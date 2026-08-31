@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import type { Metadata } from "next";
 import { Plus } from "lucide-react";
 import { listAllGames } from "@/lib/catalog";
@@ -11,6 +12,9 @@ import { getGameHealth, HEALTH_WINDOW_DAYS } from "@/lib/admin/gameOpsHealth";
 export const metadata: Metadata = { title: "Admin · Games" };
 
 export default async function AdminGamesPage() {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   const [games, editionCounts, modCounts, health, editionControllerSupport] = await Promise.all([
     listAllGames(),
     editionCountsByGame(),

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import Link from "next/link";
 import { Gift, CheckCircle, Clock, AlertTriangle, ExternalLink } from "lucide-react";
 import dbConnect from "@/lib/db";
@@ -14,6 +15,9 @@ import type { StoreSlug } from "@/lib/freeOffers/types";
 export const metadata: Metadata = { title: "Free Offers | Admin" };
 
 export default async function AdminFreeOffersPage() {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   await dbConnect();
 
   const [offers, logs, games] = await Promise.all([

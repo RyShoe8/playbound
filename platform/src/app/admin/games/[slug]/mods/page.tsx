@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Plus } from "lucide-react";
@@ -15,6 +16,9 @@ export default async function AdminGameModsPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   const { slug } = await params;
   const game = await getGame(slug, { includeUnpublished: true });
   if (!game) notFound();

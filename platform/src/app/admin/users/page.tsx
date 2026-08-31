@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
 import { getServerSession } from "next-auth/next";
@@ -9,6 +10,9 @@ import { LocalTime } from "@/components/LocalTime";
 export const metadata: Metadata = { title: "Admin · Users" };
 
 export default async function AdminUsersPage() {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   const session = await getServerSession(authOptions);
   await dbConnect();
   const users = await User.find()

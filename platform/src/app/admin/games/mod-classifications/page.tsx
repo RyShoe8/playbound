@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { getModClassificationTree } from "@/lib/modClassifications";
 import { ModClassificationsManager } from "@/components/admin/ModClassificationsManager";
 
@@ -8,6 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminModClassificationsPage() {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   const { tree, flat } = await getModClassificationTree(true);
 
   return (

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { listAllGames } from "@/lib/catalog";
 import { WeeklyIssueForm } from "@/components/admin/WeeklyIssueForm";
 import { getNewsletterFooterTemplate } from "@/lib/weekly";
@@ -7,6 +8,9 @@ import { toCatalogGamePrefill } from "@/lib/newsletterEmail";
 export const metadata: Metadata = { title: "Admin · New weekly issue" };
 
 export default async function AdminNewWeeklyPage() {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   const games = await listAllGames();
   const today = new Date().toISOString().slice(0, 10);
   const year = Number(today.slice(0, 4)) || new Date().getUTCFullYear();

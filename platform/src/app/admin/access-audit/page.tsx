@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import type { Metadata } from "next";
 import { ArrowLeft, ShieldCheck, AlertTriangle } from "lucide-react";
 import { loadAccessGraph } from "@/lib/access/graph";
@@ -15,6 +16,9 @@ export const metadata: Metadata = { title: "Admin · Access Audit" };
  * than the feature earns. This screen exists to be driven to zero first.
  */
 export default async function AccessAuditPage() {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   const graph = await loadAccessGraph();
   const issues = auditAccessGraph(graph, {
     ceilingCents: DEFAULT_VALUE_PRICE_CEILING_CENTS,
