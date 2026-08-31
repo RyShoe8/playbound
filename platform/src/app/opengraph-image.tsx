@@ -1,5 +1,4 @@
 import { ImageResponse } from "next/og";
-import { cacheLife, cacheTag } from "next/cache";
 import { newestGame } from "@/lib/catalog";
 import {
   SITE_NAME,
@@ -267,21 +266,21 @@ function heroCard(game: {
 }
 
 /*
- * The rendered PNG, cached as bytes.
+ * Rendered per request, deliberately.
  *
- * This carried `export const revalidate = 3600` before Cache Components, and
- * removing it turned the route dynamic — so every social crawler hit paid a
- * full Satori render of a 1200x630 card that changes only when a new game is
- * added. The data behind it was already cached; the drawing was not.
+ * This carried `export const revalidate = 3600` before Cache Components. The
+ * obvious replacement — a "use cache" helper returning the PNG bytes, since a
+ * Response is not serializable — does not work: filling the cache with a
+ * Satori render times out the prerender (USE_CACHE_TIMEOUT), taking about
+ * fifty seconds before the build gives up.
  *
- * Bytes rather than the ImageResponse itself, because "use cache" can only
- * hold serializable values and a Response is not one. Tagged "catalog" so
- * adding a game refreshes the card rather than waiting out the window.
+ * So the render stays uncached and this route is dynamic. The cost is bounded:
+ * newestGame() reads through the catalog's own cache, so the database is not
+ * touched per request and only the 1200x630 draw repeats. That is worse than
+ * the prerendered card this used to be, and it is the one place in this
+ * migration where the new model is a step back rather than forward.
  */
-async function ogImageBytes(): Promise<ArrayBuffer> {
-  "use cache";
-  cacheLife("hours");
-  cacheTag("catalog");
+export default async function Image() {
   let content = brandedCard();
   try {
     const game = await newestGame();
@@ -289,11 +288,5 @@ async function ogImageBytes(): Promise<ArrayBuffer> {
   } catch {
     // Catalog unavailable — the branded card still says who this is.
   }
-  return new ImageResponse(content, { ...size }).arrayBuffer();
-}
-
-export default async function Image() {
-  return new Response(await ogImageBytes(), {
-    headers: { "content-type": contentType },
-  });
+  return new ImageResponse(content, { ...size });
 }
