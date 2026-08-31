@@ -1,8 +1,8 @@
 import Link from "next/link";
+import { listGearByCategory, listPublishedGear, resolveGearCategory } from "@/lib/gear";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { GearCard } from "@/components/gear/GearCard";
-import { listGearByCategory, resolveGearCategory } from "@/lib/gear";
 import { pageMetadata } from "@/lib/seo";
 import { JsonLd, graph, breadcrumbSchema } from "@/components/JsonLd";
 
@@ -20,7 +20,10 @@ import { JsonLd, graph, breadcrumbSchema } from "@/components/JsonLd";
 export const revalidate = 900;
 
 export async function generateStaticParams() {
-  return [];
+  // Derived from what is published rather than the full enum: an empty
+  // category 404s, and the sitemap already lists only the populated ones.
+  const gear = await listPublishedGear();
+  return [...new Set(gear.map((g) => g.category.toLowerCase()))].map((category) => ({ category }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ category: string }> }): Promise<Metadata> {

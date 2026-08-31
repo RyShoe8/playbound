@@ -1,6 +1,6 @@
 import Link from "next/link";
+import { getCollection, listCollections } from "@/lib/collections";
 import { notFound } from "next/navigation";
-import { getCollection } from "@/lib/collections";
 import { gamesFor } from "@/lib/catalog";
 import { CollectionGamesList } from "@/components/CollectionGamesList";
 import { Badge } from "@/components/ui/bits";
@@ -34,7 +34,7 @@ export const revalidate = 900;
  * renders it and every request after that is served from the cache.
  */
 export async function generateStaticParams() {
-  return [];
+  return (await listCollections()).map((c) => ({ slug: c.slug }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {

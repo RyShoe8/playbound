@@ -1,7 +1,7 @@
 import Link from "next/link";
+import { getGame, listGames } from "@/lib/catalog";
 import { notFound } from "next/navigation";
 import { Users, Gamepad2, Wifi } from "lucide-react";
-import { getGame } from "@/lib/catalog";
 import {
   getMultiplayerAdapter,
   isPlayBoundManagedMultiplayer,
@@ -42,7 +42,16 @@ import { absoluteUrl } from "@/lib/site";
 export const revalidate = 900;
 
 export async function generateStaticParams() {
-  return [];
+  /*
+   * Adapters that actually have a published game, which is the same gate the
+   * sitemap uses. The adapter map alone is wider than the catalog, and those
+   * extra slugs call notFound() — during a build that is an error rather than
+   * a 404, which is exactly how the previous attempt at this failed.
+   */
+  const games = await listGames();
+  return games
+    .filter((g) => g.slug in MULTIPLAYER_ADAPTERS)
+    .map((g) => ({ slug: g.slug }));
 }
 
 export async function generateMetadata({
