@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { unstable_rethrow } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
@@ -34,6 +35,8 @@ export async function GET(req: Request) {
       }
     );
   } catch (err) {
+    // Let Next's own control-flow errors through — see unstable_rethrow.
+    unstable_rethrow(err);
     console.error("Events list error:", err);
     return NextResponse.json({ error: "Failed to load events" }, { status: 500 });
   }

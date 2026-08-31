@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { unstable_rethrow } from "next/navigation";
 import mongoose from "mongoose";
 import { getFriendsUserId } from "@/lib/friendsAuth";
 import dbConnect from "@/lib/db";
@@ -66,6 +67,8 @@ export async function GET(req: Request, ctx: RouteContext) {
       })),
     });
   } catch (err) {
+    // Let Next's own control-flow errors through — see unstable_rethrow.
+    unstable_rethrow(err);
     console.error("GET /api/parties/[id]/chat failed:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

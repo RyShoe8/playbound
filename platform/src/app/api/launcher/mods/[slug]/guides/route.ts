@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { unstable_rethrow } from "next/navigation";
 import { getMod } from "@/lib/mods";
 import dbConnect from "@/lib/db";
 import GuidePost from "@/lib/models/GuidePost";
@@ -41,6 +42,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
       }
     );
   } catch (err) {
+    // Let Next's own control-flow errors through — see unstable_rethrow.
+    unstable_rethrow(err);
     console.error("launcher mod guides error:", err);
     return NextResponse.json({ error: "Failed to load guides" }, { status: 500 });
   }
