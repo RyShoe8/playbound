@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { unstable_rethrow } from "next/navigation";
 import { getFriendsUserId } from "@/lib/friendsAuth";
 import {
   createParty,
@@ -34,6 +35,8 @@ export async function GET(req: Request) {
     if (!wantDiscoverable) return NextResponse.json({ myParties });
     return NextResponse.json({ myParties, discoverable });
   } catch (err) {
+    // Let Next's own control-flow errors through — see unstable_rethrow.
+    unstable_rethrow(err);
     console.error("GET /api/parties failed:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

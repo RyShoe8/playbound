@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { unstable_rethrow } from "next/navigation";
 import { resolveDownloadSources } from "@/lib/mirrors/resolution";
 import Artifact from "@/lib/models/Artifact";
 import dbConnect from "@/lib/db";
@@ -31,6 +32,8 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ artifacts });
   } catch (error: unknown) {
+    // Let Next's own control-flow errors through — see unstable_rethrow.
+    unstable_rethrow(error);
     const msg = error instanceof Error ? error.message : "Failed to query downloads";
     console.error("[Downloads API Error]:", error);
     return NextResponse.json({ error: msg }, { status: 500 });

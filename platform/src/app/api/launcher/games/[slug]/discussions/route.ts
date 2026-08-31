@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { unstable_rethrow } from "next/navigation";
 import { getGame } from "@/lib/catalog";
 import dbConnect from "@/lib/db";
 import DiscussionTopic from "@/lib/models/DiscussionTopic";
@@ -58,6 +59,8 @@ export async function GET(
       }
     );
   } catch (err) {
+    // Let Next's own control-flow errors through — see unstable_rethrow.
+    unstable_rethrow(err);
     console.error("launcher discussions error:", err);
     return NextResponse.json({ error: "Failed to load discussions" }, { status: 500 });
   }

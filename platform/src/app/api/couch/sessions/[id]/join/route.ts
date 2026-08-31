@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { unstable_rethrow } from "next/navigation";
 import { ensureCouchStore } from "@/lib/couch/ensureStore";
 import {
   assertController,
@@ -104,6 +105,8 @@ export async function GET(req: Request, context: RouteContext) {
           : [],
     });
   } catch (err) {
+    // Let Next's own control-flow errors through — see unstable_rethrow.
+    unstable_rethrow(err);
     console.error("GET /api/couch/sessions/[id]/join failed:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

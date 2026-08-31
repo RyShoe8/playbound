@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { unstable_rethrow } from "next/navigation";
 import {
   postSignalingMessage,
   pollSignalingMessages,
@@ -72,6 +73,8 @@ export async function GET(req: Request, context: RouteContext) {
 
     return NextResponse.json({ messages });
   } catch (err) {
+    // Let Next's own control-flow errors through — see unstable_rethrow.
+    unstable_rethrow(err);
     console.error("GET /api/multiplayer/holocure/sessions/[id]/signal failed:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { unstable_rethrow } from "next/navigation";
 import { absoluteMediaUrl, sizeLabelFromMB } from "@/lib/launcherInstall";
 import { listGames } from "@/lib/catalog";
 import { listMods } from "@/lib/mods";
@@ -71,6 +72,8 @@ export async function GET(req: Request) {
       }
     );
   } catch (err) {
+    // Let Next's own control-flow errors through — see unstable_rethrow.
+    unstable_rethrow(err);
     console.error("launcher mods error:", err);
     return NextResponse.json({ error: "Failed to load mods" }, { status: 500 });
   }
