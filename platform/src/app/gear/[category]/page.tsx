@@ -17,7 +17,6 @@ import { JsonLd, graph, breadcrumbSchema } from "@/components/JsonLd";
  * to true, so the first request for a category renders it and the rest are
  * served from cache.
  */
-export const revalidate = 900;
 
 export async function generateStaticParams() {
   // Derived from what is published rather than the full enum: an empty

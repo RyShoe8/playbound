@@ -7,8 +7,6 @@ import { issueForGame } from "@/lib/weekly";
 import { SITE_URL, QUALITY_BAR } from "@/lib/site";
 import { sizeLabel } from "@/lib/seo";
 
-export const revalidate = 3600;
-
 /**
  * Chrome-free markdown mirror of a game page.
  *

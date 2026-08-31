@@ -90,6 +90,22 @@ const sharpTracingIncludes = Object.fromEntries(
 );
 
 const nextConfig: NextConfig = {
+  /*
+   * Partial Prerendering. Each route prerenders a static shell and streams the
+   * parts that genuinely depend on the request.
+   *
+   * The reason is /games/[slug] and /mods/[slug] — 630 URLs that cannot be
+   * cached today because they read the session to decide whether a testing
+   * game is visible. That is real per-viewer authorization rather than the
+   * redundant discovery-mode filter the other routes were carrying, so it
+   * cannot simply be moved to the browser.
+   *
+   * This is a global switch: data is dynamic by default and caching is opted
+   * into with `use cache`. Existing `fetch` and `unstable_cache` caching keeps
+   * working as a separate layer.
+   */
+  cacheComponents: true,
+
   outputFileTracingIncludes: sharpTracingIncludes,
   async headers() {
     return [

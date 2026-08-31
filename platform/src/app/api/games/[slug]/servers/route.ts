@@ -3,8 +3,6 @@ import { getGame } from "@/lib/catalog";
 import { requestIncludesTesting } from "@/lib/requestIncludesTesting";
 import { hasServerProvider, listServersForGame } from "@/lib/servers/registry";
 
-export const revalidate = 30;
-
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ slug: string }> }
