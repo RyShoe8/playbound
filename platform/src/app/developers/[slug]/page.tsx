@@ -27,6 +27,24 @@ import { JsonLd, graph, itemListSchema, breadcrumbSchema } from "@/components/Js
  */
 export const revalidate = 900;
 
+/*
+ * Required for ISR on a dynamic segment. Without a generateStaticParams
+ * export at all, Next renders the route per request and serves it
+ * `private, no-store` — `revalidate` above does nothing on its own. Returning
+ * an empty array is the documented way to say "generate every path at
+ * runtime, then cache it" (see generate-static-params.md: "You must return an
+ * empty array from generateStaticParams ... in order to revalidate (ISR)
+ * paths at runtime").
+ *
+ * Empty rather than the real slugs on purpose: listing them means reading the
+ * catalog during the build, and the catalog changes far more often than we
+ * deploy. dynamicParams defaults to true, so the first request for any slug
+ * renders it and every request after that is served from the cache.
+ */
+export async function generateStaticParams() {
+  return [];
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const dev = await getDeveloper(slug);

@@ -17,6 +17,12 @@ import {
 } from "@/components/JsonLd";
 import { absoluteUrl } from "@/lib/site";
 
+/*
+ * These 27 pages were already listed here, and were still rendered per request
+ * and served `private, no-store`: the discovery-mode cookie read in the page
+ * body overrode static generation entirely. Removing that read is what lets
+ * this export do what it always looked like it was doing.
+ */
 export function generateStaticParams() {
   return alternativePages.map((p) => ({ slug: p.slug }));
 }
