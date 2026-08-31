@@ -22,7 +22,7 @@ import { sizeLabel } from "@/lib/seo";
  * A GET export cannot itself carry the directive, so the work moves into a
  * cached helper.
  */
-async function buildLlmsTxt() {
+async function buildLlmsTxt(): Promise<string> {
   "use cache";
   cacheLife("hours");
   cacheTag("catalog");
@@ -158,14 +158,14 @@ async function buildLlmsTxt() {
   );
   lines.push("");
 
-  return new Response(lines.join("\n"), {
+  return lines.join("\n");
+}
+
+export async function GET() {
+  return new Response(await buildLlmsTxt(), {
     headers: {
       "content-type": "text/plain; charset=utf-8",
       "cache-control": "public, max-age=3600, s-maxage=3600",
     },
   });
-}
-
-export async function GET() {
-  return buildLlmsTxt();
 }
