@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
 import WeeklyIssue from "@/lib/models/WeeklyIssue";
@@ -55,6 +56,8 @@ export async function POST(req: Request) {
       await saveNewsletterFooterTemplate(body.emailDraft.footer);
     }
 
+    // listWeeklyIssues is cached now; drop it so the change shows at once.
+    revalidateTag("weekly", { expire: 0 });
     return NextResponse.json({ success: true, slug: doc.slug }, { status: 201 });
   } catch (err) {
     if (err instanceof z.ZodError) {
