@@ -17,6 +17,7 @@ import { fetchAsheronsCallServers } from "./providers/asherons-call";
 import { fetchCounterStrike2Servers } from "./providers/counter-strike-2";
 import { fetchOldSchoolRuneScapeServers } from "./providers/old-school-runescape";
 import { fetchStarWarsGalaxiesServers } from "./providers/star-wars-galaxies";
+import { fetchMorrowindServers } from "./providers/morrowind";
 import { fetchRenegadeXServers } from "./providers/renegade-x";
 import {
   fetchSteamConcurrentPlayers,
@@ -118,11 +119,13 @@ const providers: Record<string, ServerProvider> = {
   },
   morrowind: {
     slug: "morrowind",
-    fetchServers: () => fetchRemoteMaster("morrowind"),
+    fetchServers: () =>
+      fetchViaAdapterOrDirect("morrowind", fetchMorrowindServers),
   },
   tes3mp: {
     slug: "tes3mp",
-    fetchServers: () => fetchRemoteMaster("tes3mp"),
+    fetchServers: () =>
+      fetchViaAdapterOrDirect("tes3mp", fetchMorrowindServers),
   },
   "wolfenstein-enemy-territory": {
     slug: "wolfenstein-enemy-territory",

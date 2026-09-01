@@ -63,6 +63,9 @@ configured, failures return an error + empty list (no fake lobby row).
 | `0ad` | XMPP MUC push (pointer without creds; full list with creds) |
 | `veloren` | HTTP serverlist + UDP query_port ServerInfo |
 | `openttd` | HTML listing + top-N detail enrich (~2 min) |
+| `star-wars-galaxies` | SWG Legends shard scrape (Cloudflare-safe proxy) |
+| `morrowind` / `tes3mp` | TES3MP HTTP master server (`master.tes3mp.com:8081`) |
 
 HTTP-only titles (Beyond All Reason, OpenRA, SuperTuxKart, …) are
-fetched directly by Vercel providers — not this service.
+fetched directly by Vercel providers — not this service (unless proxying
+blocked origins like Star Wars Galaxies).

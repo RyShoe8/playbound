@@ -102,3 +102,52 @@ describe("old-school-runescape parseOsrsWorlds", () => {
     ).toHaveLength(0);
   });
 });
+
+describe("star-wars-galaxies parseLegendsStatus", () => {
+  it("parses online status and player counts", async () => {
+    const { parseLegendsStatus } = await import("./providers/star-wars-galaxies");
+    expect(parseLegendsStatus("OMEGA · ONLINE · 908 PLAYERS")).toEqual({
+      galaxy: "OMEGA",
+      online: true,
+      players: 908,
+    });
+    expect(parseLegendsStatus("OMEGA · OFFLINE · 0 PLAYERS")).toEqual({
+      galaxy: "OMEGA",
+      online: false,
+      players: 0,
+    });
+    expect(parseLegendsStatus("Not matching html")).toBeNull();
+  });
+});
+
+describe("morrowind parseTes3mpServers", () => {
+  it("parses servers and cleans double-quoted hostnames", async () => {
+    const { parseTes3mpServers } = await import("./providers/morrowind");
+    const raw = `{"list servers":{"18.219.106.85:25565":{"modname": "Default", "passw": false, "hostname": "[NA] Nerevarine Prophecies (0.8.1)", "query_port": 0, "last_update": 55, "players": 9, "version": "0.8.1", "max_players": 64}, "1.2.3.4:25565":{"modname": "Tamriel Rebuilt", "passw": true, "hostname": ""QuotedName"", "query_port": 0, "last_update": 2, "players": 3, "version": "0.8.1", "max_players": 16}}}`;
+    const servers = parseTes3mpServers(raw);
+    expect(servers).toHaveLength(2);
+    expect(servers[0]).toMatchObject({
+      id: "tes3mp:18.219.106.85:25565",
+      name: "[NA] Nerevarine Prophecies (0.8.1)",
+      host: "18.219.106.85",
+      port: 25565,
+      players: 9,
+      maxPlayers: 64,
+      map: null,
+      gameType: "TES3MP 0.8.1",
+      protected: false,
+    });
+    expect(servers[1]).toMatchObject({
+      id: "tes3mp:1.2.3.4:25565",
+      name: "QuotedName",
+      host: "1.2.3.4",
+      port: 25565,
+      players: 3,
+      maxPlayers: 16,
+      map: "Tamriel Rebuilt",
+      gameType: "TES3MP 0.8.1",
+      protected: true,
+    });
+  });
+});
+
