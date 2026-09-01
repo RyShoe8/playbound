@@ -25,6 +25,32 @@ function logAdapterErrorOnce(slug: string, error: string) {
  * Fetch a UDP-backed list from the always-on Master Adapter (Render).
  * Optional lobby auth is forwarded for Zero-K / 0 A.D. / Wesnoth battle lists.
  */
+/**
+ * Prefer the Master Adapter, fall back to fetching the upstream directly.
+ *
+ * For sources that block Vercel but not the adapter. swglegends.com sits behind
+ * Cloudflare and answers 403 to our production requests while returning 200 to
+ * the same headers from an ordinary network, so it is the request's origin
+ * being refused rather than its shape — nothing we can send fixes it, but a
+ * proxy with a different address can.
+ *
+ * Ordered adapter-first because the direct path is the known-broken one. If the
+ * adapter has no endpoint for the slug yet this costs one fast 404 before
+ * falling back to exactly today's behaviour, and it starts working the moment
+ * that endpoint exists without another deploy here.
+ */
+export async function fetchViaAdapterOrDirect(
+  slug: string,
+  direct: () => Promise<GameServer[]>
+): Promise<GameServer[]> {
+  try {
+    return await fetchRemoteMaster(slug);
+  } catch (err) {
+    logAdapterErrorOnce(slug, err instanceof Error ? err.message : String(err));
+    return direct();
+  }
+}
+
 export async function fetchRemoteMaster(
   slug: string,
   auth?: RemoteMasterAuth | null

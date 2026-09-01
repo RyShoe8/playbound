@@ -7,7 +7,7 @@ import { fetchHurryCurryServers } from "./providers/hurry-curry";
 import { fetchLuantiServers } from "./providers/luanti";
 import { fetchOpenArenaServers } from "./providers/openarena";
 import { fetchOpenRaPlayerCount, fetchOpenRaServers } from "./providers/openra";
-import { fetchRemoteMaster } from "./providers/remote";
+import { fetchRemoteMaster, fetchViaAdapterOrDirect } from "./providers/remote";
 import { fetchSuperTuxKartServers } from "./providers/supertuxkart";
 import { fetchTeamFortress2Servers } from "./providers/team-fortress-2";
 import { fetchSpaceStation14Servers } from "./providers/space-station-14";
@@ -199,7 +199,10 @@ const providers: Record<string, ServerProvider> = {
    */
   "star-wars-galaxies": {
     slug: "star-wars-galaxies",
-    fetchServers: fetchStarWarsGalaxiesServers,
+    // Cloudflare answers 403 to Vercel and 200 to the same headers from an
+    // ordinary network, so the adapter is tried first and this is the fallback.
+    fetchServers: () =>
+      fetchViaAdapterOrDirect("star-wars-galaxies", fetchStarWarsGalaxiesServers),
   },
   mrboom: {
     slug: "mrboom",
