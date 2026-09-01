@@ -151,6 +151,37 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     ],
     note: "Official current 64-bit Windows installer.",
   },
+  "alien-swarm-reactive-drop": {
+    enabled: true,
+    /*
+     * Installs without Steam, which is unusual for a Source game and worth
+     * recording because the sibling title does not.
+     *
+     * App 563560 carries extended.freetodownload, so `login anonymous` is
+     * granted its depots: a plain SteamCMD run pulls the whole 6.8 GB client —
+     * binaries, the pak01/pak02 VPK set, and a steam_appid.txt naming 563560,
+     * which is the file a Source game reads when started outside the client.
+     * Verified against the live depot rather than inferred.
+     *
+     * The original Alien Swarm (app 630) is NOT the same: anonymous gets
+     * "Failed to install app '630' (No subscription)" and zero bytes. So this
+     * recipe cannot be reused for it, and an Alien Swarm parent entry has to
+     * stay a Steam hand-off.
+     */
+    kind: "steamcmd",
+    steamAppId: "563560",
+    versionLabel: "Anonymous SteamCMD",
+    /*
+     * Pinned because the install root holds reactivedrop.exe, srcds.exe and
+     * srcds_console.exe, and reactivedrop.exe and srcds_console.exe are both
+     * exactly 20,192 bytes — the same tie that once made Streets of Rage
+     * Remake open its level editor. Plain substring, not a regex: findExecutable
+     * escapes metacharacters in the hint before matching.
+     */
+    exeHint: "reactivedrop",
+    knownExePaths: ["reactivedrop.exe"],
+    note: "Official client through Steam's public anonymous depot — no Steam client or account needed to install. ~6.8 GB.",
+  },
   warfork: {
     enabled: true,
     kind: "steamcmd",
