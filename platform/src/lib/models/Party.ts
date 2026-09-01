@@ -77,6 +77,32 @@ const PartyLanSchema = new Schema(
   { _id: false }
 );
 
+/**
+ * A couch session the party is playing through.
+ *
+ * Games like Streets of Rage Remake have no network code at all, so there is no
+ * room here and none of the other host modes apply: the leader runs the game
+ * and the rest of the party send input from their phones, which arrive as
+ * virtual pads on the leader's PC. The session itself lives in CouchSession —
+ * this only records which one the party is using, so members can be handed the
+ * join link without asking the leader to read a code out loud.
+ */
+const PartyCouchSchema = new Schema(
+  {
+    status: {
+      type: String,
+      enum: ["none", "pending", "ready", "failed"],
+      default: "none",
+    },
+    /** Short human code, also the last path segment of joinUrl. */
+    joinCode: { type: String, default: null },
+    joinUrl: { type: String, default: null },
+    error: { type: String, default: null },
+    startedAt: { type: Date, default: null },
+  },
+  { _id: false }
+);
+
 const PartyMemberSchema = new Schema(
   {
     userId: {
@@ -178,7 +204,7 @@ const PartySchema = new Schema(
      */
     hostMode: {
       type: String,
-      enum: ["self", "dedicated", "public", null],
+      enum: ["self", "dedicated", "public", "couch", null],
       default: null,
     },
 
@@ -218,6 +244,9 @@ const PartySchema = new Schema(
 
     // Shared L2 segment for LAN-discovery-only games.
     lan: { type: PartyLanSchema, default: () => ({}) },
+
+    // Phone-controller session for games with no networking at all.
+    couch: { type: PartyCouchSchema, default: () => ({}) },
 
     lastActivity: { type: Date, default: Date.now, index: true },
     endedAt: { type: Date, default: null },

@@ -135,6 +135,9 @@ contextBridge.exposeInMainWorld("playbound", {
   setPartyOpenRaMod: (partyId, openRaMod) =>
     ipcRenderer.invoke("update-party", partyId, { openRaMod: openRaMod || null }),
   setPartyHostMode: (partyId, hostMode) => ipcRenderer.invoke("update-party", partyId, { hostMode }),
+  // Publishes the leader's couch join code to the party; null clears it.
+  setPartyCouchSession: (partyId, session) =>
+    ipcRenderer.invoke("update-party", partyId, { couchSession: session ?? null }),
   setPartyPublicServer: (partyId, publicServer) =>
     ipcRenderer.invoke("update-party", partyId, { publicServer }),
   prepareSelfHost: (input) => ipcRenderer.invoke("prepare-self-host", input || {}),

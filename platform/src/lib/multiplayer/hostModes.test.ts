@@ -6,7 +6,9 @@ import {
 } from "./adapters";
 import {
   canSelfHost,
+  canUseCouch,
   canUseDedicated,
+  couchPayloadFromDoc,
   defaultHostMode,
   findHostModeConfigProblems,
   hostModeOptions,
@@ -171,5 +173,60 @@ describe("orphaned adapters", () => {
 
   it("is case-insensitive about catalog slugs", () => {
     expect(findOrphanedAdapters(["WARZONE-2100"])).not.toContain("warzone-2100");
+  });
+});
+
+describe("couch mode", () => {
+  /*
+   * Streets of Rage Remake is a 2011 Bennu game with no network code at all:
+   * two players share one keyboard and two pads. Before couch mode existed it
+   * had no host modes, so hostModeOptions returned an empty list and a party
+   * formed around it could do nothing.
+   */
+  it("gives a game with no networking somewhere to play", () => {
+    expect(canUseCouch("streets-of-rage-remake")).toBe(true);
+    expect(hostModesFor("streets-of-rage-remake")).toEqual(["couch"]);
+    expect(defaultHostMode("streets-of-rage-remake")).toBe("couch");
+  });
+
+  it("is the only option, so the picker stays hidden", () => {
+    const available = hostModeOptions("streets-of-rage-remake").filter((o) => o.available);
+    expect(available.map((o) => o.mode)).toEqual(["couch"]);
+  });
+
+  it("is not offered to games that actually have online play", () => {
+    expect(canUseCouch("openra")).toBe(false);
+    expect(hostModesFor("openra")).not.toContain("couch");
+  });
+
+  it("survives a round trip through the party document", () => {
+    expect(isValidHostMode("streets-of-rage-remake", "couch")).toBe(true);
+    expect(resolvedHostMode("streets-of-rage-remake", "couch", null)).toBe("couch");
+    // A party created before couch mode stored null and must still resolve.
+    expect(resolvedHostMode("streets-of-rage-remake", null, null)).toBe("couch");
+  });
+
+  it("rejects a mode the game does not have", () => {
+    expect(isValidHostMode("streets-of-rage-remake", "dedicated")).toBe(false);
+    expect(isValidHostMode("openra", "couch")).toBe(false);
+  });
+
+  it("enables the payload only for a couch party, and carries the code", () => {
+    const ready = couchPayloadFromDoc("streets-of-rage-remake", "couch", {
+      status: "ready",
+      joinCode: "AB3D",
+      joinUrl: "https://playbound.club/controller/AB3D",
+    });
+    expect(ready.enabled).toBe(true);
+    expect(ready.joinCode).toBe("AB3D");
+
+    // An online game must never render the controller panel, even if a stale
+    // couch document is sitting on the party.
+    const online = couchPayloadFromDoc("openra", "dedicated", {
+      status: "ready",
+      joinCode: "AB3D",
+    });
+    expect(online.enabled).toBe(false);
+    expect(online.joinCode).toBeNull();
   });
 });

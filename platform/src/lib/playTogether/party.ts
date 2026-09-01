@@ -66,6 +66,8 @@ import { modBaseGameSlugsForCatalogGame } from "@/lib/catalogGameAliases";
 import { isVirtualLanGame } from "@/lib/multiplayer/adapters";
 import {
   defaultHostMode,
+  couchPayloadFromDoc,
+  type PartyCouchFields,
   hostModeOptions,
   isValidHostMode,
   publicLobbyPortFor,
@@ -111,6 +113,7 @@ type PartyDoc = Document & {
   selfHostReadyAt?: Date | null;
   hosted?: PartyHostFields;
   lan?: PartyLanFields;
+  couch?: PartyCouchFields & { startedAt?: Date | null };
   publicServer?: PublicServerFields | null;
   openRaMod?: OpenRaModSlug | null;
   maxSize?: number;
@@ -181,6 +184,13 @@ function resetPartyConnectState(doc: PartyDoc) {
     doc.hosted.name = null;
     doc.hosted.roomCode = null;
   }
+  if (doc.couch) {
+    doc.couch.status = "none";
+    doc.couch.joinCode = null;
+    doc.couch.joinUrl = null;
+    doc.couch.error = null;
+    doc.couch.startedAt = null;
+  }
   if (doc.lan) {
     doc.lan.status = "none";
     doc.lan.error = null;
@@ -216,6 +226,9 @@ async function maybeProvisionPartyConnect(doc: PartyDoc): Promise<void> {
   const hostMode = resolvedHostMode(slug, doc.hostMode, doc.hosted);
 
   if (hostMode === "public") return;
+  // Couch parties have no room and no overlay — the session is started by the
+  // leader's launcher when they hit Start Game, not provisioned from here.
+  if (hostMode === "couch") return;
 
   if (hostMode === "dedicated" && isHostableGame(slug)) {
     const hs = (doc.hosted?.status || "none") as HostedStatus;
@@ -238,6 +251,10 @@ async function ensurePartyConnectReady(
 ): Promise<{ ok: true } | { error: string }> {
   const slug = String(doc.gameSlug || "");
   const hostMode = resolvedHostMode(slug, doc.hostMode, doc.hosted);
+
+  // Nothing to reach in couch mode — the game runs on the leader's PC and the
+  // party arrives as controllers, not as clients.
+  if (hostMode === "couch") return { ok: true };
 
   if (hostMode === "public") {
     if (!doc.publicServer?.host || !doc.publicServer?.port) {
@@ -639,6 +656,11 @@ function serializeParty(
       String(doc.gameSlug || ""),
       hostMode,
       (doc.lan as Parameters<typeof lanPayloadFromDoc>[2]) || null
+    ),
+    couch: couchPayloadFromDoc(
+      String(doc.gameSlug || ""),
+      hostMode,
+      (doc.couch as Parameters<typeof couchPayloadFromDoc>[2]) || null
     ),
     lastActivity: (doc.lastActivity as Date)?.toISOString() || new Date().toISOString(),
     createdAt: (doc.createdAt as Date)?.toISOString() || new Date().toISOString(),
@@ -1445,6 +1467,76 @@ export async function setPartyHostMode(
  * Leader-only. Refused while playing so members are not sent to a different
  * address mid-session. Switching games or host modes already clears the pick.
  */
+/**
+ * Publish the leader's couch session to the party, so members get the
+ * controller link without the leader reading a code out loud.
+ *
+ * Called by the leader's launcher right after it starts a couch session, and
+ * again with null when the session ends. The join code is not a credential —
+ * it is what a phone types to join, and the party is already the set of people
+ * meant to have it — so this stores it verbatim rather than handing it out
+ * through a per-member call the way the LAN setup key is.
+ */
+export async function setPartyCouchSession(
+  partyId: string,
+  leaderId: string,
+  raw: unknown
+): Promise<{ party: PartyPayload; status: 200 } | { error: string; status: 400 | 403 | 404 }> {
+  await dbConnect();
+
+  const doc = await Party.findById(partyId);
+  if (!doc) return { error: "Party not found", status: 404 };
+  if (String(doc.leaderId) !== leaderId) {
+    return { error: "Only the leader runs the game in couch mode", status: 403 };
+  }
+  if (doc.status === "ended") return { error: "Party has ended", status: 400 };
+
+  const slug = String(doc.gameSlug || "");
+  if (!slug) return { error: "Pick a game first", status: 400 };
+  if (resolvedHostMode(slug, doc.hostMode, doc.hosted) !== "couch") {
+    return { error: "This party is not playing couch co-op", status: 400 };
+  }
+
+  if (!doc.couch) doc.couch = {};
+
+  if (raw === null) {
+    doc.couch.status = "none";
+    doc.couch.joinCode = null;
+    doc.couch.joinUrl = null;
+    doc.couch.error = null;
+    doc.couch.startedAt = null;
+  } else {
+    const o = (raw || {}) as Record<string, unknown>;
+    const error = typeof o.error === "string" ? o.error.trim().slice(0, 300) : "";
+    if (error) {
+      doc.couch.status = "failed";
+      doc.couch.error = error;
+      doc.couch.joinCode = null;
+      doc.couch.joinUrl = null;
+    } else {
+      const joinCode = typeof o.joinCode === "string" ? o.joinCode.trim() : "";
+      const joinUrl = typeof o.joinUrl === "string" ? o.joinUrl.trim() : "";
+      // Codes come from createCouchSession; anything else is a client bug or a
+      // forged call, and a bad code would send the whole party to a dead page.
+      if (!/^[A-Za-z0-9-]{4,16}$/.test(joinCode)) {
+        return { error: "That couch code is not valid.", status: 400 };
+      }
+      if (joinUrl && !/^https:\/\/[^\s]{1,300}$/.test(joinUrl)) {
+        return { error: "That couch link is not valid.", status: 400 };
+      }
+      doc.couch.status = "ready";
+      doc.couch.error = null;
+      doc.couch.joinCode = joinCode;
+      doc.couch.joinUrl = joinUrl || null;
+      doc.couch.startedAt = new Date();
+    }
+  }
+
+  doc.lastActivity = new Date();
+  await doc.save();
+  return { party: await partyPayloadForDoc(doc.toObject()), status: 200 };
+}
+
 export async function setPartyPublicServer(
   partyId: string,
   leaderId: string,
@@ -1742,6 +1834,17 @@ export async function joinPartyGame(
   const isLeader = String(doc.leaderId) === userId;
   if (hostMode === "self" && !isLeader && !doc.selfHostReady) {
     return { error: "Waiting for host", status: 400 };
+  }
+  /*
+   * Couch games have one copy running, on the leader's machine. A member
+   * launching their own would start a separate single-player session and mark
+   * the party as playing — they join by opening the controller link instead.
+   */
+  if (hostMode === "couch" && !isLeader) {
+    return {
+      error: "This game plays on the host's PC — open the controller link on your phone.",
+      status: 400,
+    };
   }
   const connect = await ensurePartyConnectReady(doc);
   if ("error" in connect) {

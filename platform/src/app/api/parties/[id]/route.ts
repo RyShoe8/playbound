@@ -5,6 +5,7 @@ import {
   setVisibility,
   setPartyGame,
   setPartyHostMode,
+  setPartyCouchSession,
   setPartyPublicServer,
   setPartyEdition,
   setPartyOpenRaMod,
@@ -68,6 +69,16 @@ export async function PATCH(req: Request, ctx: RouteContext) {
 
     if (typeof body.hostMode === "string") {
       const result = await setPartyHostMode(id, userId, body.hostMode);
+      if ("error" in result) {
+        return NextResponse.json({ error: result.error }, { status: result.status });
+      }
+      return NextResponse.json({ party: result.party });
+    }
+
+    // The leader's launcher publishes its couch join code here, and clears it
+    // with null when the session ends.
+    if (body.couchSession !== undefined) {
+      const result = await setPartyCouchSession(id, userId, body.couchSession);
       if ("error" in result) {
         return NextResponse.json({ error: result.error }, { status: result.status });
       }

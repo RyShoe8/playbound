@@ -1632,8 +1632,15 @@ export function listVirtualLanGames(): GameMultiplayerAdapter[] {
   );
 }
 
-/** Where a party's room actually runs. */
-export type PartyHostMode = "dedicated" | "self" | "public";
+/**
+ * Where a party's room actually runs.
+ *
+ * "couch" is the odd one out: there is no room. The game has no networking at
+ * all — Streets of Rage Remake and the other couch co-op titles are two people
+ * on one machine — so the host runs it alone and the rest of the party send
+ * their input instead, arriving as virtual pads plugged into the host's PC.
+ */
+export type PartyHostMode = "dedicated" | "self" | "public" | "couch";
 
 export const DEFAULT_HOST_MODE: PartyHostMode = "dedicated";
 
