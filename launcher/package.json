@@ -26,6 +26,7 @@
     "test:connect": "node services/connectArgs.test.js",
     "test:catalog": "node services/catalogMerge.test.js",
     "test:exe-format": "node services/executableFormat.test.js",
+    "test:exe-pick": "node services/exePick.test.js",
     "test:dosbox": "node services/ManagedDosBox.test.js",
     "test:dotnet": "node services/ManagedDotNet.test.js",
     "test:retroarch": "node services/ManagedRetroArch.test.js",

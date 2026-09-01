@@ -615,7 +615,7 @@ function findInSteamLibraries(entry) {
           if (m && m[1]) {
             const installDir = path.join(root, "steamapps", "common", m[1]);
             if (fs.existsSync(installDir)) {
-              const exe = findExecutable(installDir, entry?.exeHint);
+              const exe = findExecutable(installDir, exeHintFor(entry));
               if (exe) return exe;
             }
           }
@@ -657,7 +657,7 @@ function findInSteamLibraries(entry) {
 
       if (matches) {
         const fullDir = path.join(commonDir, folderName);
-        const exe = findExecutable(fullDir, entry?.exeHint);
+        const exe = findExecutable(fullDir, exeHintFor(entry));
         if (exe) return exe;
       }
     }
@@ -3578,10 +3578,43 @@ function repairUnixExtractedBinaries(destDir) {
 
 /* ── executable discovery ──────────────────────────────────── */
 
+/**
+ * The name hint to search an install with.
+ *
+ * `exeHint` is the explicit field, but most recipes only carry
+ * `knownExePaths` — and findExecutable never looked at those, so a package
+ * shipping more than one .exe fell through to "largest wins". Streets of Rage
+ * Remake ships SorR.exe beside the bigger SorMaker.exe, its level editor, so
+ * Play opened the editor and told the player to unlock it. The recipe had said
+ * SorR.exe all along; nothing was reading it at install time.
+ *
+ * Basenames are enough: findExecutable matches the hint against file names.
+ */
+function exeHintFor(entry) {
+  if (entry?.exeHint) return entry.exeHint;
+  const bases = (entry?.knownExePaths || [])
+    .map((raw) => {
+      try {
+        return path.basename(expandWinPath(String(raw)));
+      } catch {
+        return "";
+      }
+    })
+    .filter(Boolean);
+  return bases.length > 0 ? bases.join("|") : undefined;
+}
+
 function findExecutable(dir, exeHint) {
   if (!dir || !fs.existsSync(dir)) return null;
   const candidates = [];
   const skip = /unins|setup|install|crash|report|vcredist|dxsetup/i;
+  /*
+   * Shipped alongside the game rather than being it: level editors, config
+   * front-ends, benchmarks. Demoted rather than skipped, so a package whose
+   * only executable is one of these still launches — the rank only decides
+   * which wins when there is something else to prefer.
+   */
+  const tool = /editor|maker|config|settings|benchmark|dedicated/i;
 
   const walk = (d, depth = 0, ignoreSkip = false) => {
     if (depth > 10) return;
@@ -3615,7 +3648,7 @@ function findExecutable(dir, exeHint) {
       }
       if (process.platform === "win32") {
         if (lower.endsWith(".exe") && (ignoreSkip || !skip.test(name))) {
-          candidates.push({ full, name, size: stat.size, rank: 100 });
+          candidates.push({ full, name, size: stat.size, rank: tool.test(name) ? 60 : 100 });
         } else if (/\.(gb|gbc|gba|nes|sfc|smc|z64|n64|gen)$/i.test(lower) && (ignoreSkip || !skip.test(name))) {
           candidates.push({ full, name, size: stat.size, rank: 90 });
         }
@@ -4118,7 +4151,7 @@ function findSteamInstallExe(entry) {
       if (!installDir) continue;
       const dir = path.join(lib, "steamapps", "common", installDir);
       if (!fs.existsSync(dir)) continue;
-      const exe = findExecutable(dir, entry.exeHint);
+      const exe = findExecutable(dir, exeHintFor(entry));
       if (exe) return exe;
     } catch {
       // One unreadable library must not stop the others being checked.
@@ -5794,7 +5827,7 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
       installDir: gameDir,
       title: entry.title || slug,
     });
-    const exe = findExecutable(gameDir, entry.exeHint);
+    const exe = findExecutable(gameDir, exeHintFor(entry));
     if (!exe) {
       throw new Error("SteamCMD finished, but the game executable was not found.");
     }
@@ -5928,8 +5961,8 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   await prepareClassicDosInstall(entry, gameDir);
 
   const exe = entry.slug === "ysoccer"
-    ? findYSoccerOnlineJar(gameDir) || findExecutable(gameDir, entry.exeHint) || findNamedPortableExe(gameDir, "ysoccer.exe")
-    : findExecutable(gameDir, entry.exeHint);
+    ? findYSoccerOnlineJar(gameDir) || findExecutable(gameDir, exeHintFor(entry)) || findNamedPortableExe(gameDir, "ysoccer.exe")
+    : findExecutable(gameDir, exeHintFor(entry));
   if (!exe) throw new Error("Extracted, but no executable found");
 
   await processAddons(entry, gameDir, selectedAddons);
@@ -7313,6 +7346,45 @@ async function playGameInner(slug, join = null, editionSlug = null) {
   }
 
   /*
+   * Repair installs that recorded an executable the recipe does not name.
+   *
+   * findExecutable used to ignore knownExePaths, so a package shipping more
+   * than one .exe fell through to "largest wins". Streets of Rage Remake ships
+   * SorR.exe beside the larger SorMaker.exe — its level editor — and Play
+   * opened the editor, which then asked the player to unlock it. The recipe had
+   * named SorR.exe the whole time.
+   *
+   * Fixing the picker only helps the next install. This re-resolves inside the
+   * folder already on disk, so copies installed under the old behaviour correct
+   * themselves on the next Play instead of needing a reinstall.
+   */
+  {
+    const knownBases = (entry?.knownExePaths || [])
+      .map((raw) => {
+        try {
+          return path.basename(expandWinPath(String(raw))).toLowerCase();
+        } catch {
+          return "";
+        }
+      })
+      .filter(Boolean);
+    const current = path.basename(launchPath || "").toLowerCase();
+    if (knownBases.length > 0 && current && !knownBases.includes(current)) {
+      const named = info.dir ? findExecutable(info.dir, exeHintFor(entry)) : null;
+      if (named && named !== launchPath && knownBases.includes(path.basename(named).toLowerCase())) {
+        void telemetry.track("launch_exe_repaired", {
+          ...launchInfo(),
+          from: path.basename(launchPath),
+          to: path.basename(named),
+          reason: "not_in_known_exe_paths",
+        });
+        persistEditionExe(slug, edSlug, launchPath, named);
+        launchPath = named;
+      }
+    }
+  }
+
+  /*
    * Repair installs that recorded a DOS-era exe as the launch target.
    *
    * TES: Arena copies installed before findExecutable learned to read PE
@@ -7325,7 +7397,7 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     /\.(exe|com)$/i.test(launchPath) &&
     isLegacyDosExecutable(launchPath)
   ) {
-    const runnable = info.dir ? findExecutable(info.dir, entry?.exeHint) : null;
+    const runnable = info.dir ? findExecutable(info.dir, exeHintFor(entry)) : null;
     if (runnable && runnable !== launchPath && !isLegacyDosExecutable(runnable)) {
       void telemetry.track("launch_exe_repaired", {
         ...launchInfo(),
