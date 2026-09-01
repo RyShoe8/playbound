@@ -4,6 +4,8 @@
  */
 
 import type { PartyReadiness } from "@/lib/playTogether/partyReadiness";
+import type { PartyHostMode } from "@/lib/multiplayer/adapters";
+import type { HostModeOption } from "@/lib/multiplayer/hostModes";
 
 export const PLAY_INVITE_STATUSES = [
   "pending",
@@ -206,15 +208,17 @@ export type PartyPayload = {
    * clients read as "no constraint" rather than "nothing qualifies".
    */
   requiredPlatforms: string[];
-  /** Where the room runs. Null when the game offers no PlayBound-run multiplayer. */
-  hostMode: "self" | "dedicated" | "public" | null;
+  /**
+   * Where the room runs. Null when the game offers no PlayBound-run
+   * multiplayer.
+   *
+   * Spelt out here as a copy of PartyHostMode, which meant adding "couch" to
+   * the real type left this one behind and the compiler caught two assignments
+   * it no longer accepted. Referencing the source avoids the next drift.
+   */
+  hostMode: PartyHostMode | null;
   /** Modes this game supports, in display order. Fewer than two means no picker. */
-  hostModes: Array<{
-    mode: "self" | "dedicated" | "public";
-    available: boolean;
-    label: string;
-    hint: string;
-  }>;
+  hostModes: HostModeOption[];
   /**
    * Community dedicated server the party picked. Present only when hostMode is
    * `public`; Join Game uses the same host/port via `hosted` so existing
@@ -280,6 +284,18 @@ export type PartyPayload = {
     status: "none" | "pending" | "ready" | "failed";
     adapterFile: string | null;
     steps: string[];
+    error: string | null;
+  };
+  /**
+   * Phone-controller session for a couch party. `enabled` means this game has
+   * no networking, so only the leader launches it and everyone else joins by
+   * opening `joinUrl` on a phone.
+   */
+  couch: {
+    enabled: boolean;
+    status: "none" | "pending" | "ready" | "failed";
+    joinCode: string | null;
+    joinUrl: string | null;
     error: string | null;
   };
   lastActivity: string;

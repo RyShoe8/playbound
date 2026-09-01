@@ -1,6 +1,7 @@
 import { createFreeOfferCard, createGameCard } from "../cards.js";
 import { CADENCE } from "../cadence.js";
 import { maybeOfferPhoneControllerThenPlay } from "../phoneController.js";
+import { ensureCouchBackground, startCouchSessionQuiet } from "./couch.js";
 import { maybeShowLaunchGuidance } from "../guidanceModal.js";
 import {
   api,
@@ -1457,10 +1458,20 @@ function buildPartyViewHtml(party) {
   const hosted = party.hosted || {};
   const hostedReady = hosted.status === "ready" && hosted.host && hosted.port;
   const lan = party.lan || {};
+  /*
+   * Couch games have no networking, so there is one running copy and it is the
+   * leader's. Members join by opening the controller link on a phone, which is
+   * why they get no Join Game at all here rather than a disabled one.
+   */
+  const couch = party.couch || {};
   const isPeerOrLan = !hosted.enabled || lan.enabled;
   const waitingForLeader =
-    !isLeader && isPeerOrLan && (party.hostMode !== "self" ? !inFlight : !party.selfHostReady);
-  const canJoinGame = hasGame && !ended && (isReady || inFlight);
+    !isLeader &&
+    !couch.enabled &&
+    isPeerOrLan &&
+    (party.hostMode !== "self" ? !inFlight : !party.selfHostReady);
+  const canJoinGame =
+    hasGame && !ended && (isReady || inFlight) && (!couch.enabled || isLeader);
   /*
    * Join stays clickable once you're ready — join-game provisions the server
    * and returns a clear wait/error if connect isn't up yet. Disabling while
@@ -1472,6 +1483,7 @@ function buildPartyViewHtml(party) {
     ((hosted.enabled && hosted.status === "failed") || (lan.enabled && lan.status === "failed"));
   const memberWaitingForConnect =
     !isLeader &&
+    !couch.enabled &&
     ((party.hostMode === "self" && !party.selfHostReady) ||
       (hosted.enabled && hosted.status !== "ready") ||
       (lan.enabled && lan.status !== "ready"));
@@ -1723,6 +1735,33 @@ function buildPartyViewHtml(party) {
           .join("")}</ol>`
       : "";
 
+  /*
+   * The one thing a couch party needs on screen: where to point a phone. The
+   * leader's launcher publishes the code when it starts the session, so until
+   * then members are told what is about to happen rather than shown nothing.
+   */
+  const couchUrl = couch.joinUrl || (couch.joinCode ? `https://playbound.club/controller/${couch.joinCode}` : "");
+  const couchHtml = !couch.enabled
+    ? ""
+    : couch.status === "ready" && couch.joinCode
+    ? `<div class="party-couch">
+         <p class="party-section-label">Phone controllers</p>
+         <p class="party-couch-code">Code <strong>${escapeHtml(String(couch.joinCode))}</strong></p>
+         <p class="view-sub">Open <strong>${escapeHtml(couchUrl)}</strong> on your phone. It becomes a controller plugged into the host's PC.</p>
+         <button type="button" id="btn-party-couch-copy" class="party-btn btn-secondary" data-url="${escapeHtml(
+           couchUrl
+         )}">${ICON.phone} Copy controller link</button>
+       </div>`
+    : couch.status === "failed"
+    ? `<p class="party-inline-note party-hosted-error">${escapeHtml(
+        couch.error || "Could not start phone controllers on the host's PC."
+      )}</p>`
+    : `<p class="view-sub party-inline-note">${
+        isLeader
+          ? "This game has no online play. Start Game and your party will get a controller link."
+          : "This game runs on the host's PC. When they start it you will get a link to open on your phone."
+      }</p>`;
+
   const playingPillHtml =
     party.status === "playing" && !canJoinGame
       ? `<div class="party-playing-pill">${ICON.play} Playing</div>`
@@ -1789,6 +1828,7 @@ function buildPartyViewHtml(party) {
               party.id
             )}">${ICON.logout} ${leaveLabel}</button>
           </div>
+          ${couchHtml}
           ${lanStepsHtml}
           ${hostedStepsHtml}
           <p class="party-voice-error" id="party-voice-error" style="display: none;"></p>
@@ -2445,6 +2485,9 @@ function partyAreaSignature(active, discoverable) {
       members: (active.members || []).map((m) => [m.userId, m.username, m.role, m.ready]),
       hosted: active.hosted || null,
       lan: active.lan || null,
+      // Members find out the controller link exists through this, so it has to
+      // be part of what a repaint compares.
+      couch: active.couch || null,
       discord: active.discord || null,
       voiceEnabled: active.voiceEnabled !== false,
       configSync: active.configSync
@@ -2730,11 +2773,22 @@ function wirePartyView(slot, party) {
         void api.refreshFriendsData();
         return;
       }
+      await maybeStartPartyCouch(partyId, updated);
       await launchPartyGame(updated);
       joinGameBtn.disabled = false;
       const areaSlot = document.getElementById("friends-party-area");
       if (areaSlot) areaSlot.dataset.sig = "";
       void api.refreshFriendsData();
+    });
+  }
+
+  const couchCopyBtn = slot.querySelector("#btn-party-couch-copy");
+  if (couchCopyBtn) {
+    couchCopyBtn.addEventListener("click", () => {
+      const url = couchCopyBtn.dataset.url || "";
+      if (!url) return;
+      void window.playbound.clipboardWrite?.(url);
+      setStatus("Controller link copied");
     });
   }
 
@@ -2954,6 +3008,44 @@ async function isGameReadyToPlay(slug) {
     // Unknown is not "missing": failing the check must not block a launch that
     // would have worked. play() still refuses if it really is not installed.
     return true;
+  }
+}
+
+/**
+ * Start phone controllers for a couch party and publish the code to it.
+ *
+ * Only the leader reaches this — members have no Join Game in couch mode —
+ * because the session belongs to the machine actually running the game. A
+ * failure is published too rather than thrown: the game still launches and
+ * plays fine on one pad, and the party card can say why the phones did not
+ * appear instead of the members watching a panel that never fills in.
+ */
+async function maybeStartPartyCouch(partyId, party) {
+  if (!party?.couch?.enabled) return;
+  if (party.couch.status === "ready" && party.couch.joinCode) return;
+  try {
+    /*
+     * Through startCouchSessionQuiet rather than couchStart: it reuses a
+     * session that is already up, and — the part that matters — starts the
+     * WebRTC signalling poll. Calling the IPC directly mints a code that no
+     * phone can ever complete a connection against.
+     */
+    const state = await startCouchSessionQuiet();
+    const session = state?.session;
+    if (!state?.active || !session?.joinCode) {
+      throw new Error("Could not start phone controllers.");
+    }
+    ensureCouchBackground();
+    await window.playbound.setPartyCouchSession(partyId, {
+      joinCode: session.joinCode,
+      joinUrl: session.joinUrl || "",
+    });
+  } catch (err) {
+    await window.playbound
+      .setPartyCouchSession(partyId, {
+        error: err.message || "Could not start phone controllers.",
+      })
+      .catch(() => {});
   }
 }
 

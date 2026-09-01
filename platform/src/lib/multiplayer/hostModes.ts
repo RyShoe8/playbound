@@ -126,6 +126,38 @@ export const CLIENT_HOSTING_VERIFIED: ReadonlySet<string> = new Set<string>([
   "triplea",
 ]);
 
+/**
+ * Games with no networking, where the party plays on one machine.
+ *
+ * Streets of Rage Remake is the clearest case: a 2011 Bennu game whose two
+ * players share a keyboard and two pads. Its manual describes Battle, Survival
+ * and Volleyball as local modes and mentions no network anywhere, so there is
+ * nothing for a public server, a self-hosted room or a virtual LAN to reach —
+ * hostModeOptions returned an empty list and a party could do nothing with it.
+ *
+ * Couch mode is what serves these: the host runs the game and everyone else
+ * sends input over WebRTC, arriving as virtual Xbox pads on the host's PC. The
+ * game only ever sees local controllers, which is exactly what it wants.
+ *
+ * Listed rather than derived, matching CLIENT_HOSTING_VERIFIED above. Note the
+ * catalog's "Couch Co-Op" feature is not the test: it says a game has local
+ * co-op, not that local is all it has. BombSquad and OpenTyrian 2000 carry it
+ * and are online games — findHostModeConfigProblems rejects both if they are
+ * added back here.
+ */
+const LOCAL_COUCH_GAMES = new Set([
+  "streets-of-rage-remake",
+  "hurrican",
+  "pixreveal",
+  "the-spike-cross",
+]);
+
+/** True when the party can only play this together by sharing one machine. */
+export function canUseCouch(gameSlug: string): boolean {
+  const adapter = getMultiplayerAdapter(gameSlug);
+  return LOCAL_COUCH_GAMES.has(adapter.gameSlug) || LOCAL_COUCH_GAMES.has(gameSlug);
+}
+
 export interface HostModeOption {
   mode: PartyHostMode;
   available: boolean;
@@ -199,6 +231,7 @@ export function hostModesFor(gameSlug: string): PartyHostMode[] {
   const modes: PartyHostMode[] = [];
   if (canUsePublicServer(gameSlug)) modes.push("public");
   if (canSelfHost(gameSlug)) modes.push("self");
+  if (canUseCouch(gameSlug)) modes.push("couch");
   if (canUseDedicated(gameSlug)) modes.push("dedicated");
   return modes;
 }
@@ -231,7 +264,12 @@ export function resolvedHostMode(
   hostMode: PartyHostMode | string | null | undefined,
   hosted?: { roomId?: string | null } | null
 ): PartyHostMode | null {
-  if (hostMode === "public" || hostMode === "self" || hostMode === "dedicated") {
+  if (
+    hostMode === "public" ||
+    hostMode === "self" ||
+    hostMode === "couch" ||
+    hostMode === "dedicated"
+  ) {
     return hostMode;
   }
   if (hosted?.roomId) return "dedicated";
@@ -241,6 +279,46 @@ export function resolvedHostMode(
 /** Is this a mode the game actually supports? Guards untrusted input. */
 export function isValidHostMode(gameSlug: string, mode: unknown): mode is PartyHostMode {
   return typeof mode === "string" && hostModesFor(gameSlug).includes(mode as PartyHostMode);
+}
+
+/** What the party doc stores about its couch session. */
+export type PartyCouchFields = {
+  status?: "none" | "pending" | "ready" | "failed" | null;
+  joinCode?: string | null;
+  joinUrl?: string | null;
+  error?: string | null;
+};
+
+/**
+ * What the launcher and the party window need to show for a couch party.
+ *
+ * `enabled` is the flag that changes the UI: with it set there is no address to
+ * join and no Join Game for anyone but the leader, so members are shown the
+ * controller link instead. Mirrors lanPayloadFromDoc, which does the same job
+ * for overlay games.
+ */
+export function couchPayloadFromDoc(
+  gameSlug: string,
+  hostMode: string | null,
+  couch?: PartyCouchFields | null
+) {
+  const resolved = hostMode || defaultHostMode(gameSlug);
+  if (resolved !== "couch" || !canUseCouch(gameSlug)) {
+    return {
+      enabled: false,
+      status: "none" as const,
+      joinCode: null,
+      joinUrl: null,
+      error: null,
+    };
+  }
+  return {
+    enabled: true,
+    status: couch?.status || ("none" as const),
+    joinCode: couch?.joinCode || null,
+    joinUrl: couch?.joinUrl || null,
+    error: couch?.error || null,
+  };
 }
 
 /** Picker options, in display order, with copy explaining the tradeoff. */
@@ -257,6 +335,12 @@ export function hostModeOptions(gameSlug: string): HostModeOption[] {
       available: canSelfHost(gameSlug),
       label: "My computer",
       hint: "Your PC runs the game. Lowest latency, and your party reaches it over the PlayBound network — no port forwarding. The room ends when you quit.",
+    },
+    {
+      mode: "couch" as const,
+      available: canUseCouch(gameSlug),
+      label: "Couch co-op",
+      hint: "This game has no online play. It runs on your PC and everyone else uses their phone as a controller — the game sees them as pads plugged into your machine.",
     },
     {
       mode: "dedicated" as const,
@@ -331,6 +415,22 @@ export function findHostModeConfigProblems(): HostModeConfigProblem[] {
       problems.push({
         gameSlug: hostable.slug,
         problem: "is in HOSTABLE_GAMES but typed `official`, which says PlayBound does not run its multiplayer.",
+      });
+    }
+  }
+
+  /*
+   * Couch mode is the answer for a game with no networking. If one of these
+   * also has a server browser or a verified selfHost, then it does have online
+   * play and the picker would offer a phone-controller session next to it —
+   * two very different things under one list.
+   */
+  for (const slug of LOCAL_COUCH_GAMES) {
+    const others = hostModesFor(slug).filter((m) => m !== "couch");
+    if (others.length > 0) {
+      problems.push({
+        gameSlug: slug,
+        problem: `is listed as couch-only but also supports ${others.join(", ")}. Remove it from LOCAL_COUCH_GAMES, or drop whichever online capability it does not really have.`,
       });
     }
   }

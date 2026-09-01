@@ -90,10 +90,18 @@ export function PartyView({
   const me = party.members.find((m) => m.userId === userId);
   const isReady = me?.ready ?? false;
   const hasGame = Boolean(party.gameSlug);
+  /*
+   * A couch game has no networking: it runs on the leader's PC and everyone
+   * else joins by opening the controller link on a phone. So only the leader
+   * gets Join Game — a member launching their own copy would start a separate
+   * single-player session.
+   */
+  const couchMode = Boolean(party.couch?.enabled);
   const canJoinGame =
     hasGame &&
     party.status !== "ended" &&
-    (isReady || party.status === "playing" || party.status === "launching");
+    (isReady || party.status === "playing" || party.status === "launching") &&
+    (!couchMode || isLeader);
   const catalogGame = games.find((g) => g.slug === party.gameSlug);
   /*
    * Only games a party could actually play together.
@@ -174,7 +182,7 @@ export function PartyView({
   const waitForHostedRoom = Boolean(party.hosted?.enabled && !joinUrl && !browserHref);
   const inFlight = party.status === "playing" || party.status === "launching";
   const memberWaitingForHost =
-    !isLeader && party.hostMode === "self" && !party.selfHostReady;
+    !isLeader && !couchMode && party.hostMode === "self" && !party.selfHostReady;
   const lanReady = Boolean(party.lan?.enabled && party.lan?.status === "ready");
   const joinConnectBlocked =
     memberWaitingForHost ||
@@ -659,6 +667,31 @@ export function PartyView({
                 ))}
               </ol>
             )}
+
+          {couchMode &&
+            (party.couch?.status === "ready" && party.couch.joinCode ? (
+              <div className="w-full space-y-1 self-start">
+                <p className="text-sm font-semibold">
+                  Phone controllers · code {party.couch.joinCode}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Open{" "}
+                  {party.couch.joinUrl ||
+                    `https://playbound.club/controller/${party.couch.joinCode}`}{" "}
+                  on your phone. It becomes a controller plugged into the host&apos;s PC.
+                </p>
+              </div>
+            ) : party.couch?.status === "failed" ? (
+              <p className="text-xs text-destructive self-center">
+                {party.couch.error || "Could not start phone controllers on the host's PC."}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground self-center">
+                {isLeader
+                  ? "This game has no online play. Start the game and your party will get a controller link."
+                  : "This game runs on the host's PC. When they start it you will get a link to open on your phone."}
+              </p>
+            ))}
 
           {party.lan?.enabled && party.lan.status === "pending" && (
             <p className="text-xs text-muted-foreground self-center">
