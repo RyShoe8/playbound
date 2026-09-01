@@ -1,9 +1,10 @@
 /**
  * Which executable a package's install resolves to.
  *
- * Streets of Rage Remake ships SorR.exe — the game — beside the larger
- * SorMaker.exe, its level editor. findExecutable ranked every .exe equally and
- * broke the tie on size, so Play opened the editor and the editor told the
+ * Streets of Rage Remake ships SorR.exe — the game — beside SorMaker.exe, its
+ * level editor. findExecutable ranked every .exe equally and broke ties on
+ * size; these two are byte-for-byte the same size, so the tie fell through to
+ * directory order and SorMaker won. Play opened the editor, which then told the
  * player to unlock it. The recipe had named SorR.exe in knownExePaths all
  * along; nothing consulted it at install time.
  *
@@ -91,8 +92,15 @@ test("multiple knownExePaths all become alternatives", () => {
 });
 
 test("Streets of Rage Remake launches the game, not the level editor", () => {
-  // The editor really is the bigger file, which is what beat the game before.
-  const dir = makeInstall({ "SorMaker.exe": 9_000_000, "SorR.exe": 4_000_000 });
+  /*
+   * The real sizes, read off an install: both stubs are exactly 14,336 bytes,
+   * because each is a small Bennu loader beside its own .dat — SorR.dat is
+   * 253MB, SorMaker.dat is 4.7MB. So size could never separate them and the
+   * tie fell through to directory order, where SorMaker sorts first. An
+   * earlier version of this test used 9MB against 4MB and passed for the wrong
+   * reason.
+   */
+  const dir = makeInstall({ "SorMaker.exe": 14_336, "SorR.exe": 14_336 });
   try {
     const picked = findExecutable(dir, exeHintFor({ knownExePaths: ["SorR.exe"] }));
     assert.equal(path.basename(picked), "SorR.exe");
@@ -102,7 +110,7 @@ test("Streets of Rage Remake launches the game, not the level editor", () => {
 });
 
 test("an editor loses to a game even with no hint at all", () => {
-  const dir = makeInstall({ "SorMaker.exe": 9_000_000, "SorR.exe": 4_000_000 });
+  const dir = makeInstall({ "SorMaker.exe": 14_336, "SorR.exe": 14_336 });
   try {
     // This is the case a recipe with neither field would hit.
     assert.equal(path.basename(findExecutable(dir, undefined)), "SorR.exe");

@@ -732,6 +732,16 @@ const GAMES = {
  * from a profile but keeps its settings somewhere we cannot safely edit.
  */
 const NO_CONFIG_NEEDED = {
+  "streets-of-rage-remake": {
+    kind: "native",
+    note:
+      "The game configures the first gamepad itself. Its own manual: \"when the " +
+      "game starts for the first time, checks are made and the first gamepad is " +
+      "configured\", and it ships an in-game remapping screen showing which pad " +
+      "number is being bound. There is also nothing PlayBound could safely " +
+      "write — v5 keeps no ini or cfg, only savegame/savestate.sor, 356 bytes " +
+      "of Bennu binary sitting beside the save.",
+  },
   gradius: {
     kind: "native",
     note: "The Godot project ships explicit joypad buttons and axes for movement, fire, upgrades, start and select.",
