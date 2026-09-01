@@ -5862,6 +5862,23 @@ textarea.input-text {
   color: var(--text-muted);
 }
 .party-inline-note { margin: 0; font-size: 12px; align-self: center; }
+/* Says a party's game has no online play, sitting where "Host: …" sits for
+   every other party. Deliberately a badge rather than another muted note —
+   it is the difference between this party and an online one. */
+.party-couch-badge {
+  display: inline-flex;
+  align-items: center;
+  margin: 8px 0 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: rgba(124, 92, 240, 0.16);
+  color: var(--accent-light);
+}
+.party-couch { width: 100%; align-self: flex-start; }
+.party-couch-code { margin: 4px 0; font-size: 13px; color: var(--accent-light); }
 .party-playing-pill {
   display: inline-flex;
   align-items: center;

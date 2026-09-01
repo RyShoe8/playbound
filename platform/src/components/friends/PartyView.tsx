@@ -416,7 +416,24 @@ export function PartyView({
                     this party has to be able to play.
                   </p>
                 ) : null}
-                {party.gameSlug && !publicMode ? (
+{/*
+                  Sits under the game, before anybody readies up, because the
+                  host picker hides itself when there is only one mode — so
+                  without this a couch party looks exactly like an online one
+                  right up until Start Game.
+                */}
+                {couchMode ? (
+                  <div className="mt-2 space-y-1">
+                    <span className="inline-flex items-center rounded-full bg-primary/15 px-2.5 py-0.5 text-[11px] font-bold tracking-wide text-primary">
+                      Couch co-op · no online play
+                    </span>
+                    <p className="text-xs text-muted-foreground">
+                      Runs on {isLeader ? "your PC" : `${party.leaderUsername || "the host"}'s PC`}.
+                      Everyone else plays on it with their phone as a controller.
+                    </p>
+                  </div>
+                ) : null}
+                {party.gameSlug && !publicMode && !couchMode ? (
                   <PartyGameOnlineCount gameSlug={party.gameSlug} />
                 ) : null}
                 {/*
@@ -464,7 +481,7 @@ export function PartyView({
                   Game
                 </p>
                 <p className="mt-1 text-sm font-semibold">{party.gameTitle || party.gameSlug}</p>
-                {party.hostModes && party.hostModes.length > 1 ? (
+                {!couchMode && party.hostModes && party.hostModes.length > 1 ? (
                   <p className="text-xs text-muted-foreground mt-0.5">
                     Host:{" "}
                     {/*
@@ -480,7 +497,24 @@ export function PartyView({
                         (party.hostMode === "public" ? "Public server" : "PlayBound server")}
                   </p>
                 ) : null}
-                {party.gameSlug && !publicMode ? (
+{/*
+                  Sits under the game, before anybody readies up, because the
+                  host picker hides itself when there is only one mode — so
+                  without this a couch party looks exactly like an online one
+                  right up until Start Game.
+                */}
+                {couchMode ? (
+                  <div className="mt-2 space-y-1">
+                    <span className="inline-flex items-center rounded-full bg-primary/15 px-2.5 py-0.5 text-[11px] font-bold tracking-wide text-primary">
+                      Couch co-op · no online play
+                    </span>
+                    <p className="text-xs text-muted-foreground">
+                      Runs on {isLeader ? "your PC" : `${party.leaderUsername || "the host"}'s PC`}.
+                      Everyone else plays on it with their phone as a controller.
+                    </p>
+                  </div>
+                ) : null}
+                {party.gameSlug && !publicMode && !couchMode ? (
                   <PartyGameOnlineCount gameSlug={party.gameSlug} />
                 ) : null}
               </div>
@@ -687,9 +721,11 @@ export function PartyView({
               </p>
             ) : (
               <p className="text-xs text-muted-foreground self-center">
+                {/* The badge by the game already says what couch mode is;
+                    this says what happens next, and nothing else. */}
                 {isLeader
-                  ? "This game has no online play. Start the game and your party will get a controller link."
-                  : "This game runs on the host's PC. When they start it you will get a link to open on your phone."}
+                  ? "Start the game and your party gets a controller link."
+                  : "When the host starts the game you will get a link to open on your phone."}
               </p>
             ))}
 

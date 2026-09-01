@@ -1541,15 +1541,29 @@ function buildPartyViewHtml(party) {
           )}</p>`
       : "";
 
+  /*
+   * Sits under the game, where "Host: Public server" sits for every other
+   * party, and says the one thing that makes this party different before
+   * anybody readies up: the game has no online play. Without it a couch party
+   * is indistinguishable from an online one until Start Game, because the host
+   * picker hides itself when there is only one mode to pick.
+   */
+  const couchBadgeHtml = couch.enabled
+    ? `<p class="party-couch-badge">Couch co-op · no online play</p>
+       <p class="party-game-platform-note">Runs on ${escapeHtml(
+         isLeader ? "your PC" : `${party.leaderUsername || "the host"}'s PC`
+       )}. Everyone else plays on it with their phone as a controller.</p>`
+    : "";
+
   const gameHtml = isLeader && !ended
     ? `<label class="party-field-label" for="party-game-select">Game</label>
        <select class="input-text party-game-select" id="party-game-select" aria-label="Party game">
          ${partyGameOptionsHtml(party.gameSlug || "", party)}
-       </select>${openRaModHtml}${platformNoteHtml}`
+       </select>${openRaModHtml}${couchBadgeHtml}${platformNoteHtml}`
     : hasGame
     ? `<p class="party-field-label">Game</p>
-       <p class="party-game-label">${escapeHtml(party.gameTitle || party.gameSlug)}</p>${openRaModHtml}${
-        Array.isArray(party.hostModes) && party.hostModes.length > 1
+       <p class="party-game-label">${escapeHtml(party.gameTitle || party.gameSlug)}</p>${openRaModHtml}${couchBadgeHtml}${
+        !couch.enabled && Array.isArray(party.hostModes) && party.hostModes.length > 1
           ? `<p class="party-game-platform-note">Host: ${escapeHtml(
               /*
                * "My computer" is the hostMode option's own label, written from
@@ -1568,7 +1582,9 @@ function buildPartyViewHtml(party) {
 
   const onlineCountHtml = hasGame
     ? `<p class="party-online-count" data-slug="${escapeHtml(party.gameSlug)}"${
-        party.hostMode === "public" ? " hidden" : ""
+        // Couch games have no server browser, so this can only ever be empty —
+        // and "who's online" is the wrong question for a game with no online.
+        party.hostMode === "public" || couch.enabled ? " hidden" : ""
       }></p>`
     : "";
   /*
@@ -1757,9 +1773,11 @@ function buildPartyViewHtml(party) {
         couch.error || "Could not start phone controllers on the host's PC."
       )}</p>`
     : `<p class="view-sub party-inline-note">${
+        // The badge in the header already says what couch mode is; this says
+        // what happens next, and nothing else.
         isLeader
-          ? "This game has no online play. Start Game and your party will get a controller link."
-          : "This game runs on the host's PC. When they start it you will get a link to open on your phone."
+          ? "Start Game and your party gets a controller link."
+          : "When the host starts the game you will get a link to open on your phone."
       }</p>`;
 
   const playingPillHtml =
