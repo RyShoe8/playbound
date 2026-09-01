@@ -48,6 +48,13 @@ const RECENCY_HALF_LIFE_DAYS = 14;
 
 const clamp01 = (n) => (Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 0);
 
+/*
+ * Same output as formatStatNumber in shared.js, inlined rather than imported.
+ * This module is pure so it can be tested without the renderer, and pulling in
+ * shared.js for one call would drag the whole DOM-facing surface along with it.
+ */
+const count = (n) => (Number(n) || 0).toLocaleString();
+
 /**
  * How well a server's population fits someone looking for a game.
  *
@@ -205,7 +212,7 @@ export function scorePlayable(candidate, opts = {}) {
     reasons.push({
       key: "servers",
       weight: WEIGHTS.occupancy * occ + WEIGHTS.latency * lat,
-      text: `${server.players} playing${ping}`,
+      text: `${count(server.players)} playing${ping}`,
     });
   }
   if (controller.label) {

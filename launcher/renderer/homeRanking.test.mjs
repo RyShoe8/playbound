@@ -134,6 +134,15 @@ test("the top reason is the signal that actually moved the score", () => {
   assert.equal(r.reasons[0].text, "11 playing · 34ms");
 });
 
+test("player counts are thousands-separated, matching the rest of the launcher", () => {
+  const r = scorePlayable({
+    game: game("mmo"),
+    server: { players: 12500, maxPlayers: 20000, ping: 40 },
+  });
+  assert.equal(r.reasons[0].text, `${(12500).toLocaleString()} playing · 40ms`);
+  assert.ok(r.reasons[0].text.includes((12500).toLocaleString()));
+});
+
 test("ranking drops gated games and orders best-first", () => {
   const ranked = rankPlayableNow([
     { game: game("quiet"), installed: false },
