@@ -66,6 +66,7 @@ import { modBaseGameSlugsForCatalogGame } from "@/lib/catalogGameAliases";
 import { isVirtualLanGame } from "@/lib/multiplayer/adapters";
 import {
   defaultHostMode,
+  couchOnlyGameSlugs,
   couchPayloadFromDoc,
   type PartyCouchFields,
   hostModeOptions,
@@ -625,6 +626,7 @@ function serializeParty(
      */
     hostMode,
     hostModes: doc.gameSlug ? hostModeOptions(String(doc.gameSlug)) : [],
+    couchOnlyGames: couchOnlyGameSlugs(),
     publicServer: hostMode === "public" ? publicServer : null,
     /*
      * Only for a public self-hosted room. Party members reach the host over the

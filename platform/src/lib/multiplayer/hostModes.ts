@@ -152,6 +152,17 @@ const LOCAL_COUCH_GAMES = new Set([
   "the-spike-cross",
 ]);
 
+/**
+ * Every couch-only game, for labelling a picker before a game is chosen.
+ *
+ * The party payload carries this because neither client can import the adapter
+ * registry — the same reason hostModes is resolved server-side. Without it a
+ * leader only finds out a game is couch-only after committing the party to it.
+ */
+export function couchOnlyGameSlugs(): string[] {
+  return [...LOCAL_COUCH_GAMES].sort();
+}
+
 /** True when the party can only play this together by sharing one machine. */
 export function canUseCouch(gameSlug: string): boolean {
   const adapter = getMultiplayerAdapter(gameSlug);
