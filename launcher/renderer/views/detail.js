@@ -1674,9 +1674,34 @@ async function renderGameDetailView(slug, opts = {}) {
       installBtnClass = "btn-secondary btn-install-queued";
     }
 
+    /*
+     * A game can require purchase and still have nowhere to buy it.
+     *
+     * getGameBtn is empty without a store URL, and Install is suppressed for
+     * anything requiring purchase — so such an entry rendered with no primary
+     * action and no reason for its absence, which reads as a broken page.
+     * Wolfenstein 3D via ECWolf sits in exactly that state: tier VALUE, no
+     * price, no buy link.
+     *
+     * Name what is needed instead of showing nothing. The requirement is
+     * already resolved server-side, so say which game it is when we know.
+     */
+    const requiredTitles = (detail?.commerce?.requires || [])
+      .map((dep) => String(dep?.label || "").trim())
+      .filter((label) => label && label !== (detail.title || ""));
+    const noStoreNoteHtml =
+      paidHero && !buy?.url
+        ? `<p class="detail-commerce-note">${escapeHtml(
+            requiredTitles.length
+              ? `This needs ${requiredTitles.join(" and ")}, which PlayBound does not sell. Own it already? Add it to your library below.`
+              : "This one needs to be bought elsewhere and PlayBound has no store link for it yet. Own it already? Add it to your library below."
+          )}</p>`
+        : "";
+
     actions.innerHTML = paidHero
       ? `
       ${getGameBtn}
+      ${noStoreNoteHtml}
       <button class="btn-secondary" id="act-locate" title="Find or select an existing installation on your computer">Already installed? Add to Library</button>
       ${state.accountState.connected ? `<button class="btn-secondary" id="act-create-party">Create Party</button>` : ""}
     `
