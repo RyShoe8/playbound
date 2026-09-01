@@ -784,6 +784,15 @@ const GAMES = {
  * from a profile but keeps its settings somewhere we cannot safely edit.
  */
 const NO_CONFIG_NEEDED = {
+  openclonk: {
+    kind: "native",
+    note:
+      "Built on SDL2's GameController API — openclonk.exe carries SDL_GameController " +
+      "along with GamepadEnabled and GamepadGuiControl, so a recognised pad is mapped " +
+      "by SDL itself and drives the menus as well as play. Writing a config would " +
+      "replace a working auto-mapping with a guess. Its settings live in a Config.txt " +
+      "we have no reason to touch.",
+  },
   "streets-of-rage-remake": {
     kind: "native",
     note:
