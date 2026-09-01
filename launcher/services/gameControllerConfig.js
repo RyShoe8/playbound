@@ -784,6 +784,14 @@ const GAMES = {
  * from a profile but keeps its settings somewhere we cannot safely edit.
  */
 const NO_CONFIG_NEEDED = {
+  "alien-swarm-reactive-drop": {
+    kind: "native",
+    note:
+      "Steam Input handles the pad. The install ships steam_input/steam_input_manifest.vdf " +
+      "and steam_input/steam_deck.vdf — the game's own binding definitions — and Steam lists " +
+      "it as Full controller support. Bindings live in Steam's config, not a file beside the " +
+      "game, so there is nothing here for PlayBound to write.",
+  },
   openclonk: {
     kind: "native",
     note:
