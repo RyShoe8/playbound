@@ -557,6 +557,73 @@ export function formatStatNumber(n) {
   return v.toLocaleString();
 }
 
+/**
+ * Catalog-wide multiplayer activity, for the top of the home view.
+ *
+ * Replaces the old catalog stats card, which counted games, mods and editions —
+ * facts about the database rather than anything a player can act on. Every
+ * figure here is about whether there are people to play with right now, and
+ * each one is a link to the place you would go about it.
+ *
+ * `extra` carries the counts that live outside the catalog snapshot: open
+ * parties, players looking, and friends online.
+ */
+export function buildMultiplayerStatsHtml(live, extra = {}) {
+  const usable = live && live.ok !== false && typeof live.gameCount === "number";
+  if (!usable) {
+    return `<aside class="mp-stats-card"><p class="view-sub" style="margin:0">Live activity unavailable.</p></aside>`;
+  }
+  const scoped = scopeCatalogLiveStats(live, state.discoveryMode, catalogTierBySlug());
+  const byGame = Array.isArray(scoped.byGame) ? scoped.byGame : [];
+  const liveGames = byGame.filter((g) => Number(g.playingNow) > 0);
+  const busiest = [...liveGames].sort((a, b) => b.playingNow - a.playingNow).slice(0, 3);
+
+  const openParties = extra.openParties ?? state.liveExtraStats?.openParties ?? 0;
+  const lookingToParty = extra.lookingToParty ?? state.liveExtraStats?.lookingToParty ?? 0;
+  const friendsOnline = extra.friendsOnline ?? 0;
+
+  /* Each stat is a destination, not a readout — the label is the link. */
+  const rows = [
+    ["servers", "Games live now", liveGames.length],
+    ["friends", "Friends online", friendsOnline],
+    ["friends", "Open parties", openParties],
+    ["friends", "Looking to party", lookingToParty],
+  ];
+
+  const busiestHtml =
+    busiest.length > 0
+      ? `<div class="mp-stats-busiest">
+          <h3>Busiest right now</h3>
+          <ol>
+            ${busiest
+              .map(
+                (g) =>
+                  `<li><button type="button" class="linkish" data-popular-slug="${escapeHtml(g.slug)}">${escapeHtml(g.title || g.slug)}</button><span>${formatStatNumber(g.playingNow)}</span></li>`
+              )
+              .join("")}
+          </ol>
+        </div>`
+      : "";
+
+  return `
+    <aside class="mp-stats-card">
+      <div class="mp-stats-hero">
+        <strong>${formatStatNumber(scoped.playingNow)}</strong>
+        <span>playing right now</span>
+      </div>
+      <dl class="mp-stats-grid">
+        ${rows
+          .map(
+            ([nav, label, value]) =>
+              `<div><dt><button type="button" class="linkish stat-label-btn" data-stats-nav="${nav}">${escapeHtml(label)}</button></dt><dd>${formatStatNumber(value)}</dd></div>`
+          )
+          .join("")}
+      </dl>
+      ${busiestHtml}
+      <p class="catalog-stats-footer">Across supported games • Updated every 15 min</p>
+    </aside>`;
+}
+
 export function buildActivityPanelHtml(stats, title = "Activity") {
   if (!stats) {
     return `<aside class="activity-panel"><p class="activity-panel-title">${escapeHtml(title)}</p><p class="view-sub" style="margin:0">Stats unavailable offline.</p></aside>`;

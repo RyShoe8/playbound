@@ -2,11 +2,13 @@ import { createFreeOfferCard, createGameCard } from "./cards.js";
 import { rankPlayableNow, scorePlayable } from "./homeRanking.js";
 import {
   api,
+  buildMultiplayerStatsHtml,
   CACHE_TTL,
   cacheInvoke,
   cachePeek,
   cachePut,
   filterCatalogGames,
+  formatStatNumber,
   markViewReady,
   playingNowBySlug,
   state,
@@ -25,14 +27,7 @@ import {
  */
 
 const HOME_SHELL_HTML = `
-    <div class="home-discover-card">
-      <p class="home-discover-label">Explore PlayBound</p>
-      <div class="home-discover-pills" role="radiogroup" aria-label="Discovery mode">
-        <button type="button" role="radio" data-discovery-mode="FREE" aria-checked="false">FREE</button>
-        <button type="button" role="radio" data-discovery-mode="ALL" aria-checked="true" class="is-selected">ALL</button>
-      </div>
-      <p class="home-discover-caption" id="home-discovery-caption">Show me every PlayBound-approved game up to $15.</p>
-    </div>
+    <div id="home-mp-stats"></div>
 
     <div id="home-resume-section" class="home-resume hidden"></div>
 
@@ -194,7 +189,9 @@ async function joinBestServer(game, server) {
     }
     s = best.server;
   }
-  setStatus(`Joining ${s.name || `${s.host}:${s.port}`} — ${s.players}/${s.maxPlayers} players`);
+  setStatus(
+    `Joining ${s.name || `${s.host}:${s.port}`} — ${formatStatNumber(s.players)}/${formatStatNumber(s.maxPlayers)} players`
+  );
   await window.playbound.play(
     slug,
     { host: s.host, port: s.port, name: s.name, mod: s.mod || undefined },
@@ -243,7 +240,7 @@ function paintResume(entry) {
   const sub = document.createElement("p");
   sub.className = "home-resume-sub";
   sub.textContent = server
-    ? `${server.name || `${server.host}:${server.port}`} · ${server.players}/${server.maxPlayers} players${
+    ? `${server.name || `${server.host}:${server.port}`} · ${formatStatNumber(server.players)}/${formatStatNumber(server.maxPlayers)} players${
         Number.isFinite(server.ping) ? ` · ${Math.round(server.ping)}ms` : ""
       }`
     : entry.reasons?.[0]?.text || game.tagline || "";
@@ -304,7 +301,9 @@ function paintLive(entries) {
         game: e.game,
         reason: e.reasons[0]?.text || "",
         buttonLabel: e.installed ? "Join" : "Install & join",
-        title: e.server ? `${e.server.name || e.server.host} — ${e.server.players} players` : "Find a server",
+        title: e.server
+          ? `${e.server.name || e.server.host} — ${formatStatNumber(e.server.players)} players`
+          : "Find a server",
         badge: controllerBadge(e.controller),
         onClick: async () => {
           if (!e.installed) {
@@ -333,7 +332,7 @@ function paintPeople(parties, lookingCount, bySlug) {
     if (!game) continue;
     const seats =
       Number.isFinite(party.memberCount) && Number.isFinite(party.maxMembers)
-        ? `${party.memberCount}/${party.maxMembers} in the party`
+        ? `${formatStatNumber(party.memberCount)}/${formatStatNumber(party.maxMembers)} in the party`
         : "Open party";
     rows.push(
       buildJoinRow({
@@ -406,6 +405,54 @@ function paintPicks(entries, sourceTitle) {
 }
 
 /* ------------------------------------------------------------------ *
+ * Multiplayer activity card
+ * ------------------------------------------------------------------ */
+
+/**
+ * Counts that live outside the catalog snapshot. Best-effort: a failure keeps
+ * the previous figure rather than flashing a zero.
+ */
+async function loadExtraStats(friendsOnline) {
+  try {
+    const [pRes, lfgRes] = await Promise.allSettled([
+      fetch("https://playbound.club/api/parties/open-count", {
+        signal: AbortSignal.timeout(5000),
+      }).then((r) => (r.ok ? r.json() : null)),
+      fetch("https://playbound.club/api/presence/lfg/count", {
+        signal: AbortSignal.timeout(5000),
+      }).then((r) => (r.ok ? r.json() : null)),
+    ]);
+    const openParties =
+      pRes.status === "fulfilled" && typeof pRes.value?.count === "number"
+        ? pRes.value.count
+        : state.liveExtraStats?.openParties;
+    const lookingToParty =
+      lfgRes.status === "fulfilled" && typeof lfgRes.value?.count === "number"
+        ? lfgRes.value.count
+        : state.liveExtraStats?.lookingToParty;
+    state.liveExtraStats = { openParties, lookingToParty };
+  } catch {
+    /* keep whatever we had */
+  }
+  paintMultiplayerStats(friendsOnline);
+}
+
+function paintMultiplayerStats(friendsOnline = 0) {
+  const slot = document.getElementById("home-mp-stats");
+  if (!slot) return;
+  slot.innerHTML = buildMultiplayerStatsHtml(state._liveStatsLastGood, {
+    ...state.liveExtraStats,
+    friendsOnline,
+  });
+  slot.querySelectorAll("[data-popular-slug]").forEach((btn) => {
+    btn.addEventListener("click", () => api.openGameDetail?.(btn.dataset.popularSlug, "home"));
+  });
+  slot.querySelectorAll("[data-stats-nav]").forEach((btn) => {
+    btn.addEventListener("click", () => api.navigateTo?.(btn.dataset.statsNav));
+  });
+}
+
+/* ------------------------------------------------------------------ *
  * Assembly
  * ------------------------------------------------------------------ */
 
@@ -467,6 +514,12 @@ async function loadPlayableRows() {
     const slug = f?.presence?.gameSlug || f?.gameSlug;
     if (slug) friendsBySlug.set(slug, (friendsBySlug.get(slug) || 0) + 1);
   }
+
+  const friendsOnlineCount = (Array.isArray(friends) ? friends : friends?.friends || []).filter(
+    (f) => f?.presence?.online || f?.online
+  ).length;
+  paintMultiplayerStats(friendsOnlineCount);
+  void loadExtraStats(friendsOnlineCount);
 
   const parties = val(partiesRes, []);
   const openParties = (Array.isArray(parties) ? parties : parties?.parties || []).filter(
