@@ -105,7 +105,14 @@ export function controllerFit(support, features) {
     ? features.some((f) => String(f).toLowerCase().includes("controller"))
     : false;
   if (claimed) {
-    return { score: 0.4, label: "Controller support", confidence: "claimed" };
+    /*
+     * "Controller support" read as a promise that PlayBound would configure
+     * the pad, which at this tier it cannot — the catalog says the game takes
+     * a controller and nothing more. Streets of Rage Remake sits here: it does
+     * support one, and we have no config for it. The wording now describes the
+     * game rather than implying an action on our part.
+     */
+    return { score: 0.4, label: "Works with a controller", confidence: "claimed" };
   }
   return { score: 0, label: null, confidence: "unknown" };
 }
