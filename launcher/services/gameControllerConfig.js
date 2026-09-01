@@ -363,6 +363,31 @@ function consoleConfigEntry({ file, verified, enabledCvar, block }) {
   };
 }
 
+/*
+ * Every name this pad might answer to, most specific first.
+ *
+ * The renderer hands us a Web Gamepad id — "DualSense Wireless Controller
+ * (STANDARD GAMEPAD Vendor: 054c Product: 0ce6)" — while OIS reports a
+ * DirectInput name, which is the product name Windows keeps under
+ * MediaProperties\...\Joystick\OEM ("DualSense Wireless Controller") or,
+ * for a pad with no OEM entry, the generic device name. Since the game
+ * matches on exact equality, write all of them.
+ */
+function joystickNamesFor(profile) {
+  const raw = String(profile?.rawId || "").trim();
+  const names = [];
+  if (raw) {
+    names.push(raw);
+    // Strip the Web Gamepad API's " (STANDARD GAMEPAD Vendor: … Product: …)"
+    // suffix to leave the product name DirectInput reports.
+    const trimmed = raw.replace(/\s*\((?:STANDARD GAMEPAD\s*)?Vendor:.*$/i, "").trim();
+    if (trimmed && trimmed !== raw) names.push(trimmed);
+  }
+  // What Windows calls a pad with no vendor driver, and what OIS then reports.
+  names.push("HID-compliant game controller");
+  return names.filter(Boolean);
+}
+
 const GAMES = {
   openarena: consoleConfigEntry({
     file: path.join("baseoa", "q3config.cfg"),
@@ -649,6 +674,19 @@ const GAMES = {
       return firstExisting([homePrefs, installPrefs]) || homePrefs;
     },
     verified: "YSoccer libGDX XML preferences JoystickConfig auto-configuration.",
+    /*
+     * The D-pad cannot be made to work, and no config here will change that.
+     *
+     * com.ygames.ysoccer.framework.Joystick reads getAxis(xAxis),
+     * getAxis(yAxis), getButton(button1) and getButton(button2) — and nothing
+     * else. It contains no reference to getPov or PovDirection, while the OIS
+     * backend it runs on exposes the D-pad only as a POV. So the game never
+     * reads it, in menus or in a match. Players use the left stick.
+     *
+     * Recorded here because the prefs file gives no hint of it: a config can be
+     * perfectly correct and the D-pad will still do nothing.
+     */
+    padLimitation: "D-pad is not read by this game; the left stick moves menus and players.",
     needsConfig(text, profile) {
       const s = String(text || "");
       if (!s.includes("<properties>") || !s.includes("joystickConfigs")) return true;
@@ -693,17 +731,31 @@ const GAMES = {
         `{class:JoystickConfig,name:Wireless Gamepad,xAxis:0,yAxis:1,button1:0,button2:1}`,
       ];
 
-      if (profile?.rawId && !configs.some((c) => c.includes(`name:${profile.rawId}`))) {
-        /*
-         * One layout for every pad, because that is what the game sees.
-         *
-         * gdx-controllers talks to SDL on desktop, and SDL reports a
-         * recognised pad the same way whatever its brand: left stick on axes 0
-         * and 1, face buttons 0 and 1. PlayStation pads were special-cased to
-         * axes 4 and 5, which are the triggers — so the stick moved nothing and
-         * the game was unplayable with a DualSense.
-         */
-        configs.unshift(`{class:JoystickConfig,name:${profile.rawId},xAxis:0,yAxis:1,button1:0,button2:1}`);
+      /*
+       * One layout for every pad, because that is what the game sees.
+       *
+       * YSoccer 19 bundles gdx-controllers 1.x on its OIS backend — the jar
+       * carries com.badlogic.gdx.controllers.desktop.OisControllers — so this
+       * is DirectInput, not SDL as an earlier comment here claimed. Either way
+       * the left stick is axes 0 and 1 and the face buttons are 0 and 1.
+       * PlayStation pads were once special-cased to axes 4 and 5, which are the
+       * triggers, so the stick moved nothing.
+       *
+       * The names matter more than the axes. GLGame.reloadInputDevices does:
+       *
+       *   cfg = settings.getJoystickConfigByName(controller.getName());
+       *   if (cfg != null) inputDevices.add(new Joystick(controller, cfg, n));
+       *
+       * and getJoystickConfigByName is a String.equals scan. A pad whose name
+       * matches nothing is not added to inputDevices at all — so it drives
+       * neither menus nor matches, and the prefs file still looks configured.
+       * Hence a name per plausible spelling rather than one: an entry that
+       * never matches costs nothing, and a missing one costs the whole pad.
+       */
+      for (const name of joystickNamesFor(profile)) {
+        if (!configs.some((c) => c.includes(`name:${name},`))) {
+          configs.unshift(`{class:JoystickConfig,name:${name},xAxis:0,yAxis:1,button1:0,button2:1}`);
+        }
       }
 
       const entryXml = `<entry key="joystickConfigs">[${configs.join(",")}]</entry>`;

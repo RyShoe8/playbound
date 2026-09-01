@@ -529,5 +529,58 @@ test("writes YSoccer joystick config from the no-pad profile", () => {
   assert.ok(/GC101/.test(out) && /Xbox/.test(out), "must seed known controller names");
 });
 
+test("YSoccer config names the pad the way DirectInput will report it", () => {
+  /*
+   * GLGame.reloadInputDevices only adds a controller to inputDevices when
+   * getJoystickConfigByName(controller.getName()) returns non-null, and that
+   * lookup is a String.equals scan. A pad whose name matches nothing is
+   * dropped outright — it drives neither menus nor matches — while the prefs
+   * file still looks configured, so nothing offers to fix it.
+   *
+   * The renderer reports the Web Gamepad id, which carries a
+   * "(STANDARD GAMEPAD Vendor: … Product: …)" suffix that DirectInput never
+   * uses. Both spellings have to be present.
+   */
+  const profile = {
+    family: "dualsense",
+    rawId: "DualSense Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 0ce6)",
+  };
+  const out = applyProfile("ysoccer", "", profile);
+  const names = [...out.matchAll(/name:([^,]+),/g)].map((m) => m[1]);
+
+  assert.ok(names.includes(profile.rawId), "the raw Web Gamepad id");
+  assert.ok(
+    names.includes("DualSense Wireless Controller"),
+    "the DirectInput product name, which is what OIS reports"
+  );
+  assert.ok(
+    names.includes("HID-compliant game controller"),
+    "the generic name Windows gives a pad with no vendor driver"
+  );
+});
+
+test("an unknown pad still gets its bare product name, not just the Web id", () => {
+  // The hardcoded list cannot cover every pad, so the bare name has to be
+  // derived — otherwise an unlisted controller is written under a spelling
+  // DirectInput never produces and the game ignores it.
+  const out = applyProfile("ysoccer", "", {
+    family: "generic",
+    rawId: "8BitDo Ultimate Controller (STANDARD GAMEPAD Vendor: 2dc8 Product: 3106)",
+  });
+  const names = [...out.matchAll(/name:([^,]+),/g)].map((m) => m[1]);
+  assert.ok(names.includes("8BitDo Ultimate Controller"), `derived name missing: ${names.slice(0, 4)}`);
+});
+
+test("every YSoccer entry puts movement on the left stick", () => {
+  // Axes 4 and 5 are the triggers. Nothing may regress to them.
+  const out = applyProfile("ysoccer", "", {
+    family: "dualsense",
+    rawId: "DualSense Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 0ce6)",
+  });
+  for (const m of out.matchAll(/xAxis:(\d+),yAxis:(\d+)/g)) {
+    assert.ok(Number(m[1]) < 4 && Number(m[2]) < 4, `axes on the triggers: ${m[0]}`);
+  }
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
