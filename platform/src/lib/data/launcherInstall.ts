@@ -636,7 +636,28 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     url: "https://maniacsvault.net/ecwolf/files/ecwolf/1.x/ecwolf-1.4.2_x64.zip",
     fileName: "ecwolf-1.4.2_x64.zip",
     versionLabel: "1.4.2",
-    note: "ECWolf source port — add legal Wolf3D shareware/data separately.",
+    /*
+     * The shareware episode, so Install produces a playable game rather than
+     * an engine with nothing to run.
+     *
+     * ECWolf ships no game data, and this recipe used to say to add it
+     * "separately" — which left the player with ecwolf.exe and no way in.
+     * Apogee's 1992 shareware release is freely redistributable and ECWolf
+     * carries a first-class definition for it: iwadinfo.txt declares
+     * "Wolfenstein 3D Shareware" (Autoname Wolf.Wolf3D.Shareware), detected by
+     * the BJPIC and VISACARD lumps these files supply.
+     *
+     * Curated to the eight files the engine reads. The original archive also
+     * holds the DOS WOLF3D.EXE, which is not the engine we launch, and a saved
+     * CONFIG.WL1 that would overwrite the player's own settings.
+     *
+     * No overlayDest: the ECWolf zip is flat, so the data belongs in the game
+     * root beside ecwolf.exe and ecwolf.pk3.
+     */
+    overlayUrl:
+      "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher-packages/games/wolfenstein/wolf3d-shareware-data.zip",
+    overlayFileName: "wolf3d-shareware-data.zip",
+    note: "ECWolf with the freely redistributable Wolfenstein 3D shareware episode — one install, ready to play.",
     exeHint: "ecwolf",
   },
   everquest: {
