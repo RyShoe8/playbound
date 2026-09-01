@@ -1420,11 +1420,20 @@ function partyGameOptionsHtml(selectedSlug, party) {
   const games = filterByDiscovery(partyGamesCache || []).filter((g) =>
     partyCanAllPlay(g, required)
   );
+  /*
+   * Marked in the list, not after the fact. These games have no online play at
+   * all, and a leader who picked one expecting a server had already committed
+   * the party to it by the time the card said otherwise. The slugs come down
+   * on the party payload because the launcher cannot import the registry that
+   * knows which games these are.
+   */
+  const couchOnly = new Set(party?.couchOnlyGames || []);
   const options = [`<option value="">Select a game</option>`];
   for (const g of games) {
+    const label = couchOnly.has(g.slug) ? `${g.title} (couch co-op)` : g.title;
     options.push(
       `<option value="${escapeHtml(g.slug)}"${g.slug === selectedSlug ? " selected" : ""}>${escapeHtml(
-        g.title
+        label
       )}</option>`
     );
   }

@@ -220,6 +220,11 @@ export type PartyPayload = {
   /** Modes this game supports, in display order. Fewer than two means no picker. */
   hostModes: HostModeOption[];
   /**
+   * Every couch-only game in the catalog, so the game picker can mark them
+   * before one is chosen. Static, not per-party — see couchOnlyGameSlugs.
+   */
+  couchOnlyGames: string[];
+  /**
    * Community dedicated server the party picked. Present only when hostMode is
    * `public`; Join Game uses the same host/port via `hosted` so existing
    * launchers still connect.

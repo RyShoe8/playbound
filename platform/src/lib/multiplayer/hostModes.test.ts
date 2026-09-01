@@ -7,6 +7,7 @@ import {
 import {
   canSelfHost,
   canUseCouch,
+  couchOnlyGameSlugs,
   canUseDedicated,
   couchPayloadFromDoc,
   defaultHostMode,
@@ -209,6 +210,19 @@ describe("couch mode", () => {
   it("rejects a mode the game does not have", () => {
     expect(isValidHostMode("streets-of-rage-remake", "dedicated")).toBe(false);
     expect(isValidHostMode("openra", "couch")).toBe(false);
+  });
+
+  it("publishes the couch-only slugs so a picker can mark them", () => {
+    const slugs = couchOnlyGameSlugs();
+    expect(slugs).toContain("streets-of-rage-remake");
+    // Every slug it names must actually resolve to couch, or the picker would
+    // label a game the party then cannot set to couch mode.
+    for (const slug of slugs) {
+      expect(canUseCouch(slug)).toBe(true);
+      expect(hostModesFor(slug)).toEqual(["couch"]);
+    }
+    // Sorted, so the list does not reorder between responses.
+    expect(slugs).toEqual([...slugs].sort());
   });
 
   it("enables the payload only for a couch party, and carries the code", () => {

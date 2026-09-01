@@ -97,6 +97,9 @@ export function PartyView({
    * single-player session.
    */
   const couchMode = Boolean(party.couch?.enabled);
+  // Resolved server-side; the registry that knows which games these are is not
+  // something a client component should pull into its bundle.
+  const couchOnly = new Set(party.couchOnlyGames || []);
   const canJoinGame =
     hasGame &&
     party.status !== "ended" &&
@@ -390,9 +393,15 @@ export function PartyView({
                     }}
                   >
                     <option value="">Select a game</option>
+                    {/*
+                      Marked in the list, not after the fact: these games have
+                      no online play, and a leader who picked one expecting a
+                      server had already committed the party to it by the time
+                      the card said otherwise.
+                    */}
                     {partyGames.map((g) => (
                       <option key={g.slug} value={g.slug}>
-                        {g.title}
+                        {couchOnly.has(g.slug) ? `${g.title} (couch co-op)` : g.title}
                       </option>
                     ))}
                     {/*
