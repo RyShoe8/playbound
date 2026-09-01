@@ -15,12 +15,14 @@ import { pollZeroK } from "./zerok.js";
 import { pollZeroAd } from "./zerod.js";
 import { pollVeloren } from "./veloren.js";
 import { pollOpenTtd } from "./openttd.js";
+import { pollSwg } from "./swg.js";
+import { pollTes3mp } from "./tes3mp.js";
 
 /**
  * @typedef {{ host: string, port: number }} MasterEndpoint
  * @typedef {{
  *   slug: string,
- *   kind: 'dpmaster' | 'mindustry' | 'hedgewars' | 'wesnoth' | 'warzone' | 'zerok' | 'zerod' | 'veloren' | 'openttd',
+ *   kind: 'dpmaster' | 'mindustry' | 'hedgewars' | 'wesnoth' | 'warzone' | 'zerok' | 'zerod' | 'veloren' | 'openttd' | 'swg' | 'tes3mp',
  *   masterHost?: string,
  *   masterPort?: number,
  *   masters?: MasterEndpoint[],
@@ -88,6 +90,24 @@ export const GAMES = [
     kind: "openttd",
     source: "servers.openttd.org",
     refreshMs: 120_000,
+  },
+  {
+    slug: "star-wars-galaxies",
+    kind: "swg",
+    source: "swglegends.com",
+    refreshMs: 120_000,
+  },
+  {
+    slug: "morrowind",
+    kind: "tes3mp",
+    source: "master.tes3mp.com:8081",
+    refreshMs: 60_000,
+  },
+  {
+    slug: "tes3mp",
+    kind: "tes3mp",
+    source: "master.tes3mp.com:8081",
+    refreshMs: 60_000,
   },
 ];
 
@@ -295,6 +315,10 @@ export async function pollGame(game, creds = null) {
       return pollVeloren();
     case "openttd":
       return pollOpenTtd();
+    case "swg":
+      return pollSwg();
+    case "tes3mp":
+      return pollTes3mp();
     default:
       throw new Error(`Unknown poller kind: ${game.kind}`);
   }
