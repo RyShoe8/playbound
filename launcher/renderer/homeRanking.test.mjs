@@ -62,6 +62,10 @@ test("controller confidence ladder outranks the catalog's claim", () => {
   assert.equal(nothing.score, 0);
   assert.equal(nothing.label, null, "an unassessed game gets no badge at all");
   assert.equal(native.label, "Plug in and play");
+  // The weakest tier must not imply PlayBound will configure anything — it
+  // only knows the catalog says the game takes a pad.
+  assert.equal(claimed.label, "Works with a controller");
+  assert.ok(!/we set it up|setup/i.test(claimed.label));
 });
 
 test("a controller badge does not depend on a pad being plugged in", () => {
