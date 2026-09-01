@@ -90,6 +90,38 @@ export const collections: Collection[] = [
       "The games you grew up with — open-sourced, modernized, and better than you remember.",
     gameSlugs: ["openra", "warzone-2100", "openttd", "hedgewars", "privateer-gemini-gold", "gradius-remake", "mrboom", "triplea", "ysoccer"],
   },
+  {
+    slug: "under-15",
+    title: "Best PC Games Under $15",
+    description:
+      "Exceptional games that respect your wallet. Outstanding classic and community-enhanced titles regularly available for $15 or less, with zero pay-to-win mechanics.",
+    gameSlugs: [
+      "morrowind",
+      "star-wars-knights-of-the-old-republic",
+      "star-wars-knights-of-the-old-republic-ii-the-sith-lords",
+      "heroes-of-might-and-magic-3-complete",
+      "s-t-a-l-k-e-r-shadow-of-chernobyl",
+      "thief-gold",
+      "dungeon-keeper-gold",
+    ],
+  },
+  {
+    slug: "free-with-friends",
+    title: "Best Free Games to Play With Friends",
+    description:
+      "No purchase required, no barrier to entry. The finest genuinely free multiplayer games to jump into with friends tonight, from quick party brawlers to deep co-op campaigns.",
+    gameSlugs: [
+      "openra",
+      "supertuxkart",
+      "xonotic",
+      "brawlhalla",
+      "mindustry",
+      "hedgewars",
+      "veloren",
+      "mrboom",
+      "warzone-2100",
+    ],
+  },
 ];
 
 export const collectionsBySlug = new Map(collections.map((c) => [c.slug, c]));

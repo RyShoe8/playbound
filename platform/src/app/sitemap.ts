@@ -35,6 +35,11 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
   "use cache";
   cacheLife("hours");
   cacheTag("catalog");
+  cacheTag("collections");
+  cacheTag("weekly");
+  cacheTag("mods");
+  cacheTag("gear");
+  cacheTag("events");
   const [games, mods, weekly, editions, gear, events, collections] = await Promise.all([
     listGames(),
     listMods({ view: "card" }),
@@ -72,6 +77,10 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/gear`, changeFrequency: "weekly", priority: 0.6 },
     { url: `${SITE_URL}/servers`, changeFrequency: "hourly", priority: 0.7 },
     { url: `${SITE_URL}/connect`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE_URL}/play-with-friends`, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${SITE_URL}/guides`, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${SITE_URL}/guides/lan-over-internet`, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${SITE_URL}/guides/phone-as-controller`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${SITE_URL}/launcher`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/open-platform`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/developers`, changeFrequency: "monthly", priority: 0.6 },

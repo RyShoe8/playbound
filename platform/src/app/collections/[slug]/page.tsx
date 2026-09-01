@@ -44,9 +44,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const games = await gamesFor(collection.gameSlugs);
   const names = games.slice(0, 4).map((g) => g.title).join(", ");
 
+  const allFree = games.every((g) => !g.access || g.access.priceType === "FREE");
+  const gamesCountLabel = allFree
+    ? `${games.length} free games`
+    : `${games.length} free and affordable games`;
+
   return pageMetadata({
     title: collection.title,
-    description: `${games.length} free games hand-picked by PlayBound${names ? `, including ${names}` : ""}. ${collection.description}`,
+    description: `${gamesCountLabel} hand-picked by PlayBound${names ? `, including ${names}` : ""}. ${collection.description}`,
     path: `/collections/${collection.slug}`,
   });
 }
