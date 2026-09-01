@@ -2479,6 +2479,35 @@ function assetPatternsForEntry(entry) {
   return [...new Set(patterns.filter(Boolean))];
 }
 
+/**
+ * Why an itch.io page yielded no downloadable files.
+ *
+ * `data-upload_id` only appears for files itch will hand over without a
+ * purchase, so its absence has several very different causes and the bare
+ * "No download files found on itch.io page" named none of them. Whoever hits
+ * this is usually the person who just catalogued the game, and what they need
+ * to know is whether the recipe is wrong or the page simply has nothing to
+ * download.
+ */
+function itchNoDownloadsReason(html, pageUrl) {
+  const where = pageUrl ? ` (${pageUrl})` : "";
+  if (/you must be logged in|log in to (?:download|access)/i.test(html)) {
+    return `That itch.io page needs an account to download${where}. Catalog it as external so the player signs in on the page.`;
+  }
+  // A browser game has an embed and no files at all — the commonest reason a
+  // small itch entry has nothing to fetch.
+  if (/html_embed_widget|id=["']game_drop["']|class=["'][^"']*iframe_placeholder/i.test(html)) {
+    return `That itch.io page is a browser game with no downloads${where}. Catalog it as browser-playable rather than a download.`;
+  }
+  if (/buy_row|class=["'][^"']*buy_btn|itemprop=["']price["']/i.test(html)) {
+    return `That itch.io page sells the game, so there is no free download to fetch${where}. Catalog it as external and the player buys it on the page.`;
+  }
+  if (/<title>[^<]*(?:not found|404)/i.test(html)) {
+    return `That itch.io page does not exist${where}. Check the URL on the game's catalog entry.`;
+  }
+  return `No downloadable files on that itch.io page${where}. It may be browser-only, paid, or the URL may point at a profile rather than a game.`;
+}
+
 async function resolveDownload(entry) {
   if (entry.kind === "gamejolt-build") {
     const url = await resolveGameJoltBuild(entry.gameJoltBuildId);
@@ -2617,7 +2646,7 @@ async function resolveDownload(entry) {
     if (!res.ok) throw new Error(`itch.io returned ${res.status}`);
     const html = await res.text();
     const uploadMatches = [...html.matchAll(/data-upload_id=["'](\d+)["']/g)].map((m) => m[1]);
-    if (!uploadMatches.length) throw new Error("No download files found on itch.io page");
+    if (!uploadMatches.length) throw new Error(itchNoDownloadsReason(html, pageUrl));
     const uploadId = entry.uploadId || uploadMatches[0];
     const csrfMatch =
       html.match(/csrf_token["']?\s*[:=]\s*["']([^"']+)["']/i) ||
