@@ -3615,6 +3615,19 @@ function findExecutable(dir, exeHint) {
    * which wins when there is something else to prefer.
    */
   const tool = /editor|maker|config|settings|benchmark|dedicated/i;
+  /*
+   * EasyAntiCheat's bootstrap. A protected game ships this beside its real
+   * binary and Steam is configured to run it: it brings up the EAC service and
+   * then starts the game. Launching the binary directly gets the game's own
+   * "you must run this through Steam" refusal, because from EAC's side the
+   * launch is unprotected.
+   *
+   * Strikers Club is the case — start_protected_game.exe is 3.8MB next to a
+   * 162MB UFG-Win64-Shipping.exe, so ranking by size picked the one that
+   * cannot run. Ranked above ordinary executables rather than merely tied,
+   * since wherever this file exists it is always the right entry point.
+   */
+  const eacBootstrap = /^start_protected_game\.exe$/i;
 
   const walk = (d, depth = 0, ignoreSkip = false) => {
     if (depth > 10) return;
@@ -3648,7 +3661,12 @@ function findExecutable(dir, exeHint) {
       }
       if (process.platform === "win32") {
         if (lower.endsWith(".exe") && (ignoreSkip || !skip.test(name))) {
-          candidates.push({ full, name, size: stat.size, rank: tool.test(name) ? 60 : 100 });
+          candidates.push({
+            full,
+            name,
+            size: stat.size,
+            rank: eacBootstrap.test(name) ? 150 : tool.test(name) ? 60 : 100,
+          });
         } else if (/\.(gb|gbc|gba|nes|sfc|smc|z64|n64|gen)$/i.test(lower) && (ignoreSkip || !skip.test(name))) {
           candidates.push({ full, name, size: stat.size, rank: 90 });
         }
@@ -7380,6 +7398,45 @@ async function playGameInner(slug, join = null, editionSlug = null) {
         });
         persistEditionExe(slug, edSlug, launchPath, named);
         launchPath = named;
+      }
+    }
+  }
+
+  /*
+   * The same repair for EasyAntiCheat, which the check above cannot reach.
+   *
+   * It only fires for a recipe that names knownExePaths, and a Steam edition
+   * names an appId and nothing else — Strikers Club records whatever
+   * findExecutable picked, which before the bootstrap rank was the 162MB
+   * UFG-Win64-Shipping.exe. Launching that gets EAC's refusal, surfacing as
+   * the game telling the player to run it through Steam.
+   *
+   * Keyed on the file existing rather than on any per-game list: wherever
+   * start_protected_game.exe sits beside the recorded executable, it is the
+   * entry point and the recorded one is wrong.
+   */
+  if (process.platform === "win32" && info.dir && launchPath) {
+    const current = path.basename(launchPath).toLowerCase();
+    if (current !== "start_protected_game.exe") {
+      /*
+       * The bootstrap sits in the install root, while the binary it protects is
+       * usually buried — Strikers Club records
+       * StrikersClub\UFG\Binaries\Win64\UFG-Win64-Shipping.exe, four levels
+       * down. Looking only beside the recorded executable would never find it.
+       */
+      const bootstrap = [info.dir, path.dirname(launchPath)]
+        .filter(Boolean)
+        .map((d) => path.join(d, "start_protected_game.exe"))
+        .find((candidate) => fs.existsSync(candidate));
+      if (bootstrap) {
+        void telemetry.track("launch_exe_repaired", {
+          ...launchInfo(),
+          from: path.basename(launchPath),
+          to: "start_protected_game.exe",
+          reason: "eac_bootstrap",
+        });
+        persistEditionExe(slug, edSlug, launchPath, bootstrap);
+        launchPath = bootstrap;
       }
     }
   }
