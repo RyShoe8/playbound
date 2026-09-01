@@ -463,32 +463,39 @@ export const alternativePages: AlternativePage[] = [
     title: "Free MMO Alternatives to World of Warcraft",
     intro:
       "World of Warcraft still expects a subscription, and its competitors mostly gate the good parts behind one too. These are MMOs you can play properly without paying — not trials, and not free-to-start with a wall at level 20.",
-    topPick: "everquest",
+    topPick: "guild-wars-2",
     picks: [
+      {
+        slug: "guild-wars-2",
+        pitch:
+          "Guild Wars 2 offers an immense, living fantasy world where the entire base game is free. Renowned for dynamic world events, horizontal progression, and zero subscription fees ever.",
+        differences:
+          "Horizontal gear progression means your top-tier gear never becomes obsolete with new updates; combat is more action-oriented with dodges and ground targeting.",
+      },
+      {
+        slug: "albion-online",
+        pitch:
+          "Albion Online is a sandbox fantasy MMORPG featuring full-loot PvP zones, player-driven economy, and classless 'you are what you wear' combat.",
+        differences:
+          "Isometric perspective, sandbox guild territory warfare, and an entirely player-crafted economy rather than scripted theme-park questing.",
+      },
+      {
+        slug: "lord-of-the-rings-online",
+        pitch:
+          "The Lord of the Rings Online brings Tolkien's Middle-earth to life with hundreds of hours of free storytelling, exploration, and classic fantasy tab-target combat.",
+        differences:
+          "Slower, deeply narrative-focused pacing with traditional tab-targeting and rich lore books.",
+      },
       {
         slug: "everquest",
         pitch:
-          "EverQuest is the game WoW was reacting to, and it is free to play. Twenty-five years of content, a genuinely social levelling curve, and a choice of official live servers or community-run era servers that recreate specific points in its history.",
+          "EverQuest is the legendary pioneer of 3D MMORPGs, still actively played today with decades of content, free to play with active official and community era servers.",
         differences:
-          "Deliberately slower and harsher than WoW — grouping is expected rather than optional, travel takes real time, and dying costs you. The interface shows its age. Optional All Access unlocks some races and content.",
-      },
-      {
-        slug: "villagers-and-heroes",
-        pitch:
-          "Villagers & Heroes is a free fantasy MMO with a gentler tone, deep crafting and gathering, and one account shared across PC and mobile.",
-        differences:
-          "Much smaller world and population than WoW. Leans casual and cosy rather than raid-focused.",
-      },
-      {
-        slug: "veloren",
-        pitch:
-          "Veloren is an open-source multiplayer voxel RPG — open world, exploration and combat, with no monetisation of any kind because there is no company behind it.",
-        differences:
-          "Not an MMO in the traditional sense: worlds are community-run servers rather than one persistent shard, and it is still in active development, so expect changes between releases.",
+          "Deliberately slower and harsher than modern WoW — grouping is expected rather than optional, travel takes real time, and dying costs you.",
       },
     ],
     verdict:
-      "EverQuest is the best free alternative to World of Warcraft: a complete, still-updated MMORPG with decades of content, free to play with no subscription required, and a choice of official or community era servers. Villagers & Heroes suits players wanting something lighter, and Veloren suits anyone who wants an open-source world with no monetisation at all.",
+      "Guild Wars 2 is the best free alternative to World of Warcraft: it offers an enormous living fantasy world, world bosses, and fluid action combat with hundreds of hours of free content and no mandatory subscription.",
   },
   {
     slug: "destiny-2",
@@ -834,6 +841,108 @@ export const alternativePages: AlternativePage[] = [
     ],
     verdict:
       "Gradius Remake is the best free alternative to classic arcade shoot 'em ups: a pristine, responsive side-scrolling shooter with authentic weapon upgrade gauges and thrilling retro boss encounters.",
+  },
+  {
+    slug: "overwatch",
+    commercialGame: "Overwatch 2",
+    aliases: ["Overwatch", "OW2", "Overwatch 1"],
+    title: "Free Alternatives to Overwatch",
+    intro:
+      "If you love character-driven hero shooters with distinct class roles, payload pushes, and intense team synergy but want an experience free of battle-pass frustration, these outstanding free alternatives deliver legendary team-based combat.",
+    topPick: "team-fortress-2",
+    picks: [
+      {
+        slug: "team-fortress-2",
+        pitch:
+          "Team Fortress 2 is the foundational class-based hero shooter. Nine distinct characters, deep movement mechanics, payload and attack/defend modes, and an infinite variety of community maps and servers.",
+        differences:
+          "No ultimate ability meters or cooldown rotations — combat is driven by raw weapon mechanics, positioning, and team composition.",
+      },
+      {
+        slug: "apex-legends",
+        pitch:
+          "Apex Legends combines hero abilities with fluid slide-hopping movement, high-stakes squad firefights, and tactical positioning.",
+        differences:
+          "Battle royale and arena combat rather than objective payload pushes; larger maps and longer engagement distances.",
+      },
+      {
+        slug: "quake-champions",
+        pitch:
+          "Quake Champions marries classic arena FPS speed with unique champion passive and active abilities.",
+        differences:
+          "Far faster tempo and higher mechanical aim requirements, focused on weapon pickups and arena map control.",
+      },
+    ],
+    verdict:
+      "Team Fortress 2 is the premier free alternative to Overwatch: the definitive class-based shooter that inspired the genre, featuring nine iconic classes, deep weapon mechanics, and a thriving community with zero paid gameplay gates.",
+  },
+  {
+    slug: "diablo-iv",
+    commercialGame: "Diablo IV",
+    aliases: ["Diablo 4", "Diablo", "Diablo Immortal", "ARPG"],
+    title: "Free Alternatives to Diablo IV",
+    intro:
+      "Loot grinding, skill tree theorycrafting, and wiping screens of dungeon monsters don't need a $70 price tag or seasonal microtransaction passes. These exceptional free and community action RPGs scratch the hack-and-slash itch completely.",
+    topPick: "veloren",
+    picks: [
+      {
+        slug: "veloren",
+        pitch:
+          "Veloren is an open-world multiplayer action RPG with rich weapon skill trees, dungeon crawling, gliders, and procedural boss encounters, developed 100% free and open-source.",
+        differences:
+          "Third-person over-the-shoulder perspective and voxel art style rather than an isometric click-to-move camera.",
+      },
+      {
+        slug: "diablo-2",
+        pitch:
+          "Diablo II remains the benchmark for dark fantasy action RPG itemization, atmosphere, and skill progression, enhanced on modern hardware through PlayBound editions.",
+        differences:
+          "Classic 2000s grid inventory management and grittier old-school difficulty curves.",
+      },
+      {
+        slug: "shattered-pixel-dungeon",
+        pitch:
+          "Shattered Pixel Dungeon offers deep dungeon crawling packed with hundreds of item synergies, class subclasses, and tense tactical encounters.",
+        differences:
+          "Turn-based rogue-like movement rather than real-time hack-and-slash action.",
+      },
+    ],
+    verdict:
+      "Veloren and community-enhanced classic action RPGs are the finest free alternatives to Diablo IV: providing deep character builds, satisfying dungeon progression, and multiplayer exploration without live-service monetization.",
+  },
+  {
+    slug: "baldurs-gate-3",
+    commercialGame: "Baldur's Gate 3",
+    aliases: ["BG3", "Baldur's Gate", "D&D RPG"],
+    title: "Cheap & Free Alternatives to Baldur's Gate 3",
+    intro:
+      "Baldur's Gate 3 set a new standard for narrative roleplaying and tactical D&D combat. If your budget is under $15 or you want rich classic party RPGs with branching dialogue and memorable companions, these masterworks deliver.",
+    topPick: "star-wars-knights-of-the-old-republic",
+    picks: [
+      {
+        slug: "star-wars-knights-of-the-old-republic",
+        pitch:
+          "BioWare's D20-based masterpiece featuring legendary plot twists, Light/Dark moral choices, and rich tactical party combat in the Star Wars universe.",
+        differences:
+          "Real-time-with-pause D20 combat rather than turn-based grid encounters; sci-fi setting instead of high fantasy.",
+      },
+      {
+        slug: "star-wars-knights-of-the-old-republic-ii-the-sith-lords",
+        pitch:
+          "Obsidian's dark, deconstructive RPG sequel exploring the Force and companion loyalty, enhanced by community restored content.",
+        differences:
+          "More philosophical and morally ambiguous writing; deep crafting and companion influence systems.",
+      },
+      {
+        slug: "heroes-of-might-and-magic-3-complete",
+        pitch:
+          "The pinnacle of tactical turn-based fantasy conquest, hero development, and strategic grid combat.",
+        differences:
+          "Turn-based empire management and army tactics rather than a single-character narrative RPG party.",
+      },
+    ],
+    verdict:
+      "Star Wars: Knights of the Old Republic is the best classic alternative to Baldur's Gate 3: a D20 tactical party RPG with unforgettable characters, morally complex quests, free of microtransactions, and available for under $10.",
   },
 ];
 

@@ -7,11 +7,9 @@ import {
   X,
   Sparkles,
   Download,
-  Users,
   Gauge,
   Cloud,
   ShieldCheck,
-  ChevronRight,
   MonitorPlay,
   Layers,
   ShoppingCart,
@@ -287,9 +285,9 @@ export function HomeHeroPromoSection({
               </div>
 
               <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
-                Discover. Play.{" "}
+                Free & Affordable PC Games,{" "}
                 <span className="bg-gradient-to-r from-primary via-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-                  Connect.
+                  Ready to Play Together.
                 </span>
               </h1>
 
@@ -420,12 +418,22 @@ export function HomeHeroPromoSection({
         </div>
       ) : (
         /* Elevated Compact Layout (Dismissed Promo / 3rd+ visit): Hero & Stats in the SAME ROW */
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-stretch">
-          <div className="min-w-0 flex-1">
-            {hero ? <FeaturedGameHero hero={hero} badge="Featured New Game" /> : null}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
+              Curated Free & Affordable PC Games
+            </h1>
+            <span className="hidden text-xs font-medium text-muted-foreground sm:inline">
+              Tested, improved, and ready to play together
+            </span>
           </div>
-          <div className="flex w-full shrink-0 lg:w-80">
-            <CatalogStatsCard live={live} openPartyCount={openPartyCount} />
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-stretch">
+            <div className="min-w-0 flex-1">
+              {hero ? <FeaturedGameHero hero={hero} badge="Featured New Game" /> : null}
+            </div>
+            <div className="flex w-full shrink-0 lg:w-80">
+              <CatalogStatsCard live={live} openPartyCount={openPartyCount} />
+            </div>
           </div>
         </div>
       )}

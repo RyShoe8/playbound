@@ -137,6 +137,17 @@ async function buildLlmsTxt(): Promise<string> {
       `- [${d.name}](${SITE_URL}/developers/${d.slug}): ${d.tagline} (${d.website})`
     );
   }
+  lines.push("## Multiplayer & Setup Guides");
+  lines.push("");
+  lines.push(
+    `- [How to Play PC Games With Friends](${SITE_URL}/play-with-friends): Curated guides for 50+ games explaining dedicated servers, virtual LAN, and party launch.`
+  );
+  lines.push(
+    `- [How to Play LAN Games Over Internet](${SITE_URL}/guides/lan-over-internet): Hamachi and Radmin VPN alternative explaining CGNAT bypass and automated virtual networking.`
+  );
+  lines.push(
+    `- [How to Use Phone as PC Controller](${SITE_URL}/guides/phone-as-controller): Free Couch Mode turning iOS/Android phones into touchscreen gamepads via QR code.`
+  );
   lines.push("");
 
   lines.push("## Data");
