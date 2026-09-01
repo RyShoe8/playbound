@@ -494,7 +494,7 @@ call-of-duty-mobile xonotic supertuxkart veloren endless-sky shattered-pixel-dun
 warframe mega-man-unlimited rainbow-six-siege where-winds-meet flightgear freedoom daggerfall
 war-thunder team-fortress-2 genshin-impact valorant quake-champions holocure enlisted
 asphalt-legends privateer-gemini-gold openlara strikers-club brawlhalla
-mrboom trigger-rally ysoccer wolfenstein-enemy-territory dc-universe-online openclonk`
+mrboom trigger-rally ysoccer wolfenstein-enemy-territory dc-universe-online openclonk alien-swarm-reactive-drop`
     .split(/\s+/)
     .filter(Boolean);
 
