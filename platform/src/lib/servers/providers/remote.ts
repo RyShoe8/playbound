@@ -7,6 +7,9 @@ export type RemoteMasterAuth = {
   password: string;
 };
 
+/** Set on the empty array the adapter returns when its own poll failed. */
+const ADAPTER_FAILED = Symbol("playbound.adapterPollFailed");
+
 const adapterErrorsLogged = new Set<string>();
 
 /** HTTP headers are Latin-1; prefix so the adapter can restore UTF-8 passwords. */
@@ -44,11 +47,14 @@ export async function fetchViaAdapterOrDirect(
   direct: () => Promise<GameServer[]>
 ): Promise<GameServer[]> {
   try {
-    return await fetchRemoteMaster(slug);
+    const viaAdapter = await fetchRemoteMaster(slug);
+    // A failed poll comes back as 200 with an error and no servers, so an
+    // empty list alone cannot be trusted to mean "nobody is playing".
+    if (!(ADAPTER_FAILED in viaAdapter)) return viaAdapter;
   } catch (err) {
     logAdapterErrorOnce(slug, err instanceof Error ? err.message : String(err));
-    return direct();
   }
+  return direct();
 }
 
 export async function fetchRemoteMaster(
@@ -94,7 +100,15 @@ export async function fetchRemoteMaster(
 
   if (data.error && (!data.servers || data.servers.length === 0)) {
     logAdapterErrorOnce(slug, data.error);
-    return [];
+    /*
+     * Empty, but not silently. The adapter reports a failed poll as HTTP 200
+     * with an error field and no servers, so returning [] here looks like a
+     * success to every caller — which is how a broken SWG scrape surfaced as
+     * "no servers online" rather than as a failure, and why the direct
+     * fallback below never ran. The marker lets fetchViaAdapterOrDirect tell
+     * the two apart; every other caller still gets a plain empty list.
+     */
+    return Object.assign([] as GameServer[], { [ADAPTER_FAILED]: data.error });
   }
 
   const servers = Array.isArray(data.servers) ? data.servers.slice(0, MAX_SERVERS) : [];
