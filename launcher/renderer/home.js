@@ -158,6 +158,19 @@ function buildJoinRow({ game, reason, buttonLabel, title, onClick, badge }) {
   return row;
 }
 
+/**
+ * The strongest reason that is not the controller.
+ *
+ * Every surface that shows a reason line also shows the controller badge next
+ * to it, and both render controller.label — so whenever the pad was the top
+ * signal the same sentence appeared twice, once as prose and once as a tag.
+ * The badge is the better home for it: it is shorter and it carries the
+ * confidence tier in its styling.
+ */
+function topNonControllerReason(entry) {
+  return (entry?.reasons || []).find((r) => r.key !== "controller")?.text || "";
+}
+
 function controllerBadge(controller) {
   if (!controller?.label) return null;
   const el = document.createElement("span");
@@ -239,11 +252,14 @@ function paintResume(entry) {
 
   const sub = document.createElement("p");
   sub.className = "home-resume-sub";
+  // The badge below this line carries the pad signal; see
+  // topNonControllerReason for why it must not also be the sentence.
+  const topReason = topNonControllerReason(entry);
   sub.textContent = server
     ? `${server.name || `${server.host}:${server.port}`} · ${formatStatNumber(server.players)}/${formatStatNumber(server.maxPlayers)} players${
         Number.isFinite(server.ping) ? ` · ${Math.round(server.ping)}ms` : ""
       }`
-    : entry.reasons?.[0]?.text || game.tagline || "";
+    : topReason || game.tagline || "";
 
   copy.append(eyebrow, title, sub);
   const pad = controllerBadge(controller);
@@ -299,7 +315,10 @@ function paintLive(entries) {
     ...entries.map((e) =>
       buildJoinRow({
         game: e.game,
-        reason: e.reasons[0]?.text || "",
+        // Same reason as the hero: the badge beside this line already renders
+        // controller.label, and a server with nobody on it produces no
+        // occupancy reason, which let the pad reason reach the top here too.
+        reason: topNonControllerReason(e) || "",
         buttonLabel: e.installed ? "Join" : "Install & join",
         title: e.server
           ? `${e.server.name || e.server.host} — ${formatStatNumber(e.server.players)} players`
