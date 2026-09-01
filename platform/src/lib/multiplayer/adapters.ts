@@ -163,6 +163,42 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "Current upstream KryoNet dedicated server; PlayBound builds the GPL client/server and joins directly.",
   },
 
+  openclonk: {
+    gameSlug: "openclonk",
+    title: "OpenClonk",
+    tier: "tier1_improved",
+    /*
+     * Peer-hosted, not virtual LAN.
+     *
+     * OpenClonk finds games on a LAN by broadcast — the binary is thick with
+     * discovery, broadcast and UDP handling — which makes it look like a
+     * virtual-LAN candidate. It is not: virtualLan.js is for games that "offer
+     * no address to connect to", and OpenClonk offers one. It takes a --join
+     * switch, so the launcher can hand a member the host's address directly and
+     * skip the overlay entirely.
+     */
+    adapterType: "direct-ip",
+    protocol: "custom",
+    client: {
+      launchArguments: ["--join={host}:{port}"],
+    },
+    selfHost: {
+      // C4NetStdPortTCP in src/network/C4Network2.h. The UDP, discovery and
+      // reference ports (11113/11114/11111) are for finding games on a LAN,
+      // which a party reached by address does not need.
+      port: 11112,
+      protocol: "tcp",
+      verified: true,
+      inGameSteps: [
+        "Host: Main menu → Start network game, then pick a scenario",
+        "Friends: Click Join Game in the launcher",
+      ],
+    },
+    notes:
+      "Hosts from the game's own 'Start network game' menu entry; members join by address with --join. " +
+      "No dedicated server on the VPS, so the leader's PC is the room.",
+  },
+
   keeperfx: {
     gameSlug: "keeperfx",
     title: "KeeperFX",
