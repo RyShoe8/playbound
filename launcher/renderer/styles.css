@@ -10059,3 +10059,217 @@ textarea.input-text {
   transform: translateY(-1px);
 }
 
+
+/* ============================================================
+   Home — play-first rows
+   Added with the home view rebuild. The page leads with things
+   you can press rather than things you can read, so these are
+   join rows and a resume hero, not more card grids.
+   ============================================================ */
+
+/* Row 01 — Resume ------------------------------------------- */
+
+.home-resume {
+  margin-bottom: 28px;
+}
+
+.home-resume-card {
+  position: relative;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  min-height: 208px;
+  display: flex;
+  align-items: flex-end;
+  cursor: pointer;
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+
+.home-resume-card:hover {
+  border-color: var(--border-focus);
+}
+
+/* Keeps the copy legible whatever the cover art is doing behind it. */
+.home-resume-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    rgba(12, 10, 18, 0.94) 0%,
+    rgba(12, 10, 18, 0.82) 42%,
+    rgba(12, 10, 18, 0.35) 100%
+  );
+}
+
+.home-resume-copy {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 26px 28px;
+  max-width: 640px;
+}
+
+.home-resume-eyebrow {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-light);
+}
+
+.home-resume-title {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--text-main);
+}
+
+.home-resume-sub {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.home-resume-btn {
+  margin-top: 10px;
+}
+
+/* Rows 02 / 03 — join lists --------------------------------- */
+
+.home-join-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.home-join-row {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px 10px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.home-join-row:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-focus);
+}
+
+.home-join-art {
+  width: 56px;
+  height: 56px;
+  border-radius: 9px;
+  flex: none;
+}
+
+.home-join-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.home-join-title {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The reason this row is on the page — carried from the ranking model, so a
+   surprising order can always be read off the card. */
+.home-join-reason {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.home-join-btn {
+  flex: none;
+  min-width: 104px;
+}
+
+.home-join-empty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* Controller confidence ------------------------------------- */
+
+/* Shown whether or not a pad is plugged in — an unplugged controller is still
+   one you own. The tint encodes how sure the launcher is, not merely that the
+   catalog claims support. */
+.home-pad-badge {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.home-pad-native {
+  color: var(--success);
+  background: rgba(52, 210, 123, 0.12);
+  border-color: rgba(52, 210, 123, 0.3);
+}
+
+.home-pad-verified {
+  color: var(--accent-light);
+  background: rgba(124, 92, 240, 0.14);
+  border-color: rgba(124, 92, 240, 0.34);
+}
+
+.home-pad-config {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--border);
+}
+
+.home-pad-claimed {
+  color: var(--text-muted);
+  background: transparent;
+  border-color: var(--border);
+}
+
+.game-card .home-pad-badge {
+  margin: 0 12px 12px;
+}
+
+@media (max-width: 720px) {
+  .home-join-row {
+    grid-template-columns: 44px minmax(0, 1fr);
+    grid-template-areas: "art body" "btn btn";
+  }
+  .home-join-art { grid-area: art; width: 44px; height: 44px; }
+  .home-join-body { grid-area: body; }
+  .home-join-btn { grid-area: btn; width: 100%; margin-top: 4px; }
+  .home-resume-title { font-size: 24px; }
+}
