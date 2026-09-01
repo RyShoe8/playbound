@@ -147,3 +147,49 @@ test("config front-ends lose to the game they configure", () => {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("an EAC-protected game launches through its bootstrap, not its binary", () => {
+  /*
+   * Strikers Club's real sizes, read off the Steam install: the EAC bootstrap
+   * is 3.8MB beside a 162MB shipping binary, so ranking by size picked the
+   * binary — and EAC refuses an unprotected launch, which surfaces to the
+   * player as the game demanding to be run through Steam.
+   */
+  const dir = makeInstall({
+    "start_protected_game.exe": 3_985_408,
+    "UFG.exe": 524_288,
+  });
+  try {
+    assert.equal(path.basename(findExecutable(dir, undefined)), "start_protected_game.exe");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("the anti-cheat installer is never mistaken for the game", () => {
+  // EasyAntiCheat_EOS_Setup.exe ships in the same tree; the skip rule has to
+  // keep matching it, or a package with no other candidate would launch it.
+  const dir = makeInstall({
+    "EasyAntiCheat_EOS_Setup.exe": 943_000,
+    "start_protected_game.exe": 3_985_408,
+  });
+  try {
+    assert.equal(path.basename(findExecutable(dir, undefined)), "start_protected_game.exe");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("a hint still wins over the bootstrap when a recipe names one", () => {
+  // The bootstrap outranks ordinary executables, but a recipe that explicitly
+  // names an executable is a deliberate statement and must still be honoured.
+  const dir = makeInstall({
+    "start_protected_game.exe": 3_985_408,
+    "Launcher.exe": 800_000,
+  });
+  try {
+    assert.equal(path.basename(findExecutable(dir, "Launcher.exe")), "Launcher.exe");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
