@@ -239,7 +239,13 @@ export const editions: EditionSeed[] = [
       playbound_installer: {
         kind: "github-release",
         repo: "TES3MP/TES3MP",
-        assetPattern: "tes3mp-.*-windows.*\\.zip$",
+        // TES3MP names its Windows client `tes3mp.Win64.release.0.8.1.zip` —
+        // dots, no "windows" — so the old `tes3mp-.*-windows` matched nothing
+        // in any release and every install failed. The trailing version must
+        // stay digits-only: the newest release is a VR respin whose only asset
+        // is `...0.8.1.VR.client.zip`, and that is not the desktop client the
+        // rest of this recipe describes.
+        assetPattern: "^tes3mp\\.Win64\\.release\\.[0-9.]+\\.zip$",
         exeHint: "tes3mp.exe",
         knownExePaths: ["tes3mp.exe", "tes3mp-browser.exe", "tes3mp-server.exe"],
         note: "TES3MP multiplayer client. Connect to public PlayBound servers or host a party.",
