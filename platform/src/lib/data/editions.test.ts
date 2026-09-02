@@ -296,3 +296,35 @@ describe("mr. boom retroarch edition", () => {
     }
   });
 });
+
+describe("Morrowind editions", () => {
+  const morrowind = editions.filter((e) => e.gameSlug === "morrowind");
+
+  it("matches the Windows client TES3MP actually ships", () => {
+    // The recipe asked for `tes3mp-.*-windows.*\.zip$`, which matches nothing
+    // in any TES3MP release: upstream names the client with dots and "Win64".
+    // Every install of this edition failed on "No matching asset".
+    const re = new RegExp(
+      morrowind.find((e) => e.slug === "tes3mp")!.installConfig!.playbound_installer!
+        .assetPattern!,
+      "i"
+    );
+    expect(re.test("tes3mp.Win64.release.0.8.1.zip")).toBe(true);
+    expect(re.test("tes3mp.Win64.release.0.6.0.zip")).toBe(true);
+  });
+
+  it("does not pick the VR respin that ships as the newest release", () => {
+    // tes3mp-0.8.1-vr is the latest release and carries only a VR client, so
+    // the installer walks back to tes3mp-0.8.1 — but only while the pattern
+    // refuses the VR archive. Loosen the version to `.*` and it stops there.
+    const re = new RegExp(
+      morrowind.find((e) => e.slug === "tes3mp")!.installConfig!.playbound_installer!
+        .assetPattern!,
+      "i"
+    );
+    expect(re.test("tes3mp.Win64.release.0.8.1.VR.client.zip")).toBe(false);
+    expect(re.test("tes3mp-GNU+Linux-x86_64-release-0.8.1-68954091c5-6da3fdea59.tar.gz")).toBe(
+      false
+    );
+  });
+});
