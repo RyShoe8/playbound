@@ -46,7 +46,188 @@ function warzoneAutohostId(ctx) {
   return raw ? `pb-${raw}` : "pb-default";
 }
 
+/**
+ * Warzone's autohost settings, as PlayBound declares them.
+ *
+ * These were inline literals in the challenge object below, which meant the
+ * party leader hosting the room could not reach any of them and no UI could
+ * know they existed. They are declared again, with labels and bounds, in
+ * platform/src/lib/serverControl/settings.ts — the agent is a separate
+ * deployable and cannot import the platform's TypeScript — and that file's
+ * test reads this object out of this source to prove the two have not
+ * drifted. Change one, change the other, or that test fails.
+ *
+ * Values only. `name` comes from the party, and `spectatorHost`, `blindMode`
+ * and the `locked` block are not settings anyone is being offered.
+ */
+export const WARZONE_DEFAULT_SETTINGS = {
+  map: "Sk-Mountain",
+  maxPlayers: 8,
+  techLevel: 1,
+  bases: 2,
+  powerLevel: 1,
+  alliances: 0,
+  scavengers: 0,
+  openSpectatorSlots: 4,
+};
+
+/**
+ * Enemy Territory's settings that can only be delivered at spawn.
+ *
+ * `sv_maxclients` is latched in the Quake 3 engine — rcon accepts a new value
+ * and the running server ignores it until it restarts — so it is the one ET
+ * setting that has to come through here rather than over the live channel.
+ * Everything else ET declares is an rcon cvar and never touches this file.
+ *
+ * There is deliberately no default: absent means "do not pass the argument",
+ * which is what keeps an untouched room byte-identical to what shipped.
+ */
+const ET_STARTUP_SETTING_KEYS = ["sv_maxclients"];
+
+function etStartupSettings(settings) {
+  const out = {};
+  if (!settings || typeof settings !== "object") return out;
+  for (const key of ET_STARTUP_SETTING_KEYS) {
+    const value = settings[key];
+    if (typeof value === "number" && Number.isFinite(value)) out[key] = value;
+  }
+  return out;
+}
+
+/** Games with spawn-time defaults of their own. */
+const RECIPE_DEFAULT_SETTINGS = {
+  "warzone-2100": WARZONE_DEFAULT_SETTINGS,
+};
+
+function typesOf(values) {
+  const types = {};
+  for (const [key, value] of Object.entries(values)) types[key] = typeof value;
+  return types;
+}
+
+/**
+ * The spawn-time settings each recipe understands, and the type each must be.
+ *
+ * Only settings a room is *started* with belong here. ET's map and game mode
+ * are delivered over rcon to a running server and never reach this file, which
+ * is why its list is one key long despite the game declaring five settings.
+ */
+const RECIPE_SETTING_TYPES = {
+  "warzone-2100": typesOf(WARZONE_DEFAULT_SETTINGS),
+  "wolfenstein-enemy-territory": { sv_maxclients: "number" },
+  openarena: { sv_maxclients: "number" },
+  supertuxkart: { mode: "number", difficulty: "number", "max-players": "number" },
+  "space-station-14": { "game.soft_max_players": "number", "game.lobbyenabled": "boolean" },
+  freedoom: {
+    gameMode: "string",
+    sv_maxplayers: "number",
+    sv_maxclients: "number",
+    fraglimit: "number",
+    timelimit: "number",
+  },
+};
+
+/**
+ * The settings a recipe will actually honour, filtered to the keys it declares.
+ *
+ * PlayBound validates a host's choices against the game's schema before they
+ * get here (`coerceSettingValues`), but this agent is reachable by anything
+ * holding the shared secret and these values are written into a file a game
+ * server parses. So the recipe's own keys are the boundary here too: an
+ * undeclared key is dropped rather than passed through, and a value of the
+ * wrong type is ignored rather than written out to break the spawn.
+ */
+export function acceptedSettingsFor(slug, settings) {
+  const types = RECIPE_SETTING_TYPES[slug];
+  if (!types || !settings || typeof settings !== "object") return {};
+  const accepted = {};
+  for (const [key, expected] of Object.entries(types)) {
+    const value = settings[key];
+    if (value === undefined || value === null) continue;
+    if (typeof value !== expected) continue;
+    accepted[key] = value;
+  }
+  return accepted;
+}
+
+/** A recipe's defaults with any accepted host overrides applied. */
+export function effectiveSettings(slug, settings) {
+  const defaults = RECIPE_DEFAULT_SETTINGS[slug];
+  if (!defaults) return {};
+  return { ...defaults, ...acceptedSettingsFor(slug, settings) };
+}
+
+/**
+ * OpenArena settings that can only be delivered at spawn.
+ *
+ * sv_maxclients is latched in the Quake 3 engine — rcon takes the value and the
+ * running server keeps the old one — so it is the one OpenArena setting that
+ * cannot go over the live channel. Absent means the argument is not passed at
+ * all, which keeps an untouched room identical to what shipped.
+ */
+function openArenaStartupArgs(settings) {
+  const value = settings && typeof settings === "object" ? settings.sv_maxclients : undefined;
+  if (typeof value !== "number" || !Number.isFinite(value)) return [];
+  return ["+set", "sv_maxclients", String(value)];
+}
+
+/**
+ * Freedoom's multiplayer server is Zandronum, and its cvars go on the command
+ * line as `+name value` — the same form the recipe already uses for
+ * `+sv_hostname`.
+ *
+ * Game mode is the awkward one. Zandronum has no single mode variable: each
+ * mode is its own boolean (`ctf 1`, `teamplay 1`, …) and cooperative is the
+ * absence of all of them. PlayBound's schema declares one enum, because that is
+ * what a host is actually choosing, and the spelling is this function's job.
+ *
+ * Chocolate Doom understands none of this, so its branch below never calls in
+ * here and keeps the plain args it always had.
+ */
+const ZANDRONUM_MODE_CVARS = {
+  deathmatch: "deathmatch",
+  teamplay: "teamplay",
+  ctf: "ctf",
+  duel: "duel",
+  lastmanstanding: "lastmanstanding",
+};
+
+function freedoomSettingArgs(settings) {
+  if (!settings || typeof settings !== "object") return [];
+  const args = [];
+  const mode = ZANDRONUM_MODE_CVARS[settings.gameMode];
+  // "coop" is the absence of a mode flag, not a flag of its own.
+  if (mode) args.push(`+${mode}`, "1");
+  for (const key of ["sv_maxplayers", "sv_maxclients", "fraglimit", "timelimit"]) {
+    const value = settings[key];
+    if (typeof value === "number" && Number.isFinite(value)) args.push(`+${key}`, String(value));
+  }
+  return args;
+}
+
+/**
+ * Settings that go on a command line as their own flags.
+ *
+ * SuperTuxKart and Space Station 14 both take theirs this way rather than
+ * through a config file, so a recipe only has to append what a host chose. An
+ * unset value is left off entirely rather than pinned to whatever number this
+ * file believes the default is — a room nobody has touched starts exactly as
+ * it always did.
+ */
+function flagArgs(settings, spec) {
+  const args = [];
+  if (!settings || typeof settings !== "object") return args;
+  for (const [key, format] of Object.entries(spec)) {
+    const value = settings[key];
+    if (value === undefined || value === null) continue;
+    const text = typeof value === "boolean" ? String(value) : String(value);
+    args.push(...format(text));
+  }
+  return args;
+}
+
 function buildWarzoneAutohostConfig(ctx) {
+  const settings = effectiveSettings("warzone-2100", ctx.settings);
   return {
     locked: {
       alliances: true,
@@ -54,16 +235,16 @@ function buildWarzoneAutohostConfig(ctx) {
       bases: true,
     },
     challenge: {
-      map: "Sk-Mountain",
-      maxPlayers: 8,
-      scavengers: 0,
-      alliances: 0,
-      powerLevel: 1,
-      bases: 2,
+      map: settings.map,
+      maxPlayers: settings.maxPlayers,
+      scavengers: settings.scavengers,
+      alliances: settings.alliances,
+      powerLevel: settings.powerLevel,
+      bases: settings.bases,
       name: String(ctx.name || "PlayBound.club Party").slice(0, 40),
-      techLevel: 1,
+      techLevel: settings.techLevel,
       spectatorHost: true,
-      openSpectatorSlots: 4,
+      openSpectatorSlots: settings.openSpectatorSlots,
       blindMode: "none",
     },
   };
@@ -344,6 +525,11 @@ export const recipes = {
       `--lan-server=${ctx.name}`,
       `--port=${port}`,
       "--no-graphics",
+      ...flagArgs(acceptedSettingsFor("supertuxkart", ctx.settings), {
+        mode: (v) => [`--mode=${v}`],
+        difficulty: (v) => [`--difficulty=${v}`],
+        "max-players": (v) => [`--max-players=${v}`],
+      }),
     ],
   },
   xonotic: {
@@ -364,6 +550,9 @@ export const recipes = {
     ],
   },
   openarena: {
+    // Quake 3 engine, same as ET: takes rcon on its own UDP port. index.js
+    // generates a per-room password when a recipe declares this.
+    rcon: "quake3",
     portStart: 27960,
     portEnd: 27980,
     protocol: "udp",
@@ -381,6 +570,8 @@ export const recipes = {
       "+set",
       "sv_master1",
       '""',
+      ...(ctx.rconPassword ? ["+set", "rconpassword", ctx.rconPassword] : []),
+      ...(openArenaStartupArgs(ctx.settings)),
     ],
   },
   triplea: {
@@ -438,6 +629,9 @@ export const recipes = {
     portEnd: 27959,
     protocol: "udp",
     startupGraceMs: 3000,
+    // Quake 3 engine: takes rcon on its own UDP port. index.js generates a
+    // per-room password and passes it in ctx for the args below.
+    rcon: "quake3",
     binaries: gameBin("wolfenstein-enemy-territory", [
       "etlded",
       "etlded.x86_64",
@@ -471,6 +665,16 @@ export const recipes = {
         "+set",
         "omnibot_enable",
         "0",
+        /*
+         * Only what the host actually chose. An unset value is left to the
+         * engine rather than pinned to whatever number this file believes the
+         * default is — a room nobody has touched still starts exactly as it
+         * always did.
+         */
+        ...(ctx.rconPassword ? ["+set", "rconpassword", ctx.rconPassword] : []),
+        ...(etStartupSettings(ctx.settings).sv_maxclients !== undefined
+          ? ["+set", "sv_maxclients", String(etStartupSettings(ctx.settings).sv_maxclients)]
+          : []),
         "+exec",
         "et-playbound.cfg",
         "+map",
@@ -599,6 +803,7 @@ export const recipes = {
         "+sv_hostname",
         ctx.name || "PlayBound.club Party",
         ...iwadArgs,
+        ...freedoomSettingArgs(ctx.settings),
       ];
     },
   },
@@ -607,7 +812,16 @@ export const recipes = {
     portEnd: 1222,
     protocol: "udp",
     binaries: gameBin("space-station-14", ["Robust.Server", "SS14.Server"]),
-    args: (port) => ["--port", String(port)],
+    // RobustToolbox takes any CVar as --cvar name=value, overriding both its
+    // defaults and the config file, so nothing has to be written to disk.
+    args: (port, ctx) => [
+      "--port",
+      String(port),
+      ...flagArgs(acceptedSettingsFor("space-station-14", ctx && ctx.settings), {
+        "game.soft_max_players": (v) => ["--cvar", `game.soft_max_players=${v}`],
+        "game.lobbyenabled": (v) => ["--cvar", `game.lobbyenabled=${v}`],
+      }),
+    ],
   },
   "zero-k": {
     portStart: 8452,

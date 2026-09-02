@@ -21,7 +21,15 @@ import { createReadStream, createWriteStream } from "node:fs";
 import { copyFile, mkdir, rename, rm, stat } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
-import { resolveRecipe, listInstalled, listGameHostStatus, missingDedicatedBinaryMessage, recipes } from "./recipes.js";
+import { generateRconPassword, isRconAuthFailure, sendRcon } from "./rcon.js";
+import {
+  resolveRecipe,
+  listInstalled,
+  listGameHostStatus,
+  missingDedicatedBinaryMessage,
+  acceptedSettingsFor,
+  recipes,
+} from "./recipes.js";
 import { canEnsure, ensureGame, ensureMissingGames, listEnsureableSlugs } from "./ensureGame.js";
 import { ET_SLUG, verifyEtLegacyReady } from "./etLegacyInstall.js";
 import { collectMetrics } from "./metrics.js";
@@ -581,7 +589,7 @@ function stopRoom(room) {
   if (byParty.get(room.partyId) === room.roomId) byParty.delete(room.partyId);
 }
 
-async function startRoom({ gameSlug, partyId, name, editionSlug, mod }) {
+async function startRoom({ gameSlug, partyId, name, editionSlug, mod, settings }) {
   const existingId = byParty.get(partyId);
   if (existingId && rooms.has(existingId)) {
     return { room: rooms.get(existingId) };
@@ -591,7 +599,7 @@ async function startRoom({ gameSlug, partyId, name, editionSlug, mod }) {
     return { error: `Host is at capacity (${MAX_ROOMS} rooms)` };
   }
 
-  const roomCtx = { editionSlug, mod, partyId, name };
+  const roomCtx = { editionSlug, mod, partyId, name, settings };
   let resolved = resolveRecipe(gameSlug, roomCtx);
   if (!resolved) return { error: `Game ${gameSlug} is not hostable` };
 
@@ -650,6 +658,14 @@ async function startRoom({ gameSlug, partyId, name, editionSlug, mod }) {
     // Explicit override for games where edition alone can't say which mod to
     // run — OpenRA's "official" edition is one client covering ra/cnc/d2k.
     mod: mod || "",
+    settings: settings && typeof settings === "object" ? settings : {},
+    /*
+     * Generated here and kept here. The platform can ask this agent to run a
+     * command on a room it owns, but never learns the password, so it cannot
+     * administer a game server directly and a leaked platform token does not
+     * become console access.
+     */
+    rconPassword: recipe.rcon ? generateRconPassword() : null,
   };
 
   // A port can be occupied by something outside our own bookkeeping (a stale
@@ -704,6 +720,14 @@ async function startRoom({ gameSlug, partyId, name, editionSlug, mod }) {
       pid: child.pid || null,
       child,
       createdAt: Date.now(),
+      /*
+       * What this room was actually started with, so PlayBound can show the
+       * running values rather than what our database believes it asked for.
+       * Only the keys the recipe accepted — see settingsForRecipe.
+       */
+      settings: acceptedSettingsFor(gameSlug, ctx.settings),
+      rcon: recipe.rcon || null,
+      rconPassword: ctx.rconPassword,
     };
 
     const startupLog = [];
@@ -861,6 +885,9 @@ function publicRoom(room) {
     host: room.host || PUBLIC_IP,
     port: room.port,
     createdAt: room.createdAt,
+    settings: room.settings || {},
+    // Whether this room can take live commands — not the password that does it.
+    rcon: room.rcon || null,
   };
 }
 
@@ -927,6 +954,13 @@ const server = http.createServer(async (req, res) => {
         name: body.name,
         editionSlug: body.editionSlug,
         mod: body.mod,
+        /*
+         * Host-chosen server settings, declared and already validated against
+         * the game's schema by platform/src/lib/serverControl. The recipe
+         * still picks only the keys it knows, because this agent is reachable
+         * with the shared secret and must not trust a body to be well-formed.
+         */
+        settings: body.settings,
       });
       if (result.error) {
         json(res, 409, { error: result.error });
@@ -999,6 +1033,54 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "DELETE" && archiveMatch) {
       const result = await deleteArchivedFile(decodeURIComponent(archiveMatch[1]));
       json(res, result.error ? 400 : 200, result);
+      return;
+    }
+
+    /*
+     * Run one command on a room's game server.
+     *
+     * The caller names a room, not a host, a port or a password — those are
+     * ours. Commands themselves are composed by the platform from declared
+     * settings (see src/lib/serverControl/rcon.ts); this endpoint is the
+     * transport and deliberately does not try to be a second validator of
+     * something it cannot interpret.
+     */
+    const rconMatch = url.pathname.match(/^\/rooms\/([^/]+)\/rcon$/);
+    if (req.method === "POST" && rconMatch) {
+      const room = rooms.get(rconMatch[1]);
+      if (!room) {
+        json(res, 404, { error: "No such room" });
+        return;
+      }
+      if (!room.rcon || !room.rconPassword) {
+        json(res, 409, { error: `${room.gameSlug} rooms do not take live commands` });
+        return;
+      }
+      const body = await readBody(req);
+      const command = String(body.command || "").trim();
+      if (!command) {
+        json(res, 400, { error: "command is required" });
+        return;
+      }
+      try {
+        const response = await sendRcon({
+          port: room.port,
+          password: room.rconPassword,
+          command,
+        });
+        if (isRconAuthFailure(response)) {
+          // A wrong password answers with an ordinary print, so a caller
+          // checking only for a thrown error would record this as success.
+          console.warn(`[rcon] ${room.gameSlug}:${room.port} rejected our password`);
+          json(res, 502, { error: "The game server rejected the control password" });
+          return;
+        }
+        json(res, 200, { ok: true, response });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.warn(`[rcon] ${room.gameSlug}:${room.port} ${command.split(" ")[0]}: ${message}`);
+        json(res, 502, { error: message });
+      }
       return;
     }
 

@@ -40,6 +40,7 @@ import {
   PartyPublicServerPicker,
   type PartyPublicServerGate,
 } from "@/components/friends/PartyPublicServerPicker";
+import { PartyServerSettings } from "@/components/friends/PartyServerSettings";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 export type PartyGameOption = {
@@ -564,6 +565,17 @@ export function PartyView({
                 publicServerGate === "ready" ? () => void setReady(party.id, true) : undefined
               }
             />
+          </div>
+        ) : null}
+
+        {/*
+          * Server controls for a PlayBound-hosted room. Renders nothing unless
+          * the party actually has one this game declares settings for, so it
+          * stays absent for self-hosted, public and non-hostable parties.
+          */}
+        {party.gameSlug ? (
+          <div className="border-t border-border p-4">
+            <PartyServerSettings partyId={party.id} />
           </div>
         ) : null}
       </div>

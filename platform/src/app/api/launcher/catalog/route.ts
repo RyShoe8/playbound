@@ -16,6 +16,7 @@ import { gameAccessTiers, tierFor } from "@/lib/access/tiers";
 import { accessFieldsForLauncher } from "@/lib/launcherCommerce";
 import { formatEditionChipName, getDisplayEditionsForGame } from "@/lib/data/editions";
 import { supportsController } from "@/lib/controller/support";
+import { getMultiplayerAdapter } from "@/lib/multiplayer/adapters";
 
 export async function GET(req: Request) {
   try {
@@ -61,6 +62,14 @@ export async function GET(req: Request) {
           return entry
             ? {
                 ...entry,
+                /*
+                 * How this game's dedicated server is started, so the launcher
+                 * can host one on the player's own PC — see
+                 * launcher/services/localServer.js. Declared on the multiplayer
+                 * adapter rows and, until server control needed it, read by
+                 * nothing.
+                 */
+                hostLaunch: getMultiplayerAdapter(g.slug)?.host ?? null,
                 status: g.status || "published",
                 testing: g.status === "testing",
                 platforms: Array.isArray(g.platforms) ? g.platforms : [],

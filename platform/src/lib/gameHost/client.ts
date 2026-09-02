@@ -18,6 +18,12 @@ export type GameHostRoom = {
   name?: string;
   roomCode?: string | null;
   createdAt?: number;
+  /**
+   * What the agent actually started this room with — the recipe's defaults
+   * plus whatever host-chosen settings it accepted. Read it rather than
+   * trusting our own record: a room can outlive the deploy that made it.
+   */
+  settings?: Record<string, string | number | boolean>;
 };
 
 export type GameHostHealth = {
@@ -196,10 +202,19 @@ export async function createHostRoom(opts: {
   gameSlug: string;
   partyId: string;
   name?: string;
-  maxPlayers?: number;
+  /*
+   * There is deliberately no maxPlayers here. One was sent for a long time and
+   * the agent never read it — startRoom does not destructure it — so it did
+   * nothing. Server slots are now a declared setting (see serverControl), and
+   * that is the only channel: party size is who is in the party, which is not
+   * the same question as how many slots the room has. A three-person party
+   * does not want a three-slot server nobody else can join.
+   */
   editionSlug?: string | null;
   /** Explicit override for games edition alone can't disambiguate — see Party.openRaMod. */
   mod?: string | null;
+  /** Host-chosen server settings, already coerced against the game's schema. */
+  settings?: Record<string, string | number | boolean>;
 }): Promise<GameHostRoom | { error: string }> {
   const cfg = hostConfig();
   if (!cfg) return { error: "Game host is not configured" };
@@ -213,9 +228,9 @@ export async function createHostRoom(opts: {
           gameSlug: opts.gameSlug,
           partyId: opts.partyId,
           name: opts.name,
-          maxPlayers: opts.maxPlayers,
           editionSlug: opts.editionSlug || null,
           mod: opts.mod || null,
+          settings: opts.settings || undefined,
         }),
       },
       CREATE_ROOM_TIMEOUT_MS
@@ -239,6 +254,8 @@ export async function createHostRoom(opts: {
       port: Number(data.port),
       gameSlug: data.gameSlug || opts.gameSlug,
       name: data.name,
+      // What the agent accepted, which is not always what was asked for.
+      settings: data.settings,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Game host unreachable";
@@ -341,6 +358,33 @@ export async function ensureMissingHostGames(): Promise<{
       ok: false,
       message: err instanceof Error ? err.message : "Game host unreachable",
     };
+  }
+}
+
+/**
+ * Run one command on a room's game server, through the agent.
+ *
+ * The control password lives on the VPS and is never sent here, so this is the
+ * only way the platform can reach a running server — which is the point. The
+ * command itself must be composed from declared settings by
+ * src/lib/serverControl/rcon.ts, never assembled from anything a host typed.
+ */
+export async function sendRoomCommand(
+  roomId: string,
+  command: string
+): Promise<{ ok: true; response: string } | { ok: false; error: string }> {
+  if (!roomId) return { ok: false, error: "No room to command" };
+  try {
+    const res = await hostFetch(`/rooms/${encodeURIComponent(roomId)}/rcon`, {
+      method: "POST",
+      body: JSON.stringify({ command }),
+    });
+    if (!res) return { ok: false, error: "Game host is not configured" };
+    const data = (await res.json().catch(() => ({}))) as { response?: string; error?: string };
+    if (!res.ok) return { ok: false, error: data.error || `Game host returned ${res.status}` };
+    return { ok: true, response: String(data.response ?? "") };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Game host unreachable" };
   }
 }
 
