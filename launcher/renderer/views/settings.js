@@ -29,6 +29,9 @@ async function renderSettingsView() {
     /* keep previous */
   }
   const settings = await window.playbound.getSettings();
+  const overlayShortcut = window.playbound.getOverlayShortcut
+    ? (await window.playbound.getOverlayShortcut())?.accelerator || ""
+    : "";
   const ver = window.playbound.getAppVersion
     ? await window.playbound.getAppVersion()
     : { version: settings.version, packaged: settings.packaged };
@@ -107,6 +110,18 @@ async function renderSettingsView() {
     </div>
 
     <div class="settings-group">
+      <label class="settings-label">In-Game Overlay</label>
+      <p class="settings-hint">Press this while a game is running to change the party's server without alt-tabbing. Deliberately not Shift+Tab — Steam already owns that.</p>
+      <input type="text" class="input-text" id="set-overlay-shortcut" value="${escapeHtml(
+        overlayShortcut
+      )}" placeholder="CommandOrControl+\`" />
+      <div style="margin-top: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <button class="btn-secondary btn-sm" id="set-btn-overlay-shortcut">Save shortcut</button>
+        <span class="settings-hint" id="set-overlay-shortcut-status"></span>
+      </div>
+    </div>
+
+    <div class="settings-group">
       <label class="settings-label">Your Gaming PC</label>
       <p class="settings-hint">Used to check game compatibility on playbound.club. Synced when you sign in.</p>
       <div id="set-hw-summary" style="margin-top: 8px; font-size: 13px; line-height: 1.5; color: var(--text-muted);">Loading…</div>
@@ -158,6 +173,22 @@ async function renderSettingsView() {
     if (picked) {
       await window.playbound.saveSettings({ gamesDir: picked });
       api.renderSettingsView();
+    }
+  });
+  document.getElementById("set-btn-overlay-shortcut")?.addEventListener("click", async () => {
+    const input = document.getElementById("set-overlay-shortcut");
+    const status = document.getElementById("set-overlay-shortcut-status");
+    const result = await window.playbound.setOverlayShortcut(input.value.trim());
+    /*
+     * The OS refuses a chord another application already holds, and it refuses
+     * quietly — so say which happened rather than leaving someone pressing a
+     * key that was never bound.
+     */
+    if (result?.ok) {
+      status.textContent = `Bound to ${result.accelerator}.`;
+      setStatus("Overlay shortcut saved");
+    } else {
+      status.textContent = result?.error || "That shortcut could not be bound.";
     }
   });
   document.getElementById("set-channel-admin")?.addEventListener("click", async () => {

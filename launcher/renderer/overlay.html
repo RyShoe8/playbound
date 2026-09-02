@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self';"
+    />
+    <title>PlayBound Overlay</title>
+    <style>
+      /*
+       * Self-contained rather than sharing styles.css. The overlay draws over a
+       * running game on a transparent window, so it cannot inherit a stylesheet
+       * built for an opaque app shell — and a stray `background` rule there
+       * would paint a grey rectangle across someone's match.
+       */
+      :root {
+        color-scheme: dark;
+        --bg: rgba(12, 10, 18, 0.92);
+        --border: rgba(255, 255, 255, 0.12);
+        --text: #f5f3ff;
+        --muted: rgba(245, 243, 255, 0.6);
+        --accent: #8b5cf6;
+        --danger: #f87171;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        overflow: hidden;
+      }
+      body {
+        font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+        color: var(--text);
+      }
+      .overlay {
+        margin: 8px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--bg);
+        backdrop-filter: blur(14px);
+        max-height: calc(100vh - 16px);
+        display: flex;
+        flex-direction: column;
+      }
+      /* The only draggable strip: everything else must stay clickable. */
+      .titlebar {
+        -webkit-app-region: drag;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border);
+      }
+      .brand {
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        font-size: 11px;
+        text-transform: uppercase;
+      }
+      .subject {
+        color: var(--muted);
+        font-size: 11px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .close {
+        -webkit-app-region: no-drag;
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 15px;
+        line-height: 1;
+        padding: 2px 4px;
+      }
+      .body {
+        padding: 12px 14px 14px;
+        overflow-y: auto;
+      }
+      .row {
+        display: block;
+        margin-bottom: 10px;
+      }
+      .row > span {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      .row .help {
+        font-weight: 400;
+        color: var(--muted);
+      }
+      select,
+      input[type="text"],
+      input[type="number"] {
+        width: 100%;
+        box-sizing: border-box;
+        height: 30px;
+        padding: 0 8px;
+        border-radius: 7px;
+        border: 1px solid var(--border);
+        background: rgba(0, 0, 0, 0.35);
+        color: var(--text);
+        font: inherit;
+      }
+      .toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .note {
+        font-size: 11px;
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 7px;
+        padding: 8px 10px;
+        margin: 10px 0;
+      }
+      .note.warn {
+        color: var(--text);
+      }
+      .error {
+        color: var(--danger);
+        font-size: 11px;
+        margin: 8px 0 0;
+      }
+      button.apply {
+        width: 100%;
+        height: 32px;
+        border: 0;
+        border-radius: 8px;
+        background: var(--accent);
+        color: #fff;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button.apply:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .hint {
+        font-size: 10px;
+        color: var(--muted);
+        text-align: center;
+        padding: 8px 0 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="overlay">
+      <header class="titlebar">
+        <span class="brand">PlayBound</span>
+        <span class="subject" id="subject"></span>
+        <button class="close" id="close" title="Close">✕</button>
+      </header>
+      <main class="body" id="root">
+        <p class="note">Loading…</p>
+      </main>
+    </div>
+    <script type="module" src="overlay.js"></script>
+  </body>
+</html>

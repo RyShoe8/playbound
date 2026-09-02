@@ -180,6 +180,19 @@ contextBridge.exposeInMainWorld("playbound", {
   getServers: (slug) => ipcRenderer.invoke("get-servers", slug),
   getServerIndex: () => ipcRenderer.invoke("get-server-index"),
   getPartySync: (opts) => ipcRenderer.invoke("get-party-sync", opts || {}),
+
+  // In-game overlay. See docs/server-control.md.
+  startSelfHostServer: (partyId) => ipcRenderer.invoke("start-self-host-server", partyId),
+  stopSelfHostServer: (partyId) => ipcRenderer.invoke("stop-self-host-server", partyId),
+  toggleOverlay: () => ipcRenderer.invoke("toggle-overlay"),
+  hideOverlay: () => ipcRenderer.invoke("hide-overlay"),
+  getOverlayContext: () => ipcRenderer.invoke("overlay-context"),
+  getOverlayShortcut: () => ipcRenderer.invoke("get-overlay-shortcut"),
+  setOverlayShortcut: (accelerator) => ipcRenderer.invoke("set-overlay-shortcut", accelerator),
+  onOverlayOpened: (cb) => ipcRenderer.on("overlay-opened", () => cb()),
+  getServerSettings: (partyId) => ipcRenderer.invoke("get-server-settings", partyId),
+  applyServerSettings: (partyId, settings) =>
+    ipcRenderer.invoke("apply-server-settings", partyId, settings),
   getConnectMeta: (slug) => ipcRenderer.invoke("get-connect-meta", slug),
   pingServers: (servers) => ipcRenderer.invoke("ping-servers", servers),
   getAllServers: () => ipcRenderer.invoke("get-all-servers"),
