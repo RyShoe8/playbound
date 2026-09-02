@@ -42,6 +42,13 @@ const PartyHostedSchema = new Schema(
     error: { type: String, default: null },
     roomCode: { type: String, default: null },
     provisionedAt: { type: Date, default: null },
+    /*
+     * Host-chosen server settings this room was started with. Mixed because
+     * the shape is per-game and declared in src/lib/serverControl/settings.ts,
+     * which is also what validates it — nothing reaches here that the game's
+     * profile did not accept. Empty means the recipe's own defaults.
+     */
+    settings: { type: Schema.Types.Mixed, default: () => ({}) },
   },
   { _id: false }
 );
@@ -242,6 +249,27 @@ const PartySchema = new Schema(
     // Public VPS dedicated room for NAT-sensitive listen-server games.
     hosted: { type: PartyHostedSchema, default: () => ({}) },
 
+    /*
+     * Server control for a room hosted on the leader's own PC.
+     *
+     * Nothing can call into a home machine, so the platform writes desired
+     * state and the leader's launcher reconciles against it. `desiredRevision`
+     * is what it reconciles on: the launcher reports back the revision it has
+     * actually applied, and anything behind means the room is still running
+     * the previous settings.
+     *
+     * Desired state, never commands. The launcher owns the dedicated process
+     * and decides how to reach the state, so this can ask for a different map
+     * and nothing else.
+     */
+    selfHostControl: {
+      settings: { type: Schema.Types.Mixed, default: () => ({}) },
+      desiredRevision: { type: Number, default: 0 },
+      appliedRevision: { type: Number, default: 0 },
+      lastAppliedAt: { type: Date, default: null },
+      lastError: { type: String, default: null },
+    },
+
     // Shared L2 segment for LAN-discovery-only games.
     lan: { type: PartyLanSchema, default: () => ({}) },
 
@@ -331,6 +359,15 @@ export type PartyDoc = {
     error?: string | null;
     roomCode?: string | null;
     provisionedAt?: Date | null;
+    /** Per-game, declared and validated by src/lib/serverControl/settings.ts. */
+    settings?: Record<string, string | number | boolean> | null;
+  };
+  selfHostControl?: {
+    settings?: Record<string, string | number | boolean> | null;
+    desiredRevision?: number;
+    appliedRevision?: number;
+    lastAppliedAt?: Date | null;
+    lastError?: string | null;
   };
   lan?: {
     groupId?: string | null;

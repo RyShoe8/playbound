@@ -102,7 +102,6 @@ export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
     gameSlug: hostSlug,
     partyId: String(party._id),
     name,
-    maxPlayers: Number(party.maxSize) || 8,
     editionSlug: party.editionSlug || null,
     mod: party.openRaMod || null,
   });
