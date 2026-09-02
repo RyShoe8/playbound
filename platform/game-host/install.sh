@@ -44,6 +44,7 @@ apt-get install -y --no-install-recommends \
   hedgewars \
   warzone2100 \
   bzflag-server \
+  teeworlds-server \
   supertuxkart \
   openarena-server \
   0ad
