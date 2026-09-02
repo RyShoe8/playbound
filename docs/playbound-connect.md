@@ -164,6 +164,7 @@ and tested on the game-host VPS:
 - `beyond-all-reason`, `zero-k` (Spring/Recoil lobbies)
 - `keeperfx`, `marathon-2`, `aleph-one`, `morrowind` / `tes3mp`
 - `battle-for-wesnoth`, `freedoom`, `flightgear`, `unvanquished`
+- `dune-legacy` (player-hosted Internet games; no headless server or CLI join)
 
 ## Related admin
 

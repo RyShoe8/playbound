@@ -108,6 +108,10 @@ const CLIENT_CONNECT_ARGS = {
   ],
   srb2: ["+connect", "{host}:{port}"],
   jfsw: ["-net", "{host}:{port}"],
+  // Dune Legacy only accepts the server address from its Internet Game menu.
+  "dune-legacy": null,
+  // OpenMOHAA inherits the id Tech console-style direct connect command.
+  openmohaa: ["+connect", "{host}:{port}"],
 
   /*
    * Hedgewars joins by URL, not by flag.
@@ -163,6 +167,8 @@ const DEFAULT_GAME_PORTS = {
   triplea: 3303,
   "0ad": 20595,
   "0-ad": 20595,
+  "dune-legacy": 28747,
+  openmohaa: 12203,
 };
 
 function defaultGamePort(slug) {

@@ -101,7 +101,9 @@ Installed by default (must show `true` in `/health` after `install.sh`):
 OpenRA, OpenTTD, Luanti/Minetest, Mindustry, YSoccer (built from source if the
 GitHub release asset is missing), Hedgewars (`hedgewars-server`), Warzone 2100,
 Freeciv, BZFlag, SuperTuxKart, OpenArena, TripleA, 0 A.D., Mr. Boom, Xonotic,
-Wolfenstein: Enemy Territory (`etlded`).
+Wolfenstein: Enemy Territory (`etlded`), and OpenMOHAA (`omohaaded`). OpenMOHAA's
+licensed `main/Pak*.pk3` data must be copied from an owned MOHAA installation;
+`install.sh` installs only the open-source dedicated binary.
 
 Skip Xonotic with `SKIP_XONOTIC=1`. Unvanquished stays manual (updater tree).
 

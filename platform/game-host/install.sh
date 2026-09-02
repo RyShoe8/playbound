@@ -569,6 +569,23 @@ fi
 
 chown -R playbound:playbound "$GAMES_DIR" "$INSTALL_ROOT/jre"
 
+echo "==> OpenMOHAA dedicated binary"
+OPENMOHAA_DIR="$GAMES_DIR/openmohaa"
+OPENMOHAA_VERSION="${OPENMOHAA_VERSION:-v0.82.1}"
+mkdir -p "$OPENMOHAA_DIR"
+if [[ ! -x "$OPENMOHAA_DIR/omohaaded" ]]; then
+  OPENMOHAA_ZIP="/tmp/openmohaa-${OPENMOHAA_VERSION}.zip"
+  curl -fL --retry 3 -o "$OPENMOHAA_ZIP" \
+    "https://github.com/openmoh/openmohaa/releases/download/${OPENMOHAA_VERSION}/openmohaa-${OPENMOHAA_VERSION}-linux-amd64.zip"
+  unzip -qo "$OPENMOHAA_ZIP" -d "$OPENMOHAA_DIR"
+  rm -f "$OPENMOHAA_ZIP"
+fi
+if [[ ! -f "$OPENMOHAA_DIR/main/Pak0.pk3" ]]; then
+  echo "  WARN: OpenMOHAA needs licensed main/Pak*.pk3 assets copied into $OPENMOHAA_DIR"
+fi
+
+chown -R playbound:playbound "$OPENMOHAA_DIR"
+
 echo "==> firewall"
 ufw allow OpenSSH || true
 ufw allow 8741/tcp comment "playbound-game-host" || true

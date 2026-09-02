@@ -190,6 +190,12 @@ describe("couch mode", () => {
     expect(defaultHostMode("streets-of-rage-remake")).toBe("couch");
   });
 
+  it("routes Metal Slug Remake's local co-op through couch mode", () => {
+    expect(canUseCouch("metal-slug-remake")).toBe(true);
+    expect(hostModesFor("metal-slug-remake")).toEqual(["couch"]);
+    expect(defaultHostMode("metal-slug-remake")).toBe("couch");
+  });
+
   it("is the only option, so the picker stays hidden", () => {
     const available = hostModeOptions("streets-of-rage-remake").filter((o) => o.available);
     expect(available.map((o) => o.mode)).toEqual(["couch"]);
