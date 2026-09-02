@@ -6,6 +6,7 @@ import {
   isPlayBoundManagedMultiplayer,
   MULTIPLAYER_ADAPTERS,
 } from "./adapters";
+import { games } from "@/lib/data/games";
 
 describe("PlayBound Multiplayer Adapter Framework", () => {
   it("correctly identifies Tier 1 PlayBound Multiplayer Editions", () => {
@@ -91,5 +92,18 @@ describe("PlayBound Multiplayer Adapter Framework", () => {
     expect(unknownGame.tier).toBe("tier3_official");
     expect(unknownGame.adapterType).toBe("official");
     expect(isPlayBoundManagedMultiplayer("some-random-game")).toBe(false);
+  });
+
+  it("declares a mode for every published multiplayer game in the seed", () => {
+    const multiplayer = games.filter(
+      (game) =>
+        game.status === "published" &&
+        game.features?.some((feature) => /multiplayer|co-op/i.test(feature))
+    );
+    const missing = multiplayer
+      .filter((game) => !MULTIPLAYER_ADAPTERS[game.slug])
+      .map((game) => game.slug);
+
+    expect(missing).toEqual([]);
   });
 });

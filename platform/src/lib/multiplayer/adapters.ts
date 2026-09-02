@@ -983,6 +983,40 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "Multiplayer belongs to the original Call of Pripyat master. Anomaly, GAMMA, and Gunslinger are single-player editions and do not inherit this adapter at launch.",
   },
 
+  "dune-legacy": {
+    gameSlug: "dune-legacy",
+    title: "Dune Legacy",
+    tier: "tier1_improved",
+    adapterType: "direct-ip",
+    protocol: "tcp",
+    client: {
+      inGameJoinPrompt: true,
+      inGameSteps: ["Multiplayer", "Internet Game", "Enter the host address and port 28747"],
+    },
+    notes:
+      "Player-hosted Internet games on the configured ServerPort (28747 by default). " +
+      "The client has no headless server or command-line join, so Connect supplies reachability and an in-game address.",
+  },
+
+  openmohaa: {
+    gameSlug: "openmohaa",
+    title: "OpenMOHAA",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "quake",
+    host: {
+      port: 12203,
+      protocol: "udp",
+      binaryHint: "omohaaded",
+      argsTemplate: ["+set", "net_port", "{port}"],
+    },
+    client: {
+      launchArguments: ["+connect", "{host}:{port}"],
+    },
+    notes:
+      "OpenMOHAA dedicated server using the owner's MOHAA assets on the PlayBound VPS; clients join with +connect.",
+  },
+
   // ─── TIER 2: Automated Server Infrastructure ─────────────────────────────
   bombsquad: {
     gameSlug: "bombsquad",
@@ -1215,6 +1249,70 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     adapterType: "official",
     protocol: "official",
     notes: "Hosted matchmaking. PlayBound provides party coordination.",
+  },
+
+  everquest: {
+    gameSlug: "everquest",
+    title: "EverQuest",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "The selected official or community edition owns login, server selection and character presence.",
+  },
+
+  "star-wars-galaxies": {
+    gameSlug: "star-wars-galaxies",
+    title: "Star Wars Galaxies: An Empire Divided",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Community shard launchers own authentication and server selection; PlayBound provides party launch and presence.",
+  },
+
+  "asherons-call": {
+    gameSlug: "asherons-call",
+    title: "Asheron's Call",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "ThwargLauncher and the selected ACEmulator world own authentication and server selection.",
+  },
+
+  "world-of-sea-battle": {
+    gameSlug: "world-of-sea-battle",
+    title: "World of Sea Battle",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Official MMO servers and launcher only. PlayBound provides party launch and presence.",
+  },
+
+  "old-school-runescape": {
+    gameSlug: "old-school-runescape",
+    title: "Old School RuneScape",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Jagex owns authentication and world selection; PlayBound provides party launch and presence.",
+  },
+
+  "star-wars-the-old-republic": {
+    gameSlug: "star-wars-the-old-republic",
+    title: "Star Wars: The Old Republic",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Official Broadsword servers only. PlayBound provides party launch and presence.",
+  },
+
+  "metal-slug-remake": {
+    gameSlug: "metal-slug-remake",
+    title: "Metal Slug: Community Remake",
+    tier: "tier1_improved",
+    adapterType: "official",
+    protocol: "official",
+    notes:
+      "No network transport: its two-player multiplayer is local co-op. PlayBound Connect uses couch mode and remote controllers.",
   },
 
   "call-of-duty-mobile": {

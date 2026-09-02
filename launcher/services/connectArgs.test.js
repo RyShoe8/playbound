@@ -16,6 +16,8 @@ const { test } = require("node:test");
 const {
   CLIENT_CONNECT_ARGS,
   applyConnectTemplates,
+  defaultGamePort,
+  joinsFromInGameMenu,
   staticLaunchArgs,
 } = require("./connectArgs");
 
@@ -67,6 +69,19 @@ test("joining still substitutes the address", () => {
       port: 30000,
     }),
     ["--go", "--address", "10.0.0.5", "--port", "30000"]
+  );
+});
+
+test("new peer-hosted games expose the address and port their launch path needs", () => {
+  assert.equal(joinsFromInGameMenu("dune-legacy"), true);
+  assert.equal(defaultGamePort("dune-legacy"), 28747);
+  assert.equal(defaultGamePort("openmohaa"), 12203);
+  assert.deepEqual(
+    applyConnectTemplates(CLIENT_CONNECT_ARGS.openmohaa, {
+      host: "100.64.0.2",
+      port: 12203,
+    }),
+    ["+connect", "100.64.0.2:12203"]
   );
 });
 

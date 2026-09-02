@@ -307,6 +307,31 @@ export const recipes = {
       );
     },
   },
+  openmohaa: {
+    portStart: 12203,
+    portEnd: 12222,
+    protocol: "udp",
+    binaries: gameBin("openmohaa", ["omohaaded"]),
+    cwd: () => path.join(GAMES_ROOT, "openmohaa"),
+    prepareSpawn: async (_port, ctx) => {
+      const home = path.join(HOST_HOME, "openmohaa", `pb-${ctx.partyId.slice(-8)}`);
+      fs.mkdirSync(path.join(home, "main"), { recursive: true });
+    },
+    args: (port, ctx) => {
+      const home = path.join(HOST_HOME, "openmohaa", `pb-${ctx.partyId.slice(-8)}`);
+      return [
+        "+set", "fs_homepath", home,
+        "+set", "net_port", String(port),
+        "+set", "sv_hostname", String(ctx.name || "PlayBound OpenMOHAA").slice(0, 48),
+        "+set", "sv_gamespy", "0",
+        "+set", "sv_maxclients", "16",
+        "+set", "g_gametype", "1",
+        "+map", "dm/mohdm1",
+      ];
+    },
+    startupGraceMs: 2500,
+    spawnEnv: () => ({ HOME: HOST_HOME }),
+  },
   openra: {
     portStart: 1234,
     portEnd: 1250,
@@ -951,6 +976,9 @@ export function listGameHostStatus() {
       } catch {
         ready = false;
       }
+    }
+    if (slug === "openmohaa" && hasBinary) {
+      ready = fs.existsSync(path.join(GAMES_ROOT, "openmohaa", "main", "Pak0.pk3"));
     }
     out[slug] = { installed: hasBinary, ready };
   }

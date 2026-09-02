@@ -53,6 +53,13 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     portEnd: 6587,
     protocol: "both",
   },
+  openmohaa: {
+    slug: "openmohaa",
+    title: "OpenMOHAA",
+    defaultPort: 12203,
+    portEnd: 12222,
+    protocol: "udp",
+  },
   /*
    * TCP: the client connects over WebSocket, so the listener is TCP even
    * though the adapter previously claimed UDP. 27032 is the game server port

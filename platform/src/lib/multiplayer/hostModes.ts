@@ -147,6 +147,7 @@ export const CLIENT_HOSTING_VERIFIED: ReadonlySet<string> = new Set<string>([
  */
 const LOCAL_COUCH_GAMES = new Set([
   "streets-of-rage-remake",
+  "metal-slug-remake",
   "hurrican",
   "pixreveal",
   "the-spike-cross",
