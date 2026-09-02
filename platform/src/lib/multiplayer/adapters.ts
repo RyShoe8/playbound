@@ -998,25 +998,6 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       "The client has no headless server or command-line join, so Connect supplies reachability and an in-game address.",
   },
 
-  openmohaa: {
-    gameSlug: "openmohaa",
-    title: "OpenMOHAA",
-    tier: "tier1_improved",
-    adapterType: "managed-server",
-    protocol: "quake",
-    host: {
-      port: 12203,
-      protocol: "udp",
-      binaryHint: "omohaaded",
-      argsTemplate: ["+set", "net_port", "{port}"],
-    },
-    client: {
-      launchArguments: ["+connect", "{host}:{port}"],
-    },
-    notes:
-      "OpenMOHAA dedicated server using the owner's MOHAA assets on the PlayBound VPS; clients join with +connect.",
-  },
-
   // ─── TIER 2: Automated Server Infrastructure ─────────────────────────────
   bombsquad: {
     gameSlug: "bombsquad",
@@ -1075,32 +1056,24 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "Rust voxel RPG server connect.",
   },
 
-  /*
-   * GameSpy — the master server MOHAA shipped with — has been dead since 2013.
-   * The community answer is the same shape as OpenArena's: a replacement
-   * master server (xNULL for retail, 333networks for OpenMoHAA) plus the
-   * id Tech 3 client's own +connect. That is a direct-ip fit, not a
-   * managed-server one — PlayBound is not standing up a VPS dedicated server
-   * for it, the way it deliberately hasn't for GoldenEye: Source either.
-   *
-   * No `selfHost` override, matching Marathon/Aleph One/Freedoom: the client
-   * itself can run a listen-server (in-game Host Game, or `+set dedicated 0`)
-   * with no separate binary, so canSelfHost's peer-hosted fallback already
-   * answers correctly without a verified flag. What verified guards is a
-   * VPS-primary game's optional local alternative — this game has no VPS
-   * path to be an alternative to.
-   */
+  /* The live catalog folds OpenMOHAA into this game as its default edition. */
   "medal-of-honor-allied-assault": {
     gameSlug: "medal-of-honor-allied-assault",
     title: "Medal of Honor: Allied Assault",
     tier: "tier1_improved",
-    adapterType: "direct-ip",
+    adapterType: "managed-server",
     protocol: "quake",
+    host: {
+      port: 12203,
+      protocol: "udp",
+      binaryHint: "omohaaded",
+      argsTemplate: ["+set", "net_port", "{port}"],
+    },
     client: {
       launchArguments: ["+connect", "{host}:{port}"],
     },
     notes:
-      "id Tech 3 client join. Default port 12203/UDP. GameSpy's master server is gone; community browsers use the xNULL master list (retail) or 333networks (OpenMoHAA edition) instead of the game's own broken server list.",
+      "OpenMOHAA dedicated server using the owner's MOHAA assets on the PlayBound VPS; clients join with +connect.",
   },
 
   "wolfenstein-enemy-territory": {
@@ -1657,6 +1630,7 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
  */
 const ADAPTER_SLUG_ALIASES: Record<string, string> = {
   "0-ad": "0ad",
+  openmohaa: "medal-of-honor-allied-assault",
   opentyrian: "opentyrian-2000",
 };
 

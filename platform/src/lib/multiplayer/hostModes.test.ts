@@ -138,6 +138,14 @@ describe("host mode configuration", () => {
     expect(hostModesFor("0ad")).toEqual(hostModesFor("0-ad"));
   });
 
+  it("hosts the live MOHAA parent through its OpenMOHAA edition adapter", () => {
+    const parent = "medal-of-honor-allied-assault";
+    expect(getMultiplayerAdapter(parent).gameSlug).toBe(parent);
+    expect(getMultiplayerAdapter(parent).adapterType).toBe("managed-server");
+    expect(canUseDedicated(parent)).toBe(true);
+    expect(defaultHostMode(parent)).toBe("dedicated");
+  });
+
   it("still falls back to `official` for a genuinely unknown game", () => {
     // The alias lookup must not turn an unknown slug into a match.
     expect(getMultiplayerAdapter("not-a-real-game").adapterType).toBe("official");

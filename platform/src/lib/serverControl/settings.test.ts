@@ -247,7 +247,7 @@ describe("coverage of the games PlayBound hosts", () => {
      */
     mindustry:
       "Configured over stdin with host <map> <mode>; the mode cannot be set without naming a map, so it needs the map entity first.",
-    openmohaa:
+    "medal-of-honor-allied-assault":
       "The first deployed room pins the proven FFA map and client limit; expose its cvars after the managed host path has had a two-client production test.",
   };
 
