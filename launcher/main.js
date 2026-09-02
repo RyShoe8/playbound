@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, dialog, Tray, Menu, nativeImage, screen, safeStorage, session, Notification } = require("electron");
+const { app, BrowserWindow, globalShortcut, ipcMain, shell, dialog, Tray, Menu, nativeImage, screen, safeStorage, session, Notification } = require("electron");
 
 // GPU Acceleration & Rendering Switches for silky-smooth scrolling on all hardware
 app.commandLine.appendSwitch("enable-gpu-rasterization");
@@ -21,6 +21,7 @@ const { createTelemetry } = require("./telemetry");
 const Platform = require("./platform");
 const GameLauncher = require("./services/GameLauncher");
 const { createManagedJava } = require("./services/ManagedJava");
+const { createLocalServers } = require("./services/localServer");
 const { createManagedDosBox } = require("./services/ManagedDosBox");
 const { createManagedDotNet, requiredDotNetMajor } = require("./services/ManagedDotNet");
 const { createManagedRetroArch } = require("./services/ManagedRetroArch");
@@ -5916,12 +5917,27 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
       dest: downloadPath,
     });
   } catch (err) {
+    /*
+     * A resolver timeout is this machine, not the mirror.
+     *
+     * downloadTo retries each URL and downloadResilientArtifact walks every
+     * source, so EAI_AGAIN surviving to here means nothing resolved at all —
+     * a laptop woken on dead wifi, a VPN mid-handshake. Sending that player
+     * to the game's website is advice they cannot follow either, and it reads
+     * as though we know a mirror is down when we know the opposite.
+     */
+    const message = String(err?.message || err || "");
+    if (/\b(EAI_AGAIN|ENETUNREACH|ENETDOWN)\b/i.test(message)) {
+      throw new Error(
+        `${message}. PlayBound couldn't reach the network — check your connection or VPN, then try again.`
+      );
+    }
     const site = entry.editionLinks?.website || entry.url;
     const hint =
       site && String(site).startsWith("http")
         ? ` Open ${site} if the mirror is down.`
         : "";
-    throw new Error(`${err.message || err}.${hint}`);
+    throw new Error(`${message || err}.${hint}`);
   }
   if (entry.checksumMd5) {
     await verifyChecksumMd5(downloadPath, entry.checksumMd5);
@@ -12140,6 +12156,345 @@ function friendsPopoutOpen() {
   return Boolean(friendsWin && !friendsWin.isDestroyed());
 }
 
+/* ── local dedicated servers ───────────────────────────────── */
+
+const localServers = createLocalServers({
+  onExit: (partyId, code, error) => {
+    console.warn(`[self-host] ${partyId}: server exited (${code})`);
+    void reportSelfHostState(partyId, { ready: false, error });
+  },
+});
+
+/**
+ * Which parties this launcher is hosting a server for.
+ *
+ * Only the leader reconciles — every other member's launcher has nothing to
+ * run — so this is empty on most machines and holds at most one entry on the
+ * host's.
+ */
+const selfHostReconcilers = new Map();
+
+/**
+ * Wait for a spawned server to actually answer on its port.
+ *
+ * A process that started is not a server that is listening — the same reason
+ * the menu-driven self-host path probed rather than trusting the click. Some
+ * dedicated servers load maps for several seconds before they bind.
+ */
+async function waitForLocalListener(port, timeoutMs) {
+  if (!port) return false;
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const ms = await probeServerLatency("127.0.0.1", port, 750);
+    if (Number.isFinite(ms)) return true;
+    await new Promise((resolve) => setTimeout(resolve, 750));
+  }
+  return false;
+}
+
+async function reportSelfHostState(partyId, patch) {
+  try {
+    await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/self-host-server`, {
+      method: "POST",
+      body: patch,
+    });
+  } catch (err) {
+    console.warn(`[self-host] could not report state: ${err.message}`);
+  }
+}
+
+/**
+ * Bring this machine's server in line with what the party asked for.
+ *
+ * Reconciliation rather than commands: the platform writes desired state and a
+ * revision, and this decides how to reach it. There is no way to tell a
+ * dedicated server that took its configuration on the command line to use a
+ * different one, so the process is the unit of change — a revision behind
+ * means respawn.
+ */
+async function reconcileSelfHostServer(partyId) {
+  let desired;
+  try {
+    desired = await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/self-host-server`);
+  } catch (err) {
+    console.warn(`[self-host] could not read desired state: ${err.message}`);
+    return;
+  }
+  if (!desired || desired.error) return;
+
+  if (!desired.shouldRun) {
+    // The party ended or moved off self-hosting. Stopping is part of the loop,
+    // not a special case — a server left running keeps a port and a room alive
+    // that nothing points at any more.
+    if (localServers.stop(partyId)) {
+      void reportSelfHostState(partyId, { ready: false });
+    }
+    stopSelfHostReconciler(partyId);
+    return;
+  }
+
+  const current = localServers.get(partyId);
+  if (current && current.revision >= Number(desired.desiredRevision || 0)) return;
+
+  const slug = String(desired.gameSlug || "");
+  const state = loadState();
+  const game = ensureGameInstallRecord(state[slug]);
+  const entry =
+    catalog.find((e) => e.slug === slug) || bundledCatalog.find((e) => e.slug === slug) || null;
+  const hostLaunch = entry?.hostLaunch || null;
+  const port = Number(hostLaunch?.port) || defaultGamePort(slug) || 0;
+
+  if (!hostLaunch?.argsTemplate?.length) {
+    void reportSelfHostState(partyId, {
+      appliedRevision: Number(desired.desiredRevision || 0),
+      ready: false,
+      error: `PlayBound cannot start a ${entry?.title || slug} server on this PC.`,
+    });
+    stopSelfHostReconciler(partyId);
+    return;
+  }
+
+  const result = localServers.start(partyId, {
+    exe: game?.exe || null,
+    cwd: game?.dir || null,
+    hostLaunch,
+    port,
+    settings: desired.settings || {},
+    revision: Number(desired.desiredRevision || 0),
+  });
+
+  if (result.error) {
+    void reportSelfHostState(partyId, {
+      appliedRevision: Number(desired.desiredRevision || 0),
+      ready: false,
+      error: result.error,
+    });
+    return;
+  }
+
+  /*
+   * Reported ready only once the port answers. A spawned process is not a
+   * server — the same reason the old menu-driven path probed rather than
+   * trusting the click.
+   */
+  const listening = await waitForLocalListener(port, 20_000);
+  void reportSelfHostState(partyId, {
+    appliedRevision: Number(desired.desiredRevision || 0),
+    ready: listening,
+    port,
+    error: listening ? null : "The server did not start listening.",
+  });
+}
+
+/** Poll while this launcher is the host. Cheap, and only on the leader's machine. */
+function startSelfHostReconciler(partyId) {
+  if (selfHostReconcilers.has(String(partyId))) return;
+  const timer = setInterval(() => void reconcileSelfHostServer(partyId), 5000);
+  selfHostReconcilers.set(String(partyId), timer);
+  void reconcileSelfHostServer(partyId);
+}
+
+function stopSelfHostReconciler(partyId) {
+  const timer = selfHostReconcilers.get(String(partyId));
+  if (!timer) return;
+  clearInterval(timer);
+  selfHostReconcilers.delete(String(partyId));
+}
+
+ipcMain.handle("start-self-host-server", (_event, partyId) => {
+  if (!partyId) return { error: "No party" };
+  startSelfHostReconciler(partyId);
+  return { ok: true };
+});
+ipcMain.handle("stop-self-host-server", (_event, partyId) => {
+  localServers.stop(partyId);
+  stopSelfHostReconciler(partyId);
+  return { ok: true };
+});
+
+/* ── in-game overlay ───────────────────────────────────────── */
+
+let overlayWin = null;
+
+/**
+ * Deliberately not Shift+Tab.
+ *
+ * Steam owns that chord in most players' hands, and a launcher that steals it
+ * either does nothing (Steam grabbed it first) or does the wrong thing to
+ * someone reaching for the Steam overlay. Ctrl+` is close by and unclaimed.
+ */
+const DEFAULT_OVERLAY_SHORTCUT = "CommandOrControl+`";
+
+function overlayShortcut() {
+  const configured = String(loadSettings().overlayShortcut || "").trim();
+  return configured || DEFAULT_OVERLAY_SHORTCUT;
+}
+
+/**
+ * An independent always-on-top window, not an injected one.
+ *
+ * A Steam-style injected overlay draws inside the game by hooking its graphics
+ * API, which buys exclusive fullscreen at the cost of per-game breakage,
+ * crashes and anti-cheat exposure. This covers borderless and windowed games —
+ * most of the catalog — with no code in the game's process at all. See
+ * docs/server-control.md.
+ */
+function createOverlayWindow() {
+  if (overlayWin && !overlayWin.isDestroyed()) return overlayWin;
+
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  overlayWin = new BrowserWindow({
+    width: 420,
+    height: Math.min(620, height - 80),
+    x: Math.max(0, width - 460),
+    y: 60,
+    show: false,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    movable: true,
+    // Off the taskbar and the alt-tab list: this is a heads-up display, not a
+    // window someone should have to manage.
+    skipTaskbar: true,
+    alwaysOnTop: true,
+    fullscreenable: false,
+    backgroundColor: "#00000000",
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+  // Above fullscreen windows on macOS too, where "always on top" alone is not.
+  overlayWin.setAlwaysOnTop(true, "screen-saver");
+  overlayWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  overlayWin.loadFile(path.join(__dirname, "renderer", "overlay.html"));
+  overlayWin.on("closed", () => {
+    overlayWin = null;
+  });
+  return overlayWin;
+}
+
+function hideOverlay() {
+  if (overlayWin && !overlayWin.isDestroyed() && overlayWin.isVisible()) {
+    overlayWin.hide();
+  }
+  return { ok: true };
+}
+
+function toggleOverlay() {
+  const win = createOverlayWindow();
+  if (win.isVisible()) {
+    win.hide();
+    return { ok: true, visible: false };
+  }
+  /*
+   * Tell the page it is being opened rather than letting it poll while hidden.
+   * An overlay nobody is looking at should not be asking the server what the
+   * map is every few seconds.
+   */
+  win.webContents.send("overlay-opened");
+  win.showInactive();
+  win.focus();
+  return { ok: true, visible: true };
+}
+
+/**
+ * Bind the toggle, and say so when the OS refuses.
+ *
+ * globalShortcut.register returns false when another application already owns
+ * the chord — it does not throw — so an unchecked call leaves a player pressing
+ * a key that was never bound and no way to find out why.
+ */
+function registerOverlayShortcut() {
+  globalShortcut.unregisterAll();
+  const accelerator = overlayShortcut();
+  try {
+    const bound = globalShortcut.register(accelerator, () => toggleOverlay());
+    if (!bound) {
+      console.warn(`[overlay] ${accelerator} is already taken by another application`);
+      return { ok: false, accelerator, error: "That shortcut is already in use." };
+    }
+    return { ok: true, accelerator };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.warn(`[overlay] could not bind ${accelerator}: ${message}`);
+    return { ok: false, accelerator, error: message };
+  }
+}
+
+/**
+ * What the overlay is looking at.
+ *
+ * Prefers the party for a game that is actually running — an overlay opened
+ * mid-game is about that game — and falls back to the only live party when
+ * there is exactly one. Guessing between several while nothing is running
+ * would put the wrong server's controls under a Restart button.
+ */
+async function overlayContext() {
+  const sync = await launcherJson("/api/party-sync?discoverable=0").catch(() => ({}));
+  const parties = Array.isArray(sync?.myParties) ? sync.myParties : [];
+  const live = parties.filter((p) => p && p.status !== "ended");
+  if (!live.length) return { party: null };
+
+  const running = [...activeLaunches.keys()];
+  const forRunning = live.find((p) => running.includes(String(p.gameSlug)));
+  const party = forRunning || (live.length === 1 ? live[0] : null);
+  if (!party) return { party: null, reason: "several parties are open" };
+  return {
+    party: {
+      id: String(party.id),
+      gameSlug: party.gameSlug || null,
+      gameTitle: party.gameTitle || null,
+      memberCount: Array.isArray(party.members) ? party.members.length : null,
+    },
+  };
+}
+
+ipcMain.handle("toggle-overlay", () => toggleOverlay());
+ipcMain.handle("hide-overlay", () => hideOverlay());
+ipcMain.handle("overlay-context", async () => {
+  try {
+    return await overlayContext();
+  } catch (err) {
+    return { party: null, error: err.message };
+  }
+});
+ipcMain.handle("get-overlay-shortcut", () => ({
+  accelerator: overlayShortcut(),
+  isDefault: overlayShortcut() === DEFAULT_OVERLAY_SHORTCUT,
+}));
+ipcMain.handle("set-overlay-shortcut", (_event, accelerator) => {
+  const settings = loadSettings();
+  const next = String(accelerator || "").trim();
+  if (next) settings.overlayShortcut = next;
+  else delete settings.overlayShortcut;
+  saveSettings(settings);
+  return registerOverlayShortcut();
+});
+
+ipcMain.handle("get-server-settings", async (_event, partyId) => {
+  if (!partyId) return { error: "No party" };
+  try {
+    return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/server-settings`);
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("apply-server-settings", async (_event, partyId, settings) => {
+  if (!partyId) return { error: "No party" };
+  try {
+    return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/server-settings`, {
+      method: "PATCH",
+      body: { settings: settings || {} },
+    });
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
 function openFriendsPopout() {
   if (friendsPopoutOpen()) {
     if (friendsWin.isMinimized()) friendsWin.restore();
@@ -12592,6 +12947,7 @@ if (gotLock) {
     }
     
     createWindow();
+    registerOverlayShortcut();
     if (loadSettings().launcherToken) {
       startLauncherPresenceLoop();
     }
@@ -12645,6 +13001,15 @@ if (gotLock) {
       return;
     }
     if (process.platform !== "darwin") app.quit();
+  });
+
+  /*
+   * A global shortcut outlives the window that registered it, so an unregister
+   * on quit is not optional — Electron warns that leaving one bound can keep
+   * the chord swallowed until the OS notices the process is gone.
+   */
+  app.on("will-quit", () => {
+    globalShortcut.unregisterAll();
   });
 
   app.on("before-quit", () => {

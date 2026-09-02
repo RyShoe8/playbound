@@ -3332,11 +3332,25 @@ async function launchPartyGame(party) {
         const res = await window.playbound.play(slug, peerConnect, edition);
         startGameSession(slug, party.gameTitle || slug);
         if (isLeader && party.hostMode === "self") {
-          const connectMeta = (await window.playbound.getConnectMeta?.(slug)) || {};
-          const listenPort = Number(party.port || catalogGame?.port || connectMeta.defaultPort || 0);
-          if (listenPort > 0 && connectMeta.protocol !== "udp") {
-            void reportSelfHostWhenListening(party, listenPort);
-            setStatus("Game launched — start the server in-game. Party members will unlock automatically.");
+          /*
+           * A game with a dedicated server PlayBound can start gets one, and
+           * the launcher owns it — that is what makes the room controllable
+           * and what removes the wait for someone to click Start Network Game.
+           * Games without a host template keep the old path: launch, then
+           * probe until the player has hosted from the game's own menus.
+           */
+          if (catalogGame?.hostLaunch?.argsTemplate?.length && window.playbound.startSelfHostServer) {
+            await window.playbound.startSelfHostServer(party.id);
+            setStatus("Starting the server on this PC — party members will unlock automatically.");
+          } else {
+            const connectMeta = (await window.playbound.getConnectMeta?.(slug)) || {};
+            const listenPort = Number(
+              party.port || catalogGame?.port || connectMeta.defaultPort || 0
+            );
+            if (listenPort > 0 && connectMeta.protocol !== "udp") {
+              void reportSelfHostWhenListening(party, listenPort);
+              setStatus("Game launched — start the server in-game. Party members will unlock automatically.");
+            }
           }
         }
         maybeShowLaunchGuidance(res, {
