@@ -101,6 +101,22 @@ export async function upsertAutoBugReport(input: AutoBugInput): Promise<void> {
   }
 }
 
+/**
+ * True when a failure says the player's own machine had no network.
+ *
+ * `EAI_AGAIN` is a DNS resolver timeout and `ENETUNREACH`/`ENETDOWN` mean the
+ * stack had no route at all. The launcher retries each mirror and then every
+ * source before it reports, so one of these surviving to telemetry means no
+ * host resolved — a laptop that woke on a dead wifi, a VPN mid-handshake.
+ * Filing that against the game produces a bug nobody can act on, sitting in
+ * Admin under a healthy catalog entry and pointing at an upstream mirror that
+ * was never down. Genuine mirror deaths (HTTP 404, ENOTFOUND on one host,
+ * checksum mismatches) still report.
+ */
+export function isClientNetworkFailure(message: string | null | undefined): boolean {
+  return /\b(EAI_AGAIN|ENETUNREACH|ENETDOWN)\b/i.test(String(message || ""));
+}
+
 /** Map a saved telemetry event into an auto bug when applicable. */
 export async function maybeUpsertAutoBugFromTelemetry(opts: {
   event: string;
@@ -126,6 +142,9 @@ export async function maybeUpsertAutoBugFromTelemetry(opts: {
   // party_failed covers Discord/sync/host/etc — only auto-bug NetBird/LAN.
   if (event === "party_failed" && area !== "lan") return;
 
+  const failureMessage = typeof props.message === "string" ? props.message : null;
+  if (isClientNetworkFailure(failureMessage)) return;
+
   const sourceProp = typeof props.source === "string" ? props.source : "";
   const source: BugReportSource = sourceProp === "website" ? "website" : "launcher";
 
@@ -142,7 +161,7 @@ export async function maybeUpsertAutoBugFromTelemetry(opts: {
     event,
     source,
     code,
-    message: typeof props.message === "string" ? props.message : null,
+    message: failureMessage,
     gameSlug: typeof props.gameSlug === "string" ? props.gameSlug : null,
     editionSlug: typeof props.editionSlug === "string" ? props.editionSlug : null,
     gameTitle: typeof props.gameTitle === "string" ? props.gameTitle : null,
