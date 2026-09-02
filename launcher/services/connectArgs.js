@@ -36,6 +36,26 @@ const CLIENT_CONNECT_ARGS = {
   // Without Game.Mod={mod}, OpenRA starts in modchooser or whatever mod was last open
   // and the handshake fails with "Server is running an incompatible mod".
   openra: ["Game.Mod={mod}", "Launch.Connect={host}:{port}"],
+  // OpenHV is the same engine under a different mod, and its own spawn
+  // recipe passes Game.Mod=hv. Without an entry here a room PlayBound
+  // provisions had no client join at all: the catalog record carries no
+  // connectArgs for it either.
+  openhv: ["Game.Mod=hv", "Launch.Connect={host}:{port}"],
+  // The client takes console commands as argv, quoted as one token.
+  teeworlds: ['"connect {host}:{port}"'],
+  /*
+   * BombSquad prompts for the address in-game — its adapter row says so
+   * with inGameJoinPrompt. Declared null rather than left out, so this
+   * reads as "there is no CLI join" instead of "nobody has got to it".
+   */
+  bombsquad: null,
+  /*
+   * id Tech 3, so the join is the Quake 3 one — which the adapter row has
+   * always declared. It simply never reached this file, and the catalog
+   * record carries no connectArgs either, so a provisioned room could only
+   * be joined by pasting the address in by hand.
+   */
+  "medal-of-honor-allied-assault": ["+connect", "{host}:{port}"],
   openttd: ["-n", "{host}:{port}"],
   luanti: ["--go", "--address", "{host}", "--port", "{port}"],
   // Without --autoconnect the GTK client only pre-fills the connect dialog
@@ -149,6 +169,10 @@ const DEFAULT_GAME_PORTS = {
   opentyrian: 1333,
   openttd: 3979,
   openra: 1234,
+  openhv: 1255,
+  teeworlds: 8303,
+  bombsquad: 43210,
+  "medal-of-honor-allied-assault": 12203,
   luanti: 30000,
   mindustry: 6567,
   // Hedgewars' own default when an hwplay:// URL omits the port.

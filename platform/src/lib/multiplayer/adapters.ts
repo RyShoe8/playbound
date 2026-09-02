@@ -424,6 +424,86 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "Uses Wesnoth's own lobby / wesnothd; not apt-installable on Ubuntu 24.04 VPS.",
   },
 
+  /*
+   * BZFlag was hosted before it was declared.
+   *
+   * It has been in HOSTABLE_GAMES with a spawn recipe and a connect line for a
+   * while, and install.sh both installs `bzflag-server` and masks the distro
+   * unit so PlayBound's rooms own the port. What was missing was this row — so
+   * getMultiplayerAdapter fell through to its synthetic `official` default,
+   * which means "the game's own network stays theirs" and is the opposite of
+   * what actually happens.
+   *
+   * The port is 5155 rather than BZFlag's default 5154 for the same reason the
+   * recipe uses that range: the distro service commonly owns 5154.
+   */
+  bzflag: {
+    gameSlug: "bzflag",
+    title: "BZFlag",
+    tier: "tier2_automated_server",
+    adapterType: "managed-server",
+    protocol: "udp",
+    host: {
+      port: 5155,
+      protocol: "both",
+      binaryHint: "bzfs",
+      // -offa is open free-for-all; +s seeds super flags, -mp caps players.
+      argsTemplate: ["-p", "{port}", "-offa", "-q", "-j", "+r", "+s", "10", "-mp", "8"],
+    },
+    client: {
+      // The client takes the server as a bare positional argument.
+      launchArguments: ["{host}:{port}"],
+    },
+    selfHost: {
+      port: 5155,
+      protocol: "both",
+      verified: true,
+      inGameSteps: [
+        "Host: bzfs ships with the game and the launcher starts it for you.",
+        "Friends: Click Join Game in the launcher.",
+      ],
+    },
+    notes:
+      "bzfs dedicated server, installed on the VPS by install.sh. The client can also start bzfs itself, which is why self-hosting is offered.",
+  },
+
+  /*
+   * Teeworlds: the agent has always known how to spawn it.
+   *
+   * recipes.js writes a full config file for Teeworlds — name, map, gametype,
+   * client cap, score and time limits — and settings.ts declares all six. None
+   * of it was reachable, because the slug was absent from HOSTABLE_GAMES and
+   * had no adapter row, so Connect treated it as `official` and never asked for
+   * a room. This declares what the agent could already do.
+   *
+   * The VPS needs `teeworlds-server` installed before a room will actually
+   * spawn; install.sh now asks for it, so the box needs that script re-run.
+   */
+  teeworlds: {
+    gameSlug: "teeworlds",
+    title: "Teeworlds",
+    tier: "tier2_automated_server",
+    adapterType: "managed-server",
+    protocol: "udp",
+    host: {
+      port: 8303,
+      protocol: "udp",
+      binaryHint: "teeworlds_srv",
+      /*
+       * No argsTemplate on purpose. Teeworlds is configured by a file the
+       * recipe writes rather than by argv, so there is nothing for a local
+       * launcher to template — and buildServerArgs returning null is how the
+       * launcher declines to start one on a player's PC.
+       */
+    },
+    client: {
+      // The client takes console commands as argv; "connect" is one of them.
+      launchArguments: ['"connect {host}:{port}"'],
+    },
+    notes:
+      "Dedicated teeworlds_srv on the VPS, configured through a generated .cfg. Client joins with a quoted connect command.",
+  },
+
   openarena: {
     gameSlug: "openarena",
     title: "OpenArena",

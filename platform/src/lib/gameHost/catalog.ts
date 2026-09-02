@@ -109,6 +109,13 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     portEnd: 5174,
     protocol: "both",
   },
+  teeworlds: {
+    slug: "teeworlds",
+    title: "Teeworlds",
+    defaultPort: 8303,
+    portEnd: 8323,
+    protocol: "udp",
+  },
   supertuxkart: {
     slug: "supertuxkart",
     title: "SuperTuxKart",
