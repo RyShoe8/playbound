@@ -75,3 +75,26 @@ describe("every hostable game is declared all the way down", () => {
     ).toEqual([]);
   });
 });
+
+/**
+ * install.sh copies the agent file by file rather than by glob, so a module
+ * added to the agent is invisible to a deploy until someone remembers to list
+ * it — and the agent then dies at startup on an import of a file that is not
+ * there. rcon.js shipped exactly that way and would have taken the game host
+ * down on the next install.
+ */
+describe("the agent deploy carries every file the agent imports", () => {
+  it("lists each of index.js's local imports in install.sh", () => {
+    const agent = source("../../../game-host/index.js");
+    const installer = source("../../../game-host/install.sh");
+    const imports = [
+      ...new Set([...agent.matchAll(/from "\.\/([a-zA-Z0-9_.-]+)"/g)].map((m) => m[1])),
+    ];
+    expect(imports.length, "no local imports found — the regex has drifted").toBeGreaterThan(3);
+    const missing = imports.filter((f) => !installer.includes(`AGENT_SRC/${f}`));
+    expect(
+      missing,
+      `imported by the agent but never copied to the VPS: ${missing.join(", ")}`
+    ).toEqual([]);
+  });
+});
