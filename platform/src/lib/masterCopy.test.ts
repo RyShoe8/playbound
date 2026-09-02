@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
 import type { Game } from "@/lib/data/types";
-import { gamesRequiringMaster, masterCopyUnlocksEmpty, toLauncherUnlocks } from "./masterCopy";
+import {
+  alternateEditionsUnlockedByMaster,
+  gamesRequiringMaster,
+  masterCopyUnlocksEmpty,
+  toLauncherUnlocks,
+} from "./masterCopy";
+import type { Edition } from "./editionTypes";
 
 function game(partial: Partial<Game> & Pick<Game, "slug">): Game {
   return {
@@ -73,6 +79,17 @@ describe("masterCopyUnlocksEmpty", () => {
     expect(
       masterCopyUnlocksEmpty({ games: [game({ slug: "keeperfx" })], editions: [], mods: [] })
     ).toBe(false);
+  });
+});
+
+describe("alternateEditionsUnlockedByMaster", () => {
+  it("does not repeat the generated Official fallback as an unlocked edition", () => {
+    const generatedOfficial = { slug: "official", name: "Official", virtual: true } as Edition;
+    const storedAlternate = { slug: "open-engine", name: "Open Engine", virtual: false } as Edition;
+
+    expect(alternateEditionsUnlockedByMaster([generatedOfficial, storedAlternate])).toEqual([
+      storedAlternate,
+    ]);
   });
 });
 

@@ -72,6 +72,17 @@ export function masterCopyUnlocksEmpty(unlocks: MasterCopyUnlocks): boolean {
 }
 
 /**
+ * A master's generated Official edition is only a compatibility fallback for
+ * games without stored editions. The master-copy page already represents that
+ * base game, so repeating the fallback under "What this copy unlocks" makes it
+ * look like a second install choice. Only real, stored alternate editions
+ * belong in that section.
+ */
+export function alternateEditionsUnlockedByMaster(editions: Edition[]): Edition[] {
+  return editions.filter((edition) => !edition.virtual);
+}
+
+/**
  * Reverse of Requires: published games that need this copy, those games'
  * public choosable editions and mods, plus mods whose base game is the master.
  */
@@ -113,7 +124,7 @@ export async function listUnlockedByMaster(
    */
   if (master) {
     const ownEditions = await listPublicEditionsForGame(master);
-    for (const edition of ownEditions) {
+    for (const edition of alternateEditionsUnlockedByMaster(ownEditions)) {
       editions.push({ game: master, edition });
     }
   }
