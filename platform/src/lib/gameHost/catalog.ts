@@ -53,9 +53,9 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     portEnd: 6587,
     protocol: "both",
   },
-  openmohaa: {
-    slug: "openmohaa",
-    title: "OpenMOHAA",
+  "medal-of-honor-allied-assault": {
+    slug: "medal-of-honor-allied-assault",
+    title: "Medal of Honor: Allied Assault / OpenMOHAA",
     defaultPort: 12203,
     portEnd: 12222,
     protocol: "udp",
@@ -248,6 +248,7 @@ export const HOSTABLE_SLUGS = Object.keys(HOSTABLE_GAMES);
  */
 const HOSTABLE_SLUG_ALIASES: Record<string, string> = {
   "0ad": "0-ad",
+  openmohaa: "medal-of-honor-allied-assault",
   etlegacy: "wolfenstein-enemy-territory",
   tf2: "team-fortress-2",
   cs2: "counter-strike-2",

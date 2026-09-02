@@ -46,6 +46,7 @@ describe("game host catalog", () => {
      */
     expect(isHostableGame("0-ad")).toBe(true);
     expect(isHostableGame("0ad")).toBe(true);
+    expect(getHostableGame("openmohaa")?.slug).toBe("medal-of-honor-allied-assault");
   });
 
   it("does not host closed platforms or lobby-only titles", () => {

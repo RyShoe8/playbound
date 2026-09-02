@@ -101,7 +101,11 @@ describe("PlayBound Multiplayer Adapter Framework", () => {
         game.features?.some((feature) => /multiplayer|co-op/i.test(feature))
     );
     const missing = multiplayer
-      .filter((game) => !MULTIPLAYER_ADAPTERS[game.slug])
+      .filter(
+        (game) =>
+          !MULTIPLAYER_ADAPTERS[game.slug] &&
+          getMultiplayerAdapter(game.slug).gameSlug === game.slug
+      )
       .map((game) => game.slug);
 
     expect(missing).toEqual([]);

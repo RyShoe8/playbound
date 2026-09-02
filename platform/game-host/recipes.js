@@ -307,7 +307,7 @@ export const recipes = {
       );
     },
   },
-  openmohaa: {
+  "medal-of-honor-allied-assault": {
     portStart: 12203,
     portEnd: 12222,
     protocol: "udp",
@@ -977,7 +977,7 @@ export function listGameHostStatus() {
         ready = false;
       }
     }
-    if (slug === "openmohaa" && hasBinary) {
+    if (slug === "medal-of-honor-allied-assault" && hasBinary) {
       ready = fs.existsSync(path.join(GAMES_ROOT, "openmohaa", "main", "Pak0.pk3"));
     }
     out[slug] = { installed: hasBinary, ready };
