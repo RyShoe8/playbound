@@ -91,6 +91,28 @@ fi
 # ":i386" package could not be resolved at all. And libtinfo5/libncurses5
 # were asked for as amd64, which is not the arch that needs them — and which
 # noble does not carry either way, having moved to ncurses 6.
+echo "==> Battle for Wesnoth server config (accept the whole 1.18 series)"
+WESNOTH_DIR="$GAMES_DIR/battle-for-wesnoth"
+mkdir -p "$WESNOTH_DIR"
+#
+# wesnothd's versions_accepted defaults to its own exact version, so a 1.18.5
+# server refuses a 1.18.7 client over a point release — the room starts and
+# nobody can join, which is precisely how Warzone was failing. Widening it to
+# the series is what lets any 1.18.x client in, and it costs nothing when the
+# versions happen to agree.
+#
+cat > "$WESNOTH_DIR/wesnothd.cfg" <<'WESNOTHCFG'
+# Managed by PlayBound install.sh — edits here are overwritten.
+#
+# Our clients install whatever 1.18.x the catalog points at, and the packaged
+# server is whatever the distro or PPA last shipped. Those drift apart by
+# point releases constantly, and wesnothd's default is to accept only its own
+# exact version, so this widens it to the series. Crossing a series boundary
+# (1.16 to 1.18) genuinely is incompatible and is deliberately not allowed.
+versions_accepted="1.18.*"
+WESNOTHCFG
+echo "  wrote $WESNOTH_DIR/wesnothd.cfg (versions_accepted=1.18.*)"
+
 echo "==> SteamCMD / SRCDS 32-bit runtime"
 dpkg --add-architecture i386
 apt-get update -y
