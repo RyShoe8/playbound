@@ -1249,7 +1249,101 @@ body {
 .server-meta {
   font-size: 11px;
   color: var(--text-dim);
-  margin-top: 2px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.server-ip-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: text !important;
+}
+
+.server-ip-copy-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-main);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.server-ip-copy-btn .server-ip-copy-badge {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0 4px;
+  border-radius: 3px;
+  color: var(--text-dim);
+  pointer-events: none;
+}
+
+.server-ip-copy-btn:hover .server-ip-copy-badge {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.server-ip-copy-btn.copied {
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.server-ip-copy-btn.copied .server-ip-copy-badge {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.party-server-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  font-size: 12px;
+  margin: 4px 0;
+  width: fit-content;
+}
+
+.party-server-label {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.party-server-addr-val {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 600;
+  color: var(--text-main);
+  user-select: text !important;
+}
+
+.copy-server-ip-btn {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.copy-server-ip-btn:hover {
+  background: rgba(59, 130, 246, 0.25);
+  color: #93c5fd;
 }
 
 .ping-cell {

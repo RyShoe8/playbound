@@ -1751,6 +1751,33 @@ function buildPartyViewHtml(party) {
         )}</span>${copyErrorBadge(hosted.error || "Could not start the PlayBound server.")}</p>`
       : "";
 
+  const hostedAddr = hosted.host ? `${hosted.host}:${hosted.port}` : "";
+  const isHurryCurry = String(party.gameSlug || "").toLowerCase() === "hurry-curry";
+  const hurryCurryAddr = isHurryCurry && hostedAddr ? `ws://${hostedAddr}` : hostedAddr;
+  const copyAddr = isHurryCurry ? hurryCurryAddr : hostedAddr;
+  const hostedReadyHtml =
+    hosted.enabled && hosted.status === "ready" && hostedAddr
+      ? `<div class="party-server-info">
+           <span class="party-server-label">Server IP:</span>
+           <span class="party-server-addr-val">${escapeHtml(copyAddr)}</span>
+           <button type="button" class="copy-server-ip-btn" data-action="copy-party-server" data-addr="${escapeHtml(
+             copyAddr
+           )}" title="Click to copy server IP">Copy IP</button>
+         </div>`
+      : "";
+
+  const publicAddr = publicPicked?.host ? `${publicPicked.host}:${publicPicked.port}` : "";
+  const publicReadyHtml =
+    party.hostMode === "public" && publicAddr
+      ? `<div class="party-server-info">
+           <span class="party-server-label">Server IP:</span>
+           <span class="party-server-addr-val">${escapeHtml(publicAddr)}</span>
+           <button type="button" class="copy-server-ip-btn" data-action="copy-party-server" data-addr="${escapeHtml(
+             publicAddr
+           )}" title="Click to copy server IP">Copy IP</button>
+         </div>`
+      : "";
+
   const lanNoteHtml =
     lan.enabled && lan.status === "pending"
       ? `<p class="view-sub party-inline-note">Setting up the party network…</p>`
@@ -1861,6 +1888,8 @@ function buildPartyViewHtml(party) {
           <div class="party-actions-group">
             ${readyHtml}
             ${joinGameHtml}
+            ${hostedReadyHtml}
+            ${publicReadyHtml}
             ${hostedNoteHtml}
             ${lanNoteHtml}
             ${playingPillHtml}
@@ -2850,6 +2879,21 @@ function wirePartyView(slot, party) {
     });
   });
 
+  slot.querySelectorAll("[data-action='copy-party-server']").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const addr = btn.dataset.addr || "";
+      if (!addr) return;
+      void (window.playbound?.clipboardWrite?.(addr) || navigator.clipboard?.writeText?.(addr));
+      const orig = btn.textContent;
+      btn.textContent = "Copied!";
+      setStatus(`Copied server address ${addr}`);
+      setTimeout(() => {
+        if (btn.textContent === "Copied!") btn.textContent = orig;
+      }, 2000);
+    });
+  });
+
   const voiceBtn = slot.querySelector("#btn-party-voice");
   if (voiceBtn) {
     voiceBtn.addEventListener("click", () => {
@@ -3199,8 +3243,14 @@ async function launchPartyGame(party) {
            * failed auto-connect, so hand the player the address instead.
            */
           if (res?.manualConnect) {
-            void window.playbound.clipboardWrite?.(address);
-            setStatus(`Copied ${address} — join it from the game's multiplayer menu.`);
+            const isHurry = String(slug || "").toLowerCase() === "hurry-curry";
+            const toCopy = isHurry ? `ws://${address}` : address;
+            void window.playbound.clipboardWrite?.(toCopy);
+            if (isHurry) {
+              setStatus(`Copied ${toCopy} — paste it into Hurry Curry's server address field.`);
+            } else {
+              setStatus(`Copied ${toCopy} — join it from the game's multiplayer menu.`);
+            }
           } else {
             const steps =
               Array.isArray(hosted.steps) && hosted.steps.length
