@@ -268,5 +268,11 @@ contextBridge.exposeInMainWorld("playbound", {
   onUpdateStatus: (cb) => ipcRenderer.on("update-status", (_event, data) => cb(data || {})),
   onGameExited: (cb) => ipcRenderer.on("game-exited", (_event, data) => cb(data || {})),
   onGameStarted: (cb) => ipcRenderer.on("game-started", (_event, data) => cb(data || {})),
+  /*
+   * The machine has been left alone, or picked back up. Consumed by pollGate
+   * so an unattended launcher stops asking the server for updates nobody is
+   * there to read.
+   */
+  onSystemIdle: (cb) => ipcRenderer.on("system-idle", (_event, data) => cb(Boolean(data?.idle))),
   onNavigate: (cb) => ipcRenderer.on("navigate", (_event, data) => cb(data || {})),
 });

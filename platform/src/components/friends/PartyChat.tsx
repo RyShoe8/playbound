@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MessageCircle, Send } from "lucide-react";
 import { CADENCE } from "@/lib/realtime/cadence";
+import { useVisiblePolling } from "@/hooks/useVisiblePolling";
 import { DiscordLinkPrompt } from "@/components/friends/DiscordLinkPrompt";
 
 type ChatMessage = {
@@ -52,9 +53,11 @@ export function PartyChat({
 
   useEffect(() => {
     void load();
-    const timer = setInterval(() => void load(lastIdRef.current), CADENCE.partyChatPollMs);
-    return () => clearInterval(timer);
   }, [load]);
+
+  // Chat is the fastest poll on the page. A hidden tab does not need it, and a
+  // returning one wants it now rather than up to a tick late.
+  useVisiblePolling(() => load(lastIdRef.current), CADENCE.partyChatPollMs);
 
   useEffect(() => {
     const el = scroller.current;

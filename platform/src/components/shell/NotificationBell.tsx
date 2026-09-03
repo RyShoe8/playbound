@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { Bell } from "lucide-react";
 import { CADENCE } from "@/lib/realtime/cadence";
+import { useVisiblePolling } from "@/hooks/useVisiblePolling";
 import { useFriendsStore } from "@/stores/friendsStore";
 import { LocalTime } from "@/components/LocalTime";
 
@@ -119,13 +120,25 @@ export function NotificationBell() {
     }
     startPolling(30000);
     const kickoff = window.setTimeout(() => void refresh(false), 0);
-    const t = setInterval(() => void refresh(openRef.current), CADENCE.notificationPollMs);
     return () => {
       clearTimeout(kickoff);
-      clearInterval(t);
       stopPolling();
     };
   }, [status, startPolling, stopPolling, refresh]);
+
+  /*
+   * The bell sits in the shell, so it polls on every page for as long as the
+   * tab exists — including tabs nobody has looked at since this morning. It
+   * was the single largest source of idle traffic on the site: one request
+   * every 10s forever, each one an auth lookup plus its reads. Gating on
+   * visibility leaves an open tab costing nothing until it is looked at, and
+   * the refresh on becoming visible means the count is right by the time the
+   * user can read it.
+   */
+  useVisiblePolling(
+    () => refresh(openRef.current),
+    status === "authenticated" ? CADENCE.notificationPollMs : null
+  );
 
   useEffect(() => {
     if (!open) return;

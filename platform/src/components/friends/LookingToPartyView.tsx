@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { Gamepad2, LogIn, Users } from "lucide-react";
 import { Avatar } from "@/components/ui/bits";
 import { CreatePartyPanel } from "@/components/friends/CreatePartyPanel";
+import { useVisiblePolling } from "@/hooks/useVisiblePolling";
+
+/** Presence entries carry an hour's TTL; half a minute is fresh enough. */
+const LFG_POLL_MS = 30_000;
 
 type LookingPlayer = {
   id: string;
@@ -59,30 +63,28 @@ export function LookingToPartyView() {
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (status !== "authenticated") return;
-    let cancelled = false;
-    const load = () => {
-      fetch("/api/presence/lfg/list")
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (cancelled) return;
-          if (Array.isArray(data?.players)) setPlayers(data.players);
-          setLoading(false);
-        })
-        .catch(() => {
-          if (!cancelled) setLoading(false);
-        });
-    };
-    load();
-    // The flag has an hour's TTL and people come and go, so keep it fresh at
-    // the same cadence the friends page polls presence.
-    const timer = setInterval(load, 30000);
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-    };
+    fetch("/api/presence/lfg/list")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data?.players)) setPlayers(data.players);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, [status]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  /*
+   * The flag has an hour's TTL and people come and go, so keep it fresh — but
+   * only while somebody is looking at the list. This is a page people leave
+   * open in a background tab waiting for a friend to appear, which is exactly
+   * the case that was polling all day for nobody.
+   */
+  useVisiblePolling(load, status === "authenticated" ? LFG_POLL_MS : null);
 
   if (status === "loading") {
     return <div className="animate-pulse text-muted-foreground">Loading…</div>;

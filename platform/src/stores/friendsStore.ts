@@ -74,6 +74,31 @@ type FriendsState = {
   stopRequestsPolling: () => void;
 };
 
+/*
+ * Both store polls run for as long as a subscriber is mounted, which for the
+ * requests badge means every authenticated page for the life of the tab. A tab
+ * nobody is looking at does not need either: the tick is skipped while the
+ * document is hidden, and becoming visible refetches immediately so the badge
+ * is right by the time it can be read.
+ */
+function documentHidden() {
+  return typeof document !== "undefined" && document.visibilityState === "hidden";
+}
+
+/**
+ * Catch up the moment the tab is looked at again, so a skipped tick never
+ * shows as a stale badge. Installed once, on the first poller to start, and
+ * left in place — it does nothing while no poll is subscribed.
+ */
+let visibilityHooked = false;
+function hookVisibilityCatchUp(refetch: () => void) {
+  if (visibilityHooked || typeof document === "undefined") return;
+  visibilityHooked = true;
+  document.addEventListener("visibilitychange", () => {
+    if (!documentHidden()) refetch();
+  });
+}
+
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 let pollSubscribers = 0;
 
@@ -270,7 +295,16 @@ export const useFriendsStore = create<FriendsState>((set, get) => ({
     get().fetchRequests();
     if (pollInterval) return;
 
+    hookVisibilityCatchUp(() => {
+      if (pollSubscribers > 0) {
+        get().fetchFriends();
+        get().fetchRequests();
+      } else if (requestsPollSubscribers > 0) {
+        get().fetchRequests();
+      }
+    });
     pollInterval = setInterval(() => {
+      if (documentHidden()) return;
       get().fetchFriends();
       get().fetchRequests();
     }, intervalMs);
@@ -289,7 +323,16 @@ export const useFriendsStore = create<FriendsState>((set, get) => ({
     get().fetchRequests();
     if (requestsPollInterval) return;
 
+    hookVisibilityCatchUp(() => {
+      if (pollSubscribers > 0) {
+        get().fetchFriends();
+        get().fetchRequests();
+      } else if (requestsPollSubscribers > 0) {
+        get().fetchRequests();
+      }
+    });
     requestsPollInterval = setInterval(() => {
+      if (documentHidden()) return;
       get().fetchRequests();
     }, intervalMs);
   },
