@@ -666,6 +666,14 @@ if [[ "$HC_NEEDS_BUILD" -eq 1 ]]; then
     rm -rf "$TMP_BUILD"
   fi
 fi
+
+if [[ ! -d "$HC_DIR/data" ]]; then
+  echo "Fetching Hurry Curry game data..."
+  if curl -fL --retry 3 -o /tmp/hc-data.zip "https://hurrycurry-download.metamuffin.org/data.zip"; then
+    unzip -qo /tmp/hc-data.zip -d "$HC_DIR" || true
+    rm -f /tmp/hc-data.zip
+  fi
+fi
 chown -R playbound:playbound "$HC_DIR"
 
 echo "==> firewall"
