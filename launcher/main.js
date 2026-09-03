@@ -422,11 +422,55 @@ function pathUnderRoot(candidate, root) {
   return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
 }
 
+/**
+ * Directories someone explicitly pointed the launcher at.
+ *
+ * allowedExecutableRoots exists to stop the launcher spawning whatever a
+ * catalog row or a drive scan happens to name, which is worth keeping. But a
+ * path chosen in an OS file picker is not a guess — it is a person saying
+ * "the game is here", and refusing it made Locate useless for anyone who does
+ * not install to the default folder. Red Eclipse in D:\Games located fine and
+ * then failed to launch with "Executable path is outside allowed install
+ * locations", which reads as a bug in the game rather than a rule about paths.
+ *
+ * The directory is remembered rather than the file, because a game rarely
+ * launches the exe you pointed at — bootstrappers, edition binaries and mod
+ * loaders all live beside it. A filesystem root is never remembered: picking
+ * D:\game.exe must not trust the whole drive, so that case stores the exact
+ * file instead.
+ */
+function rememberLocatedRoot(exePath) {
+  try {
+    const full = normalizeFsPath(exePath);
+    if (!full) return;
+    const isMacApp = process.platform === "darwin" && full.endsWith(".app");
+    const dir = isMacApp ? full : path.dirname(full);
+    const root = path.parse(dir).root;
+    // A bare drive root would trust everything on the disk; allow just this file.
+    const remembered = !dir || dir === root ? full : dir;
+
+    const settings = loadSettings();
+    const existing = Array.isArray(settings.locatedRoots) ? settings.locatedRoots : [];
+    if (existing.some((entry) => pathUnderRoot(remembered, entry))) return;
+    // A newly chosen parent supersedes anything it contains.
+    const next = existing.filter((entry) => !pathUnderRoot(entry, remembered));
+    next.push(remembered);
+    settings.locatedRoots = next.slice(-50);
+    saveSettings(settings);
+  } catch (err) {
+    // A launch must never fail because a preference would not save.
+    console.warn("[locate] could not remember install location:", err?.message || err);
+  }
+}
+
 /** Roots where catalog knownExePaths / located installs may live. */
 function allowedExecutableRoots() {
   const roots = [];
   try {
-    roots.push(loadSettings().gamesDir || DEFAULT_GAMES_DIR);
+    const settings = loadSettings();
+    roots.push(settings.gamesDir || DEFAULT_GAMES_DIR);
+    // Folders a person picked in the file dialog. See rememberLocatedRoot.
+    if (Array.isArray(settings.locatedRoots)) roots.push(...settings.locatedRoots);
   } catch {
     roots.push(DEFAULT_GAMES_DIR);
   }
@@ -6746,6 +6790,7 @@ async function locateGameExecutable(slug) {
       exe = parts.slice(0, appIdx + 1).join(path.sep);
     }
   }
+  rememberLocatedRoot(exe);
   return markInstalledFromExe(slug, entry, exe, "located");
 }
 
@@ -6778,6 +6823,10 @@ async function addCustomGameExecutable(customTitle = null) {
       exe = parts.slice(0, appIdx + 1).join(path.sep);
     }
   }
+
+  // Same reason as Locate: a custom game is a folder someone chose, and it is
+  // almost never inside the default install directory.
+  rememberLocatedRoot(exe);
 
   const baseName = path.basename(exe, path.extname(exe));
   const rawTitle =
@@ -7695,6 +7744,15 @@ async function playGameInner(slug, join = null, editionSlug = null) {
       code = "SHELL_LAUNCH_BLOCKED";
     } else if (/outside allowed install locations/i.test(rawMessage)) {
       code = "SPAWN_PATH_DENIED";
+      /*
+       * Reached by installs located before the launcher started remembering
+       * the folders people pick. The original wording described a rule and
+       * offered no way out of it, which reads as the game being broken. Using
+       * Locate again is a single click and now records the folder for good.
+       */
+      message =
+        "PlayBound does not recognise this install folder. Click Locate and pick the game's " +
+        "executable again — that tells PlayBound the folder is yours and it will be remembered.";
     } else if (err?.code === "DOSBOX_MISSING" || err?.code === "DOS_EXECUTABLE" || /DOS-era \(16-bit\)/i.test(rawMessage)) {
       code = err?.code === "DOSBOX_MISSING" ? "DOSBOX_MISSING" : "DOS_EXECUTABLE";
       message = rawMessage.includes("Couldn't install DOSBox")
