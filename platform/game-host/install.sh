@@ -628,11 +628,42 @@ chown -R playbound:playbound "$FREEDOOM_DIR"
 echo "==> Hurry Curry dedicated server"
 HC_DIR="$GAMES_DIR/hurry-curry"
 mkdir -p "$HC_DIR"
-if [[ ! -x "$HC_DIR/hurrycurry-server" && ! -x "/usr/bin/hurrycurry-server" ]]; then
-  HC_URL="${HURRY_CURRY_SERVER_URL:-https://hurrycurry-download.metamuffin.org/server-x86_64-unknown-linux-gnu}"
-  echo "Fetching Hurry Curry dedicated server..."
-  if curl -fL --retry 3 -o "$HC_DIR/hurrycurry-server" "$HC_URL"; then
-    chmod +x "$HC_DIR/hurrycurry-server"
+
+HC_NEEDS_BUILD=1
+if [[ -x "$HC_DIR/hurrycurry-server" ]]; then
+  if "$HC_DIR/hurrycurry-server" --help >/dev/null 2>&1; then
+    HC_NEEDS_BUILD=0
+  else
+    echo "  existing hurrycurry-server binary is incompatible with host glibc"
+  fi
+fi
+
+if [[ "$HC_NEEDS_BUILD" -eq 1 ]]; then
+  echo "Building Hurry Curry server for Ubuntu host..."
+  if command -v docker >/dev/null 2>&1 && systemctl is-active --quiet docker; then
+    docker run --rm -v "$HC_DIR:/out" rust:1-bookworm sh -c "
+      git clone --depth 1 https://codeberg.org/hurrycurry/hurrycurry /build &&
+      cd /build &&
+      cargo build --release --bin hurrycurry-server &&
+      cp target/release/hurrycurry-server /out/hurrycurry-server &&
+      chmod 755 /out/hurrycurry-server
+    " || true
+  fi
+
+  if [[ ! -x "$HC_DIR/hurrycurry-server" ]] || ! "$HC_DIR/hurrycurry-server" --help >/dev/null 2>&1; then
+    if ! command -v cargo >/dev/null 2>&1; then
+      apt-get install -y --no-install-recommends cargo rustc libssl-dev pkg-config || true
+    fi
+    TMP_BUILD="/tmp/hurrycurry-build-$$"
+    rm -rf "$TMP_BUILD"
+    if git clone --depth 1 https://codeberg.org/hurrycurry/hurrycurry "$TMP_BUILD"; then
+      (cd "$TMP_BUILD" && cargo build --release --bin hurrycurry-server) || true
+      if [[ -x "$TMP_BUILD/target/release/hurrycurry-server" ]]; then
+        cp -f "$TMP_BUILD/target/release/hurrycurry-server" "$HC_DIR/hurrycurry-server"
+        chmod 755 "$HC_DIR/hurrycurry-server"
+      fi
+    fi
+    rm -rf "$TMP_BUILD"
   fi
 fi
 chown -R playbound:playbound "$HC_DIR"
