@@ -1029,7 +1029,8 @@ async function renderGameDetailView(slug, opts = {}) {
     installingKeys.add(lockKey);
     const btn = document.getElementById("install-tab-install");
     if (btn) btn.disabled = true;
-    setStatus("Starting install...");
+    setStatus("Starting install…");
+    setProgress("indeterminate");
     try {
       cacheInvalidate(`game:${slug}`);
       cacheInvalidate(`editions:${slug}`);
@@ -1667,7 +1668,15 @@ async function renderGameDetailView(slug, opts = {}) {
     let installBtnLabel = choosable ? "Choose an edition" : "Install Game";
     let installBtnClass = "btn-primary";
     if (activeInstall) {
-      installBtnLabel = `⚡ Installing${activeInstall.pct ? ` (${activeInstall.pct}%)` : "…"}`;
+      const verb =
+        activeInstall.phase === "extracting"
+          ? "Unpacking"
+          : activeInstall.phase === "downloading"
+          ? "Downloading"
+          : activeInstall.phase === "resolving"
+          ? "Preparing"
+          : "Installing";
+      installBtnLabel = `⚡ ${verb}${activeInstall.pct ? ` (${activeInstall.pct}%)` : "…"}`;
       installBtnClass = "btn-primary btn-install-active";
     } else if (queuedInstall) {
       installBtnLabel = `⚡ Queued (#${queuedInstall.queuePosition || 1} in queue)`;
@@ -2777,7 +2786,8 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
     installingKeys.add(lockKey);
     const btn = document.getElementById("edition-install") || document.getElementById("install-tab-install-btn");
     if (btn) btn.disabled = true;
-    setStatus("Starting install...");
+    setStatus("Starting install…");
+    setProgress("indeterminate");
     try {
       cacheInvalidate(`game:${gameSlug}`);
       cacheInvalidate(`editions:${gameSlug}`);

@@ -2965,6 +2965,8 @@ async function downloadTo(url, dest, attempts = 3) {
       const reader = res.body.getReader();
       let received = 0;
       let lastSent = 0;
+      // Emit initial download progress immediately so UI updates right away
+      sendProgress({ phase: "downloading", received: 0, total });
       /*
        * Per attempt, not per call: a retry restarts the file at zero, and the
        * meter has to forget the previous attempt or it reports a rate computed
@@ -3655,10 +3657,15 @@ async function extractArchive(archivePath, destDir) {
   await fsp.mkdir(destDir, { recursive: true });
   if (lower.endsWith(".dmg")) {
     await extractDmg(archivePath, destDir);
-  } else if (lower.endsWith(".7z") || lower.endsWith(".rar")) {
-    await extract7z(archivePath, destDir, (pct) =>
-      sendProgress({ phase: "extracting", pct })
-    );
+  } else if (sevenZipBinary()) {
+    try {
+      await extract7z(archivePath, destDir, (pct) =>
+        sendProgress({ phase: "extracting", pct })
+      );
+    } catch (err) {
+      console.warn("[7z] extract failed, falling back to system unzipper:", err?.message || err);
+      await extractZip(archivePath, destDir);
+    }
   } else if (lower.endsWith(".tar.gz") || lower.endsWith(".tgz") || lower.endsWith(".tar.xz")) {
     if (process.platform === "win32") {
       throw new Error("tar archives are not supported on Windows installs");
@@ -5719,6 +5726,12 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
     activeInstallTask = task;
     activeDownloadSignal = abortController.signal;
     broadcastInstallQueue();
+    sendProgress({
+      phase: "resolving",
+      slug,
+      title,
+      message: `Installing ${title}…`,
+    });
 
     try {
       const result = await installGameInner(slug, targetDir, editionSlug, selectedAddons);

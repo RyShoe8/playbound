@@ -601,15 +601,23 @@ function wireMainEvents() {
 
     if (phase === "resolving") {
       // Finding the release, following redirects, sometimes waiting on an
-      // upstream that is simply slow. Silent until it resolves.
+      // upstream that is simply slow. Keep the user informed with animated bar.
       tickPhase(phaseStartedAt, withElapsed(`${titlePrefix}Finding the download…`));
+      setProgress("indeterminate");
     } else if (phase === "queued") {
       // No bar: this install has not started and has no progress of its own.
       setStatus(message || `${titlePrefix}Queued — waiting for current install to finish…`);
       setProgress(null);
-    } else if (phase === "java") setStatus(message || "Installing Java…");
-    else if (phase === "dosbox") setStatus(message || "Installing DOSBox…");
-    else if (phase === "downloading") {
+    } else if (phase === "java") {
+      setStatus(message || "Installing Java…");
+      setProgress("indeterminate");
+    } else if (phase === "dosbox") {
+      setStatus(message || "Installing DOSBox…");
+      setProgress("indeterminate");
+    } else if (phase === "retroarch") {
+      setStatus(message || "Installing RetroArch runtime…");
+      setProgress("indeterminate");
+    } else if (phase === "downloading") {
       const pct = total ? Math.round((received / total) * 100) : null;
       const prefix = addon ? `Downloading ${addon}` : "Downloading";
       const size = `${fmtBytes(received)}${total ? ` of ${fmtBytes(total)} (${pct}%)` : ""}`;
@@ -617,14 +625,8 @@ function wireMainEvents() {
       // samples to mean something. Until then the bytes carry it.
       const detail = [size, fmtRate(bytesPerSecond), fmtEta(etaMs)].filter(Boolean).join(" · ");
       setStatus(`${titlePrefix}${prefix} ${detail}${queuedText}`);
-      setProgress(pct);
+      setProgress(pct != null ? pct : "indeterminate");
     } else if (phase === "extracting") {
-      /*
-       * 7-Zip reports a real percentage, so .7z and .rar get a moving bar. Zip
-       * goes through Expand-Archive, which reports nothing — that one falls
-       * back to the clock, which is still the difference between "slow" and
-       * "hung".
-       */
       const what = addon ? addon : "game files";
       if (data.pct != null) {
         stopPhaseTicker();
@@ -641,10 +643,10 @@ function wireMainEvents() {
       // Someone has a setup window open in front of them; the clock says how
       // long PlayBound has been waiting on it.
       tickPhase(phaseStartedAt, withElapsed(addon || `${titlePrefix}Waiting for the installer…`));
-      setProgress(null);
+      setProgress("indeterminate");
     } else if (phase === "installing-base") {
       tickPhase(phaseStartedAt, withElapsed(`${titlePrefix}Installing the base game first…`));
-      setProgress(null);
+      setProgress("indeterminate");
     } else if (phase === "done") {
       setStatus(`${titlePrefix}Complete!`);
       setProgress(null);

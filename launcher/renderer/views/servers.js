@@ -513,6 +513,7 @@ function paintServersTable() {
       }
       if (!has) {
         setStatus(`Installing ${slug}…`);
+        setProgress("indeterminate");
         try {
           const res = await window.playbound.install(slug);
           if (res.status === "installer-opened") {
