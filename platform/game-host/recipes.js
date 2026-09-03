@@ -1028,13 +1028,13 @@ export const recipes = {
       }),
     ],
   },
-  "zero-k": {
-    portStart: 8452,
-    portEnd: 8462,
-    protocol: "udp",
-    binaries: gameBin("zero-k", ["spring-dedicated", "spring", "Zero-K.exe"]),
-    args: (port) => ["--port", String(port), "--headless"],
-  },
+  /*
+   * No zero-k recipe. It used to pass --port and --headless to
+   * spring-dedicated, which accepts neither: that server takes a start script
+   * file and reads its port from HostPort inside it. Zero-K is played through
+   * its own lobby over the party overlay instead — see the note in
+   * src/lib/gameHost/catalog.ts.
+   */
   flightgear: {
     portStart: 5000,
     portEnd: 5010,

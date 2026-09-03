@@ -282,6 +282,8 @@ describe("coverage of the games PlayBound hosts", () => {
   const READY_BUT_NOT_HOSTED: Record<string, string> = {
     teeworlds:
       "The agent has a full recipe, but the slug is not in HOSTABLE_GAMES and its adapter is official — so nothing ever asks for a Teeworlds room.",
+    "zero-k":
+      "Assessed and found to have nothing a server can change — battles are configured in Zero-K's lobby. The profile records that; PlayBound stopped provisioning Zero-K rooms once it turned out spring-dedicated takes a start script rather than the flags the recipe passed.",
   };
 
   it("knows which profiles are for games PlayBound does not actually host", async () => {
