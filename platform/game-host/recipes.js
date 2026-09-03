@@ -896,12 +896,24 @@ export const recipes = {
       "wesnothd-1.16",
       "wesnoth",
     ]),
+    /*
+     * `-c` is not optional here, whatever the manpage says about defaults.
+     *
+     * wesnothd's `versions_accepted` "defaults to the corresponding wesnoth
+     * version" — its own, exactly. So a 1.18.5 server turns away a 1.18.7
+     * client over a point release, and the room comes up with nobody able to
+     * join it. install.sh writes a config next to this that widens it to the
+     * series; without the file wesnothd falls back to that exact-match default
+     * and Wesnoth breaks the same way Warzone did.
+     */
     args: (port, _ctx, binary) => {
+      const cfg = path.join(GAMES_ROOT, "battle-for-wesnoth", "wesnothd.cfg");
+      const config = fs.existsSync(cfg) ? ["-c", cfg] : [];
       // If the GUI client binary is symlinked, pass -s to run in dedicated server mode
       if (binary && (binary.endsWith("/wesnoth") || binary === "wesnoth")) {
-        return ["-s", "-p", String(port)];
+        return ["-s", ...config, "-p", String(port)];
       }
-      return ["-p", String(port)];
+      return [...config, "-p", String(port)];
     },
   },
   veloren: {
