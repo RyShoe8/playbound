@@ -84,7 +84,16 @@ export function launcherPlayModUrl(slug: string): string {
 }
 
 /** Uninstall a game via the launcher. */
-export function launcherUninstallUrl(slug: string): string {
+export function launcherUninstallUrl(slug: string, editionSlug?: string | null): string {
+  /*
+   * Editions are the installable unit, and the launcher's deep link has always
+   * accepted one here — uninstall is in its EDITION_ACTIONS set alongside
+   * install and play. Without the parameter this removed the whole game, which
+   * is the wrong scope when a player has three editions and wants one gone.
+   */
+  if (editionSlug) {
+    return `playbound://uninstall/${slug}?edition=${encodeURIComponent(editionSlug)}`;
+  }
   return `playbound://uninstall/${slug}`;
 }
 

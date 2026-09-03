@@ -288,20 +288,29 @@ function JoinMultiplayerButton({
   );
 }
 
-function DesktopInstalledActions({
+/**
+ * Uninstall from this PC, for a whole game.
+ *
+ * Shared rather than inlined because a game with editions needs it too, and it
+ * had simply been left out of that card: editions offered Folder, Locate and
+ * Remove, so the only way to get the files off the disk was to remove the game
+ * from the library entirely and then not have it listed anywhere.
+ *
+ * The watcher is what makes the card disappear. The launcher does the work out
+ * of process, so there is nothing to await — the page polls the library until
+ * the game stops coming back.
+ */
+function UninstallFromPcButton({
   slug,
-  editionSlug,
-  title,
+  className,
+  onGone,
 }: {
   slug: string;
-  editionSlug?: string | null;
-  title: string;
+  className?: string;
+  onGone?: () => void;
 }) {
   const router = useRouter();
-  const [hidden, setHidden] = useState(false);
   const stopWatch = useRef<(() => void) | null>(null);
-  const chip =
-    "inline-flex min-h-8 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold";
 
   useEffect(() => () => stopWatch.current?.(), []);
 
@@ -312,11 +321,36 @@ function DesktopInstalledActions({
       slug,
       deepLink: launcherUninstallUrl(slug),
       onGone: () => {
-        setHidden(true);
+        onGone?.();
         router.refresh();
       },
     });
   }
+
+  return (
+    <button
+      type="button"
+      onClick={uninstallFromPc}
+      className={className}
+      title="Uninstall from this PC via the PlayBound app"
+    >
+      Uninstall from PC
+    </button>
+  );
+}
+
+function DesktopInstalledActions({
+  slug,
+  editionSlug,
+  title,
+}: {
+  slug: string;
+  editionSlug?: string | null;
+  title: string;
+}) {
+  const [hidden, setHidden] = useState(false);
+  const chip =
+    "inline-flex min-h-8 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold";
 
   if (hidden) return null;
 
@@ -344,14 +378,11 @@ function DesktopInstalledActions({
         Locate
       </a>
       <RemoveFromLibraryButton slug={slug} onRemoved={() => setHidden(true)} />
-      <button
-        type="button"
-        onClick={uninstallFromPc}
+      <UninstallFromPcButton
+        slug={slug}
+        onGone={() => setHidden(true)}
         className={cn(chip, "bg-secondary text-secondary-foreground hover:bg-secondary/70")}
-        title="Uninstall from this PC via the PlayBound app"
-      >
-        Uninstall from PC
-      </button>
+      />
     </div>
   );
 }
@@ -615,12 +646,27 @@ function DesktopLibraryRow({
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       {isEdInstalled ? (
-                        <a
-                          href={launcherPlayUrl(game.slug, ed.slug)}
-                          className="inline-flex min-h-7 items-center gap-1 rounded-full bg-play px-2.5 text-[11px] font-bold text-play-foreground hover:brightness-110"
-                        >
-                          <Play className="size-3 fill-current" /> Play
-                        </a>
+                        <>
+                          <a
+                            href={launcherPlayUrl(game.slug, ed.slug)}
+                            className="inline-flex min-h-7 items-center gap-1 rounded-full bg-play px-2.5 text-[11px] font-bold text-play-foreground hover:brightness-110"
+                          >
+                            <Play className="size-3 fill-current" /> Play
+                          </a>
+                          {/*
+                            * Scoped to this edition. A plain link rather than
+                            * the watched button below it, because the game
+                            * stays in the library when one of several editions
+                            * goes — there is no "gone" for the watcher to see.
+                            */}
+                          <a
+                            href={launcherUninstallUrl(game.slug, ed.slug)}
+                            className="inline-flex min-h-7 items-center gap-1 rounded-full bg-secondary px-2.5 text-[11px] font-bold text-secondary-foreground hover:bg-secondary/70"
+                            title={`Uninstall ${ed.name} from this PC`}
+                          >
+                            <Trash2 className="size-3" /> Uninstall
+                          </a>
+                        </>
                       ) : (
                         <a
                           href={launcherInstallUrl(game.slug, ed.slug)}
@@ -654,6 +700,12 @@ function DesktopLibraryRow({
                 </>
               ) : null}
               <RemoveFromLibraryButton slug={game.slug} className="!min-h-7" />
+              {installed && showLauncherActions ? (
+                <UninstallFromPcButton
+                  slug={game.slug}
+                  className="inline-flex min-h-7 items-center gap-1 rounded-full bg-secondary px-2.5 text-[11px] font-bold text-secondary-foreground hover:bg-secondary/70"
+                />
+              ) : null}
             </div>
           </div>
         ) : (
