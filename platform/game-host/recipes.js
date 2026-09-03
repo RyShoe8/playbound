@@ -427,18 +427,37 @@ export const recipes = {
     protocol: "tcp",
     binaries: gameBin("hurry-curry", ["hurrycurry-server"]),
     cwd: () => path.join(GAMES_ROOT, "hurry-curry"),
+    prepareSpawn: async () => {
+      const hcDir = path.join(GAMES_ROOT, "hurry-curry");
+      const dataDir = path.join(hcDir, "data");
+      if (!fs.existsSync(dataDir)) {
+        const dataUrl =
+          process.env.HURRY_CURRY_DATA_URL ||
+          "https://hurrycurry-download.metamuffin.org/data.zip";
+        const tmpZip = path.join("/tmp", `hc-data-${Date.now()}.zip`);
+        try {
+          const res = await fetch(dataUrl);
+          if (res.ok) {
+            const buf = Buffer.from(await res.arrayBuffer());
+            await fs.promises.writeFile(tmpZip, buf);
+            await execFileAsync("unzip", ["-qo", tmpZip, "-d", hcDir]);
+            await fs.promises.unlink(tmpZip).catch(() => {});
+          }
+        } catch (err) {
+          console.warn("[hurry-curry] could not auto-download data.zip:", err);
+        }
+      }
+    },
     args: (port, ctx) => {
-      const args = [
+      const dataDir = path.join(GAMES_ROOT, "hurry-curry", "data");
+      return [
         "--listen",
         `0.0.0.0:${port}`,
         "--server-name",
         String(ctx.name || "PlayBound Hurry Curry").slice(0, 40),
+        "--data-dir",
+        dataDir,
       ];
-      const dataDir = path.join(GAMES_ROOT, "hurry-curry", "data");
-      if (fs.existsSync(dataDir)) {
-        args.push("--data-dir", dataDir);
-      }
-      return args;
     },
     spawnEnv: () => ({ HOME: HOST_HOME }),
   },

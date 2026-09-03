@@ -74,6 +74,10 @@ const ENSURE_SPECS = {
       process.env.HURRY_CURRY_SERVER_URL ||
       "https://hurrycurry-download.metamuffin.org/server-x86_64-unknown-linux-gnu",
     isRawBinary: true,
+    overlayUrl:
+      process.env.HURRY_CURRY_DATA_URL ||
+      "https://hurrycurry-download.metamuffin.org/data.zip",
+    overlayCheckFile: "data/index.yaml",
     binaryNames: ["hurrycurry-server", "server-x86_64-unknown-linux-gnu"],
     linkAs: "hurrycurry-server",
   },
