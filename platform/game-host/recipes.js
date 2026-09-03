@@ -426,12 +426,20 @@ export const recipes = {
     portEnd: 27052,
     protocol: "tcp",
     binaries: gameBin("hurry-curry", ["hurrycurry-server"]),
-    args: (port, ctx) => [
-      "--listen",
-      `[::]:${port}`,
-      "--name",
-      String(ctx.name || "PlayBound Hurry Curry").slice(0, 40),
-    ],
+    cwd: () => path.join(GAMES_ROOT, "hurry-curry"),
+    args: (port, ctx) => {
+      const args = [
+        "--listen",
+        `0.0.0.0:${port}`,
+        "--server-name",
+        String(ctx.name || "PlayBound Hurry Curry").slice(0, 40),
+      ];
+      const dataDir = path.join(GAMES_ROOT, "hurry-curry", "data");
+      if (fs.existsSync(dataDir)) {
+        args.push("--data-dir", dataDir);
+      }
+      return args;
+    },
     spawnEnv: () => ({ HOME: HOST_HOME }),
   },
   mindustry: {
