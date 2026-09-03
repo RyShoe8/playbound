@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Download, ExternalLink, FolderOpen, Play, Trash2, Users } from "lucide-react";
+import { ChevronDown, Download, ExternalLink, FolderOpen, Play, Trash2, Users } from "lucide-react";
 import type { Game } from "@/lib/data/types";
 import {
   launcherInstallUrl,
@@ -24,6 +24,114 @@ import { isGameCompatible } from "@/lib/compatibility/compatibility";
 import { shouldOfferLauncher, resolveMobileOutbound, parseMobileOs } from "@/lib/mobilePlay";
 import { MobileOutboundCta } from "@/components/MobileOutboundCta";
 import { cn } from "@/lib/utils";
+
+/**
+ * Which games have their editions open, remembered across navigations.
+ *
+ * The launcher keeps the same thing under the same name, for the same reason:
+ * a library is a list you come back to, and re-opening the one game you were
+ * looking at every time is a small tax paid constantly. Failures are ignored —
+ * private windows and blocked storage both throw, and neither is a reason for
+ * the page not to render.
+ */
+const EXPANDED_EDITIONS_KEY = "playbound_library_expanded_editions";
+
+/*
+ * Parsed once and kept, because useSyncExternalStore calls the snapshot on
+ * every render and re-reading localStorage each time would be wasteful — and
+ * a snapshot that allocates a fresh Set each call makes React re-render for
+ * ever, since it compares by identity.
+ */
+let expandedCache: Set<string> | null = null;
+const expandedListeners = new Set<() => void>();
+
+function readExpandedEditions(): Set<string> {
+  if (expandedCache) return expandedCache;
+  try {
+    const raw = window.localStorage.getItem(EXPANDED_EDITIONS_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    expandedCache = new Set(Array.isArray(parsed) ? parsed.map(String) : []);
+  } catch {
+    // Private windows and blocked site data both throw here. Neither is a
+    // reason for the library not to render.
+    expandedCache = new Set();
+  }
+  return expandedCache;
+}
+
+function writeExpandedEditions(next: Set<string>) {
+  expandedCache = next;
+  try {
+    window.localStorage.setItem(EXPANDED_EDITIONS_KEY, JSON.stringify([...next]));
+  } catch {
+    /* storage is a convenience here, never a requirement */
+  }
+  for (const listener of expandedListeners) listener();
+}
+
+function subscribeExpanded(onChange: () => void) {
+  expandedListeners.add(onChange);
+  return () => {
+    expandedListeners.delete(onChange);
+  };
+}
+
+function useExpandedEditions(slug: string) {
+  const open = useSyncExternalStore(
+    subscribeExpanded,
+    () => readExpandedEditions().has(slug),
+    // Closed on the server, so the first client render agrees with it and the
+    // stored value is applied on hydration.
+    () => false
+  );
+
+  function toggle() {
+    const next = new Set(readExpandedEditions());
+    if (next.has(slug)) next.delete(slug);
+    else next.add(slug);
+    writeExpandedEditions(next);
+  }
+
+  return [open, toggle] as const;
+}
+
+/**
+ * Two columns that scroll past each other, rather than a grid.
+ *
+ * A CSS grid aligns rows, so the taller of two side-by-side cards sets the
+ * height of both: opening one game's editions pushed the game beside it down
+ * and left a gap under it. Each column is its own stack, so opening a card only
+ * moves what is below it in that column. The launcher's library does the same
+ * and carries the same note.
+ *
+ * Round-robin rather than first-half/second-half, because it preserves the
+ * left-to-right reading order the grid had — splitting in halves would move
+ * every card somewhere else the first time this shipped.
+ */
+const TWO_COLUMN_QUERY = "(min-width: 1024px)";
+
+function useColumnCount(): number {
+  // One on the server and on first paint. Anything else would have to guess a
+  // viewport width during SSR and be wrong for half of them.
+  const [count, setCount] = useState(1);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia(TWO_COLUMN_QUERY);
+    const apply = () => setCount(mq.matches ? 2 : 1);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
+  return count;
+}
+
+function distribute<T>(items: T[], columns: number): T[][] {
+  const out: T[][] = Array.from({ length: columns }, () => []);
+  items.forEach((item, i) => out[i % columns].push(item));
+  return out;
+}
 
 export type LibraryEditionItem = {
   slug: string;
@@ -440,6 +548,7 @@ function DesktopLibraryRow({
   const installedEditionsSet = new Set(installedEditionsList);
 
   const hasMultipleEditions = editions.length > 1;
+  const [editionsOpen, toggleEditions] = useExpandedEditions(game.slug);
 
   return (
     <article className="flex gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/30">
@@ -466,11 +575,24 @@ function DesktopLibraryRow({
         </div>
 
         {hasMultipleEditions && showLauncherActions ? (
-          <div className="mt-3 space-y-1.5 rounded-xl border border-border/70 bg-muted/20 p-2.5">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-              Editions ({editions.length})
-            </div>
-            <div className="space-y-1.5">
+          <div className="mt-3 rounded-xl border border-border/70 bg-muted/20 p-2.5">
+            {/*
+              * Collapsed by default, like the launcher's. A game with six
+              * editions otherwise makes a card three times the height of its
+              * neighbours before anyone has asked to see them.
+              */}
+            <button
+              type="button"
+              onClick={toggleEditions}
+              aria-expanded={editionsOpen}
+              className="flex w-full items-center justify-between gap-1 rounded-lg text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <span>Editions ({editions.length})</span>
+              <ChevronDown
+                className={cn("size-3.5 shrink-0 transition-transform", editionsOpen && "rotate-180")}
+              />
+            </button>
+            <div className={cn("mt-1.5 space-y-1.5", !editionsOpen && "hidden")}>
               {editions.map((ed) => {
                 const isEdInstalled = installedEditionsSet.has(ed.slug);
                 return (
@@ -607,6 +729,71 @@ export function LibraryGrid({
   const emptyFiltered =
     mode === "compatible" && visibleGames.length === 0 && visibleOrphans.length === 0;
 
+  const columnCount = useColumnCount();
+
+  /*
+   * One ordered list, built once, then dealt into columns. Games first and
+   * orphans after, which is the order the grid showed them in — the layout
+   * changed, the reading order did not.
+   */
+  const desktopCards: { key: string; node: React.ReactNode }[] = [
+    ...visibleGames.map((game) => ({
+      key: game.slug,
+      node: (
+        <DesktopLibraryRow
+          key={game.slug}
+          game={game}
+          meta={bySlug.get(game.slug)}
+          mods={modsByBase[game.slug] || []}
+          showLauncherActions={showLauncherActions}
+          editions={editionsByGame[game.slug] || []}
+        />
+      ),
+    })),
+    ...visibleOrphans.map((entry) => {
+      const title = entry.gameSlug
+        .split("-")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+      return {
+        key: entry.gameSlug,
+        node: (
+          <article
+            key={entry.gameSlug}
+            className="flex gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/30"
+          >
+            <div className="flex w-28 shrink-0 items-center justify-center rounded-lg bg-secondary text-4xl font-extrabold text-muted-foreground shadow-sm">
+              {title.charAt(0)}
+            </div>
+            <div className="flex min-w-0 flex-1 flex-col">
+              <p className="truncate text-xl font-bold">{title}</p>
+              <div className="mt-2">
+                <StatusBadges
+                  installed={entry.installed}
+                  saved={entry.saved}
+                  ownedElsewhere={entry.ownedElsewhere}
+                />
+              </div>
+              <div className="mt-auto pt-3 flex flex-wrap gap-2">
+                {entry.installed && showLauncherActions ? (
+                  <DesktopInstalledActions slug={entry.gameSlug} title={entry.gameSlug} />
+                ) : (
+                  <RemoveFromLibraryButton slug={entry.gameSlug} />
+                )}
+              </div>
+              {modsByBase[entry.gameSlug] && modsByBase[entry.gameSlug].length > 0 && (
+                <div className="mt-2">
+                  <LibraryModsDisclosure mods={modsByBase[entry.gameSlug]} />
+                </div>
+              )}
+            </div>
+          </article>
+        ),
+      };
+    }),
+  ];
+
+
   return (
     <div className="space-y-4">
       {emptyFiltered ? (
@@ -651,59 +838,16 @@ export function LibraryGrid({
             ))}
           </div>
 
-          {/* Desktop / tablet list */}
-          <div className="hidden flex-col gap-4 sm:flex lg:grid lg:grid-cols-2 xl:grid-cols-3">
-            {visibleGames.map((game) => (
-              <DesktopLibraryRow
-                key={game.slug}
-                game={game}
-                meta={bySlug.get(game.slug)}
-                mods={modsByBase[game.slug] || []}
-                showLauncherActions={showLauncherActions}
-                editions={editionsByGame[game.slug] || []}
-              />
+          {/*
+            * Desktop / tablet: independent columns, not a grid. See
+            * useColumnCount for why the row alignment had to go.
+            */}
+          <div className="hidden gap-4 sm:flex sm:flex-col lg:flex-row lg:items-start">
+            {distribute(desktopCards, columnCount).map((column, i) => (
+              <div key={i} className="flex min-w-0 flex-1 flex-col gap-4">
+                {column.map((card) => card.node)}
+              </div>
             ))}
-            {visibleOrphans.map((entry) => {
-              const title = entry.gameSlug
-                .split("-")
-                .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-                .join(" ");
-              return (
-                <article
-                  key={entry.gameSlug}
-                  className="flex gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/30"
-                >
-                  <div className="flex w-28 shrink-0 items-center justify-center rounded-lg bg-secondary text-4xl font-extrabold text-muted-foreground shadow-sm">
-                    {title.charAt(0)}
-                  </div>
-                  <div className="flex min-w-0 flex-1 flex-col">
-                    <p className="truncate text-xl font-bold">{title}</p>
-                    <div className="mt-2">
-                      <StatusBadges
-                        installed={entry.installed}
-                        saved={entry.saved}
-                        ownedElsewhere={entry.ownedElsewhere}
-                      />
-                    </div>
-                    <div className="mt-auto pt-3 flex flex-wrap gap-2">
-                      {entry.installed && showLauncherActions ? (
-                        <DesktopInstalledActions
-                          slug={entry.gameSlug}
-                          title={entry.gameSlug}
-                        />
-                      ) : (
-                        <RemoveFromLibraryButton slug={entry.gameSlug} />
-                      )}
-                    </div>
-                    {modsByBase[entry.gameSlug] && modsByBase[entry.gameSlug].length > 0 && (
-                      <div className="mt-2">
-                        <LibraryModsDisclosure mods={modsByBase[entry.gameSlug]} />
-                      </div>
-                    )}
-                  </div>
-                </article>
-              );
-            })}
           </div>
         </>
       )}
