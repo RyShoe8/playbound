@@ -69,6 +69,14 @@ const ENSURE_SPECS = {
     binaryNames: ["zandronum-server", "odasrv", "odamex-server", "chocolate-server"],
     linkAs: "zandronum-server",
   },
+  "hurry-curry": {
+    archiveUrl:
+      process.env.HURRY_CURRY_SERVER_URL ||
+      "https://hurrycurry-download.metamuffin.org/server-x86_64-unknown-linux-gnu",
+    isRawBinary: true,
+    binaryNames: ["hurrycurry-server", "server-x86_64-unknown-linux-gnu"],
+    linkAs: "hurrycurry-server",
+  },
 };
 
 export function canEnsure(slug) {
@@ -277,10 +285,16 @@ async function ensureGameUnlocked(slug) {
     console.log(`[ensure] ${slug}: downloading engine…`);
     await download(spec.archiveUrl, archivePath);
 
-    const extractDir = path.join(work, "extract");
-    await extractArchive(archivePath, extractDir);
-    const root = await flattenSingleRoot(extractDir);
-    await cp(root, gameDir, { recursive: true, force: true });
+    if (spec.isRawBinary) {
+      const destBinary = path.join(gameDir, spec.linkAs || spec.binaryNames[0]);
+      await cp(archivePath, destBinary);
+      await chmod(destBinary, 0o755);
+    } else {
+      const extractDir = path.join(work, "extract");
+      await extractArchive(archivePath, extractDir);
+      const root = await flattenSingleRoot(extractDir);
+      await cp(root, gameDir, { recursive: true, force: true });
+    }
 
     let binary = await findBinary(gameDir, spec.binaryNames);
     if (binary && spec.linkAs) {

@@ -618,6 +618,18 @@ if [[ ! -f "$FREEDOOM_DIR/freedoom2.wad" && ! -f "/usr/share/games/doom/freedoom
 fi
 chown -R playbound:playbound "$FREEDOOM_DIR"
 
+echo "==> Hurry Curry dedicated server"
+HC_DIR="$GAMES_DIR/hurry-curry"
+mkdir -p "$HC_DIR"
+if [[ ! -x "$HC_DIR/hurrycurry-server" && ! -x "/usr/bin/hurrycurry-server" ]]; then
+  HC_URL="${HURRY_CURRY_SERVER_URL:-https://hurrycurry-download.metamuffin.org/server-x86_64-unknown-linux-gnu}"
+  echo "Fetching Hurry Curry dedicated server..."
+  if curl -fL --retry 3 -o "$HC_DIR/hurrycurry-server" "$HC_URL"; then
+    chmod +x "$HC_DIR/hurrycurry-server"
+  fi
+fi
+chown -R playbound:playbound "$HC_DIR"
+
 echo "==> firewall"
 ufw allow OpenSSH || true
 ufw allow 8741/tcp comment "playbound-game-host" || true
