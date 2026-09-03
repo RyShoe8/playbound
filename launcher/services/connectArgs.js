@@ -44,11 +44,13 @@ const CLIENT_CONNECT_ARGS = {
   // The client takes console commands as argv, quoted as one token.
   teeworlds: ['"connect {host}:{port}"'],
   /*
-   * BombSquad prompts for the address in-game — its adapter row says so
-   * with inGameJoinPrompt. Declared null rather than left out, so this
-   * reads as "there is no CLI join" instead of "nobody has got to it".
+   * BombSquad and Hurry Curry prompt for the address in-game — their adapter
+   * rows specify inGameJoinPrompt. Declared null so the launcher knows there
+   * is no CLI join and copies the server address to the clipboard.
    */
   bombsquad: null,
+  "hurry-curry": null,
+  hurrycurry: null,
   /*
    * id Tech 3, so the join is the Quake 3 one — which the adapter row has
    * always declared. It simply never reached this file, and the catalog

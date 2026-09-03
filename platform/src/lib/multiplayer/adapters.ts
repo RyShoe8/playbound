@@ -1673,6 +1673,10 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     },
     client: {
       inGameJoinPrompt: true,
+      inGameSteps: [
+        "In the game menu, click Play / Connect",
+        "Paste the server address (copied to clipboard automatically) and click Join",
+      ],
     },
     selfHost: {
       port: 27032,

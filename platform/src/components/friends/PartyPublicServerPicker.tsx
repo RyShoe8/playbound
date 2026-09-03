@@ -350,7 +350,24 @@ export function PartyPublicServerPicker({
                             : `${server.players}${server.maxPlayers ? `/${server.maxPlayers}` : ""}`}
                         </span>
                       </span>
-                      <span className="mt-1.5 flex flex-wrap gap-x-3 text-sm text-muted-foreground">
+                      <span className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                        <span
+                          className="font-mono text-xs hover:text-foreground inline-flex items-center gap-1 cursor-pointer bg-secondary/70 hover:bg-secondary px-1.5 py-0.5 rounded border border-border/40 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const addr = `${server.host}:${server.port}`;
+                            void navigator.clipboard?.writeText(addr);
+                            const t = e.currentTarget;
+                            const prev = t.textContent;
+                            t.textContent = "Copied!";
+                            setTimeout(() => {
+                              t.textContent = prev;
+                            }, 1500);
+                          }}
+                          title="Click to copy server IP:port"
+                        >
+                          {server.host}:{server.port}
+                        </span>
                         {server.map ? <span>{server.map}</span> : null}
                         {loc ? <span>{loc}</span> : null}
                         {server.gameType ? <span>{server.gameType}</span> : null}

@@ -709,6 +709,36 @@ export function PartyView({
             </p>
           )}
 
+          {party.hosted?.enabled && party.hosted.status === "ready" && party.hosted.host && (
+            <div className="flex items-center gap-2 self-center text-xs text-muted-foreground bg-secondary/50 px-2.5 py-1 rounded-md border border-border/50">
+              <span className="font-semibold text-foreground/80">Server:</span>
+              <span className="font-mono font-medium text-foreground select-text">
+                {party.gameSlug === "hurry-curry"
+                  ? `ws://${party.hosted.host}:${party.hosted.port}`
+                  : `${party.hosted.host}:${party.hosted.port}`}
+              </span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  const target = e.currentTarget;
+                  const addr =
+                    party.gameSlug === "hurry-curry"
+                      ? `ws://${party.hosted?.host}:${party.hosted?.port}`
+                      : `${party.hosted?.host}:${party.hosted?.port}`;
+                  void navigator.clipboard?.writeText(addr);
+                  target.textContent = "Copied!";
+                  setTimeout(() => {
+                    target.textContent = "Copy IP";
+                  }, 2000);
+                }}
+                className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-primary/15 hover:bg-primary/25 text-primary cursor-pointer transition-colors"
+                title="Copy server IP address"
+              >
+                Copy IP
+              </button>
+            </div>
+          )}
+
           {publicMode &&
             party.hosted?.enabled &&
             party.hosted.status !== "ready" &&

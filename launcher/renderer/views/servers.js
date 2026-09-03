@@ -454,7 +454,16 @@ function paintServersTable() {
     const actionClass = isInstalled ? "btn-primary" : "btn-secondary";
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td><strong>${escapeHtml(s.name)}</strong>${s.gameType ? `<div class="server-meta">${escapeHtml(s.gameType)}</div>` : ""}</td>
+      <td>
+        <strong>${escapeHtml(s.name)}</strong>
+        <div class="server-meta">
+          <button type="button" class="server-ip-copy-btn" data-action="copy-server-ip" data-addr="${escapeHtml(id)}" title="Click to copy IP:port">
+            <span class="server-ip-text">${escapeHtml(id)}</span>
+            <span class="server-ip-copy-badge">Copy</span>
+          </button>
+          ${s.gameType ? `<span class="server-gametype-tag">· ${escapeHtml(s.gameType)}</span>` : ""}
+        </div>
+      </td>
       <td>${s.players == null ? "—" : `${s.players}/${s.maxPlayers ?? "—"}`}</td>
       <td>${escapeHtml(s.map || "—")}</td>
       <td>${escapeHtml(formatServerLocation(s))}</td>
@@ -467,6 +476,24 @@ function paintServersTable() {
   }
 
   wrap.replaceChildren(table);
+
+  wrap.querySelectorAll('[data-action="copy-server-ip"]').forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const addr = btn.dataset.addr;
+      if (addr) {
+        await (window.playbound?.clipboardWrite?.(addr) || navigator.clipboard?.writeText?.(addr));
+        const badge = btn.querySelector(".server-ip-copy-badge");
+        btn.classList.add("copied");
+        if (badge) badge.textContent = "Copied!";
+        setStatus(`Copied server address ${addr}`);
+        setTimeout(() => {
+          btn.classList.remove("copied");
+          if (badge) badge.textContent = "Copy";
+        }, 2000);
+      }
+    });
+  });
 
   wrap.querySelectorAll("th.sortable").forEach((th) => {
     th.addEventListener("click", () => setServersSort(th.dataset.sort));
