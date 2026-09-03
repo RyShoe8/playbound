@@ -60,7 +60,8 @@ import { pageMetadata, privateMetadata, gameDescription, gameTitle } from "@/lib
 import { canAccessTesting, viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { comparisonsFeaturing } from "@/lib/data/comparisons";
 import { alternativePages } from "@/lib/data/alternatives";
-import { classifyMediaUrl } from "@/lib/mediaEmbed";
+import { classifyMediaUrl, heroMediaItems } from "@/lib/mediaEmbed";
+import { GameHeroMedia } from "@/components/GameHeroMedia";
 import { HlsVideo } from "@/components/HlsVideo";
 import { deriveInstallSteps, deriveFaq } from "@/lib/enrich";
 import {
@@ -167,6 +168,11 @@ export default async function GamePage({
   }
 
   const tab: Tab = tabs.includes(rawTab as Tab) ? (rawTab as Tab) : "overview";
+  // Trailers and screenshots for the hero reel — the same URLs the Media tab
+  // renders, ordered videos-first. Empty for a game with no media, which is
+  // what keeps the generated-art hero for those.
+  const heroMedia = heroMediaItems(game.videos, game.screenshots);
+
   // Critical path only: developer + editions for hero chooser and static schema.
   const [developer, editions, gameMods, gameOffers] = await Promise.all([
     getDeveloper(game.developerSlug),
@@ -211,11 +217,49 @@ export default async function GamePage({
       )}
 
       {/* ── Hero ───────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden border-b border-border">
-        <GameArt game={game} showTitle={false} className="absolute inset-0" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-background/20" />
-        <div className="relative px-4 pt-24 pb-6 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap items-end justify-between gap-6">
+      <section
+        className={`relative overflow-hidden border-b border-border ${
+          /*
+           * Height only when there is something to look at. The hero has
+           * always been as tall as its own text, which is right for a game
+           * with generated art and far too short to crop a screenshot into.
+           */
+          heroMedia.length > 0 ? "min-h-[24rem] sm:min-h-[30rem]" : ""
+        }`}
+      >
+        {/*
+          * Trailers and screenshots, arrowed through like Steam. A game with
+          * no media keeps the generated art it always had, so nothing about
+          * the page changes for the titles that have none. The Media tab is
+          * untouched — this is a second view of those URLs, not a move.
+          */}
+        {heroMedia.length > 0 ? (
+          <GameHeroMedia items={heroMedia} title={game.title} poster={game.coverImage} />
+        ) : (
+          <GameArt game={game} showTitle={false} className="absolute inset-0" />
+        )}
+        {/*
+          * pointer-events-none matters: these cover the whole hero, and without
+          * it the reel's arrows and dots would be unclickable.
+          *
+          * The vertical scrim is lighter over real media than over generated
+          * art. The old value was tuned against a flat two-colour gradient,
+          * where washing it out costs nothing; over a screenshot it costs the
+          * screenshot. The horizontal one then buys the title block its
+          * contrast back without dimming the whole frame.
+          */}
+        <div
+          className={`pointer-events-none absolute inset-0 bg-gradient-to-t ${
+            heroMedia.length > 0
+              ? "from-background via-background/50 to-background/10"
+              : "from-background via-background/70 to-background/20"
+          }`}
+        />
+        {heroMedia.length > 0 ? (
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-background/85 via-background/25 to-transparent" />
+        ) : null}
+        <div className="pointer-events-none relative z-10 px-4 pt-24 pb-14 sm:px-6 lg:px-8">
+          <div className="pointer-events-auto flex flex-wrap items-end justify-between gap-6">
             <div className="max-w-2xl">
               <div className="flex flex-wrap items-center gap-2">
                 <LaunchBadge game={game} />
@@ -244,7 +288,7 @@ export default async function GamePage({
           </div>
 
           {(activeOffer || historicalOffers.length > 0) && (
-            <div className="mt-6">
+            <div className="pointer-events-auto mt-6">
               <FreeOfferBanner activeOffer={activeOffer} historicalOffers={historicalOffers} />
             </div>
           )}

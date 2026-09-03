@@ -99,3 +99,64 @@ export function classifyMediaUrl(src: string): ClassifiedMedia {
   }
   return { kind: "direct", src: stored };
 }
+
+/**
+ * A shape the hero reel can render, from the same URLs the Media tab uses.
+ *
+ * Videos come first because a trailer is what a game leads with — the same
+ * order Steam puts them in — and screenshots follow in the order they were
+ * curated. Nothing is invented: a game with no media produces an empty list
+ * and the page falls back to its generated art.
+ */
+export type HeroMediaItem =
+  | { type: "image"; src: string }
+  | { type: "video"; kind: "direct" | "hls"; src: string }
+  | {
+      type: "embed";
+      kind: "youtube" | "vimeo";
+      src: string;
+      embedUrl: string;
+      poster: string | null;
+    };
+
+export function heroMediaItems(
+  videos: readonly string[] | undefined,
+  screenshots: readonly string[] | undefined,
+  limit = 12
+): HeroMediaItem[] {
+  const items: HeroMediaItem[] = [];
+
+  for (const raw of videos ?? []) {
+    if (!raw) continue;
+    const media = classifyMediaUrl(raw);
+    if (media.kind === "youtube" || media.kind === "vimeo") {
+      if (!media.embedUrl) continue;
+      const id = media.kind === "youtube" ? youtubeId(media.src) : null;
+      items.push({
+        type: "embed",
+        kind: media.kind,
+        src: media.src,
+        embedUrl: media.embedUrl,
+        /*
+         * YouTube serves a poster frame from a predictable URL. Vimeo does not
+         * — its thumbnails need an API call — so those slides show a play
+         * control on black rather than a wrong or missing image.
+         */
+        poster: id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : null,
+      });
+    } else {
+      items.push({ type: "video", kind: media.kind, src: media.src });
+    }
+  }
+
+  for (const src of screenshots ?? []) {
+    if (src) items.push({ type: "image", src });
+  }
+
+  /*
+   * Capped. Every extra slide is another dot in a strip that has to stay
+   * readable at the bottom of a hero, and nobody arrows through forty
+   * screenshots — the Media tab is where the full set lives.
+   */
+  return items.slice(0, limit);
+}
