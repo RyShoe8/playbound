@@ -4,6 +4,7 @@
  */
 
 import type { PartyReadiness } from "@/lib/playTogether/partyReadiness";
+import type { PartyActions } from "@/lib/playTogether/partyActions";
 import type { PartyHostMode } from "@/lib/multiplayer/adapters";
 import type { HostModeOption } from "@/lib/multiplayer/hostModes";
 
@@ -281,6 +282,12 @@ export type PartyPayload = {
    * anything left to the clients gets hand-ported and drifts.
    */
   readiness?: PartyReadiness | null;
+  /**
+   * The action bar, resolved for the requesting viewer. Null when nobody is
+   * asking (a public listing). Clients render it rather than recomputing the
+   * gating — see partyActions.ts.
+   */
+  actions?: PartyActions | null;
   /** True when the requesting user is currently in a game (presence `playing`). */
   selfPlaying?: boolean;
   /** Public VPS room for games that cannot host from a home PC. */

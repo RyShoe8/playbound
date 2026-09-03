@@ -85,6 +85,7 @@ import {
   isBaseEditionSlug,
   libraryHasRequiredEdition,
 } from "@/lib/playTogether/editionMatch";
+import { computePartyActions } from "@/lib/playTogether/partyActions";
 import { computePartyReadiness } from "@/lib/playTogether/partyReadiness";
 import {
   preferredPartyEditionSlug,
@@ -790,6 +791,30 @@ async function safeConfigSync(
   }
 }
 
+/**
+ * The action bar for one viewer.
+ *
+ * Viewer-dependent — whether you are the leader, whether you have readied —
+ * so it is attached here beside selfPlaying rather than in the shared payload
+ * builder, which has no idea who is asking.
+ */
+function actionsFor(party: PartyPayload, viewerUserId?: string) {
+  if (!viewerUserId) return null;
+  return computePartyActions({
+    viewerId: viewerUserId,
+    leaderId: party.leaderId,
+    leaderUsername: party.leaderUsername,
+    status: party.status,
+    gameSlug: party.gameSlug,
+    hostMode: party.hostMode,
+    selfHostReady: party.selfHostReady,
+    members: party.members.map((m) => ({ userId: m.userId, ready: m.ready })),
+    hosted: party.hosted,
+    lan: party.lan,
+    couch: party.couch,
+  });
+}
+
 /** Fold a sync result (or the absence of one) into the payload. */
 function applyConfigSync(
   party: PartyPayload,
@@ -797,7 +822,11 @@ function applyConfigSync(
   viewerUserId?: string
 ): PartyPayload {
   if (!outcome || "error" in outcome) {
-    return { ...party, readiness: readinessFor(party, null) };
+    return {
+      ...party,
+      readiness: readinessFor(party, null),
+      actions: actionsFor(party, viewerUserId),
+    };
   }
   const selfPlaying = viewerUserId
     ? Boolean(outcome.sync.members.find((m) => m.userId === viewerUserId)?.playing)
@@ -807,6 +836,7 @@ function applyConfigSync(
     configSync: outcome.sync,
     selfPlaying,
     readiness: readinessFor(party, outcome.sync),
+    actions: actionsFor(party, viewerUserId),
   };
 }
 
