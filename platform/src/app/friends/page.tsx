@@ -30,8 +30,14 @@ export default async function FriendsPage() {
            * Carried so the party picker can drop singleplayer games. Passed
            * rather than precomputed here because this same list also feeds
            * AddFriends, which wants the whole catalog.
+           *
+           * Both fields matter: supportsMultiplayer reads tags as well as
+           * features (hotseat/LAN/split-screen never appear in features), and
+           * dropping tags here was why the web party picker offered fewer
+           * games than the launcher's, which gets both from the same catalog.
            */
           features: g.features,
+          tags: g.tags,
         }))}
         genres={[...GENRES]}
       />

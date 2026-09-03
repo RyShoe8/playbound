@@ -52,8 +52,16 @@ export type PartyGameOption = {
   platforms?: string[];
   steamDeck?: boolean;
   launcherInstall?: { enabled?: boolean; kind?: string } | null;
-  /** Only used to decide whether the game belongs in a party at all. */
+  /**
+   * Only used to decide whether the game belongs in a party at all.
+   *
+   * Both read by supportsMultiplayer — hotseat, LAN and split-screen games
+   * only say so in tags, never features. Dropping either one here silently
+   * shrinks this picker below what the launcher's party screen offers, since
+   * the launcher's catalog carries both.
+   */
   features?: string[];
+  tags?: string[];
 };
 
 export function PartyView({
