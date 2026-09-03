@@ -54,7 +54,10 @@ const signingActive = reportSigningConfig(signing, { label: "signing" });
 const windowsSigningOptions = signingActive
   ? {
       signAndEditExecutable: true,
-      signtoolOptions: signing.signtoolOptions,
+      signtoolOptions: {
+        ...(signing.signtoolOptions || {}),
+        sign: "./scripts/custom-sign.js",
+      },
       ...(signing.signAllBinaries ? { signExts: EXTRA_SIGN_EXTS } : {}),
     }
   : {
@@ -85,10 +88,11 @@ module.exports = {
     "assets/**/*",
     /*
      * 7zip-bin ships binaries for every platform (~12 MB); a Windows build only
-     * ever runs the Windows one. Dropping the others keeps the installer close
-     * to its previous size.
+     * ever runs the Windows x64 one. Dropping the others keeps the installer close
+     * to its previous size and avoids signing unused architectures.
      */
     "!**/node_modules/7zip-bin/{mac,linux}/**",
+    "!**/node_modules/7zip-bin/win/{arm64,ia32}/**",
   ],
   /*
    * ViGEmBus setup must sit beside the app (not inside asar) so Couch Mode and
@@ -140,7 +144,7 @@ module.exports = {
   ],
 
   win: {
-    target: ["nsis", "portable"],
+    target: process.env.BUILD_PORTABLE === "true" ? ["nsis", "portable"] : ["nsis"],
     artifactName: "PlayBound-Setup-${version}.${ext}",
     /*
      * An explicit multi-size .ico rather than letting electron-builder convert

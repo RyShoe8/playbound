@@ -51,13 +51,15 @@ One release signs several files, not one:
 
 | Setting | Signings per release | Releases/year |
 | --- | --- | --- |
-| **Default** (`WINDOWS_SIGN_ALL_BINARIES` unset) | **~5** | ~48 |
-| Native binaries included (`=true`) | ~11 | ~21 |
+| **Default** (`npm run dist:prod`) | **~4** | **~60** |
+| With Portable (`npm run dist:portable`) | ~5 | ~48 |
+| Native binaries included (`WINDOWS_SIGN_ALL_BINARIES=true`) | ~10 | ~24 |
 
-The five are: the NSIS installer, the portable build, `PlayBound.exe`,
-`elevate.exe`, and the uninstaller. Enabling native signing adds Electron's
-bundled `.dll` files (`ffmpeg`, `libEGL`, `libGLESv2`, `vk_swiftshader`,
-`vulkan-1`, `d3dcompiler_47`).
+The four standard files are: `PlayBound.exe`, `elevate.exe`, the generated uninstaller,
+and the `PlayBound-Setup-<version>.exe` NSIS installer. Bundled third-party binaries
+(`ViGEmBus_Setup.exe` and `7za.exe`) are skipped by `launcher/scripts/custom-sign.js`
+because ViGEmBus is already signed by its vendor and 7za is an internal helper, saving
+valuable quota. Building portable adds `PlayBound-Launcher-Portable-<version>.exe` (+1).
 
 **Why native signing is off by default.** Those DLLs are stock Electron
 binaries, not our code. Signing them helps with enterprise allow-listing and
