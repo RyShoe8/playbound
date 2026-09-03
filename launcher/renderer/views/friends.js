@@ -3339,8 +3339,20 @@ async function launchPartyGame(party) {
            * Games without a host template keep the old path: launch, then
            * probe until the player has hosted from the game's own menus.
            */
-          if (catalogGame?.hostLaunch?.argsTemplate?.length && window.playbound.startSelfHostServer) {
-            await window.playbound.startSelfHostServer(party.id);
+          /*
+           * Only when this install actually ships the dedicated binary. The
+           * launcher answers that before starting anything, because a game
+           * whose client hosts from its own menus — OpenRA among them — has to
+           * keep the older path: launch, let the player host, probe the port.
+           * Taking the wrong branch leaves every other member on "Waiting for
+           * host" with nothing to tell them why.
+           */
+          const local =
+            catalogGame?.hostLaunch?.argsTemplate?.length && window.playbound.startSelfHostServer
+              ? await window.playbound.startSelfHostServer(party.id, slug)
+              : { ok: false };
+
+          if (local?.ok) {
             setStatus("Starting the server on this PC — party members will unlock automatically.");
           } else {
             const connectMeta = (await window.playbound.getConnectMeta?.(slug)) || {};
