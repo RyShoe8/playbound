@@ -7481,6 +7481,26 @@ async function playGameInner(slug, join = null, editionSlug = null) {
       launchPath = zandronumExe;
       info = { ...info, exe: zandronumExe };
     }
+
+    const ed = String(edSlug || info.editionSlug || "").toLowerCase();
+    const isPhase1 = ed.includes("phase-1") || ed.includes("phase1") || ed === "1";
+    const isFreeDm = ed.includes("freedm") || ed.includes("dm");
+    const iwadName = isPhase1 ? "freedoom1.wad" : isFreeDm ? "freedm.wad" : "freedoom2.wad";
+
+    if (!args.includes("-iwad")) {
+      const iwadCandidate = info.dir
+        ? [
+            path.join(info.dir, iwadName),
+            path.join(path.dirname(launchPath), iwadName),
+            findNamedPortableExe(info.dir, iwadName),
+          ].find((p) => p && fs.existsSync(p))
+        : null;
+      if (iwadCandidate) {
+        args.unshift("-iwad", iwadCandidate);
+      } else {
+        args.unshift("-iwad", iwadName);
+      }
+    }
   }
 
   /*
