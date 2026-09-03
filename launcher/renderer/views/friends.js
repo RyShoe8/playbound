@@ -26,6 +26,54 @@ import {
   views,
 } from "../shared.js";
 
+/*
+ * What "Join Game" means when the server is not up yet.
+ *
+ * It used to mean nothing. Provisioning a room takes seconds to a minute, and
+ * every click during that window came back with "Server not ready yet — wait a
+ * moment" and re-enabled the button, so the way to join a party was to keep
+ * clicking until one of the clicks happened to land after the room came up.
+ * Players read that as a broken button, and clicked faster.
+ *
+ * The click is now remembered. The party panel already re-renders on every
+ * poll, so it finishes the join itself the moment connect is ready — and until
+ * then the button says so, and cancels if pressed again.
+ */
+let pendingJoin = null;
+/** Guards the poll firing a second join while the first is still going. */
+let joinInFlight = false;
+/*
+ * Long enough for a cold room on a busy box — Veloren generates a world before
+ * it listens — and short enough that a party is not left believing a join is
+ * still coming an hour later.
+ */
+const PENDING_JOIN_TIMEOUT_MS = 4 * 60 * 1000;
+
+/**
+ * Whether this member could connect right now.
+ *
+ * The same three conditions memberWaitingForConnect is built from, asked of a
+ * fresh payload rather than of the render's local variables — the auto-join
+ * needs the answer for the party the server just sent back.
+ */
+function partyConnectReady(party, isLeader) {
+  const hosted = party.hosted || {};
+  const lan = party.lan || {};
+  if (hosted.enabled && hosted.status !== "ready") return false;
+  if (lan.enabled && lan.configured !== false && lan.status !== "ready") return false;
+  // The leader's own launcher is what makes a self-hosted room ready, so the
+  // leader is never the one waiting for it.
+  if (!isLeader && party.hostMode === "self" && !lan.enabled && !party.selfHostReady) return false;
+  return true;
+}
+
+/** Whether connect has failed outright, so waiting would be waiting forever. */
+function partyConnectFailed(party) {
+  const hosted = party.hosted || {};
+  const lan = party.lan || {};
+  return (hosted.enabled && hosted.status === "failed") || (lan.enabled && lan.status === "failed");
+}
+
 let friendsPollInterval = null;
 let friendsPollMs = 5000;
 let localPlaying = false;
@@ -1466,7 +1514,6 @@ function buildPartyViewHtml(party) {
   const ended = party.status === "ended";
   const inFlight = party.status === "launching" || party.status === "playing";
   const hosted = party.hosted || {};
-  const hostedReady = hosted.status === "ready" && hosted.host && hosted.port;
   const lan = party.lan || {};
   /*
    * Couch games have no networking, so there is one running copy and it is the
@@ -1503,7 +1550,14 @@ function buildPartyViewHtml(party) {
     ((party.hostMode === "self" && !lan.enabled && !party.selfHostReady) ||
       (hosted.enabled && hosted.status !== "ready") ||
       (lan.enabled && lan.configured !== false && lan.status !== "ready"));
-  const joinDisabled = joinConnectFailed || waitingForLeader || memberWaitingForConnect;
+  /*
+   * An armed join stays clickable so it can be called off. Everything else
+   * that would have disabled it is already described by the label.
+   */
+  const joinDisabled =
+    pendingJoin?.partyId === party.id
+      ? false
+      : joinConnectFailed || waitingForLeader || memberWaitingForConnect;
   const voiceEnabled = party.voiceEnabled !== false;
   const hasDiscordVoice = Boolean(party.discord?.inviteUrl || party.discord?.voiceChannelId);
   const showLaunchVoice = voiceEnabled || hasDiscordVoice;
@@ -1707,9 +1761,25 @@ function buildPartyViewHtml(party) {
       : "";
 
   const waitingForServer = !isLeader && memberWaitingForConnect && !waitingForLeader;
-  const joinButtonText = isLeader && !inFlight ? "Start Game" : waitingForLeader ? "Waiting for host" : waitingForServer ? "Server Starting…" : "Join Game";
-  const joinButtonIcon = waitingForLeader || waitingForServer ? ICON.loader : ICON.play;
-  const joinTitle = waitingForLeader
+  /*
+   * A click that is still owed an answer. The button becomes the state of that
+   * wait rather than an invitation to press it again — and stays pressable,
+   * because the only thing left to ask of it is "stop waiting".
+   */
+  const autoJoinArmed = pendingJoin?.partyId === party.id && !ended;
+  const joinButtonText = autoJoinArmed
+    ? "Joining when the server is ready…"
+    : isLeader && !inFlight
+    ? "Start Game"
+    : waitingForLeader
+    ? "Waiting for host"
+    : waitingForServer
+    ? "Server Starting…"
+    : "Join Game";
+  const joinButtonIcon = autoJoinArmed || waitingForLeader || waitingForServer ? ICON.loader : ICON.play;
+  const joinTitle = autoJoinArmed
+    ? "PlayBound will join you as soon as the server is up — click to stop waiting"
+    : waitingForLeader
     ? "The party host must start the game first"
     : waitingForServer
     ? "The game server is still starting"
@@ -1725,10 +1795,14 @@ function buildPartyViewHtml(party) {
            joinDisabled ? ` disabled` : ""
          }${joinTitle ? ` title="${escapeHtml(joinTitle)}"` : ""}>${joinButtonIcon} ${escapeHtml(joinButtonText)}</button>
          ${
+           /*
+            * Room code only. The address used to be printed here too, and
+            * then again below as the copyable "Server IP" row — the same
+            * server twice, one of them unselectable, which reads as two
+            * different servers rather than one shown badly.
+            */
            hosted.roomCode
              ? `<p class="party-host-line party-room-code">Room Code: ${escapeHtml(String(hosted.roomCode))}</p>`
-             : hostedReady
-             ? `<p class="party-host-line">${escapeHtml(hosted.host)}:${Number(hosted.port) || ""}</p>`
              : ""
          }
        </div>`
@@ -2843,40 +2917,94 @@ function wirePartyView(slot, party) {
 
   const joinGameBtn = slot.querySelector("#btn-party-join-game");
   if (joinGameBtn) {
-    joinGameBtn.addEventListener("click", async () => {
-      if (joinGameBtn.disabled) return;
+    // Re-derived here rather than passed down: this runs in the wiring pass,
+    // which sees the party payload and not the render's locals.
+    const isLeader = String(party.leaderId) === String(state.accountState?.userId);
+    const ended = party.status === "ended";
+
+    /**
+     * One attempt: ask to join, and either go or arm the wait.
+     *
+     * Shared by the button and by the poll that finishes an armed join, so
+     * there is one description of what joining does rather than two that drift.
+     */
+    const attemptJoin = async () => {
+      if (joinInFlight) return;
+      joinInFlight = true;
       joinGameBtn.disabled = true;
-      const res = await window.playbound.partyJoinGame(partyId);
-      if (res?.error) {
-        setStatus(res.error, true);
-        joinGameBtn.disabled = false;
-        void api.refreshFriendsData();
-        return;
-      }
-      const updated = res?.party || party;
-      const hosted = updated.hosted || {};
-      const lan = updated.lan || {};
-      if (
-        (hosted.enabled && hosted.status !== "ready") ||
-        (lan.enabled && lan.status !== "ready")
-      ) {
-        setStatus(
-          hosted.error || lan.error || "Server not ready yet — wait a moment.",
-          true
-        );
+      try {
+        const res = await window.playbound.partyJoinGame(partyId);
+        if (res?.error) {
+          pendingJoin = null;
+          setStatus(res.error, true);
+          void api.refreshFriendsData();
+          return;
+        }
+        const updated = res?.party || party;
+        if (partyConnectFailed(updated)) {
+          pendingJoin = null;
+          setStatus(
+            updated.hosted?.error || updated.lan?.error || "The server could not start.",
+            true
+          );
+        } else if (!partyConnectReady(updated, isLeader)) {
+          /*
+           * Armed rather than refused. Nothing more is asked of the player:
+           * the next poll that sees a ready room finishes this for them.
+           */
+          pendingJoin = { partyId, at: Date.now() };
+          setStatus("Waiting for the server — PlayBound will join you the moment it's ready.");
+          /*
+           * Let go of the button, or the wait never ends: the panel skips a
+           * repaint while focus is inside it, and the repaint is what notices
+           * the room came up. A pressed button holds focus by default.
+           */
+          blurPartyFocus();
+        } else {
+          pendingJoin = null;
+          await maybeStartPartyCouch(partyId, updated);
+          await launchPartyGame(updated);
+        }
+      } finally {
+        joinInFlight = false;
         joinGameBtn.disabled = false;
         const areaSlot = document.getElementById("friends-party-area");
         if (areaSlot) areaSlot.dataset.sig = "";
         void api.refreshFriendsData();
+      }
+    };
+
+    joinGameBtn.addEventListener("click", () => {
+      // A second press while waiting means "stop waiting", not "try harder".
+      if (pendingJoin?.partyId === partyId) {
+        pendingJoin = null;
+        setStatus("Stopped waiting for the server.");
+        void api.refreshFriendsData();
         return;
       }
-      await maybeStartPartyCouch(partyId, updated);
-      await launchPartyGame(updated);
-      joinGameBtn.disabled = false;
-      const areaSlot = document.getElementById("friends-party-area");
-      if (areaSlot) areaSlot.dataset.sig = "";
-      void api.refreshFriendsData();
+      if (joinGameBtn.disabled) return;
+      void attemptJoin();
     });
+
+    /*
+     * Finish an armed join as soon as the room is up. This runs on every
+     * repaint of the panel, which the friends poll drives, so no timer of its
+     * own is needed.
+     */
+    if (pendingJoin?.partyId === partyId) {
+      if (ended || partyConnectFailed(party)) {
+        pendingJoin = null;
+        setStatus(
+          party.hosted?.error || party.lan?.error || "The server could not start.",
+          true
+        );
+      } else if (Date.now() - pendingJoin.at > PENDING_JOIN_TIMEOUT_MS) {
+        pendingJoin = null;
+        setStatus("The server is taking too long — try Join Game again.", true);
+      } else if (partyConnectReady(party, isLeader)) {
+        void attemptJoin();
+      }
+    }
   }
 
   const couchCopyBtn = slot.querySelector("#btn-party-couch-copy");
