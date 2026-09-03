@@ -1478,7 +1478,13 @@ function buildPartyViewHtml(party) {
     !isLeader &&
     !couch.enabled &&
     isPeerOrLan &&
-    (party.hostMode !== "self" ? !inFlight : !party.selfHostReady);
+    /*
+     * A virtual-LAN party has no listen server to probe, so selfHostReady is a
+     * flag nothing ever sets — HoloCure sat on "Waiting for host" forever. Once
+     * the party is in flight everyone is on the segment and the game does its
+     * own finding.
+     */
+    (party.hostMode !== "self" || lan.enabled ? !inFlight : !party.selfHostReady);
   const canJoinGame =
     hasGame && !ended && (isReady || inFlight) && (!couch.enabled || isLeader);
   /*

@@ -1871,7 +1871,24 @@ export async function joinPartyGame(
   const firstLaunch = doc.status !== "playing" && doc.status !== "launching";
   const hostMode = resolvedHostMode(String(doc.gameSlug), doc.hostMode, doc.hosted);
   const isLeader = String(doc.leaderId) === userId;
-  if (hostMode === "self" && !isLeader && !doc.selfHostReady) {
+  /*
+   * `selfHostReady` means a listen server answered a probe. A virtual-LAN game
+   * never produces one: there is no address to connect to, which is the entire
+   * reason it is on an overlay segment, and the launcher's probe is skipped for
+   * UDP anyway — HoloCure's discovery is UDP 27015.
+   *
+   * So gating those members on it meant waiting on a flag nothing could ever
+   * set. HoloCure resolves to hostMode "self" (the room is the leader's PC), so
+   * every member sat on "Waiting for host" indefinitely no matter what the host
+   * did. For these games the party being in flight is the readiness signal, and
+   * finding the host is the game's own job once everyone is on the segment.
+   */
+  if (
+    hostMode === "self" &&
+    !isLeader &&
+    !doc.selfHostReady &&
+    !isVirtualLanGame(String(doc.gameSlug || ""))
+  ) {
     return { error: "Waiting for host", status: 400 };
   }
   /*

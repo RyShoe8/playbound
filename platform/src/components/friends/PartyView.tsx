@@ -185,8 +185,17 @@ export function PartyView({
    */
   const waitForHostedRoom = Boolean(party.hosted?.enabled && !joinUrl && !browserHref);
   const inFlight = party.status === "playing" || party.status === "launching";
+  /*
+   * A virtual-LAN party has no listen server to probe, so selfHostReady never
+   * arrives and waiting on it never ends. Those members are gated on the party
+   * being in flight instead — see joinPartyGame.
+   */
   const memberWaitingForHost =
-    !isLeader && !couchMode && party.hostMode === "self" && !party.selfHostReady;
+    !isLeader &&
+    !couchMode &&
+    party.hostMode === "self" &&
+    !party.lan?.enabled &&
+    !party.selfHostReady;
   const lanReady = Boolean(party.lan?.enabled && party.lan?.status === "ready");
   const joinConnectBlocked =
     memberWaitingForHost ||
