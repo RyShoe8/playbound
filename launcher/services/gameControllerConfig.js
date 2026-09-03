@@ -388,7 +388,62 @@ function joystickNamesFor(profile) {
   return names.filter(Boolean);
 }
 
+const rvglEntry = {
+  verified: "VERIFIED against RVGL original — defaults Controller1 to Joystick 0 and standard gamepad button layout.",
+  resolve: (c) => {
+    if (!c.installDir) return null;
+    const rvglIniPath = path.join(c.installDir, "profiles", "rvgl.ini");
+    let profileName = "player";
+    try {
+      if (fs.existsSync(rvglIniPath)) {
+        const text = fs.readFileSync(rvglIniPath, "utf8");
+        const m = /^\s*DefaultProfile\s*=\s*"([^"]+)"/im.exec(text);
+        if (m && m[1]) profileName = m[1];
+      }
+    } catch {
+      /* ignore */
+    }
+    return firstExisting([
+      path.join(c.installDir, "profiles", profileName, "profile.ini"),
+      path.join(c.installDir, "profiles", "player", "profile.ini"),
+    ]);
+  },
+  needsConfig(text) {
+    const m = /^\s*Joystick\s*=\s*(-?\d+)/im.exec(String(text || ""));
+    if (!m) return true;
+    return Number(m[1]) < 0;
+  },
+  apply(text, profile) {
+    const original = String(text || "");
+    if (!/^\[Controller1\]/im.test(original)) return null;
+    return editIniSection(original, "Controller1", () => [
+      "Joystick = 0",
+      "ForceFeedback = 0",
+      "NonLinearSteering = 1",
+      "SteeringDeadzone = 10",
+      "SteeringRange = 90",
+      "ButtonOpacity = 50",
+      "KeyLeft = 0x01ff000d",
+      "KeyRight = 0x01ff000e",
+      "KeyFwd = 0x01ff0000",
+      "KeyBack = 0x01ff0002",
+      "KeyFire = 0x01ff0001",
+      "KeyReset = 0x01ff0003",
+      "KeyReposition = 0x01ff0004",
+      "KeyHonka = 0x01ff0005",
+      "KeyChangeCamera = 0x01ff0006",
+      "KeyRearView = 0x01ff0007",
+      "KeyPause = 0x01ff0008",
+    ]);
+  },
+};
+
 const GAMES = {
+  "re-volt-rvgl": rvglEntry,
+  "rvgl-original": rvglEntry,
+  "rvgl-online": rvglEntry,
+  revolt: rvglEntry,
+  rvgl: rvglEntry,
   openarena: consoleConfigEntry({
     file: path.join("baseoa", "q3config.cfg"),
     verified: "read from a real OpenArena install — seta in_joystick / in_joystickThreshold",
@@ -839,26 +894,6 @@ const NO_CONFIG_NEEDED = {
   "renegade-x": {
     kind: "native",
     note: "Totem Arts ships complete Xbox-style bindings for movement, aiming, weapons, menus, scoring, and vehicles in DefaultInput.ini.",
-  },
-  "re-volt-rvgl": {
-    kind: "native",
-    note: "RVGL provides native configurable gamepad input; PlayBound preserves the player's own mapping.",
-  },
-  "rvgl-original": {
-    kind: "native",
-    note: "RVGL provides native configurable gamepad input; PlayBound preserves the player's own mapping.",
-  },
-  "rvgl-online": {
-    kind: "native",
-    note: "RVGL provides native configurable gamepad input; PlayBound preserves the player's own mapping.",
-  },
-  revolt: {
-    kind: "native",
-    note: "RVGL provides native configurable gamepad input; PlayBound preserves the player's own mapping.",
-  },
-  rvgl: {
-    kind: "native",
-    note: "RVGL provides native configurable gamepad input; PlayBound preserves the player's own mapping.",
   },
   supertux: { kind: "native", note: "SDL2 binds a pad on detection; defaults cover the whole game." },
   supertuxkart: { kind: "native", note: "Detects pads on first run and writes its own mapping." },
