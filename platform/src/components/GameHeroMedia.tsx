@@ -181,6 +181,10 @@ function Slide({
           src={item.src}
           poster={poster || undefined}
           title={`${title} trailer`}
+          controls={false}
+          autoPlay
+          muted
+          loop
           className="h-full w-full object-cover"
         />
       );
@@ -212,24 +216,30 @@ function Slide({
     );
   }
 
+  /*
+   * The poster is scenery and the play control is a button, rather than the
+   * whole slide being one. A full-bleed button means any stray click in the
+   * hero starts a video, and it puts a hit target under the title and the
+   * install buttons — which is exactly how this shipped broken the first time.
+   */
   return (
-    <button
-      type="button"
-      onClick={onPlay}
-      className="group relative block h-full w-full"
-      aria-label={`Play ${title} video`}
-    >
+    <>
       {item.poster ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={item.poster} alt="" className="h-full w-full object-cover" />
       ) : (
         <span className="block h-full w-full bg-black" />
       )}
-      <span className="absolute inset-0 flex items-center justify-center">
-        <span className="rounded-full bg-black/50 p-4 text-white transition group-hover:bg-black/70">
+      <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+        <button
+          type="button"
+          onClick={onPlay}
+          aria-label={`Play ${title} video`}
+          className="pointer-events-auto rounded-full bg-black/50 p-4 text-white transition hover:bg-black/75 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        >
           <Play className="size-7 fill-current" />
-        </span>
+        </button>
       </span>
-    </button>
+    </>
   );
 }

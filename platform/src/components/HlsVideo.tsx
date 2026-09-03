@@ -9,11 +9,24 @@ export function HlsVideo({
   poster,
   className,
   title,
+  /*
+   * Defaults describe the Media tab, which is where a trailer is watched: a
+   * player with controls that waits to be asked. The hero passes the opposite
+   * — a muted, looping backdrop — and nothing else has to change for it.
+   */
+  controls = true,
+  autoPlay = false,
+  muted = false,
+  loop = false,
 }: {
   src: string;
   poster?: string;
   className?: string;
   title?: string;
+  controls?: boolean;
+  autoPlay?: boolean;
+  muted?: boolean;
+  loop?: boolean;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
 
@@ -44,7 +57,10 @@ export function HlsVideo({
   return (
     <video
       ref={ref}
-      controls
+      controls={controls}
+      autoPlay={autoPlay}
+      muted={muted}
+      loop={loop}
       playsInline
       preload="metadata"
       poster={poster}

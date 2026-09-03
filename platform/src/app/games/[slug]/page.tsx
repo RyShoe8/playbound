@@ -224,7 +224,7 @@ export default async function GamePage({
            * always been as tall as its own text, which is right for a game
            * with generated art and far too short to crop a screenshot into.
            */
-          heroMedia.length > 0 ? "min-h-[24rem] sm:min-h-[30rem]" : ""
+          heroMedia.length > 0 ? "flex min-h-[24rem] flex-col sm:min-h-[30rem]" : ""
         }`}
       >
         {/*
@@ -258,9 +258,20 @@ export default async function GamePage({
         {heroMedia.length > 0 ? (
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-background/85 via-background/25 to-transparent" />
         ) : null}
-        <div className="pointer-events-none relative z-10 px-4 pt-24 pb-14 sm:px-6 lg:px-8">
-          <div className="pointer-events-auto flex flex-wrap items-end justify-between gap-6">
-            <div className="max-w-2xl">
+        {/*
+          * mt-auto is what puts the words at the foot of a hero that is now
+          * taller than they are; without it they sit at the top and the install
+          * buttons float in the middle of the artwork.
+          *
+          * pointer-events-auto belongs on the blocks that are actually
+          * interactive, never on the row. A row is full width, so re-enabling
+          * it there covers the reel with a transparent sheet — including the
+          * gap between the title and the buttons, which is exactly where the
+          * play control sits.
+          */}
+        <div className="pointer-events-none relative z-10 mt-auto px-4 pt-24 pb-14 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap items-end justify-between gap-6">
+            <div className="pointer-events-auto max-w-2xl">
               <div className="flex flex-wrap items-center gap-2">
                 <LaunchBadge game={game} />
                 <Suspense fallback={null}>
@@ -280,7 +291,7 @@ export default async function GamePage({
                 </Suspense>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="pointer-events-auto flex flex-wrap items-center gap-2">
               <Suspense fallback={<GameHeroActionsFallback game={game} choosable={choosable} />}>
                 <GameHeroActions game={game} choosable={choosable} />
               </Suspense>
