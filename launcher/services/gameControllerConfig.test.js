@@ -287,7 +287,7 @@ test("records why a native game has no writer", () => {
   assert.strictEqual(supportsControllerConfig("space-station-14"), false);
   // Edition Play must still resolve when the UI briefly passes an edition slug.
   for (const slug of ["re-volt-rvgl", "rvgl-original", "rvgl-online", "rvgl"]) {
-    assert.strictEqual(controllerSupportFor(slug).kind, "native", slug);
+    assert.strictEqual(controllerSupportFor(slug).kind, "config", slug);
   }
 });
 
@@ -580,6 +580,23 @@ test("every YSoccer entry puts movement on the left stick", () => {
   for (const m of out.matchAll(/xAxis:(\d+),yAxis:(\d+)/g)) {
     assert.ok(Number(m[1]) < 4 && Number(m[2]) < 4, `axes on the triggers: ${m[0]}`);
   }
+});
+
+test("rvgl configures Controller1 to Joystick 0 with gamepad buttons", () => {
+  const original = `[Game]\nPlayerName1 = "JACKY DAYTONA"\n\n[Controller1]\nJoystick = -1\nKeyLeft = 0x00000050\nKeyFwd = 0x00000052\n\n[Controller2]\nJoystick = -1\n`;
+  const out = applyProfile("re-volt-rvgl", original, {
+    family: "dualsense",
+    label: "PS5 Controller",
+  });
+  assert.ok(out.includes("Joystick = 0"));
+  assert.ok(out.includes("KeyFwd = 0x01ff0000"));
+  assert.ok(out.includes("KeyLeft = 0x01ff000d"));
+  assert.ok(out.includes("[Controller2]\nJoystick = -1"));
+});
+
+test("rvgl leaves existing controller mapping alone when Joystick >= 0", () => {
+  const configured = `[Controller1]\nJoystick = 0\nKeyFwd = 0x01ff0000\n`;
+  assert.strictEqual(applyProfile("re-volt-rvgl", configured, { family: "xbox" }), null);
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);
