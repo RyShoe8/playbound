@@ -63,8 +63,11 @@ import {
 } from "@/lib/virtualLan/provision";
 import { isHostableGame, type HostedStatus } from "@/lib/gameHost/catalog";
 import { modBaseGameSlugsForCatalogGame } from "@/lib/catalogGameAliases";
-import { isVirtualLanGame } from "@/lib/multiplayer/adapters";
-import { isVirtualLanConfigured } from "@/lib/virtualLan/client";
+import { getMultiplayerAdapter, isVirtualLanGame } from "@/lib/multiplayer/adapters";
+import {
+  isDiscoveryReflectorConfigured,
+  isVirtualLanConfigured,
+} from "@/lib/virtualLan/client";
 import {
   defaultHostMode,
   couchOnlyGameSlugs,
@@ -289,6 +292,20 @@ async function ensurePartyConnectReady(
   }
 
   if (isVirtualLanGame(slug) || hostMode === "self") {
+    /*
+     * Checked before readiness, because a party network can provision
+     * perfectly and still be useless. A game that finds peers by broadcast
+     * needs the discovery reflector inside its NetBird policy; without the
+     * infra group id the policy is built without it, every call succeeds, and
+     * the join simply never finds a host. That is the most expensive kind of
+     * failure — it looks like the game is broken.
+     */
+    if (getMultiplayerAdapter(slug)?.virtualLan?.requiresBroadcast && !isDiscoveryReflectorConfigured()) {
+      return {
+        error:
+          "LAN parties for this game need PlayBound's discovery reflector, which is not configured on this deployment.",
+      };
+    }
     let ls = doc.lan?.status || "none";
     if (ls === "ready" && doc.lan?.setupKey) {
       /* ready */
