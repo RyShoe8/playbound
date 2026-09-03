@@ -286,6 +286,7 @@ export type PartyPayload = {
    */
   lan: {
     enabled: boolean;
+    configured?: boolean;
     status: "none" | "pending" | "ready" | "failed";
     adapterFile: string | null;
     steps: string[];
