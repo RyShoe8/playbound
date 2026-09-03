@@ -94,7 +94,18 @@ const CLIENT_CONNECT_ARGS = {
   wolfenstein: ["--join", "{host}"],
   "wolfenstein-3d": ["--join", "{host}"],
   "beyond-all-reason": ["--connect={host}:{port}"],
-  "zero-k": ["--connect={host}:{port}"],
+  /*
+   * Zero-K joins from its own lobby, not from a flag.
+   *
+   * This carried `--connect={host}:{port}`, which was never exercised: the
+   * only thing that would have supplied a host was a PlayBound-provisioned
+   * room, and those never started — spring-dedicated does not take the flags
+   * that recipe passed. The game's actual path is Multiplayer → Custom
+   * Battles over the party's overlay, so null is the honest answer and the
+   * player is shown the address instead of being launched with a flag nobody
+   * has confirmed the client reads.
+   */
+  "zero-k": null,
   flightgear: ["--multiplay=out,10,{host},{port}"],
   mrboom: ["-c", "{host}"],
   

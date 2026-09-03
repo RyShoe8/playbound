@@ -224,13 +224,23 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     portEnd: 1222,
     protocol: "udp",
   },
-  "zero-k": {
-    slug: "zero-k",
-    title: "Zero-K",
-    defaultPort: 8452,
-    portEnd: 8462,
-    protocol: "udp",
-  },
+  /*
+   * Zero-K is deliberately absent.
+   *
+   * It was listed here with a recipe that passed `--port` and `--headless` to
+   * spring-dedicated, and every room failed with "unknown command line flag" —
+   * the engine's dedicated server takes a start script file, and the port
+   * lives inside that script as HostPort. Writing one would not have helped:
+   * the script has to name the exact game archive and map, no Zero-K content
+   * is installed on the host box, and a client has no way to reach a relay
+   * room built that way.
+   *
+   * None of which is a gap, because Zero-K's multiplayer is its lobby. The
+   * adapter is virtual-lan and already carries the real steps — host a Custom
+   * Room, friends join it from Custom Battles — over the party's overlay. A
+   * PlayBound-provisioned room is the wrong answer to a question the game
+   * answers itself.
+   */
   flightgear: {
     slug: "flightgear",
     title: "FlightGear",
