@@ -19,6 +19,9 @@ const {
   defaultGamePort,
   joinsFromInGameMenu,
   staticLaunchArgs,
+  arbiterLaunchArgs,
+  hasArbiterLaunch,
+  clientConnectArgs,
 } = require("./connectArgs");
 
 test("a templated pair contributes nothing to a plain launch", () => {
@@ -117,4 +120,43 @@ test("openra join substitutes the target mod and address", () => {
     ),
     ["Game.Mod=d2k", "Launch.Connect=147.93.133.235:1234"]
   );
+});
+
+/**
+ * ECWolf has no dedicated server: the host is a player. Getting this wrong is
+ * silent — the leader launches a perfectly good single-player game, nothing
+ * listens, and every joiner's --join dials a machine that is not in a session.
+ */
+test("a peer game's host launches differently from its joiners", () => {
+  assert.ok(hasArbiterLaunch("wolfenstein"), "ECWolf hosts from a player's own game");
+  assert.deepEqual(
+    applyConnectTemplates(arbiterLaunchArgs("wolfenstein"), { nodes: 4 }),
+    ["--host", "4"],
+    "the arbiter waits for the party"
+  );
+  // Two is the floor: a one-node multiplayer game never starts.
+  assert.deepEqual(applyConnectTemplates(arbiterLaunchArgs("wolfenstein"), {}), ["--host", "2"]);
+  assert.deepEqual(
+    applyConnectTemplates(arbiterLaunchArgs("wolfenstein"), { nodes: 1 }),
+    ["--host", "2"]
+  );
+});
+
+test("a game with a real dedicated server has no arbiter launch", () => {
+  // The flag decides whether the leader's own game is the server. Claiming it
+  // for a game PlayBound hosts would launch the client with flags meant for a
+  // host that already exists elsewhere.
+  assert.equal(hasArbiterLaunch("openarena"), false);
+  assert.equal(hasArbiterLaunch("veloren"), false);
+  assert.equal(arbiterLaunchArgs("openra"), null);
+});
+
+test("both spellings of the Wolfenstein 3D slug join the same way", () => {
+  // The adapter registry calls it "wolfenstein"; the catalog row for a game
+  // still in testing may not. A missed alias here is a silent no-join.
+  for (const slug of ["wolfenstein", "wolfenstein-3d"]) {
+    assert.deepEqual(clientConnectArgs(slug), ["--join", "{host}"], slug);
+    assert.equal(defaultGamePort(slug), 5029, slug);
+    assert.ok(hasArbiterLaunch(slug), slug);
+  }
 });

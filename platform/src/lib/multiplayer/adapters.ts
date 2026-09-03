@@ -1103,13 +1103,44 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     tier: "tier1_improved",
     adapterType: "direct-ip",
     protocol: "udp",
-    host: { port: 5029, protocol: "udp", binaryHint: "ecwolf" },
-    client: { launchArguments: ["--join", "{host}"] },
+    /*
+     * No binaryHint, because there is no dedicated server to name.
+     *
+     * ECWolf's host is a player: one node runs the ordinary game with
+     * `--host <nodes>` and becomes the arbiter, and everyone else runs
+     * `--join <that machine>`. Naming ecwolf here read as "a server binary
+     * exists", which is what invited the self-host path to try to start one.
+     * The port stays, because that is what the overlay has to carry.
+     */
+    host: { port: 5029, protocol: "udp" },
+    client: {
+      launchArguments: ["--join", "{host}"],
+      /*
+       * The game does not start itself once everyone is connected. Per the
+       * project's multiplayer guide, all nodes then choose New Game from the
+       * main menu and the arbiter picks the parameters — so a player who has
+       * been joined correctly still sees a title screen, and without this
+       * reads that as a failed join.
+       */
+      inGameSteps: [
+        "Wait until every player's ECWolf is at the main menu",
+        "Everyone: choose New Game — the host picks the difficulty and level",
+      ],
+    },
     virtualLan: {
       requiresBroadcast: false,
-      inGameSteps: ["The party leader starts ECWolf after every player has joined the PlayBound party."],
+      inGameSteps: [
+        "The host launches first: their ECWolf waits for the rest of the party",
+        "Everyone else joins, then all players choose New Game from the main menu",
+      ],
     },
-    notes: "ECWolf lock-step LAN play over the private overlay; up to 11 nodes and no public dedicated server.",
+    notes:
+      "ECWolf lock-step peer play over the private overlay; up to 11 nodes and no dedicated server — " +
+      "the host is a player, started with --host <nodes>, and joiners use --join <host>. " +
+      "Every node must run the same ECWolf build with identical game data loaded in the same order, " +
+      "so an add-on installed on one machine and not another breaks the session: that includes the " +
+      "Wolfenstein Sprite Fix and Rotation Project (forum.drdteam.org/viewtopic.php?f=192&t=6432), " +
+      "which is a per-player add-on and must be all of the party or none of it.",
   },
 
   "space-station-14": {
