@@ -78,8 +78,8 @@ const CLIENT_CONNECT_ARGS = {
   "marathon-infinity": ["-connect", "{host}:{port}"],
   "aleph-one": ["-connect", "{host}:{port}"],
   alephone: ["-connect", "{host}:{port}"],
-  freedoom: ["+connect", "{host}:{port}"],
-  zandronum: ["+connect", "{host}:{port}"],
+  freedoom: ["-iwad", "{iwad}", "+connect", "{host}:{port}"],
+  zandronum: ["-iwad", "{iwad}", "+connect", "{host}:{port}"],
   triplea: ["-Dserver.address={host}", "-Dserver.port={port}"],
   "space-station-14": ["--connect-address", "ss14://{host}:{port}"],
   veloren: ["--connect", "{host}:{port}"],
@@ -238,8 +238,16 @@ function joinsFromInGameMenu(slug) {
   return hasClientConnectArgs(slug) && clientConnectArgs(slug) === null;
 }
 
+function freedoomIwadName(editionSlug) {
+  const ed = String(editionSlug || "").toLowerCase();
+  if (ed.includes("phase-1") || ed.includes("phase1") || ed === "1") return "freedoom1.wad";
+  if (ed.includes("freedm") || ed.includes("dm")) return "freedm.wad";
+  return "freedoom2.wad";
+}
+
 function applyConnectTemplates(templates, join, editionSlug) {
   const mod = join?.mod || openRaModName(editionSlug || join?.edition);
+  const iwad = freedoomIwadName(editionSlug || join?.edition);
   return templates.map((template) =>
     String(template)
       .replaceAll("{host}", join?.host || "")
@@ -247,6 +255,7 @@ function applyConnectTemplates(templates, join, editionSlug) {
       .replaceAll("{name}", join?.name || "")
       // OpenRA needs the mod named or it joins with whatever it last had open.
       .replaceAll("{mod}", mod || "ra")
+      .replaceAll("{iwad}", iwad)
       /*
        * Which seat this player takes in a two-player peer game. Both sides run
        * the same command line except for this, and if they agree on it they
@@ -258,7 +267,7 @@ function applyConnectTemplates(templates, join, editionSlug) {
   );
 }
 
-const TEMPLATE_TOKEN = /\{(host|port|name|mod|playerNumber)\}/;
+const TEMPLATE_TOKEN = /\{(host|port|name|mod|playerNumber|iwad)\}/;
 
 /**
  * Args to pass on a plain launch — one with no server to join.
