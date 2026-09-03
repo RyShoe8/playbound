@@ -40,11 +40,19 @@ function renderDeepLinkView(ctx) {
     state.returnToFriendsParty = true;
     state.partyInstallReturnSlug = ctx.slug;
   }
+  /*
+   * An install already running for this link renders the panel again rather
+   * than returning without drawing anything.
+   *
+   * The early return was guarding against re-running startInstall, which
+   * startInstall now refuses on its own. What it actually did was make the
+   * party's Install button dead: the second click set the same context, this
+   * bailed before drawing, and the player was left on whatever screen they
+   * were on with a status line still reading "Installing…". Showing them the
+   * install they already started is the honest answer to clicking it twice.
+   */
   const jobKey = deepLinkJobKey(ctx);
-  if (activeDeepLinkJob && activeDeepLinkJob === jobKey) {
-    state.deepLinkCtx = ctx;
-    return;
-  }
+  const alreadyRunning = Boolean(activeDeepLinkJob) && activeDeepLinkJob === jobKey;
   state.deepLinkCtx = ctx;
 
   const container = views.deepLink;
@@ -190,8 +198,13 @@ function renderDeepLinkView(ctx) {
       void startInstall();
     });
 
-    // Auto-start install immediately
-    void startInstall();
+    // Auto-start install immediately — unless this link is already installing,
+    // in which case say so instead of starting a second one.
+    if (alreadyRunning) {
+      setStatus(`${title} is already installing — see the queue in the status bar.`);
+    } else {
+      void startInstall();
+    }
   } else if (ctx.action === "play") {
     actions.innerHTML = `
       <button class="btn-success" id="dl-act-run" disabled>Launching…</button>
