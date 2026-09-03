@@ -22,6 +22,7 @@ const Platform = require("./platform");
 const GameLauncher = require("./services/GameLauncher");
 const { createManagedJava } = require("./services/ManagedJava");
 const { createLocalServers } = require("./services/localServer");
+const { createTransferMeter } = require("./services/transferMeter");
 const { createManagedDosBox } = require("./services/ManagedDosBox");
 const { createManagedDotNet, requiredDotNetMajor } = require("./services/ManagedDotNet");
 const { createManagedRetroArch } = require("./services/ManagedRetroArch");
@@ -2843,8 +2844,21 @@ function sendProgress(payload) {
     if (payload.received != null && payload.total) {
       activeInstallTask.pct = Math.round((payload.received / payload.total) * 100);
     }
+    // Unpacking has a percentage but no byte counts, so it sets pct directly.
+    if (payload.pct != null) activeInstallTask.pct = payload.pct;
     if (payload.addon !== undefined) activeInstallTask.addon = payload.addon;
     if (payload.message !== undefined) activeInstallTask.message = payload.message;
+    if (payload.bytesPerSecond !== undefined) activeInstallTask.bytesPerSecond = payload.bytesPerSecond;
+    if (payload.etaMs !== undefined) activeInstallTask.etaMs = payload.etaMs;
+    /*
+     * When a phase starts, so the UI can say how long it has been going. The
+     * silent phases are the ones that look hung — extraction has no byte count
+     * to show and can run for minutes on a large archive.
+     */
+    if (payload.phase && payload.phase !== activeInstallTask.lastPhase) {
+      activeInstallTask.lastPhase = payload.phase;
+      activeInstallTask.phaseStartedAt = Date.now();
+    }
   }
   const snapshot = getInstallQueueSnapshot();
   const enriched = {
@@ -2854,6 +2868,7 @@ function sendProgress(payload) {
     title: payload.title || activeInstallTask?.title || null,
     queueCount: snapshot.totalCount,
     queue: snapshot,
+    phaseStartedAt: activeInstallTask?.phaseStartedAt ?? null,
   };
   if (win && !win.isDestroyed()) {
     win.webContents.send("progress", enriched);
@@ -2906,6 +2921,12 @@ async function downloadTo(url, dest, attempts = 3) {
       const reader = res.body.getReader();
       let received = 0;
       let lastSent = 0;
+      /*
+       * Per attempt, not per call: a retry restarts the file at zero, and the
+       * meter has to forget the previous attempt or it reports a rate computed
+       * across the gap.
+       */
+      const meter = createTransferMeter();
       for (;;) {
         if (activeDownloadSignal?.aborted) {
           throw new Error("Download cancelled");
@@ -2919,11 +2940,12 @@ async function downloadTo(url, dest, attempts = 3) {
         const now = Date.now();
         if (now - lastSent > 250) {
           lastSent = now;
-          sendProgress({ phase: "downloading", received, total });
+          const { bytesPerSecond, etaMs } = meter.update(received, total, now);
+          sendProgress({ phase: "downloading", received, total, bytesPerSecond, etaMs });
         }
       }
       await new Promise((r, j) => file.end((err) => (err ? j(err) : r())));
-      sendProgress({ phase: "downloading", received, total: total || received });
+      sendProgress({ phase: "downloading", received, total: total || received, etaMs: 0 });
       return;
     } catch (err) {
       lastErr = err;
@@ -3463,7 +3485,7 @@ function sevenZipBinary() {
 }
 
 /** Extract a .7z or .rar. Mirrors extractZip: shell out, no extraction library. */
-function extract7z(archivePath, destDir) {
+function extract7z(archivePath, destDir, onPercent) {
   return new Promise((resolve, reject) => {
     const bin = sevenZipBinary();
     if (!bin) {
@@ -3474,13 +3496,34 @@ function extract7z(archivePath, destDir) {
       );
       return;
     }
-    // -bso0/-bse0/-bsp0 silence progress chatter; -y accepts overwrite prompts,
-    // which a detached process could never answer.
+    /*
+     * -bsp1 asks 7-Zip for the percentage it already knows.
+     *
+     * This used to be -bsp0, silenced along with the rest of the chatter, which
+     * left unpacking as the one long step with nothing to show — minutes of a
+     * spinner on a large archive, indistinguishable from a hang. -bso0 still
+     * silences the per-file listing; only the progress line comes through.
+     *
+     * -y accepts overwrite prompts, which a detached process could never answer.
+     */
     const child = spawn(
       bin,
-      ["x", String(archivePath), `-o${String(destDir)}`, "-y", "-bso0", "-bsp0"],
+      ["x", String(archivePath), `-o${String(destDir)}`, "-y", "-bso0", "-bsp1"],
       { windowsHide: true }
     );
+    if (typeof onPercent === "function") {
+      let last = -1;
+      child.stdout?.on("data", (chunk) => {
+        // 7-Zip redraws one line with carriage returns, so the last match in a
+        // chunk is the current figure.
+        const matches = String(chunk).match(/(\d{1,3})%/g);
+        if (!matches?.length) return;
+        const pct = Number(matches[matches.length - 1].replace("%", ""));
+        if (!Number.isFinite(pct) || pct === last) return;
+        last = pct;
+        onPercent(Math.min(100, Math.max(0, pct)));
+      });
+    }
     let err = "";
     child.stderr?.on("data", (d) => (err += d));
     child.on("error", (spawnErr) =>
@@ -3569,7 +3612,9 @@ async function extractArchive(archivePath, destDir) {
   if (lower.endsWith(".dmg")) {
     await extractDmg(archivePath, destDir);
   } else if (lower.endsWith(".7z") || lower.endsWith(".rar")) {
-    await extract7z(archivePath, destDir);
+    await extract7z(archivePath, destDir, (pct) =>
+      sendProgress({ phase: "extracting", pct })
+    );
   } else if (lower.endsWith(".tar.gz") || lower.endsWith(".tgz") || lower.endsWith(".tar.xz")) {
     if (process.platform === "win32") {
       throw new Error("tar archives are not supported on Windows installs");

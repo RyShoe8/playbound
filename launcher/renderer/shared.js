@@ -729,6 +729,43 @@ export function buildCatalogStatsCardHtml(live, extra = {}) {
 export const fmtBytes = (n) =>
   n >= 1e9 ? `${(n / 1e9).toFixed(2)} GB` : n >= 1e6 ? `${(n / 1e6).toFixed(0)} MB` : `${Math.round(n / 1e3)} KB`;
 
+/** "8 MB/s". Empty until the meter has enough signal to mean anything. */
+export const fmtRate = (bytesPerSecond) =>
+  bytesPerSecond ? `${fmtBytes(bytesPerSecond)}/s` : "";
+
+/**
+ * How long is left, rounded hard on purpose.
+ *
+ * "about 4m" is honest about a number derived from the last few seconds of a
+ * connection. "4m 12s" reads as a promise, and the moment it slips the whole
+ * readout stops being believed — including the parts that were right.
+ */
+export function fmtEta(ms) {
+  if (ms == null || !Number.isFinite(ms) || ms < 0) return "";
+  const seconds = Math.round(ms / 1000);
+  if (seconds <= 3) return "almost done";
+  if (seconds < 60) return `about ${seconds}s left`;
+  const minutes = Math.ceil(seconds / 60);
+  if (minutes < 60) return `about ${minutes}m left`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest ? `about ${hours}h ${rest}m left` : `about ${hours}h left`;
+}
+
+/**
+ * Time spent in the current step, as m:ss.
+ *
+ * This is the whole answer to "it looks like nothing is happening": a phase
+ * with no byte count still has a number that visibly moves, so a slow step
+ * reads as slow rather than as hung.
+ */
+export function fmtElapsed(ms) {
+  if (ms == null || !Number.isFinite(ms) || ms < 0) return "";
+  const seconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
 export function editionsContextSlug() {
   return state.currentDetailSlug || state.currentEditionDetail?.gameSlug || null;
 }
@@ -854,9 +891,19 @@ export function renderQueuePopoverContent() {
   let html = "";
   if (active) {
     const pct = active.pct != null ? active.pct : (active.total && active.received ? Math.round((active.received / active.total) * 100) : 0);
-    const sizeStr = active.total
-      ? `${fmtBytes(active.received || 0)} / ${fmtBytes(active.total)} (${pct}%)`
-      : (active.received ? fmtBytes(active.received) : "");
+    const rateStr = active.phase === "downloading" ? fmtRate(active.bytesPerSecond) : "";
+    const etaStr = active.phase === "downloading" ? fmtEta(active.etaMs) : "";
+    const sizeStr = [
+      active.total
+        ? `${fmtBytes(active.received || 0)} / ${fmtBytes(active.total)} (${pct}%)`
+        : active.received
+          ? fmtBytes(active.received)
+          : "",
+      rateStr,
+      etaStr,
+    ]
+      .filter(Boolean)
+      .join(" · ");
     const phaseLabel = active.phase === "downloading"
       ? (active.addon ? `Downloading ${active.addon}` : "Downloading files…")
       : active.phase === "extracting"

@@ -11,6 +11,9 @@ import {
   editionsContextSlug,
   endGameSession,
   fmtBytes,
+  fmtElapsed,
+  fmtEta,
+  fmtRate,
   loadCompatibilitySetting,
   refreshAccountStatus,
   runStatusAction,
@@ -561,14 +564,46 @@ function wireMainEvents() {
     if (data) setInstallQueueState(data);
   }).catch(() => {});
 
-  window.playbound.onProgress(({ phase, received, total, addon, message, title, slug, queue, queueCount }) => {
+  /*
+   * A step with no byte count still needs a number that moves.
+   *
+   * Extraction is the one that gets reported as a hang: a 4 GB archive is
+   * several minutes of a spinner and one unchanging sentence, which is
+   * indistinguishable from a stuck install. The elapsed clock is what makes
+   * slow read as slow. It ticks in the renderer because the main process has
+   * nothing to say during those seconds — that is the entire problem.
+   */
+  let phaseTicker = null;
+  function stopPhaseTicker() {
+    if (phaseTicker) clearInterval(phaseTicker);
+    phaseTicker = null;
+  }
+  function tickPhase(startedAt, render) {
+    stopPhaseTicker();
+    const paint = () => render(startedAt ? fmtElapsed(Date.now() - startedAt) : "");
+    paint();
+    if (startedAt) phaseTicker = setInterval(paint, 1000);
+  }
+
+  window.playbound.onProgress((data) => {
+    const {
+      phase, received, total, addon, message, title, queue, queueCount,
+      bytesPerSecond, etaMs, phaseStartedAt,
+    } = data;
     if (queue) setInstallQueueState(queue);
 
     const titlePrefix = title ? `${title}: ` : "";
     const queuedText = queueCount && queueCount > 1 ? ` · (+${queueCount - 1} queued)` : "";
+    const withElapsed = (base) => (elapsed) =>
+      setStatus(`${base}${elapsed ? ` · ${elapsed}` : ""}${queuedText}`);
 
-    if (phase === "resolving") setStatus(`${titlePrefix}Resolving download package…${queuedText}`);
-    else if (phase === "queued") {
+    if (phase !== "downloading") stopPhaseTicker();
+
+    if (phase === "resolving") {
+      // Finding the release, following redirects, sometimes waiting on an
+      // upstream that is simply slow. Silent until it resolves.
+      tickPhase(phaseStartedAt, withElapsed(`${titlePrefix}Finding the download…`));
+    } else if (phase === "queued") {
       // No bar: this install has not started and has no progress of its own.
       setStatus(message || `${titlePrefix}Queued — waiting for current install to finish…`);
       setProgress(null);
@@ -576,20 +611,45 @@ function wireMainEvents() {
     else if (phase === "dosbox") setStatus(message || "Installing DOSBox…");
     else if (phase === "downloading") {
       const pct = total ? Math.round((received / total) * 100) : null;
-      const prefix = addon ? `Downloading ${addon}...` : "Downloading...";
-      setStatus(`${titlePrefix}${prefix} ${fmtBytes(received)}${total ? ` of ${fmtBytes(total)} (${pct}%)` : ""}${queuedText}`);
+      const prefix = addon ? `Downloading ${addon}` : "Downloading";
+      const size = `${fmtBytes(received)}${total ? ` of ${fmtBytes(total)} (${pct}%)` : ""}`;
+      // Rate and remaining appear a second or so in, once the meter has enough
+      // samples to mean something. Until then the bytes carry it.
+      const detail = [size, fmtRate(bytesPerSecond), fmtEta(etaMs)].filter(Boolean).join(" · ");
+      setStatus(`${titlePrefix}${prefix} ${detail}${queuedText}`);
       setProgress(pct);
     } else if (phase === "extracting") {
-      setStatus(`${titlePrefix}Extracting game files… this can take a few minutes${queuedText}`);
-      setProgress("indeterminate");
+      /*
+       * 7-Zip reports a real percentage, so .7z and .rar get a moving bar. Zip
+       * goes through Expand-Archive, which reports nothing — that one falls
+       * back to the clock, which is still the difference between "slow" and
+       * "hung".
+       */
+      const what = addon ? addon : "game files";
+      if (data.pct != null) {
+        stopPhaseTicker();
+        setStatus(`${titlePrefix}Unpacking ${what}… ${data.pct}%${queuedText}`);
+        setProgress(data.pct);
+      } else {
+        tickPhase(
+          phaseStartedAt,
+          withElapsed(`${titlePrefix}Unpacking ${what}… large games take a few minutes`)
+        );
+        setProgress("indeterminate");
+      }
     } else if (phase === "installer-ready") {
-      setStatus(addon || `${titlePrefix}Waiting for the installer to finish…`);
+      // Someone has a setup window open in front of them; the clock says how
+      // long PlayBound has been waiting on it.
+      tickPhase(phaseStartedAt, withElapsed(addon || `${titlePrefix}Waiting for the installer…`));
       setProgress(null);
     } else if (phase === "installing-base") {
-      setStatus(`${titlePrefix}Installing required base game…`);
+      tickPhase(phaseStartedAt, withElapsed(`${titlePrefix}Installing the base game first…`));
       setProgress(null);
     } else if (phase === "done") {
       setStatus(`${titlePrefix}Complete!`);
+      setProgress(null);
+    } else if (phase === "cancelled") {
+      setStatus(message || `${titlePrefix}Install cancelled.`);
       setProgress(null);
     }
   });
