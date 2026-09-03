@@ -1506,6 +1506,26 @@ function partyGameOptionsHtml(selectedSlug, party) {
   return options.join("");
 }
 
+/*
+ * The launcher half of the party action bar's shared vocabulary.
+ *
+ * partyActions.ts on the platform decides which icon and which colour role
+ * each button gets; these turn those names into this renderer's inline SVG and
+ * CSS classes. The web app has its own half in partyActionStyle.tsx. The
+ * decision is shared, the rendering is not.
+ */
+const PARTY_TONE = {
+  primary: "btn-primary",
+  secondary: "btn-secondary",
+  success: "btn-success",
+  danger: "btn-danger",
+  muted: "btn-secondary",
+};
+
+function PARTY_ICON(name) {
+  return name && ICON[name] ? ICON[name] : "";
+}
+
 function partyStatusLabel(status) {
   const text = String(status || "").replace("_", " ");
   return text ? text.charAt(0).toUpperCase() + text.slice(1) : "";
@@ -1758,49 +1778,37 @@ function buildPartyViewHtml(party) {
     })
     .join("");
 
+  /*
+   * Labels, gating and tone come from party.actions, resolved server-side, so
+   * this panel and the web one cannot drift apart again. See
+   * platform/src/lib/playTogether/partyActions.ts. The fallback keeps an older
+   * server — or a payload built without a viewer — rendering something sane.
+   */
+  const actions = party.actions || null;
   const readyHtml =
-    !ended && !inFlight
+    actions && actions.ready.visible
       ? `<button type="button" id="btn-party-ready" class="party-btn ${
-          isReady ? "btn-secondary" : "btn-success"
-        }"${hasGame ? "" : " disabled title=\"Pick a game first\""}>
-           ${isReady ? ICON.x : ICON.check} ${isReady ? "Cancel Ready" : "Ready Up"}
+          PARTY_TONE[actions.ready.tone] || "btn-primary"
+        }"${actions.ready.enabled ? "" : ` disabled title="${escapeHtml(actions.ready.title)}"`}>
+           ${PARTY_ICON(actions.ready.icon)} ${escapeHtml(actions.ready.label)}
          </button>`
       : "";
 
-  const waitingForServer = !isLeader && memberWaitingForConnect && !waitingForLeader;
   /*
-   * A click that is still owed an answer. The button becomes the state of that
-   * wait rather than an invitation to press it again — and stays pressable,
-   * because the only thing left to ask of it is "stop waiting".
+   * A click that is still owed an answer. Whether one is outstanding is local
+   * state the server cannot see, so the resolver sends both readings of the
+   * button and this picks between them — rather than writing its own labels,
+   * which is how the two panels forked in the first place.
    */
   const autoJoinArmed = pendingJoin?.partyId === party.id && !ended;
-  const joinButtonText = autoJoinArmed
-    ? "Joining when the server is ready…"
-    : isLeader && !inFlight
-    ? "Start Game"
-    : waitingForLeader
-    ? "Waiting for host"
-    : waitingForServer
-    ? "Server Starting…"
-    : "Join Game";
-  const joinButtonIcon = autoJoinArmed || waitingForLeader || waitingForServer ? ICON.loader : ICON.play;
-  const joinTitle = autoJoinArmed
-    ? "PlayBound will join you as soon as the server is up — click to stop waiting"
-    : waitingForLeader
-    ? "The party host must start the game first"
-    : waitingForServer
-    ? "The game server is still starting"
-    : hosted.status === "failed" || lan.status === "failed"
-    ? hosted.error || lan.error || "Could not start the party connection"
-    : hosted.status === "pending" || lan.status === "pending"
-    ? "Server is starting — click to join when ready"
-    : "";
-
-  const joinGameHtml = canJoinGame
+  const joinBtn = actions ? (autoJoinArmed ? actions.joinArmed : actions.join) : null;
+  const joinGameHtml = joinBtn && joinBtn.visible
     ? `<div class="party-join-wrap">
-         <button type="button" id="btn-party-join-game" class="party-btn btn-primary"${
-           joinDisabled ? ` disabled` : ""
-         }${joinTitle ? ` title="${escapeHtml(joinTitle)}"` : ""}>${joinButtonIcon} ${escapeHtml(joinButtonText)}</button>
+         <button type="button" id="btn-party-join-game" class="party-btn ${
+           PARTY_TONE[joinBtn.tone] || "btn-primary"
+         }"${joinBtn.enabled ? "" : ` disabled`}${
+           joinBtn.title ? ` title="${escapeHtml(joinBtn.title)}"` : ""
+         }>${PARTY_ICON(joinBtn.icon)} ${escapeHtml(joinBtn.label)}</button>
          ${
            /*
             * Room code only. The address used to be printed here too, and
@@ -1822,16 +1830,6 @@ function buildPartyViewHtml(party) {
         )}" title="Click to copy error">Copy</button>`
       : "";
 
-  const hostedNoteHtml =
-    party.hostMode === "public" && hosted.enabled && hosted.status !== "ready"
-      ? `<p class="view-sub party-inline-note">Now pick a server under <strong>Public server</strong> above.</p>`
-      : hosted.enabled && hosted.status === "pending"
-      ? `<p class="view-sub party-inline-note">Starting PlayBound server…</p>`
-      : hosted.enabled && hosted.status === "failed"
-      ? `<p class="party-inline-note party-hosted-error"><span>${escapeHtml(
-          hosted.error || "Could not start the PlayBound server."
-        )}</span>${copyErrorBadge(hosted.error || "Could not start the PlayBound server.")}</p>`
-      : "";
 
   const hostedAddr = hosted.host ? `${hosted.host}:${hosted.port}` : "";
   const isHurryCurry = String(party.gameSlug || "").toLowerCase() === "hurry-curry";
@@ -1883,18 +1881,6 @@ function buildPartyViewHtml(party) {
         }</p>`
       : "";
 
-  const lanNoteHtml =
-    lan.enabled && lan.status === "pending"
-      ? `<p class="view-sub party-inline-note">Setting up the party network…</p>`
-      : lan.enabled && lan.status === "failed"
-      ? `<p class="party-inline-note party-hosted-error"><span>${escapeHtml(
-          lan.error ||
-            "Could not set up the party network. The discovery reflector may not be running on the NetBird VPS."
-        )}</span>${copyErrorBadge(
-          lan.error ||
-            "Could not set up the party network. The discovery reflector may not be running on the NetBird VPS."
-        )}</p>`
-      : "";
   const lanStepsHtml =
     lan.enabled && Array.isArray(lan.steps) && lan.steps.length
       ? `<ol class="party-lan-steps">${lan.steps
@@ -1913,32 +1899,27 @@ function buildPartyViewHtml(party) {
    * leader's launcher publishes the code when it starts the session, so until
    * then members are told what is about to happen rather than shown nothing.
    */
-  const couchUrl = couch.joinUrl || (couch.joinCode ? `https://playbound.club/controller/${couch.joinCode}` : "");
-  const couchHtml = !couch.enabled
+  // Code, link and the what-happens-next line all come from actions.couch.
+  const couchPanel = actions ? actions.couch : null;
+  const couchHtml = !couchPanel
     ? ""
-    : couch.status === "ready" && couch.joinCode
+    : couchPanel.status === "ready" && couchPanel.joinCode
     ? `<div class="party-couch">
          <p class="party-section-label">Phone controllers</p>
-         <p class="party-couch-code">Code <strong>${escapeHtml(String(couch.joinCode))}</strong></p>
-         <p class="view-sub">Open <strong>${escapeHtml(couchUrl)}</strong> on your phone. It becomes a controller plugged into the host's PC.</p>
+         <p class="party-couch-code">Code <strong>${escapeHtml(String(couchPanel.joinCode))}</strong></p>
+         <p class="view-sub">Open <strong>${escapeHtml(couchPanel.joinUrl || "")}</strong> on your phone. It becomes a controller plugged into the host's PC.</p>
          <button type="button" id="btn-party-couch-copy" class="party-btn btn-secondary" data-url="${escapeHtml(
-           couchUrl
+           couchPanel.joinUrl || ""
          )}">${ICON.phone} Copy controller link</button>
        </div>`
-    : couch.status === "failed"
-    ? `<p class="party-inline-note party-hosted-error">${escapeHtml(
-        couch.error || "Could not start phone controllers on the host's PC."
-      )}</p>`
-    : `<p class="view-sub party-inline-note">${
-        // The badge in the header already says what couch mode is; this says
-        // what happens next, and nothing else.
-        isLeader
-          ? "Start Game and your party gets a controller link."
-          : "When the host starts the game you will get a link to open on your phone."
-      }</p>`;
+    : `<p class="${
+        couchPanel.status === "failed"
+          ? "party-inline-note party-hosted-error"
+          : "view-sub party-inline-note"
+      }">${escapeHtml(couchPanel.note)}</p>`;
 
   const playingPillHtml =
-    party.status === "playing" && !canJoinGame
+    actions && actions.playingPill
       ? `<div class="party-playing-pill">${ICON.play} Playing</div>`
       : "";
 
@@ -1995,8 +1976,15 @@ function buildPartyViewHtml(party) {
             ${joinGameHtml}
             ${hostedReadyHtml}
             ${publicReadyHtml}
-            ${hostedNoteHtml}
-            ${lanNoteHtml}
+            ${(actions ? actions.notes : [])
+              .map((n) =>
+                n.tone === "error"
+                  ? `<p class="party-inline-note party-hosted-error"><span>${escapeHtml(
+                      n.text
+                    )}</span>${copyErrorBadge(n.text)}</p>`
+                  : `<p class="view-sub party-inline-note">${escapeHtml(n.text)}</p>`
+              )
+              .join("")}
             ${serverControlNoteHtml}
             ${playingPillHtml}
           </div>

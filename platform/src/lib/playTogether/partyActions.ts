@@ -64,6 +64,13 @@ export interface PartyCouchPanel {
 export interface PartyActions {
   ready: PartyActionButton;
   join: PartyActionButton;
+  /*
+   * The join button as it reads once the viewer has armed a join and is waiting
+   * for the server. Whether that is happening is client-side state the server
+   * cannot see, so the client swaps to this rather than writing its own labels
+   * — which is how the strings would get forked again.
+   */
+  joinArmed: PartyActionButton;
   couch: PartyCouchPanel | null;
   /** Inline notes under the action bar, in display order. */
   notes: PartyActionNote[];
@@ -97,12 +104,6 @@ export interface PartyActionsInput {
     joinUrl?: string | null;
     error?: string | null;
   } | null;
-  /**
-   * The viewer has armed a join and is waiting for the server. Client-side
-   * state — only the launcher has it today — but the labels for it belong here
-   * with the rest, so the web says the same thing when it grows the feature.
-   */
-  joinArmed?: boolean;
 }
 
 /** Every string the party action bar can show. One place, so both clients agree. */
@@ -191,9 +192,8 @@ export function computePartyActions(input: PartyActionsInput): PartyActions {
   const canJoin = hasGame && !ended && (isReady || inFlight) && (!couchOn || isLeader);
   const waitingForServer = !isLeader && memberWaitingForConnect && !waitingForLeader;
 
-  const label = input.joinArmed
-    ? PARTY_COPY.joinArmed
-    : isLeader && !inFlight
+  const label =
+    isLeader && !inFlight
       ? PARTY_COPY.startGame
       : waitingForLeader
         ? PARTY_COPY.waitingForHost
@@ -212,9 +212,7 @@ export function computePartyActions(input: PartyActionsInput): PartyActions {
     hosted.status === "failed" || lan.status === "failed"
       ? hosted.error || lan.error || PARTY_COPY.connectFailed
       : "";
-  const title = input.joinArmed
-    ? PARTY_COPY.joinArmedTitle
-    : waitingForLeader
+  const title = waitingForLeader
       ? PARTY_COPY.hostMustStart
       : connectError
         ? connectError
@@ -250,15 +248,22 @@ export function computePartyActions(input: PartyActionsInput): PartyActions {
     join: button({
       visible: canJoin,
       label,
-      /*
-       * An armed join stays clickable so it can be called off, and everything
-       * else that would disable it is already described by the label.
-       */
-      enabled: input.joinArmed
-        ? true
-        : !(joinConnectFailed || waitingForLeader || memberWaitingForConnect),
+      enabled: !(joinConnectFailed || waitingForLeader || memberWaitingForConnect),
       title,
-      icon: waitingForLeader || waitingForServer || input.joinArmed ? "loader" : "play",
+      icon: waitingForLeader || waitingForServer ? "loader" : "play",
+      tone: "primary",
+    }),
+    joinArmed: button({
+      visible: canJoin,
+      label: PARTY_COPY.joinArmed,
+      /*
+       * Stays clickable: the only thing left to ask of it is "stop waiting",
+       * and everything that would otherwise disable it is already said by the
+       * label.
+       */
+      enabled: true,
+      title: PARTY_COPY.joinArmedTitle,
+      icon: "loader",
       tone: "primary",
     }),
     couch: couchOn
