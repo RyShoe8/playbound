@@ -53,7 +53,31 @@ export const PLATFORM_EXPR = {
         {
           $ifNull: [
             "$$prop",
-            { $cond: [{ $eq: ["$properties.origin", "server"] }, "Server", "Unknown"] },
+            {
+              $cond: [
+                { $eq: ["$properties.origin", "server"] },
+                "Server",
+                {
+                  $cond: [
+                    {
+                      $in: [
+                        "$event",
+                        [
+                          "party_ok",
+                          "party_failed",
+                          "party_hosted_failed",
+                          "party_hosted_ready",
+                          "party_lan_failed",
+                          "party_chat_failed",
+                        ],
+                      ],
+                    },
+                    "Server",
+                    "Unknown",
+                  ],
+                },
+              ],
+            },
           ],
         },
       ],

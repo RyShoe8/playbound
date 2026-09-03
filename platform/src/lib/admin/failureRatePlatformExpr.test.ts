@@ -121,6 +121,10 @@ describe("the platform aggregation expression", () => {
     expect(bucket({ os: "unknown", properties: { origin: "server" } })).toBe("Server");
     // Even with no os field at all.
     expect(bucket({ properties: { origin: "server" } })).toBe("Server");
+    // Historic party events recorded before origin: "server" was added.
+    expect(bucket({ event: "party_failed", os: "unknown", properties: {} })).toBe("Server");
+    expect(bucket({ event: "party_ok", properties: {} })).toBe("Server");
+    expect(bucket({ event: "party_hosted_failed", properties: {} })).toBe("Server");
   });
 
   it("prefers a known platform over the server label", () => {

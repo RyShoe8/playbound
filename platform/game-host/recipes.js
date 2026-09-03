@@ -852,6 +852,7 @@ export const recipes = {
     args: (port, ctx, binary) => {
       const isChoc = binary && binary.toLowerCase().includes("chocolate");
       const iwadArgs = [];
+      const ed = String(ctx?.editionSlug || "").toLowerCase();
       const isPhase1 = ed.includes("phase-1") || ed.includes("phase1") || ed === "1";
       const isFreeDm = ed.includes("freedm") || ed.includes("dm");
       const iwadName = isPhase1
