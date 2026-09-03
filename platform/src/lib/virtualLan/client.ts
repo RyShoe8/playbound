@@ -48,6 +48,19 @@ function infraGroupId(): string | null {
   return process.env.NETBIRD_INFRA_GROUP_ID || null;
 }
 
+/**
+ * Whether the discovery reflector can actually see a party's traffic.
+ *
+ * Games that find peers by broadcast need the reflector inside the party's
+ * NetBird policy, because WireGuard routes rather than replicates and a
+ * broadcast packet otherwise reaches nobody. Without this group id the policy
+ * is still created, the party still forms and every call still succeeds — the
+ * join simply never finds a host, which looks like a bug in the game.
+ */
+export function isDiscoveryReflectorConfigured(): boolean {
+  return Boolean(infraGroupId());
+}
+
 export function isVirtualLanConfigured(): boolean {
   return Boolean(apiBase() && apiToken());
 }
