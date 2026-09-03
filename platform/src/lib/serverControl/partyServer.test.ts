@@ -24,13 +24,16 @@ function party(over: Partial<PartyServerSource> = {}): PartyServerSource {
 
 describe("whether a party has a server to control", () => {
   it("does for a hostable game on the PlayBound VPS", () => {
-    expect(serverControlAvailability(party())).toEqual({ available: true });
+    expect(serverControlAvailability(party())).toEqual({ available: true, phase: "live" });
   });
 
   it("treats an old party with no host mode as the game's default", () => {
     // hostMode predates nothing here — parties created before host modes exist
     // with null, and for a hostable game that has always meant the VPS.
-    expect(serverControlAvailability(party({ hostMode: null }))).toEqual({ available: true });
+    expect(serverControlAvailability(party({ hostMode: null }))).toEqual({
+      available: true,
+      phase: "live",
+    });
   });
 
   it("controls a room on the leader's own PC through their launcher", () => {
@@ -42,6 +45,7 @@ describe("whether a party has a server to control", () => {
      */
     expect(serverControlAvailability(party({ hostMode: "self", hosted: { roomId: null } }))).toEqual({
       available: true,
+      phase: "live",
     });
     expect(createPartyServerAdapter(party({ hostMode: "self" }))?.kind).toBe("local");
     expect(createPartyServerAdapter(party())?.kind).toBe("vps-agent");
@@ -71,12 +75,26 @@ describe("whether a party has a server to control", () => {
     );
     expect((notHosted as { reason: string }).reason).toMatch(/does not host HoloCure/);
 
+  });
+
+  it("offers controls before the room starts, as a plan rather than a change", () => {
+    /*
+     * This used to be a refusal. The only way to get a server on the right map
+     * was to start one on the wrong map and restart it, which disconnects the
+     * party to fix something they were never allowed to set — so the phase
+     * says "pre-launch" and provisionPartyHost starts the room with it.
+     */
     const noRoom = serverControlAvailability(party({ hosted: { roomId: null } }));
-    expect((noRoom as { reason: string }).reason).toMatch(/has not started/);
+    expect(noRoom).toEqual({ available: true, phase: "pre-launch" });
+
+    const running = serverControlAvailability(party({ hosted: { roomId: "room_a" } }));
+    expect(running).toEqual({ available: true, phase: "live" });
   });
 
   it("returns no adapter when there is nothing to control", () => {
     expect(createPartyServerAdapter(party({ hostMode: "couch" }))).toBe(null);
+    /* Nothing to adapt before the room is asked for — the settings chosen in
+       that phase are stored on the party, not sent to a process. */
     expect(createPartyServerAdapter(party({ hosted: { roomId: null } }))).toBe(null);
   });
 });

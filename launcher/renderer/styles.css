@@ -5959,6 +5959,26 @@ textarea.input-text {
   color: var(--text-muted);
 }
 .party-inline-note { margin: 0; font-size: 12px; align-self: center; }
+/* The overlay hint sits with the other party notes but wraps like a sentence
+   rather than a status line — it names a key, and a key has to look like one. */
+.party-overlay-hint {
+  flex-basis: 100%;
+  align-self: flex-start;
+  line-height: 1.5;
+}
+.party-overlay-hint kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+}
 /* Says a party's game has no online play, sitting where "Host: …" sits for
    every other party. Deliberately a badge rather than another muted note —
    it is the difference between this party and an online one. */

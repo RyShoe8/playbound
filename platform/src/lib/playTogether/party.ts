@@ -62,6 +62,7 @@ import {
   type PartyLanFields,
 } from "@/lib/virtualLan/provision";
 import { isHostableGame, type HostedStatus } from "@/lib/gameHost/catalog";
+import { serverControlAvailability } from "@/lib/serverControl/partyServer";
 import { modBaseGameSlugsForCatalogGame } from "@/lib/catalogGameAliases";
 import { getMultiplayerAdapter, isVirtualLanGame } from "@/lib/multiplayer/adapters";
 import {
@@ -566,6 +567,33 @@ async function pickCanonicalPartyDoc(
 }
 
 /**
+ * Whether PlayBound can administer this party's server, for the party panel.
+ *
+ * Both clients need the same answer and neither can work it out: the launcher
+ * cannot import the settings profiles at all, and the web panel would have to
+ * fetch a second endpoint before it knew whether to mention the in-game
+ * overlay. The reason travels with it so a panel can say why there is nothing
+ * rather than showing an empty space.
+ */
+function serverControlPayload(
+  doc: Record<string, unknown>,
+  hostMode: PartyHostMode | null,
+  gameTitle: string | null
+): PartyPayload["serverControl"] {
+  const availability = serverControlAvailability({
+    _id: doc._id as { toString(): string },
+    gameSlug: String(doc.gameSlug || ""),
+    gameTitle,
+    editionSlug: (doc.editionSlug as string) || null,
+    hostMode,
+    hosted: (doc.hosted as { roomId?: string | null }) || null,
+  } as Parameters<typeof serverControlAvailability>[0]);
+  return availability.available
+    ? { supported: true, phase: availability.phase, reason: null }
+    : { supported: false, phase: null, reason: availability.reason };
+}
+
+/**
  * The one way a single party doc becomes a payload.
  *
  * Every mutation and read path goes through here so the shape a client gets
@@ -663,6 +691,12 @@ function serializeParty(
      */
     hostMode,
     hostModes: doc.gameSlug ? hostModeOptions(String(doc.gameSlug)) : [],
+    /*
+     * Resolved with the host mode the party is actually on, not the raw field —
+     * a null hostMode means the game's default, and the controls follow that
+     * same resolution or they would disagree with the panel above them.
+     */
+    serverControl: serverControlPayload(doc, hostMode, gameTitle),
     couchOnlyGames: couchOnlyGameSlugs(),
     publicServer: hostMode === "public" ? publicServer : null,
     /*

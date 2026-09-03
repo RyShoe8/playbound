@@ -13,6 +13,7 @@ import {
   type HostedStatus,
 } from "./catalog";
 import { defaultHostMode } from "@/lib/multiplayer/hostModes";
+import { coerceSettingValues } from "@/lib/serverControl/settings";
 import {
   partyEventProps,
   trackPartyEvent,
@@ -29,6 +30,8 @@ export type PartyHostFields = {
   error?: string | null;
   roomCode?: string | null;
   provisionedAt?: Date | null;
+  /** What the host chose before the room was asked for. See serverControl. */
+  settings?: Record<string, unknown> | null;
 };
 
 type PartyLike = Document & {
@@ -98,12 +101,26 @@ export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
    * catalog slug would have the agent look up a recipe it does not have.
    */
   const hostSlug = getHostableGame(slug)?.slug || slug;
+  /*
+   * Start it as the host asked for it.
+   *
+   * Settings chosen before the room existed are stored on the party (see the
+   * pre-launch phase in serverControl/partyServer.ts). Sending them here is
+   * what makes that choice free: without it the only way to change a map was
+   * to start a room on the wrong one and restart it, which drops the party.
+   *
+   * Re-coerced rather than trusted, because the profile may have changed since
+   * they were saved — anything the game no longer declares is dropped instead
+   * of being handed to the agent.
+   */
+  const planned = coerceSettingValues(slug, (hosted.settings as Record<string, unknown>) || {});
   const result = await createHostRoom({
     gameSlug: hostSlug,
     partyId: String(party._id),
     name,
     editionSlug: party.editionSlug || null,
     mod: party.openRaMod || null,
+    settings: Object.keys(planned.values).length ? planned.values : undefined,
   });
 
   if ("error" in result) {

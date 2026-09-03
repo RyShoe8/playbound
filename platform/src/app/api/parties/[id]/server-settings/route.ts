@@ -7,7 +7,41 @@ import {
   serverControlAvailability,
   type PartyServerSource,
 } from "@/lib/serverControl/partyServer";
-import { controlFeatureSupport, strongestApplyMode } from "@/lib/serverControl/settings";
+import {
+  coerceSettingValues,
+  controlFeatureSupport,
+  defaultSettingValues,
+  getServerSettingProfile,
+  strongestApplyMode,
+} from "@/lib/serverControl/settings";
+import type { ServerControlCapabilities, ServerRuntimeState } from "@/lib/serverControl/adapter";
+
+/**
+ * What a room that does not exist yet can do.
+ *
+ * Settings only: there is nothing running to list players on, restart, or send
+ * a command to. Saying so honestly is what keeps the panel from offering
+ * buttons that would have to fail.
+ */
+const PRE_LAUNCH_CAPABILITIES: ServerControlCapabilities = {
+  settings: true,
+  players: false,
+  console: false,
+  restart: false,
+  liveApply: false,
+};
+
+function preLaunchState(gameSlug: string): ServerRuntimeState {
+  return {
+    status: "stopped",
+    gameSlug,
+    host: null,
+    port: null,
+    name: null,
+    startedAt: null,
+    error: null,
+  };
+}
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -50,11 +84,34 @@ export async function GET(req: Request, ctx: RouteContext) {
       });
     }
 
+    /*
+     * Before the room exists there is nothing to ask, so the answer is built
+     * from the game's own schema and whatever the host has already planned.
+     */
+    if (availability.phase === "pre-launch") {
+      const slug = String(party.gameSlug || "");
+      const profile = getServerSettingProfile(slug)!;
+      const planned = coerceSettingValues(slug, (doc.hosted?.settings as Record<string, unknown>) || {});
+      return NextResponse.json({
+        supported: true,
+        phase: "pre-launch",
+        canEdit: isLeader,
+        capabilities: PRE_LAUNCH_CAPABILITIES,
+        gameSlug: slug,
+        definitions: profile.settings,
+        values: { ...defaultSettingValues(slug), ...planned.values },
+        status: preLaunchState(slug),
+        features: controlFeatureSupport(slug),
+        partySize: doc.members.length,
+      });
+    }
+
     const adapter = createPartyServerAdapter(party)!;
     const [view, status] = await Promise.all([adapter.getSettings(), adapter.getStatus()]);
 
     return NextResponse.json({
       supported: true,
+      phase: "live",
       canEdit: isLeader,
       capabilities: adapter.capabilities,
       gameSlug: view.gameSlug,
@@ -97,6 +154,27 @@ export async function PATCH(req: Request, ctx: RouteContext) {
     const requested = body.settings;
     if (!requested || typeof requested !== "object" || Array.isArray(requested)) {
       return NextResponse.json({ error: "settings object is required" }, { status: 400 });
+    }
+
+    /*
+     * Planning, not applying. Nothing is running, so this writes what the room
+     * will be started with and says so — no restart warning, because there is
+     * nobody on a server to disconnect.
+     */
+    if (availability.phase === "pre-launch") {
+      const slug = String(party.gameSlug || "");
+      const { values, rejected } = coerceSettingValues(slug, requested);
+      doc.hosted = doc.hosted || {};
+      doc.hosted.settings = { ...(doc.hosted.settings || {}), ...values };
+      doc.markModified("hosted.settings");
+      await doc.save();
+      return NextResponse.json({
+        outcome: "planned",
+        applied: values,
+        rejected,
+        status: preLaunchState(slug),
+        appliedBy: null,
+      });
     }
 
     const adapter = createPartyServerAdapter(party, { save: (p) => (p as typeof doc).save() })!;

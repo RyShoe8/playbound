@@ -16,6 +16,8 @@ type SettingsResponse =
   | {
       features: ControlFeatureSupport[];
       supported: true;
+      /** "pre-launch" means the room has not been asked for yet. */
+      phase: "live" | "pre-launch";
       canEdit: boolean;
       capabilities: ServerControlCapabilities;
       gameSlug: string;
@@ -103,9 +105,16 @@ export function PartyServerSettings({ partyId }: { partyId: string }) {
    * so a "live" setting still restarts the room — and a warning promising
    * nobody is disconnected would be worse than none.
    */
+  const preLaunch = data.phase === "pre-launch";
   const schemaMode = strongestApplyMode(data.gameSlug, changed);
-  const mode = !data.capabilities.liveApply && schemaMode ? "restart" : schemaMode;
-  const editable = data.canEdit && data.status.status !== "unknown";
+  /*
+   * Nothing to warn about before the room exists. The cost of a setting is
+   * whoever it disconnects, and there is nobody on a server that has not
+   * started — so the panel stays quiet rather than threatening a restart of
+   * something that is not running.
+   */
+  const mode = preLaunch ? null : !data.capabilities.liveApply && schemaMode ? "restart" : schemaMode;
+  const editable = data.canEdit && (preLaunch || data.status.status !== "unknown");
 
   async function apply() {
     setBusy(true);
@@ -133,6 +142,8 @@ export function PartyServerSettings({ partyId }: { partyId: string }) {
       }
       if (json.status?.status === "failed") {
         setError(json.status.error || "The server did not come back up");
+      } else if (json.outcome === "planned") {
+        setNotice("Saved. The server starts with these when the party launches.");
       } else if (json.outcome === "restarted") {
         setNotice("Server restarted with the new settings.");
       } else if (json.outcome === "applied-live") {
@@ -155,11 +166,13 @@ export function PartyServerSettings({ partyId }: { partyId: string }) {
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-sm font-semibold">Server</h3>
         <span className="text-xs text-muted-foreground tabular-nums">
-          {data.status.status === "running"
-            ? `${data.status.host}:${data.status.port}`
-            : data.status.status === "unknown"
-              ? "Status unavailable"
-              : data.status.status}
+          {preLaunch
+            ? "Not started yet"
+            : data.status.status === "running"
+              ? `${data.status.host}:${data.status.port}`
+              : data.status.status === "unknown"
+                ? "Status unavailable"
+                : data.status.status}
         </span>
       </div>
 
@@ -195,6 +208,21 @@ export function PartyServerSettings({ partyId }: { partyId: string }) {
         </p>
       ) : null}
 
+      {/*
+        * Where else these controls live.
+        *
+        * The panel is only reachable by leaving the game, which is the one
+        * moment a host most wants to change the map. The launcher's overlay
+        * shows the same controls over the running game — worth saying once,
+        * here, on the games that actually have controls to open.
+        */}
+      <p className="text-xs text-muted-foreground">
+        In game: press <kbd className="rounded border border-border px-1 font-mono">Ctrl</kbd>{" "}
+        + <kbd className="rounded border border-border px-1 font-mono">`</kbd>{" "}
+        to open these controls in the PlayBound overlay without closing the game. The
+        shortcut is changeable in the launcher&rsquo;s settings.
+      </p>
+
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
       {notice ? <p className="text-xs text-muted-foreground">{notice}</p> : null}
 
@@ -206,7 +234,15 @@ export function PartyServerSettings({ partyId }: { partyId: string }) {
           className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
         >
           {busy ? <RotateCw className="size-3.5 animate-spin" /> : null}
-          {busy ? (mode === "restart" ? "Restarting…" : "Applying…") : "Apply changes"}
+          {busy
+            ? preLaunch
+              ? "Saving…"
+              : mode === "restart"
+                ? "Restarting…"
+                : "Applying…"
+            : preLaunch
+              ? "Save for launch"
+              : "Apply changes"}
         </button>
       ) : (
         <p className="text-xs text-muted-foreground">Only the party leader can change these.</p>

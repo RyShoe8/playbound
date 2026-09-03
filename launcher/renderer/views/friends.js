@@ -13,6 +13,7 @@ import {
   filterByDiscovery,
   filterByCompatibility,
   filterCatalogGames,
+  formatAccelerator,
   gamePlayHintHtml,
   isGameDesktopCompatible,
   isMacOS,
@@ -1778,6 +1779,29 @@ function buildPartyViewHtml(party) {
          </div>`
       : "";
 
+  /*
+   * Say the controls exist, and where the key is.
+   *
+   * A host with a server they can administer has no way to discover that from
+   * the party panel: the controls live in an overlay behind a chord nobody has
+   * been told about, and the one moment they want it — mid-match, wrong map —
+   * is the moment they will not go looking through settings. Only shown for a
+   * game that actually has controls, so it never advertises a panel that would
+   * open empty.
+   */
+  const serverControlNoteHtml =
+    party.serverControl?.supported && !ended
+      ? `<p class="view-sub party-inline-note party-overlay-hint">${
+          party.serverControl.phase === "pre-launch"
+            ? `Set the map, slots and the rest before the server starts — press <kbd>${escapeHtml(
+                formatAccelerator(state.overlayShortcut)
+              )}</kbd> now, or in game once you are playing.`
+            : `Change this server's settings without leaving the game — press <kbd>${escapeHtml(
+                formatAccelerator(state.overlayShortcut)
+              )}</kbd> in game to open the PlayBound overlay.`
+        }</p>`
+      : "";
+
   const lanNoteHtml =
     lan.enabled && lan.status === "pending"
       ? `<p class="view-sub party-inline-note">Setting up the party network…</p>`
@@ -1892,6 +1916,7 @@ function buildPartyViewHtml(party) {
             ${publicReadyHtml}
             ${hostedNoteHtml}
             ${lanNoteHtml}
+            ${serverControlNoteHtml}
             ${playingPillHtml}
           </div>
           <div class="party-actions-group">

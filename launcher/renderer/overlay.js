@@ -114,13 +114,20 @@ function render() {
   }
 
   const changed = changedKeys();
-  const mode = strongestApply(data.definitions, changed);
+  /*
+   * Before the room exists, a change costs nothing and disconnects nobody —
+   * it is a choice about how the server will start. So no apply warning, and
+   * a button that says what it does.
+   */
+  const preLaunch = data.phase === "pre-launch";
+  const mode = preLaunch ? null : strongestApply(data.definitions, changed);
   const controls = data.definitions
     .map((def) => controlHtml(def, state.draft[def.key] ?? data.values[def.key] ?? def.default))
     .join("");
 
-  const statusLine =
-    data.status?.status === "running"
+  const statusLine = preLaunch
+    ? "Not started yet — these are what it will start with"
+    : data.status?.status === "running"
       ? `${data.status.host}:${data.status.port}`
       : data.status?.status === "unknown"
         ? "Status unavailable"
@@ -139,7 +146,15 @@ function render() {
     ? `<button class="apply" id="apply" ${
         state.busy || !changed.length || data.status?.status === "unknown" ? "disabled" : ""
       }>${
-        state.busy ? (mode === "restart" ? "Restarting…" : "Applying…") : "Apply changes"
+        state.busy
+          ? preLaunch
+            ? "Saving…"
+            : mode === "restart"
+              ? "Restarting…"
+              : "Applying…"
+          : preLaunch
+            ? "Save for launch"
+            : "Apply changes"
       }</button>`
     : `<p class="note">Only the party leader can change these.</p>`;
 
@@ -227,6 +242,8 @@ async function apply() {
     }
     if (result.status?.status === "failed") {
       state.error = result.status.error || "The server did not come back up";
+    } else if (result.outcome === "planned") {
+      state.notice = "Saved. The server starts with these.";
     } else if (result.outcome === "restarted") {
       state.notice = "Server restarted with the new settings.";
     } else if (result.outcome === "applied-live") {

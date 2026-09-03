@@ -53,6 +53,13 @@ export const state = {
   modDetailActiveTab: "overview",
   detailActiveTab: "overview",
   updateStatus: { phase: "idle" },
+  /*
+   * The chord that opens the in-game overlay, read once at boot so any view
+   * can name it without an await mid-render. Defaults to the same accelerator
+   * main.js falls back to, so a failed read still tells the player something
+   * true.
+   */
+  overlayShortcut: "CommandOrControl+`",
   gamesFilters: {
     query: "",
     genre: "",
@@ -728,6 +735,35 @@ export function buildCatalogStatsCardHtml(live, extra = {}) {
 
 export const fmtBytes = (n) =>
   n >= 1e9 ? `${(n / 1e9).toFixed(2)} GB` : n >= 1e6 ? `${(n / 1e6).toFixed(0)} MB` : `${Math.round(n / 1e3)} KB`;
+
+/**
+ * An Electron accelerator as something to read on a key.
+ *
+ * "CommandOrControl+`" is exact and unreadable; a player needs "Ctrl + `".
+ * Mac gets the Command symbol, since that is the key it actually maps to
+ * there.
+ */
+export function formatAccelerator(accelerator) {
+  const raw = String(accelerator || "").trim();
+  if (!raw) return "";
+  const mac = isMacOS();
+  return raw
+    .split("+")
+    .map((part) => {
+      const key = part.trim();
+      const lower = key.toLowerCase();
+      if (lower === "commandorcontrol" || lower === "cmdorctrl") return mac ? "⌘" : "Ctrl";
+      if (lower === "command" || lower === "cmd" || lower === "super" || lower === "meta") {
+        return mac ? "⌘" : "Win";
+      }
+      if (lower === "control" || lower === "ctrl") return "Ctrl";
+      if (lower === "alt" || lower === "option") return mac ? "⌥" : "Alt";
+      if (lower === "shift") return mac ? "⇧" : "Shift";
+      return key.length === 1 ? key : key.charAt(0).toUpperCase() + key.slice(1);
+    })
+    .filter(Boolean)
+    .join(" + ");
+}
 
 /** "8 MB/s". Empty until the meter has enough signal to mean anything. */
 export const fmtRate = (bytesPerSecond) =>

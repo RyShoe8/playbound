@@ -565,6 +565,15 @@ function wireMainEvents() {
   }).catch(() => {});
 
   /*
+   * Read once, so a view can name the overlay chord while it builds its HTML.
+   * The default in state is the same one main.js falls back to, so a failed
+   * read still leaves something true on screen.
+   */
+  window.playbound.getOverlayShortcut?.().then((res) => {
+    if (res?.accelerator) state.overlayShortcut = res.accelerator;
+  }).catch(() => {});
+
+  /*
    * A step with no byte count still needs a number that moves.
    *
    * Extraction is the one that gets reported as a hang: a 4 GB archive is

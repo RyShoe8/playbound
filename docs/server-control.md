@@ -215,6 +215,41 @@ because the launcher's connect args carry none and setting one locks the party o
 its own room. And a **server name**, because the party already names the room — a second
 channel for one value is the mistake `maxPlayers` made against the agent for months.
 
+## Two phases, and only one of them costs anything
+
+Settings are offered **before** the room starts as well as while it runs, and the
+difference is not cosmetic. `serverControlAvailability` returns a `phase`:
+
+- `pre-launch` — no room has been asked for yet. Values are written to
+  `party.hosted.settings` and handed to the agent by `provisionPartyHost` at spawn.
+  Nothing restarts, nobody is disconnected, and the panel shows neither warning.
+  There is no adapter in this phase; `createPartyServerAdapter` returns null,
+  because there is no process to adapt.
+- `live` — the room exists. Every change costs whatever the schema says it costs,
+  which today is usually a restart that drops the party.
+
+The pre-launch phase exists because its absence was a trap. "The room has not started
+yet" meant the only way to get a server on the right map was to start one on the wrong
+map and then restart it — paying a disconnection to fix something nobody had been
+allowed to set. Choosing first is free; the party panel and the overlay both offer it.
+
+Values are re-coerced at spawn rather than trusted, because a profile can change
+between the save and the launch. A key the game no longer declares is dropped instead
+of being handed to the agent.
+
+## Saying the controls exist
+
+A host cannot use a panel they have never been told about, and the overlay lives behind
+a chord. So the party payload carries `serverControl: { supported, phase, reason }`,
+resolved server-side for the same reason `hostMode` is — the launcher cannot import the
+profiles, and a second implementation of "does this game have controls" is a second
+thing to drift.
+
+Both party panels use it to name the shortcut, and only on games that actually have
+controls: a note pointing at a panel that would open empty is worse than no note. The
+launcher formats the player's *configured* accelerator rather than the default, since
+the whole point is telling them which key to press.
+
 ## Deferred on purpose
 
 **A `GameMap` entity.** Right now maps come from recipes for a couple of games and are

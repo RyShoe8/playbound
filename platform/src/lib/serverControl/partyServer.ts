@@ -45,8 +45,18 @@ export interface PartyServerSource {
   } | null;
 }
 
+/**
+ * When the controls are being used, which decides what a change costs.
+ *
+ * `live` is a server that exists: a change reaches a running process, and for
+ * most games that means a restart someone pays for. `pre-launch` is the room
+ * that has not been asked for yet — the host is choosing what it starts as,
+ * which costs nothing because there is nobody on it to disconnect.
+ */
+export type ServerControlPhase = "live" | "pre-launch";
+
 export type ServerControlAvailability =
-  | { available: true }
+  | { available: true; phase: ServerControlPhase }
   | { available: false; reason: string };
 
 /**
@@ -94,13 +104,21 @@ export function serverControlAvailability(party: PartyServerSource): ServerContr
    * owns the dedicated process — see localAdapter. The room existing is the
    * launcher's business, not ours, so there is no roomId to wait for.
    */
-  if (party.hostMode === "self") return { available: true };
+  if (party.hostMode === "self") return { available: true, phase: "live" };
 
-  if (!party.hosted?.roomId) {
-    return { available: false, reason: "The room has not started yet." };
-  }
+  /*
+   * A room that has not started is the best moment to choose its settings, not
+   * the one moment they are hidden.
+   *
+   * This used to be a refusal — "the room has not started yet" — which meant
+   * the only way to get a server on the right map was to launch one on the
+   * wrong map and then restart it, disconnecting the party to fix something
+   * nobody had been able to set in the first place. The values chosen now are
+   * planned state; provisionPartyHost starts the room with them.
+   */
+  if (!party.hosted?.roomId) return { available: true, phase: "pre-launch" };
 
-  return { available: true };
+  return { available: true, phase: "live" };
 }
 
 export interface PartyAdapterOptions {
@@ -121,7 +139,15 @@ export function createPartyServerAdapter(
   party: PartyServerSource,
   opts: PartyAdapterOptions = {}
 ): ServerControlAdapter | null {
-  if (!serverControlAvailability(party).available) return null;
+  const availability = serverControlAvailability(party);
+  if (!availability.available) return null;
+  /*
+   * There is no process to adapt before the room is asked for. Settings chosen
+   * in that phase are stored on the party and handed to the agent at spawn —
+   * see provisionPartyHost — so callers wanting that path check the phase
+   * rather than expecting an adapter here.
+   */
+  if (availability.phase === "pre-launch") return null;
 
   const slug = String(party.gameSlug);
 
