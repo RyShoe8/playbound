@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { FriendsView } from "@/components/friends/FriendsView";
 import { listGames } from "@/lib/catalog";
+import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { GENRES } from "@/lib/gamePayload";
 import { privateMetadata } from "@/lib/seo";
 
@@ -12,8 +13,21 @@ import { privateMetadata } from "@/lib/seo";
 export const metadata: Metadata = privateMetadata("Friends");
 
 export default async function FriendsPage() {
-  // Fetched here so the picker lists the real catalog rather than a hardcoded set.
-  const games = await listGames();
+  /*
+   * Fetched here so the picker lists the real catalog rather than a hardcoded
+   * set — and with testing entries for the people allowed to see them.
+   *
+   * Without that the two party pickers disagreed on which games exist, not
+   * just which are multiplayer: the launcher hands testers the testing catalog,
+   * so OpenClonk, OpenTyrian 2000, OpenHV, OpenSpades, Populous: Reincarnated,
+   * Re-Volt and Pokémon: Dawn of Darkness were all offered there and missing
+   * here. Every one of them is `status: testing`.
+   *
+   * This page is already dynamic — it reads the session and queries Mongo per
+   * request — so resolving the viewer costs nothing extra, and it is private
+   * and unindexed, so no cached copy can leak a testing entry to the public.
+   */
+  const games = await listGames({ includeTesting: await viewerCanSeeTesting() });
   return (
     <div className="w-full space-y-4 px-4 py-8 sm:px-6 lg:px-8">
       <FriendsView
