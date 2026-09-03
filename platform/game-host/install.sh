@@ -605,7 +605,11 @@ if [[ ! -x "$FREEDOOM_DIR/zandronum-server" && ! -x "/usr/games/zandronum-server
   fi
 fi
 
-if [[ ! -f "$FREEDOOM_DIR/freedoom2.wad" && ! -f "/usr/share/games/doom/freedoom2.wad" ]]; then
+if [[ ! -f "$FREEDOOM_DIR/freedoom2.wad" && -f "/usr/share/games/doom/freedoom2.wad" ]]; then
+  cp -f /usr/share/games/doom/*.wad "$FREEDOOM_DIR/" 2>/dev/null || true
+fi
+
+if [[ ! -f "$FREEDOOM_DIR/freedoom2.wad" ]]; then
   FREE_URL="${FREEDOOM_IWADS_URL:-https://github.com/freedoom/freedoom/releases/download/v0.13.0/freedoom-0.13.0.zip}"
   echo "Fetching Freedoom IWADs..."
   if curl -fL --retry 3 -o /tmp/freedoom.zip "$FREE_URL"; then
