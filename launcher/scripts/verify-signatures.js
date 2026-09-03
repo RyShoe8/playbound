@@ -260,13 +260,18 @@ function main() {
     if (info.status === "Valid") {
       if (!info.timestamped) notTimestamped.push(rel);
       if (!signerSubject && info.subject) signerSubject = info.subject;
-      // Only enforced on binaries we produce. Electron ships some third-party
-      // binaries that arrive already signed by their vendor (d3dcompiler_47.dll
-      // is Microsoft-signed), so a differing publisher there is expected.
+      // Only enforced on binaries we produce. Third-party redistributables and
+      // Electron vendor binaries (d3dcompiler_47.dll, ViGEmBus_Setup.exe) arrive
+      // already signed by their vendor, so a differing publisher there is expected.
+      const isVendorBinary =
+        rel.toLowerCase().includes("vigem") ||
+        rel.toLowerCase().includes("7zip-bin") ||
+        target.kind.includes("native");
+
       if (
         expectedPublisher &&
         info.subject &&
-        !target.kind.includes("native") &&
+        !isVendorBinary &&
         !info.subject.toLowerCase().includes(expectedPublisher.toLowerCase())
       ) {
         wrongPublisher.push({ rel, subject: info.subject });
@@ -283,6 +288,13 @@ function main() {
       if (!signerSubject && info.subject) signerSubject = info.subject;
       untrusted.push(rel);
       console.warn(`  UNTRUSTED ${rel}  (${info.status}: chain not trusted — allowed by WINDOWS_SIGNING_ALLOW_UNTRUSTED)`);
+      continue;
+    }
+
+    // 7za.exe is an internal unpack tool skipped by custom-sign to conserve
+    // signing quota. Allow it to remain unsigned unless signAllBinaries is requested.
+    if (path.basename(target.path).toLowerCase() === "7za.exe" && !signing.signAllBinaries) {
+      console.log(`  SKIPPED   ${rel}  (internal CLI helper — signature omitted to save quota)`);
       continue;
     }
 

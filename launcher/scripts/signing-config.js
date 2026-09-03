@@ -66,8 +66,8 @@ const DEFAULT_TIMESTAMP_SERVER = "http://timestamp.digicert.com";
  *
  * OFF BY DEFAULT, because signing is a metered resource here: PlayBound signs
  * through SSL.com eSigner, whose plan allows 240 signings per year (~20/month).
- * Including these six-or-so DLLs takes a release from ~5 signings to ~11 —
- * roughly 21 releases a year instead of 48. They are stock Electron binaries
+ * Including these six-or-so DLLs takes a release from ~4 signings to ~10 —
+ * roughly 24 releases a year instead of 60. They are stock Electron binaries
  * rather than our code, so the trade is rarely worth it.
  *
  * Set WINDOWS_SIGN_ALL_BINARIES=true to include them.
@@ -319,12 +319,23 @@ function reportSigningConfig(config, opts = {}) {
 
   console.log(`${tag} ${config.reason}`);
   console.log(`${tag} Mode: ${config.mode} · required: ${config.required ? "yes" : "no (auto)"}`);
+  /*
+   * These counts have to match signing-status.js and docs/windows-code-signing.md,
+   * because this is the number someone reads while a metered build is running.
+   * They dropped when custom-sign.js started skipping the pre-signed ViGEmBus
+   * installer and the internal 7za helper, and when the portable target became
+   * opt-in — which is the "+1" below.
+   */
+  const base = config.signAllBinaries ? 10 : 4;
   console.log(
     config.signAllBinaries
-      ? `${tag} Bundled native binaries (${EXTRA_SIGN_EXTS.join(", ")}) WILL be signed — ~11 signings this build.`
-      : `${tag} Bundled native binaries skipped — ~5 signings this build. ` +
-        `Set WINDOWS_SIGN_ALL_BINARIES=true to include them (~11).`
+      ? `${tag} Bundled native binaries (${EXTRA_SIGN_EXTS.join(", ")}) WILL be signed — ~${base} signings this build.`
+      : `${tag} Bundled native binaries skipped — ~${base} signings this build. ` +
+        `Set WINDOWS_SIGN_ALL_BINARIES=true to include them (~10).`
   );
+  if (process.env.BUILD_PORTABLE === "true") {
+    console.log(`${tag} Portable target requested — one extra signing (~${base + 1} total).`);
+  }
   return true;
 }
 

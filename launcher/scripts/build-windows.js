@@ -63,17 +63,47 @@ function main() {
   }
 
   const env = { ...process.env };
+  const isPortable = process.argv.includes("--portable");
+  if (isPortable) {
+    env.BUILD_PORTABLE = "true";
+  }
 
   if (mode === "dev") {
     env.WINDOWS_SIGNING_ENABLED = "false";
-    console.log(`${TAG} Mode: DEVELOPMENT — artifacts will be unsigned.`);
+    console.log(`${TAG} Mode: DEVELOPMENT — artifacts will be unsigned${isPortable ? " (including portable)" : ""}.`);
   } else {
     // Respect an explicit "false" only if someone deliberately set it; otherwise
     // production always demands a signature.
     if (env.WINDOWS_SIGNING_ENABLED == null || env.WINDOWS_SIGNING_ENABLED.trim() === "") {
       env.WINDOWS_SIGNING_ENABLED = "true";
     }
-    console.log(`${TAG} Mode: PRODUCTION — signing required (WINDOWS_SIGNING_ENABLED=${env.WINDOWS_SIGNING_ENABLED}).`);
+
+    if (process.platform === "win32" && !env.WINDOWS_CERT_SHA1 && !env.WINDOWS_CERT_SUBJECT_NAME && !env.WINDOWS_CERT_PATH) {
+      try {
+        const { runPowerShellJson } = require("./signing-config");
+        const certs = runPowerShellJson(`
+$ErrorActionPreference = 'SilentlyContinue'
+$certs = Get-ChildItem -Path Cert:\\CurrentUser\\My, Cert:\\LocalMachine\\My |
+  Where-Object { $_.EnhancedKeyUsageList.FriendlyName -contains 'Code Signing' -and $_.HasPrivateKey }
+ConvertTo-Json -InputObject @($certs | Select-Object -Property Thumbprint, Subject) -Compress
+`);
+        const certList = Array.isArray(certs) ? certs : certs ? [certs] : [];
+        if (certList.length > 0) {
+          const match = certList.find((c) => (c.Subject || "").includes("The Media Shop")) || certList[0];
+          if (match && match.Thumbprint) {
+            env.WINDOWS_CERT_SHA1 = match.Thumbprint;
+            console.log(`${TAG} Auto-selected certificate: ${match.Thumbprint} (${match.Subject})`);
+          }
+        }
+      } catch {
+        // Fall back to normal configuration resolution / error reporting
+      }
+    }
+
+    console.log(
+      `${TAG} Mode: PRODUCTION — signing required (WINDOWS_SIGNING_ENABLED=${env.WINDOWS_SIGNING_ENABLED}` +
+        `${isPortable ? ", + portable" : ""}).`
+    );
 
     /*
      * verify-signatures.js checks every top-level .exe it finds in dist/ — it

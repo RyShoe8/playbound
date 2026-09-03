@@ -1,6 +1,6 @@
 {
   "name": "playbound-launcher",
-  "version": "0.3.34",
+  "version": "0.3.35",
   "description": "PlayBound App — discover, install, update, and launch free PC games and servers.",
   "main": "bootstrap.js",
   "scripts": {
@@ -16,6 +16,7 @@
     "dist": "node scripts/build-windows.js --dev",
     "dist:dev": "node scripts/build-windows.js --dev",
     "dist:prod": "node scripts/build-windows.js --prod",
+    "dist:portable": "node scripts/build-windows.js --prod --portable",
     "dist:mac": "electron-builder --mac --universal",
     "verify:signatures": "node scripts/verify-signatures.js",
     "signing:status": "node scripts/signing-status.js",
