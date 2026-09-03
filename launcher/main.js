@@ -6003,6 +6003,22 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     if (fallback) entry = fallback;
   }
 
+  /*
+   * Nothing to install, said in a sentence.
+   *
+   * A game only reaches the launcher catalog with an enabled install recipe,
+   * so a slug that resolves to nothing here is a title the website offered —
+   * from a party panel, most often — that this launcher cannot install: a
+   * testing entry whose recipe is not enabled yet, or one unpublished since
+   * the link was made. The next line dereferenced entry regardless, so the
+   * player got "Cannot read properties of null (reading 'url')".
+   */
+  if (!entry) {
+    throw new Error(
+      `PlayBound doesn't have an install for ${slug} yet. It may still be in testing — ask the party host how they installed it.`
+    );
+  }
+
   if (entry.url && String(entry.url).includes("sahaquiel.us")) {
     entry.kind = "external";
     entry.url = "https://www.projectquarm.com/";
