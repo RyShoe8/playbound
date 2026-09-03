@@ -23,6 +23,8 @@ const GameLauncher = require("./services/GameLauncher");
 const { createManagedJava } = require("./services/ManagedJava");
 const { createLocalServers } = require("./services/localServer");
 const { createTransferMeter } = require("./services/transferMeter");
+const { toQueueSnapshot } = require("./services/installQueueView");
+const { chooseExeFromListing, isUninstallerExe } = require("./services/exeCandidates");
 const { createManagedDosBox } = require("./services/ManagedDosBox");
 const { createManagedDotNet, requiredDotNetMajor } = require("./services/ManagedDotNet");
 const { createManagedRetroArch } = require("./services/ManagedRetroArch");
@@ -2863,16 +2865,17 @@ const installQueue = [];
 let activeInstallTask = null;
 let activeDownloadSignal = null;
 
+/**
+ * The queue as the renderer is told about it.
+ *
+ * Built field by field in services/installQueueView.js rather than by
+ * spreading the task: a task owns an AbortController, the promise the queue
+ * chains on and the function that releases it, and a promise or a function in
+ * an IPC payload makes the send fail silently. See that file for what that
+ * cost us.
+ */
 function getInstallQueueSnapshot() {
-  const queued = installQueue.filter((t) => t.status === "queued").map((t, idx) => ({
-    ...t,
-    queuePosition: idx + 1,
-  }));
-  return {
-    active: activeInstallTask ? { ...activeInstallTask } : null,
-    queued,
-    totalCount: (activeInstallTask ? 1 : 0) + queued.length,
-  };
+  return toQueueSnapshot({ activeTask: activeInstallTask, tasks: installQueue });
 }
 
 function broadcastInstallQueue() {
@@ -4032,7 +4035,14 @@ if (-not $hit) { return }
     if (out) {
       const hit = JSON.parse(out);
       const icon = stripRegQuotes(hit.DisplayIcon);
-      if (icon && /\.exe$/i.test(icon) && fs.existsSync(icon)) {
+      /*
+       * DisplayIcon is whatever the installer felt like registering, and Inno
+       * Setup registers its own uninstaller as often as the game. Taking it on
+       * trust wired Play to unins000.exe — a button that offers to delete the
+       * game the player just installed. The install folder is right either
+       * way, so a rejected icon falls through to searching it.
+       */
+      if (icon && /\.exe$/i.test(icon) && !isUninstallerExe(icon) && fs.existsSync(icon)) {
         exe = icon;
       } else {
         const root = stripRegQuotes(hit.InstallLocation);
@@ -4097,6 +4107,44 @@ if (-not $hit) { return }
               }
             };
             if (want.size) walk(root, 0);
+          }
+          if (!exe) {
+            /*
+             * A game whose recipe names no executable at all — a catalog row
+             * added for testing, most often. Windows has just told us the
+             * folder; refusing to look inside it means the player is told
+             * their install was not found while it sits there complete.
+             *
+             * The choice is deliberately timid (see services/exeCandidates.js)
+             * and returns nothing rather than guess badly, which leaves the
+             * existing "choose the .exe in Library" path as the fallback.
+             */
+            const listing = [];
+            const collect = (dir, rel, depth) => {
+              if (depth > 2 || listing.length > 400) return;
+              let entries;
+              try {
+                entries = fs.readdirSync(dir, { withFileTypes: true });
+              } catch {
+                return;
+              }
+              for (const ent of entries) {
+                const relPath = rel ? `${rel}/${ent.name}` : ent.name;
+                if (ent.isDirectory()) collect(path.join(dir, ent.name), relPath, depth + 1);
+                else if (/\.exe$/i.test(ent.name)) listing.push(relPath);
+              }
+            };
+            collect(root, "", 0);
+            const picked = chooseExeFromListing({
+              files: listing,
+              wanted: [
+                entry.exeHint,
+                ...(entry.knownExePaths || []).map((p) => expandWinPath(p)),
+              ].filter(Boolean),
+              title: entry.title,
+              slug: entry.slug,
+            });
+            if (picked) exe = path.join(root, picked.split("/").join(path.sep));
           }
         }
       }
@@ -4593,7 +4641,13 @@ function matchUninstallDump(entry, dump) {
         (loc && fs.existsSync(path.join(loc, b)))
     );
     if (!titleHit && !baseHit) continue;
-    if (icon && /\.exe$/i.test(icon) && fs.existsSync(icon) && isAllowedExecutablePath(icon)) {
+    if (
+      icon &&
+      /\.exe$/i.test(icon) &&
+      !isUninstallerExe(icon) &&
+      fs.existsSync(icon) &&
+      isAllowedExecutablePath(icon)
+    ) {
       return icon;
     }
     if (loc && fs.existsSync(loc)) {
@@ -5663,20 +5717,29 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
   const coverImage = entry?.coverImage || null;
 
   const abortController = new AbortController();
+  /*
+   * Anything already in the queue is ahead of this one, running or not.
+   *
+   * Reading activeInstallTask alone was too narrow: a task that has been
+   * created but has not yet cleared the queue chain leaves that null, so the
+   * install behind it called itself active and announced "Installing…" while
+   * it was in fact waiting.
+   */
+  const blocker = activeInstallTask || installQueue[0] || null;
   const task = {
     id: key,
     slug,
     editionSlug: editionSlug || null,
     title,
     coverImage,
-    status: activeInstallTask ? "queued" : "active",
-    phase: activeInstallTask ? "queued" : "resolving",
+    status: blocker ? "queued" : "active",
+    phase: blocker ? "queued" : "resolving",
     received: 0,
     total: 0,
     pct: 0,
     addon: null,
-    message: activeInstallTask
-      ? `Queued — waiting for ${activeInstallTask.title || "current install"} to finish…`
+    message: blocker
+      ? `Queued — waiting for ${blocker.title || "current install"} to finish…`
       : `Installing ${title}…`,
     startedAt: Date.now(),
     cancelled: false,
@@ -5706,10 +5769,9 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
   broadcastInstallQueue();
 
   const waitFor = installQueueTail;
-  const queuedBehind = gameInstallJobs.size;
 
   const job = (async () => {
-    if (queuedBehind > 0) {
+    if (blocker) {
       /*
        * Say so rather than looking hung. A queued install shows no download
        * progress for as long as the one ahead of it takes, which is otherwise
@@ -5719,7 +5781,7 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
         phase: "queued",
         slug,
         title,
-        message: `${title} is queued — waiting for ${activeInstallTask?.title || "current install"} to finish…`,
+        message: `${title} is queued — waiting for ${blocker.title || "current install"} to finish…`,
       });
       if (win && !win.isDestroyed()) {
         win.webContents.send("install-scan", {
@@ -5729,7 +5791,16 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
         });
       }
     }
-    await waitFor;
+    /*
+     * Either the queue reaches us, or we are taken out of it.
+     *
+     * Waiting only on the task ahead meant cancelling a queued install did
+     * nothing until the thing blocking it finished — and if that never
+     * finished, the cancelled install sat there for the rest of the session.
+     * Cancelling resolves this task's own `finished`, so racing the two lets
+     * it leave immediately.
+     */
+    await Promise.race([waitFor, task.finished]);
     if (task.cancelled) {
       // Outside the try/finally below, so release the chain here too rather
       // than leaning on the cancel path having already done it.
@@ -5793,6 +5864,21 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
     })
     .finally(() => {
       if (gameInstallJobs.get(key) === job) gameInstallJobs.delete(key);
+      /*
+       * The queue survives a job that fails in a way the inner handler never
+       * sees — anything thrown before the install itself begins skips that
+       * finally, and every install started afterwards then waits forever on a
+       * promise nothing will resolve. Releasing twice is a no-op; not
+       * releasing once ends the queue for the session.
+       */
+      if (activeInstallTask === task) {
+        activeInstallTask = null;
+        activeDownloadSignal = null;
+      }
+      const idx = installQueue.indexOf(task);
+      if (idx >= 0) installQueue.splice(idx, 1);
+      task.releaseQueue();
+      broadcastInstallQueue();
     });
 
   gameInstallJobs.set(key, job);
