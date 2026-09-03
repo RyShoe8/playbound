@@ -151,30 +151,30 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     ],
     note: "Official current 64-bit Windows installer.",
   },
-  "alien-swarm-reactive-drop": {
+  "alien-swarm": {
     enabled: true,
     /*
-     * Stays a Steam hand-off, and the reason is worth recording because the
-     * obvious shortcut looks like it works.
+     * A Steam hand-off, and the reason is worth recording because the obvious
+     * shortcut looks like it works.
      *
-     * App 563560 carries extended.freetodownload, so `login anonymous` really
-     * is granted its depots: a plain SteamCMD run pulls the whole 6.8 GB
-     * client, VPKs and all, with no Steam account. It was shipped as a
-     * kind: "steamcmd" recipe on that basis.
+     * Reactive Drop (app 563560, now this game's default edition) carries
+     * extended.freetodownload, so `login anonymous` really is granted its
+     * depots: a plain SteamCMD run pulls the whole 6.8 GB client, VPKs and all,
+     * with no Steam account. That was briefly shipped as a kind: "steamcmd"
+     * recipe.
      *
      * The game does not then run. Launched with the Steam client closed it
      * opens its window, fails SteamAPI_Init and exits with "cannot connect to
      * steam client service" — steam_appid.txt and bin/steam_api.dll are both
-     * present, and it needs the client process regardless. So the download
-     * costs 6.8 GB of our bandwidth and ends at a game that still demands
-     * Steam, which is where steam://install puts the player anyway, with Steam
-     * handling updates afterwards.
+     * present and it needs the client process regardless. So the download costs
+     * 6.8 GB and ends at a game that still demands Steam, which is where
+     * steam://install puts the player anyway, with Steam handling updates.
      *
-     * The original Alien Swarm (app 630) is not even downloadable this way:
+     * Alien Swarm itself (app 630) is not even downloadable that way:
      * anonymous gets "Failed to install app '630' (No subscription)".
      */
     kind: "external",
-    url: "steam://install/563560",
+    url: "steam://install/630",
     note: "Free on Steam — Steam handles the download and the install.",
   },
   warfork: {
