@@ -668,10 +668,39 @@ export const recipes = {
     portStart: 43210,
     portEnd: 43230,
     protocol: "udp",
-    binaries: gameBin("bombsquad", ["bombsquad_server"]),
+    binaries: gameBin("bombsquad", ["run-server", "bombsquad_server"]),
+    prepareSpawn: async () => {
+      const basePy = path.join(
+        GAMES_ROOT,
+        "bombsquad",
+        "dist",
+        "ba_data",
+        "python",
+        "efro",
+        "dataclassio",
+        "_base.py"
+      );
+      if (fs.existsSync(basePy)) {
+        try {
+          let content = await fs.promises.readFile(basePy, "utf8");
+          if (
+            content.includes("from typing import TYPE_CHECKING, get_args") &&
+            !content.includes("from typing import TYPE_CHECKING, Any, get_args")
+          ) {
+            content = content.replace(
+              "from typing import TYPE_CHECKING, get_args",
+              "from typing import TYPE_CHECKING, Any, get_args"
+            );
+            await fs.promises.writeFile(basePy, content, "utf8");
+          }
+        } catch (err) {
+          console.warn("[bombsquad] could not patch _base.py:", err);
+        }
+      }
+    },
     args: (port, ctx) => [
       String(port),
-      ctx.name,
+      ctx.name || "PlayBound Party",
       String(Math.min(Number(ctx.maxPlayers) || 8, 8)),
       ctx.partyId,
     ],
