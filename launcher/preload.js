@@ -182,7 +182,8 @@ contextBridge.exposeInMainWorld("playbound", {
   getPartySync: (opts) => ipcRenderer.invoke("get-party-sync", opts || {}),
 
   // In-game overlay. See docs/server-control.md.
-  startSelfHostServer: (partyId) => ipcRenderer.invoke("start-self-host-server", partyId),
+  startSelfHostServer: (partyId, slug) =>
+    ipcRenderer.invoke("start-self-host-server", partyId, slug),
   stopSelfHostServer: (partyId) => ipcRenderer.invoke("stop-self-host-server", partyId),
   toggleOverlay: () => ipcRenderer.invoke("toggle-overlay"),
   hideOverlay: () => ipcRenderer.invoke("hide-overlay"),

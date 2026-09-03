@@ -12261,6 +12261,62 @@ function friendsPopoutOpen() {
 
 /* ── local dedicated servers ───────────────────────────────── */
 
+/**
+ * The dedicated server binary inside a game's install, if it ships one.
+ *
+ * `hostLaunch.binaryHint` names it — OpenRA.Server, teeworlds_srv, bzfs — and
+ * that is emphatically not the game's own executable. Starting the client with
+ * server arguments is what shipped in 0.3.26: OpenRA's client came up, nothing
+ * bound the port, selfHostReady was never set, and every other member's Join
+ * Game silently did nothing.
+ *
+ * Returning null is a real answer, and the caller falls back to the path that
+ * worked before: launch the game, let the player host from its menus, probe
+ * the port. Plenty of games ship no separate server.
+ */
+function resolveLocalServerBinary(gameDir, hostLaunch) {
+  const hint = String(hostLaunch?.binaryHint || "").trim();
+  if (!gameDir || !hint) return null;
+  const names = [hint];
+  if (process.platform === "win32" && !/\.(exe|bat|cmd|jar)$/i.test(hint)) {
+    names.push(`${hint}.exe`);
+  }
+  // Shallow on purpose: a server binary sits beside the client or one level
+  // down. Walking a whole install to find one is a lot of disk for a guess.
+  const roots = [gameDir, path.join(gameDir, "bin")];
+  for (const root of roots) {
+    for (const name of names) {
+      try {
+        const candidate = path.join(root, name);
+        if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) return candidate;
+      } catch {
+        /* unreadable path is a miss */
+      }
+    }
+  }
+  return null;
+}
+
+/** Everything needed to host this game locally, or why we cannot. */
+function localDedicatedServerFor(slug) {
+  const entry =
+    catalog.find((e) => e.slug === slug) || bundledCatalog.find((e) => e.slug === slug) || null;
+  const hostLaunch = entry?.hostLaunch || null;
+  if (!hostLaunch?.argsTemplate?.length) {
+    return { ok: false, reason: `PlayBound has no server template for ${entry?.title || slug}.` };
+  }
+  const game = ensureGameInstallRecord(loadState()[slug]);
+  const exe = resolveLocalServerBinary(game?.dir, hostLaunch);
+  if (!exe) {
+    return {
+      ok: false,
+      reason: `${entry?.title || slug} does not ship ${hostLaunch.binaryHint} in this install.`,
+    };
+  }
+  return { ok: true, exe, cwd: game?.dir || path.dirname(exe), hostLaunch, entry };
+}
+
+
 const localServers = createLocalServers({
   onExit: (partyId, code, error) => {
     console.warn(`[self-host] ${partyId}: server exited (${code})`);
@@ -12340,26 +12396,22 @@ async function reconcileSelfHostServer(partyId) {
   if (current && current.revision >= Number(desired.desiredRevision || 0)) return;
 
   const slug = String(desired.gameSlug || "");
-  const state = loadState();
-  const game = ensureGameInstallRecord(state[slug]);
-  const entry =
-    catalog.find((e) => e.slug === slug) || bundledCatalog.find((e) => e.slug === slug) || null;
-  const hostLaunch = entry?.hostLaunch || null;
-  const port = Number(hostLaunch?.port) || defaultGamePort(slug) || 0;
-
-  if (!hostLaunch?.argsTemplate?.length) {
+  const resolved = localDedicatedServerFor(slug);
+  if (!resolved.ok) {
     void reportSelfHostState(partyId, {
       appliedRevision: Number(desired.desiredRevision || 0),
       ready: false,
-      error: `PlayBound cannot start a ${entry?.title || slug} server on this PC.`,
+      error: resolved.reason,
     });
     stopSelfHostReconciler(partyId);
     return;
   }
+  const { exe, cwd, hostLaunch } = resolved;
+  const port = Number(hostLaunch?.port) || defaultGamePort(slug) || 0;
 
   const result = localServers.start(partyId, {
-    exe: game?.exe || null,
-    cwd: game?.dir || null,
+    exe,
+    cwd,
     hostLaunch,
     port,
     settings: desired.settings || {},
@@ -12404,8 +12456,14 @@ function stopSelfHostReconciler(partyId) {
   selfHostReconcilers.delete(String(partyId));
 }
 
-ipcMain.handle("start-self-host-server", (_event, partyId) => {
-  if (!partyId) return { error: "No party" };
+ipcMain.handle("start-self-host-server", (_event, partyId, slug) => {
+  if (!partyId) return { ok: false, reason: "No party" };
+  /*
+   * Answered before anything starts, so the renderer can fall back to the
+   * menu-hosted path immediately instead of watching a reconciler fail.
+   */
+  const resolved = localDedicatedServerFor(String(slug || ""));
+  if (!resolved.ok) return { ok: false, reason: resolved.reason };
   startSelfHostReconciler(partyId);
   return { ok: true };
 });
