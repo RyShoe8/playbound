@@ -488,11 +488,31 @@ else
     echo "  Warzone $WZ_HAVE_VER already matches upstream $WZ_UPSTREAM_VER"
   else
     curl -fL --retry 3 -o /tmp/warzone2100-upstream.deb "$WZ_DEB_URL"
+    # Ubuntu splits the game into warzone2100 + warzone2100-data; the upstream
+    # package carries its own data, so dpkg refuses to unpack over files the
+    # split-out package owns:
+    #
+    #   trying to overwrite '/usr/share/doc/warzone2100/ScriptingManual.htm',
+    #   which is also in package warzone2100-data
+    #
+    # Removing that package first is what lets the install proceed — apt
+    # already reports it as no longer required once the upstream build is the
+    # one being installed. It takes warzone2100 with it, which is the point.
+    if dpkg-query -W -f='${Status}' warzone2100-data 2>/dev/null | grep -q "install ok installed"; then
+      echo "  removing the distro's warzone2100-data so the upstream build can own its files"
+      apt-get remove -y warzone2100-data || true
+    fi
     # apt install, not dpkg -i: the upstream package pulls dependencies the
     # apt one did not, and dpkg would leave it half-configured.
-    apt-get install -y --allow-downgrades /tmp/warzone2100-upstream.deb       || echo "  WARN: upstream Warzone package would not install — hosting may fail on version mismatch" >&2
+    if apt-get install -y --allow-downgrades /tmp/warzone2100-upstream.deb; then
+      echo "  Warzone now: $(dpkg-query -W -f='${Version}' warzone2100 2>/dev/null || echo unknown) (upstream $WZ_UPSTREAM_VER)"
+    else
+      # Leaving the box with no Warzone at all would be worse than leaving it
+      # with one that cannot host: put the distro build back.
+      echo "  WARN: upstream Warzone package would not install — restoring the distro build; hosting will fail on version mismatch" >&2
+      apt-get install -y --no-install-recommends warzone2100 || true
+    fi
     rm -f /tmp/warzone2100-upstream.deb
-    echo "  Warzone now: $(dpkg-query -W -f='${Version}' warzone2100 2>/dev/null || echo unknown) (upstream $WZ_UPSTREAM_VER)"
   fi
 fi
 
@@ -508,6 +528,19 @@ for cand in /usr/games/warzone2100.real \
     break
   fi
 done
+if [[ -z "$WZ_REAL" ]]; then
+  # Only Ubuntu's package has a .real — it wraps the game in a bwrap launcher
+  # script and puts the actual binary beside it under that name. The upstream
+  # package installs a plain executable with no wrapper, so there is nothing to
+  # step around and the binary itself is the right target. A wrapper script is
+  # told apart from the real thing by looking for bwrap inside it.
+  for cand in /usr/bin/warzone2100 /usr/games/warzone2100 /usr/local/bin/warzone2100; do
+    if [[ -x "$cand" ]] && ! grep -qs bwrap "$cand"; then
+      WZ_REAL="$cand"
+      break
+    fi
+  done
+fi
 if [[ -n "$WZ_REAL" ]]; then
   cat > "$WZ_DIR/run-server" <<EOF
 #!/usr/bin/env bash
@@ -516,7 +549,7 @@ EOF
   chmod +x "$WZ_DIR/run-server"
   echo "  Warzone run-server -> $WZ_REAL"
 else
-  echo "  WARN: warzone2100.real not found — dedicated hosting may fail on headless VPS"
+  echo "  WARN: no runnable warzone2100 binary found — dedicated hosting will fail on this box"
 fi
 
 echo "==> Warzone 2100 autohost config"
