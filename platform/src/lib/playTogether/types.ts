@@ -220,6 +220,22 @@ export type PartyPayload = {
   /** Modes this game supports, in display order. Fewer than two means no picker. */
   hostModes: HostModeOption[];
   /**
+   * Whether PlayBound can administer this party's server, and when.
+   *
+   * Resolved here rather than by each client for the same reason as hostMode:
+   * the launcher cannot import the settings profiles, and a second answer to
+   * "does this game have server controls" is a second thing to drift. It is
+   * what the party panel uses to tell the host the in-game overlay is worth
+   * opening — a note about controls that do not exist is worse than silence.
+   */
+  serverControl: {
+    supported: boolean;
+    /** "pre-launch" while the room has not started; null when unsupported. */
+    phase: "live" | "pre-launch" | null;
+    /** Why there are no controls, when there are none. */
+    reason: string | null;
+  };
+  /**
    * Every couch-only game in the catalog, so the game picker can mark them
    * before one is chosen. Static, not per-party — see couchOnlyGameSlugs.
    */
