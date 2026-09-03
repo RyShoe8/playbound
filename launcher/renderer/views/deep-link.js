@@ -139,6 +139,7 @@ function renderDeepLinkView(ctx) {
       if (activeDeepLinkJob === key) return;
       activeDeepLinkJob = key;
       setStatus(`Installing ${title}…`);
+      setProgress("indeterminate");
       try {
         const checkboxes = document.querySelectorAll(".addon-checkbox");
         const addons = Array.from(checkboxes).filter((cb) => cb.checked).map((cb) => cb.value);
