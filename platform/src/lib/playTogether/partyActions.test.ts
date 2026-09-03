@@ -239,3 +239,42 @@ describe("the two panels cannot disagree", () => {
     expect(couchMember.playingPill).toBe(true);
   });
 });
+
+describe("server control note", () => {
+  const withControl = (phase: "live" | "pre-launch" | null, over = {}) =>
+    computePartyActions(
+      base({ serverControl: { supported: true, phase }, ...over })
+    );
+
+  it("says nothing when the game has no controls", () => {
+    expect(computePartyActions(base()).serverControl).toBeNull();
+    expect(
+      computePartyActions(base({ serverControl: { supported: false, phase: null } })).serverControl
+    ).toBeNull();
+  });
+
+  it("tells a pre-launch host to set the room up before it starts", () => {
+    const note = withControl("pre-launch").serverControl;
+    expect(note?.phase).toBe("pre-launch");
+    expect(note?.lead).toBe(PARTY_COPY.serverControlPreLaunch);
+  });
+
+  it("switches to the live wording once the room is running", () => {
+    expect(withControl("live").serverControl?.lead).toBe(PARTY_COPY.serverControlLive);
+  });
+
+  /*
+   * The launcher's controls are behind an overlay chord and the web's are on
+   * the page, so the tails cannot match — but both are authored here, so
+   * neither surface can be reworded on its own.
+   */
+  it("carries a tail for each surface, with the chord left to the launcher", () => {
+    const note = withControl("pre-launch").serverControl;
+    expect(note?.launcherTail).toContain("{key}");
+    expect(note?.webTail).not.toContain("{key}");
+  });
+
+  it("goes quiet once the party has ended", () => {
+    expect(withControl("live", { status: "ended" }).serverControl).toBeNull();
+  });
+});

@@ -1868,18 +1868,15 @@ function buildPartyViewHtml(party) {
    * game that actually has controls, so it never advertises a panel that would
    * open empty.
    */
-  const serverControlNoteHtml =
-    party.serverControl?.supported && !ended
-      ? `<p class="view-sub party-inline-note party-overlay-hint">${
-          party.serverControl.phase === "pre-launch"
-            ? `Set the map, slots and the rest before the server starts — press <kbd>${escapeHtml(
-                formatAccelerator(state.overlayShortcut)
-              )}</kbd> now, or in game once you are playing.`
-            : `Change this server's settings without leaving the game — press <kbd>${escapeHtml(
-                formatAccelerator(state.overlayShortcut)
-              )}</kbd> in game to open the PlayBound overlay.`
-        }</p>`
-      : "";
+  const serverControl = actions ? actions.serverControl : null;
+  const serverControlNoteHtml = serverControl
+    ? `<p class="view-sub party-inline-note party-overlay-hint">${escapeHtml(
+        serverControl.lead
+      )} — ${serverControl.launcherTail
+        .split("{key}")
+        .map((part) => escapeHtml(part))
+        .join(`<kbd>${escapeHtml(formatAccelerator(state.overlayShortcut))}</kbd>`)}</p>`
+    : "";
 
   const lanStepsHtml =
     lan.enabled && Array.isArray(lan.steps) && lan.steps.length

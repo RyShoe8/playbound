@@ -616,7 +616,20 @@ export function PartyView({
           * stays absent for self-hosted, public and non-hostable parties.
           */}
         {party.gameSlug ? (
-          <div className="border-t border-border p-4">
+          <div className="border-t border-border p-4 space-y-2">
+            {/*
+              The prompt the launcher shows. A host who has not started the room
+              has no reason to guess that now is the moment to set the map and
+              slots, and the panel alone does not say so. The lead sentence is
+              the launcher's, resolved server-side; the tail differs because
+              these controls are on the page rather than behind an overlay
+              chord.
+            */}
+            {actions.serverControl ? (
+              <p className="text-xs text-muted-foreground">
+                {actions.serverControl.lead} — {actions.serverControl.webTail}
+              </p>
+            ) : null}
             <PartyServerSettings partyId={party.id} />
           </div>
         ) : null}

@@ -812,6 +812,7 @@ function actionsFor(party: PartyPayload, viewerUserId?: string) {
     hosted: party.hosted,
     lan: party.lan,
     couch: party.couch,
+    serverControl: party.serverControl,
   });
 }
 
