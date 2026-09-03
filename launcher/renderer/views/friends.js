@@ -3349,8 +3349,35 @@ async function launchPartyGame(party) {
   if (lan.enabled) {
     const meta = (await window.playbound.getConnectMeta?.(slug)) || {};
     const symmetric = Boolean(meta.symmetric);
-    const peerAddresses = lanReady?.peerAddresses || [];
+    let peerAddresses = lanReady?.peerAddresses || [];
     const wantsPeer = symmetric || !isLeader;
+
+    const myId = String(state.accountState?.id || state.accountState?._id || "");
+    const otherMember = (party.members || []).find((m) => String(m.userId) !== myId);
+    const peerName = otherMember?.username || (symmetric ? "the other player" : "the host");
+
+    if (wantsPeer && peerAddresses.length === 0) {
+      // Don't fail immediately: poll for the peer for up to 12s so the first player doesn't have to guess and repeatedly re-click
+      for (let attempt = 1; attempt <= 8; attempt++) {
+        setStatus(`Waiting for ${peerName} to click Join Game… (${Math.round(attempt * 1.5)}s)`);
+        await new Promise((r) => setTimeout(r, 1500));
+        try {
+          const check = await window.playbound.prepareVirtualLan({
+            partyId: party.id,
+            slug: party.gameSlug,
+            editionSlug: party.editionSlug || null,
+            adapterFile: lan.adapterFile || null,
+            isLeader,
+          });
+          if (Array.isArray(check?.peerAddresses) && check.peerAddresses.length > 0) {
+            peerAddresses = check.peerAddresses;
+            break;
+          }
+        } catch {
+          /* retry */
+        }
+      }
+    }
 
     if (wantsPeer && peerAddresses.length > 0) {
       const port = Number(party.port || catalogGame?.port || meta.defaultPort || 0);
@@ -3364,15 +3391,10 @@ async function launchPartyGame(party) {
         playerNumber: isLeader ? 1 : 2,
       };
     } else if (wantsPeer) {
-      /*
-       * On the overlay but nobody else has enrolled yet. Launching now starts
-       * a session the other side cannot join, and for a symmetric game that
-       * is a guaranteed dead lobby rather than a slow one.
-       */
       setStatus(
         symmetric
-          ? "Waiting for the other player to join the party network — try Join Game again in a moment."
-          : "Waiting for the host to join the party network — try Join Game again in a moment."
+          ? `Waiting for ${peerName} to click Join Game. Once ${peerName} clicks Join Game, click Join Game here.`
+          : `Waiting for ${peerName} to click Join Game first. Once ${peerName} connects, click Join Game here.`
       );
       return;
     }
