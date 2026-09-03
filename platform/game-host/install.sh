@@ -349,6 +349,10 @@ exec /usr/bin/env python3 -OB ./bombsquad_server \
 EOF
   chmod +x "$BOMBSQUAD_DIR/run-server"
 fi
+# Patch Ballistica 1.8.0a116 upstream bug where typing.Any was imported only under TYPE_CHECKING
+if [[ -f "$BOMBSQUAD_DIR/dist/ba_data/python/efro/dataclassio/_base.py" ]]; then
+  sed -i 's/from typing import TYPE_CHECKING, get_args/from typing import TYPE_CHECKING, Any, get_args/' "$BOMBSQUAD_DIR/dist/ba_data/python/efro/dataclassio/_base.py"
+fi
 
 echo "==> Wolfenstein: Enemy Territory (ET: Legacy dedicated)"
 ET_DIR="$GAMES_DIR/wolfenstein-enemy-territory"
