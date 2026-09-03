@@ -3,8 +3,10 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Users, Crown, LogOut, Check, X, Phone, Play, HardDriveDownload } from "lucide-react";
+import { Users, Crown, LogOut, X, Phone, HardDriveDownload } from "lucide-react";
 import { usePartyStore } from "@/stores/partyStore";
+import { computePartyActions } from "@/lib/playTogether/partyActions";
+import { PartyActionIconView, partyButtonClass, partyNoteClass } from "./partyActionStyle";
 import type { PartyPayload } from "@/lib/playTogether/types";
 import { filterGamesForParty } from "@/lib/playTogether/partyPlatforms";
 import {
@@ -106,6 +108,27 @@ export function PartyView({
    * single-player session.
    */
   const couchMode = Boolean(party.couch?.enabled);
+  /*
+   * The action bar, resolved server-side so this panel and the launcher's
+   * cannot disagree about labels, gating or which button is primary. The
+   * fallback covers a payload built without a viewer (a public listing), where
+   * there is no "you" to gate on and the bar is not shown anyway.
+   */
+  const actions =
+    party.actions ??
+    computePartyActions({
+      viewerId: userId ?? "",
+      leaderId: party.leaderId,
+      leaderUsername: party.leaderUsername,
+      status: party.status,
+      gameSlug: party.gameSlug,
+      hostMode: party.hostMode,
+      selfHostReady: party.selfHostReady,
+      members: party.members.map((m) => ({ userId: m.userId, ready: m.ready })),
+      hosted: party.hosted,
+      lan: party.lan,
+      couch: party.couch,
+    });
   // Resolved server-side; the registry that knows which games these are is not
   // something a client component should pull into its bundle.
   const couchOnly = new Set(party.couchOnlyGames || []);
@@ -639,53 +662,52 @@ export function PartyView({
       {/* Actions */}
       <div className="p-4 bg-muted/50 border-t border-border flex flex-wrap items-center gap-3 justify-between">
         <div className="flex gap-3">
-          {party.status !== "ended" && party.status !== "launching" && party.status !== "playing" && (
+          {actions.ready.visible && (
             <button
-              disabled={!hasGame}
+              disabled={!actions.ready.enabled}
               onClick={() => void setReady(party.id, !isReady)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md font-bold text-sm transition-colors disabled:opacity-50 ${
-                isReady 
-                  ? 'bg-secondary text-secondary-foreground hover:bg-secondary/80' 
-                  : 'bg-green-600 text-white hover:bg-green-700'
-              }`}
-              title={hasGame ? undefined : "Pick a game first"}
+              className={partyButtonClass(actions.ready.tone)}
+              title={actions.ready.title || undefined}
             >
-              {isReady ? <X className="size-4" /> : <Check className="size-4" />}
-              {isReady ? "Cancel Ready" : "Ready Up"}
+              <PartyActionIconView icon={actions.ready.icon} />
+              {actions.ready.label}
             </button>
           )}
 
-          {canJoinGame && (
+          {actions.join.visible && (
             <div className="flex flex-col gap-1">
               {waitForHostedRoom || (!joinHref && !joinOpensBrowser) ? (
                 <button
                   type="button"
-                  disabled={joinConnectBlocked}
+                  disabled={!actions.join.enabled}
                   onClick={(e) => handleJoinGame(e)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary font-bold text-primary-foreground text-sm hover:bg-primary/90 shadow-sm disabled:opacity-50"
+                  className={partyButtonClass(actions.join.tone)}
+                  title={actions.join.title || undefined}
                 >
-                  <Play className="size-4 fill-current" />
-                  {memberWaitingForHost ? "Waiting for host" : "Join Game"}
+                  <PartyActionIconView icon={actions.join.icon} />
+                  {actions.join.label}
                 </button>
               ) : (
                 <a
                   href={joinHref || "#"}
                   target={joinOpensBrowser ? "_blank" : undefined}
                   rel={joinOpensBrowser ? "noopener noreferrer" : undefined}
-                  aria-disabled={joinConnectBlocked}
+                  aria-disabled={!actions.join.enabled}
+                  title={actions.join.title || undefined}
                   onClick={(e) => {
-                    if (joinConnectBlocked) {
+                    if (!actions.join.enabled) {
                       e.preventDefault();
                       return;
                     }
                     handleJoinGame(e);
                   }}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-md bg-primary font-bold text-primary-foreground text-sm hover:bg-primary/90 shadow-sm${
-                    joinConnectBlocked ? " pointer-events-none opacity-50" : ""
-                  }`}
+                  className={partyButtonClass(
+                    actions.join.tone,
+                    actions.join.enabled ? "" : "pointer-events-none opacity-50"
+                  )}
                 >
-                  <Play className="size-4 fill-current" />
-                  {memberWaitingForHost ? "Waiting for host" : "Join Game"}
+                  <PartyActionIconView icon={actions.join.icon} />
+                  {actions.join.label}
                 </a>
               )}
               {party.hosted?.roomCode ? (
@@ -788,45 +810,32 @@ export function PartyView({
               </ol>
             )}
 
-          {couchMode &&
-            (party.couch?.status === "ready" && party.couch.joinCode ? (
+          {actions.couch &&
+            (actions.couch.status === "ready" && actions.couch.joinCode ? (
               <div className="w-full space-y-1 self-start">
                 <p className="text-sm font-semibold">
-                  Phone controllers · code {party.couch.joinCode}
+                  Phone controllers · code {actions.couch.joinCode}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Open{" "}
-                  {party.couch.joinUrl ||
-                    `https://playbound.club/controller/${party.couch.joinCode}`}{" "}
-                  on your phone. It becomes a controller plugged into the host&apos;s PC.
+                  Open {actions.couch.joinUrl} on your phone. It becomes a controller plugged
+                  into the host&apos;s PC.
                 </p>
               </div>
-            ) : party.couch?.status === "failed" ? (
-              <p className="text-xs text-destructive self-center">
-                {party.couch.error || "Could not start phone controllers on the host's PC."}
-              </p>
             ) : (
-              <p className="text-xs text-muted-foreground self-center">
-                {/* The badge by the game already says what couch mode is;
-                    this says what happens next, and nothing else. */}
-                {isLeader
-                  ? "Start the game and your party gets a controller link."
-                  : "When the host starts the game you will get a link to open on your phone."}
+              <p className={partyNoteClass(actions.couch.status === "failed" ? "error" : "info")}>
+                {actions.couch.note}
               </p>
             ))}
 
-          {party.lan?.enabled && party.lan.status === "pending" && (
-            <p className="text-xs text-muted-foreground self-center">
-              Setting up the party network…
+          {/*
+            Hosted and LAN notes, resolved server-side. The launcher renders the
+            same list in the same order from the same field.
+          */}
+          {actions.notes.map((note) => (
+            <p key={`${note.tone}:${note.text}`} className={partyNoteClass(note.tone)}>
+              {note.text}
             </p>
-          )}
-
-          {party.lan?.enabled && party.lan.status === "failed" && (
-            <p className="text-xs text-destructive self-center">
-              {party.lan.error ||
-                "Could not set up the party network. The discovery reflector may not be running on the NetBird VPS."}
-            </p>
-          )}
+          ))}
 
         </div>
 
