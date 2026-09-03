@@ -882,10 +882,17 @@ export const recipes = {
     portStart: 15000,
     portEnd: 15020,
     protocol: "tcp",
+    /*
+     * Versioned name first, because Wesnoth multiplayer does not cross a
+     * series boundary. The box can end up with both series installed — the
+     * install script falls back to 1.16 when the 1.18 package is unavailable —
+     * and an unversioned `wesnothd` says nothing about which one it is. Our
+     * clients install 1.18, so that is the one to reach for.
+     */
     binaries: gameBin("battle-for-wesnoth", [
+      "wesnothd-1.18",
       "wesnothd",
       "wesnoth-server",
-      "wesnothd-1.18",
       "wesnothd-1.16",
       "wesnoth",
     ]),
