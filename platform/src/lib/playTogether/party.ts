@@ -64,6 +64,7 @@ import {
 import { isHostableGame, type HostedStatus } from "@/lib/gameHost/catalog";
 import { modBaseGameSlugsForCatalogGame } from "@/lib/catalogGameAliases";
 import { isVirtualLanGame } from "@/lib/multiplayer/adapters";
+import { isVirtualLanConfigured } from "@/lib/virtualLan/client";
 import {
   defaultHostMode,
   couchOnlyGameSlugs,
@@ -302,6 +303,25 @@ async function ensurePartyConnectReady(
         return { error: "Party network is still starting — wait a moment" };
       }
       if (ls !== "ready") {
+        /*
+         * An unconfigured deployment is not a failure anyone can act on, and
+         * it does not look like one from the outside: provisionPartyLan
+         * returns early without recording an error, so this fell back to
+         * "Could not set up the party network" — which reads as a transient
+         * fault and invites retrying forever.
+         *
+         * It matters because the member's side shows none of it. Their button
+         * stays on "Waiting for host" until the party status flips, and the
+         * status only flips after this function succeeds — so a HoloCure party
+         * sits there indefinitely with the one legible message going to the
+         * host alone.
+         */
+        if (!isVirtualLanConfigured()) {
+          return {
+            error:
+              "LAN parties are unavailable: PlayBound's party network is not configured on this deployment.",
+          };
+        }
         return {
           error: doc.lan?.error || "Could not set up the party network.",
         };
