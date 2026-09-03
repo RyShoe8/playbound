@@ -37,3 +37,8 @@ signing.env
 
 # Save snapshots written by SaveData when a test runs without an explicit root.
 *__official/
+
+# Competitive-intelligence strategy docs — keyword targets, gap analysis,
+# growth sequencing. Local-only; the repo is public.
+/SEO-STRATEGY.md
+/SEO-STRATEGY-*.md
