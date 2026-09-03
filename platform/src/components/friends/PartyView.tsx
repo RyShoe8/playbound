@@ -194,9 +194,11 @@ export function PartyView({
     !isLeader &&
     !couchMode &&
     party.hostMode === "self" &&
-    !party.lan?.enabled &&
-    !party.selfHostReady;
-  const lanReady = Boolean(party.lan?.enabled && party.lan?.status === "ready");
+    (party.lan?.enabled ? !inFlight : !party.selfHostReady);
+  const lanReady = Boolean(
+    party.lan?.enabled &&
+      (party.lan.configured === false || party.lan?.status === "ready")
+  );
   const joinConnectBlocked =
     memberWaitingForHost ||
     (Boolean(party.hosted?.enabled) && party.hosted?.status !== "ready") ||

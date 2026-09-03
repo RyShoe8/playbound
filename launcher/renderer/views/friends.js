@@ -1499,9 +1499,9 @@ function buildPartyViewHtml(party) {
   const memberWaitingForConnect =
     !isLeader &&
     !couch.enabled &&
-    ((party.hostMode === "self" && !party.selfHostReady) ||
+    ((party.hostMode === "self" && !lan.enabled && !party.selfHostReady) ||
       (hosted.enabled && hosted.status !== "ready") ||
-      (lan.enabled && lan.status !== "ready"));
+      (lan.enabled && lan.configured !== false && lan.status !== "ready"));
   const joinDisabled = joinConnectFailed || waitingForLeader || memberWaitingForConnect;
   const voiceEnabled = party.voiceEnabled !== false;
   const hasDiscordVoice = Boolean(party.discord?.inviteUrl || party.discord?.voiceChannelId);

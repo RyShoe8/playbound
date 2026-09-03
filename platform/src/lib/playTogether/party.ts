@@ -1896,13 +1896,11 @@ export async function joinPartyGame(
    * did. For these games the party being in flight is the readiness signal, and
    * finding the host is the game's own job once everyone is on the segment.
    */
-  if (
-    hostMode === "self" &&
-    !isLeader &&
-    !doc.selfHostReady &&
-    !isVirtualLanGame(String(doc.gameSlug || ""))
-  ) {
-    return { error: "Waiting for host", status: 400 };
+  if (hostMode === "self" && !isLeader) {
+    const isVLan = isVirtualLanGame(String(doc.gameSlug || ""));
+    if (isVLan ? firstLaunch : !doc.selfHostReady) {
+      return { error: "Waiting for host", status: 400 };
+    }
   }
   /*
    * Couch games have one copy running, on the leader's machine. A member
@@ -1920,7 +1918,10 @@ export async function joinPartyGame(
     return { error: connect.error, status: 400 };
   }
   if (firstLaunch) {
-    doc.status = hostMode === "self" ? "launching" : "playing";
+    doc.status =
+      hostMode === "self" && !isVirtualLanGame(String(doc.gameSlug || ""))
+        ? "launching"
+        : "playing";
     if (hostMode === "self") {
       doc.selfHostReady = false;
       doc.selfHostReadyAt = null;
