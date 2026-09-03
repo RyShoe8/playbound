@@ -844,11 +844,13 @@ export const recipes = {
     args: (port, ctx, binary) => {
       const isChoc = binary && binary.toLowerCase().includes("chocolate");
       const iwadArgs = [];
-      const ed = String(ctx?.editionSlug || "").toLowerCase();
-      const iwadName =
-        ed.includes("phase-1") || ed.includes("phase1") || ed === "1"
-          ? "freedoom1.wad"
-          : "freedoom2.wad";
+      const isPhase1 = ed.includes("phase-1") || ed.includes("phase1") || ed === "1";
+      const isFreeDm = ed.includes("freedm") || ed.includes("dm");
+      const iwadName = isPhase1
+        ? "freedoom1.wad"
+        : isFreeDm
+        ? "freedm.wad"
+        : "freedoom2.wad";
       const candidates = [
         path.join(GAMES_ROOT, "freedoom", iwadName),
         path.join("/usr/share/games/doom", iwadName),
@@ -857,6 +859,9 @@ export const recipes = {
       ];
       const iwadPath = candidates.find((p) => fs.existsSync(p)) || iwadName;
       iwadArgs.push("-iwad", iwadPath);
+
+      const defaultMap = isPhase1 ? "E1M1" : "MAP01";
+      const startingMap = ctx?.settings?.map || defaultMap;
 
       if (isChoc) {
         return ["-port", String(port), "-servername", ctx.name || "PlayBound.club Party", ...iwadArgs];
@@ -868,6 +873,8 @@ export const recipes = {
         "+sv_hostname",
         ctx.name || "PlayBound.club Party",
         ...iwadArgs,
+        "+map",
+        startingMap,
         ...freedoomSettingArgs(ctx.settings),
       ];
     },
