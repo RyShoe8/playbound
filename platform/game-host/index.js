@@ -22,6 +22,7 @@ import { copyFile, mkdir, rename, rm, stat } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
 import { generateRconPassword, isRconAuthFailure, sendRcon } from "./rcon.js";
+import { shouldRestartRoom, MAX_RESTARTS } from "./roomRestart.js";
 import {
   resolveRecipe,
   listInstalled,
@@ -720,6 +721,10 @@ async function startRoom({ gameSlug, partyId, name, editionSlug, mod, settings }
       pid: child.pid || null,
       child,
       createdAt: Date.now(),
+      // When the current process started, which is what the restart decision
+      // measures. Not createdAt: a restarted room keeps its original identity.
+      processStartedAt: Date.now(),
+      restarts: 0,
       /*
        * What this room was actually started with, so PlayBound can show the
        * running values rather than what our database believes it asked for.
@@ -749,10 +754,58 @@ async function startRoom({ gameSlug, partyId, name, editionSlug, mod, settings }
       const line = String(buf).trim();
       if (line) console.warn(`[${gameSlug}:${port}] ${line.slice(0, 200)}`);
     });
-    child.on("exit", (code) => {
-      console.log(`[${gameSlug}:${port}] exited ${code}`);
-      if (rooms.get(roomId) === room) stopRoom(room);
-    });
+    /*
+     * Several dedicated servers end their process when a match ends — OpenRA's
+     * own launch script wraps it in `while true` for exactly that reason. This
+     * agent started it once, so the end of a game was indistinguishable from
+     * the server dying: everyone booted mid-session, room gone, party wound
+     * back to forming with nothing to rejoin.
+     *
+     * A finished match comes back. A binary that cannot run does not — see
+     * shouldRestartRoom, which draws that line on how long the process lived.
+     */
+    const attachExitHandler = (proc) => {
+      proc.on("exit", (code) => {
+        console.log(`[${gameSlug}:${port}] exited ${code}`);
+        // A deliberate stop removes the room first, so this is the check for it.
+        if (rooms.get(roomId) !== room) return;
+
+        const decision = shouldRestartRoom({
+          restarts: room.restarts || 0,
+          uptimeMs: Date.now() - (room.processStartedAt || room.createdAt || Date.now()),
+        });
+        if (!decision.restart) {
+          console.log(`[${gameSlug}:${port}] not restarting — ${decision.reason}`);
+          stopRoom(room);
+          return;
+        }
+
+        room.restarts = (room.restarts || 0) + 1;
+        console.log(
+          `[${gameSlug}:${port}] restarting (${room.restarts}/${MAX_RESTARTS}) — ${decision.reason}`
+        );
+        try {
+          const next = spawn(binary, args, { cwd, env: spawnEnv, stdio: ["pipe", "pipe", "pipe"], detached: true });
+          room.child = next;
+          room.pid = next.pid || null;
+          room.processStartedAt = Date.now();
+          next.stdout?.on("data", pushLog);
+          next.stderr?.on("data", pushLog);
+          attachExitHandler(next);
+          if (recipe.stdin) {
+            try {
+              next.stdin?.write(recipe.stdin(port, ctx));
+            } catch (err) {
+              console.warn("stdin write failed on restart", err);
+            }
+          }
+        } catch (err) {
+          console.warn(`[${gameSlug}:${port}] restart failed:`, err?.message || err);
+          stopRoom(room);
+        }
+      });
+    };
+    attachExitHandler(child);
 
     if (recipe.stdin) {
       try {
