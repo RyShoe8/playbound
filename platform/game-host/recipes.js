@@ -834,22 +834,35 @@ export const recipes = {
       // Zandronum is the default edition, so it is also the default server.
       return firstExisting(gameBin("freedoom", ["zandronum-server"]));
     },
-    spawnEnv: () => ({ SDL_VIDEODRIVER: "dummy", SDL_AUDIODRIVER: "dummy" }),
+    spawnEnv: () => ({
+      SDL_VIDEODRIVER: "dummy",
+      SDL_AUDIODRIVER: "dummy",
+      DOOMWADDIR: path.join(GAMES_ROOT, "freedoom"),
+      DOOMWADPATH: `${path.join(GAMES_ROOT, "freedoom")}:/usr/share/games/doom:/usr/local/share/games/doom`,
+    }),
+    startupReadyTimeoutMs: 20_000,
     args: (port, ctx, binary) => {
       const isChoc = binary && binary.toLowerCase().includes("chocolate");
       const iwadArgs = [];
       const ed = String(ctx?.editionSlug || "").toLowerCase();
-      if (ed.includes("phase-1") || ed.includes("phase1") || ed === "1") {
-        iwadArgs.push("-iwad", "freedoom1.wad");
-      } else if (ed.includes("phase-2") || ed.includes("phase2") || ed === "2") {
-        iwadArgs.push("-iwad", "freedoom2.wad");
-      } else {
-        iwadArgs.push("-iwad", "freedoom2.wad");
-      }
+      const iwadName =
+        ed.includes("phase-1") || ed.includes("phase1") || ed === "1"
+          ? "freedoom1.wad"
+          : "freedoom2.wad";
+      const candidates = [
+        path.join(GAMES_ROOT, "freedoom", iwadName),
+        path.join("/usr/share/games/doom", iwadName),
+        path.join("/usr/local/share/games/doom", iwadName),
+        iwadName,
+      ];
+      const iwadPath = candidates.find((p) => fs.existsSync(p)) || iwadName;
+      iwadArgs.push("-iwad", iwadPath);
+
       if (isChoc) {
         return ["-port", String(port), "-servername", ctx.name || "PlayBound.club Party", ...iwadArgs];
       }
       return [
+        "-host",
         "-port",
         String(port),
         "+sv_hostname",

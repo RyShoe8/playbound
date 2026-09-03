@@ -811,6 +811,25 @@ export function setStatus(text, isError = false) {
   if (!statusMsg) return;
   statusMsg.textContent = text || "";
   statusMsg.style.color = isError ? "var(--danger)" : "var(--text-muted)";
+  if (isError && text) {
+    statusMsg.title = "Click to copy error to clipboard";
+    statusMsg.style.cursor = "pointer";
+    statusMsg.onclick = () => {
+      const rawText = String(text || "").trim();
+      if (!rawText) return;
+      void (window.playbound?.clipboardWrite?.(rawText) || navigator.clipboard?.writeText?.(rawText));
+      statusMsg.textContent = `${rawText} (Copied!)`;
+      setTimeout(() => {
+        if (statusMsg.textContent === `${rawText} (Copied!)`) {
+          statusMsg.textContent = rawText;
+        }
+      }, 2000);
+    };
+  } else {
+    statusMsg.removeAttribute("title");
+    statusMsg.style.cursor = "";
+    statusMsg.onclick = null;
+  }
 }
 
 export function setProgress(pct) {

@@ -10400,3 +10400,58 @@ textarea.input-text {
 @media (max-width: 900px) {
   .mp-stats-card { grid-template-columns: minmax(0, 1fr); gap: 16px; }
 }
+
+/* ── Selectable & Copyable Errors ────────────────────────────────────────── */
+.party-hosted-error,
+.create-party-error,
+.party-voice-error,
+.party-inline-note,
+.error,
+.error-msg,
+.status-error,
+[role="alert"],
+.user-select-text,
+.copyable-error,
+#statusbar-msg {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+
+.party-hosted-error {
+  cursor: text;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.copy-error-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-left: 6px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--danger, #f87171);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: all 0.15s ease;
+  vertical-align: middle;
+}
+
+.copy-error-badge:hover {
+  background: rgba(239, 68, 68, 0.28);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #fff;
+}
+
+.copy-error-badge:active {
+  transform: scale(0.96);
+}
+

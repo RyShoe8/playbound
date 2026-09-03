@@ -1733,22 +1733,32 @@ function buildPartyViewHtml(party) {
        </div>`
     : "";
 
+  const copyErrorBadge = (text) =>
+    text
+      ? `<button type="button" class="copy-error-badge" data-action="copy-error" data-error="${escapeHtml(
+          String(text)
+        )}" title="Click to copy error">Copy</button>`
+      : "";
+
   const hostedNoteHtml =
     party.hostMode === "public" && hosted.enabled && hosted.status !== "ready"
       ? `<p class="view-sub party-inline-note">Now pick a server under <strong>Public server</strong> above.</p>`
       : hosted.enabled && hosted.status === "pending"
       ? `<p class="view-sub party-inline-note">Starting PlayBound server…</p>`
       : hosted.enabled && hosted.status === "failed"
-      ? `<p class="party-inline-note party-hosted-error">${escapeHtml(
+      ? `<p class="party-inline-note party-hosted-error"><span>${escapeHtml(
           hosted.error || "Could not start the PlayBound server."
-        )}</p>`
+        )}</span>${copyErrorBadge(hosted.error || "Could not start the PlayBound server.")}</p>`
       : "";
 
   const lanNoteHtml =
     lan.enabled && lan.status === "pending"
       ? `<p class="view-sub party-inline-note">Setting up the party network…</p>`
       : lan.enabled && lan.status === "failed"
-      ? `<p class="party-inline-note party-hosted-error">${escapeHtml(
+      ? `<p class="party-inline-note party-hosted-error"><span>${escapeHtml(
+          lan.error ||
+            "Could not set up the party network. The discovery reflector may not be running on the NetBird VPS."
+        )}</span>${copyErrorBadge(
           lan.error ||
             "Could not set up the party network. The discovery reflector may not be running on the NetBird VPS."
         )}</p>`
@@ -2824,6 +2834,21 @@ function wirePartyView(slot, party) {
       setStatus("Controller link copied");
     });
   }
+
+  slot.querySelectorAll("[data-action='copy-error']").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const err = btn.dataset.error || "";
+      if (!err) return;
+      void (window.playbound?.clipboardWrite?.(err) || navigator.clipboard?.writeText?.(err));
+      const orig = btn.textContent;
+      btn.textContent = "Copied!";
+      setStatus("Error copied to clipboard");
+      setTimeout(() => {
+        if (btn.textContent === "Copied!") btn.textContent = orig;
+      }, 2000);
+    });
+  });
 
   const voiceBtn = slot.querySelector("#btn-party-voice");
   if (voiceBtn) {

@@ -719,9 +719,25 @@ export function PartyView({
             )}
 
           {party.hosted?.enabled && party.hosted.status === "failed" && (
-            <p className="text-xs text-destructive self-center">
-              {party.hosted.error || "Could not start the PlayBound server."}
-            </p>
+            <div className="flex items-center gap-2 self-center text-xs text-destructive select-text">
+              <span>{party.hosted.error || "Could not start the PlayBound server."}</span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  const target = e.currentTarget;
+                  const text = party.hosted?.error || "Could not start the PlayBound server.";
+                  void navigator.clipboard?.writeText(text);
+                  target.textContent = "Copied!";
+                  setTimeout(() => {
+                    target.textContent = "Copy";
+                  }, 2000);
+                }}
+                className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-destructive/15 hover:bg-destructive/25 text-destructive cursor-pointer transition-colors"
+                title="Copy error to clipboard"
+              >
+                Copy
+              </button>
+            </div>
           )}
 
           {party.hosted?.enabled &&
