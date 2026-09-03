@@ -152,6 +152,7 @@ const CLIENT_CONNECT_ARGS = {
   // In-game Room Code / Lobby Joins / Direct Network — no CLI join; show host:port to paste.
   supertuxkart: null,
   holocure: null,
+  "hurry-curry": null,
   openciv3: null,
   "dungeon-keeper-gold": null,
   starcraft: null,

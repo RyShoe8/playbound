@@ -945,6 +945,8 @@ export function resolveRecipe(slug, ctx) {
 const HOST_TITLES = {
   "0-ad": "0 A.D.",
   bombsquad: "BombSquad",
+  freedoom: "Freedoom",
+  "hurry-curry": "Hurry Curry!",
   "wolfenstein-enemy-territory": "Wolfenstein: Enemy Territory",
   ysoccer: "YSoccer",
 };
