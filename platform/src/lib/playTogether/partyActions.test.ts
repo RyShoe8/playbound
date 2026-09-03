@@ -98,18 +98,26 @@ describe("join button", () => {
     expect(a.join.title).toBe(PARTY_COPY.serverStillStarting);
   });
 
-  it("stays clickable when armed, so the wait can be called off", () => {
+  /*
+   * Whether a join is armed is client-side state the server cannot see, so the
+   * resolver emits both readings and the client picks. That is what stops the
+   * launcher writing its own labels for the armed case.
+   */
+  it("offers an armed reading that stays clickable, so the wait can be called off", () => {
     const a = computePartyActions(
       base({
         viewerId: "u2",
-        joinArmed: true,
         hosted: { enabled: true, status: "pending" },
         members: [{ userId: "u2", ready: true }],
       })
     );
-    expect(a.join.enabled).toBe(true);
-    expect(a.join.label).toBe(PARTY_COPY.joinArmed);
-    expect(a.join.title).toBe(PARTY_COPY.joinArmedTitle);
+    expect(a.join.enabled).toBe(false);
+    expect(a.joinArmed.enabled).toBe(true);
+    expect(a.joinArmed.label).toBe(PARTY_COPY.joinArmed);
+    expect(a.joinArmed.title).toBe(PARTY_COPY.joinArmedTitle);
+    expect(a.joinArmed.icon).toBe("loader");
+    // Both readings appear and disappear together.
+    expect(a.joinArmed.visible).toBe(a.join.visible);
   });
 
   it("surfaces the connect error rather than a generic one", () => {

@@ -733,11 +733,11 @@ export function PartyView({
             </div>
           )}
 
-          {party.hosted?.enabled && party.hosted.status === "pending" && (
-            <p className="text-xs text-muted-foreground self-center">
-              Starting PlayBound server…
-            </p>
-          )}
+          {/*
+            The "starting" and "failed" notes come from actions.notes, rendered
+            with the rest of them below, so this panel and the launcher's show
+            the same set in the same order.
+          */}
 
           {party.hosted?.enabled && party.hosted.status === "ready" && party.hosted.host && (
             <div className="flex items-center gap-2 self-center text-xs text-muted-foreground bg-secondary/50 px-2.5 py-1 rounded-md border border-border/50">
