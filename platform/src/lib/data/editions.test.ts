@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { editions } from "./editions";
+import { editions, formatEditionChipNames } from "./editions";
 
 const holocure = editions.filter((e) => e.gameSlug === "holocure");
 
@@ -326,5 +326,51 @@ describe("Morrowind editions", () => {
     expect(re.test("tes3mp-GNU+Linux-x86_64-release-0.8.1-68954091c5-6da3fdea59.tar.gz")).toBe(
       false
     );
+  });
+});
+
+describe("naming a game's editions together", () => {
+  /*
+   * The parenthetical is sometimes the only thing telling two editions apart.
+   * Dropping it per-name left YSoccer with two library rows both called
+   * "YSoccer" — the game's own name, twice, with nothing to choose between.
+   */
+  it("keeps the part that distinguishes two editions", () => {
+    expect(formatEditionChipNames(["YSoccer (Portable)", "YSoccer (Tournament)"])).toEqual([
+      "YSoccer (Portable)",
+      "YSoccer (Tournament)",
+    ]);
+  });
+
+  it("still tidies a name that stays unique without it", () => {
+    expect(formatEditionChipNames(["Doom (1993)", "Brutal Doom"])).toEqual(["Doom", "Brutal Doom"]);
+  });
+
+  it("shortens only the names that collide", () => {
+    expect(
+      formatEditionChipNames(["YSoccer (Portable)", "YSoccer (Tournament)", "Ancient Beast (2007)"])
+    ).toEqual(["YSoccer (Portable)", "YSoccer (Tournament)", "Ancient Beast"]);
+  });
+
+  it("handles a single edition and an empty list", () => {
+    expect(formatEditionChipNames(["Quake (GOG)"])).toEqual(["Quake"]);
+    expect(formatEditionChipNames([])).toEqual([]);
+  });
+
+  it("every published game's editions end up distinguishable", () => {
+    // The whole point: no game may present two editions under one label.
+    const bySlug = new Map<string, string[]>();
+    for (const edition of editions) {
+      if (edition.visibility === "hidden" || edition.status === "archived") continue;
+      const list = bySlug.get(edition.gameSlug) || [];
+      list.push(edition.name);
+      bySlug.set(edition.gameSlug, list);
+    }
+    for (const [slug, names] of bySlug) {
+      const shown = formatEditionChipNames(names);
+      expect(new Set(shown).size, `${slug} shows duplicate edition names: ${shown.join(", ")}`).toBe(
+        new Set(names).size
+      );
+    }
   });
 });

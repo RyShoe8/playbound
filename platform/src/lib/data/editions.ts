@@ -4591,6 +4591,28 @@ export function formatEditionChipName(name: string): string {
 }
 
 /**
+ * The same tidying, applied to a game's editions together.
+ *
+ * The parenthetical is sometimes the only thing telling two editions apart.
+ * YSoccer ships "YSoccer (Portable)" and "YSoccer (Tournament)"; formatted one
+ * at a time they both became "YSoccer", so the launcher library listed two
+ * editions under the game's own name and a player had no way to tell which was
+ * which — or that they were different at all.
+ *
+ * A name is only shortened when the short form stays unique within the game.
+ * Where it collides, every colliding edition keeps what it was actually
+ * called, which is longer and correct.
+ */
+export function formatEditionChipNames(names: readonly string[]): string[] {
+  const formatted = names.map((n) => formatEditionChipName(n));
+  const counts = new Map<string, number>();
+  for (const name of formatted) counts.set(name, (counts.get(name) || 0) + 1);
+  return formatted.map((name, i) =>
+    (counts.get(name) || 0) > 1 ? String(names[i] || name) : name
+  );
+}
+
+/**
  * Returns distinct / non-generic editions for a game (excluding purely standard/fallback "official"
  * or "default" entries where no notable community/remaster/alternate editions exist).
  * If a game only has a single generic "official" or "default" edition, it returns empty [].

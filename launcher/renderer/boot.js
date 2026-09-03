@@ -606,7 +606,17 @@ function wireMainEvents() {
     const withElapsed = (base) => (elapsed) =>
       setStatus(`${base}${elapsed ? ` · ${elapsed}` : ""}${queuedText}`);
 
-    if (phase !== "downloading") stopPhaseTicker();
+    /*
+     * Every phase stops the previous phase's clock, downloading included.
+     *
+     * It used to be exempt, and the exemption is what made the status bar
+     * flash: "Finding the download…" starts a ticker that repaints once a
+     * second, downloading sets the real byte count on every progress event,
+     * and with the ticker still running the two alternated in the same line.
+     * A phase that wants a clock starts its own below — tickPhase clears this
+     * one first — so stopping unconditionally costs nothing.
+     */
+    stopPhaseTicker();
 
     if (phase === "resolving") {
       // Finding the release, following redirects, sometimes waiting on an
@@ -638,7 +648,6 @@ function wireMainEvents() {
     } else if (phase === "extracting") {
       const what = addon ? addon : "game files";
       if (data.pct != null) {
-        stopPhaseTicker();
         setStatus(`${titlePrefix}Unpacking ${what}… ${data.pct}%${queuedText}`);
         setProgress(data.pct);
       } else {

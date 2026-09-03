@@ -53,6 +53,7 @@ const { ensureOpenTtdClientName } = require("./services/openTtdPlayerName");
 const { reconcileCatalog, startupCatalog } = require("./services/catalogMerge");
 const virtualLan = require("./services/virtualLan");
 const {
+  firstRunnableOnPlatform,
   isLegacyDosExecutable,
   preferRunnableExecutable,
   shouldLaunchThroughDosBox,
@@ -7591,15 +7592,33 @@ async function playGameInner(slug, join = null, editionSlug = null) {
    * binary directly so join arguments reach the engine.
    */
   if (slug === "xonotic") {
-    const xonoticExe =
-      findNamedPortableExe(info.dir, "xonotic-x86_64-sdl.exe") ||
-      findNamedPortableExe(info.dir, "xonotic-x86_64-gl.exe") ||
-      findNamedPortableExe(info.dir, "xonotic-x86-sdl.exe") ||
-      findNamedPortableExe(info.dir, "xonotic-x86-gl.exe") ||
-      findNamedPortableExe(info.dir, "xonotic-x86_64.exe") ||
-      findNamedPortableExe(info.dir, "xonotic-linux64-sdl") ||
-      findNamedPortableExe(info.dir, "xonotic-linux64-gl") ||
-      (info.dir ? findExecutable(info.dir, "xonotic.*sdl|xonotic.*gl|xonotic-x86") : null);
+    /*
+     * One zip, every platform's engine in it.
+     *
+     * Xonotic ships the Windows .exe, the Linux ELF and the macOS bundle side
+     * by side, and this list is walked in order until a file exists — so on a
+     * Windows box whose release did not carry one of the .exe names above,
+     * `xonotic-linux64-sdl` was found, written into the install record by
+     * persistEditionExe, and spawned. That is the "Couldn't start
+     * xonotic-linux64-sdl (file missing or not runnable)" a player sees, and
+     * it survives restarts because the wrong answer was saved.
+     *
+     * The names stay ordered by preference; the platform filter decides which
+     * of them this machine is allowed to adopt.
+     */
+    const xonoticExe = firstRunnableOnPlatform([
+      findNamedPortableExe(info.dir, "xonotic-x86_64-sdl.exe"),
+      findNamedPortableExe(info.dir, "xonotic-x86_64-gl.exe"),
+      findNamedPortableExe(info.dir, "xonotic-x86-sdl.exe"),
+      findNamedPortableExe(info.dir, "xonotic-x86-gl.exe"),
+      findNamedPortableExe(info.dir, "xonotic-x86_64.exe"),
+      findNamedPortableExe(info.dir, "xonotic-x64-sdl.exe"),
+      findNamedPortableExe(info.dir, "xonotic-x64-gl.exe"),
+      findNamedPortableExe(info.dir, "xonotic-linux64-sdl"),
+      findNamedPortableExe(info.dir, "xonotic-linux64-glx"),
+      findNamedPortableExe(info.dir, "xonotic-linux64-gl"),
+      info.dir ? findExecutable(info.dir, "xonotic.*sdl|xonotic.*gl|xonotic-x86") : null,
+    ]);
 
     if (xonoticExe && (path.basename(launchPath).toLowerCase() === "xonotic.exe" || launchPath !== xonoticExe)) {
       persistEditionExe(slug, edSlug, launchPath, xonoticExe);
@@ -7617,10 +7636,13 @@ async function playGameInner(slug, join = null, editionSlug = null) {
    * launching zandronum.exe.
    */
   if (slug === "freedoom" || slug === "zandronum") {
-    const zandronumExe =
-      findNamedPortableExe(info.dir, "zandronum.exe") ||
-      findNamedPortableExe(info.dir, "zandronum") ||
-      (info.dir ? findExecutable(info.dir, "zandronum") : null);
+    // Same shape as Xonotic's: the bare name below the .exe is the Linux
+    // build, and adopting it on Windows saves an unrunnable path.
+    const zandronumExe = firstRunnableOnPlatform([
+      findNamedPortableExe(info.dir, "zandronum.exe"),
+      findNamedPortableExe(info.dir, "zandronum"),
+      info.dir ? findExecutable(info.dir, "zandronum") : null,
+    ]);
 
     if (zandronumExe && (launchPath !== zandronumExe || /gzdoom/i.test(path.basename(launchPath)))) {
       persistEditionExe(slug, edSlug, launchPath, zandronumExe);
