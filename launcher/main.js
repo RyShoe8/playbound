@@ -1,4 +1,4 @@
-const { app, BrowserWindow, globalShortcut, ipcMain, shell, dialog, Tray, Menu, nativeImage, screen, safeStorage, session, Notification } = require("electron");
+const { app, BrowserWindow, globalShortcut, ipcMain, shell, dialog, Tray, Menu, nativeImage, screen, safeStorage, session, Notification, powerMonitor } = require("electron");
 
 // GPU Acceleration & Rendering Switches for silky-smooth scrolling on all hardware
 app.commandLine.appendSwitch("enable-gpu-rasterization");
@@ -8182,6 +8182,61 @@ function sendGameStarted(slug) {
   }
 }
 
+/*
+ * Tell the renderer when the machine has been left alone.
+ *
+ * A launcher sitting open on an unattended desk polls exactly as hard as one
+ * somebody is using — the renderer cannot tell the difference, because it sees
+ * no input in either case once another window has focus. Only the main process
+ * can ask the OS, so it does, and pushes the answer in for pollGate to use.
+ *
+ * Ten minutes is chosen to be obviously past "thinking about it" and well
+ * short of a lunch break. Checked once a minute, which is cheap and means the
+ * worst case for coming back is one stale minute — and any real activity
+ * (a live party, a running game) ignores this signal entirely anyway.
+ */
+const SYSTEM_IDLE_THRESHOLD_S = 10 * 60;
+const SYSTEM_IDLE_CHECK_MS = 60_000;
+let systemIdleTimer = null;
+let systemIdleState = false;
+
+function broadcastSystemIdle(idle) {
+  for (const target of [win, friendsWin, overlayWin]) {
+    if (target && !target.isDestroyed()) {
+      try {
+        target.webContents.send("system-idle", { idle });
+      } catch {
+        /* a window closing mid-broadcast is not an error */
+      }
+    }
+  }
+}
+
+function startSystemIdleWatch() {
+  if (systemIdleTimer) return;
+  systemIdleTimer = setInterval(() => {
+    let idle = false;
+    try {
+      idle = powerMonitor.getSystemIdleTime() >= SYSTEM_IDLE_THRESHOLD_S;
+    } catch {
+      // No idle information available on this platform: never suspend on it.
+      idle = false;
+    }
+    if (idle === systemIdleState) return;
+    systemIdleState = idle;
+    broadcastSystemIdle(idle);
+  }, SYSTEM_IDLE_CHECK_MS);
+  // Waking the machine is the one moment we know the answer without asking.
+  powerMonitor.on("unlock-screen", () => {
+    systemIdleState = false;
+    broadcastSystemIdle(false);
+  });
+  powerMonitor.on("resume", () => {
+    systemIdleState = false;
+    broadcastSystemIdle(false);
+  });
+}
+
 /**
  * Back up a game's saves once it closes.
  *
@@ -13263,6 +13318,9 @@ if (gotLock) {
     if (uninstallIdx !== -1) return testUninstall(process.argv[uninstallIdx + 1]);
 
     configureYoutubeEmbedIdentity();
+
+    // Cheap, and it is what lets an unattended launcher stop polling.
+    startSystemIdleWatch();
 
     void flushLastCrashReport();
 

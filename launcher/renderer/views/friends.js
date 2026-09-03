@@ -1,5 +1,6 @@
 import { createFreeOfferCard, createGameCard } from "../cards.js";
 import { CADENCE } from "../cadence.js";
+import { pollSuspended } from "../pollGate.js";
 import { maybeOfferPhoneControllerThenPlay } from "../phoneController.js";
 import { ensureCouchBackground, startCouchSessionQuiet } from "./couch.js";
 import { maybeShowLaunchGuidance } from "../guidanceModal.js";
@@ -505,6 +506,12 @@ function syncFriendsPoll() {
   friendsPollInterval = setInterval(() => {
     const inLiveParty = Boolean(state._activeParty && state._activeParty.status !== "ended");
     if ((state.currentView === "friends" || inLiveParty) && state.accountState.connected) {
+      /*
+       * Kept running rather than torn down: the panel is still mounted and the
+       * moment the window comes back we want the next tick on schedule. A live
+       * party or a running game overrides this — see pollGate.
+       */
+      if (pollSuspended({ liveParty: inLiveParty, playing: localPlaying })) return;
       void pollFriendsData();
     } else {
       clearInterval(friendsPollInterval);
@@ -2166,10 +2173,25 @@ function buildPartyChatHtml(party) {
   `;
 }
 
-async function refreshPartyChat(party) {
+/*
+ * Chat was being fetched on two independent cadences.
+ *
+ * Its own timer runs at partyChatPollMs, and every friends poll also called
+ * this because a refresh repaints the party area — so a live party fetched
+ * chat roughly twice as often as the cadence anyone chose, for one panel.
+ *
+ * A fetch that lands inside the cadence window is dropped. Sending a message
+ * passes `force`, because that path has to see its own write.
+ */
+let lastPartyChatAt = 0;
+
+async function refreshPartyChat(party, { force = false } = {}) {
   const list = document.getElementById("party-chat-list");
   if (!list || !party?.id) return;
   if (!window.playbound.getPartyChat) return;
+  const now = Date.now();
+  if (!force && now - lastPartyChatAt < CADENCE.partyChatPollMs) return;
+  lastPartyChatAt = now;
   try {
     const data = await window.playbound.getPartyChat(party.id);
     const messages = Array.isArray(data?.messages) ? data.messages : [];
@@ -3097,7 +3119,8 @@ function wirePartyView(slot, party) {
     partyChatTimer = null;
   }
   if (party?.id) {
-    void refreshPartyChat(party);
+    // The panel just mounted and has nothing in it; the throttle is for polls.
+    void refreshPartyChat(party, { force: true });
     partyChatTimer = setInterval(() => {
       const list = document.getElementById("party-chat-list");
       if (!list || list.dataset.party !== String(party.id)) {
@@ -3105,6 +3128,9 @@ function wirePartyView(slot, party) {
         partyChatTimer = null;
         return;
       }
+      // A party open in a hidden window still matters, so this one only stops
+      // for a genuinely idle machine.
+      if (pollSuspended({ liveParty: party.status !== "ended" })) return;
       void refreshPartyChat(party);
     }, CADENCE.partyChatPollMs);
   }
@@ -3152,7 +3178,7 @@ function wirePartyView(slot, party) {
         setStatus(res.error, true);
         return;
       }
-      void refreshPartyChat(party);
+      void refreshPartyChat(party, { force: true });
     });
   }
 }

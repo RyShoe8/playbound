@@ -1,4 +1,5 @@
 import { renderHomeView } from "./home.js";
+import { setSystemIdle } from "./pollGate.js";
 import {
   api,
   applyAccountToSidebar,
@@ -593,6 +594,9 @@ function wireMainEvents() {
     paint();
     if (startedAt) phaseTicker = setInterval(paint, 1000);
   }
+
+  // Main tells us when the machine has been left alone; pollGate reads it.
+  window.playbound.onSystemIdle?.((idle) => setSystemIdle(idle));
 
   window.playbound.onProgress((data) => {
     const {
