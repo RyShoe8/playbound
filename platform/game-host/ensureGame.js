@@ -58,6 +58,17 @@ const ENSURE_SPECS = {
     archiveUrl: process.env.XONOTIC_URL || "https://dl.xonotic.org/xonotic-0.8.6.zip",
     binaryNames: ["xonotic-linux64-dedicated", "xonotic-dedicated"],
   },
+  freedoom: {
+    archiveUrl:
+      process.env.ZANDRONUM_LINUX_URL ||
+      "https://zandronum.com/downloads/zandronum3.2-linux-x86_64.tar.bz2",
+    overlayUrl:
+      process.env.FREEDOOM_IWADS_URL ||
+      "https://github.com/freedoom/freedoom/releases/download/v0.13.0/freedoom-0.13.0.zip",
+    overlayCheckFile: "freedoom2.wad",
+    binaryNames: ["zandronum-server", "odasrv", "odamex-server", "chocolate-server"],
+    linkAs: "zandronum-server",
+  },
 };
 
 export function canEnsure(slug) {
@@ -111,10 +122,9 @@ async function extractArchive(archivePath, destDir) {
     await run("unzip", ["-qo", archivePath, "-d", destDir]);
     return;
   }
-  // tar.gz / .tgz / mislabeled archives from Content-Disposition
+  // tar.gz / .tar.bz2 / .tar.xz / mislabeled archives from Content-Disposition
   try {
-    await run("tar", ["-tzf", archivePath]);
-    await run("tar", ["-xzf", archivePath, "-C", destDir]);
+    await run("tar", ["-xf", archivePath, "-C", destDir]);
   } catch {
     await run("unzip", ["-qo", archivePath, "-d", destDir]);
   }
@@ -126,9 +136,15 @@ async function flattenSingleRoot(extractDir) {
   return path.join(extractDir, entries[0].name);
 }
 
-async function needsEtOverlay(gameDir) {
-  const pak0 = path.join(gameDir, "etmain", "pak0.pk3");
-  return !(await exists(pak0));
+async function needsOverlay(gameDir, spec) {
+  if (spec.overlayCheckFile) {
+    return !(await exists(path.join(gameDir, spec.overlayCheckFile)));
+  }
+  if (spec.overlayDest) {
+    const pak0 = path.join(gameDir, "etmain", "pak0.pk3");
+    return !(await exists(pak0));
+  }
+  return false;
 }
 
 async function ensureEtLegacyGame(gameDir, spec, work) {
@@ -286,16 +302,21 @@ async function ensureGameUnlocked(slug) {
       }
     }
 
-    if (spec.overlayUrl && spec.overlayDest && (await needsEtOverlay(gameDir))) {
-      console.log(`[ensure] ${slug}: downloading ${spec.overlayDest} assets…`);
+    if (spec.overlayUrl && (await needsOverlay(gameDir, spec))) {
+      const destLabel = spec.overlayDest || "game";
+      console.log(`[ensure] ${slug}: downloading ${destLabel} assets…`);
       const overlayZip = path.join(work, "overlay.zip");
       await download(spec.overlayUrl, overlayZip);
       const overlayExtract = path.join(work, "overlay");
       await extractArchive(overlayZip, overlayExtract);
-      const overlayDir = path.join(gameDir, spec.overlayDest);
+      const overlayDir = spec.overlayDest
+        ? path.join(gameDir, spec.overlayDest)
+        : gameDir;
       await mkdir(overlayDir, { recursive: true });
       const overlayRoot = await flattenSingleRoot(overlayExtract);
-      const nested = path.join(overlayRoot, spec.overlayDest);
+      const nested = spec.overlayDest
+        ? path.join(overlayRoot, spec.overlayDest)
+        : overlayRoot;
       const from = (await exists(nested)) ? nested : overlayRoot;
       await cp(from, overlayDir, { recursive: true, force: true });
     }

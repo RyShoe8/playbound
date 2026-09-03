@@ -47,7 +47,8 @@ apt-get install -y --no-install-recommends \
   teeworlds-server \
   supertuxkart \
   openarena-server \
-  0ad
+  0ad \
+  chocolate-doom
 
 # Optional on some mirrors — do not fail the whole install if missing.
 apt-get install -y --no-install-recommends wesnoth-server wesnoth flightgear || true
@@ -590,6 +591,32 @@ if [[ ! -f "$OPENMOHAA_DIR/main/Pak0.pk3" ]]; then
 fi
 
 chown -R playbound:playbound "$OPENMOHAA_DIR"
+
+echo "==> Freedoom (Zandronum dedicated + Freedoom IWADs)"
+FREEDOOM_DIR="$GAMES_DIR/freedoom"
+mkdir -p "$FREEDOOM_DIR"
+if [[ ! -x "$FREEDOOM_DIR/zandronum-server" && ! -x "/usr/games/zandronum-server" && ! -x "/usr/bin/zandronum-server" ]]; then
+  ZAN_URL="${ZANDRONUM_LINUX_URL:-https://zandronum.com/downloads/zandronum3.2-linux-x86_64.tar.bz2}"
+  echo "Fetching Zandronum dedicated server..."
+  if curl -fL --retry 3 -o /tmp/zandronum.tar.bz2 "$ZAN_URL"; then
+    tar -xf /tmp/zandronum.tar.bz2 -C "$FREEDOOM_DIR" || true
+    chmod +x "$FREEDOOM_DIR/zandronum-server" 2>/dev/null || true
+    rm -f /tmp/zandronum.tar.bz2
+  fi
+fi
+
+if [[ ! -f "$FREEDOOM_DIR/freedoom2.wad" && ! -f "/usr/share/games/doom/freedoom2.wad" ]]; then
+  FREE_URL="${FREEDOOM_IWADS_URL:-https://github.com/freedoom/freedoom/releases/download/v0.13.0/freedoom-0.13.0.zip}"
+  echo "Fetching Freedoom IWADs..."
+  if curl -fL --retry 3 -o /tmp/freedoom.zip "$FREE_URL"; then
+    rm -rf /tmp/freedoom-extract
+    mkdir -p /tmp/freedoom-extract
+    unzip -qo /tmp/freedoom.zip -d /tmp/freedoom-extract
+    find /tmp/freedoom-extract -name "*.wad" -exec cp -f {} "$FREEDOOM_DIR/" \;
+    rm -rf /tmp/freedoom.zip /tmp/freedoom-extract
+  fi
+fi
+chown -R playbound:playbound "$FREEDOOM_DIR"
 
 echo "==> firewall"
 ufw allow OpenSSH || true
