@@ -61,6 +61,16 @@ export interface PartyCouchPanel {
   note: string;
 }
 
+export interface PartyServerControlNote {
+  phase: "live" | "pre-launch";
+  /** The shared sentence. Each client appends its own way in. */
+  lead: string;
+  /** Launcher tail, with {key} still to be replaced by the overlay chord. */
+  launcherTail: string;
+  /** Web tail — the controls are on the page, so no shortcut is named. */
+  webTail: string;
+}
+
 export interface PartyActions {
   ready: PartyActionButton;
   join: PartyActionButton;
@@ -79,6 +89,8 @@ export interface PartyActions {
   /** Member-row status words, so the two lists cannot disagree. */
   memberReadyLabel: string;
   memberNotReadyLabel: string;
+  /** Told to the host when this party's server can actually be administered. */
+  serverControl: PartyServerControlNote | null;
 }
 
 export interface PartyActionsInput {
@@ -104,6 +116,8 @@ export interface PartyActionsInput {
     joinUrl?: string | null;
     error?: string | null;
   } | null;
+  /** Resolved elsewhere; see PartyPayload.serverControl. */
+  serverControl?: { supported?: boolean; phase?: "live" | "pre-launch" | null } | null;
 }
 
 /** Every string the party action bar can show. One place, so both clients agree. */
@@ -131,6 +145,19 @@ export const PARTY_COPY = {
   couchLeaderNext: "Start Game and your party gets a controller link.",
   couchMemberNext: "When the host starts the game you will get a link to open on your phone.",
   couchFailed: "Could not start phone controllers on the host's PC.",
+  /*
+   * A host with an administrable server has no way to discover that from the
+   * party panel, and the moment they want it — mid-match, wrong map — is the
+   * moment they will not go hunting. The lead sentence is shared; the clause
+   * that says how to get in cannot be, because the launcher's controls live
+   * behind an overlay chord and the web's sit on the page. Both halves are
+   * owned here so neither can be reworded on one surface only.
+   */
+  serverControlPreLaunch: "Set the map, slots and the rest before the server starts",
+  serverControlLive: "Change this server's settings without leaving the game",
+  serverControlLauncherTail: "press {key} now, or in game once you are playing.",
+  serverControlLauncherLiveTail: "press {key} in game to open the PlayBound overlay.",
+  serverControlWebTail: "use the controls below.",
   memberReady: "Ready",
   memberNotReady: "Not ready",
   playing: "Playing",
@@ -289,5 +316,20 @@ export function computePartyActions(input: PartyActionsInput): PartyActions {
     playingPill: input.status === "playing" && !canJoin,
     memberReadyLabel: PARTY_COPY.memberReady,
     memberNotReadyLabel: PARTY_COPY.memberNotReady,
+    serverControl:
+      input.serverControl?.supported && !ended
+        ? {
+            phase: input.serverControl.phase === "pre-launch" ? "pre-launch" : "live",
+            lead:
+              input.serverControl.phase === "pre-launch"
+                ? PARTY_COPY.serverControlPreLaunch
+                : PARTY_COPY.serverControlLive,
+            launcherTail:
+              input.serverControl.phase === "pre-launch"
+                ? PARTY_COPY.serverControlLauncherTail
+                : PARTY_COPY.serverControlLauncherLiveTail,
+            webTail: PARTY_COPY.serverControlWebTail,
+          }
+        : null,
   };
 }

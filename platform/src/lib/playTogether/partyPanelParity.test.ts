@@ -80,6 +80,8 @@ const OWNED: Array<keyof typeof PARTY_COPY> = [
   "couchMemberNext",
   "lanPending",
   "hostedPending",
+  "serverControlPreLaunch",
+  "serverControlLive",
 ];
 
 describe("party panel parity", () => {
