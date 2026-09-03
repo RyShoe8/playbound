@@ -61,7 +61,7 @@ const ENSURE_SPECS = {
   freedoom: {
     archiveUrl:
       process.env.ZANDRONUM_LINUX_URL ||
-      "https://zandronum.com/downloads/zandronum3.2-linux-x86_64.tar.bz2",
+      "https://zandronum.com/downloads/zandronum3.2.1-linux-x86_64.tar.bz2",
     overlayUrl:
       process.env.FREEDOOM_IWADS_URL ||
       "https://github.com/freedoom/freedoom/releases/download/v0.13.0/freedoom-0.13.0.zip",
