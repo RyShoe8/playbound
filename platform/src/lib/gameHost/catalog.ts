@@ -201,7 +201,13 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     slug: "veloren",
     title: "Veloren",
     defaultPort: 14004,
-    portEnd: 14014,
+    /*
+     * One port. veloren-server-cli takes its address from its own settings
+     * file and has no port argument, so a range promised a mobility the server
+     * does not have: the agent would move on and the server would bind 14004
+     * regardless. See the recipe.
+     */
+    portEnd: 14004,
     protocol: "both",
   },
   freedoom: {

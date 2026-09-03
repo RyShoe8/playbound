@@ -257,6 +257,38 @@ function firstExisting(candidates) {
   return null;
 }
 
+/**
+ * Where one Unvanquished room keeps its instance state.
+ *
+ * Per party, because the engine's single-instance check is per homepath — see
+ * the recipe. Short-suffixed the same way OpenMOHAA's is, so the directory is
+ * traceable to a party without being a full id.
+ */
+function unvanquishedHome(ctx) {
+  return path.join(HOST_HOME, "unvanquished", `pb-${String(ctx.partyId || "room").slice(-8)}`);
+}
+
+/**
+ * The game data, handed back after moving the homepath.
+ *
+ * Paks live under the default homepath (that is what the engine logs as its
+ * pak search path), so an instance pointed at a fresh homepath has no game
+ * without these. Both known locations are offered and only the ones that exist
+ * are passed, since the engine takes several pakpaths and an absent one is
+ * just noise in the log.
+ */
+function unvanquishedPakPathArgs() {
+  const candidates = [
+    path.join(HOST_HOME, ".local", "share", "unvanquished", "pkg"),
+    path.join(GAMES_ROOT, "unvanquished", "pkg"),
+  ];
+  const args = [];
+  for (const dir of candidates) {
+    if (fs.existsSync(dir)) args.push("-pakpath", dir);
+  }
+  return args;
+}
+
 function gameBin(slug, names) {
   const dir = path.join(GAMES_ROOT, slug);
   return [
@@ -809,7 +841,31 @@ export const recipes = {
     portEnd: 27975,
     protocol: "udp",
     binaries: gameBin("unvanquished", ["daemonded", "daemon-ded", "unvanquished-server"]),
+    /*
+     * A room of its own, or the second one is not a server at all.
+     *
+     * The Dæmon engine treats one homepath as one instance: a second daemonded
+     * started against the same homepath finds the first, forwards its command
+     * line to it and exits 0 — "Existing instance found | Forwarding commands
+     * to existing instance". Nothing binds, so the room times out waiting for a
+     * port while the process it was meant to be reports success.
+     *
+     * A per-party homepath makes each room its own instance. The paks live in
+     * the default homepath, so they have to be handed back explicitly or the
+     * new instance starts with no game data — hence the pakpaths below.
+     */
+    prepareSpawn: async (_port, ctx) => {
+      fs.mkdirSync(unvanquishedHome(ctx), { recursive: true });
+    },
     args: (port, ctx) => [
+      /*
+       * Every "-option" must precede every "+command" — the engine stops
+       * reading options at the first "+", so an interleaved list silently
+       * loses the ones after it.
+       */
+      "-homepath",
+      unvanquishedHome(ctx),
+      ...unvanquishedPakPathArgs(),
       "+set",
       "net_port",
       String(port),
@@ -819,6 +875,8 @@ export const recipes = {
       "+map",
       "plat23",
     ],
+    /* Loading plat23 from cold paks is well past the ten-second default. */
+    startupReadyTimeoutMs: 45_000,
   },
   "battle-for-wesnoth": {
     portStart: 15000,
@@ -841,7 +899,16 @@ export const recipes = {
   },
   veloren: {
     portStart: 14004,
-    portEnd: 14014,
+    /*
+     * One port, not a range.
+     *
+     * veloren-server-cli takes its address from its own settings file and has
+     * no port argument, so scanning a range was theatre: the agent would move
+     * to 14005, the server would bind 14004 anyway, and the room would fail
+     * with a timeout that named a port nothing had ever tried to open. Failing
+     * to find a free port says what actually happened.
+     */
+    portEnd: 14004,
     protocol: "both",
     binaries: gameBin("veloren", ["veloren-server-cli", "veloren-server"]),
     args: () => [],
@@ -851,6 +918,15 @@ export const recipes = {
       SDL_AUDIODRIVER: "dummy",
       VELOREN_ASSETS: path.join(GAMES_ROOT, "veloren", "assets"),
     }),
+    /*
+     * Veloren generates a world before it listens.
+     *
+     * Civilisation placement alone logs for tens of seconds on a VPS, and the
+     * ten-second default killed every room mid-worldgen and reported it as a
+     * server that would not bind. Three minutes is long enough for a cold
+     * generation and still bounded.
+     */
+    startupReadyTimeoutMs: 180_000,
   },
   freedoom: {
     portStart: 10666,

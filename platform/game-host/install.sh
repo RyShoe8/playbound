@@ -463,6 +463,39 @@ BWRAP
   systemctl reload apparmor 2>/dev/null || true
 fi
 
+# The server has to be the same build as the client, or nobody can join.
+#
+# Warzone refuses a client whose netcode version differs from the host's, and
+# says so as "Your game version does not match the host" — with no version
+# printed on either side, so it reads as a broken server rather than a version
+# skew. Ubuntu ships 4.3.x; the launcher installs whatever the latest GitHub
+# release is (4.7 at the time of writing), so the apt package could never host
+# for a PlayBound player.
+#
+# So the upstream .deb from that same release is installed over it, which keeps
+# the two tracking each other: the launcher's recipe and this both resolve
+# Warzone2100/warzone2100 releases/latest.
+echo "==> Warzone 2100 (upstream build — apt's is too old to host for our clients)"
+WZ_DEB_URL="$(curl -fsSL https://api.github.com/repos/Warzone2100/warzone2100/releases/latest   | grep -oE 'https://[^"]+warzone2100_ubuntu24\.04_amd64\.deb' | head -n1 || true)"
+if [[ -z "$WZ_DEB_URL" ]]; then
+  echo "  WARN: could not resolve the current Warzone release — keeping whatever is installed" >&2
+else
+  WZ_UPSTREAM_VER="$(basename "$(dirname "$WZ_DEB_URL")")"
+  WZ_HAVE_VER="$(dpkg-query -W -f='${Version}' warzone2100 2>/dev/null || true)"
+  # Compared loosely on purpose: the tag is "4.7.0" and the package version
+  # carries a suffix, so a substring match is what says "already this release".
+  if [[ -n "$WZ_HAVE_VER" && "$WZ_HAVE_VER" == *"${WZ_UPSTREAM_VER#v}"* ]]; then
+    echo "  Warzone $WZ_HAVE_VER already matches upstream $WZ_UPSTREAM_VER"
+  else
+    curl -fL --retry 3 -o /tmp/warzone2100-upstream.deb "$WZ_DEB_URL"
+    # apt install, not dpkg -i: the upstream package pulls dependencies the
+    # apt one did not, and dpkg would leave it half-configured.
+    apt-get install -y --allow-downgrades /tmp/warzone2100-upstream.deb       || echo "  WARN: upstream Warzone package would not install — hosting may fail on version mismatch" >&2
+    rm -f /tmp/warzone2100-upstream.deb
+    echo "  Warzone now: $(dpkg-query -W -f='${Version}' warzone2100 2>/dev/null || echo unknown) (upstream $WZ_UPSTREAM_VER)"
+  fi
+fi
+
 echo "==> Warzone 2100 (run-server wrapper — skip apt bwrap, no /dev/dri on VPS)"
 WZ_DIR="$GAMES_DIR/warzone-2100"
 mkdir -p "$WZ_DIR"
