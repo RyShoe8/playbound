@@ -1208,10 +1208,23 @@ export async function leavePartiesOnDisconnect(userId: string): Promise<number> 
 /**
  * Remove party members whose presence is offline or whose heartbeat has aged
  * out. Appear-offline users keep a live heartbeat and stay in the party.
+ *
+ * A party that is mid-session is left alone, and that exclusion is the point.
+ * The heartbeat runs every 60s against a 2-minute staleness window, so two
+ * missed beats is enough to be judged gone — and the likeliest time to miss two
+ * is while a game is running and the launcher is behind a fullscreen window
+ * doing nothing else. Dropping members then removed everyone from a party
+ * whose players were, demonstrably, playing: a twenty-minute match ended with
+ * the party gone rather than waiting for them to come back to it.
+ *
+ * Being in a game is the strongest evidence of presence there is, and it is
+ * evidence this sweep already had. sweepStaleParties remains the backstop for a
+ * machine that genuinely dies mid-match — fifteen minutes of no activity ends
+ * it either way.
  */
 export async function dropOfflinePartyMembers(now = new Date()): Promise<{ dropped: number }> {
   await dbConnect();
-  const active = await Party.find({ status: { $nin: ["ended"] } });
+  const active = await Party.find({ status: { $nin: ["ended", "launching", "playing"] } });
   if (active.length === 0) return { dropped: 0 };
 
   const memberIds = [
