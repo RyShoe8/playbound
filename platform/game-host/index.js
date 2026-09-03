@@ -629,14 +629,14 @@ async function startRoom({ gameSlug, partyId, name, editionSlug, mod, settings }
       return {
         error:
           ensured.error ||
-          missingDedicatedBinaryMessage(gameSlug, resolved.recipe),
+          missingDedicatedBinaryMessage(gameSlug, resolved.recipe, roomCtx),
       };
     }
     resolved = resolveRecipe(gameSlug, roomCtx);
   }
   const { recipe, binary } = resolved;
   if (!binary) {
-    return { error: missingDedicatedBinaryMessage(gameSlug, recipe) };
+    return { error: missingDedicatedBinaryMessage(gameSlug, recipe, roomCtx) };
   }
 
   let serverName = String(name || "PlayBound.club Party").trim();

@@ -90,10 +90,9 @@ sudo journalctl -u playbound-game-host -f
 ```
 
 `health.games` lists which dedicated binaries the agent found. A `false` game
-will fail party provision until you install it. Freedoom needs `odamex-server`
-or `zandronum-server` on this box — `install.sh` does not install those, so
-party Join Game will say the PlayBound game server does not have Freedoom yet
-until they are apt-installed here. That is not a Vercel change.
+will fail party provision until you install it. Freedoom uses `zandronum-server`
+or `chocolate-server` — `install.sh` and `ensureGame.js` install Zandronum 3.2
+dedicated server and Freedoom Phase 1+2 IWADs.
 
 ## Games this host covers
 
@@ -101,7 +100,7 @@ Installed by default (must show `true` in `/health` after `install.sh`):
 OpenRA, OpenTTD, Luanti/Minetest, Mindustry, YSoccer (built from source if the
 GitHub release asset is missing), Hedgewars (`hedgewars-server`), Warzone 2100,
 Freeciv, BZFlag, SuperTuxKart, OpenArena, TripleA, 0 A.D., Mr. Boom, Xonotic,
-Wolfenstein: Enemy Territory (`etlded`), and OpenMOHAA (`omohaaded`). OpenMOHAA's
+Wolfenstein: Enemy Territory (`etlded`), Freedoom (`zandronum-server`), and OpenMOHAA (`omohaaded`). OpenMOHAA's
 licensed `main/Pak*.pk3` data must be copied from an owned MOHAA installation;
 `install.sh` installs only the open-source dedicated binary.
 
@@ -109,5 +108,5 @@ Skip Xonotic with `SKIP_XONOTIC=1`. Unvanquished stays manual (updater tree).
 
 **Not VPS-hosted** (adapters are `direct-ip` / lobby — party Join Game will not
 spawn a dedicated process): KeeperFX, Marathon / Aleph One, TES3MP, Wesnoth,
-Freedoom, FlightGear, Unvanquished, Beyond All Reason, Zero-K, and closed
+FlightGear, Unvanquished, Beyond All Reason, Zero-K, and closed
 platforms.

@@ -843,6 +843,8 @@ export const recipes = {
         iwadArgs.push("-iwad", "freedoom1.wad");
       } else if (ed.includes("phase-2") || ed.includes("phase2") || ed === "2") {
         iwadArgs.push("-iwad", "freedoom2.wad");
+      } else {
+        iwadArgs.push("-iwad", "freedoom2.wad");
       }
       if (isChoc) {
         return ["-port", String(port), "-servername", ctx.name || "PlayBound.club Party", ...iwadArgs];
@@ -951,15 +953,24 @@ const HOST_TITLES = {
  * VPS dedicated binary is missing — not the party leader's local install.
  * health.games lists which recipes resolved a binary on this box.
  */
-export function missingDedicatedBinaryMessage(slug, recipe) {
+export function missingDedicatedBinaryMessage(slug, recipe, ctx) {
   const title = HOST_TITLES[slug] || slug;
-  const names = [
-    ...new Set(
-      (recipe?.binaries || [])
-        .map((p) => path.basename(String(p || "")))
-        .filter(Boolean)
-    ),
-  ];
+  let names = [];
+  if (slug === "freedoom") {
+    const ed = String(ctx?.editionSlug || "").toLowerCase();
+    if (ed.includes("odamex")) names = ["odamex-server"];
+    else if (ed.includes("chocolate") || ed.includes("crispy")) names = ["chocolate-server"];
+    else names = ["zandronum-server"];
+  }
+  if (!names.length) {
+    names = [
+      ...new Set(
+        (recipe?.binaries || [])
+          .map((p) => path.basename(String(p || "")))
+          .filter(Boolean)
+      ),
+    ];
+  }
   const ops = names.length
     ? ` The VPS is missing ${names.join(" or ")} — check health.games.`
     : "";
