@@ -809,6 +809,31 @@ export const recipes = {
       "crispy-server",
       "prboom-plus-game-server",
     ]),
+    /*
+     * Doom source ports are not interchangeable on the wire.
+     *
+     * The binaries list is a search path, and taking the first one that exists
+     * meant a Zandronum client — the default Freedoom edition — being handed an
+     * Odamex server. The client connects, the handshake never completes, and it
+     * sits on "connecting to <ip>" forever with nothing logged anywhere. An
+     * incompatible server is worse than no server: no server says so.
+     *
+     * So the edition picks the engine, and a missing match is a clear failure
+     * rather than a silent one.
+     */
+    resolveBinary: (_candidates, ctx) => {
+      const edition = String(ctx?.editionSlug || "").toLowerCase();
+      if (edition.includes("odamex")) {
+        return firstExisting(gameBin("freedoom", ["odasrv", "odamex-server"]));
+      }
+      if (edition.includes("chocolate") || edition.includes("crispy")) {
+        return firstExisting(
+          gameBin("freedoom", ["chocolate-server", "chocolate-doom-server", "crispy-server"])
+        );
+      }
+      // Zandronum is the default edition, so it is also the default server.
+      return firstExisting(gameBin("freedoom", ["zandronum-server"]));
+    },
     spawnEnv: () => ({ SDL_VIDEODRIVER: "dummy", SDL_AUDIODRIVER: "dummy" }),
     args: (port, ctx, binary) => {
       const isChoc = binary && binary.toLowerCase().includes("chocolate");
