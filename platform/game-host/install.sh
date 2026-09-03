@@ -51,12 +51,94 @@ apt-get install -y --no-install-recommends \
   chocolate-doom
 
 # Optional on some mirrors — do not fail the whole install if missing.
-apt-get install -y --no-install-recommends wesnoth-server wesnoth flightgear || true
+# (wesnoth-server is not one of these: noble has no such package at all, and
+# the server it does have is the wrong series. See the Wesnoth block below.)
+apt-get install -y --no-install-recommends wesnoth flightgear || true
 
-# SteamCMD & Source Dedicated Server (TF2 / CS2) 32-bit & 64-bit runtime libraries
+# ── Battle for Wesnoth: the server has to be the same series as the client ──
+#
+# Noble packages Wesnoth 1.16 and calls the server wesnoth-1.16-server; there
+# is no "wesnoth-server" at all, which is why that install has failed with
+# "Unable to locate package" since this box was built. Installing the 1.16
+# server would not have helped either: PlayBound's client recipe installs
+# 1.18.7, and Wesnoth multiplayer does not cross a series boundary — the room
+# would come up and nobody could join it, which is the Warzone version skew
+# in a different hat.
+#
+# 1.18 for noble comes from the Debian/Ubuntu Games Team PPA.
+echo "==> Battle for Wesnoth 1.18 dedicated (noble ships 1.16; our clients are 1.18)"
+if [[ -x /usr/games/wesnothd-1.18 ]] || command -v wesnothd-1.18 >/dev/null 2>&1; then
+  echo "  wesnothd-1.18 already installed"
+else
+  apt-get install -y --no-install-recommends software-properties-common || true
+  if add-apt-repository -y ppa:pkg-games/wesnoth-devel; then
+    apt-get update -y
+    if apt-get install -y --no-install-recommends wesnoth-1.18-server; then
+      echo "  wesnothd-1.18 installed from the Wesnoth PPA"
+    else
+      echo "  WARN: wesnoth-1.18-server not in the PPA — falling back to 1.16, which 1.18 clients cannot join" >&2
+      apt-get install -y --no-install-recommends wesnoth-1.16-server || true
+    fi
+  else
+    echo "  WARN: could not add ppa:pkg-games/wesnoth-devel — Wesnoth rooms will have no server" >&2
+  fi
+fi
+
+# ── SteamCMD & Source Dedicated Server (TF2 / CS2) runtime ───────────────
+#
+# SRCDS is a 32-bit binary, so the libraries it needs are the i386 ones. Two
+# things were wrong here. The i386 architecture was never enabled, so any
+# ":i386" package could not be resolved at all. And libtinfo5/libncurses5
+# were asked for as amd64, which is not the arch that needs them — and which
+# noble does not carry either way, having moved to ncurses 6.
+echo "==> SteamCMD / SRCDS 32-bit runtime"
+dpkg --add-architecture i386
+apt-get update -y
 apt-get install -y --no-install-recommends \
-  lib32gcc-s1 lib32stdc++6 libtinfo5 libncurses5 libcurl4-gnutls-dev:i386 \
+  lib32gcc-s1 lib32stdc++6 lib32z1 \
+  libbz2-1.0:i386 libsdl2-2.0-0:i386 \
   || apt-get install -y --no-install-recommends lib32gcc-s1 lib32stdc++6 || true
+
+# libtinfo.so.5 and libncurses.so.5 are what SRCDS wants for its console, and
+# noble dropped both. The jammy builds still sit in the Ubuntu pool and install
+# beside ncurses 6 without disturbing it. Resolved from the pool index rather
+# than pinned, because a pinned point release gets superseded and then 404s.
+NCURSES_POOL="http://security.ubuntu.com/ubuntu/pool/universe/n/ncurses/"
+NCURSES5_DEBS=()
+NCURSES_INDEX="$(curl -fsSL "$NCURSES_POOL" || true)"
+for spec in "libtinfo5 amd64" "libtinfo5 i386" "libncurses5 amd64" "libncurses5 i386"; do
+  read -r nc_pkg nc_arch <<<"$spec"
+  if dpkg-query -W -f='${Status}' "$nc_pkg:$nc_arch" 2>/dev/null | grep -q "install ok installed"; then
+    continue
+  fi
+  # Highest version by dpkg's ordering, not sort -V's: the pool holds both
+  # "6.3-2" and "6.3-2ubuntu0.3", and sort -V puts the security update
+  # first, which is backwards.
+  nc_file=""
+  nc_best=""
+  while read -r nc_cand; do
+    [[ -z "$nc_cand" ]] && continue
+    nc_ver="${nc_cand#${nc_pkg}_}"
+    nc_ver="${nc_ver%_${nc_arch}.deb}"
+    if [[ -z "$nc_best" ]] || dpkg --compare-versions "$nc_ver" gt "$nc_best"; then
+      nc_best="$nc_ver"
+      nc_file="$nc_cand"
+    fi
+  done < <(printf '%s' "$NCURSES_INDEX" | grep -oE "${nc_pkg}_[0-9][^\"]*_${nc_arch}[.]deb" | sort -u)
+  if [[ -z "$nc_file" ]]; then
+    echo "  WARN: no $nc_pkg ($nc_arch) in the Ubuntu pool — SRCDS may not start" >&2
+    continue
+  fi
+  if curl -fL --retry 3 -o "/tmp/$nc_file" "${NCURSES_POOL}${nc_file}"; then
+    NCURSES5_DEBS+=("/tmp/$nc_file")
+  fi
+done
+if (( ${#NCURSES5_DEBS[@]} > 0 )); then
+  # One apt call, so an i386 package finds the i386 dependency it needs.
+  apt-get install -y "${NCURSES5_DEBS[@]}" \
+    || echo "  WARN: ncurses 5 compatibility libraries would not install — TF2/CS2 hosting may fail" >&2
+  rm -f "${NCURSES5_DEBS[@]}"
+fi
 
 # ET: Legacy etlded runtime libraries (Ubuntu 24.04).
 apt-get install -y --no-install-recommends \
