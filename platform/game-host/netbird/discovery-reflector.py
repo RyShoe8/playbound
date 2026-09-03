@@ -115,6 +115,47 @@ class PeerDirectory:
         ]
 
 
+class TrafficLog:
+    """
+    A periodic line saying what arrived and what happened to it.
+
+    Silence used to be ambiguous. A reflector receiving nothing and a reflector
+    receiving packets it cannot place look identical in the journal, and they
+    have completely different causes — the first is a missing NetBird route,
+    the second is a peer outside the party's group. Discovery retries every
+    frame, so this summarises on a timer instead of logging per packet.
+    """
+
+    def __init__(self, interval=30.0):
+        self.interval = interval
+        self.reported_at = time.time()
+        self.received = 0
+        self.forwarded = 0
+        self.unplaceable = set()
+
+    def seen(self, src_ip, target_count):
+        self.received += 1
+        if target_count:
+            self.forwarded += target_count
+        else:
+            self.unplaceable.add(src_ip)
+        now = time.time()
+        if now - self.reported_at < self.interval:
+            return
+        self.reported_at = now
+        detail = ""
+        if self.unplaceable:
+            senders = ", ".join(sorted(self.unplaceable)[:5])
+            detail = (
+                f"; {len(self.unplaceable)} sender(s) shared no group with anyone "
+                f"({senders}) — check NETBIRD_INFRA_GROUP_ID and the party policy"
+            )
+        log(f"{self.received} packet(s) in, {self.forwarded} forwarded{detail}")
+        self.received = 0
+        self.forwarded = 0
+        self.unplaceable.clear()
+
+
 def checksum(data):
     if len(data) % 2:
         data += b"\x00"
@@ -172,7 +213,13 @@ def main():
     listener.bind((BIND_ADDR, LISTEN_PORT))
 
     directory = PeerDirectory(PEER_CACHE_TTL)
+    stats = TrafficLog()
     log(f"listening on {BIND_ADDR}:{LISTEN_PORT}, management {API_URL}")
+    log(
+        "if nothing is logged below while players sit on a multiplayer screen, "
+        "the segment's broadcast address is not routed to this peer — see step 7 "
+        "of netbird/README.md"
+    )
 
     while True:
         try:
@@ -184,6 +231,7 @@ def main():
             continue
 
         targets = directory.targets_for(src_ip)
+        stats.seen(src_ip, len(targets))
         if not targets:
             # Either an unknown peer or a party of one. Nothing to mirror to.
             continue
