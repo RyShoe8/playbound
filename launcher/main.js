@@ -4342,7 +4342,25 @@ function findKnownExecutable(entry) {
     if (underGames && isAllowedExecutablePath(underGames)) return underGames;
   }
   const fromReg = findExeFromUninstallRegistry(entry);
-  if (fromReg && isAllowedExecutablePath(fromReg)) return fromReg;
+  if (fromReg) {
+    /*
+     * Windows' own record of where this game was installed.
+     *
+     * The path was being found and then thrown away: a game installed anywhere
+     * but the default folder sits outside allowedExecutableRoots, so the guard
+     * discarded the one answer that was actually authoritative and detection
+     * reported nothing. Red Eclipse installed to a custom directory was never
+     * found, even though its uninstall entry named the folder exactly.
+     *
+     * An uninstall key whose display name matches the catalog title is at
+     * least as good as someone pointing at the file themselves, so it is
+     * trusted the same way — recorded as a located root, which also means the
+     * launch guard accepts it later instead of refusing to start what
+     * detection just claimed to find.
+     */
+    rememberLocatedRoot(fromReg);
+    if (isAllowedExecutablePath(fromReg)) return fromReg;
+  }
   return null;
 }
 
