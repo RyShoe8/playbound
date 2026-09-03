@@ -14,7 +14,7 @@ import {
 import { requestIncludesTesting } from "@/lib/requestIncludesTesting";
 import { gameAccessTiers, tierFor } from "@/lib/access/tiers";
 import { accessFieldsForLauncher } from "@/lib/launcherCommerce";
-import { formatEditionChipName, getDisplayEditionsForGame } from "@/lib/data/editions";
+import { formatEditionChipNames, getDisplayEditionsForGame } from "@/lib/data/editions";
 import { supportsController } from "@/lib/controller/support";
 import { getMultiplayerAdapter } from "@/lib/multiplayer/adapters";
 
@@ -28,9 +28,17 @@ export async function GET(req: Request) {
     ]);
     const entries = games
       .map((g) => {
-        const displayEditions = getDisplayEditionsForGame(g.slug).map((e) => ({
+        const gameEditions = getDisplayEditionsForGame(g.slug);
+        /*
+         * Named as a set, not one at a time. Tidying each name alone turned
+         * YSoccer's "(Portable)" and "(Tournament)" editions into two rows
+         * both called "YSoccer" in the launcher library — see
+         * formatEditionChipNames.
+         */
+        const editionNames = formatEditionChipNames(gameEditions.map((e) => e.name));
+        const displayEditions = gameEditions.map((e, i) => ({
           slug: e.slug,
-          name: formatEditionChipName(e.name),
+          name: editionNames[i],
           type: e.type,
           isDefault: e.isDefault,
           features: Array.isArray(e.features) ? e.features : [],

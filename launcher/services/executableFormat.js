@@ -126,6 +126,58 @@ function preferRunnableExecutable(orderedPaths, { platform = process.platform } 
 }
 
 /**
+ * Whether this OS could run the file at all.
+ *
+ * Several packages ship every platform's build in one archive — Xonotic's zip
+ * carries the Windows .exe, the Linux ELF and the macOS .app side by side — and
+ * a per-game list of candidate names walked past the Windows entries into
+ * `xonotic-linux64-sdl`, which Windows cannot execute. Worse, the pick was
+ * written back into the install record, so the game stayed broken until
+ * someone located the exe by hand.
+ *
+ * Decided by name and header, never by running anything. On Windows a launch
+ * target has to be a PE image or a script Windows knows how to run; anywhere
+ * else a Windows executable is not a candidate.
+ *
+ * @param {string} filePath
+ * @param {{ platform?: string }} [opts]
+ * @returns {boolean}
+ */
+function runnableOnPlatform(filePath, { platform = process.platform } = {}) {
+  const p = String(filePath || "");
+  if (!p) return false;
+  if (platform === "win32") {
+    if (/\.(bat|cmd|jar)$/i.test(p)) return true;
+    if (!/\.(exe|com)$/i.test(p)) return false;
+    // A DOS-era image is a separate problem with its own path (DOSBox); this
+    // only answers whether Windows could load it directly.
+    return !isLegacyDosExecutable(p);
+  }
+  // A .exe on Linux or macOS needs a compatibility layer the launcher does not
+  // silently assume. Everything else — ELF, Mach-O, .app, a shell script — is
+  // left to the caller, which already knows what it went looking for.
+  return !/\.(exe|com|bat|cmd)$/i.test(p);
+}
+
+/**
+ * The first candidate this OS can actually run.
+ *
+ * A convenience over runnableOnPlatform for the per-game name lists, which are
+ * ordered by preference and where "the first one that exists" was the rule
+ * that let a Linux binary win on Windows.
+ *
+ * @param {(string|null|undefined)[]} orderedPaths
+ * @param {{ platform?: string }} [opts]
+ * @returns {string | null}
+ */
+function firstRunnableOnPlatform(orderedPaths, opts = {}) {
+  for (const candidate of orderedPaths || []) {
+    if (candidate && runnableOnPlatform(candidate, opts)) return candidate;
+  }
+  return null;
+}
+
+/**
  * Player-facing explanation for a DOS-era launch target when DOSBox is missing.
  * @param {string} exeName
  * @returns {string}
@@ -144,5 +196,7 @@ module.exports = {
   isLegacyDosExecutable,
   shouldLaunchThroughDosBox,
   preferRunnableExecutable,
+  runnableOnPlatform,
+  firstRunnableOnPlatform,
   dosExecutableMessage,
 };

@@ -746,16 +746,36 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
      * rather than adding a second one.
      */
     const canonicalName = (value) => String(value || "").trim().toLowerCase();
+    /*
+     * The name without its parenthetical, which is what an older install
+     * record holds.
+     *
+     * Edition names used to be shortened one at a time, so an install of
+     * "YSoccer (Portable)" was recorded as plain "YSoccer". Now that the
+     * catalog keeps the longer name where it is the only thing telling two
+     * editions apart, an exact-name match would miss and the install would be
+     * listed a second time under the game's own name.
+     */
+    const shortName = (value) => canonicalName(String(value || "").replace(/\s*\([^)]*\)/g, ""));
     const catalogByName = new Map();
+    const catalogByShortName = new Map();
     for (const row of allEditions) {
       const key = canonicalName(row.name);
       if (key && !catalogByName.has(key)) catalogByName.set(key, row);
+      const short = shortName(row.name);
+      // Several editions can share a short name; the default is the one an
+      // install that never recorded a slug most likely is.
+      if (short && (!catalogByShortName.has(short) || row.isDefault)) {
+        catalogByShortName.set(short, row);
+      }
     }
 
     for (const [s, inst] of installedMap.entries()) {
       if (seenSlugs.has(s)) continue;
 
-      const sameName = catalogByName.get(canonicalName(inst.editionName));
+      const sameName =
+        catalogByName.get(canonicalName(inst.editionName)) ||
+        catalogByShortName.get(shortName(inst.editionName));
       if (sameName) {
         // Same edition, recorded under a different slug. Adopt the install so
         // Play and the folder actions work, and do not add a duplicate row.

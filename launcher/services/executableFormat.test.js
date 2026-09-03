@@ -21,6 +21,8 @@ const {
   isLegacyDosExecutable,
   shouldLaunchThroughDosBox,
   preferRunnableExecutable,
+  runnableOnPlatform,
+  firstRunnableOnPlatform,
   dosExecutableMessage,
 } = require("./executableFormat");
 
@@ -168,4 +170,52 @@ test("PE files are not wrapped in DOSBox even when needsDosBox is set", () => {
 
 test.after(() => {
   fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+/**
+ * A cross-platform archive must not hand this OS a binary it cannot run.
+ *
+ * Xonotic's zip carries the Windows .exe, the Linux ELF and the macOS bundle
+ * together, and the per-game candidate list took the first name that existed —
+ * so a Windows install adopted xonotic-linux64-sdl, saved it to the install
+ * record, and reported "file missing or not runnable" from then on.
+ */
+test("Windows will not adopt a Linux build from a cross-platform package", () => {
+  const win = { platform: "win32" };
+  assert.equal(runnableOnPlatform("C:/Games/xonotic/xonotic-linux64-sdl", win), false);
+  assert.equal(runnableOnPlatform("C:/Games/xonotic/xonotic-osx-sdl.app", win), false);
+  assert.equal(
+    firstRunnableOnPlatform(
+      ["C:/Games/xonotic/xonotic-linux64-sdl", "C:/Games/xonotic/xonotic-x86_64.exe"],
+      win
+    ),
+    "C:/Games/xonotic/xonotic-x86_64.exe"
+  );
+});
+
+test("and Linux will not adopt the Windows one", () => {
+  const linux = { platform: "linux" };
+  assert.equal(runnableOnPlatform("/games/xonotic/xonotic-x86_64.exe", linux), false);
+  assert.equal(runnableOnPlatform("/games/xonotic/xonotic-linux64-sdl", linux), true);
+  assert.equal(
+    firstRunnableOnPlatform(
+      ["/games/xonotic/xonotic-x86_64.exe", "/games/xonotic/xonotic-linux64-sdl"],
+      linux
+    ),
+    "/games/xonotic/xonotic-linux64-sdl"
+  );
+});
+
+test("nothing runnable resolves to nothing rather than to a guess", () => {
+  assert.equal(firstRunnableOnPlatform([null, undefined], { platform: "win32" }), null);
+  assert.equal(firstRunnableOnPlatform([], { platform: "linux" }), null);
+  assert.equal(runnableOnPlatform("", { platform: "win32" }), false);
+});
+
+test("scripts and jars stay launchable on Windows", () => {
+  // play.cmd beside a .jar is a real shape in this catalog; the filter must
+  // not narrow launching to .exe only.
+  const win = { platform: "win32" };
+  assert.equal(runnableOnPlatform("C:/Games/triplea/play.cmd", win), true);
+  assert.equal(runnableOnPlatform("C:/Games/triplea/triplea.jar", win), true);
 });
