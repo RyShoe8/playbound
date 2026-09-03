@@ -64,6 +64,8 @@ const {
 } = require("./services/CompatibilityRunner");
 const {
   clientConnectArgs,
+  arbiterLaunchArgs,
+  hasArbiterLaunch,
   hasClientConnectArgs,
   isSymmetricPeerGame,
   joinsFromInGameMenu,
@@ -7459,7 +7461,18 @@ async function playGameInner(slug, join = null, editionSlug = null) {
   const resolvedPort = Number(join?.port) || defaultGamePort(slug) || Number(entry?.port) || 0;
   const resolvedJoin = join?.host ? { ...join, port: resolvedPort } : null;
 
-  if (resolvedJoin?.host && Array.isArray(connectArgs) && connectArgs.length > 0) {
+  /*
+   * The arbiter of a peer game launches its own game as the host.
+   *
+   * ECWolf has no dedicated server: the player hosting runs the ordinary game
+   * with `--host <nodes>` and everyone else runs `--join <that machine>`. So
+   * the host's argv is a different template from the joiner's, and it needs no
+   * address — which is why it is answered before the host check below.
+   */
+  const arbiterArgs = join?.arbiter ? arbiterLaunchArgs(slug) : null;
+  if (arbiterArgs) {
+    args.push(...applyConnectTemplates(arbiterArgs, join, edSlug));
+  } else if (resolvedJoin?.host && Array.isArray(connectArgs) && connectArgs.length > 0) {
     args.push(...applyConnectTemplates(connectArgs, resolvedJoin, edSlug));
   } else {
     // All-or-nothing: a half-applied connect line is worse than none. See
@@ -11055,6 +11068,12 @@ ipcMain.handle("get-parties", async (_event, opts = {}) => {
 ipcMain.handle("get-connect-meta", (_event, slug) => ({
   symmetric: isSymmetricPeerGame(slug),
   defaultPort: defaultGamePort(slug) || 0,
+  /*
+   * Whether hosting this game means launching the host's own game with
+   * different flags rather than starting a server. The party panel needs the
+   * answer before it launches the leader — see arbiterLaunchArgs.
+   */
+  arbiterHosted: hasArbiterLaunch(slug),
 }));
 
 ipcMain.handle("get-party-sync", async (_event, opts = {}) => {

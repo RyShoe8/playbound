@@ -86,7 +86,13 @@ const CLIENT_CONNECT_ARGS = {
   "space-station-14": ["--connect-address", "ss14://{host}:{port}"],
   veloren: ["--connect", "{host}:{port}"],
   "wolfenstein-enemy-territory": ["+connect", "{host}:{port}"],
+  /*
+   * ECWolf joins with `--join <host>` and hosts with `--host <nodes>` — see
+   * ARBITER_LAUNCH_ARGS. The port is omitted deliberately: both sides default
+   * to 5029, and --join takes host[:port] only when it differs.
+   */
   wolfenstein: ["--join", "{host}"],
+  "wolfenstein-3d": ["--join", "{host}"],
   "beyond-all-reason": ["--connect={host}:{port}"],
   "zero-k": ["--connect={host}:{port}"],
   flightgear: ["--multiplay=out,10,{host},{port}"],
@@ -161,7 +167,45 @@ const CLIENT_CONNECT_ARGS = {
   openlara: null,
 };
 
+/**
+ * What the player *hosting* a peer game launches with.
+ *
+ * Most games in this file have a server on one side and a client on the other,
+ * so one connect template covers everybody: the joiner gets flags, the host
+ * gets none because a separate dedicated process is doing the listening.
+ *
+ * A few games have no such process. ECWolf's multiplayer is peer lock-step
+ * with an arbiter node, and the arbiter is somebody's ordinary game started
+ * with `--host <number of nodes>` — per the project's multiplayer guide,
+ * "ecwolf --host 2" against "ecwolf --join 192.168.0.100". Without this the
+ * leader launched with no network flags at all, nothing was ever listening,
+ * and every member's --join dialled a machine that was playing single-player.
+ *
+ * `{nodes}` is how many players the arbiter waits for, which is the size of
+ * the party.
+ */
+const ARBITER_LAUNCH_ARGS = {
+  wolfenstein: ["--host", "{nodes}"],
+  "wolfenstein-3d": ["--host", "{nodes}"],
+};
+
+/**
+ * The host's argv for a peer game, or null when hosting needs no flags.
+ */
+function arbiterLaunchArgs(slug) {
+  const key = String(slug || "");
+  return ARBITER_LAUNCH_ARGS[key] || null;
+}
+
+/** Whether this game's host launches differently from its joiners. */
+function hasArbiterLaunch(slug) {
+  return Boolean(arbiterLaunchArgs(slug));
+}
+
 const DEFAULT_GAME_PORTS = {
+  /* ECWolf's own default; --join takes host[:port] and omits it when default. */
+  wolfenstein: 5029,
+  "wolfenstein-3d": 5029,
   openarena: 27960,
   "wolfenstein-enemy-territory": 27960,
   xonotic: 26000,
@@ -266,10 +310,15 @@ function applyConnectTemplates(templates, join, editionSlug) {
        * peer games could be hosted from inside a party.
        */
       .replaceAll("{playerNumber}", String(join?.playerNumber || 2))
+      /*
+       * How many players the arbiter waits for. Two is the floor because a
+       * one-node "multiplayer" game is a single-player game that never starts.
+       */
+      .replaceAll("{nodes}", String(Math.max(2, Number(join?.nodes) || 2)))
   );
 }
 
-const TEMPLATE_TOKEN = /\{(host|port|name|mod|playerNumber|iwad)\}/;
+const TEMPLATE_TOKEN = /\{(host|port|name|mod|playerNumber|iwad|nodes)\}/;
 
 /**
  * Args to pass on a plain launch — one with no server to join.
@@ -292,6 +341,9 @@ function staticLaunchArgs(connectArgs) {
 }
 
 module.exports = {
+  ARBITER_LAUNCH_ARGS,
+  arbiterLaunchArgs,
+  hasArbiterLaunch,
   CLIENT_CONNECT_ARGS,
   SYMMETRIC_PEER_GAMES,
   clientConnectArgs,

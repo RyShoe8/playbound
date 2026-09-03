@@ -3554,6 +3554,28 @@ async function launchPartyGame(party) {
   }
 
   /*
+   * A peer game whose host is a player, not a process.
+   *
+   * ECWolf's arbiter is somebody's ordinary game started with
+   * `--host <nodes>`; there is no server binary to start and no address for
+   * the host to dial. Without this the leader launched with no network flags,
+   * so nothing was listening and every joiner's --join went to a machine
+   * playing on its own — which is exactly "it loads the game but not a
+   * multiplayer server".
+   *
+   * The count is the party, because that is how many nodes the arbiter waits
+   * for before the game can be started from the menu.
+   */
+  const arbiterMeta = await window.playbound.getConnectMeta?.(slug).catch(() => null);
+  if (isLeader && arbiterMeta?.arbiterHosted) {
+    peerConnect = {
+      arbiter: true,
+      nodes: Math.max(2, (party.members || []).length),
+      name: state.accountState?.username || "",
+    };
+  }
+
+  /*
    * Hedgewars' GUI can spawn this same helper from its menus, but doing it
    * here lets the host use the exact hwplay:// lobby handoff that dedicated
    * rooms already use. The frontend has no supported CLI command for creating
