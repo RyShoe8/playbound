@@ -592,15 +592,18 @@ fi
 
 chown -R playbound:playbound "$OPENMOHAA_DIR"
 
-echo "==> Freedoom (Zandronum dedicated + Freedoom IWADs)"
+echo "==> Freedoom (Zandronum 3.2.1 dedicated + Freedoom IWADs)"
 FREEDOOM_DIR="$GAMES_DIR/freedoom"
 mkdir -p "$FREEDOOM_DIR"
-if [[ ! -x "$FREEDOOM_DIR/zandronum-server" && ! -x "/usr/games/zandronum-server" && ! -x "/usr/bin/zandronum-server" ]]; then
-  ZAN_URL="${ZANDRONUM_LINUX_URL:-https://zandronum.com/downloads/zandronum3.2-linux-x86_64.tar.bz2}"
-  echo "Fetching Zandronum dedicated server..."
+ZAN_VERSION="3.2.1"
+ZAN_VER_FILE="$FREEDOOM_DIR/.zandronum-version"
+if [[ ! -x "$FREEDOOM_DIR/zandronum-server" || "$(<"$ZAN_VER_FILE" 2>/dev/null)" != "$ZAN_VERSION" ]]; then
+  ZAN_URL="${ZANDRONUM_LINUX_URL:-https://zandronum.com/downloads/zandronum${ZAN_VERSION}-linux-x86_64.tar.bz2}"
+  echo "Fetching Zandronum ${ZAN_VERSION} dedicated server..."
   if curl -fL --retry 3 -o /tmp/zandronum.tar.bz2 "$ZAN_URL"; then
     tar -xf /tmp/zandronum.tar.bz2 -C "$FREEDOOM_DIR" || true
     chmod +x "$FREEDOOM_DIR/zandronum-server" 2>/dev/null || true
+    echo "$ZAN_VERSION" > "$ZAN_VER_FILE"
     rm -f /tmp/zandronum.tar.bz2
   fi
 fi
