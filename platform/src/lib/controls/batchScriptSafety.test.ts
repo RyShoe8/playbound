@@ -10,6 +10,7 @@ const script2 = readFileSync(
   path.join(process.cwd(), "scripts", "fill-game-controls-batch-2.ts"),
   "utf8"
 );
+const script3 = readFileSync(path.join(process.cwd(), "scripts", "fill-game-controls-batch-3.ts"), "utf8");
 const route = readFileSync(
   path.join(process.cwd(), "src", "app", "api", "admin", "controls", "batch-1", "route.ts"),
   "utf8"
@@ -18,6 +19,7 @@ const route2 = readFileSync(
   path.join(process.cwd(), "src", "app", "api", "admin", "controls", "batch-2", "route.ts"),
   "utf8"
 );
+const route3 = readFileSync(path.join(process.cwd(), "src", "app", "api", "admin", "controls", "batch-3", "route.ts"), "utf8");
 
 describe("controls batch database safety", () => {
   it("only issues a controls-only $set with no upsert", () => {
@@ -55,5 +57,16 @@ describe("controls batch database safety", () => {
     expect(route2).not.toMatch(/deleteMany|replaceOne|findOneAndUpdate|bulkWrite/);
     expect(route2).toContain("withoutControls(bySlug.get(slug)!) !== withoutControls(newDoc)");
     expect(route2).toContain("stored controls do not match the validated payload");
+  });
+
+  it("batch 3 has the same controls-only contract", () => {
+    for (const source of [script3, route3]) {
+      expect(source).toContain("{ $set: { controls: controls.get(slug) } }");
+      expect(source).toContain("{ upsert: false }");
+      expect(source).not.toMatch(/deleteMany|replaceOne|findOneAndUpdate|bulkWrite/);
+      expect(source).toContain("a non-controls field changed");
+      expect(source).toContain("stored controls do not match the validated payload");
+    }
+    expect(script3).toContain('process.argv.includes("--apply")');
   });
 });
