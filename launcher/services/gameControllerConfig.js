@@ -708,22 +708,61 @@ const GAMES = {
       return trimmed ? `${trimmed}\n\n${block}\n` : `<trigger>\n${block}\n</trigger>\n`;
     },
   },
+  /**
+   * Privateer Gemini Gold — Vega Strike's `vegastrike.config`, which is XML.
+   *
+   * What was here before wrote an ini block:
+   *
+   *     [joystick]
+   *     joy_enabled = true
+   *
+   * and appended it past `</vegaconfig>`. Neither key exists in Vega Strike,
+   * and content after the root element is not well-formed XML. Worse, the
+   * guard looked for `joy_enabled = true` — a string the engine never writes —
+   * so the config was judged unconfigured on every launch and another copy of
+   * the block was appended each time.
+   *
+   * The engine's real switch is `force_use_of_joystick` in the joystick
+   * section, and the bindings themselves already ship in the file: buttons,
+   * hat switch and the x/y/z axes, inside a vssetup block that `#set Joystick`
+   * selects. So this flips the one variable that matters and edits nothing
+   * else — no appending, and it declines any file that is not recognisably
+   * this config.
+   */
   "privateer-gemini-gold": {
     resolve: (c) =>
       firstExisting([
         c.installDir && path.join(c.installDir, "vegastrike.config"),
         c.installDir && path.join(c.installDir, "geminigold.config"),
       ]),
-    verified: "Vega Strike / Privateer Gemini Gold flightstick & joystick configuration.",
+    verified:
+      "Read against a real Privateer Gemini Gold install: <vegaconfig> XML " +
+      "with force_use_of_joystick in <section name=\"joystick\">, and the " +
+      "joystick binds and axes already present in the shipped file.",
+    /*
+     * The engine predates gamepads: its axes are named for a flightstick's x,
+     * y and z, and a pad's third axis is whatever its driver puts there. If a
+     * stick behaves oddly after this, the axis numbers in the <axis> lines are
+     * the thing to adjust, not this switch.
+     */
+    padLimitation:
+      "Built for flightsticks; a gamepad's third axis may need its <axis> line adjusted by hand.",
     needsConfig(text) {
-      return !/joy_enabled\s*=\s*true/i.test(String(text || ""));
+      const s = String(text || "");
+      // Only speak for the file we recognise; anything else is left alone.
+      if (!/<vegaconfig/i.test(s) || !/force_use_of_joystick/i.test(s)) return false;
+      return !/<var\s+name="force_use_of_joystick"\s+value="true"/i.test(s);
     },
-    apply(text, profile) {
+    apply(text) {
       const original = String(text ?? "");
-      if (!/<vegastrike|\[joystick\]|#|general/i.test(original) && original.trim() !== "") return null;
-      const block = `# PlayBound Flightstick & Controller Setup\n[joystick]\njoy_enabled = true\njoy_name = ${profile.label}\n`;
-      const trimmed = original.replace(/\s*$/, "");
-      return trimmed ? `${trimmed}\n\n${block}` : block;
+      if (!/<vegaconfig/i.test(original) || !/<\/vegaconfig>/i.test(original)) return null;
+      if (!/force_use_of_joystick/i.test(original)) return null;
+      const edited = original.replace(
+        /(<var\s+name="force_use_of_joystick"\s+value=")false(")/gi,
+        "$1true$2"
+      );
+      // Nothing to change is not the same as a successful write.
+      return edited === original ? null : edited;
     },
   },
 

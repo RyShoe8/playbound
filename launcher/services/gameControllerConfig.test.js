@@ -11,6 +11,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const {
+  GAMES,
   applyProfile,
   configPathFor,
   supportsControllerConfig,
@@ -341,12 +342,17 @@ test("auto-configures Trigger Rally with joystick block", () => {
   assert.ok(out.includes("<axis name=\"steer\""));
 });
 
-test("auto-configures Privateer Gemini Gold with joystick block", () => {
+test("declines an ini-shaped file that is not vegastrike.config", () => {
+  /*
+   * This used to assert the opposite: that an ini block naming the pad was
+   * appended to whatever it was handed. vegastrike.config is XML and has
+   * neither joy_enabled nor joy_name, so that produced a file the engine could
+   * not parse, from a guard that could never become satisfied.
+   */
   const t16k = pickPrimary([{ id: "T.16000M Joystick", connected: true }]);
   const conf = "# Privateer Gemini Gold config\n[general]\nfullscreen=true\n";
-  const out = applyProfile("privateer-gemini-gold", conf, t16k);
-  assert.ok(out.includes("joy_enabled = true"));
-  assert.ok(out.includes("Thrustmaster HOTAS"));
+  assert.equal(GAMES["privateer-gemini-gold"].needsConfig(conf), false);
+  assert.equal(applyProfile("privateer-gemini-gold", conf, t16k), null);
 });
 
 /* ── FlightGear: fgfsrc, and the file it must not touch ────────────────── */
@@ -588,6 +594,81 @@ test("rvgl configures Controller1 to Joystick 0 with gamepad buttons", () => {
 test("rvgl leaves existing controller mapping alone when Joystick >= 0", () => {
   const configured = `[Controller1]\nJoystick = 0\nKeyFwd = 0x01ff0000\n`;
   assert.strictEqual(applyProfile("re-volt-rvgl", configured, { family: "xbox" }), null);
+});
+
+
+/* --- Privateer Gemini Gold: vegastrike.config is XML, not ini --- */
+
+const VEGA = [
+  "<vegaconfig>",
+  "<!-- #set Joystick joy_normal -->",
+  "\t<variables>",
+  '\t\t<section name="joystick">',
+  '\t\t\t<var name="deadband" value="0.05"/>',
+  "<!-- #joy_throttle joy_t_a_rev joy_axis joy_normal -->",
+  '\t\t\t<var name="force_use_of_joystick" value="false" />',
+  "<!-- #end -->",
+  "\t\t</section>",
+  "\t</variables>",
+  "</vegaconfig>",
+  "",
+].join("\n");
+
+test("privateer flips the engine's real switch", () => {
+  const spec = GAMES["privateer-gemini-gold"];
+  assert(spec.needsConfig(VEGA), "a config with joystick off should need configuring");
+  const out = spec.apply(VEGA, { label: "DualSense Wireless Controller", buttons: {} });
+  assert(/<var name="force_use_of_joystick" value="true" \/>/.test(out), `not enabled: ${out}`);
+});
+
+test("privateer never writes past the XML root", () => {
+  /*
+   * The bug this replaces: an ini block appended after </vegaconfig>, which is
+   * not well-formed XML and used keys (joy_enabled, joy_name) that Vega Strike
+   * has never had.
+   */
+  const spec = GAMES["privateer-gemini-gold"];
+  const out = spec.apply(VEGA, { label: "Pad", buttons: {} });
+  assert(out.trimEnd().endsWith("</vegaconfig>"), `content after the root: ${out.slice(-120)}`);
+  assert(!/\[joystick\]/.test(out), "wrote an ini section into an XML file");
+  assert(!/joy_enabled/.test(out), "wrote a setting the engine does not have");
+});
+
+test("privateer edits in place and adds no lines", () => {
+  const spec = GAMES["privateer-gemini-gold"];
+  const out = spec.apply(VEGA, { label: "Pad", buttons: {} });
+  assert.equal(out.split("\n").length, VEGA.split("\n").length, "changed the line count");
+});
+
+test("privateer stops asking once the switch is on", () => {
+  /*
+   * The old guard looked for `joy_enabled = true`, which the engine never
+   * writes — so every launch judged the file unconfigured and appended another
+   * copy of the block.
+   */
+  const spec = GAMES["privateer-gemini-gold"];
+  const once = spec.apply(VEGA, { label: "Pad", buttons: {} });
+  assert.equal(spec.needsConfig(once), false, "would re-prompt and append again");
+  assert.equal(spec.apply(once, { label: "Pad", buttons: {} }), null, "second pass should decline");
+});
+
+test("privateer declines a file that is not this config", () => {
+  const spec = GAMES["privateer-gemini-gold"];
+  for (const foreign of ["", "[joystick]\njoy_enabled = true\n", "<other><x/></other>"]) {
+    assert.equal(spec.needsConfig(foreign), false, `claimed a foreign file: ${foreign.slice(0, 20)}`);
+    assert.equal(spec.apply(foreign, { label: "Pad", buttons: {} }), null);
+  }
+});
+
+test("privateer leaves a player's own binds and axes untouched", () => {
+  const withBinds = VEGA.replace(
+    "\t\t</section>",
+    '\t\t\t<axis name="x" joystick="0" axis="0" inverse="false" />\n\t\t</section>'
+  );
+  const spec = GAMES["privateer-gemini-gold"];
+  const out = spec.apply(withBinds, { label: "Pad", buttons: {} });
+  assert(/<axis name="x" joystick="0" axis="0" inverse="false" \/>/.test(out), "dropped an axis bind");
+  assert(/<var name="deadband" value="0.05"\/>/.test(out), "dropped a neighbouring var");
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);
