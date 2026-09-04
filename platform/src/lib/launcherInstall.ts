@@ -57,6 +57,9 @@ export type LauncherInstall = {
   /** Intel Mac override; urlMac is the Apple Silicon / default build. */
   urlMacX64?: string | null;
   urlLinux?: string | null;
+  /** Per-platform release-asset patterns for the github-* kinds. */
+  assetPatternMac?: string | null;
+  assetPatternLinux?: string | null;
   fileName?: string | null;
   /** itch.io's upload_id for the specific file to grab when a page lists several downloads. */
   uploadId?: string | null;
@@ -145,6 +148,8 @@ export type LauncherCatalogEntry = {
   urlMac?: string;
   urlMacX64?: string;
   urlLinux?: string;
+  assetPatternMac?: string;
+  assetPatternLinux?: string;
   fileName?: string;
   uploadId?: string;
   versionLabel?: string;
@@ -346,6 +351,8 @@ export function toLauncherCatalogEntry(input: {
   if (li.urlMac) entry.urlMac = li.urlMac;
   if (li.urlMacX64) entry.urlMacX64 = li.urlMacX64;
   if (li.urlLinux) entry.urlLinux = li.urlLinux;
+  if (li.assetPatternMac) entry.assetPatternMac = li.assetPatternMac;
+  if (li.assetPatternLinux) entry.assetPatternLinux = li.assetPatternLinux;
   if (li.fileName) entry.fileName = li.fileName;
   if (li.uploadId) entry.uploadId = li.uploadId;
   if (li.versionLabel) entry.versionLabel = li.versionLabel;
