@@ -679,6 +679,21 @@ async function OverviewTab({
           </Suspense>
         </section>
 
+        {/*
+         * Screenshots and trailers on the page itself, not only behind the
+         * Media tab.
+         *
+         * Images rank on the strength of the page hosting them, and that is
+         * this page — the one worth ranking. Behind ?tab=media they were on a
+         * URL whose canonical points here, so they were doing nothing for
+         * either. The tab stays for people who want just the gallery.
+         */}
+        {hasMedia(game) && (
+          <section>
+            <MediaTab game={game} />
+          </section>
+        )}
+
         <Suspense fallback={<GameSimilarFallback />}>
           <GameSimilarBlock game={game} />
         </Suspense>
@@ -1073,6 +1088,17 @@ function GuidesTab({ gameSlug, isSignedIn, items }: { gameSlug: string; isSigned
       )}
     </div>
   );
+}
+
+/**
+ * Whether there is any media worth a section.
+ *
+ * MediaTab renders its heading and counts regardless, so without this an
+ * empty gallery would appear on the overview of every game that has no
+ * screenshots — a heading over nothing.
+ */
+function hasMedia(game: Game): boolean {
+  return (game.screenshots?.filter(Boolean).length ?? 0) > 0 || (game.videos?.length ?? 0) > 0;
 }
 
 function MediaTab({ game }: { game: Game }) {
