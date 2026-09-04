@@ -224,6 +224,14 @@ const CatalogGameSchema = new Schema(
     systemRequirements: { type: SystemRequirementsSchema, required: true },
     /** Optional structured requirements for the compatibility engine (additive to free-text). */
     hardwareRequirements: { type: HardwareRequirementsBlockSchema, default: null },
+
+    /*
+     * Default controls, per input method. Mixed shape rather than a strict
+     * sub-schema: the bindings list is free-form enough that a strict schema
+     * here would reject rows the zod layer already validated, and validation
+     * belongs in one place.
+     */
+    controls: { type: Schema.Types.Mixed, default: null },
     launcherInstall: { type: LauncherInstallSchema, default: null },
     serverLobbyAuth: { type: ServerLobbyAuthSchema, default: null },
     installCount: { type: Number, default: 0 },

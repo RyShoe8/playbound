@@ -78,6 +78,8 @@ export async function GET(
         videos: Array.isArray(game.videos) ? game.videos.filter(Boolean) : [],
         systemRequirements: game.systemRequirements || null,
         hardwareRequirements: game.hardwareRequirements || null,
+        // Same block the web controls page renders, so the two cannot drift.
+        controls: game.controls || null,
         faq: Array.isArray(game.faq) ? game.faq : [],
         bestFor: Array.isArray(game.bestFor) ? game.bestFor : [],
         notFor: Array.isArray(game.notFor) ? game.notFor : [],

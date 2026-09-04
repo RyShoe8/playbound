@@ -249,6 +249,13 @@ function toGame(doc: LeanGame): Game {
       extra?.hardwareRequirements
     ),
 
+    /*
+     * Live only. There is no seed for controls and there should not be: the
+     * whole point is that a person documented them against the game, so a
+     * build-time copy could only ever be a stale guess at that.
+     */
+    controls: (doc.controls as Game["controls"]) ?? undefined,
+
     qualityBar:
       normalizeQualityBar(
         (doc.qualityBar && typeof doc.qualityBar === "object" && (doc.qualityBar as { verdict?: string }).verdict)

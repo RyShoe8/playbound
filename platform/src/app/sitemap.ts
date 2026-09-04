@@ -13,6 +13,7 @@ import { MULTIPLAYER_ADAPTERS } from "@/lib/multiplayer/adapters";
 import { SITE_URL } from "@/lib/site";
 import { cacheLife, cacheTag } from "next/cache";
 import { lastMod, newestUpdate } from "@/lib/sitemapDates";
+import { hasControls } from "@/lib/controls/types";
 
 /**
  * Sourced from the live catalog so it stays correct as games are added weekly.
@@ -99,6 +100,20 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
     ...lastMod(g.qualityBar?.lastVerified),
   }));
 
+  /*
+   * Only games that actually have bindings. The controls page 404s without
+   * them, so listing every game here would fill the sitemap with URLs that
+   * do not resolve — the fastest way to make a sitemap worth ignoring.
+   */
+  const controlsRoutes: MetadataRoute.Sitemap = games
+    .filter((g) => hasControls(g.controls))
+    .map((g) => ({
+      url: `${SITE_URL}/games/${g.slug}/controls`,
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+      ...lastMod(g.qualityBar?.lastVerified),
+    }));
+
   // Only real, active editions are indexed. A game whose sole edition is the generated
   // Official one has no separate page worth listing — it would duplicate the
   // game page it was derived from. Unlisted, draft, and hidden editions are excluded.
@@ -143,6 +158,7 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     ...staticRoutes,
     ...gameRoutes,
+    ...controlsRoutes,
     ...editionRoutes,
     ...playWithFriendsRoutes,
     ...eventRoutes,

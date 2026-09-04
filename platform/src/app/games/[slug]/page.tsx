@@ -16,6 +16,7 @@ import { getDeveloper } from "@/lib/developers";
 import { listPublicEditionsForGame, hasChoosableEditions } from "@/lib/editions";
 import type { Edition } from "@/lib/editionTypes";
 import { hasServerBrowser } from "@/lib/servers/registry";
+import { hasControls } from "@/lib/controls/types";
 import { EditionsSection } from "@/components/editions/EditionsSection";
 import type { Game, Developer } from "@/lib/data/types";
 import { GameArt } from "@/components/GameArt";
@@ -102,6 +103,12 @@ type Tab = (typeof tabs)[number];
  */
 const PROMOTED_ROUTES = [
   { key: "servers", label: "servers", href: (slug: string) => `/servers?game=${encodeURIComponent(slug)}` },
+  /*
+   * Controls is a real URL for the same reason servers is: "<game> keybinds"
+   * is a search with intent, and a ?tab= cannot rank because this page's
+   * canonical folds every tab variant into one.
+   */
+  { key: "controls", label: "controls", href: (slug: string) => `/games/${slug}/controls` },
 ] as const;
 
 /** Tabs that remain as query params — low search value, app-like content. */
@@ -342,6 +349,8 @@ export default async function GamePage({
         {/* Real URLs — these can rank. */}
         {PROMOTED_ROUTES.filter((r) => {
           if (r.key === "servers" && !hasServerBrowser(game.slug)) return false;
+          // The page 404s without bindings, so it must not be linked without them.
+          if (r.key === "controls" && !hasControls(game.controls)) return false;
           return true;
         }).map((r) => (
           <Link

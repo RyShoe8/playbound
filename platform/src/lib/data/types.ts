@@ -1,5 +1,6 @@
 import type { LauncherInstall } from "@/lib/launcherInstall";
 import type { HardwareRequirementsBlock } from "@/lib/hardware/types";
+import type { GameControls } from "@/lib/controls/types";
 import type { GameAccess } from "@/lib/access/types";
 
 export type LaunchMethod = "browser" | "install" | "server";
@@ -163,6 +164,12 @@ export interface Game {
   systemRequirements: { min: string; recommended: string };
   /** Optional structured requirements for compatibility (additive to free-text). */
   hardwareRequirements?: HardwareRequirementsBlock | null;
+  /**
+   * Default controls per input method. Optional: most games have none written
+   * down yet, and an absent block renders no controls page rather than an
+   * empty one.
+   */
+  controls?: GameControls | null;
   /** Desktop launcher install recipe (CMS / seed). */
   launcherInstall?: LauncherInstall;
 
