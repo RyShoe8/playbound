@@ -807,6 +807,7 @@ function wireMainEvents() {
     if (state.currentView === "home") api.paintHomeGrids?.(state.catalogCache, state.recentCache);
     else if (state.currentView === "games") api.paintGamesGrid?.(state.catalogCache);
     else if (state.currentView === "search") api.paintSearchResults?.(state.catalogCache);
+    else if (state.currentView === "library") api.renderLibraryView?.();
   });
 }
 

@@ -34,7 +34,7 @@ let lastSentRy = 0;
 let lastSentLt = 0;
 let lastSentRt = 0;
 
-function deadzone(val, threshold = 0.08) {
+function deadzone(val, threshold = 0.15) {
   if (Math.abs(val) < threshold) return 0;
   return val;
 }

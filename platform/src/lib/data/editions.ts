@@ -890,6 +890,8 @@ export const editions: EditionSeed[] = [
     description:
       "The official release of Wolfenstein: Enemy Territory on Steam by id Software and Bethesda Softworks. Free to play.",
     type: "official",
+    status: "archived",
+    visibility: "unlisted",
     isDefault: false,
     sortOrder: 20,
     links: {
@@ -3807,7 +3809,7 @@ export const editions: EditionSeed[] = [
       min: "1.5 GHz CPU / 1 GB RAM / OpenGL 2.0 GPU / 200 MB storage",
       recommended: "Dual-Core 2.0 GHz CPU / 2 GB RAM / Dedicated GPU / USB Gamepads (1–4 players)",
     },
-    features: ["Singleplayer", "Local Multiplayer", "Online Multiplayer", "1–4 Players", "Custom Leagues", "Tactics Editor", "Team Editor", "DRM-Free", "Portable"],
+    features: ["Singleplayer", "Local Multiplayer", "Online Multiplayer", "Controller Support", "1–4 Players", "Custom Leagues", "Tactics Editor", "Team Editor", "DRM-Free", "Portable"],
     tags: ["Sports", "Soccer", "Football", "Retro", "Pixel Art", "Open Source"],
     aliases: ["YSoccer Windows", "YSoccer Online"],
     version: "PlayBound Online",
@@ -3842,7 +3844,7 @@ export const editions: EditionSeed[] = [
       min: "1.5 GHz CPU / 1 GB RAM / OpenGL 2.0 GPU",
       recommended: "Dual-Core 2.0 GHz CPU / 2 GB RAM / 4x USB Gamepads",
     },
-    features: ["Local Multiplayer", "Online Multiplayer", "Tournament Ready", "Classic SWOS Pitches", "Calibrated 4-Player Controls"],
+    features: ["Local Multiplayer", "Online Multiplayer", "Controller Support", "Tournament Ready", "Classic SWOS Pitches", "Calibrated 4-Player Controls"],
     tags: ["Sports", "Tournament", "Retro", "SWOS", "Local PvP"],
     verificationLevel: "playbound_verified",
   },

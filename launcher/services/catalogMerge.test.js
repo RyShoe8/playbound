@@ -105,3 +105,64 @@ test("startup still enriches cached entries from the bundle", () => {
   });
   assert.equal(games[0].exeHint, "openra");
 });
+
+test("retired, archived, or unlisted editions are stripped from catalog games", () => {
+  const staleWolf = g("wolfenstein-enemy-territory", {
+    editions: [
+      { slug: "et-legacy", name: "ET: Legacy" },
+      { slug: "steam", name: "Steam Official" },
+      { slug: "truecombat-elite", name: "TrueCombat: Elite" },
+    ],
+  });
+  const staleGemini = g("privateer-gemini-gold", {
+    editions: [
+      { slug: "gemini-gold-1-03", name: "Privateer Gemini Gold (v1.03)" },
+      { slug: "gemini-gold-unix", name: "Privateer Gemini Gold (Linux & macOS Native)" },
+    ],
+  });
+  const gameWithArchived = g("some-game", {
+    editions: [
+      { slug: "active", name: "Active Edition", status: "active", visibility: "public" },
+      { slug: "archived", name: "Archived Edition", status: "archived" },
+      { slug: "unlisted", name: "Unlisted Edition", visibility: "unlisted" },
+    ],
+  });
+
+  const startup = startupCatalog({
+    cached: [staleWolf, staleGemini, gameWithArchived],
+    bundled: [],
+  });
+  assert.deepEqual(
+    startup.find((e) => e.slug === "wolfenstein-enemy-territory").editions.map((e) => e.slug),
+    ["et-legacy", "truecombat-elite"],
+    "steam edition must be stripped from wolfenstein"
+  );
+  assert.deepEqual(
+    startup.find((e) => e.slug === "privateer-gemini-gold").editions.map((e) => e.slug),
+    ["gemini-gold-1-03"],
+    "gemini-gold-unix edition must be stripped from privateer-gemini-gold"
+  );
+  assert.deepEqual(
+    startup.find((e) => e.slug === "some-game").editions.map((e) => e.slug),
+    ["active"],
+    "archived and unlisted editions must be stripped"
+  );
+
+  const { games } = reconcileCatalog({
+    remote: [staleWolf, staleGemini, gameWithArchived],
+    cached: [],
+    bundled: [],
+  });
+  assert.deepEqual(
+    games.find((e) => e.slug === "wolfenstein-enemy-territory").editions.map((e) => e.slug),
+    ["et-legacy", "truecombat-elite"]
+  );
+  assert.deepEqual(
+    games.find((e) => e.slug === "privateer-gemini-gold").editions.map((e) => e.slug),
+    ["gemini-gold-1-03"]
+  );
+  assert.deepEqual(
+    games.find((e) => e.slug === "some-game").editions.map((e) => e.slug),
+    ["active"]
+  );
+});

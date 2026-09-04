@@ -52,6 +52,7 @@ export async function GET(req: Request) {
           name: editionNames[i],
           type: e.type,
           isDefault: e.isDefault,
+          platforms: Array.isArray(e.platforms) ? e.platforms : [],
           features: Array.isArray(e.features) ? e.features : [],
           tags: Array.isArray(e.tags) ? e.tags : [],
           hasControllerSupport: supportsController(e),

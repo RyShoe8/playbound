@@ -114,7 +114,7 @@ async function renderSettingsView() {
       <p class="settings-hint">Press this while a game is running to change the party's server without alt-tabbing. Deliberately not Shift+Tab — Steam already owns that.</p>
       <input type="text" class="input-text" id="set-overlay-shortcut" value="${escapeHtml(
         overlayShortcut
-      )}" placeholder="CommandOrControl+\`" />
+      )}" placeholder="CommandOrControl+P" />
       <div style="margin-top: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
         <button class="btn-secondary btn-sm" id="set-btn-overlay-shortcut">Save shortcut</button>
         <span class="settings-hint" id="set-overlay-shortcut-status"></span>

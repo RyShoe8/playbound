@@ -11,6 +11,7 @@ import {
   executableNoun,
   filterByCompatibility,
   gamePlayHintHtml,
+  isEditionDesktopCompatible,
   isGameDesktopCompatible,
   isMacOS,
   isModDesktopCompatible,
@@ -55,11 +56,8 @@ function catalogListFrom(raw) {
 }
 
 async function loadLibraryLocalData() {
-  const catalog =
-    state.catalogCache.length > 0
-      ? state.catalogCache
-      : (await window.playbound.getCatalog?.()) || [];
-  if (!state.catalogCache.length && Array.isArray(catalog)) {
+  const catalog = (await window.playbound.getCatalog?.()) || state.catalogCache || [];
+  if (Array.isArray(catalog) && catalog.length > 0) {
     state.catalogCache = catalog;
   }
 
@@ -718,6 +716,18 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
     if (catalogEditions.length > 0) {
       for (const catEd of catalogEditions) {
         const inst = installedMap.get(catEd.slug);
+        const isRetired =
+          (game.slug === "privateer-gemini-gold" && catEd.slug === "gemini-gold-unix") ||
+          (game.slug === "wolfenstein-enemy-territory" && catEd.slug === "steam") ||
+          (game.slug === "wipeout-rewrite" && catEd.slug === "phantom-edition") ||
+          catEd.status === "archived" ||
+          catEd.visibility === "unlisted" ||
+          catEd.visibility === "hidden";
+
+        if (!inst && (isRetired || !isEditionDesktopCompatible(catEd, catalogEntry))) {
+          continue;
+        }
+
         allEditions.push({
           slug: catEd.slug,
           name: catEd.name || catEd.slug,
@@ -831,7 +841,12 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
         gameFeatures: pickList(catalogEntry?.features, game.features),
         gameTags: pickList(catalogEntry?.tags, game.tags),
         controllerSupport: curEd?.controllerSupport || catEd?.controllerSupport || catalogEntry?.controllerSupport || game.controllerSupport,
-        hasControllerSupport: curEd?.hasControllerSupport ?? catEd?.hasControllerSupport ?? catalogEntry?.hasControllerSupport ?? game.hasControllerSupport,
+        hasControllerSupport:
+          curEd?.hasControllerSupport === true ||
+          catEd?.hasControllerSupport === true ||
+          catalogEntry?.hasControllerSupport === true ||
+          game.hasControllerSupport === true ||
+          (curEd?.hasControllerSupport ?? catEd?.hasControllerSupport ?? catalogEntry?.hasControllerSupport ?? game.hasControllerSupport),
       };
       try {
         const launched = await maybeOfferPhoneControllerThenPlay(
@@ -1003,7 +1018,7 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
         });
         group.appendChild(play);
 
-        const joinBtn = buildJoinMultiplayerButton(game, ed);
+        const joinBtn = buildJoinMultiplayerButton(game, ed, opts);
         if (joinBtn) group.appendChild(joinBtn);
 
         const menuItems = [
@@ -1542,9 +1557,16 @@ function buildRunAsAdminMenuItem(game) {
  * anyway. The button therefore starts optimistic and reports honestly when
  * nothing good is available, which is the same shape as Play failing.
  */
-function buildJoinMultiplayerButton(game, ed) {
+function buildJoinMultiplayerButton(game, ed, opts = {}) {
   const slug = game?.slug;
   if (!slug) return null;
+  // Command-line connection support is also used by peer-to-peer parties.
+  // OpenTyrian and ECWolf (Wolfenstein 3D) have that capability but no public servers to search, so the
+  // library's server-finder action must additionally require a real server browser.
+  const hasBrowser = Boolean(
+    game.hasServerBrowser ?? opts?.catalogEntry?.hasServerBrowser ?? false
+  );
+  if (!hasBrowser) return null;
   const caps = window.playbound?.joinCapability?.(slug);
   if (!caps?.canCommandLineJoin) return null;
 

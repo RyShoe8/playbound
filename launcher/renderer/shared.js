@@ -59,7 +59,7 @@ export const state = {
    * main.js falls back to, so a failed read still tells the player something
    * true.
    */
-  overlayShortcut: "CommandOrControl+`",
+  overlayShortcut: "CommandOrControl+P",
   gamesFilters: {
     query: "",
     genre: "",
@@ -371,13 +371,32 @@ export function isGameDesktopCompatible(game) {
 }
 
 export function isEditionDesktopCompatible(edition, game) {
+  if (!edition) return false;
+  if (edition.slug === "gemini-gold-unix") return false;
   const parent = game || {
     platforms: edition?.platforms,
     browserPlayable: edition?.browserPlayable,
     steamDeck: edition?.steamDeck,
   };
   if (parent && !isGameDesktopCompatible(parent)) return false;
-  const platforms = (edition?.platforms || []).map(normalizePlatform).filter(Boolean);
+  let platforms = (edition?.platforms || []).map(normalizePlatform).filter(Boolean);
+  if (platforms.length === 0) {
+    const text = [
+      edition.name || "",
+      edition.editionName || "",
+      edition.shortDescription || "",
+      ...(Array.isArray(edition.tags) ? edition.tags : []),
+      ...(Array.isArray(edition.features) ? edition.features : []),
+    ].join(" ").toLowerCase();
+
+    const mentionsMac = /macos|mac\b|apple|osx/i.test(text);
+    const mentionsLinux = /linux|unix/i.test(text);
+    const mentionsWin = /windows|win32|pc\b/i.test(text);
+
+    if ((mentionsMac || mentionsLinux) && !mentionsWin) {
+      platforms = [mentionsMac && "macos", mentionsLinux && "linux"].filter(Boolean);
+    }
+  }
   if (platforms.length === 0) return true;
   const allowed = desktopPlatformAllowedSet();
   return platforms.some((p) => allowed.has(p));
@@ -739,7 +758,7 @@ export const fmtBytes = (n) =>
 /**
  * An Electron accelerator as something to read on a key.
  *
- * "CommandOrControl+`" is exact and unreadable; a player needs "Ctrl + `".
+ * "CommandOrControl+P" is exact and unreadable; a player needs "Ctrl + P".
  * Mac gets the Command symbol, since that is the key it actually maps to
  * there.
  */

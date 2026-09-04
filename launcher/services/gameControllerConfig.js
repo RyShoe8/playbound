@@ -752,12 +752,10 @@ const GAMES = {
       const isDualSense = profile?.family === "dualsense" || /dualsense|ps5|0ce6/i.test(profile?.rawId || "");
 
       const configs = [
-        `{class:JoystickConfig,name:Controller (GC101 1.03),xAxis:1,yAxis:0,button1:0,button2:1}`,
-        `{class:JoystickConfig,name:Controller (XBOX 360 For Windows),xAxis:1,yAxis:0,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:Controller (GC101 1.03),xAxis:0,yAxis:1,button1:0,button2:1}`,
         `{class:JoystickConfig,name:Controller (XBOX 360 For Windows),xAxis:0,yAxis:1,button1:0,button2:1}`,
         `{class:JoystickConfig,name:Controller (Xbox 360 Wireless Receiver for Windows),xAxis:0,yAxis:1,button1:0,button2:1}`,
         `{class:JoystickConfig,name:Controller (Xbox One For Windows),xAxis:0,yAxis:1,button1:0,button2:1}`,
-        `{class:JoystickConfig,name:Xbox 360 Controller,xAxis:1,yAxis:0,button1:0,button2:1}`,
         `{class:JoystickConfig,name:Xbox 360 Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
         `{class:JoystickConfig,name:Xbox 360 Controller (XInput CONTROLLER),xAxis:0,yAxis:1,button1:0,button2:1}`,
         `{class:JoystickConfig,name:Xbox One Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
@@ -768,6 +766,7 @@ const GAMES = {
         `{class:JoystickConfig,name:PS5 Controller,xAxis:4,yAxis:3,button1:0,button2:1}`,
         `{class:JoystickConfig,name:PS4 Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
         `{class:JoystickConfig,name:Wireless Gamepad,xAxis:0,yAxis:1,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:HID-compliant game controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
       ];
 
       /*

@@ -8,6 +8,7 @@ import {
   type LauncherInstall,
 } from "@/lib/launcherInstall";
 import { requestIncludesTesting } from "@/lib/requestIncludesTesting";
+import { getMultiplayerAdapter } from "@/lib/multiplayer/adapters";
 
 export async function GET(
   req: Request,
@@ -48,7 +49,12 @@ export async function GET(
   });
 
   return NextResponse.json(
-    { ...entry, status: game.status || "published", testing: game.status === "testing" },
+    {
+      ...entry,
+      hostLaunch: getMultiplayerAdapter(game.slug)?.host ?? null,
+      status: game.status || "published",
+      testing: game.status === "testing",
+    },
     {
       headers: {
         "Cache-Control": includeTesting
