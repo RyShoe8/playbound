@@ -54,6 +54,8 @@ export type LauncherInstall = {
   exeHint?: string | null;
   url?: string | null;
   urlMac?: string | null;
+  /** Intel Mac override; urlMac is the Apple Silicon / default build. */
+  urlMacX64?: string | null;
   urlLinux?: string | null;
   fileName?: string | null;
   /** itch.io's upload_id for the specific file to grab when a page lists several downloads. */
@@ -141,6 +143,7 @@ export type LauncherCatalogEntry = {
   exeHint?: string;
   url?: string;
   urlMac?: string;
+  urlMacX64?: string;
   urlLinux?: string;
   fileName?: string;
   uploadId?: string;
@@ -341,6 +344,7 @@ export function toLauncherCatalogEntry(input: {
   if (li.exeHint) entry.exeHint = li.exeHint;
   if (li.url) entry.url = li.url;
   if (li.urlMac) entry.urlMac = li.urlMac;
+  if (li.urlMacX64) entry.urlMacX64 = li.urlMacX64;
   if (li.urlLinux) entry.urlLinux = li.urlLinux;
   if (li.fileName) entry.fileName = li.fileName;
   if (li.uploadId) entry.uploadId = li.uploadId;

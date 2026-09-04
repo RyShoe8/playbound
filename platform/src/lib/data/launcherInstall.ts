@@ -355,10 +355,9 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
      * a direct-installer whose only URL ends in .exe rather than handing it to
      * Wine, so the install throws instead of running.
      *
-     * Apple Silicon, because that is what a Mac bought since 2020 is. Wildfire
-     * ship a second build at 0ad-0.28.0-macos-x86_64.dmg for Intel and urlMac
-     * is a single field, so an Intel Mac gets a slice it cannot run — worth an
-     * arch-aware field before the Mac launcher ships.
+     * urlMac is the Apple Silicon build and urlMacX64 the Intel one, picked by
+     * process.arch. Wildfire ship both, and before urlMacX64 existed an Intel
+     * Mac was handed an aarch64 slice it could not run.
      *
      * No urlLinux: the only Linux artifacts upstream are unix-build and
      * unix-data source tarballs, which need compiling. Linux keeps the Windows
@@ -366,6 +365,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
      * tarball is not.
      */
     urlMac: "https://releases.wildfiregames.com/0ad-0.28.0-macos-aarch64.dmg",
+    urlMacX64: "https://releases.wildfiregames.com/0ad-0.28.0-macos-x86_64.dmg",
     fileName: "0ad-0.28.0-win64.exe",
     versionLabel: "0.28.0",
     exeHint: "pyrogenesis",
@@ -826,6 +826,16 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     enabled: true,
     kind: "direct-installer",
     url: "https://lol.secure.dyn.riotcdn.net/channels/public/x/installer/current/live.na.exe",
+    /*
+     * Riot ship the Mac installer as a zip, not a dmg — same path, different
+     * extension. Verified: it carries "Install League of Legends na.app".
+     *
+     * The kind stays direct-installer, which on macOS hands the file to the
+     * OS. A zip opens in Archive Utility and the player runs the .app it
+     * extracts, so it is one step longer than a dmg but it is Riot's own
+     * installer rather than a Windows binary the Mac would simply refuse.
+     */
+    urlMac: "https://lol.secure.dyn.riotcdn.net/channels/public/x/installer/current/live.na.zip",
     fileName: "Install-League-of-Legends-NA.exe",
     registryTitles: ["League of Legends", "Riot Client"],
     knownExePaths: [

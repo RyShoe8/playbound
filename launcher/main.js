@@ -2627,7 +2627,18 @@ async function resolveDownload(entry) {
   ) {
     let effectiveUrl = entry.url;
     if (process.platform === "darwin" && entry.urlMac) {
-      effectiveUrl = entry.urlMac;
+      /*
+       * Apple ship two architectures and several projects build for both, so
+       * one urlMac hands half of Mac users a slice they cannot run. 0 A.D. is
+       * the case: macos-aarch64.dmg and macos-x86_64.dmg, and an Intel Mac
+       * given the first gets nothing.
+       *
+       * urlMac stays the default — Apple Silicon, which is every Mac sold
+       * since 2020 — and urlMacX64 is the Intel override. A recipe with only
+       * urlMac keeps working exactly as before.
+       */
+      effectiveUrl =
+        process.arch !== "arm64" && entry.urlMacX64 ? entry.urlMacX64 : entry.urlMac;
     } else if (process.platform === "linux" && entry.urlLinux) {
       effectiveUrl = entry.urlLinux;
     }
