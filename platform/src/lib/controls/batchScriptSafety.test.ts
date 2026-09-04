@@ -13,6 +13,7 @@ const script2 = readFileSync(
 const script3 = readFileSync(path.join(process.cwd(), "scripts", "fill-game-controls-batch-3.ts"), "utf8");
 const script4 = readFileSync(path.join(process.cwd(), "scripts", "fill-game-controls-batch-4.ts"), "utf8");
 const script5 = readFileSync(path.join(process.cwd(), "scripts", "fill-game-controls-batch-5.ts"), "utf8");
+const script6 = readFileSync(path.join(process.cwd(), "scripts", "fill-game-controls-batch-6.ts"), "utf8");
 const route = readFileSync(
   path.join(process.cwd(), "src", "app", "api", "admin", "controls", "batch-1", "route.ts"),
   "utf8"
@@ -24,6 +25,7 @@ const route2 = readFileSync(
 const route3 = readFileSync(path.join(process.cwd(), "src", "app", "api", "admin", "controls", "batch-3", "route.ts"), "utf8");
 const route4 = readFileSync(path.join(process.cwd(), "src", "app", "api", "admin", "controls", "batch-4", "route.ts"), "utf8");
 const route5 = readFileSync(path.join(process.cwd(), "src", "app", "api", "admin", "controls", "batch-5", "route.ts"), "utf8");
+const route6 = readFileSync(path.join(process.cwd(), "src", "app", "api", "admin", "controls", "batch-6", "route.ts"), "utf8");
 
 describe("controls batch database safety", () => {
   it("only issues a controls-only $set with no upsert", () => {
@@ -91,5 +93,12 @@ describe("controls batch database safety", () => {
       expect(source).not.toMatch(/deleteMany|replaceOne|findOneAndUpdate|bulkWrite/); expect(source).toContain("a non-controls field changed"); expect(source).toContain("stored controls do not match the validated payload");
     }
     expect(script5).toContain('process.argv.includes("--apply")');
+  });
+
+  it("batch 6 has the same controls-only contract", () => {
+    for (const source of [script6, route6]) {
+      expect(source).toContain("{ $set: { controls: controls.get(slug) } }"); expect(source).toContain("{ upsert: false }"); expect(source).not.toMatch(/deleteMany|replaceOne|findOneAndUpdate|bulkWrite/); expect(source).toContain("a non-controls field changed"); expect(source).toContain("stored controls do not match the validated payload");
+    }
+    expect(script6).toContain('process.argv.includes("--apply")');
   });
 });
