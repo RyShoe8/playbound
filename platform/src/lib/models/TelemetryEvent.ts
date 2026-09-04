@@ -56,6 +56,13 @@ TelemetryEventSchema.index({ userId: 1, createdAt: -1 });
  * separate sort stage.
  */
 TelemetryEventSchema.index({ event: 1, "properties.gameSlug": 1, createdAt: -1 });
+/*
+ * Covers countActivePlatformPlayersByGame, which filters on event +
+ * properties.gameSlug + sessionId + a createdAt range. Without this the
+ * existing {event, properties.gameSlug, createdAt} index cannot satisfy the
+ * sessionId filter and Mongo falls back to a FETCH for every candidate row.
+ */
+TelemetryEventSchema.index({ event: 1, "properties.gameSlug": 1, sessionId: 1, createdAt: -1 });
 TelemetryEventSchema.index({ event: 1, "properties.modSlug": 1, createdAt: -1 });
 TelemetryEventSchema.index({ event: 1, "properties.editionSlug": 1, createdAt: -1 });
 

@@ -3,6 +3,7 @@ import { listGames } from "@/lib/catalog";
 import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { DiscoverFilters } from "@/components/DiscoverFilters";
 import { getCatalogLiveStats, playingNowBySlug } from "@/lib/liveActivity";
+import type { CatalogLiveStats } from "@/lib/liveActivity";
 import { pageMetadata } from "@/lib/seo";
 import { JsonLd, graph, itemListSchema, breadcrumbSchema } from "@/components/JsonLd";
 
@@ -13,11 +14,36 @@ export const metadata: Metadata = pageMetadata({
   path: "/discover",
 });
 
+/**
+ * On a warm cache (the vast majority of hits) the live stats resolve in under
+ * 1ms.  On a cold miss the multiplayer fan-out can stall for 8.5s+, which
+ * blocks the entire page render.  This races the stats against a 3-second
+ * budget so the game grid always appears quickly — playing-now badges simply
+ * fill in as empty when the stats are still loading.
+ */
+const LIVE_STATS_BUDGET_MS = 3_000;
+
+function liveStatsWithBudget(): Promise<CatalogLiveStats | null> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(null), LIVE_STATS_BUDGET_MS);
+    getCatalogLiveStats().then(
+      (stats) => {
+        clearTimeout(timer);
+        resolve(stats);
+      },
+      () => {
+        clearTimeout(timer);
+        resolve(null);
+      }
+    );
+  });
+}
+
 export default async function DiscoverPage() {
   const includeTesting = await viewerCanSeeTesting();
   const [games, liveStats] = await Promise.all([
     listGames({ includeTesting }),
-    getCatalogLiveStats(),
+    liveStatsWithBudget(),
   ]);
 
   return (
@@ -50,7 +76,10 @@ export default async function DiscoverPage() {
       </div>
 
       {/* Client-side filters + grid */}
-      <DiscoverFilters games={games} playingNowBySlug={playingNowBySlug(liveStats)} />
+      <DiscoverFilters
+        games={games}
+        playingNowBySlug={liveStats ? playingNowBySlug(liveStats) : {}}
+      />
 
       {/* SEO fallback: ensure crawlers see links to all games even without JS */}
       <noscript>
@@ -65,3 +94,4 @@ export default async function DiscoverPage() {
     </div>
   );
 }
+
