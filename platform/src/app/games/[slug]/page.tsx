@@ -64,6 +64,7 @@ import { alternativePages } from "@/lib/data/alternatives";
 import { classifyMediaUrl, heroMediaItems } from "@/lib/mediaEmbed";
 import { GameHeroMedia } from "@/components/GameHeroMedia";
 import { GameControlsContent } from "./GameControlsContent";
+import { GameControlsSummary } from "./GameControlsSummary";
 import { HlsVideo } from "@/components/HlsVideo";
 import { deriveInstallSteps, deriveFaq } from "@/lib/enrich";
 import {
@@ -688,6 +689,13 @@ async function OverviewTab({
          * URL whose canonical points here, so they were doing nothing for
          * either. The tab stays for people who want just the gallery.
          */}
+        {/*
+         * A taste of the controls, with the full reference a click away.
+         * Answers "what are the keys" on the page worth ranking, while
+         * leaving /controls a reason to exist — it targets a different search.
+         */}
+        <GameControlsSummary game={game} />
+
         {hasMedia(game) && (
           <section>
             <MediaTab game={game} />

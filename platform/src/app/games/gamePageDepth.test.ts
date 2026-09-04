@@ -74,3 +74,47 @@ describe("media is part of the game page", () => {
     }
   });
 });
+
+describe("controls on the game page, and the page they link to", () => {
+  it("the overview shows a controls summary", () => {
+    expect(overviewTab()).toMatch(/<GameControlsSummary game=\{game\} \/>/);
+  });
+
+  it("the summary is an h2, the dedicated page an h1", () => {
+    /*
+     * Same subject, different jobs. Two h1s saying "<game> controls" across
+     * two URLs is the shape that makes Google pick one and drop the other.
+     */
+    const summary = readFileSync(
+      path.join(process.cwd(), "src", "app", "games", "[slug]", "GameControlsSummary.tsx"),
+      "utf8"
+    );
+    const full = readFileSync(
+      path.join(process.cwd(), "src", "app", "games", "[slug]", "GameControlsContent.tsx"),
+      "utf8"
+    );
+    // Strip comments first: the components discuss h1 and h2 in prose, and
+    // matching that would test the documentation rather than the markup.
+    const code = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+    expect(code(summary)).toMatch(/<h2[^>]*>\{game\.title\} controls<\/h2>/);
+    expect(code(summary)).not.toMatch(/<h1/);
+    expect(code(full)).toMatch(/<h1/);
+  });
+
+  it("the summary previews rather than reprints, and links onward", () => {
+    // If it showed everything, /controls would be a duplicate of a section
+    // of the hub and would deserve to be dropped.
+    const summary = readFileSync(
+      path.join(process.cwd(), "src", "app", "games", "[slug]", "GameControlsSummary.tsx"),
+      "utf8"
+    );
+    expect(summary).toMatch(/const PREVIEW_ROWS = \d+/);
+    expect(summary).toMatch(/\.slice\(0, PREVIEW_ROWS\)/);
+    expect(summary).toMatch(/href=\{`\/games\/\$\{game\.slug\}\/controls`\}/);
+  });
+
+  it("the controls route 404s when there is nothing to show", () => {
+    // A promoted URL that renders an empty section is a thin page.
+    expect(PAGE).toMatch(/tab === "controls" && !hasControls\(game\.controls\)\) notFound\(\)/);
+  });
+});
