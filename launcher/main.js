@@ -2322,9 +2322,14 @@ async function ensureCatalogEntry(slug, forceRemote = false) {
     const entry = await res.json();
     if (!entry?.slug) return existing || null;
     registerCatalogEntryHosts(entry);
-    catalog = [...catalog.filter((e) => e.slug !== entry.slug), entry];
+    const merged = {
+      ...(existing || {}),
+      ...entry,
+      hostLaunch: entry.hostLaunch ?? existing?.hostLaunch ?? null,
+    };
+    catalog = [...catalog.filter((e) => e.slug !== entry.slug), merged];
     saveCatalogCache(catalog);
-    return entry;
+    return merged;
   } catch (err) {
     console.warn(`ensureCatalogEntry(${slug}) failed:`, err.message || err);
     return existing || null;
@@ -7652,6 +7657,9 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     : Array.isArray(entry?.launchArgs)
       ? [...entry.launchArgs]
       : [];
+  // Strip any unresolved template tokens from static launchArgs
+  args = args.filter((a) => !/\{host\}|\{port\}/i.test(String(a)));
+
   const resolvedPort = Number(join?.port) || defaultGamePort(slug) || Number(entry?.port) || 0;
   let resolvedJoin = join?.host ? { ...join, port: resolvedPort } : null;
 
@@ -7686,12 +7694,12 @@ async function playGameInner(slug, join = null, editionSlug = null) {
    */
   const arbiterArgs = join?.arbiter ? arbiterLaunchArgs(slug) : null;
   if (arbiterArgs) {
+    args = args.filter((a) => !/^--connect(?:=|$)/i.test(String(a)));
     args.push(...applyConnectTemplates(arbiterArgs, join, edSlug));
   } else if (resolvedJoin?.host && Array.isArray(connectArgs) && connectArgs.length > 0) {
+    args = args.filter((a) => !/^--connect(?:=|$)/i.test(String(a)));
     args.push(...applyConnectTemplates(connectArgs, resolvedJoin, edSlug));
   } else {
-    // All-or-nothing: a half-applied connect line is worse than none. See
-    // staticLaunchArgs in services/connectArgs.js.
     args.push(...staticLaunchArgs(connectArgs));
   }
 
@@ -9628,6 +9636,7 @@ function listInstalledGames() {
       features: entry?.features || [],
       controllerSupport: entry?.controllerSupport || null,
       hasControllerSupport: entry?.hasControllerSupport ?? null,
+      hasServerBrowser: Boolean(entry?.hasServerBrowser),
       multiplayer: Boolean(entry?.multiplayer),
       platforms: Array.isArray(entry?.platforms) ? entry.platforms : ["Windows"],
       browserPlayable: Boolean(entry?.browserPlayable),
@@ -9844,7 +9853,10 @@ ipcMain.handle("set-run-as-admin", (_event, slug, on) => {
 ipcMain.on("join-capability", (event, slug) => {
   let canCommandLineJoin = false;
   try {
-    canCommandLineJoin = hasClientConnectArgs(slug) && !joinsFromInGameMenu(slug);
+    const entry = catalog.find((game) => game.slug === String(slug || ""));
+    const hasTrackedServers = Boolean(entry?.hasServerBrowser);
+    canCommandLineJoin =
+      hasTrackedServers && hasClientConnectArgs(slug) && !joinsFromInGameMenu(slug);
   } catch {
     canCommandLineJoin = false;
   }
@@ -12771,9 +12783,13 @@ function resolveLocalServerBinary(gameDir, hostLaunch) {
 
 /** Everything needed to host this game locally, or why we cannot. */
 function localDedicatedServerFor(slug, editionSlug = null) {
-  const entry =
-    catalog.find((e) => e.slug === slug) || bundledCatalog.find((e) => e.slug === slug) || null;
-  const hostLaunch = entry?.hostLaunch || null;
+  const remote = catalog.find((e) => e.slug === slug) || null;
+  const bundled = bundledCatalog.find((e) => e.slug === slug) || null;
+  const entry = remote || bundled || null;
+  const hostLaunch =
+    (remote?.hostLaunch?.argsTemplate?.length || remote?.hostLaunch?.configFile)
+      ? remote.hostLaunch
+      : (bundled?.hostLaunch || remote?.hostLaunch || null);
   if (!hostLaunch?.argsTemplate?.length && !hostLaunch?.configFile) {
     return { ok: false, reason: `PlayBound has no server template for ${entry?.title || slug}.` };
   }
@@ -12960,13 +12976,19 @@ let overlayWin = null;
  *
  * Steam owns that chord in most players' hands, and a launcher that steals it
  * either does nothing (Steam grabbed it first) or does the wrong thing to
- * someone reaching for the Steam overlay. Ctrl+` is close by and unclaimed.
+ * someone reaching for the Steam overlay. Ctrl+P is easy to associate with
+ * PlayBound and does not collide with another launcher action.
  */
-const DEFAULT_OVERLAY_SHORTCUT = "CommandOrControl+`";
+const DEFAULT_OVERLAY_SHORTCUT = "CommandOrControl+P";
+const LEGACY_OVERLAY_SHORTCUT = "CommandOrControl+`";
 
 function overlayShortcut() {
   const configured = String(loadSettings().overlayShortcut || "").trim();
-  return configured || DEFAULT_OVERLAY_SHORTCUT;
+  // An old default may have been persisted by the settings screen. Treat it
+  // as a default during the upgrade; any other custom accelerator is kept.
+  return !configured || configured === LEGACY_OVERLAY_SHORTCUT
+    ? DEFAULT_OVERLAY_SHORTCUT
+    : configured;
 }
 
 /**

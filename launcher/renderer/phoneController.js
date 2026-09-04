@@ -34,9 +34,29 @@ function firstNonEmptyList(...candidates) {
  * by the parent game — pass `detail.gameSlug` or the game slug as `slug`.
  */
 export async function gameSupportsController(detail, slug) {
+  // Prefer parent game slug: edition slugs like `rvgl-online` are not in the
+  // controller config map and would falsely skip the Play prompt.
+  const gameSlug = detail?.gameSlug || slug || detail?.slug;
+  const clean = gameSlug ? String(gameSlug).toLowerCase().replace(/^custom-/, "") : "";
+
+  // 1. Controller configuration profile or native runner exists for this title
+  if (clean) {
+    try {
+      const support = await window.playbound.getControllerSupport?.(clean);
+      if (support && (support.kind === "native" || support.kind === "config" || support.kind === "unwritable")) {
+        return true;
+      }
+      if (support?.kind === "unsupported") return false;
+    } catch {
+      /* ignore */
+    }
+  }
+
+  // 2. Explicit true on edition or game
+  if (detail?.hasControllerSupport === true) return true;
+
+  // 3. Features / tags indicating controller support
   if (detail) {
-    if (detail.hasControllerSupport === true) return true;
-    if (detail.hasControllerSupport === false) return false;
     const features = firstNonEmptyList(detail.features, detail.gameFeatures);
     const tags = firstNonEmptyList(detail.tags, detail.gameTags);
     const hay = [
@@ -52,22 +72,9 @@ export async function gameSupportsController(detail, slug) {
       if (/\b(no controller|controller not supported|unsupported)\b/.test(hay)) return false;
       if (/\b(controller|gamepad|joystick|flightstick|hotas|wheel|marathon|alephone|aleph one)\b/.test(hay)) return true;
     }
+    if (detail.hasControllerSupport === false) return false;
   }
-  // Prefer parent game slug: edition slugs like `rvgl-online` are not in the
-  // controller config map and would falsely skip the Play prompt.
-  const gameSlug = detail?.gameSlug || slug || detail?.slug;
-  if (gameSlug) {
-    try {
-      const clean = String(gameSlug).toLowerCase().replace(/^custom-/, "");
-      const support = await window.playbound.getControllerSupport?.(clean);
-      if (support?.kind === "unsupported") return false;
-      if (support && (support.kind === "native" || support.kind === "config" || support.kind === "unwritable")) {
-        return true;
-      }
-    } catch {
-      /* ignore */
-    }
-  }
+
   return false;
 }
 

@@ -23,6 +23,7 @@ import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { isGameCompatible } from "@/lib/compatibility/compatibility";
 import { shouldOfferLauncher, resolveMobileOutbound, parseMobileOs } from "@/lib/mobilePlay";
 import { MobileOutboundCta } from "@/components/MobileOutboundCta";
+import { hasServerBrowser } from "@/lib/multiplayer/support";
 import { cn } from "@/lib/utils";
 
 /**
@@ -343,10 +344,12 @@ function DesktopInstalledActions({
   slug,
   editionSlug,
   title,
+  hasServerBrowser,
 }: {
   slug: string;
   editionSlug?: string | null;
   title: string;
+  hasServerBrowser?: boolean;
 }) {
   const [hidden, setHidden] = useState(false);
   const chip =
@@ -362,7 +365,9 @@ function DesktopInstalledActions({
       >
         <Play className="size-3 fill-current" /> Play
       </a>
-      <JoinMultiplayerButton slug={slug} title={title} className={chip} />
+      {hasServerBrowser ? (
+        <JoinMultiplayerButton slug={slug} title={title} className={chip} />
+      ) : null}
       <a
         href={launcherOpenFolderUrl(slug)}
         className={cn(chip, "bg-secondary text-secondary-foreground hover:bg-secondary/70")}
@@ -715,6 +720,7 @@ function DesktopLibraryRow({
                 slug={game.slug}
                 editionSlug={editions[0]?.slug}
                 title={game.title}
+                hasServerBrowser={hasServerBrowser(game)}
               />
             ) : ownedElsewhere && showLauncherActions ? (
               <div className="flex flex-wrap items-center gap-2">

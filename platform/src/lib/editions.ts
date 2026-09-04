@@ -402,6 +402,12 @@ function filterRetiredEditions(gameSlug: string, editions: Edition[]): Edition[]
     // edition. The unified 1.03 recipe now selects that package itself.
     return editions.filter((e) => e.slug !== "gemini-gold-unix");
   }
+  if (gameSlug === "wolfenstein-enemy-territory") {
+    // Steam edition is archived and unlisted. Suppress from public/launcher catalogs.
+    return editions.filter(
+      (e) => e.slug !== "steam" || (e.status === "active" && e.visibility === "public")
+    );
+  }
   return editions;
 }
 

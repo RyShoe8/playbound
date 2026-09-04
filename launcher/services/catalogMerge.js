@@ -14,13 +14,27 @@
  * So membership comes from one source, and the others only fill in fields.
  */
 
+function filterRetiredEditionsFromEntry(entry) {
+  if (!entry || !Array.isArray(entry.editions)) return entry;
+  const filtered = entry.editions.filter((ed) => {
+    if (!ed || !ed.slug) return false;
+    if (entry.slug === "privateer-gemini-gold" && ed.slug === "gemini-gold-unix") return false;
+    if (entry.slug === "wolfenstein-enemy-territory" && ed.slug === "steam") return false;
+    if (entry.slug === "wipeout-rewrite" && ed.slug === "phantom-edition") return false;
+    if (ed.status === "archived" || ed.visibility === "unlisted" || ed.visibility === "hidden") return false;
+    return true;
+  });
+  return { ...entry, editions: filtered };
+}
+
 /** Field-level merge for one slug: bundled < cached < authoritative. */
 function enrich(entry, bundledBySlug, cachedBySlug) {
-  return {
+  const merged = {
     ...(bundledBySlug.get(entry.slug) || {}),
     ...(cachedBySlug.get(entry.slug) || {}),
     ...entry,
   };
+  return filterRetiredEditionsFromEntry(merged);
 }
 
 function indexBySlug(list) {
@@ -64,10 +78,14 @@ function reconcileCatalog({ remote, cached, bundled }) {
 function startupCatalog({ cached, bundled }) {
   const cachedList = (Array.isArray(cached) ? cached : []).filter((e) => e?.slug);
   if (cachedList.length === 0) {
-    return (Array.isArray(bundled) ? bundled : []).filter((e) => e?.slug).map((e) => ({ ...e }));
+    return (Array.isArray(bundled) ? bundled : [])
+      .filter((e) => e?.slug)
+      .map((e) => filterRetiredEditionsFromEntry({ ...e }));
   }
   const bundledBySlug = indexBySlug(bundled);
-  return cachedList.map((entry) => ({ ...(bundledBySlug.get(entry.slug) || {}), ...entry }));
+  return cachedList.map((entry) =>
+    filterRetiredEditionsFromEntry({ ...(bundledBySlug.get(entry.slug) || {}), ...entry })
+  );
 }
 
 module.exports = { reconcileCatalog, startupCatalog };

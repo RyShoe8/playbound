@@ -1937,7 +1937,6 @@ const SLUG_ALIASES: Record<string, string> = {
   "revolt": "re-volt-rvgl",
   "rvgl": "re-volt-rvgl",
   "uqm": "the-ur-quan-masters",
-  "wolfenstein": "wolfenstein-enemy-territory",
 };
 
 /** Returns the client CLI connect template arguments, null for in-game menu join, or undefined if unknown. */
