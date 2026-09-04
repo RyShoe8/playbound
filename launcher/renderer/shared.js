@@ -173,70 +173,11 @@ export const CACHE_TTL = {
   catalogLiveStats: 15 * 60_000,
 };
 
-/** @type {Map<string, { at: number, data?: any, inflight?: Promise<any> | null }>} */
-const ipcCache = new Map();
-
-/**
- * Bumped by every invalidation.
- *
- * Deleting a key does not stop a request that is already in the air, and that
- * request still writes its result when it lands. After an install that meant
- * the pre-install payload — the one that says the game is not installed — could
- * drop back into the cache *after* the invalidation, and the next read would
- * treat it as fresh. The visible symptom was the hero button staying on
- * "Install Game" after the status area already said the install had finished.
- *
- * A request remembers the epoch it started in and declines to cache its result
- * if the world has moved on since.
+/*
+ * Request memoisation lives in cache.js. Re-exported here because every
+ * view already reaches for it through shared.js.
  */
-let cacheEpoch = 0;
-
-export function cachePeek(key, ttlMs) {
-  const hit = ipcCache.get(key);
-  if (!hit || hit.data === undefined) return null;
-  return { data: hit.data, fresh: Date.now() - hit.at <= ttlMs };
-}
-
-export function cachePut(key, data) {
-  ipcCache.set(key, { at: Date.now(), data, inflight: null });
-  return data;
-}
-
-export function cacheInvalidate(prefix = "") {
-  cacheEpoch++;
-  if (!prefix) {
-    ipcCache.clear();
-    return;
-  }
-  for (const key of [...ipcCache.keys()]) {
-    if (key === prefix || key.startsWith(`${prefix}:`)) ipcCache.delete(key);
-  }
-}
-
-export async function cacheInvoke(key, ttlMs, fn) {
-  const peek = cachePeek(key, ttlMs);
-  if (peek?.fresh) return peek.data;
-  const hit = ipcCache.get(key);
-  if (hit?.inflight) {
-    return hit.data !== undefined ? hit.data : hit.inflight;
-  }
-  const startedAt = cacheEpoch;
-  const inflight = Promise.resolve()
-    .then(fn)
-    .then((data) => {
-      // Invalidated while this was in the air — hand the caller the answer it
-      // asked for, but do not let it become the cached truth.
-      if (cacheEpoch !== startedAt) return data;
-      return cachePut(key, data);
-    })
-    .finally(() => {
-      const cur = ipcCache.get(key);
-      if (cur) cur.inflight = null;
-    });
-  ipcCache.set(key, { at: hit?.at || 0, data: hit?.data, inflight });
-  if (hit?.data !== undefined) return hit.data;
-  return inflight;
-}
+export { cacheInvalidate, cacheInvoke, cachePeek, cachePut } from "./cache.js";
 
 export function prefetchGameDetail(slug) {
   if (!slug || !window.playbound?.getGameDetail) return;
