@@ -178,6 +178,17 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     kind: "direct-zip",
     url: "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher-packages/games/meteorite/meteorite-win.zip",
     fileName: "meteorite-win.zip",
+    /*
+     * The mac and Linux builds, picked by resolveDownload from process.platform.
+     * checksumMd5 stays the Windows one — it is a single field and the launcher
+     * only ships for Windows today; a mac client verifying a Windows digest
+     * would reject a good download, so the digest travels with the platform it
+     * was taken from.
+     */
+    urlMac:
+      "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher-packages/games/meteorite/meteorite-mac.zip",
+    urlLinux:
+      "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher-packages/games/meteorite/meteorite-linux.zip",
     versionLabel: "1.0.1",
     checksumMd5: "13fc2856905a4a616d6b6669ff4e199c",
     exeHint: "Meteorite",
