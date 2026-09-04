@@ -39,6 +39,21 @@ test("a browser game is named as one, with what to do instead", () => {
   assert.ok(msg.includes(URL), "the page must be named");
 });
 
+test("a name-your-own-price game is not reported as a purchase", () => {
+  /*
+   * The regression this exists for. Meteorite is free — its data.json says
+   * price "$0.00" and the button reads "Download Now" — but the page carries
+   * the same buy_btn markup a paid game does, and the checker told the
+   * operator to catalog it as something the player buys.
+   */
+  const html = `<div class="buy_row"><a class="button buy_btn">Download Now</a></div>
+                <div>Name your own price</div>`;
+  const msg = reason(html, URL);
+  assert.match(msg, /free but name-your-own-price/i);
+  assert.doesNotMatch(msg, /sells the game/i);
+  assert.match(msg, /No thanks/i, "the operator needs the exact step the player takes");
+});
+
 test("a paid game says the download is not free rather than missing", () => {
   const msg = reason(`<div class="buy_row"><a class="buy_btn">Buy Now</a></div>`, URL);
   assert.match(msg, /sells the game/i);
