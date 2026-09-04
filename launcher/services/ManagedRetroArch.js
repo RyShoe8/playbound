@@ -4,17 +4,43 @@ const fsp = require("fs/promises");
 const path = require("path");
 
 const RETROARCH_VERSION = "1.19.1";
-const RETROARCH_URL =
-  `https://buildbot.libretro.com/stable/${RETROARCH_VERSION}/windows/x86_64/RetroArch.7z`;
-const CORE_URLS = {
-  mrboom: "https://buildbot.libretro.com/nightly/windows/x86_64/latest/mrboom_libretro.dll.zip",
-  puae: "https://buildbot.libretro.com/nightly/windows/x86_64/latest/puae_libretro.dll.zip",
-  gambatte: "https://buildbot.libretro.com/nightly/windows/x86_64/latest/gambatte_libretro.dll.zip",
-  sameboy: "https://buildbot.libretro.com/nightly/windows/x86_64/latest/sameboy_libretro.dll.zip",
-  mgba: "https://buildbot.libretro.com/nightly/windows/x86_64/latest/mgba_libretro.dll.zip",
-  snes9x: "https://buildbot.libretro.com/nightly/windows/x86_64/latest/snes9x_libretro.dll.zip",
-  genesis_plus_gx: "https://buildbot.libretro.com/nightly/windows/x86_64/latest/genesis_plus_gx_libretro.dll.zip",
-};
+
+/**
+ * libretro's build path and core suffix for this platform.
+ *
+ * Everything here was hardcoded to windows/x86_64 and .dll, so a Mac or Linux
+ * player got a Windows RetroArch and Windows cores — silently, since nothing
+ * checked. Every DOS-style ROM install and mrboom's RetroArch edition depend
+ * on this, and libretro publish all three platforms under the same layout.
+ */
+const CORES = ["mrboom", "puae", "gambatte", "sameboy", "mgba", "snes9x", "genesis_plus_gx"];
+
+function retroPlatform(platform = process.platform) {
+  if (platform === "darwin") return { path: "apple/osx/x86_64", coreExt: "dylib" };
+  if (platform === "linux") return { path: "linux/x86_64", coreExt: "so" };
+  return { path: "windows/x86_64", coreExt: "dll" };
+}
+
+/** RetroArch itself. macOS ships a disk image; the others ship a 7z. */
+function retroArchUrl(platform = process.platform) {
+  const { path: p } = retroPlatform(platform);
+  const file = platform === "darwin" ? "RetroArch.dmg" : "RetroArch.7z";
+  return `https://buildbot.libretro.com/stable/${RETROARCH_VERSION}/${p}/${file}`;
+}
+
+function coreUrl(core, platform = process.platform) {
+  if (!CORES.includes(core)) return null;
+  const { path: p, coreExt } = retroPlatform(platform);
+  return `https://buildbot.libretro.com/nightly/${p}/latest/${core}_libretro.${coreExt}.zip`;
+}
+
+/*
+ * Kept as an object because callers and tests read it as a map of every
+ * supported core, and now resolved for the running platform rather than fixed
+ * to Windows.
+ */
+const CORE_URLS = Object.fromEntries(CORES.map((c) => [c, coreUrl(c)]));
+const RETROARCH_URL = retroArchUrl();
 
 function coreForExtension(ext) {
   const clean = String(ext || "").toLowerCase().replace(/^\./, "");
@@ -29,17 +55,37 @@ function managedRetroArchRoot(userDataPath) {
   return path.join(userDataPath, "runtimes", "retroarch");
 }
 
-function runtimeBinary(root) {
-  const current = path.join(root, "current");
-  const direct = path.join(current, "retroarch.exe");
-  if (fs.existsSync(direct)) return direct;
-  const wrapped = path.join(current, "RetroArch-Win64", "retroarch.exe");
-  return fs.existsSync(wrapped) ? wrapped : direct;
+/** Where each platform's package leaves the executable. */
+function runtimeBinaryCandidates(current, platform = process.platform) {
+  if (platform === "darwin") {
+    return [
+      path.join(current, "RetroArch.app", "Contents", "MacOS", "RetroArch"),
+      path.join(current, "RetroArch"),
+    ];
+  }
+  if (platform === "linux") {
+    return [path.join(current, "RetroArch"), path.join(current, "retroarch")];
+  }
+  return [
+    path.join(current, "retroarch.exe"),
+    path.join(current, "RetroArch-Win64", "retroarch.exe"),
+  ];
 }
 
-function coreBinary(root, core) {
-  if (!Object.prototype.hasOwnProperty.call(CORE_URLS, core)) return null;
-  return path.join(path.dirname(runtimeBinary(root)), "cores", `${core}_libretro.dll`);
+function runtimeBinary(root, platform = process.platform) {
+  const current = path.join(root, "current");
+  const candidates = runtimeBinaryCandidates(current, platform);
+  return candidates.find((c) => fs.existsSync(c)) || candidates[0];
+}
+
+function coreBinary(root, core, platform = process.platform) {
+  if (!CORES.includes(core)) return null;
+  const { coreExt } = retroPlatform(platform);
+  return path.join(
+    path.dirname(runtimeBinary(root, platform)),
+    "cores",
+    `${core}_libretro.${coreExt}`
+  );
 }
 
 function createManagedRetroArch({ userDataPath, downloadTo, extractArchive, onProgress }) {
@@ -52,7 +98,13 @@ function createManagedRetroArch({ userDataPath, downloadTo, extractArchive, onPr
     if (fs.existsSync(binary)) return { ok: true, binary, shared: true, alreadyPresent: true };
     if (runtimeJob) return runtimeJob;
     runtimeJob = (async () => {
-      const temp = path.join(root, ".downloads", `RetroArch-${RETROARCH_VERSION}.7z`);
+      /*
+       * Named from the URL, not fixed to .7z: extractArchive dispatches on the
+       * extension, and macOS serves a .dmg. A disk image saved as RetroArch.7z
+       * would be handed to the 7z branch and fail.
+       */
+      const ext = RETROARCH_URL.toLowerCase().endsWith(".dmg") ? "dmg" : "7z";
+      const temp = path.join(root, ".downloads", `RetroArch-${RETROARCH_VERSION}.${ext}`);
       try {
         onProgress?.({ phase: "retroarch", message: "Installing shared RetroArch runtime…" });
         await fsp.mkdir(path.dirname(temp), { recursive: true });
@@ -61,7 +113,9 @@ function createManagedRetroArch({ userDataPath, downloadTo, extractArchive, onPr
         await fsp.mkdir(current, { recursive: true });
         await extractArchive(temp, current);
         binary = runtimeBinary(root);
-        if (!fs.existsSync(binary)) throw new Error("RetroArch installed but retroarch.exe was not found");
+        if (!fs.existsSync(binary)) {
+          throw new Error(`RetroArch installed but its executable was not found at ${binary}`);
+        }
         return { ok: true, binary, shared: true };
       } catch (error) {
         return { ok: false, error: error?.message || String(error) };
@@ -83,7 +137,8 @@ function createManagedRetroArch({ userDataPath, downloadTo, extractArchive, onPr
       const runtime = await ensureRuntime();
       if (!runtime.ok) return runtime;
       target = coreBinary(root, core);
-      const temp = path.join(root, ".downloads", `${core}_libretro.dll.zip`);
+      const { coreExt } = retroPlatform();
+      const temp = path.join(root, ".downloads", `${core}_libretro.${coreExt}.zip`);
       try {
         onProgress?.({ phase: "retroarch", message: `Installing ${core.toUpperCase()} core…` });
         await fsp.mkdir(path.dirname(temp), { recursive: true });
@@ -106,4 +161,18 @@ function createManagedRetroArch({ userDataPath, downloadTo, extractArchive, onPr
   return { root: () => root, runtimeBinary: () => runtimeBinary(root), coreBinary: (core) => coreBinary(root, core), ensureRuntime, ensureCore };
 }
 
-module.exports = { CORE_URLS, RETROARCH_URL, RETROARCH_VERSION, coreBinary, coreForExtension, createManagedRetroArch, managedRetroArchRoot, runtimeBinary };
+module.exports = {
+  CORES,
+  CORE_URLS,
+  RETROARCH_URL,
+  RETROARCH_VERSION,
+  coreBinary,
+  coreForExtension,
+  coreUrl,
+  createManagedRetroArch,
+  managedRetroArchRoot,
+  retroArchUrl,
+  retroPlatform,
+  runtimeBinary,
+  runtimeBinaryCandidates,
+};
