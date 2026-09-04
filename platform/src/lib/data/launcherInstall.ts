@@ -350,6 +350,22 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     enabled: true,
     kind: "direct-installer",
     url: "https://releases.wildfiregames.com/0ad-0.28.0-win64.exe",
+    /*
+     * Without this a Mac cannot install 0 A.D. at all: resolveDownload refuses
+     * a direct-installer whose only URL ends in .exe rather than handing it to
+     * Wine, so the install throws instead of running.
+     *
+     * Apple Silicon, because that is what a Mac bought since 2020 is. Wildfire
+     * ship a second build at 0ad-0.28.0-macos-x86_64.dmg for Intel and urlMac
+     * is a single field, so an Intel Mac gets a slice it cannot run — worth an
+     * arch-aware field before the Mac launcher ships.
+     *
+     * No urlLinux: the only Linux artifacts upstream are unix-build and
+     * unix-data source tarballs, which need compiling. Linux keeps the Windows
+     * installer and the Wine runner, which is a working path where a source
+     * tarball is not.
+     */
+    urlMac: "https://releases.wildfiregames.com/0ad-0.28.0-macos-aarch64.dmg",
     fileName: "0ad-0.28.0-win64.exe",
     versionLabel: "0.28.0",
     exeHint: "pyrogenesis",
@@ -869,6 +885,8 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     enabled: true,
     kind: "direct-installer",
     url: "https://live.albiononline.com/clients/latest/albion-online-setup.exe",
+    // Same path, .pkg rather than .dmg — Albion ship a Mac installer package.
+    urlMac: "https://live.albiononline.com/clients/latest/albion-online-setup.pkg",
     fileName: "albion-online-setup.exe",
     exeHint: "Albion.?Online",
     registryTitles: ["Albion Online"],
@@ -948,6 +966,9 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     enabled: true,
     kind: "direct-installer",
     url: "https://www.runescape.com/downloads/oldschool.msi",
+    // Jagex ship a Mac client; without it the .msi trips resolveDownload's
+    // refusal and a Mac cannot install at all.
+    urlMac: "https://www.runescape.com/downloads/oldschool.dmg",
     fileName: "OldSchool.msi",
     exeHint: "OldSchool|JagexLauncher",
     registryTitles: ["Old School RuneScape", "Jagex Launcher"],
