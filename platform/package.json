@@ -37,6 +37,7 @@
     "fill:controls-batch-2": "tsx scripts/fill-game-controls-batch-2.ts",
     "fill:controls-batch-3": "tsx scripts/fill-game-controls-batch-3.ts",
     "fill:controls-batch-4": "tsx scripts/fill-game-controls-batch-4.ts",
+    "fill:controls-batch-5": "tsx scripts/fill-game-controls-batch-5.ts",
     "migrate:discussions": "tsx scripts/migrate-discussion-posts.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
