@@ -89,3 +89,59 @@ test("the default deadline stays within what a person will wait", () => {
   assert.ok(ms >= 3000, `${ms}ms is too tight — a slow connection would fail normal use`);
   assert.ok(ms <= 15000, `${ms}ms is longer than a page load should ever block`);
 });
+
+/* --- the whole-surface rule, not just the home page --- */
+
+/** Every ipcMain handler body, brace-matched. */
+function allHandlers() {
+  const out = [];
+  const re = /ipcMain\.handle\("([^"]+)"/g;
+  let m;
+  while ((m = re.exec(MAIN))) {
+    let i = MAIN.indexOf("{", MAIN.indexOf("(", m.index));
+    let d = 0;
+    for (; i < MAIN.length; i += 1) {
+      if (MAIN[i] === "{") d += 1;
+      else if (MAIN[i] === "}") {
+        d -= 1;
+        if (d === 0) break;
+      }
+    }
+    out.push({ name: m[1], body: MAIN.slice(m.index, i + 1) });
+  }
+  return out;
+}
+
+test("no IPC handler can reach our API without a deadline", () => {
+  /*
+   * The rule the home-page bug was a symptom of. Node's fetch has no response
+   * deadline, so any bare call to our own API can hang a view that awaits it —
+   * which is how the home page and, before apiFetch existed, the game page
+   * both ended up stuck.
+   *
+   * 38 handlers were in this state; converting them left zero. A call that
+   * genuinely wants its own deadline passes a signal, and apiFetch yields to
+   * it, so that stays allowed.
+   */
+  const offenders = [];
+  for (const h of allHandlers()) {
+    // Only calls to our own API — a third-party host is a different question.
+    const bare = /(?<![.\w])fetch\(\s*\n?\s*`\$\{getApiBase\(\)\}/.test(h.body);
+    if (bare && !/AbortSignal\.timeout\(/.test(h.body)) offenders.push(h.name);
+  }
+  assert.deepEqual(
+    offenders,
+    [],
+    "these reach our API with no deadline — use apiFetch, or pass a signal"
+  );
+});
+
+test("apiFetch is actually the common path, not a rarity", () => {
+  /*
+   * It existed for 7 of 79 call sites while the bug it was written for stayed
+   * live everywhere else. If this ratio collapses again, the same class of
+   * hang is back.
+   */
+  const apiCalls = (MAIN.match(/apiFetch\(/g) || []).length;
+  assert.ok(apiCalls >= 40, `only ${apiCalls} apiFetch call sites — bare fetch is creeping back`);
+});
