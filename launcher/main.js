@@ -155,24 +155,56 @@ const { loadSettings, saveSettings, gamesRoot, getApiBase } = createSettings({
 
 const { parseDeepLink, extractLinkHandoff } = createDeepLinks(PROTOCOL);
 
-function loadCachedCatalog() {
+/**
+ * Cache format version.
+ *
+ * Bumped when a cache written by an older launcher can no longer be trusted to
+ * say which games exist. Version 2 is the first written by a build that
+ * reconciles against the live feed instead of unioning every list it has seen.
+ */
+const CATALOG_CACHE_VERSION = 2;
+
+/**
+ * The cached catalog, and whether it is trustworthy about membership.
+ *
+ * A bare array is a version 1 cache. Those were written by the union logic
+ * that reconcileCatalog replaced, so they accumulated every slug the launcher
+ * had ever seen and never dropped one: a real cache on disk holds 159 games
+ * where the live feed serves 92. Believing it means showing 67 games that no
+ * longer exist, each of which fails its detail and hardware lookups with
+ * "Game not found" — the site is fine, only the launcher shows them.
+ *
+ * A stale cache is still useful for filling in fields, so it is not discarded;
+ * it just does not get to decide which games exist until a refresh replaces it.
+ */
+function loadCachedCatalogFile() {
   try {
-    if (fs.existsSync(CATALOG_CACHE_FILE)) {
-      const data = JSON.parse(fs.readFileSync(CATALOG_CACHE_FILE, "utf-8"));
-      if (Array.isArray(data) && data.length > 0) {
-        return data;
-      }
+    if (!fs.existsSync(CATALOG_CACHE_FILE)) return { games: null, trusted: false };
+    const data = JSON.parse(fs.readFileSync(CATALOG_CACHE_FILE, "utf-8"));
+    if (Array.isArray(data)) {
+      return { games: data.length > 0 ? data : null, trusted: false };
+    }
+    if (data && Array.isArray(data.games) && data.games.length > 0) {
+      return { games: data.games, trusted: data.version === CATALOG_CACHE_VERSION };
     }
   } catch (err) {
     console.warn("[catalog-cache] Failed to read cached catalog:", err?.message || err);
   }
-  return null;
+  return { games: null, trusted: false };
+}
+
+function loadCachedCatalog() {
+  return loadCachedCatalogFile().games;
 }
 
 function saveCatalogCache(entries) {
   try {
     if (Array.isArray(entries) && entries.length > 0) {
-      fs.writeFileSync(CATALOG_CACHE_FILE, JSON.stringify(entries, null, 2), "utf-8");
+      fs.writeFileSync(
+        CATALOG_CACHE_FILE,
+        JSON.stringify({ version: CATALOG_CACHE_VERSION, games: entries }, null, 2),
+        "utf-8"
+      );
     }
   } catch (err) {
     console.warn("[catalog-cache] Failed to write cached catalog:", err?.message || err);
@@ -181,7 +213,8 @@ function saveCatalogCache(entries) {
 
 /** Mutable catalog: bundled fallback, overlaid with cached/remote entries from the site API. */
 let catalog = (() => {
-  const games = startupCatalog({ cached: loadCachedCatalog(), bundled: bundledCatalog });
+  const { games: cached, trusted } = loadCachedCatalogFile();
+  const games = startupCatalog({ cached, bundled: bundledCatalog, cachedIsTrusted: trusted });
   for (const entry of games) registerCatalogEntryHosts(entry);
   return games;
 })();

@@ -166,3 +166,75 @@ test("retired, archived, or unlisted editions are stripped from catalog games", 
     ["active"]
   );
 });
+
+/* --- a cache written before reconcileCatalog cannot decide membership --- */
+
+test("an untrusted cache fills in fields but adds no games", () => {
+  /*
+   * Version 1 caches were written by the union logic reconcileCatalog
+   * replaced, so they only ever grew. A real one holds 159 games where the
+   * feed serves 92 — and each of the 67 extras fails its detail and hardware
+   * lookups with "Game not found" in the launcher while the site is fine.
+   */
+  const bundled = [
+    { slug: "0ad", title: "0 A.D.", blurb: "stale blurb" },
+    { slug: "freedoom", title: "Freedoom" },
+  ];
+  const cached = [
+    { slug: "0ad", title: "0 A.D.", blurb: "fresher blurb" },
+    { slug: "freedoom", title: "Freedoom" },
+    { slug: "unpublished-game", title: "Gone" },
+  ];
+
+  const out = startupCatalog({ cached, bundled, cachedIsTrusted: false });
+  assert.deepStrictEqual(out.map((g) => g.slug).sort(), ["0ad", "freedoom"]);
+  assert.strictEqual(
+    out.find((g) => g.slug === "0ad").blurb,
+    "fresher blurb",
+    "the cache is still the freshest field data"
+  );
+});
+
+test("a trusted cache still decides membership", () => {
+  // The designed behaviour: a reconciled cache is closer to the feed than the
+  // build's own copy, so a game added since the build still appears offline.
+  const bundled = [{ slug: "0ad", title: "0 A.D." }];
+  const cached = [
+    { slug: "0ad", title: "0 A.D." },
+    { slug: "added-since-build", title: "New" },
+  ];
+  const out = startupCatalog({ cached, bundled, cachedIsTrusted: true });
+  assert.deepStrictEqual(out.map((g) => g.slug).sort(), ["0ad", "added-since-build"]);
+});
+
+test("trust defaults to true so existing callers are unchanged", () => {
+  const bundled = [{ slug: "a", title: "A" }];
+  const cached = [{ slug: "a", title: "A" }, { slug: "b", title: "B" }];
+  assert.strictEqual(startupCatalog({ cached, bundled }).length, 2);
+});
+
+test("an untrusted empty cache still falls back to bundled", () => {
+  const bundled = [{ slug: "a", title: "A" }];
+  assert.deepStrictEqual(
+    startupCatalog({ cached: [], bundled, cachedIsTrusted: false }).map((g) => g.slug),
+    ["a"]
+  );
+  assert.deepStrictEqual(
+    startupCatalog({ cached: null, bundled, cachedIsTrusted: false }).map((g) => g.slug),
+    ["a"]
+  );
+});
+
+test("one refresh clears the problem for good", () => {
+  // reconcileCatalog's output becomes the next cache, and that one is trusted.
+  const bundled = [{ slug: "0ad", title: "0 A.D." }];
+  const stale = [{ slug: "0ad", title: "0 A.D." }, { slug: "gone", title: "Gone" }];
+  const remote = [{ slug: "0ad", title: "0 A.D." }, { slug: "new-game", title: "New" }];
+
+  const { games, removed } = reconcileCatalog({ remote, cached: stale, bundled });
+  assert.deepStrictEqual(games.map((g) => g.slug).sort(), ["0ad", "new-game"]);
+  assert.ok(removed.includes("gone"), "the stale slug is reported removed");
+
+  const after = startupCatalog({ cached: games, bundled, cachedIsTrusted: true });
+  assert.deepStrictEqual(after.map((g) => g.slug).sort(), ["0ad", "new-game"]);
+});

@@ -75,14 +75,36 @@ function reconcileCatalog({ remote, cached, bundled }) {
  * truth than the build's own copy and decides membership when present. Only a
  * launcher that has never successfully refreshed falls back to bundled.
  */
-function startupCatalog({ cached, bundled }) {
+function startupCatalog({ cached, bundled, cachedIsTrusted = true }) {
   const cachedList = (Array.isArray(cached) ? cached : []).filter((e) => e?.slug);
+  const bundledList = (Array.isArray(bundled) ? bundled : []).filter((e) => e?.slug);
+  const bundledBySlug = indexBySlug(bundledList);
+
   if (cachedList.length === 0) {
-    return (Array.isArray(bundled) ? bundled : [])
-      .filter((e) => e?.slug)
-      .map((e) => filterRetiredEditionsFromEntry({ ...e }));
+    return bundledList.map((e) => filterRetiredEditionsFromEntry({ ...e }));
   }
-  const bundledBySlug = indexBySlug(bundled);
+
+  /*
+   * A cache from before reconcileCatalog cannot say which games exist.
+   *
+   * Those were written by the union logic this file replaced, so they only
+   * ever grew: a real one on disk lists 159 games where the live feed serves
+   * 92. Trusting it shows 67 games that were unpublished or renamed, each
+   * failing its detail and hardware lookups with "Game not found" — visible in
+   * the launcher only, since the site never had them.
+   *
+   * Its contents are still the freshest field data available, so it fills in
+   * the games the build knows about; it just does not add members. One
+   * successful refresh replaces it with a trusted cache and this stops
+   * applying.
+   */
+  if (!cachedIsTrusted) {
+    const cachedBySlug = indexBySlug(cachedList);
+    return bundledList.map((entry) =>
+      filterRetiredEditionsFromEntry({ ...entry, ...(cachedBySlug.get(entry.slug) || {}) })
+    );
+  }
+
   return cachedList.map((entry) =>
     filterRetiredEditionsFromEntry({ ...(bundledBySlug.get(entry.slug) || {}), ...entry })
   );

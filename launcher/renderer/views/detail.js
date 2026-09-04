@@ -584,14 +584,14 @@ async function renderGameDetailView(slug, opts = {}) {
   const genreChips = (detail.genres || [])
     .map((g) => `<span class="chip">${escapeHtml(g)}</span>`)
     .join("");
-  const shots = (detail.screenshots || [])
-    .slice(0, 8)
-    .map(
-      (src) =>
-        `<a class="shot-thumb" href="${escapeHtml(src)}" data-ext="${escapeHtml(src)}"><img src="${escapeHtml(src)}" alt="" loading="lazy" /></a>`
-    )
-    .join("");
-
+  /*
+   * No screenshot strip on the Overview tab.
+   *
+   * The Media tab already shows every screenshot and trailer, at a size worth
+   * looking at, so the eight-thumbnail row under System Requirements was the
+   * same content twice — and it sat at the bottom of the longest tab, where it
+   * read as the end of the page rather than a gallery.
+   */
 
   /*
    * Only editions gate the paint — the hero button depends on how many there
@@ -793,7 +793,6 @@ async function renderGameDetailView(slug, opts = {}) {
                 : ""
             }
 
-            ${shots ? `<section class="detail-section"><h2 class="detail-section-title">Screenshots</h2><div class="shot-row">${shots}</div></section>` : ""}
           </div>
 
           ${buildOverviewSidebarHtml(detail, slug, liveStats)}
