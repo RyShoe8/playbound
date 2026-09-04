@@ -2551,6 +2551,18 @@ function itchNoDownloadsReason(html, pageUrl) {
   if (/html_embed_widget|id=["']game_drop["']|class=["'][^"']*iframe_placeholder/i.test(html)) {
     return `That itch.io page is a browser game with no downloads${where}. Catalog it as browser-playable rather than a download.`;
   }
+  /*
+   * Name-your-own-price before paid, because an NYP page carries the same
+   * buy_btn markup and was being reported as selling the game. Meteorite is
+   * the case: its data.json says price "$0.00" and the button reads "Download
+   * Now", yet the checker told the operator to catalog a free game as a
+   * purchase. The files are free — they just sit behind itch's "no thanks,
+   * take me to the downloads" step, which needs a session and a CSRF token,
+   * so there is no upload id in the page for us to fetch.
+   */
+  if (/name your own price|pay what you want/i.test(html)) {
+    return `That itch.io page is free but name-your-own-price, so the files sit behind itch's payment step and we cannot fetch them${where}. Catalog it as external — the player clicks Download Now, then "No thanks, just take me to the downloads".`;
+  }
   if (/buy_row|class=["'][^"']*buy_btn|itemprop=["']price["']/i.test(html)) {
     return `That itch.io page sells the game, so there is no free download to fetch${where}. Catalog it as external and the player buys it on the page.`;
   }
