@@ -31,8 +31,8 @@ function loadSelector() {
   assert.ok(end > start, "could not bound the platform branch");
   const body = src.slice(start, end);
 
-  return (entry, platform) =>
-    new Function("entry", "process", `${body} return effectiveUrl;`)(entry, { platform });
+  return (entry, platform, arch = "x64") =>
+    new Function("entry", "process", `${body} return effectiveUrl;`)(entry, { platform, arch });
 }
 
 const pick = loadSelector();
@@ -70,6 +70,24 @@ test("an empty override is ignored, not treated as a URL", () => {
   const entry = { url: WIN, urlMac: "", urlLinux: null };
   assert.equal(pick(entry, "darwin"), WIN);
   assert.equal(pick(entry, "linux"), WIN);
+});
+
+test("an Intel Mac gets the Intel slice, Apple Silicon gets the default", () => {
+  /*
+   * 0 A.D. ships macos-aarch64.dmg and macos-x86_64.dmg. With one urlMac an
+   * Intel Mac was handed the aarch64 build and could not run it.
+   */
+  const entry = { url: WIN, urlMac: "https://cdn.example/x-aarch64.dmg", urlMacX64: "https://cdn.example/x-x86_64.dmg" };
+  assert.equal(pick(entry, "darwin", "arm64"), "https://cdn.example/x-aarch64.dmg");
+  assert.equal(pick(entry, "darwin", "x64"), "https://cdn.example/x-x86_64.dmg");
+  // Non-Mac platforms are untouched by the arch branch.
+  assert.equal(pick(entry, "win32", "x64"), WIN);
+});
+
+test("a recipe with only urlMac still serves every Mac, as before", () => {
+  const entry = { url: WIN, urlMac: MAC };
+  assert.equal(pick(entry, "darwin", "arm64"), MAC);
+  assert.equal(pick(entry, "darwin", "x64"), MAC);
 });
 
 test("Meteorite's shipped recipe resolves a distinct build per platform", () => {
