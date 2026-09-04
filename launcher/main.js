@@ -6823,7 +6823,25 @@ async function maybeConfigureOpenMw(gameDir) {
     if (!openMwConfig.isOpenMwInstall(gameDir, fs.existsSync)) return;
     const cfgPath = path.join(gameDir, "openmw.cfg");
     const cfg = await fsp.readFile(cfgPath, "utf8");
-    if (!openMwConfig.needsMorrowindData(cfg)) return;
+
+    /*
+     * Already pointed at Morrowind, but possibly by a build of this code that
+     * wrote data= and content= and no fallback-archive= lines. That install
+     * starts, loads the world, and renders every texture — menus included — as
+     * a pink placeholder, because the textures live in the BSAs and OpenMW
+     * only reads a BSA the config names. Repair it in place; the alternative
+     * is telling the player to reinstall or to go and run the TES3MP wizard.
+     */
+    if (!openMwConfig.needsMorrowindData(cfg)) {
+      for (const dir of openMwConfig.dataDirsIn(cfg)) {
+        const missing = openMwConfig.missingArchives(cfg, dir, fs.existsSync);
+        if (!missing.length) continue;
+        await fsp.writeFile(cfgPath, openMwConfig.withMorrowindArchives(cfg, missing));
+        console.log(`Registered Morrowind archives for ${path.basename(gameDir)}: ${missing.join(", ")}`);
+        return;
+      }
+      return;
+    }
 
     /*
      * Steam's own record first, then the usual GOG and retail shapes. Reusing
@@ -6849,8 +6867,14 @@ async function maybeConfigureOpenMw(gameDir) {
       return;
     }
 
-    await fsp.writeFile(cfgPath, openMwConfig.withMorrowindData(cfg, found.dataDir, found.masters));
-    console.log(`Pointed ${path.basename(gameDir)} at Morrowind data: ${found.dataDir}`);
+    await fsp.writeFile(
+      cfgPath,
+      openMwConfig.withMorrowindData(cfg, found.dataDir, found.masters, found.archives)
+    );
+    console.log(
+      `Pointed ${path.basename(gameDir)} at Morrowind data: ${found.dataDir}` +
+        ` (${found.masters.length} master(s), ${found.archives.length} archive(s))`
+    );
   } catch (err) {
     // Never fail the install over this — the engine is installed either way,
     // and a player with the data elsewhere can still point it at their copy.
@@ -7593,6 +7617,21 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     } catch (err) {
       console.warn("[openttd] client name setup skipped:", err?.message || err);
     }
+  }
+
+  /*
+   * OpenMW and TES3MP re-check their config on the way in, not just at
+   * install. Two reasons: a copy installed before this code knew about BSAs is
+   * sitting there with a pink main menu and would otherwise need a reinstall
+   * to fix, and a player who moved or reinstalled Morrowind gets picked up on
+   * the next launch instead of being sent to the wizard. It no-ops in a few
+   * filesystem checks when the config is already complete.
+   */
+  for (const dir of [info.dir, info.exe ? path.dirname(info.exe) : null]) {
+    if (!dir) continue;
+    if (!openMwConfig.isOpenMwInstall(dir, fs.existsSync)) continue;
+    await maybeConfigureOpenMw(dir);
+    break;
   }
 
   /*

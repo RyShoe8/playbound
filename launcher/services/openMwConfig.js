@@ -27,6 +27,22 @@ const path = require("path");
 const MORROWIND_MASTERS = ["Morrowind.esm", "Tribunal.esm", "Bloodmoon.esm"];
 
 /**
+ * The BSA archives, in the same order as the masters.
+ *
+ * `content=` alone gets the engine as far as loading the world, which is why
+ * missing these does not look like a config problem: the game starts. But
+ * every texture, mesh, font and UI element lives inside these archives, and
+ * OpenMW only reads a BSA that is named by a `fallback-archive=` line. Without
+ * them the engine substitutes its magenta placeholder for every texture it
+ * cannot find — including the menu backgrounds and button faces, so the main
+ * menu comes up as unreadable pink boxes.
+ *
+ * The community answer to this is "run the TES3MP wizard", which is really
+ * just a person doing what this file does.
+ */
+const MORROWIND_ARCHIVES = ["Morrowind.bsa", "Tribunal.bsa", "Bloodmoon.bsa"];
+
+/**
  * True when this install is an OpenMW-family engine.
  *
  * Keyed on the config file rather than a list of edition slugs, so OpenMW,
@@ -69,14 +85,65 @@ function mastersIn(dataDir, exists) {
  * to insert two entries would be a large edit to make a small change, and any
  * of the player's own settings would go with it.
  */
-function withMorrowindData(cfgText, dataDir, masters) {
+function withMorrowindData(cfgText, dataDir, masters, archives = []) {
   const body = String(cfgText || "").replace(/\s*$/, "");
   const lines = [
     "",
     "",
     "# Added by PlayBound: the licensed Morrowind data this engine needs.",
     `data="${dataDir}"`,
+    // Archives before content: without these the world loads and every
+    // texture, including the menus, renders as a pink placeholder.
+    ...archives.map((a) => `fallback-archive=${a}`),
     ...masters.map((m) => `content=${m}`),
+    "",
+  ];
+  return `${body}\n${lines.join("\n")}`;
+}
+
+/** The archives present in a Data Files directory, in load order. */
+function archivesIn(dataDir, exists) {
+  return MORROWIND_ARCHIVES.filter((name) => exists(path.join(dataDir, name)));
+}
+
+/**
+ * Data directories the config already names.
+ *
+ * Used by the repair path: an install configured before archives were written
+ * has a good `data=` line and needs only the `fallback-archive=` lines, so
+ * there is no reason to go looking for Morrowind on disk a second time.
+ */
+function dataDirsIn(cfgText) {
+  const out = [];
+  const re = /^\s*data\s*=\s*"?([^"\r\n]+?)"?\s*$/gm;
+  let m;
+  while ((m = re.exec(String(cfgText || "")))) out.push(m[1]);
+  return out;
+}
+
+/** Archives that exist on disk but are not yet named by the config. */
+function missingArchives(cfgText, dataDir, exists) {
+  const text = String(cfgText || "");
+  return archivesIn(dataDir, exists).filter(
+    (name) => !new RegExp(`^\\s*fallback-archive\\s*=\\s*${name}\\s*$`, "im").test(text)
+  );
+}
+
+/**
+ * The config with archive lines appended and nothing else touched.
+ *
+ * The repair for an install that PlayBound already pointed at Morrowind before
+ * this file knew about BSAs — the player has a working `data=` and `content=`
+ * and a pink main menu, and reinstalling to fix it would be a poor answer.
+ */
+function withMorrowindArchives(cfgText, archives) {
+  if (!archives.length) return String(cfgText || "");
+  const body = String(cfgText || "").replace(/\s*$/, "");
+  const lines = [
+    "",
+    "",
+    "# Added by PlayBound: Morrowind's texture and mesh archives.",
+    ...archives.map((a) => `fallback-archive=${a}`),
     "",
   ];
   return `${body}\n${lines.join("\n")}`;
@@ -112,17 +179,22 @@ function morrowindDataCandidates({ extra = [], programFiles = [], drives = [] } 
 function resolveMorrowindData(candidates, exists) {
   for (const dir of candidates) {
     const masters = mastersIn(dir, exists);
-    if (masters.length > 0) return { dataDir: dir, masters };
+    if (masters.length > 0) return { dataDir: dir, masters, archives: archivesIn(dir, exists) };
   }
   return null;
 }
 
 module.exports = {
   MORROWIND_MASTERS,
+  MORROWIND_ARCHIVES,
   isOpenMwInstall,
   needsMorrowindData,
   mastersIn,
+  archivesIn,
+  dataDirsIn,
+  missingArchives,
   withMorrowindData,
+  withMorrowindArchives,
   morrowindDataCandidates,
   resolveMorrowindData,
 };
