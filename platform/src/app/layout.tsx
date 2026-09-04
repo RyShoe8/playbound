@@ -96,10 +96,27 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const accessTiers = await gameAccessTiers();
+  /*
+   * suppressHydrationWarning on <html>: Vercel injects data-dpl-id onto this
+   * element in the HTML it serves. React never rendered that attribute, so
+   * hydration finds one it did not put there, strips it, and throws minified
+   * error #418 — whose argument is literally "HTML", naming this element. It
+   * fired on every page, because every page is prerendered and every response
+   * carries the attribute.
+   *
+   * Recoverable but not free: React discards the mismatched tree and rebuilds
+   * it on the client, on every page load.
+   *
+   * The flag covers this element's own attributes and text only, never its
+   * descendants, so a real mismatch anywhere inside the app still reports.
+   * That narrowness is why it is the right tool here rather than a blanket
+   * silencing.
+   */
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <head>
         {/* Impact.com partner verification. Uses value= per their spec, not the
