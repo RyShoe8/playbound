@@ -63,6 +63,7 @@ import { comparisonsFeaturing } from "@/lib/data/comparisons";
 import { alternativePages } from "@/lib/data/alternatives";
 import { classifyMediaUrl, heroMediaItems } from "@/lib/mediaEmbed";
 import { GameHeroMedia } from "@/components/GameHeroMedia";
+import { GameControlsContent } from "./GameControlsContent";
 import { HlsVideo } from "@/components/HlsVideo";
 import { deriveInstallSteps, deriveFaq } from "@/lib/enrich";
 import {
@@ -93,6 +94,7 @@ const tabs = [
   "discussion",
   "reviews",
   "media",
+  "controls",
 ] as const;
 type Tab = (typeof tabs)[number];
 
@@ -112,7 +114,13 @@ const PROMOTED_ROUTES = [
 ] as const;
 
 /** Tabs that remain as query params — low search value, app-like content. */
-const PARAM_TABS = tabs;
+const PARAM_TABS = tabs.filter((tab) => tab !== "controls");
+
+type GamePageProps = {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ tab?: string; category?: string; sort?: string; filter?: string; q?: string }>;
+  forcedTab?: Tab;
+};
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -140,19 +148,11 @@ async function safeQuery<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   }
 }
 
-export default async function GamePage({
+export async function GamePageFrame({
   params,
   searchParams,
-}: {
-  params: Promise<{ slug: string }>;
-  searchParams: Promise<{
-    tab?: string;
-    category?: string;
-    sort?: string;
-    filter?: string;
-    q?: string;
-  }>;
-}) {
+  forcedTab,
+}: GamePageProps) {
   const { slug } = await params;
   const sp = await searchParams;
   const { tab: rawTab } = sp;
@@ -174,7 +174,8 @@ export default async function GamePage({
     notFound();
   }
 
-  const tab: Tab = tabs.includes(rawTab as Tab) ? (rawTab as Tab) : "overview";
+  const tab: Tab = forcedTab ?? (tabs.includes(rawTab as Tab) ? (rawTab as Tab) : "overview");
+  if (tab === "controls" && !hasControls(game.controls)) notFound();
   // Trailers and screenshots for the hero reel — the same URLs the Media tab
   // renders, ordered videos-first. Empty for a game with no media, which is
   // what keeps the generated-art hero for those.
@@ -357,7 +358,7 @@ export default async function GamePage({
             key={r.key}
             href={r.href(game.slug)}
             data-tab={r.key}
-            className="border-b-2 border-transparent px-3 py-3 text-sm font-semibold whitespace-nowrap capitalize text-muted-foreground transition-colors hover:text-foreground"
+            className={cn("border-b-2 px-3 py-3 text-sm font-semibold whitespace-nowrap capitalize transition-colors", tab === r.key ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground")}
           >
             {r.label}
           </Link>
@@ -454,9 +455,14 @@ export default async function GamePage({
           </Suspense>
         )}
         {tab === "media" && <MediaTab game={game} />}
+        {tab === "controls" && <GameControlsContent game={game} />}
       </div>
     </div>
   );
+}
+
+export default function GamePage(props: GamePageProps) {
+  return <GamePageFrame {...props} />;
 }
 
 /* ────────────────────────── Tabs ────────────────────────── */
