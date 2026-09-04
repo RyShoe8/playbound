@@ -130,6 +130,30 @@ const optionalTrimmed = z
   .optional()
   .transform((v) => (!v ? null : v));
 
+/*
+ * Mongo returns an unset path as null, so a recipe read back from the admin
+ * API is not a recipe the admin API will accept: PATCH the document you were
+ * just given and `needsDotNetMajor: null` comes back as "expected number,
+ * received null". Every string field already tolerates null through
+ * optionalTrimmed above; these are the flags and the one number that did not,
+ * so anything doing a read-modify-write had to strip nulls first to get a save
+ * through.
+ *
+ * They normalise to exactly what toPayloadLauncherInstall emits — absent
+ * rather than null — so the round trip is a fixed point.
+ */
+const optionalFlag = z
+  .union([z.boolean(), z.null()])
+  .optional()
+  // Annotated: `v || undefined` otherwise infers `true | undefined`, and the
+  // admin form has to be able to pass `false` back when a box is unticked.
+  .transform((v): boolean | undefined => v || undefined);
+
+const optionalPositiveInt = z
+  .union([z.number().int().positive(), z.null()])
+  .optional()
+  .transform((v): number | undefined => v || undefined);
+
 export const launcherInstallSchema = z
   .object({
     enabled: z.boolean().default(true),
@@ -173,15 +197,19 @@ export const launcherInstallSchema = z
     detectedVersion: optionalTrimmed,
     versionCheckStatus: optionalTrimmed,
     versionCheckNote: optionalTrimmed,
-    autoUpdatePinned: z.boolean().optional().default(true),
+    // null and absent both mean "not pinned off", matching toPayloadLauncherInstall.
+    autoUpdatePinned: z
+      .union([z.boolean(), z.null()])
+      .optional()
+      .transform((v): boolean => v !== false),
     overlayUrl: optionalTrimmed,
     overlayFileName: optionalTrimmed,
     overlayDest: optionalTrimmed,
-    unwrapSingleRoot: z.boolean().optional(),
-    needsDosBox: z.boolean().optional(),
+    unwrapSingleRoot: optionalFlag,
+    needsDosBox: optionalFlag,
     /** Launch elevated. Curated per game — see launcherInstall.ts. */
-    needsAdmin: z.boolean().optional(),
-    needsDotNetMajor: z.number().int().positive().optional(),
+    needsAdmin: optionalFlag,
+    needsDotNetMajor: optionalPositiveInt,
   })
   .superRefine((val, ctx) => {
     if (!val.enabled) return;
