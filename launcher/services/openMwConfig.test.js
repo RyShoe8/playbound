@@ -17,7 +17,11 @@ const {
   isOpenMwInstall,
   needsMorrowindData,
   mastersIn,
+  archivesIn,
+  dataDirsIn,
+  missingArchives,
   withMorrowindData,
+  withMorrowindArchives,
   morrowindDataCandidates,
   resolveMorrowindData,
 } = require("./openMwConfig");
@@ -134,4 +138,126 @@ test("the real reported case: a GOG copy on another drive", () => {
   const candidates = morrowindDataCandidates({ drives: ["C:\\", "D:\\"] });
   const found = resolveMorrowindData(candidates, fakeExists(full));
   assert.equal(found.dataDir, DATA, "D:\\GOG\\Morrowind\\Data Files should be found by drive scan");
+});
+
+/*
+ * The pink-menu bug.
+ *
+ * data= and content= are enough for the engine to load the world, so the game
+ * starts and reaches the main menu — but every texture, mesh and font lives
+ * inside the BSAs, and OpenMW only reads a BSA the config names with a
+ * fallback-archive= line. Without them it draws its magenta placeholder for
+ * everything, so the menu is unreadable pink boxes over a working game.
+ */
+
+const GOG_DATA = "D:\Gog\Morrowind\Data Files";
+const GOG_FILES = new Set(
+  ["Morrowind.esm", "Tribunal.esm", "Bloodmoon.esm", "Morrowind.bsa", "Tribunal.bsa", "Bloodmoon.bsa"].map(
+    (f) => path.join(GOG_DATA, f)
+  )
+);
+const gogExists = (p) => GOG_FILES.has(p);
+
+test("a real GOTY install resolves its archives alongside its masters", () => {
+  const found = resolveMorrowindData([GOG_DATA], gogExists);
+  assert.deepEqual(found.masters, ["Morrowind.esm", "Tribunal.esm", "Bloodmoon.esm"]);
+  assert.deepEqual(found.archives, ["Morrowind.bsa", "Tribunal.bsa", "Bloodmoon.bsa"]);
+});
+
+test("a fresh write registers the archives, not just the masters", () => {
+  const found = resolveMorrowindData([GOG_DATA], gogExists);
+  const out = withMorrowindData("# stock\n", found.dataDir, found.masters, found.archives);
+  for (const bsa of ["Morrowind.bsa", "Tribunal.bsa", "Bloodmoon.bsa"]) {
+    assert.match(out, new RegExp(`^fallback-archive=${bsa}$`, "m"), `${bsa} not registered`);
+  }
+  // And the config it already produced is still there.
+  assert.match(out, /^data="D:\Gog\Morrowind\Data Files"$/m);
+  assert.match(out, /^content=Morrowind\.esm$/m);
+});
+
+test("archives are listed before content, in load order", () => {
+  const found = resolveMorrowindData([GOG_DATA], gogExists);
+  const out = withMorrowindData("", found.dataDir, found.masters, found.archives);
+  const at = (s) => out.indexOf(s);
+  assert.ok(at("fallback-archive=Morrowind.bsa") < at("fallback-archive=Tribunal.bsa"));
+  assert.ok(at("fallback-archive=Tribunal.bsa") < at("fallback-archive=Bloodmoon.bsa"));
+  assert.ok(at("fallback-archive=Bloodmoon.bsa") < at("content=Morrowind.esm"));
+});
+
+test("an install with only the base game registers only the base archive", () => {
+  const baseOnly = new Set([path.join(GOG_DATA, "Morrowind.esm"), path.join(GOG_DATA, "Morrowind.bsa")]);
+  const found = resolveMorrowindData([GOG_DATA], (p) => baseOnly.has(p));
+  assert.deepEqual(found.archives, ["Morrowind.bsa"]);
+  const out = withMorrowindData("", found.dataDir, found.masters, found.archives);
+  // Naming a BSA that is not on disk is itself an error at startup.
+  assert.doesNotMatch(out, /Tribunal\.bsa/);
+  assert.doesNotMatch(out, /Bloodmoon\.bsa/);
+});
+
+/* --- the repair path, for installs already configured without archives --- */
+
+const PINK = [
+  "# stock config",
+  'data="C:\Program Files\TES3MP\data"',
+  `data="${GOG_DATA}"`,
+  "content=Morrowind.esm",
+  "content=Tribunal.esm",
+  "content=Bloodmoon.esm",
+  "",
+].join("\n");
+
+test("the pink-menu config is recognised as already having content", () => {
+  // So the fresh-write path correctly declines it, and the repair path runs.
+  assert.equal(needsMorrowindData(PINK), false);
+});
+
+test("dataDirsIn finds the Morrowind directory among the engine's own", () => {
+  const dirs = dataDirsIn(PINK);
+  assert.equal(dirs.length, 2);
+  assert.ok(dirs.includes(GOG_DATA));
+});
+
+test("every archive is reported missing from the pink config", () => {
+  assert.deepEqual(missingArchives(PINK, GOG_DATA, gogExists), [
+    "Morrowind.bsa",
+    "Tribunal.bsa",
+    "Bloodmoon.bsa",
+  ]);
+});
+
+test("the engine's own data dirs contribute nothing to repair", () => {
+  // No BSAs live there, so it must not add lines for files that do not exist.
+  assert.deepEqual(missingArchives(PINK, "C:\Program Files\TES3MP\data", gogExists), []);
+});
+
+test("repair adds the archives and leaves everything else untouched", () => {
+  const missing = missingArchives(PINK, GOG_DATA, gogExists);
+  const fixed = withMorrowindArchives(PINK, missing);
+  for (const bsa of ["Morrowind.bsa", "Tribunal.bsa", "Bloodmoon.bsa"]) {
+    assert.match(fixed, new RegExp(`^fallback-archive=${bsa}$`, "m"));
+  }
+  for (const line of PINK.split("\n").filter(Boolean)) {
+    assert.ok(fixed.includes(line), `repair dropped: ${line}`);
+  }
+});
+
+test("repair is idempotent — a second pass adds nothing", () => {
+  const once = withMorrowindArchives(PINK, missingArchives(PINK, GOG_DATA, gogExists));
+  assert.deepEqual(missingArchives(once, GOG_DATA, gogExists), []);
+  assert.equal(withMorrowindArchives(once, []), once);
+});
+
+test("an already-correct config is left exactly as it was", () => {
+  const good = `${PINK}\nfallback-archive=Morrowind.bsa\nfallback-archive=Tribunal.bsa\nfallback-archive=Bloodmoon.bsa\n`;
+  assert.deepEqual(missingArchives(good, GOG_DATA, gogExists), []);
+});
+
+test("a partially repaired config gets only what it lacks", () => {
+  const half = `${PINK}\nfallback-archive=Morrowind.bsa\n`;
+  assert.deepEqual(missingArchives(half, GOG_DATA, gogExists), ["Tribunal.bsa", "Bloodmoon.bsa"]);
+});
+
+test("archive matching is not fooled by a similar line", () => {
+  const decoy = `${PINK}\n# fallback-archive=Morrowind.bsa is commented out\n`;
+  assert.ok(missingArchives(decoy, GOG_DATA, gogExists).includes("Morrowind.bsa"));
 });
