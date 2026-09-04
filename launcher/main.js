@@ -21,6 +21,7 @@ const { createTelemetry } = require("./telemetry");
 const Platform = require("./platform");
 const GameLauncher = require("./services/GameLauncher");
 const editionLifecycle = require("./services/editionLifecycle");
+const { duneLegacyHasPakData } = require("./services/duneLegacyData");
 const { createManagedJava } = require("./services/ManagedJava");
 const { createLocalServers } = require("./services/localServer");
 const { createTransferMeter } = require("./services/transferMeter");
@@ -1444,11 +1445,6 @@ function openAuthWindow(targetUrl) {
   }
 }
 
-/** @deprecated name kept for call sites — opens in-app auth window */
-function openAuthInBrowser() {
-  openAuthWindow();
-}
-
 async function handleSyncDeepLink() {
   showMainWindow();
   context = null;
@@ -1700,9 +1696,25 @@ function findJarInDir(dir) {
 }
 
 /** .exe, .jar, or a folder that contains a .jar — all count as Play-ready. */
+/**
+ * The exe an install record claims, but only if it is still on disk.
+ *
+ * `record.exe && fs.existsSync(record.exe)` was written out at seventeen call
+ * sites, in five spellings that differ only in how they handle a missing
+ * record. Returning the path rather than a boolean covers both uses: the
+ * predicate reads as a truthiness check, and the sites that went on to use the
+ * value stop repeating the property access.
+ *
+ * Deliberately not playableExePath below, which is a different question — that
+ * one falls back to a jar in the install directory, so a game with no exe can
+ * still be playable through it.
+ */
+function exeOnDisk(record) {
+  return record?.exe && fs.existsSync(record.exe) ? record.exe : null;
+}
+
 function playableExePath(info) {
-  if (info?.exe && fs.existsSync(info.exe)) return info.exe;
-  return findJarInDir(info?.dir) || null;
+  return exeOnDisk(info) || findJarInDir(info?.dir) || null;
 }
 
 function pickPrimaryEdition(game) {
@@ -1741,12 +1753,6 @@ function syncGameInstallSummary(game) {
   if (Array.isArray(primary.connectArgs)) game.connectArgs = primary.connectArgs;
   else delete game.connectArgs;
   return game;
-}
-
-function getEditionRecord(state, slug, editionSlug) {
-  const game = ensureGameInstallRecord(state[slug]);
-  const ed = editionSlug || game.editionSlug || DEFAULT_EDITION_SLUG;
-  return game.editions?.[ed] || null;
 }
 
 function editionInstallDir(slug, editionSlug) {
@@ -2193,7 +2199,7 @@ function listRecentlyPlayed() {
   const games = [];
   for (const [slug, data] of Object.entries(recent)) {
     const info = state[slug];
-    if (!info || !info.exe || !fs.existsSync(info.exe)) continue;
+    if (!exeOnDisk(info)) continue;
     const entry = catalog.find((e) => e.slug === slug);
     /*
      * Spread the whole catalog entry rather than hand-picking fields. The old
@@ -4704,7 +4710,7 @@ function resumePendingInstallerPoll() {
   for (const [slug, info] of Object.entries(state)) {
     if (slug === "__mods__") continue;
     if (!info || typeof info !== "object") continue;
-    if (info.exe && fs.existsSync(info.exe)) continue;
+    if (exeOnDisk(info)) continue;
     if (!info.pending) continue;
     const entry = catalog.find((e) => e.slug === slug);
     if (!entry) continue;
@@ -4809,7 +4815,7 @@ async function listLibraryScanCandidates() {
   for (const entry of catalog) {
     if (!entry?.slug) continue;
     const existing = installed[entry.slug];
-    if (existing?.exe && fs.existsSync(existing.exe)) continue;
+    if (exeOnDisk(existing)) continue;
     const known = findKnownPathOnly(entry) || findExeInSlugGamesDir(entry);
     if (known) {
       found.push({
@@ -4844,7 +4850,7 @@ function addScannedLibraryGames(slugs) {
     const entry = catalog.find((e) => e.slug === slug);
     if (!entry) continue;
     const existing = installed[slug];
-    if (existing?.exe && fs.existsSync(existing.exe)) continue;
+    if (exeOnDisk(existing)) continue;
     const known =
       findKnownPathOnly(entry) || findExeInSlugGamesDir(entry) || findKnownExecutable(entry);
     if (!known) continue;
@@ -4868,7 +4874,7 @@ async function scanKnownInstalls() {
   for (const entry of catalog) {
     if (!entry?.slug || !entry.knownExePaths?.length) continue;
     const existing = state[entry.slug];
-    if (existing?.exe && fs.existsSync(existing.exe)) continue;
+    if (exeOnDisk(existing)) continue;
     const known = findKnownPathOnly(entry) || findExeInSlugGamesDir(entry);
     if (known) {
       markInstalled(entry.slug, {
@@ -5044,7 +5050,7 @@ function modUsesUserDataFolder(baseGameSlug, installRelativePath) {
 function isBaseGameReady(baseGameSlug) {
   const state = loadState();
   const info = state[baseGameSlug];
-  return Boolean(info?.exe && fs.existsSync(info.exe));
+  return Boolean(exeOnDisk(info));
 }
 
 async function maybeResumePendingMod(justInstalledBaseSlug) {
@@ -5371,7 +5377,7 @@ function markPendingInstall(slug, version, editionExtra = {}) {
   const game = ensureGameInstallRecord(state[slug]);
   const ed = editionExtra.editionSlug || game.editionSlug || DEFAULT_EDITION_SLUG;
   const existing = game.editions[ed];
-  if (existing?.exe && fs.existsSync(existing.exe)) return existing;
+  if (exeOnDisk(existing)) return existing;
   const alreadyPending = Boolean(existing?.pending);
   game.editions[ed] = {
     ...(existing || {}),
@@ -5424,7 +5430,7 @@ function dismissPendingInstall(slug, editionSlug = null) {
   const game = ensureGameInstallRecord(state[slug]);
   const ed = editionSlug || game.editionSlug || DEFAULT_EDITION_SLUG;
   const info = game.editions[ed];
-  if (info?.pending && !(info.exe && fs.existsSync(info.exe))) {
+  if (info?.pending && !exeOnDisk(info)) {
     delete game.editions[ed];
   }
   if (Object.keys(game.editions).length === 0) {
@@ -7503,7 +7509,7 @@ async function playGameInner(slug, join = null, editionSlug = null) {
   if (info) {
     await maybeRepairWolfensteinEtInstall(slug, info, edSlug);
   }
-  if ((!info || !(info.exe && fs.existsSync(info.exe))) && game.exe && fs.existsSync(game.exe)) {
+  if (!exeOnDisk(info) && exeOnDisk(game)) {
     info = {
       exe: game.exe,
       dir: game.dir,
@@ -7513,16 +7519,16 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     };
     await maybeRepairWolfensteinEtInstall(slug, info, edSlug);
   }
-  if ((!info || !(info.exe && fs.existsSync(info.exe))) && game.editions) {
+  if (!exeOnDisk(info) && game.editions) {
     for (const [key, ed] of Object.entries(game.editions)) {
-      if (ed && ed.exe && fs.existsSync(ed.exe)) {
+      if (exeOnDisk(ed)) {
         info = { ...ed, editionSlug: key };
         await maybeRepairWolfensteinEtInstall(slug, info, key);
         break;
       }
     }
   }
-  if (!info || !info.exe || !fs.existsSync(info.exe)) {
+  if (!exeOnDisk(info)) {
     const message = editionSlug ? "That edition is not installed" : "Not installed";
     void telemetry.launchFailed({
       ...launchInfo(),
@@ -8849,7 +8855,7 @@ async function playMod(slug) {
   const info = mods[slug];
   if (!info || typeof info !== "object") throw new Error("Mod is not installed");
 
-  let exe = info.exe && fs.existsSync(info.exe) ? info.exe : null;
+  let exe = exeOnDisk(info);
   if (!exe && info.dir && fs.existsSync(info.dir)) {
     exe = findExecutable(info.dir, null);
     if (exe) {
@@ -8920,26 +8926,6 @@ async function confirmAndUninstallGame(slug, editionSlug = null) {
   return uninstallGame(slug, editionSlug || null);
 }
 
-async function confirmAndUninstallMod(slug) {
-  const state = loadState();
-  const mods = state.__mods__ && typeof state.__mods__ === "object" ? state.__mods__ : {};
-  const info = mods[slug];
-  if (!info) throw new Error("Mod is not installed");
-  const title = info.title || slug;
-  const { response } = await dialog.showMessageBox(win || undefined, {
-    type: "warning",
-    buttons: ["Remove", "Cancel"],
-    defaultId: 1,
-    cancelId: 1,
-    title: "Remove mod",
-    message: `Uninstall ${title}?`,
-    detail: "This removes the mod from this PC, including its PlayBound install folder.",
-  });
-  if (response !== 0) return { status: "cancelled" };
-  return uninstallMod(slug);
-}
-
-/** Web handoff already confirmed intent — uninstall without a second dialog. */
 /**
  * Ask before a deep link destroys anything.
  *
@@ -9002,6 +8988,7 @@ async function uninstallGameFromDeepLink(slug, editionSlug = null) {
   return result;
 }
 
+/** Web handoff already confirmed intent — uninstall without a second dialog. */
 async function uninstallModFromDeepLink(slug) {
   const state = loadState();
   const mods = state.__mods__ && typeof state.__mods__ === "object" ? state.__mods__ : {};
@@ -9526,7 +9513,7 @@ async function uninstallGame(slug, editionSlug = null) {
       return { status: "not-installed", editionSlug };
     }
     const info = game.editions[editionSlug];
-    if (info.pending && !(info.exe && fs.existsSync(info.exe))) {
+    if (info.pending && !exeOnDisk(info)) {
       delete game.editions[editionSlug];
     } else {
       if (info.dir) {
@@ -9684,7 +9671,7 @@ function resolveOpenCiv3InstallDir() {
   if (!game) return null;
   const edSlug = game.editionSlug || DEFAULT_EDITION_SLUG;
   const info = game.editions?.[edSlug] || null;
-  const exe = (info?.exe && fs.existsSync(info.exe) && info.exe) || (game.exe && fs.existsSync(game.exe) && game.exe) || null;
+  const exe = exeOnDisk(info) || exeOnDisk(game) || null;
   if (exe) return resolveGameDir(exe);
   const dir = info?.dir || game.dir;
   if (dir && fs.existsSync(dir)) return resolveGameDir(dir);
@@ -9754,7 +9741,7 @@ function sanitizeShortcutName(name) {
 async function createGameShortcut(slug) {
   const state = loadState();
   const info = state[slug];
-  if (!info?.exe || !fs.existsSync(info.exe)) {
+  if (!exeOnDisk(info)) {
     throw new Error("Not installed — no executable found");
   }
   const entry = catalog.find((e) => e.slug === slug);
@@ -11711,29 +11698,6 @@ function resolveGameDirForSlug(slug, editionSlug = null) {
   const exe = info?.exe || game.exe;
   if (info?.dir) return info.dir;
   return exe ? path.dirname(exe) : null;
-}
-
-/** True when Dune Legacy can find at least one required original PAK. */
-function duneLegacyHasPakData(exePath, dir) {
-  const roots = [];
-  const base = dir || (exePath ? path.dirname(exePath) : null);
-  if (base) {
-    roots.push(base);
-    roots.push(path.join(base, "data"));
-  }
-  if (process.env.APPDATA) {
-    roots.push(path.join(process.env.APPDATA, "dunelegacy", "data"));
-  }
-  for (const root of roots) {
-    try {
-      if (fs.existsSync(path.join(root, "DUNE.PAK")) || fs.existsSync(path.join(root, "ATRE.PAK"))) {
-        return true;
-      }
-    } catch {
-      /* ignore */
-    }
-  }
-  return false;
 }
 
 /*
