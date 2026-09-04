@@ -75,6 +75,7 @@ const {
   defaultGamePort,
 } = require("./services/connectArgs");
 const { createHostService } = require("./services/couch/hostService");
+const openMwConfig = require("./services/openMwConfig");
 const gamepadBridge = require("./services/gamepadBridge");
 
 function loadHardwareModule() {
@@ -6255,6 +6256,7 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
 
   await processAddons(entry, gameDir, selectedAddons);
   await maybeApplyEditionPostInstall(entry, gameDir);
+  await maybeConfigureOpenMw(gameDir);
   if (entry?.modLoader) {
     await ensureEditionMods(slug, entry, gameDir, exe);
   }
@@ -6654,6 +6656,58 @@ function runAuriePatcher(patcherPath, exePath, nativeDllPath, action) {
  * Quarm: drop latest eqw.dll into the client folder when a GitHub recipe
  * (or default CoastalRedwood repo) is available.
  */
+/**
+ * Give an OpenMW-family install the game data it has no way to find.
+ *
+ * TES3MP and OpenMW ship an engine and no game. Installed as-is they abort
+ * with "No content file given" before opening a window, which reached the
+ * player as PlayBound reporting the game "exited immediately after launch" —
+ * a config problem dressed up as a driver problem.
+ *
+ * PlayBound does not ship Morrowind. This only writes the path to a copy the
+ * player already owns, and does nothing when it cannot find one: a guessed
+ * path produces the same silent abort with a new cause.
+ */
+async function maybeConfigureOpenMw(gameDir) {
+  try {
+    if (!openMwConfig.isOpenMwInstall(gameDir, fs.existsSync)) return;
+    const cfgPath = path.join(gameDir, "openmw.cfg");
+    const cfg = await fsp.readFile(cfgPath, "utf8");
+    if (!openMwConfig.needsMorrowindData(cfg)) return;
+
+    /*
+     * Steam's own record first, then the usual GOG and retail shapes. Reusing
+     * steamLibraryDirs means a copy on a second drive is found the same way a
+     * Steam game's executable is, rather than by guessing that drive letter.
+     */
+    let steamRoots = [];
+    try {
+      steamRoots = steamLibraryDirs().map((lib) =>
+        path.join(lib, "steamapps", "common", "Morrowind")
+      );
+    } catch {
+      /* no Steam, or an unreadable library index — the other candidates stand */
+    }
+    const drives = ["C:\\", "D:\\", "E:\\"];
+    const programFiles = [process.env.ProgramFiles, process.env["ProgramFiles(x86)"]].filter(Boolean);
+    const found = openMwConfig.resolveMorrowindData(
+      openMwConfig.morrowindDataCandidates({ extra: steamRoots, programFiles, drives }),
+      fs.existsSync
+    );
+    if (!found) {
+      console.warn("OpenMW install found no Morrowind data to point at:", gameDir);
+      return;
+    }
+
+    await fsp.writeFile(cfgPath, openMwConfig.withMorrowindData(cfg, found.dataDir, found.masters));
+    console.log(`Pointed ${path.basename(gameDir)} at Morrowind data: ${found.dataDir}`);
+  } catch (err) {
+    // Never fail the install over this — the engine is installed either way,
+    // and a player with the data elsewhere can still point it at their copy.
+    console.warn("OpenMW data configuration skipped:", err?.message || err);
+  }
+}
+
 async function maybeApplyEditionPostInstall(entry, gameDir) {
   if (!entry?.postInstallEqw && entry?.editionSlug !== "project-quarm") return;
   try {
