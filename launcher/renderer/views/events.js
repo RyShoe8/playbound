@@ -44,10 +44,10 @@ function eventTypeDisplay(type) {
 }
 
 /**
- * One event card. Extracted from the old flat grid loop so the sectioned
- * layout can reuse it — the card markup itself is unchanged.
+ * One event card, shared by each section. The catalog map supplies the human
+ * game title because event records intentionally store only the stable slug.
  */
-function createEventCard(ev) {
+function createEventCard(ev, gameCatalogMap = new Map()) {
   const card = document.createElement("div");
   card.className = "pb-event-card";
 
@@ -57,6 +57,8 @@ function createEventCard(ev) {
     ? `${ev.when.dateLine} · ${ev.when.timeLine || ""}`
     : formatEventDate(ev.startsAt);
   const coverUrl = ev.coverImage || null;
+  const catalogGame = ev.gameSlug ? gameCatalogMap.get(ev.gameSlug) : null;
+  const gameName = ev.gameTitle || catalogGame?.title || ev.gameSlug || "";
 
   const badges = `
     ${isLive ? `<span class="pb-badge-live">● Live now</span>` : ""}
@@ -76,7 +78,7 @@ function createEventCard(ev) {
     }
     <div class="pb-event-card-body">
       <h3 class="pb-event-title">${escapeHtml(ev.title)}</h3>
-      ${ev.gameSlug ? `<p class="pb-event-game">${escapeHtml(ev.gameSlug)}</p>` : ""}
+      ${gameName ? `<p class="pb-event-game">${escapeHtml(gameName)}</p>` : ""}
       <p class="pb-event-time">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         ${escapeHtml(whenStr)}
@@ -527,7 +529,7 @@ async function renderEventsView() {
 
         const grid = document.createElement("div");
         grid.className = "events-grid";
-        for (const ev of items) grid.appendChild(createEventCard(ev));
+        for (const ev of items) grid.appendChild(createEventCard(ev, gameCatalogMap));
         section.appendChild(grid);
 
         sectionsHost.appendChild(section);
@@ -842,4 +844,3 @@ async function renderEventDetailView(eventId) {
 
 api.renderEventsView = renderEventsView;
 api.renderEventDetailView = renderEventDetailView;
-

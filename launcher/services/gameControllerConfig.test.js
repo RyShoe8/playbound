@@ -453,33 +453,22 @@ test("auto-configures YSoccer with libGDX JoystickConfig XML", () => {
   const next = applyProfile("ysoccer", emptyXml, dualsense);
   assert(next.includes("joystickConfigs"));
   assert(next.includes("DualSense Wireless Controller"));
-  /*
-   * Axes 0 and 1, not 4 and 5.
-   *
-   * This assertion used to require xAxis:4, which is the trigger — so it was
-   * pinning the bug in place: a DualSense could not move at all, and the test
-   * agreed with the broken output. gdx-controllers talks to SDL on desktop,
-   * and SDL reports every recognised pad the same way, left stick on 0 and 1.
-   */
+  // This build uses OIS/DirectInput. A DualSense exposes its left stick as
+  // axes 4/3, not the browser's standardized 0/1 pair.
   const ds = next.match(/\{class:JoystickConfig,name:DualSense[^}]*\}/)[0];
-  assert(/xAxis:0/.test(ds), `DualSense must use the left stick: ${ds}`);
-  assert(/yAxis:1/.test(ds), `DualSense must use the left stick: ${ds}`);
+  assert(/xAxis:4/.test(ds), `DualSense must use the DirectInput left stick: ${ds}`);
+  assert(/yAxis:3/.test(ds), `DualSense must use the DirectInput left stick: ${ds}`);
 });
 
-test("treats a config bound to the triggers as needing a rewrite", () => {
-  /*
-   * The state a stuck player is actually in: the file names their pad, so every
-   * other check says "configured", while movement points at an axis that is not
-   * a stick. Taken from a real YSoccer19 prefs file.
-   */
+test("repairs the old standardized DualSense axes that leave its stick dead", () => {
   const stuck =
     `<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<properties>\n` +
-    `<entry key="joystickConfigs">[{class:JoystickConfig,name:DualSense Wireless Controller,xAxis:4,yAxis:3,button1:1,button2:2}]</entry>\n` +
+    `<entry key="joystickConfigs">[{class:JoystickConfig,name:DualSense Wireless Controller,xAxis:0,yAxis:1,button1:0,button2:1}]</entry>\n` +
     `</properties>\n`;
   const rewritten = applyProfile("ysoccer", stuck, dualsense);
-  assert(rewritten, "a config on the triggers must be rewritten, not left alone");
+  assert(rewritten, "the stale DualSense profile must be rewritten");
   const ds = rewritten.match(/\{class:JoystickConfig,name:DualSense[^}]*\}/)[0];
-  assert(/xAxis:0/.test(ds) && /yAxis:1/.test(ds), `still unusable: ${ds}`);
+  assert(/xAxis:4/.test(ds) && /yAxis:3/.test(ds), `still unusable: ${ds}`);
 });
 
 /* ── every catalogued controller game has an answer ────────────────────── */
@@ -571,15 +560,13 @@ test("an unknown pad still gets its bare product name, not just the Web id", () 
   assert.ok(names.includes("8BitDo Ultimate Controller"), `derived name missing: ${names.slice(0, 4)}`);
 });
 
-test("every YSoccer entry puts movement on the left stick", () => {
-  // Axes 4 and 5 are the triggers. Nothing may regress to them.
+test("YSoccer gives the detected DualSense name its DirectInput stick axes", () => {
   const out = applyProfile("ysoccer", "", {
     family: "dualsense",
     rawId: "DualSense Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 0ce6)",
   });
-  for (const m of out.matchAll(/xAxis:(\d+),yAxis:(\d+)/g)) {
-    assert.ok(Number(m[1]) < 4 && Number(m[2]) < 4, `axes on the triggers: ${m[0]}`);
-  }
+  const raw = out.match(/\{class:JoystickConfig,name:DualSense Wireless Controller \(STANDARD GAMEPAD[^}]*\}/)[0];
+  assert.ok(/xAxis:4,yAxis:3/.test(raw), `wrong DirectInput axes: ${raw}`);
 });
 
 test("rvgl configures Controller1 to Joystick 0 with gamepad buttons", () => {
