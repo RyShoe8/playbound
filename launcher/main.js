@@ -20,6 +20,7 @@ const bundledCatalog = require("./catalog");
 const { createTelemetry } = require("./telemetry");
 const Platform = require("./platform");
 const GameLauncher = require("./services/GameLauncher");
+const editionLifecycle = require("./services/editionLifecycle");
 const { createManagedJava } = require("./services/ManagedJava");
 const { createLocalServers } = require("./services/localServer");
 const { createTransferMeter } = require("./services/transferMeter");
@@ -7660,6 +7661,15 @@ async function playGameInner(slug, join = null, editionSlug = null) {
 
   // Legacy github-jar installs pointed at play.cmd — prefer the sidecar .jar.
   let launchPath = GameLauncher.preferJarBesideLauncher(info.exe);
+  launchPath = editionLifecycle.editionLaunchExecutable(
+    info,
+    {
+      gameSlug: slug,
+      editionSlug: edSlug,
+      joining: Boolean(resolvedJoin?.host),
+    },
+    fs.existsSync
+  );
   const joiningHostedYs =
     slug === "ysoccer" &&
     (Boolean(join?.host && join?.port) || args.some((a) => /--connect/i.test(a)));
@@ -9365,10 +9375,10 @@ function isDedicatedSourcemodDir(dir) {
  * Delete or uninstall a game directory.
  * Runs official uninstaller for installer games, and cleanly deletes PlayBound managed folders.
  */
-async function tryRemovePlayBoundInstallDir(slug, dir, entry = null) {
+async function tryRemovePlayBoundInstallDir(slug, dir, entry = null, { editionSlug = null } = {}) {
   if (!dir) return null;
 
-  if (entry) {
+  if (entry && editionLifecycle.mayRunNativeUninstaller(editionSlug)) {
     try {
       await runGameUninstaller(slug, entry, dir);
     } catch (err) {
@@ -9462,7 +9472,7 @@ async function uninstallGame(slug, editionSlug = null) {
       delete game.editions[editionSlug];
     } else {
       if (info.dir) {
-        const warning = await tryRemovePlayBoundInstallDir(slug, info.dir, entry);
+        const warning = await tryRemovePlayBoundInstallDir(slug, info.dir, entry, { editionSlug });
         if (warning) warnings.push(warning);
       }
       delete game.editions[editionSlug];
