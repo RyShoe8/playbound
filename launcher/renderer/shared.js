@@ -174,10 +174,14 @@ export const CACHE_TTL = {
 };
 
 /*
- * Request memoisation lives in cache.js. Re-exported here because every
- * view already reaches for it through shared.js.
+ * Request memoisation lives in cache.js. Imported and re-exported, not
+ * forwarded with `export … from`: this file calls cacheInvoke itself in four
+ * places, and a bare re-export forwards the name to importers without binding
+ * it locally, so those calls become undefined references.
  */
-export { cacheInvalidate, cacheInvoke, cachePeek, cachePut } from "./cache.js";
+import { cacheInvalidate, cacheInvoke, cachePeek, cachePut } from "./cache.js";
+
+export { cacheInvalidate, cacheInvoke, cachePeek, cachePut };
 
 export function prefetchGameDetail(slug) {
   if (!slug || !window.playbound?.getGameDetail) return;
