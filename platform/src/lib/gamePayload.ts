@@ -135,8 +135,22 @@ export const launcherInstallSchema = z
     kind: z.enum(LAUNCHER_INSTALL_KINDS),
     repo: optionalTrimmed,
     assetPattern: optionalTrimmed,
+    /*
+     * Per-platform builds. The launcher has read all of these for a long time —
+     * resolveDownload picks urlMac/urlMacX64/urlLinux over url, and
+     * assetPatternsForEntry picks the mac and linux release assets — but none
+     * of them were in this schema, and zod strips what it does not declare. So
+     * a per-platform URL could be written in the seed and never through the
+     * admin panel, which is where games are actually curated: every game added
+     * there was Windows-only by construction.
+     */
+    assetPatternMac: optionalTrimmed,
+    assetPatternLinux: optionalTrimmed,
     exeHint: optionalTrimmed,
     url: optionalTrimmed,
+    urlMac: optionalTrimmed,
+    urlMacX64: optionalTrimmed,
+    urlLinux: optionalTrimmed,
     fileName: optionalTrimmed,
     uploadId: optionalTrimmed,
     versionLabel: optionalTrimmed,
@@ -694,8 +708,13 @@ export function toPayloadLauncherInstall(
     kind: li.kind,
     repo: li.repo ?? null,
     assetPattern: li.assetPattern ?? null,
+    assetPatternMac: li.assetPatternMac ?? null,
+    assetPatternLinux: li.assetPatternLinux ?? null,
     exeHint: li.exeHint ?? null,
     url: li.url ?? null,
+    urlMac: li.urlMac ?? null,
+    urlMacX64: li.urlMacX64 ?? null,
+    urlLinux: li.urlLinux ?? null,
     fileName: li.fileName ?? null,
     uploadId: li.uploadId ?? null,
     versionLabel: li.versionLabel ?? null,

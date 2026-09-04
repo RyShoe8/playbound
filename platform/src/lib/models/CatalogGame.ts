@@ -32,7 +32,12 @@ const LauncherInstallSchema = new Schema(
     exeHint: { type: String, default: null },
     url: { type: String, default: null },
     urlMac: { type: String, default: null },
+    /** Intel Mac override; urlMac is the Apple Silicon / default build. */
+    urlMacX64: { type: String, default: null },
     urlLinux: { type: String, default: null },
+    /** Per-platform release-asset patterns for the github-* kinds. */
+    assetPatternMac: { type: String, default: null },
+    assetPatternLinux: { type: String, default: null },
     fileName: { type: String, default: null },
     /** itch.io's upload_id for the specific file a page's Download button should resolve — a page can list several. */
     uploadId: { type: String, default: null },
