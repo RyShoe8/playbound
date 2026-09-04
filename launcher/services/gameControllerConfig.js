@@ -166,12 +166,25 @@ function editIniSection(text, section, mutate) {
   return [...lines.slice(0, start + 1), ...body, ...lines.slice(end)].join("\n");
 }
 
+/*
+ * DualSense sticks under this backend are 5/4, not the 4/3 written first.
+ *
+ * With 4/3 the pad worked but drove the wrong things: left stick up/down moved
+ * the menu left and right, right stick left/right moved it up and down. Those
+ * two symptoms say axis 4 is left-stick Y and axis 3 is right-stick X, and
+ * against DualSense's DirectInput order (0=LX 1=LY 2=RX 3=RY 4=L2 5=R2) only
+ * one arrangement puts both there: the OIS backend enumerating the axes
+ * reversed, 0=R2 1=L2 2=RY 3=RX 4=LY 5=LX. That makes the left stick 5 and 4.
+ *
+ * Matching 4/3 here means an already-written config is treated as stale and
+ * rewritten, so a player who hit the bug does not have to delete their prefs.
+ */
 function ysoccerHasDualSenseStickAxes(text) {
   const entries = String(text || "").match(/\{class:JoystickConfig,name:[^}]+\}/g) || [];
   const dualSenseEntries = entries.filter((entry) =>
     /name:(?:DualSense|PS5 Controller)/i.test(entry)
   );
-  return dualSenseEntries.some((entry) => /xAxis:4,\s*yAxis:3(?:,|\})/.test(entry));
+  return dualSenseEntries.some((entry) => /xAxis:5,\s*yAxis:4(?:,|\})/.test(entry));
 }
 
 function iniKeyOf(line) {
@@ -761,9 +774,9 @@ const GAMES = {
         `{class:JoystickConfig,name:Xbox One Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
         `{class:JoystickConfig,name:XInput Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
         `{class:JoystickConfig,name:Xbox Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
-        `{class:JoystickConfig,name:DualSense Wireless Controller,xAxis:4,yAxis:3,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:DualSense Wireless Controller,xAxis:5,yAxis:4,button1:0,button2:1}`,
         `{class:JoystickConfig,name:Wireless Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
-        `{class:JoystickConfig,name:PS5 Controller,xAxis:4,yAxis:3,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:PS5 Controller,xAxis:5,yAxis:4,button1:0,button2:1}`,
         `{class:JoystickConfig,name:PS4 Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
         `{class:JoystickConfig,name:Wireless Gamepad,xAxis:0,yAxis:1,button1:0,button2:1}`,
         `{class:JoystickConfig,name:HID-compliant game controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
@@ -775,7 +788,7 @@ const GAMES = {
        * YSoccer 19 bundles gdx-controllers 1.x on its OIS backend — the jar
        * carries com.badlogic.gdx.controllers.desktop.OisControllers — so this
        * is DirectInput, not SDL as an earlier comment here claimed. Its axis
-       * order is device-specific: DualSense uses 4/3 for the left stick while
+       * order is device-specific: DualSense uses 5/4 for the left stick while
        * Xbox-compatible pads use the mappings below. Face buttons are 0 and 1.
        *
        * The names matter more than the axes. GLGame.reloadInputDevices does:
@@ -791,8 +804,8 @@ const GAMES = {
        */
       for (const name of joystickNamesFor(profile)) {
         if (!configs.some((c) => c.includes(`name:${name},`))) {
-          const xAxis = isDualSense ? 4 : 0;
-          const yAxis = isDualSense ? 3 : 1;
+          const xAxis = isDualSense ? 5 : 0;
+          const yAxis = isDualSense ? 4 : 1;
           configs.unshift(`{class:JoystickConfig,name:${name},xAxis:${xAxis},yAxis:${yAxis},button1:0,button2:1}`);
         }
       }
