@@ -6192,6 +6192,36 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     await verifyChecksumMd5(downloadPath, entry.checksumMd5);
   }
 
+  /*
+   * An AppImage is the game, not an installer.
+   *
+   * A recipe's kind describes its Windows shape, and Linux often answers the
+   * same game with a single self-contained AppImage — Freeciv is the case: a
+   * setup .exe on Windows, Freeciv-gtk4-*.AppImage on Linux. Handing that to
+   * the installer branch would openPath it at the desktop, where without the
+   * executable bit nothing happens at all.
+   *
+   * So it takes the direct-exe treatment instead: keep it, mark it executable,
+   * and record it as the thing Play launches. Checked before the installer
+   * branch because the recipe still says direct-installer.
+   */
+  if (process.platform !== "win32" && /\.appimage$/i.test(String(dl.name || ""))) {
+    sendProgress({ phase: "extracting" });
+    await fsp.mkdir(gameDir, { recursive: true });
+    const exe = path.join(gameDir, dl.name);
+    await fsp.copyFile(downloadPath, exe);
+    await removeFileWithRetries(downloadPath);
+    // Downloads arrive without it, and an AppImage that is not executable is
+    // an inert file rather than a game.
+    ensureUnixExecutable(exe);
+    await processAddons(entry, gameDir, selectedAddons);
+    markInstalled(slug, { version: dl.version, exe, dir: gameDir, ...editionExtra });
+    sendProgress({ phase: "done" });
+    void reportInstall(slug);
+    void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version, ...editionExtra }));
+    return { status: "installed", version: dl.version, dir: gameDir };
+  }
+
   if (entry.kind === "github-installer" || entry.kind === "direct-installer") {
     sendProgress({
       phase: "installer-ready",

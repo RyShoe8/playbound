@@ -90,6 +90,26 @@ test("a recipe with only urlMac still serves every Mac, as before", () => {
   assert.equal(pick(entry, "darwin", "x64"), MAC);
 });
 
+test("Freeciv hands Linux the AppImage and Windows the setup exe", () => {
+  /*
+   * The AppImage is the game, not an installer, so the install path has a
+   * branch for it — see the .appimage check in main.js. Without urlLinux this
+   * recipe gave Linux a Windows setup .exe to run under Wine.
+   */
+  const src = fs.readFileSync(
+    path.join(__dirname, "..", "..", "platform", "src", "lib", "data", "launcherInstall.ts"),
+    "utf8"
+  );
+  const at = src.indexOf("\n  freeciv: {");
+  assert.ok(at > 0, "no freeciv recipe found");
+  const block = src.slice(at, src.indexOf("\n  },", at));
+  const grab = (key) => (new RegExp(`\\b${key}:\\s*\\n?\\s*"([^"]+)"`).exec(block) || [])[1];
+  const entry = { url: grab("url"), urlLinux: grab("urlLinux") };
+
+  assert.match(pick(entry, "linux"), /\.AppImage$/i);
+  assert.match(pick(entry, "win32"), /\.exe$/i);
+});
+
 test("Meteorite's shipped recipe resolves a distinct build per platform", () => {
   // The real values, read from the catalog recipe this was added for.
   const recipe = fs.readFileSync(

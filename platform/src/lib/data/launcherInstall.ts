@@ -517,6 +517,16 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     // Keep in sync with FREECIV_VERSION in platform/game-host/install.sh — party
     // hosting rejects clients when the VPS apt server is older than this build.
     url: "https://files.freeciv.org/packages/windows/Freeciv-3.2.5-msys2-win64-10-gtk4-setup.exe",
+    /*
+     * Linux gets the AppImage rather than the Windows setup under Wine. It is
+     * the mainstream gtk4 client with the map editor — the same build the
+     * project's own download page offers Linux users.
+     *
+     * The versions differ on purpose: upstream's newest Windows setup is still
+     * 3.2.5 while the AppImage is 3.2.6, so each platform gets the newest
+     * build that actually exists for it.
+     */
+    urlLinux: "https://files.freeciv.org/packages/appimage/Freeciv-gtk4-3.2.6-x86_64.AppImage",
     urlMac: "https://files.freeciv.org/packages/macos/freeciv-3.1.0-beta1-MacOS.tar.gz",
     fileName: "Freeciv-3.2.5-msys2-win64-10-gtk4-setup.exe",
     versionLabel: "3.2.5",
