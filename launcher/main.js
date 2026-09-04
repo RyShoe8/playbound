@@ -1669,7 +1669,7 @@ function afterUiReady(fn) {
 }
 
 async function fetchModInstall(slug) {
-  const res = await fetch(`${getApiBase()}/api/mods/${encodeURIComponent(slug)}`, {
+  const res = await apiFetch(`${getApiBase()}/api/mods/${encodeURIComponent(slug)}`, {
     headers: { "user-agent": "playbound-launcher", accept: "application/json" },
   });
   if (!res.ok) throw new Error(`Couldn't load mod (${res.status})`);
@@ -2023,7 +2023,7 @@ async function pullCompatibilityPreference() {
   const settings = loadSettings();
   if (!settings.launcherToken) return;
   try {
-    const res = await fetch(`${getApiBase()}/api/auth/preferences`, {
+    const res = await apiFetch(`${getApiBase()}/api/auth/preferences`, {
       headers: launcherApiHeaders(),
     });
     if (!res.ok) return;
@@ -2049,7 +2049,7 @@ async function pushCompatibilityPreference(mode) {
   const settings = loadSettings();
   if (!settings.launcherToken) return;
   try {
-    await fetch(`${getApiBase()}/api/auth/preferences`, {
+    await apiFetch(`${getApiBase()}/api/auth/preferences`, {
       method: "PATCH",
       headers: launcherApiHeaders({ "content-type": "application/json" }),
       body: JSON.stringify({ compatibilityFilter: mode }),
@@ -2063,7 +2063,7 @@ async function pushDiscoveryPreference(mode) {
   const settings = loadSettings();
   if (!settings.launcherToken) return;
   try {
-    await fetch(`${getApiBase()}/api/auth/preferences`, {
+    await apiFetch(`${getApiBase()}/api/auth/preferences`, {
       method: "PATCH",
       headers: launcherApiHeaders({ "content-type": "application/json" }),
       body: JSON.stringify({ discoveryMode: mode }),
@@ -2434,7 +2434,7 @@ async function syncLibrary(slug, action, version, opts = {}) {
             version,
             ...(opts.editionSlug ? { editionSlug: opts.editionSlug } : {}),
           };
-    const res = await fetch(`${getApiBase()}/api/library/sync`, {
+    const res = await apiFetch(`${getApiBase()}/api/library/sync`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -10004,7 +10004,7 @@ ipcMain.handle("find-best-server", async (_event, slug) => {
   const clean = String(slug || "").trim();
   if (!/^[a-z0-9][a-z0-9-]*$/.test(clean)) return { server: null, reason: "unsupported" };
   try {
-    const res = await fetch(
+    const res = await apiFetch(
       `${getApiBase()}/api/games/${encodeURIComponent(clean)}/best-server`,
       {
         headers: launcherApiHeaders({ accept: "application/json" }),
@@ -10387,7 +10387,7 @@ ipcMain.handle("clear-launcher-token", async () => {
   const token = settings.launcherToken;
   if (token) {
     try {
-      await fetch(`${getApiBase()}/api/library/token`, {
+      await apiFetch(`${getApiBase()}/api/library/token`, {
         method: "DELETE",
         headers: {
           authorization: `Bearer ${token}`,
@@ -10520,7 +10520,7 @@ ipcMain.handle("ping-servers", async (_event, servers) => {
 
 ipcMain.handle("get-servers", async (_event, slug) => {
   try {
-    const res = await fetch(`${getApiBase()}/api/games/${encodeURIComponent(slug)}/servers`, {
+    const res = await apiFetch(`${getApiBase()}/api/games/${encodeURIComponent(slug)}/servers`, {
       headers: launcherApiHeaders({ accept: "application/json" }),
     });
     if (!res.ok) return { supported: false, servers: [] };
@@ -10556,7 +10556,7 @@ ipcMain.handle("get-mods-catalog", async () => {
 });
 ipcMain.handle("get-gear-catalog", async () => {
   try {
-    const res = await fetch(`${getApiBase()}/api/launcher/gear`, {
+    const res = await apiFetch(`${getApiBase()}/api/launcher/gear`, {
       headers: launcherApiHeaders(),
     });
     if (!res.ok) return { items: [], categories: [], grouped: {} };
@@ -10567,7 +10567,7 @@ ipcMain.handle("get-gear-catalog", async () => {
 });
 ipcMain.handle("get-gear-detail", async (_event, slug) => {
   try {
-    const res = await fetch(`${getApiBase()}/api/launcher/gear/${encodeURIComponent(slug)}`, {
+    const res = await apiFetch(`${getApiBase()}/api/launcher/gear/${encodeURIComponent(slug)}`, {
       headers: launcherApiHeaders(),
     });
     if (!res.ok) return null;
@@ -10580,7 +10580,7 @@ ipcMain.handle("get-events", async (_event, opts) => {
   try {
     const past = Boolean(opts?.past);
     const qs = past ? "?past=1" : "";
-    const res = await fetch(`${getApiBase()}/api/events${qs}`, {
+    const res = await apiFetch(`${getApiBase()}/api/events${qs}`, {
       headers: launcherApiHeaders({ accept: "application/json" }),
     });
     if (!res.ok) return { events: [] };
@@ -10591,7 +10591,7 @@ ipcMain.handle("get-events", async (_event, opts) => {
 });
 ipcMain.handle("get-friends-upcoming-events", async () => {
   try {
-    const res = await fetch(`${getApiBase()}/api/events/friends-upcoming`, {
+    const res = await apiFetch(`${getApiBase()}/api/events/friends-upcoming`, {
       headers: launcherApiHeaders({ accept: "application/json" }),
     });
     if (!res.ok) return { events: [] };
@@ -10602,7 +10602,7 @@ ipcMain.handle("get-friends-upcoming-events", async () => {
 });
 ipcMain.handle("get-notifications", async () => {
   try {
-    const res = await fetch(`${getApiBase()}/api/notifications`, {
+    const res = await apiFetch(`${getApiBase()}/api/notifications`, {
       headers: launcherApiHeaders({ accept: "application/json" }),
       cache: "no-store",
     });
@@ -10614,7 +10614,7 @@ ipcMain.handle("get-notifications", async () => {
 });
 ipcMain.handle("mark-notifications-read", async (_event, opts = {}) => {
   try {
-    const res = await fetch(`${getApiBase()}/api/notifications/read`, {
+    const res = await apiFetch(`${getApiBase()}/api/notifications/read`, {
       method: "POST",
       headers: launcherApiHeaders({ "content-type": "application/json" }),
       body: JSON.stringify(opts?.all ? { all: true } : { id: opts?.id }),
@@ -10630,7 +10630,7 @@ ipcMain.handle("mark-notifications-read", async (_event, opts = {}) => {
 });
 ipcMain.handle("play-invite-action", async (_event, inviteId, action) => {
   try {
-    const res = await fetch(`${getApiBase()}/api/play-invites/${encodeURIComponent(inviteId)}`, {
+    const res = await apiFetch(`${getApiBase()}/api/play-invites/${encodeURIComponent(inviteId)}`, {
       method: "POST",
       headers: launcherApiHeaders({ "content-type": "application/json" }),
       body: JSON.stringify({ action }),
@@ -10646,7 +10646,7 @@ ipcMain.handle("play-invite-action", async (_event, inviteId, action) => {
 });
 ipcMain.handle("get-event-detail", async (_event, eventId) => {
   try {
-    const res = await fetch(`${getApiBase()}/api/events/${encodeURIComponent(eventId)}`, {
+    const res = await apiFetch(`${getApiBase()}/api/events/${encodeURIComponent(eventId)}`, {
       headers: launcherApiHeaders({ accept: "application/json" }),
     });
     if (!res.ok) return null;
@@ -10657,7 +10657,7 @@ ipcMain.handle("get-event-detail", async (_event, eventId) => {
 });
 ipcMain.handle("create-event", async (_event, payload) => {
   try {
-    const res = await fetch(`${getApiBase()}/api/events`, {
+    const res = await apiFetch(`${getApiBase()}/api/events`, {
       method: "POST",
       headers: launcherApiHeaders({
         "content-type": "application/json",
@@ -10683,7 +10683,7 @@ ipcMain.handle("upload-event-cover", async (_event, fileBuffer, fileName, mimeTy
     const tail = Buffer.from(`\r\n--${boundary}--\r\n`);
     const body = Buffer.concat([head, buf, tail]);
 
-    const res = await fetch(`${getApiBase()}/api/events/upload`, {
+    const res = await apiFetch(`${getApiBase()}/api/events/upload`, {
       method: "POST",
       headers: launcherApiHeaders({
         "content-type": `multipart/form-data; boundary=${boundary}`,
@@ -10701,7 +10701,7 @@ ipcMain.handle("upload-event-cover", async (_event, fileBuffer, fileName, mimeTy
 });
 ipcMain.handle("rsvp-event", async (_event, eventId, status) => {
   try {
-    const res = await fetch(`${getApiBase()}/api/events/${encodeURIComponent(eventId)}/rsvp`, {
+    const res = await apiFetch(`${getApiBase()}/api/events/${encodeURIComponent(eventId)}/rsvp`, {
       method: "POST",
       headers: launcherApiHeaders({ "content-type": "application/json" }),
       body: JSON.stringify({ status }),
@@ -10717,7 +10717,7 @@ ipcMain.handle("rsvp-event", async (_event, eventId, status) => {
 });
 ipcMain.handle("cancel-event", async (_event, eventId) => {
   try {
-    const res = await fetch(`${getApiBase()}/api/events/${encodeURIComponent(eventId)}`, {
+    const res = await apiFetch(`${getApiBase()}/api/events/${encodeURIComponent(eventId)}`, {
       method: "PATCH",
       headers: launcherApiHeaders({ "content-type": "application/json" }),
       body: JSON.stringify({ cancel: true }),
@@ -10733,7 +10733,7 @@ ipcMain.handle("cancel-event", async (_event, eventId) => {
 });
 ipcMain.handle("delete-event", async (_event, eventId) => {
   try {
-    const res = await fetch(`${getApiBase()}/api/events/${encodeURIComponent(eventId)}`, {
+    const res = await apiFetch(`${getApiBase()}/api/events/${encodeURIComponent(eventId)}`, {
       method: "DELETE",
       headers: launcherApiHeaders({ accept: "application/json" }),
     });
@@ -10748,7 +10748,7 @@ ipcMain.handle("delete-event", async (_event, eventId) => {
 });
 ipcMain.handle("tournament-action", async (_event, eventId, action, payload) => {
   try {
-    const res = await fetch(`${getApiBase()}/api/events/${encodeURIComponent(eventId)}/tournament`, {
+    const res = await apiFetch(`${getApiBase()}/api/events/${encodeURIComponent(eventId)}/tournament`, {
       method: "POST",
       headers: launcherApiHeaders({ "content-type": "application/json" }),
       body: JSON.stringify({ action, ...(payload || {}) }),
@@ -10764,7 +10764,7 @@ ipcMain.handle("tournament-action", async (_event, eventId, action, payload) => 
 });
 ipcMain.handle("get-free-offers", async () => {
   try {
-    const res = await fetch(`${getApiBase()}/api/free-offers`, {
+    const res = await apiFetch(`${getApiBase()}/api/free-offers`, {
       headers: launcherApiHeaders({ accept: "application/json" }),
     });
     if (!res.ok) return { offers: [], count: 0 };
@@ -10776,7 +10776,7 @@ ipcMain.handle("get-free-offers", async () => {
 ipcMain.handle("get-all-servers", async () => {
   let providers = [];
   try {
-    const idxRes = await fetch(`${getApiBase()}/api/launcher/servers`, {
+    const idxRes = await apiFetch(`${getApiBase()}/api/launcher/servers`, {
       headers: launcherApiHeaders(),
     });
     if (idxRes.ok) {
@@ -10816,7 +10816,7 @@ ipcMain.handle("get-all-servers", async () => {
       const i = cursor++;
       const slug = providers[i];
       try {
-        const res = await fetch(`${getApiBase()}/api/games/${encodeURIComponent(slug)}/servers`, {
+        const res = await apiFetch(`${getApiBase()}/api/games/${encodeURIComponent(slug)}/servers`, {
           headers: launcherApiHeaders({ accept: "application/json" }),
         });
         if (!res.ok) continue;
@@ -11079,7 +11079,7 @@ ipcMain.handle("couch-signal-post", async (_event, body) => {
   const state = couchHost.getState();
   const session = state.session;
   if (!session) return { ok: false, error: "No session" };
-  const res = await fetch(`${getApiBase()}/api/couch/sessions/${session.sessionId}/signal`, {
+  const res = await apiFetch(`${getApiBase()}/api/couch/sessions/${session.sessionId}/signal`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -11100,7 +11100,7 @@ ipcMain.handle("couch-signal-poll", async (_event, since) => {
     since: String(since || 0),
     hostToken: session.hostToken,
   });
-  const res = await fetch(
+  const res = await apiFetch(
     `${getApiBase()}/api/couch/sessions/${session.sessionId}/signal?${qs}`
   );
   if (!res.ok) return { messages: [] };
@@ -11358,7 +11358,7 @@ ipcMain.handle("get-editions", async (_event, gameSlug) => {
 
 ipcMain.handle("get-game-guides", async (_event, slug) => {
   try {
-    const res = await fetch(
+    const res = await apiFetch(
       `${getApiBase()}/api/launcher/games/${encodeURIComponent(slug)}/guides`,
       { headers: launcherApiHeaders() }
     );
@@ -11371,7 +11371,7 @@ ipcMain.handle("get-game-guides", async (_event, slug) => {
 
 ipcMain.handle("get-mod-guides", async (_event, slug) => {
   try {
-    const res = await fetch(
+    const res = await apiFetch(
       `${getApiBase()}/api/launcher/mods/${encodeURIComponent(slug)}/guides`,
       { headers: launcherApiHeaders() }
     );
@@ -11384,7 +11384,7 @@ ipcMain.handle("get-mod-guides", async (_event, slug) => {
 
 ipcMain.handle("get-game-releases", async (_event, slug) => {
   try {
-    const res = await fetch(
+    const res = await apiFetch(
       `${getApiBase()}/api/launcher/games/${encodeURIComponent(slug)}/releases`,
       { headers: launcherApiHeaders() }
     );
@@ -11397,7 +11397,7 @@ ipcMain.handle("get-game-releases", async (_event, slug) => {
 
 ipcMain.handle("get-game-reviews", async (_event, slug) => {
   try {
-    const res = await fetch(
+    const res = await apiFetch(
       `${getApiBase()}/api/launcher/games/${encodeURIComponent(slug)}/reviews`,
       { headers: launcherApiHeaders() }
     );
@@ -11410,7 +11410,7 @@ ipcMain.handle("get-game-reviews", async (_event, slug) => {
 
 ipcMain.handle("get-game-discussions", async (_event, slug) => {
   try {
-    const res = await fetch(
+    const res = await apiFetch(
       `${getApiBase()}/api/launcher/games/${encodeURIComponent(slug)}/discussions`,
       { headers: launcherApiHeaders() }
     );
@@ -12013,7 +12013,7 @@ ipcMain.handle("link-discord", () => {
 
 ipcMain.handle("get-friend-requests", async () => {
   try {
-    const res = await fetch(`${getApiBase()}/api/friends/requests`, { headers: launcherApiHeaders() });
+    const res = await apiFetch(`${getApiBase()}/api/friends/requests`, { headers: launcherApiHeaders() });
     if (!res.ok) throw new Error("Failed to fetch friend requests");
     return await res.json();
   } catch (err) {
@@ -12023,7 +12023,7 @@ ipcMain.handle("get-friend-requests", async () => {
 
 ipcMain.handle("accept-friend-request", async (_event, requestId) => {
   try {
-    const res = await fetch(`${getApiBase()}/api/friends/accept`, {
+    const res = await apiFetch(`${getApiBase()}/api/friends/accept`, {
       method: "POST",
       headers: launcherApiHeaders({ "content-type": "application/json" }),
       body: JSON.stringify({ requestId })
@@ -12037,7 +12037,7 @@ ipcMain.handle("accept-friend-request", async (_event, requestId) => {
 
 ipcMain.handle("decline-friend-request", async (_event, requestId) => {
   try {
-    const res = await fetch(`${getApiBase()}/api/friends/decline`, {
+    const res = await apiFetch(`${getApiBase()}/api/friends/decline`, {
       method: "POST",
       headers: launcherApiHeaders({ "content-type": "application/json" }),
       body: JSON.stringify({ requestId })
@@ -12051,7 +12051,7 @@ ipcMain.handle("decline-friend-request", async (_event, requestId) => {
 
 ipcMain.handle("cancel-friend-request", async (_event, requestId) => {
   try {
-    const res = await fetch(`${getApiBase()}/api/friends/cancel`, {
+    const res = await apiFetch(`${getApiBase()}/api/friends/cancel`, {
       method: "POST",
       headers: launcherApiHeaders({ "content-type": "application/json" }),
       body: JSON.stringify({ requestId }),
@@ -12065,7 +12065,7 @@ ipcMain.handle("cancel-friend-request", async (_event, requestId) => {
 
 ipcMain.handle("block-user", async (_event, targetUserId) => {
   try {
-    const res = await fetch(`${getApiBase()}/api/friends/block`, {
+    const res = await apiFetch(`${getApiBase()}/api/friends/block`, {
       method: "POST",
       headers: launcherApiHeaders({ "content-type": "application/json" }),
       body: JSON.stringify({ targetUserId }),
@@ -12155,7 +12155,7 @@ async function syncHardwareProfile({ quiet = false, force = false } = {}) {
     const profile = await cachedHardwareProfile({ force: true });
     const next = { ...settings, hardwareProfile: profile, hardwareProfileCollectedAt: profile.collectedAt };
     saveSettings(next);
-    const res = await fetch(`${getApiBase()}/api/hardware/profile`, {
+    const res = await apiFetch(`${getApiBase()}/api/hardware/profile`, {
       method: "PUT",
       headers: launcherApiHeaders({ "content-type": "application/json" }),
       body: JSON.stringify(profile),
@@ -12239,7 +12239,7 @@ ipcMain.handle("get-hardware-compatibility", async (_event, gameSlug, opts = {})
     if (Array.isArray(opts?.modSlugs) && opts.modSlugs.length) {
       params.set("modSlugs", opts.modSlugs.join(","));
     }
-    const res = await fetch(`${getApiBase()}/api/hardware/compatibility?${params}`, {
+    const res = await apiFetch(`${getApiBase()}/api/hardware/compatibility?${params}`, {
       headers: launcherApiHeaders(),
     });
     const data = await res.json().catch(() => null);
@@ -12258,7 +12258,7 @@ ipcMain.handle("get-hardware-compatibility", async (_event, gameSlug, opts = {})
 
 ipcMain.handle("get-appear-offline", async () => {
   try {
-    const res = await fetch(`${getApiBase()}/api/presence/visibility`, {
+    const res = await apiFetch(`${getApiBase()}/api/presence/visibility`, {
       headers: launcherApiHeaders(),
     });
     if (!res.ok) throw new Error("Failed to load visibility");
@@ -12270,7 +12270,7 @@ ipcMain.handle("get-appear-offline", async () => {
 
 ipcMain.handle("set-appear-offline", async (_event, appearOffline) => {
   try {
-    const res = await fetch(`${getApiBase()}/api/presence/visibility`, {
+    const res = await apiFetch(`${getApiBase()}/api/presence/visibility`, {
       method: "PATCH",
       headers: launcherApiHeaders({ "content-type": "application/json" }),
       body: JSON.stringify({ appearOffline: Boolean(appearOffline) }),
@@ -12350,7 +12350,7 @@ async function beatLauncherPresence() {
   };
   try {
     const path = presenceSessionId ? "/api/presence/heartbeat" : "/api/presence/start";
-    const res = await fetch(`${getApiBase()}${path}`, {
+    const res = await apiFetch(`${getApiBase()}${path}`, {
       method: "POST",
       headers: launcherApiHeaders({ "content-type": "application/json" }),
       body: JSON.stringify(body),
@@ -12386,7 +12386,7 @@ function stopLauncherPresenceLoop() {
   }
   const settings = loadSettings();
   if (settings.launcherToken && presenceSessionId) {
-    void fetch(`${getApiBase()}/api/presence/end`, {
+    void apiFetch(`${getApiBase()}/api/presence/end`, {
       method: "POST",
       headers: launcherApiHeaders({ "content-type": "application/json" }),
       body: JSON.stringify({ sessionId: presenceSessionId }),
@@ -12407,7 +12407,7 @@ ipcMain.handle("presence-heartbeat", async (_event, payload = {}) => {
       sessionId: presenceSessionId,
     };
     const path = presenceSessionId ? "/api/presence/heartbeat" : "/api/presence/start";
-    const res = await fetch(`${getApiBase()}${path}`, {
+    const res = await apiFetch(`${getApiBase()}${path}`, {
       method: "POST",
       headers: launcherApiHeaders({ "content-type": "application/json" }),
       body: JSON.stringify(body),
@@ -12424,7 +12424,7 @@ ipcMain.handle("presence-heartbeat", async (_event, payload = {}) => {
 
 ipcMain.handle("remove-friend", async (_event, friendId) => {
   try {
-    const res = await fetch(`${getApiBase()}/api/friends/remove`, {
+    const res = await apiFetch(`${getApiBase()}/api/friends/remove`, {
       method: "POST",
       headers: launcherApiHeaders({ "content-type": "application/json" }),
       body: JSON.stringify({ friendId })
@@ -12437,7 +12437,7 @@ ipcMain.handle("remove-friend", async (_event, friendId) => {
 });
 ipcMain.handle("search-users", async (_event, query) => {
   try {
-    const res = await fetch(`${getApiBase()}/api/friends/search?q=${encodeURIComponent(query)}`, { headers: launcherApiHeaders() });
+    const res = await apiFetch(`${getApiBase()}/api/friends/search?q=${encodeURIComponent(query)}`, { headers: launcherApiHeaders() });
     if (!res.ok) {
       const data = await res.json().catch(() => null);
       throw new Error(data?.error || "Failed to search users");
@@ -12451,7 +12451,7 @@ ipcMain.handle("search-users", async (_event, query) => {
 ipcMain.handle("discover-players", async (_event, params) => {
   try {
     const query = new URLSearchParams(params).toString();
-    const res = await fetch(`${getApiBase()}/api/friends/discover?${query}`, { headers: launcherApiHeaders() });
+    const res = await apiFetch(`${getApiBase()}/api/friends/discover?${query}`, { headers: launcherApiHeaders() });
     if (!res.ok) {
       const data = await res.json().catch(() => null);
       throw new Error(data?.error || "Failed to discover players");
@@ -12464,7 +12464,7 @@ ipcMain.handle("discover-players", async (_event, params) => {
 
 ipcMain.handle("send-friend-request", async (_event, targetUserId) => {
   try {
-    const res = await fetch(`${getApiBase()}/api/friends/request`, {
+    const res = await apiFetch(`${getApiBase()}/api/friends/request`, {
       method: "POST",
       headers: launcherApiHeaders({ "content-type": "application/json" }),
       body: JSON.stringify({ targetUserId })
@@ -12481,7 +12481,7 @@ ipcMain.handle("send-friend-request", async (_event, targetUserId) => {
 
 ipcMain.handle("invite-friend-by-email", async (_event, email) => {
   try {
-    const res = await fetch(`${getApiBase()}/api/friends/invite`, {
+    const res = await apiFetch(`${getApiBase()}/api/friends/invite`, {
       method: "POST",
       headers: launcherApiHeaders({ "content-type": "application/json" }),
       body: JSON.stringify({ email })
@@ -12594,7 +12594,7 @@ ipcMain.handle("get-game-detail", async (_event, slug) => {
 ipcMain.handle("get-mod-detail", async (_event, slug) => {
   let rich = null;
   try {
-    const res = await fetch(`${getApiBase()}/api/launcher/mods/${encodeURIComponent(slug)}`, {
+    const res = await apiFetch(`${getApiBase()}/api/launcher/mods/${encodeURIComponent(slug)}`, {
       headers: launcherApiHeaders(),
     });
     if (res.ok) rich = await res.json();
