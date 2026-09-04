@@ -10429,7 +10429,9 @@ ipcMain.handle("get-servers", async (_event, slug) => {
 });
 ipcMain.handle("get-server-index", async () => {
   try {
-    const res = await fetch(`${getApiBase()}/api/launcher/servers`, {
+    // The home page awaits this before it paints its rows, so it needs a
+    // deadline: unbounded, a stalled connection held the whole page.
+    const res = await apiFetch(`${getApiBase()}/api/launcher/servers`, {
       headers: launcherApiHeaders(),
     });
     if (!res.ok) return { games: [], providers: [] };
@@ -11320,7 +11322,8 @@ ipcMain.handle("get-game-discussions", async (_event, slug) => {
 // --- Friends API Bridging ---
 ipcMain.handle("get-friends", async () => {
   try {
-    const res = await fetch(`${getApiBase()}/api/friends`, { headers: launcherApiHeaders() });
+    // Same deal — one of the seven calls the home page blocks on.
+    const res = await apiFetch(`${getApiBase()}/api/friends`, { headers: launcherApiHeaders() });
     if (!res.ok) throw new Error("Failed to fetch friends");
     return await res.json();
   } catch (err) {
@@ -11329,7 +11332,13 @@ ipcMain.handle("get-friends", async () => {
 });
 
 async function launcherJson(path, { method = "GET", body } = {}) {
-  const res = await fetch(`${getApiBase()}${path}`, {
+  /*
+   * apiFetch, not fetch: thirty call sites route through here, including the
+   * parties and play-together reads the home page waits on. A bare fetch has
+   * no response deadline, so a stalled connection held the whole page — the
+   * same failure apiFetch was written for on the game page.
+   */
+  const res = await apiFetch(`${getApiBase()}${path}`, {
     method,
     headers: launcherApiHeaders(body != null ? { "content-type": "application/json" } : {}),
     body: body != null ? JSON.stringify(body) : undefined,
