@@ -43,19 +43,20 @@ export async function generateMetadata({
 
   return pageMetadata({
     /*
-     * page.title already opens with "Free Alternatives to …", so the old
-     * "(Free & Open Source)" suffix repeated the word Free and spent 21 of the
-     * ~48 characters available before the layout's " · PlayBound" suffix.
+     * The full title, however long.
      *
-     * Two of these name a second game ("… Supreme Commander & Total
-     * Annihilation") and still overflow on their own. Those drop the trailing
-     * "& …" for the search result only — the full title stays as the h1 and in
-     * the article schema, so nothing visible on the page changes.
+     * This used to cut anything over 60 characters at its first " & ", which
+     * traded an indexed keyword for a cosmetic one. Google indexes the whole
+     * title tag and only truncates what it *displays*, so trimming ourselves
+     * removed "Total Annihilation", "Transport Tycoon" and "Hearts of Iron"
+     * from the index on the very pages built to rank for them — while a
+     * display truncation would have cost nothing.
+     *
+     * It also split inside a game's own name. "Free Alternatives to Axis &
+     * Allies & Hearts of Iron" became "Free Alternatives to Axis", which names
+     * no game that exists.
      */
-    title:
-      page.title.length + " · PlayBound".length > 60
-        ? page.title.split(" & ")[0]!
-        : page.title,
+    title: page.title,
     description: page.verdict,
     path: `/alternatives/${page.slug}`,
   });
