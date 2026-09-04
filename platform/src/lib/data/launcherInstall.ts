@@ -151,6 +151,39 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     ],
     note: "Official current 64-bit Windows installer.",
   },
+  meteorite: {
+    enabled: true,
+    /*
+     * The author's own Windows build, mirrored.
+     *
+     * itch is where Bauxite publishes it, but its uploads sit behind the
+     * name-your-own-price step, which needs a session and a CSRF token — no
+     * upload id ever reaches the page, so the scraper has nothing to fetch and
+     * the install failed with "no download files found".
+     *
+     * GitHub is not the alternative it looks like. Both releases carry zero
+     * assets, and the repo — which the Godot Asset Library also serves — is a
+     * Godot 3.0 project with no executable. Its fonts/ folder holds only
+     * main_font.tres, because the font is excluded from the repo: publishing
+     * the raw .ttf would redistribute it, while embedding it in a compiled
+     * build is permitted. That is why the README's "download a font first"
+     * applies to building from source and not to this package, whose
+     * Meteorite.pck already carries res://fonts/uni0553-webfont.ttf at 138,460
+     * bytes. The game renders its text.
+     *
+     * Mirroring is ours to do: the Asset Library entry, Bauxite's own
+     * submission, declares the project CC-BY-SA-4.0. The zip is byte-for-byte
+     * theirs — nothing added, nothing repacked.
+     */
+    kind: "direct-zip",
+    url: "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher-packages/games/meteorite/meteorite-win.zip",
+    fileName: "meteorite-win.zip",
+    versionLabel: "1.0.1",
+    checksumMd5: "13fc2856905a4a616d6b6669ff4e199c",
+    exeHint: "Meteorite",
+    knownExePaths: ["Meteorite.exe"],
+    note: "Mirrored from the author's itch release under CC-BY-SA-4.0. A lowres metroidvania FPS made in Godot for LOWREZJAM 2018.",
+  },
   "alien-swarm": {
     enabled: true,
     /*
