@@ -10577,3 +10577,68 @@ textarea.input-text {
 .copy-error-badge:active {
   transform: scale(0.96);
 }
+
+/* ── Controls tab ───────────────────────────────────────────────────────── */
+/* Tabular data gets a real table: it is what a keybind list is, and it keeps
+   the launcher and the web controls page telling the same story. */
+.controls-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0 18px;
+  font-size: 13px;
+}
+.controls-table caption {
+  text-align: left;
+  font-weight: 700;
+  padding-bottom: 6px;
+  color: var(--text);
+}
+.controls-table th,
+.controls-table td {
+  text-align: left;
+  padding: 7px 12px 7px 0;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.controls-table thead th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  border-bottom-width: 2px;
+}
+.controls-table tbody th {
+  font-weight: 500;
+  color: var(--text);
+}
+.controls-table kbd {
+  display: inline-block;
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--bg-raised, rgba(255, 255, 255, 0.05));
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 12px;
+  white-space: nowrap;
+}
+/* A caveat about one binding, under the action it belongs to. */
+.control-note {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+/* A caveat about a whole scheme — the YSoccer D-pad case. */
+.controls-note {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--warning-border, rgba(245, 158, 11, 0.35));
+  background: var(--warning-bg, rgba(245, 158, 11, 0.1));
+  border-radius: 8px;
+  font-size: 13px;
+}
+.controls-source {
+  margin-top: -6px;
+  font-size: 11px;
+}

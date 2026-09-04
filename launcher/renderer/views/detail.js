@@ -44,6 +44,89 @@ const HW_VERDICT_LABEL = {
   unknown: "Unknown",
 };
 
+/*
+ * Default controls, rendered from the same block the web controls page uses.
+ *
+ * A tab here rather than a page: someone in the launcher has already decided
+ * to play and wants to know what to press. The web version is the one built
+ * to be found by search.
+ *
+ * Kept close to the web markup — real tables, grouped, source shown — so the
+ * two cannot drift into telling different stories.
+ */
+const CONTROL_SCHEME_LABELS = {
+  keyboard: "Mouse & keyboard",
+  controller: "Controller",
+  flightstick: "Flightstick",
+  touch: "Touch",
+};
+const CONTROL_SCHEME_ORDER = ["keyboard", "controller", "flightstick", "touch"];
+const CONTROL_GROUP_ORDER = [
+  "Movement", "Camera", "Combat", "Interaction", "Inventory",
+  "Interface", "Multiplayer", "Vehicle", "Flight", "Building", "Other",
+];
+
+/** Schemes worth showing, in presentation order. */
+function documentedControlSchemes(detail) {
+  return (detail?.controls?.schemes || [])
+    .filter((s) => s && ((s.bindings && s.bindings.length > 0) || s.notes || s.supported === false))
+    .sort((a, b) => CONTROL_SCHEME_ORDER.indexOf(a.scheme) - CONTROL_SCHEME_ORDER.indexOf(b.scheme));
+}
+
+/** True when there are actual bindings, which is what earns the tab. */
+function hasControlBindings(detail) {
+  return documentedControlSchemes(detail).some((s) => s.bindings && s.bindings.length > 0);
+}
+
+function controlsPanelHtml(detail) {
+  const schemes = documentedControlSchemes(detail);
+  if (schemes.length === 0) return "";
+
+  const sections = schemes
+    .map((block) => {
+      const buckets = new Map();
+      for (const b of block.bindings || []) {
+        const g = b.group || "Other";
+        if (!buckets.has(g)) buckets.set(g, []);
+        buckets.get(g).push(b);
+      }
+      const tables = CONTROL_GROUP_ORDER.filter((g) => buckets.has(g))
+        .map((g) => {
+          const rows = buckets
+            .get(g)
+            .map(
+              (b) =>
+                `<tr><th scope="row">${escapeHtml(b.action)}${
+                  b.note ? `<span class="control-note">${escapeHtml(b.note)}</span>` : ""
+                }</th><td><kbd>${escapeHtml(b.input)}</kbd></td></tr>`
+            )
+            .join("");
+          return `<table class="controls-table"><caption>${escapeHtml(g)}</caption><thead><tr><th scope="col">Action</th><th scope="col">Default input</th></tr></thead><tbody>${rows}</tbody></table>`;
+        })
+        .join("");
+
+      const label = CONTROL_SCHEME_LABELS[block.scheme] || block.scheme;
+      const unsupported =
+        block.supported === false
+          ? `<p class="view-sub">${escapeHtml(detail.title || "This game")} does not support this input method.</p>`
+          : "";
+      const notes = block.notes ? `<p class="controls-note">${escapeHtml(block.notes)}</p>` : "";
+      const source = block.sourceUrl
+        ? `<p class="view-sub controls-source">Source: <a href="${escapeHtml(block.sourceUrl)}" data-ext="${escapeHtml(block.sourceUrl)}">${escapeHtml(block.sourceLabel || "official documentation")}</a></p>`
+        : block.verified
+          ? `<p class="view-sub controls-source">Verified against the game by PlayBound.</p>`
+          : "";
+
+      return `<section class="detail-section"><h2 class="detail-section-title">${escapeHtml(label)}</h2>${unsupported}${notes}${tables}${source}</section>`;
+    })
+    .join("");
+
+  const overall = detail.controls && detail.controls.notes
+    ? `<p class="controls-note">${escapeHtml(detail.controls.notes)}</p>`
+    : "";
+  return `${overall}${sections}<p class="view-sub">These are the game's own defaults — anything you have remapped will differ.</p>`;
+}
+
 function getFeatureIcon(featureText) {
   const text = String(featureText || "").toLowerCase();
   // Singleplayer / Campaign / Solo / Story
@@ -732,6 +815,7 @@ async function renderGameDetailView(slug, opts = {}) {
     <nav class="detail-tabs" id="detail-tabs">
       <button type="button" class="detail-tab ${state.detailActiveTab === "overview" ? "active" : ""}" data-tab="overview">Overview</button>
       <button type="button" class="detail-tab ${state.detailActiveTab === "install" ? "active" : ""}" data-tab="install">Install</button>
+      ${hasControlBindings(detail) ? `<button type="button" class="detail-tab ${state.detailActiveTab === "controls" ? "active" : ""}" data-tab="controls">Controls</button>` : ""}
       ${(detail.hasServerBrowser ?? detail.multiplayer) ? `<button type="button" class="detail-tab ${state.detailActiveTab === "servers" ? "active" : ""}" data-tab="servers">Servers</button>` : ""}
       ${detail.mods && detail.mods.length > 0 ? `<button type="button" class="detail-tab ${state.detailActiveTab === "mods" ? "active" : ""}" data-tab="mods">Mods</button>` : ""}
       <button type="button" class="detail-tab ${state.detailActiveTab === "guides" ? "active" : ""}" data-tab="guides">Guides</button>
@@ -865,6 +949,7 @@ async function renderGameDetailView(slug, opts = {}) {
       </div>
 
       <!-- ── Dynamic Subnav Tabs ─────────────────────────────── -->
+      <div class="detail-tab-panel ${state.detailActiveTab === "controls" ? "active" : ""}" data-panel="controls" id="detail-controls-sec">${controlsPanelHtml(detail)}</div>
       <div class="detail-tab-panel ${state.detailActiveTab === "servers" ? "active" : ""}" data-panel="servers" id="detail-servers-sec"></div>
       <div class="detail-tab-panel ${state.detailActiveTab === "mods" ? "active" : ""}" data-panel="mods" id="detail-mods-sec"></div>
       <div class="detail-tab-panel ${state.detailActiveTab === "guides" ? "active" : ""}" data-panel="guides" id="detail-guides-sec"><p class="view-sub">Loading guides…</p></div>
