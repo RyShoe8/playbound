@@ -2657,20 +2657,42 @@ async function resolveDownload(entry) {
         "This game only ships a Windows installer in the catalog. On Mac, use Locate to select the .app if you already installed it."
       );
     }
+    const overridden = effectiveUrl !== entry.url;
     let name = entry.fileName;
     try {
       const urlFileName = path.basename(new URL(effectiveUrl).pathname);
-      if (effectiveUrl !== entry.url || !name || name === "download" || !name.includes(".")) {
+      if (overridden || !name || name === "download" || !name.includes(".")) {
         if (urlFileName && urlFileName !== "download" && urlFileName.includes(".")) {
           name = urlFileName;
         }
       }
     } catch {}
-    if (!name || name === "download" || !name.includes(".")) {
+    /*
+     * `fileName` describes the Windows build, so a per-platform override must
+     * not be allowed to keep it — the extension decides how the download is
+     * installed, and 7KAA's Linux .tar.gz saved as 7kaa-install-win32.exe gets
+     * openPath'd as an installer instead of extracted.
+     *
+     * The basename alone is not enough to catch it: SourceForge serves
+     * .../7kaa-2.15.7-linux-x86-64.tar.gz/download, so the basename is
+     * "download" and the real name is the segment before it. Scan from the end
+     * so that trailing-segment shape resolves to the file rather than to some
+     * earlier archive-looking directory.
+     */
+    if (
+      (overridden && name === entry.fileName) ||
+      !name ||
+      name === "download" ||
+      !name.includes(".")
+    ) {
       try {
-        const parts = new URL(effectiveUrl).pathname.split("/").filter(Boolean);
-        const fromPath = parts.find((p) => /\.(exe|zip|7z|rar|msi|dmg|jar|tar\.gz|tar\.xz|tgz|appimage|bin)$/i.test(p));
-        name = fromPath || entry.fileName || `${entry.slug}.bin`;
+        const parts = new URL(effectiveUrl).pathname.split("/").filter(Boolean).reverse();
+        const fromPath = parts.find((p) =>
+          /\.(exe|zip|7z|rar|msi|dmg|jar|tar\.gz|tar\.xz|tgz|appimage|bin)$/i.test(
+            decodeURIComponent(p)
+          )
+        );
+        name = (fromPath && decodeURIComponent(fromPath)) || entry.fileName || `${entry.slug}.bin`;
       } catch {
         name = entry.fileName || `${entry.slug}.bin`;
       }
@@ -3682,21 +3704,32 @@ async function extractOverlayReplacing(archivePath, destDir) {
   }
 }
 
+/**
+ * Whether a filename is a tar archive the launcher should hand to `tar`.
+ *
+ * `.tar.bz2` and plain `.tar` are included because upstreams publish them and
+ * `tar -xaf` reads them; the old inline check listed only the three we happened
+ * to have recipes for at the time.
+ */
+function isTarball(name) {
+  return /\.(tar\.(gz|xz|bz2)|tgz|txz|tbz2?|tar)$/i.test(String(name || ""));
+}
+
 async function extractArchive(archivePath, destDir) {
   const lower = String(archivePath || "").toLowerCase();
   await fsp.mkdir(destDir, { recursive: true });
   if (lower.endsWith(".dmg")) {
     await extractDmg(archivePath, destDir);
-  } else if (sevenZipBinary()) {
-    try {
-      await extract7z(archivePath, destDir, (pct) =>
-        sendProgress({ phase: "extracting", pct })
-      );
-    } catch (err) {
-      console.warn("[7z] extract failed, falling back to system unzipper:", err?.message || err);
-      await extractZip(archivePath, destDir);
-    }
-  } else if (lower.endsWith(".tar.gz") || lower.endsWith(".tgz") || lower.endsWith(".tar.xz")) {
+  } else if (isTarball(lower)) {
+    /*
+     * Tar must be tested before 7-Zip, not after. 7zip-bin ships a 7za for
+     * linux and mac as well as win, so sevenZipBinary() is never null on the
+     * two platforms that actually receive tarballs — which left this branch
+     * unreachable. Worse, it failed quietly: 7-Zip treats gzip and xz as
+     * single-file compressors, so it unwrapped one layer and dropped a bare
+     * .tar into the game directory instead of the game, with a zero exit code
+     * and nothing for the catch below to catch.
+     */
     if (process.platform === "win32") {
       throw new Error("tar archives are not supported on Windows installs");
     }
@@ -3711,6 +3744,15 @@ async function extractArchive(archivePath, destDir) {
         code === 0 ? resolve() : reject(new Error(`tar extract failed: ${err || code}`))
       );
     });
+  } else if (sevenZipBinary()) {
+    try {
+      await extract7z(archivePath, destDir, (pct) =>
+        sendProgress({ phase: "extracting", pct })
+      );
+    } catch (err) {
+      console.warn("[7z] extract failed, falling back to system unzipper:", err?.message || err);
+      await extractZip(archivePath, destDir);
+    }
   } else {
     await extractZip(archivePath, destDir);
   }
@@ -6222,7 +6264,21 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     return { status: "installed", version: dl.version, dir: gameDir };
   }
 
-  if (entry.kind === "github-installer" || entry.kind === "direct-installer") {
+  /*
+   * A per-platform URL can hand an installer recipe something that is not an
+   * installer: 7KAA ships a setup .exe on Windows and a .tar.gz on Linux off
+   * the same recipe. openPath on a tarball opens the desktop archive manager
+   * and waits forever for an install that is not happening, and the direct-exe
+   * branch below would copy it to 7kaa.exe. Neither produces a game.
+   *
+   * Falling through to the extract-and-find tail is what the file actually
+   * needs, and that tail already handles unwrapping, overlays and exe
+   * discovery. Same reasoning as the AppImage branch above — the recipe names
+   * the Windows shape, so the download has to be believed over the recipe.
+   */
+  const downloadIsTarball = isTarball(dl.name);
+
+  if (!downloadIsTarball && (entry.kind === "github-installer" || entry.kind === "direct-installer")) {
     sendProgress({
       phase: "installer-ready",
       addon: `Waiting for the ${entry.title || slug} installer to finish…`,
@@ -6246,7 +6302,7 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     return result;
   }
 
-  if (entry.kind === "direct-exe") {
+  if (!downloadIsTarball && entry.kind === "direct-exe") {
     sendProgress({ phase: "extracting" });
     await fsp.mkdir(gameDir, { recursive: true });
     const destName = dl.name.toLowerCase().endsWith(".exe") ? dl.name : `${entry.slug}.exe`;
