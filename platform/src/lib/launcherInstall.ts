@@ -37,6 +37,8 @@ export type LauncherInstallAddon = {
   description?: string;
   url: string;
   fileName: string;
+  /** Always installed with the game; shown for size transparency but cannot be unchecked. */
+  required?: boolean;
 };
 
 export type SteamPrerequisite = {

@@ -2,6 +2,15 @@ import type { Types } from "mongoose";
 import { defaultEndsAt, formatEventWhen } from "@/lib/events/time";
 import { deriveEventStatus, type EventStatus, type EventType } from "@/lib/events/types";
 import type { RsvpCounts } from "@/lib/events/rsvpCounts";
+import { SITE_URL } from "@/lib/site";
+
+function eventCoverUrl(pathOrUrl?: string | null): string | null {
+  const value = String(pathOrUrl || "").trim();
+  if (!value) return null;
+  if (/^https?:\/\//i.test(value)) return value;
+  if (value.startsWith("//")) return `https:${value}`;
+  return `${SITE_URL}${value.startsWith("/") ? value : `/${value}`}`;
+}
 
 export type SerializedEvent = {
   id: string;
@@ -81,7 +90,7 @@ export function serializeEvent(
     description: e.description || "",
     eventType: (e.eventType || "game_night") as EventType,
     gameSlug: e.gameSlug || null,
-    coverImage: e.coverImage || fallbackCover || null,
+    coverImage: eventCoverUrl(e.coverImage || fallbackCover),
     editionSlug: e.editionSlug || null,
     modSlugs: e.modSlugs || [],
     recommendedModSlugs: e.recommendedModSlugs || [],

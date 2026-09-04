@@ -18,6 +18,13 @@ export type HostableGame = {
 };
 
 export const HOSTABLE_GAMES: Record<string, HostableGame> = {
+  morrowind: {
+    slug: "morrowind",
+    title: "TES3MP",
+    defaultPort: 25565,
+    portEnd: 25585,
+    protocol: "udp",
+  },
   openra: {
     slug: "openra",
     title: "OpenRA",
@@ -270,6 +277,7 @@ export const HOSTABLE_SLUGS = Object.keys(HOSTABLE_GAMES);
  * Catalog slugs that differ from the slug the VPS knows the game by.
  */
 const HOSTABLE_SLUG_ALIASES: Record<string, string> = {
+  tes3mp: "morrowind",
   "0ad": "0-ad",
   openmohaa: "medal-of-honor-allied-assault",
   etlegacy: "wolfenstein-enemy-territory",

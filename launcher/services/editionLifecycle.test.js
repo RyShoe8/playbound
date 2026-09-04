@@ -1,6 +1,5 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const path = require("node:path");
 const { mayRunNativeUninstaller, editionLaunchExecutable } = require("./editionLifecycle");
 
 test("removing one edition never invokes a native product uninstaller", () => {
@@ -9,12 +8,11 @@ test("removing one edition never invokes a native product uninstaller", () => {
   assert.equal(mayRunNativeUninstaller(null), true);
 });
 
-test("normal TES3MP play opens its server browser", () => {
+test("normal TES3MP play keeps the client for its locally hosted server", () => {
   const info = { dir: "C:\\Games\\morrowind\\tes3mp", exe: "C:\\Games\\morrowind\\tes3mp\\tes3mp.exe" };
-  const browser = path.join(info.dir, "tes3mp-browser.exe");
   assert.equal(
-    editionLaunchExecutable(info, { gameSlug: "morrowind", editionSlug: "tes3mp", joining: false }, (p) => p === browser),
-    browser
+    editionLaunchExecutable(info, { gameSlug: "morrowind", editionSlug: "tes3mp", joining: false }),
+    info.exe
   );
 });
 

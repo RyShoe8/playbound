@@ -78,12 +78,12 @@ function renderDeepLinkView(ctx) {
       ${
         entry?.addons && entry.addons.length > 0 && ctx.action === "install"
           ? `<div class="detail-addons-picker" style="margin: 0.75rem 0;">
-               <p style="font-weight:600; margin-bottom:0.5rem; font-size:13px; color:#a1a1aa;">Optional Downloads</p>
+               <p style="font-weight:600; margin-bottom:0.5rem; font-size:13px; color:#a1a1aa;">Included Downloads</p>
                ${entry.addons
                  .map(
                    (a) =>
                      `<label style="display:block; font-size:13px; margin-bottom:0.25rem; color:#e2e8f0; display:flex; align-items:flex-start; gap:0.5rem; cursor:pointer;">
-                        <input type="checkbox" class="addon-checkbox" value="${escapeHtml(a.id)}" checked style="margin-top:2px;" />
+                        <input type="checkbox" class="addon-checkbox" value="${escapeHtml(a.id)}" checked${a.required ? " disabled" : ""} style="margin-top:2px;" />
                         <div>
                           <div>${escapeHtml(a.name)}</div>
                           <div style="font-size:11px; color:#a1a1aa;">${escapeHtml(a.description || "")}</div>

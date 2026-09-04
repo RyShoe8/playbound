@@ -57,6 +57,10 @@ describe("host mode configuration", () => {
     expect(canSelfHost("ysoccer")).toBe(false);
   });
 
+  it("offers TES3MP local, PlayBound dedicated, and public server hosting", () => {
+    expect(hostModesFor("morrowind")).toEqual(["public", "self", "dedicated"]);
+  });
+
   it("offers nothing for a game PlayBound does not run multiplayer for", () => {
     // League of Legends uses Riot's own networking end to end.
     expect(hostModesFor("league-of-legends")).toEqual([]);

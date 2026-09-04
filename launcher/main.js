@@ -2085,6 +2085,31 @@ function resolveMediaUrl(pathOrUrl) {
   return s.startsWith("/") ? `${base}${s}` : `${base}/${s}`;
 }
 
+/** Normalize media fields returned by event endpoints for the file:// renderer. */
+function resolveEventMedia(payload) {
+  if (!payload || typeof payload !== "object") return payload;
+  const normalized = { ...payload };
+  if (normalized.event && typeof normalized.event === "object") {
+    normalized.event = {
+      ...normalized.event,
+      coverImage: resolveMediaUrl(normalized.event.coverImage),
+    };
+  }
+  if (Array.isArray(normalized.events)) {
+    normalized.events = normalized.events.map((event) => ({
+      ...event,
+      coverImage: resolveMediaUrl(event?.coverImage),
+    }));
+  }
+  if (normalized.game && typeof normalized.game === "object") {
+    normalized.game = {
+      ...normalized.game,
+      coverImage: resolveMediaUrl(normalized.game.coverImage),
+    };
+  }
+  return normalized;
+}
+
 function launcherApiHeaders(extra = {}) {
   const settings = loadSettings();
   const headers = {
@@ -6458,8 +6483,12 @@ function resolveInsideGameDir(gameDir, relative) {
 }
 
 async function processAddons(entry, gameDir, selectedAddons) {
-  if (!entry.addons || !Array.isArray(selectedAddons) || selectedAddons.length === 0) return;
-  for (const addonId of selectedAddons) {
+  if (!Array.isArray(entry.addons) || entry.addons.length === 0) return;
+  const requested = new Set(Array.isArray(selectedAddons) ? selectedAddons : []);
+  for (const addon of entry.addons) {
+    if (addon.required) requested.add(addon.id);
+  }
+  for (const addonId of requested) {
     const addon = entry.addons.find((a) => a.id === addonId);
     if (!addon) continue;
     sendProgress({ phase: "downloading", addon: addon.name });
@@ -7624,7 +7653,28 @@ async function playGameInner(slug, join = null, editionSlug = null) {
       ? [...entry.launchArgs]
       : [];
   const resolvedPort = Number(join?.port) || defaultGamePort(slug) || Number(entry?.port) || 0;
-  const resolvedJoin = join?.host ? { ...join, port: resolvedPort } : null;
+  let resolvedJoin = join?.host ? { ...join, port: resolvedPort } : null;
+
+  /*
+   * Play on the TES3MP edition means host a private server on this PC, then
+   * join it. The public browser belongs to Join Multiplayer, not Play.
+   */
+  if (slug === "morrowind" && edSlug === "tes3mp" && !resolvedJoin) {
+    const local = localDedicatedServerFor(slug, edSlug);
+    if (!local.ok) throw new Error(local.reason);
+    const port = Number(local.hostLaunch.port) || 25565;
+    const started = localServers.start(`standalone:${slug}:${edSlug}`, {
+      exe: local.exe,
+      cwd: local.cwd,
+      hostLaunch: local.hostLaunch,
+      port,
+      settings: {},
+      revision: Date.now(),
+    });
+    if (!started.ok) throw new Error(started.error || "Could not start the TES3MP server.");
+    resolvedJoin = { host: "127.0.0.1", port };
+    await new Promise((resolve) => setTimeout(resolve, 750));
+  }
 
   /*
    * The arbiter of a peer game launches its own game as the host.
@@ -10392,7 +10442,7 @@ ipcMain.handle("get-events", async (_event, opts) => {
       headers: launcherApiHeaders({ accept: "application/json" }),
     });
     if (!res.ok) return { events: [] };
-    return await res.json();
+    return resolveEventMedia(await res.json());
   } catch {
     return { events: [] };
   }
@@ -10403,7 +10453,7 @@ ipcMain.handle("get-friends-upcoming-events", async () => {
       headers: launcherApiHeaders({ accept: "application/json" }),
     });
     if (!res.ok) return { events: [] };
-    return await res.json();
+    return resolveEventMedia(await res.json());
   } catch {
     return { events: [] };
   }
@@ -10458,7 +10508,7 @@ ipcMain.handle("get-event-detail", async (_event, eventId) => {
       headers: launcherApiHeaders({ accept: "application/json" }),
     });
     if (!res.ok) return null;
-    return await res.json();
+    return resolveEventMedia(await res.json());
   } catch {
     return null;
   }
@@ -12720,22 +12770,24 @@ function resolveLocalServerBinary(gameDir, hostLaunch) {
 }
 
 /** Everything needed to host this game locally, or why we cannot. */
-function localDedicatedServerFor(slug) {
+function localDedicatedServerFor(slug, editionSlug = null) {
   const entry =
     catalog.find((e) => e.slug === slug) || bundledCatalog.find((e) => e.slug === slug) || null;
   const hostLaunch = entry?.hostLaunch || null;
-  if (!hostLaunch?.argsTemplate?.length) {
+  if (!hostLaunch?.argsTemplate?.length && !hostLaunch?.configFile) {
     return { ok: false, reason: `PlayBound has no server template for ${entry?.title || slug}.` };
   }
   const game = ensureGameInstallRecord(loadState()[slug]);
-  const exe = resolveLocalServerBinary(game?.dir, hostLaunch);
+  const installedEdition = editionSlug ? game?.editions?.[editionSlug] : null;
+  const gameDir = installedEdition?.dir || game?.dir;
+  const exe = resolveLocalServerBinary(gameDir, hostLaunch);
   if (!exe) {
     return {
       ok: false,
       reason: `${entry?.title || slug} does not ship ${hostLaunch.binaryHint} in this install.`,
     };
   }
-  return { ok: true, exe, cwd: game?.dir || path.dirname(exe), hostLaunch, entry };
+  return { ok: true, exe, cwd: gameDir || path.dirname(exe), hostLaunch, entry };
 }
 
 
@@ -12854,7 +12906,11 @@ async function reconcileSelfHostServer(partyId) {
    * server — the same reason the old menu-driven path probed rather than
    * trusting the click.
    */
-  const listening = await waitForLocalListener(port, 20_000);
+  const listening = hostLaunch?.protocol === "udp"
+    ? await new Promise((resolve) =>
+        setTimeout(() => resolve(localServers.get(partyId)?.child?.exitCode == null), 1500)
+      )
+    : await waitForLocalListener(port, 20_000);
   void reportSelfHostState(partyId, {
     appliedRevision: Number(desired.desiredRevision || 0),
     ready: listening,

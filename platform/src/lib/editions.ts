@@ -152,6 +152,7 @@ function toEdition(doc: LeanEdition): Edition {
           (editionSlugStr === "official" || editionSlugStr === "opentesarena")) ||
         (gameSlugStr === "daggerfall" &&
           (editionSlugStr === "classic-dos" || editionSlugStr === "daggerfall-unity")) ||
+        (gameSlugStr === "privateer-gemini-gold" && editionSlugStr === "gemini-gold-1-03") ||
         (gameSlugStr === "holocure" &&
           (editionSlugStr === "playbound" || editionSlugStr === "official")))
     ) {
@@ -215,7 +216,9 @@ function toEdition(doc: LeanEdition): Edition {
       : undefined,
     hardwareRequirements: (doc.hardwareRequirements as Edition["hardwareRequirements"]) || null,
     platforms:
-      Array.isArray(doc.platforms) && doc.platforms.length > 0
+      gameSlugStr === "privateer-gemini-gold" && editionSlugStr === "gemini-gold-1-03"
+        ? seedMatch?.platforms
+        : Array.isArray(doc.platforms) && doc.platforms.length > 0
         ? (doc.platforms as string[])
         : seedMatch?.platforms,
     features: useCuratedFreedoomMetadata ? seedMatch!.features ?? [] : (doc.features as string[]) ?? [],
@@ -391,8 +394,15 @@ export function deriveVirtualEdition(game: Game): Edition {
 
 /** Editions removed from seed but possibly still stored in Mongo. */
 function filterRetiredEditions(gameSlug: string, editions: Edition[]): Edition[] {
-  if (gameSlug !== "wipeout-rewrite") return editions;
-  return editions.filter((e) => e.slug !== "phantom-edition");
+  if (gameSlug === "wipeout-rewrite") {
+    return editions.filter((e) => e.slug !== "phantom-edition");
+  }
+  if (gameSlug === "privateer-gemini-gold") {
+    // The old Unix row represented an operating-system package, not a distinct
+    // edition. The unified 1.03 recipe now selects that package itself.
+    return editions.filter((e) => e.slug !== "gemini-gold-unix");
+  }
+  return editions;
 }
 
 /**

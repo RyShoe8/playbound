@@ -824,12 +824,12 @@ async function renderGameDetailView(slug, opts = {}) {
           ${
             detail.addons && detail.addons.length > 0
               ? `<div class="detail-addons-picker" style="margin: 12px 0 16px;">
-                 <p style="font-weight:700; margin-bottom:0.5rem; font-size:13px; color:var(--text-main);">Optional Downloads & Addons</p>
+                 <p style="font-weight:700; margin-bottom:0.5rem; font-size:13px; color:var(--text-main);">Included Downloads & Addons</p>
                  ${detail.addons
                    .map(
                      (a) =>
                        `<label style="display:block; font-size:13px; margin-bottom:0.35rem; color:#e2e8f0; display:flex; align-items:flex-start; gap:0.6rem; cursor:pointer;">
-                          <input type="checkbox" class="addon-checkbox" value="${escapeHtml(a.id)}" checked style="margin-top:3px;" />
+                          <input type="checkbox" class="addon-checkbox" value="${escapeHtml(a.id)}" checked${a.required ? " disabled" : ""} style="margin-top:3px;" />
                           <div>
                             <div style="font-weight:600">${escapeHtml(a.name)}</div>
                             <div style="font-size:11px; color:#a1a1aa;">${escapeHtml(a.description || "")}</div>
