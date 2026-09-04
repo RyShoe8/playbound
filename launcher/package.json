@@ -37,6 +37,7 @@
     "test:couch": "node services/couch/protocol.test.js",
     "test:runner": "node services/CompatibilityRunner.test.js",
     "test:gamelauncher": "node services/GameLauncher.test.js",
+    "test:edition-lifecycle": "node services/editionLifecycle.test.js",
     "test:vigem": "node services/couch/windowsVigem.test.js",
     "test:elevate": "node services/GameLauncher.elevate.test.js"
   },
