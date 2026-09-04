@@ -187,6 +187,44 @@ let catalog = (() => {
 })();
 
 /**
+ * Slug index over the catalog.
+ *
+ * `catalogEntry(slug)` was written out at thirty-five call
+ * sites, several of them on the install and play paths and inside IPC handlers
+ * the renderer calls per card — each one a linear scan of every game in the
+ * catalog to answer a question a Map answers outright.
+ *
+ * Built lazily and dropped whenever `catalog` is reassigned, which happens in
+ * exactly two places: a remote refresh and ensureCatalogEntry merging one game
+ * back in. Anything that assigns `catalog` must null this, which is what
+ * setCatalog is for.
+ */
+let catalogIndex = null;
+
+/** Replace the catalog and drop the stale index in one step. */
+function setCatalog(next) {
+  catalog = next;
+  catalogIndex = null;
+}
+
+/** The catalog entry for a slug, or null. */
+function catalogEntry(slug) {
+  const key = String(slug || "");
+  if (!key) return null;
+  if (!catalogIndex) {
+    catalogIndex = new Map();
+    if (Array.isArray(catalog)) {
+      for (const entry of catalog) {
+        // Last wins, matching find()'s first-wins only when slugs are unique —
+        // which they are, and catalogMerge is what keeps them that way.
+        if (entry?.slug && !catalogIndex.has(entry.slug)) catalogIndex.set(entry.slug, entry);
+      }
+    }
+  }
+  return catalogIndex.get(key) || null;
+}
+
+/**
  * @param {string} raw
  * @param {{ campaign?: string, content?: string, skipUtm?: boolean } | undefined} opts
  */
@@ -1761,7 +1799,7 @@ function editionInstallDir(slug, editionSlug) {
 
 function maybeDiscoverBaseGameInEditionDir(slug, game, state) {
   if (!Array.isArray(catalog) || !game) return;
-  const catEntry = catalog.find((e) => e.slug === slug);
+  const catEntry = catalogEntry(slug);
   if (!catEntry || !Array.isArray(catEntry.editions) || catEntry.editions.length <= 1) return;
   const baseEdCat =
     catEntry.editions.find((ce) => ce.isDefault || ce.slug === "official" || ce.slug === "default") ||
@@ -1819,7 +1857,7 @@ function maybeDiscoverBaseGameInEditionDir(slug, game, state) {
 function installedEditionsPayload(slug, state = loadState()) {
   const game = ensureGameInstallRecord(state[slug]);
   maybeDiscoverBaseGameInEditionDir(slug, game, state);
-  const catEntry = catalog.find((e) => e.slug === slug);
+  const catEntry = catalogEntry(slug);
   const pickList = (...cands) => {
     for (const c of cands) {
       if (Array.isArray(c) && c.length > 0) return c;
@@ -1929,7 +1967,7 @@ async function flushLastCrashReport() {
  * Identity for an edition event, derived from the catalog entry / install state.
  */
 function editionInfoFor(slug, extra = {}) {
-  const entry = catalog.find((e) => e.slug === slug);
+  const entry = catalogEntry(slug);
   let stateMeta = {};
   try {
     stateMeta = loadState()[slug] || {};
@@ -2200,7 +2238,7 @@ function listRecentlyPlayed() {
   for (const [slug, data] of Object.entries(recent)) {
     const info = state[slug];
     if (!exeOnDisk(info)) continue;
-    const entry = catalog.find((e) => e.slug === slug);
+    const entry = catalogEntry(slug);
     /*
      * Spread the whole catalog entry rather than hand-picking fields. The old
      * list left out genres, tags, approxSize and kind, so Recently Played cards
@@ -2300,7 +2338,7 @@ async function refreshRemoteCatalog(force = false) {
     });
     if (!games) return;
     for (const entry of games) registerCatalogEntryHosts(entry);
-    catalog = games;
+    setCatalog(games);
 
     lastCatalogRefreshTime = Date.now();
     saveCatalogCache(catalog);
@@ -2315,7 +2353,7 @@ async function refreshRemoteCatalog(force = false) {
 }
 
 async function ensureCatalogEntry(slug, forceRemote = false) {
-  const existing = catalog.find((e) => e.slug === slug);
+  const existing = catalogEntry(slug);
   if (!forceRemote && existing && existing.kind && existing.kind !== "external") {
     registerCatalogEntryHosts(existing);
     return existing;
@@ -2333,7 +2371,7 @@ async function ensureCatalogEntry(slug, forceRemote = false) {
       ...entry,
       hostLaunch: entry.hostLaunch ?? existing?.hostLaunch ?? null,
     };
-    catalog = [...catalog.filter((e) => e.slug !== entry.slug), merged];
+    setCatalog([...catalog.filter((e) => e.slug !== entry.slug), merged]);
     saveCatalogCache(catalog);
     return merged;
   } catch (err) {
@@ -2388,7 +2426,7 @@ function buildContextPayload() {
     const baseSlug = context.mod?.baseGameSlug || null;
     const base = baseSlug ? state[baseSlug] : null;
     const basePath = base?.dir && fs.existsSync(base.dir) ? base.dir : null;
-    const baseEntry = baseSlug ? catalog.find((e) => e.slug === baseSlug) : null;
+    const baseEntry = baseSlug ? catalogEntry(baseSlug) : null;
     const modInstalled = Boolean(state.__mods__?.[context.slug]);
     return {
       action: "install-mod",
@@ -2416,7 +2454,7 @@ function buildContextPayload() {
     };
   }
 
-  const entry = catalog.find((e) => e.slug === context.slug);
+  const entry = catalogEntry(context.slug);
   if (!entry) return { action: context.action, slug: context.slug, entry: null };
   const state = loadState();
   const installed = state[entry.slug];
@@ -4712,14 +4750,14 @@ function resumePendingInstallerPoll() {
     if (!info || typeof info !== "object") continue;
     if (exeOnDisk(info)) continue;
     if (!info.pending) continue;
-    const entry = catalog.find((e) => e.slug === slug);
+    const entry = catalogEntry(slug);
     if (!entry) continue;
     markPendingInstall(slug, info.version);
     startInstallerPoll(slug, entry, info.version);
   }
   const pending = getPendingInstaller();
   if (pending?.slug && !state[pending.slug]) {
-    const entry = catalog.find((e) => e.slug === pending.slug);
+    const entry = catalogEntry(pending.slug);
     if (entry) {
       markPendingInstall(pending.slug, pending.version);
       startInstallerPoll(pending.slug, entry, pending.version);
@@ -4847,7 +4885,7 @@ function addScannedLibraryGames(slugs) {
   const installed = loadState();
   const added = [];
   for (const slug of slugs || []) {
-    const entry = catalog.find((e) => e.slug === slug);
+    const entry = catalogEntry(slug);
     if (!entry) continue;
     const existing = installed[slug];
     if (exeOnDisk(existing)) continue;
@@ -5185,7 +5223,7 @@ async function offerElevatedRetry(slug, title, exeName) {
  * rather than a second-order one about the retry.
  */
 async function spawnWithElevationFallback(slug, launchPath, args, opts) {
-  const entry = catalog.find((e) => e.slug === slug);
+  const entry = catalogEntry(slug);
   /*
    * Resolved here rather than left to spawnTrackedExe, so the catch below can
    * tell whether the attempt was already elevated. Otherwise a game that is
@@ -5222,7 +5260,7 @@ async function shouldConfigureController(slug, profile, opts = {}) {
   const key = `${slug}:${profile.family}`;
   if (Object.prototype.hasOwnProperty.call(answers, key)) return answers[key];
 
-  const entry = catalog.find((e) => e.slug === slug);
+  const entry = catalogEntry(slug);
   const title = entry?.title || slug;
   const { response, checkboxChecked } = await dialog.showMessageBox(win || undefined, {
     type: "question",
@@ -5817,7 +5855,7 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
   if (existing) return existing;
 
   const entry =
-    catalog.find((e) => e.slug === slug) ||
+    catalogEntry(slug) ||
     bundledCatalog.find((e) => e.slug === slug);
   const title = entry?.title || slug;
   const coverImage = entry?.coverImage || null;
@@ -5938,7 +5976,7 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
        * First Play then skips the download; failure here is fine — Play will
        * retry and surface the error if it still can't get a runtime.
        */
-      const entry = catalog.find((e) => e.slug === slug);
+      const entry = catalogEntry(slug);
       const major = requiredDotNetMajor({ ...entry, slug });
       if (major && process.platform === "win32") {
         void managedDotNet.ensureManagedDotNet({ major }).catch((err) => {
@@ -6049,7 +6087,7 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   }
   let entry =
     (await ensureCatalogEntry(slug, true)) ||
-    catalog.find((e) => e.slug === slug) ||
+    catalogEntry(slug) ||
     bundledCatalog.find((e) => e.slug === slug);
 
   let editionMeta = null;
@@ -6882,6 +6920,36 @@ async function maybeConfigureOpenMw(gameDir) {
   }
 }
 
+/**
+ * Teach an OpenMW-family engine about pads newer than its bundled SDL.
+ *
+ * TES3MP carries SDL 2.0.12 (March 2020), which has never heard of a
+ * DualSense (November 2020). Its client log says "Detected unusable
+ * controller: DualSense Wireless Controller" while naming a pad it does know
+ * as a game controller on the same machine — so the prompt to play with a
+ * controller is answered yes, `enable controller` is set, and nothing moves.
+ *
+ * OpenMW reads gamecontrollerdb.txt from its user config directory on top of
+ * the copy it ships, so the pad can be added without touching the install or
+ * the engine's own database.
+ */
+async function maybeAddOpenMwControllerMappings() {
+  try {
+    const dir = path.join(app.getPath("documents"), "My Games", "OpenMW");
+    if (!fs.existsSync(dir)) return;
+    const dbPath = path.join(dir, "gamecontrollerdb.txt");
+    const existing = fs.existsSync(dbPath) ? await fsp.readFile(dbPath, "utf8") : "";
+    const missing = openMwConfig.missingControllerMappings(existing);
+    if (!missing.length) return;
+    await fsp.writeFile(dbPath, openMwConfig.withControllerMappings(existing, missing));
+    console.log(`[openmw] added ${missing.length} controller mapping(s) to ${dbPath}`);
+  } catch (err) {
+    // A pad that stays unmapped is worse than the game not starting, so this
+    // never throws — the engine still runs, just without that controller.
+    console.warn("[openmw] controller mappings skipped:", err?.message || err);
+  }
+}
+
 async function maybeApplyEditionPostInstall(entry, gameDir) {
   if (!entry?.postInstallEqw && entry?.editionSlug !== "project-quarm") return;
   try {
@@ -7117,7 +7185,7 @@ async function installLocateThenZip(slug, entry, editionExtra) {
 
 async function locateGameExecutable(slug) {
   stopExeScan(slug);
-  const entry = (await ensureCatalogEntry(slug)) || catalog.find((e) => e.slug === slug);
+  const entry = (await ensureCatalogEntry(slug)) || catalogEntry(slug);
   if (!entry) throw new Error(`Unknown game: ${slug}`);
 
   const known = findKnownExecutable(entry);
@@ -7596,7 +7664,7 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     }
   }
 
-  if (isOpenRaFamily(slug, catalog.find((e) => e.slug === slug))) {
+  if (isOpenRaFamily(slug, catalogEntry(slug))) {
     try {
       await prepareOpenRaNetwork({ exePath: info.exe });
     } catch (err) {
@@ -7631,6 +7699,7 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     if (!dir) continue;
     if (!openMwConfig.isOpenMwInstall(dir, fs.existsSync)) continue;
     await maybeConfigureOpenMw(dir);
+    await maybeAddOpenMwControllerMappings();
     break;
   }
 
@@ -7657,7 +7726,7 @@ async function playGameInner(slug, join = null, editionSlug = null) {
 
   // Prefer connectArgs stored on the edition install; fall back to catalog entry.
   let connectArgs = Array.isArray(info.connectArgs) ? info.connectArgs : null;
-  const entry = catalog.find((e) => e.slug === slug);
+  const entry = catalogEntry(slug);
   if (!connectArgs && Array.isArray(entry?.connectArgs)) connectArgs = entry.connectArgs;
 
   /*
@@ -8720,7 +8789,7 @@ function spawnTrackedExe(slug, exePath, args = [], opts = {}) {
   try {
     child = GameLauncher.spawnGame(exePath, args, {
       gameSlug: slug,
-      needsDosBox: Boolean(catalog.find((e) => e.slug === slug)?.needsDosBox),
+      needsDosBox: Boolean(catalogEntry(slug)?.needsDosBox),
       /*
        * Never inferred from a failure — Windows reports "needs elevation" and
        * "antivirus blocked this" as the same EACCES, so guessing would throw a
@@ -8733,7 +8802,7 @@ function spawnTrackedExe(slug, exePath, args = [], opts = {}) {
        */
       elevate:
         opts.elevate ??
-        Boolean(catalog.find((e) => e.slug === slug)?.needsAdmin || elevationRemembered(slug)),
+        Boolean(catalogEntry(slug)?.needsAdmin || elevationRemembered(slug)),
       env: opts.env,
     });
   } catch (err) {
@@ -8748,7 +8817,7 @@ function spawnTrackedExe(slug, exePath, args = [], opts = {}) {
     throw out;
   }
 
-  const entry = catalog.find((e) => e.slug === slug);
+  const entry = catalogEntry(slug);
   const wrapDos = shouldLaunchThroughDosBox(exePath, { needsDosBox: Boolean(entry?.needsDosBox) });
   const imageNames = [
     ...new Set(
@@ -8948,7 +9017,7 @@ async function confirmAndUninstallGame(slug, editionSlug = null) {
   const state = loadState();
   const info = state[slug];
   if (!info) throw new Error("Game is not installed");
-  const entry = catalog.find((e) => e.slug === slug);
+  const entry = catalogEntry(slug);
   const title = entry?.title || slug;
   const { response } = await dialog.showMessageBox(win || undefined, {
     type: "warning",
@@ -8993,7 +9062,7 @@ async function confirmDestructiveDeepLink(title, detail) {
 
 async function uninstallGameFromDeepLink(slug, editionSlug = null) {
   await ensureCatalogEntry(slug);
-  const entry = catalog.find((e) => e.slug === slug);
+  const entry = catalogEntry(slug);
   const title = entry?.title || slug;
   const state = loadState();
   if (!state[slug]) {
@@ -9121,7 +9190,7 @@ Get-CimInstance Win32_Process | ForEach-Object {
 }
 
 function collectUninstallImageNames(slug, infos) {
-  const entry = catalog.find((e) => e.slug === slug);
+  const entry = catalogEntry(slug);
   const names = [...hintProcessNames(entry?.exeHint)];
   for (const info of infos) {
     if (info?.exe) names.push(normalizeProcessImageName(info.exe));
@@ -9523,13 +9592,13 @@ async function uninstallGame(slug, editionSlug = null) {
   const game = ensureGameInstallRecord(state[slug]);
   if (!state[slug]) return { status: "not-installed" };
 
-  const entry = (await ensureCatalogEntry(slug)) || catalog.find((e) => e.slug === slug) || { slug };
+  const entry = (await ensureCatalogEntry(slug)) || catalogEntry(slug) || { slug };
 
   // A modded edition patches an executable PlayBound does not own — the game
   // belongs to Steam. Restore it before dropping our records, so uninstalling
   // the edition never leaves a modified binary behind.
   try {
-    const modEntry = catalog.find((e) => e.slug === slug);
+    const modEntry = catalogEntry(slug);
     if (modEntry?.modLoader) {
       const info = editionSlug ? game.editions?.[editionSlug] : game;
       if (info?.exe) await removeEditionModPatch(modEntry, info.dir, info.exe);
@@ -9644,7 +9713,7 @@ function listInstalledGames() {
     const ready = Boolean(playableExePath(game));
     const pending = Boolean(game.pending) && !ready;
     if (!ready && !pending && editions.length === 0) continue;
-    const entry = catalog.find((e) => e.slug === slug);
+    const entry = catalogEntry(slug);
     const isCustom = Boolean(raw.custom || slug.startsWith("custom-"));
     const displayTitle =
       raw.title ||
@@ -9783,7 +9852,7 @@ async function createGameShortcut(slug) {
   if (!exeOnDisk(info)) {
     throw new Error("Not installed — no executable found");
   }
-  const entry = catalog.find((e) => e.slug === slug);
+  const entry = catalogEntry(slug);
   const title = sanitizeShortcutName(entry?.title || slug);
   // .lnk to a .jar is unreliable; prefer play.cmd when present (github-jar installs).
   let targetPath = info.exe;
@@ -9859,7 +9928,7 @@ ipcMain.handle("play-mod", (_event, slug) => playMod(slug));
  */
 ipcMain.handle("get-run-as-admin", (_event, slug) => {
   const clean = String(slug || "");
-  const entry = catalog.find((e) => e.slug === clean);
+  const entry = catalogEntry(clean);
   return {
     enabled: elevationRemembered(clean) || Boolean(entry?.needsAdmin),
     // The catalog's answer is not the player's to turn off here; saying which
@@ -9879,7 +9948,7 @@ ipcMain.handle("set-run-as-admin", (_event, slug, on) => {
 ipcMain.on("join-capability", (event, slug) => {
   let canCommandLineJoin = false;
   try {
-    const entry = catalog.find((game) => game.slug === String(slug || ""));
+    const entry = catalogEntry(slug);
     const hasTrackedServers = Boolean(entry?.hasServerBrowser);
     canCommandLineJoin =
       hasTrackedServers && hasClientConnectArgs(slug) && !joinsFromInGameMenu(slug);
@@ -10720,7 +10789,7 @@ ipcMain.handle("get-all-servers", async () => {
         if (!res.ok) continue;
         const data = await res.json();
         if (!data.supported) continue;
-        const entry = catalog.find((e) => e.slug === slug);
+        const entry = catalogEntry(slug);
         results.push({
           slug,
           title: entry?.title || slug,
@@ -12396,7 +12465,7 @@ ipcMain.handle("invite-friend-by-email", async (_event, email) => {
 // ----------------------------
 ipcMain.handle("get-recently-played", () => listRecentlyPlayed());
 ipcMain.handle("get-game-detail", async (_event, slug) => {
-  let entry = (await ensureCatalogEntry(slug)) || catalog.find((e) => e.slug === slug);
+  let entry = (await ensureCatalogEntry(slug)) || catalogEntry(slug);
 
   let rich = null;
   try {
@@ -12795,7 +12864,7 @@ function resolveLocalServerBinary(gameDir, hostLaunch) {
 
 /** Everything needed to host this game locally, or why we cannot. */
 function localDedicatedServerFor(slug, editionSlug = null) {
-  const remote = catalog.find((e) => e.slug === slug) || null;
+  const remote = catalogEntry(slug) || null;
   const bundled = bundledCatalog.find((e) => e.slug === slug) || null;
   const entry = remote || bundled || null;
   const hostLaunch =
@@ -13427,7 +13496,7 @@ function createWindow() {
     void syncLibraryNow({ quiet: true });
     const pending = getPendingInstaller();
     if (pending?.slug) {
-      const entry = catalog.find((e) => e.slug === pending.slug);
+      const entry = catalogEntry(pending.slug);
       if (entry) {
         invalidateUninstallCache(entry);
         const known = findKnownExecutable(entry);
@@ -13482,7 +13551,7 @@ async function testResolve() {
 /* ── headless self-test: full install pipeline for one game ── */
 
 async function testInstall(slug) {
-  const entry = catalog.find((e) => e.slug === slug);
+  const entry = catalogEntry(slug);
   if (!entry || entry.kind !== "github-zip") {
     console.log(`test-install needs a github-zip entry; got: ${slug}`);
     app.exit(1);
