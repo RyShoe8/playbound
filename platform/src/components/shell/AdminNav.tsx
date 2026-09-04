@@ -311,7 +311,10 @@ function NavPill({
       : "bg-primary text-primary-foreground"
     : "text-muted-foreground hover:bg-secondary hover:text-foreground";
   return (
-    <Link href={href} className={`${base} ${tone}`}>
+    // Every admin destination is dynamic and many run live Mongo/analytics
+    // queries. Prefetching the entire visible nav fans those expensive routes
+    // out on every admin page load and can exhaust the small database pool.
+    <Link href={href} prefetch={false} className={`${base} ${tone}`}>
       <Icon className={sub ? "size-3" : "size-3.5"} />
       {label}
     </Link>

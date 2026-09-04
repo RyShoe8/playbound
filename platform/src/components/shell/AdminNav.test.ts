@@ -6,6 +6,8 @@ import {
   inSection,
   links,
 } from "./AdminNav";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 
 /**
  * The admin nav is only reachable behind auth, so its behaviour is asserted
@@ -39,6 +41,11 @@ function subRow(pathname: string) {
 }
 
 describe("admin nav structure", () => {
+  it("does not prefetch every dynamic admin destination", () => {
+    const source = readFileSync(path.join(process.cwd(), "src", "components", "shell", "AdminNav.tsx"), "utf8");
+    expect(source).toContain('<Link href={href} prefetch={false}');
+  });
+
   it("keeps the regrouped items out of the top row", () => {
     const top = links.map((l) => l.label);
     expect(top).not.toContain("Collections");
