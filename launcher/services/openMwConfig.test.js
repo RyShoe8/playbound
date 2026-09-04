@@ -18,6 +18,10 @@ const {
   needsMorrowindData,
   mastersIn,
   archivesIn,
+  CONTROLLER_MAPPINGS,
+  mappingGuid,
+  missingControllerMappings,
+  withControllerMappings,
   dataDirsIn,
   missingArchives,
   withMorrowindData,
@@ -260,4 +264,71 @@ test("a partially repaired config gets only what it lacks", () => {
 test("archive matching is not fooled by a similar line", () => {
   const decoy = `${PINK}\n# fallback-archive=Morrowind.bsa is commented out\n`;
   assert.ok(missingArchives(decoy, GOG_DATA, gogExists).includes("Morrowind.bsa"));
+});
+
+/* --- controller mappings for pads newer than the engine's SDL --- */
+
+test("the DualSense is mapped for both USB and Bluetooth", () => {
+  /*
+   * The two enumerate as different devices: bus 0300 over USB, 0500 over
+   * Bluetooth. A player on the cable and a player on Bluetooth are not the
+   * same case, so one line each.
+   */
+  const guids = CONTROLLER_MAPPINGS.map(mappingGuid);
+  assert.ok(guids.includes("030000004c050000e60c000000000000"), "no USB DualSense mapping");
+  assert.ok(guids.includes("050000004c050000e60c000000000000"), "no Bluetooth DualSense mapping");
+});
+
+test("every shipped mapping is a well-formed SDL line", () => {
+  for (const line of CONTROLLER_MAPPINGS) {
+    assert.ok(mappingGuid(line), `no 32-hex GUID at the head of: ${line.slice(0, 40)}`);
+    // The engine needs both sticks and the face buttons to be useful.
+    for (const field of ["leftx:", "lefty:", "rightx:", "righty:", "a:", "b:", "platform:"]) {
+      assert.ok(line.includes(field), `mapping is missing ${field}`);
+    }
+    assert.ok(line.split(",").length > 15, "mapping looks truncated");
+  }
+});
+
+test("a comment or blank line is not mistaken for a mapping", () => {
+  assert.equal(mappingGuid("# a comment"), null);
+  assert.equal(mappingGuid(""), null);
+  assert.equal(mappingGuid(null), null);
+  assert.equal(mappingGuid("not-a-guid,Name,a:b1,"), null);
+});
+
+test("an empty database gets both mappings", () => {
+  assert.deepEqual(missingControllerMappings(""), CONTROLLER_MAPPINGS);
+  const out = withControllerMappings("", CONTROLLER_MAPPINGS);
+  for (const line of CONTROLLER_MAPPINGS) assert.ok(out.includes(line));
+});
+
+test("an existing database keeps every line it already had", () => {
+  const existing = "# upstream db\n030000005e0400008e02000014010000,Xbox 360 Controller,a:b0,platform:Windows,\n";
+  const out = withControllerMappings(existing, missingControllerMappings(existing));
+  assert.ok(out.includes("030000005e0400008e02000014010000"), "dropped an existing mapping");
+  assert.ok(out.includes("# upstream db"), "dropped an existing comment");
+  for (const line of CONTROLLER_MAPPINGS) assert.ok(out.includes(line));
+});
+
+test("adding is idempotent — a second pass writes nothing", () => {
+  const once = withControllerMappings("", CONTROLLER_MAPPINGS);
+  assert.deepEqual(missingControllerMappings(once), []);
+  assert.equal(withControllerMappings(once, []), once);
+});
+
+test("a player's own mapping for the same pad is left alone", () => {
+  /*
+   * SDL takes the first match, and theirs is already an answer to the question
+   * this feature exists to answer — so match on GUID, not on the whole line.
+   */
+  const mine = "030000004c050000e60c000000000000,My Tuned DualSense,a:b1,leftx:a0,platform:Windows,\n";
+  const missing = missingControllerMappings(mine);
+  assert.equal(missing.length, 1, "should only be missing the Bluetooth line");
+  assert.equal(mappingGuid(missing[0]), "050000004c050000e60c000000000000");
+});
+
+test("GUID matching ignores case and surrounding whitespace", () => {
+  const upper = "  030000004C050000E60C000000000000,PS5,a:b1,platform:Windows,  \n";
+  assert.equal(missingControllerMappings(upper).length, 1);
 });

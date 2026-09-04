@@ -43,6 +43,63 @@ const MORROWIND_MASTERS = ["Morrowind.esm", "Tribunal.esm", "Bloodmoon.esm"];
 const MORROWIND_ARCHIVES = ["Morrowind.bsa", "Tribunal.bsa", "Bloodmoon.bsa"];
 
 /**
+ * SDL controller mappings the engine's own database is too old to have.
+ *
+ * TES3MP bundles SDL 2.0.12, released in March 2020; the DualSense arrived
+ * that November. So SDL sees the pad, fails to recognise it as a game
+ * controller, and the client log says
+ *
+ *     Detected unusable controller: DualSense Wireless Controller
+ *
+ * while a pad SDL does know about on the same machine is "Detected game
+ * controller". `enable controller = true` cannot fix that on its own — the
+ * engine has nothing to map the axes and buttons onto.
+ *
+ * OpenMW reads gamecontrollerdb.txt out of its user config directory in
+ * addition to the copy it ships, which is the supported way to add a pad
+ * without touching the install.
+ *
+ * The GUIDs are SDL's Windows form: bus, then vendor and product byte-swapped.
+ * 054c/0ce6 is Sony's DualSense — 0300 over USB, 0500 over Bluetooth, which
+ * enumerate as different devices and so need a line each.
+ */
+const CONTROLLER_MAPPINGS = [
+  "030000004c050000e60c000000000000,PS5 Controller,a:b1,b:b2,back:b8,dpdown:h0.4,dpleft:h0.8,dpright:h0.2,dpup:h0.1,guide:b12,leftshoulder:b4,leftstick:b10,lefttrigger:a3,leftx:a0,lefty:a1,rightshoulder:b5,rightstick:b11,righttrigger:a4,rightx:a2,righty:a5,start:b9,x:b0,y:b3,platform:Windows,",
+  "050000004c050000e60c000000000000,PS5 Controller,a:b1,b:b2,back:b8,dpdown:h0.4,dpleft:h0.8,dpright:h0.2,dpup:h0.1,guide:b12,leftshoulder:b4,leftstick:b10,lefttrigger:a3,leftx:a0,lefty:a1,rightshoulder:b5,rightstick:b11,righttrigger:a4,rightx:a2,righty:a5,start:b9,x:b0,y:b3,platform:Windows,",
+];
+
+/** The GUID at the head of an SDL mapping line, or null for a comment. */
+function mappingGuid(line) {
+  const m = /^([0-9a-f]{32}),/i.exec(String(line || "").trim());
+  return m ? m[1].toLowerCase() : null;
+}
+
+/**
+ * Mappings not already present, matched on GUID rather than whole line.
+ *
+ * A player who added their own line for the same pad keeps it: theirs is
+ * already the answer to the question this file exists to answer, and SDL takes
+ * the first match anyway.
+ */
+function missingControllerMappings(dbText, mappings = CONTROLLER_MAPPINGS) {
+  const have = new Set(
+    String(dbText || "")
+      .split(/\r?\n/)
+      .map(mappingGuid)
+      .filter(Boolean)
+  );
+  return mappings.filter((line) => !have.has(mappingGuid(line)));
+}
+
+/** The database with the given mappings appended. */
+function withControllerMappings(dbText, mappings) {
+  if (!mappings.length) return String(dbText || "");
+  const body = String(dbText || "").replace(/\s*$/, "");
+  const block = ["# Added by PlayBound: pads newer than this engine's SDL.", ...mappings, ""];
+  return body ? `${body}\n${block.join("\n")}` : block.join("\n");
+}
+
+/**
  * True when this install is an OpenMW-family engine.
  *
  * Keyed on the config file rather than a list of edition slugs, so OpenMW,
@@ -187,6 +244,10 @@ function resolveMorrowindData(candidates, exists) {
 module.exports = {
   MORROWIND_MASTERS,
   MORROWIND_ARCHIVES,
+  CONTROLLER_MAPPINGS,
+  mappingGuid,
+  missingControllerMappings,
+  withControllerMappings,
   isOpenMwInstall,
   needsMorrowindData,
   mastersIn,
