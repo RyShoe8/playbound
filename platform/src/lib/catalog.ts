@@ -558,9 +558,15 @@ export function listGamesForJoin(): Promise<JoinCatalogGame[]> {
 }
 
 /** All games including drafts (admin). */
-export async function listAllGames(): Promise<
-  (Game & { published: boolean; status: CatalogStatus; updatedAt?: string; publishedAt?: string | null; installCount?: number })[]
-> {
+type AdminGame = Game & {
+  published: boolean;
+  status: CatalogStatus;
+  updatedAt?: string;
+  publishedAt?: string | null;
+  installCount?: number;
+};
+
+async function computeAllGames(): Promise<AdminGame[]> {
   try {
     await dbConnect();
     const docs = await CatalogGame.find().sort({ updatedAt: -1 }).lean();
@@ -581,6 +587,19 @@ export async function listAllGames(): Promise<
     console.error("[catalog] listAllGames failed:", err);
     return [];
   }
+}
+
+/**
+ * Cached so the admin dashboard (and any other admin page reading the full
+ * catalog) does not re-scan every CatalogGame document on every load.
+ * Tagged with "catalog" so admin writes invalidate it immediately via
+ * revalidateTag.
+ */
+export function listAllGames(): Promise<AdminGame[]> {
+  return unstable_cache(computeAllGames, ["catalog-all-games"], {
+    revalidate: 60,
+    tags: ["catalog"],
+  })();
 }
 
 export async function getGame(

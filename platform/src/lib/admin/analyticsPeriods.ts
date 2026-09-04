@@ -3,6 +3,7 @@
  */
 
 import dbConnect from "@/lib/db";
+import TelemetryEvent from "@/lib/models/TelemetryEvent";
 
 export type PeriodWindows = {
   now: Date;
@@ -187,10 +188,14 @@ export async function periodTelemetryCounts(
   return periodDocumentCounts(TelemetryEvent, base);
 }
 
-import TelemetryEvent from "@/lib/models/TelemetryEvent";
-
 /**
  * Distinct identified userIds with any telemetry in each window.
+ *
+ * Buckets entirely inside MongoDB so only six counts come back, rather than
+ * pulling every createdAt date for every user in the last 60 days into JS
+ * memory.  The old approach transferred all of that data to the app server
+ * and then iterated it — for a busy telemetry collection this could be
+ * hundreds of megabytes and multiple seconds of JSON.parse.
  */
 export async function periodDistinctUsers(
   distinctFn?: (filter: Record<string, unknown>) => Promise<unknown[]>
@@ -207,26 +212,72 @@ export async function periodDistinctUsers(
           createdAt: { $gte: w.d60 },
         },
       },
+      /*
+       * First pass: per-user, record whether that user had ANY event in each
+       * bucket.  $max of a boolean (0/1) is cheaper than $addToSet + $size
+       * because it avoids building intermediate arrays.
+       */
       {
         $group: {
           _id: "$userId",
-          dates: { $push: "$createdAt" },
+          inDay: { $max: { $cond: [{ $gte: ["$createdAt", w.today] }, 1, 0] } },
+          inWeek: { $max: { $cond: [{ $gte: ["$createdAt", w.d7] }, 1, 0] } },
+          inMonth: { $max: { $cond: [{ $gte: ["$createdAt", w.d30] }, 1, 0] } },
+          inDayPrev: {
+            $max: {
+              $cond: [
+                { $and: [{ $gte: ["$createdAt", w.yesterday] }, { $lt: ["$createdAt", w.today] }] },
+                1,
+                0,
+              ],
+            },
+          },
+          inWeekPrev: {
+            $max: {
+              $cond: [
+                { $and: [{ $gte: ["$createdAt", w.d14] }, { $lt: ["$createdAt", w.d7] }] },
+                1,
+                0,
+              ],
+            },
+          },
+          inMonthPrev: {
+            $max: {
+              $cond: [
+                { $and: [{ $gte: ["$createdAt", w.d60] }, { $lt: ["$createdAt", w.d30] }] },
+                1,
+                0,
+              ],
+            },
+          },
         },
       },
-    ])) as Array<{ _id: string; dates: Date[] }>;
+      /* Second pass: sum the per-user flags into totals. */
+      {
+        $group: {
+          _id: null,
+          day: { $sum: "$inDay" },
+          week: { $sum: "$inWeek" },
+          month: { $sum: "$inMonth" },
+          dayPrev: { $sum: "$inDayPrev" },
+          weekPrev: { $sum: "$inWeekPrev" },
+          monthPrev: { $sum: "$inMonthPrev" },
+        },
+      },
+    ])) as Array<Record<string, number>>;
 
-    let day = 0, week = 0, month = 0, dayPrev = 0, weekPrev = 0, monthPrev = 0;
-    for (const row of rows) {
-      const dates = row.dates || [];
-      if (dates.some((d) => d >= w.today)) day += 1;
-      if (dates.some((d) => d >= w.d7)) week += 1;
-      if (dates.some((d) => d >= w.d30)) month += 1;
-      if (dates.some((d) => d >= w.yesterday && d < w.today)) dayPrev += 1;
-      if (dates.some((d) => d >= w.d14 && d < w.d7)) weekPrev += 1;
-      if (dates.some((d) => d >= w.d60 && d < w.d30)) monthPrev += 1;
+    const res = rows[0];
+    if (res) {
+      return {
+        day: res.day || 0,
+        week: res.week || 0,
+        month: res.month || 0,
+        dayPrev: res.dayPrev || 0,
+        weekPrev: res.weekPrev || 0,
+        monthPrev: res.monthPrev || 0,
+      };
     }
-
-    return { day, week, month, dayPrev, weekPrev, monthPrev };
+    return emptyPeriodCounts();
   } catch {
     if (typeof distinctFn === "function") {
       const run = async (createdAt: Record<string, Date>) => {
@@ -251,3 +302,4 @@ export async function periodDistinctUsers(
     return emptyPeriodCounts();
   }
 }
+
