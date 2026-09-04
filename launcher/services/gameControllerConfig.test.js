@@ -456,8 +456,12 @@ test("auto-configures YSoccer with libGDX JoystickConfig XML", () => {
   // This build uses OIS/DirectInput. A DualSense exposes its left stick as
   // axes 4/3, not the browser's standardized 0/1 pair.
   const ds = next.match(/\{class:JoystickConfig,name:DualSense[^}]*\}/)[0];
-  assert(/xAxis:4/.test(ds), `DualSense must use the DirectInput left stick: ${ds}`);
-  assert(/yAxis:3/.test(ds), `DualSense must use the DirectInput left stick: ${ds}`);
+  // 5/4, not 4/3: with 4/3 the pad worked but drove the wrong axes — left
+  // stick up/down moved the menu sideways, right stick sideways moved it up
+  // and down. That places LY at 4 and RX at 3, which is the OIS backend
+  // enumerating DualSense's axes reversed, putting the left stick at 5 and 4.
+  assert(/xAxis:5/.test(ds), `DualSense must use the DirectInput left stick: ${ds}`);
+  assert(/yAxis:4/.test(ds), `DualSense must use the DirectInput left stick: ${ds}`);
 });
 
 test("repairs the old standardized DualSense axes that leave its stick dead", () => {
@@ -468,7 +472,7 @@ test("repairs the old standardized DualSense axes that leave its stick dead", ()
   const rewritten = applyProfile("ysoccer", stuck, dualsense);
   assert(rewritten, "the stale DualSense profile must be rewritten");
   const ds = rewritten.match(/\{class:JoystickConfig,name:DualSense[^}]*\}/)[0];
-  assert(/xAxis:4/.test(ds) && /yAxis:3/.test(ds), `still unusable: ${ds}`);
+  assert(/xAxis:5/.test(ds) && /yAxis:4/.test(ds), `still unusable: ${ds}`);
 });
 
 /* ── every catalogued controller game has an answer ────────────────────── */
@@ -566,7 +570,7 @@ test("YSoccer gives the detected DualSense name its DirectInput stick axes", () 
     rawId: "DualSense Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 0ce6)",
   });
   const raw = out.match(/\{class:JoystickConfig,name:DualSense Wireless Controller \(STANDARD GAMEPAD[^}]*\}/)[0];
-  assert.ok(/xAxis:4,yAxis:3/.test(raw), `wrong DirectInput axes: ${raw}`);
+  assert.ok(/xAxis:5,yAxis:4/.test(raw), `wrong DirectInput axes: ${raw}`);
 });
 
 test("rvgl configures Controller1 to Joystick 0 with gamepad buttons", () => {
