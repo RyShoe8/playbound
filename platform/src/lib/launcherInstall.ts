@@ -384,3 +384,17 @@ export function toLauncherCatalogEntry(input: {
   if (li.requiresBaseDir) entry.requiresBaseDir = true;
   return entry;
 }
+
+/**
+ * The install kinds that resolve their download from a GitHub release, and so
+ * cannot save without an owner/repo.
+ *
+ * Kept here because the rule was written out longhand in four places — the
+ * editor form, both validators in gamePayload, and the version prober — and
+ * adding a fifth github-* kind would have had to find all of them.
+ */
+export const GITHUB_INSTALL_KINDS = ["github-zip", "github-installer", "github-jar"] as const;
+
+export function isGithubInstallKind(kind: unknown): boolean {
+  return (GITHUB_INSTALL_KINDS as readonly string[]).includes(String(kind));
+}

@@ -22,6 +22,7 @@ import {
 import {
   defaultLauncherInstallForWebsite,
   disableServerSupportFields,
+  isGithubInstallKind,
   enableInstallerSupportFields,
   enableServerSupportFields,
   isPcInstallCandidate,
@@ -240,9 +241,22 @@ export function GameEditorForm({
       const base =
         prev.launcherInstall ??
         toPayloadLauncherInstall(defaultLauncherInstallForWebsite(prev.website || "https://example.com"))!;
+      const merged = { ...base, ...partial };
+      /*
+       * The repo input renders `githubRepo` as a fallback when the recipe has
+       * no repo of its own, so switching Install kind to a github-* one looks
+       * complete on screen while `repo` is still null underneath — and the save
+       * comes back 400 "GitHub install kinds need owner/repo" naming a field
+       * that visibly has a value in it.
+       *
+       * Commit what is displayed rather than only what was typed into it.
+       */
+      if (isGithubInstallKind(merged.kind) && !merged.repo && prev.githubRepo) {
+        merged.repo = prev.githubRepo;
+      }
       return {
         ...prev,
-        launcherInstall: toPayloadLauncherInstall({ ...base, ...partial }),
+        launcherInstall: toPayloadLauncherInstall(merged),
       };
     });
   }
@@ -1879,9 +1893,7 @@ export function GameEditorForm({
                     />
                   </div>
                 </div>
-                {(form.launcherInstall?.kind === "github-zip" ||
-                  form.launcherInstall?.kind === "github-installer" ||
-                  form.launcherInstall?.kind === "github-jar") && (
+                {isGithubInstallKind(form.launcherInstall?.kind) && (
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
                       <label className={label}>GitHub repo (owner/repo)</label>

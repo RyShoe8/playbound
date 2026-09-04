@@ -5,6 +5,7 @@ import {
   defaultLauncherInstallForWebsite,
   isPcInstallCandidate,
   type LauncherInstall,
+  isGithubInstallKind,
 } from "@/lib/launcherInstall";
 import { CATALOG_STATUSES } from "@/lib/catalogStatus";
 import { hardwareRequirementsBlockSchema } from "@/lib/hardware/schema";
@@ -184,7 +185,7 @@ export const launcherInstallSchema = z
   })
   .superRefine((val, ctx) => {
     if (!val.enabled) return;
-    if (val.kind === "github-zip" || val.kind === "github-installer" || val.kind === "github-jar") {
+    if (isGithubInstallKind(val.kind)) {
       if (!val.repo) {
         ctx.addIssue({ code: "custom", message: "GitHub install kinds need owner/repo", path: ["repo"] });
       }
@@ -753,7 +754,7 @@ export function withDefaultLauncherInstall(payload: GamePayload): GamePayload {
   }
   if (payload.launcherInstall?.kind) {
     const li = { ...payload.launcherInstall };
-    if ((li.kind === "github-zip" || li.kind === "github-installer" || li.kind === "github-jar") && !li.repo) {
+    if (isGithubInstallKind(li.kind) && !li.repo) {
       li.repo = payload.githubRepo || null;
     }
     if (li.kind === "external" && !li.url) {
