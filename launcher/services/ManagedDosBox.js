@@ -92,20 +92,42 @@ function hostAssetPattern() {
   return /windows|win64|win32|msvc/i;
 }
 
+/**
+ * Archive formats this platform can actually open.
+ *
+ * Matching only .zip meant macOS and Linux found nothing at all: DOSBox
+ * Staging publishes a .dmg for macOS and a .tar.xz for Linux, and ships a zip
+ * only for Windows. So every DOS game — Daggerfall, TES: Arena — failed on
+ * those platforms at "No DOSBox Staging zip", before the game itself was ever
+ * reached.
+ *
+ * Deliberately narrower than "anything": a Windows -setup.exe is an installer
+ * to click through, not an archive to unpack, and picking it would swap a
+ * clear failure for a stuck one.
+ */
+function hostArchivePattern() {
+  if (process.platform === "darwin") return /\.dmg$/i;
+  if (process.platform === "linux") return /\.(tar\.xz|tar\.gz|tgz|zip)$/i;
+  return /\.zip$/i;
+}
+
 function pickDosBoxAsset(assets) {
   const list = Array.isArray(assets) ? assets : [];
   const osPat = hostAssetPattern();
+  const archivePat = hostArchivePattern();
   const archPat =
     process.arch === "arm64" || process.arch === "aarch64" ? /arm64|aarch64/i : /x86_64|x64|amd64/i;
-  const zips = list.filter((a) => /\.zip$/i.test(a.name || "") && osPat.test(a.name || ""));
-  const ranked = zips
+  const usable = list.filter(
+    (a) => archivePat.test(a.name || "") && osPat.test(a.name || "")
+  );
+  const ranked = usable
     .filter((a) => !/debug|pdb|symbols/i.test(a.name || ""))
     .sort((a, b) => {
       const aArch = archPat.test(a.name) ? 1 : 0;
       const bArch = archPat.test(b.name) ? 1 : 0;
       return bArch - aArch;
     });
-  return ranked[0] || zips[0] || null;
+  return ranked[0] || usable[0] || null;
 }
 
 async function resolveDosBoxDownload() {
@@ -116,7 +138,9 @@ async function resolveDosBoxDownload() {
   const release = await res.json();
   const asset = pickDosBoxAsset(release.assets);
   if (!asset?.browser_download_url) {
-    throw new Error(`No DOSBox Staging zip for ${process.platform} in ${release.tag_name || "latest"}`);
+    throw new Error(
+      `No DOSBox Staging build this launcher can unpack for ${process.platform} in ${release.tag_name || "latest"}`
+    );
   }
   return {
     url: asset.browser_download_url,
@@ -165,6 +189,38 @@ function createManagedDosBox(deps) {
       }
       return;
     }
+    /*
+     * macOS ships DOSBox as a disk image, which tar cannot read. Mount it
+     * read-only and without a Finder window, copy what is inside, then detach
+     * — leaving it mounted would keep a volume on the player's desktop.
+     */
+    if (process.platform === "darwin" && /\.dmg$/i.test(archivePath)) {
+      const mountPoint = path.join(path.dirname(destDir), "dosbox-dmg-mount");
+      await fsp.mkdir(mountPoint, { recursive: true });
+      const attach = spawnSync(
+        "hdiutil",
+        ["attach", "-nobrowse", "-readonly", "-mountpoint", mountPoint, archivePath],
+        { encoding: "utf8", timeout: 600000 }
+      );
+      if (attach.status !== 0) {
+        throw new Error(
+          (attach.stderr || attach.stdout || "hdiutil attach failed").toString().slice(0, 400)
+        );
+      }
+      try {
+        const copy = spawnSync("cp", ["-R", `${mountPoint}/.`, destDir], {
+          encoding: "utf8",
+          timeout: 600000,
+        });
+        if (copy.status !== 0) {
+          throw new Error((copy.stderr || copy.stdout || "copy failed").toString().slice(0, 400));
+        }
+      } finally {
+        spawnSync("hdiutil", ["detach", mountPoint], { encoding: "utf8", timeout: 120000 });
+      }
+      return;
+    }
+
     const r = spawnSync("tar", ["-xf", archivePath, "-C", destDir], {
       encoding: "utf8",
       timeout: 600000,
