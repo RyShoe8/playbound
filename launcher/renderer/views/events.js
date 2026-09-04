@@ -56,8 +56,8 @@ function createEventCard(ev, gameCatalogMap = new Map()) {
   const whenStr = ev.when?.dateLine
     ? `${ev.when.dateLine} · ${ev.when.timeLine || ""}`
     : formatEventDate(ev.startsAt);
-  const coverUrl = ev.coverImage || null;
   const catalogGame = ev.gameSlug ? gameCatalogMap.get(ev.gameSlug) : null;
+  const coverUrl = ev.coverImage || catalogGame?.coverImage || null;
   const gameName = ev.gameTitle || catalogGame?.title || ev.gameSlug || "";
 
   const badges = `

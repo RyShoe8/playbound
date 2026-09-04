@@ -14,7 +14,8 @@ import {
 import { requestIncludesTesting } from "@/lib/requestIncludesTesting";
 import { gameAccessTiers, tierFor } from "@/lib/access/tiers";
 import { accessFieldsForLauncher } from "@/lib/launcherCommerce";
-import { formatEditionChipNames, getDisplayEditionsForGame } from "@/lib/data/editions";
+import { formatEditionChipNames } from "@/lib/data/editions";
+import { listEditionsForGame } from "@/lib/editions";
 import { supportsController } from "@/lib/controller/support";
 import { getMultiplayerAdapter } from "@/lib/multiplayer/adapters";
 
@@ -26,9 +27,19 @@ export async function GET(req: Request) {
       listGames({ includeTesting }),
       gameAccessTiers(),
     ]);
-    const entries = games
-      .map((g) => {
-        const gameEditions = getDisplayEditionsForGame(g.slug);
+    const entries = (
+      await Promise.all(
+        games.map(async (g) => {
+        const publicActiveEditions = (await listEditionsForGame(g, { includeInactive: false })).filter(
+          (edition) => edition.visibility === "public"
+        );
+        const onlyEdition = publicActiveEditions[0];
+        const gameEditions =
+          publicActiveEditions.length === 1 &&
+          onlyEdition.type === "official" &&
+          (onlyEdition.slug === "official" || onlyEdition.slug === "default")
+            ? []
+            : publicActiveEditions;
         /*
          * Named as a set, not one at a time. Tidying each name alone turned
          * YSoccer's "(Portable)" and "(Tournament)" editions into two rows
@@ -48,10 +59,17 @@ export async function GET(req: Request) {
 
         // PC-installable games: full launcher recipe
         if (isPcInstallCandidate(g)) {
-          const recipe =
-            (g.launcherInstall as LauncherInstall | undefined) ||
-            launcherInstallBySlug[g.slug] ||
-            null;
+          const staticRecipe = launcherInstallBySlug[g.slug] || null;
+          const storedRecipe = g.launcherInstall as LauncherInstall | undefined;
+          const recipe = storedRecipe
+            ? {
+                ...staticRecipe,
+                ...storedRecipe,
+                // Supplemental payloads are curated in source and should not
+                // disappear when an older database recipe supplies the base download.
+                addons: storedRecipe.addons?.length ? storedRecipe.addons : staticRecipe?.addons,
+              }
+            : staticRecipe;
           if (!recipe?.enabled || !recipe.kind) return null;
           const entry = toLauncherCatalogEntry({
             slug: g.slug,
@@ -117,8 +135,9 @@ export async function GET(req: Request) {
           ...(cover ? { coverImage: cover } : {}),
           ...accessFieldsForLauncher(tierFor(tiers, g.slug)),
         };
-      })
-      .filter(Boolean);
+        })
+      )
+    ).filter(Boolean);
 
     return NextResponse.json(
       { games: entries },

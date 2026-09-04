@@ -284,6 +284,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
         description: "Includes high-quality video sequences for the single-player campaign. (1GB)",
         url: "https://sourceforge.net/projects/warzone2100/files/warzone2100/Videos/high-quality-en/sequences.wz/download",
         fileName: "sequences.wz",
+        required: true,
       },
     ],
   },
@@ -626,6 +627,8 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     // 321 MB and serving 200 to the launcher's user agent.
     kind: "direct-installer",
     url: "https://downloads.sourceforge.net/project/privateer/Wing%20Commander%20Privateer/Privateer%20Gemini%20Gold%201.03/PrivateerGold1.03.exe",
+    urlMac: "https://downloads.sourceforge.net/project/privateer/Wing%20Commander%20Privateer/Privateer%20Gemini%20Gold%201.03/PrivateerGold1.03.dmg",
+    urlLinux: "https://downloads.sourceforge.net/project/privateer/Wing%20Commander%20Privateer/Privateer%20Gemini%20Gold%201.03/PrivateerGold1.03.bz2.bin",
     fileName: "PrivateerGold1.03.exe",
     versionLabel: "1.03",
     exeHint: "privateer|vegastrike",
@@ -635,7 +638,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
       "%PROGRAMFILES(X86)%\\Privateer Gemini Gold\\privateer.exe",
       "%LOCALAPPDATA%\\Programs\\Privateer Gemini Gold\\privateer.exe",
     ],
-    note: "Opens the official Privateer Gemini Gold setup — finish the wizard, then Play.",
+    note: "Downloads the official Privateer Gemini Gold setup for your operating system — finish the installer, then Play.",
   },
   "ur-quan-masters": {
     enabled: true,

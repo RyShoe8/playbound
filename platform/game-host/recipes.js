@@ -24,6 +24,7 @@ const ET_HOME_ROOT = process.env.GAME_HOST_ET_HOME || "/var/lib/playbound-host/e
 const WZ_CONFIG_DIR = path.join(HOST_HOME, "warzone");
 const WZ_AUTOHOST_DIR = path.join(WZ_CONFIG_DIR, "autohost");
 const TEEWORLDS_CONFIG_DIR = path.join(HOST_HOME, "teeworlds");
+const TES3MP_CONFIG_DIR = path.join(HOST_HOME, "tes3mp");
 
 function teeworldsConfigPath(ctx) {
   const party = String(ctx.partyId || "default").replace(/[^a-zA-Z0-9_-]/g, "").slice(-24);
@@ -113,6 +114,7 @@ function typesOf(values) {
  * is why its list is one key long despite the game declaring five settings.
  */
 const RECIPE_SETTING_TYPES = {
+  morrowind: { gameMode: "string", hostname: "string", maximumPlayers: "number", password: "string" },
   "warzone-2100": typesOf(WARZONE_DEFAULT_SETTINGS),
   "wolfenstein-enemy-territory": { sv_maxclients: "number" },
   openarena: { sv_maxclients: "number" },
@@ -313,6 +315,55 @@ function openRaMod(editionSlug) {
 }
 
 export const recipes = {
+  morrowind: {
+    portStart: 25565,
+    portEnd: 25585,
+    protocol: "udp",
+    startupGraceMs: 1500,
+    binaries: gameBin("morrowind", ["tes3mp-server", "tes3mp-server.x86_64"]),
+    prepareSpawn: async (port, ctx) => {
+      fs.mkdirSync(TES3MP_CONFIG_DIR, { recursive: true });
+      const settings = acceptedSettingsFor("morrowind", ctx.settings);
+      const safe = (value, fallback = "") => String(value ?? fallback).replace(/[\r\n]/g, " ").trim();
+      const config = [
+        "[General]",
+        "localAddress = 0.0.0.0",
+        `port = ${port}`,
+        `maximumPlayers = ${Number(settings.maximumPlayers) || Number(ctx.maxPlayers) || 8}`,
+        `hostname = ${safe(settings.hostname, ctx.name || "PlayBound.club Party")}`,
+        "logLevel = 1",
+        `password = ${safe(settings.password)}`,
+        "",
+        "[Plugins]",
+        "home = ./server",
+        "plugins = serverCore.lua",
+        "",
+        "[MasterServer]",
+        "enabled = false",
+        "address = master.tes3mp.com",
+        "port = 25561",
+        "rate = 10000",
+        "",
+      ].join("\n");
+      const room = path.join(TES3MP_CONFIG_DIR, `pb-${ctx.partyId.slice(-16)}`);
+      fs.mkdirSync(room, { recursive: true });
+      fs.writeFileSync(path.join(room, "tes3mp-server-default.cfg"), config, "utf8");
+      const sourceServer = path.join(GAMES_ROOT, "morrowind", "server");
+      const roomServer = path.join(room, "server");
+      fs.cpSync(sourceServer, roomServer, { recursive: true, force: true });
+      const luaConfig = path.join(roomServer, "scripts", "config.lua");
+      if (settings.gameMode && fs.existsSync(luaConfig)) {
+        const safeMode = safe(settings.gameMode, "Default").replace(/["\\]/g, "");
+        const lua = fs.readFileSync(luaConfig, "utf8").replace(
+          /^config\.gameMode\s*=.*$/m,
+          `config.gameMode = "${safeMode}"`
+        );
+        fs.writeFileSync(luaConfig, lua, "utf8");
+      }
+    },
+    args: () => [],
+    cwd: (_port, ctx) => path.join(TES3MP_CONFIG_DIR, `pb-${ctx.partyId.slice(-16)}`),
+  },
   teeworlds: {
     portStart: 8303,
     portEnd: 8323,

@@ -1,7 +1,6 @@
 "use strict";
 
 const fs = require("fs");
-const path = require("path");
 
 /**
  * Native uninstallers belong to whole products, not PlayBound editions.
@@ -13,17 +12,11 @@ function mayRunNativeUninstaller(editionSlug) {
 }
 
 /**
- * TES3MP's client defaults to localhost when launched without a server. That
- * looks like a permanently black game window. Normal Play opens its bundled
- * server browser; Join Game still launches the client with --connect.
+ * Edition-specific executable selection. TES3MP hosting is orchestrated by
+ * the local server manager; both local play and remote joins use its client.
  */
-function editionLaunchExecutable(info, { gameSlug, editionSlug, joining } = {}, exists = fs.existsSync) {
-  const current = info?.exe || "";
-  if (gameSlug !== "morrowind" || editionSlug !== "tes3mp" || joining || !info?.dir) {
-    return current;
-  }
-  const browser = path.join(info.dir, "tes3mp-browser.exe");
-  return exists(browser) ? browser : current;
+function editionLaunchExecutable(info) {
+  return info?.exe || "";
 }
 
 module.exports = { mayRunNativeUninstaller, editionLaunchExecutable };

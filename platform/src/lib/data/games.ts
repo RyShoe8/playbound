@@ -690,7 +690,8 @@ const facts: Game[] = [
     tags: ["Post-Apocalyptic", "Classic"],
     license: "Open Source (GPL-2.0)",
     releaseYear: 1999,
-    sizeMB: 550,
+    // Game archive plus the required 964.3 MB high-quality campaign sequences.wz.
+    sizeMB: 1515,
     platforms: ["Windows", "macOS", "Linux"],
     features: ["Singleplayer Campaign", "Multiplayer", "Dedicated Servers", "LAN Support", "Map Editor"],
     launchMethods: ["install", "server"],
@@ -706,7 +707,7 @@ const facts: Game[] = [
     screenshots: ["https://cdn.cloudflare.steamstatic.com/steam/apps/1241950/header.jpg"],
     systemRequirements: {
       min: "1.8 GHz CPU · 2 GB RAM · OpenGL 2.1 GPU · 1 GB storage",
-      recommended: "2.5 GHz CPU · 4 GB RAM · Any modern GPU · 2 GB storage",
+      recommended: "2.5 GHz CPU · 4 GB RAM · Any modern GPU · 3 GB storage",
     },
     hardwareRequirements: {
       min: {
@@ -720,7 +721,7 @@ const facts: Game[] = [
       },
       recommended: {
         ramMB: 4096,
-        storageMB: 2048,
+        storageMB: 3072,
         cpuText: "2.5 GHz CPU",
         gpuText: "Any modern GPU",
       },

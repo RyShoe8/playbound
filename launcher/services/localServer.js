@@ -19,7 +19,45 @@
  */
 
 const { spawn } = require("node:child_process");
+const fs = require("node:fs");
 const path = require("node:path");
+
+function iniValue(value) {
+  return String(value ?? "").replace(/[\r\n]/g, " ").trim();
+}
+
+function writeServerConfig(cwd, hostLaunch, port, settings) {
+  if (!hostLaunch?.configFile) return;
+  const configPath = path.join(cwd, hostLaunch.configFile);
+  let content = fs.existsSync(configPath) ? fs.readFileSync(configPath, "utf8") : "[General]\n";
+  const values = {
+    port,
+    hostname: "PlayBound.club Party",
+    ...(settings || {}),
+  };
+  const allowed = new Set(hostLaunch.configKeys || []);
+  for (const [key, raw] of Object.entries(values)) {
+    if (!allowed.has(key)) continue;
+    const line = `${key} = ${iniValue(raw)}`;
+    const re = new RegExp(`^${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*=.*$`, "mi");
+    content = re.test(content) ? content.replace(re, line) : content.replace(/^\[General\]\s*$/mi, `[General]\n${line}`);
+  }
+  fs.writeFileSync(configPath, content, "utf8");
+
+  if (hostLaunch.scriptConfigFile) {
+    const scriptPath = path.join(cwd, hostLaunch.scriptConfigFile);
+    if (!fs.existsSync(scriptPath)) throw new Error(`${hostLaunch.scriptConfigFile} was not found`);
+    let script = fs.readFileSync(scriptPath, "utf8");
+    const scriptKeys = new Set(hostLaunch.scriptConfigKeys || []);
+    for (const [key, raw] of Object.entries(settings || {})) {
+      if (!scriptKeys.has(key)) continue;
+      const value = iniValue(raw).replace(/["\\]/g, "");
+      const re = new RegExp(`^config\\.${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*=.*$`, "mi");
+      if (re.test(script)) script = script.replace(re, `config.${key} = "${value}"`);
+    }
+    fs.writeFileSync(scriptPath, script, "utf8");
+  }
+}
 
 /**
  * Settings that go on the command line as engine cvars.
@@ -55,7 +93,7 @@ function cvarArgs(settings) {
  */
 function buildServerArgs({ hostLaunch, port, settings }) {
   const template = Array.isArray(hostLaunch?.argsTemplate) ? hostLaunch.argsTemplate : [];
-  if (!template.length) return null;
+  if (!template.length) return hostLaunch?.configFile ? [] : null;
   const resolved = template.map((arg) =>
     String(arg).replace("{port}", String(port)).replace("{name}", "PlayBound.club Party")
   );
@@ -101,6 +139,12 @@ function createLocalServers({ onExit } = {}) {
 
     stop(partyId);
 
+    try {
+      writeServerConfig(cwd || path.dirname(exe), hostLaunch, port, settings);
+    } catch (err) {
+      return { error: `Could not write server configuration: ${err.message}` };
+    }
+
     let child;
     try {
       child = spawn(exe, args, {
@@ -138,4 +182,4 @@ function createLocalServers({ onExit } = {}) {
   return { start, stop, stopAll, get, running };
 }
 
-module.exports = { createLocalServers, buildServerArgs, cvarArgs };
+module.exports = { createLocalServers, buildServerArgs, cvarArgs, writeServerConfig };

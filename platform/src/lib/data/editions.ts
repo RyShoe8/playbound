@@ -2970,7 +2970,7 @@ export const editions: EditionSeed[] = [
     visibility: "public",
     isDefault: true,
     sortOrder: 10,
-    platforms: ["Windows"],
+    platforms: ["Windows", "Linux", "macOS"],
     links: {
       website: "https://privateer.sourceforge.net",
       forum: "https://privateer.sourceforge.net/comlink/",
@@ -2980,10 +2980,12 @@ export const editions: EditionSeed[] = [
       playbound_installer: {
         kind: "direct-installer",
         url: "https://downloads.sourceforge.net/project/privateer/Wing%20Commander%20Privateer/Privateer%20Gemini%20Gold%201.03/PrivateerGold1.03.exe",
+        urlMac: "https://downloads.sourceforge.net/project/privateer/Wing%20Commander%20Privateer/Privateer%20Gemini%20Gold%201.03/PrivateerGold1.03.dmg",
+        urlLinux: "https://downloads.sourceforge.net/project/privateer/Wing%20Commander%20Privateer/Privateer%20Gemini%20Gold%201.03/PrivateerGold1.03.bz2.bin",
         fileName: "PrivateerGold1.03.exe",
         versionLabel: "1.03",
         exeHint: "privateer|vegastrike",
-        note: "Official standalone Windows installer for Privateer Gemini Gold 1.03.",
+        note: "Official standalone Privateer Gemini Gold 1.03 installer selected for the current operating system.",
       },
     },
     requirements: {
@@ -3003,33 +3005,6 @@ export const editions: EditionSeed[] = [
         a: "Full campaigns for both the original Wing Commander Privateer and the Righteous Fire expansion, complete 3D ship models, stations, trading commodities, and guilds.",
       },
     ],
-  },
-  {
-    gameSlug: "privateer-gemini-gold",
-    slug: "gemini-gold-unix",
-    name: "Privateer Gemini Gold (Linux & macOS Native)",
-    shortDescription: "Native Linux and macOS builds distributed as standalone tarball / DMG archives.",
-    description:
-      "Native Unix builds of Gemini Gold powered by Vega Strike's cross-platform POSIX engine. No Wine or emulation required on Linux or Intel macOS.",
-    type: "community",
-    status: "active",
-    visibility: "public",
-    isDefault: false,
-    sortOrder: 20,
-    platforms: ["Linux", "macOS"],
-    links: {
-      website: "https://privateer.sourceforge.net",
-    },
-    installMethod: "manual",
-    requirements: {
-      min: "1.0 GHz x86 CPU · 512 MB RAM · OpenGL 1.4 GPU · 1.5 GB disk space",
-      recommended: "2.0 GHz Dual-Core · 2 GB RAM · Dedicated GPU · 2 GB disk space",
-      notes: "Linux requires bzip2 and standard OpenGL runtime libraries. macOS package supports Intel DMG.",
-    },
-    features: ["Singleplayer", "Linux Native", "macOS Native", "Story Campaign", "Joystick Support"],
-    tags: ["Linux", "macOS", "Space Sim", "Open Source Engine"],
-    version: "1.03",
-    verificationLevel: "community_verified",
   },
   {
     gameSlug: "quake-champions",
@@ -4634,6 +4609,5 @@ export function getDisplayEditionsForGame(gameSlug: string): EditionSeed[] {
 
   return gameEditions;
 }
-
 
 

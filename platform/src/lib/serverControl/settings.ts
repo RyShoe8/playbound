@@ -1249,7 +1249,36 @@ const HURRY_CURRY: ServerSettingProfile = {
   settings: [],
 };
 
+const TES3MP: ServerSettingProfile = {
+  slug: "morrowind",
+  settings: [
+    {
+      key: "gameMode",
+      label: "Server browser mode",
+      feature: "gameMode",
+      type: "enum",
+      default: "Default",
+      options: [
+        { value: "Default", label: "Default" },
+        { value: "Vanilla", label: "Vanilla" },
+        { value: "Co-op", label: "Co-op" },
+        { value: "Roleplay", label: "Roleplay" },
+        { value: "Hardcore", label: "Hardcore" },
+        { value: "Permadeath", label: "Permadeath" },
+      ],
+      apply: "restart",
+      backend: "config-file",
+      help: "Advertised category in the TES3MP server browser. Gameplay rules still come from the server scripts.",
+    },
+    { key: "hostname", label: "Server name", type: "string", default: "PlayBound.club Party", maxLength: 64, apply: "restart", backend: "config-file" },
+    { key: "maximumPlayers", label: "Max players", feature: "slots", type: "number", default: 8, min: 2, max: 64, apply: "restart", backend: "config-file" },
+    { key: "password", label: "Server password", feature: "password", type: "string", default: "", maxLength: 64, apply: "restart", backend: "config-file" },
+  ],
+};
+
 export const SERVER_SETTING_PROFILES: Readonly<Record<string, ServerSettingProfile>> = {
+  morrowind: TES3MP,
+  tes3mp: TES3MP,
   "warzone-2100": WARZONE_2100,
   "wolfenstein-enemy-territory": WOLFENSTEIN_ENEMY_TERRITORY,
   freeciv: FREECIV,

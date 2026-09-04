@@ -29,6 +29,10 @@ export interface HostLaunchConfig {
   protocol?: "udp" | "tcp" | "both";
   binaryHint?: string;
   argsTemplate?: string[];
+  configFile?: string;
+  configKeys?: string[];
+  scriptConfigFile?: string;
+  scriptConfigKeys?: string[];
 }
 
 export interface ClientLaunchConfig {
@@ -220,7 +224,17 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     client: {
       launchArguments: ["--connect={host}:{port}"],
     },
-    notes: "TES3MP needs game data on the host; not auto-provisioned on the VPS yet.",
+    host: {
+      port: 25565,
+      protocol: "udp",
+      binaryHint: "tes3mp-server",
+      argsTemplate: [],
+      configFile: "tes3mp-server-default.cfg",
+      configKeys: ["port", "hostname", "maximumPlayers", "password"],
+      scriptConfigFile: "server/scripts/config.lua",
+      scriptConfigKeys: ["gameMode"],
+    },
+    notes: "TES3MP client and dedicated server with managed local configuration.",
   },
 
   tes3mp: {
@@ -1942,4 +1956,3 @@ export function getDefaultGamePort(gameSlug: string): number {
   if (!adapter) return 0;
   return adapter.host?.port || adapter.selfHost?.port || 0;
 }
-

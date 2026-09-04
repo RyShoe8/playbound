@@ -5,8 +5,11 @@
  */
 
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
 const test = require("node:test");
-const { buildServerArgs, cvarArgs } = require("./localServer");
+const { buildServerArgs, cvarArgs, writeServerConfig } = require("./localServer");
 
 const ET_HOST = {
   argsTemplate: ["+set", "dedicated", "1", "+set", "net_port", "{port}"],
@@ -58,4 +61,26 @@ test("substitutes into templates that carry the port inside a longer argument", 
     settings: {},
   });
   assert.deepEqual(args, ["Server.ListenPort=1255"]);
+});
+
+test("writes TES3MP config-file server settings", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "playbound-tes3mp-"));
+  const file = path.join(dir, "tes3mp-server-default.cfg");
+  const scriptsDir = path.join(dir, "server", "scripts");
+  fs.mkdirSync(scriptsDir, { recursive: true });
+  fs.writeFileSync(path.join(scriptsDir, "config.lua"), 'config.gameMode = "Default"\n');
+  fs.writeFileSync(file, "[General]\nport = 25565\nmaximumPlayers = 64\nhostname = TES3MP server\npassword =\n");
+  writeServerConfig(dir, {
+    configFile: "tes3mp-server-default.cfg",
+    configKeys: ["port", "hostname", "maximumPlayers", "password"],
+    scriptConfigFile: "server/scripts/config.lua",
+    scriptConfigKeys: ["gameMode"],
+  }, 25570, { gameMode: "Roleplay", hostname: "Friends only", maximumPlayers: 6, password: "scrib" });
+  const actual = fs.readFileSync(file, "utf8");
+  assert.match(actual, /^port = 25570$/m);
+  assert.match(actual, /^hostname = Friends only$/m);
+  assert.match(actual, /^maximumPlayers = 6$/m);
+  assert.match(actual, /^password = scrib$/m);
+  assert.match(fs.readFileSync(path.join(scriptsDir, "config.lua"), "utf8"), /^config\.gameMode = "Roleplay"$/m);
+  fs.rmSync(dir, { recursive: true, force: true });
 });

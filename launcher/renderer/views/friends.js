@@ -3618,7 +3618,27 @@ async function launchPartyGame(party) {
       async () => {
         setStatus("Checking Java / launching…");
         const edition = party.editionSlug || party.installedEditionSlug || null;
-        const res = await window.playbound.play(slug, peerConnect, edition);
+        let launchConnect = peerConnect;
+        let localServerStarted = false;
+        if (
+          slug === "morrowind" &&
+          edition === "tes3mp" &&
+          isLeader &&
+          party.hostMode === "self" &&
+          window.playbound.startSelfHostServer
+        ) {
+          const local = await window.playbound.startSelfHostServer(party.id, slug);
+          if (!local?.ok) throw new Error(local?.reason || "Could not start the TES3MP server.");
+          await new Promise((resolve) => setTimeout(resolve, 1600));
+          const connectMeta = (await window.playbound.getConnectMeta?.(slug)) || {};
+          launchConnect = {
+            host: "127.0.0.1",
+            port: Number(party.port || connectMeta.defaultPort || 25565),
+            name: state.accountState?.username || "",
+          };
+          localServerStarted = true;
+        }
+        const res = await window.playbound.play(slug, launchConnect, edition);
         startGameSession(slug, party.gameTitle || slug);
         if (isLeader && party.hostMode === "self") {
           /*
@@ -3636,8 +3656,9 @@ async function launchPartyGame(party) {
            * Taking the wrong branch leaves every other member on "Waiting for
            * host" with nothing to tell them why.
            */
-          const local =
-            catalogGame?.hostLaunch?.argsTemplate?.length && window.playbound.startSelfHostServer
+          const local = localServerStarted
+            ? { ok: true }
+            : (catalogGame?.hostLaunch?.argsTemplate?.length || catalogGame?.hostLaunch?.configFile) && window.playbound.startSelfHostServer
               ? await window.playbound.startSelfHostServer(party.id, slug)
               : { ok: false };
 
