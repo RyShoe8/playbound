@@ -1928,15 +1928,26 @@ export function listSelfHostCandidates(): Array<{
     .map((a) => ({ gameSlug: a.gameSlug, title: a.title, selfHost: a.selfHost }));
 }
 
+/*
+ * Alternative spellings for the connect-args and port lookups below.
+ *
+ * An entry only belongs here when the key has no adapter of its own. Three
+ * that did not have been removed: "aleph-one" and "alephone" both name real
+ * adapters, so aliasing them to marathon redirected each game away from its
+ * own config — harmless while the three configs happened to be identical, and
+ * a silent override the moment one of them gained a port. "uqm" pointed at
+ * "the-ur-quan-masters", which is not an adapter at all, so it resolved to
+ * undefined exactly as an unknown slug would.
+ *
+ * aliasesResolve.test.ts fails on both shapes rather than relying on this
+ * comment being read.
+ */
 const SLUG_ALIASES: Record<string, string> = {
   "0-ad": "0ad",
   "marathon-infinity": "marathon",
-  "aleph-one": "marathon",
-  "alephone": "marathon",
-  "zandronum": "freedoom",
-  "revolt": "re-volt-rvgl",
-  "rvgl": "re-volt-rvgl",
-  "uqm": "the-ur-quan-masters",
+  zandronum: "freedoom",
+  revolt: "re-volt-rvgl",
+  rvgl: "re-volt-rvgl",
 };
 
 /** Returns the client CLI connect template arguments, null for in-game menu join, or undefined if unknown. */
