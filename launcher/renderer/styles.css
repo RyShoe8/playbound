@@ -7758,8 +7758,9 @@ textarea.input-text {
 
 .events-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 380px));
+  gap: 20px;
+  align-items: stretch;
 }
 
 /* Sectioned events list, matching the website's grouped layout. */
@@ -7792,7 +7793,7 @@ textarea.input-text {
 .pb-event-card-cover-wrap {
   position: relative;
   width: 100%;
-  height: 150px;
+  height: 168px;
   overflow: hidden;
   background: var(--bg-surface);
 }
@@ -7815,7 +7816,7 @@ textarea.input-text {
 }
 
 .pb-event-card-body {
-  padding: 16px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -7862,18 +7863,18 @@ textarea.input-text {
 }
 
 .pb-event-title {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 800;
   color: var(--text-main);
-  margin: 10px 0 4px;
+  margin: 12px 0 5px;
   line-height: 1.3;
 }
 
 .pb-event-game {
   font-size: 13px;
-  font-weight: 600;
-  color: var(--text-dim);
-  margin: 0 0 6px;
+  font-weight: 700;
+  color: var(--accent-light);
+  margin: 0 0 10px;
 }
 
 .pb-event-time {
@@ -7882,14 +7883,15 @@ textarea.input-text {
   gap: 6px;
   font-size: 12px;
   color: var(--text-dim);
-  margin: 0 0 8px;
+  margin: 0 0 12px;
+  line-height: 1.4;
 }
 
 .pb-event-desc {
   font-size: 13px;
   color: var(--text-dim);
-  line-height: 1.4;
-  margin: 0 0 12px;
+  line-height: 1.5;
+  margin: 0 0 16px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -7901,6 +7903,8 @@ textarea.input-text {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   padding-top: 12px;
   margin-top: auto;
@@ -7913,11 +7917,13 @@ textarea.input-text {
   font-size: 12px;
   font-weight: 700;
   color: var(--text-dim);
+  white-space: nowrap;
 }
 
 .pb-event-actions {
   display: flex;
   gap: 6px;
+  margin-left: auto;
 }
 
 .event-detail-wrap {
@@ -8145,8 +8151,8 @@ textarea.input-text {
 }
 
 .events-grid {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 380px));
+  gap: 20px;
 }
 
 .gear-card-grid {
@@ -8179,16 +8185,16 @@ textarea.input-text {
   }
 
   .events-grid {
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr));
+    gap: 16px;
   }
 
   .pb-event-card-cover-wrap {
-    height: 126px;
+    height: 150px;
   }
 
   .pb-event-card-body {
-    padding: 13px;
+    padding: 16px;
   }
 
   .gear-card-grid {
@@ -10571,4 +10577,3 @@ textarea.input-text {
 .copy-error-badge:active {
   transform: scale(0.96);
 }
-

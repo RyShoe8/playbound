@@ -166,20 +166,12 @@ function editIniSection(text, section, mutate) {
   return [...lines.slice(0, start + 1), ...body, ...lines.slice(end)].join("\n");
 }
 
-/**
- * True when a joystick config binds movement to something that is not a stick.
- *
- * SDL exposes a recognised pad with the left stick on axes 0 and 1; 4 and 5 are
- * the triggers. An entry pointing movement at those is not a preference to
- * respect, it is a config that cannot work — and it has to be distinguishable
- * from a good one, or every check says "already configured" and the player is
- * stuck with a pad the game appears not to see.
- */
-function hasUnusableAxes(text) {
-  for (const m of String(text || "").matchAll(/xAxis:(\d+),\s*yAxis:(\d+)/g)) {
-    if (Number(m[1]) >= 4 || Number(m[2]) >= 4) return true;
-  }
-  return false;
+function ysoccerHasDualSenseStickAxes(text) {
+  const entries = String(text || "").match(/\{class:JoystickConfig,name:[^}]+\}/g) || [];
+  const dualSenseEntries = entries.filter((entry) =>
+    /name:(?:DualSense|PS5 Controller)/i.test(entry)
+  );
+  return dualSenseEntries.some((entry) => /xAxis:4,\s*yAxis:3(?:,|\})/.test(entry));
 }
 
 function iniKeyOf(line) {
@@ -750,22 +742,14 @@ const GAMES = {
       if (profile.family === "xbox" && !/Xbox|GC101/i.test(s)) return true;
       if (profile.family === "dualshock4" && !/DualShock|PS4/i.test(s)) return true;
       if (profile.rawId && !s.includes(profile.rawId)) return true;
-      /*
-       * A config can name the right pad and still be unusable.
-       *
-       * An entry that puts movement on axis 4 or higher has it on the triggers
-       * rather than the left stick, which reads to a player as "the game does
-       * not see my controller" — and every check above says it is configured,
-       * so nothing offered to fix it. Both PlayBound's own PlayStation mapping
-       * and YSoccer's in-game binding produced exactly that.
-       */
-      if (hasUnusableAxes(s)) return true;
+      // This build uses OIS/DirectInput, not the browser's standardized axis
+      // order. The old 0/1 DualSense profile has working buttons but no stick.
+      if (profile.family === "dualsense" && !ysoccerHasDualSenseStickAxes(s)) return true;
       return false;
     },
     apply(text, profile) {
       const original = String(text ?? "");
       const isDualSense = profile?.family === "dualsense" || /dualsense|ps5|0ce6/i.test(profile?.rawId || "");
-      const isDualShock4 = profile?.family === "dualshock4" || /dualshock|ps4/i.test(profile?.rawId || "");
 
       const configs = [
         `{class:JoystickConfig,name:Controller (GC101 1.03),xAxis:1,yAxis:0,button1:0,button2:1}`,
@@ -779,9 +763,9 @@ const GAMES = {
         `{class:JoystickConfig,name:Xbox One Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
         `{class:JoystickConfig,name:XInput Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
         `{class:JoystickConfig,name:Xbox Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
-        `{class:JoystickConfig,name:DualSense Wireless Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:DualSense Wireless Controller,xAxis:4,yAxis:3,button1:0,button2:1}`,
         `{class:JoystickConfig,name:Wireless Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
-        `{class:JoystickConfig,name:PS5 Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:PS5 Controller,xAxis:4,yAxis:3,button1:0,button2:1}`,
         `{class:JoystickConfig,name:PS4 Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
         `{class:JoystickConfig,name:Wireless Gamepad,xAxis:0,yAxis:1,button1:0,button2:1}`,
       ];
@@ -791,10 +775,9 @@ const GAMES = {
        *
        * YSoccer 19 bundles gdx-controllers 1.x on its OIS backend — the jar
        * carries com.badlogic.gdx.controllers.desktop.OisControllers — so this
-       * is DirectInput, not SDL as an earlier comment here claimed. Either way
-       * the left stick is axes 0 and 1 and the face buttons are 0 and 1.
-       * PlayStation pads were once special-cased to axes 4 and 5, which are the
-       * triggers, so the stick moved nothing.
+       * is DirectInput, not SDL as an earlier comment here claimed. Its axis
+       * order is device-specific: DualSense uses 4/3 for the left stick while
+       * Xbox-compatible pads use the mappings below. Face buttons are 0 and 1.
        *
        * The names matter more than the axes. GLGame.reloadInputDevices does:
        *
@@ -809,7 +792,9 @@ const GAMES = {
        */
       for (const name of joystickNamesFor(profile)) {
         if (!configs.some((c) => c.includes(`name:${name},`))) {
-          configs.unshift(`{class:JoystickConfig,name:${name},xAxis:0,yAxis:1,button1:0,button2:1}`);
+          const xAxis = isDualSense ? 4 : 0;
+          const yAxis = isDualSense ? 3 : 1;
+          configs.unshift(`{class:JoystickConfig,name:${name},xAxis:${xAxis},yAxis:${yAxis},button1:0,button2:1}`);
         }
       }
 
