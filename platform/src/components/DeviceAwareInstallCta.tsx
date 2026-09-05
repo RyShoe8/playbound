@@ -28,9 +28,19 @@ export function DeviceAwareInstallCta({
     const outbound = resolveMobileOutbound(game, os);
     return (
       <div className="rounded-xl border border-border bg-card p-5">
-        <p className="font-bold">Get it on this device</p>
+        {/*
+          The heading has to agree with the button under it.
+          "Get it on this device" over "Open official site" promises an install
+          we cannot give — the same thing the button itself used to do for
+          games with no store listing, one level up.
+        */}
+        <p className="font-bold">
+          {outbound.label === "Open official site" ? "Where to get it" : "Get it on this device"}
+        </p>
         <p className="mt-1 text-sm text-muted-foreground">
-          Opens the official store or project site. The PlayBound desktop launcher is for computers.
+          {outbound.label === "Open official site"
+            ? "No app store listing for this one, so this opens the official site. The PlayBound desktop launcher is for computers."
+            : "Opens the official store or project site. The PlayBound desktop launcher is for computers."}
         </p>
         <div className="mt-4">
           {/* Adds the game to this device's library on the way out — a store
