@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { resolveMobileOutbound, parseMobileOs, type MobilePlayGame } from "./mobilePlay";
 
@@ -202,5 +204,25 @@ describe("no store means no install promise", () => {
       iosStoreUrl: null,
     });
     expect(resolveMobileOutbound(browser, "android").label).toBe("Play Free");
+  });
+});
+
+describe("the surrounding copy agrees with the button", () => {
+  /*
+   * The button was fixed first and the heading above it still read "Get it on
+   * this device" — the same promise, one level up. Verified live on Re-Volt
+   * under an Android UA before this was written.
+   */
+  const CTA = readFileSync(
+    path.join(process.cwd(), "src", "components", "DeviceAwareInstallCta.tsx"),
+    "utf8"
+  );
+
+  it("does not say 'get it on this device' when it is only a link out", () => {
+    expect(CTA).toMatch(/outbound\.label === "Open official site" \? "Where to get it" : "Get it on this device"/);
+  });
+
+  it("explains why there is no install, rather than implying one", () => {
+    expect(CTA).toMatch(/No app store listing for this one/);
   });
 });
