@@ -150,6 +150,19 @@ export function CompatibilityProvider({
     if (status === "unauthenticated") syncedUser.current = false;
   }, [status]);
 
+  /*
+   * Mirror the mode onto <html> for the pre-hydration CSS.
+   *
+   * globals.css hides desktop-only games under 768px so a phone does not
+   * paint 74 games it is about to remove. "Compatible only" is the default,
+   * so that rule is right for a first paint — but a viewer who chose "all
+   * games" must get them back, and CSS cannot read localStorage. This is the
+   * one thing the stylesheet needs from the client.
+   */
+  useEffect(() => {
+    document.documentElement.classList.toggle("compat-show-all", mode === "all");
+  }, [mode]);
+
   const setMode = useCallback(
     (next: CompatibilityFilterMode) => {
       writeLocalMode(next);

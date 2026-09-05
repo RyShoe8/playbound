@@ -182,3 +182,46 @@ body.is-popout .shell-main {
   padding-left: 0 !important;
   padding-bottom: 0 !important;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Desktop-only games on a phone, hidden before hydration.
+
+   The layout is static and useDevice only resolves on the client, so every
+   server-rendered listing is the desktop set. On a phone that is 74 of 94
+   published games appearing and then being removed — the whole grid rebuilds
+   itself. GameCard stamps data-mobile-compat on the server; this hides the
+   incompatible ones at first paint.
+
+   Chosen over a device-hint cookie because reading cookies() in the root
+   layout would make every page dynamic — the site is fully prerendered today
+   (X-Nextjs-Prerender: 1 on every route) — and would drop those games from
+   the mobile HTML entirely, costing their internal links under mobile-first
+   indexing. Hiding keeps the links and the prerender.
+
+   The breakpoint matches the mobile check in useDevice. "Compatible only" is
+   the default preference, so this is right for a first paint; a viewer who
+   has chosen "all games" gets them back when the client adds compat-show-all.
+   ───────────────────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  [data-mobile-compat="false"] {
+    display: none;
+  }
+
+  html.compat-show-all [data-mobile-compat="false"] {
+    display: revert;
+  }
+}
+
+/* The spotlight's phone understudy — see HomeHero. Only rendered when the
+   desktop pick is something a phone cannot run, so on a hydrated phone
+   neither of these selectors matches anything. */
+@media (max-width: 767px) {
+  [data-hero-variant="desktop"] {
+    display: none;
+  }
+}
+@media (min-width: 768px) {
+  [data-hero-variant="mobile"] {
+    display: none;
+  }
+}
