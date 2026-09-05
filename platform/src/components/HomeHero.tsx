@@ -17,15 +17,51 @@ import { formatEditionChipName, getDisplayEditionsForGame } from "@/lib/data/edi
  * the current device when the filter is set to Compatible.
  * `gamesNewestFirst` must already be sorted by createdAt desc.
  */
+/**
+ * The spotlight, and its phone-sized understudy.
+ *
+ * The pick depends on the device, and the server has no device — useDevice
+ * only resolves after hydration, so a server render always spotlights the
+ * newest *desktop* game. On a phone that game is usually one this device
+ * cannot run, and it is the largest thing on the page when it swaps.
+ *
+ * Hiding it is not an option the way it is for a card in a row: there is only
+ * one, and hiding it leaves a hole. So when the desktop pick is not something
+ * a phone can run, a second hero is rendered for the narrow breakpoint and
+ * CSS chooses. Once hydrated on a phone, device.type is mobile, the primary
+ * pick is already mobile-compatible, and the understudy is not rendered at
+ * all — so this costs nothing after the first paint.
+ */
 export function HomeHero({ gamesNewestFirst }: { gamesNewestFirst: Game[] }) {
   const { mode, device } = useCompatibilityFilter();
 
-  const hero =
+  const pickFor = (deviceType: Parameters<typeof isGameCompatible>[1]) =>
     (mode === "compatible"
-      ? gamesNewestFirst.find((g) => isGameCompatible(g, device.type))
+      ? gamesNewestFirst.find((g) => isGameCompatible(g, deviceType))
       : gamesNewestFirst[0]) ?? gamesNewestFirst[0];
 
+  const hero = pickFor(device.type);
+  const mobileHero = mode === "compatible" ? pickFor("mobile") : hero;
+  const needsMobileVariant = Boolean(mobileHero && mobileHero.slug !== hero?.slug);
+
   if (!hero) return null;
+
+  if (needsMobileVariant && mobileHero) {
+    // The attribute goes on each hero's own root, not a wrapper: a wrapper
+    // would need display:contents to keep the layout, and that fights the
+    // hide rule on equal specificity.
+    return (
+      <>
+        <HeroCard hero={hero} variant="desktop" />
+        <HeroCard hero={mobileHero} variant="mobile" />
+      </>
+    );
+  }
+
+  return <HeroCard hero={hero} />;
+}
+
+function HeroCard({ hero, variant }: { hero: Game; variant?: "desktop" | "mobile" }) {
 
   const isPaid = directPurchaseRequired(hero.access);
   const price = accessPriceLabel(hero.access?.currentPriceCents ?? null);
@@ -33,7 +69,10 @@ export function HomeHero({ gamesNewestFirst }: { gamesNewestFirst: Game[] }) {
   const displayEditions = getDisplayEditionsForGame(hero.slug);
 
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-border shadow-md">
+    <section
+      data-hero-variant={variant}
+      className="relative overflow-hidden rounded-2xl border border-border shadow-md"
+    >
       <GameArt
         game={hero}
         showTitle={false}

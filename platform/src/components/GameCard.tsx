@@ -32,6 +32,7 @@ import {
   resolveMobileOutbound,
   shouldOfferLauncher,
 } from "@/lib/mobilePlay";
+import { isGameCompatible } from "@/lib/compatibility/compatibility";
 import { withOutboundUtm } from "@/lib/utm";
 import { formatEditionChipName, getDisplayEditionsForGame } from "@/lib/data/editions";
 
@@ -236,6 +237,17 @@ export function GameCard({
   return (
     <Link
       href={`/games/${game.slug}`}
+      /*
+       * Whether this game runs on a phone, decided on the server.
+       *
+       * The server has no device to filter for — the layout is static, and
+       * useDevice only resolves after hydration — so every listing renders the
+       * desktop set. On a phone that is 74 of 94 published games appearing and
+       * then vanishing. A media query on this attribute hides them at first
+       * paint instead, with no cookie, no inline script, and no cost to the
+       * prerendered HTML. globals.css has the rule.
+       */
+      data-mobile-compat={isGameCompatible(game, "mobile") ? "true" : "false"}
       className={cn(
         "group flex h-full w-[250px] shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-border bg-card transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.7)] sm:w-[276px]",
         className
