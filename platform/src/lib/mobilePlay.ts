@@ -6,7 +6,6 @@ export type MobileOs = "android" | "ios" | "other";
 
 export type MobileOutboundLabel =
   | "Play Free"
-  | "Get It Free"
   | "Get on Google Play"
   | "Get on the App Store"
   | "Open official site";
@@ -66,13 +65,27 @@ export function resolveMobileOutbound(
     return { href: game.iosStoreUrl, label: "Get on the App Store" };
   }
 
-  // Prefer any available store if OS is ambiguous.
-  if (game.androidStoreUrl && !game.iosStoreUrl) {
+  // Prefer any available store only when the OS is genuinely ambiguous.
+  // A known iOS user must never be sent to Google Play (and vice versa).
+  if (os === "other" && game.androidStoreUrl && !game.iosStoreUrl) {
     return { href: game.androidStoreUrl, label: "Get on Google Play" };
   }
-  if (game.iosStoreUrl && !game.androidStoreUrl) {
+  if (os === "other" && game.iosStoreUrl && !game.androidStoreUrl) {
     return { href: game.iosStoreUrl, label: "Get on the App Store" };
   }
 
-  return { href: game.website, label: "Get It Free" };
+  /*
+   * No store we can send this person to, so do not imply there is one.
+   *
+   * This used to read "Get It Free", which on a phone is a promise to install
+   * an app — and MobileOutboundCta picks its icon from the label, so it drew a
+   * download arrow for games that have no mobile build to download. Re-Volt is
+   * the case: listed for Android because RVGL has an Android build, but it is
+   * not on Google Play, so the button offered an install that does not exist.
+   *
+   * "Open official site" is what actually happens next, and the component
+   * already draws an external-link icon for it — that branch existed before
+   * anything returned this label.
+   */
+  return { href: game.website, label: "Open official site" };
 }

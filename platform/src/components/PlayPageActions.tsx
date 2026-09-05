@@ -63,7 +63,12 @@ export function PlayPageActions({
           surface="play_page_mobile"
           className="mt-2 flex items-center gap-2 rounded-full bg-play px-6 py-2.5 text-sm font-bold text-play-foreground transition-all hover:brightness-110"
         >
-          {outbound.label === "Get It Free" ? `Get It Free on ${host}` : outbound.label}
+          {/*
+            The website fallback names the host, since "Open official site" on
+            its own does not say whose. The resolver no longer emits
+            "Get It Free" — it implied an app install for games with no store.
+          */}
+          {outbound.label === "Open official site" ? `Open ${host}` : outbound.label}
         </MobileOutboundCta>
         {outbound.href !== officialHref ? (
           <TelemetryAnchor
