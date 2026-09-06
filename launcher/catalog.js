@@ -3963,8 +3963,7 @@ module.exports = [
     "platforms": [
       "Windows",
       "macOS",
-      "Linux",
-      "Android"
+      "Linux"
     ],
     "browserPlayable": false,
     "steamDeck": false,
