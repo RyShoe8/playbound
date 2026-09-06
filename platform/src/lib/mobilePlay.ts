@@ -8,6 +8,7 @@ export type MobileOutboundLabel =
   | "Play Free"
   | "Get on Google Play"
   | "Get on the App Store"
+  | "Download APK"
   | "Open official site";
 
 export type MobileOutbound = {
@@ -22,6 +23,39 @@ export type MobilePlayGame = {
   browserPlayable: boolean;
   launchMethods: LaunchMethod[];
 };
+
+/**
+ * Whether an Android URL is a Play Store listing or a direct download.
+ *
+ * androidStoreUrl has always been documented as "Google Play / Android
+ * download page", but the label was hard-coded to Google Play — so a game
+ * distributed as an APK from its own site advertised a store listing it does
+ * not have. Re-Volt is the case: RVGL publishes an Android build, and it has
+ * never been on Play.
+ */
+export function isPlayStoreUrl(url: string | null | undefined): boolean {
+  try {
+    return /(^|\.)play\.google\.com$/i.test(new URL(String(url)).hostname);
+  } catch {
+    return false;
+  }
+}
+
+/** A link that hands the browser an APK rather than a page about one. */
+export function isApkUrl(url: string | null | undefined): boolean {
+  try {
+    return /\.apk$/i.test(new URL(String(url)).pathname);
+  } catch {
+    return false;
+  }
+}
+
+/** What to call an Android destination, based on what it actually is. */
+function androidLabel(url: string): MobileOutboundLabel {
+  if (isPlayStoreUrl(url)) return "Get on Google Play";
+  if (isApkUrl(url)) return "Download APK";
+  return "Open official site";
+}
 
 /** Desktop & Linux get the PlayBound Launcher; phones/tablets never do. */
 export function shouldOfferLauncher(device: DeviceType): boolean {
@@ -59,7 +93,7 @@ export function resolveMobileOutbound(
   }
 
   if (os === "android" && game.androidStoreUrl) {
-    return { href: game.androidStoreUrl, label: "Get on Google Play" };
+    return { href: game.androidStoreUrl, label: androidLabel(game.androidStoreUrl) };
   }
   if (os === "ios" && game.iosStoreUrl) {
     return { href: game.iosStoreUrl, label: "Get on the App Store" };
@@ -68,7 +102,7 @@ export function resolveMobileOutbound(
   // Prefer any available store only when the OS is genuinely ambiguous.
   // A known iOS user must never be sent to Google Play (and vice versa).
   if (os === "other" && game.androidStoreUrl && !game.iosStoreUrl) {
-    return { href: game.androidStoreUrl, label: "Get on Google Play" };
+    return { href: game.androidStoreUrl, label: androidLabel(game.androidStoreUrl) };
   }
   if (os === "other" && game.iosStoreUrl && !game.androidStoreUrl) {
     return { href: game.iosStoreUrl, label: "Get on the App Store" };

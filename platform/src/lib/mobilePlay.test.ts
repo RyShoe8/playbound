@@ -1,7 +1,13 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { resolveMobileOutbound, parseMobileOs, type MobilePlayGame } from "./mobilePlay";
+import {
+  resolveMobileOutbound,
+  parseMobileOs,
+  isPlayStoreUrl,
+  isApkUrl,
+  type MobilePlayGame,
+} from "./mobilePlay";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -224,5 +230,82 @@ describe("the surrounding copy agrees with the button", () => {
 
   it("explains why there is no install, rather than implying one", () => {
     expect(CTA).toMatch(/No app store listing for this one/);
+  });
+});
+
+describe("Android: a store listing and a direct APK are not the same thing", () => {
+  /*
+   * androidStoreUrl has always been documented as "Google Play / Android
+   * download page", but the label was hard-coded to Google Play. A game
+   * distributed as an APK from its own site therefore advertised a store
+   * listing it does not have. Re-Volt is the case: RVGL publishes an Android
+   * build and has never been on Play.
+   */
+  const PLAY = "https://play.google.com/store/apps/details?id=com.example";
+  const APK = "https://distribute.re-volt.io/releases/rvgl_full_android_original.apk";
+  const PAGE = "https://re-volt.io/downloads";
+
+  it("a Play Store URL still says Google Play", () => {
+    const g = game({ androidStoreUrl: PLAY });
+    expect(resolveMobileOutbound(g, "android").label).toBe("Get on Google Play");
+  });
+
+  it("an APK URL offers the download, from the developer's own host", () => {
+    const g = game({ androidStoreUrl: APK });
+    const out = resolveMobileOutbound(g, "android");
+    expect(out.label).toBe("Download APK");
+    expect(out.href).toBe(APK);
+  });
+
+  it("an Android page that is neither does not claim to be either", () => {
+    const g = game({ androidStoreUrl: PAGE });
+    expect(resolveMobileOutbound(g, "android").label).toBe("Open official site");
+  });
+
+  it("the same rule applies when the OS is ambiguous", () => {
+    expect(resolveMobileOutbound(game({ androidStoreUrl: APK }), "other").label).toBe("Download APK");
+    expect(resolveMobileOutbound(game({ androidStoreUrl: PLAY }), "other").label).toBe(
+      "Get on Google Play"
+    );
+  });
+
+  it("an iOS user is never handed an Android APK", () => {
+    // The rule that mattered before and still does: no cross-OS offers.
+    const g = game({ androidStoreUrl: APK });
+    const out = resolveMobileOutbound(g, "ios");
+    expect(out.label).not.toBe("Download APK");
+    expect(out.href).not.toBe(APK);
+  });
+
+  it("host detection is not fooled by a lookalike domain", () => {
+    for (const bad of [
+      "https://play.google.com.evil.test/x",
+      "https://notplay.google.com/x",
+      "https://play.google.co/x",
+    ]) {
+      expect(isPlayStoreUrl(bad), bad).toBe(false);
+    }
+    expect(isPlayStoreUrl(PLAY)).toBe(true);
+  });
+
+  it("apk detection ignores a query string and rejects near-misses", () => {
+    expect(isApkUrl("https://x.test/a/b/game.apk?token=1")).toBe(true);
+    expect(isApkUrl("https://x.test/apk/download")).toBe(false);
+    expect(isApkUrl("https://x.test/game.apk.html")).toBe(false);
+    expect(isApkUrl(null)).toBe(false);
+  });
+
+  it("the CTA tells the player Android takes over after the download", () => {
+    /*
+     * We cannot install it for them — Android's package installer does, and it
+     * asks permission first. Someone not expecting that reads the prompt as a
+     * failure.
+     */
+    const CTA = readFileSync(
+      path.join(process.cwd(), "src", "components", "DeviceAwareInstallCta.tsx"),
+      "utf8"
+    );
+    expect(CTA).toMatch(/outbound\.label === "Download APK"/);
+    expect(CTA).toMatch(/allow installs from your browser/);
   });
 });
