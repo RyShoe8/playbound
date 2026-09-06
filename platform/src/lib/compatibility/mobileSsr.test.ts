@@ -87,18 +87,21 @@ describe("the premise all of this rests on", () => {
   });
 
   it("a game listing Android is mobile-compatible and must not be hidden", () => {
-    /*
-     * Re-Volt, which a bug report named as desktop-only. It lists Android, so
-     * it belongs on a phone — the real complaint there was the install button,
-     * not the listing.
-     */
-    const reVolt = {
-      slug: "re-volt-rvgl",
+    const androidGame = {
+      slug: "sample-android-game",
       platforms: ["Windows", "macOS", "Linux", "Android"],
       browserPlayable: false,
       steamDeck: false,
     } as never;
-    expect(isGameCompatible(reVolt, "mobile")).toBe(true);
+    expect(isGameCompatible(androidGame, "mobile")).toBe(true);
+
+    const reVolt = {
+      slug: "re-volt-rvgl",
+      platforms: ["Windows", "macOS", "Linux"],
+      browserPlayable: false,
+      steamDeck: false,
+    } as never;
+    expect(isGameCompatible(reVolt, "mobile")).toBe(false);
   });
 
   it("a browser game is compatible everywhere", () => {
