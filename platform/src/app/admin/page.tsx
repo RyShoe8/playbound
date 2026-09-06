@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import type { Metadata } from "next";
-import { Bug, CalendarDays, Download, Gamepad2, Inbox, Plus, Shield, Users } from "lucide-react";
+import { Bug, CalendarDays, Download, Gamepad2, Inbox, Plus, Shield, Users, SlidersHorizontal } from "lucide-react";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
 import NewsletterSubscriber from "@/lib/models/NewsletterSubscriber";
@@ -220,6 +220,12 @@ export default async function AdminPage() {
             >
               <Inbox className="size-4" /> Submissions
               {kpis.pendingSubs > 0 ? ` (${kpis.pendingSubs})` : ""}
+            </Link>
+            <Link
+              href="/admin/platform-limits"
+              className="flex items-center gap-2 rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold transition-colors hover:bg-secondary/70"
+            >
+              <SlidersHorizontal className="size-4" /> Party limits
             </Link>
             <Link
               href="/admin/bugs"
