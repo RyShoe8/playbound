@@ -4633,6 +4633,16 @@ function markInstalledFromExe(slug, entry, exe, version) {
     connectArgs: Array.isArray(entry?.connectArgs) ? entry.connectArgs : undefined,
   });
   void syncAllInstalledGames({ force: true });
+
+  /*
+   * A copy we did not download still gets our setup: the game-assets overlay,
+   * the classic-DOS config, edition post-install, OpenMW data. Fire-and-forget
+   * for the same reason the mod setup below is — the game is registered and
+   * playable already, and every one of these also runs again before launch or
+   * is a no-op when the recipe does not configure it.
+   */
+  void applyOwnedCopySetup(slug, entry, dir, exe);
+
   // Modded editions finish setting themselves up here — this is the one point
   // every detection path (known path, registry, drive scan) converges on.
   // Failures are reported but not fatal: the same routine runs again before
@@ -6507,6 +6517,64 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
  * have written. DOSBox mounts the FALL.EXE directory as C:, so both paths are
  * deliberately relative to that mount.
  */
+/**
+ * Bring an install we did not download up to the state we would have left it in.
+ *
+ * Every detection path — Locate, a known path, the registry, the drive scan —
+ * converges on markInstalledFromExe, which recorded the game and set up mods
+ * and nothing else. The download path also lays down the game-assets overlay,
+ * writes the classic-DOS config, applies edition post-install and points
+ * OpenMW-family engines at their data. So a player who brought their own copy
+ * got a bare registration and none of the work that makes the game run well.
+ *
+ * The case that surfaced it: someone with Tyrian from GOG. That folder holds
+ * the original DOS build and nothing else, so the launcher had only DOS
+ * binaries to choose from, correctly wrapped one in DOSBox, and dropped them
+ * at a DOS prompt — while our own package would have given them the native
+ * engine over the same data.
+ *
+ * Only the steps that make sense for a folder we do not own. No extraction, no
+ * unwrapping, no exe discovery — the exe is the one the player pointed at.
+ * Each step is already a no-op for a game that does not configure it, so this
+ * costs a few property reads for everything else.
+ *
+ * Never fatal. The copy is already registered and playable by this point;
+ * failing here would take a working registration away over an optional extra.
+ */
+async function applyOwnedCopySetup(slug, entry, gameDir, exe) {
+  if (!entry || !gameDir) return;
+  try {
+    if (entry.overlayUrl) {
+      /*
+       * Writes into a directory the player owns, which is the point for a
+       * brought-your-own copy — it is how the locate-then-zip editions have
+       * always worked. It adds and replaces our files; it never removes theirs.
+       */
+      sendProgress({ phase: "downloading", addon: "Game Assets" });
+      const overlayName = entry.overlayFileName || "overlay.zip";
+      const overlayPath = path.join(app.getPath("temp"), "playbound-launcher", overlayName);
+      await downloadTo(entry.overlayUrl, overlayPath);
+      sendProgress({ phase: "extracting" });
+      const overlayDir = resolveInsideGameDir(gameDir, entry.overlayDest || "");
+      if (!overlayDir) throw new Error("Game-assets archive has an unsafe destination path");
+      await fsp.mkdir(overlayDir, { recursive: true });
+      await extractOverlayReplacing(overlayPath, overlayDir);
+      await removeFileWithRetries(overlayPath);
+      await flattenWadFiles(gameDir);
+    }
+
+    await prepareClassicDosInstall(entry, gameDir);
+    await maybeApplyEditionPostInstall(entry, gameDir);
+    await maybeConfigureOpenMw(gameDir);
+
+    if (slug === OPENCIV3_SLUG) {
+      await ensureDefaultDisplaySettings(exe || gameDir);
+    }
+  } catch (err) {
+    console.warn(`[owned-copy] setup skipped for ${slug}:`, err?.message || err);
+  }
+}
+
 async function prepareClassicDosInstall(entry, gameDir) {
   if (entry?.slug !== "daggerfall" || entry?.editionSlug !== "classic-dos") return;
   const fallExe = findExecutable(gameDir, "FALL.EXE");
