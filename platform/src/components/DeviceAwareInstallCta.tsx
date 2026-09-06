@@ -38,9 +38,17 @@ export function DeviceAwareInstallCta({
           {outbound.label === "Open official site" ? "Where to get it" : "Get it on this device"}
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
-          {outbound.label === "Open official site"
-            ? "No app store listing for this one, so this opens the official site. The PlayBound desktop launcher is for computers."
-            : "Opens the official store or project site. The PlayBound desktop launcher is for computers."}
+          {outbound.label === "Download APK"
+            ? /*
+               * Say what happens next. The download starts from here, but the
+               * install is Android's own — it will ask permission before the
+               * package installer runs, and a person who is not expecting that
+               * reads it as the download having failed.
+               */
+              "Downloads the official APK straight from the developer. Android will ask you to allow installs from your browser, then take over."
+            : outbound.label === "Open official site"
+              ? "No app store listing for this one, so this opens the official site. The PlayBound desktop launcher is for computers."
+              : "Opens the official store or project site. The PlayBound desktop launcher is for computers."}
         </p>
         <div className="mt-4">
           {/* Adds the game to this device's library on the way out — a store
