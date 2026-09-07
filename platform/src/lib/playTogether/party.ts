@@ -97,6 +97,8 @@ import {
   editionsFromRow,
   primaryEditionFromRow,
 } from "@/lib/library/installedEditions";
+import { getPartySlotContext } from "@/lib/entitlements/pool";
+import { canSeatAnother, describeCapacity } from "@/lib/entitlements/slots";
 import {
   canJoinParty,
   canLeaveParty,
@@ -611,15 +613,25 @@ async function partyPayloadForDoc(
   opts: { people?: PartyPeople; gameTitle?: string | null } = {}
 ): Promise<PartyPayload> {
   const gameSlug = String(doc.gameSlug || "");
-  const [people, gameTitle] = await Promise.all([
+  const members = (doc.members as unknown[]) || [];
+  const [people, gameTitle, slotCtx] = await Promise.all([
     opts.people ? Promise.resolve(opts.people) : resolvePartyPeople(partyMemberIds(doc)),
     opts.gameTitle !== undefined
       ? Promise.resolve(opts.gameTitle)
       : gameSlug
         ? getGame(gameSlug, { includeTesting: true }).then((g) => g?.title || null)
         : Promise.resolve(null),
+    /*
+     * Capacity ships with the party rather than from a second endpoint,
+     * because it changes for reasons that have nothing to do with this party —
+     * someone else's party filling up shrinks it — so a client that fetched it
+     * once would show a number that quietly stopped being true. The pool read
+     * behind this is memoised per couple of seconds, so a polling screen costs
+     * one aggregate, not one per tick.
+     */
+    getPartySlotContext({ leaderId: String(doc.leaderId), memberCount: members.length }),
   ]);
-  return serializeParty(doc, people, gameTitle);
+  return serializeParty(doc, people, gameTitle, describeCapacity(slotCtx));
 }
 
 /** Leader plus roster, deduped — the set every payload needs names and OS for. */
@@ -638,7 +650,8 @@ function hashPartyPassword(password: string, salt: string): string {
 function serializeParty(
   doc: Record<string, unknown>,
   people: PartyPeople,
-  gameTitle: string | null
+  gameTitle: string | null,
+  capacity: PartyPayload["capacity"]
 ): PartyPayload {
   const { nameById, osById } = people;
   const members = (doc.members as Array<Record<string, unknown>>) || [];
@@ -653,6 +666,7 @@ function serializeParty(
 
   return {
     id: String(doc._id),
+    capacity,
     leaderId,
     leaderUsername: nameById.get(leaderId) || "Player",
     name: normalizePartyName(doc.name),
@@ -1090,6 +1104,22 @@ export async function joinParty(
 
   const check = canJoinParty(rp, userId, isFriend || hasInvite, passwordOk);
   if (!check.ok) return { error: check.reason || "Cannot join", status: 403 };
+
+  /*
+   * The party's own maxSize is what the host asked for; the pool is what the
+   * platform can actually fund. Both have to allow the join, and this is the
+   * second one — checked here rather than in canJoinParty because it needs the
+   * database and those rules are pure.
+   *
+   * Not raced to zero deliberately: the atomic push below cannot also test the
+   * pool, so two simultaneous joins can take the last slot together. One seat
+   * of overshoot on a soft budget is not worth a lock, and the next join is
+   * refused because usage is recomputed from the parties themselves.
+   */
+  const seat = canSeatAnother(
+    await getPartySlotContext({ leaderId: rp.leaderId, memberCount: rp.members.length })
+  );
+  if (!seat.ok) return { error: seat.reason || "Party is full", status: 403 };
 
   const now = new Date();
 
@@ -2352,8 +2382,24 @@ async function serializePartyDocs(
     ),
   ]);
   const titleBySlug = new Map(games);
-  return docs.map((d) =>
-    serializeParty(d, people, titleBySlug.get(String(d.gameSlug)) || null)
+  /*
+   * Capacity per party, not one shared figure: it depends on the host's plan
+   * and on how many members each already seats. The pool read underneath is
+   * memoised, so this is arithmetic per row rather than a query per row.
+   */
+  return Promise.all(
+    docs.map(async (d) => {
+      const ctx = await getPartySlotContext({
+        leaderId: String(d.leaderId),
+        memberCount: ((d.members as unknown[]) || []).length,
+      });
+      return serializeParty(
+        d,
+        people,
+        titleBySlug.get(String(d.gameSlug)) || null,
+        describeCapacity(ctx)
+      );
+    })
   );
 }
 
