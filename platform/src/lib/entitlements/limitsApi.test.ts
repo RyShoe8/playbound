@@ -14,7 +14,13 @@ import { describe, expect, it } from "vitest";
 const read = (...p: string[]) => readFileSync(path.join(process.cwd(), ...p), "utf8");
 const ROUTE = read("src", "app", "api", "admin", "platform-limits", "route.ts");
 const EDITOR = read("src", "components", "admin", "PlatformLimitsEditor.tsx");
-const PAGE = read("src", "app", "admin", "platform-limits", "page.tsx");
+/*
+ * The editor lives on the parties screen — the pool governs those parties, and
+ * the usage figures are computed from them, so the setting and the thing it
+ * limits are read together.
+ */
+const PAGE = read("src", "app", "admin", "connect", "parties", "page.tsx");
+const OLD_ROUTE = read("src", "app", "admin", "platform-limits", "page.tsx");
 
 describe("the route", () => {
   it("is admin-only on both verbs", () => {
@@ -90,6 +96,16 @@ describe("the screen", () => {
 });
 
 describe("the page", () => {
+  it("is the parties screen, with the editor on it", () => {
+    expect(PAGE).toMatch(/<PlatformLimitsEditor/);
+    expect(PAGE).toMatch(/<ConnectManager view="parties" \/>/);
+  });
+
+  it("the old standalone URL still lands somewhere useful", () => {
+    // It was live; a bookmark should redirect rather than 404.
+    expect(OLD_ROUTE).toMatch(/permanentRedirect\("\/admin\/connect\/parties"\)/);
+  });
+
   it("is never served from a cache", () => {
     /*
      * Pool usage is live. The admin layout opts out of prerendering, but each
