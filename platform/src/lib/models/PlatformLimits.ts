@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
-import { PARTY_ABSOLUTE_MAX } from "@/lib/playTogether/types";
+import { PARTY_STRUCTURAL_MAX } from "@/lib/playTogether/types";
 
 /**
  * Platform-wide limits an admin can change without a deploy.
@@ -22,8 +22,7 @@ export interface IPlatformLimits extends Document {
    *
    * A business limit, not a safety rail: it binds parties whose host has no
    * plan slots and nobody else. A subscriber is bound by what they bought plus
-   * whatever the pool has spare, and by PARTY_ABSOLUTE_MAX, which is a fact
-   * about the schema rather than a setting.
+   * whatever the pool has spare, and by maxPartySize below.
    */
   freePartyHardCap: number;
   /**
@@ -34,6 +33,16 @@ export interface IPlatformLimits extends Document {
    * member. Zero here genuinely means "subscribers only".
    */
   freePartyBaseline: number;
+  /**
+   * The largest any party may be, subscribers included.
+   *
+   * Editable here rather than compiled in, so a package selling more seats
+   * does not need a deploy. Bounded only by PARTY_STRUCTURAL_MAX, which is a
+   * runaway guard on the document rather than a business limit.
+   */
+  maxPartySize: number;
+  /** Size a new party gets when its creator does not choose one. */
+  defaultPartySize: number;
   /** Turns the pool off entirely, so only plan slots count. */
   poolEnabled: boolean;
   createdAt: Date;
@@ -45,11 +54,12 @@ const PlatformLimitsSchema = new Schema<IPlatformLimits>(
     singletonKey: { type: String, required: true, unique: true, default: "default" },
     freePartySlotPool: { type: Number, required: true, default: 200, min: 0 },
     /*
-     * Defaults to the schema ceiling, so switching this on changes nothing for
-     * anyone until an admin lowers it — at which point it starts biting free
-     * parties only.
+     * 20 was the old ceiling for everyone, so free parties keep exactly the
+     * size they had. Subscribers are no longer bound by it.
      */
-    freePartyHardCap: { type: Number, required: true, default: PARTY_ABSOLUTE_MAX, min: 2 },
+    freePartyHardCap: { type: Number, required: true, default: 20, min: 2 },
+    maxPartySize: { type: Number, required: true, default: 100, min: 2, max: PARTY_STRUCTURAL_MAX },
+    defaultPartySize: { type: Number, required: true, default: 8, min: 2 },
     freePartyBaseline: { type: Number, required: true, default: 0, min: 0 },
     poolEnabled: { type: Boolean, default: true },
   },

@@ -84,29 +84,29 @@ export const OPENRA_MOD_LABELS: Record<OpenRaModSlug, string> = {
   d2k: "Dune 2000",
 };
 
-/** Default cap per party — overridable at creation. */
+/**
+ * Fallback default when no admin setting has been read.
+ *
+ * `defaultPartySize` in PlatformLimits is the real default and is editable in
+ * the admin UI; this is what a read path uses before it has one, and what
+ * existing documents fall back to.
+ */
 export const PARTY_MAX_SIZE = 8;
 
 /**
- * The largest party the schema can store, for anyone.
+ * A runaway guard on the Party document, and nothing else.
  *
- * A fact about the model rather than a policy: Party validates
- * `members.length` against it and caps `maxSize` at the same figure, so a
- * party one over this fails to save whatever an admin or a subscription says.
- * Slot arithmetic has to respect it, or it would promise a subscriber seats
- * that cannot be written.
+ * This is the one place a compile-time number is unavoidable: the Mongoose
+ * schema is built at module load, before any database read, so its validator
+ * cannot ask an admin setting how large a party may be.
  *
- * Raised from 20 for subscription packages that sell more than that. 100 is a
- * ceiling rather than a target: a party member embeds an ObjectId, a short
- * role, two booleans, an optional address and a date — on the order of a
- * hundred bytes — so a hundred of them is a few kilobytes against MongoDB's
- * 16MB document limit. The constraint that actually bites first is a party
- * screen listing that many people, not storage.
- *
- * Raising it again is a schema change, not a settings change. Everything that
- * enforces a party size reads this constant, so there is one place to move.
+ * So it is deliberately not a business limit. The number that decides how
+ * large a party can actually get is `maxPartySize` in PlatformLimits, which is
+ * editable in the admin UI and enforced on every create and join. This exists
+ * only to stop a bug writing an unbounded members array into a document, and
+ * is set far above any package worth selling.
  */
-export const PARTY_ABSOLUTE_MAX = 100;
+export const PARTY_STRUCTURAL_MAX = 500;
 
 export const PARTY_NAME_MAX = 60;
 

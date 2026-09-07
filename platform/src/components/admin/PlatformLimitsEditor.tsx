@@ -13,6 +13,8 @@ import { useState } from "react";
 type Limits = {
   freePartySlotPool: number;
   freePartyHardCap: number;
+  maxPartySize: number;
+  defaultPartySize: number;
   freePartyBaseline: number;
   poolEnabled: boolean;
 };
@@ -23,6 +25,7 @@ type Usage = {
   available: number;
   freeHardCap: number;
   absoluteCap: number;
+  defaultPartySize: number;
   enabled: boolean;
 };
 
@@ -80,7 +83,7 @@ export function PlatformLimitsEditor({
           <Stat label="In use" value={usage.inUse} />
           <Stat label="Available" value={usage.available} />
           <Stat label="Free cap" value={usage.freeHardCap} />
-          <Stat label="Ceiling" value={usage.absoluteCap} />
+          <Stat label="Max party" value={usage.absoluteCap} />
         </div>
         <div
           className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted"
@@ -136,10 +139,37 @@ export function PlatformLimitsEditor({
             onChange={(e) => set("freePartyHardCap", Number(e.target.value))}
             className="w-40 rounded-lg border border-border bg-background px-3 py-2"
           />
-          <p className="mt-1 text-xs text-muted-foreground">
-            No party of any kind can exceed {usage.absoluteCap}, which is a limit of the party
-            schema rather than a setting — raising it is a code change.
-          </p>
+          {limits.freePartyHardCap > limits.maxPartySize ? (
+            <p className="mt-1 text-xs text-amber-600">
+              Higher than the maximum party size below, so the smaller of the two applies.
+            </p>
+          ) : null}
+        </Field>
+
+        <Field
+          label="Maximum party size"
+          hint="The largest any party may be, subscribers included. A subscription package cannot seat more than this, so raise it before selling one that does."
+        >
+          <input
+            type="number"
+            min={2}
+            value={limits.maxPartySize}
+            onChange={(e) => set("maxPartySize", Number(e.target.value))}
+            className="w-40 rounded-lg border border-border bg-background px-3 py-2"
+          />
+        </Field>
+
+        <Field
+          label="Default party size"
+          hint="What a new party gets when its creator does not pick a size."
+        >
+          <input
+            type="number"
+            min={2}
+            value={limits.defaultPartySize}
+            onChange={(e) => set("defaultPartySize", Number(e.target.value))}
+            className="w-40 rounded-lg border border-border bg-background px-3 py-2"
+          />
         </Field>
 
         <Field

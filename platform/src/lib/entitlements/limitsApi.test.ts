@@ -36,12 +36,20 @@ describe("the route", () => {
     expect(ROUTE).toMatch(/firstZodErrorMessage/);
   });
 
-  it("refuses a free cap below two, or above the schema ceiling", () => {
+  it("refuses a free cap below two", () => {
+    // A party of one is not a party, and the join rules already refuse it.
+    expect(ROUTE).toMatch(/freePartyHardCap: z\.number\(\)\.int\(\)\.min\(2\)/);
+  });
+
+  it("bounds the size settings by the runaway guard, not by each other", () => {
     /*
-     * A party of one is not a party. Above the ceiling the number would never
-     * apply, because Party validates members.length against it regardless.
+     * Bounding them against each other would make the save order matter:
+     * raising the maximum before the free cap, or the reverse, would reject
+     * a perfectly reasonable pair mid-edit. The arithmetic takes the smaller
+     * of the two at read time instead.
      */
-    expect(ROUTE).toMatch(/freePartyHardCap: z\.number\(\)\.int\(\)\.min\(2\)\.max\(PARTY_ABSOLUTE_MAX\)/);
+    expect(ROUTE).toMatch(/maxPartySize: z\.number\(\)\.int\(\)\.min\(2\)\.max\(PARTY_STRUCTURAL_MAX\)/);
+    expect(ROUTE).toMatch(/freePartyHardCap: z\.number\(\)\.int\(\)\.min\(2\)\.max\(PARTY_STRUCTURAL_MAX\)/);
   });
 
   it("the cap it exposes is the free one, not a cap on everyone", () => {
@@ -96,7 +104,9 @@ describe("the screen", () => {
     // Otherwise an admin reads it as a limit on subscribers too and sets it
     // high to avoid capping paying customers, defeating the point.
     expect(EDITOR).toMatch(/Binds hosts on no plan|without paying/i);
-    expect(EDITOR).toMatch(/limit of the party\s+schema rather than a setting/);
+    // And the maximum that does bind everyone is edited right beside it.
+    expect(EDITOR).toMatch(/Maximum party size/);
+    expect(EDITOR).toMatch(/subscribers included/i);
   });
 
   it("says what turning the pool off actually does", () => {
