@@ -320,7 +320,19 @@ export const recipes = {
     portEnd: 25585,
     protocol: "udp",
     startupGraceMs: 1500,
-    binaries: gameBin("morrowind", ["tes3mp-server", "tes3mp-server.x86_64"]),
+    /*
+     * The ELF first, not the `tes3mp-server` bash wrapper beside it. That
+     * wrapper does `cd "$(dirname $0)"` before exec'ing, which would land the
+     * process in the install directory and silently ignore the per-room config
+     * and `server/` tree written below — every party would get the stock
+     * settings. Skipping it costs only the two things it did: LD_LIBRARY_PATH
+     * for the bundled Boost 1.67, set in spawnEnv, and a resources path, which
+     * defaults to ./resources relative to cwd and so has to be absolute here.
+     */
+    binaries: gameBin("morrowind", ["tes3mp-server.x86_64", "tes3mp-server"]),
+    spawnEnv: () => ({
+      LD_LIBRARY_PATH: path.join(GAMES_ROOT, "morrowind", "lib"),
+    }),
     prepareSpawn: async (port, ctx) => {
       fs.mkdirSync(TES3MP_CONFIG_DIR, { recursive: true });
       const settings = acceptedSettingsFor("morrowind", ctx.settings);
@@ -361,7 +373,7 @@ export const recipes = {
         fs.writeFileSync(luaConfig, lua, "utf8");
       }
     },
-    args: () => [],
+    args: () => ["--resources", path.join(GAMES_ROOT, "morrowind", "resources")],
     cwd: (_port, ctx) => path.join(TES3MP_CONFIG_DIR, `pb-${ctx.partyId.slice(-16)}`),
   },
   teeworlds: {

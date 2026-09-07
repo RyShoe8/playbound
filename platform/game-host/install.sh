@@ -167,6 +167,10 @@ apt-get install -y --no-install-recommends \
   libsdl2-2.0-0 libcurl4 libopenal1 libjpeg-turbo8 libpng16-16 libfreetype6 zlib1g \
   || echo "WARN: some ET runtime packages unavailable"
 
+# TES3MP server: everything it links is base system or bundled in its own lib/
+# (Boost 1.67), except LuaJIT — the server's whole plugin layer is Lua.
+apt-get install -y --no-install-recommends libluajit-5.1-2   || echo "WARN: libluajit-5.1-2 unavailable — TES3MP hosting will fail" >&2
+
 # Luanti was still Minetest on Ubuntu 24.04.
 if apt-cache show luanti-server >/dev/null 2>&1; then
   apt-get install -y --no-install-recommends luanti-server
@@ -402,6 +406,40 @@ fi
 # Legacy flag still accepted for ops who used --with-heavy only for Xonotic.
 if [[ "$WITH_HEAVY" -eq 1 ]]; then
   echo "==> --with-heavy: Xonotic handled above (Unvanquished still manual)"
+fi
+
+# ── TES3MP dedicated (Morrowind multiplayer) ─────────────────────────────
+#
+# The server-only tarball from the same 0.8.1 release the launcher installs to
+# players, and pinned to the exact asset rather than "latest" for two reasons.
+# TES3MP refuses a client whose protocol does not match, and this file carries
+# the same build hashes as the client archive (68954091c5-6da3fdea59), so
+# pinning is what guarantees they agree. And 0.8.1 has been the newest release
+# since May 2022, with the only later tag being a VR respin that ships no
+# server — "latest" would eventually resolve to something wrong on its own.
+#
+# 11 MB, no game assets: the server syncs state and never loads Morrowind's
+# data files. The layout under TES3MP-server/ is what recipes.js already
+# expects — tes3mp-server.x86_64 beside a server/ tree of Lua, and a stock
+# tes3mp-server-default.cfg whose keys the per-room config mirrors.
+echo "==> TES3MP dedicated (Morrowind multiplayer)"
+TES3MP_DIR="$GAMES_DIR/morrowind"
+TES3MP_URL="${TES3MP_SERVER_URL:-https://github.com/TES3MP/TES3MP/releases/download/tes3mp-0.8.1/tes3mp-server-GNU%2BLinux-x86_64-release-0.8.1-68954091c5-6da3fdea59.tar.gz}"
+mkdir -p "$TES3MP_DIR"
+if [[ ! -f "$TES3MP_DIR/tes3mp-server.x86_64" ]]; then
+  TES3MP_TMP="$(mktemp -d)"
+  if curl -fL --retry 3 "$TES3MP_URL" | tar -xz --strip-components=1 -C "$TES3MP_TMP"; then
+    cp -a "$TES3MP_TMP/." "$TES3MP_DIR/"
+    chmod +x "$TES3MP_DIR/tes3mp-server.x86_64" 2>/dev/null || true
+  else
+    echo "WARN: TES3MP server download or extraction failed" >&2
+  fi
+  rm -rf -- "$TES3MP_TMP"
+fi
+if [[ -f "$TES3MP_DIR/tes3mp-server.x86_64" ]]; then
+  echo "  TES3MP server ready at $TES3MP_DIR/tes3mp-server.x86_64"
+else
+  echo "  WARN: TES3MP server missing — Morrowind parties cannot be hosted" >&2
 fi
 
 echo "==> BombSquad dedicated"
