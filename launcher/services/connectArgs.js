@@ -108,6 +108,20 @@ const CLIENT_CONNECT_ARGS = {
   "zero-k": null,
   flightgear: ["--multiplay=out,10,{host},{port}"],
   mrboom: ["-c", "{host}"],
+  /*
+   * Host only, deliberately — there is no {port} to give it.
+   *
+   * --connect takes a bare host and the client then scans it for the server:
+   * cdogs.c hands connectAddr.host to NetClientTryScanAndConnect, which calls
+   * TryScanHost, and the port never leaves the client's own ListenPort config
+   * (default 34219). Templating {host}:{port} here would pass a string ENet
+   * cannot resolve and every join would fail.
+   *
+   * The game's own --help calls this Experimental. It is wired anyway because
+   * a working co-op run is worth having, but that is why the adapter carries
+   * no verified self-host flag.
+   */
+  "c-dogs-sdl": ["--connect={host}"],
   
   // Third-party engines / Source Ports
   "the-ur-quan-masters": null,

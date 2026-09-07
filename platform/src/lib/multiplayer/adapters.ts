@@ -215,6 +215,47 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "ENET/UDP CLI -connect. No Linux dedicated on the PlayBound VPS yet — peer host.",
   },
 
+  "c-dogs-sdl": {
+    gameSlug: "c-dogs-sdl",
+    title: "C-Dogs SDL",
+    tier: "tier1_improved",
+    adapterType: "direct-ip",
+    protocol: "enet",
+    client: {
+      /*
+       * Host with no port. --connect takes a bare address and the client scans
+       * it: cdogs.c passes connectAddr.host to NetClientTryScanAndConnect,
+       * which calls TryScanHost, and the port is never read from the flag.
+       * "{host}:{port}" would hand ENet a string it cannot resolve.
+       */
+      launchArguments: ["--connect={host}"],
+    },
+    /*
+     * Deliberately no selfHost block.
+     *
+     * canSelfHost checks adapter.selfHost first and returns its `verified`
+     * flag outright, so declaring one here with verified:false would *disable*
+     * self-hosting rather than describe it. Without the block the next rule
+     * applies — a direct-ip adapter is peer-hosted by definition, and hosting
+     * is simply how the game already works — which is the accurate answer for
+     * an ENet listen server.
+     *
+     * The `verified` flag is for managed-server games where a client's Host
+     * button has to be seen to be believed. That is not this: there is no
+     * server binary to be uncertain about.
+     *
+     * The listen port is 34219 (NET_DEFAULT_LISTEN_PORT in src/cdogs/config.c,
+     * config key ListenPort). It is recorded here rather than in a selfHost
+     * block because party members reach the host over the overlay, which needs
+     * no port mapping.
+     */
+    notes:
+      "ENet, built into the client — release 2.4.0 ships no server binary, so the leader's PC " +
+      "is the room and there is nothing for the VPS to run. Joins go over the party's overlay " +
+      "address because a bare home connection will not accept inbound on 34219. Upstream marks " +
+      "--connect Experimental; up to 4 players, co-op and deathmatch.",
+  },
+
   morrowind: {
     gameSlug: "morrowind",
     title: "The Elder Scrolls III: Morrowind",
