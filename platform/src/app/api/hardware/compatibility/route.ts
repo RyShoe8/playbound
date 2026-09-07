@@ -54,7 +54,16 @@ export async function GET(req: Request) {
       } else if (ed?.requirements) {
         editionBlock = parseFreeTextRequirementsBlock(ed.requirements);
       } else {
-        const bySlug = await getEditionBySlug(game, editionSlug);
+        /*
+         * Hidden editions included. listPublicEditionsForGame above drops them
+         * by design, and without this getEditionBySlug drops them too — so a
+         * hidden edition fell through to getEditionById, which is given a slug
+         * and cannot cast one, leaving editionBlock null. The check then
+         * silently graded the base game instead of the edition actually being
+         * played. Hidden means "not listed", not "not reachable": the caller
+         * has already named this edition, so answering for it is the point.
+         */
+        const bySlug = await getEditionBySlug(game, editionSlug, { includeHidden: true });
         if (bySlug?.hardwareRequirements) {
           editionBlock = bySlug.hardwareRequirements as HardwareRequirementsBlock;
         } else if (bySlug?.requirements) {
