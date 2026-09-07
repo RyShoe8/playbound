@@ -91,14 +91,22 @@ export const PARTY_MAX_SIZE = 8;
  * The largest party the schema can store, for anyone.
  *
  * A fact about the model rather than a policy: Party validates
- * `members.length <= 20` and caps `maxSize` at the same figure, so a party of
- * 21 fails to save whatever an admin or a subscription says. Slot arithmetic
- * has to respect it or it would promise a subscriber seats that cannot be
- * written.
+ * `members.length` against it and caps `maxSize` at the same figure, so a
+ * party one over this fails to save whatever an admin or a subscription says.
+ * Slot arithmetic has to respect it, or it would promise a subscriber seats
+ * that cannot be written.
  *
- * Raising it is a schema change, not a settings change.
+ * Raised from 20 for subscription packages that sell more than that. 100 is a
+ * ceiling rather than a target: a party member embeds an ObjectId, a short
+ * role, two booleans, an optional address and a date — on the order of a
+ * hundred bytes — so a hundred of them is a few kilobytes against MongoDB's
+ * 16MB document limit. The constraint that actually bites first is a party
+ * screen listing that many people, not storage.
+ *
+ * Raising it again is a schema change, not a settings change. Everything that
+ * enforces a party size reads this constant, so there is one place to move.
  */
-export const PARTY_ABSOLUTE_MAX = 20;
+export const PARTY_ABSOLUTE_MAX = 100;
 
 export const PARTY_NAME_MAX = 60;
 
