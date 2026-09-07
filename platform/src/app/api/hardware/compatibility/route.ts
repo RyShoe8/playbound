@@ -32,7 +32,14 @@ export async function GET(req: Request) {
   const userId = await getFriendsUserId(req);
   await dbConnect();
 
-  const game = await getGame(gameSlug);
+  /*
+   * Testing games included: this route only reads requirements to answer "will
+   * this run on my PC", and a game being unpublished is exactly when someone is
+   * checking it. Without this the panel 404s and — because the client reads
+   * `data?.result ?? null` — shows nothing rather than an error, so the check
+   * silently does nothing on every testing entry.
+   */
+  const game = await getGame(gameSlug, { includeTesting: true });
   if (!game) {
     return NextResponse.json({ error: "Game not found" }, { status: 404 });
   }
