@@ -46,13 +46,28 @@ describe("presence during a match", () => {
     expect(STALE_AFTER_MS).toBeLessThan(20 * 60 * 1000);
   });
 
-  it("leaves the idle sweep as the backstop for a machine that really died", () => {
+  it("leaves the idle sweep as the backstop, judged on presence not mutations", () => {
     /*
-     * Skipping in-session parties would strand one forever if the timeout did
-     * not still catch it. Fifteen minutes of no activity ends a party whatever
-     * its status, so a PC that dies mid-match is cleaned up either way.
+     * This assertion used to read "fifteen minutes of no activity ends a party
+     * whatever its status", and that sentence was the bug. lastActivity only
+     * moves on a party mutation — join, ready, launch, a settings change — and
+     * a match produces none of them. So every session longer than fifteen
+     * minutes was ended mid-game with the status still on "playing", which is
+     * the opposite of a backstop.
+     *
+     * The timeout is unchanged and still bounds how long a party outlives the
+     * people in it. What changed is the evidence: sweepStaleParties now ends a
+     * party once every member's heartbeat has gone, the same evidence
+     * dropOfflinePartyMembers uses, so a machine that dies mid-match is still
+     * cleaned up within the window while a match that is simply long is not.
      */
     expect(PARTY_IDLE_TIMEOUT_MS).toBeGreaterThan(STALE_AFTER_MS);
     expect(PARTY_IDLE_TIMEOUT_MS).toBe(15 * 60 * 1000);
+
+    /*
+     * The gap that makes the backstop safe: a dead machine stops beating long
+     * before the sweep looks, so silence is established well within the window.
+     */
+    expect(PARTY_IDLE_TIMEOUT_MS - STALE_AFTER_MS).toBeGreaterThanOrEqual(10 * 60 * 1000);
   });
 });

@@ -1315,8 +1315,10 @@ export async function leavePartiesOnDisconnect(userId: string): Promise<number> 
  *
  * Being in a game is the strongest evidence of presence there is, and it is
  * evidence this sweep already had. sweepStaleParties remains the backstop for a
- * machine that genuinely dies mid-match — fifteen minutes of no activity ends
- * it either way.
+ * machine that genuinely dies mid-match, but it now decides on the same
+ * evidence: it ends a party once every member's heartbeat has gone, rather
+ * than once fifteen minutes have passed without a party mutation. Deferring to
+ * it was right; what it measured was not.
  */
 export async function dropOfflinePartyMembers(now = new Date()): Promise<{ dropped: number }> {
   await dbConnect();
@@ -2801,8 +2803,61 @@ export async function sweepStaleParties(now = new Date()) {
     lastActivity: { $lt: cutoff },
   });
 
+  /*
+   * Idle is judged on presence, not on party mutations.
+   *
+   * lastActivity only moves when someone joins, readies, changes a setting or
+   * launches — and none of that happens while a match is being played. A party
+   * that launched and then simply got played therefore looked idle from the
+   * moment it started, and this sweep ended it fifteen minutes in, with the
+   * status still reading "playing". That is not a backstop for a dead machine,
+   * it is a timer on every session longer than a quarter of an hour.
+   *
+   * dropOfflinePartyMembers already learned this and skips in-session parties
+   * for exactly the same reason: the launcher sits behind a fullscreen game and
+   * goes quiet while the people in it are demonstrably there. It deferred to
+   * this sweep as the safety net, which was sound — the net was just strung
+   * from the wrong measurement.
+   *
+   * A live heartbeat from any member is what keeps a party alive now. When
+   * every member has gone silent the party still ends on schedule, so a PC that
+   * dies mid-match is cleaned up exactly as before.
+   */
+  const staleMemberIds = [
+    ...new Set(
+      stale.flatMap((doc) =>
+        (doc.members || []).map((m: { userId: unknown }) => String(m.userId))
+      )
+    ),
+  ];
+  const liveSet = new Set<string>();
+  if (staleMemberIds.length > 0) {
+    const live = await Presence.find({
+      userId: { $in: staleMemberIds },
+      status: { $ne: "offline" },
+      lastHeartbeat: { $gte: new Date(now.getTime() - STALE_AFTER_MS) },
+    })
+      .select("userId")
+      .lean();
+    for (const row of live) liveSet.add(String(row.userId));
+  }
+
   let ended = 0;
+  let kept = 0;
   for (const doc of stale) {
+    const stillThere = (doc.members || []).some((m: { userId: unknown }) =>
+      liveSet.has(String(m.userId))
+    );
+    if (stillThere) {
+      /*
+       * Touched rather than merely skipped, so the party is not re-examined on
+       * every pass for as long as it runs.
+       */
+      doc.lastActivity = now;
+      await doc.save();
+      kept += 1;
+      continue;
+    }
     doc.status = "ended";
     doc.endedAt = now;
     await releasePartyHost(doc);
@@ -2810,6 +2865,9 @@ export async function sweepStaleParties(now = new Date()) {
     await doc.save();
     await cleanupPartyDiscordVoice(doc);
     ended += 1;
+  }
+  if (kept > 0) {
+    console.log(`[party] idle sweep kept ${kept} part${kept === 1 ? "y" : "ies"} with live members`);
   }
 
   /*
