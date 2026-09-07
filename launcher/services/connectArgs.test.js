@@ -151,12 +151,25 @@ test("a game with a real dedicated server has no arbiter launch", () => {
   assert.equal(arbiterLaunchArgs("openra"), null);
 });
 
-test("both spellings of the Wolfenstein 3D slug join the same way", () => {
-  // The adapter registry calls it "wolfenstein"; the catalog row for a game
-  // still in testing may not. A missed alias here is a silent no-join.
-  for (const slug of ["wolfenstein", "wolfenstein-3d"]) {
-    assert.deepEqual(clientConnectArgs(slug), ["--join", "{host}"], slug);
-    assert.equal(defaultGamePort(slug), 5029, slug);
-    assert.ok(hasArbiterLaunch(slug), slug);
-  }
+test("Wolfenstein 3D joins, hosts and ports off one slug", () => {
+  /*
+   * One spelling, because the question the second one hedged against has been
+   * answered: the catalog row is "wolfenstein", the same key the adapter
+   * registry uses. A "wolfenstein-3d" alias lived here while that was still
+   * unsettled, and carried its own hazard — it resolved to connect args with
+   * no adapter behind them, which is a half-working state that reads as a bug
+   * rather than a missing entry.
+   *
+   * If the slug is ever renamed, all three maps below move together or joins
+   * break silently. That is what the original alias was guarding, and it is
+   * why they are asserted here as a set.
+   */
+  assert.deepEqual(clientConnectArgs("wolfenstein"), ["--join", "{host}"]);
+  assert.equal(defaultGamePort("wolfenstein"), 5029);
+  assert.ok(hasArbiterLaunch("wolfenstein"));
+  assert.deepEqual(arbiterLaunchArgs("wolfenstein"), ["--host", "{nodes}"]);
+
+  // The dropped alias must stay dropped, not silently reappear via a fallback.
+  assert.equal(clientConnectArgs("wolfenstein-3d"), undefined);
+  assert.equal(hasArbiterLaunch("wolfenstein-3d"), false);
 });
