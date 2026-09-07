@@ -722,12 +722,7 @@ function findInSteamLibraries(entry) {
   }
 
   // 2. Extract Steam App ID (from entry.steamAppId or entry.url or entry.links?.steam)
-  let appId = entry?.steamAppId || null;
-  if (!appId) {
-    const url = entry?.url || entry?.links?.steam || entry?.editionLinks?.steam || "";
-    const m = String(url).match(/store\.steampowered\.com\/app\/(\d+)/i) || String(url).match(/steam:\/\/install\/(\d+)/i);
-    if (m) appId = m[1];
-  }
+  let appId = steamAppIdFor(entry);
 
   // 3. If Steam App ID is known, check appmanifest_<appId>.acf across all library roots
   if (appId) {
@@ -4503,9 +4498,34 @@ function findExeInSlugGamesDir(entry) {
  * in it is the folder under steamapps/common. Reading that is exact rather than
  * a guess, and needs nothing per game beyond the app id.
  */
+/**
+ * A game's Steam app id, from the catalog row however it happens to carry it.
+ *
+ * Most rows never set steamAppId — the id is only in the store URL. Reading
+ * the field alone made findSteamInstallExe give up on exactly those rows, so
+ * Steam's own appmanifest was never consulted and detection fell through to a
+ * full-drive basename scan. For Strikers Club that scan hunts strikers-club.exe
+ * (slug.exe, the fallback when a row has no exeHint or knownExePaths) against
+ * an install that ships UFG.exe and start_protected_game.exe — a name that
+ * cannot match, so the game never resolved at all.
+ *
+ * Deriving the id here also means findExecutable runs inside the exact install
+ * directory, which is where the EasyAntiCheat bootstrap preference lives. That
+ * ranking already existed; it was simply unreachable for a row like this one.
+ */
+function steamAppIdFor(entry) {
+  const direct = String(entry?.steamAppId || "").trim();
+  if (/^\d+$/.test(direct)) return direct;
+  const url = entry?.url || entry?.links?.steam || entry?.editionLinks?.steam || "";
+  const m =
+    String(url).match(/store\.steampowered\.com\/app\/(\d+)/i) ||
+    String(url).match(/steam:\/\/(?:install|run|rungameid)\/(\d+)/i);
+  return m ? m[1] : null;
+}
+
 function findSteamInstallExe(entry) {
-  const appId = String(entry?.steamAppId || "").trim();
-  if (!/^\d+$/.test(appId)) return null;
+  const appId = steamAppIdFor(entry);
+  if (!appId) return null;
   let libraries = [];
   try {
     libraries = steamLibraryDirs();
