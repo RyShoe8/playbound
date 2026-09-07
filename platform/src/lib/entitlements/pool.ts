@@ -2,7 +2,7 @@ import dbConnect from "@/lib/db";
 import Party from "@/lib/models/Party";
 import PlatformLimits from "@/lib/models/PlatformLimits";
 import { poolSlotsUsed } from "@/lib/entitlements/slots";
-import { PARTY_ABSOLUTE_MAX } from "@/lib/playTogether/types";
+
 
 /**
  * How much of the shared party pool is spoken for right now.
@@ -29,8 +29,10 @@ export type PoolStatus = {
   available: number;
   /** How large a party can get without paying. Binds free hosts only. */
   freeHardCap: number;
-  /** The largest party the schema can store, for anyone. */
+  /** The largest any party may be, subscribers included. Set in admin. */
   absoluteCap: number;
+  /** Size a new party gets when its creator does not choose one. */
+  defaultPartySize: number;
   /** False when an admin has turned the pool off entirely. */
   enabled: boolean;
 };
@@ -48,12 +50,20 @@ export async function getPlatformLimits() {
     freePartyHardCap?: number;
     /** Written before the cap became free-only. Read so a live document is not lost. */
     partyHardCap?: number;
+    maxPartySize?: number;
+    defaultPartySize?: number;
     freePartyBaseline: number;
     poolEnabled: boolean;
   };
+  /*
+   * Defaults applied on read rather than relied on from the schema, so a
+   * document written before these fields existed still answers sensibly.
+   */
   return {
     ...limits,
-    freePartyHardCap: limits.freePartyHardCap ?? limits.partyHardCap ?? PARTY_ABSOLUTE_MAX,
+    freePartyHardCap: limits.freePartyHardCap ?? limits.partyHardCap ?? 20,
+    maxPartySize: limits.maxPartySize ?? 100,
+    defaultPartySize: limits.defaultPartySize ?? 8,
   };
 }
 
@@ -97,7 +107,8 @@ export async function getPoolStatus(): Promise<PoolStatus> {
     inUse,
     available: Math.max(0, pool - inUse),
     freeHardCap: limits.freePartyHardCap,
-    absoluteCap: PARTY_ABSOLUTE_MAX,
+    absoluteCap: limits.maxPartySize,
+    defaultPartySize: limits.defaultPartySize,
     enabled: limits.poolEnabled,
   };
 }

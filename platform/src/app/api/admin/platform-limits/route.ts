@@ -4,7 +4,7 @@ import dbConnect from "@/lib/db";
 import PlatformLimits from "@/lib/models/PlatformLimits";
 import { getPoolStatus } from "@/lib/entitlements/pool";
 import { requireAdminSession } from "@/lib/requireAdmin";
-import { PARTY_ABSOLUTE_MAX } from "@/lib/playTogether/types";
+import { PARTY_STRUCTURAL_MAX } from "@/lib/playTogether/types";
 import { firstZodErrorMessage } from "@/lib/zodError";
 
 /**
@@ -24,10 +24,18 @@ const limitsSchema = z
     freePartySlotPool: z.number().int().min(0).max(100_000).optional(),
     /*
      * Two is the floor because a party of one is not a party, and the join
-     * rules already refuse below it. The ceiling is the schema's own limit —
-     * a free cap above it would be a number that never applies.
+     * rules already refuse below it. Bounded by the structural guard rather
+     * than by maxPartySize, so the two can be saved in either order without
+     * one rejecting the other mid-edit; the arithmetic takes the smaller.
      */
-    freePartyHardCap: z.number().int().min(2).max(PARTY_ABSOLUTE_MAX).optional(),
+    freePartyHardCap: z.number().int().min(2).max(PARTY_STRUCTURAL_MAX).optional(),
+    /*
+     * The real party ceiling, subscribers included. Bounded only by the
+     * runaway guard on the document — everything below that is a business
+     * decision, which is why it lives here rather than in code.
+     */
+    maxPartySize: z.number().int().min(2).max(PARTY_STRUCTURAL_MAX).optional(),
+    defaultPartySize: z.number().int().min(2).max(PARTY_STRUCTURAL_MAX).optional(),
     freePartyBaseline: z.number().int().min(0).max(200).optional(),
     poolEnabled: z.boolean().optional(),
   })

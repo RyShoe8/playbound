@@ -253,7 +253,7 @@ describe("numbers that should not crash it", () => {
   });
 });
 
-describe("the schema ceiling is one number, in one place", () => {
+describe("party size limits are settings, not code", () => {
   /*
    * Subscription packages sell more than the old 20, so the ceiling moved.
    * The risk in moving it is that a copy stays behind: a validator, a clamp or
@@ -262,20 +262,38 @@ describe("the schema ceiling is one number, in one place", () => {
    */
   const read = (...p: string[]) => readFileSync(path.join(process.cwd(), ...p), "utf8");
 
-  it("nothing enforcing party size hardcodes a number", () => {
-    const model = read("src", "lib", "models", "Party.ts");
-    expect(model).toMatch(/v\.length <= PARTY_ABSOLUTE_MAX/);
-    expect(model).toMatch(/max: PARTY_ABSOLUTE_MAX/);
-    expect(model).not.toMatch(/v\.length <= 20/);
-
+  it("party creation reads the admin settings, not a constant", () => {
+    /*
+     * The point of the change: selling a larger package must not need a
+     * deploy. Creation clamps to maxPartySize from PlatformLimits.
+     */
     const service = read("src", "lib", "playTogether", "party.ts");
-    expect(service).toMatch(/Math\.min\(Math\.max\(opts\.maxSize \|\| PARTY_MAX_SIZE, 2\), PARTY_ABSOLUTE_MAX\)/);
+    expect(service).toMatch(/const partyLimits = await getPlatformLimits\(\)/);
+    expect(service).toMatch(/partyLimits\.maxPartySize/);
+    expect(service).toMatch(/partyLimits\.defaultPartySize/);
+    expect(service).not.toMatch(/PARTY_ABSOLUTE_MAX/);
   });
 
-  it("the free cap cannot be set above it", () => {
-    // A free cap over the ceiling would be a number that never applies.
+  it("both party size limits are editable through the admin route", () => {
     const route = read("src", "app", "api", "admin", "platform-limits", "route.ts");
-    expect(route).toMatch(/freePartyHardCap: z\.number\(\)\.int\(\)\.min\(2\)\.max\(PARTY_ABSOLUTE_MAX\)/);
+    expect(route).toMatch(/maxPartySize: z\.number\(\)/);
+    expect(route).toMatch(/defaultPartySize: z\.number\(\)/);
+    expect(route).toMatch(/freePartyHardCap: z\.number\(\)/);
+  });
+
+  it("the only compiled-in number is a runaway guard on the document", () => {
+    /*
+     * The schema is built at module load, before any database read, so its
+     * validator cannot ask a setting. That is the one place a constant is
+     * unavoidable — and it is set far above any package, so it never decides
+     * a business question.
+     */
+    const types = read("src", "lib", "playTogether", "types.ts");
+    expect(types).toMatch(/export const PARTY_STRUCTURAL_MAX = 500;/);
+    expect(types).toMatch(/runaway guard/i);
+
+    const model = read("src", "lib", "models", "Party.ts");
+    expect(model).toMatch(/v\.length <= PARTY_STRUCTURAL_MAX/);
   });
 
   it("a package larger than the old ceiling now works", () => {
@@ -284,9 +302,14 @@ describe("the schema ceiling is one number, in one place", () => {
     expect(partyCapacity(c)).toBe(40);
   });
 
-  it("a package larger than the new ceiling is still bounded", () => {
-    // Selling 250 slots would promise seats that cannot be written.
+  it("a package larger than the configured maximum is still bounded", () => {
+    // absoluteCap is now whatever an admin set, so raising it is a settings
+    // change — but the arithmetic still respects it.
     const c = ctx({ planSlots: 250, poolAvailable: 50, memberCount: 1, absoluteCap: 100 });
     expect(partyCapacity(c)).toBe(100);
+    // Raise the setting and the same package fits: 250 plan slots plus the
+    // 50 free pool seats is 300, which the higher maximum now allows.
+    const raised = ctx({ planSlots: 250, poolAvailable: 50, memberCount: 1, absoluteCap: 300 });
+    expect(partyCapacity(raised)).toBe(300);
   });
 });

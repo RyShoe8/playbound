@@ -4,7 +4,7 @@ import {
   PARTY_VISIBILITIES,
   PARTY_MEMBER_ROLES,
   PARTY_MAX_SIZE,
-  PARTY_ABSOLUTE_MAX,
+  PARTY_STRUCTURAL_MAX,
 } from "@/lib/playTogether/types";
 
 /**
@@ -145,8 +145,14 @@ const PartySchema = new Schema(
       type: [PartyMemberSchema],
       default: [],
       validate: {
-        validator: (v: unknown[]) => v.length <= PARTY_ABSOLUTE_MAX,
-        message: `Party cannot exceed ${PARTY_ABSOLUTE_MAX} members`,
+        /*
+         * A runaway guard, not the party size limit. The schema is built
+         * before any database read, so it cannot ask what an admin has set —
+         * maxPartySize in PlatformLimits does that, enforced on create and
+         * join. This only stops an unbounded array reaching a document.
+         */
+        validator: (v: unknown[]) => v.length <= PARTY_STRUCTURAL_MAX,
+        message: `Party cannot exceed ${PARTY_STRUCTURAL_MAX} members`,
       },
     },
 
@@ -200,7 +206,7 @@ const PartySchema = new Schema(
       type: Number,
       default: PARTY_MAX_SIZE,
       min: 2,
-      max: PARTY_ABSOLUTE_MAX,
+      max: PARTY_STRUCTURAL_MAX,
     },
 
     /*
