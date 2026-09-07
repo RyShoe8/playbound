@@ -3,6 +3,7 @@ dist/
 dist-build*/
 tools/vigem-host/nuget-tmp/
 tools/vigem-host/bin/
+tools/vigem-host/obj/
 *.user
 
 # Compiled ViGEm host. Built from tools/vigem-host by scripts/build-vigem-host.js
