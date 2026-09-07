@@ -463,22 +463,22 @@ test("auto-configures YSoccer with libGDX JoystickConfig XML", () => {
   // above the browser's standardized 0/1 pair.
   const ds = next.match(/\{class:JoystickConfig,name:DualSense[^}]*\}/)[0];
   /*
-   * 6/5, arrived at by shifting twice — the history is the evidence.
+   * 5/4, and the second guess that moved it to 6/5 was wrong.
    *
-   * 4/3 gave a live pad driving the wrong axes: left stick up/down moved the
-   * menu sideways, right stick sideways moved it up and down. That put LY at 4
-   * and RX at 3, so the backend enumerates this pad's axes in reverse, and the
-   * pair moved to 5/4.
+   * With the shipped 4/3 config active, the left stick's up/down drove the
+   * menu sideways and the right stick's sideways drove it up and down. That
+   * reads LY at 4 and RX at 3 — RX *below* LY, which is the OIS backend
+   * enumerating this pad's axes in reverse. LX is physically just before LY,
+   * so under a reversed order it sits one index above it: 5.
    *
-   * 5/4 reproduced the same symptom one place along: LY at 5, RX at 4. Both
-   * readings agree on the reversal and disagree only on where it starts, and
-   * the second is the one measured against the shipped build. Under a reversed
-   * enumeration LX sits one *above* LY rather than below it, because the two
-   * are physically adjacent and the order runs backwards — so LY 5 puts LX at
-   * 6, giving xAxis 6 and yAxis 5.
+   * The same symptom was then reported again and taken as fresh evidence for
+   * shifting to 6/5. It was not. YSoccer had no record in installed.json, so
+   * applyControllerConfig — reachable only from the launch path, past an
+   * exeOnDisk check — never ran, and the prefs file sat at 4/3 the whole time.
+   * An unchanged symptom meant an unchanged config, not a wrong constant.
    */
-  assert(/xAxis:6/.test(ds), `DualSense must use the DirectInput left stick: ${ds}`);
-  assert(/yAxis:5/.test(ds), `DualSense must use the DirectInput left stick: ${ds}`);
+  assert(/xAxis:5/.test(ds), `DualSense must use the DirectInput left stick: ${ds}`);
+  assert(/yAxis:4/.test(ds), `DualSense must use the DirectInput left stick: ${ds}`);
 });
 
 test("repairs the old standardized DualSense axes that leave its stick dead", () => {
@@ -489,7 +489,7 @@ test("repairs the old standardized DualSense axes that leave its stick dead", ()
   const rewritten = applyProfile("ysoccer", stuck, dualsense);
   assert(rewritten, "the stale DualSense profile must be rewritten");
   const ds = rewritten.match(/\{class:JoystickConfig,name:DualSense[^}]*\}/)[0];
-  assert(/xAxis:6/.test(ds) && /yAxis:5/.test(ds), `still unusable: ${ds}`);
+  assert(/xAxis:5/.test(ds) && /yAxis:4/.test(ds), `still unusable: ${ds}`);
 });
 
 /* ── every catalogued controller game has an answer ────────────────────── */
@@ -587,7 +587,7 @@ test("YSoccer gives the detected DualSense name its DirectInput stick axes", () 
     rawId: "DualSense Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 0ce6)",
   });
   const raw = out.match(/\{class:JoystickConfig,name:DualSense Wireless Controller \(STANDARD GAMEPAD[^}]*\}/)[0];
-  assert.ok(/xAxis:6,yAxis:5/.test(raw), `wrong DirectInput axes: ${raw}`);
+  assert.ok(/xAxis:5,yAxis:4/.test(raw), `wrong DirectInput axes: ${raw}`);
 });
 
 test("rvgl configures Controller1 to Joystick 0 with gamepad buttons", () => {
