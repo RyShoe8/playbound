@@ -87,6 +87,19 @@ export const OPENRA_MOD_LABELS: Record<OpenRaModSlug, string> = {
 /** Default cap per party — overridable at creation. */
 export const PARTY_MAX_SIZE = 8;
 
+/**
+ * The largest party the schema can store, for anyone.
+ *
+ * A fact about the model rather than a policy: Party validates
+ * `members.length <= 20` and caps `maxSize` at the same figure, so a party of
+ * 21 fails to save whatever an admin or a subscription says. Slot arithmetic
+ * has to respect it or it would promise a subscriber seats that cannot be
+ * written.
+ *
+ * Raising it is a schema change, not a settings change.
+ */
+export const PARTY_ABSOLUTE_MAX = 20;
+
 export const PARTY_NAME_MAX = 60;
 
 export const PARTY_VISIBILITY_LABELS: Record<Exclude<PartyVisibility, "event">, string> = {

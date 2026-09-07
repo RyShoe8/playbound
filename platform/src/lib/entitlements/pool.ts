@@ -2,6 +2,7 @@ import dbConnect from "@/lib/db";
 import Party from "@/lib/models/Party";
 import PlatformLimits from "@/lib/models/PlatformLimits";
 import { poolSlotsUsed } from "@/lib/entitlements/slots";
+import { PARTY_ABSOLUTE_MAX } from "@/lib/playTogether/types";
 
 /**
  * How much of the shared party pool is spoken for right now.
@@ -26,8 +27,10 @@ export type PoolStatus = {
   inUse: number;
   /** Slots anyone could still claim. */
   available: number;
-  /** No party may exceed this regardless of pool or plan. */
-  hardCap: number;
+  /** How large a party can get without paying. Binds free hosts only. */
+  freeHardCap: number;
+  /** The largest party the schema can store, for anyone. */
+  absoluteCap: number;
   /** False when an admin has turned the pool off entirely. */
   enabled: boolean;
 };
@@ -40,11 +43,17 @@ export async function getPlatformLimits() {
     { $setOnInsert: { singletonKey: "default" } },
     { upsert: true, new: true, setDefaultsOnInsert: true }
   ).lean();
-  return doc as unknown as {
+  const limits = doc as unknown as {
     freePartySlotPool: number;
-    partyHardCap: number;
+    freePartyHardCap?: number;
+    /** Written before the cap became free-only. Read so a live document is not lost. */
+    partyHardCap?: number;
     freePartyBaseline: number;
     poolEnabled: boolean;
+  };
+  return {
+    ...limits,
+    freePartyHardCap: limits.freePartyHardCap ?? limits.partyHardCap ?? PARTY_ABSOLUTE_MAX,
   };
 }
 
@@ -87,7 +96,8 @@ export async function getPoolStatus(): Promise<PoolStatus> {
     pool,
     inUse,
     available: Math.max(0, pool - inUse),
-    hardCap: limits.partyHardCap,
+    freeHardCap: limits.freePartyHardCap,
+    absoluteCap: PARTY_ABSOLUTE_MAX,
     enabled: limits.poolEnabled,
   };
 }
@@ -111,7 +121,8 @@ export async function getPartySlotContext(opts: {
     planSlots,
     poolAvailable: status.available,
     memberCount: opts.memberCount,
-    hardCap: status.hardCap,
+    freeHardCap: status.freeHardCap,
+    absoluteCap: status.absoluteCap,
     pool: status,
   };
 }

@@ -22,7 +22,10 @@ const ctx = (over: Partial<Parameters<typeof partyCapacity>[0]> = {}) => ({
   planSlots: 0,
   poolAvailable: 0,
   memberCount: 1,
-  hardCap: HARD_CAP,
+  // The free cap and the schema ceiling start equal, so existing cases read
+  // the same as before; the tests that care set them apart deliberately.
+  freeHardCap: HARD_CAP,
+  absoluteCap: HARD_CAP,
   ...over,
 });
 
@@ -118,11 +121,68 @@ describe("the hard cap", () => {
      */
     const capped = canSeatAnother(ctx({ planSlots: 40, poolAvailable: 40, memberCount: HARD_CAP }));
     expect(capped.ok).toBe(false);
-    expect(capped.reason).toMatch(/cap at 20/);
+    expect(capped.reason).toMatch(/cannot exceed 20/);
 
     const drained = canSeatAnother(ctx({ planSlots: 0, poolAvailable: 0, memberCount: 3 }));
     expect(drained.ok).toBe(false);
     expect(drained.reason).toMatch(/free party slots are in use/);
+  });
+});
+
+describe("the free cap binds free parties only", () => {
+  /*
+   * It is a business limit, not a safety rail: how large a party someone can
+   * run without paying. A subscriber is bound by what they bought plus what
+   * the pool has spare, and by the schema — never by this.
+   */
+  const FREE_CAP = 6;
+  const free = (over = {}) => ctx({ freeHardCap: FREE_CAP, absoluteCap: HARD_CAP, ...over });
+
+  it("stops a free party at the free cap even with pool to spare", () => {
+    expect(partyCapacity(free({ planSlots: 0, poolAvailable: 50, memberCount: 1 }))).toBe(FREE_CAP);
+  });
+
+  it("does not stop a subscriber at the free cap", () => {
+    // Four plan slots and plenty of pool: the free cap of six is irrelevant.
+    expect(partyCapacity(free({ planSlots: 4, poolAvailable: 50, memberCount: 1 }))).toBe(HARD_CAP);
+  });
+
+  it("even one plan slot lifts the free cap", () => {
+    // The distinction is paying at all, not how much.
+    expect(partyCapacity(free({ planSlots: 1, poolAvailable: 50, memberCount: 1 }))).toBe(HARD_CAP);
+  });
+
+  it("the schema ceiling still binds a subscriber", () => {
+    /*
+     * Party validates members.length against it, so promising more would
+     * promise seats that fail to save. Raising it is a schema change.
+     */
+    expect(partyCapacity(free({ planSlots: 500, poolAvailable: 500, memberCount: 1 }))).toBe(HARD_CAP);
+  });
+
+  it("a free cap above the schema ceiling cannot raise it", () => {
+    const c = ctx({ planSlots: 0, poolAvailable: 99, memberCount: 1, freeHardCap: 100, absoluteCap: 20 });
+    expect(partyCapacity(c)).toBe(20);
+  });
+
+  it("tells a free host that subscribing helps, and a subscriber that it does not", () => {
+    const freeAtCap = canSeatAnother(free({ planSlots: 0, poolAvailable: 50, memberCount: FREE_CAP }));
+    expect(freeAtCap.ok).toBe(false);
+    expect(freeAtCap.reason).toMatch(/subscribe for a larger party/);
+
+    const subAtCeiling = canSeatAnother(free({ planSlots: 4, poolAvailable: 50, memberCount: HARD_CAP }));
+    expect(subAtCeiling.ok).toBe(false);
+    expect(subAtCeiling.reason).not.toMatch(/subscribe/);
+  });
+
+  it("the screen can tell which limit is stopping the party", () => {
+    const freeSide = describeCapacity(free({ planSlots: 0, poolAvailable: 50, memberCount: 2 }));
+    expect(freeSide.cap).toBe(FREE_CAP);
+    expect(freeSide.capIsFreeLimit).toBe(true);
+
+    const paidSide = describeCapacity(free({ planSlots: 4, poolAvailable: 50, memberCount: 2 }));
+    expect(paidSide.cap).toBe(HARD_CAP);
+    expect(paidSide.capIsFreeLimit).toBe(false);
   });
 });
 
@@ -178,7 +238,8 @@ describe("numbers that should not crash it", () => {
         planSlots: undefined as never,
         poolAvailable: null as never,
         memberCount: 2,
-        hardCap: HARD_CAP,
+        freeHardCap: HARD_CAP,
+        absoluteCap: HARD_CAP,
       })
     ).toBe(2);
     expect(partyCapacity(ctx({ planSlots: 4.9, poolAvailable: 7.9, memberCount: 1 }))).toBe(11);
@@ -186,6 +247,6 @@ describe("numbers that should not crash it", () => {
 
   it("never returns a negative seat count", () => {
     // A party over the cap (cap lowered under a live party) must read zero.
-    expect(seatsRemaining(ctx({ memberCount: 30, hardCap: 20 }))).toBe(0);
+    expect(seatsRemaining(ctx({ memberCount: 30, freeHardCap: 20, absoluteCap: 20 }))).toBe(0);
   });
 });

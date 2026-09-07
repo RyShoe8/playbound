@@ -34,9 +34,35 @@ export type SlotContext = {
   poolAvailable: number;
   /** Members already in the party, including the host. */
   memberCount: number;
-  /** Safety rail — no party exceeds this however much capacity exists. */
-  hardCap: number;
+  /**
+   * Cap that applies to parties on no plan.
+   *
+   * A business limit, not a safety rail — it is how large a party someone can
+   * run without paying. A host with any plan slots is not bound by it; they
+   * are bound by what they bought plus what the pool has spare.
+   */
+  freeHardCap: number;
+  /**
+   * The largest party the schema can store, for anyone.
+   *
+   * Structural, not policy: Party validates members.length against it, so
+   * promising a subscriber more would promise seats that fail to save.
+   */
+  absoluteCap: number;
 };
+
+/**
+ * The cap that actually applies to this party.
+ *
+ * A free host gets the smaller of the admin's free cap and what the schema
+ * allows. A subscriber is not subject to the free cap at all — the point of
+ * paying — so only the structural ceiling binds them.
+ */
+export function effectiveCap(ctx: Pick<SlotContext, "planSlots" | "freeHardCap" | "absoluteCap">): number {
+  const absolute = safe(ctx.absoluteCap);
+  if (safe(ctx.planSlots) > 0) return absolute;
+  return Math.min(safe(ctx.freeHardCap), absolute);
+}
 
 /**
  * How many of a party's members are drawing on the shared pool.
@@ -63,7 +89,7 @@ export function unusedPlanSlots(memberCount: number, planSlots: number): number 
 export function partyCapacity(ctx: SlotContext): number {
   const members = safe(ctx.memberCount);
   const headroom = unusedPlanSlots(members, ctx.planSlots) + safe(ctx.poolAvailable);
-  return Math.min(members + headroom, safe(ctx.hardCap));
+  return Math.min(members + headroom, effectiveCap(ctx));
 }
 
 /** Seats a party could still fill, right now. */
@@ -80,8 +106,16 @@ export function seatsRemaining(ctx: SlotContext): number {
  */
 export function canSeatAnother(ctx: SlotContext): { ok: boolean; reason?: string } {
   const members = safe(ctx.memberCount);
-  if (members >= safe(ctx.hardCap)) {
-    return { ok: false, reason: `Parties cap at ${safe(ctx.hardCap)} players` };
+  const cap = effectiveCap(ctx);
+  if (members >= cap) {
+    /*
+     * Two different dead ends. A free party at its cap can be grown by
+     * subscribing; a party at the schema ceiling cannot be grown at all, and
+     * saying "subscribe" there would be selling something that does not help.
+     */
+    return safe(ctx.planSlots) > 0
+      ? { ok: false, reason: `Parties cannot exceed ${cap} players` }
+      : { ok: false, reason: `Free parties cap at ${cap} players — subscribe for a larger party` };
   }
   if (unusedPlanSlots(members, ctx.planSlots) > 0) return { ok: true };
   if (safe(ctx.poolAvailable) > 0) return { ok: true };
@@ -105,6 +139,9 @@ export function describeCapacity(ctx: SlotContext): {
   fromPool: number;
   poolAvailable: number;
   atHardCap: boolean;
+  cap: number;
+  /** True when the free cap is what stops this party, not the schema. */
+  capIsFreeLimit: boolean;
 } {
   const members = safe(ctx.memberCount);
   const capacity = partyCapacity(ctx);
@@ -115,7 +152,9 @@ export function describeCapacity(ctx: SlotContext): {
     fromPlan,
     fromPool: Math.max(0, capacity - fromPlan),
     poolAvailable: safe(ctx.poolAvailable),
-    atHardCap: capacity >= safe(ctx.hardCap),
+    atHardCap: capacity >= effectiveCap(ctx),
+    cap: effectiveCap(ctx),
+    capIsFreeLimit: safe(ctx.planSlots) === 0 && safe(ctx.freeHardCap) < safe(ctx.absoluteCap),
   };
 }
 
