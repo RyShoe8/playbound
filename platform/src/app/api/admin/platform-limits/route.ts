@@ -23,21 +23,11 @@ const limitsSchema = z
   .object({
     freePartySlotPool: z.number().int().min(0).max(100_000).optional(),
     /*
-     * Two is the floor because a party of one is not a party, and the join
-     * rules already refuse below it. Bounded by the structural guard rather
-     * than by maxPartySize, so the two can be saved in either order without
-     * one rejecting the other mid-edit; the arithmetic takes the smaller.
+     * Two is the floor because a party of one is not a party. The ceiling is
+     * the runaway guard on the document, not a business number — everything
+     * below it is a decision for whoever is running the platform.
      */
-    freePartyHardCap: z.number().int().min(2).max(PARTY_STRUCTURAL_MAX).optional(),
-    /*
-     * The real party ceiling, subscribers included. Bounded only by the
-     * runaway guard on the document — everything below that is a business
-     * decision, which is why it lives here rather than in code.
-     */
-    maxPartySize: z.number().int().min(2).max(PARTY_STRUCTURAL_MAX).optional(),
-    defaultPartySize: z.number().int().min(2).max(PARTY_STRUCTURAL_MAX).optional(),
-    freePartyBaseline: z.number().int().min(0).max(200).optional(),
-    poolEnabled: z.boolean().optional(),
+    maxFreePartySize: z.number().int().min(2).max(PARTY_STRUCTURAL_MAX).optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: "Nothing to update" });
 
