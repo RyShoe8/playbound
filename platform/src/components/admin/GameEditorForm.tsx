@@ -1937,6 +1937,47 @@ export function GameEditorForm({
                         className={field}
                       />
                     </div>
+                    {/*
+                      Per-platform downloads. LauncherInstall has carried
+                      urlMac, urlMacX64 and urlLinux for a long time and passes
+                      them straight through to the launcher catalog, but this
+                      form never rendered an input for any of them — so a game
+                      could be tagged macOS and Linux while the only reachable
+                      recipe pointed at a Windows build, and the mismatch was
+                      invisible from the admin. Ryzom was the case that surfaced
+                      it: three platforms tagged, one download.
+
+                      Blank means "use the main Download URL", which is what the
+                      launcher already does, so filling none of these leaves
+                      existing single-platform recipes exactly as they were.
+                    */}
+                    <div>
+                      <label className={label}>macOS download URL (optional)</label>
+                      <input
+                        value={form.launcherInstall?.urlMac ?? ""}
+                        onChange={(e) => patchLauncher({ urlMac: e.target.value || null })}
+                        placeholder="Apple Silicon / universal build"
+                        className={field}
+                      />
+                    </div>
+                    <div>
+                      <label className={label}>Intel Mac download URL (optional)</label>
+                      <input
+                        value={form.launcherInstall?.urlMacX64 ?? ""}
+                        onChange={(e) => patchLauncher({ urlMacX64: e.target.value || null })}
+                        placeholder="Only when the Intel build is a separate file"
+                        className={field}
+                      />
+                    </div>
+                    <div>
+                      <label className={label}>Linux download URL (optional)</label>
+                      <input
+                        value={form.launcherInstall?.urlLinux ?? ""}
+                        onChange={(e) => patchLauncher({ urlLinux: e.target.value || null })}
+                        placeholder="https://…/client_linux64.zip"
+                        className={field}
+                      />
+                    </div>
                     <div>
                       <label className={label}>File name (optional)</label>
                       <input
