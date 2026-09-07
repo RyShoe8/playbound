@@ -27,6 +27,7 @@ const path = require("path");
 const fs = require("fs");
 const os = require("os");
 const { defaultContext } = require("./saveLocations");
+const { CONTROLLER_MAPPINGS } = require("./openMwConfig");
 
 /**
  * The first of these paths that exists, or null.
@@ -896,11 +897,13 @@ const NO_CONFIG_NEEDED = {
   openclonk: {
     kind: "native",
     note:
-      "Built on SDL2's GameController API — openclonk.exe carries SDL_GameController " +
-      "along with GamepadEnabled and GamepadGuiControl, so a recognised pad is mapped " +
-      "by SDL itself and drives the menus as well as play. Writing a config would " +
-      "replace a working auto-mapping with a guess. Its settings live in a Config.txt " +
-      "we have no reason to touch.",
+      "Built on SDL2's GameController API, and that part still holds — but the earlier " +
+      "note here leaned on the word *recognised* and never checked it. OpenClonk 8.1 is " +
+      "the 2018-03-16 build, so its bundled SDL2 predates the DualSense by two years and " +
+      "has no entry for it: the log line is a flat \"No Gamepad found\", before any " +
+      "mapping question arises. Nothing in a config file fixes that, which is why this " +
+      "stays a no-config game — the pad is supplied through SDL_GAMECONTROLLERCONFIG at " +
+      "launch instead. See SDL_ENV_GAMES below.",
   },
   "streets-of-rage-remake": {
     kind: "native",
@@ -1075,7 +1078,37 @@ function applyProfile(gameSlug, text, profile) {
   return entry.apply(text, profile);
 }
 
+
+/**
+ * Games whose bundled SDL is older than the player's pad.
+ *
+ * SDL only reports a *game controller* for a device it has a mapping for;
+ * anything else is a bare joystick, and an engine that asks for a controller
+ * sees nothing. A build from 2018 cannot know a pad from 2020, so no amount of
+ * in-game configuration helps — the mapping has to reach SDL before the engine
+ * starts, and SDL_GAMECONTROLLERCONFIG is the documented way to do that.
+ *
+ * Deliberately narrow. Setting this for a game whose SDL already knows the pad
+ * would override a correct built-in mapping with ours, so a slug earns a place
+ * here only after its own log has been read and found wanting.
+ */
+const SDL_ENV_GAMES = new Set(["openclonk"]);
+
+/**
+ * Controller mappings to inject at launch, or null when the game needs none.
+ *
+ * Newline-separated, which is the format SDL_GAMECONTROLLERCONFIG parses. The
+ * mappings themselves are shared with the OpenMW writer rather than copied, so
+ * a correction to a pad's layout reaches both.
+ */
+function sdlControllerEnv(slug) {
+  if (!SDL_ENV_GAMES.has(String(slug || ""))) return null;
+  return { SDL_GAMECONTROLLERCONFIG: CONTROLLER_MAPPINGS.join("\n") };
+}
+
 module.exports = {
+  SDL_ENV_GAMES,
+  sdlControllerEnv,
   GAMES,
   NO_CONFIG_NEEDED,
   supportsControllerConfig,
