@@ -1653,20 +1653,44 @@ const server = http.createServer(async (req, res) => {
         res.end(JSON.stringify({ error: "Voice channel not found" }));
         return;
       }
+      /*
+       * Three outcomes, not two.
+       *
+       * This counted only members it actually relocated, so somebody already
+       * sitting in the party's channel came back as moved:0 — the same answer
+       * as "could not move them". The caller reads that as failure and sends a
+       * Discord invite to a person who is already in the room.
+       *
+       * Not in voice at all is the genuinely different case: Discord will not
+       * pull a member into a channel they are not connected to, so an invite
+       * really is the only way to reach them. Separating the three lets the
+       * caller tell "you are already here" from "here is how to get here".
+       */
       let moved = 0;
+      let alreadyThere = 0;
+      let notInVoice = 0;
       for (const id of ids) {
         try {
           const member = await guild.members.fetch(id);
-          if (member.voice?.channelId && member.voice.channelId !== channel.id) {
-            await member.voice.setChannel(channel.id, "PlayBound party voice");
-            moved += 1;
+          const currentId = member.voice?.channelId || null;
+          if (!currentId) {
+            notInVoice += 1;
+            continue;
           }
+          if (currentId === channel.id) {
+            alreadyThere += 1;
+            continue;
+          }
+          await member.voice.setChannel(channel.id, "PlayBound party voice");
+          moved += 1;
         } catch (err) {
           console.warn("party voice move", id, err?.message || err);
         }
       }
       res.writeHead(200, { "content-type": "application/json" });
-      res.end(JSON.stringify({ success: true, moved, guildId: GUILD_ID }));
+      res.end(
+        JSON.stringify({ success: true, moved, alreadyThere, notInVoice, guildId: GUILD_ID })
+      );
     } catch (err) {
       console.error("parties/voice/move", err);
       res.writeHead(500);
