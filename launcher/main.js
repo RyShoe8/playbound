@@ -12190,6 +12190,31 @@ ipcMain.handle("prepare-virtual-lan", async (event, opts) => {
       }
     }
     reportProgress("Party network connected.");
+
+    /*
+     * Record how the overlay actually connected.
+     *
+     * `netbird status` answered "is the daemon up", which is not the question a
+     * laggy session asks. Whether each peer is reached directly or through a
+     * relay is, and it is invisible without asking for detail — a relayed pair
+     * sends every packet out to a relay and back, which for a lockstep game
+     * lands on every frame rather than averaging out.
+     *
+     * Sampled on a delay because ICE has not finished when the adapter first
+     * gets an address: asked immediately it reports "unknown" for everyone,
+     * which is worse than not asking. Never awaited and never allowed to
+     * throw — a diagnostic that can fail a launch is not worth having.
+     */
+    setTimeout(() => {
+      void virtualLan
+        .overlayPeerDiagnostics()
+        .then((summary) => {
+          console.log(`[overlay] ${virtualLan.describeOverlayDetail(summary)}`);
+        })
+        .catch((err) => {
+          console.warn("[overlay] diagnostics skipped:", err?.message || err);
+        });
+    }, 10_000).unref?.();
     /*
      * peerAddresses/isLeader come back from the enrolment POST above and used
      * to be dropped here. Peer-to-peer games need them: each side dials the
