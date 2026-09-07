@@ -2558,7 +2558,7 @@ function hostOsAssetScore(assetName) {
     /\.exe$/i.test(n) ||
     /(?:^|[^a-z0-9])(windows|win64|win32|winportable|win-x64|win_x64|-win-)(?:[^a-z0-9]|$)/.test(n);
   const isMac =
-    /\.dmg$/i.test(n) ||
+    /\.(dmg|pkg)$/i.test(n) ||
     /(?:^|[^a-z0-9])(macos|osx|darwin|mac)(?:[^a-z0-9]|$)/.test(n);
   const isLinux =
     /\.appimage$/i.test(n) ||
@@ -2612,8 +2612,8 @@ function assetPatternsForEntry(entry) {
     // Catalog recipes are often Windows-shaped; try portable Mac fallouts before failing.
     if (winPat && !/(win|windows|\.exe)/i.test(winPat)) patterns.push(winPat);
     patterns.push(
-      "(macos|osx|darwin|mac).*\\.(zip|dmg)$",
-      "\\.(dmg)$",
+      "(macos|osx|darwin|mac).*\\.(zip|dmg|pkg)$",
+      "\\.(dmg|pkg)$",
       "\\.jar$"
     );
     if (winPat) patterns.push(winPat);
@@ -2791,7 +2791,7 @@ async function resolveDownload(entry) {
       try {
         const parts = new URL(effectiveUrl).pathname.split("/").filter(Boolean).reverse();
         const fromPath = parts.find((p) =>
-          /\.(exe|zip|7z|rar|msi|dmg|jar|tar\.gz|tar\.xz|tgz|appimage|bin)$/i.test(
+          /\.(exe|zip|7z|rar|msi|dmg|pkg|jar|tar\.gz|tar\.xz|tgz|appimage|bin)$/i.test(
             decodeURIComponent(p)
           )
         );
@@ -3640,6 +3640,116 @@ function extractDmg(dmgPath, destDir) {
 }
 
 /**
+ * Expand a .pkg into destDir. macOS only.
+ *
+ * A .pkg is normally applied with `installer -pkg X -target /`, which writes
+ * system-wide and needs root. That is the wrong shape here twice over: every
+ * other game lands in its own directory under the library, and a launcher that
+ * asks for an admin password to install a game has earned the suspicion it
+ * gets. `pkgutil --expand-full` unpacks the identical payload without touching
+ * the system, which puts this on the same footing as the .dmg path — take the
+ * .app out, copy it in, leave nothing behind.
+ *
+ * Falls back to the Payload trees when a package installs loose files rather
+ * than a bundle, since that is the same tree the installer would have written.
+ */
+function extractPkg(pkgPath, destDir) {
+  return new Promise((resolve, reject) => {
+    if (process.platform !== "darwin") {
+      reject(new Error("PKG installs are only supported on macOS"));
+      return;
+    }
+    const workDir = path.join(
+      app.getPath("temp"),
+      `playbound-pkg-${process.pid}-${Date.now()}`
+    );
+    const cleanup = () => {
+      try {
+        fs.rmSync(workDir, { recursive: true, force: true });
+      } catch {
+        /* ignore */
+      }
+    };
+
+    try {
+      // pkgutil refuses a destination that already exists; it creates workDir.
+      execFileSync("pkgutil", ["--expand-full", String(pkgPath), workDir], {
+        timeout: 180_000,
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+    } catch (err) {
+      cleanup();
+      reject(new Error(`PKG expand failed: ${err?.message || err}`));
+      return;
+    }
+
+    try {
+      const apps = [];
+      const walk = (dir, depth = 0) => {
+        if (depth > 8) return;
+        let entries;
+        try {
+          entries = fs.readdirSync(dir, { withFileTypes: true });
+        } catch {
+          return;
+        }
+        for (const ent of entries) {
+          if (!ent.isDirectory()) continue;
+          const full = path.join(dir, ent.name);
+          // Never descend into a bundle; its own Contents would match again.
+          if (ent.name.endsWith(".app")) {
+            apps.push(full);
+            continue;
+          }
+          walk(full, depth + 1);
+        }
+      };
+      walk(workDir);
+
+      fs.mkdirSync(destDir, { recursive: true });
+      if (apps.length) {
+        for (const appPath of apps) {
+          fs.cpSync(appPath, path.join(destDir, path.basename(appPath)), { recursive: true });
+        }
+      } else {
+        const payloads = [];
+        const findPayloads = (dir, depth = 0) => {
+          if (depth > 4) return;
+          let entries;
+          try {
+            entries = fs.readdirSync(dir, { withFileTypes: true });
+          } catch {
+            return;
+          }
+          for (const ent of entries) {
+            if (!ent.isDirectory()) continue;
+            const full = path.join(dir, ent.name);
+            if (ent.name === "Payload") payloads.push(full);
+            else findPayloads(full, depth + 1);
+          }
+        };
+        findPayloads(workDir);
+        if (!payloads.length) {
+          cleanup();
+          reject(new Error("PKG had no app bundle or payload"));
+          return;
+        }
+        for (const payload of payloads) {
+          for (const name of fs.readdirSync(payload)) {
+            fs.cpSync(path.join(payload, name), path.join(destDir, name), { recursive: true });
+          }
+        }
+      }
+      cleanup();
+      resolve();
+    } catch (err) {
+      cleanup();
+      reject(new Error(`PKG extract failed: ${err?.message || err}`));
+    }
+  });
+}
+
+/**
  * Resolve the bundled 7-Zip binary.
  *
  * Windows' own tar.exe is libarchive and does read the 7z container, but it is
@@ -3823,6 +3933,8 @@ async function extractArchive(archivePath, destDir) {
   await fsp.mkdir(destDir, { recursive: true });
   if (lower.endsWith(".dmg")) {
     await extractDmg(archivePath, destDir);
+  } else if (lower.endsWith(".pkg")) {
+    await extractPkg(archivePath, destDir);
   } else if (isTarball(lower)) {
     /*
      * Tar must be tested before 7-Zip, not after. 7zip-bin ships a 7za for
@@ -7464,7 +7576,7 @@ async function placeModFiles(slug, install, baseDirOverride) {
    * non-archive and failed. Existing mods still route to extraction because
    * their assets really are .zip files; anything else is now copied into place.
    */
-  const isArchive = /\.(zip|dmg|tar\.gz|tgz|tar\.xz)$/i.test(dl.name);
+  const isArchive = /\.(zip|dmg|pkg|tar\.gz|tgz|tar\.xz)$/i.test(dl.name);
   if (isArchive && !/\.jar$/i.test(dl.name)) {
     sendProgress({ phase: "extracting" });
     await extractArchive(downloadPath, targetDir);
