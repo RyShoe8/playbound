@@ -4020,7 +4020,14 @@ function exeHintFor(entry) {
 function findExecutable(dir, exeHint) {
   if (!dir || !fs.existsSync(dir)) return null;
   const candidates = [];
-  const skip = /unins|setup|install|crash|report|vcredist|dxsetup/i;
+  /*
+   * `wininst` is setuptools' bundled installer stub. A game that ships its own
+   * Python carries several of them under Lib/site-packages, and they are plain
+   * .exe files with no marker distinguishing them from a real binary — so for
+   * Unknown Horizons the picker chose wininst-14.0-amd64.exe over the game.
+   * Nothing anyone ships as an actual game is named this.
+   */
+  const skip = /unins|setup|install|crash|report|vcredist|dxsetup|wininst/i;
   /*
    * Shipped alongside the game rather than being it: level editors, config
    * front-ends, benchmarks. Demoted rather than skipped, so a package whose
@@ -4082,6 +4089,22 @@ function findExecutable(dir, exeHint) {
           });
         } else if (/\.(gb|gbc|gba|nes|sfc|smc|z64|n64|gen)$/i.test(lower) && (ignoreSkip || !skip.test(name))) {
           candidates.push({ full, name, size: stat.size, rank: 90 });
+        } else if (/\.(bat|cmd)$/i.test(lower) && (ignoreSkip || !skip.test(name))) {
+          /*
+           * A batch launcher is the entry point for a game that has no exe of
+           * its own — Python and Java titles bundle an interpreter and start
+           * through a script. Unknown Horizons is the case: its directory holds
+           * a bundled python.exe, an uninstaller the skip list already drops,
+           * and run_uh.bat. With nothing else eligible this returned null and
+           * the player was asked to find the executable by hand.
+           *
+           * Ranked below a real .exe on purpose. Where a game ships both, the
+           * binary is the thing to launch and the script is usually a
+           * convenience wrapper; this only wins when nothing better exists.
+           * expectedExeBasenames has always accepted .bat, so the drive scan
+           * and this picker disagreed about what counts as launchable.
+           */
+          candidates.push({ full, name, size: stat.size, rank: 80 });
         }
         continue;
       }
