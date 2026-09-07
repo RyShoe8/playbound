@@ -60,11 +60,7 @@ export default async function ConnectPartiesPage() {
         <PlatformLimitsEditor
           initialLimits={{
             freePartySlotPool: limits.freePartySlotPool,
-            freePartyHardCap: limits.freePartyHardCap,
-            maxPartySize: limits.maxPartySize,
-            defaultPartySize: limits.defaultPartySize,
-            freePartyBaseline: limits.freePartyBaseline,
-            poolEnabled: limits.poolEnabled,
+            maxFreePartySize: limits.maxFreePartySize,
           }}
           initialUsage={usage}
         />

@@ -23,9 +23,9 @@ import PlayInvite from "@/lib/models/PlayInvite";
 import { getGame } from "@/lib/catalog";
 import { requiredPlatformsFor } from "@/lib/playTogether/partyPlatforms";
 import { listEditionsForGame } from "@/lib/editions";
-import { getPlatformLimits } from "@/lib/entitlements/pool";
 import {
   PARTY_MAX_SIZE,
+  PARTY_STRUCTURAL_MAX,
   PARTY_IDLE_TIMEOUT_MS,
   type PartyStatus,
   type PartyVisibility,
@@ -937,7 +937,6 @@ export async function createParty(opts: {
   const now = new Date();
   let doc;
   try {
-    const partyLimits = await getPlatformLimits();
     doc = await Party.create({
       leaderId: opts.userId,
       members: [
@@ -958,14 +957,7 @@ export async function createParty(opts: {
       passwordSalt,
       passwordHash,
       voiceEnabled: wantVoice,
-      /*
-       * Bounds come from the admin settings, not a compiled-in number, so
-       * selling a larger package does not need a deploy.
-       */
-      maxSize: Math.min(
-        Math.max(opts.maxSize || partyLimits.defaultPartySize, 2),
-        partyLimits.maxPartySize
-      ),
+      maxSize: Math.min(Math.max(opts.maxSize || PARTY_MAX_SIZE, 2), PARTY_STRUCTURAL_MAX),
       /*
        * Validated against the game rather than trusted: a mode the game does
        * not support would otherwise provision an overlay for a room that

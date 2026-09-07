@@ -2,6 +2,7 @@ import dbConnect from "@/lib/db";
 import Party from "@/lib/models/Party";
 import PlatformLimits from "@/lib/models/PlatformLimits";
 import { poolSlotsUsed } from "@/lib/entitlements/slots";
+import { PARTY_STRUCTURAL_MAX } from "@/lib/playTogether/types";
 
 
 /**
@@ -21,20 +22,14 @@ import { poolSlotsUsed } from "@/lib/entitlements/slots";
 const LIVE_STATUSES = ["forming", "ready", "launching", "playing"] as const;
 
 export type PoolStatus = {
-  /** Total slots the platform funds. */
+  /** Total free seats the platform funds. */
   pool: number;
-  /** Slots held by live parties right now. */
+  /** Seats held by live parties right now. */
   inUse: number;
-  /** Slots anyone could still claim. */
+  /** Seats anyone could still claim. */
   available: number;
-  /** How large a party can get without paying. Binds free hosts only. */
-  freeHardCap: number;
-  /** The largest any party may be, subscribers included. Set in admin. */
-  absoluteCap: number;
-  /** Size a new party gets when its creator does not choose one. */
-  defaultPartySize: number;
-  /** False when an admin has turned the pool off entirely. */
-  enabled: boolean;
+  /** The largest a party can get without a subscription. */
+  maxFreePartySize: number;
 };
 
 /** The limits document, created with its defaults on first read. */
@@ -46,24 +41,21 @@ export async function getPlatformLimits() {
     { upsert: true, new: true, setDefaultsOnInsert: true }
   ).lean();
   const limits = doc as unknown as {
-    freePartySlotPool: number;
+    freePartySlotPool?: number;
+    maxFreePartySize?: number;
+    /* Earlier names for the free cap, read so a live document is not lost. */
     freePartyHardCap?: number;
-    /** Written before the cap became free-only. Read so a live document is not lost. */
     partyHardCap?: number;
-    maxPartySize?: number;
-    defaultPartySize?: number;
-    freePartyBaseline: number;
-    poolEnabled: boolean;
   };
   /*
-   * Defaults applied on read rather than relied on from the schema, so a
-   * document written before these fields existed still answers sensibly.
+   * Defaults applied on read rather than trusted from the schema, so a
+   * document written before a field existed still answers sensibly instead of
+   * returning undefined into the arithmetic.
    */
   return {
-    ...limits,
-    freePartyHardCap: limits.freePartyHardCap ?? limits.partyHardCap ?? 20,
-    maxPartySize: limits.maxPartySize ?? 100,
-    defaultPartySize: limits.defaultPartySize ?? 8,
+    freePartySlotPool: limits.freePartySlotPool ?? 200,
+    maxFreePartySize:
+      limits.maxFreePartySize ?? limits.freePartyHardCap ?? limits.partyHardCap ?? 8,
   };
 }
 
@@ -88,7 +80,8 @@ export async function planSlotsForUser(_userId: string | null | undefined): Prom
  */
 export async function getPoolStatus(): Promise<PoolStatus> {
   const limits = await getPlatformLimits();
-  const pool = limits.poolEnabled ? limits.freePartySlotPool : 0;
+  // Zero is how free parties are turned off; no separate switch for it.
+  const pool = limits.freePartySlotPool;
 
   const live = await Party.find(
     { status: { $in: LIVE_STATUSES } },
@@ -106,10 +99,7 @@ export async function getPoolStatus(): Promise<PoolStatus> {
     pool,
     inUse,
     available: Math.max(0, pool - inUse),
-    freeHardCap: limits.freePartyHardCap,
-    absoluteCap: limits.maxPartySize,
-    defaultPartySize: limits.defaultPartySize,
-    enabled: limits.poolEnabled,
+    maxFreePartySize: limits.maxFreePartySize,
   };
 }
 
@@ -132,8 +122,12 @@ export async function getPartySlotContext(opts: {
     planSlots,
     poolAvailable: status.available,
     memberCount: opts.memberCount,
-    freeHardCap: status.freeHardCap,
-    absoluteCap: status.absoluteCap,
+    freeHardCap: status.maxFreePartySize,
+    /*
+     * Subscribers are bounded by what they bought plus the pool, not by an
+     * admin number — the structural guard is only there to stop a runaway.
+     */
+    absoluteCap: PARTY_STRUCTURAL_MAX,
     pool: status,
   };
 }

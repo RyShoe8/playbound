@@ -36,24 +36,27 @@ describe("the route", () => {
     expect(ROUTE).toMatch(/firstZodErrorMessage/);
   });
 
-  it("refuses a free cap below two", () => {
+  it("refuses a free party size below two", () => {
     // A party of one is not a party, and the join rules already refuse it.
-    expect(ROUTE).toMatch(/freePartyHardCap: z\.number\(\)\.int\(\)\.min\(2\)/);
+    expect(ROUTE).toMatch(/maxFreePartySize: z\.number\(\)\.int\(\)\.min\(2\)/);
   });
 
-  it("bounds the size settings by the runaway guard, not by each other", () => {
+  it("exposes exactly two settings, and no more", () => {
     /*
-     * Bounding them against each other would make the save order matter:
-     * raising the maximum before the free cap, or the reverse, would reject
-     * a perfectly reasonable pair mid-edit. The arithmetic takes the smaller
-     * of the two at read time instead.
+     * Free seats and free party size. Subscribers need no setting — they are
+     * bounded by what they bought plus whatever the pool has spare — and
+     * party size is not something a player picks.
      */
-    expect(ROUTE).toMatch(/maxPartySize: z\.number\(\)\.int\(\)\.min\(2\)\.max\(PARTY_STRUCTURAL_MAX\)/);
-    expect(ROUTE).toMatch(/freePartyHardCap: z\.number\(\)\.int\(\)\.min\(2\)\.max\(PARTY_STRUCTURAL_MAX\)/);
+    const fields = (ROUTE.match(/^\s{4}\w+: z\./gm) || []).length;
+    expect(fields).toBe(2);
+    expect(ROUTE).toMatch(/freePartySlotPool: z\.number\(\)/);
+    expect(ROUTE).toMatch(/maxFreePartySize: z\.number\(\)/);
   });
 
-  it("the cap it exposes is the free one, not a cap on everyone", () => {
-    expect(ROUTE).not.toMatch(/partyHardCap:/);
+  it("does not reintroduce settings nobody asked for", () => {
+    for (const gone of ["maxPartySize", "defaultPartySize", "freePartyBaseline", "poolEnabled"]) {
+      expect(ROUTE, `${gone} is back`).not.toMatch(new RegExp(`\b${gone}\b`));
+    }
   });
 
   it("refuses a negative pool", () => {
@@ -68,7 +71,7 @@ describe("the route", () => {
      * concern.
      */
     const optional = ROUTE.match(/\.optional\(\)/g) || [];
-    expect(optional.length).toBeGreaterThanOrEqual(4);
+    expect(optional.length).toBeGreaterThanOrEqual(2);
     expect(ROUTE).toMatch(/Nothing to update/);
   });
 
@@ -97,20 +100,18 @@ describe("the screen", () => {
      * should not have to learn that from support tickets.
      */
     expect(EDITOR).toMatch(/const oversubscribed =/);
-    expect(EDITOR).toMatch(/Nobody will be removed/);
+    expect(EDITOR).toMatch(/Nobody will be\s+removed/);
   });
 
   it("says the free cap binds free parties only", () => {
     // Otherwise an admin reads it as a limit on subscribers too and sets it
     // high to avoid capping paying customers, defeating the point.
-    expect(EDITOR).toMatch(/Binds hosts on no plan|without paying/i);
-    // And the maximum that does bind everyone is edited right beside it.
-    expect(EDITOR).toMatch(/Maximum party size/);
-    expect(EDITOR).toMatch(/subscribers included/i);
+    expect(EDITOR).toMatch(/without a subscription/i);
+    expect(EDITOR).toMatch(/Subscribers are limited by the slots they bought/);
   });
 
-  it("says what turning the pool off actually does", () => {
-    expect(EDITOR).toMatch(/subscriptions the only route|pool is switched off/i);
+  it("says how to turn free parties off, without a separate switch for it", () => {
+    expect(EDITOR).toMatch(/Zero turns free parties off/);
   });
 
   it("gives the usage bar a text alternative", () => {

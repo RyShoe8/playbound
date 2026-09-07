@@ -253,63 +253,37 @@ describe("numbers that should not crash it", () => {
   });
 });
 
-describe("party size limits are settings, not code", () => {
+describe("only free parties are limited by a setting", () => {
   /*
-   * Subscription packages sell more than the old 20, so the ceiling moved.
-   * The risk in moving it is that a copy stays behind: a validator, a clamp or
-   * a slot calculation still holding the old figure would reject or refuse
-   * seats a package had already sold.
+   * Two settings, and no more: how many free seats exist, and how large a
+   * party gets without paying. A subscriber needs neither — they are bounded
+   * by the slots they bought plus whatever the pool has spare — and party
+   * size is not something a player picks.
    */
   const read = (...p: string[]) => readFileSync(path.join(process.cwd(), ...p), "utf8");
 
-  it("party creation reads the admin settings, not a constant", () => {
-    /*
-     * The point of the change: selling a larger package must not need a
-     * deploy. Creation clamps to maxPartySize from PlatformLimits.
-     */
-    const service = read("src", "lib", "playTogether", "party.ts");
-    expect(service).toMatch(/const partyLimits = await getPlatformLimits\(\)/);
-    expect(service).toMatch(/partyLimits\.maxPartySize/);
-    expect(service).toMatch(/partyLimits\.defaultPartySize/);
-    expect(service).not.toMatch(/PARTY_ABSOLUTE_MAX/);
+  it("the settings document holds exactly those two numbers", () => {
+    const model = read("src", "lib", "models", "PlatformLimits.ts");
+    expect(model).toMatch(/freePartySlotPool: \{ type: Number/);
+    expect(model).toMatch(/maxFreePartySize: \{ type: Number/);
+    for (const gone of ["maxPartySize", "defaultPartySize", "freePartyBaseline", "poolEnabled"]) {
+      expect(model, `${gone} is back`).not.toMatch(new RegExp(`\b${gone}\b`));
+    }
   });
 
-  it("both party size limits are editable through the admin route", () => {
-    const route = read("src", "app", "api", "admin", "platform-limits", "route.ts");
-    expect(route).toMatch(/maxPartySize: z\.number\(\)/);
-    expect(route).toMatch(/defaultPartySize: z\.number\(\)/);
-    expect(route).toMatch(/freePartyHardCap: z\.number\(\)/);
+  it("a subscriber is bounded by plan plus pool, not by the free size", () => {
+    const c = ctx({ planSlots: 40, poolAvailable: 10, memberCount: 1, freeHardCap: 8, absoluteCap: 500 });
+    expect(partyCapacity(c)).toBe(50);
   });
 
-  it("the only compiled-in number is a runaway guard on the document", () => {
-    /*
-     * The schema is built at module load, before any database read, so its
-     * validator cannot ask a setting. That is the one place a constant is
-     * unavoidable — and it is set far above any package, so it never decides
-     * a business question.
-     */
-    const types = read("src", "lib", "playTogether", "types.ts");
-    expect(types).toMatch(/export const PARTY_STRUCTURAL_MAX = 500;/);
-    expect(types).toMatch(/runaway guard/i);
-
-    const model = read("src", "lib", "models", "Party.ts");
-    expect(model).toMatch(/v\.length <= PARTY_STRUCTURAL_MAX/);
+  it("a free host is bounded by the free size, however large the pool", () => {
+    const c = ctx({ planSlots: 0, poolAvailable: 500, memberCount: 1, freeHardCap: 8, absoluteCap: 500 });
+    expect(partyCapacity(c)).toBe(8);
   });
 
-  it("a package larger than the old ceiling now works", () => {
-    // 40 plan slots was unreachable at 20 and is the point of the change.
-    const c = ctx({ planSlots: 40, poolAvailable: 0, memberCount: 1, absoluteCap: 100 });
-    expect(partyCapacity(c)).toBe(40);
-  });
-
-  it("a package larger than the configured maximum is still bounded", () => {
-    // absoluteCap is now whatever an admin set, so raising it is a settings
-    // change — but the arithmetic still respects it.
-    const c = ctx({ planSlots: 250, poolAvailable: 50, memberCount: 1, absoluteCap: 100 });
-    expect(partyCapacity(c)).toBe(100);
-    // Raise the setting and the same package fits: 250 plan slots plus the
-    // 50 free pool seats is 300, which the higher maximum now allows.
-    const raised = ctx({ planSlots: 250, poolAvailable: 50, memberCount: 1, absoluteCap: 300 });
-    expect(partyCapacity(raised)).toBe(300);
+  it("the runaway guard still bounds an absurd plan", () => {
+    // Not a business limit — just a stop on an unbounded members array.
+    const c = ctx({ planSlots: 9999, poolAvailable: 0, memberCount: 1, freeHardCap: 8, absoluteCap: 500 });
+    expect(partyCapacity(c)).toBe(500);
   });
 });
