@@ -465,6 +465,7 @@ const SKIP_VOICE: PartyVoiceFollowup = {
   needsDiscordLink: false,
   inviteUrl: null,
   moved: false,
+  inPartyVoice: false,
 };
 
 function isMongoDuplicateKey(err: unknown): boolean {

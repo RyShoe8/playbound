@@ -3907,15 +3907,35 @@ async function handleLaunchPartyVoice(partyId, party, voiceBtn, errorEl) {
       return;
     }
 
+    /*
+     * Being in the channel is checked before the invite, not after.
+     *
+     * The invite is permanent — provisioning creates it with maxAge 0 and
+     * stores it on the party — so `inviteUrl` is almost never empty, and the
+     * `moved` branch below used to sit inside `if (!inviteUrl)` where nothing
+     * could reach it. The result was an invite opening every time voice was
+     * launched, including for people already sitting in the channel.
+     *
+     * inPartyVoice covers both halves of "you are in the room": we moved them,
+     * or they were already there. Neither needs an invite.
+     */
+    if (res?.inPartyVoice || res?.moved) {
+      setStatus(
+        res?.moved
+          ? "Moved you into the party voice channel in Discord."
+          : "You're already in the party voice channel."
+      );
+      const areaSlotMoved = document.getElementById("friends-party-area");
+      if (areaSlotMoved) areaSlotMoved.dataset.sig = "";
+      blurPartyFocus();
+      void api.refreshFriendsData();
+      return;
+    }
+
     const inviteUrl =
       res?.inviteUrl || res?.party?.discord?.inviteUrl || party.discord?.inviteUrl || "";
 
     if (!inviteUrl) {
-      if (res?.moved) {
-        setStatus("Moved to party voice in Discord — open Discord to join.");
-        void window.playbound.openDiscordInvite?.("https://discord.com/app");
-        return;
-      }
       const errMsg = res?.error || "Could not launch Discord voice.";
       if (errorEl) {
         errorEl.textContent = errMsg;

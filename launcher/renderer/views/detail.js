@@ -1844,6 +1844,9 @@ async function renderGameDetailView(slug, opts = {}) {
       setStatus(`Party created for ${detail.title || slug}`);
       if (res.needsDiscordLink) {
         window.playbound.linkDiscord?.();
+      } else if (res.inPartyVoice || res.moved) {
+        // Already placed in the new channel — an invite would send someone to a
+        // room they are standing in.
       } else if (res.inviteUrl || res.party?.discord?.inviteUrl) {
         window.playbound.openExternal(res.inviteUrl || res.party.discord.inviteUrl);
       }

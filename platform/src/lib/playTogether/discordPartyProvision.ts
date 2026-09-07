@@ -213,17 +213,25 @@ export async function cleanupPartyDiscordVoice(
 export type PartyVoiceFollowup = {
   needsDiscordLink: boolean;
   inviteUrl: string | null;
+  /** Relocated from another channel. Kept distinct from `inPartyVoice` for telemetry. */
   moved: boolean;
+  /**
+   * They are in the party's voice channel now — whether we moved them or they
+   * were already sitting there. This is what a caller should branch on: the
+   * question is "do they still need an invite", and someone already in the
+   * room does not, however they got there.
+   */
+  inPartyVoice: boolean;
 };
 
 export async function moveDiscordUsersToPartyVoice(
   party: PartyLike,
   discordUserIds: string[]
-): Promise<{ moved: number }> {
+): Promise<{ moved: number; alreadyThere: number; notInVoice: number }> {
   const { url, secret } = botConfig();
   const voiceChannelId = party.discord?.voiceChannelId;
   if (!url || !secret || !voiceChannelId || discordUserIds.length === 0) {
-    return { moved: 0 };
+    return { moved: 0, alreadyThere: 0, notInVoice: 0 };
   }
   try {
     const res = await fetch(`${url}/parties/voice/move`, {
@@ -237,13 +245,26 @@ export async function moveDiscordUsersToPartyVoice(
     });
     if (!res.ok) {
       trackPartyFailure("discord", { op: "move", ...partyEventProps(party), status: res.status });
-      return { moved: 0 };
+      return { moved: 0, alreadyThere: 0, notInVoice: 0 };
     }
-    const data = (await res.json()) as { moved?: number };
-    return { moved: Number(data.moved) || 0 };
+    const data = (await res.json()) as {
+      moved?: number;
+      alreadyThere?: number;
+      notInVoice?: number;
+    };
+    return {
+      moved: Number(data.moved) || 0,
+      /*
+       * Absent from an older bot, which reported only `moved`. Defaulting to 0
+       * keeps this the same conservative "send the invite" behaviour rather
+       * than silently claiming someone is present.
+       */
+      alreadyThere: Number(data.alreadyThere) || 0,
+      notInVoice: Number(data.notInVoice) || 0,
+    };
   } catch (err) {
     trackPartyFailure("discord", { op: "move", ...partyEventProps(party), message: err });
-    return { moved: 0 };
+    return { moved: 0, alreadyThere: 0, notInVoice: 0 };
   }
 }
 
@@ -260,10 +281,17 @@ export async function syncPartyVoiceForMember(
   const inviteUrl = party.discord?.inviteUrl || null;
   const conn = await DiscordConnection.findOne({ userId }).select("discordId").lean();
   if (!conn?.discordId) {
-    return { needsDiscordLink: true, inviteUrl, moved: false };
+    return { needsDiscordLink: true, inviteUrl, moved: false, inPartyVoice: false };
   }
-  const { moved } = await moveDiscordUsersToPartyVoice(party, [String(conn.discordId)]);
-  return { needsDiscordLink: false, inviteUrl, moved: moved > 0 };
+  const { moved, alreadyThere } = await moveDiscordUsersToPartyVoice(party, [
+    String(conn.discordId),
+  ]);
+  return {
+    needsDiscordLink: false,
+    inviteUrl,
+    moved: moved > 0,
+    inPartyVoice: moved > 0 || alreadyThere > 0,
+  };
 }
 
 

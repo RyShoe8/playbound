@@ -35,7 +35,9 @@ export async function POST(req: Request, ctx: RouteContext) {
     const voice = await syncPartyVoiceForMember(party, userId);
     const inviteUrl = voice.inviteUrl || party.discord?.inviteUrl || null;
 
-    if (!inviteUrl && !voice.moved) {
+    // Being in the room already counts as success — it is the outcome the
+    // caller wanted, not a failure to produce an invite.
+    if (!inviteUrl && !voice.inPartyVoice) {
       return NextResponse.json(
         {
           error: "Could not create Discord voice room. The bot service may be offline.",
@@ -56,6 +58,7 @@ export async function POST(req: Request, ctx: RouteContext) {
       needsDiscordLink: voice.needsDiscordLink,
       inviteUrl,
       moved: voice.moved,
+      inPartyVoice: voice.inPartyVoice,
     });
   } catch (err) {
     console.error("POST /api/parties/[id]/discord failed:", err);

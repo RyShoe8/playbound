@@ -502,6 +502,13 @@ export const usePartyStore = create<PartyState>((set, get) => ({
         return {
           inviteUrl: data.inviteUrl || data.party.discord.inviteUrl || null,
           needsDiscordLink: Boolean(data.needsDiscordLink),
+          /*
+           * Passed through so a caller can skip the invite for somebody who is
+           * already in the party's channel. Dropping it here was half the
+           * reason voice always opened an invite: the answer existed on the
+           * response and never reached the code deciding what to do.
+           */
+          inPartyVoice: Boolean(data.inPartyVoice),
         };
       }
       return { inviteUrl: null, error: data.error || "Could not enable voice" };
