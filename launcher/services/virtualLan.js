@@ -159,6 +159,128 @@ async function autoInstallNetBird(onProgress) {
   return { error: hint, needsInstall: true };
 }
 
+/**
+ * Parse `netbird status -d` into per-peer connection facts.
+ *
+ * The plain `netbird status` we already ran answers "is the overlay up", which
+ * is not the question a laggy session asks. The detailed form carries the one
+ * that matters: whether each peer is reached directly or through a relay. A
+ * relayed peer routes every packet out to a relay and back, so a pair that
+ * would have been 30ms direct can sit at twice that — and for a lockstep game
+ * like OpenTyrian, where neither side advances until it hears from the other,
+ * that doubling lands on every frame.
+ *
+ * Parsed leniently on purpose. NetBird's detail output has changed shape
+ * between releases and this is diagnostic data, so an unfamiliar layout should
+ * yield nulls and an honest "unknown" rather than a wrong reading or a throw.
+ */
+function parseOverlayPeers(text) {
+  const lines = String(text || "").split(/\r?\n/);
+  const peers = [];
+  let current = null;
+  const flush = () => {
+    if (current && (current.name || current.ip)) peers.push(current);
+    current = null;
+  };
+
+  for (const raw of lines) {
+    if (!raw.trim()) continue;
+    // A peer block opens with its FQDN on a line of its own, value empty.
+    const header = /^\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*:\s*$/.exec(raw);
+    if (header) {
+      flush();
+      current = {
+        name: header[1],
+        ip: null,
+        status: null,
+        connectionType: null,
+        relayed: null,
+        latencyMs: null,
+      };
+      continue;
+    }
+    const pair = /^\s*([A-Za-z][A-Za-z0-9 ()/_-]*?)\s*:\s*(.+?)\s*$/.exec(raw);
+    if (!pair || !current) continue;
+    const key = pair[1].trim().toLowerCase();
+    const value = pair[2].trim();
+    if (key === "netbird ip") current.ip = value.split("/")[0];
+    else if (key === "status") current.status = value;
+    else if (key === "connection type" || key === "connection") {
+      current.connectionType = value;
+      // "Relayed" is the failure mode; anything explicitly P2P/direct is not.
+      if (/relay/i.test(value)) current.relayed = true;
+      else if (/p2p|direct/i.test(value)) current.relayed = false;
+    } else if (key === "latency") {
+      const m = /([\d.]+)\s*(ms|s|us|µs)?/i.exec(value);
+      if (m) {
+        let n = Number.parseFloat(m[1]);
+        const unit = (m[2] || "ms").toLowerCase();
+        if (unit === "s") n *= 1000;
+        else if (unit === "us" || unit === "µs") n /= 1000;
+        if (Number.isFinite(n)) current.latencyMs = Math.round(n * 10) / 10;
+      }
+    }
+  }
+  flush();
+  return peers;
+}
+
+/** Peer detail plus the summary lines, shaped for logging and display. */
+function summarizeOverlayDetail(text) {
+  const peers = parseOverlayPeers(text);
+  const grab = (label) => {
+    const m = new RegExp(`^\s*${label}\s*:\s*(.+)$`, "im").exec(String(text || ""));
+    return m ? m[1].trim() : null;
+  };
+  const latencies = peers
+    .map((p) => p.latencyMs)
+    .filter((n) => typeof n === "number" && Number.isFinite(n));
+  return {
+    peers,
+    management: grab("Management"),
+    signal: grab("Signal"),
+    relays: grab("Relays"),
+    relayedCount: peers.filter((p) => p.relayed === true).length,
+    directCount: peers.filter((p) => p.relayed === false).length,
+    unknownCount: peers.filter((p) => p.relayed === null).length,
+    worstLatencyMs: latencies.length ? Math.max(...latencies) : null,
+  };
+}
+
+/**
+ * Run the detailed status and summarize it. Never throws: a machine with no
+ * NetBird, or a CLI that refuses without elevation, returns `available: false`
+ * so a caller can log the reason rather than lose the whole diagnostic.
+ */
+async function overlayPeerDiagnostics() {
+  const cli = findCli();
+  if (!cli) return { available: false, reason: "NetBird CLI not found" };
+  const res = await run(cli, ["status", "-d"]);
+  const blob = `${res.stdout}${res.stderr}`;
+  if (!res.ok && !/peers/i.test(blob)) {
+    return { available: false, reason: res.error || "netbird status -d failed", raw: blob };
+  }
+  return { available: true, ...summarizeOverlayDetail(blob), raw: blob };
+}
+
+/** One line worth logging when a party joins the overlay. */
+function describeOverlayDetail(summary) {
+  if (!summary || summary.available === false) {
+    return `overlay diagnostics unavailable: ${summary?.reason || "unknown"}`;
+  }
+  const parts = [
+    `peers=${summary.peers.length}`,
+    `direct=${summary.directCount}`,
+    `relayed=${summary.relayedCount}`,
+  ];
+  if (summary.unknownCount) parts.push(`unknown=${summary.unknownCount}`);
+  if (summary.worstLatencyMs != null) parts.push(`worstLatency=${summary.worstLatencyMs}ms`);
+  if (summary.relayedCount > 0) {
+    parts.push("RELAYED — traffic is going through a relay, expect roughly double the direct round-trip");
+  }
+  return parts.join(" ");
+}
+
 const DOWNLOAD_URL = "https://pkgs.netbird.io/windows/x64";
 
 /**
@@ -414,7 +536,11 @@ async function writeAdapterFile(gameDir, adapterFile, adapterName) {
 
 module.exports = {
   DOWNLOAD_URL,
+  describeOverlayDetail,
   findCli,
+  overlayPeerDiagnostics,
+  parseOverlayPeers,
+  summarizeOverlayDetail,
   joinNetwork,
   leaveNetwork,
   overlayStatus,
