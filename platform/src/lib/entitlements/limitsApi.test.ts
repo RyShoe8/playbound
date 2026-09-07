@@ -36,9 +36,16 @@ describe("the route", () => {
     expect(ROUTE).toMatch(/firstZodErrorMessage/);
   });
 
-  it("refuses a party cap below two", () => {
-    // A party of one is not a party, and the join rules already refuse it.
-    expect(ROUTE).toMatch(/partyHardCap: z\.number\(\)\.int\(\)\.min\(2\)/);
+  it("refuses a free cap below two, or above the schema ceiling", () => {
+    /*
+     * A party of one is not a party. Above the ceiling the number would never
+     * apply, because Party validates members.length against it regardless.
+     */
+    expect(ROUTE).toMatch(/freePartyHardCap: z\.number\(\)\.int\(\)\.min\(2\)\.max\(PARTY_ABSOLUTE_MAX\)/);
+  });
+
+  it("the cap it exposes is the free one, not a cap on everyone", () => {
+    expect(ROUTE).not.toMatch(/partyHardCap:/);
   });
 
   it("refuses a negative pool", () => {
@@ -83,6 +90,13 @@ describe("the screen", () => {
      */
     expect(EDITOR).toMatch(/const oversubscribed =/);
     expect(EDITOR).toMatch(/Nobody will be removed/);
+  });
+
+  it("says the free cap binds free parties only", () => {
+    // Otherwise an admin reads it as a limit on subscribers too and sets it
+    // high to avoid capping paying customers, defeating the point.
+    expect(EDITOR).toMatch(/Binds hosts on no plan|without paying/i);
+    expect(EDITOR).toMatch(/limit of the party\s+schema rather than a setting/);
   });
 
   it("says what turning the pool off actually does", () => {

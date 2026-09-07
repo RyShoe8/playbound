@@ -4,6 +4,7 @@ import {
   PARTY_VISIBILITIES,
   PARTY_MEMBER_ROLES,
   PARTY_MAX_SIZE,
+  PARTY_ABSOLUTE_MAX,
 } from "@/lib/playTogether/types";
 
 /**
@@ -144,8 +145,8 @@ const PartySchema = new Schema(
       type: [PartyMemberSchema],
       default: [],
       validate: {
-        validator: (v: unknown[]) => v.length <= 20,
-        message: "Party cannot exceed 20 members",
+        validator: (v: unknown[]) => v.length <= PARTY_ABSOLUTE_MAX,
+        message: `Party cannot exceed ${PARTY_ABSOLUTE_MAX} members`,
       },
     },
 
@@ -199,7 +200,7 @@ const PartySchema = new Schema(
       type: Number,
       default: PARTY_MAX_SIZE,
       min: 2,
-      max: 20,
+      max: PARTY_ABSOLUTE_MAX,
     },
 
     /*

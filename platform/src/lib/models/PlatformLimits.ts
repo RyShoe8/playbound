@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
+import { PARTY_ABSOLUTE_MAX } from "@/lib/playTogether/types";
 
 /**
  * Platform-wide limits an admin can change without a deploy.
@@ -16,8 +17,15 @@ export interface IPlatformLimits extends Document {
   singletonKey: string;
   /** Concurrent party slots PlayBound funds for everyone, shared platform-wide. */
   freePartySlotPool: number;
-  /** No party exceeds this, however much plan and pool capacity exists. */
-  partyHardCap: number;
+  /**
+   * How large a party can get without paying.
+   *
+   * A business limit, not a safety rail: it binds parties whose host has no
+   * plan slots and nobody else. A subscriber is bound by what they bought plus
+   * whatever the pool has spare, and by PARTY_ABSOLUTE_MAX, which is a fact
+   * about the schema rather than a setting.
+   */
+  freePartyHardCap: number;
   /**
    * Slots a party gets when nothing else applies.
    *
@@ -37,10 +45,11 @@ const PlatformLimitsSchema = new Schema<IPlatformLimits>(
     singletonKey: { type: String, required: true, unique: true, default: "default" },
     freePartySlotPool: { type: Number, required: true, default: 200, min: 0 },
     /*
-     * 20 matches the clamp party creation already applies, so turning this on
-     * changes nothing about existing behaviour until an admin moves it.
+     * Defaults to the schema ceiling, so switching this on changes nothing for
+     * anyone until an admin lowers it — at which point it starts biting free
+     * parties only.
      */
-    partyHardCap: { type: Number, required: true, default: 20, min: 2 },
+    freePartyHardCap: { type: Number, required: true, default: PARTY_ABSOLUTE_MAX, min: 2 },
     freePartyBaseline: { type: Number, required: true, default: 0, min: 0 },
     poolEnabled: { type: Boolean, default: true },
   },

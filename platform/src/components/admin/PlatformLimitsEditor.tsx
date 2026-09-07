@@ -12,7 +12,7 @@ import { useState } from "react";
 
 type Limits = {
   freePartySlotPool: number;
-  partyHardCap: number;
+  freePartyHardCap: number;
   freePartyBaseline: number;
   poolEnabled: boolean;
 };
@@ -21,7 +21,8 @@ type Usage = {
   pool: number;
   inUse: number;
   available: number;
-  hardCap: number;
+  freeHardCap: number;
+  absoluteCap: number;
   enabled: boolean;
 };
 
@@ -78,7 +79,8 @@ export function PlatformLimitsEditor({
           <Stat label="Pool" value={usage.pool} />
           <Stat label="In use" value={usage.inUse} />
           <Stat label="Available" value={usage.available} />
-          <Stat label="Hard cap" value={usage.hardCap} />
+          <Stat label="Free cap" value={usage.freeHardCap} />
+          <Stat label="Ceiling" value={usage.absoluteCap} />
         </div>
         <div
           className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted"
@@ -123,16 +125,21 @@ export function PlatformLimitsEditor({
         ) : null}
 
         <Field
-          label="Party hard cap"
-          hint="No party exceeds this however much plan and pool capacity exists. A safety rail, not a business limit."
+          label="Free party cap"
+          hint="How large a party can get without paying. Binds hosts on no plan and nobody else — a subscriber is limited by the slots they bought plus whatever the pool has spare."
         >
           <input
             type="number"
             min={2}
-            value={limits.partyHardCap}
-            onChange={(e) => set("partyHardCap", Number(e.target.value))}
+            max={usage.absoluteCap}
+            value={limits.freePartyHardCap}
+            onChange={(e) => set("freePartyHardCap", Number(e.target.value))}
             className="w-40 rounded-lg border border-border bg-background px-3 py-2"
           />
+          <p className="mt-1 text-xs text-muted-foreground">
+            No party of any kind can exceed {usage.absoluteCap}, which is a limit of the party
+            schema rather than a setting — raising it is a code change.
+          </p>
         </Field>
 
         <Field
