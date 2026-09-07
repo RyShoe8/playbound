@@ -357,9 +357,22 @@ export function PartyView({
             <p className="text-sm text-muted-foreground flex items-center gap-2">
               <span className="capitalize">{party.status.replace("_", " ")}</span>
               <span>·</span>
+              {/*
+                The party's own maxSize is what the host asked for; the real
+                limit is the platform's — the max free party size, and how much
+                of the shared pool is left. Showing maxSize meant a party could
+                read "1 / 8" while the pool had nothing to give it.
+              */}
               <span className="flex items-center gap-1">
-                <Users className="size-3" /> {party.members.length} / {party.maxSize}
+                <Users className="size-3" />{" "}
+                {party.members.length} / {party.capacity?.cap ?? party.maxSize}
               </span>
+              {party.capacity ? (
+                <>
+                  <span>·</span>
+                  <span>{party.capacity.poolAvailable} free slots left</span>
+                </>
+              ) : null}
             </p>
             <PartyCapacityNote party={party} />
           </div>
@@ -907,20 +920,14 @@ function PartyCapacityNote({ party }: { party: PartyPayload }) {
   // Older payloads in a client store predate this field; say nothing.
   if (!cap) return null;
 
-  if (cap.seatsRemaining > 0) {
-    return (
-      <p className="text-xs text-muted-foreground">
-        {cap.seatsRemaining} {cap.seatsRemaining === 1 ? "seat" : "seats"} left
-        {cap.fromPool > 0 ? ` · ${cap.poolAvailable} free seats available right now` : ""}
-      </p>
-    );
-  }
+  // Room to grow, and the header line above already says by how much.
+  if (cap.seatsRemaining > 0) return null;
 
   if (cap.atHardCap) {
     return (
       <p className="text-xs text-muted-foreground">
         {cap.capIsFreeLimit
-          ? `Free parties cap at ${cap.cap} players.`
+          ? `Free parties cap at ${cap.cap} players — subscribe for a larger party.`
           : `Parties cap at ${cap.cap} players.`}
       </p>
     );
