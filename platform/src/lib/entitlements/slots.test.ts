@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   canSeatAnother,
@@ -248,5 +250,43 @@ describe("numbers that should not crash it", () => {
   it("never returns a negative seat count", () => {
     // A party over the cap (cap lowered under a live party) must read zero.
     expect(seatsRemaining(ctx({ memberCount: 30, freeHardCap: 20, absoluteCap: 20 }))).toBe(0);
+  });
+});
+
+describe("the schema ceiling is one number, in one place", () => {
+  /*
+   * Subscription packages sell more than the old 20, so the ceiling moved.
+   * The risk in moving it is that a copy stays behind: a validator, a clamp or
+   * a slot calculation still holding the old figure would reject or refuse
+   * seats a package had already sold.
+   */
+  const read = (...p: string[]) => readFileSync(path.join(process.cwd(), ...p), "utf8");
+
+  it("nothing enforcing party size hardcodes a number", () => {
+    const model = read("src", "lib", "models", "Party.ts");
+    expect(model).toMatch(/v\.length <= PARTY_ABSOLUTE_MAX/);
+    expect(model).toMatch(/max: PARTY_ABSOLUTE_MAX/);
+    expect(model).not.toMatch(/v\.length <= 20/);
+
+    const service = read("src", "lib", "playTogether", "party.ts");
+    expect(service).toMatch(/Math\.min\(Math\.max\(opts\.maxSize \|\| PARTY_MAX_SIZE, 2\), PARTY_ABSOLUTE_MAX\)/);
+  });
+
+  it("the free cap cannot be set above it", () => {
+    // A free cap over the ceiling would be a number that never applies.
+    const route = read("src", "app", "api", "admin", "platform-limits", "route.ts");
+    expect(route).toMatch(/freePartyHardCap: z\.number\(\)\.int\(\)\.min\(2\)\.max\(PARTY_ABSOLUTE_MAX\)/);
+  });
+
+  it("a package larger than the old ceiling now works", () => {
+    // 40 plan slots was unreachable at 20 and is the point of the change.
+    const c = ctx({ planSlots: 40, poolAvailable: 0, memberCount: 1, absoluteCap: 100 });
+    expect(partyCapacity(c)).toBe(40);
+  });
+
+  it("a package larger than the new ceiling is still bounded", () => {
+    // Selling 250 slots would promise seats that cannot be written.
+    const c = ctx({ planSlots: 250, poolAvailable: 50, memberCount: 1, absoluteCap: 100 });
+    expect(partyCapacity(c)).toBe(100);
   });
 });

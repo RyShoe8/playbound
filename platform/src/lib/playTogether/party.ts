@@ -25,6 +25,7 @@ import { requiredPlatformsFor } from "@/lib/playTogether/partyPlatforms";
 import { listEditionsForGame } from "@/lib/editions";
 import {
   PARTY_MAX_SIZE,
+  PARTY_ABSOLUTE_MAX,
   PARTY_IDLE_TIMEOUT_MS,
   type PartyStatus,
   type PartyVisibility,
@@ -956,7 +957,7 @@ export async function createParty(opts: {
       passwordSalt,
       passwordHash,
       voiceEnabled: wantVoice,
-      maxSize: Math.min(Math.max(opts.maxSize || PARTY_MAX_SIZE, 2), 20),
+      maxSize: Math.min(Math.max(opts.maxSize || PARTY_MAX_SIZE, 2), PARTY_ABSOLUTE_MAX),
       /*
        * Validated against the game rather than trusted: a mode the game does
        * not support would otherwise provision an overlay for a room that
