@@ -1611,6 +1611,35 @@ const server = http.createServer(async (req, res) => {
           reason: `PlayBound party voice ${partyId || ""}`,
         }));
 
+      /*
+       * Guarantee the party can actually talk.
+       *
+       * The channel inherits its permissions from the PlayBound Parties
+       * category, and nothing here ever set any — so if @everyone is denied
+       * Speak at guild or category level, every member lands in the channel
+       * muted. That is what was happening: people could Connect fine and
+       * arrived unable to say anything.
+       *
+       * Granting Speak on the channel itself overrides the inherited deny for
+       * this channel only, which is the narrowest place to put it. A party
+       * voice room where nobody may speak has no purpose, so this is the one
+       * permission worth asserting rather than inheriting.
+       *
+       * Applied after the reuse branch as well, so channels created before
+       * this are repaired rather than staying silently broken. Non-fatal: if
+       * the bot lacks Manage Roles the room is still usable by anyone the
+       * server does allow to speak, and a warning is better than no channel.
+       */
+      try {
+        await voice.permissionOverwrites.edit(
+          guild.roles.everyone,
+          { Speak: true },
+          { reason: "PlayBound party voice — members must be able to speak" }
+        );
+      } catch (err) {
+        console.warn("party voice speak overwrite", err?.message || err);
+      }
+
       const invite = await voice.createInvite({
         maxAge: 0,
         maxUses: 0,
