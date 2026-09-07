@@ -4,3 +4,8 @@ dist-build*/
 tools/vigem-host/nuget-tmp/
 tools/vigem-host/bin/
 *.user
+
+# Compiled ViGEm host. Built from tools/vigem-host by scripts/build-vigem-host.js
+# on every dist run, 60+ MB, and rebuilt from source that is tracked — so it is
+# an artifact, not a vendored binary like ViGEmBus_Setup.exe beside it.
+resources/vigem/PlayBound.VigemHost.exe
