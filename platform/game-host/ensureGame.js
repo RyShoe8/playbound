@@ -69,6 +69,20 @@ const ENSURE_SPECS = {
     binaryNames: ["zandronum-server", "odasrv", "odamex-server", "chocolate-server"],
     linkAs: "zandronum-server",
   },
+  /*
+   * TES3MP. Same pinned asset as install.sh — see the comment there for why the
+   * exact build matters. The generic path handles it as-is: one root directory
+   * in the tarball, which flattenSingleRoot strips, leaving the layout
+   * recipes.js resolves against. No linkAs, because the wrapper script the
+   * archive already ships under the name `tes3mp-server` is the one thing the
+   * recipe deliberately does not run.
+   */
+  morrowind: {
+    archiveUrl:
+      process.env.TES3MP_SERVER_URL ||
+      "https://github.com/TES3MP/TES3MP/releases/download/tes3mp-0.8.1/tes3mp-server-GNU%2BLinux-x86_64-release-0.8.1-68954091c5-6da3fdea59.tar.gz",
+    binaryNames: ["tes3mp-server.x86_64"],
+  },
   "hurry-curry": {
     archiveUrl:
       process.env.HURRY_CURRY_SERVER_URL ||

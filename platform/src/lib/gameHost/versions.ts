@@ -39,6 +39,24 @@ export const EXPECTED_SERVER_VERSIONS: Record<string, string> = {
   flightgear: "fgms daemon",
   openhv: "OpenRA engine (OpenHV.Server)",
   "re-volt-rvgl": "RVGL dedicated",
+  /*
+   * Pinned in install.sh to the 0.8.1 server tarball, which carries the same
+   * build hashes as the client archive — TES3MP rejects a mismatched protocol,
+   * so these two move together or not at all.
+   */
+  morrowind: "0.8.1",
+};
+
+/**
+ * Games whose hosted client is an edition, not the base game's install.
+ *
+ * clientVersionForHostableGame reads the catalog game's own launcher recipe,
+ * which for Morrowind is plain OpenMW 0.48 — a build that cannot join a TES3MP
+ * server at all. The Connect card was reporting it opposite a TES3MP server and
+ * calling the pair fine, because neither label was comparable to the other.
+ */
+const HOSTED_CLIENT_VERSIONS: Record<string, string> = {
+  morrowind: "0.8.1",
 };
 
 function installFor(slug: string): LauncherInstall | undefined {
@@ -87,6 +105,8 @@ export function hasComparableVersion(label: string | null | undefined): boolean 
 }
 
 export function clientVersionForHostableGame(slug: string): string {
+  const hosted = HOSTED_CLIENT_VERSIONS[slug];
+  if (hosted) return hosted;
   const install = installFor(slug);
   if (install?.versionLabel) return install.versionLabel;
   if (install?.url) {
