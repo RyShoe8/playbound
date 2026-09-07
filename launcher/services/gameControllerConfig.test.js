@@ -479,6 +479,13 @@ test("auto-configures YSoccer with libGDX JoystickConfig XML", () => {
    */
   assert(/xAxis:5/.test(ds), `DualSense must use the DirectInput left stick: ${ds}`);
   assert(/yAxis:4/.test(ds), `DualSense must use the DirectInput left stick: ${ds}`);
+  /*
+   * Cross confirms, Circle goes back — confirmed on a real DualSense.
+   * DirectInput enumerates Square 0, Cross 1, Circle 2, so the old 0/1 put
+   * confirm on Square: the pad worked, it just did not agree with the prompts.
+   */
+  assert(/button1:1/.test(ds), `DualSense confirm must be Cross: ${ds}`);
+  assert(/button2:2/.test(ds), `DualSense back must be Circle: ${ds}`);
 });
 
 test("repairs the old standardized DualSense axes that leave its stick dead", () => {
@@ -490,6 +497,7 @@ test("repairs the old standardized DualSense axes that leave its stick dead", ()
   assert(rewritten, "the stale DualSense profile must be rewritten");
   const ds = rewritten.match(/\{class:JoystickConfig,name:DualSense[^}]*\}/)[0];
   assert(/xAxis:5/.test(ds) && /yAxis:4/.test(ds), `still unusable: ${ds}`);
+  assert(/button1:1,button2:2/.test(ds), `still unusable: ${ds}`);
 });
 
 /* ── every catalogued controller game has an answer ────────────────────── */
@@ -587,7 +595,7 @@ test("YSoccer gives the detected DualSense name its DirectInput stick axes", () 
     rawId: "DualSense Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 0ce6)",
   });
   const raw = out.match(/\{class:JoystickConfig,name:DualSense Wireless Controller \(STANDARD GAMEPAD[^}]*\}/)[0];
-  assert.ok(/xAxis:5,yAxis:4/.test(raw), `wrong DirectInput axes: ${raw}`);
+  assert.ok(/xAxis:5,yAxis:4,button1:1,button2:2/.test(raw), `wrong DirectInput axes: ${raw}`);
 });
 
 test("rvgl configures Controller1 to Joystick 0 with gamepad buttons", () => {
@@ -681,6 +689,29 @@ test("privateer leaves a player's own binds and axes untouched", () => {
   assert(/<axis name="x" joystick="0" axis="0" inverse="false" \/>/.test(out), "dropped an axis bind");
   assert(/<var name="deadband" value="0.05"\/>/.test(out), "dropped a neighbouring var");
 });
+test("repairs a DualSense config whose axes are right but buttons are stale", () => {
+  /*
+   * The axis guard shipped before the buttons were known to be wrong, so a
+   * file could hold the correct 5/4 and still confirm on Square. A guard that
+   * only checked axes would call that configured and leave it — the same way
+   * the pre-5/4 guard left 4/3 in place across two releases. It checks the
+   * whole pair now, so the older half cannot hide behind the newer one.
+   */
+  const stale =
+    `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<properties>
+` +
+    `<entry key="joystickConfigs">[{class:JoystickConfig,name:DualSense Wireless Controller,xAxis:5,yAxis:4,button1:0,button2:1}]</entry>
+` +
+    `</properties>
+`;
+  const out = applyProfile("ysoccer", stale, dualsense);
+  assert(out, "correct axes with stale buttons must still be rewritten");
+  const ds = out.match(/\{class:JoystickConfig,name:DualSense[^}]*\}/)[0];
+  assert(/button1:1,button2:2/.test(ds), `buttons not repaired: ${ds}`);
+  assert(/xAxis:5,yAxis:4/.test(ds), `axes must survive the repair: ${ds}`);
+});
+
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

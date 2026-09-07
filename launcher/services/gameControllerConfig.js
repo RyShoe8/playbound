@@ -184,7 +184,9 @@ function ysoccerHasDualSenseStickAxes(text) {
   const dualSenseEntries = entries.filter((entry) =>
     /name:(?:DualSense|PS5 Controller)/i.test(entry)
   );
-  return dualSenseEntries.some((entry) => /xAxis:5,\s*yAxis:4(?:,|\})/.test(entry));
+  return dualSenseEntries.some((entry) =>
+    /xAxis:5,\s*yAxis:4,\s*button1:1,\s*button2:2(?:,|\})/.test(entry)
+  );
 }
 
 function iniKeyOf(line) {
@@ -813,9 +815,9 @@ const GAMES = {
         `{class:JoystickConfig,name:Xbox One Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
         `{class:JoystickConfig,name:XInput Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
         `{class:JoystickConfig,name:Xbox Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
-        `{class:JoystickConfig,name:DualSense Wireless Controller,xAxis:5,yAxis:4,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:DualSense Wireless Controller,xAxis:5,yAxis:4,button1:1,button2:2}`,
         `{class:JoystickConfig,name:Wireless Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
-        `{class:JoystickConfig,name:PS5 Controller,xAxis:5,yAxis:4,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:PS5 Controller,xAxis:5,yAxis:4,button1:1,button2:2}`,
         `{class:JoystickConfig,name:PS4 Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
         `{class:JoystickConfig,name:Wireless Gamepad,xAxis:0,yAxis:1,button1:0,button2:1}`,
         `{class:JoystickConfig,name:HID-compliant game controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
@@ -828,7 +830,13 @@ const GAMES = {
        * carries com.badlogic.gdx.controllers.desktop.OisControllers — so this
        * is DirectInput, not SDL as an earlier comment here claimed. Its axis
        * order is device-specific: DualSense uses 5/4 for the left stick while
-       * Xbox-compatible pads use the mappings below. Face buttons are 0 and 1.
+       * Xbox-compatible pads use the mappings below.
+     *
+     * Face buttons follow the same split. DirectInput enumerates a PlayStation
+     * pad Square 0, Cross 1, Circle 2, Triangle 3, so 0/1 put confirm on Square
+     * and back on Cross — playable, but not what the buttons say. 1/2 is Cross
+     * to confirm and Circle to go back. Xbox pads keep 0/1, where A and B
+     * already sit.
        *
        * The names matter more than the axes. GLGame.reloadInputDevices does:
        *
@@ -845,7 +853,9 @@ const GAMES = {
         if (!configs.some((c) => c.includes(`name:${name},`))) {
           const xAxis = isDualSense ? 5 : 0;
           const yAxis = isDualSense ? 4 : 1;
-          configs.unshift(`{class:JoystickConfig,name:${name},xAxis:${xAxis},yAxis:${yAxis},button1:0,button2:1}`);
+          const b1 = isDualSense ? 1 : 0;
+          const b2 = isDualSense ? 2 : 1;
+          configs.unshift(`{class:JoystickConfig,name:${name},xAxis:${xAxis},yAxis:${yAxis},button1:${b1},button2:${b2}}`);
         }
       }
 
