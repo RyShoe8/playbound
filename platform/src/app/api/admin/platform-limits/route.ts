@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
 import PlatformLimits from "@/lib/models/PlatformLimits";
-import { getPoolStatus } from "@/lib/entitlements/pool";
+import { getPoolStatus, invalidatePoolStatus } from "@/lib/entitlements/pool";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import { PARTY_STRUCTURAL_MAX } from "@/lib/playTogether/types";
 import { firstZodErrorMessage } from "@/lib/zodError";
@@ -73,6 +73,7 @@ export async function PATCH(req: Request) {
      * but it does mean no new joins until usage falls back under the line, and
      * an admin should not have to work that out from two separate screens.
      */
+    invalidatePoolStatus();
     const usage = await getPoolStatus();
     return NextResponse.json({ success: true, limits, usage });
   } catch (err) {

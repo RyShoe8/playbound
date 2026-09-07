@@ -78,7 +78,29 @@ export async function planSlotsForUser(_userId: string | null | undefined): Prom
  * subscriptions yet every host is on zero, so today this is simply the number
  * of people in parties — but the shape is already right for when it is not.
  */
+/*
+ * Recomputing is cheap but not free, and every party payload wants the figure —
+ * a client polling its party would otherwise run the aggregate on every tick.
+ * Two seconds is short enough that nobody sees a stale pool and long enough
+ * that one screen refresh costs one query rather than one per party.
+ */
+const POOL_TTL_MS = 2_000;
+let poolCache: { at: number; value: PoolStatus } | null = null;
+
 export async function getPoolStatus(): Promise<PoolStatus> {
+  const cached = poolCache;
+  if (cached && Date.now() - cached.at < POOL_TTL_MS) return cached.value;
+  const value = await computePoolStatus();
+  poolCache = { at: Date.now(), value };
+  return value;
+}
+
+/** Drop the memo after a write, so an admin sees their own change immediately. */
+export function invalidatePoolStatus() {
+  poolCache = null;
+}
+
+async function computePoolStatus(): Promise<PoolStatus> {
   const limits = await getPlatformLimits();
   // Zero is how free parties are turned off; no separate switch for it.
   const pool = limits.freePartySlotPool;

@@ -205,8 +205,34 @@ export type PartyMemberPayload = {
 };
 
 /** Serialised party for API responses. */
+/**
+ * What this party could grow to, right now.
+ *
+ * A live figure, not a setting: free seats are a platform-wide pool, so a
+ * party's headroom shrinks when other people play and returns when they stop.
+ * Sent with every payload so a screen that polls stays honest.
+ */
+export type PartyCapacity = {
+  /** Largest this party can currently be. */
+  capacity: number;
+  /** Seats it could still fill. */
+  seatsRemaining: number;
+  /** Of the capacity, how much the host's own plan covers. */
+  fromPlan: number;
+  /** The rest, drawn from the shared pool. */
+  fromPool: number;
+  /** Free seats left platform-wide, net of this party. */
+  poolAvailable: number;
+  /** True when the cap, not the pool, is what stops it growing. */
+  atHardCap: boolean;
+  cap: number;
+  /** True when that cap is the free limit — i.e. subscribing would lift it. */
+  capIsFreeLimit: boolean;
+};
+
 export type PartyPayload = {
   id: string;
+  capacity: PartyCapacity;
   leaderId: string;
   leaderUsername: string;
   name: string | null;

@@ -361,6 +361,7 @@ export function PartyView({
                 <Users className="size-3" /> {party.members.length} / {party.maxSize}
               </span>
             </p>
+            <PartyCapacityNote party={party} />
           </div>
 
           <div className="flex flex-wrap gap-3 md:justify-end">
@@ -889,5 +890,45 @@ export function PartyView({
         onClose={() => setDiscordPrompt({ open: false, inviteUrl: null })}
       />
     </div>
+  );
+}
+
+/**
+ * Why this party can or cannot grow.
+ *
+ * Free seats are a platform-wide pool, so "full" here does not always mean the
+ * same thing: the party may be at the free cap, or everyone else may simply be
+ * playing right now. Those are different problems for the person reading it —
+ * one is fixed by subscribing, the other by waiting — so they get different
+ * sentences rather than a shared "Party is full".
+ */
+function PartyCapacityNote({ party }: { party: PartyPayload }) {
+  const cap = party.capacity;
+  // Older payloads in a client store predate this field; say nothing.
+  if (!cap) return null;
+
+  if (cap.seatsRemaining > 0) {
+    return (
+      <p className="text-xs text-muted-foreground">
+        {cap.seatsRemaining} {cap.seatsRemaining === 1 ? "seat" : "seats"} left
+        {cap.fromPool > 0 ? ` · ${cap.poolAvailable} free seats available right now` : ""}
+      </p>
+    );
+  }
+
+  if (cap.atHardCap) {
+    return (
+      <p className="text-xs text-muted-foreground">
+        {cap.capIsFreeLimit
+          ? `Free parties cap at ${cap.cap} players.`
+          : `Parties cap at ${cap.cap} players.`}
+      </p>
+    );
+  }
+
+  return (
+    <p className="text-xs text-amber-600 dark:text-amber-500">
+      All free party seats are in use right now — someone leaving a party frees one up.
+    </p>
   );
 }
