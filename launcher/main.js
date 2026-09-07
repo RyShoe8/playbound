@@ -8340,6 +8340,23 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     }
   }
 
+  /*
+   * Hand SDL a mapping for pads its own build is too old to know.
+   *
+   * OpenClonk 8.1 ships the 2018 SDL2, which predates the DualSense: it logs
+   * "No Gamepad found" and never reaches the question of bindings, so there is
+   * no in-game setting or config file that helps. SDL reads
+   * SDL_GAMECONTROLLERCONFIG before the engine asks for a controller, which is
+   * the one place a mapping can still land.
+   *
+   * Merged rather than assigned — the .NET block above may already have put
+   * DOTNET_ROOT here, and a game can need both.
+   */
+  const sdlEnv = gameControllerConfig.sdlControllerEnv(slug);
+  if (sdlEnv) {
+    launchEnv = { ...(launchEnv || process.env), ...sdlEnv };
+  }
+
   // Repair modded editions before launching. Steam restores the original
   // executable on update or file verification, which silently strips the mod
   // loader; without this the player would just find the modded menus gone.

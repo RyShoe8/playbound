@@ -16,6 +16,7 @@ const {
   configPathFor,
   supportsControllerConfig,
   controllerSupportFor,
+  sdlControllerEnv,
 } = require("./gameControllerConfig");
 
 /** A directory that does not exist, so every candidate lookup misses. */
@@ -711,6 +712,25 @@ test("repairs a DualSense config whose axes are right but buttons are stale", ()
   assert(/button1:1,button2:2/.test(ds), `buttons not repaired: ${ds}`);
   assert(/xAxis:5,yAxis:4/.test(ds), `axes must survive the repair: ${ds}`);
 });
+test("OpenClonk gets an SDL mapping its own build is too old to have", () => {
+  /*
+   * Not a bindings problem. OpenClonk 8.1 is the 2018 build and logs
+   * "No Gamepad found" for a 2020 pad, so SDL never surfaces a controller at
+   * all — the mapping has to arrive through the environment before the engine
+   * asks. Narrow on purpose: handing this to a game whose SDL already knows
+   * the pad would override a correct built-in mapping with ours.
+   */
+  const env = sdlControllerEnv("openclonk");
+  assert(env && env.SDL_GAMECONTROLLERCONFIG, "openclonk must get a mapping");
+  const lines = env.SDL_GAMECONTROLLERCONFIG.split("\n");
+  assert.equal(lines.length, 2, "USB and Bluetooth DualSense GUIDs");
+  for (const line of lines) {
+    assert(/^[0-9a-f]{32},/i.test(line), `not an SDL mapping: ${line}`);
+  }
+  assert.equal(sdlControllerEnv("ysoccer"), null, "other games get nothing");
+  assert.equal(sdlControllerEnv(""), null, "no slug gets nothing");
+});
+
 
 
 console.log(`\n${passed} passed, ${failed} failed`);
