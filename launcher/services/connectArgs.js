@@ -92,7 +92,6 @@ const CLIENT_CONNECT_ARGS = {
    * to 5029, and --join takes host[:port] only when it differs.
    */
   wolfenstein: ["--join", "{host}"],
-  "wolfenstein-3d": ["--join", "{host}"],
   "beyond-all-reason": ["--connect={host}:{port}"],
   /*
    * Zero-K joins from its own lobby, not from a flag.
@@ -211,7 +210,6 @@ const CLIENT_CONNECT_ARGS = {
  */
 const ARBITER_LAUNCH_ARGS = {
   wolfenstein: ["--host", "{nodes}"],
-  "wolfenstein-3d": ["--host", "{nodes}"],
 };
 
 /**
@@ -230,7 +228,6 @@ function hasArbiterLaunch(slug) {
 const DEFAULT_GAME_PORTS = {
   /* ECWolf's own default; --join takes host[:port] and omits it when default. */
   wolfenstein: 5029,
-  "wolfenstein-3d": 5029,
   openarena: 27960,
   "wolfenstein-enemy-territory": 27960,
   xonotic: 26000,
