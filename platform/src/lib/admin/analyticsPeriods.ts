@@ -198,8 +198,19 @@ export async function periodTelemetryCounts(
  * hundreds of megabytes and multiple seconds of JSON.parse.
  */
 export async function periodDistinctUsers(
-  distinctFn?: (filter: Record<string, unknown>) => Promise<unknown[]>
+  distinctFn?: (filter: Record<string, unknown>) => Promise<unknown[]>,
+  /**
+   * Which identity to count, and what else must match.
+   *
+   * Defaults to userId so existing callers are unchanged. Launcher installs
+   * count anonymousId instead: a launcher only gets a userId once someone
+   * links a site account, and almost nobody does, so counting users measured
+   * account links rather than installs.
+   */
+  opts: { field?: string; match?: Record<string, unknown> } = {}
 ): Promise<PeriodCounts> {
+  const field = opts.field || "userId";
+  const extraMatch = opts.match || {};
   // Same cold-start race as periodDocumentCounts — needs a live connection.
   await dbConnect();
   const w = getPeriodWindows();
@@ -208,7 +219,8 @@ export async function periodDistinctUsers(
     const rows = (await TelemetryEvent.aggregate([
       {
         $match: {
-          userId: { $nin: [null, ""] },
+          [field]: { $nin: [null, ""] },
+          ...extraMatch,
           createdAt: { $gte: w.d60 },
         },
       },
@@ -219,7 +231,7 @@ export async function periodDistinctUsers(
        */
       {
         $group: {
-          _id: "$userId",
+          _id: "$" + field,
           inDay: { $max: { $cond: [{ $gte: ["$createdAt", w.today] }, 1, 0] } },
           inWeek: { $max: { $cond: [{ $gte: ["$createdAt", w.d7] }, 1, 0] } },
           inMonth: { $max: { $cond: [{ $gte: ["$createdAt", w.d30] }, 1, 0] } },
@@ -283,7 +295,8 @@ export async function periodDistinctUsers(
       const run = async (createdAt: Record<string, Date>) => {
         const ids = await distinctFn({
           createdAt,
-          userId: { $nin: [null, ""] },
+          [field]: { $nin: [null, ""] },
+          ...extraMatch,
         });
         return ids.length;
       };
