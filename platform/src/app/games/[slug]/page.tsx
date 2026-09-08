@@ -527,10 +527,19 @@ async function OverviewTab({
 
         {/* Editions sit high on the page: when a game has several, which one
             to install is the reader's first decision, ahead of the blurb.
-            Renders nothing for games with only the generated Official one. */}
-        <Suspense fallback={<EditionsSectionFallback game={game} editions={editions} />}>
-          <GameEditionsBlock game={game} editions={editions} />
-        </Suspense>
+            Renders nothing for games with only the generated Official one.
+
+            Skipped on a master copy that already listed editions above:
+            "What this copy unlocks" shows the same cards, so a second
+            "Available editions" block further down just repeats them —
+            Morrowind rendered OpenMW, TES3MP, Classic GOTY and Tamriel
+            Rebuilt twice on one page. Games with no master-copy block still
+            need this, and it is the only place their editions appear. */}
+        {unlocks && unlocks.editions.length > 0 ? null : (
+          <Suspense fallback={<EditionsSectionFallback game={game} editions={editions} />}>
+            <GameEditionsBlock game={game} editions={editions} />
+          </Suspense>
+        )}
 
         <section>
           <h2 className="text-lg font-bold">About {game.title}</h2>
