@@ -821,12 +821,46 @@ async function sortCategories(guild) {
   );
   if (categories.length < 2) return;
 
-  const parties = categories.filter((c) => c.name === "PlayBound Parties");
-  const rest = categories
-    .filter((c) => c.name !== "PlayBound Parties")
-    .sort((a, b) => a.name.localeCompare(b.name, "en"));
+  /*
+   * Four bands, then alphabetical inside each.
+   *
+   * Plain alphabetical put the hub and Event Rooms wherever their letters
+   * landed, in among the games. The game band deliberately mixes franchise
+   * categories with the "GAME CHANNELS — …" letter buckets: sorting them
+   * together is what the reader wants, since a bucket is just a group of
+   * games that had no franchise of their own.
+   *
+   * PlayBound Parties is matched before the PlayBound prefix so the hub rule
+   * cannot claim it and drag it to the top.
+   */
+  const rank = (name) => {
+    if (name === "PlayBound Parties") return 3;
+    if (/^playbound/i.test(name)) return 0;
+    if (name === EVENTS_CATEGORY_NAME || /^events?/i.test(name)) return 1;
+    return 2;
+  };
 
-  const ordered = [...rest, ...parties];
+  /*
+   * Sort a letter bucket by the letters it holds, not by its label.
+   *
+   * Every bucket is called "GAME CHANNELS — …", so sorting on the raw name
+   * files all of them under G — which puts the 0–C games after Freeciv and
+   * before Hedgewars, i.e. not alphabetical at all from the reader's side.
+   * Using the range start slots each bucket where its contents belong.
+   */
+  const sortKey = (name) => {
+    const range = /^GAME CHANNELS\s*[—-]\s*(.)/.exec(name);
+    return range ? range[1] : name;
+  };
+
+  const ordered = [...categories].sort((a, b) => {
+    const byRank = rank(a.name) - rank(b.name);
+    if (byRank !== 0) return byRank;
+    const byKey = sortKey(a.name).localeCompare(sortKey(b.name), "en");
+    // Same key means a bucket and a game that starts with that letter, or a
+    // spill bucket beside its parent — fall back to the full name.
+    return byKey !== 0 ? byKey : a.name.localeCompare(b.name, "en");
+  });
   const updates = [];
   ordered.forEach((cat, index) => {
     if (cat.position !== index) updates.push({ channel: cat.id, position: index });
