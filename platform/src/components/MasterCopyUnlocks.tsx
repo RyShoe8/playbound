@@ -71,8 +71,15 @@ export function MasterCopyUnlocks({
            * silently vanished for exactly the master copies that had no other
            * unlocked game alongside them.
            */}
+          {/*
+           * Editions go two up, like the mods grid below and "Available
+           * editions" above. This was a bare `grid` with no column count, so
+           * however many editions a master copy unlocked came down a single
+           * column inside a 42rem cap — a narrow ribbon of cards with the
+           * rest of the row empty beside it.
+           */}
           {unlocks.editions.length > 0 ? (
-            <div className="grid max-w-2xl gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               {unlocks.editions.map(({ game: parent, edition }) => (
                 <EditionCard key={`${parent.slug}:${edition.id}`} game={parent} edition={edition} />
               ))}
