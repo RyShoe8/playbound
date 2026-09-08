@@ -1500,14 +1500,22 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       ],
     },
     selfHost: {
-      // GoldSrc default. The package also ships hlds.exe, so a PlayBound
-      // dedicated server is possible later; nothing hosts it today.
+      /*
+       * GoldSrc default, and peer-hosted for good: a PlayBound dedicated
+       * server is not merely unbuilt, it is not possible with this game.
+       *
+       * hlds.exe ships in the package and suggests otherwise, but liblist.gam
+       * names the server library as gamedll "cl_dlls/hl.dll" — a Windows DLL.
+       * Linux HLDS loads dlls/<name>_i386.so, and the package contains no .so
+       * of any kind, because Cry of Fear never shipped a Linux server build.
+       * Hosting it on the VPS would mean running hlds.exe under Wine.
+       */
       port: 27015,
       protocol: "udp",
       verified: false,
     },
     notes:
-      "Four-player co-op campaign on a GoldSrc listen server. The Steam emulator pins the command line, so joins go through the in-game LAN browser on the shared segment rather than +connect.",
+      "Four-player co-op campaign on a GoldSrc listen server — the leader's PC is the room; no PlayBound dedicated server is possible (Windows-only gamedll). The Steam emulator pins the command line, so joins go through the in-game LAN browser on the shared segment rather than +connect.",
   },
 
   "call-of-duty-mobile": {
