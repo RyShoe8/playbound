@@ -1454,6 +1454,22 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       "No network transport: its two-player multiplayer is local co-op. PlayBound Connect uses couch mode and remote controllers.",
   },
 
+  hurrican: {
+    gameSlug: "hurrican",
+    title: "Hurrican",
+    tier: "tier1_improved",
+    adapterType: "official",
+    protocol: "official",
+    /*
+     * Same shape as metal-slug-remake, and for the same reason: the source
+     * tree has no networking code at all, so there is nothing for virtual-lan
+     * to carry — its two players share one screen. Connect earns its place
+     * through couch mode instead, injecting the remote player as pad two.
+     */
+    notes:
+      "No network transport: its two-player multiplayer is local co-op. PlayBound Connect uses couch mode and remote controllers.",
+  },
+
   "call-of-duty-mobile": {
     gameSlug: "call-of-duty-mobile",
     title: "Call of Duty: Mobile",
