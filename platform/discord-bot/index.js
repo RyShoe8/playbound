@@ -725,7 +725,7 @@ async function cleanupArchiveSection(guild) {
  * Without this they linger in a franchise category forever, because their
  * names ("rvgl-online") match none of the installer/client patterns below.
  */
-async function cleanupSingleChannelEditionChannels(guild) {
+async function flattenSingleChannelGames(guild) {
   const slugs = [...SINGLE_CHANNEL_GAMES];
   if (!slugs.length) return;
 
@@ -758,19 +758,27 @@ async function cleanupSingleChannelEditionChannels(guild) {
 
     const keepId = game.communityLinks?.playboundDiscord?.channelId || null;
     const keepName = discordChannelName(game.slug);
+    const children = [...channels.values()].filter(
+      (c) => c && c.parentId === cat.id && c.type === ChannelType.GuildText
+    );
 
-    for (const channel of channels.values()) {
-      if (!channel || channel.parentId !== cat.id) continue;
-      if (channel.type !== ChannelType.GuildText) continue;
-      if (channel.id === keepId || channel.name === keepName) continue;
+    /* Prefer the stored channel, then one already named after the game. */
+    const keep =
+      children.find((c) => c.id === keepId) ||
+      children.find((c) => c.name === keepName) ||
+      children[0] ||
+      null;
+
+    for (const channel of children) {
+      if (keep && channel.id === keep.id) continue;
 
       console.log(
-        `[cleanup] Deleting #${channel.name} from "${cat.name}" — ${game.slug} is single-channel`
+        `[flatten] Deleting #${channel.name} from "${cat.name}" — ${game.slug} is single-channel`
       );
       await channel
         .delete("PlayBound cleanup: game is single-channel, editions share one room")
         .catch((err) => {
-          console.warn(`[cleanup] Failed to delete #${channel.name}:`, err?.message || err);
+          console.warn(`[flatten] Failed to delete #${channel.name}:`, err?.message || err);
         });
       await editions
         .updateOne(
@@ -778,6 +786,46 @@ async function cleanupSingleChannelEditionChannels(guild) {
           { $unset: { playboundDiscord: "" } }
         )
         .catch(() => {});
+      await sleep(PROVISION_DELAY_MS);
+    }
+
+    if (!keep) continue;
+
+    /*
+     * Move the survivor out ourselves rather than leaving it to provisioning.
+     *
+     * provisionMissing only visits games gameNeedsProvision() flags, and that
+     * returns false as soon as a channel id is stored — which it is for these
+     * games. So provisionFlatChannel never ran for them, the channel stayed
+     * put, and the category it kept alive was re-used on every pass.
+     */
+    const bucket = await ensureCategory(guild, categoryNameForSlug(game.slug));
+    if (keep.name !== keepName) {
+      await keep.setName(keepName).catch(() => {});
+    }
+    if (keep.parentId !== bucket.id) {
+      console.log(`[flatten] Moving #${keepName} to "${bucket.name}"`);
+      await keep.setParent(bucket.id, { lockPermissions: false }).catch((err) => {
+        console.warn(`[flatten] Failed to move #${keepName}:`, err?.message || err);
+      });
+      await sleep(PROVISION_DELAY_MS);
+    }
+
+    if (keepId !== keep.id) {
+      await games
+        .updateOne(
+          { slug: game.slug },
+          { $set: { "communityLinks.playboundDiscord.channelId": keep.id } }
+        )
+        .catch(() => {});
+    }
+
+    const remaining = (await guild.channels.fetch()).filter((c) => c && c.parentId === cat.id);
+    if (remaining.size === 0) {
+      console.log(`[flatten] Deleting empty category "${cat.name}"`);
+      await cat.delete("PlayBound cleanup: single-channel game no longer needs a category").catch(
+        (err) => console.warn(`[flatten] Failed to delete "${cat.name}":`, err?.message || err)
+      );
       await sleep(PROVISION_DELAY_MS);
     }
   }
@@ -818,7 +866,7 @@ async function sortChannelsAlphabetically(guild) {
 
 async function cleanupRedundantChannels(guild) {
   await cleanupArchiveSection(guild);
-  await cleanupSingleChannelEditionChannels(guild);
+  await flattenSingleChannelGames(guild);
 
   const serverGeneral = await findServerGeneral(guild);
   const channels = await guild.channels.fetch();
