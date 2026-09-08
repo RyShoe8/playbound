@@ -738,26 +738,58 @@ async function flattenSingleChannelGames(guild) {
   const channels = await guild.channels.fetch();
 
   for (const game of owned) {
-    /*
-     * Emptying the franchise category is what matters, not matching names.
-     *
-     * The first version of this looked for channels named after each
-     * edition's current slug. It found nothing: these channels were created
-     * by an older bot that named them differently, so the names in the guild
-     * and the slugs in Mongo had already drifted apart. Whatever a channel is
-     * called, if it sits in this game's franchise category and is not the
-     * game's own channel, a single-channel game should not have it.
-     */
-    const cat = channels.find(
-      (c) =>
-        c &&
-        c.type === ChannelType.GuildCategory &&
-        c.name === franchiseCategoryName(game.title)
-    );
-    if (!cat) continue;
-
     const keepId = game.communityLinks?.playboundDiscord?.channelId || null;
     const keepName = discordChannelName(game.slug);
+
+    /*
+     * Locate the category through the game's own channel, not by name.
+     *
+     * Two earlier passes keyed on a name and both matched nothing: first each
+     * edition's slug, then franchiseCategoryName(game.title). The guild has
+     * drifted from Mongo — these categories and channels were created by an
+     * older bot and renamed since — so any exact name is a guess. What is
+     * reliable is where the game's channel actually sits: if its parent is
+     * not one of the shared buckets, that parent is the category to empty,
+     * whatever it happens to be called. The name match stays as a fallback
+     * for a category whose channels have all been renamed out of reach.
+     */
+    const keepChannel =
+      (keepId ? channels.get(keepId) : null) ||
+      channels.find((c) => c && c.type === ChannelType.GuildText && c.name === keepName) ||
+      null;
+
+    let cat = null;
+    if (keepChannel?.parentId) {
+      const parent = channels.get(keepChannel.parentId);
+      if (
+        parent &&
+        parent.type === ChannelType.GuildCategory &&
+        !isSharedCategoryName(parent.name)
+      ) {
+        cat = parent;
+      }
+    }
+    if (!cat) {
+      cat =
+        channels.find(
+          (c) =>
+            c &&
+            c.type === ChannelType.GuildCategory &&
+            c.name === franchiseCategoryName(game.title)
+        ) || null;
+    }
+
+    if (!cat) {
+      const parentName = keepChannel?.parentId
+        ? channels.get(keepChannel.parentId)?.name
+        : "none";
+      console.log(
+        `[flatten] ${game.slug}: already flat ` +
+          `(channel=${keepChannel ? `#${keepChannel.name}` : "none"}, parent="${parentName}")`
+      );
+      continue;
+    }
+
     const children = [...channels.values()].filter(
       (c) => c && c.parentId === cat.id && c.type === ChannelType.GuildText
     );
