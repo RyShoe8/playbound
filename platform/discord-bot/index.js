@@ -1352,15 +1352,37 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === "POST" && req.url === "/provision-all") {
     if (!requireSecret(req, res)) return;
-    try {
-      const result = await provisionMissing();
+    /*
+     * Answer immediately and sweep in the background.
+     *
+     * This used to await provisionMissing() before responding, and the caller
+     * aborts at 12s — but a full sweep rate-limits itself with 1.5s between
+     * destructive calls and walks every published game, so it takes minutes.
+     * The work completed; the admin just always saw "This operation was
+     * aborted" and had no idea whether anything had happened.
+     *
+     * backfillRunning already makes concurrent sweeps a no-op, and it is
+     * reset in a finally, so a failed run cannot wedge the endpoint.
+     */
+    if (backfillRunning) {
       res.writeHead(200, { "content-type": "application/json" });
-      res.end(JSON.stringify({ success: true, ...result }));
-    } catch (err) {
-      console.error(err);
-      res.writeHead(500);
-      res.end(String(err?.message || err));
+      res.end(JSON.stringify({ success: true, started: false, note: "already running" }));
+      return;
     }
+
+    provisionMissing()
+      .then((result) => {
+        console.log(
+          `[provision-all] finished: provisioned=${result.provisioned.length} ` +
+            `linked=${result.skipped.length} failed=${result.failed.length}`
+        );
+      })
+      .catch((err) => {
+        console.error("[provision-all] sweep failed:", err?.message || err);
+      });
+
+    res.writeHead(202, { "content-type": "application/json" });
+    res.end(JSON.stringify({ success: true, started: true }));
     return;
   }
 
