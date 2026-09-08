@@ -919,10 +919,6 @@ const NO_CONFIG_NEEDED = {
     kind: "native",
     note: "The Godot project ships explicit joypad buttons and axes for movement, fire, upgrades, start and select.",
   },
-  "gradius-remake": {
-    kind: "native",
-    note: "The Godot project ships explicit joypad buttons and axes for movement, fire, upgrades, start and select.",
-  },
   hurrican: {
     kind: "native",
     /*
