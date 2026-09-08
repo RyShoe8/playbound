@@ -640,7 +640,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     ],
     note: "Downloads the official Privateer Gemini Gold setup for your operating system — finish the installer, then Play.",
   },
-  "ur-quan-masters": {
+  "the-ur-quan-masters": {
     enabled: true,
     // Upstream never published a 0.8.0 zip — the 0.8 directory ships a win32
     // *installer*, so both the filename and the kind were wrong and the

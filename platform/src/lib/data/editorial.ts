@@ -142,7 +142,7 @@ export const maintenanceChecks: Record<string, MaintenanceCheck> = {
     checkedAt: "2026-08-14",
     note: "Freelancer community patches, FLUF, and server master lists are maintained at The Starport and Codeberg.",
   },
-  "ur-quan-masters": {
+  "the-ur-quan-masters": {
     kind: "manual",
     url: "https://urquanmasters.com",
     checkedAt: "2026-08-14",
@@ -1548,7 +1548,7 @@ export const editorial: Record<string, GameEditorial> = {
     ],
   },
 
-  "ur-quan-masters": {
+  "the-ur-quan-masters": {
     qualityBar: clearsAll(
       "The Ur-Quan Masters clears the PlayBound Bar: 100% free under GPL with full original assets released by the creators, an epic 40+ hour space opera campaign with full 3DO voice acting and music, Super Melee combat, and active cross-platform maintenance."
     ),
