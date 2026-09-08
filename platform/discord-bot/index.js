@@ -729,40 +729,57 @@ async function cleanupSingleChannelEditionChannels(guild) {
   const slugs = [...SINGLE_CHANNEL_GAMES];
   if (!slugs.length) return;
 
-  const owned = await editions
-    .find({ gameSlug: { $in: slugs } })
-    .project({ slug: 1, gameSlug: 1 })
+  const owned = await games
+    .find({ slug: { $in: slugs } })
+    .project({ slug: 1, title: 1, communityLinks: 1 })
     .toArray();
   if (!owned.length) return;
 
-  // The game's own channel is never an edition channel, whatever it is named.
-  const gameChannelNames = new Set(slugs.map((s) => discordChannelName(s)));
-  const byName = new Map();
-  for (const ed of owned) {
-    const name = discordChannelName(ed.slug);
-    if (gameChannelNames.has(name)) continue;
-    byName.set(name, ed);
-  }
-  if (!byName.size) return;
-
   const channels = await guild.channels.fetch();
-  for (const channel of channels.values()) {
-    if (!channel || channel.type !== ChannelType.GuildText) continue;
-    const edition = byName.get(channel.name);
-    if (!edition) continue;
 
-    console.log(
-      `[cleanup] Deleting edition channel #${channel.name} — ${edition.gameSlug} is single-channel`
+  for (const game of owned) {
+    /*
+     * Emptying the franchise category is what matters, not matching names.
+     *
+     * The first version of this looked for channels named after each
+     * edition's current slug. It found nothing: these channels were created
+     * by an older bot that named them differently, so the names in the guild
+     * and the slugs in Mongo had already drifted apart. Whatever a channel is
+     * called, if it sits in this game's franchise category and is not the
+     * game's own channel, a single-channel game should not have it.
+     */
+    const cat = channels.find(
+      (c) =>
+        c &&
+        c.type === ChannelType.GuildCategory &&
+        c.name === franchiseCategoryName(game.title)
     );
-    await channel
-      .delete("PlayBound cleanup: game is single-channel, editions share one room")
-      .catch((err) => {
-        console.warn(`[cleanup] Failed to delete #${channel.name}:`, err?.message || err);
-      });
-    await editions
-      .updateOne({ _id: edition._id }, { $unset: { playboundDiscord: "" } })
-      .catch(() => {});
-    await sleep(PROVISION_DELAY_MS);
+    if (!cat) continue;
+
+    const keepId = game.communityLinks?.playboundDiscord?.channelId || null;
+    const keepName = discordChannelName(game.slug);
+
+    for (const channel of channels.values()) {
+      if (!channel || channel.parentId !== cat.id) continue;
+      if (channel.type !== ChannelType.GuildText) continue;
+      if (channel.id === keepId || channel.name === keepName) continue;
+
+      console.log(
+        `[cleanup] Deleting #${channel.name} from "${cat.name}" — ${game.slug} is single-channel`
+      );
+      await channel
+        .delete("PlayBound cleanup: game is single-channel, editions share one room")
+        .catch((err) => {
+          console.warn(`[cleanup] Failed to delete #${channel.name}:`, err?.message || err);
+        });
+      await editions
+        .updateOne(
+          { gameSlug: game.slug, "playboundDiscord.channelId": channel.id },
+          { $unset: { playboundDiscord: "" } }
+        )
+        .catch(() => {});
+      await sleep(PROVISION_DELAY_MS);
+    }
   }
 }
 
@@ -864,7 +881,6 @@ async function cleanupRedundantChannels(guild) {
   }
 
   await ensurePartiesCategoryAtBottom(guild);
-  await sortChannelsAlphabetically(guild);
 }
 
 /**
@@ -942,6 +958,15 @@ async function provisionMissing() {
       }
       await sleep(PROVISION_DELAY_MS);
     }
+    /*
+     * Sort last, once every channel is where it is going to stay.
+     *
+     * This used to run at the end of cleanup, which is before provisioning
+     * re-parents anything — so a channel adopted into a letter bucket landed
+     * wherever Discord put it and the guild looked unsorted despite the pass
+     * having "run".
+     */
+    await sortChannelsAlphabetically(guild);
   } finally {
     backfillRunning = false;
   }
