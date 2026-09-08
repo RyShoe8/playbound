@@ -833,10 +833,29 @@ async function sortCategories(guild) {
    * PlayBound Parties is matched before the PlayBound prefix so the hub rule
    * cannot claim it and drag it to the top.
    */
+  const norm = (name) => String(name || "").trim().toLowerCase();
+  /*
+   * Pinned by exact name, not by prefix.
+   *
+   * This was /^playbound\b/i, except the \b was written as a literal
+   * backspace (0x08) rather than a word boundary, so the test could never
+   * match anything and the hub category sorted as though it were a game —
+   * which is exactly what kept dragging it out of first place.
+   *
+   * Exact names avoid the whole class of problem: "Playbound" and
+   * "PlayBound Parties" share a first word, so a prefix rule only keeps
+   * them apart while the tests stay in this order. Comparing trimmed
+   * lowercase names also means casing or a stray space cannot defeat the
+   * pin.
+   */
+  const PINNED_TOP = ["playbound"];
+  const PINNED_BOTTOM = ["playbound parties"];
+
   const rank = (name) => {
-    if (name === "PlayBound Parties") return 3;
-    if (/^playbound/i.test(name)) return 0;
-    if (name === EVENTS_CATEGORY_NAME || /^events?/i.test(name)) return 1;
+    const n = norm(name);
+    if (PINNED_BOTTOM.includes(n)) return 3;
+    if (PINNED_TOP.includes(n)) return 0;
+    if (n === norm(EVENTS_CATEGORY_NAME) || n.startsWith("event")) return 1;
     return 2;
   };
 
