@@ -91,7 +91,7 @@ contextBridge.exposeInMainWorld("playbound", {
   getAccount: () => ipcRenderer.invoke("get-account"),
   setLauncherToken: (token) => ipcRenderer.invoke("set-launcher-token", token),
   clearLauncherToken: () => ipcRenderer.invoke("clear-launcher-token"),
-  signIn: () => ipcRenderer.invoke("sign-in"),
+  signIn: (intent) => ipcRenderer.invoke("sign-in", intent),
   syncLibraryNow: (opts) => ipcRenderer.invoke("sync-library-now", opts || {}),
   reportBug: (payload) => ipcRenderer.invoke("report-bug", payload || {}),
 

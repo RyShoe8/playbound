@@ -317,6 +317,13 @@ function renderLfgPicker() {
 }
 
 
+/** Signed-out pitch. Mirrors ANON_FRIENDS_BENEFITS in platform FriendsView.tsx. */
+const ANON_FRIENDS_BENEFITS = [
+  { title: "Start a party", body: "Group up, then launch the same game together in one click." },
+  { title: "Host online servers", body: "Spin up a server for your party — no port forwarding, no setup." },
+  { title: "See who's playing", body: "Add friends, watch what they're in, and jump straight into it." },
+];
+
 async function renderFriendsView() {
   const container = views.friends;
   
@@ -328,11 +335,31 @@ async function renderFriendsView() {
           <p class="view-sub" style="margin: 4px 0 0 0">See who's playing and manage friend requests.</p>
         </div>
       </div>
-      <div style="text-align: center; padding: 40px 0; border: 1px dashed var(--border); border-radius: 8px; margin-top: 20px;">
-        <p class="view-sub">Sign in to view and manage your friends.</p>
-        <button class="btn-primary" style="margin-top: 12px" id="btn-friends-login">Sign In</button>
+      <div style="text-align: center; padding: 32px 20px; border: 1px solid var(--border); border-radius: 12px; margin-top: 20px;">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 800;">Play together on PlayBound</h2>
+        <p class="view-sub" style="margin: 6px auto 0; max-width: 420px;">
+          A free account unlocks the social side of the launcher. Games stay free either way.
+        </p>
+        <div style="display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); max-width: 560px; margin: 20px auto 0; text-align: left;">
+          ${ANON_FRIENDS_BENEFITS.map(
+            (b) => `
+            <div style="border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: var(--bg-secondary, transparent);">
+              <p style="margin: 0; font-size: 13px; font-weight: 700;">${b.title}</p>
+              <p class="view-sub" style="margin: 4px 0 0 0; font-size: 12px;">${b.body}</p>
+            </div>`
+          ).join("")}
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+          <button class="btn-primary" id="btn-friends-create-party">Create a party</button>
+          <button class="btn-secondary" id="btn-friends-login">Sign in</button>
+        </div>
+        <p class="view-sub" style="margin: 12px 0 0 0; font-size: 12px;">Free forever. No card required.</p>
       </div>
     `;
+    // Create a party opens signup; Sign in opens the handoff page directly.
+    document.getElementById("btn-friends-create-party")?.addEventListener("click", () => {
+      void window.playbound.signIn?.("sign-up");
+    });
     document.getElementById("btn-friends-login")?.addEventListener("click", () => {
       void window.playbound.signIn?.();
     });

@@ -10645,8 +10645,26 @@ ipcMain.handle("clear-launcher-token", async () => {
   notifyAccount({ connected: false, canUseAdminChannel: false });
   return { connected: false, canUseAdminChannel: false };
 });
-ipcMain.handle("sign-in", () => {
-  openAuthWindow();
+/*
+ * Where each account CTA lands, keyed by intent rather than URL.
+ *
+ * The renderer asks for an intent and main builds the address, so a
+ * compromised renderer cannot aim this BrowserWindow — which has access to
+ * the session cookie the handoff reads — at an arbitrary origin.
+ *
+ * "sign-up" exists because the friends screen pitches parties to people who
+ * have no account: sending them to the sign-in page was the wrong door. It
+ * carries the launcher through to the handoff so the app still links up once
+ * the account exists.
+ */
+const AUTH_INTENT_PATHS = {
+  "sign-in": "/launcher/auth?from=app",
+  "sign-up": "/signup?from=party&launcher=1",
+};
+
+ipcMain.handle("sign-in", (_event, intent) => {
+  const path = AUTH_INTENT_PATHS[intent] || AUTH_INTENT_PATHS["sign-in"];
+  openAuthWindow(`${getApiBase()}${path}`);
   return true;
 });
 ipcMain.handle("sync-library-now", async (_event, opts) =>
