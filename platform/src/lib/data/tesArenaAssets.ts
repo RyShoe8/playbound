@@ -19,7 +19,6 @@ export const ARENA_GAMEFILES_FILE = "Arena-1.06-GameFiles.zip";
 export const ARENA_GAMEFILES_MIRROR_PATH = `launcher-packages/games/${TES_ARENA_SLUG}/${ARENA_GAMEFILES_FILE}`;
 export const ARENA_SETUP_MIRROR_PATH = `launcher-packages/games/${TES_ARENA_SLUG}/original/${ARENA_FREEWARE_SETUP_FILE}`;
 
-const BLOB_BASE = "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com";
 const MIRROR_BASE = "https://mirror.playbound.club";
 
 /*
@@ -31,8 +30,8 @@ const MIRROR_BASE = "https://mirror.playbound.club";
  * launcher-packages/ path it never managed to populate.
  */
 export const ARENA_GAMEFILES_URL = `${MIRROR_BASE}/games/${TES_ARENA_SLUG}/1.06/${ARENA_GAMEFILES_FILE}`;
-/** Verbatim Bethesda zip, staged next to the extracted tree. */
-export const ARENA_SETUP_ARCHIVE_URL = `${BLOB_BASE}/${ARENA_SETUP_MIRROR_PATH}`;
+/** Verbatim Bethesda zip, kept on the VPS as the preservation copy. */
+export const ARENA_SETUP_ARCHIVE_URL = `${MIRROR_BASE}/games/${TES_ARENA_SLUG}/original/${ARENA_FREEWARE_SETUP_FILE}`;
 /** Intended VPS paths; archive-tes-arena-assets.ts copies Blob → game-host. */
 export const ARENA_GAMEFILES_VPS_URL = `${MIRROR_BASE}/${ARENA_GAMEFILES_MIRROR_PATH}`;
 export const ARENA_SETUP_MIRROR_URL = `${MIRROR_BASE}/${ARENA_SETUP_MIRROR_PATH}`;

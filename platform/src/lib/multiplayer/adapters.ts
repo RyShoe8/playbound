@@ -1470,6 +1470,46 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       "No network transport: its two-player multiplayer is local co-op. PlayBound Connect uses couch mode and remote controllers.",
   },
 
+  "cry-of-fear": {
+    gameSlug: "cry-of-fear",
+    title: "Cry of Fear",
+    tier: "tier1_improved",
+    /*
+     * virtual-lan rather than direct-ip, despite GoldSrc offering a perfectly
+     * good address to connect to.
+     *
+     * PlayBound's package launches through CryOfFear.exe, a renamed Goldberg
+     * ColdClientLoader whose ColdClientLoader.ini pins the whole command line
+     * ("ExeCommandLine=-game cryoffear -windowed"). Anything the launcher
+     * appends never reaches cof.exe, so a +connect join cannot be handed over
+     * the way keeperfx or openclonk take theirs. The overlay segment sidesteps
+     * that entirely: the party shares a subnet and the game's own co-op lobby
+     * finds the host, with no arguments to pass.
+     */
+    adapterType: "virtual-lan",
+    protocol: "udp",
+    client: {
+      inGameJoinPrompt: true,
+    },
+    virtualLan: {
+      requiresBroadcast: true,
+      inGameSteps: [
+        "Main menu → Co-op",
+        "Leader: Create a game and pick the co-op campaign",
+        "Everyone else: the server browser's LAN tab lists the leader's game",
+      ],
+    },
+    selfHost: {
+      // GoldSrc default. The package also ships hlds.exe, so a PlayBound
+      // dedicated server is possible later; nothing hosts it today.
+      port: 27015,
+      protocol: "udp",
+      verified: false,
+    },
+    notes:
+      "Four-player co-op campaign on a GoldSrc listen server. The Steam emulator pins the command line, so joins go through the in-game LAN browser on the shared segment rather than +connect.",
+  },
+
   "call-of-duty-mobile": {
     gameSlug: "call-of-duty-mobile",
     title: "Call of Duty: Mobile",

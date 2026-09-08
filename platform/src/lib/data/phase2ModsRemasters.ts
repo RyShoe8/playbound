@@ -219,7 +219,7 @@ const flightgearMods: ModSeed[] = [
      */
     kind: "direct-zip",
     direct:
-      "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/mods/flightgear-addon-blacklist/blacklist-master.zip",
+      "https://mirror.playbound.club/games/flightgear/addon-blacklist/blacklist-master.zip",
     size: 4,
     changes: "Hides blacklisted multiplayer callsigns and models from the session.",
     summary: "Lets you mute problem callsigns or models on busy multiplayer networks.",
