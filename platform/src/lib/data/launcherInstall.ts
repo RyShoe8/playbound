@@ -176,7 +176,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
      * theirs — nothing added, nothing repacked.
      */
     kind: "direct-zip",
-    url: "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher-packages/games/meteorite/meteorite-win.zip",
+    url: "https://mirror.playbound.club/games/meteorite/1.0.1/meteorite-win.zip",
     fileName: "meteorite-win.zip",
     /*
      * The mac and Linux builds, picked by resolveDownload from process.platform.
@@ -186,9 +186,9 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
      * was taken from.
      */
     urlMac:
-      "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher-packages/games/meteorite/meteorite-mac.zip",
+      "https://mirror.playbound.club/games/meteorite/1.0.1/meteorite-mac.zip",
     urlLinux:
-      "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher-packages/games/meteorite/meteorite-linux.zip",
+      "https://mirror.playbound.club/games/meteorite/1.0.1/meteorite-linux.zip",
     versionLabel: "1.0.1",
     checksumMd5: "13fc2856905a4a616d6b6669ff4e199c",
     exeHint: "Meteorite",
