@@ -13,7 +13,7 @@
  * party/event text-channel messages for PlayBound chat).
  *
  * Channel layout:
- * - Single-edition / no editions: #slug under GAME CHANNELS — A–M / N–Z
+ * - Single-edition / no editions: #slug under a GAME CHANNELS letter bucket
  * - Multi-edition games (2+ public active editions):
  *     Category named after the game title
  *       #general          ← game-level invite (stored on cataloggames)
@@ -65,9 +65,69 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Letter bucket for a game's channel.
+ *
+ * Six buckets rather than two because Discord caps a category at 50 channels,
+ * and N–Z had reached it: every move into it failed with
+ * CHANNEL_PARENT_MAX_CHANNELS, so games could not be placed at all and the
+ * failure looked like the layout logic misbehaving.
+ *
+ * The ranges are uneven on purpose — they are balanced against the catalog's
+ * actual first-letter distribution, not the alphabet. Across all 193 games
+ * the largest bucket is 44, and only about 107 are published, so there is
+ * room to roughly double before this needs splitting again.
+ *
+ * Digits sort below "a", so numeric slugs land in the first bucket.
+ */
 function categoryNameForSlug(slug) {
-  const ch = (slug[0] || "a").toLowerCase();
-  return ch >= "n" ? "GAME CHANNELS — N–Z" : "GAME CHANNELS — A–M";
+  const ch = (String(slug || "")[0] || "a").toLowerCase();
+  if (ch < "d") return "GAME CHANNELS — 0–C";
+  if (ch < "h") return "GAME CHANNELS — D–G";
+  if (ch < "n") return "GAME CHANNELS — H–M";
+  if (ch < "s") return "GAME CHANNELS — N–R";
+  if (ch < "u") return "GAME CHANNELS — S–T";
+  return "GAME CHANNELS — U–Z";
+}
+
+/** Discord's hard cap on channels in one category. */
+const CATEGORY_CHANNEL_LIMIT = 50;
+
+/**
+ * True when a category is the right home for this slug.
+ *
+ * Accepts the overflow spills too, otherwise a channel sitting in
+ * "… S–T (2)" reads as misplaced and both provisioning and the daily
+ * reconcile would move it back and forth forever.
+ */
+function isBucketFor(categoryName, slug) {
+  const base = categoryNameForSlug(slug);
+  const name = String(categoryName || "");
+  return name === base || name.startsWith(`${base} (`);
+}
+
+/**
+ * The bucket to put this game's channel in, spilling when one fills up.
+ *
+ * Rebalancing the ranges bought headroom but does not scale: the catalog
+ * keeps growing and any fixed set of ranges eventually hits the 50-channel
+ * cap again, which is what stranded Re-Volt — every move into a full N–Z
+ * failed and the game simply could not be placed.
+ *
+ * So overflow instead of re-ranging. "… S–T" fills, "… S–T (2)" is created
+ * and used, and so on. Nothing has to be re-tuned by hand as the catalog
+ * doubles, and existing channels never move just because a neighbour spilled.
+ */
+async function bucketCategoryFor(guild, slug) {
+  const base = categoryNameForSlug(slug);
+  for (let i = 1; i <= 20; i++) {
+    const name = i === 1 ? base : `${base} (${i})`;
+    const cat = await ensureCategory(guild, name);
+    const used = guild.channels.cache.filter((c) => c && c.parentId === cat.id).size;
+    if (used < CATEGORY_CHANNEL_LIMIT) return cat;
+  }
+  /* 20 full spills of one letter range is not overflow, it is a bug. */
+  throw new Error(`No room in any "${base}" category`);
 }
 
 /** Discord channel names: lowercase, a–z 0–9 hyphen, max 90. */
@@ -526,13 +586,13 @@ async function inviteFor(channel) {
 }
 
 /**
- * Flat layout: #slug under A–M / N–Z letter bucket (games with no custom editions).
+ * Flat layout: #slug under its letter bucket (games with no custom editions).
  */
 async function provisionFlatChannel(guild, game) {
   const slug = game.slug;
   const channelName = discordChannelName(slug);
   const existingId = game.communityLinks?.playboundDiscord?.channelId;
-  const cat = await ensureCategory(guild, categoryNameForSlug(slug));
+  const cat = await bucketCategoryFor(guild, slug);
   const topic = `${game.title} on PlayBound — ${SITE_URL}/games/${slug}`;
 
   const { channel, created } = await ensureTextChannel(guild, {
@@ -871,7 +931,7 @@ async function gameNeedsProvision(game, guild) {
   if (channel.name !== mainChannelName) return true;
 
   const parent = channel.parentId ? guild.channels.cache.get(channel.parentId) : null;
-  return parent?.name !== categoryNameForSlug(game.slug);
+  return !isBucketFor(parent?.name, game.slug);
 }
 
 async function provisionMissing() {
@@ -946,6 +1006,7 @@ async function expectedPlacement(game) {
   const franchise = publicEds.length >= 1;
   return {
     name: discordChannelName(game.slug),
+    franchise,
     category: franchise
       ? franchiseCategoryName(game.title)
       : categoryNameForSlug(game.slug),
@@ -1013,14 +1074,25 @@ async function reconcileChannels(opts = {}) {
         }
 
         const parent = channel.parentId ? guild.channels.cache.get(channel.parentId) : null;
-        if (!parent || parent.name !== want.category) {
+        /*
+         * A flat game is in the right place if it is in any spill of its
+         * bucket. Comparing against the base name alone would haul every
+         * channel out of "… (2)" each night, only for provisioning to spill
+         * it straight back.
+         */
+        const placed = want.franchise
+          ? parent?.name === want.category
+          : isBucketFor(parent?.name, game.slug);
+        if (!placed) {
           moved.push({
             slug: game.slug,
             from: parent?.name || "(none)",
             to: want.category,
           });
           if (!dryRun) {
-            const cat = await ensureCategory(guild, want.category);
+            const cat = want.franchise
+              ? await ensureCategory(guild, want.category)
+              : await bucketCategoryFor(guild, game.slug);
             await channel.setParent(cat.id, { lockPermissions: false });
             await sleep(PROVISION_DELAY_MS);
           }
