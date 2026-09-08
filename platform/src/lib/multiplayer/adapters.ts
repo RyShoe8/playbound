@@ -1444,6 +1444,23 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "Official Broadsword servers only. PlayBound provides party launch and presence.",
   },
 
+  "metal-slug-awakening": {
+    gameSlug: "metal-slug-awakening",
+    title: "Metal Slug: Awakening",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    /*
+     * Not to be confused with metal-slug-remake below, which is the local
+     * co-op fan project. This is HaoPlay's live-service title: matchmaking,
+     * accounts and world state all sit on their servers, so there is nothing
+     * for PlayBound to host or route. Party launch and presence is the whole
+     * contribution, same as the other mobile live-service entries.
+     */
+    notes:
+      "Official HaoPlay servers only; PlayBound provides party launch and presence. Ships on Windows, Android and iOS from the same account.",
+  },
+
   "metal-slug-remake": {
     gameSlug: "metal-slug-remake",
     title: "Metal Slug: Community Remake",
