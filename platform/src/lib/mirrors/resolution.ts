@@ -63,7 +63,11 @@ export async function resolveDownloadSources(
   // 1. Process Cloudflare R2 Hot Cache
   if (artifact.r2Status === "cached") {
     try {
-      const presignedUrl = await getR2PresignedDownloadUrl(artifact.relativePath, 3600);
+      const presignedUrl = await getR2PresignedDownloadUrl(
+        artifact.relativePath,
+        3600,
+        artifact.filename
+      );
       resolvedSources.push({
         sourceId: `r2-${artifact.artifactId}`,
         type: "r2",

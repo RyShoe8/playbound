@@ -55,7 +55,19 @@ export async function ensureArtifact(input: {
         : input.artifactType === "mod"
           ? `games/${input.gameSlug}/mods/${input.filename || artifactId}`
           : `games/${input.gameSlug}/${input.version || "unknown"}/${input.filename || artifactId}`
-      : `artifacts/${artifactId}`,
+      : /*
+         * Keep the real filename in the key.
+         *
+         * Every game branch above already ends in the filename; this one did
+         * not, so a launcher artifact was stored as
+         * "artifacts/playbound-launcher-windows-0.3.51" and the download
+         * redirect handed browsers a name with no .exe on it. Rows created
+         * before this keep their old path — ensureArtifact only sets it on
+         * insert — so nothing already mirrored moves.
+         */
+        input.filename
+        ? `artifacts/${artifactId}/${input.filename}`
+        : `artifacts/${artifactId}`,
     sizeBytes: input.sizeBytes || 0,
     sha256: input.sha256 || "",
     licenseStatus: "unknown",

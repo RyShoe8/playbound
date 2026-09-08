@@ -50,9 +50,20 @@ function getS3Client(): S3Client | null {
  * Generates a temporary presigned GET URL for a Cloudflare R2 object.
  * Default lifetime: 1 hour (3600 seconds).
  */
+/**
+ * Presigned GET for an R2 object.
+ *
+ * `filename` matters because the object key is not always the file's name.
+ * Artifacts with no gameSlug are stored as `artifacts/<artifactId>`, which for
+ * the launcher is "playbound-launcher-windows-0.3.51" — no extension. A browser
+ * following the redirect saves exactly that, and Windows reports a "51 File"
+ * rather than an installer. Signing a content-disposition into the URL names
+ * the download correctly whatever the key looks like.
+ */
 export async function getR2PresignedDownloadUrl(
   objectKey: string,
-  expiresInSeconds: number = 3600
+  expiresInSeconds: number = 3600,
+  filename?: string | null
 ): Promise<string> {
   const config = getR2ClientConfig();
   const client = getS3Client();
@@ -65,9 +76,16 @@ export async function getR2PresignedDownloadUrl(
     return `${base}/${cleanKey}?token=sim_${expiresAt}`;
   }
 
+  // Quotes and control characters would break the header it lands in.
+  const safeName = String(filename || "")
+    .replace(/["\\\r\n]/g, "")
+    .trim();
   const command = new GetObjectCommand({
     Bucket: config.bucket,
     Key: objectKey,
+    ...(safeName
+      ? { ResponseContentDisposition: `attachment; filename="${safeName}"` }
+      : {}),
   });
 
   return getSignedUrl(client, command, { expiresIn: expiresInSeconds });
