@@ -127,9 +127,10 @@ export async function uploadObjectToR2(
   }
 
   try {
+    const cleanKey = objectKey.replace(/^\/+/, "");
     const command = new PutObjectCommand({
       Bucket: config.bucket,
-      Key: objectKey,
+      Key: cleanKey,
       Body: body,
       ContentType: contentType,
       StorageClass: "STANDARD",

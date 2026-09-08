@@ -263,16 +263,64 @@ async function resolveItchDownloadUrl(pageUrl) {
  * to https directly hands back a real Node Readable with no adapter in the
  * way, so backpressure and the write stream work the way they're supposed to.
  */
+/**
+ * Resolves a SourceForge download or project URL to a direct CDN mirror URL.
+ * Bypasses Cloudflare bot challenges by requesting with use_mirror=autoselect
+ * and following to the final dl.sourceforge.net CDN mirror.
+ */
+async function resolveSourceForgeDownloadUrl(url) {
+  try {
+    let direct = String(url || "").trim();
+    const match = direct.match(/sourceforge\.net\/projects\/([^/]+)\/files\/(.+?)(?:\/download)?(?:\?.*)?$/i);
+    if (match) {
+      const [, project, filePath] = match;
+      direct = `https://downloads.sourceforge.net/project/${project}/${filePath}`;
+    }
+    const parsed = new URL(direct);
+    if (!parsed.searchParams.has("use_mirror")) {
+      parsed.searchParams.set("use_mirror", "autoselect");
+    }
+    const res = await fetch(parsed.toString(), {
+      headers: { "User-Agent": "curl/8.4.0" },
+      redirect: "follow",
+      signal: AbortSignal.timeout(15000),
+    });
+    if (res.ok && res.url && /dl\.sourceforge\.net/i.test(res.url)) {
+      return res.url;
+    }
+    return res.ok ? res.url : parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Streams a GET over node:https or node:http, following redirects manually.
+ *
+ * fetch()'s res.body is a WHATWG ReadableStream, and Readable.fromWeb() —
+ * the standard way to pipe it into a Node write stream — has a serious
+ * performance bug on Node 20: converting a large fetch body this way pegs a
+ * CPU core in pure userspace (confirmed with strace -c: ~0 syscall time
+ * while the process sits at 100%+ CPU) and collapses effective throughput to
+ * tens of KB/s regardless of real link speed. A 2GB archive that curl pulled
+ * at 20+ MB/s took over an hour and still timed out through fetch(). Talking
+ * to https directly hands back a real Node Readable with no adapter in the
+ * way, so backpressure and the write stream work the way they're supposed to.
+ */
 function httpsGetStream(targetUrl, { headers, signal, maxRedirects = 5 } = {}) {
   return new Promise((resolve, reject) => {
+    const isSourceForge = /sourceforge\.net/i.test(String(targetUrl));
     const defaultHeaders = {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "User-Agent": isSourceForge
+        ? "curl/8.4.0"
+        : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       Accept: "*/*",
       ...headers,
     };
     const attempt = (u, redirectsLeft) => {
-      const req = https.get(u, { headers: defaultHeaders, signal }, (res) => {
+      const parsed = typeof u === "string" ? new URL(u) : u;
+      const client = parsed.protocol === "http:" ? http : https;
+      const req = client.get(parsed, { headers: defaultHeaders, signal }, (res) => {
         const status = res.statusCode || 0;
         if (status >= 300 && status < 400 && res.headers.location) {
           res.resume();
@@ -297,6 +345,9 @@ async function archiveFromUrl({ url, relativePath, sha256, sizeBytes }, abortSig
   let effectiveUrl = String(url || "").trim();
   if (/itch\.io/i.test(effectiveUrl)) {
     const resolved = await resolveItchDownloadUrl(effectiveUrl);
+    if (resolved) effectiveUrl = resolved;
+  } else if (/sourceforge\.net/i.test(effectiveUrl)) {
+    const resolved = await resolveSourceForgeDownloadUrl(effectiveUrl);
     if (resolved) effectiveUrl = resolved;
   }
   let source;

@@ -47,10 +47,13 @@ describe("launcherDownloadUrlForOs", () => {
     expect(url.endsWith("PlayBound-Launcher-Setup.dmg")).toBe(true);
   });
 
-  it("returns Setup.exe alias for Windows", () => {
+  it("returns tiered download route for Windows", () => {
     const url = launcherDownloadUrlForOs("windows");
-    expect(url).toBe(DEFAULT_WINDOWS_LAUNCHER_DOWNLOAD_URL);
-    expect(url.endsWith("PlayBound-Launcher-Setup.exe")).toBe(true);
+    expect(url).toBe("/api/launcher/download");
+
+    const directUrl = launcherDownloadUrlForOs("windows", { direct: true });
+    expect(directUrl).toBe(DEFAULT_WINDOWS_LAUNCHER_DOWNLOAD_URL);
+    expect(directUrl.endsWith("PlayBound-Launcher-Setup.exe")).toBe(true);
   });
 
   it("wires UA → OS → installer for Linux handoff", () => {

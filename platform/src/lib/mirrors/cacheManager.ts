@@ -18,7 +18,12 @@ import {
   archiveArtifactOnHost,
   deleteArchivedArtifactOnHost,
 } from "@/lib/gameHost/client";
-import { checkR2ObjectExists, deleteObjectFromR2, getR2PresignedDownloadUrl } from "./r2Client";
+import {
+  checkR2ObjectExists,
+  deleteObjectFromR2,
+  getR2PresignedDownloadUrl,
+  uploadObjectToR2,
+} from "./r2Client";
 import { calculateArtifactCacheScore, evaluateSourceHealth } from "./scoring";
 
 /** Resolves an itch.io game page to its direct pre-signed CDN download URL. */
@@ -55,6 +60,38 @@ export async function resolveItchDownloadUrl(pageUrl: string, uploadIdHint?: str
     const json = (await postRes.json()) as { url?: string };
     return json.url || null;
   } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolves a SourceForge download or project URL to a direct CDN mirror URL.
+ * Bypasses Cloudflare bot challenges by requesting with use_mirror=autoselect
+ * and following to the final dl.sourceforge.net CDN mirror.
+ */
+export async function resolveSourceForgeDownloadUrl(pageOrDownloadUrl: string): Promise<string | null> {
+  try {
+    let direct = pageOrDownloadUrl.trim();
+    const match = direct.match(/sourceforge\.net\/projects\/([^/]+)\/files\/(.+?)(?:\/download)?(?:\?.*)?$/i);
+    if (match) {
+      const [, project, filePath] = match;
+      direct = `https://downloads.sourceforge.net/project/${project}/${filePath}`;
+    }
+    const parsed = new URL(direct);
+    if (!parsed.searchParams.has("use_mirror")) {
+      parsed.searchParams.set("use_mirror", "autoselect");
+    }
+    const res = await fetch(parsed.toString(), {
+      headers: { "User-Agent": "curl/8.4.0" },
+      redirect: "follow",
+      signal: AbortSignal.timeout(15000),
+    });
+    if (res.ok && res.url && /dl\.sourceforge\.net/i.test(res.url)) {
+      return res.url;
+    }
+    return res.ok ? res.url : parsed.toString();
+  } catch (err) {
+    console.warn("[resolveSourceForgeDownloadUrl] Failed resolving:", err);
     return null;
   }
 }
@@ -98,6 +135,10 @@ export async function catalogArchiveSourceUrl(
         const direct = await resolveItchDownloadUrl(url);
         if (direct) return direct;
       }
+      if (/sourceforge\.net/i.test(url)) {
+        const direct = await resolveSourceForgeDownloadUrl(url);
+        if (direct) return direct;
+      }
       return url;
     }
   }
@@ -121,6 +162,10 @@ export async function catalogArchiveSourceUrl(
 
   if (/itch\.io/i.test(url)) {
     const direct = await resolveItchDownloadUrl(url, recipe?.uploadId);
+    if (direct) return direct;
+  }
+  if (/sourceforge\.net/i.test(url)) {
+    const direct = await resolveSourceForgeDownloadUrl(url);
     if (direct) return direct;
   }
   return url;
@@ -359,6 +404,78 @@ export async function rebalanceR2Cache(): Promise<{
   };
 }
 
+function detectContentType(filename: string): string {
+  if (/\.exe$/i.test(filename)) return "application/vnd.microsoft.portable-executable";
+  if (/\.zip$/i.test(filename)) return "application/zip";
+  if (/\.dmg$/i.test(filename)) return "application/x-apple-diskimage";
+  if (/\.appimage$/i.test(filename)) return "application/x-executable";
+  if (/\.jar$/i.test(filename)) return "application/java-archive";
+  if (/\.tar\.gz$/i.test(filename)) return "application/gzip";
+  return "application/octet-stream";
+}
+
+/**
+ * Ensures an artifact's physical bytes are uploaded from the VPS archive or staging to Cloudflare R2.
+ */
+export async function syncArtifactToR2(
+  artifact: IArtifact
+): Promise<{ success: boolean; message: string }> {
+  const cleanRel = artifact.relativePath.replace(/^\/+/, "");
+
+  // Check if already in R2
+  const exists = await checkR2ObjectExists(cleanRel);
+  if (exists.exists) {
+    return { success: true, message: `Artifact ${artifact.filename} already exists in R2.` };
+  }
+
+  const settings = await getMirrorSettings();
+  const vpsBase = (settings.vpsMirrorBaseUrl || "https://mirror.playbound.club").replace(/\/+$/, "");
+  const vpsUrl = `${vpsBase}/${cleanRel}`;
+
+  try {
+    let res = await fetch(vpsUrl, { signal: AbortSignal.timeout(60000) });
+    if (!res.ok) {
+      // Fallback: try public sources for this artifact
+      const altSources = await MirrorSource.find({ artifactId: artifact.artifactId, enabled: true })
+        .sort({ priority: -1 })
+        .lean();
+      for (const s of altSources) {
+        if (s.url && /^https?:\/\//i.test(s.url)) {
+          const altRes = await fetch(s.url, { signal: AbortSignal.timeout(60000) });
+          if (altRes.ok) {
+            res = altRes;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!res.ok) {
+      return {
+        success: false,
+        message: `Could not fetch artifact bytes from VPS archive (${vpsUrl}) or public mirrors (status ${res.status}).`,
+      };
+    }
+
+    const arrayBuffer = await res.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const contentType = detectContentType(artifact.filename);
+
+    const uploadRes = await uploadObjectToR2(cleanRel, buffer, contentType);
+    if (!uploadRes.success) {
+      return { success: false, message: uploadRes.error || "Failed uploading artifact to Cloudflare R2." };
+    }
+
+    return {
+      success: true,
+      message: `Uploaded ${(buffer.length / (1024 * 1024)).toFixed(1)} MB to Cloudflare R2 hot cache.`,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { success: false, message: `Error transferring artifact to R2: ${msg}` };
+  }
+}
+
 /**
  * Manually promotes an artifact to R2, bypassing score thresholds but checking VPS verification.
  */
@@ -371,6 +488,12 @@ export async function manualPromoteArtifact(artifactId: string, actor: string): 
     return { success: false, message: "Authoritative VPS copy must be verified before R2 promotion." };
   }
 
+  // Upload bytes to Cloudflare R2
+  const syncResult = await syncArtifactToR2(artifact);
+  if (!syncResult.success) {
+    return { success: false, message: syncResult.message };
+  }
+
   artifact.r2Status = "cached";
   artifact.r2LastPromoted = new Date();
   artifact.r2Disabled = false;
@@ -380,10 +503,10 @@ export async function manualPromoteArtifact(artifactId: string, actor: string): 
     eventType: "manual_promote",
     actor,
     artifactId: artifact.artifactId,
-    details: `${actor} manually promoted ${artifact.filename} to R2 hot cache`,
+    details: `${actor} manually promoted ${artifact.filename} to R2 hot cache (${syncResult.message})`,
   });
 
-  return { success: true, message: `Promoted ${artifact.filename} to R2 hot cache.` };
+  return { success: true, message: `Promoted ${artifact.filename} to R2 hot cache. ${syncResult.message}` };
 }
 
 /**
@@ -563,6 +686,12 @@ export async function archiveArtifactToVps(
     if (direct) {
       sourceUrl = direct;
       sourceLabel = "resolved itch.io CDN";
+    }
+  } else if (sourceUrl && /sourceforge\.net/i.test(sourceUrl)) {
+    const direct = await resolveSourceForgeDownloadUrl(sourceUrl);
+    if (direct) {
+      sourceUrl = direct;
+      sourceLabel = "resolved SourceForge CDN";
     }
   }
 
