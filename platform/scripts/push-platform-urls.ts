@@ -85,7 +85,7 @@ const UPDATES: PlatformUrlUpdate[] = [
     ],
   },
   {
-    slug: "ur-quan-masters",
+    slug: "the-ur-quan-masters",
     title: "The Ur-Quan Masters",
     urlMac: "https://downloads.sourceforge.net/project/sc2/UQM/0.8/uqm-0.8-macos.dmg",
     editions: [

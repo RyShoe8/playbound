@@ -2288,7 +2288,7 @@ export const editions: EditionSeed[] = [
     verificationLevel: "community_verified",
   },
   {
-    gameSlug: "ur-quan-masters",
+    gameSlug: "the-ur-quan-masters",
     slug: "uqm-playbound-edition",
     name: "The Ur-Quan Masters — PlayBound Edition",
     shortDescription:
@@ -2336,7 +2336,7 @@ export const editions: EditionSeed[] = [
     verificationLevel: "official",
   },
   {
-    gameSlug: "ur-quan-masters",
+    gameSlug: "the-ur-quan-masters",
     slug: "uqm-classic",
     name: "The Ur-Quan Masters (Classic DOS)",
     shortDescription: "The pure 1992 Star Control II experience with original DOS music and sound.",

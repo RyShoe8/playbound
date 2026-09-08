@@ -3723,7 +3723,7 @@ const facts: Game[] = [
     },
   },
   {
-    slug: "ur-quan-masters",
+    slug: "the-ur-quan-masters",
     title: "The Ur-Quan Masters",
     tagline: "The open-source resurrection of Star Control II — widely hailed as one of the greatest games ever made.",
     description:
