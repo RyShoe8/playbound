@@ -440,6 +440,14 @@ async function listPublicEditions(gameSlug) {
       status: "active",
     })
     .project({
+      /*
+       * isExcludedEdition reads gameSlug to apply SINGLE_CHANNEL_GAMES, and
+       * this projection did not select it — so that check ran as has("") and
+       * never matched. Everything on that list was really being excluded by
+       * the name patterns or discord-exclusions.json, and any game whose
+       * edition slugs looked like neither still got a channel each.
+       */
+      gameSlug: 1,
       slug: 1,
       name: 1,
       isDefault: 1,
@@ -718,72 +726,6 @@ async function cleanupArchiveSection(guild) {
 }
 
 /**
- * Remove edition channels belonging to games that are now single-channel.
- *
- * Adding a game to SINGLE_CHANNEL_GAMES stops it provisioning edition
- * channels, but says nothing about the ones already sitting in the guild.
- *
- * Earlier versions of this hunted for the franchise category those channels
- * lived in, by name and then by id. That was the wrong handle: the names had
- * drifted, and the categories have since been deleted by hand, leaving the
- * edition channels behind with no parent at all. Match the channels
- * themselves — by the id stored on the edition, else by its slug — and delete
- * them wherever they happen to sit. Putting the surviving channel in its
- * letter bucket is provisionFlatChannel's job, and gameNeedsProvision now
- * asks for it when the channel is in the wrong place.
- */
-async function flattenSingleChannelGames(guild) {
-  const slugs = [...SINGLE_CHANNEL_GAMES];
-  if (!slugs.length) return;
-
-  const owned = await games
-    .find({ slug: { $in: slugs } })
-    .project({ slug: 1, communityLinks: 1 })
-    .toArray();
-  if (!owned.length) return;
-
-  const ownedSlugs = owned.map((g) => g.slug);
-  const eds = await editions
-    .find({ gameSlug: { $in: ownedSlugs } })
-    .project({ slug: 1, gameSlug: 1, playboundDiscord: 1 })
-    .toArray();
-  if (!eds.length) return;
-
-  const channels = await guild.channels.fetch();
-
-  /* Never delete a game's own channel, however an edition is named. */
-  const keepIds = new Set(
-    owned.map((g) => g.communityLinks?.playboundDiscord?.channelId).filter(Boolean)
-  );
-  const keepNames = new Set(owned.map((g) => discordChannelName(g.slug)));
-
-  for (const ed of eds) {
-    const name = discordChannelName(ed.slug);
-    if (keepNames.has(name)) continue;
-
-    const storedId = ed.playboundDiscord?.channelId || null;
-    const channel =
-      (storedId ? channels.get(storedId) : null) ||
-      channels.find((c) => c && c.type === ChannelType.GuildText && c.name === name) ||
-      null;
-    if (!channel || keepIds.has(channel.id)) continue;
-
-    console.log(
-      `[flatten] Deleting #${channel.name} — ${ed.gameSlug} is single-channel`
-    );
-    await channel
-      .delete("PlayBound cleanup: game is single-channel, editions share one room")
-      .catch((err) => {
-        console.warn(`[flatten] Failed to delete #${channel.name}:`, err?.message || err);
-      });
-    await editions
-      .updateOne({ _id: ed._id }, { $unset: { playboundDiscord: "" } })
-      .catch(() => {});
-    await sleep(PROVISION_DELAY_MS);
-  }
-}
-
-/**
  * Order text channels alphabetically inside every category.
  *
  * Discord orders by an explicit position, so channels otherwise sit in
@@ -818,7 +760,6 @@ async function sortChannelsAlphabetically(guild) {
 
 async function cleanupRedundantChannels(guild) {
   await cleanupArchiveSection(guild);
-  await flattenSingleChannelGames(guild);
 
   const serverGeneral = await findServerGeneral(guild);
   const channels = await guild.channels.fetch();
