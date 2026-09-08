@@ -930,6 +930,16 @@ const NO_CONFIG_NEEDED = {
      */
     note: "SDL2 GameController and joystick support with rumble; the second couch player can use a phone as pad two.",
   },
+  /*
+   * Confirmed by hand on the PC client, not from the store listings: neither
+   * the App Store nor Google Play description mentions a gamepad, and the one
+   * Play Store hit for "TOUCHSCREEN OR GAMEPAD CONTROLS" belongs to a
+   * similar-apps entry for Lara Croft, not to this game.
+   */
+  "metal-slug-awakening": {
+    kind: "native",
+    note: "Gamepad works on the Windows client; the mobile builds pair a Bluetooth pad directly.",
+  },
   "apex-legends": { kind: "native", note: "Ships Xbox and PlayStation controller layouts." },
   "among-us": { kind: "native", note: "Native controller navigation and gameplay bindings." },
   "goose-goose-duck": { kind: "native", note: "Steam build ships full Xbox controller support." },
