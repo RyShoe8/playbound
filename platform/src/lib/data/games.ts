@@ -2341,7 +2341,7 @@ const facts: Game[] = [
       // data-only package is prepared from Splash Damage's official 2.60b
       // archive so a new PlayBound install is immediately playable.
       overlayUrl:
-        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher-packages/games/wolfenstein-enemy-territory/ET-260b-Base-Data.zip",
+        "https://mirror.playbound.club/games/wolfenstein-enemy-territory/2.60b/ET-260b-Base-Data.zip",
       overlayFileName: "ET-260b-Base-Data.zip",
       overlayDest: "etmain",
       note: "Installs ET: Legacy plus the official free Enemy Territory game data, ready to play with classic mod and server compatibility.",

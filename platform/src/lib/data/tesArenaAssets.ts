@@ -22,8 +22,15 @@ export const ARENA_SETUP_MIRROR_PATH = `launcher-packages/games/${TES_ARENA_SLUG
 const BLOB_BASE = "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com";
 const MIRROR_BASE = "https://mirror.playbound.club";
 
-/** Public download used by launcher recipes (same Blob host as ET's data pack). */
-export const ARENA_GAMEFILES_URL = `${BLOB_BASE}/${ARENA_GAMEFILES_MIRROR_PATH}`;
+/*
+ * Public download used by launcher recipes.
+ *
+ * Served from the VPS, not Blob: game files belong on our own mirror. The
+ * archived path is games/tes-arena/1.06/, which is where the mirrors admin
+ * actually wrote it — archive-tes-arena-assets.ts had only ever described the
+ * launcher-packages/ path it never managed to populate.
+ */
+export const ARENA_GAMEFILES_URL = `${MIRROR_BASE}/games/${TES_ARENA_SLUG}/1.06/${ARENA_GAMEFILES_FILE}`;
 /** Verbatim Bethesda zip, staged next to the extracted tree. */
 export const ARENA_SETUP_ARCHIVE_URL = `${BLOB_BASE}/${ARENA_SETUP_MIRROR_PATH}`;
 /** Intended VPS paths; archive-tes-arena-assets.ts copies Blob → game-host. */
