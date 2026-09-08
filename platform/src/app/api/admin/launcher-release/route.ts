@@ -4,6 +4,7 @@ import dbConnect from "@/lib/db";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import { ensureArtifact, ensurePublicSource } from "@/lib/mirrors/ensureArtifact";
 import { archiveArtifactToVps } from "@/lib/mirrors/cacheManager";
+import { deleteArchivedArtifactOnHost } from "@/lib/gameHost/client";
 
 const FILENAME_RE = /^PlayBound-Setup-(\d+\.\d+\.\d+)\.exe$/i;
 
@@ -80,15 +81,24 @@ export async function POST(req: Request) {
      * installer with no .exe on it. R2 can be told the right name through a
      * signed content-disposition, but a plain mirror URL cannot, so the key
      * itself has to carry it. Re-running this route repoints the row and
-     * re-archives; the old object is left alone rather than deleted, since
-     * nothing here knows whether something else still references it.
+     * re-archives.
+     *
+     * The legacy object has to go first, and not merely for tidiness: it is a
+     * *file* sitting on the exact path the new key needs as a *directory*, so
+     * archiving fails with EEXIST on mkdir until it is gone. "artifacts/<id>"
+     * belongs to this artifact alone, so removing it strands nothing. Done
+     * unconditionally rather than only when the row still points there,
+     * because a half-finished repoint leaves the row moved and the blocker
+     * behind.
      */
-    const wantPath = `artifacts/${artifactId}/${input.fileName}`;
+    const legacyPath = `artifacts/${artifactId}`;
+    const wantPath = `${legacyPath}/${input.fileName}`;
     if (artifact.relativePath !== wantPath) {
       artifact.relativePath = wantPath;
       artifact.vpsStatus = "missing";
       artifact.r2Status = "not_cached";
     }
+    await deleteArchivedArtifactOnHost(legacyPath).catch(() => ({ success: false }));
 
     /*
      * ensureArtifact defaults every new row to unmirrorable — correct for
