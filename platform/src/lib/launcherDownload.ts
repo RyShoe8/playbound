@@ -78,9 +78,18 @@ export function launcherOsLabel(os: LauncherOs): string {
   return "Windows";
 }
 
-/** Prefer the OS-specific Blob alias; never hand a Windows .exe to Mac/Linux users. */
-export function launcherDownloadUrlForOs(os: LauncherOs): string {
+export const LAUNCHER_ENDPOINT_DOWNLOAD_URL = "/api/launcher/download";
+
+/**
+ * Route Windows signed launcher through the resilient tiered endpoint (R2 primary -> VPS secondary -> Blob fallback).
+ * Pass `{ direct: true }` to bypass the redirect route and link straight to Blob.
+ */
+export function launcherDownloadUrlForOs(
+  os: LauncherOs,
+  options?: { direct?: boolean }
+): string {
   if (os === "macos") return MAC_LAUNCHER_DOWNLOAD_URL;
   if (os === "linux") return LINUX_LAUNCHER_DOWNLOAD_URL;
-  return LAUNCHER_DOWNLOAD_URL;
+  if (options?.direct) return LAUNCHER_DOWNLOAD_URL;
+  return LAUNCHER_ENDPOINT_DOWNLOAD_URL;
 }
