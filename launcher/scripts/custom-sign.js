@@ -23,6 +23,16 @@ const SKIP_SIGN_FILENAMES = new Set([
   "vigembus_setup.exe",
   // Internal extraction tool
   "7za.exe",
+  /*
+   * Never executed, so a signature on it buys nothing.
+   *
+   * services/couch/windowsVigem.js spawns PlayBound.VigemHost.ps1 through
+   * PowerShell; nothing anywhere runs the .exe. It ships in resources/vigem
+   * alongside the script, and signing it quietly took the per-release cost
+   * from 4 to 5. There is no elevation manifest on it either, so it would not
+   * raise a UAC publisher prompt even if something did start it.
+   */
+  "playbound.vigemhost.exe",
 ]);
 
 module.exports = async function customSign(configuration, packager) {
@@ -38,3 +48,12 @@ module.exports = async function customSign(configuration, packager) {
   const signToolManager = await packager.signtoolManager.value;
   return signToolManager.doSign(configuration, packager);
 };
+
+/*
+ * Exported so verify-signatures.js can report the real cost.
+ *
+ * That reporter counted every binary it verified, so the two skips above were
+ * billed as if they had been signed: a build spending 4 signatures reported
+ * ~7. Sharing one list keeps the estimate honest when the list changes.
+ */
+module.exports.SKIP_SIGN_FILENAMES = SKIP_SIGN_FILENAMES;

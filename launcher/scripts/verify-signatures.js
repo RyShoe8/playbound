@@ -32,6 +32,7 @@ const os = require("os");
 const path = require("path");
 
 const { resolveSigningConfig, runPowerShellJson } = require("./signing-config");
+const { SKIP_SIGN_FILENAMES } = require("./custom-sign");
 
 const TAG = "[verify-signatures]";
 
@@ -354,9 +355,18 @@ function main() {
   // this build. The NSIS uninstaller is signed during packaging and embedded
   // into the installer, so it is spent but no longer on disk to verify —
   // count it explicitly rather than under-reporting.
-  const verifiedOurs = targets.filter((t) => !t.kind.includes("native")).length;
+  /*
+   * Only count what custom-sign actually delegated to signtool. Everything on
+   * its skip list verifies fine here — vendor binaries carry their own
+   * signature — so counting verified files billed those skips as if we had
+   * paid for them, and a 4-signature build reported ~7.
+   */
+  const billable = targets.filter(
+    (t) => !SKIP_SIGN_FILENAMES.has(path.basename(t.path).toLowerCase())
+  );
+  const verifiedOurs = billable.filter((t) => !t.kind.includes("native")).length;
   const nativesSigned = signing.signAllBinaries
-    ? targets.filter((t) => t.kind.includes("native")).length
+    ? billable.filter((t) => t.kind.includes("native")).length
     : 0;
   const signingsUsed = verifiedOurs + nativesSigned + 1; // +1 = embedded uninstaller
 
