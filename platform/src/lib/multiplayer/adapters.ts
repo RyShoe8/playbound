@@ -592,6 +592,38 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "Quake III dedicated server with +connect CLI argument and Virtual LAN auto-connect.",
   },
 
+  "red-eclipse": {
+    gameSlug: "red-eclipse",
+    title: "Red Eclipse",
+    tier: "tier1_improved",
+    adapterType: "direct-ip",
+    protocol: "enet",
+    client: {
+      /*
+       * Not "+connect host port" — Red Eclipse does not take one.
+       *
+       * main.cpp parses a single protocol-prefixed URL argument built from
+       * VERSION_UNAME, so the join is literally "redeclipse://host:port".
+       * An omitted port falls back to SERVER_PORT rather than failing, and a
+       * password can ride in front as "password@host".
+       */
+      launchArguments: ["redeclipse://{host}:{port}"],
+    },
+    selfHost: {
+      // SERVER_PORT in src/engine/version.h. The engine also binds
+      // serverport+1 (28802) for info/ping, so both need opening to be listed.
+      port: 28801,
+      protocol: "udp",
+      verified: false,
+      inGameSteps: [
+        "Host: Multiplayer → Host Game",
+        "Friends: Click Join Game in the launcher",
+      ],
+    },
+    notes:
+      "Cube 2 / Tesseract lineage with its own master list and dedicated server. Peer-hosted for now — no Red Eclipse dedicated server on the PlayBound VPS yet.",
+  },
+
   xonotic: {
     gameSlug: "xonotic",
     title: "Xonotic",
