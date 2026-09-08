@@ -7,7 +7,7 @@ import { AddFriends } from "@/components/friends/AddFriends";
 import { FriendInviteClaim } from "@/components/friends/FriendInviteClaim";
 import { FriendsUpcomingEvents } from "@/components/events/FriendsUpcomingEvents";
 import { Avatar } from "@/components/ui/bits";
-import { Gamepad2, LogIn, UserMinus, X } from "lucide-react";
+import { Gamepad2, Globe2, LogIn, PartyPopper, UserMinus, Users, X } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { telemetry } from "@/lib/telemetry";
@@ -18,6 +18,25 @@ import { PartyConfigSync } from "@/components/friends/PartyConfigSync";
 import { CreatePartyPanel } from "@/components/friends/CreatePartyPanel";
 import { PopoutButton } from "@/components/friends/PopoutButton";
 import { Checkbox } from "@/components/ui/Checkbox";
+
+/** Signed-out pitch on /friends. Mirrored in launcher/renderer/views/friends.js. */
+const ANON_FRIENDS_BENEFITS = [
+  {
+    icon: PartyPopper,
+    title: "Start a party",
+    body: "Group up, then launch the same game together in one click.",
+  },
+  {
+    icon: Globe2,
+    title: "Host online servers",
+    body: "Spin up a server for your party — no port forwarding, no setup.",
+  },
+  {
+    icon: Users,
+    title: "See who's playing",
+    body: "Add friends, watch what they're in, and jump straight into it.",
+  },
+];
 
 function PrivacyToggle({
   label,
@@ -554,17 +573,55 @@ export function FriendsView({
     return <div className="animate-pulse text-muted-foreground">Loading friends...</div>;
   }
 
+  /*
+   * Signed-out visitors get the pitch, not just a locked door.
+   *
+   * This used to be one line — "Sign in to view and manage your friends." —
+   * which describes the wall rather than what is behind it. Parties, hosted
+   * online servers and presence are the reason to make an account, and the
+   * launcher install base had never been told they exist. The Create a party
+   * button stays visible and routes into signup rather than disappearing.
+   */
   if (status !== "authenticated") {
     return (
-      <div className="mt-5 rounded-lg border border-dashed border-border px-4 py-10 text-center">
-        <p className="text-sm text-muted-foreground">Sign in to view and manage your friends.</p>
-        <Link
-          href="/login?callbackUrl=/friends"
-          className="mt-3 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground transition-all hover:brightness-110"
-        >
-          <LogIn className="size-4" />
-          Sign In
-        </Link>
+      <div className="mt-5 rounded-xl border border-border bg-card px-5 py-8 text-center sm:px-8">
+        <PartyPopper className="mx-auto size-8 text-primary" />
+        <h2 className="mt-3 text-xl font-extrabold tracking-tight">Play together on PlayBound</h2>
+        <p className="mx-auto mt-1.5 max-w-md text-sm text-muted-foreground">
+          A free account unlocks the social side of the launcher. Games stay free either way.
+        </p>
+
+        <ul className="mx-auto mt-5 grid max-w-lg gap-2.5 text-left sm:grid-cols-3">
+          {ANON_FRIENDS_BENEFITS.map((benefit) => (
+            <li
+              key={benefit.title}
+              className="rounded-lg border border-border bg-secondary/40 px-3 py-3"
+            >
+              <benefit.icon className="size-4 text-primary" />
+              <p className="mt-1.5 text-sm font-bold">{benefit.title}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{benefit.body}</p>
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <Link
+            href="/signup?from=party"
+            onClick={() => telemetry.track("anon_create_party_clicked", { source: "friends" })}
+            className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground transition-all hover:brightness-110"
+          >
+            <PartyPopper className="size-4" />
+            Create a party
+          </Link>
+          <Link
+            href="/login?callbackUrl=/friends"
+            className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-6 py-2.5 text-sm font-bold transition-colors hover:bg-secondary/70"
+          >
+            <LogIn className="size-4" />
+            Sign in
+          </Link>
+        </div>
+        <p className="mt-3 text-xs text-muted-foreground">Free forever. No card, no install required.</p>
       </div>
     );
   }

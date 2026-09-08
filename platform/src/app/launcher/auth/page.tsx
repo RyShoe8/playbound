@@ -35,8 +35,8 @@ export default async function LauncherAuthPage({
         </h1>
         <p className="text-sm text-muted-foreground">
           {fromApp
-            ? "Sign in once here — the app will stay signed in and sync your installs automatically."
-            : "Optional — installs still work without an account. Sign in only if you want library sync and other account features."}
+            ? "Sign in once here and the app stays signed in — parties, hosted online servers, friends and library sync all unlock. It's free."
+            : "Installs work without an account, but parties, hosted online servers, friends and library sync all need one. It's free."}
         </p>
         <Link
           href={`/login?callbackUrl=${encodeURIComponent(callbackPath)}`}
@@ -44,8 +44,8 @@ export default async function LauncherAuthPage({
         >
           <LogIn className="size-4" /> Sign In
         </Link>
-        <Link href="/signup" className="text-sm font-semibold text-primary hover:underline">
-          Create an account
+        <Link href="/signup?from=party" className="text-sm font-semibold text-primary hover:underline">
+          Create a free account
         </Link>
         <Link href="/forgot-password" className="text-sm text-muted-foreground hover:text-primary hover:underline">
           Forgot password?

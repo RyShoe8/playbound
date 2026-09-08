@@ -11,6 +11,9 @@ import { useTelemetry } from "@/lib/telemetry";
 import { storeInviteTokenFromSearch } from "@/components/friends/FriendInviteClaim";
 import { Checkbox } from "@/components/ui/Checkbox";
 
+/** Where the launcher's account window listens for the link handoff. */
+const LAUNCHER_HANDOFF = "/launcher/auth?from=app";
+
 export default function SignupPage() {
   const { track } = useTelemetry();
   const [username, setUsername] = useState("");
@@ -21,6 +24,22 @@ export default function SignupPage() {
   const [message, setMessage] = useState("");
   const [captchaBlocked, setCaptchaBlocked] = useState(false);
   const [fromInvite, setFromInvite] = useState(false);
+  /*
+   * Which CTA sent them here, so the page can acknowledge it.
+   *
+   * The friends screen and the launcher pitch parties and online servers to
+   * signed-out visitors; landing on a generic "Free forever" headline after
+   * clicking "Create a party" loses the thread.
+   */
+  const [fromCta, setFromCta] = useState("");
+  /*
+   * Signup opened inside the launcher's account window.
+   *
+   * That window watches for the handoff deep link, so every exit from this
+   * page has to end at /launcher/auth rather than the site's usual /profile —
+   * otherwise the account gets created and the app never links to it.
+   */
+  const [fromLauncher, setFromLauncher] = useState(false);
 
   useEffect(() => {
     const { email: inviteEmail } = storeInviteTokenFromSearch(window.location.search);
@@ -30,6 +49,8 @@ export default function SignupPage() {
     } else if (new URLSearchParams(window.location.search).get("invite")) {
       setFromInvite(true);
     }
+    setFromCta(new URLSearchParams(window.location.search).get("from") || "");
+    setFromLauncher(new URLSearchParams(window.location.search).get("launcher") === "1");
   }, []);
 
   async function submit(e: React.FormEvent) {
@@ -75,7 +96,10 @@ export default function SignupPage() {
           We sent a verification link to <span className="font-semibold text-foreground">{email}</span>.
           Click it to activate your account, then sign in.
         </p>
-        <Link href="/login" className="text-sm font-semibold text-primary hover:underline">
+        <Link
+          href={fromLauncher ? `/login?callbackUrl=${encodeURIComponent(LAUNCHER_HANDOFF)}` : "/login"}
+          className="text-sm font-semibold text-primary hover:underline"
+        >
           Go to sign in →
         </Link>
       </div>
@@ -90,13 +114,22 @@ export default function SignupPage() {
         <p className="mt-1 text-sm text-muted-foreground">
           {fromInvite
             ? "Finish signing up to connect with your friend on PlayBound."
-            : "Free forever. Just like every game on PlayBound."}
+            : fromCta === "party"
+              ? "Accounts are free. You need one to start a party and play with friends."
+              : "Free forever. Just like every game on PlayBound."}
         </p>
       </div>
 
       {/* Google signups skip email verification entirely — Google has already
           verified the address — and pick a username on /welcome. */}
-      <GoogleSignInButton callbackUrl="/welcome" label="Sign up with Google" />
+      <GoogleSignInButton
+        callbackUrl={
+          fromLauncher
+            ? `/welcome?next=${encodeURIComponent(LAUNCHER_HANDOFF)}`
+            : "/welcome"
+        }
+        label="Sign up with Google"
+      />
       <AuthDivider />
 
       <form onSubmit={submit} className="space-y-3">
@@ -164,7 +197,10 @@ export default function SignupPage() {
 
       <p className="mt-5 text-center text-sm text-muted-foreground">
         Already have an account?{" "}
-        <Link href="/login" className="font-semibold text-primary hover:underline">
+        <Link
+          href={fromLauncher ? `/login?callbackUrl=${encodeURIComponent(LAUNCHER_HANDOFF)}` : "/login"}
+          className="font-semibold text-primary hover:underline"
+        >
           Sign in
         </Link>
       </p>
