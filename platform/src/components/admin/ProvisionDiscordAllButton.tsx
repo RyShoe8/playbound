@@ -14,6 +14,15 @@ export function ProvisionDiscordAllButton() {
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         setMessage(data?.error ?? "Provision failed");
+      } else if (data?.started === false) {
+        setMessage("A sweep is already running — leave it to finish.");
+      } else if (data?.started) {
+        /*
+         * The bot answers as soon as it has picked the work up: a full sweep
+         * rate-limits itself and runs for minutes, so there is no total to
+         * report here. Progress goes to the bot log.
+         */
+        setMessage("Started. It runs in the background and takes a few minutes.");
       } else {
         const p = Array.isArray(data?.provisioned) ? data.provisioned.length : 0;
         const s = Array.isArray(data?.skipped) ? data.skipped.length : 0;
