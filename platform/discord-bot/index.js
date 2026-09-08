@@ -94,6 +94,20 @@ function categoryNameForSlug(slug) {
 const CATEGORY_CHANNEL_LIMIT = 50;
 
 /**
+ * Channels that should not exist, deleted wherever they sit.
+ *
+ * Duplicates left by earlier layouts and edition slugs. These are in shared
+ * letter buckets, so the redundant-name sweep — which only looks inside game
+ * categories — never reached them.
+ */
+const RETIRED_CHANNEL_NAMES = new Set([
+  "re-volt-online",
+  "rvgl-original",
+  "rvgl-online",
+  "gemini-gold-unix",
+]);
+
+/**
  * True when a category is the right home for this slug.
  *
  * Accepts the overflow spills too, otherwise a channel sitting in
@@ -135,6 +149,10 @@ function discordChannelName(raw) {
   const str = String(raw || "channel").toLowerCase().trim();
   if (str === "the-elder-scrolls-iii-morrowind" || str === "morrowind") {
     return "openmw";
+  }
+  /* The engine suffix means nothing to a player looking for the Re-Volt room. */
+  if (str === "re-volt-rvgl") {
+    return "re-volt";
   }
   return (
     str
@@ -786,12 +804,46 @@ async function cleanupArchiveSection(guild) {
 }
 
 /**
+ * Order the categories themselves, with PlayBound Parties pinned last.
+ *
+ * ensureCategory creates a new category at `categories.length + 10`, i.e. the
+ * bottom — fine when one appears occasionally, wrong when six letter buckets
+ * are introduced at once and all land underneath PlayBound Parties.
+ *
+ * Sorting here and pinning Parties in the same pass is what makes this safe:
+ * the two used to be separate, so anything that sorted categories would have
+ * fought ensurePartiesCategoryAtBottom on every run.
+ */
+async function sortCategories(guild) {
+  const channels = await guild.channels.fetch();
+  const categories = [...channels.values()].filter(
+    (c) => c && c.type === ChannelType.GuildCategory
+  );
+  if (categories.length < 2) return;
+
+  const parties = categories.filter((c) => c.name === "PlayBound Parties");
+  const rest = categories
+    .filter((c) => c.name !== "PlayBound Parties")
+    .sort((a, b) => a.name.localeCompare(b.name, "en"));
+
+  const ordered = [...rest, ...parties];
+  const updates = [];
+  ordered.forEach((cat, index) => {
+    if (cat.position !== index) updates.push({ channel: cat.id, position: index });
+  });
+  if (!updates.length) return;
+
+  console.log(`[sort] Reordering ${updates.length} categor(y/ies)`);
+  await guild.channels
+    .setPositions(updates)
+    .catch((err) => console.warn("[sort] Failed to reorder categories:", err?.message || err));
+}
+
+/**
  * Order text channels alphabetically inside every category.
  *
  * Discord orders by an explicit position, so channels otherwise sit in
- * creation order and a guild slowly becomes unscannable. Category order is
- * deliberately left alone: ensurePartiesCategoryAtBottom owns that, and
- * sorting categories here would fight it every run.
+ * creation order and a guild slowly becomes unscannable.
  */
 async function sortChannelsAlphabetically(guild) {
   const channels = await guild.channels.fetch();
@@ -827,6 +879,25 @@ async function cleanupRedundantChannels(guild) {
   for (const channel of channels.values()) {
     if (!channel || channel.type !== ChannelType.GuildText) continue;
     if (serverGeneral && channel.id === serverGeneral.id) continue;
+
+    /*
+     * Checked before the parent guard below, which skips anything already in a
+     * shared letter bucket. These strays are sitting in one, so the guard is
+     * exactly what kept them alive. The game's own channel is never listed —
+     * #re-volt-rvgl gets renamed to #re-volt by the reconcile pass, which
+     * keeps its history; deleting it would throw the room away and build a
+     * new one.
+     */
+    if (RETIRED_CHANNEL_NAMES.has(channel.name)) {
+      console.log(`[cleanup] Deleting retired channel #${channel.name}`);
+      await channel
+        .delete("PlayBound cleanup: retired duplicate channel")
+        .catch((err) =>
+          console.warn(`[cleanup] Failed to delete #${channel.name}:`, err?.message || err)
+        );
+      await sleep(PROVISION_DELAY_MS);
+      continue;
+    }
 
     const parent = channel.parentId ? guild.channels.cache.get(channel.parentId) : null;
     if (!parent || isSharedCategoryName(parent.name)) continue;
@@ -986,6 +1057,7 @@ async function provisionMissing() {
      * wherever Discord put it and the guild looked unsorted despite the pass
      * having "run".
      */
+    await sortCategories(guild);
     await sortChannelsAlphabetically(guild);
   } finally {
     backfillRunning = false;
@@ -1095,6 +1167,45 @@ async function reconcileChannels(opts = {}) {
               : await bucketCategoryFor(guild, game.slug);
             await channel.setParent(cat.id, { lockPermissions: false });
             await sleep(PROVISION_DELAY_MS);
+          }
+        }
+
+        /*
+         * Edition channels were never placed by anything.
+         *
+         * provisionFranchise parents them when it creates them, and nothing
+         * revisits them afterwards — this loop only ever considered a game's
+         * own channel. So #exult and #keeperfx sat in a letter bucket from an
+         * older layout, which also kept that bucket alive and non-empty long
+         * after every game had left it.
+         */
+        if (want.franchise) {
+          for (const ed of await listPublicEditions(game.slug)) {
+            const edName = discordChannelName(ed.slug);
+            const edChannel =
+              (ed.playboundDiscord?.channelId
+                ? guild.channels.cache.get(ed.playboundDiscord.channelId)
+                : null) ||
+              guild.channels.cache.find(
+                (c) => c && c.type === ChannelType.GuildText && c.name === edName
+              );
+            if (!edChannel || edChannel.type !== ChannelType.GuildText) continue;
+
+            const edParent = edChannel.parentId
+              ? guild.channels.cache.get(edChannel.parentId)
+              : null;
+            if (edParent?.name === want.category) continue;
+
+            moved.push({
+              slug: ed.slug,
+              from: edParent?.name || "(none)",
+              to: want.category,
+            });
+            if (!dryRun) {
+              const cat = await ensureCategory(guild, want.category);
+              await edChannel.setParent(cat.id, { lockPermissions: false });
+              await sleep(PROVISION_DELAY_MS);
+            }
           }
         }
       } catch (err) {
