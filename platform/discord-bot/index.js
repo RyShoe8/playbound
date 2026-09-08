@@ -316,22 +316,6 @@ const SINGLE_CHANNEL_GAMES = new Set([
   "the-ur-quan-masters",
 ]);
 
-/**
- * Franchise categories to flatten, by id.
- *
- * Every name-based attempt at finding these missed — the category names, the
- * channel names and the stored channel ids have all drifted from Mongo, so
- * each guess skipped the game silently and nothing moved. An id cannot drift.
- *
- * This is a repair anchor, not permanent configuration: once a category has
- * been emptied and deleted the lookup finds nothing and the entry is inert,
- * so it costs one wasted cache read per sweep and can be dropped whenever.
- */
-const SINGLE_CHANNEL_CATEGORY_IDS = new Map([
-  ["re-volt-rvgl", "1545519606817357994"],
-  ["privateer-gemini-gold", "1546726552023212232"],
-]);
-
 const _filename = fileURLToPath(import.meta.url);
 const _dirname = path.dirname(_filename);
 
@@ -738,8 +722,15 @@ async function cleanupArchiveSection(guild) {
  *
  * Adding a game to SINGLE_CHANNEL_GAMES stops it provisioning edition
  * channels, but says nothing about the ones already sitting in the guild.
- * Without this they linger in a franchise category forever, because their
- * names ("rvgl-online") match none of the installer/client patterns below.
+ *
+ * Earlier versions of this hunted for the franchise category those channels
+ * lived in, by name and then by id. That was the wrong handle: the names had
+ * drifted, and the categories have since been deleted by hand, leaving the
+ * edition channels behind with no parent at all. Match the channels
+ * themselves — by the id stored on the edition, else by its slug — and delete
+ * them wherever they happen to sit. Putting the surviving channel in its
+ * letter bucket is provisionFlatChannel's job, and gameNeedsProvision now
+ * asks for it when the channel is in the wrong place.
  */
 async function flattenSingleChannelGames(guild) {
   const slugs = [...SINGLE_CHANNEL_GAMES];
@@ -747,153 +738,48 @@ async function flattenSingleChannelGames(guild) {
 
   const owned = await games
     .find({ slug: { $in: slugs } })
-    .project({ slug: 1, title: 1, communityLinks: 1 })
+    .project({ slug: 1, communityLinks: 1 })
     .toArray();
   if (!owned.length) return;
 
+  const ownedSlugs = owned.map((g) => g.slug);
+  const eds = await editions
+    .find({ gameSlug: { $in: ownedSlugs } })
+    .project({ slug: 1, gameSlug: 1, playboundDiscord: 1 })
+    .toArray();
+  if (!eds.length) return;
+
   const channels = await guild.channels.fetch();
 
-  for (const game of owned) {
-    const keepId = game.communityLinks?.playboundDiscord?.channelId || null;
-    const keepName = discordChannelName(game.slug);
+  /* Never delete a game's own channel, however an edition is named. */
+  const keepIds = new Set(
+    owned.map((g) => g.communityLinks?.playboundDiscord?.channelId).filter(Boolean)
+  );
+  const keepNames = new Set(owned.map((g) => discordChannelName(g.slug)));
 
-    /*
-     * Locate the category through the game's own channel, not by name.
-     *
-     * Two earlier passes keyed on a name and both matched nothing: first each
-     * edition's slug, then franchiseCategoryName(game.title). The guild has
-     * drifted from Mongo — these categories and channels were created by an
-     * older bot and renamed since — so any exact name is a guess. What is
-     * reliable is where the game's channel actually sits: if its parent is
-     * not one of the shared buckets, that parent is the category to empty,
-     * whatever it happens to be called. The name match stays as a fallback
-     * for a category whose channels have all been renamed out of reach.
-     */
-    const keepChannel =
-      (keepId ? channels.get(keepId) : null) ||
-      channels.find((c) => c && c.type === ChannelType.GuildText && c.name === keepName) ||
+  for (const ed of eds) {
+    const name = discordChannelName(ed.slug);
+    if (keepNames.has(name)) continue;
+
+    const storedId = ed.playboundDiscord?.channelId || null;
+    const channel =
+      (storedId ? channels.get(storedId) : null) ||
+      channels.find((c) => c && c.type === ChannelType.GuildText && c.name === name) ||
       null;
+    if (!channel || keepIds.has(channel.id)) continue;
 
-    let cat = null;
-
-    /* An explicitly pinned id beats every heuristic below it. */
-    const pinnedId = SINGLE_CHANNEL_CATEGORY_IDS.get(game.slug);
-    if (pinnedId) {
-      const pinned = channels.get(pinnedId);
-      if (pinned && pinned.type === ChannelType.GuildCategory) cat = pinned;
-    }
-
-    if (!cat && keepChannel?.parentId) {
-      const parent = channels.get(keepChannel.parentId);
-      if (
-        parent &&
-        parent.type === ChannelType.GuildCategory &&
-        !isSharedCategoryName(parent.name)
-      ) {
-        cat = parent;
-      }
-    }
-    if (!cat) {
-      cat =
-        channels.find(
-          (c) =>
-            c &&
-            c.type === ChannelType.GuildCategory &&
-            c.name === franchiseCategoryName(game.title)
-        ) || null;
-    }
-
-    if (!cat) {
-      const parentName = keepChannel?.parentId
-        ? channels.get(keepChannel.parentId)?.name
-        : "none";
-      console.log(
-        `[flatten] ${game.slug}: already flat ` +
-          `(channel=${keepChannel ? `#${keepChannel.name}` : "none"}, parent="${parentName}")`
-      );
-      continue;
-    }
-
-    const children = [...channels.values()].filter(
-      (c) => c && c.parentId === cat.id && c.type === ChannelType.GuildText
+    console.log(
+      `[flatten] Deleting #${channel.name} — ${ed.gameSlug} is single-channel`
     );
-
-    /*
-     * Prefer the stored channel, then one already named after the game, then
-     * the oldest.
-     *
-     * The last of those matters because the first two can both miss here —
-     * that is the drift this whole function exists to repair. Falling back to
-     * whichever child happened to be first in the collection could keep an
-     * edition channel and delete the game's real one, history and all. The
-     * game's channel is created before any of its editions, so oldest-first
-     * keeps the right room.
-     */
-    const keep =
-      children.find((c) => c.id === keepId) ||
-      children.find((c) => c.name === keepName) ||
-      [...children].sort((a, b) => a.createdTimestamp - b.createdTimestamp)[0] ||
-      null;
-
-    for (const channel of children) {
-      if (keep && channel.id === keep.id) continue;
-
-      console.log(
-        `[flatten] Deleting #${channel.name} from "${cat.name}" — ${game.slug} is single-channel`
-      );
-      await channel
-        .delete("PlayBound cleanup: game is single-channel, editions share one room")
-        .catch((err) => {
-          console.warn(`[flatten] Failed to delete #${channel.name}:`, err?.message || err);
-        });
-      await editions
-        .updateOne(
-          { gameSlug: game.slug, "playboundDiscord.channelId": channel.id },
-          { $unset: { playboundDiscord: "" } }
-        )
-        .catch(() => {});
-      await sleep(PROVISION_DELAY_MS);
-    }
-
-    if (!keep) continue;
-
-    /*
-     * Move the survivor out ourselves rather than leaving it to provisioning.
-     *
-     * provisionMissing only visits games gameNeedsProvision() flags, and that
-     * returns false as soon as a channel id is stored — which it is for these
-     * games. So provisionFlatChannel never ran for them, the channel stayed
-     * put, and the category it kept alive was re-used on every pass.
-     */
-    const bucket = await ensureCategory(guild, categoryNameForSlug(game.slug));
-    if (keep.name !== keepName) {
-      await keep.setName(keepName).catch(() => {});
-    }
-    if (keep.parentId !== bucket.id) {
-      console.log(`[flatten] Moving #${keepName} to "${bucket.name}"`);
-      await keep.setParent(bucket.id, { lockPermissions: false }).catch((err) => {
-        console.warn(`[flatten] Failed to move #${keepName}:`, err?.message || err);
+    await channel
+      .delete("PlayBound cleanup: game is single-channel, editions share one room")
+      .catch((err) => {
+        console.warn(`[flatten] Failed to delete #${channel.name}:`, err?.message || err);
       });
-      await sleep(PROVISION_DELAY_MS);
-    }
-
-    if (keepId !== keep.id) {
-      await games
-        .updateOne(
-          { slug: game.slug },
-          { $set: { "communityLinks.playboundDiscord.channelId": keep.id } }
-        )
-        .catch(() => {});
-    }
-
-    const remaining = (await guild.channels.fetch()).filter((c) => c && c.parentId === cat.id);
-    if (remaining.size === 0) {
-      console.log(`[flatten] Deleting empty category "${cat.name}"`);
-      await cat.delete("PlayBound cleanup: single-channel game no longer needs a category").catch(
-        (err) => console.warn(`[flatten] Failed to delete "${cat.name}":`, err?.message || err)
-      );
-      await sleep(PROVISION_DELAY_MS);
-    }
+    await editions
+      .updateOne({ _id: ed._id }, { $unset: { playboundDiscord: "" } })
+      .catch(() => {});
+    await sleep(PROVISION_DELAY_MS);
   }
 }
 
@@ -1017,7 +903,7 @@ async function provisionChannel(slug) {
   return provisionFlatChannel(guild, game);
 }
 
-async function gameNeedsProvision(game) {
+async function gameNeedsProvision(game, guild) {
   const publicEds = await listPublicEditions(game.slug);
   const mainChannelName = discordChannelName(game.slug);
   if (publicEds.length >= 1) {
@@ -1025,7 +911,26 @@ async function gameNeedsProvision(game) {
     const edsMissing = publicEds.some((e) => !e.playboundDiscord?.channelId);
     return !hasMain || edsMissing;
   }
-  return !game.communityLinks?.playboundDiscord?.channelId;
+
+  const channelId = game.communityLinks?.playboundDiscord?.channelId;
+  if (!channelId) return true;
+  if (!guild) return false;
+
+  /*
+   * A stored id was treated as "done", whatever state the channel was in.
+   *
+   * That is why Re-Volt and Privateer never moved: both had an id, so they
+   * were skipped on every sweep and provisionFlatChannel — the thing that
+   * puts a channel in its letter bucket — never ran for them. A channel that
+   * has been deleted, or that is sitting in the wrong place or under no
+   * category at all, still needs provisioning.
+   */
+  const channel = guild.channels.cache.get(channelId);
+  if (!channel) return true;
+  if (channel.name !== mainChannelName) return true;
+
+  const parent = channel.parentId ? guild.channels.cache.get(channel.parentId) : null;
+  return parent?.name !== categoryNameForSlug(game.slug);
 }
 
 async function provisionMissing() {
@@ -1049,7 +954,7 @@ async function provisionMissing() {
 
     const needs = [];
     for (const doc of list) {
-      if (await gameNeedsProvision(doc)) needs.push(doc);
+      if (await gameNeedsProvision(doc, guild)) needs.push(doc);
     }
 
     console.log(
