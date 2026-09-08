@@ -754,7 +754,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
      * root beside ecwolf.exe and ecwolf.pk3.
      */
     overlayUrl:
-      "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher-packages/games/wolfenstein/wolf3d-shareware-data.zip",
+      "https://mirror.playbound.club/games/wolfenstein/1.4.2/wolf3d-shareware-data.zip",
     overlayFileName: "wolf3d-shareware-data.zip",
     note: "ECWolf with the freely redistributable Wolfenstein 3D shareware episode — one install, ready to play.",
     exeHint: "ecwolf",
