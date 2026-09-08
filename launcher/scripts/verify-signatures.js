@@ -292,10 +292,20 @@ function main() {
       continue;
     }
 
-    // 7za.exe is an internal unpack tool skipped by custom-sign to conserve
-    // signing quota. Allow it to remain unsigned unless signAllBinaries is requested.
-    if (path.basename(target.path).toLowerCase() === "7za.exe" && !signing.signAllBinaries) {
-      console.log(`  SKIPPED   ${rel}  (internal CLI helper — signature omitted to save quota)`);
+    /*
+     * Files custom-sign deliberately leaves unsigned to conserve quota.
+     *
+     * This tested the literal name "7za.exe" while the cost estimate below
+     * used the shared SKIP_SIGN_FILENAMES set, so adding a name to that set
+     * corrected the reported spend but left this check demanding a signature
+     * the hook had just declined to buy — which failed the build after all
+     * four signatures were already spent. One source of truth now.
+     */
+    if (
+      SKIP_SIGN_FILENAMES.has(path.basename(target.path).toLowerCase()) &&
+      !signing.signAllBinaries
+    ) {
+      console.log(`  SKIPPED   ${rel}  (not signed by design — signature omitted to save quota)`);
       continue;
     }
 
