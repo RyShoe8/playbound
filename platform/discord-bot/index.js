@@ -306,6 +306,14 @@ const SINGLE_CHANNEL_GAMES = new Set([
   "triplea",
   "privateer-gemini-gold",
   "trigger-rally",
+  /*
+   * Editions here are ways of installing the same game, not places with
+   * separate populations. Re-Volt's soundtrack and online editions were each
+   * given a channel and all three sat empty next to one another; Ur-Quan
+   * Masters' HD build is the same story. One room, one conversation.
+   */
+  "re-volt-rvgl",
+  "the-ur-quan-masters",
 ]);
 
 const _filename = fileURLToPath(import.meta.url);
@@ -709,8 +717,91 @@ async function cleanupArchiveSection(guild) {
   );
 }
 
+/**
+ * Remove edition channels belonging to games that are now single-channel.
+ *
+ * Adding a game to SINGLE_CHANNEL_GAMES stops it provisioning edition
+ * channels, but says nothing about the ones already sitting in the guild.
+ * Without this they linger in a franchise category forever, because their
+ * names ("rvgl-online") match none of the installer/client patterns below.
+ */
+async function cleanupSingleChannelEditionChannels(guild) {
+  const slugs = [...SINGLE_CHANNEL_GAMES];
+  if (!slugs.length) return;
+
+  const owned = await editions
+    .find({ gameSlug: { $in: slugs } })
+    .project({ slug: 1, gameSlug: 1 })
+    .toArray();
+  if (!owned.length) return;
+
+  // The game's own channel is never an edition channel, whatever it is named.
+  const gameChannelNames = new Set(slugs.map((s) => discordChannelName(s)));
+  const byName = new Map();
+  for (const ed of owned) {
+    const name = discordChannelName(ed.slug);
+    if (gameChannelNames.has(name)) continue;
+    byName.set(name, ed);
+  }
+  if (!byName.size) return;
+
+  const channels = await guild.channels.fetch();
+  for (const channel of channels.values()) {
+    if (!channel || channel.type !== ChannelType.GuildText) continue;
+    const edition = byName.get(channel.name);
+    if (!edition) continue;
+
+    console.log(
+      `[cleanup] Deleting edition channel #${channel.name} — ${edition.gameSlug} is single-channel`
+    );
+    await channel
+      .delete("PlayBound cleanup: game is single-channel, editions share one room")
+      .catch((err) => {
+        console.warn(`[cleanup] Failed to delete #${channel.name}:`, err?.message || err);
+      });
+    await editions
+      .updateOne({ _id: edition._id }, { $unset: { playboundDiscord: "" } })
+      .catch(() => {});
+    await sleep(PROVISION_DELAY_MS);
+  }
+}
+
+/**
+ * Order text channels alphabetically inside every category.
+ *
+ * Discord orders by an explicit position, so channels otherwise sit in
+ * creation order and a guild slowly becomes unscannable. Category order is
+ * deliberately left alone: ensurePartiesCategoryAtBottom owns that, and
+ * sorting categories here would fight it every run.
+ */
+async function sortChannelsAlphabetically(guild) {
+  const channels = await guild.channels.fetch();
+  const categories = [...channels.values()].filter(
+    (c) => c && c.type === ChannelType.GuildCategory
+  );
+
+  const updates = [];
+  for (const cat of categories) {
+    const children = [...channels.values()]
+      .filter((c) => c && c.parentId === cat.id && c.type === ChannelType.GuildText)
+      .sort((a, b) => a.name.localeCompare(b.name, "en"));
+
+    children.forEach((channel, index) => {
+      // Only ask Discord for the moves that actually change something.
+      if (channel.position !== index) updates.push({ channel: channel.id, position: index });
+    });
+  }
+
+  if (!updates.length) return;
+  console.log(`[sort] Alphabetising ${updates.length} channel(s)`);
+  await guild.channels.setPositions(updates).catch((err) => {
+    console.warn("[sort] Failed to alphabetise channels:", err?.message || err);
+  });
+}
+
 async function cleanupRedundantChannels(guild) {
   await cleanupArchiveSection(guild);
+  await cleanupSingleChannelEditionChannels(guild);
 
   const serverGeneral = await findServerGeneral(guild);
   const channels = await guild.channels.fetch();
@@ -773,6 +864,7 @@ async function cleanupRedundantChannels(guild) {
   }
 
   await ensurePartiesCategoryAtBottom(guild);
+  await sortChannelsAlphabetically(guild);
 }
 
 /**
