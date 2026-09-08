@@ -316,6 +316,22 @@ const SINGLE_CHANNEL_GAMES = new Set([
   "the-ur-quan-masters",
 ]);
 
+/**
+ * Franchise categories to flatten, by id.
+ *
+ * Every name-based attempt at finding these missed — the category names, the
+ * channel names and the stored channel ids have all drifted from Mongo, so
+ * each guess skipped the game silently and nothing moved. An id cannot drift.
+ *
+ * This is a repair anchor, not permanent configuration: once a category has
+ * been emptied and deleted the lookup finds nothing and the entry is inert,
+ * so it costs one wasted cache read per sweep and can be dropped whenever.
+ */
+const SINGLE_CHANNEL_CATEGORY_IDS = new Map([
+  ["re-volt-rvgl", "1545519606817357994"],
+  ["privateer-gemini-gold", "1546726552023212232"],
+]);
+
 const _filename = fileURLToPath(import.meta.url);
 const _dirname = path.dirname(_filename);
 
@@ -759,7 +775,15 @@ async function flattenSingleChannelGames(guild) {
       null;
 
     let cat = null;
-    if (keepChannel?.parentId) {
+
+    /* An explicitly pinned id beats every heuristic below it. */
+    const pinnedId = SINGLE_CHANNEL_CATEGORY_IDS.get(game.slug);
+    if (pinnedId) {
+      const pinned = channels.get(pinnedId);
+      if (pinned && pinned.type === ChannelType.GuildCategory) cat = pinned;
+    }
+
+    if (!cat && keepChannel?.parentId) {
       const parent = channels.get(keepChannel.parentId);
       if (
         parent &&
@@ -794,11 +818,21 @@ async function flattenSingleChannelGames(guild) {
       (c) => c && c.parentId === cat.id && c.type === ChannelType.GuildText
     );
 
-    /* Prefer the stored channel, then one already named after the game. */
+    /*
+     * Prefer the stored channel, then one already named after the game, then
+     * the oldest.
+     *
+     * The last of those matters because the first two can both miss here —
+     * that is the drift this whole function exists to repair. Falling back to
+     * whichever child happened to be first in the collection could keep an
+     * edition channel and delete the game's real one, history and all. The
+     * game's channel is created before any of its editions, so oldest-first
+     * keeps the right room.
+     */
     const keep =
       children.find((c) => c.id === keepId) ||
       children.find((c) => c.name === keepName) ||
-      children[0] ||
+      [...children].sort((a, b) => a.createdTimestamp - b.createdTimestamp)[0] ||
       null;
 
     for (const channel of children) {
