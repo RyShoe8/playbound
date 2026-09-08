@@ -56,7 +56,11 @@ export async function GET(req: Request) {
       try {
         const check = await checkR2ObjectExists(artifact.relativePath);
         if (check.exists) {
-          targetUrl = await getR2PresignedDownloadUrl(artifact.relativePath, 3600);
+          targetUrl = await getR2PresignedDownloadUrl(
+            artifact.relativePath,
+            3600,
+            artifact.filename
+          );
           sourceType = "r2";
         } else {
           console.warn(`[Launcher Download] ${artifact.filename} marked cached but not found in R2. Falling back to VPS.`);
