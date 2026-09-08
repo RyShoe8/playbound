@@ -323,6 +323,12 @@ function buildOverviewSidebarHtml(detail, slug, liveStats = null) {
   const mp = (detail.isMultiplayer ?? detail.multiplayer) ? "Yes (Multiplayer)" : "Singleplayer";
   const controller = detail.controllerSupport || "Supported";
   const cloudSaves = detail.cloudSaves ? "Supported" : "Local Backup";
+  /*
+   * Moved out of the hero line, which now ends on the download size.
+   * detectedVersion is what the daily catalog probe writes, so it is the
+   * freshest of the three; versionLabel is the curated fallback.
+   */
+  const version = detail.version || detail.versionLabel || detail.detectedVersion || "";
 
   return `
     <aside class="detail-overview-sidebar">
@@ -347,6 +353,11 @@ function buildOverviewSidebarHtml(detail, slug, liveStats = null) {
           <span class="detail-sidebar-label">Release</span>
           <span class="detail-sidebar-val">${escapeHtml(String(release))}</span>
         </div>
+        ${version ? `
+        <div class="detail-sidebar-row">
+          <span class="detail-sidebar-label">Version</span>
+          <span class="detail-sidebar-val">${escapeHtml(String(version))}</span>
+        </div>` : ""}
         <div class="detail-sidebar-row">
           <span class="detail-sidebar-label">License</span>
           <span class="detail-sidebar-val">${escapeHtml(license)}</span>
@@ -806,7 +817,11 @@ async function renderGameDetailView(slug, opts = {}) {
         <div class="detail-hero-copy">
           <div class="chip-row">${genreChips}${(detail.isMultiplayer ?? detail.multiplayer) ? '<span class="chip chip-accent">Multiplayer</span>' : ""}${detail.testing ? '<span class="chip chip-accent">Testing</span>' : ""}${playingChip}</div>
           <h1 class="detail-hero-title">${escapeHtml(detail.title)}</h1>
-          <p class="detail-hero-sub">${escapeHtml(detail.blurb || "")} · ${escapeHtml(detail.approxSize || "")}${detail.version ? ` · v${escapeHtml(detail.version)}` : ""}</p>
+          <p class="detail-hero-sub">${escapeHtml(detail.blurb || "")}${
+            detail.approxSize
+              ? ` <span class="detail-hero-size">${escapeHtml(detail.approxSize)}</span>`
+              : ""
+          }</p>
         </div>
         <div class="detail-hero-actions" id="detail-actions"></div>
       </div>
@@ -2188,8 +2203,10 @@ async function renderModDetailView(slug) {
           }</div>
           <h1 class="detail-hero-title">${escapeHtml(detail.title)}</h1>
           <p class="detail-hero-sub">${escapeHtml(detail.tagline || "")}${
-            detail.approxSize ? ` · ${escapeHtml(detail.approxSize)}` : ""
-          }${detail.version ? ` · v${escapeHtml(detail.version)}` : ""}</p>
+            detail.approxSize
+              ? ` <span class="detail-hero-size">${escapeHtml(detail.approxSize)}</span>`
+              : ""
+          }</p>
         </div>
         <div class="detail-hero-actions" id="mod-detail-actions"></div>
       </div>
@@ -2576,7 +2593,11 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
             }
           </div>
           <h1 class="detail-hero-title">${escapeHtml(edition.editionName)}</h1>
-          <p class="detail-hero-sub">${escapeHtml(edition.shortDescription || "")} · ${escapeHtml(sizeText)}${edition.releaseYear ? ` · ${escapeHtml(String(edition.releaseYear))}` : ""}</p>
+          <p class="detail-hero-sub">${escapeHtml(edition.shortDescription || "")}${
+            sizeText && sizeText !== "—"
+              ? ` <span class="detail-hero-size">${escapeHtml(sizeText)}</span>`
+              : ""
+          }</p>
         </div>
         <div class="detail-hero-actions">
           ${

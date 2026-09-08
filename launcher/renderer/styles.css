@@ -1940,6 +1940,26 @@ body {
   margin: 8px 0 0;
 }
 
+/*
+ * The download size closes the hero line and is the one fact people scan for
+ * before pressing Install, so it is set apart from the tagline rather than
+ * trailing it as another muted clause.
+ */
+.detail-hero-size {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  vertical-align: 2px;
+  white-space: nowrap;
+}
+
 /* Bottom-aligned with the copy, matching the web's justify-between hero. */
 .detail-hero-actions {
   display: flex;
