@@ -15,6 +15,7 @@ import { listUnlockedByMaster } from "@/lib/masterCopy";
 import { getDeveloper } from "@/lib/developers";
 import { listPublicEditionsForGame, hasChoosableEditions } from "@/lib/editions";
 import type { Edition } from "@/lib/editionTypes";
+import { isBrowserGame } from "@/lib/gameLaunch";
 import { hasServerBrowser } from "@/lib/servers/registry";
 import { hasControls } from "@/lib/controls/types";
 import { EditionsSection } from "@/components/editions/EditionsSection";
@@ -345,7 +346,11 @@ export async function GamePageFrame({
               : "border-transparent text-muted-foreground hover:text-foreground"
           )}
         >
-          install
+          {/* A browser game has nothing to install, and the hero already says
+              Play. The tab still holds the how-to-play steps, FAQ and specs,
+              so it is relabelled rather than hidden; the ?tab=install param
+              stays put so existing links and rankings do not move. */}
+          {isBrowserGame(game) ? "play" : "install"}
         </Link>
 
         {/* Real URLs — these can rank. */}
