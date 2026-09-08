@@ -72,6 +72,25 @@ export async function POST(req: Request) {
     artifact.filename = input.fileName;
 
     /*
+     * Heal a key that does not end in the filename.
+     *
+     * Rows created before ensureArtifact kept the filename for gameSlug-less
+     * artifacts are stored at "artifacts/<artifactId>", and the VPS serves
+     * that path verbatim — so a browser following the mirror fallback saves an
+     * installer with no .exe on it. R2 can be told the right name through a
+     * signed content-disposition, but a plain mirror URL cannot, so the key
+     * itself has to carry it. Re-running this route repoints the row and
+     * re-archives; the old object is left alone rather than deleted, since
+     * nothing here knows whether something else still references it.
+     */
+    const wantPath = `artifacts/${artifactId}/${input.fileName}`;
+    if (artifact.relativePath !== wantPath) {
+      artifact.relativePath = wantPath;
+      artifact.vpsStatus = "missing";
+      artifact.r2Status = "not_cached";
+    }
+
+    /*
      * ensureArtifact defaults every new row to unmirrorable — correct for
      * unknown third-party content, wrong for our own signed build. Matches
      * what the local upload script has always set for this same artifact type.
