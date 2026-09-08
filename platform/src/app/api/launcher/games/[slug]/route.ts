@@ -3,6 +3,7 @@ import { unstable_rethrow } from "next/navigation";
 import { getGame } from "@/lib/catalog";
 import { absoluteMediaUrl, sizeLabelFromMB, hasServerBrowser, supportsMultiplayer } from "@/lib/launcherInstall";
 import { listMods } from "@/lib/mods";
+import { listDevelopers } from "@/lib/developers";
 import { listUnlockedByMaster, toLauncherUnlocks } from "@/lib/masterCopy";
 import { requestIncludesTesting } from "@/lib/requestIncludesTesting";
 import { gameAccessTiers, tierFor } from "@/lib/access/tiers";
@@ -17,10 +18,11 @@ export async function GET(
     const { slug } = await params;
     const includeTesting = await requestIncludesTesting(req);
     const origin = new URL(req.url).origin || "https://playbound.club";
-    const [game, tiers, affiliates] = await Promise.all([
+    const [game, tiers, affiliates, developers] = await Promise.all([
       getGame(slug, { includeTesting }),
       gameAccessTiers(),
       getStoreAffiliateMap(),
+      listDevelopers(),
     ]);
     if (!game) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -70,6 +72,19 @@ export async function GET(
         genres: game.genres || [],
         tags: game.tags || [],
         approxSize: sizeLabelFromMB(game.sizeMB) || null,
+        /*
+         * The launcher's Game Details sidebar reads these directly. Without
+         * them it fell back to "Independent" / "Free" / "—" for every
+         * game, so Release always read as empty and Developer and License
+         * showed placeholders rather than the curated values.
+         */
+        releaseYear: game.releaseYear || null,
+        license: game.license || null,
+        developer:
+          developers.find((d) => d.slug === game.developerSlug)?.name ||
+          game.developerSlug ||
+          null,
+        version: game.launcherInstall?.versionLabel || game.launcherInstall?.detectedVersion || null,
         art: [game.art.from, game.art.to],
         coverImage: absoluteMediaUrl(game.coverImage, origin),
         screenshots: (game.screenshots || [])
