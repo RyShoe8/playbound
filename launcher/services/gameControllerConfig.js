@@ -923,6 +923,17 @@ const NO_CONFIG_NEEDED = {
     kind: "native",
     note: "The Godot project ships explicit joypad buttons and axes for movement, fire, upgrades, start and select.",
   },
+  hurrican: {
+    kind: "native",
+    /*
+     * Worth an entry despite being single-machine: Hurrican's co-op is two
+     * players sharing one PC, so the phone-as-controller is how a second
+     * player joins without a second physical pad. DX8Joystick.cpp opens both
+     * SDL_GameController and raw SDL_Joystick and queries rumble, so a bridged
+     * pad is seen as a real device with no remapping needed.
+     */
+    note: "SDL2 GameController and joystick support with rumble; the second couch player can use a phone as pad two.",
+  },
   "apex-legends": { kind: "native", note: "Ships Xbox and PlayStation controller layouts." },
   "among-us": { kind: "native", note: "Native controller navigation and gameplay bindings." },
   "goose-goose-duck": { kind: "native", note: "Steam build ships full Xbox controller support." },
