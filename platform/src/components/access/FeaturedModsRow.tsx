@@ -5,12 +5,21 @@ import { CardRow } from "@/components/GameCard";
 import { ModPreviewCard } from "@/components/ModPreviewCard";
 import { SectionHeader } from "@/components/ui/bits";
 import { useDiscoveryMode } from "@/hooks/useDiscoveryMode";
+import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { useAccessTiers } from "@/components/AccessTiersProvider";
 import { filterBySlugAccess } from "@/lib/access/discoveryMode";
+import { isModCompatible } from "@/lib/compatibility/compatibility";
 
 export type FeaturedMod = {
   mod: CatalogModPublic;
-  baseGame: { slug?: string; title?: string; coverImage?: string | null } | null;
+  baseGame: {
+    slug?: string;
+    title?: string;
+    coverImage?: string | null;
+    platforms?: string[];
+    browserPlayable?: boolean;
+    steamDeck?: boolean;
+  } | null;
 };
 
 /**
@@ -32,14 +41,21 @@ export function FeaturedModsRow({
   candidates: FeaturedMod[];
   limit?: number;
 }) {
-  const { mode } = useDiscoveryMode();
+  const { mode: discoveryMode } = useDiscoveryMode();
+  const { mode: compatMode, device } = useCompatibilityFilter();
   const tiers = useAccessTiers();
 
-  const visible = filterBySlugAccess(
+  const accessible = filterBySlugAccess(
     candidates,
-    mode,
+    discoveryMode,
     tiers,
     (c) => c.mod.baseGameSlug
+  );
+
+  const visible = (
+    compatMode === "all"
+      ? accessible
+      : accessible.filter((c) => isModCompatible(c.mod, c.baseGame, device.type))
   ).slice(0, limit);
 
   if (visible.length === 0) return null;

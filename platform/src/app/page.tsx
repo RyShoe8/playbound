@@ -145,7 +145,16 @@ export default async function HomePage() {
     const base = gameBySlug.get(m.baseGameSlug);
     return {
       mod: m,
-      baseGame: base ? { slug: base.slug, title: base.title, coverImage: base.coverImage } : null,
+      baseGame: base
+        ? {
+            slug: base.slug,
+            title: base.title,
+            coverImage: base.coverImage,
+            platforms: base.platforms,
+            browserPlayable: base.browserPlayable,
+            steamDeck: base.steamDeck,
+          }
+        : null,
     };
   });
 

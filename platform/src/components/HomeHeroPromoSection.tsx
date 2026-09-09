@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
@@ -27,7 +27,8 @@ import { isGameCompatible } from "@/lib/compatibility/compatibility";
 import { CatalogStatsCard } from "@/components/ActivityStatsCard";
 import type { CatalogLiveStats } from "@/lib/liveActivity";
 import { directPurchaseRequired } from "@/lib/access/resolver";
-import { accessPriceLabel } from "@/lib/access/discoveryMode";
+import { accessPriceLabel, scopeCatalogLiveStats } from "@/lib/access/discoveryMode";
+import { useAccessTiers } from "@/components/AccessTiersProvider";
 import { formatEditionChipName, getDisplayEditionsForGame } from "@/lib/data/editions";
 
 interface HomeHeroPromoSectionProps {
@@ -144,6 +145,15 @@ export function HomeHeroPromoSection({
   const { data: session, status } = useSession();
   const { mode, device } = useCompatibilityFilter();
   const { mode: discoveryMode, setMode: setDiscoveryMode } = useDiscoveryMode();
+  const tiers = useAccessTiers();
+  const scopedStats = useMemo(
+    () =>
+      scopeCatalogLiveStats(live, discoveryMode, tiers, {
+        mode,
+        device: device.type,
+      }),
+    [live, discoveryMode, tiers, mode, device.type]
+  );
   const [showPromo, setShowPromo] = useState<boolean>(true);
   const admin = session?.user?.role === "admin";
 
@@ -395,7 +405,18 @@ export function HomeHeroPromoSection({
               </div>
 
               <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                <span>{games.length} Verified Games</span>
+                <span>
+                  {scopedStats.gameCount}{" "}
+                  {mode === "compatible"
+                    ? device.type === "mobile" || device.type === "tablet"
+                      ? "Verified Mobile Games"
+                      : device.type === "macos"
+                        ? "Verified Mac Games"
+                        : device.type === "linux"
+                          ? "Verified Linux Games"
+                          : "Verified PC Games"
+                    : "Verified Games"}
+                </span>
                 <span>•</span>
                 <span>One new curation every Wednesday</span>
               </div>
