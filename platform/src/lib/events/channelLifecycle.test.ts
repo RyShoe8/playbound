@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   channelCleanupDue,
   channelExpiresAt,
+  channelProvisionDue,
+  EVENT_CHANNEL_JOIN_EARLY_MS,
   EVENT_CHANNEL_GRACE_MS,
 } from "./channelLifecycle";
 
@@ -28,6 +30,24 @@ const live = {
 };
 
 const at = (ms: number) => new Date(end.getTime() + ms);
+
+describe("join window", () => {
+  it("opens event voice 15 minutes before the start", () => {
+    expect(
+      channelProvisionDue(live, new Date(start.getTime() - EVENT_CHANNEL_JOIN_EARLY_MS - 1))
+    ).toBe(false);
+    expect(
+      channelProvisionDue(live, new Date(start.getTime() - EVENT_CHANNEL_JOIN_EARLY_MS))
+    ).toBe(true);
+    expect(channelProvisionDue(live, start)).toBe(true);
+  });
+
+  it("does not open rooms for inactive events", () => {
+    expect(channelProvisionDue({ ...live, status: "draft" }, start)).toBe(false);
+    expect(channelProvisionDue({ ...live, status: "cancelled" }, start)).toBe(false);
+    expect(channelProvisionDue({ ...live, status: "completed" }, start)).toBe(false);
+  });
+});
 
 describe("grace window", () => {
   it("keeps the channel while the event is still running", () => {

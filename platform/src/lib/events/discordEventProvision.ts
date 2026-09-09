@@ -9,6 +9,7 @@
  */
 
 import type { Document } from "mongoose";
+import DiscordConnection from "@/lib/models/DiscordConnection";
 
 type EventLike = Document & {
   _id: { toString(): string };
@@ -74,6 +75,68 @@ export async function provisionEventDiscordVoice(
   } catch (err) {
     console.warn("discord event voice provision error", err);
     return false;
+  }
+}
+
+export type EventVoiceFollowup = {
+  needsDiscordLink: boolean;
+  inviteUrl: string | null;
+  moved: boolean;
+  inEventVoice: boolean;
+};
+
+/**
+ * Match party Launch Voice: ensure the room exists, then move a linked member
+ * who is already connected to voice; otherwise return the room invite.
+ */
+export async function syncEventVoiceForMember(
+  event: EventLike,
+  userId: string
+): Promise<EventVoiceFollowup> {
+  if (!event.discordVoiceChannelId || event.discordVoiceCleanedAt) {
+    await provisionEventDiscordVoice(event);
+  }
+
+  const inviteUrl = event.discordInviteUrl || null;
+  const conn = await DiscordConnection.findOne({ userId }).select("discordId").lean();
+  if (!conn?.discordId) {
+    return { needsDiscordLink: true, inviteUrl, moved: false, inEventVoice: false };
+  }
+
+  const { url, secret } = botConfig();
+  if (!url || !secret || !event.discordVoiceChannelId) {
+    return { needsDiscordLink: false, inviteUrl, moved: false, inEventVoice: false };
+  }
+
+  try {
+    // The bot's move operation is channel-generic; this is the same operation
+    // used by Party Launch Voice.
+    const res = await fetch(`${url}/parties/voice/move`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${secret}`,
+      },
+      body: JSON.stringify({
+        voiceChannelId: event.discordVoiceChannelId,
+        discordUserIds: [String(conn.discordId)],
+      }),
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!res.ok) {
+      return { needsDiscordLink: false, inviteUrl, moved: false, inEventVoice: false };
+    }
+    const data = (await res.json()) as { moved?: number; alreadyThere?: number };
+    const moved = Number(data.moved) > 0;
+    return {
+      needsDiscordLink: false,
+      inviteUrl,
+      moved,
+      inEventVoice: moved || Number(data.alreadyThere) > 0,
+    };
+  } catch (err) {
+    console.warn("discord event voice move error", err);
+    return { needsDiscordLink: false, inviteUrl, moved: false, inEventVoice: false };
   }
 }
 

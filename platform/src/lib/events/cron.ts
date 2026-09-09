@@ -9,7 +9,10 @@ import {
   cleanupEventDiscordVoice,
   provisionEventDiscordVoice,
 } from "@/lib/events/discordEventProvision";
-import { channelCleanupDue } from "@/lib/events/channelLifecycle";
+import {
+  channelCleanupDue,
+  channelProvisionDue,
+} from "@/lib/events/channelLifecycle";
 
 /**
  * Status transitions, reminders, attendance sync, Discord voice lifecycle.
@@ -49,6 +52,20 @@ export async function runEventsCron(now = new Date()): Promise<{
       registrationDeadline: event.registrationDeadline,
       now,
     });
+
+    // Admin-created events have an organizer/creator. Give their Discord room
+    // to attendees during the 15-minute gathering window; automated pop-ups
+    // retain their existing planner-driven lifecycle.
+    const manuallyCreated = Boolean(event.organizerId || event.createdBy);
+    if (
+      manuallyCreated &&
+      !event.discordVoiceChannelId &&
+      !event.discordVoiceCleanedAt &&
+      channelProvisionDue(event, now)
+    ) {
+      const ok = await provisionEventDiscordVoice(event);
+      if (ok) discordActions++;
+    }
 
     if (next !== event.status) {
       const prev = event.status;

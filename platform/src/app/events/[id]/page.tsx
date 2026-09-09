@@ -328,6 +328,11 @@ export default async function EventDetailPage({ params }: Props) {
           eventId={event.id}
           gameSlug={event.gameSlug}
           discordInviteUrl={event.discordInviteUrl}
+          startsAt={event.startsAt}
+          endsAt={event.endsAt}
+          discordRoomReady={Boolean(
+            eventDoc.discordVoiceChannelId && !eventDoc.discordVoiceCleanedAt
+          )}
           isLive={isLive}
           game={game}
         />
