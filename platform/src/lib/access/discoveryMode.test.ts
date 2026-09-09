@@ -118,8 +118,14 @@ describe("scopeCatalogLiveStats", () => {
     modCountBySlug: { morrowind: 8, "0ad": 2, openmw: 0 },
   };
 
-  it("leaves ALL mode numbers alone", () => {
+  it("leaves ALL mode numbers alone when no compatibility filter", () => {
     expect(scopeCatalogLiveStats(live, "ALL", tiers)).toBe(live);
+  });
+
+  it("leaves ALL mode numbers alone when compatibility filter is all", () => {
+    expect(
+      scopeCatalogLiveStats(live, "ALL", tiers, { mode: "all", device: "mobile" })
+    ).toBe(live);
   });
 
   it("counts only FREE games, their players, editions, and mods", () => {
@@ -130,6 +136,121 @@ describe("scopeCatalogLiveStats", () => {
     expect(next.modCount).toBe(2);
     expect(next.mostPopular.map((g) => g.slug)).toEqual(["0ad"]);
     expect(next.byGame.map((g) => g.slug)).toEqual(["0ad"]);
+  });
+
+  const multiPlatformLive = {
+    gameCount: 4,
+    modCount: 15,
+    editionCount: 7,
+    playingNow: 100,
+    byGame: [
+      {
+        slug: "win-game",
+        title: "Windows Only Title",
+        playingNow: 50,
+        platforms: ["Windows"],
+      },
+      {
+        slug: "mac-linux-game",
+        title: "Mac & Linux Title",
+        playingNow: 30,
+        platforms: ["macOS", "Linux"],
+      },
+      {
+        slug: "mobile-web-game",
+        title: "Mobile & Web Title",
+        playingNow: 15,
+        platforms: ["Android", "iOS", "Web"],
+      },
+      {
+        slug: "steam-deck-game",
+        title: "Deck Title",
+        playingNow: 5,
+        platforms: ["Windows"],
+        steamDeck: true,
+      },
+    ],
+    mostPopular: [
+      { slug: "win-game", title: "Windows Only Title", playingNow: 50 },
+      { slug: "mac-linux-game", title: "Mac & Linux Title", playingNow: 30 },
+      { slug: "mobile-web-game", title: "Mobile & Web Title", playingNow: 15 },
+    ],
+    editionCountBySlug: {
+      "win-game": 2,
+      "mac-linux-game": 2,
+      "mobile-web-game": 1,
+      "steam-deck-game": 2,
+    },
+    modCountBySlug: {
+      "win-game": 6,
+      "mac-linux-game": 5,
+      "mobile-web-game": 2,
+      "steam-deck-game": 2,
+    },
+    modCountBySlugAndDevice: {
+      mobile: { "mobile-web-game": 1 },
+      macos: { "mac-linux-game": 4 },
+      linux: { "mac-linux-game": 5, "steam-deck-game": 2 },
+      desktop: { "win-game": 6, "mobile-web-game": 2, "steam-deck-game": 2 },
+    },
+  };
+
+  it("scopes stats for mobile: only mobile/web games, correct counts and top popular", () => {
+    const mobileScoped = scopeCatalogLiveStats(multiPlatformLive, "ALL", tiers, {
+      mode: "compatible",
+      device: "mobile",
+    });
+    expect(mobileScoped.gameCount).toBe(1);
+    expect(mobileScoped.playingNow).toBe(15);
+    expect(mobileScoped.editionCount).toBe(1);
+    expect(mobileScoped.modCount).toBe(1); // from modCountBySlugAndDevice.mobile
+    expect(mobileScoped.mostPopular.map((g) => g.slug)).toEqual(["mobile-web-game"]);
+    expect(mobileScoped.byGame.map((g) => g.slug)).toEqual(["mobile-web-game"]);
+  });
+
+  it("scopes stats for macOS: only macOS and web games", () => {
+    const macScoped = scopeCatalogLiveStats(multiPlatformLive, "ALL", tiers, {
+      mode: "compatible",
+      device: "macos",
+    });
+    expect(macScoped.gameCount).toBe(2); // mac-linux-game and mobile-web-game (has Web)
+    expect(macScoped.playingNow).toBe(45); // 30 + 15
+    expect(macScoped.editionCount).toBe(3); // 2 + 1
+    expect(macScoped.modCount).toBe(4); // 4 for mac-linux-game + 0 for mobile-web-game
+    expect(macScoped.mostPopular.map((g) => g.slug)).toEqual([
+      "mac-linux-game",
+      "mobile-web-game",
+    ]);
+  });
+
+  it("scopes stats for Linux: Linux, Web, and Steam Deck games", () => {
+    const linuxScoped = scopeCatalogLiveStats(multiPlatformLive, "ALL", tiers, {
+      mode: "compatible",
+      device: "linux",
+    });
+    // mac-linux-game (Linux), mobile-web-game (Web), steam-deck-game (steamDeck on Linux)
+    expect(linuxScoped.gameCount).toBe(3);
+    expect(linuxScoped.playingNow).toBe(50); // 30 + 15 + 5
+    expect(linuxScoped.mostPopular.map((g) => g.slug)).toEqual([
+      "mac-linux-game",
+      "mobile-web-game",
+      "steam-deck-game",
+    ]);
+  });
+
+  it("scopes stats for Windows / desktop", () => {
+    const desktopScoped = scopeCatalogLiveStats(multiPlatformLive, "ALL", tiers, {
+      mode: "compatible",
+      device: "desktop",
+    });
+    // win-game, mobile-web-game (Web), steam-deck-game (Windows + steamDeck)
+    expect(desktopScoped.gameCount).toBe(3);
+    expect(desktopScoped.playingNow).toBe(70); // 50 + 15 + 5
+    expect(desktopScoped.mostPopular.map((g) => g.slug)).toEqual([
+      "win-game",
+      "mobile-web-game",
+      "steam-deck-game",
+    ]);
   });
 });
 

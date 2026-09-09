@@ -14,6 +14,7 @@ import { fetchHoloCurePlayers } from "@/lib/servers/providers/steam-concurrent";
 import dbConnect from "@/lib/db";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
 import EditionModel from "@/lib/models/Edition";
+import { isModCompatible, type DeviceType } from "@/lib/compatibility/compatibility";
 
 const EXTERNAL_CONCURRENT_PROVIDERS: Record<string, () => Promise<number>> = {
   holocure: async () => {
@@ -45,6 +46,9 @@ export type CatalogPopularGame = {
   slug: string;
   title: string;
   playingNow: number;
+  platforms?: string[];
+  browserPlayable?: boolean;
+  steamDeck?: boolean;
 };
 
 export type CatalogLiveStats = {
@@ -61,6 +65,8 @@ export type CatalogLiveStats = {
   editionCountBySlug: Record<string, number>;
   /** Card-view mods keyed by base game slug, for Discover-mode scoping. */
   modCountBySlug: Record<string, number>;
+  /** Mod counts keyed by device type and base game slug for device-scoped stats. */
+  modCountBySlugAndDevice?: Partial<Record<string, Record<string, number>>>;
   asOf: string;
 };
 
@@ -461,17 +467,36 @@ async function computeCatalogLiveStats(): Promise<CatalogLiveStats> {
     editionCount += Math.max(1, Number(editionCountBySlug[g.slug]) || 0);
   }
 
+  const DEVICE_TYPES: DeviceType[] = ["desktop", "macos", "linux", "tablet", "mobile"];
+  const gameBySlug = new Map(games.map((g) => [g.slug, g]));
+  const modCountBySlugAndDevice: Record<DeviceType, Record<string, number>> = {
+    desktop: {},
+    macos: {},
+    linux: {},
+    tablet: {},
+    mobile: {},
+  };
+
   const modCountBySlug: Record<string, number> = {};
   for (const mod of mods) {
     const base = mod.baseGameSlug;
     if (!base) continue;
     modCountBySlug[base] = (modCountBySlug[base] || 0) + 1;
+    const baseGame = gameBySlug.get(base);
+    for (const d of DEVICE_TYPES) {
+      if (isModCompatible(mod, baseGame, d)) {
+        modCountBySlugAndDevice[d][base] = (modCountBySlugAndDevice[d][base] || 0) + 1;
+      }
+    }
   }
 
-  const byGame = [...games]
+  const byGame: CatalogPopularGame[] = [...games]
     .map((g) => ({
       slug: g.slug,
       title: g.title,
+      platforms: g.platforms,
+      browserPlayable: g.browserPlayable,
+      steamDeck: g.steamDeck,
       playingNow:
         (mpBySlug.get(g.slug) ?? 0) +
         (platformByGame.get(g.slug) ?? 0) +
@@ -494,6 +519,7 @@ async function computeCatalogLiveStats(): Promise<CatalogLiveStats> {
     byGame,
     editionCountBySlug,
     modCountBySlug,
+    modCountBySlugAndDevice,
     asOf,
   };
 }
@@ -586,7 +612,7 @@ export function playingNowBySlug(stats: CatalogLiveStats): Record<string, number
 
 /** Catalog-wide snapshot (homepage). Shared for 15 minutes. */
 export function getCatalogLiveStats(): Promise<CatalogLiveStats> {
-  return unstable_cache(computeCatalogLiveStats, ["live-activity-catalog-v8"], {
+  return unstable_cache(computeCatalogLiveStats, ["live-activity-catalog-v9"], {
     revalidate: CACHE_SECONDS,
     tags: ["live-activity"],
   })();

@@ -6,6 +6,7 @@ import { Users } from "lucide-react";
 import type { CatalogLiveStats } from "@/lib/liveActivity";
 import { Avatar } from "@/components/ui/bits";
 import { useDiscoveryMode } from "@/hooks/useDiscoveryMode";
+import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { useAccessTiers } from "@/components/AccessTiersProvider";
 import { scopeCatalogLiveStats } from "@/lib/access/discoveryMode";
 
@@ -86,7 +87,6 @@ export function ActivityStatsCard({
 
 const PODIUM_MEDALS = ["🥇", "🥈", "🥉"] as const;
 
-/** Homepage header catalog snapshot, scoped to the current Discover mode. */
 export function CatalogStatsCard({
   live,
   openPartyCount = 0,
@@ -94,9 +94,17 @@ export function CatalogStatsCard({
   live: CatalogLiveStats;
   openPartyCount?: number;
 }) {
-  const { mode } = useDiscoveryMode();
+  const { mode: discoveryMode } = useDiscoveryMode();
   const tiers = useAccessTiers();
-  const scoped = useMemo(() => scopeCatalogLiveStats(live, mode, tiers), [live, mode, tiers]);
+  const { mode: compatMode, device } = useCompatibilityFilter();
+  const scoped = useMemo(
+    () =>
+      scopeCatalogLiveStats(live, discoveryMode, tiers, {
+        mode: compatMode,
+        device: device.type,
+      }),
+    [live, discoveryMode, tiers, compatMode, device.type]
+  );
   /*
    * Fetched on the client rather than rendered with the page.
    *
@@ -200,7 +208,16 @@ export function CatalogStatsCard({
       )}
 
       <p className="mt-auto pt-2.5 text-[11px] text-muted-foreground">
-        Across supported games • Updated every 15 min
+        {compatMode === "compatible"
+          ? device.type === "mobile" || device.type === "tablet"
+            ? "Across supported mobile games"
+            : device.type === "macos"
+              ? "Across supported Mac games"
+              : device.type === "linux"
+                ? "Across supported Linux games"
+                : "Across supported PC games"
+          : "Across all catalog games"}{" "}
+        • Updated every 15 min
       </p>
     </div>
   );

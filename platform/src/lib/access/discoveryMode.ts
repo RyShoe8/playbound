@@ -13,6 +13,11 @@
 
 import type { AccessTier } from "./types";
 import { tierFor, type GameTierMap } from "./tierMap";
+import {
+  isGameCompatible,
+  type CompatibilityFilterMode,
+  type DeviceType,
+} from "@/lib/compatibility/compatibility";
 
 export type DiscoveryMode = "FREE" | "ALL";
 
@@ -86,35 +91,83 @@ export type CatalogLiveStatsSlice = {
   modCount: number;
   editionCount: number;
   playingNow: number;
-  mostPopular: Array<{ slug: string; title: string; playingNow: number }>;
-  byGame: Array<{ slug: string; title: string; playingNow: number }>;
+  mostPopular: Array<{
+    slug: string;
+    title: string;
+    playingNow: number;
+    platforms?: string[];
+    browserPlayable?: boolean;
+    steamDeck?: boolean;
+  }>;
+  byGame: Array<{
+    slug: string;
+    title: string;
+    playingNow: number;
+    platforms?: string[];
+    browserPlayable?: boolean;
+    steamDeck?: boolean;
+  }>;
   editionCountBySlug?: Record<string, number>;
   modCountBySlug?: Record<string, number>;
+  modCountBySlugAndDevice?: Partial<Record<string, Record<string, number>>>;
+};
+
+export type CompatibilityScope = {
+  mode?: CompatibilityFilterMode;
+  device?: DeviceType;
 };
 
 /**
- * Homepage catalog snapshot, limited to the current Discover mode.
+ * Homepage catalog snapshot, limited to the current Discover mode and device compatibility.
  *
  * The 15-minute live payload is mode-blind so the CDN and launcher can share
- * one computation. FREE vs ALL is applied here, the same way listings are.
+ * one computation. Discovery mode (FREE vs ALL) and device compatibility
+ * (desktop vs macos vs linux vs mobile) are applied here, the same way listings are.
  */
 export function scopeCatalogLiveStats<T extends CatalogLiveStatsSlice>(
   live: T,
   mode: DiscoveryMode,
-  tiers: GameTierMap
+  tiers: GameTierMap,
+  compatibility?: CompatibilityScope
 ): T {
-  if (mode === "ALL") return live;
-  const byGame = filterGamesByMode(live.byGame || [], mode, tiers);
+  const isCompatFilterActive =
+    compatibility?.mode === "compatible" && Boolean(compatibility.device);
+  const isDiscoveryFilterActive = mode !== "ALL";
+
+  if (!isCompatFilterActive && !isDiscoveryFilterActive) return live;
+
+  let byGame = live.byGame || [];
+
+  if (isDiscoveryFilterActive) {
+    byGame = filterGamesByMode(byGame, mode, tiers);
+  }
+
+  if (isCompatFilterActive && compatibility?.device) {
+    const targetDevice = compatibility.device;
+    byGame = byGame.filter((g) => isGameCompatible(g, targetDevice));
+  }
+
   const editionCountBySlug = live.editionCountBySlug || {};
   const modCountBySlug = live.modCountBySlug || {};
+  const deviceModCounts =
+    isCompatFilterActive && compatibility?.device && live.modCountBySlugAndDevice
+      ? live.modCountBySlugAndDevice[compatibility.device]
+      : null;
+
   let editionCount = 0;
   let modCount = 0;
   let playingNow = 0;
+
   for (const game of byGame) {
     editionCount += Math.max(1, Number(editionCountBySlug[game.slug]) || 0);
-    modCount += Number(modCountBySlug[game.slug]) || 0;
+    if (deviceModCounts) {
+      modCount += Number(deviceModCounts[game.slug]) || 0;
+    } else {
+      modCount += Number(modCountBySlug[game.slug]) || 0;
+    }
     playingNow += Number(game.playingNow) || 0;
   }
+
   return {
     ...live,
     byGame,
