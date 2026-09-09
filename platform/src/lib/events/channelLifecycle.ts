@@ -21,6 +21,7 @@ import { defaultEndsAt } from "@/lib/events/time";
  * scheduled end time would drop players mid-conversation.
  */
 export const EVENT_CHANNEL_GRACE_MS = 30 * 60_000;
+export const EVENT_CHANNEL_JOIN_EARLY_MS = 15 * 60_000;
 
 export interface ChannelLifecycleInput {
   status: string;
@@ -40,6 +41,22 @@ export function channelExpiresAt(input: ChannelLifecycleInput): Date {
 
 export function hasChannel(input: ChannelLifecycleInput): boolean {
   return Boolean(input.discordVoiceChannelId || input.discordTextChannelId);
+}
+
+/** Whether a manually-created event's room should be available to join. */
+export function channelProvisionDue(
+  input: Pick<ChannelLifecycleInput, "status" | "startsAt" | "endsAt">,
+  now: Date
+): boolean {
+  if (input.status === "draft" || input.status === "cancelled" || input.status === "completed") {
+    return false;
+  }
+  const startsAt = new Date(input.startsAt);
+  const endsAt = input.endsAt ? new Date(input.endsAt) : defaultEndsAt(startsAt);
+  return (
+    now.getTime() >= startsAt.getTime() - EVENT_CHANNEL_JOIN_EARLY_MS &&
+    now.getTime() <= endsAt.getTime()
+  );
 }
 
 /**
