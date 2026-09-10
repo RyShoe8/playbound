@@ -18,7 +18,7 @@ export default async function AdminGamesPage() {
   const [games, editionCounts, modCounts, health, editionControllerSupport] = await Promise.all([
     listAllGames(),
     editionCountsByGame(),
-    modCountsByGame(),
+    modCountsByGame({ includeUnpublished: true }),
     getGameHealth(),
     editionControllerSupportByGame(),
   ]);

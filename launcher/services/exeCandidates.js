@@ -36,6 +36,14 @@ const NEVER_THE_GAME = [
   /^(ue4prereqsetup|oalinst|directx.*)\.exe$/i,
   /^crash(report|handler|pad).*\.exe$/i,
   /^.*(unins|uninstall).*\.exe$/i,
+  /^.*([_\-\.]|^)install(er)?([_\-\.].*)?\.exe$/i,
+  /^.*([_\-\.]|^)setup([_\-\.].*)?\.exe$/i,
+  /^wininst.*\.exe$/i,
+];
+
+const INSTALLER_PATTERNS = [
+  /^.*([_\-\.]|^)install(er)?([_\-\.].*)?\.exe$/i,
+  /^.*([_\-\.]|^)setup([_\-\.].*)?\.exe$/i,
 ];
 
 function baseName(file) {
@@ -50,6 +58,15 @@ function depthOf(file) {
 function isUninstallerExe(file) {
   const base = baseName(file);
   return NEVER_THE_GAME.some((re) => re.test(base));
+}
+
+function isInstallerExe(file) {
+  const base = baseName(file);
+  if (!/\.exe$/i.test(base)) return false;
+  if (/^.*(unins|uninstall).*\.exe$/i.test(base)) return false;
+  if (/crash(report|handler|pad)/i.test(base)) return false;
+  if (/^(vc_?redist|dxsetup|dotnet|ue4prereqsetup|oalinst|directx|wininst)/i.test(base)) return false;
+  return INSTALLER_PATTERNS.some((re) => re.test(base));
 }
 
 function norm(s) {
@@ -70,7 +87,7 @@ function chooseExeFromListing({ files = [], wanted = [], title = "", slug = "" }
 
   const want = new Set(wanted.map((w) => baseName(w).toLowerCase()).filter(Boolean));
   if (want.size) {
-    const named = exes.filter((f) => want.has(baseName(f).toLowerCase())).sort(byDepth);
+    const named = exes.filter((f) => !isUninstallerExe(f) && want.has(baseName(f).toLowerCase())).sort(byDepth);
     if (named.length) return named[0];
   }
 
@@ -98,4 +115,4 @@ function chooseExeFromListing({ files = [], wanted = [], title = "", slug = "" }
   return null;
 }
 
-module.exports = { chooseExeFromListing, isUninstallerExe, NEVER_THE_GAME };
+module.exports = { chooseExeFromListing, isUninstallerExe, isInstallerExe, NEVER_THE_GAME };

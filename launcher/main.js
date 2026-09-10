@@ -26,7 +26,7 @@ const { createManagedJava } = require("./services/ManagedJava");
 const { createLocalServers } = require("./services/localServer");
 const { createTransferMeter } = require("./services/transferMeter");
 const { toQueueSnapshot } = require("./services/installQueueView");
-const { chooseExeFromListing, isUninstallerExe } = require("./services/exeCandidates");
+const { chooseExeFromListing, isUninstallerExe, isInstallerExe } = require("./services/exeCandidates");
 const { createManagedDosBox } = require("./services/ManagedDosBox");
 const { createManagedDotNet, requiredDotNetMajor } = require("./services/ManagedDotNet");
 const { createManagedRetroArch } = require("./services/ManagedRetroArch");
@@ -802,6 +802,7 @@ let context = null;
 let installerPollTimer = null;
 let installerPollSlug = null;
 let installerPollCancel = null;
+let installerPollOnComplete = null;
 /** Delayed full-drive BFS — only after known-path poll grace period */
 let exeScanDelayTimer = null;
 /** @type {{ slug: string, abort: boolean, generation: number } | null} */
@@ -1776,7 +1777,20 @@ function findJarInDir(dir) {
  * still be playable through it.
  */
 function exeOnDisk(record) {
-  return record?.exe && fs.existsSync(record.exe) ? record.exe : null;
+  if (record?.exe && fs.existsSync(record.exe)) {
+    if (!isUninstallerExe(record.exe)) {
+      return record.exe;
+    }
+    if (record?.dir && fs.existsSync(record.dir)) {
+      const real = findExecutable(record.dir);
+      if (real && !isUninstallerExe(real)) {
+        record.exe = real;
+        return real;
+      }
+    }
+    return null;
+  }
+  return null;
 }
 
 function playableExePath(info) {
@@ -2311,6 +2325,8 @@ function buildSettingsPayload() {
     canUseAdminChannel: linkedCanUseAdminChannel,
     updateChannel,
     updateChannelPref: linkedCanUseAdminChannel ? updateChannelPref : "latest",
+    partyInviteTrayNotifications:
+      settings.partyInviteTrayNotifications !== false,
     javaRuntime: managedJava.status(),
     dosBoxRuntime: managedDosBox.status(),
     dotNetRuntime: managedDotNet.status(),
@@ -3036,7 +3052,7 @@ function broadcastInstallQueue() {
 }
 
 function sendProgress(payload) {
-  if (activeInstallTask) {
+  if (activeInstallTask && (!payload.slug || payload.slug === activeInstallTask.slug)) {
     if (payload.phase) activeInstallTask.phase = payload.phase;
     if (payload.received != null) activeInstallTask.received = payload.received;
     if (payload.total != null) activeInstallTask.total = payload.total;
@@ -4004,7 +4020,10 @@ function repairUnixExtractedBinaries(destDir) {
  * Basenames are enough: findExecutable matches the hint against file names.
  */
 function exeHintFor(entry) {
-  if (entry?.exeHint) return entry.exeHint;
+  if (entry?.slug === "the-dark-mod") {
+    return "TheDarkModx64|TheDarkMod|DarkMod";
+  }
+  if (entry?.exeHint && !isUninstallerExe(entry.exeHint)) return entry.exeHint;
   const bases = (entry?.knownExePaths || [])
     .map((raw) => {
       try {
@@ -4013,7 +4032,7 @@ function exeHintFor(entry) {
         return "";
       }
     })
-    .filter(Boolean);
+    .filter((b) => Boolean(b) && !isUninstallerExe(b));
   return bases.length > 0 ? bases.join("|") : undefined;
 }
 
@@ -4066,6 +4085,7 @@ function findExecutable(dir, exeHint) {
         continue;
       }
       if (stat.isSymbolicLink()) continue;
+      if (isUninstallerExe(name)) continue;
       if (stat.isDirectory()) {
         if (process.platform === "darwin" && name.endsWith(".app") && (ignoreSkip || !skip.test(name))) {
           candidates.push({ full, name, size: stat.size, rank: 300 });
@@ -4136,7 +4156,7 @@ function findExecutable(dir, exeHint) {
     const parts = String(exeHint)
       .split("|")
       .map((p) => p.trim().replace(/\.exe$/i, ""))
-      .filter(Boolean);
+      .filter((p) => Boolean(p) && !isUninstallerExe(p.endsWith(".exe") ? p : `${p}.exe`));
     if (parts.length > 0) {
       const pattern = parts
         .map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
@@ -4164,6 +4184,45 @@ function findExecutable(dir, exeHint) {
 function preferRunnableCandidate(entries) {
   const sorted = [...entries].sort((a, b) => b.rank - a.rank || b.size - a.size);
   return preferRunnableExecutable(sorted.map((e) => e.full)) || sorted[0].full;
+}
+
+/**
+ * Find an installer executable in an extracted folder (e.g. tdm_installer.exe, setup.exe).
+ * Used when an archive contains only an installer stub rather than the installed game.
+ */
+function findInstallerInDir(dir, entry) {
+  if (!dir || !fs.existsSync(dir)) return null;
+  const queue = [{ d: dir, depth: 0 }];
+  const candidates = [];
+  while (queue.length) {
+    const current = queue.shift();
+    if (!current || current.depth > 3) continue;
+    let entries;
+    try {
+      entries = fs.readdirSync(current.d, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const ent of entries) {
+      const full = path.join(current.d, ent.name);
+      if (ent.isDirectory()) {
+        queue.push({ d: full, depth: current.depth + 1 });
+      } else if (ent.isFile() && /\.exe$/i.test(ent.name)) {
+        if (isInstallerExe(ent.name)) {
+          let size = 0;
+          try {
+            size = fs.statSync(full).size;
+          } catch {
+            /* ignore */
+          }
+          candidates.push({ full, name: ent.name, depth: current.depth, size });
+        }
+      }
+    }
+  }
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => a.depth - b.depth || b.size - a.size);
+  return candidates[0].full;
 }
 
 /**
@@ -4219,7 +4278,9 @@ function findYSoccerOnlineJar(dir) {
 }
 
 function expandWinPath(p) {
+  const gamesDir = (typeof loadSettings === "function" && loadSettings()?.gamesDir) || DEFAULT_GAMES_DIR || "C:\\Games";
   let out = String(p || "")
+    .replace(/%GAMES%/gi, gamesDir)
     .replace(/%LOCALAPPDATA%/gi, process.env.LOCALAPPDATA || "")
     .replace(/%APPDATA%/gi, process.env.APPDATA || "")
     .replace(/%PROGRAMFILES%/gi, process.env.PROGRAMFILES || "")
@@ -4824,6 +4885,7 @@ function markInstalledFromExe(slug, entry, exe, version) {
 
 function stopInstallerPoll() {
   installerPollCancel = null;
+  installerPollOnComplete = null;
   if (installerPollTimer) {
     clearInterval(installerPollTimer);
     installerPollTimer = null;
@@ -4835,21 +4897,46 @@ function stopInstallerPoll() {
   }
 }
 
+/** Complete a waiting installer poll for `slug`, resolving whoever awaits it. */
+function completeInstallerPoll(slug, result) {
+  if (slug && installerPollSlug && installerPollSlug !== slug) return false;
+  const cb = installerPollOnComplete;
+  stopInstallerPoll();
+  if (cb) {
+    try {
+      cb(null, result);
+    } catch (err) {
+      console.warn("installerPoll onComplete failed:", err);
+    }
+    return true;
+  }
+  return false;
+}
+
 /** Stop a waiting installer poll for `slug`, failing whoever awaits it. */
 function abortInstallerPoll(slug) {
-  if (!installerPollCancel) return false;
-  if (slug && installerPollSlug !== slug) return false;
+  if (slug && installerPollSlug && installerPollSlug !== slug) return false;
   const cancel = installerPollCancel;
+  const cb = installerPollOnComplete;
+  stopInstallerPoll();
   const err = new Error("Install cancelled");
   err.code = "INSTALL_CANCELLED";
-  cancel(err);
-  return true;
+  if (cancel) {
+    cancel(err);
+    return true;
+  }
+  if (cb) {
+    cb(err);
+    return true;
+  }
+  return false;
 }
 
 function startInstallerPoll(slug, entry, version, onComplete) {
   stopInstallerPoll();
   stopExeScan(slug);
   installerPollSlug = slug;
+  installerPollOnComplete = typeof onComplete === "function" ? onComplete : null;
   /*
    * How cancelling reaches a poll that is already waiting.
    *
@@ -4859,12 +4946,9 @@ function startInstallerPoll(slug, entry, version, onComplete) {
    * out on its own.
    */
   installerPollCancel = (err) => {
+    const cb = installerPollOnComplete;
     stopInstallerPoll();
-    if (onComplete) {
-      const cb = onComplete;
-      onComplete = null;
-      cb(err);
-    }
+    if (cb) cb(err);
   };
   markPendingInstall(slug, version, {
     editionSlug: entry?.editionSlug,
@@ -4896,15 +4980,20 @@ function startInstallerPoll(slug, entry, version, onComplete) {
 
   const tryKnownPath = ({ deep }) => {
     let known = findKnownPathOnly(entry);
+    if (!known) {
+      known = findExeInSlugGamesDir(entry);
+    }
+    if (!known && entry?.installDir && fs.existsSync(entry.installDir)) {
+      known = findExecutable(entry.installDir, exeHintFor(entry));
+    }
     if (!known && deep) {
       invalidateUninstallCache(entry);
       known = findKnownExecutable(entry);
     }
     if (!known) return false;
-    stopInstallerPoll();
     stopExeScan(slug);
     const result = markInstalledFromExe(slug, entry, known, version || "located");
-    if (onComplete) onComplete(null, result);
+    completeInstallerPoll(slug, result);
     return true;
   };
 
@@ -4921,6 +5010,7 @@ function startInstallerPoll(slug, entry, version, onComplete) {
 
   installerPollTimer = setInterval(() => {
     if (Date.now() - started > maxMs) {
+      const cb = installerPollOnComplete;
       stopInstallerPoll();
       // Keep the pending Library card so Play is Locate, not a vanished install.
       // Do not start a full-disk exe scan — that freezes the launcher.
@@ -4929,9 +5019,8 @@ function startInstallerPoll(slug, entry, version, onComplete) {
         false,
         `Couldn't find ${title} automatically — choose the .exe in Library.`
       );
-      if (onComplete) {
-        onComplete(new Error(`Couldn't find ${title} after its installer closed.`));
-        onComplete = null;
+      if (cb) {
+        cb(new Error(`Couldn't find ${title} after its installer closed.`));
       }
       return;
     }
@@ -5554,6 +5643,13 @@ function markInstalled(
   { version, exe, dir, editionSlug, editionName, editionType, connectArgs, launchArgs, features, tags, hasControllerSupport }
 ) {
   stopExeScan(slug);
+  completeInstallerPoll(slug, {
+    status: "installed",
+    version,
+    exe,
+    dir,
+    editionSlug: editionSlug || DEFAULT_EDITION_SLUG,
+  });
   stopInstallerPoll();
   const state = loadState();
   const game = ensureGameInstallRecord(state[slug]);
@@ -5687,18 +5783,26 @@ function expectedExeBasenames(entry) {
   const bases = new Set();
   for (const raw of entry?.knownExePaths || []) {
     const base = path.basename(expandWinPath(raw)).toLowerCase();
-    if (base && /\.(exe|cmd|bat)$/i.test(base)) bases.add(base);
+    if (base && /\.(exe|cmd|bat)$/i.test(base) && !isUninstallerExe(base)) bases.add(base);
   }
-  if (entry?.exeHint && !/[|\\/]/.test(entry.exeHint)) {
-    const hint = String(entry.exeHint).toLowerCase();
-    if (/\.(exe|cmd|bat)$/.test(hint)) bases.add(hint);
-    else bases.add(`${hint}.exe`);
+  const hintRaw = entry?.slug === "the-dark-mod" ? "TheDarkModx64|TheDarkMod|DarkMod" : entry?.exeHint;
+  if (hintRaw) {
+    const hints = String(hintRaw)
+      .split("|")
+      .map((p) => p.trim().toLowerCase())
+      .filter((p) => Boolean(p) && !isUninstallerExe(p.endsWith(".exe") ? p : `${p}.exe`));
+    for (const hint of hints) {
+      if (!/[\\/]/.test(hint)) {
+        if (/\.(exe|cmd|bat)$/.test(hint)) bases.add(hint);
+        else bases.add(`${hint}.exe`);
+      }
+    }
   }
   if (entry?.slug) {
     const slugExe = `${String(entry.slug).toLowerCase()}.exe`;
     // Skip slug.exe when known/hint names already point at a different launcher
     // binary (e.g. veloren → airshipper.exe).
-    if (bases.size === 0 || bases.has(slugExe)) bases.add(slugExe);
+    if (!isUninstallerExe(slugExe) && (bases.size === 0 || bases.has(slugExe))) bases.add(slugExe);
   }
   /*
    * These names are matched against files in the games directory, and on macOS
@@ -6143,6 +6247,10 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
      * it leave immediately.
      */
     await Promise.race([waitFor, task.finished]);
+    while (activeInstallTask && activeInstallTask !== task) {
+      await Promise.race([activeInstallTask.finished, task.finished]);
+      if (task.cancelled) break;
+    }
     if (task.cancelled) {
       // Outside the try/finally below, so release the chain here too rather
       // than leaning on the cancel path having already done it.
@@ -6277,6 +6385,34 @@ function cancelInstallQueueItem(slug, editionSlug) {
     win.webContents.send("install-scan", { slug, phase: "cancelled", message: "Install cancelled." });
   }
   return { ok: true };
+}
+
+async function maybeHandleInstallerPackage(slug, entry, gameDir, editionExtra, dl) {
+  const installerExe = findInstallerInDir(gameDir, entry);
+  if (!installerExe) return null;
+  sendProgress({
+    phase: "installer-ready",
+    addon: `Waiting for the ${entry.title || slug} installer to finish…`,
+  });
+  await shell.openPath(installerExe);
+  const known =
+    findExecutable(gameDir, exeHintFor(entry)) ||
+    findKnownExecutable(entry);
+  if (known) {
+    const result = markInstalledFromExe(slug, { ...entry, ...editionExtra }, known, dl.version);
+    void reportInstall(slug);
+    void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version, ...editionExtra }));
+    return result;
+  }
+  const result = await new Promise((resolve, reject) => {
+    startInstallerPoll(slug, { ...entry, ...editionExtra, installDir: gameDir }, dl.version, (err, installed) => {
+      if (err) reject(err);
+      else resolve(installed);
+    });
+  });
+  void reportInstall(slug);
+  void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version, ...editionExtra }));
+  return result;
 }
 
 async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
@@ -6634,7 +6770,11 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   const exe = entry.slug === "ysoccer"
     ? findYSoccerOnlineJar(gameDir) || findExecutable(gameDir, exeHintFor(entry)) || findNamedPortableExe(gameDir, "ysoccer.exe")
     : findExecutable(gameDir, exeHintFor(entry));
-  if (!exe) throw new Error("Extracted, but no executable found");
+  if (!exe) {
+    const handled = await maybeHandleInstallerPackage(slug, entry, gameDir, editionExtra, dl);
+    if (handled) return handled;
+    throw new Error("Extracted, but no executable found");
+  }
 
   await processAddons(entry, gameDir, selectedAddons);
   await maybeApplyEditionPostInstall(entry, gameDir);
@@ -11815,6 +11955,22 @@ ipcMain.handle("create-party", async (_event, opts = {}) => {
 
 ipcMain.handle("show-desktop-notification", async (_event, opts) => {
   try {
+    const isPartyInvite =
+      opts?.type === "party_invite" ||
+      opts?.type === "play_invite" ||
+      Boolean(opts?.meta?.partyId) ||
+      Boolean(opts?.meta?.inviteId);
+
+    const isMinimized = isMainWindowMinimized();
+    const settings = loadSettings();
+    const allowStatusNotifs = settings.partyInviteTrayNotifications !== false;
+
+    // When the launcher is minimized, pop up a small notification from the status area for party invites
+    if (isPartyInvite && isMinimized && allowStatusNotifs) {
+      showStatusAreaPartyNotification(opts);
+      return { ok: true, statusArea: true };
+    }
+
     if (Notification && Notification.isSupported()) {
       const notif = new Notification({
         title: opts?.title || "PlayBound",
@@ -13622,11 +13778,194 @@ function closeFriendsPopout() {
   return { ok: true };
 }
 
+/* ── status-area party invite popup ────────────────────────── */
+
+let partyNotifWin = null;
+let partyNotifCloseTimer = null;
+let partyNotifRemainingMs = 15000;
+let partyNotifTimerStartedAt = 0;
+let currentPartyInviteData = null;
+
+function isMainWindowMinimized() {
+  if (!win || win.isDestroyed()) return true;
+  return !win.isVisible() || win.isMinimized();
+}
+
+function getStatusAreaPosition(winWidth, winHeight) {
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { workArea } = primaryDisplay;
+
+  // If system tray icon bounds can be queried on Windows/macOS:
+  if (tray && !tray.isDestroyed()) {
+    try {
+      const tb = tray.getBounds();
+      if (tb && tb.width > 0 && tb.height > 0) {
+        let x = Math.round(tb.x + tb.width / 2 - winWidth / 2);
+        let y = tb.y - winHeight - 8;
+
+        // If taskbar is at the top:
+        if (tb.y < workArea.y + 20) {
+          y = tb.y + tb.height + 8;
+        }
+
+        // Clamp to workArea bounds
+        x = Math.max(workArea.x + 8, Math.min(x, workArea.x + workArea.width - winWidth - 8));
+        y = Math.max(workArea.y + 8, Math.min(y, workArea.y + workArea.height - winHeight - 8));
+        return { x, y };
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  // Standard status area position: bottom-right corner of primary workArea
+  const margin = 12;
+  const x = Math.round(workArea.x + workArea.width - winWidth - margin);
+  const y = Math.round(workArea.y + workArea.height - winHeight - margin);
+  return { x, y };
+}
+
+function createPartyNotifWindow() {
+  if (partyNotifWin && !partyNotifWin.isDestroyed()) return partyNotifWin;
+
+  const width = 360;
+  const height = 142;
+  const { x, y } = getStatusAreaPosition(width, height);
+
+  partyNotifWin = new BrowserWindow({
+    width,
+    height,
+    x,
+    y,
+    show: false,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    movable: false,
+    skipTaskbar: true,
+    alwaysOnTop: true,
+    fullscreenable: false,
+    backgroundColor: "#00000000",
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      backgroundThrottling: false,
+    },
+  });
+
+  partyNotifWin.setAlwaysOnTop(true, "screen-saver");
+  partyNotifWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  partyNotifWin.loadFile(path.join(__dirname, "renderer", "party-notification.html"));
+
+  partyNotifWin.on("closed", () => {
+    partyNotifWin = null;
+    if (partyNotifCloseTimer) {
+      clearTimeout(partyNotifCloseTimer);
+      partyNotifCloseTimer = null;
+    }
+  });
+
+  return partyNotifWin;
+}
+
+function showStatusAreaPartyNotification(inviteData) {
+  const notifWindow = createPartyNotifWindow();
+  currentPartyInviteData = inviteData;
+
+  const width = 360;
+  const height = 142;
+  const { x, y } = getStatusAreaPosition(width, height);
+  notifWindow.setPosition(x, y);
+
+  const sendDataAndShow = () => {
+    if (!notifWindow || notifWindow.isDestroyed()) return;
+    notifWindow.webContents.send("party-invite", inviteData);
+    // showInactive so it pops up without stealing focus from active game or app
+    notifWindow.showInactive();
+  };
+
+  if (notifWindow.webContents.isLoading()) {
+    notifWindow.webContents.once("did-finish-load", sendDataAndShow);
+  } else {
+    sendDataAndShow();
+  }
+
+  partyNotifRemainingMs = 15000;
+  partyNotifTimerStartedAt = Date.now();
+  if (partyNotifCloseTimer) clearTimeout(partyNotifCloseTimer);
+  partyNotifCloseTimer = setTimeout(() => {
+    hidePartyNotifWindow();
+  }, partyNotifRemainingMs);
+}
+
+function hidePartyNotifWindow() {
+  if (partyNotifCloseTimer) {
+    clearTimeout(partyNotifCloseTimer);
+    partyNotifCloseTimer = null;
+  }
+  if (partyNotifWin && !partyNotifWin.isDestroyed() && partyNotifWin.isVisible()) {
+    partyNotifWin.hide();
+  }
+}
+
+function pausePartyNotifTimer() {
+  if (partyNotifCloseTimer) {
+    clearTimeout(partyNotifCloseTimer);
+    partyNotifCloseTimer = null;
+    const elapsed = Date.now() - partyNotifTimerStartedAt;
+    partyNotifRemainingMs = Math.max(1000, partyNotifRemainingMs - elapsed);
+  }
+}
+
+function resumePartyNotifTimer() {
+  if (partyNotifCloseTimer) clearTimeout(partyNotifCloseTimer);
+  partyNotifTimerStartedAt = Date.now();
+  partyNotifCloseTimer = setTimeout(() => {
+    hidePartyNotifWindow();
+  }, partyNotifRemainingMs);
+}
+
+ipcMain.handle("hide-party-notification", () => {
+  hidePartyNotifWindow();
+  return true;
+});
+
+ipcMain.handle("pause-party-notification-timer", () => {
+  pausePartyNotifTimer();
+  return true;
+});
+
+ipcMain.handle("resume-party-notification-timer", () => {
+  resumePartyNotifTimer();
+  return true;
+});
+
+ipcMain.handle("test-party-notification", (_event, opts) => {
+  const sample = {
+    id: opts?.id || "test-party-invite-1",
+    type: "party_invite",
+    title: opts?.title || "Alex invited you to a party",
+    body: opts?.body || "Mindustry · 3 players in lobby",
+    meta: {
+      partyId: opts?.meta?.partyId || "test-party-id",
+      fromUsername: opts?.meta?.fromUsername || "Alex",
+      gameTitle: opts?.meta?.gameTitle || "Mindustry",
+      gameSlug: opts?.meta?.gameSlug || "mindustry",
+      memberCount: opts?.meta?.memberCount || 3,
+    },
+  };
+  showStatusAreaPartyNotification(sample);
+  return { ok: true };
+});
+
 function showMainWindow(opts = {}) {
   const navigate = opts?.navigate || null;
   const sendNavigate = (target) => {
     if (!navigate || !target || target.isDestroyed()) return;
-    target.webContents.send("navigate", navigate);
+    const payload = typeof navigate === "string" ? { view: navigate } : navigate;
+    target.webContents.send("navigate", payload);
   };
 
   if (!win || win.isDestroyed()) {
@@ -13758,6 +14097,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      backgroundThrottling: false,
     },
   });
   if (!appIcon.isEmpty()) win.setIcon(appIcon);

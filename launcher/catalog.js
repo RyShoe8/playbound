@@ -4,6 +4,65 @@
 
 module.exports = [
   {
+    "slug": "the-dark-mod",
+    "title": "The Dark Mod",
+    "blurb": "A living library of fan-built stealth missions where one loud footstep can ruin everything.",
+    "kind": "direct-zip",
+    "art": [
+      "#831843",
+      "#f472b6"
+    ],
+    "approxSize": "~6.1 GB",
+    "genres": [
+      "Stealth",
+      "Adventure"
+    ],
+    "tags": [
+      "Indie",
+      "Mods"
+    ],
+    "launchMethods": [
+      "install"
+    ],
+    "features": [
+      "Singleplayer",
+      "Mod Support",
+      "Level Editor",
+      "Custom Maps",
+      "Community Content"
+    ],
+    "multiplayer": false,
+    "hasServerBrowser": false,
+    "isMultiplayer": false,
+    "coverImage": "https://www.thedarkmod.com/wp-content/themes/thedarkmod/images/tdm_title.png",
+    "exeHint": "TheDarkModx64|TheDarkMod|DarkMod",
+    "url": "https://update.thedarkmod.com/zipsync/tdm_installer.exe.zip",
+    "fileName": "tdm_installer.exe.zip",
+    "versionLabel": "2.14",
+    "knownExePaths": [
+      "%GAMES%\\the-dark-mod\\TheDarkModx64.exe",
+      "%GAMES%\\the-dark-mod\\TheDarkMod.exe",
+      "%PROGRAMFILES%\\TheDarkMod\\TheDarkModx64.exe",
+      "%PROGRAMFILES(X86)%\\TheDarkMod\\TheDarkModx64.exe",
+      "%PROGRAMFILES%\\The Dark Mod\\TheDarkModx64.exe",
+      "%PROGRAMFILES(X86)%\\The Dark Mod\\TheDarkModx64.exe",
+      "C:\\Games\\TheDarkMod\\TheDarkModx64.exe",
+      "TheDarkModx64.exe",
+      "TheDarkMod.exe",
+      "DarkMod.exe"
+    ],
+    "registryTitles": [
+      "The Dark Mod"
+    ],
+    "note": "Official standalone bootstrap installer package for The Dark Mod.",
+    "status": "testing",
+    "testing": true,
+    "platforms": [
+      "Windows",
+      "Linux"
+    ]
+  },
+  {
     "slug": "openra",
     "title": "OpenRA",
     "blurb": "Classic real-time strategy, rebuilt for the modern age.",

@@ -5,29 +5,60 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 
-const { chooseExeFromListing, isUninstallerExe } = require("./exeCandidates.js");
+const { chooseExeFromListing, isUninstallerExe, isInstallerExe } = require("./exeCandidates.js");
 
-test("a recipe's own name wins over everything else", () => {
+test("a recipe's own name wins over everything else unless it is an uninstaller or installer", () => {
   const files = ["7kaa.exe", "bin/game.exe", "unins000.exe"];
   assert.equal(
     chooseExeFromListing({ files, wanted: ["bin/game.exe"], title: "Seven Kingdoms" }),
     "bin/game.exe"
   );
+  assert.equal(
+    chooseExeFromListing({ files: ["tdm_installer.exe", "hash.txt"], wanted: ["tdm_installer.exe"], title: "The Dark Mod" }),
+    null,
+    "an installer stub named by a recipe is never chosen as the game executable"
+  );
 });
 
-test("an uninstaller is never the game", () => {
+test("an uninstaller or installer stub is never the game", () => {
   /*
    * Inno Setup writes DisplayIcon pointing at its own uninstaller as often as
    * at the app, and a Play button wired to unins000.exe offers to delete the
    * game the player just installed.
+   *
+   * Similarly, an installer binary (e.g. tdm_installer.exe, install.exe, setup.exe)
+   * must never be mistaken for the installed game executable.
    */
   assert.ok(isUninstallerExe("C:\\Games\\7KAA\\unins000.exe"));
   assert.ok(isUninstallerExe("uninstall.exe"));
   assert.ok(isUninstallerExe("Uninstall Seven Kingdoms.exe"));
+  assert.ok(isUninstallerExe("tdm_installer.exe"));
+  assert.ok(isUninstallerExe("install.exe"));
+  assert.ok(isUninstallerExe("setup.exe"));
+  assert.ok(isUninstallerExe("wininst-14.0-amd64.exe"));
   assert.ok(!isUninstallerExe("7kaa.exe"));
+  assert.ok(!isUninstallerExe("TheDarkModx64.exe"));
+  assert.ok(!isUninstallerExe("DarkMod.exe"));
+
+  assert.ok(isInstallerExe("tdm_installer.exe"));
+  assert.ok(isInstallerExe("install.exe"));
+  assert.ok(isInstallerExe("installer.exe"));
+  assert.ok(isInstallerExe("setup.exe"));
+  assert.ok(!isInstallerExe("unins000.exe"));
+  assert.ok(!isInstallerExe("TheDarkModx64.exe"));
+
   assert.equal(
     chooseExeFromListing({ files: ["unins000.exe", "7kaa.exe"], title: "Seven Kingdoms: Ancient Adversaries" }),
     "7kaa.exe"
+  );
+  assert.equal(
+    chooseExeFromListing({ files: ["tdm_installer.exe", "TheDarkModx64.exe"], title: "The Dark Mod", slug: "the-dark-mod" }),
+    "TheDarkModx64.exe"
+  );
+  assert.equal(
+    chooseExeFromListing({ files: ["tdm_installer.exe", "hash.txt"], title: "The Dark Mod", slug: "the-dark-mod" }),
+    null,
+    "a folder with only an installer stub resolves to nothing until the game is installed"
   );
 });
 

@@ -237,8 +237,12 @@ async function refresh() {
           seenNotificationIds.add(item.id);
           showNotificationToast(item);
           void window.playbound.showDesktopNotification?.({
+            id: item.id,
+            type: item.type,
             title: item.title,
             body: item.body || "",
+            href: item.href || "",
+            meta: item.meta || {},
           });
         }
       }

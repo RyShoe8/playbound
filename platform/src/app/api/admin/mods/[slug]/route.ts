@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
 import CatalogMod from "@/lib/models/CatalogMod";
@@ -87,6 +87,17 @@ export async function PATCH(
 
     revalidateTag("mods", { expire: 0 });
     revalidateTag("developers", { expire: 0 });
+    if (parsed.baseGameSlug) {
+      revalidatePath(`/games/${parsed.baseGameSlug}`);
+      if (doc.editionSlug) {
+        revalidatePath(`/games/${parsed.baseGameSlug}/editions/${doc.editionSlug}`);
+      }
+    }
+    revalidatePath(`/mods/${doc.slug}`);
+    if (slug !== doc.slug) {
+      revalidatePath(`/mods/${slug}`);
+    }
+    revalidatePath("/mods");
     return NextResponse.json({ success: true, slug: doc.slug });
   } catch (err) {
     if (err instanceof z.ZodError) {
@@ -112,6 +123,14 @@ export async function DELETE(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
     revalidateTag("mods", { expire: 0 });
+    if (doc.baseGameSlug) {
+      revalidatePath(`/games/${doc.baseGameSlug}`);
+      if (doc.editionSlug) {
+        revalidatePath(`/games/${doc.baseGameSlug}/editions/${doc.editionSlug}`);
+      }
+    }
+    revalidatePath(`/mods/${doc.slug}`);
+    revalidatePath("/mods");
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("Admin delete mod error:", err);

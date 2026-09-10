@@ -886,6 +886,11 @@ const GAMES = {
  * from a profile but keeps its settings somewhere we cannot safely edit.
  */
 const NO_CONFIG_NEEDED = {
+  "alien-swarm": {
+    kind: "native",
+    note:
+      "Alien Swarm features partial controller support requiring console commands (such as exec 360controller) or Steam settings, whereas its community continuation, Alien Swarm: Reactive Drop, features official full controller support.",
+  },
   "alien-swarm-reactive-drop": {
     kind: "native",
     note:

@@ -1349,6 +1349,46 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       "Source sourcemod. Client-hosted listen server; no srcds recipe on the VPS, so it is self-host only for now.",
   },
 
+  "alien-swarm": {
+    gameSlug: "alien-swarm",
+    title: "Alien Swarm",
+    tier: "tier2_automated_server",
+    adapterType: "direct-ip",
+    protocol: "custom",
+    client: {
+      launchArguments: ["+connect", "{host}:{port}"],
+      inGameSteps: ["Choose a marine class and loadout when the briefing starts."],
+    },
+    selfHost: {
+      port: 27015,
+      protocol: "udp",
+      verified: true,
+      inGameSteps: ["Create Game", "Select a campaign mission and launch lobby"],
+    },
+    notes:
+      "Valve Source engine co-op tactical shooter. Direct IP join via +connect; client-hosted listen server on port 27015.",
+  },
+
+  "alien-swarm-reactive-drop": {
+    gameSlug: "alien-swarm-reactive-drop",
+    title: "Alien Swarm: Reactive Drop",
+    tier: "tier2_automated_server",
+    adapterType: "direct-ip",
+    protocol: "custom",
+    client: {
+      launchArguments: ["+connect", "{host}:{port}"],
+      inGameSteps: ["Choose a marine class and loadout when the briefing starts."],
+    },
+    selfHost: {
+      port: 27015,
+      protocol: "udp",
+      verified: true,
+      inGameSteps: ["Create Game", "Select campaign mission or workshop map and launch lobby"],
+    },
+    notes:
+      "Community continuation on Source engine with official full controller support and active Steam/LAN multiplayer.",
+  },
+
   // ─── TIER 3: Official / Proprietary (Party Orchestration Only) ───────────
   "marvel-snap": {
     gameSlug: "marvel-snap",

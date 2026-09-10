@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import type { PipelineStage } from "mongoose";
 import dbConnect from "@/lib/db";
 import CatalogMod from "@/lib/models/CatalogMod";
 import type { GameArt, GameFaq, InstallStep } from "@/lib/data/types";
@@ -7,6 +8,7 @@ import type { ModHardwareRequirements } from "@/lib/hardware/types";
 import { mods as seedMods } from "@/lib/data/mods";
 import ModClassification from "@/lib/models/ModClassification";
 import { getDescendantClassificationIds } from "@/lib/modClassifications";
+import { modBaseGameSlugsForCatalogGame } from "@/lib/catalogGameAliases";
 
 const seedBySlug = new Map(seedMods.map((s) => [s.slug, s]));
 
@@ -285,10 +287,33 @@ function seedToModPublic(seed: (typeof seedMods)[number]): CatalogModPublic {
 
 async function listModsUncached(opts?: ListModsOptions): Promise<CatalogModPublic[]> {
   let dbMods: CatalogModPublic[] = [];
+  const existingDbSlugs = new Set<string>();
   try {
     await dbConnect();
+
+    // Track all existing mod slugs in MongoDB within scope so that
+    // draft/testing/archived documents in MongoDB are NEVER resurrected from seedMods.
+    const allowedBaseSlugs = opts?.baseGameSlug
+      ? modBaseGameSlugsForCatalogGame(opts.baseGameSlug)
+      : null;
+    const slugScopeFilter = allowedBaseSlugs
+      ? allowedBaseSlugs.length === 1
+        ? { baseGameSlug: allowedBaseSlugs[0] }
+        : { baseGameSlug: { $in: allowedBaseSlugs } }
+      : {};
+    const existingDbDocs = await CatalogMod.find(slugScopeFilter, { slug: 1 }).lean();
+    for (const d of existingDbDocs) {
+      if (d.slug) existingDbSlugs.add(String(d.slug));
+    }
+
     const parts: Record<string, unknown>[] = [];
-    if (opts?.baseGameSlug) parts.push({ baseGameSlug: opts.baseGameSlug });
+    if (allowedBaseSlugs) {
+      parts.push(
+        allowedBaseSlugs.length === 1
+          ? { baseGameSlug: allowedBaseSlugs[0] }
+          : { baseGameSlug: { $in: allowedBaseSlugs } }
+      );
+    }
     if (opts && "editionSlug" in opts) {
       // null matches both explicit null and missing field (legacy docs).
       parts.push({ editionSlug: opts.editionSlug ?? null });
@@ -323,19 +348,19 @@ async function listModsUncached(opts?: ListModsOptions): Promise<CatalogModPubli
     console.error("[mods] listMods failed:", err);
   }
 
-  // Include seed mods that are not in MongoDB
-  const storedSlugs = new Set(dbMods.map((m) => m.slug));
+  // Include seed mods that are not in MongoDB.
+  // The database is the source of truth. If a mod exists in MongoDB under ANY status
+  // (e.g. draft), it must never be resurrected from seedMods.
+  const storedSlugs = new Set([...dbMods.map((m) => m.slug), ...existingDbSlugs]);
+  const allowedBaseSlugsSet = opts?.baseGameSlug
+    ? new Set(modBaseGameSlugsForCatalogGame(opts.baseGameSlug))
+    : null;
+
   const matchingSeeds = seedMods
     .filter((s) => {
       if (storedSlugs.has(s.slug)) return false;
       if (!opts?.includeUnpublished && !s.published) return false;
-      if (opts?.baseGameSlug) {
-        const match =
-          s.baseGameSlug === opts.baseGameSlug ||
-          (opts.baseGameSlug === "dungeon-keeper-gold" && (s.baseGameSlug === "keeperfx" || s.baseGameSlug === "dungeon-keeper-gold")) ||
-          (opts.baseGameSlug === "alephone" && (s.baseGameSlug === "marathon-2" || s.baseGameSlug === "alephone"));
-        if (!match) return false;
-      }
+      if (allowedBaseSlugsSet && !allowedBaseSlugsSet.has(s.baseGameSlug)) return false;
       return true;
     })
     .map(seedToModPublic);
@@ -399,30 +424,43 @@ export async function getMod(
   slug: string,
   opts?: { includeUnpublished?: boolean; includeTesting?: boolean }
 ): Promise<CatalogModPublic | undefined> {
+  let docExistsInMongo = false;
   try {
     await dbConnect();
-    const query: Record<string, unknown> = opts?.includeUnpublished
-      ? { slug }
-      : { $and: [{ slug }, mongoVisibleFilter({ includeTesting: Boolean(opts?.includeTesting) })] };
-    const doc = await CatalogMod.findOne(query).lean();
+    const doc = await CatalogMod.findOne({ slug }).lean();
     if (doc) {
-      const mod = toMod(doc as LeanMod);
-      if (mod.classificationIds?.length) {
-        const classifications = await ModClassification.find(
-          { _id: { $in: mod.classificationIds } },
-          { name: 1 }
-        ).lean();
-        mod.tags = classifications.map((c) => c.name);
+      docExistsInMongo = true;
+      const lean = doc as LeanMod;
+      const status = normalizeStatus(lean);
+      const isVisible =
+        opts?.includeUnpublished ||
+        status === "published" ||
+        (opts?.includeTesting && (status === "testing" || Boolean(doc.inTesting)));
+
+      if (isVisible) {
+        const mod = toMod(lean);
+        if (mod.classificationIds?.length) {
+          const classifications = await ModClassification.find(
+            { _id: { $in: mod.classificationIds } },
+            { name: 1 }
+          ).lean();
+          mod.tags = classifications.map((c) => c.name);
+        }
+        return mod;
       }
-      return mod;
+      // Mod exists in MongoDB but is draft/non-visible: do NOT fall back to seed!
+      return undefined;
     }
   } catch (err) {
     console.error("[mods] getMod failed:", err);
   }
 
-  const seed = seedBySlug.get(slug);
-  if (seed && (opts?.includeUnpublished || seed.published)) {
-    return seedToModPublic(seed);
+  // Only fall back to seed if the mod does NOT exist in MongoDB at all
+  if (!docExistsInMongo) {
+    const seed = seedBySlug.get(slug);
+    if (seed && (opts?.includeUnpublished || seed.published)) {
+      return seedToModPublic(seed);
+    }
   }
 
   return undefined;
@@ -466,13 +504,18 @@ export async function getModAdmin(slug: string) {
   return null;
 }
 
-export async function modCountsByGame(): Promise<Map<string, number>> {
+export async function modCountsByGame(opts?: {
+  includeUnpublished?: boolean;
+}): Promise<Map<string, number>> {
   const counts = new Map<string, number>();
   try {
     await dbConnect();
-    const rows = await CatalogMod.aggregate<{ _id: string; count: number }>([
-      { $group: { _id: "$baseGameSlug", count: { $sum: 1 } } },
-    ]);
+    const pipeline: PipelineStage[] = [];
+    if (!opts?.includeUnpublished) {
+      pipeline.push({ $match: mongoVisibleFilter({ includeTesting: false }) });
+    }
+    pipeline.push({ $group: { _id: "$baseGameSlug", count: { $sum: 1 } } });
+    const rows = await CatalogMod.aggregate<{ _id: string; count: number }>(pipeline);
     for (const r of rows) {
       counts.set(r._id, r.count);
     }
