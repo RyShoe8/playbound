@@ -2396,6 +2396,69 @@ async function refreshRemoteCatalog(force = false) {
   }
 }
 
+/*
+ * Editions whose portable layout is known to keep saves outside the install
+ * directory and can therefore be replaced safely in the background.
+ *
+ * Auto-updating every archive would be destructive for older portable games
+ * that store saves beside the executable. Keep this an explicit allowlist
+ * until recipes can declare their save/update contract themselves.
+ */
+const SAFE_MANAGED_EDITION_UPDATES = new Set(["rollercoaster-tycoon::openrct2"]);
+
+function normalizedReleaseVersion(value) {
+  return String(value || "").trim().replace(/^v/i, "");
+}
+
+async function autoUpdateSafeManagedEditions() {
+  const state = loadState();
+  for (const key of SAFE_MANAGED_EDITION_UPDATES) {
+    const [slug, editionSlug] = key.split("::");
+    let edition;
+    try {
+      edition = await resolveEditionForInstall(slug, editionSlug);
+    } catch (err) {
+      console.warn(`[game-update] couldn't check ${key}:`, err?.message || err);
+      continue;
+    }
+    const editionEntry = catalogEntryFromEdition(edition);
+    const entry = editionEntry ? { ...(catalogEntry(slug) || {}), ...editionEntry } : null;
+    if (!["direct-zip", "direct-7z", "github-zip"].includes(entry?.kind)) continue;
+
+    const game = ensureGameInstallRecord(state[slug]);
+    const installed = game.editions?.[editionSlug];
+    const fromVersion = normalizedReleaseVersion(installed?.version);
+    const toVersion = normalizedReleaseVersion(entry?.versionLabel);
+    if (!exeOnDisk(installed) || !fromVersion || !toVersion || fromVersion === toVersion) {
+      continue;
+    }
+    if (!isPlayBoundManagedInstallDir(slug, installed.dir)) continue;
+
+    try {
+      console.log(
+        `[game-update] ${slug}/${editionSlug}: ${fromVersion} -> ${toVersion}`
+      );
+      const result = await installGame(slug, installed.dir, editionSlug);
+      if (result?.status === "installed") {
+        void telemetry.editionUpdated(
+          editionInfoFor(slug, {
+            editionSlug,
+            fromVersion,
+            toVersion,
+          })
+        );
+      }
+    } catch (err) {
+      // Install failures are already surfaced by installGame and can be
+      // retried on the next launcher run.
+      console.warn(
+        `[game-update] ${slug}/${editionSlug} failed:`,
+        err?.message || err
+      );
+    }
+  }
+}
+
 async function ensureCatalogEntry(slug, forceRemote = false) {
   const existing = catalogEntry(slug);
   if (!forceRemote && existing && existing.kind && existing.kind !== "external") {
@@ -4036,6 +4099,34 @@ function exeHintFor(entry) {
   return bases.length > 0 ? bases.join("|") : undefined;
 }
 
+/**
+ * A catalog path can describe an installer helper rather than a game binary.
+ * Unknown Horizons' old recipe names run_uh.bat; keeping that as an automatic
+ * answer makes Play save the script even when the player explicitly needs to
+ * locate the real Windows executable.
+ */
+function acceptsKnownExecutable(entry, candidate) {
+  if (
+    process.platform === "win32" &&
+    entry?.slug === "unknown-horizons" &&
+    /\.(?:bat|cmd)$/i.test(String(candidate || ""))
+  ) {
+    return false;
+  }
+  return true;
+}
+
+/** Recipe paths plus narrowly-known vendor defaults missing from older rows. */
+function knownExecutablePathsFor(entry) {
+  const paths = [...(entry?.knownExePaths || [])];
+  if (process.platform === "win32" && entry?.slug === "seven-kingdoms-ancient-adversaries") {
+    for (const root of [process.env["ProgramFiles(x86)"], process.env.ProgramFiles]) {
+      if (root) paths.push(path.join(root, "7kaa", "7kaa.exe"));
+    }
+  }
+  return paths;
+}
+
 function findExecutable(dir, exeHint) {
   if (!dir || !fs.existsSync(dir)) return null;
   const candidates = [];
@@ -4476,7 +4567,7 @@ if (-not $hit) { return }
             };
             if (want.size) walk(root, 0);
           }
-          if (!exe) {
+          if (!exe && entry?.slug !== "unknown-horizons") {
             /*
              * A game whose recipe names no executable at all — a catalog row
              * added for testing, most often. Windows has just told us the
@@ -4486,6 +4577,10 @@ if (-not $hit) { return }
              * The choice is deliberately timid (see services/exeCandidates.js)
              * and returns nothing rather than guess badly, which leaves the
              * existing "choose the .exe in Library" path as the fallback.
+             * Unknown Horizons is intentionally excluded: its legacy install
+             * has a generic bundled python.exe, not a standalone game binary,
+             * and selecting that silently is worse than asking the player to
+             * locate the executable they actually use.
              */
             const listing = [];
             const collect = (dir, rel, depth) => {
@@ -4631,9 +4726,10 @@ function findMacApplication(entry) {
 }
 
 function findKnownPathOnly(entry) {
-  for (const raw of entry.knownExePaths || []) {
+  for (const raw of knownExecutablePathsFor(entry)) {
     const full = expandWinPath(raw);
     if (!full) continue;
+    if (!acceptsKnownExecutable(entry, full)) continue;
     if (full.includes("*")) {
       const parts = full.split("*");
       const baseDir = parts[0].replace(/[\\/]+$/, "");
@@ -5781,9 +5877,16 @@ function dismissPendingInstall(slug, editionSlug = null) {
 
 function expectedExeBasenames(entry) {
   const bases = new Set();
-  for (const raw of entry?.knownExePaths || []) {
+  for (const raw of knownExecutablePathsFor(entry)) {
     const base = path.basename(expandWinPath(raw)).toLowerCase();
-    if (base && /\.(exe|cmd|bat)$/i.test(base) && !isUninstallerExe(base)) bases.add(base);
+    if (
+      base &&
+      /\.(exe|cmd|bat)$/i.test(base) &&
+      !isUninstallerExe(base) &&
+      acceptsKnownExecutable(entry, base)
+    ) {
+      bases.add(base);
+    }
   }
   const hintRaw = entry?.slug === "the-dark-mod" ? "TheDarkModx64|TheDarkMod|DarkMod" : entry?.exeHint;
   if (hintRaw) {
@@ -7601,7 +7704,13 @@ async function locateGameExecutable(slug) {
             { name: "Java / binaries", extensions: ["jar", "*"] },
             { name: "All Files", extensions: ["*"] },
           ]
-        : [{ name: "Executables", extensions: ["exe", "cmd", "bat", "jar"] }],
+        : [
+            {
+              name: "Executables",
+              extensions:
+                slug === "unknown-horizons" ? ["exe"] : ["exe", "cmd", "bat", "jar"],
+            },
+          ],
     properties:
       process.platform === "darwin"
         ? ["openFile", "treatPackageAsDirectory"]
@@ -8014,6 +8123,29 @@ async function playGameInner(slug, join = null, editionSlug = null) {
         await maybeRepairWolfensteinEtInstall(slug, info, key);
         break;
       }
+    }
+  }
+  /*
+   * Migrate the bad Unknown Horizons pointer already saved by older launcher
+   * builds. Merely fixing discovery helps new installs, but an existing
+   * run_uh.bat record would keep rendering Play and launching the same script
+   * forever. Put the player straight into Locate and replace the edition's
+   * pointer with the chosen .exe.
+   */
+  if (exeOnDisk(info) && !acceptsKnownExecutable({ slug }, info.exe)) {
+    const located = await locateGameExecutable(slug);
+    if (located?.status === "installed" && located.exe) {
+      info = {
+        ...info,
+        exe: located.exe,
+        dir: located.dir,
+        version: located.version,
+        editionSlug: located.editionSlug || edSlug,
+      };
+    } else {
+      const locateErr = new Error(`Choose the ${catalogEntry(slug)?.title || slug} .exe to play.`);
+      locateErr.code = "EXE_LOCATE_REQUIRED";
+      throw locateErr;
     }
   }
   if (!exeOnDisk(info)) {
@@ -14349,6 +14481,7 @@ if (gotLock) {
     
     createWindow();
     registerOverlayShortcut();
+    void telemetry.launcherInstalled();
     if (loadSettings().launcherToken) {
       startLauncherPresenceLoop();
     }
@@ -14371,6 +14504,7 @@ if (gotLock) {
     void scanKnownInstalls();
     void (async () => {
       await refreshRemoteCatalog();
+      await autoUpdateSafeManagedEditions();
       for (const entry of catalog) {
         if (
           (entry.kind === "github-installer" || entry.kind === "direct-installer") &&
