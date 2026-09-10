@@ -122,6 +122,15 @@ async function renderSettingsView() {
     </div>
 
     <div class="settings-group">
+      <label class="settings-label">Notifications</label>
+      <p class="settings-hint">Control alerts and status area notifications when PlayBound is minimized or in the background.</p>
+      <label style="display: flex; align-items: center; gap: 8px; margin-top: 8px; cursor: pointer;">
+        <input type="checkbox" id="set-tray-party-notifs" ${settings.partyInviteTrayNotifications === false ? "" : "checked"} />
+        <span style="font-size: 13px; color: var(--text);">Allow party invite notifications to pop up from the status area when minimized</span>
+      </label>
+    </div>
+
+    <div class="settings-group">
       <label class="settings-label">Your Gaming PC</label>
       <p class="settings-hint">Used to check game compatibility on playbound.club. Synced when you sign in.</p>
       <div id="set-hw-summary" style="margin-top: 8px; font-size: 13px; line-height: 1.5; color: var(--text-muted);">Loading…</div>
@@ -200,6 +209,19 @@ async function renderSettingsView() {
     await window.playbound.saveSettings({ updateChannel: "latest" });
     setStatus("Update channel: signed (release)");
     api.renderSettingsView();
+  });
+
+  const trayNotifsCheckbox = document.getElementById("set-tray-party-notifs");
+  if (trayNotifsCheckbox) {
+    trayNotifsCheckbox.checked = settings.partyInviteTrayNotifications !== false;
+  }
+  trayNotifsCheckbox?.addEventListener("change", async () => {
+    await window.playbound.saveSettings({ partyInviteTrayNotifications: trayNotifsCheckbox.checked });
+    setStatus(
+      trayNotifsCheckbox.checked
+        ? "Status area party notifications enabled"
+        : "Status area party notifications disabled"
+    );
   });
 
   const hwSummary = document.getElementById("set-hw-summary");

@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self';"
+    />
+    <title>PlayBound Party Invite</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: rgba(14, 11, 22, 0.95);
+        --border: rgba(139, 92, 246, 0.32);
+        --glow: rgba(139, 92, 246, 0.22);
+        --text: #f5f3ff;
+        --muted: rgba(225, 220, 250, 0.72);
+        --accent: #8b5cf6;
+        --accent-hover: #7c3aed;
+        --accent-gradient: linear-gradient(135deg, #9333ea 0%, #6366f1 100%);
+        --accent-glow: rgba(147, 51, 234, 0.4);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background: transparent;
+        overflow: hidden;
+        user-select: none;
+        -webkit-user-select: none;
+        font: 12px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: var(--text);
+      }
+
+      .popup-wrapper {
+        padding: 4px;
+        width: 100%;
+        height: 100%;
+      }
+
+      .notif-card {
+        width: 100%;
+        height: 100%;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow:
+          0 10px 30px rgba(0, 0, 0, 0.65),
+          0 0 20px var(--glow),
+          inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(18px);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+        animation: popUpFromTray 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+
+      .notif-card.dismissing {
+        animation: popDownDismiss 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
+      }
+
+      @keyframes popUpFromTray {
+        0% {
+          opacity: 0;
+          transform: translateY(24px) scale(0.96);
+        }
+        75% {
+          opacity: 1;
+          transform: translateY(-2px) scale(1.01);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @keyframes popDownDismiss {
+        0% {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+        100% {
+          opacity: 0;
+          transform: translateY(20px) scale(0.95);
+        }
+      }
+
+      /* Subtle gradient line across the top */
+      .top-glow-bar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #a855f7 30%, #6366f1 70%, transparent);
+      }
+
+      .notif-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px 4px;
+      }
+
+      .badge-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .pulse-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #a855f7;
+        box-shadow: 0 0 8px #a855f7;
+        animation: pulseGlow 1.8s infinite ease-in-out;
+      }
+
+      @keyframes pulseGlow {
+        0%, 100% { opacity: 0.8; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.25); box-shadow: 0 0 12px #c084fc; }
+      }
+
+      .badge-text {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #c084fc;
+      }
+
+      .btn-close {
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.45);
+        font-size: 13px;
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+        padding: 0;
+      }
+
+      .btn-close:hover {
+        background: rgba(255, 255, 255, 0.12);
+        color: #ffffff;
+      }
+
+      .notif-body {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 2px 12px 6px;
+      }
+
+      .avatar-badge {
+        flex-shrink: 0;
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, rgba(147, 51, 234, 0.25), rgba(99, 102, 241, 0.25));
+        border: 1px solid rgba(168, 85, 247, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 17px;
+      }
+
+      .text-wrap {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .notif-title {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: #ffffff;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.3;
+      }
+
+      .notif-detail {
+        font-size: 11px;
+        color: var(--muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 2px;
+      }
+
+      .notif-actions {
+        display: flex;
+        gap: 8px;
+        padding: 0 12px 10px;
+      }
+
+      .btn-action {
+        height: 28px;
+        border-radius: 7px;
+        font-size: 11.5px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s ease;
+        padding: 0 12px;
+      }
+
+      .btn-action.primary {
+        flex: 1.4;
+        border: none;
+        background: var(--accent-gradient);
+        color: #ffffff;
+        box-shadow: 0 2px 8px var(--accent-glow);
+      }
+
+      .btn-action.primary:hover {
+        filter: brightness(1.15);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px var(--accent-glow);
+      }
+
+      .btn-action.primary:active {
+        transform: translateY(0);
+        filter: brightness(0.95);
+      }
+
+      .btn-action.secondary {
+        flex: 1;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(255, 255, 255, 0.06);
+        color: rgba(255, 255, 255, 0.85);
+      }
+
+      .btn-action.secondary:hover {
+        background: rgba(255, 255, 255, 0.12);
+        color: #ffffff;
+        border-color: rgba(255, 255, 255, 0.22);
+      }
+
+      .btn-action.secondary:active {
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      /* Auto-dismiss countdown track */
+      .timer-track {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .timer-fill {
+        height: 100%;
+        width: 100%;
+        background: linear-gradient(90deg, #8b5cf6, #c084fc);
+        transform-origin: left center;
+        animation: timerCountdown 15s linear forwards;
+      }
+
+      .timer-fill.paused {
+        animation-play-state: paused;
+      }
+
+      @keyframes timerCountdown {
+        from { transform: scaleX(1); }
+        to { transform: scaleX(0); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="popup-wrapper">
+      <div class="notif-card" id="card">
+        <div class="top-glow-bar"></div>
+
+        <div class="notif-header">
+          <div class="badge-wrap">
+            <span class="pulse-dot"></span>
+            <span class="badge-text" id="badge-text">Party Invite</span>
+          </div>
+          <button type="button" class="btn-close" id="btn-close" title="Dismiss">✕</button>
+        </div>
+
+        <div class="notif-body">
+          <div class="avatar-badge" id="avatar-icon">👥</div>
+          <div class="text-wrap">
+            <div class="notif-title" id="notif-title">Party Invite</div>
+            <div class="notif-detail" id="notif-detail">You were invited to join a party</div>
+          </div>
+        </div>
+
+        <div class="notif-actions">
+          <button type="button" class="btn-action primary" id="btn-join">Join Party</button>
+          <button type="button" class="btn-action secondary" id="btn-decline">Decline</button>
+        </div>
+
+        <div class="timer-track">
+          <div class="timer-fill" id="timer-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="party-notification.js"></script>
+  </body>
+</html>

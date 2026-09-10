@@ -268,6 +268,10 @@ contextBridge.exposeInMainWorld("playbound", {
   onUpdateStatus: (cb) => ipcRenderer.on("update-status", (_event, data) => cb(data || {})),
   onGameExited: (cb) => ipcRenderer.on("game-exited", (_event, data) => cb(data || {})),
   onGameStarted: (cb) => ipcRenderer.on("game-started", (_event, data) => cb(data || {})),
+  hidePartyNotification: () => ipcRenderer.invoke("hide-party-notification"),
+  pausePartyNotificationTimer: () => ipcRenderer.invoke("pause-party-notification-timer"),
+  resumePartyNotificationTimer: () => ipcRenderer.invoke("resume-party-notification-timer"),
+  testPartyNotification: (opts) => ipcRenderer.invoke("test-party-notification", opts || {}),
   /*
    * The machine has been left alone, or picked back up. Consumed by pollGate
    * so an unattended launcher stops asking the server for updates nobody is
@@ -275,4 +279,9 @@ contextBridge.exposeInMainWorld("playbound", {
    */
   onSystemIdle: (cb) => ipcRenderer.on("system-idle", (_event, data) => cb(Boolean(data?.idle))),
   onNavigate: (cb) => ipcRenderer.on("navigate", (_event, data) => cb(data || {})),
+  onPartyInvite: (cb) => {
+    const listener = (_event, data) => cb(data || {});
+    ipcRenderer.on("party-invite", listener);
+    return () => ipcRenderer.removeListener("party-invite", listener);
+  },
 });

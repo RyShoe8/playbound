@@ -118,6 +118,24 @@ function attachLauncherInstall(game: Game, doc?: LeanGame): Game {
       merged.overlayDest = null;
       if (seed.needsDosBox) merged.needsDosBox = true;
     }
+    if (
+      game.slug === "the-dark-mod" &&
+      (merged.exeHint?.includes("tdm_installer") || !merged.knownExePaths?.length)
+    ) {
+      merged.exeHint = seed?.exeHint || "TheDarkModx64|TheDarkMod|DarkMod";
+      merged.knownExePaths = seed?.knownExePaths || [
+        "%GAMES%\\the-dark-mod\\TheDarkModx64.exe",
+        "%GAMES%\\the-dark-mod\\TheDarkMod.exe",
+        "%PROGRAMFILES%\\TheDarkMod\\TheDarkModx64.exe",
+        "%PROGRAMFILES(X86)%\\TheDarkMod\\TheDarkModx64.exe",
+        "%PROGRAMFILES%\\The Dark Mod\\TheDarkModx64.exe",
+        "%PROGRAMFILES(X86)%\\The Dark Mod\\TheDarkModx64.exe",
+        "TheDarkModx64.exe",
+        "TheDarkMod.exe",
+        "DarkMod.exe",
+      ];
+      if (seed?.registryTitles) merged.registryTitles = seed.registryTitles;
+    }
     return { ...game, launcherInstall: merged };
   }
   if (seed) return repairControllerClaims(repairBrowserOnlyFromSeed({ ...game, launcherInstall: seed }));

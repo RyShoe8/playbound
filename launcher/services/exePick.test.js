@@ -45,12 +45,14 @@ function loadPicker() {
     return src.slice(start, i + 1);
   };
 
+  const { isUninstallerExe } = require("./exeCandidates.js");
   const factory = new Function(
     "fs",
     "path",
     "process",
     "expandWinPath",
     "preferRunnableExecutable",
+    "isUninstallerExe",
     `${grab("findExecutable")}
      ${grab("exeHintFor")}
      ${grab("preferRunnableCandidate")}
@@ -64,7 +66,8 @@ function loadPicker() {
     (p) => p,
     // The real one reads PE headers; here every candidate is runnable, so the
     // rank-then-size order is what is under test.
-    (paths) => paths[0]
+    (paths) => paths[0],
+    isUninstallerExe
   );
 }
 
@@ -192,4 +195,38 @@ test("a hint still wins over the bootstrap when a recipe names one", () => {
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test("an installer stub is never returned as the game executable", () => {
+  const installerOnly = makeInstall({
+    "tdm_installer.exe": 1_280_000,
+  });
+  try {
+    const hint = exeHintFor({ slug: "the-dark-mod", exeHint: "^tdm_installer\\.exe$" });
+    assert.equal(hint, "TheDarkModx64|TheDarkMod|DarkMod");
+    assert.equal(findExecutable(installerOnly, hint), null);
+    assert.equal(findExecutable(installerOnly, undefined), null);
+  } finally {
+    fs.rmSync(installerOnly, { recursive: true, force: true });
+  }
+
+  const completeInstall = makeInstall({
+    "tdm_installer.exe": 1_280_000,
+    "TheDarkModx64.exe": 15_000_000,
+  });
+  try {
+    const hint = exeHintFor({ slug: "the-dark-mod" });
+    const picked = findExecutable(completeInstall, hint);
+    assert.ok(picked);
+    assert.equal(path.basename(picked), "TheDarkModx64.exe");
+  } finally {
+    fs.rmSync(completeInstall, { recursive: true, force: true });
+  }
+});
+
+test("installer hints are ignored for any recipe", () => {
+  assert.equal(exeHintFor({ exeHint: "install.exe" }), undefined);
+  assert.equal(exeHintFor({ exeHint: "setup.exe" }), undefined);
+  assert.equal(exeHintFor({ exeHint: "unins000.exe" }), undefined);
+  assert.equal(exeHintFor({ exeHint: "installer.exe", knownExePaths: ["Game.exe"] }), "Game.exe");
 });

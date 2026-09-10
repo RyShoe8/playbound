@@ -133,6 +133,8 @@ const CLIENT_CONNECT_ARGS = {
   "team-fortress-2": ["+connect", "{host}:{port}"],
   "counter-strike-2": ["+connect", "{host}:{port}"],
   "dota-2": ["+connect", "{host}:{port}"],
+  "alien-swarm": ["+connect", "{host}:{port}"],
+  "alien-swarm-reactive-drop": ["+connect", "{host}:{port}"],
 
   // Mindustry takes `ip:port` as argv (same as the catalog recipe). Without
   // this, playGame's client-connect override launched the vanilla client.
@@ -262,6 +264,8 @@ const DEFAULT_GAME_PORTS = {
   "0-ad": 20595,
   "dune-legacy": 28747,
   openmohaa: 12203,
+  "alien-swarm": 27015,
+  "alien-swarm-reactive-drop": 27015,
 };
 
 function defaultGamePort(slug) {
