@@ -55,6 +55,7 @@ function createTelemetry({
   getAppVersion,
   getAuthHeaders = (extra = {}) => extra,
 }) {
+  let launcherInstallInFlight = null;
   /**
    * A stable per-install id, persisted alongside the launcher's own settings.
    * Not tied to an account — it exists so repeat installs from one machine are
@@ -109,6 +110,43 @@ function createTelemetry({
     }
   }
 
+  /**
+   * Record this launcher installation once, rather than inferring installs
+   * from whichever unrelated event happened to arrive first.
+   *
+   * The anonymous id is already the launcher's stable per-install identity,
+   * so key the receipt to it. Persist only after a successful response: an
+   * offline first run should retry next launch instead of losing the event.
+   */
+  function launcherInstalled() {
+    if (launcherInstallInFlight) return launcherInstallInFlight;
+    launcherInstallInFlight = (async () => {
+      const anonymousId = getAnonymousId();
+      try {
+        const settings = loadSettings();
+        if (settings.launcherInstallTrackedId === anonymousId) {
+          return { ok: true, alreadyTracked: true };
+        }
+      } catch {
+        // Tracking is still best-effort when settings cannot be read.
+      }
+
+      const result = await track("launcher_install", { firstSeen: true });
+      if (result.ok) {
+        try {
+          const settings = loadSettings();
+          saveSettings({ ...settings, launcherInstallTrackedId: anonymousId });
+        } catch {
+          // The event arrived; a failed receipt only means a possible retry.
+        }
+      }
+      return result;
+    })().finally(() => {
+      launcherInstallInFlight = null;
+    });
+    return launcherInstallInFlight;
+  }
+
   /** Identity attached to every edition-scoped event. */
   function editionProps({ gameSlug, gameTitle, editionSlug, editionName, editionType }) {
     const slug = editionSlug || "official";
@@ -126,6 +164,7 @@ function createTelemetry({
 
   return {
     track,
+    launcherInstalled,
 
     editionInstalled(info) {
       return track("edition_installed", {

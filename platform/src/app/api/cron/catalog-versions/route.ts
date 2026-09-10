@@ -5,7 +5,11 @@ import CatalogMod from "@/lib/models/CatalogMod";
 import EditionModel from "@/lib/models/Edition";
 import { findOrphanedAdapters } from "@/lib/multiplayer/adapters";
 import { probeGameInstall, probeModInstall } from "@/lib/catalogVersionProbe";
-import { gameProbePatchFields, modProbePatchFields } from "@/lib/applyVersionProbePatch";
+import {
+  editionProbePatchFields,
+  gameProbePatchFields,
+  modProbePatchFields,
+} from "@/lib/applyVersionProbePatch";
 import { withAutoHealGame, withAutoHealMod } from "@/lib/healBrokenInstall";
 import { cronAuthorized } from "@/lib/cronAuth";
 
@@ -117,11 +121,9 @@ async function run(req: Request) {
    * had a pattern that matched nothing and VoxeLibre's overlay was never
    * compared against its engine, and neither showed up anywhere in admin.
    *
-   * Read-only with respect to curation: only the four versionCheck* fields are
-   * written, by dotted path. Auto-heal is deliberately not applied here —
-   * rewriting an edition's recipe is a bigger promise than reporting on it,
-   * and the game pass has that machinery precisely because it was designed
-   * for it.
+   * Version pins are maintained here too. Editions use the same direct GitHub
+   * asset rules as game recipes, so leaving their URL/version read-only made
+   * default editions such as OpenRCT2 stay one release behind indefinitely.
    */
   const editions = await EditionModel.find({
     status: "active",
@@ -147,12 +149,14 @@ async function run(req: Request) {
       assetPattern: (install.assetPattern as string) || null,
       url: (install.url as string) || null,
       versionLabel: (install.versionLabel as string) || null,
-      // Editions have no autoUpdatePinned field; nothing here rewrites a
-      // recipe, so the flag that gates auto-healing is irrelevant either way.
       overlayUrl: (install.overlayUrl as string) || null,
     });
 
-    tally(summary.editions, probed.status, false);
+    const patch = editionProbePatchFields(
+      { kind: (install.kind as string) || null },
+      probed
+    );
+    tally(summary.editions, probed.status, Object.keys(patch).length > 0);
 
     await EditionModel.updateOne(
       { gameSlug: edition.gameSlug, slug: edition.slug },
@@ -162,6 +166,7 @@ async function run(req: Request) {
           lastVersionCheckAt: new Date(),
           versionCheckStatus: probed.status,
           versionCheckNote: probed.note || null,
+          ...patch,
         },
       }
     );

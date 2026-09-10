@@ -35,6 +35,23 @@ export function gameProbePatchFields(
   return set;
 }
 
+/** Dotted installConfig fields to $set for one edition document. */
+export function editionProbePatchFields(
+  install: { kind?: string | null },
+  result: ProbeResult
+): Record<string, unknown> {
+  const gameFields = gameProbePatchFields(
+    { kind: install.kind, autoUpdatePinned: true },
+    result
+  );
+  return Object.fromEntries(
+    Object.entries(gameFields).map(([key, value]) => [
+      key.replace(/^launcherInstall\./, "installConfig.playbound_installer."),
+      value,
+    ])
+  );
+}
+
 /** Top-level mod fields to apply (and return as `applied` for API responses). */
 export function modProbePatchFields(
   mod: {

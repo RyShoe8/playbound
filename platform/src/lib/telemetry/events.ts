@@ -49,6 +49,8 @@ export type TelemetryEventMap = {
   } & Extra;
   /** First-time PlayBound launcher account link (not reconnects). */
   launcher_connected: { firstConnect?: boolean } & Extra;
+  /** First successful telemetry contact from one launcher installation. */
+  launcher_install: { firstSeen?: boolean } & Extra;
   mod_installed: {
     modSlug?: string;
     baseGameSlug?: string;
