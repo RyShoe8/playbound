@@ -197,8 +197,10 @@ function eventNameSlug(raw, fallbackId) {
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "")
     .slice(0, 80);
+  const shortId = String(fallbackId || "").replace(/[^a-z0-9]/gi, "").slice(-6);
+  if (safe && shortId) return `${safe.slice(0, 72)}-${shortId}`;
   if (safe) return safe;
-  return String(fallbackId || "").replace(/[^a-z0-9]/gi, "").slice(-6) || "event";
+  return shortId || "event";
 }
 
 function formatGameNightTitle(raw) {
@@ -1658,18 +1660,34 @@ const server = http.createServer(async (req, res) => {
       // in the shared Events category, and one with a game sits in that game's
       // area, the same way party channels are placed.
       const categoryId = await resolveEventCategoryId(guild, gameSlug);
-      const voice = await guild.channels.create({
-        name: eventVoiceChannelName(title, eventId),
-        type: ChannelType.GuildVoice,
-        parent: categoryId,
-        reason: `PlayBound event voice ${eventId || ""}`,
-      });
-      const text = await guild.channels.create({
-        name: eventTextChannelName(title, eventId),
-        type: ChannelType.GuildText,
-        parent: categoryId,
-        reason: `PlayBound event text ${eventId || ""}`,
-      });
+      // Names include the event id, making this endpoint idempotent: if the
+      // caller timed out after Discord created a channel, a retry reuses it
+      // instead of leaving duplicate rooms behind.
+      await guild.channels.fetch();
+      const voiceName = eventVoiceChannelName(title, eventId);
+      const textName = eventTextChannelName(title, eventId);
+      let voice = guild.channels.cache.find(
+        (channel) => channel.type === ChannelType.GuildVoice && channel.name === voiceName
+      );
+      let text = guild.channels.cache.find(
+        (channel) => channel.type === ChannelType.GuildText && channel.name === textName
+      );
+      if (!voice) {
+        voice = await guild.channels.create({
+          name: voiceName,
+          type: ChannelType.GuildVoice,
+          parent: categoryId,
+          reason: `PlayBound event voice ${eventId || ""}`,
+        });
+      }
+      if (!text) {
+        text = await guild.channels.create({
+          name: textName,
+          type: ChannelType.GuildText,
+          parent: categoryId,
+          reason: `PlayBound event text ${eventId || ""}`,
+        });
+      }
       const invite = await voice.createInvite({
         maxAge: 0,
         maxUses: 0,

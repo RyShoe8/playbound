@@ -7,7 +7,7 @@ import { syncEventAttendance } from "@/lib/events/attendance";
 import { createEventReminderNotification } from "@/lib/events/notifications";
 import {
   cleanupEventDiscordVoice,
-  provisionEventDiscordVoice,
+  provisionEventDiscordVoiceWithRetry,
 } from "@/lib/events/discordEventProvision";
 import {
   channelCleanupDue,
@@ -63,7 +63,7 @@ export async function runEventsCron(now = new Date()): Promise<{
       !event.discordVoiceCleanedAt &&
       channelProvisionDue(event, now)
     ) {
-      const ok = await provisionEventDiscordVoice(event);
+      const ok = await provisionEventDiscordVoiceWithRetry(event);
       if (ok) discordActions++;
     }
 
@@ -80,7 +80,7 @@ export async function runEventsCron(now = new Date()): Promise<{
         !event.discordVoiceChannelId &&
         !event.discordVoiceCleanedAt
       ) {
-        const ok = await provisionEventDiscordVoice(event);
+        const ok = await provisionEventDiscordVoiceWithRetry(event);
         if (ok) discordActions++;
       }
       // Cleanup is not done here. It is a state predicate swept below, so a
@@ -92,7 +92,7 @@ export async function runEventsCron(now = new Date()): Promise<{
       await syncEventAttendance(String(event._id));
       attendanceSynced++;
       if (!event.discordVoiceChannelId && !event.discordVoiceCleanedAt) {
-        const ok = await provisionEventDiscordVoice(event);
+        const ok = await provisionEventDiscordVoiceWithRetry(event);
         if (ok) discordActions++;
       }
     }

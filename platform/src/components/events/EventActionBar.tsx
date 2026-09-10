@@ -53,7 +53,17 @@ export function EventActionBar({
       const current = Date.now();
       if (current < opensAt || current > closesAt) return;
       try {
-        const res = await fetch(`/api/events/${eventId}/discord`, { cache: "no-store" });
+        // A signed-in visitor can repair a missed cron attempt. This only
+        // ensures the room; it never moves or launches Discord in the background.
+        let res = await fetch(`/api/events/${eventId}/discord`, {
+          method: "PUT",
+          cache: "no-store",
+        });
+        // Signed-out visitors cannot ensure a room, but they should still see
+        // it become ready when cron provisions it.
+        if (res.status === 401) {
+          res = await fetch(`/api/events/${eventId}/discord`, { cache: "no-store" });
+        }
         if (!res.ok) return;
         const data = (await res.json()) as { ready?: boolean };
         setRoomReady(Boolean(data.ready));
