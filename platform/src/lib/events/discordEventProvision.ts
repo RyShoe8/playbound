@@ -78,6 +78,20 @@ export async function provisionEventDiscordVoice(
   }
 }
 
+/** Retry short-lived bot/API failures without waiting for the next cron tick. */
+export async function provisionEventDiscordVoiceWithRetry(
+  event: EventLike,
+  attempts = 3
+): Promise<boolean> {
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    if (await provisionEventDiscordVoice(event)) return true;
+    if (attempt < attempts) {
+      await new Promise((resolve) => setTimeout(resolve, attempt * 1_000));
+    }
+  }
+  return false;
+}
+
 export type EventVoiceFollowup = {
   needsDiscordLink: boolean;
   inviteUrl: string | null;

@@ -4,7 +4,10 @@ import { getFriendsUserId } from "@/lib/friendsAuth";
 import dbConnect from "@/lib/db";
 import PlatformEvent from "@/lib/models/PlatformEvent";
 import { channelProvisionDue } from "@/lib/events/channelLifecycle";
-import { syncEventVoiceForMember } from "@/lib/events/discordEventProvision";
+import {
+  provisionEventDiscordVoiceWithRetry,
+  syncEventVoiceForMember,
+} from "@/lib/events/discordEventProvision";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -27,6 +30,29 @@ export async function GET(_req: Request, ctx: RouteContext) {
     },
     { headers: { "cache-control": "no-store" } }
   );
+}
+
+/** A signed-in event-page visitor can recover a missed cron provision. */
+export async function PUT(req: Request, ctx: RouteContext) {
+  const userId = await getFriendsUserId(req);
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await ctx.params;
+  if (!Types.ObjectId.isValid(id)) {
+    return NextResponse.json({ error: "Event not found" }, { status: 404 });
+  }
+  await dbConnect();
+  const event = await PlatformEvent.findById(id);
+  if (!event) return NextResponse.json({ error: "Event not found" }, { status: 404 });
+  if (!channelProvisionDue(event, new Date())) {
+    return NextResponse.json({ ready: false }, { status: 425 });
+  }
+  if (!event.discordVoiceChannelId || event.discordVoiceCleanedAt) {
+    await provisionEventDiscordVoiceWithRetry(event);
+  }
+  return NextResponse.json({
+    ready: Boolean(event.discordVoiceChannelId && !event.discordVoiceCleanedAt),
+  });
 }
 
 /** POST /api/events/:id/discord — event equivalent of Party Launch Voice. */
