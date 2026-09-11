@@ -4188,14 +4188,14 @@ const facts: Game[] = [
     },
     launcherInstall: {
       enabled: true,
-      kind: "locate-then-zip",
-      requiresBaseDir: true,
+      kind: "github-installer",
       repo: "OpenMW/openmw",
-      assetPattern: "openmw-.*-win64\\.zip$",
+      assetPattern: "OpenMW-.*-Windows-x64\\.exe$",
+      assetPatternMac: "OpenMW-.*-macOS-.*\\.dmg$",
       exeHint: "openmw.exe",
-      knownExePaths: ["openmw.exe"],
-      versionLabel: "OpenMW 0.48",
-      note: "Locate your legal Morrowind GOTY folder to launch with modern 64-bit OpenMW.",
+      knownExePaths: ["openmw.exe", "openmw-launcher.exe"],
+      versionLabel: "OpenMW 0.51",
+      note: "Install OpenMW, then point it at your legal Morrowind GOTY data folder.",
     },
     communityLinks: {
       officialDiscord: {

@@ -2128,6 +2128,8 @@ function catalogEntryFromEdition(edition) {
       kind: cfg.kind,
       repo: cfg.repo || undefined,
       assetPattern: cfg.assetPattern || undefined,
+      assetPatternMac: cfg.assetPatternMac || undefined,
+      assetPatternLinux: cfg.assetPatternLinux || undefined,
       exeHint: cfg.exeHint || undefined,
       url: cfg.url || undefined,
       fileName: cfg.fileName || undefined,
@@ -3046,9 +3048,16 @@ async function resolveDownload(entry) {
   }
 
   if (!matched) {
-    throw new Error(
+    const patterns = assetPatternsForEntry(entry);
+    const err = new Error(
       `No ${process.platform === "darwin" ? "macOS" : "matching"} asset for ${entry.repo} ${release.tag_name}`
     );
+    err.code = "ASSET_NOT_FOUND";
+    err.repo = entry.repo;
+    err.assetPattern = patterns[0] || entry.assetPattern || undefined;
+    err.version = release.tag_name;
+    err.versionLabel = entry.versionLabel || release.tag_name;
+    throw err;
   }
   return {
     url: matched.browser_download_url,
@@ -6229,6 +6238,7 @@ async function writeJarLauncher(gameDir, jarName) {
 
 function installErrorCode(err) {
   const msg = String(err?.message || err || "");
+  if (err?.code === "ASSET_NOT_FOUND" || /No .*asset for/i.test(msg)) return "ASSET_NOT_FOUND";
   if (/Download host not allowed/i.test(msg)) return "DOWNLOAD_HOST_BLOCKED";
   if (/Invalid download URL/i.test(msg)) return "INVALID_DOWNLOAD_URL";
   if (/checksum/i.test(msg)) return "CHECKSUM_MISMATCH";
@@ -6240,13 +6250,29 @@ function installErrorCode(err) {
   return "INSTALL_FAILED";
 }
 
+function httpStatusFromInstallError(err) {
+  if (typeof err?.httpStatus === "number") return err.httpStatus;
+  const m = /HTTP\s+(\d+)/i.exec(String(err?.message || err || ""));
+  return m ? Number(m[1]) : undefined;
+}
+
 function reportInstallFailed(slug, editionSlug, err, phase = "install") {
   try {
+    const entry = catalogEntry(slug) || {};
     void telemetry.installFailed({
       ...editionInfoFor(slug, { editionSlug: editionSlug || undefined }),
       code: installErrorCode(err),
       message: String(err?.message || err || "Install failed").slice(0, 1000),
       phase,
+      version: err?.version || entry.versionLabel || entry.version || undefined,
+      versionLabel: err?.versionLabel || entry.versionLabel || undefined,
+      repo: err?.repo || entry.repo || undefined,
+      assetPattern: err?.assetPattern || entry.assetPattern || undefined,
+      httpStatus: httpStatusFromInstallError(err),
+      exitCode: err?.exitCode != null ? err.exitCode : undefined,
+      signal: err?.signal || undefined,
+      stderrTail: err?.stderrTail ? String(err.stderrTail).slice(0, 2048) : undefined,
+      exeBasename: err?.exeBasename || undefined,
     });
   } catch {
     /* never block installs on telemetry */
@@ -7431,9 +7457,13 @@ function runAuriePatcher(patcherPath, exePath, nativeDllPath, action) {
  * player already owns, and does nothing when it cannot find one: a guessed
  * path produces the same silent abort with a new cause.
  */
+/**
+ * @returns {Promise<{ morrowindDataFound: boolean, openmwCfgWritten: boolean } | null>}
+ *   null when this directory is not an OpenMW-family install.
+ */
 async function maybeConfigureOpenMw(gameDir) {
   try {
-    if (!openMwConfig.isOpenMwInstall(gameDir, fs.existsSync)) return;
+    if (!openMwConfig.isOpenMwInstall(gameDir, fs.existsSync)) return null;
     const cfgPath = path.join(gameDir, "openmw.cfg");
     const cfg = await fsp.readFile(cfgPath, "utf8");
 
@@ -7451,9 +7481,9 @@ async function maybeConfigureOpenMw(gameDir) {
         if (!missing.length) continue;
         await fsp.writeFile(cfgPath, openMwConfig.withMorrowindArchives(cfg, missing));
         console.log(`Registered Morrowind archives for ${path.basename(gameDir)}: ${missing.join(", ")}`);
-        return;
+        return { morrowindDataFound: true, openmwCfgWritten: true };
       }
-      return;
+      return { morrowindDataFound: true, openmwCfgWritten: false };
     }
 
     /*
@@ -7477,7 +7507,7 @@ async function maybeConfigureOpenMw(gameDir) {
     );
     if (!found) {
       console.warn("OpenMW install found no Morrowind data to point at:", gameDir);
-      return;
+      return { morrowindDataFound: false, openmwCfgWritten: false };
     }
 
     await fsp.writeFile(
@@ -7488,10 +7518,12 @@ async function maybeConfigureOpenMw(gameDir) {
       `Pointed ${path.basename(gameDir)} at Morrowind data: ${found.dataDir}` +
         ` (${found.masters.length} master(s), ${found.archives.length} archive(s))`
     );
+    return { morrowindDataFound: true, openmwCfgWritten: true };
   } catch (err) {
     // Never fail the install over this — the engine is installed either way,
     // and a player with the data elsewhere can still point it at their copy.
     console.warn("OpenMW data configuration skipped:", err?.message || err);
+    return { morrowindDataFound: false, openmwCfgWritten: false };
   }
 }
 
@@ -8069,6 +8101,14 @@ async function playGame(slug, join = null, editionSlug = null) {
           code: err?.code || "UNKNOWN",
           message: String(err?.message || err || "Launch failed").slice(0, 1000),
           phase: "play",
+          exitCode: err?.exitCode != null ? err.exitCode : undefined,
+          signal: err?.signal || undefined,
+          stderrTail: err?.stderrTail ? String(err.stderrTail).slice(0, 2048) : undefined,
+          exeBasename: err?.exeBasename || undefined,
+          morrowindDataFound:
+            typeof err?.morrowindDataFound === "boolean" ? err.morrowindDataFound : undefined,
+          openmwCfgWritten:
+            typeof err?.openmwCfgWritten === "boolean" ? err.openmwCfgWritten : undefined,
         });
       } catch {
         /* never block launch failure surfacing on telemetry */
@@ -8299,10 +8339,11 @@ async function playGameInner(slug, join = null, editionSlug = null) {
    * the next launch instead of being sent to the wizard. It no-ops in a few
    * filesystem checks when the config is already complete.
    */
+  let openMwLaunchStatus = null;
   for (const dir of [info.dir, info.exe ? path.dirname(info.exe) : null]) {
     if (!dir) continue;
     if (!openMwConfig.isOpenMwInstall(dir, fs.existsSync)) continue;
-    await maybeConfigureOpenMw(dir);
+    openMwLaunchStatus = await maybeConfigureOpenMw(dir);
     await maybeAddOpenMwControllerMappings();
     break;
   }
@@ -8937,7 +8978,11 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     const isJar = /\.jar$/i.test(launchPath || "");
     let code = "UNKNOWN";
     let message = rawMessage;
-    const classified = classifyLaunchFailure(err, launchPath);
+    const classified = classifyLaunchFailure(err, launchPath, {
+      morrowindDataFound: openMwLaunchStatus?.morrowindDataFound,
+      editionSlug: info.editionSlug || edSlug,
+      gameSlug: slug,
+    });
     if (classified.code !== "UNKNOWN") {
       code = classified.code;
       message = classified.message;
@@ -8982,6 +9027,21 @@ async function playGameInner(slug, join = null, editionSlug = null) {
       code = "SPAWN_ENOENT";
     }
 
+    const failureExtras = {
+      exitCode: classified.exitCode != null ? classified.exitCode : err?.exitCode,
+      signal: classified.signal || err?.signal || undefined,
+      stderrTail: classified.stderrTail || (err?.stderrTail ? String(err.stderrTail).slice(0, 2048) : undefined),
+      exeBasename: classified.exeBasename || path.basename(launchPath || "") || undefined,
+      morrowindDataFound:
+        typeof openMwLaunchStatus?.morrowindDataFound === "boolean"
+          ? openMwLaunchStatus.morrowindDataFound
+          : undefined,
+      openmwCfgWritten:
+        typeof openMwLaunchStatus?.openmwCfgWritten === "boolean"
+          ? openMwLaunchStatus.openmwCfgWritten
+          : undefined,
+    };
+
     // Offer one-click managed Java install, then retry once.
     if (code === "JAVA_MISSING") {
       const offered = await offerManagedJavaInstall({ gameTitle: entry?.title || slug });
@@ -9019,7 +9079,11 @@ async function playGameInner(slug, join = null, editionSlug = null) {
             javaInstalled: true,
           };
         } catch (retryErr) {
-          const retryClassified = classifyLaunchFailure(retryErr, launchPath);
+          const retryClassified = classifyLaunchFailure(retryErr, launchPath, {
+            morrowindDataFound: openMwLaunchStatus?.morrowindDataFound,
+            editionSlug: info.editionSlug || edSlug,
+            gameSlug: slug,
+          });
           const retryCode =
             retryClassified.code !== "UNKNOWN"
               ? retryClassified.code
@@ -9036,6 +9100,14 @@ async function playGameInner(slug, join = null, editionSlug = null) {
             code: retryCode,
             message: retryMessage,
             phase: "spawn-after-java-install",
+            morrowindDataFound: failureExtras.morrowindDataFound,
+            openmwCfgWritten: failureExtras.openmwCfgWritten,
+            exitCode: retryClassified.exitCode != null ? retryClassified.exitCode : retryErr?.exitCode,
+            signal: retryClassified.signal || retryErr?.signal || undefined,
+            stderrTail:
+              retryClassified.stderrTail ||
+              (retryErr?.stderrTail ? String(retryErr.stderrTail).slice(0, 2048) : undefined),
+            exeBasename: retryClassified.exeBasename || path.basename(launchPath || "") || undefined,
           });
           const reportedRetryErr = retryErr instanceof Error ? retryErr : new Error(retryMessage);
           reportedRetryErr.__launchFailedReported = true;
@@ -9051,6 +9123,7 @@ async function playGameInner(slug, join = null, editionSlug = null) {
           code: "JAVA_MISSING",
           message: "User declined managed Java install",
           phase: "spawn",
+          ...failureExtras,
         });
         const declinedErr = new Error(
           "Java 17+ is required. Install it from Settings → Java runtime, then try again."
@@ -9067,6 +9140,7 @@ async function playGameInner(slug, join = null, editionSlug = null) {
           code: "JAVA_MISSING",
           message: offered.error,
           phase: "java-install",
+          ...failureExtras,
         });
         const javaInstallErr = new Error(
           `Couldn’t install Java automatically (${offered.error}). Install JDK 17+ from https://adoptium.net/ or retry from Settings.`
@@ -9084,9 +9158,16 @@ async function playGameInner(slug, join = null, editionSlug = null) {
       code,
       message,
       phase: "spawn",
+      ...failureExtras,
     });
     const out = new Error(message);
     out.code = code;
+    out.exitCode = failureExtras.exitCode;
+    out.signal = failureExtras.signal;
+    out.stderrTail = failureExtras.stderrTail;
+    out.exeBasename = failureExtras.exeBasename;
+    out.morrowindDataFound = failureExtras.morrowindDataFound;
+    out.openmwCfgWritten = failureExtras.openmwCfgWritten;
     out.__launchFailedReported = true;
     throw out;
   }
@@ -9593,6 +9674,10 @@ function spawnTrackedExe(slug, exePath, args = [], opts = {}) {
     const failEarly = () => {
       const err = new Error(earlyExitMsg);
       err.code = isJar ? "JAVA_EARLY_EXIT" : "EARLY_EXIT";
+      err.exitCode = child.exitCode;
+      err.signal = child.signalCode || undefined;
+      err.stderrTail = earlyStderr.slice(0, 2048);
+      err.exeBasename = path.basename(exePath);
       fail(err);
     };
 

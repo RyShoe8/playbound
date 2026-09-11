@@ -123,6 +123,7 @@ describe("insert-catalog-wave allowlists", () => {
         "freetrain",
         "hurry-curry",
         "idle-slayer",
+        "morrowind",
         "s-t-a-l-k-e-r-call-of-pripyat",
         "seven-kingdoms-ancient-adversaries",
         "sky-children-of-the-light",
@@ -142,6 +143,7 @@ describe("insert-catalog-wave allowlists", () => {
     expect(PATCH_GAME_FIELDS["unknown-horizons"]).toContain("launcherInstall");
     expect(PATCH_GAME_FIELDS["x-men-arcade-remake"]).toEqual(["launcherInstall"]);
     expect(PATCH_GAME_FIELDS["tmnt-rescue-palooza"]).toEqual(["launcherInstall"]);
+    expect(PATCH_GAME_FIELDS.morrowind).toEqual(["launcherInstall"]);
     expect(PATCH_GAME_FIELDS["the-spike-cross"]).toContain("androidStoreUrl");
     expect(PATCH_GAME_FIELDS["slapshot-rebound"]).toContain("hardwareRequirements");
     expect(PATCH_GAME_FIELDS["space-station-14"]).toEqual(["launcherInstall", "installSteps"]);
@@ -149,9 +151,11 @@ describe("insert-catalog-wave allowlists", () => {
     expect(PATCH_GAME_FIELDS["the-dark-mod"]).toContain("platforms");
   });
 
-  it("patches CoP official + restores Anomaly edition", () => {
+  it("patches CoP official + restores Anomaly edition + OpenMW/TES3MP install recipes", () => {
     expect(Object.keys(PATCH_EDITION_FIELDS).sort()).toEqual(
       [
+        "morrowind/openmw",
+        "morrowind/tes3mp",
         "s-t-a-l-k-e-r-call-of-pripyat/anomaly",
         "s-t-a-l-k-e-r-call-of-pripyat/official",
       ].sort()
@@ -162,6 +166,8 @@ describe("insert-catalog-wave allowlists", () => {
     expect(PATCH_EDITION_FIELDS["s-t-a-l-k-e-r-call-of-pripyat/anomaly"]).toContain(
       "hardwareRequirements"
     );
+    expect(PATCH_EDITION_FIELDS["morrowind/openmw"]).toEqual(["installConfig"]);
+    expect(PATCH_EDITION_FIELDS["morrowind/tes3mp"]).toEqual(["installConfig"]);
   });
 
   it("patches holocure-rich-presence to draft only", () => {
