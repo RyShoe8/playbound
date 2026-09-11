@@ -215,6 +215,12 @@ function createTelemetry({
      * @param {string} [info.code]
      * @param {string} [info.message]
      * @param {string} [info.phase]
+     * @param {number|null} [info.exitCode]
+     * @param {string} [info.signal]
+     * @param {string} [info.stderrTail]
+     * @param {string} [info.exeBasename]
+     * @param {boolean} [info.morrowindDataFound]
+     * @param {boolean} [info.openmwCfgWritten]
      */
     launchFailed(info) {
       return track("launch_failed", {
@@ -222,6 +228,18 @@ function createTelemetry({
         code: info.code || "UNKNOWN",
         message: String(info.message || "").slice(0, 1000) || undefined,
         phase: info.phase || "play",
+        exitCode: info.exitCode != null ? info.exitCode : undefined,
+        signal: info.signal || undefined,
+        stderrTail: info.stderrTail
+          ? String(info.stderrTail).slice(0, 2048)
+          : undefined,
+        exeBasename: info.exeBasename
+          ? String(info.exeBasename).slice(0, 120)
+          : undefined,
+        morrowindDataFound:
+          typeof info.morrowindDataFound === "boolean" ? info.morrowindDataFound : undefined,
+        openmwCfgWritten:
+          typeof info.openmwCfgWritten === "boolean" ? info.openmwCfgWritten : undefined,
       });
     },
 
@@ -235,6 +253,19 @@ function createTelemetry({
         code: info.code || "INSTALL_FAILED",
         message: String(info.message || "").slice(0, 1000) || undefined,
         phase: info.phase || "install",
+        version: info.version || undefined,
+        versionLabel: info.versionLabel || undefined,
+        repo: info.repo || undefined,
+        assetPattern: info.assetPattern || undefined,
+        httpStatus: info.httpStatus != null ? info.httpStatus : undefined,
+        exitCode: info.exitCode != null ? info.exitCode : undefined,
+        signal: info.signal || undefined,
+        stderrTail: info.stderrTail
+          ? String(info.stderrTail).slice(0, 2048)
+          : undefined,
+        exeBasename: info.exeBasename
+          ? String(info.exeBasename).slice(0, 120)
+          : undefined,
       });
     },
 

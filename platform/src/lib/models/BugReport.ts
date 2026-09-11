@@ -17,6 +17,8 @@ const BugReportSchema = new Schema(
     submittedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
     launcherVersion: { type: String, maxlength: 40, default: null },
     platform: { type: String, maxlength: 40, default: null },
+    osVersion: { type: String, maxlength: 80, default: null },
+    architecture: { type: String, maxlength: 40, default: null },
     userAgent: { type: String, maxlength: 500, default: null },
     status: {
       type: String,
@@ -33,6 +35,10 @@ const BugReportSchema = new Schema(
     errorCode: { type: String, maxlength: 80, default: null },
     gameSlug: { type: String, maxlength: 120, default: null },
     editionSlug: { type: String, maxlength: 120, default: null },
+    phase: { type: String, maxlength: 80, default: null },
+    exitCode: { type: Number, default: null },
+    /** Recent distinct failure messages (newest last), capped in application code. */
+    messageSamples: { type: [String], default: undefined },
     occurrenceCount: { type: Number, default: 1, min: 1 },
     lastSeenAt: { type: Date, default: null },
   },

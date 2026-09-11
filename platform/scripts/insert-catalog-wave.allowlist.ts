@@ -148,6 +148,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   ],
   "x-men-arcade-remake": ["launcherInstall"],
   "tmnt-rescue-palooza": ["launcherInstall"],
+  morrowind: ["launcherInstall"],
 };
 
 /** Existing editions: $set ONLY these fields. */
@@ -164,6 +165,10 @@ export const PATCH_EDITION_FIELDS: Readonly<Record<string, readonly string[]>> =
     "requirements",
     "hardwareRequirements",
   ],
+  // OpenMW 0.51 ships Windows-x64.exe; live recipe still pointed at win64.zip.
+  "morrowind/openmw": ["installConfig"],
+  // Keep TES3MP desktop zip pattern in sync (VR-latest miss).
+  "morrowind/tes3mp": ["installConfig"],
 };
 
 /**

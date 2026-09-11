@@ -202,12 +202,14 @@ export const editions: EditionSeed[] = [
     installMethod: "playbound_installer",
     installConfig: {
       playbound_installer: {
-        kind: "github-release",
+        // 0.51+ ships OpenMW-*-Windows-x64.exe (NSIS), not the old win64.zip.
+        kind: "github-installer",
         repo: "OpenMW/openmw",
-        assetPattern: "openmw-.*-win64\\.zip$",
+        assetPattern: "OpenMW-.*-Windows-x64\\.exe$",
+        assetPatternMac: "OpenMW-.*-macOS-.*\\.dmg$",
         exeHint: "openmw.exe",
         knownExePaths: ["openmw.exe", "openmw-launcher.exe"],
-        note: "Standalone OpenMW 64-bit engine package. Point to your legal Morrowind GOTY data folder.",
+        note: "Standalone OpenMW 64-bit engine installer. Point to your legal Morrowind GOTY data folder.",
       },
     },
     requirements: {

@@ -226,6 +226,14 @@ export type TelemetryEventMap = {
     platform?: string;
     launcherVersion?: string;
     phase?: string;
+    osVersion?: string;
+    architecture?: string;
+    exitCode?: number | null;
+    signal?: string;
+    stderrTail?: string;
+    exeBasename?: string;
+    morrowindDataFound?: boolean;
+    openmwCfgWritten?: boolean;
   } & Extra;
 
   /**
@@ -247,6 +255,17 @@ export type TelemetryEventMap = {
     platform?: string;
     launcherVersion?: string;
     phase?: string;
+    osVersion?: string;
+    architecture?: string;
+    version?: string;
+    versionLabel?: string;
+    repo?: string;
+    assetPattern?: string;
+    httpStatus?: number;
+    exitCode?: number | null;
+    signal?: string;
+    stderrTail?: string;
+    exeBasename?: string;
   } & Extra;
 
   java_runtime_install_started: { version?: string; surface?: string } & Extra;
