@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, Wifi, Gamepad2, Joystick, ArrowRight, ShieldCheck, Download } from "lucide-react";
+import { BookOpen, Wifi, Gamepad2, Joystick, Users, ArrowRight, ShieldCheck, Download } from "lucide-react";
 import { pageMetadata } from "@/lib/seo";
 import { Badge } from "@/components/ui/bits";
 import {
