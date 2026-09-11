@@ -205,6 +205,7 @@ const CLIENT_CONNECT_ARGS = {
   "dungeon-keeper-gold": null,
   starcraft: null,
   openlara: null,
+  "flatout-2": null,
 };
 
 /**

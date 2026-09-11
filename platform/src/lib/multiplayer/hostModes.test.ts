@@ -252,6 +252,12 @@ describe("couch mode", () => {
     expect(defaultHostMode("relic-hunters-zero-remix")).toBe("couch");
   });
 
+  it("routes Lovers in a Dangerous Spacetime's local crew through couch mode", () => {
+    expect(canUseCouch("lovers-in-a-dangerous-spacetime")).toBe(true);
+    expect(hostModesFor("lovers-in-a-dangerous-spacetime")).toEqual(["couch"]);
+    expect(defaultHostMode("lovers-in-a-dangerous-spacetime")).toBe("couch");
+  });
+
   it("is the only option, so the picker stays hidden", () => {
     const available = hostModeOptions("streets-of-rage-remake").filter((o) => o.available);
     expect(available.map((o) => o.mode)).toEqual(["couch"]);

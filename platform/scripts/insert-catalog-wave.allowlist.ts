@@ -21,6 +21,8 @@ export const NEW_GAME_SLUGS: readonly string[] = [
   "tmnt-rescue-palooza",
   "relic-hunters-zero-remix",
   "srb2kart",
+  "lovers-in-a-dangerous-spacetime",
+  "flatout-2",
 ];
 
 /** `gameSlug/editionSlug` pairs to create only when absent. */

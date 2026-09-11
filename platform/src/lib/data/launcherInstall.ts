@@ -1513,4 +1513,30 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     ],
     note: "Official SRB2Kart v1.6 Windows installer; macOS dmg via urlMac.",
   },
+  "lovers-in-a-dangerous-spacetime": {
+    enabled: true,
+    kind: "external",
+    url: "goggalaxy://openGameView/1441290254",
+    knownExePaths: [
+      "%PROGRAMFILES(X86)%\\GOG Galaxy\\Games\\Lovers in a Dangerous Spacetime\\LoversInADangerousSpacetime.exe",
+      "%PROGRAMFILES%\\GOG Galaxy\\Games\\Lovers in a Dangerous Spacetime\\LoversInADangerousSpacetime.exe",
+      "C:\\GOG Games\\Lovers in a Dangerous Spacetime\\LoversInADangerousSpacetime.exe",
+      "LoversInADangerousSpacetime.exe",
+      "Lovers in a Dangerous Spacetime.exe",
+    ],
+    note: "Opens GOG Galaxy for your owned copy. Local 1–4P couch co-op only.",
+  },
+  "flatout-2": {
+    enabled: true,
+    kind: "external",
+    url: "goggalaxy://openGameView/1207660523",
+    knownExePaths: [
+      "%PROGRAMFILES(X86)%\\GOG Galaxy\\Games\\FlatOut 2\\FlatOut2.exe",
+      "%PROGRAMFILES%\\GOG Galaxy\\Games\\FlatOut 2\\FlatOut2.exe",
+      "C:\\GOG Games\\FlatOut 2\\FlatOut2.exe",
+      "FlatOut2.exe",
+      "flatout2.exe",
+    ],
+    note: "Opens GOG Galaxy for your owned copy. Official online offline; LAN via PlayBound Connect.",
+  },
 };

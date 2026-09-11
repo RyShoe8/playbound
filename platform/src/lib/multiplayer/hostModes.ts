@@ -154,6 +154,7 @@ const LOCAL_COUCH_GAMES = new Set([
   "x-men-arcade-remake",
   "tmnt-rescue-palooza",
   "relic-hunters-zero-remix",
+  "lovers-in-a-dangerous-spacetime",
 ]);
 
 /**
