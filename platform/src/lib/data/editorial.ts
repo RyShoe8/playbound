@@ -274,6 +274,24 @@ export const maintenanceChecks: Record<string, MaintenanceCheck> = {
     checkedAt: "2026-09-11",
     note: "Free OpenBOR fangame on Game Jolt. Verify PlayBound-hosted zip install and local 4P / couch mode.",
   },
+  "tmnt-rescue-palooza": {
+    kind: "manual",
+    url: "https://gamejolt.com/games/TMNT-Rescue-Palooza/39658",
+    checkedAt: "2026-09-11",
+    note: "Free OpenBOR fangame on Game Jolt. Verify PlayBound-hosted zip install and local 4P / couch mode.",
+  },
+  "relic-hunters-zero-remix": {
+    kind: "manual",
+    url: "https://www.gog.com/en/game/relic_hunters_zero_remix",
+    checkedAt: "2026-09-11",
+    note: "Free DRM-free GOG title. Verify Galaxy one-click, offline installer, and local 2P couch co-op.",
+  },
+  srb2kart: {
+    kind: "manual",
+    url: "https://github.com/STJr/Kart-Public/releases/tag/v1.6",
+    checkedAt: "2026-09-11",
+    note: "Official v1.6 GitHub release. Verify Windows installer, macOS dmg, and Connect +connect on UDP 5029.",
+  },
 };
 
 /** All published criteria met — the common case, since failing one means exclusion. */
@@ -6027,6 +6045,239 @@ export const editorial: Record<string, GameEditorial> = {
       {
         q: "What engine does it use?",
         a: "OpenBOR (Open Beats of Rage), a common engine for freeware beat 'em up remakes.",
+      },
+    ],
+  },
+
+  "tmnt-rescue-palooza": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "Sixty characters and four pads on one couch still feels like the NES TMNT cabinet — without inventing online netcode OpenBOR does not have.",
+      lastVerified: "2026-09-11",
+    },
+    maintenanceCheck: {
+      kind: "manual",
+      url: "https://gamejolt.com/games/TMNT-Rescue-Palooza/39658",
+      checkedAt: "2026-09-11",
+      note: "Free OpenBOR fangame on Game Jolt. Verify PlayBound-hosted zip and local 4P / couch mode.",
+    },
+    thatOneThing:
+      "You unlock the cast by beating stages — villains included — until the roster looks like the entire toy aisle.",
+    longDescription:
+      "Teenage Mutant Ninja Turtles: Rescue-Palooza! is Merso X's free OpenBOR homage to the NES TMNT beat 'em ups. Story mode sends you across seventeen stages to rescue everyone Shredder kidnapped; clear a stage and you unlock more characters until sixty fighters from cartoons, comics, movies, and toys are on the select screen. Arcade mode opens once story is done.\n\nCo-op is the pitch. Up to four players share one machine with combo setups, rideable vehicles, and voice clips from the show. Controllers are first-class; two players can share a keyboard if pads are short.\n\nIt is a fangame. Nickelodeon and Konami did not publish it. PlayBound lists it as freeware fan work from Game Jolt (project 39658), not as an official product. We host a PlayBound Windows package for one-click install after you upload the zip.\n\nOnline is honest: OpenBOR here has no native netcode. Friends who are not in the room use PlayBound Couch / phone-as-controller so remote pads appear as local players on the host PC — the same path as X-Men Arcade Remake and other local-only remakes.\n\nWe carry it because free four-pad TMNT co-op still clears the bar for couch parties, and because Couch mode covers remote friends without lying about LAN.",
+    whyWePickedIt:
+      "We picked Rescue-Palooza because it is a finished, free OpenBOR TMNT co-op remake with an absurd unlockable roster and real four-pad sessions. PlayBound can install it in one click once the package is hosted, and Couch mode covers the friends who cannot sit on the same couch.",
+    bestFor: [
+      "Fans of NES TMNT beat 'em ups and classic co-op scrapers",
+      "Local 2–4 player pad sessions and PlayBound Couch parties",
+      "Players happy with freeware fangames from the creator's Game Jolt release",
+      "Anyone who wants a huge unlockable cast instead of four turtles forever",
+    ],
+    notFor: [
+      "Players who only want officially licensed Nickelodeon or Konami releases",
+      "Anyone expecting native online co-op or LAN join codes",
+      "Groups that need more than four simultaneous human players",
+      "People looking for a modern licensed TMNT: Shredder's Revenge-style live service",
+    ],
+    comparableTo: [
+      "X-Men Arcade Remake",
+      "Streets of Rage Remake",
+      "Teenage Mutant Ninja Turtles: Shredder's Revenge",
+      "Teenage Mutant Ninja Turtles II: The Arcade Game (NES)",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Install from PlayBound once the Windows OpenBOR zip is hosted (Install downloads and extracts the package).",
+      },
+      {
+        platform: "windows",
+        text: "Launch OpenBOR.exe, plug in pads (or use phone-as-controller), and start Story or Arcade co-op.",
+      },
+      {
+        platform: "all",
+        text: "For friends not in the room: create a PlayBound party and use Couch mode so remote controllers join as local players on the host PC.",
+      },
+      {
+        platform: "all",
+        text: "This is unofficial fan software, not a Nickelodeon or Konami product.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is TMNT: Rescue-Palooza official?",
+        a: "No. It is a free OpenBOR fangame by Merso X. Nickelodeon and Konami did not publish it.",
+      },
+      {
+        q: "Is it free?",
+        a: "Yes. The Game Jolt release is free. PlayBound's one-click path uses a hosted Windows package of that freeware build.",
+      },
+      {
+        q: "Does it have online multiplayer?",
+        a: "Not natively. Multiplayer is local 4P co-op. Remote friends use PlayBound Couch / phone-as-controller on the host machine.",
+      },
+      {
+        q: "Does it support controllers?",
+        a: "Yes. OpenBOR binds pads natively for up to four local players. PlayBound does not rewrite a config file.",
+      },
+      {
+        q: "What engine does it use?",
+        a: "OpenBOR (Open Beats of Rage).",
+      },
+    ],
+  },
+
+  "relic-hunters-zero-remix": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "A free twin-stick remaster that still wants two pads on one screen — GOG DRM-free, no store tax, no invented online.",
+      lastVerified: "2026-09-11",
+    },
+    maintenanceCheck: {
+      kind: "manual",
+      url: "https://www.gog.com/en/game/relic_hunters_zero_remix",
+      checkedAt: "2026-09-11",
+      note: "Free DRM-free GOG title. Verify Galaxy one-click, offline installer, and local 2P couch co-op.",
+    },
+    thatOneThing:
+      "Couch co-op is two hunters on one PC — not a lobby code, and we do not pretend otherwise.",
+    longDescription:
+      "Relic Hunters Zero: Remix is Rogue Snail's free remaster of the million-player twin-stick hit. You pick one of seven hunters, run the Asteroid Dungeon Nemesis, and clear waves of Ducan ducks and turtles with tiny guns that still feel heavy. Adventure Mode is a twelve-level campaign with unlockable relics; Endless and Storm change the pressure; Daily Mode gives everyone the same random seed to chase.\n\nCo-op is local only: up to two players on one screen. Controllers are supported; keyboard plus pad works when you only have one pad. There is no native online co-op on the PC build PlayBound ships through GOG — friends who are not in the room use PlayBound Couch / phone-as-controller so a remote pad appears as player two on the host.\n\nGOG lists it as Play for free with a DRM-free offline installer; Galaxy is optional for cloud saves. PlayBound's Install button opens Galaxy on product 1205909172 (`goggalaxy://openGameView/1205909172`) so claim and install stay one click for Galaxy users. We do not redistribute GOG installers.\n\nWe carry it because free twin-stick co-op with a finished campaign still clears the bar, and because Couch mode covers the second seat without inventing LAN the game does not ship.",
+    whyWePickedIt:
+      "We picked Relic Hunters Zero: Remix because it is genuinely free on GOG, finished, controller-friendly, and honest about couch-only co-op. Galaxy one-click plus PlayBound Couch covers install and remote friends without lying about netplay.",
+    bestFor: [
+      "Players who want a free twin-stick / bullet-hell campaign with couch co-op",
+      "GOG users who prefer DRM-free offline installs",
+      "Two-pad living-room sessions and PlayBound Couch parties",
+      "Fans of Rogue Snail's tone (Chroma Squad, Knights of Pen & Paper)",
+    ],
+    notFor: [
+      "Anyone expecting native online co-op or dedicated servers",
+      "Groups that need more than two simultaneous human players",
+      "Players who refuse a GOG account for the free claim",
+      "Anyone needing deep competitive ranked shooters",
+    ],
+    comparableTo: [
+      "Enter the Gungeon",
+      "Nuclear Throne",
+      "HoloCure - Save the Fans!",
+      "Cuphead (couch tone, not genre)",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Click Install in PlayBound to open GOG Galaxy on this title (goggalaxy://). Claim the free game and install from Galaxy, or use GOG's offline installer if you prefer.",
+      },
+      {
+        platform: "windows",
+        text: "Launch once, plug in a second pad (or use Couch / phone-as-controller), and start co-op from the menu.",
+      },
+      {
+        platform: "macos",
+        text: "Claim and install from GOG (Galaxy or offline). Local 2P couch co-op works the same way.",
+      },
+      {
+        platform: "all",
+        text: "Multiplayer is local couch co-op only — no native online. Remote friends join via PlayBound Couch on the host PC.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Relic Hunters Zero: Remix free?",
+        a: "Yes. It is free on GOG (Play for free) with a DRM-free offline installer. Galaxy is optional.",
+      },
+      {
+        q: "Does it have online multiplayer?",
+        a: "Not on the PC build we list. Co-op is local 2P. Remote friends use PlayBound Couch / phone-as-controller on the host.",
+      },
+      {
+        q: "Do I need GOG Galaxy?",
+        a: "No. Offline installers work. PlayBound's one-click path opens Galaxy for convenience when you use Galaxy.",
+      },
+      {
+        q: "Does it support controllers?",
+        a: "Yes — native gamepad play. PlayBound does not need to rewrite a config file for basic pads.",
+      },
+    ],
+  },
+
+  srb2kart: {
+    qualityBar: clearsAll(
+      "SRB2Kart clears the PlayBound Bar: 100% free and open-source under GPL-2.0, finished Race and Battle modes with online multiplayer, actively maintained by the SRB2 community, and stands as one of the best free kart racers that is not SuperTuxKart."
+    ),
+    maintenanceCheck: {
+      kind: "manual",
+      url: "https://github.com/STJr/Kart-Public/releases/tag/v1.6",
+      checkedAt: "2026-09-11",
+      note: "Official v1.6 GitHub release. Verify Windows installer, macOS dmg, and Connect +connect on UDP 5029.",
+    },
+    thatOneThing:
+      "It is Sonic Robo Blast 2's netcode wearing a kart — Race, Battle, items, and +connect over PlayBound Connect.",
+    longDescription:
+      "SRB2Kart is the free open-source kart racer spun out of Sonic Robo Blast 2. Drift, boost, and lob items across community and stock tracks; Race and Battle modes cover the Mario Kart formula without a Nintendo tax. Local splitscreen works; online multiplayer uses the same Doom-engine networking as SRB2 on UDP port 5029.\n\nPlayBound installs the official v1.6 Windows installer from the Kart-Public GitHub release (macOS gets the dmg). Join Game passes `+connect host:port` the same way SRB2 does, so private parties ride PlayBound Connect's virtual LAN without manual IP pasting when the launcher can inject args.\n\nThe roster and tracks are Sonic-flavored fan work, not Sega licensed products — the same honest freeware stance as SRB2 itself. Mod support and the Message Board scene keep the game alive years after 1.6.\n\nWe carry it because free online kart racing with real netcode still clears the bar next to SuperTuxKart, and because the install path is a single official GitHub asset.",
+    whyWePickedIt:
+      "We picked SRB2Kart because it is a finished free kart racer with genuine online multiplayer, splitscreen, and a one-click official installer — the same Connect path as SRB2 without inventing a new transport.",
+    bestFor: [
+      "Players who want free online kart racing with items and battle mode",
+      "SRB2 fans who already know +connect and the Message Board",
+      "Local splitscreen parties and PlayBound Connect private races",
+      "Anyone comparing free kart options beyond SuperTuxKart",
+    ],
+    notFor: [
+      "Players who only want officially licensed Sonic Team / Sega products",
+      "Anyone expecting modern AAA kart presentation or anti-cheat ranked ladders",
+      "Groups that refuse Doom-engine visual aesthetics",
+    ],
+    comparableTo: [
+      "SuperTuxKart",
+      "Sonic Robo Blast 2",
+      "Mario Kart 8",
+      "Crash Team Racing",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Click Install in PlayBound to download and run the official SRB2Kart v1.6 Windows installer from GitHub.",
+      },
+      {
+        platform: "macos",
+        text: "Install uses the official SRB2Kart 1.6 macOS dmg from the same GitHub release.",
+      },
+      {
+        platform: "windows",
+        text: "Launch srb2kart.exe, configure pads in Options, then Host Network Game or Join Game from PlayBound.",
+      },
+      {
+        platform: "all",
+        text: "Online: create a PlayBound Connect party, host from Multiplayer, and let joiners use Join Game (+connect) or the in-game Join Network Game menu.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is SRB2Kart free?",
+        a: "Yes. It is free and open-source under GPL-2.0. The official builds are on GitHub (STJr/Kart-Public).",
+      },
+      {
+        q: "How does online multiplayer work?",
+        a: "Same family as SRB2: host a network game on UDP 5029. PlayBound Connect puts the party on one virtual LAN and Join Game can pass +connect host:port.",
+      },
+      {
+        q: "Does it support controllers?",
+        a: "Yes. v1.6 uses the SDL Game Controller API for a wide range of pads. PlayBound does not rewrite a config file.",
+      },
+      {
+        q: "Is it an official Sega game?",
+        a: "No. It is a free fan game from the Sonic Team Junior / Kart community, like SRB2.",
       },
     ],
   },

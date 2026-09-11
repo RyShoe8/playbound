@@ -174,6 +174,7 @@ const CLIENT_CONNECT_ARGS = {
     "--net-player-name={name}",
   ],
   srb2: ["+connect", "{host}:{port}"],
+  srb2kart: ["+connect", "{host}:{port}"],
   jfsw: ["-net", "{host}:{port}"],
   // Dune Legacy only accepts the server address from its Internet Game menu.
   "dune-legacy": null,
@@ -248,6 +249,7 @@ const DEFAULT_GAME_PORTS = {
   xonotic: 26000,
   freeciv: 5556,
   srb2: 5029,
+  srb2kart: 5029,
   jfsw: 1997,
   "opentyrian-2000": 1333,
   opentyrian: 1333,

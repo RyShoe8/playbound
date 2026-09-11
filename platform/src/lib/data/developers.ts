@@ -1192,6 +1192,39 @@ export const developers: Developer[] = [
     artHue: 20,
   },
   {
+    slug: "merso-x",
+    name: "Merso X",
+    tagline: "OpenBOR TMNT fangames and beat 'em up tributes.",
+    about:
+      "Independent developer behind Teenage Mutant Ninja Turtles: Rescue-Palooza! and other freeware OpenBOR beat 'em ups distributed on Game Jolt.",
+    founded: 2019,
+    location: "Worldwide",
+    website: "https://gamejolt.com/@Mersox",
+    artHue: 130,
+  },
+  {
+    slug: "rogue-snail",
+    name: "Rogue Snail",
+    tagline: "Chroma Squad, Knights of Pen & Paper, and Relic Hunters.",
+    about:
+      "Brazilian indie studio behind Relic Hunters Zero: Remix, Chroma Squad, and Knights of Pen & Paper — known for free and affordable tactical action with couch co-op.",
+    founded: 2012,
+    location: "Brazil",
+    website: "https://www.roguesnail.com",
+    artHue: 35,
+  },
+  {
+    slug: "sonic-team-jr",
+    name: "Sonic Team Junior",
+    tagline: "SRB2, SRB2Kart, and the Doom-engine Sonic community.",
+    about:
+      "The long-running community behind Sonic Robo Blast 2 and SRB2Kart — free open-source Sonic platformers and kart racers built on a modified Doom engine, released via srb2.org and GitHub.",
+    founded: 1998,
+    location: "Worldwide",
+    website: "https://www.srb2.org/",
+    artHue: 210,
+  },
+  {
     slug: "freeallegiance-team",
     name: "FreeAllegiance Community",
     tagline: "Stewards of Microsoft Allegiance open-source space combat RTS.",

@@ -1702,6 +1702,53 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       "No network transport: OpenBOR local 4P co-op (+ CPU partners). PlayBound Connect uses couch mode and remote controllers.",
   },
 
+  "tmnt-rescue-palooza": {
+    gameSlug: "tmnt-rescue-palooza",
+    title: "TMNT: Rescue-Palooza!",
+    tier: "tier1_improved",
+    adapterType: "official",
+    protocol: "official",
+    notes:
+      "No network transport: OpenBOR local 4P co-op. PlayBound Connect uses couch mode and remote controllers.",
+  },
+
+  "relic-hunters-zero-remix": {
+    gameSlug: "relic-hunters-zero-remix",
+    title: "Relic Hunters Zero: Remix",
+    tier: "tier1_improved",
+    adapterType: "official",
+    protocol: "official",
+    notes:
+      "No network transport: local 2P couch co-op only. PlayBound Connect uses couch mode and remote controllers.",
+  },
+
+  srb2kart: {
+    gameSlug: "srb2kart",
+    title: "SRB2Kart",
+    tier: "tier1_improved",
+    adapterType: "virtual-lan",
+    protocol: "udp",
+    client: {
+      launchArguments: ["+connect", "{host}:{port}"],
+    },
+    selfHost: {
+      port: 5029,
+      protocol: "udp",
+      verified: true,
+      inGameSteps: [
+        "Host: Multiplayer → Host Network Game (Race or Battle)",
+        "Friends: Multiplayer → Join Network Game (or automatically connects via +connect)",
+      ],
+    },
+    virtualLan: {
+      inGameSteps: [
+        "Host: Multiplayer → Host Network Game (Race or Battle)",
+        "Friends: Multiplayer → Join Network Game (or +connect directly)",
+      ],
+    },
+    notes: "SRB2Kart Doom-engine network multiplayer on UDP port 5029 (same family as SRB2).",
+  },
+
   hurrican: {
     gameSlug: "hurrican",
     title: "Hurrican",

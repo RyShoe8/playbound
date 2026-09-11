@@ -18,6 +18,9 @@ export const NEW_GAME_SLUGS: readonly string[] = [
   "baseball-stars-2",
   "soccer-brawl",
   "x-men-arcade-remake",
+  "tmnt-rescue-palooza",
+  "relic-hunters-zero-remix",
+  "srb2kart",
 ];
 
 /** `gameSlug/editionSlug` pairs to create only when absent. */
@@ -142,6 +145,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "hardwareRequirements",
   ],
   "x-men-arcade-remake": ["launcherInstall"],
+  "tmnt-rescue-palooza": ["launcherInstall"],
 };
 
 /** Existing editions: $set ONLY these fields. */

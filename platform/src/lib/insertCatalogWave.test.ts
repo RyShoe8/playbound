@@ -70,9 +70,12 @@ describe("insert-catalog-wave allowlists", () => {
         "baseball-stars-2",
         "earth-2140-trilogy",
         "populous-the-beginning",
+        "relic-hunters-zero-remix",
         "soccer-brawl",
+        "srb2kart",
         "super-sidekicks",
         "the-spike-cross",
+        "tmnt-rescue-palooza",
         "trackmania",
         "x-men-arcade-remake",
       ].sort()
@@ -128,6 +131,7 @@ describe("insert-catalog-wave allowlists", () => {
         "the-spike-cross",
         "unknown-horizons",
         "x-men-arcade-remake",
+        "tmnt-rescue-palooza",
       ].sort()
     );
     expect(PATCH_GAME_FIELDS["sky-children-of-the-light"]).toContain("installSteps");
@@ -135,6 +139,7 @@ describe("insert-catalog-wave allowlists", () => {
     expect(PATCH_GAME_FIELDS["alien-swarm"]).not.toContain("launcherInstall");
     expect(PATCH_GAME_FIELDS["unknown-horizons"]).toContain("launcherInstall");
     expect(PATCH_GAME_FIELDS["x-men-arcade-remake"]).toEqual(["launcherInstall"]);
+    expect(PATCH_GAME_FIELDS["tmnt-rescue-palooza"]).toEqual(["launcherInstall"]);
     expect(PATCH_GAME_FIELDS["the-spike-cross"]).toContain("androidStoreUrl");
     expect(PATCH_GAME_FIELDS["slapshot-rebound"]).toContain("hardwareRequirements");
     expect(PATCH_GAME_FIELDS["space-station-14"]).toEqual(["launcherInstall", "installSteps"]);

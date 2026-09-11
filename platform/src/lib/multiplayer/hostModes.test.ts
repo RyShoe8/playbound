@@ -240,6 +240,18 @@ describe("couch mode", () => {
     expect(defaultHostMode("x-men-arcade-remake")).toBe("couch");
   });
 
+  it("routes TMNT Rescue-Palooza's local 4P through couch mode", () => {
+    expect(canUseCouch("tmnt-rescue-palooza")).toBe(true);
+    expect(hostModesFor("tmnt-rescue-palooza")).toEqual(["couch"]);
+    expect(defaultHostMode("tmnt-rescue-palooza")).toBe("couch");
+  });
+
+  it("routes Relic Hunters Zero Remix's local 2P through couch mode", () => {
+    expect(canUseCouch("relic-hunters-zero-remix")).toBe(true);
+    expect(hostModesFor("relic-hunters-zero-remix")).toEqual(["couch"]);
+    expect(defaultHostMode("relic-hunters-zero-remix")).toBe("couch");
+  });
+
   it("is the only option, so the picker stays hidden", () => {
     const available = hostModeOptions("streets-of-rage-remake").filter((o) => o.available);
     expect(available.map((o) => o.mode)).toEqual(["couch"]);

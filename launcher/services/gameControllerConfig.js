@@ -1067,9 +1067,21 @@ const NO_CONFIG_NEEDED = {
     kind: "native",
     note: "OpenBOR binds pads natively for up to 4 local players; no PlayBound config write needed.",
   },
+  "tmnt-rescue-palooza": {
+    kind: "native",
+    note: "OpenBOR binds pads natively for up to 4 local players; no PlayBound config write needed.",
+  },
+  "relic-hunters-zero-remix": {
+    kind: "native",
+    note: "Native twin-stick gamepad support for local 2P couch co-op; no PlayBound config write needed.",
+  },
   "dc-universe-online": { kind: "native", note: "Native gamepad layout for powers, combos, and flight." },
   pixreveal: { kind: "native", note: "Companion smartphone / touchscreen controller support." },
   srb2: { kind: "native", note: "Doom engine native XInput/DirectInput gamepad bindings." },
+  srb2kart: {
+    kind: "native",
+    note: "SDL Game Controller API (v1.6+) for Race/Battle pads; no PlayBound config write needed.",
+  },
   jfsw: { kind: "native", note: "JFSW Build engine native gamepad support with analog movement and aiming." },
   yorg: { kind: "native", note: "Native SDL2 multi-gamepad split-screen support." },
   torcs: { kind: "native", note: "Native steering wheel, joystick, and controller input." },
