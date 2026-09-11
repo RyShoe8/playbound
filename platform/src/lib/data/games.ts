@@ -6833,7 +6833,7 @@ const facts: Game[] = [
     description:
       "Asteroid Base's frantic 1- to 4-player couch co-op: crew a shared neon battleship, man turrets, shields, and thrusters, and rescue space-bunnies from Anti-Love. DRM-free on GOG — local co-op only, no native online.",
     developerSlug: "asteroid-base",
-    genres: ["Shooter", "Action", "Co-op"],
+    genres: ["Shooter", "Action"],
     tags: ["Couch Co-Op", "Controller Support", "Space", "Local Multiplayer", "Indie"],
     aliases: ["LIADS", "Lovers Spacetime", "Lovers in a Dangerous Space Time"],
     license: "Commercial · DRM-free purchase",
