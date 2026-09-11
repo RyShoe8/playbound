@@ -1,6 +1,6 @@
-# Insert-only catalog apply.
-# Never runs seed:editions / seed:mods / seed:launcher-install.
-# Writes only named edition inserts, named recipe syncs, and three named mod recipes.
+# Catalog wave apply.
+# Never runs seed:editions / seed:mods / seed:launcher-install / sync-single-game.
+# Writes only allowlisted inserts plus named field patches from insert:catalog-wave.
 
 name: Apply catalog wave
 
@@ -40,7 +40,7 @@ jobs:
         if: steps.check_mongo.outputs.has_mongo == 'true'
         run: npm install
 
-      - name: Insert missing flagship editions and wave mods
+      - name: Insert / field-patch allowlisted catalog rows
         if: steps.check_mongo.outputs.has_mongo == 'true'
         run: npm run insert:catalog-wave
         env:

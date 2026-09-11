@@ -2788,7 +2788,10 @@ async function resolveDownload(entry) {
         if (m && m[0]) {
           const liveUrl = m[0];
           const fileName = path.basename(new URL(liveUrl).pathname);
-          const versionMatch = fileName.match(/BombSquad_[^_]+_([^\.]+)\.zip/i);
+          // Windows zip, Mac dmg, and Linux tar.gz all encode the train after the OS token.
+          const versionMatch = fileName.match(
+            /BombSquad_(?:Windows|Mac|Linux_x86_64)_(.+?)(?:\.tar\.gz|\.zip|\.dmg)$/i
+          );
           return {
             url: liveUrl,
             name: fileName,
@@ -13131,6 +13134,7 @@ ipcMain.handle("get-game-detail", async (_event, slug) => {
     title: rich?.title || entry.title,
     blurb: rich?.blurb || entry.blurb,
     description: rich?.description || entry.blurb || "",
+    longDescription: rich?.longDescription || null,
     features: Array.isArray(rich?.features) ? rich.features : [],
     genres: Array.isArray(rich?.genres) ? rich.genres : entry.genres || [],
     tags: Array.isArray(rich?.tags) ? rich.tags : entry.tags || [],

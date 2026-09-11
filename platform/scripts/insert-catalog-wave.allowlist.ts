@@ -1,6 +1,10 @@
 /**
- * Allowlists for `scripts/insert-catalog-wave.ts` (deploy insert-only wave).
+ * Allowlists for `scripts/insert-catalog-wave.ts` (deploy catalog wave).
  * Kept in a separate module so tests can import without connecting to Mongo.
+ *
+ * Insert lists create rows only when absent.
+ * Patch maps $set ONLY the named fields on existing rows — never other games,
+ * never other fields, never upsert.
  */
 
 /** Parent games to create only when absent. Draft until a human publishes. */
@@ -26,3 +30,26 @@ export const NEW_EDITION_KEYS: readonly string[] = [
  * an edition of earth-2140-trilogy, not a free OpenRA mod row.
  */
 export const NEW_MOD_SLUGS: readonly string[] = [];
+
+/**
+ * Existing catalog games: $set ONLY these fields.
+ * Keys are game slugs. Values are the exact CatalogGame paths allowed.
+ * BombSquad / AssaultCube platform + install wave — nothing else.
+ */
+export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
+  bombsquad: ["launcherInstall", "platforms", "androidStoreUrl"],
+  assaultcube: ["launcherInstall", "systemRequirements", "hardwareRequirements"],
+};
+
+/**
+ * Existing editions: $set ONLY these fields.
+ * Keys are `gameSlug/editionSlug`. Values are dotted paths under the edition.
+ */
+export const PATCH_EDITION_FIELDS: Readonly<Record<string, readonly string[]>> = {
+  "bombsquad/standalone-pc": [
+    "name",
+    "description",
+    "version",
+    "installConfig.playbound_installer",
+  ],
+};

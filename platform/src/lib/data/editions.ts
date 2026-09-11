@@ -3394,10 +3394,10 @@ export const editions: EditionSeed[] = [
   {
     gameSlug: "bombsquad",
     slug: "standalone-pc",
-    name: "BombSquad Standalone PC Edition (Default)",
+    name: "BombSquad Desktop (Default)",
     shortDescription: "Complete explosive 8-player party arcade game with full gamepad and server support.",
     description:
-      "The official standalone PC release of BombSquad. Jump into chaotic physics-based multiplayer matches with friends locally or over LAN/Internet.",
+      "The official desktop release of BombSquad for Windows, macOS, and Linux. Jump into chaotic physics-based multiplayer matches with friends locally or over LAN/Internet.",
     type: "official",
     status: "active",
     visibility: "public",
@@ -3410,10 +3410,12 @@ export const editions: EditionSeed[] = [
     installConfig: {
       playbound_installer: {
         kind: "direct-zip",
-        url: "https://files.ballistica.net/bombsquad/builds/BombSquad_Windows_1.8.0a103.zip",
+        url: "https://files.ballistica.net/bombsquad/builds/BombSquad_Windows_1.8.0a116.zip",
+        urlMac: "https://files.ballistica.net/bombsquad/builds/BombSquad_Mac_1.8.0a116.dmg",
+        urlLinux: "https://files.ballistica.net/bombsquad/builds/BombSquad_Linux_x86_64_1.8.0a116.tar.gz",
         fileName: "BombSquad_Windows.zip",
         exeHint: "BombSquad",
-        note: "Official BombSquad Windows standalone release.",
+        note: "Official BombSquad desktop release (Windows, macOS, Linux).",
       },
     },
     requirements: {
@@ -3422,8 +3424,8 @@ export const editions: EditionSeed[] = [
     },
     features: ["Multiplayer", "Controller Support", "Co-Op", "Dedicated Servers", "LAN Support"],
     tags: ["Party Game", "Physics", "Multiplayer", "Arcade"],
-    aliases: ["BombSquad PC", "Ballistica PC"],
-    version: "1.8.0",
+    aliases: ["BombSquad PC", "Ballistica PC", "BombSquad Desktop"],
+    version: "1.8.0a116",
     firstPlaySteps: [
       { platform: "all", text: "Create or customize your player profile and character appearance in the main menu." },
       { platform: "all", text: "Configure keyboard keys or plug in USB/Bluetooth gamepads in Settings > Controllers." },

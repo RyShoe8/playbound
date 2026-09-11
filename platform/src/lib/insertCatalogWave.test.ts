@@ -5,9 +5,13 @@ import {
   NEW_EDITION_KEYS,
   NEW_GAME_SLUGS,
   NEW_MOD_SLUGS,
+  PATCH_EDITION_FIELDS,
+  PATCH_GAME_FIELDS,
 } from "../../scripts/insert-catalog-wave.allowlist";
 import { editions } from "@/lib/data/editions";
 import { gamesBySlug } from "@/lib/data/games";
+import { launcherInstallBySlug } from "@/lib/data/launcherInstall";
+import { ASSAULTCUBE_SLUG } from "@/lib/data/assaultCubeSpecs";
 
 /**
  * Deploy insert:catalog-wave must stay scoped. The August 2026 bug was an
@@ -43,7 +47,40 @@ describe("insert-catalog-wave allowlists", () => {
     expect(NEW_MOD_SLUGS).toEqual([]);
   });
 
-  it("has seed rows for every allowlisted game and edition", () => {
+  it("patches only BombSquad and AssaultCube game fields", () => {
+    expect(Object.keys(PATCH_GAME_FIELDS).sort()).toEqual(["assaultcube", "bombsquad"]);
+    expect(PATCH_GAME_FIELDS.bombsquad).toEqual([
+      "launcherInstall",
+      "platforms",
+      "androidStoreUrl",
+    ]);
+    expect(PATCH_GAME_FIELDS.assaultcube).toEqual([
+      "launcherInstall",
+      "systemRequirements",
+      "hardwareRequirements",
+    ]);
+  });
+
+  it("patches only the BombSquad desktop edition fields", () => {
+    expect(Object.keys(PATCH_EDITION_FIELDS)).toEqual(["bombsquad/standalone-pc"]);
+    expect(PATCH_EDITION_FIELDS["bombsquad/standalone-pc"]).toEqual([
+      "name",
+      "description",
+      "version",
+      "installConfig.playbound_installer",
+    ]);
+  });
+
+  it("has seed or recipe sources for every patched game and edition", () => {
+    expect(gamesBySlug.has("bombsquad")).toBe(true);
+    expect(launcherInstallBySlug[ASSAULTCUBE_SLUG]).toBeDefined();
+    const editionKeys = new Set(editions.map((e) => `${e.gameSlug}/${e.slug}`));
+    for (const key of Object.keys(PATCH_EDITION_FIELDS)) {
+      expect(editionKeys.has(key), `missing seed edition ${key}`).toBe(true);
+    }
+  });
+
+  it("has seed rows for every allowlisted insert game and edition", () => {
     for (const slug of NEW_GAME_SLUGS) {
       expect(gamesBySlug.has(slug), `missing seed game ${slug}`).toBe(true);
     }
@@ -58,6 +95,10 @@ describe("insert-catalog-wave allowlists", () => {
     expect(src).toMatch(/allowedEditions\.has\(key\)/);
     expect(src).toMatch(/allowedMods\.has\(seed\.slug\)/);
     expect(src).toMatch(/for \(const slug of NEW_GAME_SLUGS\)/);
+    expect(src).toMatch(/PATCH_GAME_FIELDS/);
+    expect(src).toMatch(/PATCH_EDITION_FIELDS/);
     expect(src).toContain('from "./insert-catalog-wave.allowlist"');
+    expect(src).not.toMatch(/\$set:\s*seed\b/);
+    expect(src).not.toMatch(/findOneAndUpdate/);
   });
 });

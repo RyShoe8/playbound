@@ -224,5 +224,19 @@ describe("multiplayer testing-wave installers", () => {
     expect(entry.urlMac).toBe("https://x.test/mac.dmg");
     expect(entry.urlLinux).toBe("https://x.test/linux.tar.gz");
   });
+
+  it("BombSquad ships desktop urlMac/urlLinux pins", () => {
+    const recipe = launcherInstallBySlug.bombsquad;
+    expect(recipe.url).toMatch(/BombSquad_Windows_1\.8\.0a116\.zip$/);
+    expect(recipe.urlMac).toMatch(/BombSquad_Mac_1\.8\.0a116\.dmg$/);
+    expect(recipe.urlLinux).toMatch(/BombSquad_Linux_x86_64_1\.8\.0a116\.tar\.gz$/);
+  });
+
+  it("AssaultCube uses OS-specific GitHub asset patterns including tar.bz2", () => {
+    const recipe = launcherInstallBySlug.assaultcube;
+    expect(recipe.assetPattern).toMatch(/\.exe/);
+    expect(recipe.assetPatternMac).toMatch(/\.dmg/);
+    expect(recipe.assetPatternLinux).toMatch(/tar\\.bz2/);
+  });
 });
 
