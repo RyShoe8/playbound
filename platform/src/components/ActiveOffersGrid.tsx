@@ -27,7 +27,7 @@ export function ActiveOffersGrid({ offers }: { offers: FreeOfferRecord[] }) {
         </p>
         <p className="text-xs">
           {mode === "compatible" && offers.length > 0
-            ? "Switch the compatibility filter above to 'All Games' to view giveaways for all platforms."
+            ? "Switch Device Compatibility to All Games to view giveaways for all platforms."
             : "Check back soon! New giveaways are added weekly."}
         </p>
       </EmptyHint>

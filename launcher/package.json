@@ -1,6 +1,6 @@
 {
   "name": "playbound-launcher",
-  "version": "0.3.51",
+  "version": "0.3.52",
   "description": "PlayBound App — discover, install, update, and launch free PC games and servers.",
   "main": "bootstrap.js",
   "scripts": {
@@ -17,10 +17,10 @@
     "dist:dev": "node scripts/build-windows.js --dev",
     "dist:prod": "node scripts/build-windows.js --prod",
     "dist:portable": "node scripts/build-windows.js --prod --portable",
-    "dist:mac": "electron-builder --mac --universal",
+    "dist:mac": "node scripts/build-prep.js && electron-builder --mac --universal",
     "verify:signatures": "node scripts/verify-signatures.js",
     "signing:status": "node scripts/signing-status.js",
-    "dist:linux": "electron-builder --linux AppImage",
+    "dist:linux": "node scripts/build-prep.js && electron-builder --linux AppImage",
     "test:cache": "node renderer/cache.test.mjs",
     "test:home-ranking": "node renderer/homeRanking.test.mjs",
     "test:discovery": "node renderer/discovery.test.mjs",
@@ -37,6 +37,7 @@
     "test:couch": "node services/couch/protocol.test.js",
     "test:runner": "node services/CompatibilityRunner.test.js",
     "test:gamelauncher": "node services/GameLauncher.test.js",
+    "test:launch-fail": "node services/classifyLaunchFailure.test.js",
     "test:edition-lifecycle": "node services/editionLifecycle.test.js",
     "test:vigem": "node services/couch/windowsVigem.test.js",
     "test:elevate": "node services/GameLauncher.elevate.test.js"

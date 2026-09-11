@@ -65,6 +65,8 @@ const PlatformEventSchema = new Schema(
       default: () => ({ h24: false, h1: false, start: false }),
     },
     discordVoiceProvisionedAt: { type: Date, default: null },
+    /** Set while a provision call is in flight so concurrent cron/PUT callers do not stampede the bot. */
+    discordVoiceProvisioningAt: { type: Date, default: null },
     discordVoiceCleanedAt: { type: Date, default: null },
   },
   { timestamps: true }
