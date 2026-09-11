@@ -21,6 +21,25 @@ export const skyChildrenLauncherInstall = {
   note: "Sky on PlayBound is the free mobile edition (Google Play and App Store). PC/console builds are not offered here.",
 };
 
+export const skyChildrenInstallSteps = [
+  {
+    platform: "android" as const,
+    text: "Open the Google Play listing from the Sky game page and install the free Sky: Children of the Light build.",
+  },
+  {
+    platform: "android" as const,
+    text: "Sign in with your thatgamecompany / platform account if prompted, then play from your library. PlayBound does not offer PC or console installs for Sky.",
+  },
+  {
+    platform: "ios" as const,
+    text: "Open the App Store listing from the Sky game page and install the free Sky: Children of the Light build.",
+  },
+  {
+    platform: "ios" as const,
+    text: "Sign in with your thatgamecompany / Apple account if prompted, then play from your library. PlayBound does not offer PC or console installs for Sky.",
+  },
+];
+
 export const skyChildrenPatchSource = {
   platforms: [...skyChildrenPlatforms],
   androidStoreUrl: skyChildrenAndroidStoreUrl,
@@ -31,4 +50,5 @@ export const skyChildrenPatchSource = {
   browserPlayable: false,
   launcherInstall: skyChildrenLauncherInstall,
   website: "https://www.thatgamecompany.com/sky/",
+  installSteps: skyChildrenInstallSteps,
 };

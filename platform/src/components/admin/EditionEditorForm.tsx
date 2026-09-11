@@ -1778,6 +1778,8 @@ function ManualSteps({
               <option value="windows">Windows</option>
               <option value="macos">macOS</option>
               <option value="linux">Linux</option>
+              <option value="android">Android</option>
+              <option value="ios">iOS</option>
             </PremiumSelect>
             <button
               type="button"

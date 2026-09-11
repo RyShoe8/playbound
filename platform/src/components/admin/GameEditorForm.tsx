@@ -74,6 +74,7 @@ const WIRED_SERVER_PROVIDERS = new Set([
   "zero-k",
   "0ad",
   "everquest",
+  "slapshot-rebound",
 ]);
 
 type DevOption = { slug: string; name: string };

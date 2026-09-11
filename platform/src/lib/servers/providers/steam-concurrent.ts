@@ -137,6 +137,11 @@ export function fetchHoloCurePlayers(): Promise<GameServer[]> {
   return fetchSteamConcurrentPlayers(2420510, { label: "HoloCure" });
 }
 
+/** Slapshot: Rebound — Steam app 1173370. */
+export function fetchSlapshotReboundPlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(1173370, { label: "Slapshot: Rebound" });
+}
+
 /** Classic Marathon 2 — Steam app 2398490. */
 export function fetchMarathon2Players(): Promise<GameServer[]> {
   return fetchSteamConcurrentPlayers(2398490, { label: "Classic Marathon 2" });

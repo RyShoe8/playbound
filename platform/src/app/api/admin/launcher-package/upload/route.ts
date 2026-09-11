@@ -23,6 +23,8 @@ export async function POST(req: Request) {
         return {
           allowedContentTypes: ["application/zip", "application/x-7z-compressed", "application/octet-stream"],
           maximumSizeInBytes: MAX_PACKAGE_BYTES,
+          // Default client tokens expire in 1h; multi-GB packages need longer.
+          validUntil: Date.now() + 24 * 60 * 60 * 1000,
           tokenPayload: JSON.stringify({ kind: "launcher-package" }),
         };
       },

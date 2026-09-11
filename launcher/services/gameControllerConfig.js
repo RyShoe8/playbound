@@ -962,6 +962,10 @@ const NO_CONFIG_NEEDED = {
     kind: "native",
     note: "Gamepad support since 2.09 (XInput); configure bindings in Settings / DarkmodPadbinds.cfg if needed.",
   },
+  "the-spike-cross": {
+    kind: "native",
+    note: "Native Xbox and PlayStation controller support for local volleyball matches.",
+  },
   // Keyed by game slug `bombsquad`. Do not alias edition slug `standalone-pc`
   // — that edition id is shared by other titles. Play paths pass the game slug
   // (and edition features already include Controller Support).

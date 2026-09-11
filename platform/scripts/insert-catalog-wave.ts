@@ -120,6 +120,15 @@ async function main() {
   const { THE_DARK_MOD_SLUG, theDarkModPatchSource } = await import(
     "../src/lib/data/theDarkModCatalog"
   );
+  const { UNKNOWN_HORIZONS_SLUG, unknownHorizonsPatchSource } = await import(
+    "../src/lib/data/unknownHorizonsCatalog"
+  );
+  const { SPIKE_CROSS_SLUG, spikeCrossPatchSource } = await import(
+    "../src/lib/data/spikeCrossCatalog"
+  );
+  const { ALIEN_SWARM_SLUG, alienSwarmPatchSource } = await import(
+    "../src/lib/data/alienSwarmCatalog"
+  );
 
   await dbConnect();
 
@@ -268,6 +277,12 @@ async function main() {
       source = { ...teeworldsPatchSource };
     } else if (slug === THE_DARK_MOD_SLUG) {
       source = { ...theDarkModPatchSource };
+    } else if (slug === UNKNOWN_HORIZONS_SLUG) {
+      source = { ...unknownHorizonsPatchSource };
+    } else if (slug === SPIKE_CROSS_SLUG) {
+      source = { ...spikeCrossPatchSource };
+    } else if (slug === ALIEN_SWARM_SLUG) {
+      source = { ...alienSwarmPatchSource };
     } else if (slug === SEVEN_KINGDOMS_SLUG) {
       source = { launcherInstall: sevenKingdomsLauncherInstall };
     } else if (slug === "s-t-a-l-k-e-r-call-of-pripyat") {
@@ -377,6 +392,11 @@ async function main() {
       version: seed.version,
       installConfig: seed.installConfig,
       shortDescription: seed.shortDescription,
+      visibility: seed.visibility,
+      status: seed.status,
+      installMethod: seed.installMethod,
+      requirements: seed.requirements,
+      hardwareRequirements: seed.hardwareRequirements,
     };
     const payload = pickFields(source, fields);
     for (const field of fields) {

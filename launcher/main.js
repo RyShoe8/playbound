@@ -68,6 +68,7 @@ const {
   resolveDefaultRunner,
   buildRunnerLaunchSpec,
   requiresCompatibilityRunner,
+  getGamePrefixDirectory,
 } = require("./services/CompatibilityRunner");
 const {
   clientConnectArgs,
@@ -1878,6 +1879,17 @@ function maybeDiscoverBaseGameInEditionDir(slug, game, state) {
       } catch {}
     }
     if (foundExe && fs.existsSync(foundExe)) {
+      // Another edition already owns this install tree / exe — do not synthesize
+      // the default edition on top of a shared vendor path (UQM PlayBound + Classic).
+      const claimedBySibling = listEditionEntries(game).some((e) => {
+        const edSlug = e.editionSlug || DEFAULT_EDITION_SLUG;
+        if (edSlug === baseEdSlug) return false;
+        if (e.dir && sameFsPath(e.dir, dir)) return true;
+        if (e.exe && sameFsPath(e.exe, foundExe)) return true;
+        return false;
+      });
+      if (claimedBySibling) continue;
+
       if (!game.editions) game.editions = {};
       game.editions[baseEdSlug] = {
         version: entry.version || null,
@@ -4383,10 +4395,20 @@ function findYSoccerOnlineJar(dir) {
   return findExecutable(dir, "ysoccer-online");
 }
 
+function compatPrefixesRoot() {
+  try {
+    // Prefixes live beside the per-game WINEPREFIX folder (…/prefixes/{slug}).
+    return path.dirname(getGamePrefixDirectory("_"));
+  } catch {
+    return "";
+  }
+}
+
 function expandWinPath(p) {
   const gamesDir = (typeof loadSettings === "function" && loadSettings()?.gamesDir) || DEFAULT_GAMES_DIR || "C:\\Games";
   let out = String(p || "")
     .replace(/%GAMES%/gi, gamesDir)
+    .replace(/%COMPAT_PREFIXES%/gi, compatPrefixesRoot())
     .replace(/%LOCALAPPDATA%/gi, process.env.LOCALAPPDATA || "")
     .replace(/%APPDATA%/gi, process.env.APPDATA || "")
     .replace(/%PROGRAMFILES%/gi, process.env.PROGRAMFILES || "")
@@ -4396,12 +4418,16 @@ function expandWinPath(p) {
     // unexpanded %PUBLIC% would leave a path that can never match.
     .replace(/%PUBLIC%/gi, process.env.PUBLIC || "C:\\Users\\Public")
     .replace(/%USERPROFILE%/gi, process.env.USERPROFILE || process.env.HOME || "");
+  if (process.platform === "darwin" || process.platform === "linux") {
+    const home = app.getPath("home");
+    out = out
+      .replace(/^~(?=$|[\\/])/g, home)
+      .replace(/%HOME%/gi, home);
+  }
   if (process.platform === "darwin") {
     const home = app.getPath("home");
     const support = path.join(home, "Library", "Application Support");
     out = out
-      .replace(/^~(?=$|[\\/])/g, home)
-      .replace(/%HOME%/gi, home)
       .replace(/%APPLICATIONS%/gi, "/Applications")
       .replace(/%HOME_APPLICATIONS%/gi, path.join(home, "Applications"))
       .replace(/%APPLICATION_SUPPORT%/gi, support);
@@ -9957,6 +9983,18 @@ async function uninstallModsForGame(baseGameSlug) {
   }
 }
 
+function isPlayBoundCompatPrefixDir(slug, dir) {
+  if (!slug || !dir || process.platform === "win32") return false;
+  try {
+    const prefixRoot = path.resolve(getGamePrefixDirectory(slug));
+    const resolved = path.resolve(dir);
+    if (sameFsPath(resolved, prefixRoot)) return true;
+    return pathUnderRoot(resolved, prefixRoot);
+  } catch {
+    return false;
+  }
+}
+
 function isPlayBoundManagedInstallDir(slug, dir) {
   if (!slug || !dir) return false;
   const root = path.resolve(gamesRoot());
@@ -9964,6 +10002,7 @@ function isPlayBoundManagedInstallDir(slug, dir) {
   const resolved = path.resolve(dir);
   if (sameFsPath(resolved, root)) return false;
   if (sameFsPath(resolved, slugRoot)) return true;
+  if (isPlayBoundCompatPrefixDir(slug, dir)) return true;
   if (process.platform === "win32") {
     const relToSlug = path.relative(slugRoot.toLowerCase(), resolved.toLowerCase());
     if (relToSlug === "" || (!relToSlug.startsWith("..") && !path.isAbsolute(relToSlug))) {
@@ -10155,10 +10194,18 @@ function isDedicatedSourcemodDir(dir) {
  * Delete or uninstall a game directory.
  * Runs official uninstaller for installer games, and cleanly deletes PlayBound managed folders.
  */
-async function tryRemovePlayBoundInstallDir(slug, dir, entry = null, { editionSlug = null } = {}) {
+async function tryRemovePlayBoundInstallDir(
+  slug,
+  dir,
+  entry = null,
+  { editionSlug = null, lastOwnerOfInstallPath = false } = {}
+) {
   if (!dir) return null;
 
-  if (entry && editionLifecycle.mayRunNativeUninstaller(editionSlug, entry)) {
+  if (
+    entry &&
+    editionLifecycle.mayRunNativeUninstaller(editionSlug, entry, { lastOwnerOfInstallPath })
+  ) {
     try {
       await runGameUninstaller(slug, entry, dir);
     } catch (err) {
@@ -10172,6 +10219,7 @@ async function tryRemovePlayBoundInstallDir(slug, dir, entry = null, { editionSl
   await new Promise((r) => setTimeout(r, waitMs));
 
   if (!fs.existsSync(dir)) {
+    await maybeRemoveCompatPrefix(slug);
     const leftover = leftoverVendorInstallWarning(entry);
     return leftover;
   }
@@ -10189,6 +10237,7 @@ async function tryRemovePlayBoundInstallDir(slug, dir, entry = null, { editionSl
     try {
       prepareDirRemoval(slug, [{ dir }]);
       await removeDirWithRetries(dir);
+      await maybeRemoveCompatPrefix(slug);
       return leftoverVendorInstallWarning(entry);
     } catch (err) {
       const message = err?.message || String(err);
@@ -10197,6 +10246,7 @@ async function tryRemovePlayBoundInstallDir(slug, dir, entry = null, { editionSl
     }
   } else {
     console.warn(`[uninstall] skipping folder PlayBound does not own: ${dir}`);
+    await maybeRemoveCompatPrefix(slug);
     return (
       leftoverVendorInstallWarning(entry) ||
       "Removed from PlayBound. Files outside the PlayBound games folder were left on disk — finish uninstall from Windows Apps & features if needed."
@@ -10204,9 +10254,23 @@ async function tryRemovePlayBoundInstallDir(slug, dir, entry = null, { editionSl
   }
 }
 
+/** Drop the Wine/Proton prefix PlayBound created for this slug when nothing usable remains. */
+async function maybeRemoveCompatPrefix(slug) {
+  if (!slug || process.platform === "win32") return;
+  try {
+    const prefixRoot = getGamePrefixDirectory(slug);
+    if (!prefixRoot || !fs.existsSync(prefixRoot)) return;
+    if (isUnsafeUninstallDir(prefixRoot)) return;
+    prepareDirRemoval(slug, [{ dir: prefixRoot }]);
+    await removeDirWithRetries(prefixRoot);
+  } catch (err) {
+    console.warn(`[uninstall] could not delete Wine prefix for ${slug}:`, err?.message || err);
+  }
+}
+
 /** True when a known vendor install path (e.g. Program Files\\7kaa) still exists. */
 function leftoverVendorInstallWarning(entry) {
-  if (process.platform !== "win32" || !entry) return null;
+  if (!entry) return null;
   const stillThere = knownExecutablePathsFor(entry).some((raw) => {
     try {
       const full = expandWinPath(String(raw));
@@ -10217,7 +10281,10 @@ function leftoverVendorInstallWarning(entry) {
   });
   if (!stillThere) return null;
   const label = entry.title || entry.slug || "this game";
-  return `Removed from PlayBound, but ${label} files are still on disk. Finish uninstall via Windows Apps & features or the game's own uninstaller.`;
+  if (process.platform === "win32") {
+    return `Removed from PlayBound, but ${label} files are still on disk. Finish uninstall via Windows Apps & features or the game's own uninstaller.`;
+  }
+  return `Removed from PlayBound, but ${label} files are still on disk (including any Wine/Proton prefix install). Delete them manually if needed.`;
 }
 
 async function finishGameUninstall(slug, state, extra = {}) {
@@ -10275,8 +10342,24 @@ async function uninstallGame(slug, editionSlug = null) {
     if (info.pending && !exeOnDisk(info)) {
       delete game.editions[editionSlug];
     } else {
-      if (info.dir) {
-        const warning = await tryRemovePlayBoundInstallDir(slug, info.dir, entry, { editionSlug });
+      const siblingsSharePath =
+        Boolean(info.dir || info.exe) &&
+        listEditionEntries(game).some((e) => {
+          const otherSlug = e.editionSlug || DEFAULT_EDITION_SLUG;
+          if (otherSlug === editionSlug) return false;
+          if (info.dir && e.dir && sameFsPath(e.dir, info.dir)) return true;
+          if (info.exe && e.exe && sameFsPath(e.exe, info.exe)) return true;
+          if (info.dir && e.exe && sameFsPath(path.dirname(e.exe), info.dir)) return true;
+          if (info.exe && e.dir && sameFsPath(e.dir, path.dirname(info.exe))) return true;
+          return false;
+        });
+      // Shared vendor install (e.g. UQM editions in one Program Files tree):
+      // drop only this edition's state row so siblings keep the files.
+      if (info.dir && !siblingsSharePath) {
+        const warning = await tryRemovePlayBoundInstallDir(slug, info.dir, entry, {
+          editionSlug,
+          lastOwnerOfInstallPath: true,
+        });
         if (warning) warnings.push(warning);
       }
       delete game.editions[editionSlug];
