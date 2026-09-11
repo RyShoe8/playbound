@@ -6,6 +6,8 @@ const { shouldLaunchThroughDosBox, dosExecutableMessage } = require("./executabl
 const { dosBoxLaunchSpec } = require("./ManagedDosBox");
 const { requiresCompatibilityRunner, buildRunnerLaunchSpec } = require("./CompatibilityRunner");
 const { assaultCubeWorkingDirectory } = require("./assaultCubeLaunch");
+const { xrEngineWorkingDirectory } = require("./xrEngineLaunch");
+const { resolveUnknownHorizonsLaunch, isUnknownHorizonsSlug } = require("./unknownHorizonsLaunch");
 
 const JAVA_MISSING_MSG =
   "Java 17+ is required to run this game. PlayBound can install it for you — try Play again, or install Java from Settings.";
@@ -148,6 +150,13 @@ class GameLauncher {
       return child;
     }
 
+    if (isUnknownHorizonsSlug(opts.gameSlug)) {
+      const uh = resolveUnknownHorizonsLaunch(launchPath, opts.cwd || path.dirname(launchPath));
+      if (uh && path.resolve(uh.exe) !== path.resolve(launchPath)) {
+        return this.spawnGame(uh.exe, [...uh.args, ...args], { ...opts, cwd: uh.cwd });
+      }
+    }
+
     if (/\.(cmd|bat)$/i.test(launchPath)) {
       const err = new Error(
         process.platform === "darwin"
@@ -207,7 +216,10 @@ class GameLauncher {
     const finalArgs = [...launchCommand.slice(1), ...args];
 
     // For .app bundles, cwd should be the parent of the bundle, not Contents/.
-    const cwd = this.resolveWorkingDirectory(launchPath, opts.gameSlug);
+    // Callers (Unknown Horizons) may pass an explicit cwd when the exe is not
+    // the asset root (bundled python beside unknown-horizons/).
+    const cwd =
+      opts.cwd || this.resolveWorkingDirectory(launchPath, opts.gameSlug);
 
     /*
      * A game whose executable demands elevation.
@@ -271,7 +283,11 @@ class GameLauncher {
    * (bin_win32/x64) and recognise Linux/mac trees (bin_unix).
    */
   static resolveWorkingDirectory(launchPath, gameSlug) {
-    return assaultCubeWorkingDirectory(launchPath, gameSlug) || path.dirname(launchPath);
+    return (
+      assaultCubeWorkingDirectory(launchPath, gameSlug) ||
+      xrEngineWorkingDirectory(launchPath, gameSlug) ||
+      path.dirname(launchPath)
+    );
   }
 }
 

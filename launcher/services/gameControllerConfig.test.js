@@ -348,6 +348,23 @@ test("auto-configures Trigger Rally with joystick block", () => {
   assert.ok(out.includes("<axis name=\"steer\""));
 });
 
+test("Teeworlds enables joystick_enable without clobbering binds", () => {
+  const pad = pickPrimary([{ id: "Xbox 360 Controller", connected: true }]);
+  const cfg = ["bind mouse1 +fire", "joystick_enable 0", "player_name \"demo\"", ""].join("\n");
+  assert.equal(GAMES.teeworlds.needsConfig(cfg), true);
+  const out = applyProfile("teeworlds", cfg, pad);
+  assert.ok(/^joystick_enable 1$/m.test(out));
+  assert.ok(/^joystick_absolute 1$/m.test(out));
+  assert.ok(out.includes('bind mouse1 +fire'));
+  assert.ok(out.includes('player_name "demo"'));
+  assert.equal(GAMES.teeworlds.needsConfig(out), false);
+});
+
+test("Teeworlds declines a foreign config file", () => {
+  const pad = pickPrimary([{ id: "Xbox 360 Controller", connected: true }]);
+  assert.equal(applyProfile("teeworlds", "[Input]\nenable controller = false\n", pad), null);
+});
+
 test("declines an ini-shaped file that is not vegastrike.config", () => {
   /*
    * This used to assert the opposite: that an ini block naming the pad was

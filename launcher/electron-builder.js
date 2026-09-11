@@ -114,6 +114,11 @@ module.exports = {
       to: "scripts",
       filter: ["**/*"],
     },
+    {
+      from: "resources/dgvoodoo-ms-x86",
+      to: "dgvoodoo-ms-x86",
+      filter: ["**/*"],
+    },
   ],
   // systeminformation shells out to helpers; unpack so Windows detection works reliably.
   // assets is unpacked so Linux D-Bus/AppIndicator can read tray icons from real disk files.

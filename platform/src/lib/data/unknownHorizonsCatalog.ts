@@ -2,7 +2,8 @@
  * Unknown Horizons — Windows installer (Wine on Mac/Linux) + hardware.
  * Field-scoped writes go through insert-catalog-wave PATCH_GAME_FIELDS.
  *
- * The 2019.1 setup drops a real unknownhorizons.exe; do not point Play at run_uh.bat.
+ * The 2019.1 Inno setup installs to C:\Unknown-Horizons and launches via
+ * run_uh.bat → bundled python + run_uh.py (there is no unknownhorizons.exe).
  */
 export const UNKNOWN_HORIZONS_SLUG = "unknown-horizons" as const;
 
@@ -14,18 +15,17 @@ export const unknownHorizonsLauncherInstall = {
   url: "https://github.com/unknown-horizons/unknown-horizons/releases/download/2019.1/Unknown-Horizons-2019.1.214-Setup-VC15-x86.exe",
   fileName: "Unknown-Horizons-2019.1.214-Setup-VC15-x86.exe",
   versionLabel: "2019.1",
-  exeHint: "unknownhorizons",
-  registryTitles: ["Unknown Horizons"],
+  exeHint: "run_uh",
+  registryTitles: ["Unknown Horizons", "Unknown-Horizons"],
   knownExePaths: [
-    "%PROGRAMFILES(X86)%\\Unknown Horizons\\unknownhorizons.exe",
-    "%PROGRAMFILES%\\Unknown Horizons\\unknownhorizons.exe",
-    "%LOCALAPPDATA%\\Programs\\Unknown Horizons\\unknownhorizons.exe",
-    "%COMPAT_PREFIXES%/unknown-horizons/drive_c/Program Files (x86)/Unknown Horizons/unknownhorizons.exe",
-    "%COMPAT_PREFIXES%/unknown-horizons/drive_c/Program Files/Unknown Horizons/unknownhorizons.exe",
-    "unknownhorizons.exe",
+    "C:\\Unknown-Horizons\\unknown-horizons\\run_uh.bat",
+    "C:\\Unknown-Horizons\\unknown-horizons\\run_uh.py",
+    "%COMPAT_PREFIXES%/unknown-horizons/drive_c/Unknown-Horizons/unknown-horizons/run_uh.bat",
+    "run_uh.bat",
+    "run_uh.py",
   ],
   note:
-    "Official 2019.1 Windows setup (FIFE). Mac and Linux run the same installer through PlayBound Wine — there is no modern native Mac build. Play launches unknownhorizons.exe, not run_uh.bat.",
+    "Official 2019.1 Windows setup (FIFE). PlayBound runs the installer silently; Play starts run_uh via the bundled Python (not a missing .exe).",
 };
 
 export const unknownHorizonsSystemRequirements = {

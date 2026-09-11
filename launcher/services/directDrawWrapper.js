@@ -7,7 +7,9 @@
  * to the game is not enough for COM — CoCreateInstance reads the registry.
  *
  * Seamless fix (no admin):
- *   1. Cache dgVoodoo2 from the official GitHub release.
+ *   1. Prefer MS/x86 DLLs already beside the game, then bundled launcher
+ *      resources (never the full GitHub zip — Windows Defender flags it as
+ *      Trojan:Win32/Kepavll!rfn and Expand-Archive fails silently).
  *   2. Copy MS/x86 DirectX DLLs into the game folder.
  *   3. Write a sensible dgVoodoo.conf beside FreeTrain.exe.
  *   4. Register CLSID_DirectDraw under HKCU pointing at that local DDRAW.dll
@@ -24,8 +26,11 @@ const https = require("https");
 const http = require("http");
 
 const DGVOODOO_VERSION = "2_87_4";
-const DGVOODOO_ZIP_URL =
-  "https://github.com/dege-diosg/dgVoodoo2/releases/download/v2.87.4/dgVoodoo2_87_4.zip";
+
+/** Optional PlayBound mirror of only MS/x86 — never the full Defender-flagged zip. */
+const DGVOODOO_MS_X86_MIRROR_URL =
+  process.env.PLAYBOUND_DGVOODOO_MS_X86_URL ||
+  "https://mirror.playbound.club/launcher-packages/runtimes/dgvoodoo/2_87_4/ms-x86.zip";
 
 /** Classic DirectDraw COM class FreeTrain's DirectDraw.NET constructs. */
 const CLSID_DIRECTDRAW = "{E1211353-8E94-11D1-8808-00C04FC2C602}";
@@ -33,6 +38,11 @@ const CLSID_DIRECTDRAW = "{E1211353-8E94-11D1-8808-00C04FC2C602}";
 const MS_X86_DLLS = ["DDraw.dll", "D3DImm.dll", "D3D8.dll", "D3D9.dll"];
 
 const FREETRAIN_SLUGS = new Set(["freetrain", "free-train"]);
+
+const AV_BLOCK_MSG =
+  "Windows Defender (or another antivirus) blocked the DirectDraw compatibility files. " +
+  "PlayBound ships only the MS/x86 DLLs — if this keeps failing, allowlist the FreeTrain " +
+  "folder under PlayBound\\Games, then try Play again.";
 
 function isFreeTrainSlug(slug) {
   return FREETRAIN_SLUGS.has(String(slug || "").toLowerCase());
@@ -45,6 +55,31 @@ function needsDirectDrawWrapper(entry, slug) {
 
 function cacheRoot(userDataPath) {
   return path.join(userDataPath, "runtimes", "dgvoodoo", DGVOODOO_VERSION);
+}
+
+/** Packaged with the launcher — preferred over any network download. */
+function bundledMsX86Dir() {
+  const candidates = [
+    path.join(process.resourcesPath || "", "dgvoodoo-ms-x86"),
+    path.join(__dirname, "..", "resources", "dgvoodoo-ms-x86"),
+  ];
+  for (const dir of candidates) {
+    if (dirHasMsX86Dlls(dir)) return dir;
+  }
+  return null;
+}
+
+function dirHasMsX86Dlls(dir) {
+  if (!dir || !fs.existsSync(dir)) return false;
+  return (
+    fs.existsSync(path.join(dir, "DDraw.dll")) || fs.existsSync(path.join(dir, "ddraw.dll"))
+  );
+}
+
+function msX86DirFromGameDir(gameDir) {
+  if (!gameDir || !fs.existsSync(gameDir)) return null;
+  if (dirHasMsX86Dlls(gameDir)) return gameDir;
+  return null;
 }
 
 function downloadFile(url, destPath) {
@@ -75,6 +110,13 @@ function downloadFile(url, destPath) {
   });
 }
 
+function looksLikeAvBlock(stderr, stdout) {
+  const text = `${stderr || ""}\n${stdout || ""}`;
+  return /virus|trojan|malware|potentially unwanted|quarantine|Defender|Operation did not complete successfully/i.test(
+    text
+  );
+}
+
 function extractZip(zipPath, destDir) {
   // Prefer PowerShell Expand-Archive on Windows; fall back to tar on others.
   if (process.platform === "win32") {
@@ -83,12 +125,15 @@ function extractZip(zipPath, destDir) {
       [
         "-NoProfile",
         "-Command",
-        `Expand-Archive -LiteralPath '${zipPath.replace(/'/g, "''")}' -DestinationPath '${destDir.replace(/'/g, "''")}' -Force`,
+        `$ErrorActionPreference = 'Stop'; Expand-Archive -LiteralPath '${zipPath.replace(/'/g, "''")}' -DestinationPath '${destDir.replace(/'/g, "''")}' -Force`,
       ],
       { windowsHide: true, encoding: "utf8" }
     );
     if (ps.status !== 0) {
-      throw new Error(ps.stderr || ps.stdout || "Expand-Archive failed");
+      if (looksLikeAvBlock(ps.stderr, ps.stdout)) {
+        throw new Error(AV_BLOCK_MSG);
+      }
+      throw new Error((ps.stderr || ps.stdout || "Expand-Archive failed").trim());
     }
     return;
   }
@@ -102,6 +147,7 @@ function findMsX86Dir(extractedRoot) {
   const candidates = [
     path.join(extractedRoot, "MS", "x86"),
     path.join(extractedRoot, "MS", "X86"),
+    extractedRoot,
   ];
   for (const dir of candidates) {
     if (fs.existsSync(path.join(dir, "DDraw.dll")) || fs.existsSync(path.join(dir, "ddraw.dll"))) {
@@ -115,6 +161,8 @@ function findMsX86Dir(extractedRoot) {
       if (fs.existsSync(path.join(nested, "DDraw.dll")) || fs.existsSync(path.join(nested, "ddraw.dll"))) {
         return nested;
       }
+      const flat = path.join(extractedRoot, name);
+      if (dirHasMsX86Dlls(flat)) return flat;
     }
   } catch {
     /* ignore */
@@ -168,46 +216,78 @@ Set-ItemProperty -Path $path -Name 'ThreadingModel' -Value 'Both'
 }
 
 /**
- * @param {{ userDataPath: string, downloadTo?: Function, sendProgress?: Function }} deps
+ * @param {{ userDataPath: string, downloadTo?: Function, sendProgress?: Function, msX86MirrorUrl?: string }} deps
  */
 function createDirectDrawWrapper(deps) {
   const userDataPath = deps.userDataPath;
   const sendProgress = deps.sendProgress || (() => {});
+  const mirrorUrl = deps.msX86MirrorUrl || DGVOODOO_MS_X86_MIRROR_URL;
 
-  async function ensureDgVoodooExtracted() {
+  async function resolveMsX86Source(gameDir) {
+    const fromGame = msX86DirFromGameDir(gameDir);
+    if (fromGame) return { ok: true, msX86: fromGame, source: "game-dir" };
+
+    const bundled = bundledMsX86Dir();
+    if (bundled) return { ok: true, msX86: bundled, source: "bundled" };
+
+    // Optional small mirror zip of MS/x86 only — never the full GitHub release.
     const root = cacheRoot(userDataPath);
-    const zipPath = path.join(root, `dgVoodoo${DGVOODOO_VERSION}.zip`);
-    const extracted = path.join(root, "extracted");
-    const marker = path.join(root, "ready.marker");
+    const zipPath = path.join(root, "ms-x86.zip");
+    const extracted = path.join(root, "extracted-ms-x86");
+    const marker = path.join(root, "ms-x86.ready");
 
     if (fs.existsSync(marker) && findMsX86Dir(extracted)) {
-      return { ok: true, msX86: findMsX86Dir(extracted) };
+      return { ok: true, msX86: findMsX86Dir(extracted), source: "mirror-cache" };
     }
 
     await fsp.mkdir(root, { recursive: true });
-    sendProgress({ phase: "compatibility", message: "Downloading DirectDraw compatibility layer…" });
+    sendProgress({
+      phase: "compatibility",
+      message: "Downloading DirectDraw compatibility layer…",
+    });
 
-    if (!fs.existsSync(zipPath)) {
-      const tmp = `${zipPath}.partial`;
-      if (typeof deps.downloadTo === "function") {
-        await deps.downloadTo(DGVOODOO_ZIP_URL, tmp);
-      } else {
-        await downloadFile(DGVOODOO_ZIP_URL, tmp);
+    try {
+      if (!fs.existsSync(zipPath)) {
+        const tmp = `${zipPath}.partial`;
+        if (typeof deps.downloadTo === "function") {
+          await deps.downloadTo(mirrorUrl, tmp);
+        } else {
+          await downloadFile(mirrorUrl, tmp);
+        }
+        await fsp.rename(tmp, zipPath);
       }
-      await fsp.rename(tmp, zipPath);
-    }
 
-    await fsp.rm(extracted, { recursive: true, force: true });
-    await fsp.mkdir(extracted, { recursive: true });
-    sendProgress({ phase: "compatibility", message: "Preparing DirectDraw compatibility layer…" });
-    extractZip(zipPath, extracted);
+      await fsp.rm(extracted, { recursive: true, force: true });
+      await fsp.mkdir(extracted, { recursive: true });
+      sendProgress({
+        phase: "compatibility",
+        message: "Preparing DirectDraw compatibility layer…",
+      });
+      extractZip(zipPath, extracted);
 
-    const msX86 = findMsX86Dir(extracted);
-    if (!msX86) {
-      return { ok: false, error: "dgVoodoo zip did not contain MS/x86 DLLs" };
+      const msX86 = findMsX86Dir(extracted);
+      if (!msX86) {
+        return {
+          ok: false,
+          error:
+            "DirectDraw compatibility package did not contain MS/x86 DLLs. " + AV_BLOCK_MSG,
+        };
+      }
+      fs.writeFileSync(marker, new Date().toISOString(), "utf8");
+      return { ok: true, msX86, source: "mirror" };
+    } catch (err) {
+      const msg = String(err?.message || err || "");
+      if (looksLikeAvBlock(msg, "") || /virus|trojan|Defender/i.test(msg)) {
+        return { ok: false, error: AV_BLOCK_MSG };
+      }
+      // Bundled resources should normally exist; mirror is a fallback.
+      return {
+        ok: false,
+        error:
+          msg ||
+          "Could not prepare the DirectDraw compatibility layer. Reinstall FreeTrain from PlayBound, or allowlist the game folder.",
+      };
     }
-    fs.writeFileSync(marker, new Date().toISOString(), "utf8");
-    return { ok: true, msX86 };
   }
 
   async function installWrapperIntoGameDir(gameDir) {
@@ -218,15 +298,26 @@ function createDirectDrawWrapper(deps) {
       return { ok: false, error: "Game directory missing" };
     }
 
-    const prepared = await ensureDgVoodooExtracted();
+    const prepared = await resolveMsX86Source(gameDir);
     if (!prepared.ok) return prepared;
 
-    for (const name of MS_X86_DLLS) {
-      const src = path.join(prepared.msX86, name);
-      const srcAlt = path.join(prepared.msX86, name.toLowerCase());
-      const from = fs.existsSync(src) ? src : fs.existsSync(srcAlt) ? srcAlt : null;
-      if (!from) continue;
-      await fsp.copyFile(from, path.join(gameDir, name));
+    // Already present beside the exe — still ensure conf + COM registration.
+    if (prepared.source !== "game-dir") {
+      for (const name of MS_X86_DLLS) {
+        const src = path.join(prepared.msX86, name);
+        const srcAlt = path.join(prepared.msX86, name.toLowerCase());
+        const from = fs.existsSync(src) ? src : fs.existsSync(srcAlt) ? srcAlt : null;
+        if (!from) continue;
+        await fsp.copyFile(from, path.join(gameDir, name));
+      }
+    }
+
+    if (!dirHasMsX86Dlls(gameDir)) {
+      return {
+        ok: false,
+        error:
+          "DirectDraw compatibility DLLs are missing beside FreeTrain.exe. " + AV_BLOCK_MSG,
+      };
     }
 
     writeDgVoodooConf(gameDir);
@@ -239,7 +330,7 @@ function createDirectDrawWrapper(deps) {
       return { ok: false, error: reg.error };
     }
 
-    return { ok: true, ddrawPath };
+    return { ok: true, ddrawPath, source: prepared.source };
   }
 
   /**
@@ -255,7 +346,11 @@ function createDirectDrawWrapper(deps) {
     try {
       return await installWrapperIntoGameDir(gameDir);
     } catch (err) {
-      return { ok: false, error: err?.message || String(err) };
+      const msg = String(err?.message || err || "");
+      if (looksLikeAvBlock(msg, "")) {
+        return { ok: false, error: AV_BLOCK_MSG };
+      }
+      return { ok: false, error: msg };
     }
   }
 
@@ -264,7 +359,9 @@ function createDirectDrawWrapper(deps) {
     needsDirectDrawWrapper,
     isFreeTrainSlug,
     CLSID_DIRECTDRAW,
-    DGVOODOO_ZIP_URL,
+    resolveMsX86Source,
+    bundledMsX86Dir,
+    DGVOODOO_MS_X86_MIRROR_URL: mirrorUrl,
   };
 }
 
@@ -273,9 +370,14 @@ module.exports = {
   needsDirectDrawWrapper,
   isFreeTrainSlug,
   CLSID_DIRECTDRAW,
-  DGVOODOO_ZIP_URL,
   MS_X86_DLLS,
+  AV_BLOCK_MSG,
+  DGVOODOO_MS_X86_MIRROR_URL,
   writeDgVoodooConf,
   registerDirectDrawComHkcu,
   findMsX86Dir,
+  bundledMsX86Dir,
+  dirHasMsX86Dlls,
+  extractZip,
+  looksLikeAvBlock,
 };

@@ -28,6 +28,13 @@ const { createLocalServers } = require("./services/localServer");
 const { createTransferMeter } = require("./services/transferMeter");
 const { toQueueSnapshot } = require("./services/installQueueView");
 const { chooseExeFromListing, isUninstallerExe, isInstallerExe } = require("./services/exeCandidates");
+const {
+  isDarkModSlug,
+  isTdmInstallerBasename,
+  tdmUnattendedArgs,
+  tdmInstallerPollMaxMs,
+} = require("./services/tdmInstall");
+const { isUnknownHorizonsSlug } = require("./services/unknownHorizonsLaunch");
 const { createManagedDosBox } = require("./services/ManagedDosBox");
 const { createManagedDotNet, requiredDotNetMajor } = require("./services/ManagedDotNet");
 const { createDirectDrawWrapper } = require("./services/directDrawWrapper");
@@ -4137,18 +4144,10 @@ function exeHintFor(entry) {
 
 /**
  * A catalog path can describe an installer helper rather than a game binary.
- * Unknown Horizons' old recipe names run_uh.bat; keeping that as an automatic
- * answer makes Play save the script even when the player explicitly needs to
- * locate the real Windows executable.
+ * Unknown Horizons is launched via run_uh.bat → bundled python + run_uh.py;
+ * that bat is a valid discovery target (GameLauncher resolves it at spawn).
  */
-function acceptsKnownExecutable(entry, candidate) {
-  if (
-    process.platform === "win32" &&
-    entry?.slug === "unknown-horizons" &&
-    /\.(?:bat|cmd)$/i.test(String(candidate || ""))
-  ) {
-    return false;
-  }
+function acceptsKnownExecutable(_entry, _candidate) {
   return true;
 }
 
@@ -4159,6 +4158,12 @@ function knownExecutablePathsFor(entry) {
     for (const root of [process.env["ProgramFiles(x86)"], process.env.ProgramFiles]) {
       if (root) paths.push(path.join(root, "7kaa", "7kaa.exe"));
     }
+  }
+  if (process.platform === "win32" && isUnknownHorizonsSlug(entry?.slug)) {
+    paths.push(
+      "C:\\Unknown-Horizons\\unknown-horizons\\run_uh.bat",
+      "C:\\Unknown-Horizons\\unknown-horizons\\run_uh.py"
+    );
   }
   return paths;
 }
@@ -4180,7 +4185,7 @@ function findExecutable(dir, exeHint) {
    * only executable is one of these still launches — the rank only decides
    * which wins when there is something else to prefer.
    */
-  const tool = /editor|maker|config|settings|benchmark|dedicated/i;
+  const tool = /editor|maker|config|settings|benchmark|dedicated|tweaker|configurator/i;
   /*
    * EasyAntiCheat's bootstrap. A protected game ships this beside its real
    * binary and Steam is configured to run it: it brings up the EAC service and
@@ -4213,6 +4218,8 @@ function findExecutable(dir, exeHint) {
       }
       if (stat.isSymbolicLink()) continue;
       if (isUninstallerExe(name)) continue;
+      // Installer stubs are never the game — leave them for maybeHandleInstallerPackage.
+      if (/\.exe$/i.test(name) && isInstallerExe(name)) continue;
       if (stat.isDirectory()) {
         if (process.platform === "darwin" && name.endsWith(".app") && (ignoreSkip || !skip.test(name))) {
           candidates.push({ full, name, size: stat.size, rank: 300 });
@@ -4491,7 +4498,7 @@ $paths = @(
   'HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*',
   'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'
 )
-$items = Get-ItemProperty $paths | Where-Object { $_.DisplayName -or $_.DisplayIcon -or $_.InstallLocation }
+$items = Get-ItemProperty $paths | Where-Object { $_.DisplayName -or $_.DisplayIcon -or $_.InstallLocation -or $_.UninstallString }
 $hit = $null
 # An installer writes whatever name it likes, and it is rarely ours to the
 # character: "Metal Slug: Awakening" registers as "Metal Slug Awakening", and
@@ -4515,25 +4522,28 @@ foreach ($title in $titles) {
       if ($nt.Length -ge 6 -and $dn.StartsWith($nt)) { return $true }
       $false
     } |
-    Select-Object -First 1 DisplayName, InstallLocation, DisplayIcon
+    Select-Object -First 1 DisplayName, InstallLocation, DisplayIcon, UninstallString
   if ($hit) { break }
 }
 if (-not $hit -and $bases.Count -gt 0) {
   $hit = $items | Where-Object {
     $icon = [string]$_.DisplayIcon
     $loc = [string]$_.InstallLocation
+    $un = [string]$_.UninstallString
     foreach ($b in $bases) {
       if ($icon -and ($icon.ToLower().Contains($b))) { return $true }
       if ($loc -and (Test-Path (Join-Path $loc $b))) { return $true }
+      if ($un -and ($un.ToLower().Contains($b))) { return $true }
     }
     $false
-  } | Select-Object -First 1 DisplayName, InstallLocation, DisplayIcon
+  } | Select-Object -First 1 DisplayName, InstallLocation, DisplayIcon, UninstallString
 }
 if (-not $hit) { return }
 @{
   DisplayName = $hit.DisplayName
   InstallLocation = $hit.InstallLocation
   DisplayIcon = $hit.DisplayIcon
+  UninstallString = [string]$hit.UninstallString
 } | ConvertTo-Json -Compress
 `;
     const out = execFileSync(
@@ -4544,18 +4554,21 @@ if (-not $hit) { return }
     if (out) {
       const hit = JSON.parse(out);
       const icon = stripRegQuotes(hit.DisplayIcon);
+      const uninstall = stripRegQuotes(hit.UninstallString);
       /*
-       * DisplayIcon is whatever the installer felt like registering, and Inno
-       * Setup registers its own uninstaller as often as the game. Taking it on
-       * trust wired Play to unins000.exe — a button that offers to delete the
-       * game the player just installed. The install folder is right either
-       * way, so a rejected icon falls through to searching it.
+       * Prefer searching the install folder for the recipe's known exe before
+       * trusting DisplayIcon. Inno/NSIS often register a Configurator or their
+       * own uninstaller as the icon; Lost Alpha's Configurator is the common
+       * case. Seven Kingdoms AA leaves InstallLocation empty and only sets
+       * UninstallString — dirname of that is the real install root.
        */
-      if (icon && /\.exe$/i.test(icon) && !isUninstallerExe(icon) && fs.existsSync(icon)) {
-        exe = icon;
-      } else {
-        const root = stripRegQuotes(hit.InstallLocation);
-        if (root && fs.existsSync(root)) {
+      let root = stripRegQuotes(hit.InstallLocation);
+      if ((!root || !fs.existsSync(root)) && uninstall) {
+        const unPath = uninstall.replace(/^"+|"+$/g, "").split(/\s+(?=\/|-)/)[0];
+        const unDir = path.dirname(unPath);
+        if (unDir && fs.existsSync(unDir)) root = unDir;
+      }
+      if (root && fs.existsSync(root)) {
           const candidates = [];
           if (entry.exeHint) {
             const hint = entry.exeHint;
@@ -4564,29 +4577,41 @@ if (-not $hit) { return }
               candidates.push(
                 path.join(root, `${hint}.exe`),
                 path.join(root, "bin", `${hint}.exe`),
-                path.join(root, "bin", hint)
+                path.join(root, "bins", `${hint}.exe`),
+                path.join(root, "bin", hint),
+                path.join(root, "bins", hint)
               );
             } else {
-              candidates.push(path.join(root, "bin", hint));
+              candidates.push(path.join(root, "bin", hint), path.join(root, "bins", hint));
             }
           }
           candidates.push(
             path.join(root, "binaries", "system", "pyrogenesis.exe"),
             path.join(root, "bin", "hedgewars.exe"),
-            path.join(root, "hedgewars.exe")
+            path.join(root, "hedgewars.exe"),
+            path.join(root, "bins", "XR_3DA.exe"),
+            path.join(root, "bin", "XR_3DA.exe")
           );
           for (const raw of entry.knownExePaths || []) {
-            const base = path.basename(expandWinPath(raw));
+            const expanded = expandWinPath(raw);
+            if (path.isAbsolute(expanded) && fs.existsSync(expanded)) {
+              candidates.push(expanded);
+            }
+            const base = path.basename(expanded);
             if (base) {
               candidates.push(
                 path.join(root, base),
                 path.join(root, "bin", base),
+                path.join(root, "bins", base),
                 path.join(root, "binaries", "system", base)
               );
             }
+            if (raw && !/[\\/]/.test(String(raw).slice(0, 1)) && /[\\/]/.test(String(raw))) {
+              candidates.push(path.join(root, String(raw).replace(/\//g, path.sep)));
+            }
           }
           for (const c of candidates) {
-            if (c && fs.existsSync(c)) {
+            if (c && fs.existsSync(c) && !isUninstallerExe(c)) {
               exe = c;
               break;
             }
@@ -4612,12 +4637,14 @@ if (-not $hit) { return }
                 if (exe) break;
                 const full = path.join(dir, ent.name);
                 if (ent.isDirectory()) walk(full, depth + 1);
-                else if (ent.isFile() && want.has(ent.name.toLowerCase())) exe = full;
+                else if (ent.isFile() && want.has(ent.name.toLowerCase()) && !isUninstallerExe(full)) {
+                  exe = full;
+                }
               }
             };
             if (want.size) walk(root, 0);
           }
-          if (!exe && entry?.slug !== "unknown-horizons") {
+          if (!exe) {
             /*
              * A game whose recipe names no executable at all — a catalog row
              * added for testing, most often. Windows has just told us the
@@ -4627,10 +4654,8 @@ if (-not $hit) { return }
              * The choice is deliberately timid (see services/exeCandidates.js)
              * and returns nothing rather than guess badly, which leaves the
              * existing "choose the .exe in Library" path as the fallback.
-             * Unknown Horizons is intentionally excluded: its legacy install
-             * has a generic bundled python.exe, not a standalone game binary,
-             * and selecting that silently is worse than asking the player to
-             * locate the executable they actually use.
+             * Unknown Horizons: also collect .bat so run_uh.bat can win via
+             * wanted basenames (there is no game .exe).
              */
             const listing = [];
             const collect = (dir, rel, depth) => {
@@ -4645,6 +4670,12 @@ if (-not $hit) { return }
                 const relPath = rel ? `${rel}/${ent.name}` : ent.name;
                 if (ent.isDirectory()) collect(path.join(dir, ent.name), relPath, depth + 1);
                 else if (/\.exe$/i.test(ent.name)) listing.push(relPath);
+                else if (
+                  isUnknownHorizonsSlug(entry?.slug) &&
+                  /\.(bat|cmd)$/i.test(ent.name)
+                ) {
+                  listing.push(relPath);
+                }
               }
             };
             collect(root, "", 0);
@@ -4659,7 +4690,15 @@ if (-not $hit) { return }
             });
             if (picked) exe = path.join(root, picked.split("/").join(path.sep));
           }
-        }
+      }
+      if (
+        !exe &&
+        icon &&
+        /\.exe$/i.test(icon) &&
+        !isUninstallerExe(icon) &&
+        fs.existsSync(icon)
+      ) {
+        exe = icon;
       }
     }
   } catch (err) {
@@ -4799,7 +4838,14 @@ function findKnownPathOnly(entry) {
       }
       continue;
     }
-    if (fs.existsSync(full) && isAllowedExecutablePath(full)) return full;
+    if (!fs.existsSync(full)) continue;
+    /*
+     * Catalog knownExePaths can name a vendor default outside PlayBound's games
+     * folder (Unknown Horizons → C:\Unknown-Horizons). Same trust model as the
+     * uninstall-registry hit below: remember the root so launch is allowed.
+     */
+    if (!isAllowedExecutablePath(full)) rememberLocatedRoot(full);
+    if (isAllowedExecutablePath(full)) return full;
   }
   // Same paths, but under whichever Steam library the game actually landed in.
   const inSteam = findInSteamLibraries(entry);
@@ -4984,6 +5030,7 @@ function notifyInstallDetected(slug) {
 }
 
 function markInstalledFromExe(slug, entry, exe, version) {
+  rememberLocatedRoot(exe);
   const dir = resolveInstallDir(entry, exe);
   markInstalled(slug, {
     version,
@@ -5103,7 +5150,7 @@ function startInstallerPoll(slug, entry, version, onComplete) {
   });
 
   const started = Date.now();
-  const maxMs = 10 * 60 * 1000;
+  const maxMs = isDarkModSlug(entry?.slug || slug) ? tdmInstallerPollMaxMs() : 10 * 60 * 1000;
   const title = entry?.title || slug;
 
   /*
@@ -6562,9 +6609,11 @@ async function maybeHandleInstallerPackage(slug, entry, gameDir, editionExtra, d
   if (!installerExe) return null;
   sendProgress({
     phase: "installer-ready",
-    addon: `Waiting for the ${entry.title || slug} installer to finish…`,
+    addon: isDarkModSlug(slug)
+      ? "Installing The Dark Mod (large download — this can take a while)…"
+      : `Waiting for the ${entry.title || slug} installer to finish…`,
   });
-  await openInstallerPath(installerExe, slug);
+  await openInstallerPath(installerExe, slug, { installDir: gameDir });
   const known =
     findExecutable(gameDir, exeHintFor(entry)) ||
     findKnownExecutable(entry);
@@ -6588,8 +6637,50 @@ async function maybeHandleInstallerPackage(slug, entry, gameDir, editionExtra, d
 /**
  * On Windows, open the installer with the shell. On Mac/Linux, Windows .exe/.msi
  * installers must go through Wine/Proton/CrossOver — shell.openPath cannot run them.
+ *
+ * The Dark Mod's tdm_installer supports --unattended (install into its own folder).
+ * Unknown Horizons' Inno setup accepts /VERYSILENT so the wizard never appears.
  */
-async function openInstallerPath(installerPath, gameSlug) {
+async function openInstallerPath(installerPath, gameSlug, opts = {}) {
+  const installDir = opts.installDir || path.dirname(installerPath);
+  const base = path.basename(installerPath);
+
+  if (isDarkModSlug(gameSlug) || isTdmInstallerBasename(base)) {
+    await new Promise((resolve, reject) => {
+      const child = spawn(installerPath, tdmUnattendedArgs(), {
+        cwd: installDir,
+        windowsHide: true,
+        stdio: "ignore",
+      });
+      child.on("error", reject);
+      child.on("exit", (code, signal) => {
+        if (code === 0 || code == null) resolve();
+        else reject(new Error(`The Dark Mod installer exited with code ${code}${signal ? ` (${signal})` : ""}`));
+      });
+    });
+    return;
+  }
+
+  if (isUnknownHorizonsSlug(gameSlug) && process.platform === "win32") {
+    await new Promise((resolve, reject) => {
+      const child = spawn(
+        installerPath,
+        ["/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-"],
+        {
+          windowsHide: true,
+          stdio: "ignore",
+        }
+      );
+      child.on("error", reject);
+      child.on("exit", (code) => {
+        // Inno returns 0 on success; also accept null for odd detach cases.
+        if (code === 0 || code == null) resolve();
+        else reject(new Error(`Unknown Horizons setup exited with code ${code}`));
+      });
+    });
+    return;
+  }
+
   if (process.platform === "win32" || !requiresCompatibilityRunner(installerPath)) {
     await shell.openPath(installerPath);
     return;
@@ -6887,7 +6978,7 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
       phase: "installer-ready",
       addon: `Waiting for the ${entry.title || slug} installer to finish…`,
     });
-    await openInstallerPath(downloadPath, slug);
+    await openInstallerPath(downloadPath, slug, { installDir: gameDir });
     const known = findKnownExecutable(entry);
     if (known) {
       const result = markInstalledFromExe(slug, { ...entry, ...editionExtra }, known, dl.version);
@@ -7815,8 +7906,7 @@ async function locateGameExecutable(slug) {
         : [
             {
               name: "Executables",
-              extensions:
-                slug === "unknown-horizons" ? ["exe"] : ["exe", "cmd", "bat", "jar"],
+              extensions: ["exe", "cmd", "bat", "jar"],
             },
           ],
     properties:
@@ -8242,28 +8332,10 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     }
   }
   /*
-   * Migrate the bad Unknown Horizons pointer already saved by older launcher
-   * builds. Merely fixing discovery helps new installs, but an existing
-   * run_uh.bat record would keep rendering Play and launching the same script
-   * forever. Put the player straight into Locate and replace the edition's
-   * pointer with the chosen .exe.
+   * Unknown Horizons is installed via Inno to C:\Unknown-Horizons and launched
+   * through run_uh.bat → bundled python + run_uh.py. GameLauncher resolves the
+   * bat at spawn time; do not force Locate looking for a nonexistent .exe.
    */
-  if (exeOnDisk(info) && !acceptsKnownExecutable({ slug }, info.exe)) {
-    const located = await locateGameExecutable(slug);
-    if (located?.status === "installed" && located.exe) {
-      info = {
-        ...info,
-        exe: located.exe,
-        dir: located.dir,
-        version: located.version,
-        editionSlug: located.editionSlug || edSlug,
-      };
-    } else {
-      const locateErr = new Error(`Choose the ${catalogEntry(slug)?.title || slug} .exe to play.`);
-      locateErr.code = "EXE_LOCATE_REQUIRED";
-      throw locateErr;
-    }
-  }
   if (!exeOnDisk(info)) {
     const message = editionSlug ? "That edition is not installed" : "Not installed";
     void telemetry.launchFailed({
