@@ -30,6 +30,7 @@ const { toQueueSnapshot } = require("./services/installQueueView");
 const { chooseExeFromListing, isUninstallerExe, isInstallerExe } = require("./services/exeCandidates");
 const { createManagedDosBox } = require("./services/ManagedDosBox");
 const { createManagedDotNet, requiredDotNetMajor } = require("./services/ManagedDotNet");
+const { createDirectDrawWrapper } = require("./services/directDrawWrapper");
 const { createManagedRetroArch } = require("./services/ManagedRetroArch");
 const { createSteamCmdInstaller } = require("./services/steamCmd");
 const { steamAppState } = require("./services/steamPrerequisites");
@@ -65,6 +66,8 @@ const {
 const {
   detectAvailableRunners,
   resolveDefaultRunner,
+  buildRunnerLaunchSpec,
+  requiresCompatibilityRunner,
 } = require("./services/CompatibilityRunner");
 const {
   clientConnectArgs,
@@ -2133,6 +2136,7 @@ function catalogEntryFromEdition(edition) {
       unwrapSingleRoot: Boolean(cfg.unwrapSingleRoot),
       needsDosBox: Boolean(cfg.needsDosBox),
       needsAdmin: Boolean(cfg.needsAdmin),
+      needsDirectDrawWrapper: Boolean(cfg.needsDirectDrawWrapper),
       requiresBaseDir: Boolean(cfg.requiresBaseDir),
       checksumMd5: cfg.checksumMd5 || cfg.md5 || undefined,
       modLoader: cfg.modLoader || undefined,
@@ -3275,6 +3279,13 @@ const managedDotNet = createManagedDotNet({
   onProgress: (payload) => sendProgress(payload),
 });
 
+/** dgVoodoo + HKCU DirectDraw COM for FreeTrain and similar titles. */
+const directDrawWrapper = createDirectDrawWrapper({
+  userDataPath: app.getPath("userData"),
+  downloadTo,
+  sendProgress: (payload) => sendProgress(payload),
+});
+
 /** Shared DOSBox Staging for TES: Arena official and later DOS titles. */
 const managedDosBox = createManagedDosBox({
   userDataPath: app.getPath("userData"),
@@ -4091,7 +4102,7 @@ function exeHintFor(entry) {
     return "TheDarkModx64|TheDarkMod|DarkMod";
   }
   if (entry?.exeHint && !isUninstallerExe(entry.exeHint)) return entry.exeHint;
-  const bases = (entry?.knownExePaths || [])
+  const bases = knownExecutablePathsFor(entry)
     .map((raw) => {
       try {
         return path.basename(expandWinPath(String(raw)));
@@ -4123,11 +4134,6 @@ function acceptsKnownExecutable(entry, candidate) {
 /** Recipe paths plus narrowly-known vendor defaults missing from older rows. */
 function knownExecutablePathsFor(entry) {
   const paths = [...(entry?.knownExePaths || [])];
-  if (process.platform === "win32" && entry?.slug === "idle-slayer") {
-    for (const root of [process.env["ProgramFiles(x86)"], process.env.ProgramFiles]) {
-      if (root) paths.push(path.join(root, "Steam", "steamapps", "common", "Idle Slayer", "Idle Slayer.exe"));
-    }
-  }
   if (process.platform === "win32" && entry?.slug === "seven-kingdoms-ancient-adversaries") {
     for (const root of [process.env["ProgramFiles(x86)"], process.env.ProgramFiles]) {
       if (root) paths.push(path.join(root, "7kaa", "7kaa.exe"));
@@ -4430,7 +4436,7 @@ function findExeFromUninstallRegistry(entry) {
     seenTitles.add(k);
     return true;
   });
-  const knownBases = (entry.knownExePaths || [])
+  const knownBases = knownExecutablePathsFor(entry)
     .map((p) => path.basename(expandWinPath(p)).toLowerCase())
     .filter(Boolean);
   const cacheKey = titleList.join("|") || knownBases.join("|") || entry.slug || "unknown";
@@ -4611,7 +4617,7 @@ if (-not $hit) { return }
               files: listing,
               wanted: [
                 entry.exeHint,
-                ...(entry.knownExePaths || []).map((p) => expandWinPath(p)),
+                ...knownExecutablePathsFor(entry).map((p) => expandWinPath(p)),
               ].filter(Boolean),
               title: entry.title,
               slug: entry.slug,
@@ -5163,7 +5169,7 @@ function matchUninstallDump(entry, dump) {
     String(entry.title || "").trim().toLowerCase(),
     ...((entry.registryTitles || []).map((t) => String(t || "").trim().toLowerCase())),
   ].filter(Boolean);
-  const bases = (entry.knownExePaths || [])
+  const bases = knownExecutablePathsFor(entry)
     .map((p) => path.basename(expandWinPath(p)).toLowerCase())
     .filter(Boolean);
   for (const row of dump) {
@@ -5187,7 +5193,7 @@ function matchUninstallDump(entry, dump) {
       return icon;
     }
     if (loc && fs.existsSync(loc)) {
-      for (const raw of entry.knownExePaths || []) {
+      for (const raw of knownExecutablePathsFor(entry)) {
         const base = path.basename(expandWinPath(raw));
         const c = path.join(loc, base);
         if (fs.existsSync(c) && isAllowedExecutablePath(c)) return c;
@@ -6506,7 +6512,7 @@ async function maybeHandleInstallerPackage(slug, entry, gameDir, editionExtra, d
     phase: "installer-ready",
     addon: `Waiting for the ${entry.title || slug} installer to finish…`,
   });
-  await shell.openPath(installerExe);
+  await openInstallerPath(installerExe, slug);
   const known =
     findExecutable(gameDir, exeHintFor(entry)) ||
     findKnownExecutable(entry);
@@ -6525,6 +6531,31 @@ async function maybeHandleInstallerPackage(slug, entry, gameDir, editionExtra, d
   void reportInstall(slug);
   void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version, ...editionExtra }));
   return result;
+}
+
+/**
+ * On Windows, open the installer with the shell. On Mac/Linux, Windows .exe/.msi
+ * installers must go through Wine/Proton/CrossOver — shell.openPath cannot run them.
+ */
+async function openInstallerPath(installerPath, gameSlug) {
+  if (process.platform === "win32" || !requiresCompatibilityRunner(installerPath)) {
+    await shell.openPath(installerPath);
+    return;
+  }
+  const spec = buildRunnerLaunchSpec(installerPath, [], { gameSlug });
+  await new Promise((resolve, reject) => {
+    const child = spawn(spec.command, spec.args, {
+      cwd: spec.cwd,
+      env: { ...process.env, ...spec.env },
+      detached: true,
+      stdio: "ignore",
+      windowsHide: true,
+    });
+    child.on("error", reject);
+    child.unref();
+    // Detached installer UI — do not wait for exit; poll finds the game exe.
+    setTimeout(resolve, 500);
+  });
 }
 
 async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
@@ -6804,7 +6835,7 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
       phase: "installer-ready",
       addon: `Waiting for the ${entry.title || slug} installer to finish…`,
     });
-    await shell.openPath(downloadPath);
+    await openInstallerPath(downloadPath, slug);
     const known = findKnownExecutable(entry);
     if (known) {
       const result = markInstalledFromExe(slug, { ...entry, ...editionExtra }, known, dl.version);
@@ -6900,6 +6931,16 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
       await ensureDefaultDisplaySettings(exe || gameDir);
     } catch (err) {
       console.warn("[openciv3] display override skipped:", err?.message || err);
+    }
+  }
+  if (directDrawWrapper.needsDirectDrawWrapper(entry, slug)) {
+    try {
+      const dd = await directDrawWrapper.ensureForGame(gameDir, { slug, entry });
+      if (!dd.ok && !dd.skipped) {
+        console.warn("[directdraw] install-time wrapper failed:", dd.error);
+      }
+    } catch (err) {
+      console.warn("[directdraw] install-time wrapper skipped:", err?.message || err);
     }
   }
   markInstalled(slug, { version: dl.version, exe, dir: gameDir, ...editionExtra });
@@ -8757,6 +8798,34 @@ async function playGameInner(slug, join = null, editionSlug = null) {
   }
 
   /*
+   * FreeTrain (and any needsDirectDrawWrapper title) CoCreateInstances
+   * CLSID_DirectDraw. Drop dgVoodoo MS/x86 DLLs beside the exe and register
+   * that CLSID under HKCU so Play works without an admin DirectX redist.
+   */
+  if (directDrawWrapper.needsDirectDrawWrapper(entry, slug) && info?.dir) {
+    sendProgress({
+      phase: "compatibility",
+      message: "Checking DirectDraw compatibility…",
+    });
+    const dd = await directDrawWrapper.ensureForGame(info.dir, { slug, entry });
+    if (!dd.ok && !dd.skipped) {
+      const message =
+        dd.error ||
+        "Couldn't prepare the DirectDraw compatibility layer for this game.";
+      void telemetry.launchFailed({
+        ...launchInfo(),
+        code: "DIRECTDRAW_WRAPPER_FAILED",
+        message,
+        phase: "compatibility",
+      });
+      const out = new Error(message);
+      out.code = "DIRECTDRAW_WRAPPER_FAILED";
+      out.__launchFailedReported = true;
+      throw out;
+    }
+  }
+
+  /*
    * Hand SDL a mapping for pads its own build is too old to know.
    *
    * OpenClonk 8.1 ships the 2018 SDL2, which predates the DualSense: it logs
@@ -9945,7 +10014,7 @@ function findUninstallStringFromRegistry(entry) {
     return true;
   });
 
-  const knownBases = (entry.knownExePaths || [])
+  const knownBases = knownExecutablePathsFor(entry)
     .map((p) => path.basename(expandWinPath(p)).toLowerCase())
     .filter(Boolean);
 
@@ -10098,9 +10167,14 @@ async function tryRemovePlayBoundInstallDir(slug, dir, entry = null, { editionSl
   }
 
   // Small delay to let uninstaller finish releasing locks / deleting files
-  await new Promise((r) => setTimeout(r, 1200));
+  const waitMs =
+    entry?.slug === "seven-kingdoms-ancient-adversaries" ? 4000 : 1200;
+  await new Promise((r) => setTimeout(r, waitMs));
 
-  if (!fs.existsSync(dir)) return null;
+  if (!fs.existsSync(dir)) {
+    const leftover = leftoverVendorInstallWarning(entry);
+    return leftover;
+  }
 
   const isManaged = isPlayBoundManagedInstallDir(slug, dir);
   const isDedicatedProgramDir = Boolean(
@@ -10115,7 +10189,7 @@ async function tryRemovePlayBoundInstallDir(slug, dir, entry = null, { editionSl
     try {
       prepareDirRemoval(slug, [{ dir }]);
       await removeDirWithRetries(dir);
-      return null;
+      return leftoverVendorInstallWarning(entry);
     } catch (err) {
       const message = err?.message || String(err);
       console.warn(`[uninstall] could not delete ${dir}:`, message);
@@ -10123,8 +10197,27 @@ async function tryRemovePlayBoundInstallDir(slug, dir, entry = null, { editionSl
     }
   } else {
     console.warn(`[uninstall] skipping folder PlayBound does not own: ${dir}`);
-    return null;
+    return (
+      leftoverVendorInstallWarning(entry) ||
+      "Removed from PlayBound. Files outside the PlayBound games folder were left on disk — finish uninstall from Windows Apps & features if needed."
+    );
   }
+}
+
+/** True when a known vendor install path (e.g. Program Files\\7kaa) still exists. */
+function leftoverVendorInstallWarning(entry) {
+  if (process.platform !== "win32" || !entry) return null;
+  const stillThere = knownExecutablePathsFor(entry).some((raw) => {
+    try {
+      const full = expandWinPath(String(raw));
+      return full && path.isAbsolute(full) && fs.existsSync(full);
+    } catch {
+      return false;
+    }
+  });
+  if (!stillThere) return null;
+  const label = entry.title || entry.slug || "this game";
+  return `Removed from PlayBound, but ${label} files are still on disk. Finish uninstall via Windows Apps & features or the game's own uninstaller.`;
 }
 
 async function finishGameUninstall(slug, state, extra = {}) {

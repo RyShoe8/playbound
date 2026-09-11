@@ -4,6 +4,7 @@ import { Compass, Gamepad2 } from "lucide-react";
 export default function NotFound() {
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-4 text-center">
+      <meta name="playbound-not-found" content="1" />
       <Gamepad2 className="size-12 text-primary" />
       <h1 className="text-3xl font-extrabold tracking-tight">Respawn point not found</h1>
       <p className="max-w-md text-sm text-muted-foreground">

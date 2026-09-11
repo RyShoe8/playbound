@@ -20,11 +20,13 @@ type Def = {
   changes: string;
   summary: string;
   hint?: string;
+  /** Override ghMod's default published:true (e.g. intentionally draft). */
+  published?: boolean;
 };
 
 function m(d: Def): ModSeed {
   const kind = d.kind ?? (d.repo ? "github-zip" : "external");
-  return ghMod({
+  const seed = ghMod({
     slug: d.slug,
     title: d.title,
     tagline: d.tagline,
@@ -45,6 +47,8 @@ function m(d: Def): ModSeed {
     changes: d.changes,
     installHint: d.hint,
   });
+  if (d.published === false) return { ...seed, published: false };
+  return seed;
 }
 
 const everquestMods: ModSeed[] = [
@@ -177,6 +181,7 @@ const holocureMods: ModSeed[] = [
     changes: "Connects game lifecycle to Discord Rich Presence for live profile status updates.",
     summary: "Shows your live HoloCure run and co-op details on your Discord profile.",
     hint: "Make sure Discord is running on your PC before launching HoloCure.",
+    published: false,
   }),
   m({
     slug: "holocure-qol-toolkit",

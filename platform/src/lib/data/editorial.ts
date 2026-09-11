@@ -292,15 +292,15 @@ export const editorial: Record<string, GameEditorial> = {
   },
   "s-t-a-l-k-e-r-call-of-pripyat": {
     qualityBar: { genuinelyFree: true, finished: true, activelyMaintained: true, standsAlone: true, highQuality: true, verdict: "Call of Pripyat clears the PlayBound Bar because every expedition is a chain of preparation, bad weather, distant gunfire, and decisions the Zone never pauses to explain.", lastVerified: "2026-08-25" },
-    maintenanceCheck: { kind: "manual", url: "https://www.gog.com/en/game/stalker_call_of_pripyat", checkedAt: "2026-08-25", note: "Commercial classic; verify the GOG offline installer and edition compatibility manually." },
+    maintenanceCheck: { kind: "manual", url: "https://www.gog.com/en/game/stalker_call_of_pripyat", checkedAt: "2026-08-25", note: "Commercial classic; verify the GOG offline installer manually." },
     thatOneThing: "Its side missions change places and people, making exploration feel consequential instead of collectible.",
-    longDescription: "Call of Pripyat is the original S.T.A.L.K.E.R. trilogy at its most confident. Major Degtyarev enters the Zone to investigate crashed military helicopters, but the assignment quickly becomes an excuse to study three broad regions full of stalkers, mutants, anomalies, faction grudges, and problems that rarely have one clean answer.\n\nThe shooting remains dangerous, but this sequel is less interested in making a weak pistol miserable. Weapons can be repaired and upgraded, armor has clear roles, detectors turn artifact hunting into a readable risk, and emissions force everyone toward shelter. Inventory weight, radiation, bleeding, medicine, food, ammunition, and equipment condition make preparation matter without becoming a spreadsheet.\n\nIts quests are the series high point. A missing squad, an underground route, a suspicious deal, or a mutant nest can change depending on what you discover and whom you trust. Outcomes return later through prices, allies, available services, and the ending. Observation can replace a quest marker: tracks, conversations, bodies, and unusual behavior all point toward answers.\n\nGOG's DRM-free offline installer is the right master copy and needs no Galaxy client. Run it clean once before choosing an edition. Gunslinger rebuilds the original campaign's weapons; Anomaly is a standalone sandbox; GAMMA layers demanding survival progression onto Anomaly. They solve different problems and belong in separate folders.\n\nFaces are stiff, movement is heavy, multiplayer activity is community-dependent, and scripting oddities remain. It is still the easiest classic S.T.A.L.K.E.R. game to recommend on design alone: compact enough to learn, systemic enough to surprise, and generous enough to reward leaving the road because something looked wrong.",
-    whyWePickedIt: "We picked Call of Pripyat because it turns side quests into part of the world instead of chores layered over it. Decisions change services, allies, locations, and the ending, while the simulation produces trouble between objectives. Its editions also prove why curation matters: Gunslinger, Anomaly, and GAMMA are excellent, but not interchangeable.",
+    longDescription: "Call of Pripyat is the original S.T.A.L.K.E.R. trilogy at its most confident. Major Degtyarev enters the Zone to investigate crashed military helicopters, but the assignment quickly becomes an excuse to study three broad regions full of stalkers, mutants, anomalies, faction grudges, and problems that rarely have one clean answer.\n\nThe shooting remains dangerous, but this sequel is less interested in making a weak pistol miserable. Weapons can be repaired and upgraded, armor has clear roles, detectors turn artifact hunting into a readable risk, and emissions force everyone toward shelter. Inventory weight, radiation, bleeding, medicine, food, ammunition, and equipment condition make preparation matter without becoming a spreadsheet.\n\nIts quests are the series high point. A missing squad, an underground route, a suspicious deal, or a mutant nest can change depending on what you discover and whom you trust. Outcomes return later through prices, allies, available services, and the ending. Observation can replace a quest marker: tracks, conversations, bodies, and unusual behavior all point toward answers.\n\nGOG's DRM-free offline installer is the right master copy and needs no Galaxy client. PlayBound lists Call of Pripyat as that single official install — the untouched campaign, one path.\n\nFaces are stiff, movement is heavy, multiplayer activity is community-dependent, and scripting oddities remain. It is still the easiest classic S.T.A.L.K.E.R. game to recommend on design alone: compact enough to learn, systemic enough to surprise, and generous enough to reward leaving the road because something looked wrong.",
+    whyWePickedIt: "We picked Call of Pripyat because it turns side quests into part of the world instead of chores layered over it. Decisions change services, allies, locations, and the ending, while the simulation produces trouble between objectives. The GOG master preserves the campaign without a mandatory launcher.",
     bestFor: ["Players who want dense open-world exploration with consequential side quests", "Anyone who enjoys tactical shooting shaped by preparation, weather, and scarcity"],
     notFor: ["Players who need modern animation, frictionless movement, or constant direction", "Anyone looking for a traditional power fantasy or busy ranked multiplayer"],
     comparableTo: ["Metro Exodus", "Fallout: New Vegas"],
-    installSteps: [{ platform: "windows", text: "Download the DRM-free Call of Pripyat offline installer from GOG. Galaxy is optional." }, { platform: "windows", text: "Run the clean game once and confirm a new save works." }, { platform: "windows", text: "Install Gunslinger, Anomaly, or GAMMA as separate PlayBound editions." }],
-    faq: [{ q: "Is Call of Pripyat free?", a: "No. It is a paid commercial master copy; the GOG release is DRM-free." }, { q: "Which edition should I choose?", a: "Gunslinger preserves the campaign, Anomaly is a sandbox, and GAMMA adds demanding survival progression." }, { q: "Does it have multiplayer?", a: "The original includes multiplayer, but activity is community-dependent." }, { q: "Should editions share one folder?", a: "No. Keep the master and every major edition separate." }],
+    installSteps: [{ platform: "windows", text: "Download the DRM-free Call of Pripyat offline installer from GOG. Galaxy is optional." }, { platform: "windows", text: "Run the installer, launch once, and confirm a new save works." }],
+    faq: [{ q: "Is Call of Pripyat free?", a: "No. It is a paid commercial master copy; the GOG release is DRM-free." }, { q: "Where do I install from?", a: "GOG — use the DRM-free offline installer from your library. PlayBound opens the store page; there is no separate redistributable URL." }, { q: "Does it have multiplayer?", a: "The original includes multiplayer, but activity is community-dependent." }],
   },
   "star-wars-knights-of-the-old-republic": {
     qualityBar: { genuinelyFree: true, finished: true, activelyMaintained: true, standsAlone: true, highQuality: true, verdict: "KOTOR clears the PlayBound Bar because its choices matter most when they change how a companion sees you, not when a meter changes color.", lastVerified: "2026-08-25" },
@@ -1334,25 +1334,29 @@ export const editorial: Record<string, GameEditorial> = {
     comparableTo: ["Space Station 13", "Barotrauma", "Among Us", "Rimworld", "Dwarf Fortress"],
     installSteps: [
       {
-        platform: "all",
-        text: "Install the Space Station 14 launcher through PlayBound, or download it from the official site.",
+        platform: "windows",
+        text: "Install Space Station 14 with PlayBound Launcher — it downloads the official Windows SS14.Launcher zip from GitHub. Windows needs .NET 10 if the launcher asks for it.",
       },
       {
-        platform: "all",
-        text: "Create a Space Station 14 account in the launcher. It is free and is only used to identify you to servers.",
-      },
-      {
-        platform: "all",
-        text: "Pick a server from the launcher's list. The matching game build downloads automatically the first time you join, so the first connection is slower than later ones.",
-      },
-      {
-        platform: "all",
-        text: "Choose a low-pressure job for your first round — Botanist, Cargo Technician or Janitor. Avoid command and security roles until you know the station.",
+        platform: "macos",
+        text: "Install Space Station 14 with PlayBound Launcher — it downloads the official macOS SS14.Launcher zip. Open the launcher from your PlayBound games folder.",
       },
       {
         platform: "linux",
-        text: "Mark the launcher binary executable if your desktop environment does not do it for you.",
+        text: "Install Space Station 14 with PlayBound Launcher — it downloads the official Linux SS14.Launcher zip. Mark the binary executable if your desktop does not:",
         command: "chmod +x SS14.Launcher",
+      },
+      {
+        platform: "all",
+        text: "Open the SS14 Launcher and create a free account. It only identifies you to community servers — there is no purchase or subscription.",
+      },
+      {
+        platform: "all",
+        text: "Pick a server from the launcher list. The matching game build downloads automatically on first join (slower the first time, then cached).",
+      },
+      {
+        platform: "all",
+        text: "For your first round choose Botanist, Cargo Technician, or Janitor. Avoid command and security roles until you know the station.",
       },
     ],
     faq: [

@@ -163,6 +163,23 @@ function discordChannelName(raw) {
   );
 }
 
+/**
+ * Matches platform mongoVisibleFilter for published games.
+ * status: published, or legacy docs with no status and published: true.
+ * A draft with leftover published:true is NOT treated as live.
+ */
+const PUBLISHED_GAME_FILTER = {
+  $or: [
+    { status: "published" },
+    { status: { $exists: false }, published: true },
+  ],
+};
+
+/** Games that should not keep a Discord room (inverse of PUBLISHED_GAME_FILTER). */
+const UNPUBLISHED_GAME_FILTER = {
+  $nor: [PUBLISHED_GAME_FILTER],
+};
+
 /** Party voice: `party-` + sanitized display name, Discord 100-char limit. */
 function partyVoiceChannelName(raw, fallbackId) {
   const safe = String(raw || "")
@@ -796,8 +813,7 @@ async function cleanupArchiveSection(guild) {
   await games.updateMany(
     {
       $and: [
-        { status: { $ne: "published" } },
-        { published: { $ne: true } },
+        UNPUBLISHED_GAME_FILTER,
         { "communityLinks.playboundDiscord.channelId": { $nin: [null, ""] } },
       ],
     },
@@ -1016,7 +1032,7 @@ async function cleanupRedundantChannels(guild) {
 async function provisionChannel(slug) {
   const game = await games.findOne({
     slug,
-    $or: [{ status: "published" }, { published: true }],
+    ...PUBLISHED_GAME_FILTER,
   });
   if (!game) throw new Error(`Unknown or unpublished game: ${slug}`);
 
@@ -1075,7 +1091,7 @@ async function provisionMissing() {
     await cleanupRedundantChannels(guild);
 
     const list = await games
-      .find({ $or: [{ status: "published" }, { published: true }] })
+      .find(PUBLISHED_GAME_FILTER)
       .project({ slug: 1, title: 1, communityLinks: 1 })
       .toArray();
 
@@ -1148,22 +1164,29 @@ async function expectedPlacement(game) {
  * changing its slug leaves the Discord side stranded under the old name —
  * which is what this reconciles.
  *
- * Deliberately narrow. It renames, re-parents, and moves the channels of
- * unpublished games into an archive category where @everyone loses
- * SendMessages but keeps ViewChannel. It never deletes a channel and never
- * creates one: message history is not ours to destroy, and provisioning new
- * channels is provisionMissing's job. Every effect is reversible by hand.
+ * Renames and re-parents published game channels. Deletes channels for games
+ * that are not currently published, and removes orphan text channels under
+ * GAME CHANNELS letter buckets whose names are not in the published set.
+ * Provisioning new channels is provisionMissing's job.
  */
 async function reconcileChannels(opts = {}) {
   const dryRun = Boolean(opts.dryRun);
   if (reconcileRunning) {
-    return { note: "already running", renamed: [], moved: [], archived: [], failed: [] };
+    return {
+      note: "already running",
+      renamed: [],
+      moved: [],
+      deleted: [],
+      orphans: [],
+      failed: [],
+    };
   }
   reconcileRunning = true;
 
   const renamed = [];
   const moved = [];
-  const archived = [];
+  const deleted = [];
+  const orphans = [];
   const unprovisioned = [];
   const failed = [];
 
@@ -1176,9 +1199,17 @@ async function reconcileChannels(opts = {}) {
 
     /* ── published games: correct name + category ── */
     const published = await games
-      .find({ $or: [{ status: "published" }, { published: true }] })
+      .find(PUBLISHED_GAME_FILTER)
       .project({ slug: 1, title: 1, communityLinks: 1 })
       .toArray();
+
+    const expectedChannelNames = new Set();
+    for (const game of published) {
+      expectedChannelNames.add(discordChannelName(game.slug));
+      for (const ed of await listPublicEditions(game.slug)) {
+        expectedChannelNames.add(discordChannelName(ed.slug));
+      }
+    }
 
     for (const game of published) {
       try {
@@ -1272,8 +1303,7 @@ async function reconcileChannels(opts = {}) {
     const retired = await games
       .find({
         $and: [
-          { status: { $ne: "published" } },
-          { published: { $ne: true } },
+          UNPUBLISHED_GAME_FILTER,
           { "communityLinks.playboundDiscord.channelId": { $nin: [null, ""] } },
         ],
       })
@@ -1285,7 +1315,7 @@ async function reconcileChannels(opts = {}) {
         const channelId = game.communityLinks?.playboundDiscord?.channelId;
         const channel = guild.channels.cache.get(channelId);
         if (channel && channel.type === ChannelType.GuildText) {
-          archived.push({ slug: game.slug, channel: channel.name });
+          deleted.push({ slug: game.slug, channel: channel.name });
           if (!dryRun) {
             console.log(`[reconcile] Deleting unpublished game channel #${channel.name}`);
             await channel.delete("PlayBound reconcile: deleting unpublished game channel").catch(() => {});
@@ -1300,19 +1330,41 @@ async function reconcileChannels(opts = {}) {
         failed.push({ slug: game.slug, error: String(err?.message || err) });
       }
     }
+
+    /* ── orphan text channels under GAME CHANNELS letter buckets ── */
+    const serverGeneral = await findServerGeneral(guild);
+    const allChannels = await guild.channels.fetch();
+    for (const channel of allChannels.values()) {
+      if (!channel || channel.type !== ChannelType.GuildText) continue;
+      if (serverGeneral && channel.id === serverGeneral.id) continue;
+      if (RETIRED_CHANNEL_NAMES.has(channel.name)) continue;
+      if (expectedChannelNames.has(channel.name)) continue;
+
+      const parent = channel.parentId ? guild.channels.cache.get(channel.parentId) : null;
+      if (!parent || !/^GAME CHANNELS/i.test(String(parent.name || ""))) continue;
+
+      orphans.push({ channel: channel.name, category: parent.name });
+      if (!dryRun) {
+        console.log(`[reconcile] Deleting orphan channel #${channel.name} in "${parent.name}"`);
+        await channel
+          .delete("PlayBound reconcile: orphan channel for unpublished/unknown game")
+          .catch(() => {});
+        await sleep(PROVISION_DELAY_MS);
+      }
+    }
   } finally {
     reconcileRunning = false;
   }
 
   console.log(
-    `Discord reconcile${dryRun ? " (dry run)" : ""}: renamed=${renamed.length} moved=${moved.length} archived=${archived.length} unprovisioned=${unprovisioned.length} failed=${failed.length}`
+    `Discord reconcile${dryRun ? " (dry run)" : ""}: renamed=${renamed.length} moved=${moved.length} deleted=${deleted.length} orphans=${orphans.length} unprovisioned=${unprovisioned.length} failed=${failed.length}`
   );
-  return { dryRun, renamed, moved, archived, unprovisioned, failed };
+  return { dryRun, renamed, moved, deleted, archived: deleted, orphans, unprovisioned, failed };
 }
 
 async function postGameOfTheWeek() {
   const gotw = await games.findOne({
-    $or: [{ status: "published" }, { published: true }],
+    ...PUBLISHED_GAME_FILTER,
     gameOfWeek: true,
   });
   if (!gotw) return;
@@ -1504,7 +1556,7 @@ client.on("interactionCreate", async (interaction) => {
   const slug = interaction.options.getString("slug", true).toLowerCase();
   const game = await games.findOne({
     slug,
-    $or: [{ status: "published" }, { published: true }],
+    ...PUBLISHED_GAME_FILTER,
   });
   if (!game) {
     await interaction.reply({ content: `No published game \`${slug}\` on PlayBound.`, ephemeral: true });

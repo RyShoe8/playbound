@@ -13,16 +13,13 @@ export const maxDuration = 300;
  * Two passes against the Discord bot, in order:
  *
  *   1. provision-all — creates channels for published games that have none.
- *   2. reconcile     — renames and re-parents channels whose game slug or
- *                      title has since changed, and moves unpublished games'
- *                      channels into an archive category, read-only.
+ *   2. reconcile     — renames/re-parents published channels, deletes channels
+ *                      for games that are not published, and removes orphan
+ *                      text channels under GAME CHANNELS letter buckets.
  *
  * Provisioning runs first so a game that was published today gets its channel
  * before the reconcile pass looks for drift, which keeps it out of the
  * "unprovisioned" report for a day.
- *
- * Neither pass ever deletes a channel. Archiving is reversible from the
- * Discord UI, and message history is never destroyed by this route.
  *
  * Failures are reported rather than thrown: a Discord outage should leave a
  * log line, not a retrying cron.

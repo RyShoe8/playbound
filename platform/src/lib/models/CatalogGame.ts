@@ -75,6 +75,7 @@ const LauncherInstallSchema = new Schema(
     unwrapSingleRoot: { type: Boolean, default: false },
     needsDosBox: { type: Boolean, default: false },
     needsAdmin: { type: Boolean, default: false },
+    needsDirectDrawWrapper: { type: Boolean, default: false },
     needsDotNetMajor: { type: Number, default: null },
   },
   { _id: false }

@@ -4278,9 +4278,11 @@ const facts: Game[] = [
       enabled: true,
       kind: "github-zip",
       repo: "space-wizards/SS14.Launcher",
-      assetPattern: "SS14.Launcher_Windows.zip",
-      exeHint: "SS14.Launcher.exe",
-      knownExePaths: ["SS14.Launcher.exe"],
+      assetPattern: "^SS14\\.Launcher_Windows\\.zip$",
+      assetPatternMac: "^SS14\\.Launcher_macOS\\.zip$",
+      assetPatternLinux: "^SS14\\.Launcher_Linux\\.zip$",
+      exeHint: "SS14.Launcher",
+      knownExePaths: ["SS14.Launcher.exe", "SS14.Launcher"],
       needsDotNetMajor: 10,
       versionLabel: "v0.39.1",
       /*
@@ -4288,7 +4290,7 @@ const facts: Game[] = [
        * on first join and cached, which is why there is no game build to pin a
        * version against — the server decides which build you run.
        */
-      note: "Installs the official SS14 launcher. Pick a server from its list and the matching game build downloads automatically on first join.",
+      note: "Installs the official SS14 launcher for Windows, macOS, or Linux. Pick a server from its list and the matching game build downloads automatically on first join.",
     },
     communityLinks: {
       officialDiscord: {
@@ -5568,8 +5570,8 @@ const facts: Game[] = [
     releaseYear: 2021,
     sizeMB: 115,
     status: "testing",
-    platforms: ["Windows", "Web"],
-    features: ["Singleplayer", "Online Co-Op", "Dedicated Servers", "Family Friendly"],
+    platforms: ["Windows", "macOS", "Linux", "Web"],
+    features: ["Singleplayer", "Online Co-Op", "Dedicated Servers", "Family Friendly", "Controller Support"],
     launchMethods: ["install", "browser"],
     browserPlayable: true,
     steamDeck: true,
@@ -5607,9 +5609,12 @@ const facts: Game[] = [
       enabled: true,
       kind: "direct-exe",
       url: "https://hurrycurry-download.metamuffin.org/client-x86_64-pc-windows-gnu.exe",
+      urlMac: "https://hurrycurry-download.metamuffin.org/client-all-apple-darwin.zip",
+      urlLinux: "https://hurrycurry-download.metamuffin.org/client-x86_64-unknown-linux-gnu",
       fileName: "hurrycurry-client.exe",
+      exeHint: "hurrycurry|HurryCurry",
       versionLabel: "v3.1.1",
-      note: "Portable 64-bit Windows client. Also playable instantly in the browser.",
+      note: "Portable clients for Windows, macOS, and Linux. Also playable in the browser.",
     },
   },
   {
