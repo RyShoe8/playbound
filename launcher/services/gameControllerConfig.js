@@ -1063,6 +1063,10 @@ const NO_CONFIG_NEEDED = {
     kind: "native",
     note: "Neo Geo / RetroArch FBNeo binds pads natively; no PlayBound config write needed.",
   },
+  "x-men-arcade-remake": {
+    kind: "native",
+    note: "OpenBOR binds pads natively for up to 4 local players; no PlayBound config write needed.",
+  },
   "dc-universe-online": { kind: "native", note: "Native gamepad layout for powers, combos, and flight." },
   pixreveal: { kind: "native", note: "Companion smartphone / touchscreen controller support." },
   srb2: { kind: "native", note: "Doom engine native XInput/DirectInput gamepad bindings." },

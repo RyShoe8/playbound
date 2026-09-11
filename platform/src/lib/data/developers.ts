@@ -1181,6 +1181,17 @@ export const developers: Developer[] = [
     artHue: 45,
   },
   {
+    slug: "zvitor",
+    name: "ZVitor",
+    tagline: "Brazilian OpenBOR beat 'em up remakes and fangames.",
+    about:
+      "Independent developer behind free OpenBOR remakes of classic arcade and console beat 'em ups, including X-Men Arcade Remake and other community tributes distributed on Game Jolt.",
+    founded: 2013,
+    location: "Brazil",
+    website: "https://www.zvitor.com.br",
+    artHue: 20,
+  },
+  {
     slug: "freeallegiance-team",
     name: "FreeAllegiance Community",
     tagline: "Stewards of Microsoft Allegiance open-source space combat RTS.",

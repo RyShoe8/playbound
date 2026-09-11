@@ -1465,4 +1465,14 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     ],
     note: "Opens GOG Galaxy for your owned copy. PlayBound detects the install, then uses RetroArch/FBNeo for Connect netplay.",
   },
+  "x-men-arcade-remake": {
+    enabled: false,
+    kind: "direct-zip",
+    url: null,
+    fileName: "X-Men-Arcade-Remake.zip",
+    versionLabel: "2.0.0",
+    exeHint: "OpenBOR|OpenBOR.exe",
+    knownExePaths: ["OpenBOR.exe", "openbor.exe"],
+    note: "PlayBound-hosted Windows OpenBOR package. Set url after Blob upload, then enable. Local 4P couch co-op only.",
+  },
 };

@@ -234,6 +234,12 @@ describe("couch mode", () => {
     expect(defaultHostMode("metal-slug-remake")).toBe("couch");
   });
 
+  it("routes X-Men Arcade Remake's local 4P through couch mode", () => {
+    expect(canUseCouch("x-men-arcade-remake")).toBe(true);
+    expect(hostModesFor("x-men-arcade-remake")).toEqual(["couch"]);
+    expect(defaultHostMode("x-men-arcade-remake")).toBe("couch");
+  });
+
   it("is the only option, so the picker stays hidden", () => {
     const available = hostModeOptions("streets-of-rage-remake").filter((o) => o.available);
     expect(available.map((o) => o.mode)).toEqual(["couch"]);

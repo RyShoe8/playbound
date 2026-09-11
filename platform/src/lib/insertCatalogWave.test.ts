@@ -74,6 +74,7 @@ describe("insert-catalog-wave allowlists", () => {
         "super-sidekicks",
         "the-spike-cross",
         "trackmania",
+        "x-men-arcade-remake",
       ].sort()
     );
   });
@@ -126,12 +127,14 @@ describe("insert-catalog-wave allowlists", () => {
         "the-dark-mod",
         "the-spike-cross",
         "unknown-horizons",
+        "x-men-arcade-remake",
       ].sort()
     );
     expect(PATCH_GAME_FIELDS["sky-children-of-the-light"]).toContain("installSteps");
     expect(PATCH_GAME_FIELDS["alien-swarm"]).toContain("longDescription");
     expect(PATCH_GAME_FIELDS["alien-swarm"]).not.toContain("launcherInstall");
     expect(PATCH_GAME_FIELDS["unknown-horizons"]).toContain("launcherInstall");
+    expect(PATCH_GAME_FIELDS["x-men-arcade-remake"]).toEqual(["launcherInstall"]);
     expect(PATCH_GAME_FIELDS["the-spike-cross"]).toContain("androidStoreUrl");
     expect(PATCH_GAME_FIELDS["slapshot-rebound"]).toContain("hardwareRequirements");
     expect(PATCH_GAME_FIELDS["space-station-14"]).toEqual(["launcherInstall", "installSteps"]);

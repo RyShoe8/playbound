@@ -151,6 +151,7 @@ const LOCAL_COUCH_GAMES = new Set([
   "hurrican",
   "pixreveal",
   "the-spike-cross",
+  "x-men-arcade-remake",
 ]);
 
 /**
