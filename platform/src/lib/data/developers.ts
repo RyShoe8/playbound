@@ -1225,6 +1225,28 @@ export const developers: Developer[] = [
     artHue: 210,
   },
   {
+    slug: "asteroid-base",
+    name: "Asteroid Base",
+    tagline: "Couch co-op neon spaceship chaos.",
+    about:
+      "Toronto indie studio behind Lovers in a Dangerous Spacetime — frantic 1- to 4-player local co-op where the whole crew mans one neon battleship.",
+    founded: 2011,
+    location: "Toronto, Canada",
+    website: "https://www.loversinadangerousspacetime.com/",
+    artHue: 300,
+  },
+  {
+    slug: "bugbear",
+    name: "Bugbear Entertainment",
+    tagline: "Destructible racing and FlatOut carnage.",
+    about:
+      "Finnish studio known for FlatOut and other physics-driven racing games with ragdoll crashes, demolition derbies, and LAN multiplayer.",
+    founded: 2000,
+    location: "Helsinki, Finland",
+    website: "https://www.bugbear.fi/",
+    artHue: 15,
+  },
+  {
     slug: "freeallegiance-team",
     name: "FreeAllegiance Community",
     tagline: "Stewards of Microsoft Allegiance open-source space combat RTS.",

@@ -292,6 +292,18 @@ export const maintenanceChecks: Record<string, MaintenanceCheck> = {
     checkedAt: "2026-09-11",
     note: "Official v1.6 GitHub release. Verify Windows installer, macOS dmg, and Connect +connect on UDP 5029.",
   },
+  "lovers-in-a-dangerous-spacetime": {
+    kind: "manual",
+    url: "https://www.gog.com/en/game/lovers_in_a_dangerous_spacetime",
+    checkedAt: "2026-09-11",
+    note: "GOG DRM-free Windows/Mac/Linux build (Asteroid Base). Verify Galaxy install and local 4P / couch mode.",
+  },
+  "flatout-2": {
+    kind: "manual",
+    url: "https://www.gog.com/en/game/flatout_2",
+    checkedAt: "2026-09-11",
+    note: "GOG DRM-free Windows/Linux build (Bugbear). Verify Galaxy install and LAN multiplayer over Connect (official online offline).",
+  },
 };
 
 /** All published criteria met — the common case, since failing one means exclusion. */
@@ -6278,6 +6290,160 @@ export const editorial: Record<string, GameEditorial> = {
       {
         q: "Is it an official Sega game?",
         a: "No. It is a free fan game from the Sonic Team Junior / Kart community, like SRB2.",
+      },
+    ],
+  },
+
+  "lovers-in-a-dangerous-spacetime": {
+    qualityBar: {
+      genuinelyFree: false,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "Four people sprinting between laser, shield, and thruster stations still feels like piloting one brain with eight hands.",
+      lastVerified: "2026-09-11",
+    },
+    maintenanceCheck: {
+      kind: "manual",
+      url: "https://www.gog.com/en/game/lovers_in_a_dangerous_spacetime",
+      checkedAt: "2026-09-11",
+      note: "GOG DRM-free Windows/Mac/Linux build (Asteroid Base). Verify Galaxy install and local 4P / couch mode.",
+    },
+    thatOneThing:
+      "The ship only works when somebody abandons their favorite gun to grab the shield — teamwork is the control scheme.",
+    longDescription:
+      "Lovers in a Dangerous Spacetime is Asteroid Base's frantic couch co-op space shooter: one neon battleship, multiple battle stations, and up to four players (or one player plus an AI space-pet) dashing between turrets, lasers, shields, and thrusters. Levels randomize enough that routes stay fresh; gems upgrade the loadout; Anti-Love wants your bunnies.\n\nCo-op is the point and the limit. There is no native online — the developers chose a great local session over a half-baked netcode. Friends who are not in the room use PlayBound Couch / phone-as-controller so remote pads appear as local crew on the host PC.\n\nOn PlayBound this is a commercial DRM-free master from GOG. Install opens Galaxy on product 1441290254; offline installers work if you prefer. Controllers are first-class; the launcher does not rewrite config files for basic pads.\n\nWe carry it because finished four-pad couch co-op still clears the bar better than most free party games that invent online they cannot support.",
+    whyWePickedIt:
+      "We picked Lovers because it is one of the best couch co-op spaceships ever shipped, DRM-free on GOG, and honest about local-only play. PlayBound Couch covers remote friends without pretending the game has online lobbies.",
+    bestFor: [
+      "Living-room 2–4 player pad sessions and PlayBound Couch parties",
+      "Couples and friend groups who like shared-vehicle co-op",
+      "Players who already buy indie classics DRM-free on GOG",
+      "Anyone who wants AI help when a full crew is impossible",
+    ],
+    notFor: [
+      "Anyone expecting native online co-op or dedicated servers",
+      "Players who refuse a paid DRM-free purchase",
+      "Groups that need more than four simultaneous human players",
+      "People looking for a competitive ranked shooter",
+    ],
+    comparableTo: [
+      "Overcooked",
+      "Keep Talking and Nobody Explodes",
+      "Move or Die",
+      "TowerFall Ascension",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Click Install in PlayBound to open GOG Galaxy on this title (goggalaxy://). Buy or reclaim your copy, then install from Galaxy or the offline installer.",
+      },
+      {
+        platform: "windows",
+        text: "Launch, plug in pads (or use Couch / phone-as-controller), and start a co-op voyage. Solo players can use the AI space-pet.",
+      },
+      {
+        platform: "macos",
+        text: "Claim and install from GOG (Galaxy or offline). Local co-op works the same way.",
+      },
+      {
+        platform: "all",
+        text: "Multiplayer is local couch co-op only. Remote friends join via PlayBound Couch on the host PC.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Lovers in a Dangerous Spacetime free?",
+        a: "No. It is a paid commercial master on GOG; the release is DRM-free.",
+      },
+      {
+        q: "Does it have online multiplayer?",
+        a: "No. Co-op is local only (up to 4). Remote friends use PlayBound Couch / phone-as-controller on the host.",
+      },
+      {
+        q: "Do I need GOG Galaxy?",
+        a: "No. Offline installers work. PlayBound's one-click path opens Galaxy for convenience.",
+      },
+      {
+        q: "Does it support controllers?",
+        a: "Yes — native gamepad play. PlayBound does not rewrite a config file for basic pads.",
+      },
+    ],
+  },
+
+  "flatout-2": {
+    qualityBar: {
+      genuinelyFree: false,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "A ragdoll driver leaving the windshield still sells the crash better than most modern destruction racers sell their trailers.",
+      lastVerified: "2026-09-11",
+    },
+    maintenanceCheck: {
+      kind: "manual",
+      url: "https://www.gog.com/en/game/flatout_2",
+      checkedAt: "2026-09-11",
+      note: "GOG DRM-free Windows/Linux build (Bugbear). Verify Galaxy install and LAN multiplayer over Connect.",
+    },
+    thatOneThing:
+      "Official online is dead — PlayBound Connect puts the surviving LAN mode on one overlay so private wrecking crews still happen.",
+    longDescription:
+      "FlatOut 2 is Bugbear's 2006 destruction racer at its peak: career cups across race, street, and derby classes; tracks packed with breakable scenery; cars that shred to the frame; and the infamous ragdoll driver who becomes a bowling ball in mini-games. Hot-seat ragdoll sports work on one PC; serious multiplayer is LAN for up to eight.\n\nGOG's store page is explicit: multiplayer servers are offline, LAN still works. PlayBound Connect is the private-party answer — same virtual LAN approach as other LAN-only classics — so friends host and join from the in-game Multiplayer menu without GameRanger. We do not ship third-party \"online launcher\" patches as a requirement; stay on matching GOG builds and let Connect supply the shared segment.\n\nInstall opens Galaxy on product 1207660523. Controllers and wheels are supported; the launcher does not rewrite config files for basic pads. Integrated graphics are a known weak spot per GOG's own requirements.\n\nWe carry it because cheap DRM-free carnage with real LAN multiplayer still clears the bar for party nights, and because Connect replaces the GameSpy-shaped hole without inventing matchmaking the game never had.",
+    whyWePickedIt:
+      "We picked FlatOut 2 because it remains the funniest legal destruction racer you can buy DRM-free, and because PlayBound Connect restores private LAN races after the official online path died.",
+    bestFor: [
+      "LAN / Connect parties that want demolition racing and ragdoll mini-games",
+      "Players who buy classic racers DRM-free on GOG",
+      "Gamepad or wheel sessions with physics that still feel nasty",
+      "Anyone comparing FlatOut Ultimate Carnage's account friction to FO2's LAN honesty",
+    ],
+    notFor: [
+      "Players who need living official online matchmaking",
+      "Anyone expecting split-screen racing on one PC (hot-seat mini-games only)",
+      "Laptops stuck on unsupported integrated graphics",
+      "People looking for a modern sim-racing netcode stack",
+    ],
+    comparableTo: [
+      "FlatOut: Ultimate Carnage",
+      "Burnout Revenge",
+      "Destruction Derby",
+      "TrackMania",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Click Install in PlayBound to open GOG Galaxy on this title (goggalaxy://). Buy or reclaim your copy, then install from Galaxy or the offline installer.",
+      },
+      {
+        platform: "windows",
+        text: "Launch once, set controls, and confirm a single-player race works.",
+      },
+      {
+        platform: "all",
+        text: "For multiplayer: create a PlayBound Connect party, then host or join a LAN game from FlatOut 2's Multiplayer menu. Official online servers are offline.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is FlatOut 2 free?",
+        a: "No. It is a paid commercial master on GOG; the release is DRM-free.",
+      },
+      {
+        q: "Does online multiplayer still work?",
+        a: "Official servers are offline. LAN multiplayer still works — PlayBound Connect puts your party on one virtual LAN so you can host and join privately.",
+      },
+      {
+        q: "Do I need GameRanger?",
+        a: "Not for a PlayBound party. Connect supplies the shared network; use the in-game LAN multiplayer menus.",
+      },
+      {
+        q: "Does it support controllers?",
+        a: "Yes — gamepads and wheels. PlayBound does not rewrite a config file for basic pads.",
       },
     ],
   },

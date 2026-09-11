@@ -1082,6 +1082,14 @@ const NO_CONFIG_NEEDED = {
     kind: "native",
     note: "SDL Game Controller API (v1.6+) for Race/Battle pads; no PlayBound config write needed.",
   },
+  "lovers-in-a-dangerous-spacetime": {
+    kind: "native",
+    note: "Native multi-pad support for up to 4 local crew; no PlayBound config write needed.",
+  },
+  "flatout-2": {
+    kind: "native",
+    note: "Native gamepad and wheel support; no PlayBound config write needed.",
+  },
   jfsw: { kind: "native", note: "JFSW Build engine native gamepad support with analog movement and aiming." },
   yorg: { kind: "native", note: "Native SDL2 multi-gamepad split-screen support." },
   torcs: { kind: "native", note: "Native steering wheel, joystick, and controller input." },

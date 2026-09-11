@@ -1749,6 +1749,35 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "SRB2Kart Doom-engine network multiplayer on UDP port 5029 (same family as SRB2).",
   },
 
+  "lovers-in-a-dangerous-spacetime": {
+    gameSlug: "lovers-in-a-dangerous-spacetime",
+    title: "Lovers in a Dangerous Spacetime",
+    tier: "tier1_improved",
+    adapterType: "official",
+    protocol: "official",
+    notes:
+      "No network transport: local 1–4P couch co-op on one ship. PlayBound Connect uses couch mode and remote controllers.",
+  },
+
+  "flatout-2": {
+    gameSlug: "flatout-2",
+    title: "FlatOut 2",
+    tier: "tier1_improved",
+    adapterType: "virtual-lan",
+    protocol: "udp",
+    client: { inGameJoinPrompt: true },
+    virtualLan: {
+      requiresBroadcast: true,
+      inGameSteps: [
+        "Create a PlayBound Connect party first so everyone shares a LAN segment",
+        "Leader: Multiplayer → create / host a LAN game",
+        "Everyone else: Multiplayer → join the LAN session (refresh if needed)",
+      ],
+    },
+    notes:
+      "Official online servers are offline. PlayBound Connect carries surviving LAN multiplayer (up to 8) over the party overlay.",
+  },
+
   hurrican: {
     gameSlug: "hurrican",
     title: "Hurrican",

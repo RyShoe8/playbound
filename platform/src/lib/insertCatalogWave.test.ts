@@ -69,6 +69,8 @@ describe("insert-catalog-wave allowlists", () => {
       [
         "baseball-stars-2",
         "earth-2140-trilogy",
+        "flatout-2",
+        "lovers-in-a-dangerous-spacetime",
         "populous-the-beginning",
         "relic-hunters-zero-remix",
         "soccer-brawl",
