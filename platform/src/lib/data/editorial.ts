@@ -268,6 +268,12 @@ export const maintenanceChecks: Record<string, MaintenanceCheck> = {
     checkedAt: "2026-09-11",
     note: "GOG DRM-free Windows build (Code Mystics / SNK). Verify store page, Galaxy install, and FBNeo ROM detect for Connect.",
   },
+  "x-men-arcade-remake": {
+    kind: "manual",
+    url: "https://gamejolt.com/games/XMKO/994483",
+    checkedAt: "2026-09-11",
+    note: "Free OpenBOR fangame on Game Jolt. Verify PlayBound-hosted zip install and local 4P / couch mode.",
+  },
 };
 
 /** All published criteria met — the common case, since failing one means exclusion. */
@@ -5938,6 +5944,89 @@ export const editorial: Record<string, GameEditorial> = {
       {
         q: "What is socbrawl.zip?",
         a: "The FBNeo ROM set name used when Connect launches RetroArch. Your GOG purchase supplies the legal game data.",
+      },
+    ],
+  },
+
+  "x-men-arcade-remake": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "A four-pad scramble across Magneto's goons still feels like an arcade cabinet — even when two of your teammates are CPU stand-ins.",
+      lastVerified: "2026-09-11",
+    },
+    maintenanceCheck: {
+      kind: "manual",
+      url: "https://gamejolt.com/games/XMKO/994483",
+      checkedAt: "2026-09-11",
+      note: "Free OpenBOR fangame on Game Jolt. Verify PlayBound-hosted zip and local 4P / couch mode.",
+    },
+    thatOneThing:
+      "CPU partners exist because gathering four friends around one PC is hard — and Parsec is not a substitute for pads on the table.",
+    longDescription:
+      "X-Men Arcade Remake is ZVitor's free OpenBOR tribute to Konami's early-90s X-Men arcade beat 'em up. You pick mutants, smash through stages that still want to be unfair, and fill the screen with specials the way a crowded cab would. Sprites pull from several eras of X-Men games — arcade uniforms mixed with SNES, Genesis, and GBA looks — then sanded into one readable OpenBOR cast.\n\nCo-op is the point. Up to four players share one machine. When you cannot fill every seat, CPU partners tag along so a lone Wolverine is not stuck walking the campaign alone. Controllers are first-class; this is an arcade remake, not a mouse-aimed action game.\n\nIt is also a fangame. Marvel and Konami did not publish it. PlayBound lists it as freeware fan work distributed by ZVitor (Game Jolt XMKO), not as an official product. We host a PlayBound Windows package for one-click install after you upload the zip — we do not claim Marvel licensing.\n\nOnline is honest: OpenBOR here has no native netcode. Friends who are not in the room use PlayBound Couch / phone-as-controller so remote pads appear as local players on the host PC. That is the same path as other local-only remakes in the catalog. If you want separate processes talking over UDP, this is not OpenTyrian.\n\nWe carry it because free OpenBOR arcade co-op still scratches an itch Steam's licensed beat 'em ups often price or lock behind accounts — and because couch mode finally gives that Parsec complaint a PlayBound-shaped answer without lying about netplay.",
+    whyWePickedIt:
+      "We picked X-Men Arcade Remake because it is a finished, free OpenBOR co-op remake that still wants four pads on one screen. PlayBound can install it in one click once the package is hosted, and Couch mode covers the friends who cannot sit on the same couch — without inventing online netcode the engine does not have.",
+    bestFor: [
+      "Fans of Konami's X-Men arcade and classic beat 'em ups",
+      "Local 2–4 player pad sessions and PlayBound Couch parties",
+      "Players happy with freeware fangames downloaded from the creator's release",
+      "Anyone who wants CPU partners when a full human team is impossible",
+    ],
+    notFor: [
+      "Players who only want officially licensed Marvel or Konami releases",
+      "Anyone expecting native online co-op or LAN join codes",
+      "Groups that need more than four simultaneous human players",
+      "People looking for a modern licensed Marvel Avengers-style live service",
+    ],
+    comparableTo: [
+      "Streets of Rage Remake",
+      "Metal Slug: Community Remake",
+      "X-Men (1992 arcade)",
+      "Final Fight",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Install from PlayBound once the Windows OpenBOR zip is hosted (Install downloads and extracts the package).",
+      },
+      {
+        platform: "windows",
+        text: "Launch OpenBOR.exe, plug in pads (or use phone-as-controller), and start a co-op game. CPU partners can fill empty seats.",
+      },
+      {
+        platform: "all",
+        text: "For friends not in the room: create a PlayBound party and use Couch mode so remote controllers join as local players on the host PC.",
+      },
+      {
+        platform: "all",
+        text: "This is unofficial fan software, not a Marvel or Konami product.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is X-Men Arcade Remake official?",
+        a: "No. It is a free OpenBOR fangame by ZVitor. Marvel and Konami did not publish it.",
+      },
+      {
+        q: "Is it free?",
+        a: "Yes. The Game Jolt release is free. PlayBound's one-click path uses a hosted Windows package of that freeware build.",
+      },
+      {
+        q: "Does it have online multiplayer?",
+        a: "Not natively. Multiplayer is local 4P co-op. Remote friends use PlayBound Couch / phone-as-controller on the host machine.",
+      },
+      {
+        q: "Does it support controllers?",
+        a: "Yes. OpenBOR binds pads natively for up to four local players. PlayBound does not rewrite a config file.",
+      },
+      {
+        q: "What engine does it use?",
+        a: "OpenBOR (Open Beats of Rage), a common engine for freeware beat 'em up remakes.",
       },
     ],
   },

@@ -1692,6 +1692,16 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       "No network transport: its two-player multiplayer is local co-op. PlayBound Connect uses couch mode and remote controllers.",
   },
 
+  "x-men-arcade-remake": {
+    gameSlug: "x-men-arcade-remake",
+    title: "X-Men Arcade Remake",
+    tier: "tier1_improved",
+    adapterType: "official",
+    protocol: "official",
+    notes:
+      "No network transport: OpenBOR local 4P co-op (+ CPU partners). PlayBound Connect uses couch mode and remote controllers.",
+  },
+
   hurrican: {
     gameSlug: "hurrican",
     title: "Hurrican",

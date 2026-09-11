@@ -17,6 +17,7 @@ export const NEW_GAME_SLUGS: readonly string[] = [
   "super-sidekicks",
   "baseball-stars-2",
   "soccer-brawl",
+  "x-men-arcade-remake",
 ];
 
 /** `gameSlug/editionSlug` pairs to create only when absent. */
@@ -140,6 +141,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "systemRequirements",
     "hardwareRequirements",
   ],
+  "x-men-arcade-remake": ["launcherInstall"],
 };
 
 /** Existing editions: $set ONLY these fields. */
