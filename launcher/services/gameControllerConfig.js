@@ -1051,6 +1051,18 @@ const NO_CONFIG_NEEDED = {
   "strikers-club": { kind: "native", note: "Native controller support for stadium matches." },
   brawlhalla: { kind: "native", note: "Native controller support with frame-perfect input." },
   mrboom: { kind: "native", note: "Native multi-gamepad support for up to 8 simultaneous controllers." },
+  "super-sidekicks": {
+    kind: "native",
+    note: "Neo Geo / RetroArch FBNeo binds pads natively; no PlayBound config write needed.",
+  },
+  "baseball-stars-2": {
+    kind: "native",
+    note: "Neo Geo / RetroArch FBNeo binds pads natively; no PlayBound config write needed.",
+  },
+  "soccer-brawl": {
+    kind: "native",
+    note: "Neo Geo / RetroArch FBNeo binds pads natively; no PlayBound config write needed.",
+  },
   "dc-universe-online": { kind: "native", note: "Native gamepad layout for powers, combos, and flight." },
   pixreveal: { kind: "native", note: "Companion smartphone / touchscreen controller support." },
   srb2: { kind: "native", note: "Doom engine native XInput/DirectInput gamepad bindings." },

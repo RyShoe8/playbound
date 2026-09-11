@@ -250,6 +250,24 @@ export const maintenanceChecks: Record<string, MaintenanceCheck> = {
     checkedAt: "2026-08-15",
     note: "Active open-source retro football simulation on SourceForge with preserved Windows 64-bit releases and community tournament databases.",
   },
+  "super-sidekicks": {
+    kind: "manual",
+    url: "https://www.gog.com/en/game/super_sidekicks",
+    checkedAt: "2026-09-11",
+    note: "GOG DRM-free Windows build (Code Mystics / SNK). Verify store page, Galaxy install, and FBNeo ROM detect for Connect.",
+  },
+  "baseball-stars-2": {
+    kind: "manual",
+    url: "https://www.gog.com/en/game/baseball_stars_2",
+    checkedAt: "2026-09-11",
+    note: "GOG DRM-free Windows build (SNK). Verify store page, Galaxy install, and FBNeo ROM detect for Connect.",
+  },
+  "soccer-brawl": {
+    kind: "manual",
+    url: "https://www.gog.com/en/game/soccer_brawl",
+    checkedAt: "2026-09-11",
+    note: "GOG DRM-free Windows build (Code Mystics / SNK). Verify store page, Galaxy install, and FBNeo ROM detect for Connect.",
+  },
 };
 
 /** All published criteria met — the common case, since failing one means exclusion. */
@@ -5689,6 +5707,237 @@ export const editorial: Record<string, GameEditorial> = {
       {
         q: "Can I play multiplayer with friends?",
         a: "Yes! JFSW supports WangBang deathmatch and Co-op multiplayer over Virtual LAN and direct IP.",
+      },
+    ],
+  },
+
+  "super-sidekicks": {
+    qualityBar: {
+      genuinelyFree: false,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "A Champions Cup match feels like sprinting for space, then bending a shot just enough that the keeper's dive arrives a frame late.",
+      lastVerified: "2026-09-11",
+    },
+    maintenanceCheck: {
+      kind: "manual",
+      url: "https://www.gog.com/en/game/super_sidekicks",
+      checkedAt: "2026-09-11",
+      note: "GOG DRM-free Windows build (Code Mystics / SNK). Verify Galaxy install and FBNeo ROM detect for Connect.",
+    },
+    thatOneThing:
+      "The aftertouch on a through-ball still feels like cheating — until your friend does it first.",
+    longDescription:
+      "Super Sidekicks is SNK's 1992 Neo Geo soccer game that made national-team arcade football look serious without sanding off the speed. You pick a side, chase the Champions Cup, and live in the space between a clean pass and a wild first-time shot. The pitch reads clearly from above: lanes open, dens fill in, and a mistimed tackle turns a promising attack into a breakaway the other way.\n\nWhat sticks is how readable the ball is. Dribbles are not sticky magnets; they are possession you can lose. Crossing, one-twos, and speculative long shots all have a tempo that rewards reading the next second rather than mashing shoot. Two-player sessions on the same couch turn into quiet rivalries about who gets the better of a midfield scramble, because every clearance and every rebound is shared information.\n\nOn PlayBound this is a commercial DRM-free master from GOG, not a free redistribution. You buy once, install through GOG Galaxy (or the offline installer), and PlayBound detects the folder. Solo play can use the Windows build; online head-to-head with a friend uses PlayBound Connect plus managed RetroArch and the FBNeo core so both clients sync inputs over the virtual LAN. Controllers are first-class — Neo Geo sports games were built for pads — and the launcher does not need to rewrite config files for a basic gamepad.\n\nThe honest catches matter. You must own the GOG title; PlayBound never hosts the installer. Neo Geo BIOS (`neogeo.zip`) belongs in RetroArch's system folder when the FBNeo path is used. DotEmu-era packaging quirks do not apply here — this Code Mystics Windows release is the storefront path we wire for detection. If Galaxy is missing, fall back to the store page, buy or reclaim the title, then return to Install so detection can finish.\n\nWe keep Super Sidekicks because Neo Geo soccer still teaches spatial football better than a dozen modern menu trees, and because Connect turns a local arcade classic into a private online match without asking anyone to port-forward port 55435 by hand.",
+    whyWePickedIt:
+      "We picked Super Sidekicks because it preserves the first Neo Geo soccer that looked like a real pitch and still plays like an arcade argument. A cheap DRM-free GOG master plus PlayBound Connect gives two friends a legal way to settle a Champions Cup online without treating ROM piracy as the onboarding step.",
+    bestFor: [
+      "Fans of arcade soccer who want national teams and aftertouch shooting",
+      "Two-player pad sessions that should also work online over PlayBound Connect",
+      "Players who already buy Neo Geo classics DRM-free on GOG",
+      "Low-spec Windows PCs that still want crisp 2D sports",
+    ],
+    notFor: [
+      "Anyone expecting a free download — this is a paid commercial master",
+      "Players who want modern FIFA-style career menus and photoreal stadiums",
+      "Groups larger than two simultaneous human players on one netplay session",
+    ],
+    comparableTo: ["Soccer Brawl", "YSoccer", "Sensible World of Soccer", "Neo Turf Masters"],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Buy Super Sidekicks on GOG if you do not already own it (store page linked from PlayBound).",
+      },
+      {
+        platform: "windows",
+        text: "Click Install in PlayBound to open GOG Galaxy on this title (goggalaxy://). Install from Galaxy, or use GOG's offline installer if you prefer.",
+      },
+      {
+        platform: "windows",
+        text: "Wait for PlayBound to detect the install under GOG Galaxy Games (or Locate the folder / ROM zip).",
+      },
+      {
+        platform: "windows",
+        text: "For online play, follow the RetroArch netplay guide: create a Connect party, host with Play, friends Join Game.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Super Sidekicks free?",
+        a: "No. It is a paid DRM-free title on GOG. PlayBound does not redistribute the installer.",
+      },
+      {
+        q: "Do I need GOG Galaxy?",
+        a: "Galaxy is the one-click Install path from PlayBound. You can also use GOG's offline installer; detection still looks under common GOG Games folders.",
+      },
+      {
+        q: "How does online multiplayer work?",
+        a: "PlayBound Connect puts both players on a virtual LAN, then RetroArch netplay (FBNeo) syncs inputs. See /guides/retroarch-netplay.",
+      },
+      {
+        q: "Does it support controllers?",
+        a: "Yes. Neo Geo sports titles expect pads; PlayBound treats this as native gamepad support without rewriting config files.",
+      },
+      {
+        q: "What is ssideki.zip?",
+        a: "That is the FBNeo ROM set name PlayBound looks for when launching Connect netplay. Your legal GOG install supplies the game data; we never host ROMs.",
+      },
+    ],
+  },
+
+  "baseball-stars-2": {
+    qualityBar: {
+      genuinelyFree: false,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "A full-count pitch still feels like a dare — and the stolen base afterward is the punchline you earned.",
+      lastVerified: "2026-09-11",
+    },
+    maintenanceCheck: {
+      kind: "manual",
+      url: "https://www.gog.com/en/game/baseball_stars_2",
+      checkedAt: "2026-09-11",
+      note: "GOG DRM-free Windows build (SNK). Verify Galaxy install and FBNeo ROM detect for Connect.",
+    },
+    thatOneThing:
+      "Create-a-team mode lets you put your friend's worst nickname on a jersey and then strike them out on purpose.",
+    longDescription:
+      "Baseball Stars 2 is SNK's 1992 Neo Geo sequel that kept the series' swagger: build a squad, take the mound, and settle arguments one at-bat at a time. The diamond is drawn with arcade clarity — pitch locations, swing timing, and base-running decisions land in the same readable language as the original Baseball Stars, with enough personality in the player sprites that a walk-off still looks personal.\n\nCreate-a-team is the social hook. You name a club, dress it in bad colors, and immediately care more about a routine grounder because it carries your logo. Versus play turns the same tools against a friend: pitching mixes, stolen bases, and the quiet dread of a full count with runners on. It is sports game theatre without a career menu the size of a spreadsheet.\n\nPlayBound lists the GOG DRM-free Windows master. Install opens Galaxy on the owned product so the download is a single client hop after purchase. Detection watches common GOG Games paths and the FBNeo set name `bstars2.zip` so Connect can launch managed RetroArch instead of pretending the Windows port has rollback netcode. Controllers map cleanly; Neo Geo baseball was always a pad sport.\n\nCaveats stay on the page. Ownership is required. PlayBound does not ship ROMs or GOG installers. The original Baseball Stars catalog slug (`baseball-stars` / `bstars.zip`) remains a separate title — this entry is only Baseball Stars 2. BIOS for FBNeo lives under RetroArch's system folder when you take the Connect path. Two players is the honest netplay ceiling.\n\nWe carry Baseball Stars 2 because Neo Geo baseball still makes rivalry feel handmade, and because a legal GOG copy plus Connect is a better story than 'find a zip somewhere.'",
+    whyWePickedIt:
+      "We picked Baseball Stars 2 because create-a-team Neo Geo baseball is still one of the sharpest ways two friends can invent a feud. Pairing the DRM-free GOG master with RetroArch netplay over Connect keeps the rivalry legal and one install away from a private online game.",
+    bestFor: [
+      "Players who want Neo Geo baseball with create-a-team personality",
+      "Two-player pad rivalries that should work online through PlayBound Connect",
+      "Collectors already buying SNK sports titles on GOG",
+      "Anyone who liked Baseball Stars and wants the sequel's diamond",
+    ],
+    notFor: [
+      "Players seeking a free baseball game with no purchase",
+      "Fans of modern MLB simulation depth and broadcast presentation",
+      "Parties that need more than two simultaneous human players on netplay",
+    ],
+    comparableTo: ["Baseball Stars", "Super Sidekicks", "Neo Turf Masters", "RBI Baseball"],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Buy Baseball Stars 2 on GOG if you do not already own it.",
+      },
+      {
+        platform: "windows",
+        text: "Click Install in PlayBound to open GOG Galaxy on this title. Install from Galaxy, or use GOG's offline installer.",
+      },
+      {
+        platform: "windows",
+        text: "Wait for PlayBound to detect the install (or Locate the folder / bstars2.zip).",
+      },
+      {
+        platform: "windows",
+        text: "For online play, follow /guides/retroarch-netplay: Connect party, host Play, friends Join Game.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Baseball Stars 2 free?",
+        a: "No. It is a paid DRM-free GOG title. PlayBound does not host the installer or ROM.",
+      },
+      {
+        q: "Is this the same as Baseball Stars?",
+        a: "No. Baseball Stars (`baseball-stars`) is the earlier game. This page is only Baseball Stars 2.",
+      },
+      {
+        q: "How does online multiplayer work?",
+        a: "PlayBound Connect plus RetroArch netplay (FBNeo) syncs two players. See /guides/retroarch-netplay.",
+      },
+      {
+        q: "Do I need a controller?",
+        a: "A gamepad is strongly recommended; the Neo Geo original expects pads. Keyboard works in a pinch.",
+      },
+      {
+        q: "What is bstars2.zip?",
+        a: "The FBNeo ROM set name used for Connect launches. Your legal GOG purchase supplies the data.",
+      },
+    ],
+  },
+
+  "soccer-brawl": {
+    qualityBar: {
+      genuinelyFree: false,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "A shoulder charge into the box still feels illegal — then the whistle never comes and you score anyway.",
+      lastVerified: "2026-09-11",
+    },
+    maintenanceCheck: {
+      kind: "manual",
+      url: "https://www.gog.com/en/game/soccer_brawl",
+      checkedAt: "2026-09-11",
+      note: "GOG DRM-free Windows build (Code Mystics / SNK). Verify Galaxy install and FBNeo ROM detect for Connect.",
+    },
+    thatOneThing:
+      "Five-a-side Neo Geo football where tackling is basically a fight you happen to play with a ball.",
+    longDescription:
+      "Soccer Brawl is SNK's 1992 Neo Geo five-a-side that never pretended football was polite. Smaller pitch, fewer players, and contact that would get a modern sim sued. You charge, shove, and somehow still have to finish with a shot that fits through a tiny window of goal mouth. Matches are short arguments with a scoreboard.\n\nThe joy is the collision of sports timing and arcade spite. Positioning still matters — leave a lane open and the other side walks it in — but the punchline is often a late shoulder that steals possession at the worst possible moment. Two pads on a couch make every bounce contested. It is the meaner cousin of Super Sidekicks: less pageantry, more bruises.\n\nOn PlayBound the path is the GOG DRM-free Windows master. Install deep-links into Galaxy for an owned product so the download is one click after purchase. Detection looks under GOG Galaxy Games and for `socbrawl.zip` so Connect can hand the match to RetroArch/FBNeo instead of hoping the Windows port speaks netplay. Controllers are expected; the arcade cabinet never shipped a mouse.\n\nHonest limits: paid ownership, no PlayBound-hosted installers, two-player netplay ceiling, and Neo Geo BIOS on the FBNeo path. If Galaxy is absent, buy or reclaim on the storefront, install offline, then Locate. We are not shipping a piracy workflow dressed as convenience.\n\nSoccer Brawl earns its catalog row because Neo Geo sports still invents fights modern football games sand away — and Connect finally lets those fights happen across towns without a LAN cable.",
+    whyWePickedIt:
+      "We picked Soccer Brawl because five-a-side Neo Geo football is still the funniest honest soccer brawler we can put in a legal GOG install. PlayBound Connect turns that couch fight into a private online match without pretending the Windows port invented rollback for us.",
+    bestFor: [
+      "Players who want arcade soccer with real contact and short matches",
+      "Two-player pad rivalries online via PlayBound Connect",
+      "Fans of Super Sidekicks looking for a meaner five-a-side cousin",
+      "Low-spec Windows machines that still want crisp 2D sports",
+    ],
+    notFor: [
+      "Anyone who refuses a paid GOG purchase",
+      "Players seeking eleven-a-side simulation and VAR realism",
+      "Large parties that need more than two human netplay seats",
+    ],
+    comparableTo: ["Super Sidekicks", "YSoccer", "Windjammers", "Power Spikes"],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Buy Soccer Brawl on GOG if you do not already own it.",
+      },
+      {
+        platform: "windows",
+        text: "Click Install in PlayBound to open GOG Galaxy on this title. Install from Galaxy, or use GOG's offline installer.",
+      },
+      {
+        platform: "windows",
+        text: "Wait for PlayBound to detect the install (or Locate the folder / socbrawl.zip).",
+      },
+      {
+        platform: "windows",
+        text: "For online play, follow /guides/retroarch-netplay: Connect party, host Play, friends Join Game.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Soccer Brawl free?",
+        a: "No. It is a paid DRM-free GOG title. PlayBound does not redistribute the installer.",
+      },
+      {
+        q: "How is this different from Super Sidekicks?",
+        a: "Soccer Brawl is five-a-side with heavier contact. Super Sidekicks is the more traditional national-team arcade soccer.",
+      },
+      {
+        q: "How does online multiplayer work?",
+        a: "PlayBound Connect plus RetroArch netplay (FBNeo). Details: /guides/retroarch-netplay.",
+      },
+      {
+        q: "Does it support controllers?",
+        a: "Yes — native gamepad play. PlayBound does not need to rewrite a config file for basic pads.",
+      },
+      {
+        q: "What is socbrawl.zip?",
+        a: "The FBNeo ROM set name used when Connect launches RetroArch. Your GOG purchase supplies the legal game data.",
       },
     ],
   },

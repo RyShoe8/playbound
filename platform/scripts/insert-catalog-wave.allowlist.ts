@@ -14,6 +14,9 @@ export const NEW_GAME_SLUGS: readonly string[] = [
   "the-spike-cross",
   "populous-the-beginning",
   "earth-2140-trilogy",
+  "super-sidekicks",
+  "baseball-stars-2",
+  "soccer-brawl",
 ];
 
 /** `gameSlug/editionSlug` pairs to create only when absent. */
@@ -27,6 +30,9 @@ export const NEW_EDITION_KEYS: readonly string[] = [
   "populous-the-beginning/populous-reincarnated",
   "earth-2140-trilogy/official",
   "earth-2140-trilogy/opene2140",
+  "super-sidekicks/official",
+  "baseball-stars-2/official",
+  "soccer-brawl/official",
 ];
 
 /**

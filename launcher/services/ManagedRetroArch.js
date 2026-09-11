@@ -13,7 +13,7 @@ const RETROARCH_VERSION = "1.19.1";
  * checked. Every DOS-style ROM install and mrboom's RetroArch edition depend
  * on this, and libretro publish all three platforms under the same layout.
  */
-const CORES = ["mrboom", "puae", "gambatte", "sameboy", "mgba", "snes9x", "genesis_plus_gx"];
+const CORES = ["mrboom", "puae", "gambatte", "sameboy", "mgba", "snes9x", "genesis_plus_gx", "fceumm", "fbneo"];
 
 function retroPlatform(platform = process.platform) {
   if (platform === "darwin") return { path: "apple/osx/x86_64", coreExt: "dylib" };
@@ -48,7 +48,27 @@ function coreForExtension(ext) {
   if (clean === "gba") return "mgba";
   if (clean === "sfc" || clean === "smc") return "snes9x";
   if (clean === "md" || clean === "gen") return "genesis_plus_gx";
+  if (clean === "nes") return "fceumm";
   return null;
+}
+
+/**
+ * Explicit core override keyed by game slug.
+ *
+ * Some ROM formats are ambiguous by extension alone — Neo Geo games ship as
+ * .zip ROM sets, which could be anything. When the launcher knows the game
+ * slug it can resolve the correct core here rather than guessing from the
+ * file extension.  Adding a game is one line.
+ */
+const SLUG_CORE_OVERRIDES = {
+  "baseball-stars": "fbneo",
+  "baseball-stars-2": "fbneo",
+  "super-sidekicks": "fbneo",
+  "soccer-brawl": "fbneo",
+};
+
+function coreForSlug(slug) {
+  return SLUG_CORE_OVERRIDES[String(slug || "").toLowerCase()] || null;
 }
 
 function managedRetroArchRoot(userDataPath) {
@@ -166,8 +186,10 @@ module.exports = {
   CORE_URLS,
   RETROARCH_URL,
   RETROARCH_VERSION,
+  SLUG_CORE_OVERRIDES,
   coreBinary,
   coreForExtension,
+  coreForSlug,
   coreUrl,
   createManagedRetroArch,
   managedRetroArchRoot,

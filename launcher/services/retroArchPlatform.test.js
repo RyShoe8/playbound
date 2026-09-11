@@ -106,3 +106,43 @@ test("ROM extensions still pick the core they always did", () => {
   assert.equal(coreForExtension(".gen"), "genesis_plus_gx");
   assert.equal(coreForExtension(".xyz"), null);
 });
+
+test("NES ROMs resolve to fceumm", () => {
+  assert.equal(coreForExtension(".nes"), "fceumm");
+  assert.equal(coreForExtension("nes"), "fceumm");
+  assert.equal(coreForExtension(".NES"), "fceumm");
+});
+
+test("fceumm and fbneo cores resolve on every platform", () => {
+  for (const core of ["fceumm", "fbneo"]) {
+    for (const platform of ["win32", "linux", "darwin"]) {
+      const url = coreUrl(core, platform);
+      assert.ok(url, `${core} has no URL on ${platform}`);
+      assert.match(url, /^https:\/\/buildbot\.libretro\.com\/nightly\//);
+    }
+  }
+});
+
+test("fceumm and fbneo binaries resolve with the platform suffix", () => {
+  assert.match(coreBinary("/tmp/ra", "fceumm", "win32"), /fceumm_libretro\.dll$/);
+  assert.match(coreBinary("/tmp/ra", "fbneo", "linux"), /fbneo_libretro\.so$/);
+  assert.match(coreBinary("/tmp/ra", "fbneo", "darwin"), /fbneo_libretro\.dylib$/);
+});
+
+test("coreForSlug returns overrides for registered games", () => {
+  const { coreForSlug, SLUG_CORE_OVERRIDES } = require("./ManagedRetroArch");
+  assert.equal(coreForSlug("baseball-stars"), "fbneo");
+  assert.equal(coreForSlug("Baseball-Stars"), "fbneo", "slug lookup should be case-insensitive");
+  assert.equal(coreForSlug("super-sidekicks"), "fbneo");
+  assert.equal(coreForSlug("baseball-stars-2"), "fbneo");
+  assert.equal(coreForSlug("soccer-brawl"), "fbneo");
+  assert.equal(coreForSlug("unknown-game"), null);
+  assert.equal(coreForSlug(""), null);
+  assert.equal(coreForSlug(null), null);
+
+  // Every override must name a supported core.
+  for (const [slug, core] of Object.entries(SLUG_CORE_OVERRIDES)) {
+    assert.ok(CORES.includes(core), `SLUG_CORE_OVERRIDES["${slug}"] = "${core}" is not in CORES`);
+  }
+});
+
