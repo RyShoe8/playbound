@@ -952,7 +952,15 @@ const NO_CONFIG_NEEDED = {
   "fishing-planet": { kind: "native", note: "Native Xbox and PlayStation controller support." },
   "sky-children-of-the-light": {
     kind: "native",
-    note: "Steam build ships full Xbox and PlayStation controller support.",
+    note: "Mobile title — touch controls; optional Bluetooth gamepads work on supported devices.",
+  },
+  "slapshot-rebound": {
+    kind: "native",
+    note: "Native Xbox and PlayStation controller support for rink play and menus.",
+  },
+  "the-dark-mod": {
+    kind: "native",
+    note: "Gamepad support since 2.09 (XInput); configure bindings in Settings / DarkmodPadbinds.cfg if needed.",
   },
   // Keyed by game slug `bombsquad`. Do not alias edition slug `standalone-pc`
   // — that edition id is shared by other titles. Play paths pass the game slug
@@ -1017,6 +1025,10 @@ const NO_CONFIG_NEEDED = {
   "counter-strike-2": { kind: "native", note: "Native Steam Input and controller support." },
   "quake-champions": { kind: "native", note: "Native controller support." },
   holocure: { kind: "native", note: "Native twin-stick and controller mapping." },
+  "hurry-curry": {
+    kind: "native",
+    note: "Native gamepad support for 1–4 local chefs; bots fill empty seats.",
+  },
   freedoom: {
     kind: "native",
     note: "GZDoom and Zandronum feature native XInput and DirectInput controller detection with built-in analog sticks and triggers.",

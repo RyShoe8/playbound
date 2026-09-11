@@ -209,6 +209,7 @@ export const launcherInstallSchema = z
     needsDosBox: optionalFlag,
     /** Launch elevated. Curated per game — see launcherInstall.ts. */
     needsAdmin: optionalFlag,
+    needsDirectDrawWrapper: optionalFlag,
     needsDotNetMajor: optionalPositiveInt,
   })
   .superRefine((val, ctx) => {
@@ -764,6 +765,7 @@ export function toPayloadLauncherInstall(
     unwrapSingleRoot: li.unwrapSingleRoot || undefined,
     needsDosBox: li.needsDosBox || undefined,
     needsAdmin: li.needsAdmin || undefined,
+    needsDirectDrawWrapper: li.needsDirectDrawWrapper || undefined,
     needsDotNetMajor: li.needsDotNetMajor || undefined,
   };
 }

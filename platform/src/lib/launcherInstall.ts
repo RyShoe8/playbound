@@ -119,6 +119,12 @@ export type LauncherInstall = {
    */
   needsAdmin?: boolean;
   /**
+   * Windows-only: install dgVoodoo2 DirectDraw DLLs beside the game and
+   * register CLSID_DirectDraw under HKCU so Managed DirectX CoCreateInstance
+   * works on modern Windows (FreeTrain).
+   */
+  needsDirectDrawWrapper?: boolean;
+  /**
    * Windows-only: framework-dependent titles that need this .NET major
    * (Desktop Runtime). PlayBound downloads a portable copy under userData and
    * launches with DOTNET_ROOT when the machine does not already have one.
@@ -189,6 +195,8 @@ export type LauncherCatalogEntry = {
   needsDosBox?: boolean;
   /** Launch elevated; see the note on the install-config field. */
   needsAdmin?: boolean;
+  /** Windows: dgVoodoo + HKCU DirectDraw COM for Managed DirectX titles. */
+  needsDirectDrawWrapper?: boolean;
   /** Windows: portable .NET Desktop Runtime major to ensure before Play. */
   needsDotNetMajor?: number;
   /** Ask the player to locate a copy they own before installing anything. */
@@ -374,6 +382,7 @@ export function toLauncherCatalogEntry(input: {
   if (li.unwrapSingleRoot) entry.unwrapSingleRoot = true;
   if (li.needsDosBox) entry.needsDosBox = true;
   if (li.needsAdmin) entry.needsAdmin = true;
+  if (li.needsDirectDrawWrapper) entry.needsDirectDrawWrapper = true;
   if (typeof li.needsDotNetMajor === "number" && li.needsDotNetMajor > 0) {
     entry.needsDotNetMajor = li.needsDotNetMajor;
   }

@@ -5,6 +5,7 @@
  * Insert lists create rows only when absent.
  * Patch maps $set ONLY the named fields on existing rows — never other games,
  * never other fields, never upsert.
+ * Retire lists hide+archive existing editions — never delete, never upsert.
  */
 
 /** Parent games to create only when absent. Draft until a human publishes. */
@@ -19,6 +20,8 @@ export const NEW_GAME_SLUGS: readonly string[] = [
 export const NEW_EDITION_KEYS: readonly string[] = [
   "s-t-a-l-k-e-r-call-of-pripyat/official",
   "s-t-a-l-k-e-r-shadow-of-chernobyl/official",
+  "s-t-a-l-k-e-r-shadow-of-chernobyl/lost-alpha",
+  "s-t-a-l-k-e-r-shadow-of-chernobyl/true-stalker",
   "populous-the-beginning/official",
   "populous-the-beginning/populous-reincarnated",
   "earth-2140-trilogy/official",
@@ -33,23 +36,96 @@ export const NEW_MOD_SLUGS: readonly string[] = [];
 
 /**
  * Existing catalog games: $set ONLY these fields.
- * Keys are game slugs. Values are the exact CatalogGame paths allowed.
- * BombSquad / AssaultCube platform + install wave — nothing else.
+ * FreeTrain editorial/wrapper, Hurry Curry desktop, Idle Slayer mobile,
+ * Seven Kingdoms exe paths.
  */
 export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
-  bombsquad: ["launcherInstall", "platforms", "androidStoreUrl"],
-  assaultcube: ["launcherInstall", "systemRequirements", "hardwareRequirements"],
+  freetrain: [
+    "qualityBar",
+    "longDescription",
+    "whyWePickedIt",
+    "thatOneThing",
+    "bestFor",
+    "notFor",
+    "comparableTo",
+    "faq",
+    "installSteps",
+    "systemRequirements",
+    "hardwareRequirements",
+    "launcherInstall",
+  ],
+  "hurry-curry": ["platforms", "features", "launcherInstall"],
+  "idle-slayer": [
+    "platforms",
+    "androidStoreUrl",
+    "iosStoreUrl",
+    "launchMethods",
+    "steamDeck",
+    "steamAppId",
+    "browserPlayable",
+    "launcherInstall",
+    "website",
+  ],
+  "seven-kingdoms-ancient-adversaries": ["launcherInstall"],
+  "s-t-a-l-k-e-r-call-of-pripyat": [
+    "longDescription",
+    "whyWePickedIt",
+    "installSteps",
+    "faq",
+  ],
+  "sky-children-of-the-light": [
+    "platforms",
+    "androidStoreUrl",
+    "iosStoreUrl",
+    "launchMethods",
+    "steamDeck",
+    "steamAppId",
+    "browserPlayable",
+    "launcherInstall",
+    "website",
+  ],
+  "slapshot-rebound": [
+    "features",
+    "systemRequirements",
+    "hardwareRequirements",
+    "launcherInstall",
+  ],
+  "space-station-14": ["launcherInstall", "installSteps"],
+  teeworlds: [
+    "platforms",
+    "features",
+    "launcherInstall",
+    "systemRequirements",
+    "hardwareRequirements",
+  ],
+  "the-dark-mod": [
+    "platforms",
+    "features",
+    "launcherInstall",
+    "systemRequirements",
+    "hardwareRequirements",
+  ],
+};
+
+/** Existing editions: $set ONLY these fields. */
+export const PATCH_EDITION_FIELDS: Readonly<Record<string, readonly string[]>> = {
+  "s-t-a-l-k-e-r-call-of-pripyat/official": ["name", "description"],
 };
 
 /**
- * Existing editions: $set ONLY these fields.
- * Keys are `gameSlug/editionSlug`. Values are dotted paths under the edition.
+ * Existing editions to retire (hide from public listings). $set only
+ * visibility + status — never delete, never upsert.
  */
-export const PATCH_EDITION_FIELDS: Readonly<Record<string, readonly string[]>> = {
-  "bombsquad/standalone-pc": [
-    "name",
-    "description",
-    "version",
-    "installConfig.playbound_installer",
-  ],
+export const RETIRE_EDITION_KEYS: readonly string[] = [
+  "s-t-a-l-k-e-r-call-of-pripyat/anomaly",
+  "s-t-a-l-k-e-r-call-of-pripyat/gamma",
+  "s-t-a-l-k-e-r-call-of-pripyat/gunslinger",
+];
+
+/**
+ * Existing catalog mods: $set ONLY these fields. No upsert.
+ * holocure-rich-presence stays draft so seed cannot resurrect a public page.
+ */
+export const PATCH_MOD_FIELDS: Readonly<Record<string, readonly string[]>> = {
+  "holocure-rich-presence": ["status", "published"],
 };

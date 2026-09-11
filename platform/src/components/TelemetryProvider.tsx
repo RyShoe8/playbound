@@ -62,6 +62,13 @@ function PageViewTracker() {
 
     // Idle so page_view POSTs don't contend with App Router RSC on soft nav.
     const send = () => {
+      // not-found pages set this meta; don't count 404s as content views.
+      if (
+        typeof document !== "undefined" &&
+        document.querySelector('meta[name="playbound-not-found"]')
+      ) {
+        return;
+      }
       const isWebdriver = typeof navigator !== "undefined" && Boolean(navigator.webdriver);
       void telemetry.page(path, {
         path,

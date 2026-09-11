@@ -653,7 +653,7 @@ export const editions: EditionSeed[] = [
     name: "Call of Pripyat — GOG Master (Default)",
     shortDescription: "DRM-free GOG release of S.T.A.L.K.E.R.: Call of Pripyat.",
     description:
-      "The official Call of Pripyat master from GOG. Use this edition for the untouched campaign; community rebuilds like Anomaly and G.A.M.M.A. stay as separate editions.",
+      "The official Call of Pripyat master from GOG. This is the untouched campaign — install the DRM-free offline installer from your GOG library and play.",
     type: "official",
     status: "active",
     visibility: "public",
@@ -670,18 +670,6 @@ export const editions: EditionSeed[] = [
     tags: ["Open World", "Classic", "Mods"],
     aliases: ["STALKER CoP GOG", "Call of Pripyat Official"],
     verificationLevel: "official",
-  },
-  {
-    gameSlug: "s-t-a-l-k-e-r-call-of-pripyat", slug: "anomaly", name: "S.T.A.L.K.E.R. Anomaly — Standalone Edition", version: "1.5.3",
-    shortDescription: "The whole trilogy's Zone reshaped into a free-roaming survival sandbox.", description: "Anomaly is the great open-ended Zone: every major region, faction starts, story routes, and enough tuning to make the same road feel different twice.", type: "community", status: "active", visibility: "public", isDefault: false, sortOrder: 20, links: { website: "https://www.moddb.com/mods/stalker-anomaly" }, installMethod: "external_installer", installConfig: { external_installer: { url: "https://www.moddb.com/mods/stalker-anomaly" } }, features: ["Singleplayer", "Mod Support", "Community Content", "Story Campaign"], tags: ["Open World", "Mods"], aliases: ["STALKER Anomaly"], verificationLevel: "community_verified",
-  },
-  {
-    gameSlug: "s-t-a-l-k-e-r-call-of-pripyat", slug: "gamma", name: "S.T.A.L.K.E.R. G.A.M.M.A. — Survival Edition", version: "0.9.3",
-    shortDescription: "Anomaly rebuilt around scarcity, long-term progression, and gloriously fussy survival.", description: "GAMMA turns Anomaly into a deliberate survival campaign where maintenance, medicine, crafting, and preparation matter as much as marksmanship.", type: "community", status: "active", visibility: "public", isDefault: false, sortOrder: 30, links: { website: "https://github.com/Grokitach/Stalker_GAMMA", github: "https://github.com/Grokitach/Stalker_GAMMA" }, installMethod: "external_installer", installConfig: { external_installer: { url: "https://github.com/Grokitach/Stalker_GAMMA/wiki/Installing-GAMMA" } }, features: ["Singleplayer", "Mod Support", "Community Content", "Story Campaign"], tags: ["Open World", "Mods"], aliases: ["STALKER GAMMA"], verificationLevel: "community_verified",
-  },
-  {
-    gameSlug: "s-t-a-l-k-e-r-call-of-pripyat", slug: "gunslinger", name: "Gunslinger — Call of Pripyat Edition", version: "Beta",
-    shortDescription: "Call of Pripyat with obsessive weapon handling, animation, and combat detail.", description: "Gunslinger keeps the original campaign recognizable while rebuilding the feel of carrying a firearm through the Zone.", type: "community", status: "active", visibility: "public", isDefault: false, sortOrder: 40, links: { website: "https://www.moddb.com/mods/gunslinger-mod" }, installMethod: "external_installer", installConfig: { external_installer: { url: "https://www.moddb.com/mods/gunslinger-mod" } }, features: ["Singleplayer", "Mod Support", "Community Content", "Story Campaign"], tags: ["Open World", "Mods"], aliases: ["STALKER Gunslinger"], verificationLevel: "community_verified",
   },
   {
     gameSlug: "s-t-a-l-k-e-r-shadow-of-chernobyl",

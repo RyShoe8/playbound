@@ -5,7 +5,8 @@
  *   - explicit allowlists only (never the whole seed catalog)
  *   - inserts: create only when absent; new games are draft / unpublished
  *   - patches: $set ONLY allowlisted fields on existing named docs
- *   - never deletes, never upserts patches, never publishes a parent game
+ *   - retire editions: $set visibility=hidden + status=archived only
+ *   - never deletes rows, never upserts patches, never publishes a parent game
  *   - never writes a slug that is not on an allowlist
  *
  * Allowlists live in `insert-catalog-wave.allowlist.ts`.
@@ -17,6 +18,8 @@ import {
   NEW_MOD_SLUGS,
   PATCH_EDITION_FIELDS,
   PATCH_GAME_FIELDS,
+  PATCH_MOD_FIELDS,
+  RETIRE_EDITION_KEYS,
 } from "./insert-catalog-wave.allowlist";
 
 loadEnvConfig(process.cwd());
@@ -56,13 +59,17 @@ async function main() {
   const allowedMods = new Set(NEW_MOD_SLUGS);
   const patchGameSlugs = Object.keys(PATCH_GAME_FIELDS);
   const patchEditionKeys = Object.keys(PATCH_EDITION_FIELDS);
+  const patchModSlugs = Object.keys(PATCH_MOD_FIELDS);
+  const retireEditionKeys = [...RETIRE_EDITION_KEYS];
 
   if (
     NEW_GAME_SLUGS.length === 0 &&
     allowedEditions.size === 0 &&
     allowedMods.size === 0 &&
     patchGameSlugs.length === 0 &&
-    patchEditionKeys.length === 0
+    patchEditionKeys.length === 0 &&
+    patchModSlugs.length === 0 &&
+    retireEditionKeys.length === 0
   ) {
     console.log("insert-catalog-wave: allowlists empty — nothing to do.");
     process.exit(0);
@@ -84,6 +91,35 @@ async function main() {
     assaultCubeSystemRequirements,
     assaultCubeHardwareRequirements,
   } = await import("../src/lib/data/assaultCubeSpecs");
+  const {
+    FREETRAIN_SLUG,
+    freetrainEditorial,
+    freetrainHardwareRequirements,
+    freetrainLauncherInstall,
+    freetrainSystemRequirements,
+  } = await import("../src/lib/data/freetrainCatalog");
+  const { IDLE_SLAYER_SLUG, idleSlayerPatchSource } = await import(
+    "../src/lib/data/idleSlayerCatalog"
+  );
+  const { SEVEN_KINGDOMS_SLUG, sevenKingdomsLauncherInstall } = await import(
+    "../src/lib/data/sevenKingdomsCatalog"
+  );
+  const { HOLOCURE_RICH_PRESENCE_SLUG, holocureRichPresencePatchSource } = await import(
+    "../src/lib/data/holocureRichPresenceCatalog"
+  );
+  const { editorial } = await import("../src/lib/data/editorial");
+  const { SKY_CHILDREN_SLUG, skyChildrenPatchSource } = await import(
+    "../src/lib/data/skyChildrenCatalog"
+  );
+  const { SLAPSHOT_REBOUND_SLUG, slapshotReboundPatchSource } = await import(
+    "../src/lib/data/slapshotReboundCatalog"
+  );
+  const { TEEWORLDS_SLUG, teeworldsPatchSource } = await import(
+    "../src/lib/data/teeworldsCatalog"
+  );
+  const { THE_DARK_MOD_SLUG, theDarkModPatchSource } = await import(
+    "../src/lib/data/theDarkModCatalog"
+  );
 
   await dbConnect();
 
@@ -215,7 +251,52 @@ async function main() {
     }
 
     let source: Record<string, unknown>;
-    if (slug === ASSAULTCUBE_SLUG) {
+    if (slug === FREETRAIN_SLUG) {
+      source = {
+        ...freetrainEditorial,
+        systemRequirements: freetrainSystemRequirements,
+        hardwareRequirements: freetrainHardwareRequirements,
+        launcherInstall: freetrainLauncherInstall,
+      };
+    } else if (slug === IDLE_SLAYER_SLUG) {
+      source = { ...idleSlayerPatchSource };
+    } else if (slug === SKY_CHILDREN_SLUG) {
+      source = { ...skyChildrenPatchSource };
+    } else if (slug === SLAPSHOT_REBOUND_SLUG) {
+      source = { ...slapshotReboundPatchSource };
+    } else if (slug === TEEWORLDS_SLUG) {
+      source = { ...teeworldsPatchSource };
+    } else if (slug === THE_DARK_MOD_SLUG) {
+      source = { ...theDarkModPatchSource };
+    } else if (slug === SEVEN_KINGDOMS_SLUG) {
+      source = { launcherInstall: sevenKingdomsLauncherInstall };
+    } else if (slug === "s-t-a-l-k-e-r-call-of-pripyat") {
+      const ed = editorial["s-t-a-l-k-e-r-call-of-pripyat"];
+      if (!ed) {
+        console.warn(`insert-catalog-wave — no editorial for ${slug}, skipping`);
+        gamesPatchSkipped++;
+        continue;
+      }
+      source = {
+        longDescription: ed.longDescription,
+        whyWePickedIt: ed.whyWePickedIt,
+        installSteps: ed.installSteps,
+        faq: ed.faq,
+      };
+    } else if (slug === "space-station-14") {
+      const seed = games.find((g) => g.slug === slug);
+      const ed = editorial["space-station-14"];
+      const install = seed?.launcherInstall ?? launcherInstallBySlug[slug] ?? null;
+      if (!install || !ed?.installSteps) {
+        console.warn(`insert-catalog-wave — missing SS14 install/steps source, skipping`);
+        gamesPatchSkipped++;
+        continue;
+      }
+      source = {
+        launcherInstall: install,
+        installSteps: ed.installSteps,
+      };
+    } else if (slug === ASSAULTCUBE_SLUG) {
       const install = launcherInstallBySlug[ASSAULTCUBE_SLUG];
       if (!install) {
         console.warn(`insert-catalog-wave — no launcherInstall for ${slug}, skipping`);
@@ -234,7 +315,11 @@ async function main() {
         gamesPatchSkipped++;
         continue;
       }
-      source = seed as unknown as Record<string, unknown>;
+      const install = seed.launcherInstall ?? launcherInstallBySlug[slug] ?? null;
+      source = {
+        ...(seed as unknown as Record<string, unknown>),
+        launcherInstall: install,
+      };
     }
 
     const payload = pickFields(source, fields);
@@ -291,6 +376,7 @@ async function main() {
       description: seed.description,
       version: seed.version,
       installConfig: seed.installConfig,
+      shortDescription: seed.shortDescription,
     };
     const payload = pickFields(source, fields);
     for (const field of fields) {
@@ -311,12 +397,87 @@ async function main() {
     editionsPatched++;
   }
 
+  let editionsRetired = 0;
+  let editionsRetireSkipped = 0;
+  for (const key of retireEditionKeys) {
+    const [gameSlug, editionSlug] = key.split("/");
+    if (!gameSlug || !editionSlug) {
+      console.warn(`insert-catalog-wave — bad retire edition key ${key}, skipping`);
+      editionsRetireSkipped++;
+      continue;
+    }
+    const existing = await Edition.findOne({ gameSlug, slug: editionSlug }).select("_id").lean();
+    if (!existing) {
+      console.warn(`insert-catalog-wave — retire edition ${key} not in DB, skipping (no upsert)`);
+      editionsRetireSkipped++;
+      continue;
+    }
+    const result = await Edition.updateOne(
+      { gameSlug, slug: editionSlug },
+      { $set: { visibility: "hidden", status: "archived" } }
+    );
+    if (result.matchedCount !== 1) {
+      throw new Error(
+        `insert-catalog-wave — retire ${key} matched ${result.matchedCount}, expected 1`
+      );
+    }
+    console.log(`retire edition ${key} visibility=hidden status=archived`);
+    editionsRetired++;
+  }
+
+  let modsPatched = 0;
+  let modsPatchSkipped = 0;
+  for (const slug of patchModSlugs) {
+    const fields = PATCH_MOD_FIELDS[slug];
+    if (!fields || fields.length === 0) {
+      console.warn(`insert-catalog-wave — empty patch field list for mod ${slug}, skipping`);
+      modsPatchSkipped++;
+      continue;
+    }
+
+    const existing = await CatalogMod.findOne({ slug }).select("_id").lean();
+    if (!existing) {
+      console.warn(`insert-catalog-wave — patch mod ${slug} not in DB, skipping (no upsert)`);
+      modsPatchSkipped++;
+      continue;
+    }
+
+    let source: Record<string, unknown>;
+    if (slug === HOLOCURE_RICH_PRESENCE_SLUG) {
+      source = { ...holocureRichPresencePatchSource };
+    } else {
+      console.warn(`insert-catalog-wave — no patch source for mod ${slug}, skipping`);
+      modsPatchSkipped++;
+      continue;
+    }
+
+    const payload = pickFields(source, fields);
+    for (const field of fields) {
+      if (payload[field] === undefined) {
+        throw new Error(
+          `insert-catalog-wave — refuse patch mod ${slug}: missing source for field "${field}"`
+        );
+      }
+    }
+
+    const result = await CatalogMod.updateOne({ slug }, { $set: payload });
+    if (result.matchedCount !== 1) {
+      throw new Error(
+        `insert-catalog-wave — patch mod ${slug} matched ${result.matchedCount}, expected 1`
+      );
+    }
+    console.log(`patch mod ${slug} fields=[${fields.join(", ")}]`);
+    modsPatched++;
+  }
+
   console.log(
     `insert-catalog-wave: games +${gamesCreated}/skip ${gamesSkipped}, ` +
       `editions +${editionsCreated}/skip ${editionsSkipped}, ` +
       `mods +${modsCreated}/skip ${modsSkipped}, ` +
       `game-patches ${gamesPatched}/skip ${gamesPatchSkipped}, ` +
-      `edition-patches ${editionsPatched}/skip ${editionsPatchSkipped}`
+      `edition-patches ${editionsPatched}/skip ${editionsPatchSkipped}, ` +
+      `editions-retired ${editionsRetired}/skip ${editionsRetireSkipped}, ` +
+      `mod-patches ${modsPatched}/skip ${modsPatchSkipped}`
   );
   process.exit(0);
 }

@@ -1747,6 +1747,15 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "Official game servers only. PlayBound provides party launch & presence.",
   },
 
+  "slapshot-rebound": {
+    gameSlug: "slapshot-rebound",
+    title: "Slapshot: Rebound",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Official Slapshot matchmaking. PlayBound provides party launch & presence.",
+  },
+
   brawlhalla: {
     gameSlug: "brawlhalla",
     title: "Brawlhalla",
