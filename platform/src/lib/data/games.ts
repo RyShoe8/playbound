@@ -6485,7 +6485,7 @@ const facts: Game[] = [
     aliases: ["XMKO", "X-Men Arcade", "XMen Arcade Remake", "X-Men The Arcade Game Remake"],
     license: "Freeware · unofficial fangame",
     releaseYear: 2025,
-    sizeMB: 150,
+    sizeMB: 132,
     status: "draft",
     platforms: ["Windows"],
     features: [
@@ -6538,14 +6538,14 @@ const facts: Game[] = [
       },
     },
     launcherInstall: {
-      enabled: false,
+      enabled: true,
       kind: "direct-zip",
-      url: null,
-      fileName: "X-Men-Arcade-Remake.zip",
+      url: "https://mirror.playbound.club/launcher-packages/games/x-men-arcade-remake/1789150109652-xmarcadev2.zip",
+      fileName: "xmarcadev2.zip",
       versionLabel: "2.0.0",
       exeHint: "OpenBOR|OpenBOR.exe",
       knownExePaths: ["OpenBOR.exe", "openbor.exe"],
-      note: "PlayBound-hosted Windows OpenBOR package (URL set after Blob upload). Local 4P couch co-op only — no native online.",
+      note: "PlayBound-hosted Windows OpenBOR package on the VPS mirror. Local 4P couch co-op only — no native online.",
     },
     multiplayerGamingSteps: [
       {
