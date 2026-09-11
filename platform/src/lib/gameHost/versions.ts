@@ -45,6 +45,7 @@ export const EXPECTED_SERVER_VERSIONS: Record<string, string> = {
    * so these two move together or not at all.
    */
   morrowind: "0.8.1",
+  assaultcube: "v1.3.0.2 Lockdown Edition (ensure)",
 };
 
 /**

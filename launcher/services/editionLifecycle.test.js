@@ -2,9 +2,11 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const { mayRunNativeUninstaller, editionLaunchExecutable } = require("./editionLifecycle");
 
-test("removing one edition never invokes a native product uninstaller", () => {
-  assert.equal(mayRunNativeUninstaller("tes3mp"), false);
-  assert.equal(mayRunNativeUninstaller("official"), false);
+test("only installer-backed official editions invoke a native product uninstaller", () => {
+  assert.equal(mayRunNativeUninstaller("tes3mp", { kind: "direct-installer" }), false);
+  assert.equal(mayRunNativeUninstaller("official", { kind: "direct-installer" }), true);
+  assert.equal(mayRunNativeUninstaller("official", { kind: "github-installer" }), true);
+  assert.equal(mayRunNativeUninstaller("official", { kind: "direct-zip" }), false);
   assert.equal(mayRunNativeUninstaller(null), true);
 });
 

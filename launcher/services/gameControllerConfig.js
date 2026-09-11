@@ -954,9 +954,20 @@ const NO_CONFIG_NEEDED = {
     kind: "native",
     note: "Steam build ships full Xbox and PlayStation controller support.",
   },
+  // Keyed by game slug `bombsquad`. Do not alias edition slug `standalone-pc`
+  // — that edition id is shared by other titles. Play paths pass the game slug
+  // (and edition features already include Controller Support).
   bombsquad: {
     kind: "native",
     note: "Designed for multiple local game controllers; BombSquad Remote is also supported by the game.",
+  },
+  openmohaa: {
+    kind: "native",
+    note: "OpenMoHAA is id Tech 3 with joystick cvars; the engine binds pads without a PlayBound config rewrite.",
+  },
+  "medal-of-honor-allied-assault": {
+    kind: "native",
+    note: "Played through OpenMoHAA, which binds gamepads natively.",
   },
   wolfenstein: {
     kind: "native",

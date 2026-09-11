@@ -648,24 +648,72 @@ export const editions: EditionSeed[] = [
     shortDescription: "Crusader's skirmish engine rebuilt around green fields, familiar castles, and the original Stronghold mood.", description: "Stronghold Europe is the full scenery-and-rules conversion for players who want Crusader's skirmish sandbox in the forests and farmland of the first game.", type: "community", status: "active", visibility: "public", sortOrder: 20, links: { website: "https://www.moddb.com/mods/stronghold-europe" }, installMethod: "external_installer", installConfig: { external_installer: { url: "https://www.moddb.com/mods/stronghold-europe" } }, features: ["Singleplayer", "Multiplayer", "LAN Support", "Mod Support", "Custom Maps", "Community Content", "Team Play"], tags: ["Classic", "Competitive", "LAN", "Mods"], aliases: ["Stronghold Europe"], verificationLevel: "community_verified",
   },
   {
+    gameSlug: "s-t-a-l-k-e-r-call-of-pripyat",
+    slug: "official",
+    name: "Call of Pripyat — GOG Master (Default)",
+    shortDescription: "DRM-free GOG release of S.T.A.L.K.E.R.: Call of Pripyat.",
+    description:
+      "The official Call of Pripyat master from GOG. Use this edition for the untouched campaign; community rebuilds like Anomaly and G.A.M.M.A. stay as separate editions.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: true,
+    sortOrder: 5,
+    links: { website: "https://www.gog.com/en/game/stalker_call_of_pripyat" },
+    installMethod: "official_download",
+    installConfig: {
+      official_download: {
+        url: "https://www.gog.com/en/game/stalker_call_of_pripyat",
+      },
+    },
+    features: ["Singleplayer", "Multiplayer", "LAN Support", "Dedicated Servers", "Mod Support", "Community Content", "Story Campaign"],
+    tags: ["Open World", "Classic", "Mods"],
+    aliases: ["STALKER CoP GOG", "Call of Pripyat Official"],
+    verificationLevel: "official",
+  },
+  {
     gameSlug: "s-t-a-l-k-e-r-call-of-pripyat", slug: "anomaly", name: "S.T.A.L.K.E.R. Anomaly — Standalone Edition", version: "1.5.3",
-    shortDescription: "The whole trilogy's Zone reshaped into a free-roaming survival sandbox.", description: "Anomaly is the great open-ended Zone: every major region, faction starts, story routes, and enough tuning to make the same road feel different twice.", type: "community", status: "active", visibility: "public", sortOrder: 10, links: { website: "https://www.moddb.com/mods/stalker-anomaly" }, installMethod: "external_installer", installConfig: { external_installer: { url: "https://www.moddb.com/mods/stalker-anomaly" } }, features: ["Singleplayer", "Mod Support", "Community Content", "Story Campaign"], tags: ["Open World", "Mods"], aliases: ["STALKER Anomaly"], verificationLevel: "community_verified",
+    shortDescription: "The whole trilogy's Zone reshaped into a free-roaming survival sandbox.", description: "Anomaly is the great open-ended Zone: every major region, faction starts, story routes, and enough tuning to make the same road feel different twice.", type: "community", status: "active", visibility: "public", isDefault: false, sortOrder: 20, links: { website: "https://www.moddb.com/mods/stalker-anomaly" }, installMethod: "external_installer", installConfig: { external_installer: { url: "https://www.moddb.com/mods/stalker-anomaly" } }, features: ["Singleplayer", "Mod Support", "Community Content", "Story Campaign"], tags: ["Open World", "Mods"], aliases: ["STALKER Anomaly"], verificationLevel: "community_verified",
   },
   {
     gameSlug: "s-t-a-l-k-e-r-call-of-pripyat", slug: "gamma", name: "S.T.A.L.K.E.R. G.A.M.M.A. — Survival Edition", version: "0.9.3",
-    shortDescription: "Anomaly rebuilt around scarcity, long-term progression, and gloriously fussy survival.", description: "GAMMA turns Anomaly into a deliberate survival campaign where maintenance, medicine, crafting, and preparation matter as much as marksmanship.", type: "community", status: "active", visibility: "public", sortOrder: 20, links: { website: "https://github.com/Grokitach/Stalker_GAMMA", github: "https://github.com/Grokitach/Stalker_GAMMA" }, installMethod: "external_installer", installConfig: { external_installer: { url: "https://github.com/Grokitach/Stalker_GAMMA/wiki/Installing-GAMMA" } }, features: ["Singleplayer", "Mod Support", "Community Content", "Story Campaign"], tags: ["Open World", "Mods"], aliases: ["STALKER GAMMA"], verificationLevel: "community_verified",
+    shortDescription: "Anomaly rebuilt around scarcity, long-term progression, and gloriously fussy survival.", description: "GAMMA turns Anomaly into a deliberate survival campaign where maintenance, medicine, crafting, and preparation matter as much as marksmanship.", type: "community", status: "active", visibility: "public", isDefault: false, sortOrder: 30, links: { website: "https://github.com/Grokitach/Stalker_GAMMA", github: "https://github.com/Grokitach/Stalker_GAMMA" }, installMethod: "external_installer", installConfig: { external_installer: { url: "https://github.com/Grokitach/Stalker_GAMMA/wiki/Installing-GAMMA" } }, features: ["Singleplayer", "Mod Support", "Community Content", "Story Campaign"], tags: ["Open World", "Mods"], aliases: ["STALKER GAMMA"], verificationLevel: "community_verified",
   },
   {
     gameSlug: "s-t-a-l-k-e-r-call-of-pripyat", slug: "gunslinger", name: "Gunslinger — Call of Pripyat Edition", version: "Beta",
-    shortDescription: "Call of Pripyat with obsessive weapon handling, animation, and combat detail.", description: "Gunslinger keeps the original campaign recognizable while rebuilding the feel of carrying a firearm through the Zone.", type: "community", status: "active", visibility: "public", sortOrder: 30, links: { website: "https://www.moddb.com/mods/gunslinger-mod" }, installMethod: "external_installer", installConfig: { external_installer: { url: "https://www.moddb.com/mods/gunslinger-mod" } }, features: ["Singleplayer", "Mod Support", "Community Content", "Story Campaign"], tags: ["Open World", "Mods"], aliases: ["STALKER Gunslinger"], verificationLevel: "community_verified",
+    shortDescription: "Call of Pripyat with obsessive weapon handling, animation, and combat detail.", description: "Gunslinger keeps the original campaign recognizable while rebuilding the feel of carrying a firearm through the Zone.", type: "community", status: "active", visibility: "public", isDefault: false, sortOrder: 40, links: { website: "https://www.moddb.com/mods/gunslinger-mod" }, installMethod: "external_installer", installConfig: { external_installer: { url: "https://www.moddb.com/mods/gunslinger-mod" } }, features: ["Singleplayer", "Mod Support", "Community Content", "Story Campaign"], tags: ["Open World", "Mods"], aliases: ["STALKER Gunslinger"], verificationLevel: "community_verified",
+  },
+  {
+    gameSlug: "s-t-a-l-k-e-r-shadow-of-chernobyl",
+    slug: "official",
+    name: "Shadow of Chornobyl — GOG Master (Default)",
+    shortDescription: "DRM-free GOG release of S.T.A.L.K.E.R.: Shadow of Chornobyl.",
+    description:
+      "The official Shadow of Chornobyl master from GOG. Community rebuilds like Lost Alpha stay as separate editions so Install does not open ModDB by default.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: true,
+    sortOrder: 5,
+    links: { website: "https://www.gog.com/en/game/stalker_shadow_of_chernobyl" },
+    installMethod: "official_download",
+    installConfig: {
+      official_download: {
+        url: "https://www.gog.com/en/game/stalker_shadow_of_chernobyl",
+      },
+    },
+    features: ["Singleplayer", "Multiplayer", "LAN Support", "Dedicated Servers", "Mod Support", "Community Content", "Story Campaign"],
+    tags: ["Open World", "Classic", "Mods"],
+    aliases: ["STALKER SoC GOG", "Shadow of Chernobyl Official"],
+    verificationLevel: "official",
   },
   {
     gameSlug: "s-t-a-l-k-e-r-shadow-of-chernobyl", slug: "lost-alpha", name: "Lost Alpha: Developer's Cut — Total Conversion", version: "1.4007",
-    shortDescription: "The abandoned early vision of S.T.A.L.K.E.R. rebuilt into a huge standalone journey.", description: "Lost Alpha imagines the game Shadow of Chornobyl might have become before years of cuts reshaped it: wider maps, restored ideas, new routes, and its own campaign.", type: "community", status: "active", visibility: "public", sortOrder: 10, links: { website: "https://www.moddb.com/mods/lost-alpha" }, installMethod: "external_installer", installConfig: { external_installer: { url: "https://www.moddb.com/mods/lost-alpha" } }, features: ["Singleplayer", "Mod Support", "Community Content", "Story Campaign"], tags: ["Open World", "Mods"], aliases: ["STALKER Lost Alpha"], verificationLevel: "community_verified",
+    shortDescription: "The abandoned early vision of S.T.A.L.K.E.R. rebuilt into a huge standalone journey.", description: "Lost Alpha imagines the game Shadow of Chornobyl might have become before years of cuts reshaped it: wider maps, restored ideas, new routes, and its own campaign.", type: "community", status: "active", visibility: "public", isDefault: false, sortOrder: 20, links: { website: "https://www.moddb.com/mods/lost-alpha" }, installMethod: "external_installer", installConfig: { external_installer: { url: "https://www.moddb.com/mods/lost-alpha" } }, features: ["Singleplayer", "Mod Support", "Community Content", "Story Campaign"], tags: ["Open World", "Mods"], aliases: ["STALKER Lost Alpha"], verificationLevel: "community_verified",
   },
   {
     gameSlug: "s-t-a-l-k-e-r-shadow-of-chernobyl", slug: "true-stalker", name: "True Stalker — Standalone Story Edition", version: "1.5",
-    shortDescription: "A polished fan-made campaign that sends a new face into a familiar Zone.", description: "True Stalker is a complete standalone story with its own protagonist, quests, performances, and carefully rebuilt spaces.", type: "community", status: "active", visibility: "public", sortOrder: 20, links: { website: "https://www.moddb.com/mods/true-stalker" }, installMethod: "external_installer", installConfig: { external_installer: { url: "https://www.moddb.com/mods/true-stalker" } }, features: ["Singleplayer", "Mod Support", "Community Content", "Story Campaign"], tags: ["Open World", "Mods"], aliases: ["True Stalker"], verificationLevel: "community_verified",
+    shortDescription: "A polished fan-made campaign that sends a new face into a familiar Zone.", description: "True Stalker is a complete standalone story with its own protagonist, quests, performances, and carefully rebuilt spaces.", type: "community", status: "active", visibility: "public", isDefault: false, sortOrder: 30, links: { website: "https://www.moddb.com/mods/true-stalker" }, installMethod: "external_installer", installConfig: { external_installer: { url: "https://www.moddb.com/mods/true-stalker" } }, features: ["Singleplayer", "Mod Support", "Community Content", "Story Campaign"], tags: ["Open World", "Mods"], aliases: ["True Stalker"], verificationLevel: "community_verified",
   },
   {
     gameSlug: "star-wars-knights-of-the-old-republic", slug: "k1-community-patch", name: "KOTOR Community Patch — PlayBound Edition", version: "1.10",
@@ -1865,7 +1913,7 @@ export const editions: EditionSeed[] = [
         note: "Requires base MOHAA game assets (Main/pak*.pk3), then overlays modern 64-bit OpenMOHAA binaries.",
       },
     },
-    features: ["Singleplayer", "Multiplayer", "64-bit Engine", "Widescreen Support", "Raw Input"],
+    features: ["Singleplayer", "Multiplayer", "64-bit Engine", "Widescreen Support", "Raw Input", "Controller Support"],
     tags: ["WWII", "Shooter", "Open Source", "Classic"],
     aliases: ["OpenMOHAA Default"],
     verificationLevel: "playbound_verified",
@@ -4268,41 +4316,41 @@ export const editions: EditionSeed[] = [
     verificationLevel: "community_verified",
   },
   {
-    gameSlug: "openra",
+    gameSlug: "earth-2140-trilogy",
     slug: "opene2140",
-    name: "OpenE2140",
+    name: "OpenE2140 (Default modern engine)",
     shortDescription:
-      "Earth 2140 real-time strategy recreation on the modern OpenRA engine.",
+      "Earth 2140 on a modern engine — requires the GOG / licensed trilogy assets.",
     description:
-      "OpenE2140 recreates the cult classic Earth 2140 on OpenRA, featuring the United Civilized States and Eurasian Dynasty warring across a ravaged futuristic Earth.",
+      "OpenE2140 recreates Earth 2140 with modern rendering and netcode. Install the GOG Earth 2140 Trilogy first; OpenE2140 detects and copies the required .WD assets on first launch.",
     type: "community",
     status: "active",
     visibility: "public",
-    isDefault: false,
-    sortOrder: 60,
+    isDefault: true,
+    sortOrder: 10,
     links: {
-      website: "https://github.com/OpenE2140/OpenE2140",
+      website: "https://opene2140.net/",
       github: "https://github.com/OpenE2140/OpenE2140",
     },
     installMethod: "playbound_installer",
     installConfig: {
       playbound_installer: {
-        kind: "github-zip",
+        kind: "locate-then-zip",
         repo: "OpenE2140/OpenE2140",
-        assetPattern: "winportable\\.zip$|\\.zip$",
-        exeHint: "OpenE2140|OpenRA",
-        note: "Earth 2140 standalone OpenRA port.",
+        assetPattern: "OpenE2140-.*-x64-winportable\\.zip$",
+        exeHint: "OpenE2140",
+        note: "Requires Earth 2140 Trilogy game files (GOG). Locate the GOG install, then PlayBound overlays the OpenE2140 portable build.",
       },
     },
     features: ["Singleplayer", "Multiplayer", "Earth 2140", "Futuristic RTS"],
-    tags: ["OpenRA", "Earth 2140", "Retro RTS"],
-    aliases: ["Earth 2140", "Open Earth 2140"],
+    tags: ["Earth 2140", "Retro RTS", "Open Source"],
+    aliases: ["Earth 2140", "Open Earth 2140", "OpenE2140"],
     verificationLevel: "community_verified",
   },
   {
     gameSlug: "openra",
     slug: "ra2",
-    name: "Red Alert 2 (OpenRA Port)",
+    name: "Romanov's Vengeance (Red Alert 2)",
     shortDescription:
       "Community recreation of Red Alert 2 mechanics and factions on the OpenRA platform.",
     description:
@@ -4313,17 +4361,17 @@ export const editions: EditionSeed[] = [
     isDefault: false,
     sortOrder: 70,
     links: {
-      website: "https://github.com/OpenRA/ra2",
-      github: "https://github.com/OpenRA/ra2",
+      website: "https://github.com/MustaphaTR/Romanovs-Vengeance",
+      github: "https://github.com/MustaphaTR/Romanovs-Vengeance",
     },
     installMethod: "playbound_installer",
     installConfig: {
       playbound_installer: {
         kind: "github-zip",
-        repo: "OpenRA/ra2",
-        assetPattern: "\\.zip$",
-        exeHint: "ra2|OpenRA",
-        note: "Red Alert 2 community OpenRA client.",
+        repo: "MustaphaTR/Romanovs-Vengeance",
+        assetPattern: "Romanovs\\.Vengeance-.*-x64-winportable\\.zip$",
+        exeHint: "Romanovs Vengeance|OpenRA",
+        note: "Romanov's Vengeance x64 Windows portable, a maintained Red Alert 2 OpenRA client.",
       },
     },
     features: ["Singleplayer", "Multiplayer", "Red Alert 2", "Competitive"],
@@ -4558,6 +4606,90 @@ export const editions: EditionSeed[] = [
     aliases: ["Asuna Luanti"],
     verificationLevel: "community_verified",
   },
+  // --- Earth 2140 Trilogy ---
+  {
+    gameSlug: "earth-2140-trilogy",
+    slug: "official",
+    name: "Earth 2140 Trilogy — GOG Master",
+    shortDescription: "DRM-free GOG trilogy (Earth 2140 + mission packs).",
+    description:
+      "The licensed GOG Earth 2140 Trilogy. Required for OpenE2140, which copies .WD assets from this install on first launch.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 20,
+    links: { website: "https://www.gog.com/en/game/earth_2140_trilogy" },
+    installMethod: "official_download",
+    installConfig: {
+      official_download: {
+        url: "https://www.gog.com/en/game/earth_2140_trilogy",
+      },
+    },
+    features: ["Singleplayer", "Multiplayer", "Story Campaign"],
+    tags: ["Classic", "RTS", "Sci-Fi"],
+    aliases: ["Earth 2140 GOG"],
+    verificationLevel: "official",
+  },
+  // --- Populous: The Beginning ---
+  {
+    gameSlug: "populous-the-beginning",
+    slug: "official",
+    name: "Populous: The Beginning — GOG Master (Default)",
+    shortDescription: "DRM-free GOG release with Undiscovered Worlds.",
+    description:
+      "Bullfrog's Populous: The Beginning from GOG, including the Undiscovered Worlds expansion. Use the Populous Reincarnated edition for modern online Matchmaker play.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: true,
+    sortOrder: 10,
+    links: { website: "https://www.gog.com/en/game/populous_the_beginning" },
+    installMethod: "official_download",
+    installConfig: {
+      official_download: {
+        url: "https://www.gog.com/en/game/populous_the_beginning",
+      },
+    },
+    features: ["Singleplayer", "Multiplayer", "Story Campaign"],
+    tags: ["Classic", "Strategy", "God Game"],
+    aliases: ["Populous 3", "PTB GOG"],
+    verificationLevel: "official",
+  },
+  {
+    gameSlug: "populous-the-beginning",
+    slug: "populous-reincarnated",
+    name: "Populous Reincarnated — Matchmaker",
+    shortDescription: "Community Matchmaker for online Populous: The Beginning.",
+    description:
+      "Populous Reincarnated's Matchmaker replaces the defunct EA lobby. Install the GOG master first, then download the Matchmaker from PopRe.net, point it at your Populous folder, and register a PopRe account.",
+    type: "community",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 20,
+    links: {
+      website: "https://www.popre.net/",
+    },
+    installMethod: "external_installer",
+    installConfig: {
+      external_installer: {
+        url: "https://www.popre.net/downloads.php",
+        instructions:
+          "Download Populous Matchmaker from PopRe. Requires the GOG Populous: The Beginning install.",
+      },
+    },
+    features: ["Multiplayer", "Community Content", "Custom Maps"],
+    tags: ["Classic", "Strategy", "Multiplayer"],
+    aliases: ["PopRe", "Populous Matchmaker", "populous-reincarnated"],
+    multiplayerGamingSteps: [
+      { platform: "all", text: "Install Populous: The Beginning (GOG master edition) first." },
+      { platform: "all", text: "Download and install the Populous Matchmaker from popre.net/downloads." },
+      { platform: "all", text: "Register on PopRe.net, open the Matchmaker, and point it at your Populous folder." },
+      { platform: "all", text: "Log in and host or join a game from the Matchmaker lobby." },
+    ],
+    verificationLevel: "community_verified",
+  },
 ];
 
 /** Clean display name for an edition pill/chip (e.g. removes trailing parenthesized subtitles). */
@@ -4611,5 +4743,3 @@ export function getDisplayEditionsForGame(gameSlug: string): EditionSeed[] {
 
   return gameEditions;
 }
-
-

@@ -5,6 +5,7 @@ const Platform = require("../platform");
 const { shouldLaunchThroughDosBox, dosExecutableMessage } = require("./executableFormat");
 const { dosBoxLaunchSpec } = require("./ManagedDosBox");
 const { requiresCompatibilityRunner, buildRunnerLaunchSpec } = require("./CompatibilityRunner");
+const { assaultCubeWorkingDirectory } = require("./assaultCubeLaunch");
 
 const JAVA_MISSING_MSG =
   "Java 17+ is required to run this game. PlayBound can install it for you — try Play again, or install Java from Settings.";
@@ -111,7 +112,7 @@ class GameLauncher {
    * Spawns a game process detached and returns the child process.
    * @param {string} targetPath - Path to the executable, .jar, or .app bundle
    * @param {string[]} args - Additional arguments
-   * @param {{ needsDosBox?: boolean, env?: Record<string, string | undefined> }} [opts]
+   * @param {{ gameSlug?: string, needsDosBox?: boolean, env?: Record<string, string | undefined> }} [opts]
    * @returns {import("child_process").ChildProcess}
    */
   static spawnGame(targetPath, args = [], opts = {}) {
@@ -206,9 +207,7 @@ class GameLauncher {
     const finalArgs = [...launchCommand.slice(1), ...args];
 
     // For .app bundles, cwd should be the parent of the bundle, not Contents/.
-    const cwd = String(launchPath).endsWith(".app")
-      ? path.dirname(launchPath)
-      : path.dirname(launchPath);
+    const cwd = this.resolveWorkingDirectory(launchPath, opts.gameSlug);
 
     /*
      * A game whose executable demands elevation.
@@ -258,6 +257,21 @@ class GameLauncher {
       windowsHide: false,
       shell: false,
     });
+  }
+
+  /**
+   * Some older portable games keep their executable in a bin directory while
+   * resolving assets relative to the package root. AssaultCube is one of them:
+   * starting bin_win32/ac_client.exe from bin_win32 makes its core textures
+   * disappear even though the install itself is complete. The game's own error
+   * says to run from the parent of the bin directory.
+   *
+   * Detect by game slug *or* the ac_client binary name so a locate/custom
+   * install still gets the right cwd. Walk past nested bin folders
+   * (bin_win32/x64) and recognise Linux/mac trees (bin_unix).
+   */
+  static resolveWorkingDirectory(launchPath, gameSlug) {
+    return assaultCubeWorkingDirectory(launchPath, gameSlug) || path.dirname(launchPath);
   }
 }
 

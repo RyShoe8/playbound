@@ -402,6 +402,33 @@ export const recipes = {
       );
     },
   },
+  /*
+   * Official dedicated binary (bin_unix/linux_64_server). Must run with cwd at
+   * the package root so config/ and packages/ resolve. -f sets game UDP port;
+   * the engine always also binds port+1 for info — hence portStride: 2.
+   * -mlocalhost keeps private party rooms off the public master.
+   */
+  assaultcube: {
+    portStart: 28763,
+    portEnd: 28782,
+    protocol: "udp",
+    portStride: 2,
+    binaries: [
+      path.join(GAMES_ROOT, "assaultcube", "ac_server"),
+      path.join(GAMES_ROOT, "assaultcube", "bin_unix", "linux_64_server"),
+      path.join(GAMES_ROOT, "assaultcube", "bin_unix", "linux_server"),
+      ...gameBin("assaultcube", ["ac_server", "linux_64_server", "linux_server"]),
+    ],
+    cwd: () => path.join(GAMES_ROOT, "assaultcube"),
+    args: (port, ctx) => {
+      const name = String(ctx.name || "PlayBound AssaultCube")
+        .replace(/[\x00-\x1f\x7f"]+/g, " ")
+        .trim()
+        .slice(0, 40);
+      return [`-c16`, `-n${name}`, `-f${port}`, `-mlocalhost`];
+    },
+    startupGraceMs: 1500,
+  },
   "medal-of-honor-allied-assault": {
     portStart: 12203,
     portEnd: 12222,

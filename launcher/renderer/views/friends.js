@@ -3394,11 +3394,15 @@ async function launchPartyGame(party) {
   const detail = {
     title: party.gameTitle || catalogGame?.title || slug,
     slug,
+    // Always the catalog game slug (not edition slug) so native controller
+    // profiles like bombsquad resolve for the Play-time pad prompt.
     gameSlug: slug,
     controllerSupport: catalogGame?.controllerSupport,
     hasControllerSupport: catalogGame?.hasControllerSupport,
     features: catalogGame?.features,
     tags: catalogGame?.tags,
+    gameFeatures: catalogGame?.features,
+    gameTags: catalogGame?.tags,
   };
 
   const hosted = party.hosted || {};

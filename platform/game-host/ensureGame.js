@@ -95,6 +95,18 @@ const ENSURE_SPECS = {
     binaryNames: ["hurrycurry-server", "server-x86_64-unknown-linux-gnu"],
     linkAs: "hurrycurry-server",
   },
+  assaultcube: {
+    archiveUrl:
+      process.env.ASSAULTCUBE_LINUX_URL ||
+      "https://github.com/assaultcube/AC/releases/download/v1.3.0.2/AssaultCube_v1.3.0.2_LockdownEdition_RC1.tar.bz2",
+    binaryNames: [
+      "bin_unix/linux_64_server",
+      "bin_unix/linux_server",
+      "linux_64_server",
+      "linux_server",
+    ],
+    linkAs: "ac_server",
+  },
 };
 
 export function canEnsure(slug) {
@@ -319,7 +331,8 @@ async function ensureGameUnlocked(slug) {
       const linkPath = path.join(gameDir, spec.linkAs);
       if (!(await exists(linkPath))) {
         try {
-          await symlink(path.basename(binary), linkPath);
+          const target = path.relative(gameDir, binary) || path.basename(binary);
+          await symlink(target, linkPath);
         } catch {
           await cp(binary, linkPath);
         }

@@ -203,6 +203,44 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       "No dedicated server on the VPS, so the leader's PC is the room.",
   },
 
+  assaultcube: {
+    gameSlug: "assaultcube",
+    title: "AssaultCube",
+    tier: "tier2_automated_server",
+    adapterType: "managed-server",
+    protocol: "udp",
+    host: {
+      port: 28763,
+      protocol: "udp",
+      binaryHint: "ac_server",
+      /*
+       * Dedicated spawn args live in recipes.js (-c / -n / -f / -mlocalhost).
+       * No argsTemplate: local launcher should not try to start ac_server on
+       * the player's PC from a Connect template.
+       */
+    },
+    client: {
+      /*
+       * main.cpp connectprotocol(): assaultcube://host[:port] becomes
+       * `connect host port` after auth. Default game port is 28763; the
+       * server also binds port+1 (28764) for info/ping.
+       */
+      launchArguments: ["assaultcube://{host}:{port}"],
+    },
+    selfHost: {
+      port: 28763,
+      protocol: "udp",
+      verified: true,
+      inGameSteps: [
+        "Host: Multiplayer → Create → start the match (default UDP 28763)",
+        "Friends: Click Join Game in the launcher",
+      ],
+    },
+    notes:
+      "Dedicated ac_server on the PlayBound VPS (ensure downloads the official Linux archive). " +
+      "Peer host still works: the leader creates a server from Multiplayer; joiners use assaultcube://host:port.",
+  },
+
   keeperfx: {
     gameSlug: "keeperfx",
     title: "KeeperFX",
@@ -1173,6 +1211,7 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     adapterType: "managed-server",
     protocol: "udp",
     host: { port: 43210, protocol: "udp", binaryHint: "bombsquad_server" },
+    // No CLI join — party Join copies host:port and shows Gather → Manual steps.
     client: { inGameJoinPrompt: true },
     virtualLan: {
       requiresBroadcast: false,
@@ -1181,7 +1220,27 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
         "Everyone else: open Gather and connect to the copied private address",
       ],
     },
-    notes: "Official Ballistica headless server; clients enter the private host and port in-game.",
+    notes:
+      "Official Ballistica headless server; clients enter the private host and port in-game (Gather → Manual). Ballistica's public party list is in-client only — there is no official complete HTTP master for PlayBound's server browser, so we do not invent player counts.",
+  },
+
+  "populous-the-beginning": {
+    gameSlug: "populous-the-beginning",
+    title: "Populous: The Beginning",
+    tier: "tier1_improved",
+    adapterType: "direct-ip",
+    protocol: "udp",
+    client: {
+      inGameJoinPrompt: true,
+      inGameSteps: [
+        "Install the Populous Reincarnated Matchmaker edition",
+        "Open the Matchmaker and point it at your GOG Populous folder",
+        "Log in on PopRe.net, then host or join from the Matchmaker lobby",
+      ],
+    },
+    notes:
+      "Online play goes through Populous Reincarnated's Matchmaker (popre.net), not a PlayBound VPS recipe. " +
+      "Party Join copies reachability and shows Matchmaker steps; there is no CLI connect string.",
   },
 
   wolfenstein: {
@@ -1979,6 +2038,8 @@ export const EXPECTED_NON_CATALOG_ADAPTERS: ReadonlySet<string> = new Set([
   // Now editions of another game.
   "keeperfx", // Dungeon Keeper
   "tes3mp", // Morrowind
+  // Live catalog / launcher-install slug; not yet in the seed games.ts file.
+  "assaultcube",
 ]);
 
 /**

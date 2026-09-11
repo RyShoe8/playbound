@@ -588,10 +588,14 @@ async function waitForServerPort(port, protocol, child, timeoutMs) {
 }
 
 async function allocPort(recipe, slug) {
-  for (let port = recipe.portStart; port <= recipe.portEnd; port += 1) {
+  const stride = Math.max(1, Number(recipe.portStride) || 1);
+  for (let port = recipe.portStart; port <= recipe.portEnd; port += stride) {
     const key = `${slug}:${port}`;
     if (usedPorts.has(key)) continue;
     if (!(await isOsPortFree(port, recipe.protocol))) continue;
+    // AssaultCube (and similar) also bind port+1 for info — skip if that
+    // secondary UDP port is already taken so two rooms do not collide.
+    if (stride > 1 && !(await isOsPortFree(port + 1, recipe.protocol))) continue;
     usedPorts.add(key);
     return port;
   }

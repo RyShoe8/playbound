@@ -20,6 +20,10 @@ import { fetchStarWarsGalaxiesServers } from "./providers/star-wars-galaxies";
 import { fetchMorrowindServers } from "./providers/morrowind";
 import { fetchRenegadeXServers } from "./providers/renegade-x";
 import {
+  fetchOpenMohaaPlayerCount,
+  fetchOpenMohaaServers,
+} from "./providers/openmohaa";
+import {
   fetchSteamConcurrentPlayers,
   fetchTombRaider123Players,
   fetchVillagersAndHeroesPlayers,
@@ -382,6 +386,18 @@ const providers: Record<string, ServerProvider> = {
     slug: "renegade-x",
     fetchServers: fetchRenegadeXServers,
   },
+  // 333networks GameSpy-style master (credit 333networks). OpenMoHAA clients
+  // join the shared `mohaa` list; cache ≥8 min per their polling policy.
+  openmohaa: {
+    slug: "openmohaa",
+    fetchServers: fetchOpenMohaaServers,
+    fetchPlayerCount: fetchOpenMohaaPlayerCount,
+  },
+  "medal-of-honor-allied-assault": {
+    slug: "medal-of-honor-allied-assault",
+    fetchServers: fetchOpenMohaaServers,
+    fetchPlayerCount: fetchOpenMohaaPlayerCount,
+  },
 };
 
 /**
@@ -402,6 +418,8 @@ const providers: Record<string, ServerProvider> = {
  *   what supplies both)
  * - freedoom, lincity-ng, daggerfall, pixreveal (not server-browser games)
  * - gamebuddies-io (browser party; no public master)
+ * - bombsquad (Ballistica public parties are in-client only; no official
+ *   complete HTTP master list for PlayBound to browse or sum)
  * - openciv3, tomb-raider-123 (offline single-player games with no service to query;
  *   they previously reported Civilization III and Tomb Raider 1996 Steam counts
  *   as proxies, which measured a different audience under the project's name)

@@ -3,12 +3,16 @@
 const fs = require("fs");
 
 /**
- * Native uninstallers belong to whole products, not PlayBound editions.
- * An edition is removed by deleting only its managed folder; invoking a
- * registry uninstaller here can uninstall the separately-owned base game.
+ * Community/add-on editions are removed by deleting only their managed
+ * folder; invoking a registry uninstaller for one can remove its separately
+ * owned base game. The official edition is the product itself, though, and an
+ * installer-backed official edition (Freeciv, for example) must be allowed to
+ * run its own uninstaller.
  */
-function mayRunNativeUninstaller(editionSlug) {
-  return !editionSlug;
+function mayRunNativeUninstaller(editionSlug, entry = null) {
+  if (!editionSlug) return true;
+  if (editionSlug !== "official") return false;
+  return entry?.kind === "direct-installer" || entry?.kind === "github-installer";
 }
 
 /**

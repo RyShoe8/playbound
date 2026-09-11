@@ -291,6 +291,11 @@ test("records why a native game has no writer", () => {
   for (const slug of ["re-volt-rvgl", "rvgl-original", "rvgl-online", "rvgl"]) {
     assert.strictEqual(controllerSupportFor(slug).kind, "config", slug);
   }
+  for (const slug of ["openmohaa", "medal-of-honor-allied-assault", "bombsquad"]) {
+    assert.strictEqual(controllerSupportFor(slug).kind, "native", slug);
+  }
+  // Shared edition slug — must not be treated as BombSquad (or any game) native.
+  assert.notStrictEqual(controllerSupportFor("standalone-pc").kind, "native");
 });
 
 /* ── locating a config that is not in the install directory ────────────── */
