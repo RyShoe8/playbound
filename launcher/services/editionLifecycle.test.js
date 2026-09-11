@@ -10,6 +10,21 @@ test("only installer-backed official editions invoke a native product uninstalle
   assert.equal(mayRunNativeUninstaller(null), true);
 });
 
+test("last owner of a shared installer path may run the product uninstaller", () => {
+  assert.equal(
+    mayRunNativeUninstaller("uqm-classic", { kind: "direct-installer" }, { lastOwnerOfInstallPath: true }),
+    true
+  );
+  assert.equal(
+    mayRunNativeUninstaller("uqm-classic", { kind: "direct-zip" }, { lastOwnerOfInstallPath: true }),
+    false
+  );
+  assert.equal(
+    mayRunNativeUninstaller("uqm-classic", { kind: "direct-installer" }),
+    false
+  );
+});
+
 test("normal TES3MP play keeps the client for its locally hosted server", () => {
   const info = { dir: "C:\\Games\\morrowind\\tes3mp", exe: "C:\\Games\\morrowind\\tes3mp\\tes3mp.exe" };
   assert.equal(

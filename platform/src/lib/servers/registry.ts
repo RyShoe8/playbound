@@ -32,6 +32,7 @@ import {
   fetchMarathon2Players,
   fetchWarThunderPlayers,
   fetchWorldOfSeaBattlePlayers,
+  fetchSlapshotReboundPlayers,
   fetchSwtorPlayers,
   fetchMrBoomPlayers,
   fetchAllegiancePlayers,
@@ -160,6 +161,10 @@ const providers: Record<string, ServerProvider> = {
   holocure: {
     slug: "holocure",
     fetchServers: fetchHoloCurePlayers,
+  },
+  "slapshot-rebound": {
+    slug: "slapshot-rebound",
+    fetchServers: fetchSlapshotReboundPlayers,
   },
   alephone: {
     slug: "alephone",

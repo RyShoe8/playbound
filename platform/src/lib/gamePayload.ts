@@ -324,7 +324,7 @@ export function defaultArtFor(genres: string[] = [], slug = ""): { from: string;
 
 /** Shared shapes for the deeper editorial fields. */
 export const installStepSchema = z.object({
-  platform: z.enum(["all", "windows", "macos", "linux"]).default("all"),
+  platform: z.enum(["all", "windows", "macos", "linux", "android", "ios"]).default("all"),
   text: z.string().trim().min(1).max(2000),
   // Wrapped in z.optional so the key itself is optional in the inferred type,
   // matching InstallStep. A bare .transform() would make it required-but-

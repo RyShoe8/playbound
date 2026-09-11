@@ -19,6 +19,7 @@ export const NEW_GAME_SLUGS: readonly string[] = [
 /** `gameSlug/editionSlug` pairs to create only when absent. */
 export const NEW_EDITION_KEYS: readonly string[] = [
   "s-t-a-l-k-e-r-call-of-pripyat/official",
+  "s-t-a-l-k-e-r-call-of-pripyat/anomaly",
   "s-t-a-l-k-e-r-shadow-of-chernobyl/official",
   "s-t-a-l-k-e-r-shadow-of-chernobyl/lost-alpha",
   "s-t-a-l-k-e-r-shadow-of-chernobyl/true-stalker",
@@ -36,10 +37,21 @@ export const NEW_MOD_SLUGS: readonly string[] = [];
 
 /**
  * Existing catalog games: $set ONLY these fields.
- * FreeTrain editorial/wrapper, Hurry Curry desktop, Idle Slayer mobile,
- * Seven Kingdoms exe paths.
  */
 export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
+  "alien-swarm": [
+    "qualityBar",
+    "longDescription",
+    "whyWePickedIt",
+    "thatOneThing",
+    "bestFor",
+    "notFor",
+    "comparableTo",
+    "faq",
+    "installSteps",
+    "systemRequirements",
+    "hardwareRequirements",
+  ],
   freetrain: [
     "qualityBar",
     "longDescription",
@@ -83,6 +95,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "browserPlayable",
     "launcherInstall",
     "website",
+    "installSteps",
   ],
   "slapshot-rebound": [
     "features",
@@ -105,19 +118,46 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "systemRequirements",
     "hardwareRequirements",
   ],
+  "the-spike-cross": [
+    "platforms",
+    "androidStoreUrl",
+    "iosStoreUrl",
+    "features",
+    "launcherInstall",
+    "systemRequirements",
+    "hardwareRequirements",
+    "installSteps",
+  ],
+  "unknown-horizons": [
+    "platforms",
+    "launcherInstall",
+    "systemRequirements",
+    "hardwareRequirements",
+  ],
 };
 
 /** Existing editions: $set ONLY these fields. */
 export const PATCH_EDITION_FIELDS: Readonly<Record<string, readonly string[]>> = {
   "s-t-a-l-k-e-r-call-of-pripyat/official": ["name", "description"],
+  "s-t-a-l-k-e-r-call-of-pripyat/anomaly": [
+    "name",
+    "description",
+    "shortDescription",
+    "visibility",
+    "status",
+    "installMethod",
+    "installConfig",
+    "requirements",
+    "hardwareRequirements",
+  ],
 };
 
 /**
  * Existing editions to retire (hide from public listings). $set only
  * visibility + status — never delete, never upsert.
+ * Anomaly is restored this wave (see NEW_EDITION_KEYS + PATCH_EDITION_FIELDS).
  */
 export const RETIRE_EDITION_KEYS: readonly string[] = [
-  "s-t-a-l-k-e-r-call-of-pripyat/anomaly",
   "s-t-a-l-k-e-r-call-of-pripyat/gamma",
   "s-t-a-l-k-e-r-call-of-pripyat/gunslinger",
 ];

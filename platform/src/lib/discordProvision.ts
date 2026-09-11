@@ -78,12 +78,11 @@ export async function requestDiscordProvisionAll(): Promise<unknown> {
  * the same report with nothing applied.
  */
 export async function requestDiscordReconcile(
-  opts?: { dryRun?: boolean }
+  opts: { dryRun?: boolean } = {}
 ): Promise<unknown> {
-  return postBot("/reconcile", { dryRun: Boolean(opts?.dryRun) });
+  return postBot("/reconcile", { dryRun: Boolean(opts.dryRun) });
 }
 
-/** True when the game already has a PlayBound Discord channel id stored. */
 export function hasPlayboundDiscordChannel(doc: {
   communityLinks?: { playboundDiscord?: { channelId?: string | null } | null } | null;
 }): boolean {
@@ -100,25 +99,27 @@ function absoluteCatalogMedia(url?: string | null): string | null {
 /**
  * Tell the Discord bot to post in server #general. Production only —
  * preview/local must not announce even if the bot webhook env is set.
+ *
+ * One embed only: hero image + thatOneThing + title linking to the game page.
  */
 export async function requestNewGameDiscordAnnounce(game: {
   slug: string;
   title: string;
-  description?: string | null;
+  thatOneThing?: string | null;
   tagline?: string | null;
   coverImage?: string | null;
   screenshots?: string[] | null;
 }): Promise<void> {
   if (!IS_PRODUCTION || !game.slug) return;
-  const description = (game.description || game.tagline || "").trim().slice(0, 2000);
+  const thatOneThing = (game.thatOneThing || game.tagline || "").trim().slice(0, 2000);
   const imageUrl =
-    absoluteCatalogMedia(game.screenshots?.find((u) => u?.trim()) || null) ||
-    absoluteCatalogMedia(game.coverImage);
+    absoluteCatalogMedia(game.coverImage) ||
+    absoluteCatalogMedia(game.screenshots?.find((u) => u?.trim()) || null);
   try {
     await postBot("/announce-game", {
       slug: game.slug,
       title: game.title,
-      description,
+      thatOneThing,
       url: `${SITE_URL}/games/${encodeURIComponent(game.slug)}`,
       imageUrl,
     });

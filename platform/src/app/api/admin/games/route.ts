@@ -93,7 +93,7 @@ export async function POST(req: Request) {
       await requestNewGameDiscordAnnounce({
         slug: doc.slug,
         title: doc.title,
-        description: doc.description,
+        thatOneThing: doc.thatOneThing,
         tagline: doc.tagline,
         coverImage: doc.coverImage,
         screenshots: doc.screenshots,

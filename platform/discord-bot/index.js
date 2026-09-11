@@ -1447,7 +1447,10 @@ async function ensureEventsChannel(guild) {
 async function announceNewCatalogGame(payload) {
   const title = String(payload.title || "New game").slice(0, 256);
   const url = String(payload.url || `${SITE_URL}/games/${payload.slug || ""}`);
-  const description = String(payload.description || "A new game is on PlayBound.").slice(0, 4000);
+  const thatOneThing = String(payload.thatOneThing || payload.description || "")
+    .replace(/https?:\/\/\S+/gi, "")
+    .trim()
+    .slice(0, 4000);
   const imageUrl = typeof payload.imageUrl === "string" && /^https?:\/\//i.test(payload.imageUrl)
     ? payload.imageUrl
     : null;
@@ -1462,14 +1465,12 @@ async function announceNewCatalogGame(payload) {
     .setColor(0x8b5cf6)
     .setTitle(title)
     .setURL(url)
-    .setDescription(description)
     .setFooter({ text: "New on PlayBound" });
+  if (thatOneThing) embed.setDescription(thatOneThing);
   if (imageUrl) embed.setImage(imageUrl);
 
-  await channel.send({
-    content: `**${title}** was just added to the catalog.`,
-    embeds: [embed],
-  });
+  // Single embed only — no content string (avoids extra unfurls / link surfaces).
+  await channel.send({ embeds: [embed] });
 }
 
 const commands = [

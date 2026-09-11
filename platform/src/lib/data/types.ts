@@ -75,7 +75,7 @@ export interface QualityBar {
 /** One step in a per-platform install guide. */
 export interface InstallStep {
   /** Which platform this step applies to; "all" for shared steps. */
-  platform: "all" | "windows" | "macos" | "linux";
+  platform: "all" | "windows" | "macos" | "linux" | "android" | "ios";
   /** Imperative instruction. */
   text: string;
   /** Optional command to run verbatim. */

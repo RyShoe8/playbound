@@ -112,7 +112,11 @@ const RetailOfferSchema = new Schema(
 
 const InstallStepSchema = new Schema(
   {
-    platform: { type: String, enum: ["all", "windows", "macos", "linux"], default: "all" },
+    platform: {
+      type: String,
+      enum: ["all", "windows", "macos", "linux", "android", "ios"],
+      default: "all",
+    },
     text: { type: String, required: true },
     command: { type: String, default: null },
   },

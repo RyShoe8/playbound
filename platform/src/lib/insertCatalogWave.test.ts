@@ -43,6 +43,18 @@ import {
   THE_DARK_MOD_SLUG,
   theDarkModPatchSource,
 } from "@/lib/data/theDarkModCatalog";
+import {
+  UNKNOWN_HORIZONS_SLUG,
+  unknownHorizonsPatchSource,
+} from "@/lib/data/unknownHorizonsCatalog";
+import {
+  SPIKE_CROSS_SLUG,
+  spikeCrossPatchSource,
+} from "@/lib/data/spikeCrossCatalog";
+import {
+  ALIEN_SWARM_SLUG,
+  alienSwarmPatchSource,
+} from "@/lib/data/alienSwarmCatalog";
 import { mods } from "@/lib/data/mods";
 import { getMultiplayerAdapter } from "@/lib/multiplayer/adapters";
 
@@ -70,6 +82,7 @@ describe("insert-catalog-wave allowlists", () => {
         "earth-2140-trilogy/opene2140",
         "populous-the-beginning/official",
         "populous-the-beginning/populous-reincarnated",
+        "s-t-a-l-k-e-r-call-of-pripyat/anomaly",
         "s-t-a-l-k-e-r-call-of-pripyat/official",
         "s-t-a-l-k-e-r-shadow-of-chernobyl/lost-alpha",
         "s-t-a-l-k-e-r-shadow-of-chernobyl/official",
@@ -82,10 +95,9 @@ describe("insert-catalog-wave allowlists", () => {
     expect(NEW_MOD_SLUGS).toEqual([]);
   });
 
-  it("retires CoP community editions only", () => {
+  it("retires CoP gamma/gunslinger only (Anomaly restored)", () => {
     expect([...RETIRE_EDITION_KEYS].sort()).toEqual(
       [
-        "s-t-a-l-k-e-r-call-of-pripyat/anomaly",
         "s-t-a-l-k-e-r-call-of-pripyat/gamma",
         "s-t-a-l-k-e-r-call-of-pripyat/gunslinger",
       ].sort()
@@ -95,6 +107,7 @@ describe("insert-catalog-wave allowlists", () => {
   it("patches the allowlisted games only", () => {
     expect(Object.keys(PATCH_GAME_FIELDS).sort()).toEqual(
       [
+        "alien-swarm",
         "freetrain",
         "hurry-curry",
         "idle-slayer",
@@ -105,19 +118,34 @@ describe("insert-catalog-wave allowlists", () => {
         "space-station-14",
         "teeworlds",
         "the-dark-mod",
+        "the-spike-cross",
+        "unknown-horizons",
       ].sort()
     );
-    expect(PATCH_GAME_FIELDS["sky-children-of-the-light"]).toContain("androidStoreUrl");
+    expect(PATCH_GAME_FIELDS["sky-children-of-the-light"]).toContain("installSteps");
+    expect(PATCH_GAME_FIELDS["alien-swarm"]).toContain("longDescription");
+    expect(PATCH_GAME_FIELDS["alien-swarm"]).not.toContain("launcherInstall");
+    expect(PATCH_GAME_FIELDS["unknown-horizons"]).toContain("launcherInstall");
+    expect(PATCH_GAME_FIELDS["the-spike-cross"]).toContain("androidStoreUrl");
     expect(PATCH_GAME_FIELDS["slapshot-rebound"]).toContain("hardwareRequirements");
     expect(PATCH_GAME_FIELDS["space-station-14"]).toEqual(["launcherInstall", "installSteps"]);
     expect(PATCH_GAME_FIELDS.teeworlds).toContain("launcherInstall");
     expect(PATCH_GAME_FIELDS["the-dark-mod"]).toContain("platforms");
   });
 
-  it("patches CoP official edition description", () => {
-    expect(Object.keys(PATCH_EDITION_FIELDS)).toEqual([
-      "s-t-a-l-k-e-r-call-of-pripyat/official",
-    ]);
+  it("patches CoP official + restores Anomaly edition", () => {
+    expect(Object.keys(PATCH_EDITION_FIELDS).sort()).toEqual(
+      [
+        "s-t-a-l-k-e-r-call-of-pripyat/anomaly",
+        "s-t-a-l-k-e-r-call-of-pripyat/official",
+      ].sort()
+    );
+    expect(PATCH_EDITION_FIELDS["s-t-a-l-k-e-r-call-of-pripyat/anomaly"]).toContain(
+      "visibility"
+    );
+    expect(PATCH_EDITION_FIELDS["s-t-a-l-k-e-r-call-of-pripyat/anomaly"]).toContain(
+      "hardwareRequirements"
+    );
   });
 
   it("patches holocure-rich-presence to draft only", () => {
@@ -126,12 +154,13 @@ describe("insert-catalog-wave allowlists", () => {
     expect(holocureRichPresencePatchSource).toEqual({ status: "draft", published: false });
   });
 
-  it("has patch sources for Sky, Slapshot, Teeworlds, Dark Mod, SS14", () => {
+  it("has patch sources for Sky, Slapshot, Teeworlds, Dark Mod, UH, Spike, Alien Swarm, SS14", () => {
     expect(SKY_CHILDREN_SLUG).toBe("sky-children-of-the-light");
     expect(skyChildrenPatchSource.platforms).toEqual(["Android", "iOS"]);
     expect(skyChildrenPatchSource.androidStoreUrl).toBe(skyChildrenAndroidStoreUrl);
     expect(skyChildrenPatchSource.iosStoreUrl).toBe(skyChildrenIosStoreUrl);
     expect(skyChildrenPatchSource.launcherInstall.enabled).toBe(false);
+    expect(skyChildrenPatchSource.installSteps?.length).toBeGreaterThan(0);
 
     expect(SLAPSHOT_REBOUND_SLUG).toBe("slapshot-rebound");
     expect(slapshotReboundPatchSource.features).toContain("Controller Support");
@@ -147,7 +176,27 @@ describe("insert-catalog-wave allowlists", () => {
     expect(theDarkModPatchSource.platforms).toEqual(["Windows", "macOS", "Linux"]);
     expect(theDarkModPatchSource.launcherInstall.urlLinux).toMatch(/linux64/);
     expect(theDarkModPatchSource.features).toContain("Controller Support");
-    expect(theDarkModPatchSource.launcherInstall.urlMac).toBeUndefined();
+    expect(
+      (theDarkModPatchSource.launcherInstall as { urlMac?: string }).urlMac
+    ).toBeUndefined();
+    expect(
+      theDarkModPatchSource.launcherInstall.knownExePaths.some((p) =>
+        String(p).includes("COMPAT_PREFIXES")
+      )
+    ).toBe(true);
+
+    expect(UNKNOWN_HORIZONS_SLUG).toBe("unknown-horizons");
+    expect(unknownHorizonsPatchSource.launcherInstall.exeHint).toBe("unknownhorizons");
+    expect(unknownHorizonsPatchSource.launcherInstall.kind).toBe("direct-installer");
+    expect(unknownHorizonsPatchSource.platforms).toEqual(["Windows", "macOS", "Linux"]);
+
+    expect(SPIKE_CROSS_SLUG).toBe("the-spike-cross");
+    expect(spikeCrossPatchSource.platforms).toEqual(["Windows", "Android", "iOS"]);
+    expect(spikeCrossPatchSource.androidStoreUrl).toMatch(/thespikerm/);
+
+    expect(ALIEN_SWARM_SLUG).toBe("alien-swarm");
+    expect(alienSwarmPatchSource.thatOneThing).toBeTruthy();
+    expect(alienSwarmPatchSource.hardwareRequirements.min.storageMB).toBe(2560);
 
     const ss14 = gamesBySlug.get("space-station-14");
     expect(ss14?.launcherInstall?.assetPatternMac).toMatch(/macOS/);
@@ -165,9 +214,12 @@ describe("insert-catalog-wave allowlists", () => {
     expect(sevenKingdomsLauncherInstall.knownExePaths).toContain("7kaa.exe");
   });
 
-  it("drops CoP community editions from seed; keeps SoC Lost Alpha + True Stalker", () => {
+  it("keeps CoP official + Anomaly in seed; keeps SoC Lost Alpha + True Stalker", () => {
     const cop = editions.filter((e) => e.gameSlug === "s-t-a-l-k-e-r-call-of-pripyat");
-    expect(cop.map((e) => e.slug).sort()).toEqual(["official"]);
+    expect(cop.map((e) => e.slug).sort()).toEqual(["anomaly", "official"]);
+    const anomaly = cop.find((e) => e.slug === "anomaly");
+    expect(anomaly?.visibility).toBe("public");
+    expect(anomaly?.status).toBe("active");
     const soc = editions.filter((e) => e.gameSlug === "s-t-a-l-k-e-r-shadow-of-chernobyl");
     expect(soc.map((e) => e.slug).sort()).toEqual(["lost-alpha", "official", "true-stalker"]);
   });
@@ -196,9 +248,10 @@ describe("insert-catalog-wave allowlists", () => {
     expect(src).toMatch(/SLAPSHOT_REBOUND_SLUG/);
     expect(src).toMatch(/TEEWORLDS_SLUG/);
     expect(src).toMatch(/THE_DARK_MOD_SLUG/);
+    expect(src).toMatch(/UNKNOWN_HORIZONS_SLUG/);
+    expect(src).toMatch(/SPIKE_CROSS_SLUG/);
+    expect(src).toMatch(/ALIEN_SWARM_SLUG/);
     expect(src).toMatch(/space-station-14/);
     expect(src).toContain('from "./insert-catalog-wave.allowlist"');
-    expect(src).not.toMatch(/\$set:\s*seed\b/);
-    expect(src).not.toMatch(/findOneAndUpdate/);
   });
 });

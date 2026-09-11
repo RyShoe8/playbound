@@ -54,7 +54,7 @@ Manual triggers:
 
 ## New catalog game in #general
 
-When a game is **created already published** or **first published** on production (`VERCEL_ENV=production`), the Next app POSTs `/announce-game` to this worker. The bot posts in the server’s `#general` (not franchise `#general` channels under game categories).
+When a game is **created already published** or **first published** on production (`VERCEL_ENV=production`), the Next app POSTs `/announce-game` to this worker. The bot posts **one embed** in the server’s `#general` (not franchise `#general` channels under game categories): hero image, `thatOneThing`, and the title linked to the game page — no extra content links.
 
 Optional env: `DISCORD_GENERAL_CHANNEL_ID` to pin the exact channel.
 
