@@ -165,6 +165,18 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     portEnd: 43230,
     protocol: "udp",
   },
+  /*
+   * Each room binds UDP port and port+1 (game + info). catalog defaultPort is
+   * the game port; recipes.js uses portStride: 2 so rooms do not steal each
+   * other's info ports.
+   */
+  assaultcube: {
+    slug: "assaultcube",
+    title: "AssaultCube",
+    defaultPort: 28763,
+    portEnd: 28782,
+    protocol: "udp",
+  },
   "wolfenstein-enemy-territory": {
     slug: "wolfenstein-enemy-territory",
     title: "Wolfenstein: Enemy Territory",

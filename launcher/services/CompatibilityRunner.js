@@ -250,7 +250,12 @@ function buildRunnerLaunchSpec(targetExe, programArgs = [], options = {}) {
   }
 
   const prefixDir = getGamePrefixDirectory(options.gameSlug || path.basename(targetExe, ".exe"), options.appDataPath);
-  const cwd = path.dirname(targetExe);
+  /*
+   * Same package-root rule as native spawn. AssaultCube under Wine still needs
+   * cwd above bin_win32 or textures vanish — path.dirname(exe) is not enough.
+   */
+  const { assaultCubeWorkingDirectory } = require("./assaultCubeLaunch");
+  const cwd = assaultCubeWorkingDirectory(targetExe, options.gameSlug) || path.dirname(targetExe);
 
   if (runner.type === "proton") {
     // Proton launch specification

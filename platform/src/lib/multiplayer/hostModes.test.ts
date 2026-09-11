@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   findOrphanedAdapters,
+  getConnectArgsTemplate,
+  getDefaultGamePort,
   getMultiplayerAdapter,
   MULTIPLAYER_ADAPTERS,
 } from "./adapters";
@@ -49,6 +51,12 @@ describe("host mode configuration", () => {
     // the only way it works, so it must not require a verification entry.
     expect(hostModesFor("marathon-2")).toEqual(["self"]);
     expect(canUseDedicated("marathon-2")).toBe(false);
+
+    // AssaultCube: peer host in Multiplayer, plus VPS dedicated ac_server.
+    expect(hostModesFor("assaultcube")).toEqual(["self", "dedicated"]);
+    expect(canSelfHost("assaultcube")).toBe(true);
+    expect(canUseDedicated("assaultcube")).toBe(true);
+    expect(publicLobbyPortFor("assaultcube")).toEqual({ port: 28763, protocol: "udp" });
   });
 
   it("gives a VPS-only game just the dedicated mode", () => {
@@ -147,7 +155,17 @@ describe("host mode configuration", () => {
     expect(getMultiplayerAdapter(parent).gameSlug).toBe(parent);
     expect(getMultiplayerAdapter(parent).adapterType).toBe("managed-server");
     expect(canUseDedicated(parent)).toBe(true);
-    expect(defaultHostMode(parent)).toBe("dedicated");
+    // 333networks public list is preferred when present; VPS dedicated stays available.
+    expect(hostModesFor(parent)).toEqual(["public", "dedicated"]);
+    expect(defaultHostMode(parent)).toBe("public");
+  });
+
+  it("offers AssaultCube peer host and PlayBound dedicated", () => {
+    expect(getMultiplayerAdapter("assaultcube").adapterType).toBe("managed-server");
+    expect(getConnectArgsTemplate("assaultcube")).toEqual(["assaultcube://{host}:{port}"]);
+    expect(getDefaultGamePort("assaultcube")).toBe(28763);
+    expect(hostModesFor("assaultcube")).toEqual(["self", "dedicated"]);
+    expect(defaultHostMode("assaultcube")).toBe("dedicated");
   });
 
   it("still falls back to `official` for a genuinely unknown game", () => {
@@ -174,7 +192,15 @@ describe("orphaned adapters", () => {
 
   it("does not report deliberate aliases or folded-in editions", () => {
     const orphans = findOrphanedAdapters(["warzone-2100"]);
-    for (const expected of ["0-ad", "marathon", "alephone", "aleph-one", "keeperfx", "tes3mp"]) {
+    for (const expected of [
+      "0-ad",
+      "marathon",
+      "alephone",
+      "aleph-one",
+      "keeperfx",
+      "tes3mp",
+      "assaultcube",
+    ]) {
       expect(orphans).not.toContain(expected);
     }
   });

@@ -4119,6 +4119,11 @@ function acceptsKnownExecutable(entry, candidate) {
 /** Recipe paths plus narrowly-known vendor defaults missing from older rows. */
 function knownExecutablePathsFor(entry) {
   const paths = [...(entry?.knownExePaths || [])];
+  if (process.platform === "win32" && entry?.slug === "idle-slayer") {
+    for (const root of [process.env["ProgramFiles(x86)"], process.env.ProgramFiles]) {
+      if (root) paths.push(path.join(root, "Steam", "steamapps", "common", "Idle Slayer", "Idle Slayer.exe"));
+    }
+  }
   if (process.platform === "win32" && entry?.slug === "seven-kingdoms-ancient-adversaries") {
     for (const root of [process.env["ProgramFiles(x86)"], process.env.ProgramFiles]) {
       if (root) paths.push(path.join(root, "7kaa", "7kaa.exe"));
@@ -10076,7 +10081,7 @@ function isDedicatedSourcemodDir(dir) {
 async function tryRemovePlayBoundInstallDir(slug, dir, entry = null, { editionSlug = null } = {}) {
   if (!dir) return null;
 
-  if (entry && editionLifecycle.mayRunNativeUninstaller(editionSlug)) {
+  if (entry && editionLifecycle.mayRunNativeUninstaller(editionSlug, entry)) {
     try {
       await runGameUninstaller(slug, entry, dir);
     } catch (err) {

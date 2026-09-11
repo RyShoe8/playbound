@@ -34,6 +34,13 @@ describe("PlayBound Multiplayer Adapter Framework", () => {
     expect(keeper.tier).toBe("tier1_improved");
     expect(keeper.client?.launchArguments).toContain("-connect");
 
+    const assaultcube = getMultiplayerAdapter("assaultcube");
+    expect(assaultcube.adapterType).toBe("managed-server");
+    expect(assaultcube.selfHost?.verified).toBe(true);
+    expect(assaultcube.selfHost?.port).toBe(28763);
+    expect(assaultcube.host?.binaryHint).toBe("ac_server");
+    expect(assaultcube.client?.launchArguments).toEqual(["assaultcube://{host}:{port}"]);
+
     const openra = getMultiplayerAdapter("openra");
     expect(openra.adapterType).toBe("managed-server");
     expect(openra.tier).toBe("tier1_improved");

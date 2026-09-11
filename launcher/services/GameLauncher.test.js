@@ -42,3 +42,45 @@ test("GameLauncher builds runner specs for editions and mods", () => {
   assert.deepEqual(modSpec.args, ["/games/freelancer/mods/fl-hd/Freelancer.exe"]);
   assert.match(modSpec.env.WINEPREFIX, /prefixes[/\\]freelancer-hd-edition$/);
 });
+
+test("AssaultCube launches from the package root so core textures resolve", () => {
+  const exe = path.join("C:", "Games", "AssaultCube", "bin_win32", "ac_client.exe");
+  assert.equal(
+    GameLauncher.resolveWorkingDirectory(exe, "assaultcube"),
+    path.join("C:", "Games", "AssaultCube")
+  );
+});
+
+test("AssaultCube bin_unix and ac_client name alone still use the package root", () => {
+  const unix = path.join("/games", "AssaultCube", "bin_unix", "ac_client");
+  assert.equal(GameLauncher.resolveWorkingDirectory(unix, null), path.join("/games", "AssaultCube"));
+
+  const nested = path.join("C:", "Games", "AssaultCube", "bin_win32", "x64", "ac_client.exe");
+  assert.equal(
+    GameLauncher.resolveWorkingDirectory(nested, "custom-something"),
+    path.join("C:", "Games", "AssaultCube")
+  );
+});
+
+test("AssaultCube under Wine uses the package root as cwd", () => {
+  const fakeRunner = {
+    id: "test-wine",
+    name: "Test Wine",
+    type: "wine",
+    binaryPath: "/usr/bin/wine",
+  };
+  const exe = path.join("/games", "AssaultCube", "bin_win32", "ac_client.exe");
+  const spec = buildRunnerLaunchSpec(exe, [], {
+    gameSlug: "assaultcube",
+    runner: fakeRunner,
+  });
+  assert.equal(spec.cwd, path.join("/games", "AssaultCube"));
+});
+
+test("other games keep the executable directory as their working directory", () => {
+  const exe = path.join("C:", "Games", "Example", "bin", "game.exe");
+  assert.equal(
+    GameLauncher.resolveWorkingDirectory(exe, "example"),
+    path.join("C:", "Games", "Example", "bin")
+  );
+});

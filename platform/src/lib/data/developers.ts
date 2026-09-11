@@ -664,6 +664,28 @@ export const developers: Developer[] = [
     artHue: 340,
   },
   {
+    slug: "nadeo",
+    name: "Nadeo",
+    tagline: "Creators of Trackmania and the ShootMania series.",
+    about:
+      "Nadeo is the French studio behind Trackmania, known for precision racing, user-created tracks, and free-to-play competitive seasons published with Ubisoft.",
+    founded: 2000,
+    location: "Paris, France",
+    website: "https://www.trackmania.com",
+    artHue: 200,
+  },
+  {
+    slug: "topware-interactive",
+    name: "TopWare Interactive",
+    tagline: "Publishers of Earth 2140 and classic European strategy.",
+    about:
+      "TopWare Interactive publishes and maintains classic strategy titles including the Earth 2140 trilogy.",
+    founded: 1995,
+    location: "Karlsruhe, Germany",
+    website: "https://www.topware.com",
+    artHue: 25,
+  },
+  {
     slug: "bethesda-game-studios",
     name: "Bethesda Game Studios",
     tagline: "Pioneers of legendary open-world role-playing games.",
@@ -1267,6 +1289,17 @@ export const developers: Developer[] = [
     founded: 2021,
     website: "https://hurrycurry.org/",
     artHue: 25,
+  },
+  {
+    slug: "suncyan",
+    name: "SUNCYAN Inc.",
+    tagline: "The Spike volleyball series — casual sports with competitive bite.",
+    about:
+      "South Korean studio behind The Spike and The Spike Cross, free-to-play volleyball games on mobile and Steam.",
+    location: "Seoul, South Korea",
+    founded: 2010,
+    website: "https://www.suncyan.com/",
+    artHue: 35,
   },
 ];
 

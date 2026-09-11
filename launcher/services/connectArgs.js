@@ -52,6 +52,11 @@ const CLIENT_CONNECT_ARGS = {
   "hurry-curry": null,
   hurrycurry: null,
   /*
+   * AssaultCube's client accepts an assaultcube:// URL which main.cpp turns
+   * into CubeScript `connect host port` after auth (default UDP 28763).
+   */
+  assaultcube: ["assaultcube://{host}:{port}"],
+  /*
    * id Tech 3, so the join is the Quake 3 one — which the adapter row has
    * always declared. It simply never reached this file, and the catalog
    * record carries no connectArgs either, so a provisioned room could only
@@ -243,6 +248,7 @@ const DEFAULT_GAME_PORTS = {
   openhv: 1255,
   teeworlds: 8303,
   bombsquad: 43210,
+  assaultcube: 28763,
   "medal-of-honor-allied-assault": 12203,
   luanti: 30000,
   mindustry: 6567,

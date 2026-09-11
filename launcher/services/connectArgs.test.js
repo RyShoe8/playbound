@@ -86,6 +86,21 @@ test("new peer-hosted games expose the address and port their launch path needs"
     }),
     ["+connect", "100.64.0.2:12203"]
   );
+  // BombSquad has no CLI join — party Join must copy host:port for Gather → Manual.
+  assert.equal(CLIENT_CONNECT_ARGS.bombsquad, null);
+  assert.equal(joinsFromInGameMenu("bombsquad"), true);
+  assert.equal(defaultGamePort("bombsquad"), 43210);
+  assert.equal(clientConnectArgs("bombsquad"), null);
+  // AssaultCube joins via official URL protocol after the host creates a server.
+  assert.equal(defaultGamePort("assaultcube"), 28763);
+  assert.equal(joinsFromInGameMenu("assaultcube"), false);
+  assert.deepEqual(
+    applyConnectTemplates(CLIENT_CONNECT_ARGS.assaultcube, {
+      host: "100.64.0.3",
+      port: 28763,
+    }),
+    ["assaultcube://100.64.0.3:28763"]
+  );
 });
 
 test("every shipped list resolves to a complete join line", () => {
