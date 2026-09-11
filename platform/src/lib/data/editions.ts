@@ -750,8 +750,40 @@ export const editions: EditionSeed[] = [
     verificationLevel: "official",
   },
   {
-    gameSlug: "s-t-a-l-k-e-r-shadow-of-chernobyl", slug: "lost-alpha", name: "Lost Alpha: Developer's Cut — Total Conversion", version: "1.4007",
-    shortDescription: "The abandoned early vision of S.T.A.L.K.E.R. rebuilt into a huge standalone journey.", description: "Lost Alpha imagines the game Shadow of Chornobyl might have become before years of cuts reshaped it: wider maps, restored ideas, new routes, and its own campaign.", type: "community", status: "active", visibility: "public", isDefault: false, sortOrder: 20, links: { website: "https://www.moddb.com/mods/lost-alpha" }, installMethod: "external_installer", installConfig: { external_installer: { url: "https://www.moddb.com/mods/lost-alpha" } }, features: ["Singleplayer", "Mod Support", "Community Content", "Story Campaign"], tags: ["Open World", "Mods"], aliases: ["STALKER Lost Alpha"], verificationLevel: "community_verified",
+    gameSlug: "s-t-a-l-k-e-r-shadow-of-chernobyl",
+    slug: "lost-alpha",
+    name: "Lost Alpha: Developer's Cut — Total Conversion",
+    version: "1.4007",
+    shortDescription:
+      "The abandoned early vision of S.T.A.L.K.E.R. rebuilt into a huge standalone journey.",
+    description:
+      "Lost Alpha imagines the game Shadow of Chornobyl might have become before years of cuts reshaped it: wider maps, restored ideas, new routes, and its own campaign.",
+    type: "community",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 20,
+    links: { website: "https://www.moddb.com/mods/lost-alpha" },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "external",
+        url: "https://www.moddb.com/mods/lost-alpha",
+        exeHint: "XR_3DA",
+        knownExePaths: ["bins\\XR_3DA.exe", "XR_3DA.exe"],
+        registryTitles: [
+          "S.T.A.L.K.E.R. - Lost Alpha DC",
+          "Lost Alpha DC",
+          "Lost Alpha",
+        ],
+        note:
+          "Install from ModDB. PlayBound launches bins\\XR_3DA.exe — use Lost Alpha Configurator once for graphics if you need it; Play does not open that tweaker.",
+      },
+    },
+    features: ["Singleplayer", "Mod Support", "Community Content", "Story Campaign"],
+    tags: ["Open World", "Mods"],
+    aliases: ["STALKER Lost Alpha"],
+    verificationLevel: "community_verified",
   },
   {
     gameSlug: "s-t-a-l-k-e-r-shadow-of-chernobyl", slug: "true-stalker", name: "True Stalker — Standalone Story Edition", version: "1.5",

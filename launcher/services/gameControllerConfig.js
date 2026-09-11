@@ -626,6 +626,56 @@ const GAMES = {
   },
 
   /**
+   * Teeworlds — client settings07.cfg under %APPDATA%/Teeworlds.
+   *
+   * Stock builds ship joystick_enable 0. Catalog advertises Controller Support
+   * and the phone/controller modal appears, but without flipping this flag the
+   * pad/ViGEm bridge is ignored. Leave binds alone when the player already has
+   * any; only enable the joystick subsystem.
+   */
+  teeworlds: {
+    verified:
+      "UNVERIFIED against a live 0.7.x install — joystick_enable is Teeworlds' " +
+      "documented client setting. The guard declines files that are not already " +
+      "settings07-shaped (bind / joystick lines).",
+    resolve: (c) =>
+      firstExisting([
+        path.join(c.appData, "Teeworlds", "settings07.cfg"),
+        path.join(c.appData, "teeworlds", "settings07.cfg"),
+        path.join(c.home, ".teeworlds", "settings07.cfg"),
+        path.join(c.home, ".local", "share", "teeworlds", "settings07.cfg"),
+        path.join(c.home, "Library", "Application Support", "Teeworlds", "settings07.cfg"),
+        c.installDir && path.join(c.installDir, "settings07.cfg"),
+      ]),
+    needsConfig(text) {
+      return !/^\s*joystick_enable\s+1\s*$/im.test(String(text || ""));
+    },
+    apply(text) {
+      const original = String(text ?? "");
+      // A real settings07.cfg is line-based console commands, not an ini.
+      if (original && !/^\s*(bind|joystick_|player_|gfx_|snd_|cl_)/im.test(original)) {
+        return null;
+      }
+
+      const lines = original.length ? original.replace(/\r\n/g, "\n").split("\n") : [];
+      const out = [];
+      let sawAbsolute = false;
+      for (const line of lines) {
+        if (/^\s*joystick_enable\s+/i.test(line)) continue;
+        if (/^\s*joystick_absolute\s+/i.test(line)) {
+          sawAbsolute = true;
+          out.push(line);
+          continue;
+        }
+        out.push(line);
+      }
+      out.push("joystick_enable 1");
+      if (!sawAbsolute) out.push("joystick_absolute 1");
+      return `${out.join("\n").replace(/\s*$/, "")}\n`;
+    },
+  },
+
+  /**
    * Daggerfall Unity — `settings.ini`, ini-shaped, with controller options in
    * `[Controls]`.
    *

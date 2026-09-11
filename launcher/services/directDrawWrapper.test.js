@@ -9,6 +9,10 @@ const {
   needsDirectDrawWrapper,
   isFreeTrainSlug,
   CLSID_DIRECTDRAW,
+  looksLikeAvBlock,
+  AV_BLOCK_MSG,
+  dirHasMsX86Dlls,
+  createDirectDrawWrapper,
 } = require("./directDrawWrapper");
 
 test("FreeTrain slug detection", () => {
@@ -37,6 +41,50 @@ test("findMsX86Dir locates MS/x86 with DDraw.dll", () => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+test("findMsX86Dir accepts flat MS/x86-only extract root", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "pb-dgv-flat-"));
+  fs.writeFileSync(path.join(root, "DDraw.dll"), "x");
+  assert.equal(findMsX86Dir(root), root);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
 test("CLSID_DIRECTDRAW is the classic DirectDraw class", () => {
   assert.equal(CLSID_DIRECTDRAW, "{E1211353-8E94-11D1-8808-00C04FC2C602}");
+});
+
+test("looksLikeAvBlock detects Defender wording", () => {
+  assert.equal(looksLikeAvBlock("Operation did not complete successfully because the file contains a virus", ""), true);
+  assert.equal(looksLikeAvBlock("Expand-Archive failed", ""), false);
+  assert.match(AV_BLOCK_MSG, /Defender/i);
+});
+
+test("ensureForGame copies from a local MS/x86 source without GitHub", async () => {
+  const userData = fs.mkdtempSync(path.join(os.tmpdir(), "pb-dd-ud-"));
+  const gameDir = fs.mkdtempSync(path.join(os.tmpdir(), "pb-dd-game-"));
+  const bundle = fs.mkdtempSync(path.join(os.tmpdir(), "pb-dd-bundle-"));
+  for (const name of ["DDraw.dll", "D3DImm.dll", "D3D8.dll", "D3D9.dll"]) {
+    fs.writeFileSync(path.join(bundle, name), "dll");
+  }
+
+  // Point bundled lookup at our temp dir by temporarily writing beside services.
+  const wrapper = createDirectDrawWrapper({
+    userDataPath: userData,
+    msX86MirrorUrl: "http://127.0.0.1:9/should-not-be-hit.zip",
+  });
+
+  // Seed game dir empty; monkey-patch by putting DLLs in game after resolve via game-dir path:
+  // First call with DLLs already in gameDir.
+  for (const name of ["DDraw.dll", "D3DImm.dll", "D3D8.dll", "D3D9.dll"]) {
+    fs.copyFileSync(path.join(bundle, name), path.join(gameDir, name));
+  }
+  assert.equal(dirHasMsX86Dlls(gameDir), true);
+
+  const result = await wrapper.ensureForGame(gameDir, { slug: "freetrain" });
+  assert.equal(result.ok, true);
+  assert.equal(result.source, "game-dir");
+  assert.ok(fs.existsSync(path.join(gameDir, "dgVoodoo.conf")));
+
+  fs.rmSync(userData, { recursive: true, force: true });
+  fs.rmSync(gameDir, { recursive: true, force: true });
+  fs.rmSync(bundle, { recursive: true, force: true });
 });

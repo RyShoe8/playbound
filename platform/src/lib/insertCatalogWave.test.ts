@@ -151,13 +151,14 @@ describe("insert-catalog-wave allowlists", () => {
     expect(PATCH_GAME_FIELDS["the-dark-mod"]).toContain("platforms");
   });
 
-  it("patches CoP official + restores Anomaly edition + OpenMW/TES3MP install recipes", () => {
+  it("patches CoP official + restores Anomaly edition + OpenMW/TES3MP/Lost Alpha install recipes", () => {
     expect(Object.keys(PATCH_EDITION_FIELDS).sort()).toEqual(
       [
         "morrowind/openmw",
         "morrowind/tes3mp",
         "s-t-a-l-k-e-r-call-of-pripyat/anomaly",
         "s-t-a-l-k-e-r-call-of-pripyat/official",
+        "s-t-a-l-k-e-r-shadow-of-chernobyl/lost-alpha",
       ].sort()
     );
     expect(PATCH_EDITION_FIELDS["s-t-a-l-k-e-r-call-of-pripyat/anomaly"]).toContain(
@@ -168,6 +169,10 @@ describe("insert-catalog-wave allowlists", () => {
     );
     expect(PATCH_EDITION_FIELDS["morrowind/openmw"]).toEqual(["installConfig"]);
     expect(PATCH_EDITION_FIELDS["morrowind/tes3mp"]).toEqual(["installConfig"]);
+    expect(PATCH_EDITION_FIELDS["s-t-a-l-k-e-r-shadow-of-chernobyl/lost-alpha"]).toEqual([
+      "installMethod",
+      "installConfig",
+    ]);
   });
 
   it("patches holocure-rich-presence to draft only", () => {
@@ -208,9 +213,15 @@ describe("insert-catalog-wave allowlists", () => {
     ).toBe(true);
 
     expect(UNKNOWN_HORIZONS_SLUG).toBe("unknown-horizons");
-    expect(unknownHorizonsPatchSource.launcherInstall.exeHint).toBe("unknownhorizons");
+    expect(unknownHorizonsPatchSource.launcherInstall.exeHint).toBe("run_uh");
     expect(unknownHorizonsPatchSource.launcherInstall.kind).toBe("direct-installer");
     expect(unknownHorizonsPatchSource.platforms).toEqual(["Windows", "macOS", "Linux"]);
+    expect(
+      unknownHorizonsPatchSource.launcherInstall.knownExePaths.some((p) =>
+        String(p).includes("run_uh.bat")
+      )
+    ).toBe(true);
+    expect(theDarkModPatchSource.launcherInstall.exeHint).not.toMatch(/tdm_installer/);
 
     expect(SPIKE_CROSS_SLUG).toBe("the-spike-cross");
     expect(spikeCrossPatchSource.platforms).toEqual(["Windows", "Android", "iOS"]);
@@ -234,6 +245,10 @@ describe("insert-catalog-wave allowlists", () => {
     expect(idleSlayerPatchSource.iosStoreUrl).toBe(idleSlayerIosStoreUrl);
     expect(SEVEN_KINGDOMS_SLUG).toBe("seven-kingdoms-ancient-adversaries");
     expect(sevenKingdomsLauncherInstall.knownExePaths).toContain("7kaa.exe");
+    expect(sevenKingdomsLauncherInstall.knownExePaths.some((p) => p.includes("%PROGRAMFILES"))).toBe(
+      true
+    );
+    expect(sevenKingdomsLauncherInstall.registryTitles).toContain("Seven Kingdoms AA");
   });
 
   it("keeps CoP official + Anomaly in seed; keeps SoC Lost Alpha + True Stalker", () => {
@@ -244,6 +259,11 @@ describe("insert-catalog-wave allowlists", () => {
     expect(anomaly?.status).toBe("active");
     const soc = editions.filter((e) => e.gameSlug === "s-t-a-l-k-e-r-shadow-of-chernobyl");
     expect(soc.map((e) => e.slug).sort()).toEqual(["lost-alpha", "official", "true-stalker"]);
+    const lostAlpha = soc.find((e) => e.slug === "lost-alpha");
+    expect(lostAlpha?.installMethod).toBe("playbound_installer");
+    expect(lostAlpha?.installConfig?.playbound_installer?.knownExePaths).toContain(
+      "bins\\XR_3DA.exe"
+    );
   });
 
   it("keeps holocure-rich-presence unpublished in seed", () => {

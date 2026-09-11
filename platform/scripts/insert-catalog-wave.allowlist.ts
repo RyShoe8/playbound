@@ -169,6 +169,8 @@ export const PATCH_EDITION_FIELDS: Readonly<Record<string, readonly string[]>> =
   "morrowind/openmw": ["installConfig"],
   // Keep TES3MP desktop zip pattern in sync (VR-latest miss).
   "morrowind/tes3mp": ["installConfig"],
+  // Lost Alpha: launch XR_3DA, not the Configurator tweaker UI.
+  "s-t-a-l-k-e-r-shadow-of-chernobyl/lost-alpha": ["installMethod", "installConfig"],
 };
 
 /**

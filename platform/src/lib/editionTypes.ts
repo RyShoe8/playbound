@@ -157,6 +157,10 @@ export interface EditionInstallConfig {
     kind?: string;
     repo?: string | null;
     assetPattern?: string | null;
+    /** macOS GitHub/release asset pattern (parallel to game-level launcherInstall). */
+    assetPatternMac?: string | null;
+    /** Linux GitHub/release asset pattern. */
+    assetPatternLinux?: string | null;
     exeHint?: string | null;
     url?: string | null;
     /** macOS-specific download URL (usually a .dmg or .zip with a .app bundle). */
@@ -166,6 +170,8 @@ export interface EditionInstallConfig {
     fileName?: string | null;
     versionLabel?: string | null;
     knownExePaths?: string[];
+    /** Uninstall / ARP DisplayName strings used to locate the install. */
+    registryTitles?: string[];
     /** Arguments passed to the installed executable when Play is pressed. */
     launchArgs?: string[];
     installRoot?: string | null;

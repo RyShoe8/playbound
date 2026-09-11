@@ -82,12 +82,15 @@ function norm(s) {
  * @returns {string | null} one of `files`, or null to leave it to the player
  */
 function chooseExeFromListing({ files = [], wanted = [], title = "", slug = "" } = {}) {
-  const exes = files.filter((f) => /\.exe$/i.test(f));
+  const launchables = files.filter((f) => /\.(exe|bat|cmd)$/i.test(f));
+  const exes = launchables.filter((f) => /\.exe$/i.test(f));
   const byDepth = (a, b) => depthOf(a) - depthOf(b) || a.length - b.length;
 
   const want = new Set(wanted.map((w) => baseName(w).toLowerCase()).filter(Boolean));
   if (want.size) {
-    const named = exes.filter((f) => !isUninstallerExe(f) && want.has(baseName(f).toLowerCase())).sort(byDepth);
+    const named = launchables
+      .filter((f) => !isUninstallerExe(f) && want.has(baseName(f).toLowerCase()))
+      .sort(byDepth);
     if (named.length) return named[0];
   }
 

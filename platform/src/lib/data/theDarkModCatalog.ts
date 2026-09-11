@@ -1,6 +1,9 @@
 /**
  * The Dark Mod — Windows + Linux native, Mac via Wine Windows package.
  * Field-scoped writes go through insert-catalog-wave PATCH_GAME_FIELDS.
+ *
+ * Install flow: extract tdm_installer, run it with --unattended (no GUI), then
+ * play TheDarkModx64.exe from the same folder. Never treat tdm_installer as the game.
  */
 export const THE_DARK_MOD_SLUG = "the-dark-mod" as const;
 
@@ -21,7 +24,7 @@ export const theDarkModLauncherInstall = {
   urlLinux: "https://update.thedarkmod.com/zipsync/tdm_installer.linux64.zip",
   fileName: "tdm_installer.exe.zip",
   versionLabel: "2.14",
-  exeHint: "TheDarkModx64|TheDarkMod|DarkMod|thedarkmod.x64|tdm_installer",
+  exeHint: "TheDarkModx64|TheDarkMod|DarkMod|thedarkmod.x64",
   registryTitles: ["The Dark Mod"],
   knownExePaths: [
     "%GAMES%\\the-dark-mod\\TheDarkModx64.exe",
@@ -40,10 +43,9 @@ export const theDarkModLauncherInstall = {
     "TheDarkMod.exe",
     "DarkMod.exe",
     "thedarkmod.x64",
-    "tdm_installer.linux64",
   ],
   note:
-    "Official standalone installer package. Windows and Mac (via PlayBound Wine) use the Windows zip; Linux uses the native linux64 installer. No official native Mac build.",
+    "PlayBound runs the official tdm_installer unattended (multi‑GB download). Windows and Mac (via Wine) use the Windows zip; Linux uses the native linux64 installer.",
 };
 
 export const theDarkModSystemRequirements = {

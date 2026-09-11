@@ -14,11 +14,12 @@ export const sevenKingdomsLauncherInstall = {
   exeHint: "7kaa",
   knownExePaths: [
     "7kaa.exe",
-    "7kaa\\7kaa.exe",
-    "Program Files\\7kaa\\7kaa.exe",
-    "Program Files (x86)\\7kaa\\7kaa.exe",
+    "%PROGRAMFILES(X86)%\\7kaa\\7kaa.exe",
+    "%PROGRAMFILES%\\7kaa\\7kaa.exe",
   ],
   registryTitles: [
+    // Actual NSIS DisplayName on the 2.15.7 Windows installer.
+    "Seven Kingdoms AA",
     "7kaa",
     "Seven Kingdoms Ancient Adversaries",
     "Seven Kingdoms: Ancient Adversaries",

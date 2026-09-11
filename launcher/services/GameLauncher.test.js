@@ -77,6 +77,22 @@ test("AssaultCube under Wine uses the package root as cwd", () => {
   assert.equal(spec.cwd, path.join("/games", "AssaultCube"));
 });
 
+test("Lost Alpha XR_3DA uses install root as cwd not bins", () => {
+  const exe = path.join("C:", "Games", "Lost Alpha DC", "bins", "XR_3DA.exe");
+  assert.equal(
+    GameLauncher.resolveWorkingDirectory(exe, "s-t-a-l-k-e-r-shadow-of-chernobyl"),
+    path.join("C:", "Games", "Lost Alpha DC")
+  );
+});
+
+test("SoC XR_3DA under bin also uses install root", () => {
+  const exe = path.join("D:", "GOG Games", "STALKER", "bin", "XR_3DA.exe");
+  assert.equal(
+    GameLauncher.resolveWorkingDirectory(exe, null),
+    path.join("D:", "GOG Games", "STALKER")
+  );
+});
+
 test("other games keep the executable directory as their working directory", () => {
   const exe = path.join("C:", "Games", "Example", "bin", "game.exe");
   assert.equal(
