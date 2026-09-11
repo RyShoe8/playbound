@@ -18,19 +18,17 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Skip if this version is already published
+      - name: Skip if this version is already on the admin feed
         id: check
-        # See build-linux.yml for the full story: electron-builder output is
-        # not byte-reproducible, so rebuilding an unchanged version and
-        # republishing it under the same latest-mac.yml URL breaks any
-        # electron-updater that fetched the manifest or started downloading
-        # against an earlier run's bits. Only rebuild on a real version bump.
+        # Unsigned / admin channel parity with Windows: upload writes admin-mac.yml.
+        # electron-builder output is not byte-reproducible, so only rebuild on a
+        # real version bump against the admin feed (not public latest-mac.yml).
         run: |
           LOCAL_VERSION=$(node -p "require('./launcher/package.json').version")
-          LIVE_VERSION=$(curl -fsSL "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher/latest-mac.yml" | grep '^version:' | awk '{print $2}' || echo "")
-          echo "local=$LOCAL_VERSION live=$LIVE_VERSION"
+          LIVE_VERSION=$(curl -fsSL "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher/admin-mac.yml" | grep '^version:' | awk '{print $2}' || echo "")
+          echo "local=$LOCAL_VERSION admin=$LIVE_VERSION"
           if [ "$LOCAL_VERSION" = "$LIVE_VERSION" ]; then
-            echo "Version $LOCAL_VERSION is already published — skipping rebuild."
+            echo "Version $LOCAL_VERSION is already on admin-mac.yml — skipping rebuild."
             echo "should_build=false" >> "$GITHUB_OUTPUT"
           else
             echo "should_build=true" >> "$GITHUB_OUTPUT"
@@ -57,9 +55,9 @@ jobs:
         run: npm run dist:mac
         working-directory: launcher
 
-      - name: Upload to Vercel Blob
+      - name: Upload unsigned build to admin Blob channel
         if: steps.check.outputs.should_build == 'true'
-        run: npm run upload:launcher -- --mac --promote-prod
+        run: npm run upload:launcher -- --mac
         working-directory: platform
         env:
           BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN || vars.BLOB_READ_WRITE_TOKEN }}

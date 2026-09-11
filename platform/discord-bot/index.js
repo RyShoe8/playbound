@@ -1654,7 +1654,7 @@ const server = http.createServer(async (req, res) => {
     let body = "";
     for await (const chunk of req) body += chunk;
     try {
-      const { eventId, title, gameSlug } = JSON.parse(body || "{}");
+      const { eventId, title, gameSlug, announceEventsChannel } = JSON.parse(body || "{}");
       const guild = await client.guilds.fetch(GUILD_ID);
       // No dedicated category per event any more: an event with no game sits
       // in the shared Events category, and one with a game sits in that game's
@@ -1672,6 +1672,8 @@ const server = http.createServer(async (req, res) => {
       let text = guild.channels.cache.find(
         (channel) => channel.type === ChannelType.GuildText && channel.name === textName
       );
+      let createdVoice = false;
+      let createdText = false;
       if (!voice) {
         voice = await guild.channels.create({
           name: voiceName,
@@ -1679,6 +1681,7 @@ const server = http.createServer(async (req, res) => {
           parent: categoryId,
           reason: `PlayBound event voice ${eventId || ""}`,
         });
+        createdVoice = true;
       }
       if (!text) {
         text = await guild.channels.create({
@@ -1687,52 +1690,64 @@ const server = http.createServer(async (req, res) => {
           parent: categoryId,
           reason: `PlayBound event text ${eventId || ""}`,
         });
+        createdText = true;
       }
       const invite = await voice.createInvite({
         maxAge: 0,
         maxUses: 0,
         reason: "PlayBound event invite",
       });
-      await text.send({
-        content: `**${title || "PlayBound Event"}** is gathering here.\nJoin voice: ${invite.url}\nEvent page: ${SITE_URL}/events/${eventId || ""}`,
-      });
+      /*
+       * Only announce when rooms were just created. Retries and concurrent
+       * provision callers reuse channels by name — posting again caused the
+       * same gathering message to land two or three times in chat and #events.
+       */
+      const roomsCreated = createdVoice || createdText;
+      if (roomsCreated) {
+        await text.send({
+          content: `**${title || "PlayBound Event"}** is gathering here.\nJoin voice: ${invite.url}\nEvent page: ${SITE_URL}/events/${eventId || ""}`,
+        });
 
-      // Post gathering announcement into the server #events channel
-      try {
-        const eventsChannel = await ensureEventsChannel(guild);
-        if (eventsChannel?.isTextBased()) {
-          const eventUrl = `${SITE_URL}/events/${eventId || ""}`;
-          let coverImage = null;
-          if (gameSlug && games) {
-            try {
-              const g = await games.findOne({ slug: String(gameSlug).trim() });
-              if (g?.coverImage) coverImage = g.coverImage;
-            } catch {}
+        // Planner-driven pop-ups already announce via /events/announce; skip #events.
+        const postToEventsChannel = announceEventsChannel !== false;
+        if (postToEventsChannel) {
+          try {
+            const eventsChannel = await ensureEventsChannel(guild);
+            if (eventsChannel?.isTextBased()) {
+              const eventUrl = `${SITE_URL}/events/${eventId || ""}`;
+              let coverImage = null;
+              if (gameSlug && games) {
+                try {
+                  const g = await games.findOne({ slug: String(gameSlug).trim() });
+                  if (g?.coverImage) coverImage = g.coverImage;
+                } catch {}
+              }
+              const embed = new EmbedBuilder()
+                .setColor(0x3b82f6)
+                .setTitle(`🎮 ${title || "PlayBound Event"}`)
+                .setURL(eventUrl)
+                .setDescription(
+                  `An event room is now open!\n\n` +
+                  `🔊 **Voice Room:** ${invite.url}\n` +
+                  `💬 **Chat Room:** <#${text.id}>\n\n` +
+                  `🎟️ **[Join Event & Details](${eventUrl})**`
+                )
+                .setFooter({ text: "PlayBound Event Planner" })
+                .setTimestamp();
+
+              if (coverImage) {
+                embed.setThumbnail(coverImage.startsWith("http") ? coverImage : `${SITE_URL}${coverImage}`);
+              }
+
+              await eventsChannel.send({
+                content: `**${title || "PlayBound Event"}** is gathering now in <#${text.id}>!`,
+                embeds: [embed],
+              });
+            }
+          } catch (postErr) {
+            console.warn("Failed to post event to #events channel:", postErr?.message || postErr);
           }
-          const embed = new EmbedBuilder()
-            .setColor(0x3b82f6)
-            .setTitle(`🎮 ${title || "PlayBound Event"}`)
-            .setURL(eventUrl)
-            .setDescription(
-              `An event room is now open!\n\n` +
-              `🔊 **Voice Room:** ${invite.url}\n` +
-              `💬 **Chat Room:** <#${text.id}>\n\n` +
-              `🎟️ **[Join Event & Details](${eventUrl})**`
-            )
-            .setFooter({ text: "PlayBound Event Planner" })
-            .setTimestamp();
-
-          if (coverImage) {
-            embed.setThumbnail(coverImage.startsWith("http") ? coverImage : `${SITE_URL}${coverImage}`);
-          }
-
-          await eventsChannel.send({
-            content: `**${title || "PlayBound Event"}** is gathering now in <#${text.id}>!`,
-            embeds: [embed],
-          });
         }
-      } catch (postErr) {
-        console.warn("Failed to post event to #events channel:", postErr?.message || postErr);
       }
 
       res.writeHead(200, { "content-type": "application/json" });
@@ -1743,6 +1758,7 @@ const server = http.createServer(async (req, res) => {
           voiceChannelId: voice.id,
           textChannelId: text.id,
           categoryId,
+          roomsCreated,
         })
       );
     } catch (err) {

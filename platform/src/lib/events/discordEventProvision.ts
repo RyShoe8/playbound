@@ -10,19 +10,25 @@
 
 import type { Document } from "mongoose";
 import DiscordConnection from "@/lib/models/DiscordConnection";
+import PlatformEvent from "@/lib/models/PlatformEvent";
 
 type EventLike = Document & {
   _id: { toString(): string };
   title: string;
   gameSlug?: string | null;
+  organizerId?: unknown;
+  createdBy?: unknown;
   discordInviteUrl?: string | null;
   discordVoiceChannelId?: string | null;
   discordTextChannelId?: string | null;
   discordCategoryId?: string | null;
   discordVoiceProvisionedAt?: Date | null;
+  discordVoiceProvisioningAt?: Date | null;
   discordVoiceCleanedAt?: Date | null;
   save: () => Promise<unknown>;
 };
+
+const PROVISION_CLAIM_STALE_MS = 60_000;
 
 function botConfig() {
   const rawUrl = process.env.DISCORD_BOT_WEBHOOK_URL?.trim();
@@ -34,11 +40,90 @@ function botConfig() {
   return { url, secret };
 }
 
+function isManuallyCreated(event: EventLike): boolean {
+  return Boolean(event.organizerId || event.createdBy);
+}
+
+/** True when this caller won the race to provision; false if another caller holds the lock or already finished. */
+async function claimEventDiscordProvision(eventId: string): Promise<"claimed" | "already_ready" | "busy"> {
+  const fresh = await PlatformEvent.findById(eventId)
+    .select("discordVoiceChannelId discordVoiceCleanedAt discordVoiceProvisioningAt")
+    .lean<{
+      discordVoiceChannelId?: string | null;
+      discordVoiceCleanedAt?: Date | null;
+      discordVoiceProvisioningAt?: Date | null;
+    } | null>();
+  if (!fresh) return "busy";
+  if (fresh.discordVoiceChannelId && !fresh.discordVoiceCleanedAt) return "already_ready";
+
+  const staleBefore = new Date(Date.now() - PROVISION_CLAIM_STALE_MS);
+  const claimed = await PlatformEvent.findOneAndUpdate(
+    {
+      _id: eventId,
+      discordVoiceChannelId: null,
+      discordVoiceCleanedAt: null,
+      $or: [
+        { discordVoiceProvisioningAt: null },
+        { discordVoiceProvisioningAt: { $lt: staleBefore } },
+      ],
+    },
+    { $set: { discordVoiceProvisioningAt: new Date() } },
+    { new: true }
+  )
+    .select("_id")
+    .lean();
+  return claimed ? "claimed" : "busy";
+}
+
+async function clearProvisionClaim(eventId: string): Promise<void> {
+  await PlatformEvent.updateOne(
+    { _id: eventId },
+    { $set: { discordVoiceProvisioningAt: null } }
+  );
+}
+
+async function hydrateEventFromDb(event: EventLike): Promise<boolean> {
+  const fresh = await PlatformEvent.findById(event._id)
+    .select(
+      "discordInviteUrl discordVoiceChannelId discordTextChannelId discordCategoryId discordVoiceProvisionedAt discordVoiceCleanedAt"
+    )
+    .lean<{
+      discordInviteUrl?: string | null;
+      discordVoiceChannelId?: string | null;
+      discordTextChannelId?: string | null;
+      discordCategoryId?: string | null;
+      discordVoiceProvisionedAt?: Date | null;
+      discordVoiceCleanedAt?: Date | null;
+    } | null>();
+  if (!fresh?.discordVoiceChannelId || fresh.discordVoiceCleanedAt) return false;
+  event.discordInviteUrl = fresh.discordInviteUrl ?? event.discordInviteUrl;
+  event.discordVoiceChannelId = fresh.discordVoiceChannelId;
+  event.discordTextChannelId = fresh.discordTextChannelId ?? event.discordTextChannelId;
+  event.discordCategoryId = fresh.discordCategoryId ?? event.discordCategoryId;
+  event.discordVoiceProvisionedAt = fresh.discordVoiceProvisionedAt ?? event.discordVoiceProvisionedAt;
+  return true;
+}
+
 export async function provisionEventDiscordVoice(
   event: EventLike
 ): Promise<boolean> {
   const { url, secret } = botConfig();
   if (!url || !secret) return false;
+
+  const eventId = String(event._id);
+  if (event.discordVoiceChannelId && !event.discordVoiceCleanedAt) return true;
+
+  const claim = await claimEventDiscordProvision(eventId);
+  if (claim === "already_ready") {
+    await hydrateEventFromDb(event);
+    return Boolean(event.discordVoiceChannelId);
+  }
+  if (claim === "busy") {
+    // Another caller is provisioning — wait briefly and adopt their result.
+    await new Promise((resolve) => setTimeout(resolve, 1_500));
+    return hydrateEventFromDb(event);
+  }
+
   try {
     const res = await fetch(`${url}/events/voice`, {
       method: "POST",
@@ -47,16 +132,19 @@ export async function provisionEventDiscordVoice(
         authorization: `Bearer ${secret}`,
       },
       body: JSON.stringify({
-        eventId: String(event._id),
+        eventId,
         title: event.title,
         // Decides the category up front, so an event created with a game
         // never has to be moved afterwards.
         gameSlug: event.gameSlug || null,
+        // Planner pop-ups already post via /events/announce — skip #events gathering.
+        announceEventsChannel: isManuallyCreated(event),
       }),
       signal: AbortSignal.timeout(20_000),
     });
     if (!res.ok) {
       console.warn("discord event voice provision failed", res.status);
+      await clearProvisionClaim(eventId);
       return false;
     }
     const data = (await res.json()) as {
@@ -70,10 +158,15 @@ export async function provisionEventDiscordVoice(
     if (data.textChannelId) event.discordTextChannelId = data.textChannelId;
     if (data.categoryId) event.discordCategoryId = data.categoryId;
     event.discordVoiceProvisionedAt = new Date();
+    event.discordVoiceProvisioningAt = null;
     await event.save();
     return true;
   } catch (err) {
     console.warn("discord event voice provision error", err);
+    await clearProvisionClaim(eventId);
+    // Timed out after Discord created rooms — another attempt or concurrent
+    // caller may already have saved channel IDs.
+    if (await hydrateEventFromDb(event)) return true;
     return false;
   }
 }
@@ -84,9 +177,12 @@ export async function provisionEventDiscordVoiceWithRetry(
   attempts = 3
 ): Promise<boolean> {
   for (let attempt = 1; attempt <= attempts; attempt++) {
+    if (event.discordVoiceChannelId && !event.discordVoiceCleanedAt) return true;
+    if (await hydrateEventFromDb(event)) return true;
     if (await provisionEventDiscordVoice(event)) return true;
     if (attempt < attempts) {
       await new Promise((resolve) => setTimeout(resolve, attempt * 1_000));
+      if (await hydrateEventFromDb(event)) return true;
     }
   }
   return false;

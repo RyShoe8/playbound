@@ -20,6 +20,7 @@ const bundledCatalog = require("./catalog");
 const { createTelemetry } = require("./telemetry");
 const Platform = require("./platform");
 const GameLauncher = require("./services/GameLauncher");
+const { classifyLaunchFailure } = require("./services/classifyLaunchFailure");
 const editionLifecycle = require("./services/editionLifecycle");
 const { duneLegacyHasPakData } = require("./services/duneLegacyData");
 const { createManagedJava } = require("./services/ManagedJava");
@@ -8816,13 +8817,10 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     const isJar = /\.jar$/i.test(launchPath || "");
     let code = "UNKNOWN";
     let message = rawMessage;
-    if (err?.code === "JAVA_MISSING" || (/Java 17\+/i.test(rawMessage) && !/exited immediately/i.test(rawMessage))) {
-      code = "JAVA_MISSING";
-    } else if (err?.code === "JAVA_EARLY_EXIT" || /exited immediately/i.test(rawMessage)) {
-      code = "JAVA_EARLY_EXIT";
-      message = isJar
-        ? `The game exited immediately after launch (${path.basename(launchPath || "game")}). Open Folder and try running it manually, check GPU drivers, or reinstall.`
-        : rawMessage;
+    const classified = classifyLaunchFailure(err, launchPath);
+    if (classified.code !== "UNKNOWN") {
+      code = classified.code;
+      message = classified.message;
     } else if (err?.code === "SHELL_LAUNCH_BLOCKED" || /bat\/\.cmd launcher/i.test(rawMessage)) {
       code = "SHELL_LAUNCH_BLOCKED";
     } else if (/outside allowed install locations/i.test(rawMessage)) {
@@ -8901,8 +8899,15 @@ async function playGameInner(slug, join = null, editionSlug = null) {
             javaInstalled: true,
           };
         } catch (retryErr) {
-          const retryMessage = retryErr?.message || String(retryErr);
-          const retryCode = retryErr?.code || (isJar ? "JAVA_EARLY_EXIT" : "SPAWN_FAILED");
+          const retryClassified = classifyLaunchFailure(retryErr, launchPath);
+          const retryCode =
+            retryClassified.code !== "UNKNOWN"
+              ? retryClassified.code
+              : retryErr?.code || (isJar ? "JAVA_EARLY_EXIT" : "SPAWN_FAILED");
+          const retryMessage =
+            retryClassified.code !== "UNKNOWN"
+              ? retryClassified.message
+              : retryErr?.message || String(retryErr);
           void telemetry.launchFailed({
             ...editionInfoFor(slug, {
               version: info.version,
