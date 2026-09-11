@@ -223,6 +223,10 @@ const LOCATIONS = {
     verified: "documented — Sonic Robo Blast 2 gamedata and saves",
     resolve: (c) => (c.installDir ? path.join(c.installDir, "luafiles") : null),
   },
+  srb2kart: {
+    verified: "documented — SRB2Kart gamedata and saves (same layout family as SRB2)",
+    resolve: (c) => (c.installDir ? path.join(c.installDir, "luafiles") : null),
+  },
   jfsw: {
     verified: "documented — JFSW portable save and config directory",
     resolve: (c) => c.installDir || null,

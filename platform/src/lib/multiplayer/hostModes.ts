@@ -152,6 +152,8 @@ const LOCAL_COUCH_GAMES = new Set([
   "pixreveal",
   "the-spike-cross",
   "x-men-arcade-remake",
+  "tmnt-rescue-palooza",
+  "relic-hunters-zero-remix",
 ]);
 
 /**
