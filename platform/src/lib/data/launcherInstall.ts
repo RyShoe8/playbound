@@ -1476,14 +1476,14 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     note: "PlayBound-hosted Windows OpenBOR package on the VPS mirror. Local 4P couch co-op only.",
   },
   "tmnt-rescue-palooza": {
-    enabled: false,
+    enabled: true,
     kind: "direct-zip",
-    url: null,
-    fileName: "TMNT-Rescue-Palooza.zip",
+    url: "https://mirror.playbound.club/launcher-packages/games/tmnt-rescue-palooza/1789151162997-tmnt-rescue-palooza-1.15.zip",
+    fileName: "tmnt-rescue-palooza-1.15.zip",
     versionLabel: "1.1.5",
     exeHint: "OpenBOR|OpenBOR.exe",
     knownExePaths: ["OpenBOR.exe", "openbor.exe"],
-    note: "PlayBound-hosted Windows OpenBOR package. Set url after Blob upload, then enable. Local 4P couch co-op only.",
+    note: "PlayBound-hosted Windows OpenBOR package on the VPS mirror. Local 4P couch co-op only.",
   },
   "relic-hunters-zero-remix": {
     enabled: true,
