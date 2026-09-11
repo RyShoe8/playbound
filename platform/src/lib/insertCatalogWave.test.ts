@@ -67,8 +67,11 @@ describe("insert-catalog-wave allowlists", () => {
   it("only names the batch games we intend to create", () => {
     expect([...NEW_GAME_SLUGS].sort()).toEqual(
       [
+        "baseball-stars-2",
         "earth-2140-trilogy",
         "populous-the-beginning",
+        "soccer-brawl",
+        "super-sidekicks",
         "the-spike-cross",
         "trackmania",
       ].sort()
@@ -78,6 +81,7 @@ describe("insert-catalog-wave allowlists", () => {
   it("only names the batch editions we intend to create", () => {
     expect([...NEW_EDITION_KEYS].sort()).toEqual(
       [
+        "baseball-stars-2/official",
         "earth-2140-trilogy/official",
         "earth-2140-trilogy/opene2140",
         "populous-the-beginning/official",
@@ -87,6 +91,8 @@ describe("insert-catalog-wave allowlists", () => {
         "s-t-a-l-k-e-r-shadow-of-chernobyl/lost-alpha",
         "s-t-a-l-k-e-r-shadow-of-chernobyl/official",
         "s-t-a-l-k-e-r-shadow-of-chernobyl/true-stalker",
+        "soccer-brawl/official",
+        "super-sidekicks/official",
       ].sort()
     );
   });

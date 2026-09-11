@@ -8743,11 +8743,17 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     }
   }
 
-  const isRom = /\.(gb|gbc|gba|nes|sfc|smc|z64|n64|gen)$/i.test(launchPath);
+  const isRom = /\.(gb|gbc|gba|nes|sfc|smc|z64|n64|gen|zip)$/i.test(launchPath);
   if (isRom) {
     const ext = path.extname(launchPath);
-    const { coreForExtension } = require("./services/ManagedRetroArch");
-    const core = coreForExtension(ext) || "gambatte";
+    const { coreForExtension, coreForSlug } = require("./services/ManagedRetroArch");
+    const { isNetplayRomGame } = require("./services/retroArchNetplay");
+    /*
+     * Slug-based core first: Neo Geo ROMs ship as .zip, which is ambiguous by
+     * extension alone. When the slug is registered in SLUG_CORE_OVERRIDES the
+     * launcher knows the exact core regardless of the file extension.
+     */
+    const core = coreForSlug(slug) || coreForExtension(ext) || "gambatte";
     sendProgress({ phase: "retroarch", message: `Preparing RetroArch (${core})…` });
     const runtime = await managedRetroArch.ensureCore(core);
     if (!runtime.ok || !runtime.binary || !runtime.corePath) {
@@ -8755,7 +8761,23 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     }
     const romFile = launchPath;
     launchPath = runtime.binary;
-    args = ["-L", runtime.corePath, romFile, "-f", ...args];
+    /*
+     * RetroArch netplay flags for multiplayer.
+     *
+     * When joining a party (resolvedJoin has a host), add -C <host> to connect
+     * to the host's netplay session. When the player *is* the host and this is
+     * a registered netplay ROM game, add -H so RetroArch listens for joiners.
+     * This is the same mechanism Mr. Boom already uses, generalised to any ROM.
+     */
+    if (resolvedJoin?.host && isNetplayRomGame(slug)) {
+      args = ["-L", runtime.corePath, romFile, "-f", "-C", resolvedJoin.host, ...args];
+    } else if (isNetplayRomGame(slug) && join === null) {
+      // Solo play or hosting — add -H so a joiner can connect later.
+      // The -H flag is harmless when nobody joins: RetroArch plays normally.
+      args = ["-L", runtime.corePath, romFile, "-f", "-H", ...args];
+    } else {
+      args = ["-L", runtime.corePath, romFile, "-f", ...args];
+    }
   }
 
   const wrapDos = shouldLaunchThroughDosBox(launchPath, { needsDosBox: Boolean(entry?.needsDosBox) });

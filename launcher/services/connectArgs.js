@@ -111,7 +111,15 @@ const CLIENT_CONNECT_ARGS = {
    */
   "zero-k": null,
   flightgear: ["--multiplay=out,10,{host},{port}"],
-  mrboom: ["-c", "{host}"],
+  mrboom: ["-C", "{host}"],
+  /*
+   * RetroArch netplay ROM games — same -C join mechanism as Mr. Boom.
+   * See docs/retroarch-netplay-games.md for adding more.
+   */
+  "baseball-stars": ["-C", "{host}"],
+  "baseball-stars-2": ["-C", "{host}"],
+  "super-sidekicks": ["-C", "{host}"],
+  "soccer-brawl": ["-C", "{host}"],
   /*
    * Host only, deliberately — there is no {port} to give it.
    *

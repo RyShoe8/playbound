@@ -4732,6 +4732,75 @@ export const editions: EditionSeed[] = [
     ],
     verificationLevel: "community_verified",
   },
+  // --- Super Sidekicks ---
+  {
+    gameSlug: "super-sidekicks",
+    slug: "official",
+    name: "Super Sidekicks — GOG Master (Default)",
+    shortDescription: "DRM-free GOG Windows release for Neo Geo soccer.",
+    description:
+      "SNK's Super Sidekicks from GOG. Install through Galaxy or the offline installer, then use PlayBound Connect with RetroArch/FBNeo for online head-to-head.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: true,
+    sortOrder: 10,
+    links: { website: "https://www.gog.com/en/game/super_sidekicks" },
+    installMethod: "gog",
+    installConfig: {
+      gog: { productUrl: "https://www.gog.com/en/game/super_sidekicks" },
+    },
+    features: ["Singleplayer", "Multiplayer", "Local Multiplayer", "Controller Support", "PlayBound Connect"],
+    tags: ["Soccer", "Neo Geo", "Classic"],
+    aliases: ["Super Sidekicks GOG"],
+    verificationLevel: "official",
+  },
+  // --- Baseball Stars 2 ---
+  {
+    gameSlug: "baseball-stars-2",
+    slug: "official",
+    name: "Baseball Stars 2 — GOG Master (Default)",
+    shortDescription: "DRM-free GOG Windows release for Neo Geo baseball.",
+    description:
+      "SNK's Baseball Stars 2 from GOG. Install through Galaxy or the offline installer, then use PlayBound Connect with RetroArch/FBNeo for online head-to-head.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: true,
+    sortOrder: 10,
+    links: { website: "https://www.gog.com/en/game/baseball_stars_2" },
+    installMethod: "gog",
+    installConfig: {
+      gog: { productUrl: "https://www.gog.com/en/game/baseball_stars_2" },
+    },
+    features: ["Singleplayer", "Multiplayer", "Local Multiplayer", "Controller Support", "PlayBound Connect"],
+    tags: ["Baseball", "Neo Geo", "Classic"],
+    aliases: ["Baseball Stars 2 GOG", "BS2 GOG"],
+    verificationLevel: "official",
+  },
+  // --- Soccer Brawl ---
+  {
+    gameSlug: "soccer-brawl",
+    slug: "official",
+    name: "Soccer Brawl — GOG Master (Default)",
+    shortDescription: "DRM-free GOG Windows release for Neo Geo five-a-side.",
+    description:
+      "SNK's Soccer Brawl from GOG. Install through Galaxy or the offline installer, then use PlayBound Connect with RetroArch/FBNeo for online head-to-head.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: true,
+    sortOrder: 10,
+    links: { website: "https://www.gog.com/en/game/soccer_brawl" },
+    installMethod: "gog",
+    installConfig: {
+      gog: { productUrl: "https://www.gog.com/en/game/soccer_brawl" },
+    },
+    features: ["Singleplayer", "Multiplayer", "Local Multiplayer", "Controller Support", "PlayBound Connect"],
+    tags: ["Soccer", "Neo Geo", "Classic"],
+    aliases: ["Soccer Brawl GOG"],
+    verificationLevel: "official",
+  },
 ];
 
 /** Clean display name for an edition pill/chip (e.g. removes trailing parenthesized subtitles). */

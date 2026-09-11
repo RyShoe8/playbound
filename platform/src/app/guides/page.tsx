@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, Wifi, Gamepad2, Users, ArrowRight, ShieldCheck, Download } from "lucide-react";
+import { BookOpen, Wifi, Gamepad2, Joystick, ArrowRight, ShieldCheck, Download } from "lucide-react";
 import { pageMetadata } from "@/lib/seo";
 import { Badge } from "@/components/ui/bits";
 import {
@@ -13,7 +13,7 @@ import { absoluteUrl } from "@/lib/site";
 export const metadata = pageMetadata({
   title: "PC Gaming Guides, Networking & Setup Tutorials",
   description:
-    "Clear, practical guides for PC gaming: playing LAN games over the internet without port forwarding, using your phone as a touchscreen gamepad, and party setup.",
+    "Clear, practical guides for PC gaming: playing LAN games over the internet without port forwarding, RetroArch netplay for GOG Neo Geo titles, using your phone as a touchscreen gamepad, and party setup.",
   path: "/guides",
 });
 
@@ -26,6 +26,15 @@ const featuredGuides = [
       "A complete guide to bridging local multiplayer games online through CGNAT and router firewalls without port forwarding. Explains how modern virtual networking and PlayBound Connect solve local LAN connectivity automatically.",
     icon: Wifi,
     badge: "Multiplayer Networking",
+  },
+  {
+    slug: "retroarch-netplay",
+    title: "Play GOG Neo Geo Sports Online",
+    subtitle: "Galaxy Install + RetroArch Netplay over Connect",
+    description:
+      "Buy DRM-free Super Sidekicks, Baseball Stars 2, or Soccer Brawl on GOG, one-click install through Galaxy from PlayBound, then host or join with RetroArch/FBNeo over PlayBound Connect.",
+    icon: Joystick,
+    badge: "RetroArch Netplay",
   },
   {
     slug: "phone-as-controller",
@@ -78,12 +87,13 @@ export default function GuidesIndexPage() {
         </h1>
         <p className="mt-3 text-base leading-relaxed text-muted-foreground sm:text-lg">
           Practical, straightforward solutions to common PC gaming friction: bypassing port
-          forwarding hurdles, setting up phone gamepads, and jumping into multiplayer with friends.
+          forwarding hurdles, RetroArch netplay for GOG Neo Geo sports, setting up phone gamepads,
+          and jumping into multiplayer with friends.
         </p>
       </div>
 
       {/* Featured Guides Grid */}
-      <div className="mt-10 grid gap-6 sm:grid-cols-2">
+      <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {featuredGuides.map((guide) => {
           const Icon = guide.icon;
           return (
