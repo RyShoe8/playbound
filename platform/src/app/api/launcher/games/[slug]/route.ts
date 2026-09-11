@@ -68,6 +68,7 @@ export async function GET(
         title: game.title,
         blurb: game.tagline,
         description: game.description,
+        longDescription: game.longDescription || null,
         features: game.features || [],
         genres: game.genres || [],
         tags: game.tags || [],

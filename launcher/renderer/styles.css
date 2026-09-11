@@ -2265,6 +2265,10 @@ body {
   white-space: pre-wrap;
 }
 
+.detail-prose + .detail-prose {
+  margin-top: 1em;
+}
+
 .detail-one-thing-card {
   position: relative;
   display: flex;

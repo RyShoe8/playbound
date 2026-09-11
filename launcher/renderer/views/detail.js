@@ -869,7 +869,21 @@ async function renderGameDetailView(slug, opts = {}) {
 
             <section class="detail-section">
               <h2 class="detail-section-title">About ${escapeHtml(detail.title)}</h2>
-              <p class="detail-prose">${escapeHtml(detail.description || detail.blurb || "")}</p>
+              ${(() => {
+                const about =
+                  detail.longDescription || detail.description || detail.blurb || "";
+                if (!about) return `<p class="detail-prose"></p>`;
+                const paras = String(about)
+                  .split(/\n\n+/)
+                  .map((p) => p.trim())
+                  .filter(Boolean);
+                if (paras.length <= 1) {
+                  return `<p class="detail-prose">${escapeHtml(about)}</p>`;
+                }
+                return paras
+                  .map((p) => `<p class="detail-prose">${escapeHtml(p)}</p>`)
+                  .join("");
+              })()}
             </section>
 
             ${whyHtml}

@@ -1,23 +1,50 @@
 /**
- * Insert-only catalog wave — runs on deploy (`npm run build` → insert:catalog-wave).
+ * Catalog wave — runs on deploy (`npm run build` → insert:catalog-wave).
  *
  * Contract:
  *   - explicit allowlists only (never the whole seed catalog)
- *   - insert-only: existing rows are left exactly as they are
- *   - never deletes, never $sets, never publishes a parent game
- *   - new games are created as draft / unpublished
+ *   - inserts: create only when absent; new games are draft / unpublished
+ *   - patches: $set ONLY allowlisted fields on existing named docs
+ *   - never deletes, never upserts patches, never publishes a parent game
+ *   - never writes a slug that is not on an allowlist
  *
- * Allowlists live in `insert-catalog-wave.allowlist.ts`. If a key is not listed,
- * this script will not create it.
+ * Allowlists live in `insert-catalog-wave.allowlist.ts`.
  */
 import { loadEnvConfig } from "@next/env";
 import {
   NEW_EDITION_KEYS,
   NEW_GAME_SLUGS,
   NEW_MOD_SLUGS,
+  PATCH_EDITION_FIELDS,
+  PATCH_GAME_FIELDS,
 } from "./insert-catalog-wave.allowlist";
 
 loadEnvConfig(process.cwd());
+
+function pickFields(
+  source: Record<string, unknown>,
+  fields: readonly string[]
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const field of fields) {
+    if (field.includes(".")) {
+      const [head, ...rest] = field.split(".");
+      if (!head || rest.length === 0) continue;
+      let cursor: unknown = source[head];
+      for (const part of rest) {
+        if (cursor == null || typeof cursor !== "object") {
+          cursor = undefined;
+          break;
+        }
+        cursor = (cursor as Record<string, unknown>)[part];
+      }
+      out[field] = cursor;
+    } else {
+      out[field] = source[field];
+    }
+  }
+  return out;
+}
 
 async function main() {
   if (!process.env.MONGODB_URI) {
@@ -27,8 +54,16 @@ async function main() {
 
   const allowedEditions = new Set(NEW_EDITION_KEYS);
   const allowedMods = new Set(NEW_MOD_SLUGS);
+  const patchGameSlugs = Object.keys(PATCH_GAME_FIELDS);
+  const patchEditionKeys = Object.keys(PATCH_EDITION_FIELDS);
 
-  if (NEW_GAME_SLUGS.length === 0 && allowedEditions.size === 0 && allowedMods.size === 0) {
+  if (
+    NEW_GAME_SLUGS.length === 0 &&
+    allowedEditions.size === 0 &&
+    allowedMods.size === 0 &&
+    patchGameSlugs.length === 0 &&
+    patchEditionKeys.length === 0
+  ) {
     console.log("insert-catalog-wave: allowlists empty — nothing to do.");
     process.exit(0);
   }
@@ -41,8 +76,14 @@ async function main() {
   const { editions } = await import("../src/lib/data/editions");
   const { mods } = await import("../src/lib/data/mods");
   const { developersBySlug } = await import("../src/lib/data/developers");
+  const { launcherInstallBySlug } = await import("../src/lib/data/launcherInstall");
   const { defaultArtFor } = await import("../src/lib/gamePayload");
   const { ensureDerivedModFields } = await import("../src/lib/enrich");
+  const {
+    ASSAULTCUBE_SLUG,
+    assaultCubeSystemRequirements,
+    assaultCubeHardwareRequirements,
+  } = await import("../src/lib/data/assaultCubeSpecs");
 
   await dbConnect();
 
@@ -69,6 +110,8 @@ async function main() {
     ...new Set([
       ...NEW_GAME_SLUGS,
       ...NEW_EDITION_KEYS.map((k) => k.split("/")[0]!).filter(Boolean),
+      ...patchEditionKeys.map((k) => k.split("/")[0]!).filter(Boolean),
+      ...patchGameSlugs,
     ]),
   ];
   const parents = await CatalogGame.find({ slug: { $in: parentSlugs } })
@@ -154,10 +197,126 @@ async function main() {
     modsCreated++;
   }
 
+  let gamesPatched = 0;
+  let gamesPatchSkipped = 0;
+  for (const slug of patchGameSlugs) {
+    const fields = PATCH_GAME_FIELDS[slug];
+    if (!fields || fields.length === 0) {
+      console.warn(`insert-catalog-wave — empty patch field list for ${slug}, skipping`);
+      gamesPatchSkipped++;
+      continue;
+    }
+
+    const existing = await CatalogGame.findOne({ slug }).select("_id").lean();
+    if (!existing) {
+      console.warn(`insert-catalog-wave — patch game ${slug} not in DB, skipping (no upsert)`);
+      gamesPatchSkipped++;
+      continue;
+    }
+
+    let source: Record<string, unknown>;
+    if (slug === ASSAULTCUBE_SLUG) {
+      const install = launcherInstallBySlug[ASSAULTCUBE_SLUG];
+      if (!install) {
+        console.warn(`insert-catalog-wave — no launcherInstall for ${slug}, skipping`);
+        gamesPatchSkipped++;
+        continue;
+      }
+      source = {
+        launcherInstall: install,
+        systemRequirements: assaultCubeSystemRequirements,
+        hardwareRequirements: assaultCubeHardwareRequirements,
+      };
+    } else {
+      const seed = games.find((g) => g.slug === slug);
+      if (!seed) {
+        console.warn(`insert-catalog-wave — patch game ${slug} not in seed, skipping`);
+        gamesPatchSkipped++;
+        continue;
+      }
+      source = seed as unknown as Record<string, unknown>;
+    }
+
+    const payload = pickFields(source, fields);
+    for (const field of fields) {
+      if (payload[field] === undefined) {
+        throw new Error(
+          `insert-catalog-wave — refuse patch ${slug}: missing source for field "${field}"`
+        );
+      }
+    }
+
+    const result = await CatalogGame.updateOne({ slug }, { $set: payload });
+    if (result.matchedCount !== 1) {
+      throw new Error(
+        `insert-catalog-wave — patch ${slug} matched ${result.matchedCount}, expected 1`
+      );
+    }
+    console.log(`patch game ${slug} fields=[${fields.join(", ")}]`);
+    gamesPatched++;
+  }
+
+  let editionsPatched = 0;
+  let editionsPatchSkipped = 0;
+  for (const key of patchEditionKeys) {
+    const fields = PATCH_EDITION_FIELDS[key];
+    if (!fields || fields.length === 0) {
+      console.warn(`insert-catalog-wave — empty patch field list for ${key}, skipping`);
+      editionsPatchSkipped++;
+      continue;
+    }
+    const [gameSlug, editionSlug] = key.split("/");
+    if (!gameSlug || !editionSlug) {
+      console.warn(`insert-catalog-wave — bad edition key ${key}, skipping`);
+      editionsPatchSkipped++;
+      continue;
+    }
+
+    const seed = editions.find((e) => e.gameSlug === gameSlug && e.slug === editionSlug);
+    if (!seed) {
+      console.warn(`insert-catalog-wave — patch edition ${key} not in seed, skipping`);
+      editionsPatchSkipped++;
+      continue;
+    }
+
+    const existing = await Edition.findOne({ gameSlug, slug: editionSlug }).select("_id").lean();
+    if (!existing) {
+      console.warn(`insert-catalog-wave — patch edition ${key} not in DB, skipping (no upsert)`);
+      editionsPatchSkipped++;
+      continue;
+    }
+
+    const source: Record<string, unknown> = {
+      name: seed.name,
+      description: seed.description,
+      version: seed.version,
+      installConfig: seed.installConfig,
+    };
+    const payload = pickFields(source, fields);
+    for (const field of fields) {
+      if (payload[field] === undefined) {
+        throw new Error(
+          `insert-catalog-wave — refuse patch ${key}: missing source for field "${field}"`
+        );
+      }
+    }
+
+    const result = await Edition.updateOne({ gameSlug, slug: editionSlug }, { $set: payload });
+    if (result.matchedCount !== 1) {
+      throw new Error(
+        `insert-catalog-wave — patch ${key} matched ${result.matchedCount}, expected 1`
+      );
+    }
+    console.log(`patch edition ${key} fields=[${fields.join(", ")}]`);
+    editionsPatched++;
+  }
+
   console.log(
     `insert-catalog-wave: games +${gamesCreated}/skip ${gamesSkipped}, ` +
       `editions +${editionsCreated}/skip ${editionsSkipped}, ` +
-      `mods +${modsCreated}/skip ${modsSkipped}`
+      `mods +${modsCreated}/skip ${modsSkipped}, ` +
+      `game-patches ${gamesPatched}/skip ${gamesPatchSkipped}, ` +
+      `edition-patches ${editionsPatched}/skip ${editionsPatchSkipped}`
   );
   process.exit(0);
 }
