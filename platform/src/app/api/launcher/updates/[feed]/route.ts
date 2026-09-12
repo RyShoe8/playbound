@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Artifact from "@/lib/models/Artifact";
+import {
+  buildSignedWindowsLatestYml,
+  parseWindowsSetupFilename,
+} from "@/lib/launcherUpdateFeed";
 
 export async function GET(
   _req: Request,
@@ -18,22 +22,14 @@ export async function GET(
         ],
       }).sort({ createdAt: -1 });
 
-      if (artifact) {
-        const sha512 =
-          artifact.sha512 ||
-          (artifact.version === "0.3.56"
-            ? "DvRqyStiNxOSc1HZrirsZ5q8cQJgIHjcvaMD3bsf3RUP9+sPjp/Fxno4d/BTOtJeArIeW6RUW0bR2d7mFyk3mw=="
-            : "");
-
-        const yml = `version: ${artifact.version}
-files:
-  - url: https://playbound.club/api/launcher/download
-    sha512: ${sha512}
-    size: ${artifact.sizeBytes}
-path: ${artifact.filename}
-sha512: ${sha512}
-releaseDate: '${artifact.createdAt ? artifact.createdAt.toISOString() : new Date().toISOString()}'
-`;
+      if (artifact?.filename && parseWindowsSetupFilename(artifact.filename) && artifact.sha512) {
+        const yml = buildSignedWindowsLatestYml({
+          version: String(artifact.version),
+          fileName: artifact.filename,
+          sizeBytes: Number(artifact.sizeBytes) || 0,
+          sha512: String(artifact.sha512),
+          releaseDate: artifact.createdAt || new Date(),
+        });
         return new NextResponse(yml, {
           status: 200,
           headers: {

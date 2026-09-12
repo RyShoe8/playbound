@@ -23,19 +23,11 @@ async function computeChecksums(file: File): Promise<{ sha256: string; sha512: s
 }
 
 /**
- * Upload a signed launcher installer straight to the VPS archive.
+ * Upload a signed launcher installer — the entire public Windows release path.
  *
- * Every prior release shipped by running scripts/upload-launcher.ts on the
- * signing machine: real to Blob, but the VPS-archive step needs MONGODB_URI
- * and GAME_HOST_SECRET, and both are Vercel "Sensitive" env vars that
- * `vercel env pull` cannot retrieve — so that step always failed silently and
- * no release ever actually reached the VPS. This form fixes that by doing the
- * archive server-side, through this already-authenticated admin session,
- * where the real credentials already live.
- *
- * Once this shows Verified, the release is a normal row in the cache table
- * below — Promote to R2 from there works exactly as it does for any other
- * artifact.
+ * After `npm run dist:prod`, upload here, wait for On VPS, then Promote to R2
+ * in the cache table below. That publishes site download + auto-update
+ * (`latest.yml` with a URL ending in `.exe`). Do not use `upload:launcher --prod`.
  */
 export function LauncherReleaseUploader() {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -128,7 +120,7 @@ export function LauncherReleaseUploader() {
       const result = await pollUntilVerified(body.artifactId, file.size);
       setStatus(
         result.ok
-          ? "On the VPS. Promote to R2 below to seed the hot cache."
+          ? "On the VPS. Promote to R2 below — that finishes the public signed release (site download + auto-update)."
           : result.detail || "VPS transfer did not complete."
       );
     } catch (err) {
@@ -164,9 +156,9 @@ export function LauncherReleaseUploader() {
           {busy ? "Uploading…" : "Upload signed launcher"}
         </button>
         <span className="text-[11px] font-medium text-muted-foreground">
-          PlayBound-Setup-&lt;version&gt;.exe, freshly built with{" "}
-          <code className="rounded bg-secondary px-1 py-0.5">npm run dist:prod</code>. It becomes live only
-          after the VPS confirms the copy.
+          PlayBound-Setup-&lt;version&gt;.exe from{" "}
+          <code className="rounded bg-secondary px-1 py-0.5">npm run dist:prod</code>. Public
+          release = this upload + Promote to R2 (no CLI Blob --prod step).
         </span>
       </div>
       {percent !== null ? (

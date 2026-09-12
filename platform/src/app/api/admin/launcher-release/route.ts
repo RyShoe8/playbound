@@ -6,37 +6,34 @@ import { put } from "@vercel/blob";
 import { ensureArtifact, ensurePublicSource } from "@/lib/mirrors/ensureArtifact";
 import { archiveArtifactToVps } from "@/lib/mirrors/cacheManager";
 import { deleteArchivedArtifactOnHost } from "@/lib/gameHost/client";
-
-const FILENAME_RE = /^PlayBound-Setup-(\d+\.\d+\.\d+)\.exe$/i;
+import {
+  WINDOWS_SETUP_FILENAME_RE,
+  buildSignedWindowsLatestYml,
+  ensureLauncherRelativePath,
+} from "@/lib/launcherUpdateFeed";
 
 const payload = z.object({
-  fileName: z.string().regex(FILENAME_RE, "Expected PlayBound-Setup-<version>.exe"),
+  fileName: z
+    .string()
+    .regex(WINDOWS_SETUP_FILENAME_RE, "Expected PlayBound-Setup-<version>.exe"),
   sourceUrl: z.string().url().refine((v) => new URL(v).protocol === "https:", "Must be HTTPS"),
   sizeBytes: z.number().int().positive(),
   sha256: z
     .string()
     .regex(/^[0-9a-f]{64}$/i, "sha256 must be 64 hex characters")
     .optional(),
-  sha512: z.string().optional(),
+  sha512: z.string().min(1, "sha512 is required for public auto-update"),
 });
 
 /**
- * Register a signed launcher installer and archive it to the VPS.
+ * Register a signed launcher installer, publish latest.yml, and archive to the VPS.
  *
- * Runs on Vercel, so it has the production MONGODB_URI and GAME_HOST_SECRET
- * that a local machine cannot obtain — those two are Vercel "Sensitive"
- * variables, and `vercel env pull` structurally cannot retrieve them. Every
- * local run of scripts/upload-launcher.ts has published to Blob correctly and
- * then silently failed to reach the VPS for exactly that reason. This route
- * is the fix: the admin uploads through the browser, already-authenticated,
- * and the archive happens server-side where the real credentials already
- * live.
+ * This is the canonical public Windows release path (Admin upload → Promote to R2).
+ * Runs on Vercel so MONGODB_URI and GAME_HOST_SECRET are available — local
+ * `upload:launcher --prod` cannot archive to the VPS and is refused for Windows.
  *
- * ensureArtifact is called directly rather than relying on the self-heal
- * fallback inside archiveArtifactToVps, because that fallback requires a
- * gameSlug — reasonable for a game package with a missing bookkeeping row,
- * but a launcher release has no gameSlug at all. Creating the record here,
- * deliberately, is what makes a *first-ever* upload of a given version work.
+ * latest.yml file URLs must end with PlayBound-Setup-<version>.exe; electron-updater
+ * caches by URL basename and would otherwise save a file named "download".
  */
 export async function POST(req: Request) {
   const { session, error } = await requireAdminSession();
@@ -44,7 +41,7 @@ export async function POST(req: Request) {
 
   try {
     const input = payload.parse(await req.json());
-    const version = FILENAME_RE.exec(input.fileName)![1];
+    const version = WINDOWS_SETUP_FILENAME_RE.exec(input.fileName)![1];
     const artifactId = `playbound-launcher-windows-${version}`;
 
     await dbConnect();
@@ -56,6 +53,7 @@ export async function POST(req: Request) {
       filename: input.fileName,
       sizeBytes: input.sizeBytes,
       sha256: input.sha256 || null,
+      sha512: input.sha512 || null,
       artifactType: "launcher",
     });
     if (!artifact) {
@@ -72,7 +70,7 @@ export async function POST(req: Request) {
      */
     artifact.sizeBytes = input.sizeBytes;
     if (input.sha256) artifact.sha256 = input.sha256;
-    if (input.sha512) artifact.sha512 = input.sha512;
+    artifact.sha512 = input.sha512;
     artifact.filename = input.fileName;
 
     /*
@@ -95,8 +93,12 @@ export async function POST(req: Request) {
      * behind.
      */
     const legacyPath = `artifacts/${artifactId}`;
-    const wantPath = `${legacyPath}/${input.fileName}`;
-    if (artifact.relativePath !== wantPath) {
+    const { relativePath: wantPath, healed } = ensureLauncherRelativePath(
+      artifactId,
+      input.fileName,
+      artifact.relativePath
+    );
+    if (healed || artifact.relativePath !== wantPath) {
       artifact.relativePath = wantPath;
       artifact.vpsStatus = "missing";
       artifact.r2Status = "not_cached";
@@ -114,31 +116,34 @@ export async function POST(req: Request) {
     await artifact.save();
 
     /*
-     * Publish the latest.yml update manifest so electron-updater generic provider
-     * immediately discovers this new signed release. The download URL points to
-     * https://playbound.club/api/launcher/download which serves straight from R2,
-     * so zero bytes of the heavy binary live on or pass through Vercel Blob.
+     * Publish latest.yml for electron-updater. The file URL *must* end with
+     * .exe — electron-updater caches by URL basename, and a bare
+     * /api/launcher/download path becomes a file named "download".
      */
-    if (input.sha512) {
-      try {
-        const yml = `version: ${version}
-files:
-  - url: https://playbound.club/api/launcher/download
-    sha512: ${input.sha512}
-    size: ${input.sizeBytes}
-path: ${input.fileName}
-sha512: ${input.sha512}
-releaseDate: '${new Date().toISOString()}'
-`;
-        await put("launcher/latest.yml", yml, {
-          access: "public",
-          addRandomSuffix: false,
-          allowOverwrite: true,
-          contentType: "text/yaml; charset=utf-8",
-        });
-      } catch (err) {
-        console.warn("[launcher-release] Could not publish latest.yml manifest to Blob:", err);
-      }
+    try {
+      const yml = buildSignedWindowsLatestYml({
+        version,
+        fileName: input.fileName,
+        sizeBytes: input.sizeBytes,
+        sha512: input.sha512,
+      });
+      await put("launcher/latest.yml", yml, {
+        access: "public",
+        addRandomSuffix: false,
+        allowOverwrite: true,
+        contentType: "text/yaml; charset=utf-8",
+      });
+    } catch (err) {
+      console.error("[launcher-release] Refusing to continue without latest.yml:", err);
+      return NextResponse.json(
+        {
+          error:
+            err instanceof Error
+              ? err.message
+              : "Could not publish latest.yml (update feed must end with .exe)",
+        },
+        { status: 500 }
+      );
     }
 
     await ensurePublicSource({
