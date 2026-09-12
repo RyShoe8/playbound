@@ -3,8 +3,13 @@ import { requireAdminSession } from "@/lib/requireAdmin";
 import dbConnect from "@/lib/db";
 import Artifact from "@/lib/models/Artifact";
 import MirrorSource from "@/lib/models/MirrorSource";
-import { catalogArchiveSourceUrl, refreshUploadingVpsArtifacts } from "@/lib/mirrors/cacheManager";
+import {
+  catalogArchiveSourceUrl,
+  evictSupersededLauncherVersionsFromR2,
+  refreshUploadingVpsArtifacts,
+} from "@/lib/mirrors/cacheManager";
 import { filterCurrentArtifacts } from "@/lib/mirrors/currentArtifacts";
+import { launcherPlatformFromArtifactId, pickLatestLauncherArtifact } from "@/lib/mirrors/semver";
 
 export async function GET() {
   const { error } = await requireAdminSession();
@@ -14,8 +19,33 @@ export async function GET() {
     await dbConnect();
     await refreshUploadingVpsArtifacts();
 
-    const rawArtifacts = await Artifact.find({}).sort({ r2Status: 1, r2PromotionScore: -1 }).lean();
-    const artifacts = await filterCurrentArtifacts(rawArtifacts);
+    const rawArtifacts = await Artifact.find({}).sort({ r2Status: 1, r2PromotionScore: -1 });
+    /*
+     * Free R2 space occupied by superseded launcher builds whenever an admin
+     * opens this page — only when a newer launcher is already verified/cached.
+     */
+    const launchers = rawArtifacts.filter(
+      (a) =>
+        a.artifactType === "launcher" || String(a.artifactId).startsWith("playbound-launcher-")
+    );
+    const byPlatform = new Map<string, typeof launchers>();
+    for (const art of launchers) {
+      const platform = launcherPlatformFromArtifactId(art.artifactId);
+      const list = byPlatform.get(platform) || [];
+      list.push(art);
+      byPlatform.set(platform, list);
+    }
+    for (const [, list] of byPlatform) {
+      const latest = pickLatestLauncherArtifact(list);
+      if (latest && (latest.r2Status === "cached" || latest.vpsStatus === "verified")) {
+        await evictSupersededLauncherVersionsFromR2(latest.artifactId, "system").catch((err) => {
+          console.warn("[download-mirrors/cache] superseded launcher R2 cleanup failed:", err);
+        });
+      }
+    }
+
+    const refreshed = await Artifact.find({}).sort({ r2Status: 1, r2PromotionScore: -1 }).lean();
+    const artifacts = await filterCurrentArtifacts(refreshed);
     const sources = await MirrorSource.find({ sourceType: "public" }).lean();
 
     const sourceMap = new Map<string, typeof sources>();

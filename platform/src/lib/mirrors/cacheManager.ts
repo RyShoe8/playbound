@@ -709,20 +709,31 @@ export async function manualPromoteArtifact(
   artifact.r2Disabled = false;
   await artifact.save();
 
+  let supersededNote = "";
+  if (artifact.artifactType === "launcher") {
+    const evicted = await evictSupersededLauncherVersionsFromR2(artifact.artifactId, actor);
+    if (evicted > 0) {
+      supersededNote = ` Evicted ${evicted} older launcher version(s) from R2.`;
+    }
+  }
+
   await MirrorEvent.create({
     eventType: "manual_promote",
     actor,
     artifactId: artifact.artifactId,
-    details: `${actor} manually promoted ${artifact.filename} to R2 hot cache (${syncResult.message})`,
+    details: `${actor} manually promoted ${artifact.filename} to R2 hot cache (${syncResult.message})${supersededNote}`,
   });
 
   onProgress?.({
     stage: "done",
     percent: 100,
-    message: `Promoted ${artifact.filename} to R2 hot cache. ${syncResult.message}`,
+    message: `Promoted ${artifact.filename} to R2 hot cache. ${syncResult.message}${supersededNote}`,
   });
 
-  return { success: true, message: `Promoted ${artifact.filename} to R2 hot cache. ${syncResult.message}` };
+  return {
+    success: true,
+    message: `Promoted ${artifact.filename} to R2 hot cache. ${syncResult.message}${supersededNote}`,
+  };
 }
 
 
@@ -749,6 +760,55 @@ export async function manualEvictArtifact(artifactId: string, actor: string): Pr
   });
 
   return { success: true, message: `Evicted ${artifact.filename} from R2 hot cache.` };
+}
+
+/**
+ * Drop older Windows/mac/linux launcher builds from R2 after a newer one is promoted.
+ * Keeps Mongo + VPS rows so Clean Old Versions can finish bookkeeping later.
+ */
+export async function evictSupersededLauncherVersionsFromR2(
+  keepArtifactId: string,
+  actor: string
+): Promise<number> {
+  await dbConnect();
+  const { launcherPlatformFromArtifactId } = await import("@/lib/mirrors/semver");
+  const keep = await Artifact.findOne({ artifactId: keepArtifactId });
+  if (!keep) return 0;
+  const platform = launcherPlatformFromArtifactId(keep.artifactId);
+
+  const others = await Artifact.find({
+    artifactType: "launcher",
+    artifactId: { $ne: keepArtifactId },
+    r2Status: { $in: ["cached", "uploading", "candidate"] },
+  });
+
+  let evicted = 0;
+  for (const other of others) {
+    if (launcherPlatformFromArtifactId(other.artifactId) !== platform) continue;
+    try {
+      await deleteObjectFromR2(other.relativePath);
+      // Also try legacy key without filename (pre-.exe path shape).
+      const legacyKey = `artifacts/${other.artifactId}`;
+      if (other.relativePath !== legacyKey) {
+        await deleteObjectFromR2(legacyKey).catch(() => ({ success: false }));
+      }
+      other.r2Status = "not_cached";
+      other.r2LastEvicted = new Date();
+      other.r2Protected = false;
+      other.r2StatusMessage = `Superseded by ${keep.filename}`;
+      await other.save();
+      evicted += 1;
+      await MirrorEvent.create({
+        eventType: "manual_evict",
+        actor,
+        artifactId: other.artifactId,
+        details: `${actor} evicted superseded launcher ${other.filename} from R2 (kept ${keep.filename})`,
+      });
+    } catch (err) {
+      console.warn(`[mirrors] Failed evicting superseded launcher ${other.artifactId}:`, err);
+    }
+  }
+  return evicted;
 }
 
 /**

@@ -13,6 +13,8 @@ export type MinimalArtifact = {
   version?: string | null;
   filename?: string | null;
   artifactType?: string | null;
+  vpsStatus?: string | null;
+  r2Status?: string | null;
 };
 
 function isLauncherArtifact(art: MinimalArtifact): boolean {
@@ -22,9 +24,9 @@ function isLauncherArtifact(art: MinimalArtifact): boolean {
 /**
  * Filter artifacts for the admin cache table / prune helpers.
  *
- * - Launchers: keep every launcher row by default so a just-uploaded Setup.exe
- *   always appears (even if a newer stub version exists). Pass
- *   `launcherKeep: "latest"` for prune-old so superseded installer rows go away.
+ * - Launchers: by default keep only the newest version per platform, plus any
+ *   still uploading to VPS/R2 so an in-flight release stays visible. Pass
+ *   `launcherKeep: "all"` only when you explicitly need history.
  * - Games: only active catalog recipes / newest matching install.
  */
 export async function filterCurrentArtifacts<T extends MinimalArtifact>(
@@ -32,7 +34,7 @@ export async function filterCurrentArtifacts<T extends MinimalArtifact>(
   options?: { launcherKeep?: "all" | "latest" }
 ): Promise<T[]> {
   if (!artifacts || !artifacts.length) return [];
-  const launcherKeep = options?.launcherKeep ?? "all";
+  const launcherKeep = options?.launcherKeep ?? "latest";
 
   const catalogDocs = await CatalogGame.find({}).select("slug launcherInstall").lean().catch(() => []);
   const activeGameMap = new Map<string, { version?: string; fileName?: string }>();
@@ -110,7 +112,10 @@ export async function filterCurrentArtifacts<T extends MinimalArtifact>(
 
   return artifacts.filter((art) => {
     if (isLauncherArtifact(art)) {
-      return launcherKeep === "all" || currentLauncherArtifactIds.has(art.artifactId);
+      if (launcherKeep === "all") return true;
+      if (currentLauncherArtifactIds.has(art.artifactId)) return true;
+      // Keep in-flight releases visible even if semver ranking already moved on.
+      return art.vpsStatus === "uploading" || art.r2Status === "uploading";
     }
     if (art.artifactType === "edition") {
       return editionArtifacts.has(art.artifactId);
