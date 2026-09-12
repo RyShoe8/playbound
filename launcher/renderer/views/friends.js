@@ -2,7 +2,7 @@ import { createFreeOfferCard, createGameCard } from "../cards.js";
 import { CADENCE } from "../cadence.js";
 import { pollSuspended } from "../pollGate.js";
 import { maybeOfferPhoneControllerThenPlay } from "../phoneController.js";
-import { ensureCouchBackground, startCouchSessionQuiet } from "./couch.js";
+import { ensureCouchBackground, startCouchSessionQuiet, pushHostDisplayToPeers } from "./couch.js";
 import { ensureHostDisplayStream } from "../hostDisplayStream.js";
 import { maybeShowLaunchGuidance } from "../guidanceModal.js";
 import {
@@ -1448,6 +1448,8 @@ const ICON = {
  */
 let partyGamesCache = null;
 let partyGamesCacheKey = null;
+/** Party game picker: true = couch co-op only; false = online multiplayer only. */
+let partyCouchCoopFilter = false;
 /** Blocks poll repaints from undoing an in-flight party game pick. */
 let partyMutationInFlight = 0;
 
@@ -1526,9 +1528,11 @@ function partyGameOptionLabel(title, { testing = false, couch = false } = {}) {
 function partyGameOptionsHtml(selectedSlug, party) {
   const required = Array.isArray(party?.requiredPlatforms) ? party.requiredPlatforms : [];
   const memberCount = Array.isArray(party?.members) ? party.members.length : 1;
+  const couchOnly = new Set(party?.couchOnlyGames || []);
   const games = filterByDiscovery(partyGamesCache || [])
     .filter((g) => partyCanAllPlay(g, required))
-    .filter((g) => fitsPartySize(g.maxPlayers, memberCount));
+    .filter((g) => fitsPartySize(g.maxPlayers, memberCount))
+    .filter((g) => (partyCouchCoopFilter ? couchOnly.has(g.slug) : !couchOnly.has(g.slug)));
   /*
    * Marked in the list, not after the fact. These games have no online play at
    * all, and a leader who picked one expecting a server had already committed
@@ -1536,7 +1540,6 @@ function partyGameOptionsHtml(selectedSlug, party) {
    * on the party payload because the launcher cannot import the registry that
    * knows which games these are.
    */
-  const couchOnly = new Set(party?.couchOnlyGames || []);
   const options = [`<option value="">Select a game</option>`];
   for (const g of games) {
     const label = partyGameOptionLabel(g.title, {
@@ -1740,7 +1743,16 @@ function buildPartyViewHtml(party) {
     : "";
 
   const gameHtml = isLeader && !ended
-    ? `<label class="party-field-label" for="party-game-select">Game</label>
+    ? `<label class="party-couch-filter">
+         <span>Couch co-op</span>
+         <input type="checkbox" id="party-couch-coop-filter"${partyCouchCoopFilter ? " checked" : ""} />
+       </label>
+       <p class="view-sub party-couch-filter-hint">${
+         partyCouchCoopFilter
+           ? "Showing local couch co-op games (online via Connect)."
+           : "Showing online multiplayer games."
+       }</p>
+       <label class="party-field-label" for="party-game-select">Game</label>
        <select class="input-text party-game-select" id="party-game-select" aria-label="Party game">
          ${partyGameOptionsHtml(party.gameSlug || "", party)}
        </select>${openRaModHtml}${couchBadgeHtml}${platformNoteHtml}`
@@ -1991,16 +2003,13 @@ function buildPartyViewHtml(party) {
     ? `<div class="party-couch">
          <p class="party-section-label">Join online</p>
          <p class="party-couch-code">Code <strong>${escapeHtml(String(couchPanel.joinCode))}</strong></p>
-         <img class="party-couch-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
-           couchPanel.joinUrl || `https://playbound.club/c/${couchPanel.joinCode}`
-         )}" alt="Scan to join" width="160" height="160" />
-         <p class="view-sub">Scan the QR, or open <strong>playbound.club/c</strong> and enter the code. Keyboard &amp; mouse by default; pads optional.</p>
+         <p class="view-sub">Friends: open the game view in a separate window (keyboard &amp; mouse by default). Phones can use playbound.club/c with the code.</p>
          <button type="button" id="btn-party-couch-copy" class="party-btn btn-secondary" data-code="${escapeHtml(
            String(couchPanel.joinCode)
          )}">${ICON.phone} Copy code</button>
          <button type="button" id="btn-party-couch-open" class="party-btn btn-primary" data-url="${escapeHtml(
            couchPanel.joinUrl || `https://playbound.club/c/${couchPanel.joinCode}`
-         )}">${ICON.phone} Open controller</button>
+         )}">${ICON.phone} Open game view</button>
        </div>`
     : `<p class="${
         couchPanel.status === "failed"
@@ -2915,6 +2924,14 @@ function wirePartyView(slot, party) {
   }
 
   const gameSelect = slot.querySelector("#party-game-select");
+  const couchFilter = slot.querySelector("#party-couch-coop-filter");
+  if (couchFilter) {
+    couchFilter.addEventListener("change", () => {
+      partyCouchCoopFilter = Boolean(couchFilter.checked);
+      slot.dataset.sig = "";
+      paintPartyArea({ myParties: [state._activeParty], discoverable: [] }, { force: true });
+    });
+  }
   if (gameSelect) {
     gameSelect.addEventListener("change", async () => {
       const slug = gameSelect.value;
@@ -3198,7 +3215,7 @@ function wirePartyView(slot, party) {
       const code = couchCopyBtn.dataset.code || "";
       if (!code) return;
       void window.playbound.clipboardWrite?.(code);
-      setStatus("Copied code — phones open playbound.club/c and enter it (or scan the QR).");
+      setStatus("Copied code — friends Open game view, or phones use playbound.club/c.");
     });
   }
   const couchOpenBtn = slot.querySelector("#btn-party-couch-open");
@@ -3206,8 +3223,16 @@ function wirePartyView(slot, party) {
     couchOpenBtn.addEventListener("click", () => {
       const url = couchOpenBtn.dataset.url || "";
       if (!url) return;
-      if (window.playbound.openExternal) window.playbound.openExternal(url);
-      else window.open(url, "_blank", "noopener,noreferrer");
+      const sep = url.includes("?") ? "&" : "?";
+      const gameViewUrl = `${url}${sep}view=game`;
+      const features =
+        "popup=yes,noopener,noreferrer,width=" +
+        Math.max(1024, Math.floor(window.screen.availWidth * 0.92)) +
+        ",height=" +
+        Math.max(640, Math.floor(window.screen.availHeight * 0.92)) +
+        ",left=40,top=20";
+      const opened = window.open(gameViewUrl, "playbound-game-view", features);
+      if (!opened && window.playbound.openExternal) window.playbound.openExternal(gameViewUrl);
     });
   }
 
@@ -3487,10 +3512,12 @@ async function maybeStartPartyCouch(partyId, party) {
       throw new Error("Could not start online controllers.");
     }
     ensureCouchBackground();
-    // Best-effort: share host screen for remote game view (pads still work if declined).
-    void ensureHostDisplayStream().then((stream) => {
-      if (stream) setStatus("Sharing game view for online multiplayer…");
-    });
+    // Capture before publishing the code so the first Join gets video tracks in the answer.
+    const stream = await ensureHostDisplayStream();
+    if (stream) {
+      setStatus("Sharing game view for online multiplayer…");
+      void pushHostDisplayToPeers();
+    }
     await window.playbound.setPartyCouchSession(partyId, {
       joinCode: session.joinCode,
       joinUrl: session.joinUrl || "",

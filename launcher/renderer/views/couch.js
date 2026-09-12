@@ -171,6 +171,16 @@ async function pollSignals() {
     if (payload.kind === "offer" && payload.from && payload.sdp) {
       await answerOffer(payload.from, payload.sdp, session);
     }
+    if (payload.kind === "answer" && payload.from && payload.sdp) {
+      const pc = peers.get(payload.from);
+      if (pc && pc.signalingState === "have-local-offer") {
+        try {
+          await pc.setRemoteDescription(payload.sdp);
+        } catch {
+          /* ignore */
+        }
+      }
+    }
     if (payload.kind === "ice" && payload.from && payload.candidate) {
       const pc = peers.get(payload.from);
       if (pc) {
@@ -182,6 +192,58 @@ async function pollSignals() {
       }
     }
   }
+}
+
+async function attachDisplayTracks(pc) {
+  try {
+    const display = await ensureHostDisplayStream();
+    if (!display) return false;
+    const senders = pc.getSenders();
+    for (const track of display.getTracks()) {
+      const already = senders.some((s) => s.track && s.track.id === track.id);
+      if (!already) pc.addTrack(track, display);
+    }
+    return true;
+  } catch (err) {
+    console.warn("[couch] could not attach display track:", err?.message || err);
+    return false;
+  }
+}
+
+/**
+ * Re-push host game view onto every live peer (e.g. capture started after Join).
+ * Controllers stay on recvonly; we renegotiate so late capture still lands.
+ */
+export async function pushHostDisplayToPeers() {
+  const display = await ensureHostDisplayStream();
+  if (!display || peers.size === 0) return Boolean(display);
+  for (const [controllerId, pc] of peers.entries()) {
+    try {
+      const senders = pc.getSenders();
+      let added = false;
+      for (const track of display.getTracks()) {
+        if (!senders.some((s) => s.track && s.track.id === track.id)) {
+          pc.addTrack(track, display);
+          added = true;
+        }
+      }
+      if (!added) continue;
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      await pb().couchSignalPost({
+        recipientRole: "controller",
+        senderPeerId: "host",
+        payload: JSON.stringify({
+          kind: "offer",
+          sdp: offer,
+          to: controllerId,
+        }),
+      });
+    } catch (err) {
+      console.warn("[couch] renegotiate display failed:", err?.message || err);
+    }
+  }
+  return true;
 }
 
 async function answerOffer(controllerId, remoteSdp, session) {
@@ -205,16 +267,7 @@ async function answerOffer(controllerId, remoteSdp, session) {
    * remotes see the game while sending pads. Capture is best-effort — if the
    * host declines the picker, pads still work.
    */
-  try {
-    const display = await ensureHostDisplayStream();
-    if (display) {
-      for (const track of display.getTracks()) {
-        pc.addTrack(track, display);
-      }
-    }
-  } catch (err) {
-    console.warn("[couch] could not attach display track:", err?.message || err);
-  }
+  await attachDisplayTracks(pc);
 
   pc.ondatachannel = (ev) => {
     const dc = ev.channel;

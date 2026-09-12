@@ -6546,14 +6546,14 @@ const facts: Game[] = [
       url: "https://mirror.playbound.club/launcher-packages/games/x-men-arcade-remake/1789150109652-xmarcadev2.zip",
       fileName: "xmarcadev2.zip",
       versionLabel: "2.0.0",
-      exeHint: "OpenBOR|OpenBOR.exe",
-      knownExePaths: ["OpenBOR.exe", "openbor.exe"],
-      note: "PlayBound-hosted Windows OpenBOR package on the VPS mirror. Online multiplayer via PlayBound Connect (pads + host game view).",
+      exeHint: "GAMEnew|GAMEnew.exe",
+      knownExePaths: ["XMArcade/GAMEnew.exe", "GAMEnew.exe"],
+      note: "PlayBound-hosted X-Men Arcade Remake (XMKO). Online multiplayer via PlayBound Connect (pads + host game view).",
     },
     firstPlaySteps: [
       {
         platform: "all",
-        text: "Press Escape on the host keyboard to leave the match or quit OpenBOR (no Quit button in some menus).",
+        text: "Press Escape on the host keyboard to leave the match or quit (no Quit button in some menus).",
       },
     ],
     multiplayerGamingSteps: [
@@ -6563,7 +6563,7 @@ const facts: Game[] = [
       },
       {
         platform: "all",
-        text: "CPU partners can fill empty seats when you cannot gather a full team. On the host PC, press Escape to quit OpenBOR.",
+        text: "CPU partners can fill empty seats when you cannot gather a full team. On the host PC, press Escape to quit.",
       },
     ],
   },
@@ -6638,12 +6638,15 @@ const facts: Game[] = [
     launcherInstall: {
       enabled: true,
       kind: "direct-zip",
-      url: "https://mirror.playbound.club/launcher-packages/games/tmnt-rescue-palooza/1789151162997-tmnt-rescue-palooza-1.15.zip",
+      url: "https://mirror.playbound.club/launcher-packages/games/tmnt-rescue-palooza/1789256353987-tmnt-rescue-palooza-1.15.zip",
       fileName: "tmnt-rescue-palooza-1.15.zip",
       versionLabel: "1.1.5",
-      exeHint: "OpenBOR|OpenBOR.exe",
-      knownExePaths: ["OpenBOR.exe", "openbor.exe"],
-      note: "PlayBound-hosted Windows OpenBOR package on the VPS mirror. Online multiplayer via PlayBound Connect (pads + host game view).",
+      exeHint: "TMNT_Rescue_Palooza|TMNT_Rescue_Palooza.exe",
+      knownExePaths: [
+        "TMNT Rescue-Palooza 1.15/TMNT_Rescue_Palooza.exe",
+        "TMNT_Rescue_Palooza.exe",
+      ],
+      note: "PlayBound-hosted full TMNT Rescue-Palooza 1.15 only (no bundled demos). Online multiplayer via PlayBound Connect (pads + host game view).",
     },
     firstPlaySteps: [
       {
