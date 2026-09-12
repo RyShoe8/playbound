@@ -522,7 +522,13 @@ export function DownloadMirrorsManager() {
   }
 
   async function handlePruneOld() {
-    if (!confirm("Clean out old/superseded versions from the database? Only current active install files will be retained.")) return;
+    if (
+      !confirm(
+        "Remove superseded versions from the database and delete their R2 hot-cache copies (and old launcher VPS archives)? Only current install files are kept."
+      )
+    ) {
+      return;
+    }
     setBusyAction("prune-old");
     try {
       const res = await fetch("/api/admin/download-mirrors/cache/prune-old", {
@@ -1039,7 +1045,7 @@ export function DownloadMirrorsManager() {
           <button
             onClick={() => void handlePruneOld()}
             disabled={loading || busyAction === "prune-old"}
-            title="Clean out obsolete versions from the database, retaining only current active install files."
+            title="Remove superseded versions from R2 and the database; keeps only current install files."
             className="h-9 px-3 rounded-lg border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-sm font-semibold flex items-center gap-1.5 transition-colors"
           >
             <Trash2 className={`w-3.5 h-3.5 ${busyAction === "prune-old" ? "animate-spin" : ""}`} /> Clean Old Versions

@@ -33,6 +33,8 @@ export async function POST(req: Request) {
         return {
           allowedContentTypes: ["application/octet-stream", "application/x-msdownload"],
           maximumSizeInBytes: MAX_INSTALLER_BYTES,
+          allowOverwrite: true,
+          addRandomSuffix: false,
           tokenPayload: JSON.stringify({ kind: "launcher-release" }),
         };
       },

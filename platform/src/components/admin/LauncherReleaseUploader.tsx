@@ -165,8 +165,9 @@ export function LauncherReleaseUploader({
         </button>
         <span className="text-[11px] font-medium text-muted-foreground">
           PlayBound-Setup-&lt;version&gt;.exe from{" "}
-          <code className="rounded bg-secondary px-1 py-0.5">npm run dist:prod</code>. Public
-          release = this upload + Promote to R2 (no CLI Blob --prod step).
+          <code className="rounded bg-secondary px-1 py-0.5">npm run dist:prod</code>. Stages to
+          Blob, then copies to the VPS. Public release = this upload + Promote to R2 (which also
+          drops older launcher builds from R2).
         </span>
       </div>
       {percent !== null ? (
