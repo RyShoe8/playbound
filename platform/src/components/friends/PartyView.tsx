@@ -102,6 +102,8 @@ export function PartyView({
   const [openRaEditions, setOpenRaEditions] = useState<
     { slug: string; name: string }[] | null
   >(null);
+  /** When on: only LOCAL_COUCH_GAMES. When off: online multiplayer (not couch-only). */
+  const [couchCoopFilter, setCouchCoopFilter] = useState(false);
   const { mode, device } = useCompatibilityFilter();
 
   const isLeader = party.leaderId === userId;
@@ -165,18 +167,26 @@ export function PartyView({
    * party with a Linux member strands them after the group has committed to
    * it.
    */
-  const partyGames = useMemo(
-    () =>
-      filterGamesForParty(
-        games
-          .filter((g) => supportsMultiplayer(g))
-          .filter((g) => supportsLauncherParty(g))
-          .filter((g) => mode === "all" || isGameCompatible(g, device.type))
-          .filter((g) => fitsPartySize(g.maxPlayers, party.members?.length || 1)),
-        party.requiredPlatforms || []
-      ),
-    [games, mode, device.type, party.requiredPlatforms, party.members?.length]
-  );
+  const partyGames = useMemo(() => {
+    const couchSlugs = new Set(party.couchOnlyGames || []);
+    return filterGamesForParty(
+      games
+        .filter((g) => supportsMultiplayer(g))
+        .filter((g) => supportsLauncherParty(g))
+        .filter((g) => mode === "all" || isGameCompatible(g, device.type))
+        .filter((g) => fitsPartySize(g.maxPlayers, party.members?.length || 1))
+        .filter((g) => (couchCoopFilter ? couchSlugs.has(g.slug) : !couchSlugs.has(g.slug))),
+      party.requiredPlatforms || []
+    );
+  }, [
+    games,
+    mode,
+    device.type,
+    party.requiredPlatforms,
+    party.members?.length,
+    party.couchOnlyGames,
+    couchCoopFilter,
+  ]);
 
   useEffect(() => {
     if (party.gameSlug !== "openra") {
@@ -511,7 +521,26 @@ export function PartyView({
               * forming server-side.
               */}
             {isLeader && party.status !== "ended" ? (
-              <div className="max-w-[240px]">
+              <div className="max-w-[240px] space-y-2">
+                <label className="flex cursor-pointer items-center justify-between gap-3 rounded-md border border-border/80 bg-secondary/20 px-2.5 py-1.5">
+                  <span className="text-xs font-semibold text-foreground">Couch co-op</span>
+                  <input
+                    type="checkbox"
+                    className="size-4 accent-primary"
+                    checked={couchCoopFilter}
+                    onChange={(e) => setCouchCoopFilter(e.target.checked)}
+                    title={
+                      couchCoopFilter
+                        ? "Showing local couch co-op games only"
+                        : "Showing online multiplayer games"
+                    }
+                  />
+                </label>
+                <p className="text-[11px] text-muted-foreground">
+                  {couchCoopFilter
+                    ? "Local couch co-op (online via Connect pads)."
+                    : "Online multiplayer games."}
+                </p>
                 <label className="block">
                   <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Game
@@ -945,33 +974,32 @@ export function PartyView({
                 <p className="text-sm font-semibold">
                   Join online · code {actions.couch.joinCode}
                 </p>
-                {actions.couch.joinUrl || actions.couch.joinCode ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
-                      actions.couch.joinUrl ||
-                        `https://playbound.club/c/${actions.couch.joinCode}`
-                    )}`}
-                    alt="Scan to join"
-                    width={160}
-                    height={160}
-                    className="rounded-md bg-white p-1"
-                  />
-                ) : null}
                 <p className="text-xs text-muted-foreground">
-                  Scan the QR, or open <strong>playbound.club/c</strong> and enter the code.
-                  Keyboard &amp; mouse by default; pads optional.
+                  Open the game view in a separate window (keyboard &amp; mouse by default). Phones
+                  can use <strong>playbound.club/c</strong> with the code.
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {actions.couch.joinUrl ? (
-                    <a
-                      href={actions.couch.joinUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                  {actions.couch.joinUrl || actions.couch.joinCode ? (
+                    <button
+                      type="button"
                       className={partyButtonClass("primary")}
+                      onClick={() => {
+                        const base =
+                          actions.couch!.joinUrl ||
+                          `https://playbound.club/c/${actions.couch!.joinCode}`;
+                        const sep = base.includes("?") ? "&" : "?";
+                        const url = `${base}${sep}view=game`;
+                        const w = Math.max(1024, Math.floor(window.screen.availWidth * 0.92));
+                        const h = Math.max(640, Math.floor(window.screen.availHeight * 0.92));
+                        window.open(
+                          url,
+                          "playbound-game-view",
+                          `popup=yes,noopener,noreferrer,width=${w},height=${h},left=40,top=20`
+                        );
+                      }}
                     >
-                      Open controller
-                    </a>
+                      Open game view
+                    </button>
                   ) : null}
                   {actions.couch.joinCode ? (
                     <button

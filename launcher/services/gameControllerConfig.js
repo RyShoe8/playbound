@@ -1119,7 +1119,7 @@ const NO_CONFIG_NEEDED = {
   },
   "tmnt-rescue-palooza": {
     kind: "native",
-    note: "OpenBOR binds pads natively for up to 4 local players; no PlayBound config write needed.",
+    note: "Full TMNT Rescue-Palooza binds pads natively for up to 4 local players; no PlayBound config write needed.",
   },
   "relic-hunters-zero-remix": {
     kind: "native",

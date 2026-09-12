@@ -69,7 +69,15 @@ type PadState = {
 
 const EMPTY: PadState = { buttons: 0, lx: 0, ly: 0, rx: 0, ry: 0, lt: 0, rt: 0 };
 
-export function ControllerClient({ code }: { code: string }) {
+export function ControllerClient({
+  code,
+  layout = "default",
+}: {
+  code: string;
+  /** Full-window game view for Join online (separate popup), not the small embedded phone frame. */
+  layout?: "default" | "game";
+}) {
+  const gameLayout = layout === "game";
   const [error, setError] = useState<string | null>(null);
   const [join, setJoin] = useState<JoinState | null>(null);
   const [mode, setMode] = useState<InputMode>("keyboard-mouse");
@@ -412,6 +420,20 @@ export function ControllerClient({ code }: { code: string }) {
               continue;
             }
             if (payload.to && payload.to !== session.controllerId) continue;
+            if (payload.kind === "offer" && payload.sdp && pc) {
+              try {
+                await pc.setRemoteDescription(payload.sdp);
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                await postSignal({
+                  kind: "answer",
+                  sdp: answer,
+                  from: session.controllerId,
+                });
+              } catch {
+                /* ignore renegotiation races */
+              }
+            }
             if (payload.kind === "answer" && payload.sdp && pc.signalingState !== "stable") {
               await pc.setRemoteDescription(payload.sdp);
             }
@@ -687,7 +709,14 @@ export function ControllerClient({ code }: { code: string }) {
 
   if (mode === "keyboard-mouse") {
     return (
-      <main className={hasVideo ? "pbc-pad is-kbm is-gameview" : "pbc-pad is-kbm"}>
+      <main
+        className={[
+          hasVideo ? "pbc-pad is-kbm is-gameview" : "pbc-pad is-kbm",
+          gameLayout ? "is-popup-game" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      >
         <ControllerStyles />
         <div className={hasVideo ? "pbc-gameview is-live" : "pbc-gameview"} aria-hidden={!hasVideo}>
           <video ref={videoRef} className="pbc-gameview-video" playsInline muted autoPlay />
@@ -698,14 +727,29 @@ export function ControllerClient({ code }: { code: string }) {
         <header className="pbc-hud">
           <span className="pbc-hud-host">{join.hostLabel}</span>
           <span className="pbc-hud-player">{playerLabel}</span>
+          {gameLayout ? (
+            <button
+              type="button"
+              className="pbc-hud-fs"
+              onClick={() => {
+                const root = document.documentElement;
+                if (!document.fullscreenElement) void root.requestFullscreen?.();
+                else void document.exitFullscreen?.();
+              }}
+            >
+              Fullscreen
+            </button>
+          ) : null}
         </header>
-        <div className="pbc-kbm-panel">
-          <h1 className="pbc-title">Keyboard &amp; mouse</h1>
-          <p className="pbc-sub">{KEYBOARD_MOUSE_HELP}</p>
-          <p className="pbc-sub">Need a pad? Switch to Touch or Pad below.</p>
-          <StatusBar transport={transport} pingMs={pingMs} hz={hz} />
-          <ModeToggle mode={mode} setMode={setMode} />
-        </div>
+        {!gameLayout || !hasVideo ? (
+          <div className="pbc-kbm-panel">
+            <h1 className="pbc-title">Keyboard &amp; mouse</h1>
+            <p className="pbc-sub">{KEYBOARD_MOUSE_HELP}</p>
+            <p className="pbc-sub">Need a pad? Switch to Touch or Pad below.</p>
+          </div>
+        ) : null}
+        <StatusBar transport={transport} pingMs={pingMs} hz={hz} />
+        <ModeToggle mode={mode} setMode={setMode} />
       </main>
     );
   }
@@ -718,6 +762,7 @@ export function ControllerClient({ code }: { code: string }) {
         "pbc-pad",
         twinStick ? "is-twin-stick" : "",
         hasVideo ? "is-gameview" : "",
+        gameLayout ? "is-popup-game" : "",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -1220,6 +1265,36 @@ function ControllerStyles() {
   border: 1px solid rgba(255, 255, 255, 0.08);
   z-index: 2;
   pointer-events: none;
+}
+.pbc-pad.is-popup-game .pbc-gameview {
+  inset: 0;
+  left: 0;
+  top: 0;
+  transform: none;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  border: none;
+  z-index: 1;
+}
+.pbc-pad.is-popup-game .pbc-hud {
+  background: linear-gradient(to bottom, rgba(0,0,0,.65), transparent);
+  z-index: 3;
+}
+.pbc-pad.is-popup-game .pbc-status,
+.pbc-pad.is-popup-game .pbc-modes {
+  z-index: 3;
+}
+.pbc-hud-fs {
+  margin-left: auto;
+  border: 1px solid rgba(255,255,255,.25);
+  background: rgba(0,0,0,.45);
+  color: #fff;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
 }
 .pbc-pad.is-gameview .pbc-gameview {
   height: min(32vh, 240px);

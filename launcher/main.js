@@ -9481,7 +9481,7 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     "streets-of-rage-remake":
       "Press Escape on the host keyboard to quit (some menus have no Quit button; Alt+F4 also works).",
     "tmnt-rescue-palooza":
-      "Press Escape on the host keyboard to leave the match or quit OpenBOR.",
+      "Press Escape on the host keyboard to leave the match or quit TMNT Rescue-Palooza.",
     "x-men-arcade-remake":
       "Press Escape on the host keyboard to leave the match or quit OpenBOR.",
   };

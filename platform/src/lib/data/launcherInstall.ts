@@ -1473,19 +1473,24 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     url: "https://mirror.playbound.club/launcher-packages/games/x-men-arcade-remake/1789150109652-xmarcadev2.zip",
     fileName: "xmarcadev2.zip",
     versionLabel: "2.0.0",
-    exeHint: "OpenBOR|OpenBOR.exe",
-    knownExePaths: ["OpenBOR.exe", "openbor.exe"],
-    note: "PlayBound-hosted Windows OpenBOR package on the VPS mirror. Local 4P couch co-op only.",
+    /* Zip ships XMArcade/GAMEnew.exe — no OpenBOR.exe. Pin so size-fallback cannot misfire later. */
+    exeHint: "GAMEnew|GAMEnew.exe",
+    knownExePaths: ["XMArcade/GAMEnew.exe", "GAMEnew.exe"],
+    note: "PlayBound-hosted X-Men Arcade Remake (XMKO) package. Local 4P couch co-op; online via Connect.",
   },
   "tmnt-rescue-palooza": {
     enabled: true,
     kind: "direct-zip",
-    url: "https://mirror.playbound.club/launcher-packages/games/tmnt-rescue-palooza/1789151162997-tmnt-rescue-palooza-1.15.zip",
+    url: "https://mirror.playbound.club/launcher-packages/games/tmnt-rescue-palooza/1789256353987-tmnt-rescue-palooza-1.15.zip",
     fileName: "tmnt-rescue-palooza-1.15.zip",
     versionLabel: "1.1.5",
-    exeHint: "OpenBOR|OpenBOR.exe",
-    knownExePaths: ["OpenBOR.exe", "openbor.exe"],
-    note: "PlayBound-hosted Windows OpenBOR package on the VPS mirror. Local 4P couch co-op only.",
+    /* TMNT-only zip (no Balacera/other demos). Pin the full-game exe. */
+    exeHint: "TMNT_Rescue_Palooza|TMNT_Rescue_Palooza.exe",
+    knownExePaths: [
+      "TMNT Rescue-Palooza 1.15/TMNT_Rescue_Palooza.exe",
+      "TMNT_Rescue_Palooza.exe",
+    ],
+    note: "PlayBound-hosted full TMNT Rescue-Palooza 1.15 only. Local 4P couch co-op; online via Connect.",
   },
   "relic-hunters-zero-remix": {
     enabled: true,
