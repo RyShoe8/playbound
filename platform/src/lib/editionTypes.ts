@@ -133,6 +133,14 @@ export type EditionModLoaderFile = {
   extract?: boolean;
   /** Path (under dest) proving extraction finished, so it isn't redone. */
   extractedMarker?: string;
+  /**
+   * When set, the launcher re-downloads if the on-disk `.fileName.pbversion`
+   * marker does not match. Existence alone is not enough — URL-only bumps
+   * would never reach players who already have the file.
+   */
+  version?: string;
+  /** Force re-download every ensure pass (prefer `version` for normal bumps). */
+  replace?: boolean;
 };
 
 export interface EditionInstallConfig {

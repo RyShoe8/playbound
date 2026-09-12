@@ -143,6 +143,8 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
         "Play → Multiplayer",
         "Use saved network adapter",
         "Host LAN Session (leader) or Join LAN Session (everyone else)",
+        "If the controller stops navigating menus, use mouse/keyboard for lobby and level-ups",
+        "Stagger weapon upgrades when possible — simultaneous picks can still be unstable",
       ],
     },
     notes:
@@ -496,6 +498,24 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "Dedicated C&C server engine with settings argv CLI connect.",
   },
 
+  "earth-2140-trilogy": {
+    gameSlug: "earth-2140-trilogy",
+    title: "Earth 2140 Trilogy",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "custom",
+    host: {
+      port: 1234,
+      protocol: "tcp",
+      binaryHint: "OpenRA.Server",
+      argsTemplate: ["Server.ListenPort={port}", "Game.Mod=e2140"],
+    },
+    client: {
+      launchArguments: ["Game.Mod=e2140", "Launch.Connect={host}:{port}"],
+    },
+    notes: "OpenE2140 portable — Game.Mod must be e2140, never stock OpenRA ra.",
+  },
+
   /*
    * 0 A.D. lived here twice, byte-identical under "0-ad" and "0ad". The
    * catalog publishes it as "0ad", so that is the entry kept; "0-ad" — the
@@ -775,28 +795,22 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
   supertuxkart: {
     gameSlug: "supertuxkart",
     title: "SuperTuxKart",
-    tier: "tier1_improved",
-    adapterType: "virtual-lan",
-    protocol: "udp",
+    tier: "tier2_automated_server",
+    adapterType: "managed-server",
+    protocol: "both",
     client: {
-      inGameJoinPrompt: true,
+      launchArguments: ["--connect-now={host}:{port}"],
     },
     selfHost: {
       port: 2759,
       protocol: "both",
       verified: true,
       inGameSteps: [
-        "Host: Online → Create Server (LAN / Virtual LAN)",
-        "Friends: Online → Join Server → Connect to Host Virtual LAN IP",
+        "Host: Online → Create Server (LAN / Networking)",
+        "Friends: Launch game to auto-connect, or Online → Join Server",
       ],
     },
-    virtualLan: {
-      inGameSteps: [
-        "Host: Online → Create Server → Choose Tracks and Mode",
-        "Friends: Online → Find Server (LAN tab) or enter Host IP",
-      ],
-    },
-    notes: "SuperTuxKart online multiplayer with in-game lobby and LAN discovery on port 2759.",
+    notes: "SuperTuxKart online multiplayer with automated dedicated servers and direct LAN/WAN connect on port 2759.",
   },
 
   "0ad": {
@@ -1495,7 +1509,7 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       inGameSteps: ["Create Server", "Pick a map and start"],
     },
     notes:
-      "Source sourcemod. Client-hosted listen server; no srcds recipe on the VPS, so it is self-host only for now.",
+      "Source sourcemod on Source SDK Base 2007 (Steam app 218). Client-hosted listen server; no srcds recipe on the VPS, so it is self-host only for now. PlayBound launches via steam -applaunch 218 — there is no standalone non-Steam install.",
   },
 
   "alien-swarm": {
@@ -2038,14 +2052,9 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
   "re-volt-rvgl": {
     gameSlug: "re-volt-rvgl",
     title: "Re-Volt (RVGL)",
-    tier: "tier2_automated_server",
-    adapterType: "managed-server",
+    tier: "tier1_improved",
+    adapterType: "direct-ip",
     protocol: "udp",
-    host: {
-      port: 2310,
-      protocol: "udp",
-      binaryHint: "rvgl",
-    },
     client: {
       launchArguments: ["-lobby", "{host}:{port}"],
     },
@@ -2055,7 +2064,7 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       verified: true,
       inGameSteps: ["Multiplayer", "Host Game", "Lobby"],
     },
-    notes: "Cross-platform RVGL engine with automated dedicated servers and local P2P hosting.",
+    notes: "Cross-platform RVGL engine with direct P2P lobby hosting.",
   },
 
   "chris-sawyers-locomotion": {
@@ -2199,6 +2208,7 @@ const ADAPTER_SLUG_ALIASES: Record<string, string> = {
   "0-ad": "0ad",
   openmohaa: "medal-of-honor-allied-assault",
   opentyrian: "opentyrian-2000",
+  opene2140: "earth-2140-trilogy",
 };
 
 /**
@@ -2217,6 +2227,7 @@ export const EXPECTED_NON_CATALOG_ADAPTERS: ReadonlySet<string> = new Set([
   // Alternative spellings.
   "0-ad",
   "opentyrian",
+  "opene2140",
   "marathon",
   "alephone",
   "aleph-one",

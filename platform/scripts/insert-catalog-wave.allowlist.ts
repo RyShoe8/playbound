@@ -146,9 +146,10 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "systemRequirements",
     "hardwareRequirements",
   ],
-  "x-men-arcade-remake": ["launcherInstall"],
-  "tmnt-rescue-palooza": ["launcherInstall"],
+  "x-men-arcade-remake": ["launcherInstall", "firstPlaySteps", "multiplayerGamingSteps"],
+  "tmnt-rescue-palooza": ["launcherInstall", "firstPlaySteps", "multiplayerGamingSteps"],
   morrowind: ["launcherInstall"],
+  "dune-legacy": ["launcherInstall"],
 };
 
 /** Existing editions: $set ONLY these fields. */
@@ -171,6 +172,9 @@ export const PATCH_EDITION_FIELDS: Readonly<Record<string, readonly string[]>> =
   "morrowind/tes3mp": ["installConfig"],
   // Lost Alpha: launch XR_3DA, not the Configurator tweaker UI.
   "s-t-a-l-k-e-r-shadow-of-chernobyl/lost-alpha": ["installMethod", "installConfig"],
+  // Dune Legacy: SourceForge 0.99.4 path 404s; use 0.98.0aplpha/0.99.5 with PAKs.
+  "dune-legacy/modern-engine": ["installConfig"],
+  "dune-legacy/playbound-edition": ["installConfig"],
 };
 
 /**

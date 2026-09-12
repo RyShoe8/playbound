@@ -5,6 +5,7 @@ import {
   publicCouchSnapshot,
 } from "@/lib/couch/sessionManager";
 import { SITE_URL } from "@/lib/site";
+import { couchJoinPath, couchJoinUrl } from "@/lib/couch/joinUrl";
 
 /**
  * POST /api/couch/sessions — host creates a Couch Mode session.
@@ -19,13 +20,13 @@ export async function POST(req: Request) {
       autoApprove: body.autoApprove !== false,
     });
 
-    const joinPath = `/controller/${session.joinCode}`;
+    const joinPath = couchJoinPath(session.joinCode);
     return NextResponse.json(
       {
         sessionId: session.sessionId,
         joinCode: session.joinCode,
         hostToken: session.hostToken,
-        joinUrl: `${SITE_URL}${joinPath}`,
+        joinUrl: couchJoinUrl(session.joinCode, SITE_URL),
         joinPath,
         snapshot: publicCouchSnapshot(session),
       },

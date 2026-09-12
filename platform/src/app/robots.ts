@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { SITE_URL, IS_PRODUCTION } from "@/lib/site";
 
 /**
- * AI crawlers are allowed explicitly. PlayBound's growth thesis is *being the
+ * Automated crawlers are allowed explicitly. PlayBound's growth thesis is *being the
  * cited authority* in the free-games niche, so opting content into grounding
  * and training corpora is a deliberate trade, not an oversight.
  */

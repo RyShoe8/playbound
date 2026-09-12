@@ -72,6 +72,12 @@ function classifyLaunchFailure(err, launchPath, opts = {}) {
     (/Java 17\+/i.test(rawMessage) && !/exited immediately/i.test(rawMessage))
   ) {
     code = "JAVA_MISSING";
+  } else if (
+    err?.code === "GES_STEAM_MISSING" ||
+    err?.code === "GES_SDK_MISSING" ||
+    err?.code === "GES_MOD_MISSING"
+  ) {
+    code = err.code;
   } else if (err?.code === "EARLY_EXIT") {
     code = "EARLY_EXIT";
   } else if (err?.code === "JAVA_EARLY_EXIT" || (isJar && /exited immediately/i.test(rawMessage))) {

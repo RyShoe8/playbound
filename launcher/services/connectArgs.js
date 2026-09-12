@@ -23,6 +23,10 @@
  */
 function openRaModName(editionSlug) {
   const raw = String(editionSlug || "").toLowerCase();
+  // OpenE2140 before dune/ra fallthrough — portable only has mod e2140.
+  if (raw.includes("e2140") || raw.includes("opene2140") || raw.includes("earth-2140")) {
+    return "e2140";
+  }
   if (raw.includes("cnc") || raw.includes("tiberian") || raw === "td") return "cnc";
   if (raw.includes("d2k") || raw.includes("dune")) return "d2k";
   if (raw.includes("combined") || raw.includes("ca")) return "ca";
@@ -41,6 +45,8 @@ const CLIENT_CONNECT_ARGS = {
   // provisions had no client join at all: the catalog record carries no
   // connectArgs for it either.
   openhv: ["Game.Mod=hv", "Launch.Connect={host}:{port}"],
+  // OpenE2140 portable — Game.Mod must be e2140, never ra.
+  "earth-2140-trilogy": ["Game.Mod=e2140", "Launch.Connect={host}:{port}"],
   // The client takes console commands as argv, quoted as one token.
   teeworlds: ['"connect {host}:{port}"'],
   /*
@@ -196,9 +202,9 @@ const CLIENT_CONNECT_ARGS = {
    * worked but made joining a party manual for no reason.
    */
   hedgewars: ["hwplay://{host}:{port}"],
+  supertuxkart: ["--connect-now={host}:{port}"],
 
   // In-game Room Code / Lobby Joins / Direct Network — no CLI join; show host:port to paste.
-  supertuxkart: null,
   holocure: null,
   "hurry-curry": null,
   openciv3: null,
@@ -283,6 +289,7 @@ const DEFAULT_GAME_PORTS = {
   openmohaa: 12203,
   "alien-swarm": 27015,
   "alien-swarm-reactive-drop": 27015,
+  supertuxkart: 2759,
 };
 
 function defaultGamePort(slug) {
@@ -396,4 +403,5 @@ module.exports = {
   applyConnectTemplates,
   staticLaunchArgs,
   defaultGamePort,
+  openRaModName,
 };

@@ -8,7 +8,7 @@ import { SITE_URL, SITE_NAME, QUALITY_BAR } from "@/lib/site";
 import { sizeLabel } from "@/lib/seo";
 
 /**
- * Machine-readable catalog summary for AI crawlers and agents.
+ * Machine-readable catalog summary for crawlers and automated agents.
  *
  * Generated from the live catalog so it never drifts. Adoption of the llms.txt
  * convention is not universal, but the cost is one small generated file.

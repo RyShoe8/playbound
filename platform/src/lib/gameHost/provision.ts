@@ -13,6 +13,7 @@ import {
   type HostedStatus,
 } from "./catalog";
 import { defaultHostMode } from "@/lib/multiplayer/hostModes";
+import { openRaEditionAllowsStockModPicker } from "@/lib/multiplayer/openRaMod";
 import { coerceSettingValues } from "@/lib/serverControl/settings";
 import {
   partyEventProps,
@@ -114,12 +115,21 @@ export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
    * of being handed to the agent.
    */
   const planned = coerceSettingValues(slug, (hosted.settings as Record<string, unknown>) || {});
+  /*
+   * Only pass party.openRaMod for Official OpenRA. Fixed-mod editions (CA,
+   * RA2, OpenE2140, …) must not let a stale stock-mod choice override the
+   * edition-implied Game.Mod on the VPS recipe.
+   */
+  const stockOpenRaMod =
+    slug === "openra" && openRaEditionAllowsStockModPicker(party.editionSlug || null)
+      ? party.openRaMod || null
+      : null;
   const result = await createHostRoom({
     gameSlug: hostSlug,
     partyId: String(party._id),
     name,
     editionSlug: party.editionSlug || null,
-    mod: party.openRaMod || null,
+    mod: stockOpenRaMod,
     settings: Object.keys(planned.values).length ? planned.values : undefined,
   });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { Users, Crown, LogOut, X, Phone, HardDriveDownload } from "lucide-react";
@@ -8,7 +8,7 @@ import { usePartyStore } from "@/stores/partyStore";
 import { computePartyActions } from "@/lib/playTogether/partyActions";
 import { PartyActionIconView, partyButtonClass, partyNoteClass } from "./partyActionStyle";
 import type { PartyPayload } from "@/lib/playTogether/types";
-import { filterGamesForParty } from "@/lib/playTogether/partyPlatforms";
+import { filterGamesForParty, fitsPartySize, partyGameOptionLabel } from "@/lib/playTogether/partyPlatforms";
 import {
   PARTY_NAME_MAX,
   PARTY_VISIBILITIES,
@@ -21,6 +21,7 @@ import type { LaunchMethod } from "@/lib/data/types";
 import { launcherJoinUrl, launcherPlayUrl } from "@/lib/launcher";
 import { isBrowserGame } from "@/lib/gameLaunch";
 import { supportsMultiplayer, supportsLauncherParty } from "@/lib/multiplayer/support";
+import { openRaEditionAllowsStockModPicker } from "@/lib/multiplayer/openRaMod";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { isGameCompatible } from "@/lib/compatibility/compatibility";
 import { launcherDownloadUrlForOs } from "@/lib/launcherDownload";
@@ -54,6 +55,8 @@ export type PartyGameOption = {
   platforms?: string[];
   steamDeck?: boolean;
   launcherInstall?: { enabled?: boolean; kind?: string } | null;
+  status?: string;
+  maxPlayers?: number | null;
   /**
    * Only used to decide whether the game belongs in a party at all.
    *
@@ -88,6 +91,7 @@ export function PartyView({
     setHostMode,
     setName,
     setOpenRaMod,
+    setEdition,
   } = usePartyStore();
   const [voiceBusy, setVoiceBusy] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
@@ -95,6 +99,9 @@ export function PartyView({
     open: false,
     inviteUrl: null,
   });
+  const [openRaEditions, setOpenRaEditions] = useState<
+    { slug: string; name: string }[] | null
+  >(null);
   const { mode, device } = useCompatibilityFilter();
 
   const isLeader = party.leaderId === userId;
@@ -102,10 +109,10 @@ export function PartyView({
   const isReady = me?.ready ?? false;
   const hasGame = Boolean(party.gameSlug);
   /*
-   * A couch game has no networking: it runs on the leader's PC and everyone
-   * else joins by opening the controller link on a phone. So only the leader
-   * gets Join Game — a member launching their own copy would start a separate
-   * single-player session.
+   * Online multiplayer for local-co-op: the game runs on the leader's PC and
+   * everyone else joins by opening the controller link (pads ± game view).
+   * Only the leader gets Start/Join Game — a member launching their own copy
+   * would start a separate single-player session.
    */
   const couchMode = Boolean(party.couch?.enabled);
   /*
@@ -164,11 +171,63 @@ export function PartyView({
         games
           .filter((g) => supportsMultiplayer(g))
           .filter((g) => supportsLauncherParty(g))
-          .filter((g) => mode === "all" || isGameCompatible(g, device.type)),
+          .filter((g) => mode === "all" || isGameCompatible(g, device.type))
+          .filter((g) => fitsPartySize(g.maxPlayers, party.members?.length || 1)),
         party.requiredPlatforms || []
       ),
-    [games, mode, device.type, party.requiredPlatforms]
+    [games, mode, device.type, party.requiredPlatforms, party.members?.length]
   );
+
+  useEffect(() => {
+    if (party.gameSlug !== "openra") {
+      setOpenRaEditions(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(`/api/games/${encodeURIComponent("openra")}/editions`);
+        if (!res.ok) throw new Error("editions");
+        const data = (await res.json()) as {
+          editions?: { slug?: string; name?: string }[];
+        };
+        const list = (data.editions || [])
+          .map((ed) => ({
+            slug: String(ed.slug || ""),
+            name: String(ed.name || ed.slug || ""),
+          }))
+          .filter(
+            (ed) =>
+              ed.slug &&
+              ed.slug !== "opene2140" &&
+              !/e2140|earth.?2140/i.test(ed.slug)
+          );
+        if (!cancelled) setOpenRaEditions(list);
+      } catch {
+        if (!cancelled) {
+          setOpenRaEditions([
+            { slug: "official", name: "OpenRA (Official)" },
+            { slug: "combined-arms", name: "Combined Arms" },
+            { slug: "tiberian-dawn-hd", name: "Tiberian Dawn HD" },
+            { slug: "ra2", name: "Romanov's Vengeance (Red Alert 2)" },
+          ]);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [party.gameSlug]);
+
+  const openRaStockMod = openRaEditionAllowsStockModPicker(party.editionSlug);
+  const openRaEditionName =
+    openRaEditions?.find((e) => e.slug === (party.editionSlug || "official"))?.name ||
+    (party.editionSlug && party.editionSlug !== "official"
+      ? party.editionSlug
+      : "OpenRA (Official)");
+  const openRaModName =
+    OPENRA_MOD_LABELS[(party.openRaMod as keyof typeof OPENRA_MOD_LABELS) || "ra"] ||
+    OPENRA_MOD_LABELS.ra;
 
   /*
    * After the hooks, not before them. The session arrives a render late, so
@@ -252,6 +311,20 @@ export function PartyView({
   function handleJoinGame(e?: React.MouseEvent) {
     if (joinConnectBlocked) {
       e?.preventDefault();
+      return;
+    }
+    /*
+     * Online local-co-op: members open the controller join URL instead of
+     * launching their own game copy.
+     */
+    if (party.couch?.enabled && !isLeader) {
+      e?.preventDefault();
+      const url =
+        actions.couch?.joinUrl ||
+        party.couch.joinUrl ||
+        (party.couch.joinCode ? `https://playbound.club/c/${party.couch.joinCode}` : "");
+      if (!url) return;
+      window.open(url, "_blank", "noopener,noreferrer");
       return;
     }
     if (waitForHostedRoom) {
@@ -458,7 +531,10 @@ export function PartyView({
                     */}
                     {partyGames.map((g) => (
                       <option key={g.slug} value={g.slug}>
-                        {couchOnly.has(g.slug) ? `${g.title} (couch co-op)` : g.title}
+                        {partyGameOptionLabel(g.title, {
+                          testing: g.status === "testing",
+                          couch: couchOnly.has(g.slug),
+                        })}
                       </option>
                     ))}
                     {/*
@@ -491,11 +567,12 @@ export function PartyView({
                 {couchMode ? (
                   <div className="mt-2 space-y-1">
                     <span className="inline-flex items-center rounded-full bg-primary/15 px-2.5 py-0.5 text-[11px] font-bold tracking-wide text-primary">
-                      Couch co-op · no online play
+                      Online multiplayer · Connect
                     </span>
                     <p className="text-xs text-muted-foreground">
-                      Runs on {isLeader ? "your PC" : `${party.leaderUsername || "the host"}'s PC`}.
-                      Everyone else plays on it with their phone as a controller.
+                      {isLeader
+                        ? "Online multiplayer on your PC — friends join with the link (keyboard & mouse by default)."
+                        : `Online multiplayer on ${party.leaderUsername || "the host"}'s PC — join with the link (keyboard & mouse by default).`}
                     </p>
                   </div>
                 ) : null}
@@ -518,27 +595,45 @@ export function PartyView({
                   />
                 ) : null}
                 {party.gameSlug === "openra" ? (
-                  <label className="mt-2 block">
-                    <span className="text-xs font-semibold text-muted-foreground">
-                      Which OpenRA game?
-                    </span>
-                    <PremiumSelect
-                      value={party.openRaMod || ""}
-                      onChange={(e) => void setOpenRaMod(party.id, e.target.value || null)}
-                    >
-                      <option value="">Red Alert (default)</option>
-                      {OPENRA_MODS.filter((m) => m !== "ra").map((m) => (
-                        <option key={m} value={m}>
-                          {OPENRA_MOD_LABELS[m]}
-                        </option>
-                      ))}
-                    </PremiumSelect>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      OpenRA&apos;s official client bundles all three — set this to whichever one
-                      you&apos;re actually hosting, or joiners get rejected as &quot;incompatible
-                      mod&quot;.
-                    </p>
-                  </label>
+                  <div className="mt-2 space-y-2">
+                    <label className="block">
+                      <span className="text-xs font-semibold text-muted-foreground">Edition</span>
+                      <PremiumSelect
+                        value={party.editionSlug || "official"}
+                        onChange={(e) => void setEdition(party.id, e.target.value || "official")}
+                      >
+                        {(openRaEditions || [{ slug: "official", name: "OpenRA (Official)" }]).map(
+                          (ed) => (
+                            <option key={ed.slug} value={ed.slug}>
+                              {ed.name}
+                            </option>
+                          )
+                        )}
+                      </PremiumSelect>
+                    </label>
+                    {openRaStockMod ? (
+                      <label className="block">
+                        <span className="text-xs font-semibold text-muted-foreground">
+                          Mod / Game
+                        </span>
+                        <PremiumSelect
+                          value={party.openRaMod || ""}
+                          onChange={(e) => void setOpenRaMod(party.id, e.target.value || null)}
+                        >
+                          <option value="">Red Alert (default)</option>
+                          {OPENRA_MODS.filter((m) => m !== "ra").map((m) => (
+                            <option key={m} value={m}>
+                              {OPENRA_MOD_LABELS[m]}
+                            </option>
+                          ))}
+                        </PremiumSelect>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Official OpenRA bundles all three — set this to whichever one you&apos;re
+                          hosting, or joiners get rejected as &quot;incompatible mod&quot;.
+                        </p>
+                      </label>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
             ) : hasGame ? (
@@ -547,6 +642,12 @@ export function PartyView({
                   Game
                 </p>
                 <p className="mt-1 text-sm font-semibold">{party.gameTitle || party.gameSlug}</p>
+                {party.gameSlug === "openra" ? (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Edition: {openRaEditionName}
+                    {openRaStockMod ? ` · Mod: ${openRaModName}` : ""}
+                  </p>
+                ) : null}
                 {!couchMode && party.hostModes && party.hostModes.length > 1 ? (
                   <p className="text-xs text-muted-foreground mt-0.5">
                     Host:{" "}
@@ -572,11 +673,12 @@ export function PartyView({
                 {couchMode ? (
                   <div className="mt-2 space-y-1">
                     <span className="inline-flex items-center rounded-full bg-primary/15 px-2.5 py-0.5 text-[11px] font-bold tracking-wide text-primary">
-                      Couch co-op · no online play
+                      Online multiplayer · Connect
                     </span>
                     <p className="text-xs text-muted-foreground">
-                      Runs on {isLeader ? "your PC" : `${party.leaderUsername || "the host"}'s PC`}.
-                      Everyone else plays on it with their phone as a controller.
+                      {isLeader
+                        ? "Online multiplayer on your PC — friends join with the link (keyboard & mouse by default)."
+                        : `Online multiplayer on ${party.leaderUsername || "the host"}'s PC — join with the link (keyboard & mouse by default).`}
                     </p>
                   </div>
                 ) : null}
@@ -839,14 +941,50 @@ export function PartyView({
 
           {actions.couch &&
             (actions.couch.status === "ready" && actions.couch.joinCode ? (
-              <div className="w-full space-y-1 self-start">
+              <div className="w-full space-y-2 self-start">
                 <p className="text-sm font-semibold">
-                  Phone controllers · code {actions.couch.joinCode}
+                  Join online · code {actions.couch.joinCode}
                 </p>
+                {actions.couch.joinUrl || actions.couch.joinCode ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
+                      actions.couch.joinUrl ||
+                        `https://playbound.club/c/${actions.couch.joinCode}`
+                    )}`}
+                    alt="Scan to join"
+                    width={160}
+                    height={160}
+                    className="rounded-md bg-white p-1"
+                  />
+                ) : null}
                 <p className="text-xs text-muted-foreground">
-                  Open {actions.couch.joinUrl} on your phone. It becomes a controller plugged
-                  into the host&apos;s PC.
+                  Scan the QR, or open <strong>playbound.club/c</strong> and enter the code.
+                  Keyboard &amp; mouse by default; pads optional.
                 </p>
+                <div className="flex flex-wrap gap-2">
+                  {actions.couch.joinUrl ? (
+                    <a
+                      href={actions.couch.joinUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={partyButtonClass("primary")}
+                    >
+                      Open controller
+                    </a>
+                  ) : null}
+                  {actions.couch.joinCode ? (
+                    <button
+                      type="button"
+                      className={partyButtonClass("secondary")}
+                      onClick={() => {
+                        void navigator.clipboard?.writeText(actions.couch!.joinCode || "");
+                      }}
+                    >
+                      Copy code
+                    </button>
+                  ) : null}
+                </div>
               </div>
             ) : (
               <p className={partyNoteClass(actions.couch.status === "failed" ? "error" : "info")}>

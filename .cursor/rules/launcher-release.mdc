@@ -1,27 +1,36 @@
 ---
-description: Build and upload the PlayBound launcher (signed dist:prod, unsigned dist:dev, Vercel Blob). Use when the user says build, upload, release the launcher, dist:prod, dist:dev, or mentions eSigner / latest.yml / admin.yml.
-globs: launcher/package.json,launcher/scripts/**,launcher/electron-builder.js,platform/scripts/upload-launcher.ts,docs/launcher-build-and-upload.md,docs/windows-code-signing.md
-alwaysApply: false
+description: Build and ship the PlayBound launcher (signed dist:prod, Blob feeds, VPS archive, Promote to R2). Use when the user says build, upload, release the launcher, dist:prod, VPS, R2, or mentions eSigner / latest.yml.
+globs: launcher/package.json,launcher/scripts/**,launcher/electron-builder.js,platform/scripts/upload-launcher.ts,platform/src/app/api/admin/launcher-release/**,platform/src/components/admin/LauncherReleaseUploader.tsx,docs/launcher-build-and-upload.md,docs/windows-code-signing.md
+alwaysApply: true
 ---
 
 # Launcher release
 
-Follow `docs/launcher-build-and-upload.md`. Signing theory is `docs/windows-code-signing.md`. The user does not run a local Next server.
+Follow `docs/launcher-build-and-upload.md` when present. Signing theory is `docs/windows-code-signing.md`. The user does not run a local Next server.
 
-## Required sequence
+## Required sequence (Windows signed)
 
-1. Bump `launcher/package.json` `"version"` (new version or auto-update will not fire).
-2. Commit/push if they asked. `dist:dev` / `dist:prod` overwrite `launcher/catalog.js` from production `https://playbound.club/api/launcher/catalog`.
-3. **Signed (default for public):** in `launcher/`, `npm run signing:status`, set `$env:WINDOWS_CERT_SHA1`, then `npm run dist:prod`. Upload from `platform/`: `npm run upload:launcher` (needs `BLOB_READ_WRITE_TOKEN` in `platform/.env.local`).
-4. **Unsigned:** `npm run dist:dev` in `launcher/`. Upload: `npm run upload:launcher` (admin alias + `admin.yml` only). Public promote: `npm run upload:launcher -- --promote-prod --i-know-its-unsigned` and warn SmartScreen + signed clients may reject the update.
-5. Mac/Linux: `dist:mac` / `dist:linux`, then `upload:launcher -- --mac --promote-prod` or `--linux --promote-prod`.
+1. Bump `launcher/package.json` `"version"` (and lockfile top-level version).
+2. Commit/push if they asked. `dist:prod` overwrites `launcher/catalog.js` from production catalog.
+3. In `launcher/`: `npm run signing:status`, then `npm run dist:prod` (auto-picks The Media Shop cert when present).
+4. Blob + auto-update feeds from `platform/`:
+   `npm run upload:launcher -- --prod ../launcher/dist/PlayBound-Setup-<ver>.exe`
+   Needs `BLOB_READ_WRITE_TOKEN`. This publishes `latest.yml` / aliases.
+5. **VPS archive (required for public download / R2):** local `upload-launcher` cannot archive to VPS — `MONGODB_URI` / `GAME_HOST_SECRET` are Vercel Sensitive and missing locally. Use Admin → **Download mirrors** → **Upload signed launcher** (`LauncherReleaseUploader`), which POSTs `/api/admin/launcher-release` server-side and copies to the VPS.
+6. After the row shows **On VPS / verified**, **Promote to R2** in that same admin cache table. Public downloads prefer R2 → VPS → Blob.
+
+Do not treat Blob-only upload as “shipped for site download.” Site `/api/launcher/download` wants a verified VPS (then R2) artifact.
+
+## Unsigned / other
+
+- Unsigned: `dist:dev` + `upload:launcher` (admin channel). Do not VPS-archive unsigned Windows as the public installer.
+- Mac/Linux: `dist:mac` / `dist:linux`, then `upload:launcher -- --mac|--linux --promote-prod`.
 
 ## Do not
 
-- Retry `dist:prod` after eSigner `authorization grant is invalid` / `SignerSign() failed` — that burns quota. Fall back to unsigned and tell the user to re-login SSL.com CKA.
-- Use `npx electron-builder --win` (can no-op). Use the npm scripts or `node node_modules/electron-builder/cli.js --win`.
-- Use bash `&&` / `VAR=value` on Windows PowerShell. Use `;` and `$env:NAME = "value"`.
-- Promote unsigned Windows without `--i-know-its-unsigned`.
+- Retry `dist:prod` after eSigner auth failures (burns quota).
+- Use bash `&&` / `VAR=value` on PowerShell; use `;` and `$env:NAME`.
+- Claim the release is ready for Promote to R2 before VPS `vpsStatus === "verified"`.
 - Commit `.env.local` or certs.
 
-Return the upload script’s versioned and alias URLs when done.
+Return Blob URLs from the upload script, and remind the user (or complete via Admin) of the VPS upload + Promote to R2 steps.

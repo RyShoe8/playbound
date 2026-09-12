@@ -33,12 +33,11 @@ describe("game host catalog", () => {
     expect(isHostableGame("space-station-14")).toBe(true);
     expect(isHostableGame("flightgear")).toBe(true);
     expect(isHostableGame("openhv")).toBe(true);
-    expect(isHostableGame("re-volt-rvgl")).toBe(true);
     /*
-     * Zero-K is played through its own lobby, not a room PlayBound provisions.
-     * It was listed here with a recipe that spring-dedicated could not accept —
-     * see the note in catalog.ts.
+     * Zero-K and Re-Volt are played through their own lobbies/P2P, not a room
+     * PlayBound provisions. RVGL has no headless dedicated server support.
      */
+    expect(isHostableGame("re-volt-rvgl")).toBe(false);
     expect(isHostableGame("zero-k")).toBe(false);
     expect(isHostableGame("chris-sawyers-locomotion")).toBe(false);
     expect(isHostableGame("renegade-x")).toBe(false);

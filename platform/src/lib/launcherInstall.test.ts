@@ -60,6 +60,7 @@ describe("Steam prerequisites", () => {
     expect(launcherInstallBySlug["goldeneye-source"].steamPrerequisites).toEqual([
       { appId: "218", name: "Source SDK Base 2007" },
     ]);
+    expect(launcherInstallBySlug["goldeneye-source"].exeHint).toBe("hl2|gesource_run");
   });
 });
 

@@ -25,6 +25,7 @@ import {
   uploadObjectToR2,
 } from "./r2Client";
 import { calculateArtifactCacheScore, evaluateSourceHealth } from "./scoring";
+import { formatVpsTransferMessage } from "./vpsProgress";
 
 /** Resolves an itch.io game page to its direct pre-signed CDN download URL. */
 export async function resolveItchDownloadUrl(pageUrl: string, uploadIdHint?: string | null): Promise<string | null> {
@@ -740,9 +741,16 @@ export async function refreshUploadingVpsArtifacts(): Promise<void> {
   const uploading = await Artifact.find({ vpsStatus: "uploading" });
   for (const artifact of uploading) {
     const remote = await archivedArtifactStatusOnHost(artifact.relativePath);
-    if (!remote || remote.status === "uploading") continue;
+    if (!remote) continue;
+    if (remote.status === "uploading") {
+      const expected = remote.sizeBytes || artifact.sizeBytes || 0;
+      artifact.vpsStatusMessage = formatVpsTransferMessage(remote.bytesReceived, expected);
+      await artifact.save();
+      continue;
+    }
     artifact.vpsStatus = remote.status === "verified" ? "verified" : "missing";
-    artifact.vpsStatusMessage = remote.status === "verified" ? null : remote.message || "The VPS did not retain the archive transfer.";
+    artifact.vpsStatusMessage =
+      remote.status === "verified" ? null : remote.message || "The VPS did not retain the archive transfer.";
     await artifact.save();
   }
 }

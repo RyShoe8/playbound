@@ -62,7 +62,7 @@ describe("alternatives pages", () => {
   it("keeps the verdict quotable and within a snippet", () => {
     // The verdict doubles as the meta description, which clamps around 158
     // characters — but it is also the block written to be quoted verbatim by
-    // search engines and assistants, so it must read as a complete answer.
+    // search engines and answer summaries, so it must read as a complete answer.
     for (const page of alternativePages) {
       expect(page.verdict.length, `${page.slug} verdict too short`).toBeGreaterThan(80);
       expect(page.verdict).toMatch(/free/i);

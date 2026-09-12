@@ -53,7 +53,7 @@ export interface GameArt {
  *
  * Rendered as a visible, dated checklist on every game page. This is the
  * site's most citable asset: it proves the standard is applied rather than
- * claimed, and `lastVerified` supplies the recency signal LLMs weight heavily.
+ * claimed, and `lastVerified` supplies the recency signal search crawlers weight heavily.
  */
 export interface QualityBar {
   /** Worth the cost: free or regularly $15 or less, with fair non-pay-to-win monetization. */

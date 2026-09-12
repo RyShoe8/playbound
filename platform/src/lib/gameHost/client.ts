@@ -429,15 +429,38 @@ export async function archiveArtifactOnHost(input: {
 
 export async function archivedArtifactStatusOnHost(
   relativePath: string
-): Promise<{ status: "missing" | "uploading" | "verified"; message?: string } | null> {
+): Promise<{
+  status: "missing" | "uploading" | "verified";
+  message?: string;
+  bytesReceived?: number;
+  sizeBytes?: number;
+} | null> {
   try {
     const res = await hostFetch(`/mirror/archive/${encodeURIComponent(relativePath)}`, { method: "GET" });
     if (!res) return null;
-    const data = (await res.json().catch(() => ({}))) as { status?: string; error?: string };
+    const data = (await res.json().catch(() => ({}))) as {
+      status?: string;
+      error?: string;
+      bytesReceived?: number;
+      sizeBytes?: number;
+    };
     if (!res.ok || !["missing", "uploading", "verified"].includes(String(data.status))) {
       return { status: "missing", message: data.error || `Game host returned ${res.status}` };
     }
-    return { status: data.status as "missing" | "uploading" | "verified", message: data.error };
+    const out: {
+      status: "missing" | "uploading" | "verified";
+      message?: string;
+      bytesReceived?: number;
+      sizeBytes?: number;
+    } = {
+      status: data.status as "missing" | "uploading" | "verified",
+      message: data.error,
+    };
+    if (Number.isFinite(Number(data.bytesReceived))) out.bytesReceived = Number(data.bytesReceived);
+    if (Number.isFinite(Number(data.sizeBytes)) && Number(data.sizeBytes) > 0) {
+      out.sizeBytes = Number(data.sizeBytes);
+    }
+    return out;
   } catch (err) {
     return { status: "missing", message: err instanceof Error ? err.message : "Game host unreachable" };
   }

@@ -218,9 +218,9 @@ export function DownloadMirrorsManager() {
   /** How many demo rows from the old seeder are still present; 0 hides the button. */
   const [seededCount, setSeededCount] = useState(0);
 
-  async function loadData() {
+  async function loadData(opts?: { silent?: boolean }) {
     try {
-      setLoading(true);
+      if (!opts?.silent) setLoading(true);
       const [ovRes, cacheRes, srcRes, evtRes, seededRes] = await Promise.all([
         fetch("/api/admin/download-mirrors/overview"),
         fetch("/api/admin/download-mirrors/cache"),
@@ -266,15 +266,28 @@ export function DownloadMirrorsManager() {
       }
     } catch (err) {
       console.error("Error loading mirror data:", err);
-      setMessage({ text: "Failed to load mirror data", type: "error" });
+      if (!opts?.silent) setMessage({ text: "Failed to load mirror data", type: "error" });
     } finally {
-      setLoading(false);
+      if (!opts?.silent) setLoading(false);
     }
   }
 
   useEffect(() => {
     void loadData();
   }, []);
+
+  /*
+   * While a Blob→VPS archive is in flight, refresh the cache table so
+   * vpsStatusMessage shows live "Copied X of Y" progress from the host.
+   */
+  useEffect(() => {
+    const uploading = cacheItems.some((item) => item.vpsStatus === "uploading");
+    if (!uploading) return;
+    const timer = window.setInterval(() => {
+      void loadData({ silent: true });
+    }, 3000);
+    return () => window.clearInterval(timer);
+  }, [cacheItems]);
 
   async function handleSaveSettings(e: React.FormEvent) {
     e.preventDefault();

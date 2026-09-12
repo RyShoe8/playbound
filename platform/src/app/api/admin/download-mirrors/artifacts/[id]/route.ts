@@ -8,6 +8,7 @@ import MirrorEvent from "@/lib/models/MirrorEvent";
 import { calculateArtifactCacheScore } from "@/lib/mirrors/scoring";
 import { deleteArtifactCompletely } from "@/lib/mirrors/cacheManager";
 import { archivedArtifactStatusOnHost } from "@/lib/gameHost/client";
+import { formatVpsTransferMessage, vpsTransferPercent } from "@/lib/mirrors/vpsProgress";
 
 export async function GET(
   _req: Request,
@@ -28,9 +29,21 @@ export async function GET(
      * full poll window even after the VPS finished — the cache list refresh
      * was the only place that synced, and that UI is not open during upload.
      */
+    let transfer:
+      | { bytesReceived?: number; sizeBytes?: number; percent?: number | null }
+      | undefined;
     if (artifact.vpsStatus === "uploading") {
       const remote = await archivedArtifactStatusOnHost(artifact.relativePath);
-      if (remote && remote.status !== "uploading") {
+      if (remote && remote.status === "uploading") {
+        const expected = remote.sizeBytes || artifact.sizeBytes || 0;
+        artifact.vpsStatusMessage = formatVpsTransferMessage(remote.bytesReceived, expected);
+        await artifact.save();
+        transfer = {
+          bytesReceived: remote.bytesReceived ?? 0,
+          sizeBytes: expected || undefined,
+          percent: vpsTransferPercent(remote.bytesReceived ?? 0, expected),
+        };
+      } else if (remote && remote.status !== "uploading") {
         artifact.vpsStatus = remote.status === "verified" ? "verified" : "missing";
         artifact.vpsStatusMessage =
           remote.status === "verified"
@@ -53,6 +66,7 @@ export async function GET(
 
     return NextResponse.json({
       artifact: artifact.toObject(),
+      transfer: transfer || null,
       sources,
       scoreBreakdown: calculateArtifactCacheScore(artifact, publicSources),
       recentAttempts,

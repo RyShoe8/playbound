@@ -122,6 +122,7 @@ const RECIPE_SETTING_TYPES = {
   "space-station-14": { "game.soft_max_players": "number", "game.lobbyenabled": "boolean" },
   freedoom: {
     gameMode: "string",
+    difficulty: "number",
     sv_maxplayers: "number",
     sv_maxclients: "number",
     fraglimit: "number",
@@ -200,6 +201,9 @@ function freedoomSettingArgs(settings) {
   const mode = ZANDRONUM_MODE_CVARS[settings.gameMode];
   // "coop" is the absence of a mode flag, not a flag of its own.
   if (mode) args.push(`+${mode}`, "1");
+  if (typeof settings.difficulty === "number" && Number.isFinite(settings.difficulty)) {
+    args.push("-skill", String(settings.difficulty));
+  }
   for (const key of ["sv_maxplayers", "sv_maxclients", "fraglimit", "timelimit"]) {
     const value = settings[key];
     if (typeof value === "number" && Number.isFinite(value)) args.push(`+${key}`, String(value));
@@ -306,12 +310,35 @@ function gameBin(slug, names) {
 
 function openRaMod(editionSlug) {
   const raw = String(editionSlug || "").toLowerCase();
+  // OpenE2140 before dune/ra — portable only ships mod e2140.
+  if (raw.includes("e2140") || raw.includes("opene2140") || raw.includes("earth-2140")) {
+    return "e2140";
+  }
   if (raw.includes("cnc") || raw.includes("tiberian") || raw === "td") return "cnc";
   if (raw.includes("d2k") || raw.includes("dune")) return "d2k";
   if (raw.includes("combined") || raw.includes("ca")) return "ca";
   if (raw.includes("openhv") || raw === "hv") return "hv";
   if (raw.includes("ra2")) return "ra2";
   return "ra";
+}
+
+/**
+ * Official edition: honor party.openRaMod (ra/cnc/d2k).
+ * Fixed-mod editions: always infer from editionSlug so a stale openRaMod
+ * cannot force Game.Mod=ra onto Combined Arms / OpenE2140 / etc.
+ */
+function resolveOpenRaServerMod(ctx) {
+  const ed = String(ctx?.editionSlug || "").toLowerCase().trim();
+  const implied = openRaMod(ed);
+  const official = !ed || ed === "official";
+  if (official) {
+    const explicit = String(ctx?.mod || "").toLowerCase().trim();
+    if (explicit === "ra" || explicit === "cnc" || explicit === "d2k" || explicit === "ts") {
+      return explicit;
+    }
+    return implied;
+  }
+  return implied;
 }
 
 export const recipes = {
@@ -462,23 +489,56 @@ export const recipes = {
       ...gameBin("openra", ["OpenRA.Server", "openra-server"]),
       ...gameBin("combined-arms", ["OpenRA.Server", "openra-server"]),
       ...gameBin("openhv", ["OpenHV.Server", "openhv-server", "OpenRA.Server"]),
+      ...gameBin("earth-2140-trilogy", ["OpenRA.Server", "OpenE2140", "openra-server"]),
+      ...gameBin("opene2140", ["OpenRA.Server", "OpenE2140", "openra-server"]),
     ],
     resolveBinary: (candidates, ctx) => {
       const ed = String(ctx?.editionSlug || "").toLowerCase();
-      if (ed.includes("combined") || ed === "ca") {
+      const mod = String(ctx?.mod || openRaMod(ctx?.editionSlug) || "").toLowerCase();
+      if (ed.includes("combined") || ed === "ca" || mod === "ca") {
         const caBin = firstExisting(gameBin("combined-arms", ["OpenRA.Server", "openra-server"]));
         if (caBin) return caBin;
       }
-      if (ed.includes("openhv") || ed === "hv") {
+      if (ed.includes("openhv") || ed === "hv" || mod === "hv") {
         const hvBin = firstExisting(gameBin("openhv", ["OpenHV.Server", "openhv-server", "OpenRA.Server"]));
         if (hvBin) return hvBin;
+      }
+      if (
+        ed.includes("e2140") ||
+        ed.includes("opene2140") ||
+        ed.includes("earth-2140") ||
+        mod === "e2140"
+      ) {
+        const eBin = firstExisting([
+          ...gameBin("earth-2140-trilogy", ["OpenRA.Server", "OpenE2140", "openra-server"]),
+          ...gameBin("opene2140", ["OpenRA.Server", "OpenE2140", "openra-server"]),
+        ]);
+        if (eBin) return eBin;
       }
       return firstExisting(candidates);
     },
     args: (port, ctx) => [
       // ctx.mod is an explicit override for the "official" edition, which is
       // one client covering ra/cnc/d2k — editionSlug alone can't say which.
-      `Game.Mod=${ctx.mod || openRaMod(ctx.editionSlug)}`,
+      // Fixed-mod editions (CA, HV, e2140, ra2) must not be overridden by a
+      // stale party.openRaMod left over from Official.
+      `Game.Mod=${resolveOpenRaServerMod(ctx)}`,
+      `Server.Name=${ctx.name}`,
+      `Server.ListenPort=${port}`,
+      "Server.AdvertiseOnline=False",
+      "Server.EnableSingleplayer=False",
+    ],
+  },
+  "earth-2140-trilogy": {
+    portStart: 1234,
+    portEnd: 1250,
+    protocol: "tcp",
+    binaries: [
+      ...gameBin("earth-2140-trilogy", ["OpenRA.Server", "OpenE2140", "openra-server"]),
+      ...gameBin("opene2140", ["OpenRA.Server", "OpenE2140", "openra-server"]),
+    ],
+    args: (port, ctx) => [
+      "Game.Mod=e2140",
       `Server.Name=${ctx.name}`,
       `Server.ListenPort=${port}`,
       "Server.AdvertiseOnline=False",
@@ -1106,7 +1166,11 @@ export const recipes = {
       const startingMap = ctx?.settings?.map || defaultMap;
 
       if (isChoc) {
-        return ["-port", String(port), "-servername", ctx.name || "PlayBound.club Party", ...iwadArgs];
+        const chocArgs = ["-port", String(port), "-servername", ctx.name || "PlayBound.club Party", ...iwadArgs];
+        if (typeof ctx?.settings?.difficulty === "number" && Number.isFinite(ctx.settings.difficulty)) {
+          chocArgs.push("-skill", String(ctx.settings.difficulty));
+        }
+        return chocArgs;
       }
       return [
         "-host",

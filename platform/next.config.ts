@@ -144,8 +144,8 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     return [
-      // Markdown mirrors for AI agents. `.md` is the extension convention
-      // fetching agents look for, but Next route segments must be wholly
+      // Markdown mirrors. `.md` is the extension convention
+      // fetching clients look for, but Next route segments must be wholly
       // dynamic, so the real handler lives at /games/[slug]/markdown.
       { source: "/games/:slug.md", destination: "/games/:slug/markdown" },
     ];

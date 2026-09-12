@@ -17,6 +17,7 @@ export const COUCH_INPUT_MODES = /** @type {const} */ ([
 export const COUCH_ROLES = /** @type {const} */ (["host", "controller", "display"]);
 
 export const INPUT_PROFILE_IDS = /** @type {const} */ ([
+  "keyboard-mouse",
   "standard-gamepad",
   "touch-gamepad",
   "racing-wheel",
@@ -28,6 +29,7 @@ export const INPUT_PROFILE_IDS = /** @type {const} */ ([
 ]);
 
 export const SHIPPED_INPUT_PROFILES = /** @type {const} */ ([
+  "keyboard-mouse",
   "standard-gamepad",
   "touch-gamepad",
 ]);

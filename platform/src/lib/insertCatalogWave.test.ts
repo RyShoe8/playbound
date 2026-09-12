@@ -120,6 +120,7 @@ describe("insert-catalog-wave allowlists", () => {
     expect(Object.keys(PATCH_GAME_FIELDS).sort()).toEqual(
       [
         "alien-swarm",
+        "dune-legacy",
         "freetrain",
         "hurry-curry",
         "idle-slayer",
@@ -141,9 +142,18 @@ describe("insert-catalog-wave allowlists", () => {
     expect(PATCH_GAME_FIELDS["alien-swarm"]).toContain("longDescription");
     expect(PATCH_GAME_FIELDS["alien-swarm"]).not.toContain("launcherInstall");
     expect(PATCH_GAME_FIELDS["unknown-horizons"]).toContain("launcherInstall");
-    expect(PATCH_GAME_FIELDS["x-men-arcade-remake"]).toEqual(["launcherInstall"]);
-    expect(PATCH_GAME_FIELDS["tmnt-rescue-palooza"]).toEqual(["launcherInstall"]);
+    expect(PATCH_GAME_FIELDS["x-men-arcade-remake"]).toEqual([
+      "launcherInstall",
+      "firstPlaySteps",
+      "multiplayerGamingSteps",
+    ]);
+    expect(PATCH_GAME_FIELDS["tmnt-rescue-palooza"]).toEqual([
+      "launcherInstall",
+      "firstPlaySteps",
+      "multiplayerGamingSteps",
+    ]);
     expect(PATCH_GAME_FIELDS.morrowind).toEqual(["launcherInstall"]);
+    expect(PATCH_GAME_FIELDS["dune-legacy"]).toEqual(["launcherInstall"]);
     expect(PATCH_GAME_FIELDS["the-spike-cross"]).toContain("androidStoreUrl");
     expect(PATCH_GAME_FIELDS["slapshot-rebound"]).toContain("hardwareRequirements");
     expect(PATCH_GAME_FIELDS["space-station-14"]).toEqual(["launcherInstall", "installSteps"]);
@@ -154,6 +164,8 @@ describe("insert-catalog-wave allowlists", () => {
   it("patches CoP official + restores Anomaly edition + OpenMW/TES3MP/Lost Alpha install recipes", () => {
     expect(Object.keys(PATCH_EDITION_FIELDS).sort()).toEqual(
       [
+        "dune-legacy/modern-engine",
+        "dune-legacy/playbound-edition",
         "morrowind/openmw",
         "morrowind/tes3mp",
         "s-t-a-l-k-e-r-call-of-pripyat/anomaly",
@@ -173,6 +185,8 @@ describe("insert-catalog-wave allowlists", () => {
       "installMethod",
       "installConfig",
     ]);
+    expect(PATCH_EDITION_FIELDS["dune-legacy/modern-engine"]).toEqual(["installConfig"]);
+    expect(PATCH_EDITION_FIELDS["dune-legacy/playbound-edition"]).toEqual(["installConfig"]);
   });
 
   it("patches holocure-rich-presence to draft only", () => {

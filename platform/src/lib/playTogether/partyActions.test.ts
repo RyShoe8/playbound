@@ -153,11 +153,28 @@ describe("couch parties", () => {
       ...over,
     });
 
-  it("gives the leader a join button and members none", () => {
+  it("gives the leader Start Game and members Join online when the link is ready", () => {
     expect(computePartyActions(couchInput()).join.visible).toBe(true);
     expect(
       computePartyActions(couchInput({ viewerId: "u2", leaderUsername: "Ry" })).join.visible
-    ).toBe(false);
+    ).toBe(true);
+    expect(
+      computePartyActions(couchInput({ viewerId: "u2" })).join.label
+    ).toBe(PARTY_COPY.waitingForController);
+    expect(
+      computePartyActions(
+        couchInput({
+          viewerId: "u2",
+          status: "playing",
+          couch: { enabled: true, status: "ready", joinCode: "AB3D" },
+        })
+      ).join.label
+    ).toBe(PARTY_COPY.joinOnline);
+  });
+
+  it("never says no online play", () => {
+    expect(PARTY_COPY.couchBadge).not.toMatch(/no online play/i);
+    expect(computePartyActions(couchInput()).couch?.badge).toBe(PARTY_COPY.couchBadge);
   });
 
   it("names whose machine runs it, from the viewer's side", () => {
@@ -178,12 +195,13 @@ describe("couch parties", () => {
     const a = computePartyActions(
       couchInput({ couch: { enabled: true, status: "ready", joinCode: "AB3D" } })
     );
-    expect(a.couch?.joinUrl).toBe("https://playbound.club/controller/AB3D");
+    expect(a.couch?.joinUrl).toBe("https://playbound.club/c/AB3D");
   });
 
   it("never waits on a server a couch party does not have", () => {
     const a = computePartyActions(couchInput({ viewerId: "u2", hostMode: "self" }));
-    expect(a.join.visible).toBe(false);
+    expect(a.join.visible).toBe(true);
+    expect(a.join.label).toBe(PARTY_COPY.waitingForController);
     expect(a.notes).toEqual([]);
   });
 
@@ -227,16 +245,23 @@ describe("the two panels cannot disagree", () => {
     expect(playing.join.visible).toBe(true);
     expect(playing.playingPill).toBe(false);
 
+    /*
+     * Couch members keep Join online while the party is playing — they still
+     * need the controller link. The playing pill is for members who already
+     * have nothing left to press.
+     */
     const couchMember = computePartyActions(
       base({
         viewerId: "u2",
         status: "playing",
+        gameSlug: "streets-of-rage-remake",
         couch: { enabled: true, status: "ready", joinCode: "AB3D" },
         members: [{ userId: "u2", ready: true }],
       })
     );
-    expect(couchMember.join.visible).toBe(false);
-    expect(couchMember.playingPill).toBe(true);
+    expect(couchMember.join.visible).toBe(true);
+    expect(couchMember.join.label).toBe(PARTY_COPY.joinOnline);
+    expect(couchMember.playingPill).toBe(false);
   });
 });
 

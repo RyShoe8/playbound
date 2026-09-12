@@ -26,7 +26,7 @@ const BUTTON = {
   GUIDE: 1 << 14,
 };
 
-const SHIPPED_INPUT_PROFILES = ["standard-gamepad", "touch-gamepad"];
+const SHIPPED_INPUT_PROFILES = ["keyboard-mouse", "standard-gamepad", "touch-gamepad"];
 
 function clampAxis(n) {
   if (!Number.isFinite(n)) return 0;

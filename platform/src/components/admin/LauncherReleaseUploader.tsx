@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
+import { formatDataVolume, formatVpsTransferMessage, vpsTransferPercent } from "@/lib/mirrors/vpsProgress";
 
 const FILENAME_RE = /^PlayBound-Setup-\d+\.\d+\.\d+\.exe$/i;
 
@@ -30,6 +31,9 @@ export function LauncherReleaseUploader() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
+  const [percent, setPercent] = useState<number | null>(null);
+  const [transferred, setTransferred] = useState("");
+  const [phase, setPhase] = useState<"idle" | "blob" | "vps">("idle");
 
   /**
    * By the time this call's own POST returns, the server has already set
@@ -38,14 +42,36 @@ export function LauncherReleaseUploader() {
    * here never legitimately sees "missing"; if it does, the transfer failed
    * server-side, and waiting longer will not change that.
    */
-  async function pollUntilVerified(artifactId: string): Promise<{ ok: boolean; detail?: string }> {
+  async function pollUntilVerified(
+    artifactId: string,
+    expectedSize: number
+  ): Promise<{ ok: boolean; detail?: string }> {
+    setPhase("vps");
+    setPercent(0);
+    setTransferred(formatVpsTransferMessage(0, expectedSize));
     for (let i = 0; i < 180; i += 1) {
       await new Promise((resolve) => window.setTimeout(resolve, 2000));
       const res = await fetch(`/api/admin/download-mirrors/artifacts/${encodeURIComponent(artifactId)}`);
       const body = await res.json().catch(() => null);
       const vpsStatus = body?.artifact?.vpsStatus;
-      if (vpsStatus === "verified") return { ok: true };
-      if (vpsStatus === "missing") return { ok: false, detail: body?.artifact?.vpsStatusMessage };
+      if (vpsStatus === "verified") {
+        setPercent(100);
+        return { ok: true };
+      }
+      if (vpsStatus === "missing") {
+        return { ok: false, detail: body?.artifact?.vpsStatusMessage };
+      }
+      const received = Number(body?.transfer?.bytesReceived) || 0;
+      const total = Number(body?.transfer?.sizeBytes) || expectedSize;
+      const pct =
+        body?.transfer?.percent != null
+          ? Number(body.transfer.percent)
+          : vpsTransferPercent(received, total);
+      if (pct != null) setPercent(pct);
+      setTransferred(
+        body?.artifact?.vpsStatusMessage || formatVpsTransferMessage(received, total)
+      );
+      setStatus("Copying to VPS and verifying…");
     }
     return {
       ok: false,
@@ -60,14 +86,22 @@ export function LauncherReleaseUploader() {
       return;
     }
     setBusy(true);
+    setPhase("blob");
+    setPercent(0);
+    setTransferred("");
     try {
       setStatus("Hashing file…");
       const sha256 = await sha256Hex(file);
 
-      setStatus(`Uploading ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)…`);
+      setStatus(`Uploading ${file.name} (${formatDataVolume(file.size)})…`);
       const blob = await upload(`launcher/staged/${file.name}`, file, {
         access: "public",
         handleUploadUrl: "/api/admin/launcher-release/upload",
+        multipart: true,
+        onUploadProgress: ({ percentage, loaded, total }) => {
+          setPercent(percentage);
+          setTransferred(`${formatDataVolume(loaded)} of ${formatDataVolume(total)}`);
+        },
       });
 
       setStatus("Registering release and starting VPS transfer…");
@@ -81,7 +115,7 @@ export function LauncherReleaseUploader() {
       if (!body.success) throw new Error(body.message || "VPS archive could not start");
 
       setStatus("Copying to VPS and verifying…");
-      const result = await pollUntilVerified(body.artifactId);
+      const result = await pollUntilVerified(body.artifactId, file.size);
       setStatus(
         result.ok
           ? "On the VPS. Promote to R2 below to seed the hot cache."
@@ -91,6 +125,9 @@ export function LauncherReleaseUploader() {
       setStatus(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setBusy(false);
+      setPhase("idle");
+      setPercent(null);
+      setTransferred("");
     }
   }
 
@@ -122,6 +159,23 @@ export function LauncherReleaseUploader() {
           after the VPS confirms the copy.
         </span>
       </div>
+      {percent !== null ? (
+        <div className="mt-3">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
+            <div
+              className="h-full rounded-full bg-primary transition-[width] duration-300"
+              style={{ width: `${Math.max(2, percent)}%` }}
+            />
+          </div>
+          <div className="mt-1.5 flex flex-wrap justify-between gap-2 text-[11px] tabular-nums text-muted-foreground">
+            <span>
+              {phase === "vps" ? "Copying to VPS" : phase === "blob" ? "Uploading to Blob" : "Working"} —{" "}
+              {percent.toFixed(1)}%
+            </span>
+            <span>{transferred}</span>
+          </div>
+        </div>
+      ) : null}
       {status ? <p className="mt-2 break-all text-xs text-muted-foreground">{status}</p> : null}
     </div>
   );

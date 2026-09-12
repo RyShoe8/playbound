@@ -82,6 +82,11 @@ const UPDATES: PlatformUrlUpdate[] = [
         urlMac: "https://downloads.sourceforge.net/project/dunelegacy/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.5-macOS.dmg",
         urlLinux: "https://downloads.sourceforge.net/project/dunelegacy/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.3-Linux-x64.tar.gz",
       },
+      {
+        slug: "playbound-edition",
+        urlMac: "https://downloads.sourceforge.net/project/dunelegacy/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.5-macOS.dmg",
+        urlLinux: "https://downloads.sourceforge.net/project/dunelegacy/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.3-Linux-x64.tar.gz",
+      },
     ],
   },
   {

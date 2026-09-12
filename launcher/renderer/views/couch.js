@@ -7,6 +7,7 @@
 
 import { escapeHtml, setStatus, views, api } from "../shared.js";
 import { CADENCE } from "../cadence.js";
+import { ensureHostDisplayStream, stopHostDisplayStream } from "../hostDisplayStream.js";
 
 let wired = false;
 let signalSince = 0;
@@ -199,6 +200,22 @@ async function answerOffer(controllerId, remoteSdp, session) {
   pc = new RTCPeerConnection({ iceServers });
   peers.set(controllerId, pc);
 
+  /*
+   * Online multiplayer for local-co-op games: push host screen to the phone so
+   * remotes see the game while sending pads. Capture is best-effort — if the
+   * host declines the picker, pads still work.
+   */
+  try {
+    const display = await ensureHostDisplayStream();
+    if (display) {
+      for (const track of display.getTracks()) {
+        pc.addTrack(track, display);
+      }
+    }
+  } catch (err) {
+    console.warn("[couch] could not attach display track:", err?.message || err);
+  }
+
   pc.ondatachannel = (ev) => {
     const dc = ev.channel;
     channels.set(controllerId, dc);
@@ -280,9 +297,9 @@ function paint(state) {
         <p class="couch-eyebrow">PlayBound Couch Mode</p>
         <h1>Phone Controllers</h1>
         <p class="couch-lead">
-          Turn a phone into a gamepad for this PC — solo or with friends.
-          For single-player, you can also pick <strong>Use phone as controller</strong> when you hit Play on a controller-supported game.
-          No PlayBound account on the phone. Display (TV/HDMI) stays separate; this is input only.
+          Turn phones into pads on this PC for couch co-op — or when someone does not have a
+          controller. Scan the QR, or open playbound.club/c and enter the short code. No account
+          needed on the phone.
         </p>
         <div class="couch-actions">
           <button type="button" class="btn-primary" id="couch-start-btn">Start phone controllers</button>
@@ -324,7 +341,7 @@ function paint(state) {
           <p class="couch-code">Code <strong>${escapeHtml(s.joinCode)}</strong></p>
         </div>
         <div class="couch-actions">
-          <button type="button" class="btn-secondary" id="couch-copy-btn">Copy link</button>
+          <button type="button" class="btn-secondary" id="couch-copy-btn">Copy code</button>
           <button type="button" class="btn-secondary" id="couch-stop-btn">End session</button>
         </div>
       </div>
@@ -332,8 +349,8 @@ function paint(state) {
       <div class="couch-grid">
         <div class="couch-qr-panel">
           <img class="couch-qr" src="${qrSrc}" alt="Scan to join" width="220" height="220" />
-          <p class="couch-url">${escapeHtml(joinUrl)}</p>
-          <p class="couch-hint">Scan to join · playbound.club/controller/${escapeHtml(s.joinCode)}</p>
+          <p class="couch-url">Code ${escapeHtml(s.joinCode)}</p>
+          <p class="couch-hint">Scan QR · or open playbound.club/c and enter the code</p>
         </div>
         <div class="couch-players">
           ${slots
@@ -377,8 +394,8 @@ function paint(state) {
 
   root.querySelector("#couch-stop-btn")?.addEventListener("click", () => void stopSession());
   root.querySelector("#couch-copy-btn")?.addEventListener("click", async () => {
-    await pb().clipboardWrite(joinUrl);
-    setStatus("Join link copied");
+    await pb().clipboardWrite(s.joinCode || "");
+    setStatus("Copied code — phones open playbound.club/c and enter it (or scan the QR)");
   });
   root.querySelectorAll("[data-approve]").forEach((btn) => {
     btn.addEventListener("click", () =>
@@ -406,11 +423,12 @@ async function startSession() {
     return;
   }
   paint(state);
-  setStatus("Phone controllers live — scan the QR code");
+  setStatus("Phone controllers live — scan the QR, or open playbound.club/c and enter the code");
 }
 
 async function stopSession() {
   stopSignalPoll();
+  stopHostDisplayStream();
   for (const pc of peers.values()) {
     try {
       pc.close();
@@ -423,7 +441,7 @@ async function stopSession() {
   signalSince = 0;
   await pb().couchStop();
   await refresh();
-  setStatus("Couch Mode ended");
+  setStatus("Online session ended");
 }
 
 async function action(name, controllerId, playerSlot) {

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, globalShortcut, ipcMain, shell, dialog, Tray, Menu, nativeImage, screen, safeStorage, session, Notification, powerMonitor } = require("electron");
+const { app, BrowserWindow, globalShortcut, ipcMain, shell, dialog, Tray, Menu, nativeImage, screen, safeStorage, session, Notification, powerMonitor, desktopCapturer } = require("electron");
 
 // GPU Acceleration & Rendering Switches for silky-smooth scrolling on all hardware
 app.commandLine.appendSwitch("enable-gpu-rasterization");
@@ -58,6 +58,12 @@ const {
   writeDisplaySettings,
   resolveGameDir,
 } = require("./openciv3Display");
+const { ensureHolocureFullscreen } = require("./holocureDisplay");
+const {
+  GES_SLUG,
+  preflightGoldeneye,
+  preferSteamLaunch,
+} = require("./services/goldeneyeSource");
 const { prepareOpenRaNetwork, isOpenRaFamily } = require("./services/openraNat");
 const portMapping = require("./services/portMapping");
 const { ensureOpenTtdClientName } = require("./services/openTtdPlayerName");
@@ -1472,56 +1478,81 @@ function clearAuthWindowSecrets() {
   }
 }
 
+/**
+ * Open launcher account linking in the system browser.
+ *
+ * An Electron BrowserWindow does not share Chrome/Edge cookies, so Google users
+ * who already signed up on playbound.club were forced through a second Google
+ * login (often Windows Hello / passkeys). The system browser reuses their site
+ * session; LauncherAuthHandoff then fires playbound://link?code=… which the OS
+ * routes back into this process.
+ *
+ * Falls back to an in-app window only if shell.openExternal fails.
+ */
 function openAuthWindow(targetUrl) {
   const authUrl = targetUrl || `${getApiBase()}/launcher/auth?from=app`;
-  try {
-    if (authWin && !authWin.isDestroyed()) {
-      authWin.focus();
-      void authWin.loadURL(authUrl);
-      return;
-    }
-    authWin = new BrowserWindow({
-      width: 520,
-      height: 740,
-      parent: win && !win.isDestroyed() ? win : undefined,
-      modal: false,
-      title: "Sign in to PlayBound",
-      autoHideMenuBar: true,
-      backgroundColor: "#0c0a12",
-      webPreferences: {
-        contextIsolation: true,
-        nodeIntegration: false,
-        sandbox: true,
-      },
-    });
 
-    const handleUrl = (url) => {
-      const handoff = extractLinkHandoff(url);
-      if (!handoff) return false;
-      clearAuthWindowSecrets();
-      void connectWithHandoff(handoff).finally(() => {
-        if (authWin && !authWin.isDestroyed()) authWin.close();
+  const openEmbeddedFallback = () => {
+    try {
+      if (authWin && !authWin.isDestroyed()) {
+        authWin.focus();
+        void authWin.loadURL(authUrl);
+        return;
+      }
+      authWin = new BrowserWindow({
+        width: 520,
+        height: 740,
+        parent: win && !win.isDestroyed() ? win : undefined,
+        modal: false,
+        title: "Sign in to PlayBound",
+        autoHideMenuBar: true,
+        backgroundColor: "#0c0a12",
+        webPreferences: {
+          contextIsolation: true,
+          nodeIntegration: false,
+          sandbox: true,
+        },
       });
-      return true;
-    };
 
-    authWin.webContents.on("will-navigate", (e, url) => {
-      if (handleUrl(url)) e.preventDefault();
+      const handleUrl = (url) => {
+        const handoff = extractLinkHandoff(url);
+        if (!handoff) return false;
+        clearAuthWindowSecrets();
+        void connectWithHandoff(handoff).finally(() => {
+          if (authWin && !authWin.isDestroyed()) authWin.close();
+        });
+        return true;
+      };
+
+      authWin.webContents.on("will-navigate", (e, url) => {
+        if (handleUrl(url)) e.preventDefault();
+      });
+      authWin.webContents.on("will-redirect", (e, url) => {
+        if (handleUrl(url)) e.preventDefault();
+      });
+      authWin.webContents.on("did-fail-load", (_e, _code, _desc, validatedURL) => {
+        handleUrl(validatedURL);
+      });
+      authWin.on("closed", () => {
+        authWin = null;
+      });
+      void authWin.loadURL(authUrl);
+    } catch (err) {
+      console.warn("Auth window failed:", err?.message || err);
+    }
+  };
+
+  void safeOpenExternal(authUrl)
+    .then(() => {
+      notifyAccount({
+        connected: Boolean(loadSettings().launcherToken),
+        message: "Finish signing in in your browser — this app will connect automatically.",
+      });
+    })
+    .catch((err) => {
+      console.warn("System browser auth failed, using embedded window:", err?.message || err);
+      openEmbeddedFallback();
     });
-    authWin.webContents.on("will-redirect", (e, url) => {
-      if (handleUrl(url)) e.preventDefault();
-    });
-    authWin.webContents.on("did-fail-load", (_e, _code, _desc, validatedURL) => {
-      handleUrl(validatedURL);
-    });
-    authWin.on("closed", () => {
-      authWin = null;
-    });
-    void authWin.loadURL(authUrl);
-  } catch (err) {
-    console.warn("Auth window failed, opening system browser:", err?.message || err);
-    void safeOpenExternal(authUrl).catch((e) => console.warn(e?.message || e));
-  }
 }
 
 async function handleSyncDeepLink() {
@@ -7363,10 +7394,26 @@ async function ensureEditionMods(slug, entry, gameDir, exePath) {
     // For archives the marker is what the archive unpacks to, so a completed
     // extraction is not repeated on every launch.
     const marker = path.join(targetDir, file.extract ? file.extractedMarker || file.fileName : file.fileName);
-    if (fs.existsSync(marker)) continue;
+    const versionMarker = path.join(targetDir, `.${file.fileName}.pbversion`);
+    let needsFetch = !fs.existsSync(marker) || Boolean(file.replace);
+    if (!needsFetch && file.version) {
+      let onDiskVersion = "";
+      try {
+        onDiskVersion = fs.existsSync(versionMarker)
+          ? String(fs.readFileSync(versionMarker, "utf8")).trim()
+          : "";
+      } catch {
+        onDiskVersion = "";
+      }
+      if (onDiskVersion !== String(file.version).trim()) needsFetch = true;
+    }
+    if (!needsFetch) continue;
 
     sendProgress({ phase: "downloading", addon: file.fileName });
     await fsp.mkdir(targetDir, { recursive: true });
+    if (fs.existsSync(marker) && !file.extract) {
+      await fsp.rm(marker, { force: true });
+    }
     const dl = path.join(targetDir, file.fileName);
     await downloadTo(file.url, dl);
     if (file.extract) {
@@ -7374,7 +7421,10 @@ async function ensureEditionMods(slug, entry, gameDir, exePath) {
       await extractArchive(dl, targetDir);
       await fsp.rm(dl, { force: true });
     }
-    steps.push(`placed ${file.fileName}`);
+    if (file.version) {
+      await fsp.writeFile(versionMarker, `${String(file.version).trim()}\n`, "utf8");
+    }
+    steps.push(`placed ${file.fileName}${file.version ? ` (${file.version})` : ""}`);
   }
 
   // Everything past here patches the game executable, which only Aurie does.
@@ -8372,6 +8422,14 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     }
   }
 
+  if (slug === "holocure") {
+    try {
+      await ensureHolocureFullscreen();
+    } catch (err) {
+      console.warn("[holocure] display ensure skipped:", err?.message || err);
+    }
+  }
+
   if (slug === "renegade-x") {
     try {
       await maybePrepareRenegadeX(info);
@@ -8429,7 +8487,7 @@ async function playGameInner(slug, join = null, editionSlug = null) {
    */
   if (slug === "dune-legacy" && !duneLegacyHasPakData(info.exe, info.dir)) {
     const message =
-      "This Dune Legacy install is missing Dune II data files (PAKs). Remove it from your library and install again — PlayBound uses the official Windows package that includes them.";
+      "This Dune Legacy install is missing Dune II data files (PAKs). Remove it from your library and install again — PlayBound uses the official Windows package that includes them (not the GitHub engine-only zip).";
     void telemetry.launchFailed({
       ...launchInfo(),
       code: "DUNE_LEGACY_MISSING_PAK",
@@ -9031,8 +9089,61 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     }
   }
 
+  let spawnOpts = { env: launchEnv };
+
+  /*
+   * GoldenEye: Source — sourcemod on Source SDK Base 2007.
+   * gesource_run.exe exits 0 after handing off to Steam/hl2; prefer
+   * steam -applaunch and require hl2.exe before calling the launch a success.
+   */
+  if (slug === GES_SLUG) {
+    const base = steamBaseDir();
+    const steamExe =
+      base && process.platform === "win32" && fs.existsSync(path.join(base, "steam.exe"))
+        ? path.join(base, "steam.exe")
+        : null;
+    const check = preflightGoldeneye({
+      steamExePath: steamExe,
+      libraryRoots: steamLibraryRoots(),
+      steamAppState,
+    });
+    if (!check.ok) {
+      const preErr = new Error(check.message);
+      preErr.code = check.code;
+      void telemetry.launchFailed({
+        ...launchInfo(),
+        code: check.code,
+        message: check.message,
+        phase: "preflight",
+      });
+      preErr.__launchFailedReported = true;
+      throw preErr;
+    }
+    const steamLaunch = preferSteamLaunch({
+      steamExePath: steamExe,
+      gesourceDir: check.gesourceDir,
+      connectArgs: args,
+    });
+    if (steamLaunch) {
+      launchPath = steamLaunch.exePath;
+      args = steamLaunch.args;
+      spawnOpts = {
+        ...spawnOpts,
+        extraWatchImages: steamLaunch.watchImages,
+        successImages: ["hl2.exe"],
+        bootstrapGraceMs: 20000,
+      };
+    } else {
+      spawnOpts = {
+        ...spawnOpts,
+        extraWatchImages: ["hl2.exe", "gesource_run.exe"],
+        bootstrapGraceMs: 15000,
+      };
+    }
+  }
+
   try {
-    await spawnWithElevationFallback(slug, launchPath, args, { env: launchEnv });
+    await spawnWithElevationFallback(slug, launchPath, args, spawnOpts);
   } catch (err) {
     const rawMessage = err?.message || String(err);
     const exeName = path.basename(launchPath || "") || "game";
@@ -9277,6 +9388,20 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     /* ignore */
   }
 
+  /*
+   * Finicky fullscreen remakes (SoR / OpenBOR) often hide Quit — Escape is the
+   * host's exit. Injected here so Mongo-only titles like streets-of-rage-remake
+   * still get the tip without a seed entry.
+   */
+  const ESCAPE_QUIT_HINTS = {
+    "streets-of-rage-remake":
+      "Press Escape on the host keyboard to quit (some menus have no Quit button; Alt+F4 also works).",
+    "tmnt-rescue-palooza":
+      "Press Escape on the host keyboard to leave the match or quit OpenBOR.",
+    "x-men-arcade-remake":
+      "Press Escape on the host keyboard to leave the match or quit OpenBOR.",
+  };
+
   // Resolve First Play Steps and Multiplayer Gaming Steps
   const editionObj = entry?.editions?.find((ed) => ed.slug === (info.editionSlug || edSlug));
   const rawFirstPlay =
@@ -9316,7 +9441,18 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     });
   };
 
-  const firstPlaySteps = newLaunchCount <= 2 ? formatStepList(rawFirstPlay) : null;
+  let firstPlaySteps = newLaunchCount <= 2 ? formatStepList(rawFirstPlay) : null;
+  const quitHint = ESCAPE_QUIT_HINTS[slug];
+  if (quitHint && newLaunchCount <= 2) {
+    const list = Array.isArray(firstPlaySteps) ? [...firstPlaySteps] : [];
+    const already = list.some((s) =>
+      String(s?.text || s)
+        .toLowerCase()
+        .includes("escape")
+    );
+    if (!already) list.push({ platform: "all", text: quitHint });
+    firstPlaySteps = list.length ? list : null;
+  }
   const multiplayerGamingSteps = formatStepList(rawMultiplayer);
 
   return {
@@ -9603,6 +9739,12 @@ function onSpawnedProcessGone(slug) {
  * catalog exeHint image names after the child exits.
  * Rejects on immediate spawn failure (ENOENT / missing Java) so Play Now is not a false success.
  * All launches wait briefly so a process that dies instantly is not reported as success.
+ *
+ * @param {object} [opts]
+ * @param {string[]} [opts.extraWatchImages] Additional process images (e.g. hl2.exe)
+ * @param {string[]} [opts.successImages] If set, success requires one of these running
+ *   (Steam -applaunch stays alive forever — do not treat steam.exe alone as success).
+ * @param {number} [opts.bootstrapGraceMs] After exit 0 / while waiting for successImages
  */
 function spawnTrackedExe(slug, exePath, args = [], opts = {}) {
   clearLaunchTracking(slug);
@@ -9612,6 +9754,10 @@ function spawnTrackedExe(slug, exePath, args = [], opts = {}) {
   exePath = ensureUnixExecutable(exePath);
   const isJar = /\.jar$/i.test(exePath);
   const EARLY_WATCH_MS = 2000;
+  const BOOTSTRAP_GRACE_MS = Math.max(0, Number(opts.bootstrapGraceMs) || 0);
+  const successImages = Array.isArray(opts.successImages)
+    ? opts.successImages.map(normalizeProcessImageName).filter(Boolean)
+    : [];
 
   let child;
   try {
@@ -9647,6 +9793,9 @@ function spawnTrackedExe(slug, exePath, args = [], opts = {}) {
 
   const entry = catalogEntry(slug);
   const wrapDos = shouldLaunchThroughDosBox(exePath, { needsDosBox: Boolean(entry?.needsDosBox) });
+  const extraWatch = Array.isArray(opts.extraWatchImages)
+    ? opts.extraWatchImages.map(normalizeProcessImageName).filter(Boolean)
+    : [];
   const imageNames = [
     ...new Set(
       [
@@ -9654,6 +9803,8 @@ function spawnTrackedExe(slug, exePath, args = [], opts = {}) {
         ...(isJar ? ["javaw.exe", "java.exe"] : []),
         ...(wrapDos ? ["dosbox-staging.exe", "dosbox.exe"] : []),
         ...hintProcessNames(entry?.exeHint),
+        ...extraWatch,
+        ...successImages,
       ].filter(Boolean)
     ),
   ];
@@ -9753,9 +9904,33 @@ function spawnTrackedExe(slug, exePath, args = [], opts = {}) {
       fail(err);
     };
 
+    const successReady = () => {
+      if (successImages.length > 0) return isAnyImageRunning(successImages);
+      return isAnyImageRunning(imageNames) || (child.exitCode == null && child.signalCode == null && child.pid);
+    };
+
     const processStillAlive = () => {
+      if (successImages.length > 0) return isAnyImageRunning(successImages);
       if (child.exitCode == null && child.signalCode == null && child.pid) return true;
       return isAnyImageRunning(imageNames);
+    };
+
+    const pollUntilSuccessOrFail = (graceMs, onGone) => {
+      const deadline = Date.now() + graceMs;
+      const tick = () => {
+        if (settled) return;
+        if (successReady()) {
+          if (onGone) onGone();
+          succeed();
+          return;
+        }
+        if (Date.now() >= deadline) {
+          failEarly();
+          return;
+        }
+        setTimeout(tick, 400);
+      };
+      tick();
     };
 
     child.once("error", fail);
@@ -9765,18 +9940,39 @@ function spawnTrackedExe(slug, exePath, args = [], opts = {}) {
         onSpawnedProcessGone(slug);
         return;
       }
-      // Bootstrap exes (OpenRA → RedAlert) exit quickly while the real game keeps running.
-      if (isAnyImageRunning(imageNames)) {
+      // Bootstrap exes (OpenRA → RedAlert, gesource_run → hl2) exit quickly
+      // while the real game keeps running.
+      if (isAnyImageRunning(imageNames) || (successImages.length && isAnyImageRunning(successImages))) {
         onSpawnedProcessGone(slug);
         succeed();
+        return;
+      }
+      const exitOk = child.exitCode === 0 || child.exitCode == null;
+      const grace = exitOk ? Math.max(BOOTSTRAP_GRACE_MS, 8000) : 0;
+      if (grace > 0) {
+        pollUntilSuccessOrFail(grace, () => onSpawnedProcessGone(slug));
         return;
       }
       failEarly();
     };
     child.once("exit", onEarlyExit);
 
+    const settleMs = successImages.length > 0 ? Math.max(EARLY_WATCH_MS, BOOTSTRAP_GRACE_MS || 15000) : EARLY_WATCH_MS;
     setTimeout(() => {
       if (settled) return;
+      if (successImages.length > 0) {
+        if (successReady()) {
+          child.removeListener("exit", onEarlyExit);
+          child.on("exit", () => onSpawnedProcessGone(slug));
+          succeed();
+          return;
+        }
+        pollUntilSuccessOrFail(Math.max(0, settleMs - EARLY_WATCH_MS), () => {
+          child.removeListener("exit", onEarlyExit);
+          child.on("exit", () => onSpawnedProcessGone(slug));
+        });
+        return;
+      }
       if (!processStillAlive()) {
         failEarly();
         return;
@@ -14807,6 +15003,33 @@ if (gotLock) {
     if (uninstallIdx !== -1) return testUninstall(process.argv[uninstallIdx + 1]);
 
     configureYoutubeEmbedIdentity();
+
+    /*
+     * Connect online multiplayer (local co-op): host shares the game view via
+     * getDisplayMedia in the renderer. Prefer the primary screen automatically
+     * so party Start does not block on a picker mid-launch.
+     */
+    try {
+      session.defaultSession.setDisplayMediaRequestHandler(async (_request, callback) => {
+        try {
+          const sources = await desktopCapturer.getSources({
+            types: ["screen"],
+            thumbnailSize: { width: 0, height: 0 },
+          });
+          const primary = sources[0];
+          if (!primary) {
+            callback({});
+            return;
+          }
+          callback({ video: primary });
+        } catch (err) {
+          console.warn("[couch] display media handler failed:", err?.message || err);
+          callback({});
+        }
+      });
+    } catch (err) {
+      console.warn("[couch] setDisplayMediaRequestHandler unavailable:", err?.message || err);
+    }
 
     // Cheap, and it is what lets an unattended launcher stop polling.
     startSystemIdleWatch();

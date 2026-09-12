@@ -13,6 +13,7 @@ import {
   dungeonKeeperGoldSystemRequirements,
 } from "@/lib/data/dungeonKeeperGoldSpecs";
 import { launcherInstallBySlug } from "@/lib/data/launcherInstall";
+import { partyMaxPlayersBySlug } from "@/lib/data/partyMaxPlayers";
 import { collections, collectionsBySlug } from "@/lib/data";
 import { listCollections } from "@/lib/collections";
 import { listDevelopers } from "@/lib/developers";
@@ -136,6 +137,15 @@ function attachLauncherInstall(game: Game, doc?: LeanGame): Game {
       ];
       if (seed?.registryTitles) merged.registryTitles = seed.registryTitles;
     }
+    // GoldenEye: Source — gesource_run exits 0 after handing off to hl2.exe.
+    // Without hl2 in exeHint, spawnTrackedExe treats a successful Steam handoff
+    // as EARLY_EXIT. Seed fills missing/outdated Mongo recipes at read time.
+    if (game.slug === "goldeneye-source" && seed?.exeHint) {
+      if (!merged.exeHint || !/\bhl2\b/i.test(String(merged.exeHint))) {
+        merged.exeHint = seed.exeHint;
+      }
+      if (seed.note) merged.note = seed.note;
+    }
     return { ...game, launcherInstall: merged };
   }
   if (seed) return repairControllerClaims(repairBrowserOnlyFromSeed({ ...game, launcherInstall: seed }));
@@ -235,7 +245,11 @@ function toGame(doc: LeanGame): Game {
     status,
     platforms: pickPlatforms(doc.platforms as string[], seed?.platforms),
     features: (doc.features as string[])?.length ? (doc.features as string[]) : (seed?.features ?? []),
-    maxPlayers: typeof doc.maxPlayers === "number" ? doc.maxPlayers : null,
+    maxPlayers:
+      typeof doc.maxPlayers === "number"
+        ? doc.maxPlayers
+        : partyMaxPlayersBySlug[String(doc.slug)] ??
+          (typeof seed?.maxPlayers === "number" ? seed.maxPlayers : null),
     launchMethods: (doc.launchMethods as LaunchMethod[])?.length ? (doc.launchMethods as LaunchMethod[]) : (seed?.launchMethods ?? ["install"]),
     browserPlayable: Boolean(doc.browserPlayable ?? seed?.browserPlayable),
     steamDeck: Boolean(doc.steamDeck ?? seed?.steamDeck),
