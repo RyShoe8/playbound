@@ -1050,7 +1050,7 @@ export function DownloadMirrorsManager() {
       {/* TAB 1: R2 Hot Cache */}
       {activeTab === "cache" && (
         <div className="space-y-4">
-          <LauncherReleaseUploader />
+          <LauncherReleaseUploader onComplete={() => void loadData({ silent: true })} />
 
           {/* Active Storage Transfers Card */}
           {Object.keys(activeTransfers).length > 0 && (

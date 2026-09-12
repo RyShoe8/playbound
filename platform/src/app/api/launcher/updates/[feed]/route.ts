@@ -5,6 +5,7 @@ import {
   buildSignedWindowsLatestYml,
   parseWindowsSetupFilename,
 } from "@/lib/launcherUpdateFeed";
+import { pickLatestLauncherArtifact } from "@/lib/mirrors/semver";
 
 export async function GET(
   _req: Request,
@@ -14,13 +15,14 @@ export async function GET(
     const { feed } = await params;
     if (feed === "latest.yml") {
       await dbConnect();
-      const artifact = await Artifact.findOne({
+      const artifacts = await Artifact.find({
         artifactType: "launcher",
         $or: [
           { artifactId: /^playbound-launcher-windows-/ },
           { filename: /^PlayBound-Setup-.*\.exe$/i },
         ],
-      }).sort({ createdAt: -1 });
+      }).lean();
+      const artifact = pickLatestLauncherArtifact(artifacts);
 
       if (artifact?.filename && parseWindowsSetupFilename(artifact.filename) && artifact.sha512) {
         const yml = buildSignedWindowsLatestYml({
@@ -28,7 +30,7 @@ export async function GET(
           fileName: artifact.filename,
           sizeBytes: Number(artifact.sizeBytes) || 0,
           sha512: String(artifact.sha512),
-          releaseDate: artifact.createdAt || new Date(),
+          releaseDate: (artifact as { createdAt?: Date }).createdAt || new Date(),
         });
         return new NextResponse(yml, {
           status: 200,

@@ -29,7 +29,12 @@ async function computeChecksums(file: File): Promise<{ sha256: string; sha512: s
  * in the cache table below. That publishes site download + auto-update
  * (`latest.yml` with a URL ending in `.exe`). Do not use `upload:launcher --prod`.
  */
-export function LauncherReleaseUploader() {
+export function LauncherReleaseUploader({
+  onComplete,
+}: {
+  /** Refresh the cache table after a successful VPS archive (or failed register). */
+  onComplete?: () => void;
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
@@ -117,14 +122,17 @@ export function LauncherReleaseUploader() {
       if (!body.success) throw new Error(body.message || "VPS archive could not start");
 
       setStatus("Copying to VPS and verifying…");
+      onComplete?.();
       const result = await pollUntilVerified(body.artifactId, file.size);
       setStatus(
         result.ok
           ? "On the VPS. Promote to R2 below — that finishes the public signed release (site download + auto-update)."
           : result.detail || "VPS transfer did not complete."
       );
+      onComplete?.();
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Upload failed");
+      onComplete?.();
     } finally {
       setBusy(false);
       setPhase("idle");
