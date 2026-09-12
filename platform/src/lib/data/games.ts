@@ -6569,7 +6569,7 @@ const facts: Game[] = [
   },
   {
     slug: "tmnt-rescue-palooza",
-    title: "TMNT: Rescue-Palooza!",
+    title: "Teenage Mutant Ninja Turtles: Rescue-Palooza!",
     tagline: "OpenBOR NES homage — 60 characters, 17 stages, four pads on one couch.",
     description:
       "Merso X's free OpenBOR TMNT fangame: an update and homage to the classic NES beat 'em ups with sixty unlockable characters, seventeen stages, rideable vehicles, and four-player local co-op. Unofficial fangame — not Nickelodeon or Konami licensed.",
@@ -6577,15 +6577,19 @@ const facts: Game[] = [
     genres: ["Action", "Arcade"],
     tags: ["OpenBOR", "Fangame", "Co-Op", "Controller Support", "Retro", "Local Multiplayer", "TMNT"],
     aliases: [
-      "Teenage Mutant Ninja Turtles: Rescue-Palooza!",
+      "TMNT: Rescue-Palooza!",
       "TMNT Rescue-Palooza",
       "Rescue-Palooza",
       "TMNT Rescue Palooza",
+      "Teenage Mutant Ninja Turtles",
+      "Ninja Turtles",
+      "TMNT",
     ],
     license: "Freeware · unofficial fangame",
     releaseYear: 2019,
     sizeMB: 190,
-    status: "draft",
+    status: "published",
+    maxPlayers: 4,
     platforms: ["Windows"],
     features: [
       "Singleplayer",

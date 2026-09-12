@@ -50,6 +50,12 @@ export async function GET() {
       else if (!healthyPublic && artSources.length > 0) publicHealth = "Offline";
       else if (artSources.length === 0) publicHealth = "None";
 
+      const vpsPctMatch = a.vpsStatusMessage?.match(/\((\d+(?:\.\d+)?)%\)/);
+      const vpsTransferPercent = vpsPctMatch ? parseFloat(vpsPctMatch[1]) : a.vpsStatus === "verified" ? 100 : a.vpsStatus === "uploading" ? 0 : null;
+      const r2Msg = (a as { r2StatusMessage?: string | null }).r2StatusMessage || null;
+      const r2PctMatch = r2Msg?.match(/\((\d+(?:\.\d+)?)%\)/);
+      const r2TransferPercent = r2PctMatch ? parseFloat(r2PctMatch[1]) : a.r2Status === "cached" ? 100 : a.r2Status === "uploading" ? 0 : null;
+
       return {
         id: a.artifactId,
         gameSlug: a.gameSlug,
@@ -61,10 +67,13 @@ export async function GET() {
         downloads: a.totalDownloads,
         recentDownloads: a.recentDownloads,
         r2Status: a.r2Status,
+        r2StatusMessage: r2Msg,
+        r2TransferPercent,
         r2Protected: a.r2Protected,
         r2Disabled: a.r2Disabled,
         vpsStatus: a.vpsStatus,
         vpsStatusMessage: a.vpsStatusMessage || null,
+        vpsTransferPercent,
         lastPromoted: a.r2LastPromoted,
         lastEvicted: a.r2LastEvicted,
         publicHealth,

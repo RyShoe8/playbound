@@ -6,10 +6,20 @@ import { formatDataVolume, formatVpsTransferMessage, vpsTransferPercent } from "
 
 const FILENAME_RE = /^PlayBound-Setup-\d+\.\d+\.\d+\.exe$/i;
 
-/** SHA-256 of the whole file, computed in the browser before upload starts. */
-async function sha256Hex(file: File): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+/** SHA-256 (hex) and SHA-512 (base64) computed in the browser before upload starts. */
+async function computeChecksums(file: File): Promise<{ sha256: string; sha512: string }> {
+  const buffer = await file.arrayBuffer();
+  const digest256 = await crypto.subtle.digest("SHA-256", buffer);
+  const sha256 = [...new Uint8Array(digest256)].map((b) => b.toString(16).padStart(2, "0")).join("");
+
+  const digest512 = await crypto.subtle.digest("SHA-512", buffer);
+  let binary = "";
+  const bytes512 = new Uint8Array(digest512);
+  for (let i = 0; i < bytes512.byteLength; i++) {
+    binary += String.fromCharCode(bytes512[i]);
+  }
+  const sha512 = btoa(binary);
+  return { sha256, sha512 };
 }
 
 /**
@@ -91,7 +101,7 @@ export function LauncherReleaseUploader() {
     setTransferred("");
     try {
       setStatus("Hashing file…");
-      const sha256 = await sha256Hex(file);
+      const { sha256, sha512 } = await computeChecksums(file);
 
       setStatus(`Uploading ${file.name} (${formatDataVolume(file.size)})…`);
       const blob = await upload(`launcher/staged/${file.name}`, file, {
@@ -108,7 +118,7 @@ export function LauncherReleaseUploader() {
       const res = await fetch("/api/admin/launcher-release", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ fileName: file.name, sourceUrl: blob.url, sizeBytes: file.size, sha256 }),
+        body: JSON.stringify({ fileName: file.name, sourceUrl: blob.url, sizeBytes: file.size, sha256, sha512 }),
       });
       const body = await res.json().catch(() => null);
       if (!res.ok || !body?.artifactId) throw new Error(body?.error || "Could not register the release");

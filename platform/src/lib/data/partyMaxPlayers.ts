@@ -18,6 +18,7 @@ export const partyMaxPlayersBySlug: Readonly<Record<string, number>> = {
   teeworlds: 16,
   assaultcube: 32,
   holocure: 4,
+  "tmnt-rescue-palooza": 4,
   "lovers-in-a-dangerous-spacetime": 4,
   "alien-swarm": 4,
   "srb2kart": 16,

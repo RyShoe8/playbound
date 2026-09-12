@@ -114,8 +114,8 @@ const SETTINGS_FILE = path.join(app.getPath("userData"), "settings.json");
 const CATALOG_CACHE_FILE = path.join(app.getPath("userData"), "catalog-cache.json");
 const LIVE_STATS_CACHE_FILE = path.join(app.getPath("userData"), "live-stats-cache.json");
 const DEFAULT_API_BASE = "https://playbound.club";
-/** Stable Blob prefix used by electron-updater (must match package.json build.publish). */
-const UPDATER_FEED_URL = "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher/";
+/** Platform API feed used by electron-updater to resolve updates from R2. */
+const UPDATER_FEED_URL = "https://playbound.club/api/launcher/updates/";
 
 /*
  * YouTube rejects embeds from Electron's local file:// renderer when the

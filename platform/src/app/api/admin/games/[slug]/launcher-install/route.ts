@@ -26,8 +26,8 @@ export async function PATCH(
     await dbConnect();
     const doc = await CatalogGame.findOneAndUpdate(
       { slug },
-      { $set: { launcherInstall: body.launcherInstall } },
-      { returnDocument: "after", projection: { slug: 1, launcherInstall: 1 } }
+      { $set: { launcherInstall: body.launcherInstall, adminUpdatedAt: new Date() } },
+      { returnDocument: "after", projection: { slug: 1, launcherInstall: 1, adminUpdatedAt: 1 } }
     ).lean();
 
     if (!doc) return NextResponse.json({ error: "Game not found" }, { status: 404 });

@@ -110,6 +110,17 @@ describe("party panel parity", () => {
     expect(code(LAUNCHER)).toContain("actions.join");
   });
 
+  it("the launcher's buildPartyViewHtml declares actions before referencing it", () => {
+    const src = launcherPartyCard();
+    const declIndex = src.indexOf("const actions =");
+    expect(declIndex, "actions must be declared with const").toBeGreaterThan(-1);
+    const beforeDecl = src.slice(0, declIndex);
+    expect(
+      beforeDecl.match(/\bactions\b/g),
+      "actions was referenced before declaration (TDZ ReferenceError)"
+    ).toBeNull();
+  });
+
   /*
    * Tones and icons are the other half of the shared vocabulary. A name the
    * resolver can emit but a panel cannot render produces a silently unstyled

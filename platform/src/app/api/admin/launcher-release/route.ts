@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
 import { requireAdminSession } from "@/lib/requireAdmin";
+import { put } from "@vercel/blob";
 import { ensureArtifact, ensurePublicSource } from "@/lib/mirrors/ensureArtifact";
 import { archiveArtifactToVps } from "@/lib/mirrors/cacheManager";
 import { deleteArchivedArtifactOnHost } from "@/lib/gameHost/client";
@@ -16,6 +17,7 @@ const payload = z.object({
     .string()
     .regex(/^[0-9a-f]{64}$/i, "sha256 must be 64 hex characters")
     .optional(),
+  sha512: z.string().optional(),
 });
 
 /**
@@ -70,6 +72,7 @@ export async function POST(req: Request) {
      */
     artifact.sizeBytes = input.sizeBytes;
     if (input.sha256) artifact.sha256 = input.sha256;
+    if (input.sha512) artifact.sha512 = input.sha512;
     artifact.filename = input.fileName;
 
     /*
@@ -109,6 +112,34 @@ export async function POST(req: Request) {
     artifact.redistributionAllowed = true;
     artifact.licenseStatus = "first_party";
     await artifact.save();
+
+    /*
+     * Publish the latest.yml update manifest so electron-updater generic provider
+     * immediately discovers this new signed release. The download URL points to
+     * https://playbound.club/api/launcher/download which serves straight from R2,
+     * so zero bytes of the heavy binary live on or pass through Vercel Blob.
+     */
+    if (input.sha512) {
+      try {
+        const yml = `version: ${version}
+files:
+  - url: https://playbound.club/api/launcher/download
+    sha512: ${input.sha512}
+    size: ${input.sizeBytes}
+path: ${input.fileName}
+sha512: ${input.sha512}
+releaseDate: '${new Date().toISOString()}'
+`;
+        await put("launcher/latest.yml", yml, {
+          access: "public",
+          addRandomSuffix: false,
+          allowOverwrite: true,
+          contentType: "text/yaml; charset=utf-8",
+        });
+      } catch (err) {
+        console.warn("[launcher-release] Could not publish latest.yml manifest to Blob:", err);
+      }
+    }
 
     await ensurePublicSource({
       artifactId,

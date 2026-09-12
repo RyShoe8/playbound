@@ -74,6 +74,12 @@ export function modProbePatchFields(
   if (result.patch.assetPattern && (kind === "github-zip" || isHeal)) {
     applied.assetPattern = result.patch.assetPattern;
   }
+  if (result.patch.githubRepo && isHeal) {
+    applied.githubRepo = result.patch.githubRepo;
+  }
+  if (result.patch.website && isHeal) {
+    applied.website = result.patch.website;
+  }
 
   return applied;
 }

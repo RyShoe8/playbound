@@ -346,6 +346,13 @@ async function main() {
       }
     }
 
+    if (payload.status) {
+      payload.published = payload.status === "published";
+      if (payload.status === "published") {
+        payload.publishedAt = new Date();
+      }
+    }
+
     const result = await CatalogGame.updateOne({ slug }, { $set: payload });
     if (result.matchedCount !== 1) {
       throw new Error(

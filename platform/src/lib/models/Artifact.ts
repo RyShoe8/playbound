@@ -33,6 +33,7 @@ export interface IArtifact extends Document {
   relativePath: string; // e.g. "games/holocure/0.7.1/holocure-playbound.zip"
   sizeBytes: number;
   sha256: string;
+  sha512?: string;
   licenseStatus: string;
   mirrorEnabled: boolean;
   redistributionAllowed: boolean;
@@ -40,6 +41,8 @@ export interface IArtifact extends Document {
   /** Most recent archive-transfer result from the VPS; operational metadata only. */
   vpsStatusMessage?: string | null;
   r2Status: R2Status;
+  /** Most recent R2 promotion/upload result; operational metadata only. */
+  r2StatusMessage?: string | null;
   r2PromotionScore: number;
   r2LastPromoted?: Date | null;
   r2LastEvicted?: Date | null;
@@ -90,6 +93,7 @@ const ArtifactSchema = new Schema<IArtifact>(
      * "unknown", which is the truth until something verifies the file.
      */
     sha256: { type: String, default: "", index: true },
+    sha512: { type: String, default: "" },
     licenseStatus: { type: String, default: "redistributable" },
     mirrorEnabled: { type: Boolean, default: true, index: true },
     redistributionAllowed: { type: Boolean, default: true },
@@ -115,6 +119,7 @@ const ArtifactSchema = new Schema<IArtifact>(
       default: "not_cached",
       index: true,
     },
+    r2StatusMessage: { type: String, default: null },
     r2PromotionScore: { type: Number, default: 0, index: true },
     r2LastPromoted: { type: Date, default: null },
     r2LastEvicted: { type: Date, default: null },

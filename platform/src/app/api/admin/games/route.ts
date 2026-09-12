@@ -83,6 +83,7 @@ export async function POST(req: Request) {
       submissionId: body.submissionId || null,
       managedBy: body.managedBy || "admin",
       ownerUserId: body.ownerUserId || null,
+      adminUpdatedAt: new Date(),
     });
 
     const isPublished = doc.status === "published" || Boolean(doc.published);

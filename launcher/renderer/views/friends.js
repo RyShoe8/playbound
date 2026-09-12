@@ -1604,6 +1604,13 @@ function buildPartyViewHtml(party) {
    * do not get Join Game here the way a normal online title would.
    */
   const couch = party.couch || {};
+  /*
+   * Labels, gating and tone come from party.actions, resolved server-side, so
+   * this panel and the web one cannot drift apart again. See
+   * platform/src/lib/playTogether/partyActions.ts. The fallback keeps an older
+   * server — or a payload built without a viewer — rendering something sane.
+   */
+  const actions = party.actions || null;
   const isPeerOrLan = !hosted.enabled || lan.enabled;
   const waitingForLeader =
     !isLeader &&
@@ -1858,13 +1865,6 @@ function buildPartyViewHtml(party) {
     })
     .join("");
 
-  /*
-   * Labels, gating and tone come from party.actions, resolved server-side, so
-   * this panel and the web one cannot drift apart again. See
-   * platform/src/lib/playTogether/partyActions.ts. The fallback keeps an older
-   * server — or a payload built without a viewer — rendering something sane.
-   */
-  const actions = party.actions || null;
   const readyHtml =
     actions && actions.ready.visible
       ? `<button type="button" id="btn-party-ready" class="party-btn ${

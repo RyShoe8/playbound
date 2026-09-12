@@ -142,6 +142,7 @@ export async function POST(req: Request) {
             url,
             fileName: input.fileName,
           },
+          adminUpdatedAt: new Date(),
         } }
       );
       if (!result.matchedCount) return NextResponse.json({ error: "Game not found" }, { status: 404 });

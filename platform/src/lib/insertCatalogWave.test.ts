@@ -148,6 +148,10 @@ describe("insert-catalog-wave allowlists", () => {
       "multiplayerGamingSteps",
     ]);
     expect(PATCH_GAME_FIELDS["tmnt-rescue-palooza"]).toEqual([
+      "title",
+      "aliases",
+      "status",
+      "maxPlayers",
       "launcherInstall",
       "firstPlaySteps",
       "multiplayerGamingSteps",

@@ -201,6 +201,8 @@ export interface Game {
   comparableTo?: string[];
   /** ISO date of last content update. Feeds sitemap lastmod. */
   updatedAt?: string;
+  /** ISO date when this game was last edited or modified by an administrator. */
+  adminUpdatedAt?: string | null;
   /** ISO date when the game was published on PlayBound. */
   publishedAt?: string | null;
   /** ISO date when the catalog document was first created (Mongo timestamps). */

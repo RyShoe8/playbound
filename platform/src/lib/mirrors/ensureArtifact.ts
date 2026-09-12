@@ -22,6 +22,7 @@ export async function ensureArtifact(input: {
   filename?: string | null;
   sizeBytes?: number | null;
   sha256?: string | null;
+  sha512?: string | null;
   artifactType?: ArtifactType;
 }) {
   const artifactId = String(input.artifactId || "").trim();
@@ -39,6 +40,10 @@ export async function ensureArtifact(input: {
       existing.sha256 = input.sha256;
       touched = true;
     }
+    if (!existing.sha512 && input.sha512) {
+      existing.sha512 = input.sha512;
+      touched = true;
+    }
     if (touched) await existing.save();
     return existing;
   }
@@ -49,6 +54,9 @@ export async function ensureArtifact(input: {
     version: input.version || "unknown",
     artifactType: input.artifactType || "game",
     filename: input.filename || artifactId,
+    sizeBytes: input.sizeBytes || 0,
+    sha256: input.sha256 || "",
+    sha512: input.sha512 || "",
     relativePath: input.gameSlug
       ? input.artifactType === "edition"
         ? `games/${input.gameSlug}/editions/${input.version || "default"}/${input.filename || artifactId}`
@@ -68,8 +76,6 @@ export async function ensureArtifact(input: {
         input.filename
         ? `artifacts/${artifactId}/${input.filename}`
         : `artifacts/${artifactId}`,
-    sizeBytes: input.sizeBytes || 0,
-    sha256: input.sha256 || "",
     licenseStatus: "unknown",
     // Nothing is mirrored until someone decides it should be — this row is a
     // record that the download happened, not a promise that we host it.

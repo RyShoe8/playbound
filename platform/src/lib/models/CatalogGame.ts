@@ -306,10 +306,16 @@ const CatalogGameSchema = new Schema(
         provisionedAt: { type: Date, default: null },
       },
     },
+    /**
+     * When this game was last edited or modified by an administrator in the admin section.
+     * Isolated from frontend telemetry (e.g. installCount increments) and automated cron jobs.
+     */
+    adminUpdatedAt: { type: Date, default: null, index: true },
   },
   { timestamps: true }
 );
 
+CatalogGameSchema.index({ adminUpdatedAt: -1 });
 CatalogGameSchema.index({ updatedAt: -1 });
 CatalogGameSchema.index({ status: 1, playboundSupported: 1, title: 1 });
 CatalogGameSchema.index({ "launcherInstall.versionCheckStatus": 1 });

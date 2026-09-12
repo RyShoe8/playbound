@@ -123,6 +123,7 @@ export async function POST(req: Request) {
       publishedAt: published ? ((existing as { publishedAt?: Date | null })?.publishedAt ?? new Date()) : null,
       complete: g.complete === true,
       managedBy: "admin",
+      adminUpdatedAt: new Date(),
     };
 
     if (!existing) {
@@ -146,6 +147,7 @@ export async function POST(req: Request) {
         skipped.push(g.slug);
         continue;
       }
+      partial.adminUpdatedAt = new Date();
       await CatalogGame.updateOne({ slug: g.slug }, { $set: partial });
       filled[g.slug] = Object.keys(partial);
       updated++;
