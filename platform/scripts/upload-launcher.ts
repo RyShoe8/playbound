@@ -3,19 +3,18 @@
  *
  * Usage (from platform/):
  *   npx vercel env pull .env.local --environment=production
- *   cd ../launcher && npm run dist
  *   npm run upload:launcher -- ../launcher/dist/PlayBound-Setup-0.1.5.exe
- *   npm run upload:launcher -- --prod ../launcher/dist/PlayBound-Setup-0.1.5.exe
  *   npm run upload:launcher -- --mac --prod
  *   npm run upload:launcher -- --linux --prod
  *
- * The channel defaults to admin. --prod publishes to the public installer and
- * auto-update feed, and on Windows refuses unless the build looks signed.
+ * The channel defaults to admin. Windows `--prod` is refused — public signed
+ * Windows ships only via Admin → Download mirrors → Upload signed launcher →
+ * Promote to R2 (see docs/launcher-build-and-upload.md).
  *
- * Uploads:
- *   - versioned installer (as named in the update yml)
- *   - latest*.yml / admin*.yml + .blockmap (for in-app auto-update)
- *   - stable site alias (PlayBound-Launcher-Setup[.exe|.dmg|.AppImage])
+ * Uploads (admin / Mac / Linux):
+ *   - versioned installer
+ *   - latest*.yml / admin*.yml + .blockmap
+ *   - stable site alias
  */
 import { readFileSync, existsSync, readdirSync } from "fs";
 import { createHash } from "crypto";
@@ -136,6 +135,30 @@ async function main() {
     process.exit(1);
   }
   const isAdmin = decision.channel === "admin";
+
+  /*
+   * Public signed Windows releases ship only through Admin → Download mirrors
+   * (Upload signed launcher → Promote to R2). That path publishes latest.yml
+   * with a URL ending in .exe (required by electron-updater) and archives to
+   * the VPS with credentials that vercel env pull cannot provide locally.
+   * CLI --prod used to write a bare /api/launcher/download URL and skip VPS.
+   */
+  if (platform === "windows" && !isAdmin) {
+    console.error("");
+    console.error(
+      "Public signed Windows releases are not uploaded from this script anymore.\n" +
+        "\n" +
+        "  1. npm run dist:prod   (in launcher/)\n" +
+        "  2. Admin → Download mirrors → Upload signed launcher\n" +
+        "  3. Wait until On VPS / verified\n" +
+        "  4. Promote to R2\n" +
+        "\n" +
+        "For unsigned admin-channel builds, omit --prod (default)."
+    );
+    console.error("");
+    process.exit(1);
+  }
+
   if (!decision.explicit) {
     console.log("No channel given — using the admin channel. Pass --prod to publish publicly.");
   }

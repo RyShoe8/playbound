@@ -1,6 +1,6 @@
 ---
-description: Build and ship the PlayBound launcher (signed dist:prod, Blob feeds, VPS archive, Promote to R2). Use when the user says build, upload, release the launcher, dist:prod, VPS, R2, or mentions eSigner / latest.yml.
-globs: launcher/package.json,launcher/scripts/**,launcher/electron-builder.js,platform/scripts/upload-launcher.ts,platform/src/app/api/admin/launcher-release/**,platform/src/components/admin/LauncherReleaseUploader.tsx,docs/launcher-build-and-upload.md,docs/windows-code-signing.md
+description: Build and ship the PlayBound launcher. Public signed Windows = Admin upload + Promote to R2 only.
+globs: launcher/package.json,launcher/scripts/**,launcher/electron-builder.js,platform/scripts/upload-launcher.ts,platform/src/app/api/admin/launcher-release/**,platform/src/components/admin/LauncherReleaseUploader.tsx,platform/src/lib/launcherUpdateFeed.ts,docs/launcher-build-and-upload.md,docs/windows-code-signing.md
 alwaysApply: true
 ---
 
@@ -8,22 +8,24 @@ alwaysApply: true
 
 Follow `docs/launcher-build-and-upload.md` when present. Signing theory is `docs/windows-code-signing.md`. The user does not run a local Next server.
 
-## Required sequence (Windows signed)
+## Required sequence (Windows signed / public)
 
 1. Bump `launcher/package.json` `"version"` (and lockfile top-level version).
 2. Commit/push if they asked. `dist:prod` overwrites `launcher/catalog.js` from production catalog.
 3. In `launcher/`: `npm run signing:status`, then `npm run dist:prod` (auto-picks The Media Shop cert when present).
-4. Blob + auto-update feeds from `platform/`:
-   `npm run upload:launcher -- --prod ../launcher/dist/PlayBound-Setup-<ver>.exe`
-   Needs `BLOB_READ_WRITE_TOKEN`. This publishes `latest.yml` / aliases.
-5. **VPS archive (required for public download / R2):** local `upload-launcher` cannot archive to VPS — `MONGODB_URI` / `GAME_HOST_SECRET` are Vercel Sensitive and missing locally. Use Admin → **Download mirrors** → **Upload signed launcher** (`LauncherReleaseUploader`), which POSTs `/api/admin/launcher-release` server-side and copies to the VPS.
-6. After the row shows **On VPS / verified**, **Promote to R2** in that same admin cache table. Public downloads prefer R2 → VPS → Blob.
+4. **Admin → Download mirrors → Upload signed launcher** with `PlayBound-Setup-<ver>.exe`.
+   Server route `/api/admin/launcher-release` archives to VPS and publishes `latest.yml`.
+5. When the row shows **On VPS / verified**, **Promote to R2** in that same admin cache table.
 
-Do not treat Blob-only upload as “shipped for site download.” Site `/api/launcher/download` wants a verified VPS (then R2) artifact.
+That is the **entire** public signed Windows process. Do **not** run `upload:launcher -- --prod` for Windows — the script refuses it. Local CLI cannot VPS-archive (`MONGODB_URI` / `GAME_HOST_SECRET` are Vercel Sensitive).
+
+### `.exe` hard rule (electron-updater)
+
+`latest.yml` file URLs **must** end with `PlayBound-Setup-<version>.exe` (e.g. `/api/launcher/download/PlayBound-Setup-0.3.56.exe`). electron-updater caches by URL basename; a bare `/api/launcher/download` saves as a file named `download` and Windows asks what to open it with. Guards live in `platform/src/lib/launcherUpdateFeed.ts`.
 
 ## Unsigned / other
 
-- Unsigned: `dist:dev` + `upload:launcher` (admin channel). Do not VPS-archive unsigned Windows as the public installer.
+- Unsigned: `dist:dev` + `upload:launcher` (admin channel only). Do not VPS-archive unsigned Windows as the public installer.
 - Mac/Linux: `dist:mac` / `dist:linux`, then `upload:launcher -- --mac|--linux --promote-prod`.
 
 ## Do not
@@ -32,5 +34,6 @@ Do not treat Blob-only upload as “shipped for site download.” Site `/api/lau
 - Use bash `&&` / `VAR=value` on PowerShell; use `;` and `$env:NAME`.
 - Claim the release is ready for Promote to R2 before VPS `vpsStatus === "verified"`.
 - Commit `.env.local` or certs.
+- Publish a public update feed URL that does not end in `.exe`.
 
-Return Blob URLs from the upload script, and remind the user (or complete via Admin) of the VPS upload + Promote to R2 steps.
+After Admin upload, remind: wait for verified VPS, then Promote to R2.

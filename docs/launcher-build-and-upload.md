@@ -1,10 +1,10 @@
-# Launcher build and Blob upload
+# Launcher build and release
 
 How PlayBound ships the desktop app. Follow this when the user says **build**, **upload**, **release the launcher**, or **dist:prod / dist:dev**.
 
 Signing internals (certificates, eSigner budget, SmartScreen) live in [windows-code-signing.md](./windows-code-signing.md). This file is the **release procedure**.
 
-The operator does **not** run a local Next.js server. Builds and uploads are CLI-only.
+The operator does **not** run a local Next.js server.
 
 ## Layout
 
@@ -13,9 +13,10 @@ The operator does **not** run a local Next.js server. Builds and uploads are CLI
 | Version | `launcher/package.json` `"version"` (electron-builder reads this) |
 | Windows orchestrator | `launcher/scripts/build-windows.js` |
 | electron-builder config | `launcher/electron-builder.js` (not `electron-builder.config.js`) |
-| Upload | `platform/scripts/upload-launcher.ts` → `npm run upload:launcher` from **`platform/`** |
-| Blob token | `BLOB_READ_WRITE_TOKEN` in `platform/.env.local` |
-| Feed URL baked into the app | `publish[0].url` in `electron-builder.js` → `https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher/` |
+| **Public signed Windows ship** | Admin → [/admin/download-mirrors](https://playbound.club/admin/download-mirrors) → **Upload signed launcher** → **Promote to R2** |
+| Unsigned / Mac / Linux Blob upload | `platform/scripts/upload-launcher.ts` → `npm run upload:launcher` from **`platform/`** |
+| Update-feed URL helpers | `platform/src/lib/launcherUpdateFeed.ts` |
+| Runtime updater feed | `https://playbound.club/api/launcher/updates/` (overrides electron-builder `publish.url`) |
 
 Windows artifact names:
 
@@ -23,14 +24,13 @@ Windows artifact names:
 - Portable: `launcher/dist/PlayBound-Launcher-Portable-<version>.exe`
 - Signed update feed: `latest.yml` (public users)
 - Unsigned update feed: `admin.yml` (admins and internal testers)
-- Site aliases on Blob: `PlayBound-Launcher-Setup.exe` (public signed) and `PlayBound-Launcher-Setup-Admin.exe` (unsigned admin)
+- Admin Blob alias: `PlayBound-Launcher-Setup-Admin.exe` (unsigned only)
 
 > [!IMPORTANT]
 > **Channel Separation Policy:**
-> - **Regular users must NEVER receive unsigned releases.** They listen to the `latest` channel (`latest.yml`), which only receives signed production builds.
-> - **Admins and internal testers** have accounts linked with admin permissions and listen to the `admin` channel (`admin.yml`), allowing rapid iteration with unsigned builds.
-> - Running `npm run upload:launcher` without `--prod` uploads **exclusively to the `admin` channel** (`admin.yml` and `PlayBound-Launcher-Setup-Admin.exe`), leaving the public channel untouched.
-> - Only `npm run upload:launcher -- --prod` (for signed builds) or explicit `--promote-prod --i-know-its-unsigned` touches the public `latest.yml` / `PlayBound-Launcher-Setup.exe`.
+> - **Regular users must NEVER receive unsigned releases.** They listen to the `latest` channel (`latest.yml`), which only receives signed production builds via Admin upload.
+> - **Admins and internal testers** listen to the `admin` channel (`admin.yml`) from `npm run upload:launcher` (no `--prod`).
+> - **Do not** use `upload:launcher -- --prod` for Windows. The script refuses it. Public signed Windows is Admin upload + Promote to R2 only.
 
 Mac: `PlayBound-macOS-<version>.dmg` + `latest-mac.yml` / `admin-mac.yml`  
 Linux: `PlayBound-Linux-<version>.AppImage` + `latest-linux.yml` / `admin-linux.yml`
@@ -39,64 +39,45 @@ Linux: `PlayBound-Linux-<version>.AppImage` + `latest-linux.yml` / `admin-linux.
 
 1. **Bump** `launcher/package.json` `"version"` (patch unless the user names a different bump). Auto-update will not pick up a rebuild of the same version.
 2. **Commit and push** launcher + site changes the user asked to ship. Catalog recipes in `platform/src/lib/data/launcherInstall.ts` only reach a `dist:*` bundled catalog after production has them — `dist:dev` / `dist:prod` both run `scripts/sync-catalog.js`, which **overwrites** `launcher/catalog.js` from `https://playbound.club/api/launcher/catalog` (remote slug wins). If those recipe edits are not live yet, wait for the Vercel deploy, or skip sync and invoke electron-builder directly (see [Skip catalog sync](#skip-catalog-sync)).
-3. Confirm `platform/.env.local` exists. If Blob upload later says the token is missing:
-
-   ```powershell
-   cd platform
-   npx vercel env pull .env.local --environment=production
-   ```
 
 Do not commit `.env.local`, certificates, or passwords.
 
-## Signed Windows (preferred public release)
+## Signed Windows (public release)
 
 eSigner is **metered (~5 signings per successful `dist:prod`)**. Failed attempts can still spend quota. Rehearse with `dist:dev` first. Do not run `dist:prod` “to see if it works.”
 
 ```powershell
 cd launcher
 npm run signing:status
-$env:WINDOWS_CERT_SHA1 = "<thumbprint from signing:status>"
 npm run dist:prod
 ```
 
-`dist:prod` sets `WINDOWS_SIGNING_ENABLED=true`, then: sync catalog → `electron-builder --win` → `verify-signatures --required`.
+`dist:prod` auto-picks The Media Shop store cert when present, sets `WINDOWS_SIGNING_ENABLED=true`, then: sync catalog → `electron-builder --win` → `verify-signatures --required`.
 
-Success looks like: `[signing] Mode: store`, then NSIS + portable artifacts, then verification OK. Output includes `latest.yml` (not `admin.yml`).
+Success looks like: `[signing] Mode: store`, then NSIS artifacts, then verification OK.
 
-Upload from **`platform/`** (so Next loads `.env.local`):
-
-```powershell
-cd platform
-npm run upload:launcher
-```
-
-With `latest.yml` present and `admin.yml` absent, that writes:
-
-- `launcher/PlayBound-Setup-<version>.exe`
-- `launcher/latest.yml`
-- `launcher/PlayBound-Setup-<version>.exe.blockmap`
-- `launcher/PlayBound-Launcher-Setup.exe` (site download alias)
-
-Pass **`--prod`** explicitly. The upload script defaults to the admin channel; without `--prod` a signed build still lands only on `admin.yml` / `PlayBound-Launcher-Setup-Admin.exe`.
-
-### VPS archive + R2 hot cache (required for site downloads)
-
-Blob is the updater/CDN object store. **Site downloads that go through the R2 hot cache need the installer on the VPS file system first.**
-
-`upload-launcher.ts` tries to register the artifact and archive it to the VPS, but that step needs `MONGODB_URI` and `GAME_HOST_SECRET`. Both are Vercel Sensitive env vars — `vercel env pull` cannot retrieve them — so the CLI almost always logs:
-
-```text
-Could not register the mirror artifact (upload itself succeeded): …
-```
-
-That is expected. Finish the release on production admin:
+### Ship (entire public process)
 
 1. Open **[/admin/download-mirrors](https://playbound.club/admin/download-mirrors)**.
-2. Use **Upload signed launcher** (`LauncherReleaseUploader`) with the built `PlayBound-Setup-<version>.exe` (same file you just signed).
+2. **Upload signed launcher** with `launcher/dist/PlayBound-Setup-<version>.exe`.
 3. Wait until status is **On the VPS** / `vpsStatus: verified`.
-4. In the cache table, **Promote to R2** so the hot cache is seeded.
+4. **Promote to R2** in the cache table.
 
-Do not treat a Blob-only upload as a complete production ship for the site installer path.
+That is the full public signed Windows release. The admin route:
+
+- Archives the installer to the VPS (server-side `MONGODB_URI` / `GAME_HOST_SECRET`)
+- Publishes `latest.yml` with a download URL ending in `.exe`
+- Registers the mirror artifact for site `/api/launcher/download`
+
+### `.exe` hard rule (electron-updater)
+
+electron-updater names the cached installer from the **URL pathname**. If `latest.yml` points at `/api/launcher/download` with no filename, the cache file is literally named `download` and Windows asks what to open it with.
+
+Public feeds **must** use:
+
+`https://playbound.club/api/launcher/download/PlayBound-Setup-<version>.exe`
+
+Guards: `platform/src/lib/launcherUpdateFeed.ts` (build + assert). Promote to R2 refuses launcher rows whose archive path omits the `.exe` filename.
 
 ### eSigner / store signing failed
 
@@ -109,12 +90,6 @@ SignerSign() failed. (-2146893821/0x80090003)
 
 SSL.com CKA / eSigner needs a fresh login (browser + TOTP). **Stop retrying `dist:prod`.** Tell the user signing is broken. If they still want a ship: use the unsigned path below.
 
-`npx electron-builder --win` on this machine can exit 0 with almost no output. Prefer `npm run dist:prod` / `dist:dev`, or:
-
-```powershell
-node node_modules/electron-builder/cli.js --win
-```
-
 Older Windows PowerShell does not accept `&&`. Use `;` or separate commands. Set env vars with `$env:NAME = "value"`, not `NAME=value`.
 
 ## Unsigned Windows
@@ -124,29 +99,23 @@ Use for local iteration, or when signing is down and the user still wants a buil
 ```powershell
 cd launcher
 npm run dist:dev
-```
 
-This **forces** `WINDOWS_SIGNING_ENABLED=false` even if a cert is in the store. Produces `admin.yml`. SmartScreen will warn.
-
-Upload **admin-only** (does not touch the public installer or `latest.yml`):
-
-```powershell
-cd platform
+cd ../platform
 npm run upload:launcher
 ```
 
-That writes `admin.yml` and `PlayBound-Launcher-Setup-Admin.exe`.
+This **forces** `WINDOWS_SIGNING_ENABLED=false`. Produces `admin.yml` + `PlayBound-Launcher-Setup-Admin.exe`. Does **not** touch the public channel. Needs `BLOB_READ_WRITE_TOKEN` (`npx vercel env pull .env.local --environment=production` if missing).
 
 ### Promote an unsigned build to the public channel
 
-This overwrites `PlayBound-Launcher-Setup.exe` **and** `latest.yml`. Every site download and every auto-update client gets an unsigned binary. The script **refuses** unless you pass both flags:
+Emergency only. Overwrites public `latest.yml`. The script **refuses** unless you pass both flags:
 
 ```powershell
 cd platform
 npm run upload:launcher -- --promote-prod --i-know-its-unsigned
 ```
 
-Existing **signed** installs may **reject** an unsigned update (electron-updater publisher check). Friends often need to run Setup by hand. Say that when you promote.
+Existing **signed** installs may **reject** an unsigned update. Prefer fixing signing and doing a normal Admin signed ship instead.
 
 ## Mac and Linux
 
@@ -175,20 +144,18 @@ node node_modules/electron-builder/cli.js --win
 
 For signed: then `npm run verify:signatures -- --required`. After a skipped-sync build, do not commit a `catalog.js` that sync would have replaced unless the user wants that snapshot.
 
-## Blob map
+## Blob map (admin / fallback)
 
 Base: `https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher/`
 
 | File | Role |
 | --- | --- |
-| `PlayBound-Setup-<ver>.exe` | Versioned Windows installer |
-| `PlayBound-Launcher-Setup.exe` | Stable site download (public) |
 | `PlayBound-Launcher-Setup-Admin.exe` | Unsigned Windows |
-| `latest.yml` | electron-updater, signed/public |
+| `latest.yml` | electron-updater, signed/public (also written by Admin upload) |
 | `admin.yml` | electron-updater, unsigned |
-| `*.blockmap` | Delta updates |
+| `launcher/staged/PlayBound-Setup-<ver>.exe` | Staging object during Admin upload |
 
-The site env var `NEXT_PUBLIC_LAUNCHER_DOWNLOAD_URL` should already point at the public alias. Only change it on Vercel if the printed URL from upload differs.
+Site + updater prefer R2/VPS via `/api/launcher/download[/PlayBound-Setup-<ver>.exe]`.
 
 ## Checklist (agent)
 
@@ -196,7 +163,7 @@ The site env var `NEXT_PUBLIC_LAUNCHER_DOWNLOAD_URL` should already point at the
 - [ ] Relevant code committed/pushed if the user asked
 - [ ] Tried **signed** `dist:prod` unless the user asked for unsigned or eSigner is known-broken
 - [ ] Did not burn extra `dist:prod` attempts after a grant/token error
-- [ ] Upload run from `platform/` with **`--prod`** for a public signed release
-- [ ] **VPS + R2:** after Blob upload, tell the user (or use) **Upload signed launcher** on `/admin/download-mirrors`, then **Promote to R2** — CLI VPS archive usually fails without Sensitive env
+- [ ] **Public signed:** Admin **Upload signed launcher** + wait verified + **Promote to R2** (no Windows `--prod` CLI)
+- [ ] Update feed URL ends with `.exe`
+- [ ] Unsigned admin upload used default channel (no `--prod`) when asked for admin-only
 - [ ] Unsigned public promote used `--promote-prod --i-know-its-unsigned` and the SmartScreen / auto-update caveat was stated
-- [ ] Returned the versioned + alias URLs from the upload script

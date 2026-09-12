@@ -61,7 +61,7 @@ describe("artifact registered from a download", () => {
       version: "0.2.14",
       artifactType: "launcher",
       filename: "PlayBound-Setup-0.2.14.exe",
-      relativePath: "artifacts/playbound-launcher-windows-0.2.14",
+      relativePath: "artifacts/playbound-launcher-windows-0.2.14/PlayBound-Setup-0.2.14.exe",
       sizeBytes: 83385666,
       sha256: "b".repeat(64),
       licenseStatus: "first_party",
@@ -69,6 +69,7 @@ describe("artifact registered from a download", () => {
       vpsStatus: "verified",
     });
     expect(doc.validateSync()).toBeUndefined();
+    expect(doc.relativePath).toMatch(/\.exe$/i);
   });
 
   it("still rejects a row with no artifactId", () => {

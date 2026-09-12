@@ -561,6 +561,65 @@ export async function manualPromoteArtifact(
   const artifact = await Artifact.findOne({ artifactId });
   if (!artifact) return { success: false, message: "Artifact not found" };
 
+  if (artifact.artifactType === "launcher") {
+    const {
+      ensureLauncherRelativePath,
+      parseWindowsSetupFilename,
+      buildSignedWindowsLatestYml,
+    } = await import("@/lib/launcherUpdateFeed");
+    if (!parseWindowsSetupFilename(artifact.filename || "")) {
+      return {
+        success: false,
+        message:
+          "Launcher artifact filename must be PlayBound-Setup-<version>.exe before Promote to R2.",
+      };
+    }
+    const { relativePath, healed } = ensureLauncherRelativePath(
+      artifact.artifactId,
+      artifact.filename,
+      artifact.relativePath
+    );
+    if (healed) {
+      artifact.relativePath = relativePath;
+      await artifact.save();
+      return {
+        success: false,
+        message:
+          "Launcher archive path was missing the .exe filename. Re-run Upload signed launcher so the VPS stores PlayBound-Setup-<version>.exe, then Promote to R2.",
+      };
+    }
+    if (!artifact.sha512) {
+      return {
+        success: false,
+        message: "Launcher artifact is missing sha512. Re-run Upload signed launcher before Promote to R2.",
+      };
+    }
+    try {
+      const { put } = await import("@vercel/blob");
+      const yml = buildSignedWindowsLatestYml({
+        version: String(artifact.version),
+        fileName: artifact.filename,
+        sizeBytes: Number(artifact.sizeBytes) || 0,
+        sha512: String(artifact.sha512),
+        releaseDate: artifact.createdAt || new Date(),
+      });
+      await put("launcher/latest.yml", yml, {
+        access: "public",
+        addRandomSuffix: false,
+        allowOverwrite: true,
+        contentType: "text/yaml; charset=utf-8",
+      });
+    } catch (err) {
+      return {
+        success: false,
+        message:
+          err instanceof Error
+            ? `Could not refresh latest.yml before R2 promote: ${err.message}`
+            : "Could not refresh latest.yml before R2 promote",
+      };
+    }
+  }
+
   onProgress?.({
     stage: "starting",
     percent: 0,
