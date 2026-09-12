@@ -75,12 +75,22 @@ export function AdminGamesTable({
   }
 
   async function changeStatus(slug: string, nextStatus: CatalogStatus) {
-    const prev = (rows.find((g) => g.slug === slug)?.status || "draft") as CatalogStatus;
-    if (prev === nextStatus) return;
+    const prev = rows.find((g) => g.slug === slug);
+    const prevStatus = (prev?.status || "draft") as CatalogStatus;
+    if (prevStatus === nextStatus) return;
     setStatusPendingSlug(slug);
+    const nowIso = new Date().toISOString();
     setRows((list) =>
       list.map((g) =>
-        g.slug === slug ? { ...g, status: nextStatus, published: nextStatus === "published" } : g
+        g.slug === slug
+          ? {
+              ...g,
+              status: nextStatus,
+              published: nextStatus === "published",
+              updatedAt: nowIso,
+              adminUpdatedAt: nowIso,
+            }
+          : g
       )
     );
     try {
@@ -95,7 +105,17 @@ export function AdminGamesTable({
       }
     } catch (err) {
       setRows((list) =>
-        list.map((g) => (g.slug === slug ? { ...g, status: prev, published: prev === "published" } : g))
+        list.map((g) =>
+          g.slug === slug
+            ? {
+                ...g,
+                status: prevStatus,
+                published: prevStatus === "published",
+                updatedAt: prev?.updatedAt,
+                adminUpdatedAt: prev?.adminUpdatedAt,
+              }
+            : g
+        )
       );
       console.error(err);
       alert(err instanceof Error ? err.message : "Could not update status");
@@ -105,9 +125,16 @@ export function AdminGamesTable({
   }
 
   async function toggleComplete(slug: string, next: boolean) {
-    const prev = rows.find((g) => g.slug === slug)?.complete;
+    const prev = rows.find((g) => g.slug === slug);
     setPendingSlug(slug);
-    setRows((list) => list.map((g) => (g.slug === slug ? { ...g, complete: next } : g)));
+    const nowIso = new Date().toISOString();
+    setRows((list) =>
+      list.map((g) =>
+        g.slug === slug
+          ? { ...g, complete: next, updatedAt: nowIso, adminUpdatedAt: nowIso }
+          : g
+      )
+    );
     try {
       const res = await fetch(`/api/admin/games/${encodeURIComponent(slug)}/complete`, {
         method: "PATCH",
@@ -120,7 +147,16 @@ export function AdminGamesTable({
       }
     } catch (err) {
       setRows((list) =>
-        list.map((g) => (g.slug === slug ? { ...g, complete: Boolean(prev) } : g))
+        list.map((g) =>
+          g.slug === slug
+            ? {
+                ...g,
+                complete: Boolean(prev?.complete),
+                updatedAt: prev?.updatedAt,
+                adminUpdatedAt: prev?.adminUpdatedAt,
+              }
+            : g
+        )
       );
       console.error(err);
       alert(err instanceof Error ? err.message : "Could not update Complete");

@@ -376,9 +376,28 @@ async function archiveFromUrl({ url, relativePath, sha256, sizeBytes }, abortSig
     return { error: "Invalid archive URL" };
   }
   if (source.protocol !== "https:") return { error: "Archive URL must use HTTPS" };
-  if (!Number.isFinite(Number(sizeBytes)) || Number(sizeBytes) <= 0 || Number(sizeBytes) > MIRROR_ARCHIVE_MAX_BYTES) {
+  let parsedSizeBytes = Number(sizeBytes);
+  if ((!Number.isFinite(parsedSizeBytes) || parsedSizeBytes <= 0) && source.hostname.toLowerCase() === "mirror.playbound.club") {
+    let sourceRelative = "";
+    try {
+      sourceRelative = decodeURIComponent(source.pathname).replace(/^\/+/, "");
+    } catch {
+      sourceRelative = "";
+    }
+    const localSource = archivePath(sourceRelative);
+    if (localSource) {
+      try {
+        const s = await stat(localSource);
+        if (s.isFile()) parsedSizeBytes = s.size;
+      } catch {
+        /* proceed */
+      }
+    }
+  }
+  if (!Number.isFinite(parsedSizeBytes) || parsedSizeBytes <= 0 || parsedSizeBytes > MIRROR_ARCHIVE_MAX_BYTES) {
     return { error: "Archive size is invalid or exceeds the host limit" };
   }
+  sizeBytes = parsedSizeBytes;
 
   const temp = `${target}.partial-${crypto.randomBytes(6).toString("hex")}`;
   setArchiveProgress(relativePath, {
@@ -408,12 +427,13 @@ async function archiveFromUrl({ url, relativePath, sha256, sizeBytes }, abortSig
         try {
           const sourceFile = await stat(localSource);
           if (sourceFile.isFile()) {
+            const expectedSize = Number(sizeBytes) > 0 ? Number(sizeBytes) : sourceFile.size;
             if (path.resolve(localSource) !== path.resolve(target)) {
               await copyFile(localSource, temp);
             } else {
               const actual = sha256 ? await sha256File(localSource) : null;
-              if (sourceFile.size !== Number(sizeBytes)) {
-                return { error: `Archive size mismatch (expected ${sizeBytes}, got ${sourceFile.size})` };
+              if (sourceFile.size !== expectedSize) {
+                return { error: `Archive size mismatch (expected ${expectedSize}, got ${sourceFile.size})` };
               }
               if (sha256 && actual.toLowerCase() !== String(sha256).toLowerCase()) {
                 return { error: "Archive checksum mismatch" };
@@ -422,8 +442,8 @@ async function archiveFromUrl({ url, relativePath, sha256, sizeBytes }, abortSig
               return { ok: true, sizeBytes: sourceFile.size };
             }
             const copied = await stat(temp);
-            if (copied.size !== Number(sizeBytes)) {
-              return { error: `Archive size mismatch (expected ${sizeBytes}, got ${copied.size})` };
+            if (copied.size !== expectedSize) {
+              return { error: `Archive size mismatch (expected ${expectedSize}, got ${copied.size})` };
             }
             if (sha256) {
               const actual = await sha256File(temp);

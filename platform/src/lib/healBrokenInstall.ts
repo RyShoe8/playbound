@@ -130,6 +130,35 @@ async function healFromGithubRepo(
       }
     }
 
+    // No releases — check default branch for zipball fallback
+    try {
+      const branchRes = await fetch(`https://api.github.com/repos/${repo}`, {
+        headers: ghHeaders(),
+        next: { revalidate: 0 },
+      });
+      if (branchRes.ok) {
+        const data = (await branchRes.json()) as { default_branch?: string };
+        const branch = data.default_branch || "master";
+        const branchZip = `https://github.com/${repo}/archive/refs/heads/${encodeURIComponent(branch)}.zip`;
+        const reach = await probeDirectUrl(branchZip, branch);
+        if (reach.status !== "broken") {
+          return {
+            status: "updated",
+            detectedVersion: branch,
+            note: `auto-healed: default-branch archive (${branch})`,
+            patch: {
+              url: branchZip,
+              fileName: `${repo.split("/").pop() || "mod"}-${branch}.zip`,
+              versionLabel: branch,
+              directUrl: branchZip,
+            },
+          };
+        }
+      }
+    } catch {
+      // ignore
+    }
+
     return null;
   } catch {
     return null;
@@ -215,6 +244,7 @@ export async function healBrokenGameInstall(opts: {
 }
 
 export async function healBrokenModInstall(opts: {
+  slug?: string | null;
   downloadKind?: string | null;
   githubRepo?: string | null;
   directUrl?: string | null;
@@ -224,7 +254,32 @@ export async function healBrokenModInstall(opts: {
 
   const repo = opts.githubRepo?.trim() || null;
   if (repo) {
-    return healFromGithubRepo(repo, true);
+    const healed = await healFromGithubRepo(repo, true);
+    if (healed) return healed;
+  }
+
+  // If repo 404s/fails, check if seed definition has an updated repository
+  if (opts.slug) {
+    try {
+      const { mods: seedMods } = await import("@/lib/data/mods");
+      const seed = seedMods.find((m) => m.slug === opts.slug);
+      if (seed?.githubRepo && seed.githubRepo !== repo) {
+        const fromSeed = await healFromGithubRepo(seed.githubRepo, true);
+        if (fromSeed) {
+          return {
+            ...fromSeed,
+            note: `auto-healed: updated GitHub repo to ${seed.githubRepo}`,
+            patch: {
+              ...fromSeed.patch,
+              githubRepo: seed.githubRepo,
+              website: seed.website || `https://github.com/${seed.githubRepo}`,
+            },
+          };
+        }
+      }
+    } catch {
+      // ignore
+    }
   }
 
   return null;
@@ -250,6 +305,7 @@ export async function withAutoHealGame(
 export async function withAutoHealMod(
   probe: ProbeResult,
   mod: {
+    slug?: string | null;
     downloadKind?: string | null;
     githubRepo?: string | null;
     directUrl?: string | null;

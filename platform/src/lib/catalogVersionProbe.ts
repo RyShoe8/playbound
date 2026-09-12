@@ -17,6 +17,8 @@ export type ProbeResult = {
     directUrl?: string;
     assetPattern?: string;
     kind?: string;
+    githubRepo?: string;
+    website?: string;
   };
 };
 

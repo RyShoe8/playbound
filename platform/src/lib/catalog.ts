@@ -324,7 +324,12 @@ function toGame(doc: LeanGame): Game {
     comparableTo: (doc.comparableTo as string[])?.length
       ? (doc.comparableTo as string[])
       : seed?.comparableTo ?? extra?.comparableTo,
-    updatedAt: (doc as { updatedAt?: Date }).updatedAt
+    adminUpdatedAt: (doc as { adminUpdatedAt?: Date | null }).adminUpdatedAt
+      ? new Date((doc as { adminUpdatedAt: Date }).adminUpdatedAt).toISOString()
+      : null,
+    updatedAt: (doc as { adminUpdatedAt?: Date | null }).adminUpdatedAt
+      ? new Date((doc as { adminUpdatedAt: Date }).adminUpdatedAt).toISOString()
+      : (doc as { updatedAt?: Date }).updatedAt
       ? new Date((doc as { updatedAt: Date }).updatedAt).toISOString()
       : undefined,
     publishedAt: (doc as { publishedAt?: Date | null }).publishedAt
@@ -601,15 +606,19 @@ type AdminGame = Game & {
 async function computeAllGames(): Promise<AdminGame[]> {
   try {
     await dbConnect();
-    const docs = await CatalogGame.find().sort({ updatedAt: -1 }).lean();
+    const docs = await CatalogGame.find().sort({ adminUpdatedAt: -1, updatedAt: -1 }).lean();
     const dbGames = docs.map((d) => {
       const lean = d as LeanGame;
       const status = normalizeStatus(lean);
+      const adminDate = (d as { adminUpdatedAt?: Date | null }).adminUpdatedAt;
+      const fallbackDate = (d as { updatedAt?: Date }).updatedAt;
+      const effectiveDate = adminDate ?? fallbackDate;
       return {
         ...toGame(lean),
         published: status === "published",
         status,
-        updatedAt: (d as { updatedAt?: Date }).updatedAt?.toISOString(),
+        adminUpdatedAt: adminDate ? new Date(adminDate).toISOString() : null,
+        updatedAt: effectiveDate ? new Date(effectiveDate).toISOString() : undefined,
         publishedAt: (d as { publishedAt?: Date | null }).publishedAt?.toISOString() ?? null,
         installCount: Number((d as { installCount?: number }).installCount) || 0,
       };

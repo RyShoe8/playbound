@@ -29,6 +29,7 @@ export async function POST(
     autoUpdatePinned: doc.autoUpdatePinned,
   });
   const result = await withAutoHealMod(probed, {
+    slug: doc.slug,
     downloadKind: doc.downloadKind,
     githubRepo: doc.githubRepo,
     directUrl: doc.directUrl,
@@ -45,6 +46,8 @@ export async function POST(
   );
   if (applied.directUrl) doc.directUrl = applied.directUrl;
   if (applied.assetPattern) doc.assetPattern = applied.assetPattern;
+  if (applied.githubRepo) doc.githubRepo = applied.githubRepo;
+  if (applied.website) doc.website = applied.website;
 
   await doc.save();
   return NextResponse.json({ ok: true, result, applied });

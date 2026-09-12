@@ -109,6 +109,7 @@ export async function PATCH(
           submissionId: body.submissionId || null,
           managedBy: body.managedBy || "admin",
           ownerUserId: body.ownerUserId || null,
+          adminUpdatedAt: new Date(),
         },
         // Retain the old slug so its indexed URLs keep resolving.
         ...(isRename ? { $addToSet: { previousSlugs: slug } } : {}),
@@ -130,6 +131,7 @@ export async function PATCH(
         submissionId: body.submissionId || null,
         managedBy: body.managedBy || "admin",
         ownerUserId: body.ownerUserId || null,
+        adminUpdatedAt: new Date(),
       });
       doc = created;
     }

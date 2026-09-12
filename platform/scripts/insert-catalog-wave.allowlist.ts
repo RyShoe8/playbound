@@ -147,7 +147,15 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "hardwareRequirements",
   ],
   "x-men-arcade-remake": ["launcherInstall", "firstPlaySteps", "multiplayerGamingSteps"],
-  "tmnt-rescue-palooza": ["launcherInstall", "firstPlaySteps", "multiplayerGamingSteps"],
+  "tmnt-rescue-palooza": [
+    "title",
+    "aliases",
+    "status",
+    "maxPlayers",
+    "launcherInstall",
+    "firstPlaySteps",
+    "multiplayerGamingSteps",
+  ],
   morrowind: ["launcherInstall"],
   "dune-legacy": ["launcherInstall"],
 };

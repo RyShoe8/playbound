@@ -187,7 +187,7 @@ export async function applyStoreHit(opts: {
   }
 
   if (Object.keys($set).length === 0) return { wroteOffer: false, wroteIds: false };
-  await CatalogGame.updateOne({ slug: opts.slug }, { $set });
+  await CatalogGame.updateOne({ slug: opts.slug }, { $set }, { timestamps: false });
   return { wroteOffer, wroteIds };
 }
 

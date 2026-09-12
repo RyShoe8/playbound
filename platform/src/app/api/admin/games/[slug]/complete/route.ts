@@ -28,7 +28,7 @@ export async function PATCH(
     await dbConnect();
     let doc = await CatalogGame.findOneAndUpdate(
       { slug },
-      { $set: { complete: body.complete } },
+      { $set: { complete: body.complete, adminUpdatedAt: new Date() } },
       { returnDocument: "after" }
     ).lean();
 
@@ -40,6 +40,7 @@ export async function PATCH(
       const created = await CatalogGame.create({
         ...existingGame,
         complete: body.complete,
+        adminUpdatedAt: new Date(),
       });
       doc = created.toObject();
     }

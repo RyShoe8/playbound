@@ -1,14 +1,27 @@
 import React, { SelectHTMLAttributes, useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Check, Search } from "lucide-react";
 
-export type PremiumSelectProps = SelectHTMLAttributes<HTMLSelectElement>;
+export type PremiumSelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
+  searchable?: boolean;
+};
 
-export function PremiumSelect({ children, className, value, onChange, disabled, ...props }: PremiumSelectProps) {
+export function PremiumSelect({
+  children,
+  className,
+  value,
+  onChange,
+  disabled,
+  searchable,
+  ...props
+}: PremiumSelectProps) {
   const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
   const listboxRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   /**
    * Viewport coordinates for the open menu.
    *
@@ -30,17 +43,20 @@ export function PremiumSelect({ children, className, value, onChange, disabled, 
     const r = el.getBoundingClientRect();
     // Flip upward when the menu's full height would not fit below.
     const spaceBelow = window.innerHeight - r.bottom;
-    const above = spaceBelow < 248 && r.top > spaceBelow;
+    const above = spaceBelow < 260 && r.top > spaceBelow;
     setRect({
       top: above ? r.top : r.bottom,
       left: r.left,
-      width: r.width,
+      width: Math.max(r.width, 180),
       above,
     });
   }, []);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setSearchQuery("");
+      return;
+    }
     measure();
     /*
      * Fixed positioning does not follow the button, so re-measure on anything
@@ -49,7 +65,13 @@ export function PremiumSelect({ children, className, value, onChange, disabled, 
      */
     window.addEventListener("scroll", measure, true);
     window.addEventListener("resize", measure);
+
+    const timer = setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 40);
+
     return () => {
+      clearTimeout(timer);
       window.removeEventListener("scroll", measure, true);
       window.removeEventListener("resize", measure);
     };
@@ -94,6 +116,20 @@ export function PremiumSelect({ children, className, value, onChange, disabled, 
       return null;
     })
     .filter(Boolean) as { value: string | number; label: React.ReactNode; disabled?: boolean }[];
+
+  const showSearch = Boolean(searchable ?? (options.length > 8));
+
+  const filteredOptions = searchQuery.trim()
+    ? options.filter((opt) => {
+        const q = searchQuery.toLowerCase().trim();
+        const labelStr =
+          typeof opt.label === "string" || typeof opt.label === "number"
+            ? String(opt.label).toLowerCase()
+            : "";
+        const valStr = String(opt.value).toLowerCase();
+        return labelStr.includes(q) || valStr.includes(q);
+      })
+    : options;
 
   const selectedOption = options.find((o) => String(o.value) === String(value));
   const displayLabel = selectedOption ? selectedOption.label : "Select...";
@@ -143,7 +179,7 @@ export function PremiumSelect({ children, className, value, onChange, disabled, 
         <div
           ref={listboxRef}
           role="listbox"
-          className="fixed z-[9999] max-h-60 overflow-auto rounded-lg border border-border/60 bg-[#0B0F19]/95 p-1 text-popover-foreground shadow-2xl backdrop-blur-md animate-in fade-in-0 zoom-in-95"
+          className="fixed z-[9999] flex flex-col max-h-64 overflow-hidden rounded-lg border border-border/60 bg-[#0B0F19]/95 p-1 text-popover-foreground shadow-2xl backdrop-blur-md animate-in fade-in-0 zoom-in-95"
           style={{
             top: rect.top,
             left: rect.left,
@@ -153,39 +189,64 @@ export function PremiumSelect({ children, className, value, onChange, disabled, 
             transform: rect.above ? "translateY(-100%) translateY(-4px)" : "translateY(4px)",
           }}
         >
-          {options.map((opt, i) => {
-            const isSelected = String(value) === String(opt.value);
-            return (
-              <div
-                key={i}
-                role="option"
-                aria-selected={isSelected}
-                onClick={() => {
-                  if (opt.disabled) return;
-                  if (onChange) {
-                    const syntheticEvent = {
-                      target: { value: String(opt.value), name: props.name },
-                      currentTarget: { value: String(opt.value), name: props.name },
-                    } as unknown as React.ChangeEvent<HTMLSelectElement>;
-                    onChange(syntheticEvent);
-                  }
-                  setOpen(false);
-                }}
-                className={`relative flex w-full cursor-pointer select-none items-center rounded-md py-2 pl-3 pr-8 text-sm outline-none transition-colors ${
-                  opt.disabled
-                    ? "cursor-not-allowed opacity-50"
-                    : "hover:bg-primary/20 hover:text-primary"
-                } ${isSelected ? "bg-primary/20 text-primary font-medium" : ""}`}
-              >
-                <span className="truncate">{opt.label}</span>
-                {isSelected && (
-                  <span className="absolute right-2 flex h-4 w-4 items-center justify-center text-primary">
-                    <Check className="h-4 w-4" />
-                  </span>
-                )}
+          {showSearch && (
+            <div className="p-1 pb-1.5 border-b border-border/30">
+              <div className="relative flex items-center">
+                <Search className="absolute left-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search..."
+                  className="w-full h-8 pl-8 pr-3 text-xs rounded-md bg-secondary/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring border border-border/40"
+                  onClick={(e) => e.stopPropagation()}
+                />
               </div>
-            );
-          })}
+            </div>
+          )}
+
+          <div className="overflow-y-auto flex-1 max-h-52">
+            {filteredOptions.length === 0 ? (
+              <div className="py-3 px-2 text-center text-xs text-muted-foreground">
+                No matching options
+              </div>
+            ) : (
+              filteredOptions.map((opt, i) => {
+                const isSelected = String(value) === String(opt.value);
+                return (
+                  <div
+                    key={i}
+                    role="option"
+                    aria-selected={isSelected}
+                    onClick={() => {
+                      if (opt.disabled) return;
+                      if (onChange) {
+                        const syntheticEvent = {
+                          target: { value: String(opt.value), name: props.name },
+                          currentTarget: { value: String(opt.value), name: props.name },
+                        } as unknown as React.ChangeEvent<HTMLSelectElement>;
+                        onChange(syntheticEvent);
+                      }
+                      setOpen(false);
+                    }}
+                    className={`relative flex w-full cursor-pointer select-none items-center rounded-md py-2 pl-3 pr-8 text-sm outline-none transition-colors ${
+                      opt.disabled
+                        ? "cursor-not-allowed opacity-50"
+                        : "hover:bg-primary/20 hover:text-primary"
+                    } ${isSelected ? "bg-primary/20 text-primary font-medium" : ""}`}
+                  >
+                    <span className="truncate">{opt.label}</span>
+                    {isSelected && (
+                      <span className="absolute right-2 flex h-4 w-4 items-center justify-center text-primary">
+                        <Check className="h-4 w-4" />
+                      </span>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>,
         document.body
       )}

@@ -6,6 +6,8 @@ import {
   HeadObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { Readable, Transform } from "node:stream";
+
 
 function getR2ClientConfig() {
   const accountId = process.env.R2_ACCOUNT_ID || process.env.CLOUDFLARE_ACCOUNT_ID;
@@ -158,6 +160,65 @@ export async function uploadObjectToR2(
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[R2Client] Upload failed for ${objectKey}:`, message);
+    return { success: false, sizeBytes: 0, error: message };
+  }
+}
+
+/**
+ * Streams a Readable or ReadableStream to Cloudflare R2 with progress tracking.
+ * Avoids buffering multi-hundred-megabyte files entirely in memory.
+ */
+export async function uploadStreamToR2(
+  objectKey: string,
+  stream: Readable | ReadableStream,
+  sizeBytes: number,
+  contentType: string = "application/octet-stream",
+  onProgress?: (bytesUploaded: number, totalBytes: number) => void
+): Promise<{ success: boolean; sizeBytes: number; error?: string }> {
+  const config = getR2ClientConfig();
+  const client = getS3Client();
+
+  if (!client || !config.isConfigured) {
+    // Simulated upload in development with simulated progress events
+    if (onProgress) {
+      const steps = [0.25, 0.5, 0.75, 1.0];
+      for (const fraction of steps) {
+        onProgress(Math.round(sizeBytes * fraction), sizeBytes);
+        await new Promise((r) => setTimeout(r, 50));
+      }
+    }
+    return { success: true, sizeBytes };
+  }
+
+  try {
+    const cleanKey = objectKey.replace(/^\/+/, "");
+    let bytesUploaded = 0;
+
+    const progressStream = new Transform({
+      transform(chunk, _encoding, callback) {
+        bytesUploaded += chunk.length;
+        onProgress?.(bytesUploaded, sizeBytes);
+        callback(null, chunk);
+      },
+    });
+
+    const nodeStream = stream instanceof Readable ? stream : Readable.fromWeb(stream as any);
+    const bodyStream = nodeStream.pipe(progressStream);
+
+    const command = new PutObjectCommand({
+      Bucket: config.bucket,
+      Key: cleanKey,
+      Body: bodyStream,
+      ContentType: contentType,
+      ContentLength: sizeBytes > 0 ? sizeBytes : undefined,
+      StorageClass: "STANDARD",
+    });
+
+    await client.send(command);
+    return { success: true, sizeBytes: bytesUploaded || sizeBytes };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[R2Client] Streaming upload failed for ${objectKey}:`, message);
     return { success: false, sizeBytes: 0, error: message };
   }
 }

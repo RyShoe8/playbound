@@ -152,7 +152,8 @@ async function run(req: Request) {
           "access.offers": nextOffers,
           "access.currentPriceCents": current,
         },
-      }
+      },
+      { timestamps: false }
     );
     summary.updated += 1;
   }

@@ -9,6 +9,7 @@ import GameSubmission from "@/lib/models/GameSubmission";
 import BugReport from "@/lib/models/BugReport";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
 import CatalogMod from "@/lib/models/CatalogMod";
+import Party from "@/lib/models/Party";
 import { listAllGames } from "@/lib/catalog";
 import { GameArt } from "@/components/GameArt";
 import { PeriodStatTile, SectionHeader } from "@/components/ui/bits";
@@ -47,6 +48,9 @@ async function computeDashboardKpis() {
       submissions,
       openBugs,
       pendingSubs,
+      parties,
+      partiesTotal,
+      activeParties,
     ] = await Promise.all([
       User.countDocuments(),
       User.countDocuments({ emailVerified: true }),
@@ -83,6 +87,9 @@ async function computeDashboardKpis() {
       periodDocumentCounts(GameSubmission),
       BugReport.countDocuments({ status: { $in: ["open", "reviewing"] } }),
       GameSubmission.countDocuments({ status: "pending" }),
+      periodDocumentCounts(Party),
+      Party.countDocuments(),
+      Party.countDocuments({ status: { $ne: "ended" } }),
     ]);
 
     return {
@@ -103,6 +110,9 @@ async function computeDashboardKpis() {
       submissions,
       openBugs,
       pendingSubs,
+      parties,
+      partiesTotal,
+      activeParties,
     };
   } catch (err) {
     console.error("Failed to load admin dashboard KPIs:", err);
@@ -125,12 +135,15 @@ async function computeDashboardKpis() {
       submissions: empty,
       openBugs: 0,
       pendingSubs: 0,
+      parties: empty,
+      partiesTotal: 0,
+      activeParties: 0,
     };
   }
 }
 
 function loadDashboardKpis() {
-  return unstable_cache(computeDashboardKpis, ["admin-dashboard-kpis-v1"], {
+  return unstable_cache(computeDashboardKpis, ["admin-dashboard-kpis-v2"], {
     revalidate: 60,
     tags: ["admin-kpis"],
   })();
@@ -173,7 +186,7 @@ export default async function AdminPage() {
 
       <section>
         <SectionHeader title="Platform Overview" subtitle="Period columns compare to the prior day / week / month" />
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <PeriodStatTile
             label="Total PlayBounders"
             primary={String(kpis.totalUsers)}
@@ -193,16 +206,23 @@ export default async function AdminPage() {
             periods={kpis.launcherInstalls}
           />
           <PeriodStatTile
-            label="Bugs"
-            hint={`${kpis.bugReports.month} reports + ${kpis.errorEvents.month} errors (30d) · ${kpis.openBugs} open`}
-            href="/admin/bugs"
-            periods={kpis.bugs}
-          />
-          <PeriodStatTile
             label="Games Played"
             hint="game_started (site + launcher)"
             href="/admin/analytics/gameplay"
             periods={kpis.gamesPlayed}
+          />
+          <PeriodStatTile
+            label="Parties"
+            primary={String(kpis.partiesTotal)}
+            hint={`${kpis.activeParties} active now · created below`}
+            href="/admin/connect/parties"
+            periods={kpis.parties}
+          />
+          <PeriodStatTile
+            label="Bugs"
+            hint={`${kpis.bugReports.month} reports + ${kpis.errorEvents.month} errors (30d) · ${kpis.openBugs} open`}
+            href="/admin/bugs"
+            periods={kpis.bugs}
           />
           <PeriodStatTile
             label="Newsletter Subs"

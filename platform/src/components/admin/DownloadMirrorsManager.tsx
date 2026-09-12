@@ -93,10 +93,13 @@ interface CacheItem {
   downloads: number;
   recentDownloads: number;
   r2Status: string;
+  r2StatusMessage?: string | null;
+  r2TransferPercent?: number | null;
   r2Protected: boolean;
   r2Disabled: boolean;
   vpsStatus: string;
   vpsStatusMessage: string | null;
+  vpsTransferPercent?: number | null;
   lastPromoted: string | null;
   lastEvicted: string | null;
   publicHealth: string;
@@ -272,22 +275,35 @@ export function DownloadMirrorsManager() {
     }
   }
 
+  const [activeTransfers, setActiveTransfers] = useState<Record<string, {
+    target: "vps" | "r2";
+    artifactId: string;
+    filename: string;
+    gameSlug?: string | null;
+    percent: number | null;
+    statusMessage: string;
+    bytesTransferred?: number;
+    totalBytes?: number;
+  }>>({});
+
   useEffect(() => {
     void loadData();
   }, []);
 
   /*
-   * While a Blob→VPS archive is in flight, refresh the cache table so
-   * vpsStatusMessage shows live "Copied X of Y" progress from the host.
+   * While a transfer (VPS archive or R2 promotion) is in flight, poll every 1.5s
+   * so the status bars update smoothly in real time.
    */
   useEffect(() => {
-    const uploading = cacheItems.some((item) => item.vpsStatus === "uploading");
-    if (!uploading) return;
+    const hasUploading =
+      cacheItems.some((item) => item.vpsStatus === "uploading" || item.r2Status === "uploading") ||
+      Object.keys(activeTransfers).length > 0;
+    if (!hasUploading) return;
     const timer = window.setInterval(() => {
       void loadData({ silent: true });
-    }, 3000);
+    }, 1500);
     return () => window.clearInterval(timer);
-  }, [cacheItems]);
+  }, [cacheItems, activeTransfers]);
 
   async function handleSaveSettings(e: React.FormEvent) {
     e.preventDefault();
@@ -318,20 +334,151 @@ export function DownloadMirrorsManager() {
     }
   }
 
-  async function handlePromote(artifactId: string) {
+  async function handlePromote(item: CacheItem) {
+    const artifactId = item.id;
     setBusyAction(`promote-${artifactId}`);
+    setActiveTransfers((prev) => ({
+      ...prev,
+      [`r2-${artifactId}`]: {
+        target: "r2",
+        artifactId,
+        filename: item.filename,
+        gameSlug: item.gameSlug,
+        percent: 0,
+        statusMessage: "Initiating R2 promotion…",
+        totalBytes: item.sizeBytes,
+      },
+    }));
+    setCacheItems((items) =>
+      items.map((it) =>
+        it.id === artifactId
+          ? { ...it, r2Status: "uploading", r2StatusMessage: "Starting R2 upload…" }
+          : it
+      )
+    );
+
     try {
       const res = await fetch("/api/admin/download-mirrors/cache/promote", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
         body: JSON.stringify({ artifactId }),
       });
+
+      const contentType = res.headers.get("content-type") || "";
+      if (contentType.includes("text/event-stream") && res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let streamBuffer = "";
+        let finalSuccess = false;
+        let finalQueued = false;
+        let finalMessage = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          streamBuffer += decoder.decode(value, { stream: true });
+          const lines = streamBuffer.split("\n\n");
+          streamBuffer = lines.pop() || "";
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith("data: ")) continue;
+            try {
+              const event = JSON.parse(trimmed.slice(6));
+              if (event.type === "progress") {
+                const pct = event.percent != null ? Number(event.percent) : null;
+                const statusMsg = event.message || "Uploading to R2 hot cache…";
+                setActiveTransfers((prev) => ({
+                  ...prev,
+                  [`r2-${artifactId}`]: {
+                    target: "r2",
+                    artifactId,
+                    filename: item.filename,
+                    gameSlug: item.gameSlug,
+                    percent: pct,
+                    statusMessage: statusMsg,
+                    bytesTransferred: event.bytesUploaded,
+                    totalBytes: event.totalBytes,
+                  },
+                }));
+                setCacheItems((items) =>
+                  items.map((it) =>
+                    it.id === artifactId
+                      ? { ...it, r2Status: "uploading", r2StatusMessage: statusMsg, r2TransferPercent: pct }
+                      : it
+                  )
+                );
+              } else if (event.type === "done") {
+                finalSuccess = true;
+                finalQueued = Boolean(event.queued);
+                finalMessage = event.message || `Promoted ${item.filename} to R2!`;
+              } else if (event.type === "error") {
+                throw new Error(event.error || "Promotion failed");
+              }
+            } catch (jsonErr) {
+              if (jsonErr instanceof Error && jsonErr.message !== "Unexpected end of JSON input") {
+                throw jsonErr;
+              }
+            }
+          }
+        }
+
+        if (finalSuccess) {
+          if (finalQueued) {
+            setActiveTransfers((prev) => {
+              const next = { ...prev };
+              delete next[`r2-${artifactId}`];
+              return next;
+            });
+            setMessage({ text: finalMessage, type: "success" });
+            await loadData();
+            return;
+          }
+
+          setActiveTransfers((prev) => ({
+            ...prev,
+            [`r2-${artifactId}`]: {
+              target: "r2",
+              artifactId,
+              filename: item.filename,
+              gameSlug: item.gameSlug,
+              percent: 100,
+              statusMessage: "Promoted to R2 Hot Cache!",
+              totalBytes: item.sizeBytes,
+            },
+          }));
+          setTimeout(() => {
+            setActiveTransfers((prev) => {
+              const next = { ...prev };
+              delete next[`r2-${artifactId}`];
+              return next;
+            });
+          }, 3000);
+          setMessage({ text: finalMessage, type: "success" });
+          await loadData();
+          return;
+        }
+      }
+
+      // Fallback for standard JSON response
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Promotion failed");
       setMessage({ text: data.message, type: "success" });
       await loadData();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Promotion failed";
+      setActiveTransfers((prev) => {
+        const next = { ...prev };
+        delete next[`r2-${artifactId}`];
+        return next;
+      });
+      setCacheItems((items) =>
+        items.map((it) =>
+          it.id === artifactId
+            ? { ...it, r2Status: "not_cached", r2StatusMessage: msg }
+            : it
+        )
+      );
       setMessage({ text: msg, type: "error" });
     } finally {
       setBusyAction(null);
@@ -417,9 +564,25 @@ export function DownloadMirrorsManager() {
   async function handleArchive(item: CacheItem) {
     const { id: artifactId, archiveSourceUrl: sourceUrl } = item;
     setBusyAction(`archive-${artifactId}`);
-    setCacheItems((items) => items.map((item) => item.id === artifactId
-      ? { ...item, vpsStatus: "uploading", vpsStatusMessage: "Starting VPS transfer…" }
-      : item));
+    setActiveTransfers((prev) => ({
+      ...prev,
+      [`vps-${artifactId}`]: {
+        target: "vps",
+        artifactId,
+        filename: item.filename,
+        gameSlug: item.gameSlug,
+        percent: 0,
+        statusMessage: "Starting VPS transfer…",
+        totalBytes: item.sizeBytes,
+      },
+    }));
+    setCacheItems((items) =>
+      items.map((it) =>
+        it.id === artifactId
+          ? { ...it, vpsStatus: "uploading", vpsStatusMessage: "Starting VPS transfer…" }
+          : it
+      )
+    );
     try {
       const res = await fetch("/api/admin/download-mirrors/cache/archive", {
         method: "POST",
@@ -438,13 +601,82 @@ export function DownloadMirrorsManager() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || data.message || "Archive failed");
-      setMessage({ text: data.message, type: "success" });
+
+      // Poll artifact endpoint for live byte-level progress
+      for (let i = 0; i < 180; i += 1) {
+        await new Promise((resolve) => window.setTimeout(resolve, 1500));
+        const artRes = await fetch(`/api/admin/download-mirrors/artifacts/${encodeURIComponent(artifactId)}`);
+        if (!artRes.ok) continue;
+        const artData = await artRes.json().catch(() => null);
+        const vpsStatus = artData?.artifact?.vpsStatus;
+        const vpsMsg = artData?.artifact?.vpsStatusMessage;
+        const received = Number(artData?.transfer?.bytesReceived) || 0;
+        const total = Number(artData?.transfer?.sizeBytes) || item.sizeBytes || 0;
+        const pct =
+          artData?.transfer?.percent != null
+            ? Number(artData.transfer.percent)
+            : total > 0
+            ? Math.min(100, Math.round((received / total) * 1000) / 10)
+            : null;
+
+        if (vpsStatus === "verified") {
+          setActiveTransfers((prev) => ({
+            ...prev,
+            [`vps-${artifactId}`]: {
+              target: "vps",
+              artifactId,
+              filename: item.filename,
+              gameSlug: item.gameSlug,
+              percent: 100,
+              statusMessage: "Archived and verified on VPS!",
+              bytesTransferred: total,
+              totalBytes: total,
+            },
+          }));
+          setTimeout(() => {
+            setActiveTransfers((prev) => {
+              const next = { ...prev };
+              delete next[`vps-${artifactId}`];
+              return next;
+            });
+          }, 3000);
+          setMessage({ text: `Archived ${item.filename} on VPS authoritative storage!`, type: "success" });
+          await loadData();
+          return;
+        }
+
+        if (vpsStatus === "missing") {
+          throw new Error(vpsMsg || "VPS archive copy did not complete");
+        }
+
+        setActiveTransfers((prev) => ({
+          ...prev,
+          [`vps-${artifactId}`]: {
+            target: "vps",
+            artifactId,
+            filename: item.filename,
+            gameSlug: item.gameSlug,
+            percent: pct,
+            statusMessage: vpsMsg || `Copying to VPS: ${formatDataVolume(received)} of ${formatDataVolume(total)}`,
+            bytesTransferred: received,
+            totalBytes: total,
+          },
+        }));
+      }
+
       await loadData();
     } catch (err: unknown) {
       const detail = err instanceof Error ? err.message : "Archive failed";
-      setCacheItems((items) => items.map((item) => item.id === artifactId
-        ? { ...item, vpsStatus: "missing", vpsStatusMessage: detail }
-        : item));
+      setActiveTransfers((prev) => {
+        const next = { ...prev };
+        delete next[`vps-${artifactId}`];
+        return next;
+      });
+      setCacheItems((items) =>
+        items.map((it) =>
+          it.id === artifactId ? { ...it, vpsStatus: "missing", vpsStatusMessage: detail } : it
+        )
+      );
       setMessage({ text: detail, type: "error" });
     } finally {
       setBusyAction(null);
@@ -819,6 +1051,68 @@ export function DownloadMirrorsManager() {
       {activeTab === "cache" && (
         <div className="space-y-4">
           <LauncherReleaseUploader />
+
+          {/* Active Storage Transfers Card */}
+          {Object.keys(activeTransfers).length > 0 && (
+            <div className="rounded-xl border border-sky-500/30 bg-sky-950/20 p-4 space-y-3 shadow-lg">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-sky-400 flex items-center gap-1.5">
+                  <Activity className="w-4 h-4 animate-pulse" /> Active Storage Transfers ({Object.keys(activeTransfers).length})
+                </span>
+                <span className="text-xs text-sky-400/80 animate-pulse font-mono">Live streaming</span>
+              </div>
+              <div className="space-y-2.5">
+                {Object.entries(activeTransfers).map(([key, transfer]) => {
+                  const isR2 = transfer.target === "r2";
+                  const pct = transfer.percent != null ? Math.round(transfer.percent) : null;
+                  return (
+                    <div key={key} className="rounded-lg bg-card/70 border border-border/80 p-3 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2 font-medium text-foreground">
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+                              isR2
+                                ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                                : "bg-sky-500/20 text-sky-300 border border-sky-500/30"
+                            }`}
+                          >
+                            {isR2 ? "R2 Hot Cache" : "VPS Archive"}
+                          </span>
+                          <span className="font-semibold">{transfer.filename}</span>
+                          {transfer.gameSlug && (
+                            <span className="text-muted-foreground text-[11px]">({transfer.gameSlug})</span>
+                          )}
+                        </div>
+                        <div className="font-mono text-xs font-bold text-foreground">
+                          {pct != null ? `${pct}%` : "In progress…"}
+                        </div>
+                      </div>
+                      {/* Progress bar */}
+                      <div className="w-full bg-secondary/80 h-2 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-300 ${
+                            isR2
+                              ? "bg-gradient-to-r from-purple-500 to-indigo-500"
+                              : "bg-gradient-to-r from-sky-500 to-blue-500"
+                          } ${pct == null ? "w-full animate-pulse opacity-60" : ""}`}
+                          style={{ width: pct != null ? `${Math.max(3, pct)}%` : undefined }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                        <span className="truncate max-w-md">{transfer.statusMessage}</span>
+                        {transfer.bytesTransferred != null && transfer.totalBytes != null && transfer.totalBytes > 0 && (
+                          <span className="font-mono">
+                            {formatDataVolume(transfer.bytesTransferred)} / {formatDataVolume(transfer.totalBytes)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-xl">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
@@ -883,22 +1177,56 @@ export function DownloadMirrorsManager() {
                           </span>
                         </td>
                         <td className="p-4">
-                          <div className="flex items-center gap-1.5">
-                            <span
-                              className={`px-2.5 py-1 rounded-full text-xs font-bold capitalize ${
-                                item.r2Status === "cached"
-                                  ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
-                                  : item.r2Status === "candidate"
-                                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                                  : "bg-secondary text-muted-foreground"
-                              }`}
-                            >
-                              {item.r2Status.replace("_", " ")}
-                            </span>
-                            {item.r2Protected && (
-                              <span className="p-1 rounded bg-amber-500/10 text-amber-400" title="Protected from eviction">
-                                <Shield className="w-3.5 h-3.5" />
+                          <div className="space-y-1.5 min-w-36">
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className={`px-2.5 py-1 rounded-full text-xs font-bold capitalize ${
+                                  item.r2Status === "cached"
+                                    ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                                    : item.r2Status === "candidate"
+                                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                                    : item.r2Status === "uploading"
+                                    ? "bg-purple-500/20 text-purple-300 border border-purple-500/30 animate-pulse"
+                                    : "bg-secondary text-muted-foreground"
+                                }`}
+                              >
+                                {item.r2Status.replace("_", " ")}
                               </span>
+                              {item.r2Protected && (
+                                <span className="p-1 rounded bg-amber-500/10 text-amber-400" title="Protected from eviction">
+                                  <Shield className="w-3.5 h-3.5" />
+                                </span>
+                              )}
+                            </div>
+                            {(item.r2Status === "uploading" || activeTransfers[`r2-${item.id}`]) && (
+                              <div className="space-y-1">
+                                <div className="w-full bg-secondary/80 h-1.5 rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-300"
+                                    style={{
+                                      width: `${Math.max(
+                                        5,
+                                        activeTransfers[`r2-${item.id}`]?.percent ?? item.r2TransferPercent ?? 10
+                                      )}%`,
+                                    }}
+                                  />
+                                </div>
+                                <div className="text-[10px] text-purple-300 font-mono font-medium truncate">
+                                  {activeTransfers[`r2-${item.id}`]?.percent != null
+                                    ? `${Math.round(activeTransfers[`r2-${item.id}`].percent!)}% • ${activeTransfers[`r2-${item.id}`].statusMessage}`
+                                    : item.r2TransferPercent != null
+                                    ? `${Math.round(item.r2TransferPercent)}%`
+                                    : "Promoting to R2…"}
+                                </div>
+                              </div>
+                            )}
+                            {item.r2StatusMessage && item.r2Status !== "cached" && !activeTransfers[`r2-${item.id}`] && (
+                              <div
+                                className="text-[10px] text-muted-foreground truncate max-w-44 leading-tight"
+                                title={item.r2StatusMessage}
+                              >
+                                {item.r2StatusMessage}
+                              </div>
                             )}
                           </div>
                         </td>
@@ -910,39 +1238,56 @@ export function DownloadMirrorsManager() {
                             >
                               <Eye className="w-3.5 h-3.5" /> Details
                             </button>
-                            <button
-                              onClick={() => void handleArchive(item)}
-                              disabled={
-                                busyAction === `archive-${item.id}` ||
-                                item.vpsStatus === "verified" ||
-                                item.vpsStatus === "uploading"
-                              }
-                              className="px-2.5 py-1 rounded bg-sky-500/15 hover:bg-sky-500/25 text-sky-200 text-xs font-semibold transition-colors disabled:opacity-50 flex items-center gap-1"
-                              title={
-                                item.vpsStatus === "verified"
-                                  ? "Already archived on VPS"
-                                  : item.vpsStatus === "uploading"
-                                  ? "VPS archive transfer is in progress"
-                                  : "Copy to VPS archive"
-                              }
-                            >
-                              <Archive className="w-3.5 h-3.5" />
-                              {item.vpsStatus === "verified"
-                                ? "On VPS"
-                                : busyAction === `archive-${item.id}`
-                                ? "Starting…"
-                                : item.vpsStatus === "uploading"
-                                ? "Transferring…"
-                                : "Archive to VPS"}
-                            </button>
-                            {item.vpsStatusMessage && (
-                              <span
-                                className={`max-w-52 text-[11px] leading-tight ${item.vpsStatus === "missing" ? "text-rose-300" : "text-sky-200"}`}
-                                title={item.vpsStatusMessage}
+
+                            {/* VPS Archive Action / Progress */}
+                            {item.vpsStatus === "uploading" || activeTransfers[`vps-${item.id}`] ? (
+                              <div className="w-32 text-left space-y-1 bg-sky-950/30 border border-sky-500/30 rounded p-1.5">
+                                <div className="flex justify-between items-center text-[10px] text-sky-300 font-mono">
+                                  <span>VPS</span>
+                                  <span>
+                                    {activeTransfers[`vps-${item.id}`]?.percent != null
+                                      ? `${Math.round(activeTransfers[`vps-${item.id}`].percent!)}%`
+                                      : item.vpsTransferPercent != null
+                                      ? `${Math.round(item.vpsTransferPercent)}%`
+                                      : "…"}
+                                  </span>
+                                </div>
+                                <div className="w-full bg-secondary/80 h-1.5 rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-sky-500 transition-all duration-300"
+                                    style={{
+                                      width: `${Math.max(
+                                        5,
+                                        activeTransfers[`vps-${item.id}`]?.percent ?? item.vpsTransferPercent ?? 10
+                                      )}%`,
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => void handleArchive(item)}
+                                disabled={
+                                  busyAction === `archive-${item.id}` ||
+                                  item.vpsStatus === "verified"
+                                }
+                                className="px-2.5 py-1 rounded bg-sky-500/15 hover:bg-sky-500/25 text-sky-200 text-xs font-semibold transition-colors disabled:opacity-50 flex items-center gap-1"
+                                title={
+                                  item.vpsStatus === "verified"
+                                    ? "Already archived on VPS"
+                                    : "Copy to VPS archive"
+                                }
                               >
-                                {item.vpsStatusMessage}
-                              </span>
+                                <Archive className="w-3.5 h-3.5" />
+                                {item.vpsStatus === "verified"
+                                  ? "On VPS"
+                                  : busyAction === `archive-${item.id}`
+                                  ? "Starting…"
+                                  : "Archive to VPS"}
+                              </button>
                             )}
+
+                            {/* R2 Promote Action / Protect / Evict */}
                             {item.r2Status === "cached" ? (
                               <>
                                 <button
@@ -966,15 +1311,29 @@ export function DownloadMirrorsManager() {
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                               </>
+                            ) : item.r2Status === "uploading" || busyAction === `promote-${item.id}` ? (
+                              <button
+                                disabled
+                                className="px-2.5 py-1 rounded bg-purple-500/20 text-purple-300 text-xs font-bold flex items-center gap-1 opacity-70 cursor-not-allowed"
+                              >
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Promoting…
+                              </button>
                             ) : (
                               <button
-                                onClick={() => void handlePromote(item.id)}
+                                onClick={() => void handlePromote(item)}
                                 disabled={busyAction === `promote-${item.id}`}
                                 className="px-2.5 py-1 rounded bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 text-xs font-bold transition-colors flex items-center gap-1"
+                                title={
+                                  item.vpsStatus !== "verified"
+                                    ? "Promotes to R2 and automatically links/archives to VPS"
+                                    : "Promote to R2 Hot Cache"
+                                }
                               >
-                                <ArrowUpRight className="w-3.5 h-3.5" /> Promote
+                                <ArrowUpRight className="w-3.5 h-3.5" />
+                                {item.vpsStatus !== "verified" ? "Archive & Promote" : "Promote"}
                               </button>
                             )}
+
                             <button
                               onClick={() => void handleDeleteArtifact(item.id)}
                               disabled={busyAction === `delete-${item.id}`}

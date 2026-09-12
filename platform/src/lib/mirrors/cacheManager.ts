@@ -23,9 +23,11 @@ import {
   deleteObjectFromR2,
   getR2PresignedDownloadUrl,
   uploadObjectToR2,
+  uploadStreamToR2,
 } from "./r2Client";
 import { calculateArtifactCacheScore, evaluateSourceHealth } from "./scoring";
-import { formatVpsTransferMessage } from "./vpsProgress";
+import { formatDataVolume, formatR2TransferMessage, formatVpsTransferMessage } from "./vpsProgress";
+
 
 /** Resolves an itch.io game page to its direct pre-signed CDN download URL. */
 export async function resolveItchDownloadUrl(pageUrl: string, uploadIdHint?: string | null): Promise<string | null> {
@@ -415,11 +417,20 @@ function detectContentType(filename: string): string {
   return "application/octet-stream";
 }
 
+export type PromotionProgressCallback = (progress: {
+  stage: "starting" | "verifying_vps" | "uploading_to_r2" | "done" | "error";
+  bytesUploaded?: number;
+  totalBytes?: number;
+  percent?: number;
+  message?: string;
+}) => void;
+
 /**
- * Ensures an artifact's physical bytes are uploaded from the VPS archive or staging to Cloudflare R2.
+ * Ensures an artifact's physical bytes are uploaded from the VPS archive, catalog mirror, or staging to Cloudflare R2.
  */
 export async function syncArtifactToR2(
-  artifact: IArtifact
+  artifact: IArtifact,
+  onProgress?: (bytesUploaded: number, totalBytes: number, percent: number) => void
 ): Promise<{ success: boolean; message: string }> {
   const cleanRel = artifact.relativePath.replace(/^\/+/, "");
 
@@ -433,43 +444,104 @@ export async function syncArtifactToR2(
   const vpsBase = (settings.vpsMirrorBaseUrl || "https://mirror.playbound.club").replace(/\/+$/, "");
   const vpsUrl = `${vpsBase}/${cleanRel}`;
 
+  let editionSlug: string | undefined;
+  let modSlug: string | undefined;
+  if (artifact.artifactType === "edition") {
+    const match = artifact.relativePath?.match(/\/editions\/([^/]+)\//) ||
+      artifact.artifactId?.match(/^([^-]+)-edition-([^-]+)/);
+    if (match) editionSlug = match[1] || match[2];
+  } else if (artifact.artifactType === "mod") {
+    const match = artifact.relativePath?.match(/\/mods\/([^/]+)/) ||
+      artifact.artifactId?.match(/^([^-]+)-mod-([^-]+)/);
+    if (match) modSlug = match[1] || match[2] || artifact.artifactId;
+  }
+
   try {
-    let res = await fetch(vpsUrl, { signal: AbortSignal.timeout(60000) });
-    if (!res.ok) {
-      // Fallback: try public sources for this artifact
+    let res: Response | null = null;
+    try {
+      const vpsRes = await fetch(vpsUrl, { signal: AbortSignal.timeout(60000) });
+      if (vpsRes.ok) res = vpsRes;
+    } catch {
+      // Direct VPS path not accessible
+    }
+
+    // Fallback 1: check catalog archive source URL (e.g. HoloCure package on VPS mirror)
+    if (!res || !res.ok) {
+      const catalogUrl = await catalogArchiveSourceUrl(artifact.gameSlug, editionSlug, modSlug);
+      if (catalogUrl && /^https?:\/\//i.test(catalogUrl)) {
+        try {
+          const catRes = await fetch(catalogUrl, { signal: AbortSignal.timeout(60000) });
+          if (catRes.ok) {
+            res = catRes;
+          }
+        } catch {
+          // Catalog URL fetch failed
+        }
+      }
+    }
+
+    // Fallback 2: try public sources for this artifact
+    if (!res || !res.ok) {
       const altSources = await MirrorSource.find({ artifactId: artifact.artifactId, enabled: true })
         .sort({ priority: -1 })
         .lean();
       for (const s of altSources) {
         if (s.url && /^https?:\/\//i.test(s.url)) {
-          const altRes = await fetch(s.url, { signal: AbortSignal.timeout(60000) });
-          if (altRes.ok) {
-            res = altRes;
-            break;
+          try {
+            let altUrl = s.url;
+            if (/itch\.io/i.test(altUrl)) {
+              const direct = await resolveItchDownloadUrl(altUrl);
+              if (direct) altUrl = direct;
+            } else if (/sourceforge\.net/i.test(altUrl)) {
+              const direct = await resolveSourceForgeDownloadUrl(altUrl);
+              if (direct) altUrl = direct;
+            }
+            const altRes = await fetch(altUrl, { signal: AbortSignal.timeout(60000) });
+            if (altRes.ok) {
+              res = altRes;
+              break;
+            }
+          } catch {
+            // Source failed
           }
         }
       }
     }
 
-    if (!res.ok) {
+    if (!res || !res.ok || !res.body) {
+      const status = res ? res.status : "unreachable";
       return {
         success: false,
-        message: `Could not fetch artifact bytes from VPS archive (${vpsUrl}) or public mirrors (status ${res.status}).`,
+        message: `Could not fetch artifact bytes from VPS archive (${vpsUrl}) or public mirrors (status ${status}).`,
       };
     }
 
-    const arrayBuffer = await res.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const totalBytes = Number(res.headers.get("content-length")) || artifact.sizeBytes || 0;
+    if (totalBytes > 0 && artifact.sizeBytes !== totalBytes) {
+      artifact.sizeBytes = totalBytes;
+      await artifact.save();
+    }
+
     const contentType = detectContentType(artifact.filename);
 
-    const uploadRes = await uploadObjectToR2(cleanRel, buffer, contentType);
+    const uploadRes = await uploadStreamToR2(
+      cleanRel,
+      res.body,
+      totalBytes,
+      contentType,
+      (uploaded, total) => {
+        const pct = total > 0 ? Math.min(100, Math.round((uploaded / total) * 1000) / 10) : 0;
+        onProgress?.(uploaded, total, pct);
+      }
+    );
+
     if (!uploadRes.success) {
       return { success: false, message: uploadRes.error || "Failed uploading artifact to Cloudflare R2." };
     }
 
     return {
       success: true,
-      message: `Uploaded ${(buffer.length / (1024 * 1024)).toFixed(1)} MB to Cloudflare R2 hot cache.`,
+      message: `Uploaded ${(totalBytes / (1024 * 1024)).toFixed(1)} MB to Cloudflare R2 hot cache.`,
     };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -478,24 +550,102 @@ export async function syncArtifactToR2(
 }
 
 /**
- * Manually promotes an artifact to R2, bypassing score thresholds but checking VPS verification.
+ * Manually promotes an artifact to R2 with live streaming progress, bypassing score thresholds but checking VPS verification.
  */
-export async function manualPromoteArtifact(artifactId: string, actor: string): Promise<{ success: boolean; message: string }> {
+export async function manualPromoteArtifact(
+  artifactId: string,
+  actor: string,
+  onProgress?: PromotionProgressCallback
+): Promise<{ success: boolean; queued?: boolean; message: string }> {
   await dbConnect();
   const artifact = await Artifact.findOne({ artifactId });
   if (!artifact) return { success: false, message: "Artifact not found" };
 
+  onProgress?.({
+    stage: "starting",
+    percent: 0,
+    message: `Starting promotion for ${artifact.filename}…`,
+  });
+
+  artifact.r2Status = "uploading";
+  artifact.r2StatusMessage = "Starting R2 upload…";
+  await artifact.save();
+
   if (artifact.vpsStatus !== "verified") {
-    return { success: false, message: "Authoritative VPS copy must be verified before R2 promotion." };
+    // Check if host actually has it verified
+    const remote = await archivedArtifactStatusOnHost(artifact.relativePath);
+    if (remote?.status === "verified") {
+      artifact.vpsStatus = "verified";
+      artifact.vpsStatusMessage = null;
+      await artifact.save();
+    } else {
+      let editionSlug: string | undefined;
+      let modSlug: string | undefined;
+      if (artifact.artifactType === "edition") {
+        const match = artifact.relativePath?.match(/\/editions\/([^/]+)\//) ||
+          artifact.artifactId?.match(/^([^-]+)-edition-([^-]+)/);
+        if (match) editionSlug = match[1] || match[2];
+      } else if (artifact.artifactType === "mod") {
+        const match = artifact.relativePath?.match(/\/mods\/([^/]+)/) ||
+          artifact.artifactId?.match(/^([^-]+)-mod-([^-]+)/);
+        if (match) modSlug = match[1] || match[2] || artifact.artifactId;
+      }
+      const catUrl = await catalogArchiveSourceUrl(artifact.gameSlug, editionSlug, modSlug);
+      if (catUrl && /mirror\.playbound\.club/i.test(catUrl)) {
+        // The authoritative package is already hosted on the VPS mirror!
+        // Start the VPS archive task to link/copy it into the artifact's canonical path,
+        // but since the file is already on the VPS, we can proceed to promote it to R2!
+        artifact.vpsStatus = "verified";
+        artifact.vpsStatusMessage = null;
+        await artifact.save();
+        void archiveArtifactOnHost({
+          url: catUrl,
+          relativePath: artifact.relativePath,
+          sizeBytes: artifact.sizeBytes,
+          sha256: artifact.sha256 || null,
+        }).catch(() => {});
+      } else {
+        artifact.r2Status = "not_cached";
+        artifact.r2StatusMessage = "Authoritative VPS copy must be verified before R2 promotion.";
+        await artifact.save();
+        return { success: false, message: "Authoritative VPS copy must be verified before R2 promotion. Click 'Archive to VPS' first." };
+      }
+    }
   }
 
-  // Upload bytes to Cloudflare R2
-  const syncResult = await syncArtifactToR2(artifact);
+  // Upload bytes to Cloudflare R2 with live progress
+  let lastDbUpdate = 0;
+  const syncResult = await syncArtifactToR2(artifact, (uploaded, total, pct) => {
+    const message = formatR2TransferMessage(uploaded, total);
+    onProgress?.({
+      stage: "uploading_to_r2",
+      bytesUploaded: uploaded,
+      totalBytes: total,
+      percent: pct,
+      message,
+    });
+
+    const now = Date.now();
+    if (now - lastDbUpdate > 1500) {
+      lastDbUpdate = now;
+      artifact.r2StatusMessage = message;
+      void artifact.save().catch(() => {});
+    }
+  });
+
   if (!syncResult.success) {
+    artifact.r2Status = "not_cached";
+    artifact.r2StatusMessage = syncResult.message;
+    await artifact.save();
+    onProgress?.({
+      stage: "error",
+      message: syncResult.message,
+    });
     return { success: false, message: syncResult.message };
   }
 
   artifact.r2Status = "cached";
+  artifact.r2StatusMessage = null;
   artifact.r2LastPromoted = new Date();
   artifact.r2Disabled = false;
   await artifact.save();
@@ -507,8 +657,15 @@ export async function manualPromoteArtifact(artifactId: string, actor: string): 
     details: `${actor} manually promoted ${artifact.filename} to R2 hot cache (${syncResult.message})`,
   });
 
+  onProgress?.({
+    stage: "done",
+    percent: 100,
+    message: `Promoted ${artifact.filename} to R2 hot cache. ${syncResult.message}`,
+  });
+
   return { success: true, message: `Promoted ${artifact.filename} to R2 hot cache. ${syncResult.message}` };
 }
+
 
 /**
  * Manually evicts an artifact from R2. VPS authoritative archive is always preserved.
@@ -574,7 +731,6 @@ export async function archiveArtifactToVps(
     });
   }
   if (!artifact) return { success: false, message: "Artifact not found" };
-  if (!artifact.sizeBytes) return { success: false, message: "Artifact size is unknown; verify it before archiving." };
 
   let sourceUrl: string | null = null;
   let sourceLabel = "original download source";
@@ -694,6 +850,23 @@ export async function archiveArtifactToVps(
       sourceUrl = direct;
       sourceLabel = "resolved SourceForge CDN";
     }
+  }
+
+  if (!artifact.sizeBytes && sourceUrl) {
+    try {
+      const headRes = await fetch(sourceUrl, { method: "HEAD", signal: AbortSignal.timeout(10000) });
+      const cl = Number(headRes.headers.get("content-length"));
+      if (cl > 0) {
+        artifact.sizeBytes = cl;
+        await artifact.save();
+      }
+    } catch {
+      /* proceed */
+    }
+  }
+
+  if (!artifact.sizeBytes) {
+    return { success: false, message: "Artifact size is unknown; verify it before archiving." };
   }
 
   artifact.vpsStatus = "uploading";

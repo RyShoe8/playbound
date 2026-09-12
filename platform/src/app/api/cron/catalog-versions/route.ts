@@ -110,7 +110,7 @@ async function run(req: Request) {
     );
     tally(summary.games, result.status, patched);
 
-    await CatalogGame.updateOne({ slug: row.slug }, { $set: set });
+    await CatalogGame.updateOne({ slug: row.slug }, { $set: set }, { timestamps: false });
   }
 
   /*

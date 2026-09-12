@@ -49,7 +49,7 @@ export async function PATCH(
      * Only written when the game is going published — unpublishing leaves the
      * previous date rather than wiping it, and republishing moves it forward.
      */
-    const set: Record<string, unknown> = { status, published };
+    const set: Record<string, unknown> = { status, published, adminUpdatedAt: new Date() };
     if (published) set.publishedAt = new Date();
 
     let doc = await CatalogGame.findOneAndUpdate(
@@ -69,6 +69,7 @@ export async function PATCH(
         status,
         published,
         publishedAt: published ? new Date() : null,
+        adminUpdatedAt: new Date(),
       });
       doc = created.toObject();
     }
