@@ -45,7 +45,8 @@ function loadPicker() {
     return src.slice(start, i + 1);
   };
 
-  const { isUninstallerExe } = require("./exeCandidates.js");
+  const { isUninstallerExe, isInstallerExe } = require("./exeCandidates.js");
+  const { isUnknownHorizonsSlug } = require("./unknownHorizonsLaunch.js");
   const factory = new Function(
     "fs",
     "path",
@@ -53,7 +54,10 @@ function loadPicker() {
     "expandWinPath",
     "preferRunnableExecutable",
     "isUninstallerExe",
-    `${grab("findExecutable")}
+    "isInstallerExe",
+    "isUnknownHorizonsSlug",
+    `${grab("knownExecutablePathsFor")}
+     ${grab("findExecutable")}
      ${grab("exeHintFor")}
      ${grab("preferRunnableCandidate")}
      return { findExecutable, exeHintFor };`
@@ -62,12 +66,14 @@ function loadPicker() {
   return factory(
     fs,
     path,
-    { platform: "win32" },
+    { platform: "win32", env: {} },
     (p) => p,
     // The real one reads PE headers; here every candidate is runnable, so the
     // rank-then-size order is what is under test.
     (paths) => paths[0],
-    isUninstallerExe
+    isUninstallerExe,
+    isInstallerExe,
+    isUnknownHorizonsSlug
   );
 }
 

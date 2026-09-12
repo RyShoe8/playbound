@@ -63,10 +63,19 @@ function classifyLaunchFailure(err, launchPath, opts = {}) {
     looksLikeMissingMorrowindData(rawMessage) ||
     looksLikeMissingMorrowindData(stderrTail);
 
+  const isSteamGame =
+    Boolean(opts?.steamAppId) ||
+    Boolean(opts?.isSteam) ||
+    /steamapps[\\/]common/i.test(String(launchPath || ""));
+  const exitCodeZero = err?.exitCode === 0;
+
   if (openMwFamily && earlyExit && missingDataHint) {
     code = "MORROWIND_DATA_MISSING";
     message =
       "OpenMW/TES3MP needs Morrowind game data (Morrowind.esm). Install a legal GOTY copy via Steam/GOG, then try Play again so PlayBound can point the engine at it.";
+  } else if (earlyExit && exitCodeZero && isSteamGame) {
+    code = "STEAM_HANDOFF_TIMEOUT";
+    message = `Steam took too long to start ${exeBasename}. Make sure the Steam client is running and logged in, then try again.`;
   } else if (
     err?.code === "JAVA_MISSING" ||
     (/Java 17\+/i.test(rawMessage) && !/exited immediately/i.test(rawMessage))

@@ -530,8 +530,8 @@ export const recipes = {
     ],
   },
   "earth-2140-trilogy": {
-    portStart: 1234,
-    portEnd: 1250,
+    portStart: 1275,
+    portEnd: 1290,
     protocol: "tcp",
     binaries: [
       ...gameBin("earth-2140-trilogy", ["OpenRA.Server", "OpenE2140", "openra-server"]),

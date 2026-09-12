@@ -1,5 +1,5 @@
 From cc29f1ce0cb9460601ecc460f1ab7134f302f9c6 Mon Sep 17 00:00:00 2001
-From: Claude <noreply@anthropic.com>
+From: PlayBound <noreply@playbound.net>
 Date: Tue, 18 Aug 2026 11:02:55 +0000
 Subject: [PATCH] fix(launcher): never launch a DOS-era executable
 MIME-Version: 1.0
@@ -33,9 +33,6 @@ EACCES from any other cause is now classified as SPAWN_EACCES and
 explained as elevation or antivirus, rather than surfacing raw. Error
 codes also survive spawnTrackedExe's re-wrap, which previously erased
 them.
-
-Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_01FN6ATHFYk4mkNFeSvA2xwk
 ---
  launcher/main.js                           | 101 ++++++++++++-
  launcher/package.json                      |   3 +-

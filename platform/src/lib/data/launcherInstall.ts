@@ -1203,6 +1203,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
 
   holocure: {
     enabled: true,
+    steamAppId: "2420510",
     kind: "direct-zip",
     url: "https://mirror.playbound.club/launcher-packages/games/holocure/1787200318272-HoloCure.zip",
     fileName: "HoloCure.zip",

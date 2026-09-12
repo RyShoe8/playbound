@@ -1893,7 +1893,29 @@ function maybeDiscoverBaseGameInEditionDir(slug, game, state) {
   if (!baseEdCat) return;
 
   const baseEdSlug = baseEdCat.slug || DEFAULT_EDITION_SLUG;
-  if (game.editions?.[baseEdSlug] && playableExePath(game.editions[baseEdSlug])) return;
+  if (game.editions?.[baseEdSlug]) {
+    const baseEntry = game.editions[baseEdSlug];
+    const claimedBySibling = listEditionEntries(game).some((e) => {
+      const edSlug = e.editionSlug || DEFAULT_EDITION_SLUG;
+      if (edSlug === baseEdSlug) return false;
+      if (e.dir && baseEntry.dir && sameFsPath(e.dir, baseEntry.dir)) return true;
+      if (e.exe && baseEntry.exe && sameFsPath(e.exe, baseEntry.exe)) return true;
+      return false;
+    });
+    if (claimedBySibling) {
+      delete game.editions[baseEdSlug];
+      if (game.editionSlug === baseEdSlug) {
+        delete game.exe;
+        delete game.dir;
+      }
+      if (state) {
+        state[slug] = game;
+        saveState(state);
+      }
+    } else if (playableExePath(baseEntry)) {
+      return;
+    }
+  }
 
   const installedEntries = listEditionEntries(game).filter((e) => e.dir && fs.existsSync(e.dir));
   for (const entry of installedEntries) {
@@ -4759,6 +4781,14 @@ function findExeUnderGamesDir(entry) {
     if (fs.existsSync(slugDir)) roots.unshift(slugDir);
   }
 
+  const editionSubdirsToSkip = new Set(
+    (entry?.editions || [])
+      .map((e) => (e.slug || "").toLowerCase())
+      .filter((s) => s && s !== DEFAULT_EDITION_SLUG && s !== "default")
+  );
+  editionSubdirsToSkip.add("playbound");
+  editionSubdirsToSkip.add("community");
+
   const maxDepth = 5;
   const queue = roots.map((r) => ({ dir: r, depth: 0 }));
   const seen = new Set();
@@ -4778,6 +4808,9 @@ function findExeUnderGamesDir(entry) {
       const full = path.join(dir, ent.name);
       if (ent.isFile() && want.has(ent.name.toLowerCase())) return full;
       if (ent.isDirectory() && depth < maxDepth && !shouldSkipScanDir(ent.name)) {
+        if (entry?.slug && sameFsPath(dir, path.join(gamesDir, entry.slug))) {
+          if (editionSubdirsToSkip.has(ent.name.toLowerCase())) continue;
+        }
         queue.push({ dir: full, depth: depth + 1 });
       }
     }
@@ -7060,8 +7093,26 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   }
 
   sendProgress({ phase: "extracting" });
-  // Only wipe the edition-specific folder — never the parent game folder.
-  await fsp.rm(gameDir, { recursive: true, force: true });
+  // Only wipe the edition-specific folder — never sibling edition folders in the parent game folder.
+  const isParentGameRoot = sameFsPath(gameDir, path.join(gamesRoot(), entry.slug));
+  if (isParentGameRoot && fs.existsSync(gameDir)) {
+    try {
+      const items = await fsp.readdir(gameDir, { withFileTypes: true });
+      const edSlugs = new Set((entry?.editions || []).map((e) => (e.slug || "").toLowerCase()));
+      edSlugs.add("playbound");
+      edSlugs.add("community");
+      for (const item of items) {
+        if (item.isDirectory() && edSlugs.has(item.name.toLowerCase())) {
+          continue; // preserve sibling edition subdirectories
+        }
+        await fsp.rm(path.join(gameDir, item.name), { recursive: true, force: true });
+      }
+    } catch {
+      await fsp.rm(gameDir, { recursive: true, force: true });
+    }
+  } else {
+    await fsp.rm(gameDir, { recursive: true, force: true });
+  }
   await extractArchive(downloadPath, gameDir);
   await removeFileWithRetries(downloadPath);
   if (entry.unwrapSingleRoot) {
@@ -9091,6 +9142,37 @@ async function playGameInner(slug, join = null, editionSlug = null) {
 
   let spawnOpts = { env: launchEnv };
 
+  const targetSteamAppId =
+    steamAppIdFor(entry) ||
+    steamAppIdFor(info) ||
+    (slug === "holocure" ? "2420510" : null);
+  const isInsideSteam = /[\\/]steamapps[\\/]common[\\/]/i.test(launchPath || "");
+
+  if (targetSteamAppId || isInsideSteam) {
+    if (targetSteamAppId) {
+      launchEnv = {
+        ...(launchEnv || process.env),
+        SteamAppId: String(targetSteamAppId),
+        SteamGameId: String(targetSteamAppId),
+      };
+      spawnOpts.env = launchEnv;
+      try {
+        const exeDir = path.dirname(launchPath);
+        const appIdFile = path.join(exeDir, "steam_appid.txt");
+        if (!fs.existsSync(appIdFile)) {
+          fs.writeFileSync(appIdFile, String(targetSteamAppId).trim(), "utf8");
+        }
+      } catch {
+        /* ignore read-only / permission issues */
+      }
+    }
+    // Steam games that hand off to Steam or run via SteamAPI_RestartAppIfNecessary
+    // need sufficient grace period so Steam can sync and start the target binary.
+    if (!spawnOpts.bootstrapGraceMs || spawnOpts.bootstrapGraceMs < 25000) {
+      spawnOpts.bootstrapGraceMs = 25000;
+    }
+  }
+
   /*
    * GoldenEye: Source — sourcemod on Source SDK Base 2007.
    * gesource_run.exe exits 0 after handing off to Steam/hl2; prefer
@@ -9165,6 +9247,8 @@ async function playGameInner(slug, join = null, editionSlug = null) {
       morrowindDataFound: openMwLaunchStatus?.morrowindDataFound,
       editionSlug: info.editionSlug || edSlug,
       gameSlug: slug,
+      steamAppId: targetSteamAppId || undefined,
+      isSteam: isInsideSteam,
     });
     if (classified.code !== "UNKNOWN") {
       code = classified.code;

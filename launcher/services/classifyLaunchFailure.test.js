@@ -71,3 +71,20 @@ test("forwards exitCode and signal on classified failures", () => {
   assert.equal(out.signal, "SIGTERM");
   assert.equal(out.stderrTail, "boom");
 });
+
+test("Steam game early exit with code 0 is STEAM_HANDOFF_TIMEOUT", () => {
+  const err = new Error(
+    "The game exited immediately after launch (HoloCure.exe). Open Folder and try running it manually, check GPU drivers, or reinstall."
+  );
+  err.code = "EARLY_EXIT";
+  err.exitCode = 0;
+  const out = classifyLaunchFailure(
+    err,
+    "C:\\Program Files (x86)\\Steam\\steamapps\\common\\HoloCure\\HoloCure.exe",
+    { steamAppId: "2420510", gameSlug: "holocure" }
+  );
+  assert.equal(out.code, "STEAM_HANDOFF_TIMEOUT");
+  assert.equal(out.exitCode, 0);
+  assert.match(out.message, /Steam took too long to start HoloCure\.exe/);
+});
+

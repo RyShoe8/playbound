@@ -22,7 +22,11 @@ export async function generateStaticParams() {
   // Derived from what is published rather than the full enum: an empty
   // category 404s, and the sitemap already lists only the populated ones.
   const gear = await listPublishedGear();
-  return [...new Set(gear.map((g) => g.category.toLowerCase()))].map((category) => ({ category }));
+  const categories = [...new Set(gear.map((g) => g.category.toLowerCase()))];
+  if (categories.length === 0) {
+    return [{ category: "controllers" }];
+  }
+  return categories.map((category) => ({ category }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ category: string }> }): Promise<Metadata> {
