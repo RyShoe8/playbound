@@ -13,7 +13,9 @@ export async function POST() {
     await dbConnect();
 
     const allArtifacts = await Artifact.find({}).lean();
-    const currentArtifacts = await filterCurrentArtifacts(allArtifacts);
+    const currentArtifacts = await filterCurrentArtifacts(allArtifacts, {
+      launcherKeep: "latest",
+    });
     const currentArtifactIds = new Set(currentArtifacts.map((a) => a.artifactId));
 
     const obsoleteArtifactIds = allArtifacts

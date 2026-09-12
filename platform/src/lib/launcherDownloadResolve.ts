@@ -29,14 +29,15 @@ type LauncherArtifact = {
 
 async function findLatestWindowsLauncherArtifact(): Promise<LauncherArtifact | null> {
   await dbConnect();
-  const artifact = await Artifact.findOne({
+  const { pickLatestLauncherArtifact } = await import("@/lib/mirrors/semver");
+  const artifacts = await Artifact.find({
     artifactType: "launcher",
     $or: [
       { artifactId: /^playbound-launcher-windows-/ },
       { filename: /^PlayBound-Setup-.*\.exe$/i },
     ],
-  }).sort({ createdAt: -1 });
-  return artifact;
+  }).lean();
+  return pickLatestLauncherArtifact(artifacts) as LauncherArtifact | null;
 }
 
 /**
