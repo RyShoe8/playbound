@@ -355,8 +355,8 @@ export function hostModeOptions(gameSlug: string): HostModeOption[] {
     {
       mode: "couch" as const,
       available: canUseCouch(gameSlug),
-      label: "Couch co-op",
-      hint: "This game has no online play. It runs on your PC and everyone else uses their phone as a controller — the game sees them as pads plugged into your machine.",
+      label: "Online multiplayer",
+      hint: "Connect online multiplayer for local co-op games: the game runs on your PC; friends join with the link (keyboard & mouse by default, pads optional) ± game view.",
     },
     {
       mode: "dedicated" as const,

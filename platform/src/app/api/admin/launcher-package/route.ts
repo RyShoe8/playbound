@@ -79,7 +79,15 @@ export async function POST(req: Request) {
 
     const archive = await archivedArtifactStatusOnHost(relativePath);
     if (archive?.status !== "verified") {
-      return NextResponse.json({ status: archive?.status || "missing", error: archive?.message || null }, { status: 202 });
+      return NextResponse.json(
+        {
+          status: archive?.status || "missing",
+          error: archive?.message || null,
+          bytesReceived: archive?.bytesReceived ?? 0,
+          sizeBytes: archive?.sizeBytes || input.sizeBytes,
+        },
+        { status: 202 }
+      );
     }
 
     await dbConnect();

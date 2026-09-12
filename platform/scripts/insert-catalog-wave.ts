@@ -490,6 +490,16 @@ async function main() {
     modsPatched++;
   }
 
+  const { partyMaxPlayersBySlug } = await import("../src/lib/data/partyMaxPlayers");
+  let maxPlayersPatched = 0;
+  for (const [slug, maxPlayers] of Object.entries(partyMaxPlayersBySlug)) {
+    const result = await CatalogGame.updateOne({ slug }, { $set: { maxPlayers } });
+    if (result.matchedCount === 1) {
+      maxPlayersPatched++;
+      console.log(`patch game ${slug} fields=[maxPlayers]=${maxPlayers}`);
+    }
+  }
+
   console.log(
     `insert-catalog-wave: games +${gamesCreated}/skip ${gamesSkipped}, ` +
       `editions +${editionsCreated}/skip ${editionsSkipped}, ` +
@@ -497,7 +507,8 @@ async function main() {
       `game-patches ${gamesPatched}/skip ${gamesPatchSkipped}, ` +
       `edition-patches ${editionsPatched}/skip ${editionsPatchSkipped}, ` +
       `editions-retired ${editionsRetired}/skip ${editionsRetireSkipped}, ` +
-      `mod-patches ${modsPatched}/skip ${modsPatchSkipped}`
+      `mod-patches ${modsPatched}/skip ${modsPatchSkipped}, ` +
+      `maxPlayers ${maxPlayersPatched}`
   );
   process.exit(0);
 }

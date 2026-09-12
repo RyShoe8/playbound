@@ -64,7 +64,7 @@ async function renderSettingsView() {
 
     <div class="settings-group">
       <label class="settings-label">Account</label>
-      <p class="settings-hint">Sign in once — installs sync to your playbound.club library automatically.</p>
+      <p class="settings-hint">Sign in opens your browser so an existing playbound.club or Google session can connect without signing in again. Installs then sync automatically.</p>
       <div style="display: flex; gap: 10px; align-items: center;">
         <span class="dot ${state.accountState.connected ? "online" : ""}"></span>
         <span style="font-size: 13px; font-weight: 600;">${
@@ -75,7 +75,12 @@ async function renderSettingsView() {
       </div>
       <div style="margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
         <button class="btn-primary btn-sm" id="set-btn-signin">${state.accountState.connected ? "Switch account" : "Sign in"}</button>
-        ${state.accountState.connected ? '<button class="btn-danger btn-sm" id="set-btn-signout">Sign out</button>' : '<button type="button" class="btn-secondary btn-sm" id="set-btn-forgot">Forgot password</button>'}
+        ${
+          state.accountState.connected
+            ? '<button class="btn-danger btn-sm" id="set-btn-signout">Sign out</button>'
+            : `<button type="button" class="btn-secondary btn-sm" id="set-btn-forgot">Forgot password</button>
+        <p class="settings-hint" style="flex-basis: 100%; margin: 4px 0 0;">Google accounts have no PlayBound password — use Sign in (browser) instead of Forgot password.</p>`
+        }
       </div>
     </div>
 

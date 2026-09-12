@@ -297,7 +297,7 @@ describe("couch mode", () => {
     const ready = couchPayloadFromDoc("streets-of-rage-remake", "couch", {
       status: "ready",
       joinCode: "AB3D",
-      joinUrl: "https://playbound.club/controller/AB3D",
+      joinUrl: "https://playbound.club/c/AB3D",
     });
     expect(ready.enabled).toBe(true);
     expect(ready.joinCode).toBe("AB3D");

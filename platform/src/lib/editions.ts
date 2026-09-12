@@ -408,6 +408,15 @@ function filterRetiredEditions(gameSlug: string, editions: Edition[]): Edition[]
       (e) => e.slug !== "steam" || (e.status === "active" && e.visibility === "public")
     );
   }
+  if (gameSlug === "openra") {
+    /*
+     * OpenE2140 belongs on earth-2140-trilogy. A Mongo/admin row that nested
+     * it under openra made parties force Game.Mod=ra onto OpenE2140.exe.
+     */
+    return editions.filter(
+      (e) => e.slug !== "opene2140" && !/e2140|earth.?2140/i.test(String(e.slug || ""))
+    );
+  }
   return editions;
 }
 

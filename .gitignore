@@ -9,7 +9,7 @@ dist
 build
 holocure-multiplayer-mod/
 
-# Claude Code local settings (machine-specific, not shared)
+# Local IDE settings (machine-specific, not shared)
 .claude/settings.local.json
 
 # ---------------------------------------------------------------------------

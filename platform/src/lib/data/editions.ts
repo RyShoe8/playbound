@@ -1873,7 +1873,7 @@ export const editions: EditionSeed[] = [
           "%PROGRAMFILES(X86)%\\Dune Legacy\\dunelegacy.exe",
           "dunelegacy.exe",
         ],
-        note: "Official standalone Windows installer with bundled Dune II PAK assets — no separate base-game purchase.",
+        note: "Official standalone Windows installer with bundled Dune II PAK assets — no separate base-game purchase. Do not use the GitHub engine-only zip.",
       },
     },
     features: ["Singleplayer", "Multiplayer", "Mod Support", "Modern Controls", "High Resolution"],
@@ -1881,6 +1881,45 @@ export const editions: EditionSeed[] = [
     aliases: ["Dune Legacy Default"],
     verificationLevel: "playbound_verified",
     verificationNote: "SourceForge Windows installer includes PAK data; GitHub zip alone does not.",
+  },
+  {
+    gameSlug: "dune-legacy",
+    slug: "playbound-edition",
+    name: "Dune Legacy — PlayBound Edition",
+    shortDescription: "Same official Windows package as Modern Engine (bundled Dune II PAKs).",
+    description:
+      "PlayBound's labeled edition of Dune Legacy. Installs the official SourceForge Windows package that includes Dune II PAK assets — identical recipe to Modern Engine. Do not use the henricj GitHub engine-only zip.",
+    type: "enhanced",
+    isDefault: false,
+    sortOrder: 20,
+    links: {
+      website: "https://dunelegacy.sourceforge.net/",
+      github: "https://github.com/henricj/dunelegacy",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "direct-installer",
+        url: "https://downloads.sourceforge.net/project/dunelegacy/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.5-Windows-x64.exe",
+        urlMac: "https://downloads.sourceforge.net/project/dunelegacy/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.5-macOS.dmg",
+        urlLinux: "https://downloads.sourceforge.net/project/dunelegacy/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.3-Linux-x64.tar.gz",
+        fileName: "DuneLegacy-0.99.5-Windows-x64.exe",
+        versionLabel: "0.99.5",
+        exeHint: "dunelegacy",
+        knownExePaths: [
+          "%LOCALAPPDATA%\\Programs\\Dune Legacy\\dunelegacy.exe",
+          "%PROGRAMFILES%\\Dune Legacy\\dunelegacy.exe",
+          "%PROGRAMFILES(X86)%\\Dune Legacy\\dunelegacy.exe",
+          "dunelegacy.exe",
+        ],
+        note: "Official standalone Windows installer with bundled Dune II PAK assets — no separate base-game purchase. Do not use the GitHub engine-only zip.",
+      },
+    },
+    features: ["Singleplayer", "Multiplayer", "Mod Support", "Modern Controls", "High Resolution"],
+    tags: ["RTS", "Classic", "Dune", "Open Source"],
+    aliases: ["Dune Legacy PlayBound"],
+    verificationLevel: "playbound_verified",
+    verificationNote: "Same SourceForge installer as modern-engine; fixes the stale 0.99.4 404 URL.",
   },
   {
     gameSlug: "mrboom",
@@ -2071,9 +2110,9 @@ export const editions: EditionSeed[] = [
     slug: "playbound",
     name: "HoloCure: Multiplayer (Experimental)",
     shortDescription:
-      "Online co-op for HoloCure over a shared PlayBound Connect network. No Steam, no port forwarding, no Hamachi to set up yourself. Experimental — expect occasional crashes.",
+      "Online co-op for HoloCure over a shared PlayBound Connect network. No Steam, no port forwarding, no Hamachi to set up yourself. Experimental — expect occasional crashes; stagger level-up weapon picks when possible.",
     description:
-      "Adds PippleCultist's HoloCure Multiplayer Mod to HoloCure — Save the Fans!, so you can run stages co-op with friends. PlayBound installs the Aurie mod loader and the mod for you in one click.\n\nThe mod plays over LAN: one player hosts a session and everyone else finds it on the same network. PlayBound Connect supplies that network. Click Join Game in a party and Connect puts every member on one shared segment, then points HoloCure at it, so a LAN session works across the internet without you configuring anything. In game it is Play → Multiplayer → use the saved network adapter, then Host LAN Session for the leader and Join LAN Session for everyone else.\n\nThis is experimental community software, not an official HoloCure feature. The mod's author notes it may have occasional crashes since a lot is modified in the game to get networking working. Your saves remain completely safe in %LOCALAPPDATA%\\HoloCure and you can switch to unmodded vanilla HoloCure at any time.",
+      "Adds PippleCultist's HoloCure Multiplayer Mod to HoloCure — Save the Fans!, so you can run stages co-op with friends. PlayBound installs the Aurie mod loader and the mod for you in one click.\n\nThe mod plays over LAN: one player hosts a session and everyone else finds it on the same network. PlayBound Connect supplies that network. Click Join Game in a party and Connect puts every member on one shared segment, then points HoloCure at it, so a LAN session works across the internet without you configuring anything. In game it is Play → Multiplayer → use the saved network adapter, then Host LAN Session for the leader and Join LAN Session for everyone else.\n\nThis is experimental community software, not an official HoloCure feature. The mod's author notes it may have occasional crashes since a lot is modified in the game to get networking working. Known rough edges: controller navigation can fail in some multiplayer menus (use mouse/keyboard for lobby and level-up picks if the pad stops responding); simultaneous weapon upgrades have historically crashed the host — PlayBound ships a patched multiplayer DLL when available, and staggering level-ups still helps. Your saves remain completely safe in %LOCALAPPDATA%\\HoloCure and you can switch to unmodded vanilla HoloCure at any time.",
     type: "community",
     // Deliberately NOT the default. The mod is self-described as crash-prone,
     // so the vanilla edition stays the one-click path for anyone who just
@@ -2172,9 +2211,18 @@ export const editions: EditionSeed[] = [
               dest: "mods",
             },
             {
+              /*
+               * Upstream v1.4.1 until PlayBound builds/uploads
+               * HolocureMultiplayerMod-1.4.2-playbound.1.dll (see
+               * holocure-multiplayer-mod/PLAYBOUND_PATCHES.md). When that
+               * artifact is live, switch `url` to the mirror and set
+               * version to "1.4.2-playbound.1" so ensureEditionMods replaces
+               * existing installs via the .pbversion marker.
+               */
               url: "https://github.com/PippleCultist/HoloCureMultiplayerMod/releases/download/v1.4.1/HolocureMultiplayerMod.dll",
               fileName: "HolocureMultiplayerMod.dll",
               dest: "mods/Aurie",
+              version: "1.4.1",
             },
             {
               url: "https://github.com/PippleCultist/HoloCureMultiplayerMod/releases/download/v1.4.1/HoloCureMenuMod.dll",
@@ -2232,7 +2280,15 @@ export const editions: EditionSeed[] = [
     faq: [
       {
         q: "What is included in the HoloCure PlayBound Edition?",
-        a: "The PlayBound Edition packages verified community mods into a single one-click install: online co-op Multiplayer, full Sandbox/testing mode, community Character Expansions, Discord Rich Presence, and QoL utilities (random character picker & quick restarts).",
+        a: "One-click install of PippleCultist's multiplayer mod (Aurie + YYToolkit + HolocureMultiplayerMod + MenuMod + CallbackManager + emotes) over PlayBound Connect virtual LAN. Sandbox / character-expansion packs listed in older copy are not part of this recipe unless you add them separately from Mods.",
+      },
+      {
+        q: "Controller does not work in every multiplayer menu — why?",
+        a: "Vanilla HoloCure has native pad support, but after Play → Multiplayer some lobby and level-up menus only partially accept the controller (a known mod limitation). Use mouse or keyboard for those screens; in-stage twin-stick play usually still works. Emotes: Y to open, right stick to select, A to confirm.",
+      },
+      {
+        q: "The host crashed when we all upgraded weapons — is that PlayBound?",
+        a: "That class of crash is inside the multiplayer mod's level-up sync (upstream issue #57), not PlayBound Connect. Prefer staggering weapon upgrades when you can. PlayBound ships a patched HolocureMultiplayerMod build when available; switch to Official Vanilla for stable single-player.",
       },
       {
         q: "Can I install these mods individually?",
@@ -4415,6 +4471,7 @@ export const editions: EditionSeed[] = [
         repo: "OpenE2140/OpenE2140",
         assetPattern: "OpenE2140-.*-x64-winportable\\.zip$",
         exeHint: "OpenE2140",
+        connectArgs: ["Game.Mod=e2140", "Launch.Connect={host}:{port}"],
         note: "Requires Earth 2140 Trilogy game files (GOG). Locate the GOG install, then PlayBound overlays the OpenE2140 portable build.",
       },
     },

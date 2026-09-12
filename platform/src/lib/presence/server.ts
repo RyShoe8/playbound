@@ -253,6 +253,23 @@ export async function heartbeat(ctx: PresenceContext, update: PresenceUpdate) {
     { upsert: true }
   );
 
+  const effectiveStatus =
+    (set.status as string | undefined) ||
+    (preserve ? existing?.status : undefined) ||
+    update.status ||
+    null;
+
+  // Only bump parties when the client is actually in a match. An idle
+  // "online" launcher tab must not keep abandoned forming parties forever.
+  if (effectiveStatus === "playing") {
+    try {
+      const { touchPartyActivityFromPresence } = await import("@/lib/playTogether/party");
+      await touchPartyActivityFromPresence(ctx.userId, "playing");
+    } catch (err) {
+      console.warn("[presence] party activity touch failed:", err instanceof Error ? err.message : err);
+    }
+  }
+
   if (update.sessionId) {
     await PlatformSession.updateOne(
       { sessionId: update.sessionId, userId: ctx.userId, status: "active" },

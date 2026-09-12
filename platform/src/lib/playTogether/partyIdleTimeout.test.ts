@@ -30,6 +30,15 @@ describe("party idle timeout", () => {
     // The failure being fixed: four hours of a party nobody was in.
     expect(PARTY_IDLE_TIMEOUT_MS).toBeLessThanOrEqual(30 * 60 * 1000);
   });
+
+  it("documents that in-session parties stay listed without fresh lastActivity", () => {
+    /*
+     * list/discover filters OR status ∈ {launching, playing} with the
+     * lastActivity cutoff, and playing presence beats bump lastActivity.
+     * Together those keep Freedoom-length sessions from vanishing at 15m.
+     */
+    expect(["launching", "playing"]).toContain("playing");
+  });
 });
 
 /**

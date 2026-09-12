@@ -22,6 +22,7 @@ const {
   arbiterLaunchArgs,
   hasArbiterLaunch,
   clientConnectArgs,
+  openRaModName,
 } = require("./connectArgs");
 
 test("a templated pair contributes nothing to a plain launch", () => {
@@ -134,6 +135,16 @@ test("openra join substitutes the target mod and address", () => {
       "dune-2000"
     ),
     ["Game.Mod=d2k", "Launch.Connect=147.93.133.235:1234"]
+  );
+  assert.equal(openRaModName("opene2140"), "e2140");
+  assert.equal(openRaModName("earth-2140-trilogy"), "e2140");
+  assert.deepEqual(
+    applyConnectTemplates(
+      CLIENT_CONNECT_ARGS["earth-2140-trilogy"],
+      { host: "10.0.0.1", port: 1234 },
+      "opene2140"
+    ),
+    ["Game.Mod=e2140", "Launch.Connect=10.0.0.1:1234"]
   );
 });
 

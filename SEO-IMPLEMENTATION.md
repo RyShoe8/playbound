@@ -102,7 +102,7 @@ Homepage `H1` changed from the rotating hero game title to a descriptive heading
 
 ---
 
-## AI-facing surfaces
+## Machine-readable surfaces
 
 - **`/llms.txt`** — generated from the live catalog: the five criteria, every game with its verdict and verification date, the Weekly archive, collections, alternatives, comparisons, plus a citation note asking for the verification date to be included.
 - **`/games/{slug}.md`** — chrome-free markdown mirror of every game page. Rewritten in `next.config.ts` to `/games/[slug]/markdown`, since Next route segments must be wholly dynamic.

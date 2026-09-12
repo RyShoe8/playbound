@@ -3,6 +3,7 @@ import { CADENCE } from "../cadence.js";
 import { pollSuspended } from "../pollGate.js";
 import { maybeOfferPhoneControllerThenPlay } from "../phoneController.js";
 import { ensureCouchBackground, startCouchSessionQuiet } from "./couch.js";
+import { ensureHostDisplayStream } from "../hostDisplayStream.js";
 import { maybeShowLaunchGuidance } from "../guidanceModal.js";
 import {
   api,
@@ -1470,7 +1471,17 @@ async function ensurePartyGames() {
     .filter((g) => g.isMultiplayer ?? g.multiplayer ?? false)
     .filter((g) => g.kind !== "external")
     .filter((g) => filterByCompatibility([g]).length > 0)
-    .map((g) => ({ slug: g.slug, title: g.title || g.slug, kind: g.kind, url: g.url }))
+    .map((g) => ({
+      slug: g.slug,
+      title: g.title || g.slug,
+      kind: g.kind,
+      url: g.url,
+      status: g.status || (g.testing ? "testing" : "published"),
+      testing: Boolean(g.testing || g.status === "testing"),
+      maxPlayers: typeof g.maxPlayers === "number" ? g.maxPlayers : null,
+      platforms: Array.isArray(g.platforms) ? g.platforms : [],
+      browserPlayable: Boolean(g.browserPlayable),
+    }))
     .sort((a, b) => a.title.localeCompare(b.title));
   partyGamesCacheKey = cacheKey;
   return partyGamesCache;
@@ -1498,11 +1509,26 @@ function partyCanAllPlay(game, requiredPlatforms) {
   return requiredPlatforms.every((p) => supported.has(p));
 }
 
+/** Matches platform fitsPartySize — unknown capacity defaults to 8. */
+function fitsPartySize(maxPlayers, memberCount) {
+  const seats = typeof maxPlayers === "number" && maxPlayers > 0 ? maxPlayers : 8;
+  const need = Math.max(1, Number(memberCount) || 1);
+  return seats >= need;
+}
+
+function partyGameOptionLabel(title, { testing = false, couch = false } = {}) {
+  let label = title;
+  if (testing) label = `${label} (testing)`;
+  if (couch) label = `${label} (couch co-op)`;
+  return label;
+}
+
 function partyGameOptionsHtml(selectedSlug, party) {
   const required = Array.isArray(party?.requiredPlatforms) ? party.requiredPlatforms : [];
-  const games = filterByDiscovery(partyGamesCache || []).filter((g) =>
-    partyCanAllPlay(g, required)
-  );
+  const memberCount = Array.isArray(party?.members) ? party.members.length : 1;
+  const games = filterByDiscovery(partyGamesCache || [])
+    .filter((g) => partyCanAllPlay(g, required))
+    .filter((g) => fitsPartySize(g.maxPlayers, memberCount));
   /*
    * Marked in the list, not after the fact. These games have no online play at
    * all, and a leader who picked one expecting a server had already committed
@@ -1513,7 +1539,10 @@ function partyGameOptionsHtml(selectedSlug, party) {
   const couchOnly = new Set(party?.couchOnlyGames || []);
   const options = [`<option value="">Select a game</option>`];
   for (const g of games) {
-    const label = couchOnly.has(g.slug) ? `${g.title} (couch co-op)` : g.title;
+    const label = partyGameOptionLabel(g.title, {
+      testing: Boolean(g.testing || g.status === "testing"),
+      couch: couchOnly.has(g.slug),
+    });
     options.push(
       `<option value="${escapeHtml(g.slug)}"${g.slug === selectedSlug ? " selected" : ""}>${escapeHtml(
         label
@@ -1570,9 +1599,9 @@ function buildPartyViewHtml(party) {
   const hosted = party.hosted || {};
   const lan = party.lan || {};
   /*
-   * Couch games have no networking, so there is one running copy and it is the
-   * leader's. Members join by opening the controller link on a phone, which is
-   * why they get no Join Game at all here rather than a disabled one.
+   * Local-co-op online: one running copy on the leader's PC. Members join with
+   * the controller link (pads ± game view), not a second game launch — so they
+   * do not get Join Game here the way a normal online title would.
    */
   const couch = party.couch || {};
   const isPeerOrLan = !hosted.enabled || lan.enabled;
@@ -1642,27 +1671,46 @@ function buildPartyViewHtml(party) {
         )} — everyone in this party has to be able to play.</p>`
       : "";
 
+  const openRaStockMod =
+    !party.editionSlug || party.editionSlug === "official" || party.editionSlug === "__base__";
+  const openRaModLabel =
+    party.openRaMod === "cnc"
+      ? "Tiberian Dawn"
+      : party.openRaMod === "d2k"
+        ? "Dune 2000"
+        : "Red Alert (default)";
+  const openRaEditionLabel = party.editionSlug
+    ? party.editionSlug === "official"
+      ? "OpenRA (Official)"
+      : party.editionSlug
+    : "OpenRA (Official)";
   const openRaModHtml =
     party.gameSlug === "openra"
       ? isLeader && !ended
         ? `<div class="party-field-group" style="margin-top: 8px;">
-             <label class="party-field-label" for="party-openra-mod-select">OpenRA Mod / Game</label>
+             <label class="party-field-label" for="party-openra-edition-select">Edition</label>
+             <select class="input-text party-openra-edition-select" id="party-openra-edition-select" aria-label="OpenRA edition" data-party-id="${escapeHtml(
+               party.id
+             )}" data-selected="${escapeHtml(party.editionSlug || "official")}">
+               <option value="official"${
+                 !party.editionSlug || party.editionSlug === "official" ? " selected" : ""
+               }>OpenRA (Official)</option>
+             </select>
+           </div>${
+             openRaStockMod
+               ? `<div class="party-field-group" style="margin-top: 8px;">
+             <label class="party-field-label" for="party-openra-mod-select">Mod / Game</label>
              <select class="input-text party-openra-mod-select" id="party-openra-mod-select" aria-label="OpenRA Mod">
                <option value=""${!party.openRaMod || party.openRaMod === "ra" ? " selected" : ""}>Red Alert (default)</option>
                <option value="cnc"${party.openRaMod === "cnc" ? " selected" : ""}>Tiberian Dawn</option>
                <option value="d2k"${party.openRaMod === "d2k" ? " selected" : ""}>Dune 2000</option>
-               <option value="ts"${party.openRaMod === "ts" ? " selected" : ""}>Tiberian Sun</option>
              </select>
            </div>`
-        : `<p class="party-game-platform-note" style="margin-top: 4px;">Game: ${escapeHtml(
-            party.openRaMod === "cnc"
-              ? "Tiberian Dawn"
-              : party.openRaMod === "d2k"
-              ? "Dune 2000"
-              : party.openRaMod === "ts"
-              ? "Tiberian Sun"
-              : "Red Alert (default)"
-          )}</p>`
+               : ""
+           }`
+        : `<p class="party-game-platform-note" style="margin-top: 4px;">Edition: ${escapeHtml(
+            openRaEditionLabel
+          )}${openRaStockMod ? ` · Mod: ${escapeHtml(openRaModLabel)}` : ""}</p>`
       : "";
 
   /*
@@ -1673,10 +1721,15 @@ function buildPartyViewHtml(party) {
    * picker hides itself when there is only one mode to pick.
    */
   const couchBadgeHtml = couch.enabled
-    ? `<p class="party-couch-badge">Couch co-op · no online play</p>
-       <p class="party-game-platform-note">Runs on ${escapeHtml(
-         isLeader ? "your PC" : `${party.leaderUsername || "the host"}'s PC`
-       )}. Everyone else plays on it with their phone as a controller.</p>`
+    ? `<p class="party-couch-badge">${escapeHtml(
+        (actions && actions.couch && actions.couch.badge) || "Online multiplayer · Connect"
+      )}</p>
+       <p class="party-game-platform-note">${escapeHtml(
+         (actions && actions.couch && actions.couch.where) ||
+           (isLeader
+             ? "Online multiplayer on your PC — friends join with a controller link."
+             : `Online multiplayer on ${party.leaderUsername || "the host"}'s PC — join with a controller link.`)
+       )}</p>`
     : "";
 
   const gameHtml = isLeader && !ended
@@ -1863,7 +1916,7 @@ function buildPartyViewHtml(party) {
   const hurryCurryAddr = isHurryCurry && hostedAddr ? `ws://${hostedAddr}` : hostedAddr;
   const copyAddr = isHurryCurry ? hurryCurryAddr : hostedAddr;
   const hostedReadyHtml =
-    hosted.enabled && hosted.status === "ready" && hostedAddr
+    party.hostMode !== "public" && hosted.enabled && hosted.status === "ready" && hostedAddr
       ? `<div class="party-server-info">
            <span class="party-server-label">Server IP:</span>
            <span class="party-server-addr-val">${escapeHtml(copyAddr)}</span>
@@ -1883,6 +1936,13 @@ function buildPartyViewHtml(party) {
              publicAddr
            )}" title="Click to copy server IP">Copy IP</button>
          </div>`
+      : "";
+
+  const selfHostUnlockHtml =
+    isLeader && party.hostMode === "self" && !party.selfHostReady && inFlight
+      ? `<button type="button" id="btn-party-mark-ready" class="party-btn btn-secondary" data-party-id="${escapeHtml(
+          party.id
+        )}" title="Click once your server is started in-game to let friends join">${ICON.check} Mark Server Ready</button>`
       : "";
 
   /*
@@ -1919,8 +1979,8 @@ function buildPartyViewHtml(party) {
       : "";
 
   /*
-   * The one thing a couch party needs on screen: where to point a phone. The
-   * leader's launcher publishes the code when it starts the session, so until
+   * The one thing a couch party needs on screen: the join link for remotes.
+   * The leader's launcher publishes the code when it starts the session, so until
    * then members are told what is about to happen rather than shown nothing.
    */
   // Code, link and the what-happens-next line all come from actions.couch.
@@ -1929,12 +1989,18 @@ function buildPartyViewHtml(party) {
     ? ""
     : couchPanel.status === "ready" && couchPanel.joinCode
     ? `<div class="party-couch">
-         <p class="party-section-label">Phone controllers</p>
+         <p class="party-section-label">Join online</p>
          <p class="party-couch-code">Code <strong>${escapeHtml(String(couchPanel.joinCode))}</strong></p>
-         <p class="view-sub">Open <strong>${escapeHtml(couchPanel.joinUrl || "")}</strong> on your phone. It becomes a controller plugged into the host's PC.</p>
-         <button type="button" id="btn-party-couch-copy" class="party-btn btn-secondary" data-url="${escapeHtml(
-           couchPanel.joinUrl || ""
-         )}">${ICON.phone} Copy controller link</button>
+         <img class="party-couch-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
+           couchPanel.joinUrl || `https://playbound.club/c/${couchPanel.joinCode}`
+         )}" alt="Scan to join" width="160" height="160" />
+         <p class="view-sub">Scan the QR, or open <strong>playbound.club/c</strong> and enter the code. Keyboard &amp; mouse by default; pads optional.</p>
+         <button type="button" id="btn-party-couch-copy" class="party-btn btn-secondary" data-code="${escapeHtml(
+           String(couchPanel.joinCode)
+         )}">${ICON.phone} Copy code</button>
+         <button type="button" id="btn-party-couch-open" class="party-btn btn-primary" data-url="${escapeHtml(
+           couchPanel.joinUrl || `https://playbound.club/c/${couchPanel.joinCode}`
+         )}">${ICON.phone} Open controller</button>
        </div>`
     : `<p class="${
         couchPanel.status === "failed"
@@ -1998,6 +2064,7 @@ function buildPartyViewHtml(party) {
           <div class="party-actions-group">
             ${readyHtml}
             ${joinGameHtml}
+            ${selfHostUnlockHtml}
             ${hostedReadyHtml}
             ${publicReadyHtml}
             ${(actions ? actions.notes : [])
@@ -2352,6 +2419,36 @@ async function fillPartyEditionPickers(slot, party) {
       console.warn("fillPartyEditionPickers:", err);
       el.innerHTML = `<span class="party-member-sub">Couldn't load editions.</span>`;
     }
+  }
+}
+
+/** Populate the OpenRA host Edition select from catalog (Official + CA + TD HD + RA2…). */
+async function fillPartyOpenRaEditionSelect(slot, party) {
+  const select = slot.querySelector("#party-openra-edition-select");
+  if (!select || !window.playbound.getEditions || party?.gameSlug !== "openra") return;
+  try {
+    const res = await window.playbound.getEditions("openra");
+    const all = Array.isArray(res?.editions) ? res.editions : [];
+    const list = all.filter((ed) => {
+      const slug = String(ed.editionSlug || ed.slug || "").toLowerCase();
+      // Misparented OpenE2140 must never appear under OpenRA parties.
+      return slug && slug !== "opene2140" && !/e2140|earth.?2140/i.test(slug);
+    });
+    if (!list.length) return;
+    const selected = String(select.dataset.selected || party.editionSlug || "official");
+    select.innerHTML = list
+      .map((ed) => {
+        const slug = ed.editionSlug || ed.slug;
+        const name = ed.editionName || ed.name || slug;
+        const isSel =
+          selected === slug || ((!selected || selected === "official") && slug === "official");
+        return `<option value="${escapeHtml(slug)}"${isSel ? " selected" : ""}>${escapeHtml(
+          name
+        )}</option>`;
+      })
+      .join("");
+  } catch (err) {
+    console.warn("fillPartyOpenRaEditionSelect:", err);
   }
 }
 
@@ -2856,8 +2953,7 @@ function wirePartyView(slot, party) {
       const val = openRaModSelect.value || null;
       partyMutationInFlight += 1;
       try {
-        const res = await (window.playbound.setPartyOpenRaMod?.(partyId, val) ??
-          window.playbound.setPartyEdition?.(partyId, val));
+        const res = await window.playbound.setPartyOpenRaMod?.(partyId, val);
         partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
         applyPartyResult(res, "Couldn't change OpenRA game mode.");
         void api.refreshFriendsData();
@@ -2868,6 +2964,25 @@ function wirePartyView(slot, party) {
       }
     });
     enhanceSelect(openRaModSelect);
+  }
+
+  const openRaEditionSelect = slot.querySelector("#party-openra-edition-select");
+  if (openRaEditionSelect) {
+    openRaEditionSelect.addEventListener("change", async () => {
+      const val = openRaEditionSelect.value || "official";
+      partyMutationInFlight += 1;
+      try {
+        const res = await window.playbound.setPartyEdition?.(partyId, val);
+        partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
+        applyPartyResult(res, "Couldn't change OpenRA edition.");
+        void api.refreshFriendsData();
+      } catch (err) {
+        partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
+        setStatus(err.message || "Couldn't change OpenRA edition.", true);
+        void api.refreshFriendsData();
+      }
+    });
+    enhanceSelect(openRaEditionSelect);
   }
 
   const hostModeSelect = slot.querySelector("#party-hostmode-select");
@@ -2946,6 +3061,7 @@ function wirePartyView(slot, party) {
   });
 
   void fillPartyEditionPickers(slot, party);
+  void fillPartyOpenRaEditionSelect(slot, party);
   void fillPartyOnlineCount(slot);
   void fillPartyPublicServerPicker(slot);
 
@@ -2964,6 +3080,24 @@ function wirePartyView(slot, party) {
      */
     const attemptJoin = async () => {
       if (joinInFlight) return;
+      /*
+       * Online local-co-op: members join by opening the controller link, not by
+       * launching a second copy of the game on their PC.
+       */
+      const couch = party.couch || {};
+      if (couch.enabled && !isLeader) {
+        const url =
+          couch.joinUrl ||
+          (couch.joinCode ? `https://playbound.club/c/${couch.joinCode}` : "");
+        if (!url) {
+          setStatus("Waiting for the host to start online multiplayer…");
+          return;
+        }
+        if (window.playbound.openExternal) window.playbound.openExternal(url);
+        else window.open(url, "_blank", "noopener,noreferrer");
+        setStatus("Opened join link — use your controller (game view streams when the host shares).");
+        return;
+      }
       joinInFlight = true;
       joinGameBtn.disabled = true;
       try {
@@ -3041,13 +3175,39 @@ function wirePartyView(slot, party) {
     }
   }
 
+  const markReadyBtn = slot.querySelector("#btn-party-mark-ready");
+  if (markReadyBtn) {
+    markReadyBtn.addEventListener("click", async () => {
+      markReadyBtn.disabled = true;
+      markReadyBtn.textContent = "Marking ready…";
+      const res = await window.playbound.markSelfHostReady?.(partyId);
+      if (res?.error) {
+        markReadyBtn.disabled = false;
+        markReadyBtn.textContent = "Mark Server Ready";
+        setStatus(res.error, true);
+      } else {
+        setStatus("Server marked ready — party members can join now.");
+        void api.refreshFriendsData();
+      }
+    });
+  }
+
   const couchCopyBtn = slot.querySelector("#btn-party-couch-copy");
   if (couchCopyBtn) {
     couchCopyBtn.addEventListener("click", () => {
-      const url = couchCopyBtn.dataset.url || "";
+      const code = couchCopyBtn.dataset.code || "";
+      if (!code) return;
+      void window.playbound.clipboardWrite?.(code);
+      setStatus("Copied code — phones open playbound.club/c and enter it (or scan the QR).");
+    });
+  }
+  const couchOpenBtn = slot.querySelector("#btn-party-couch-open");
+  if (couchOpenBtn) {
+    couchOpenBtn.addEventListener("click", () => {
+      const url = couchOpenBtn.dataset.url || "";
       if (!url) return;
-      void window.playbound.clipboardWrite?.(url);
-      setStatus("Controller link copied");
+      if (window.playbound.openExternal) window.playbound.openExternal(url);
+      else window.open(url, "_blank", "noopener,noreferrer");
     });
   }
 
@@ -3305,13 +3465,11 @@ async function isGameReadyToPlay(slug) {
 }
 
 /**
- * Start phone controllers for a couch party and publish the code to it.
+ * Start online multiplayer controllers for a couch party and publish the code.
  *
- * Only the leader reaches this — members have no Join Game in couch mode —
- * because the session belongs to the machine actually running the game. A
- * failure is published too rather than thrown: the game still launches and
- * plays fine on one pad, and the party card can say why the phones did not
- * appear instead of the members watching a panel that never fills in.
+ * Only the leader reaches this — members Join online via the controller link —
+ * because the session belongs to the machine running the game. Also starts host
+ * display capture (best-effort) so remotes can receive the game view over WebRTC.
  */
 async function maybeStartPartyCouch(partyId, party) {
   if (!party?.couch?.enabled) return;
@@ -3326,9 +3484,13 @@ async function maybeStartPartyCouch(partyId, party) {
     const state = await startCouchSessionQuiet();
     const session = state?.session;
     if (!state?.active || !session?.joinCode) {
-      throw new Error("Could not start phone controllers.");
+      throw new Error("Could not start online controllers.");
     }
     ensureCouchBackground();
+    // Best-effort: share host screen for remote game view (pads still work if declined).
+    void ensureHostDisplayStream().then((stream) => {
+      if (stream) setStatus("Sharing game view for online multiplayer…");
+    });
     await window.playbound.setPartyCouchSession(partyId, {
       joinCode: session.joinCode,
       joinUrl: session.joinUrl || "",
@@ -3336,7 +3498,7 @@ async function maybeStartPartyCouch(partyId, party) {
   } catch (err) {
     await window.playbound
       .setPartyCouchSession(partyId, {
-        error: err.message || "Could not start phone controllers.",
+        error: err.message || "Could not start online controllers.",
       })
       .catch(() => {});
   }
@@ -3669,7 +3831,15 @@ async function launchPartyGame(party) {
           };
           localServerStarted = true;
         }
-        const res = await window.playbound.play(slug, launchConnect, edition);
+        const res = await window.playbound.play(
+          slug,
+          launchConnect && typeof launchConnect === "object"
+            ? { ...launchConnect, mod: party.openRaMod || undefined }
+            : party.openRaMod
+              ? { mod: party.openRaMod }
+              : launchConnect,
+          edition
+        );
         startGameSession(slug, party.gameTitle || slug);
         if (isLeader && party.hostMode === "self") {
           /*
@@ -3700,7 +3870,21 @@ async function launchPartyGame(party) {
             const listenPort = Number(
               party.port || catalogGame?.port || connectMeta.defaultPort || 0
             );
-            if (listenPort > 0 && connectMeta.protocol !== "udp") {
+            if (connectMeta.protocol === "udp" || connectMeta.protocol === "both") {
+              /*
+               * UDP sockets cannot accept TCP handshakes, so TCP-based probeLocalServer
+               * always fails for UDP games (e.g. Re-Volt, SuperTuxKart). Once the leader's
+               * game process has launched, mark self-host ready after a brief delay so
+               * party members can join.
+               */
+              setTimeout(async () => {
+                const res = await window.playbound.markSelfHostReady?.(party.id);
+                if (!res?.error) {
+                  setStatus("Server ready — party members can join now.");
+                  void api.refreshFriendsData();
+                }
+              }, 1500);
+            } else if (listenPort > 0) {
               void reportSelfHostWhenListening(party, listenPort);
               setStatus("Game launched — start the server in-game. Party members will unlock automatically.");
             }

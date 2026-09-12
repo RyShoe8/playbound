@@ -14,7 +14,7 @@ type Json = Record<string, unknown>;
 /**
  * Renders a JSON-LD block. Uses a plain <script> tag rather than next/script
  * because structured data must be present in the initial server-rendered HTML —
- * most AI crawlers do not execute JavaScript.
+ * most web crawlers do not execute JavaScript.
  */
 export function JsonLd({ data }: { data: Json | Json[] }) {
   return (

@@ -11,6 +11,8 @@
  * a party can play, the same way host modes are.
  */
 
+import { PARTY_MAX_SIZE } from "@/lib/playTogether/types";
+
 /** Presence OS values that correspond to a desktop platform we ship games for. */
 const OS_TO_PLATFORM: Record<string, string> = {
   windows: "windows",
@@ -70,6 +72,33 @@ export function gamePlayableByAll(
   if (supported.has("web")) return true;
 
   return requiredPlatforms.every((platform) => supported.has(platform));
+}
+
+/**
+ * Whether a game can seat this many party members.
+ *
+ * Unknown capacity defaults to PARTY_MAX_SIZE so the picker does not empty
+ * before maxPlayers is curated. Explicit low values (e.g. 2) hide the game
+ * from larger parties.
+ */
+export function fitsPartySize(
+  maxPlayers: number | null | undefined,
+  memberCount: number
+): boolean {
+  const seats = typeof maxPlayers === "number" && maxPlayers > 0 ? maxPlayers : PARTY_MAX_SIZE;
+  const need = Math.max(1, Number(memberCount) || 1);
+  return seats >= need;
+}
+
+/** Option label for the party game picker (testing + couch suffixes). */
+export function partyGameOptionLabel(
+  title: string,
+  opts: { testing?: boolean; couch?: boolean } = {}
+): string {
+  let label = title;
+  if (opts.testing) label = `${label} (testing)`;
+  if (opts.couch) label = `${label} (couch co-op)`;
+  return label;
 }
 
 /** Filter a game list down to what the whole party can run. */

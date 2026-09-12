@@ -1,7 +1,7 @@
 /**
  * Head-to-head comparison pages.
  *
- * Research showed AI assistants answer "X vs Y" questions in this niche by
+ * Research showed search engines answer "X vs Y" questions in this niche by
  * stitching together forum threads and project FAQs, because no page presents
  * an actual comparison. This is the least-defended surface in the space.
  */

@@ -229,7 +229,7 @@ export async function joinCouchSession(
     controllerToken: randomToken(16),
     sessionToken: null,
     label: (params.label || "Phone").slice(0, 64),
-    profile: (params.profile || "touch-gamepad").slice(0, 40),
+    profile: (params.profile || "keyboard-mouse").slice(0, 40),
     status: "pending",
     playerSlot: null,
     createdAt: now,

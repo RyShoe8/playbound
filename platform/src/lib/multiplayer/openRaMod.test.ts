@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
-import { openRaModFor } from "./openRaMod";
+import { openRaEditionAllowsStockModPicker, openRaModFor } from "./openRaMod";
 
 /**
  * The client's mod must match the server's.
@@ -26,6 +26,19 @@ describe("mod resolution", () => {
     expect(openRaModFor("combined-arms")).toBe("ca");
     expect(openRaModFor("openhv")).toBe("hv");
     expect(openRaModFor("ra2")).toBe("ra2");
+    expect(openRaModFor("opene2140")).toBe("e2140");
+    expect(openRaModFor("e2140")).toBe("e2140");
+    expect(openRaModFor("earth-2140-trilogy")).toBe("e2140");
+  });
+
+  it("only shows the stock mod picker on Official", () => {
+    expect(openRaEditionAllowsStockModPicker(null)).toBe(true);
+    expect(openRaEditionAllowsStockModPicker("")).toBe(true);
+    expect(openRaEditionAllowsStockModPicker("official")).toBe(true);
+    expect(openRaEditionAllowsStockModPicker("combined-arms")).toBe(false);
+    expect(openRaEditionAllowsStockModPicker("ra2")).toBe(false);
+    expect(openRaEditionAllowsStockModPicker("tiberian-dawn-hd")).toBe(false);
+    expect(openRaEditionAllowsStockModPicker("opene2140")).toBe(false);
   });
 });
 
@@ -43,12 +56,15 @@ describe("agreement with the host agent", () => {
     const body = fn![1];
 
     // Same branches, same order, same defaults.
+    expect(body).toMatch(/includes\("e2140"\)/);
+    expect(body).toMatch(/includes\("opene2140"\)/);
     expect(body).toMatch(/includes\("cnc"\)/);
     expect(body).toMatch(/includes\("tiberian"\)/);
     expect(body).toMatch(/=== "td"/);
     expect(body).toMatch(/includes\("d2k"\)/);
     expect(body).toMatch(/includes\("dune"\)/);
     expect(body).toMatch(/return "ra";/);
+    expect(AGENT).toMatch(/function resolveOpenRaServerMod/);
   });
 
   it("keeps our copy matching the agent's tiberian quirk", () => {

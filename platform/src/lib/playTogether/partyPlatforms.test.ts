@@ -1,10 +1,13 @@
 import { describe, it, expect } from "vitest";
 import {
   filterGamesForParty,
+  fitsPartySize,
   gamePlayableByAll,
   normalizePlatform,
+  partyGameOptionLabel,
   requiredPlatformsFor,
 } from "./partyPlatforms";
+import { PARTY_MAX_SIZE } from "./types";
 
 const windowsOnly = { platforms: ["Windows"] };
 const crossPlatform = { platforms: ["Windows", "macOS", "Linux"] };
@@ -83,5 +86,26 @@ describe("party platform filtering", () => {
     const games = [windowsOnly, crossPlatform, linuxOnly, browserGame];
     const kept = filterGamesForParty(games, ["windows", "linux"]);
     expect(kept).toEqual([crossPlatform, browserGame]);
+  });
+});
+
+describe("party size seating", () => {
+  it("hides games that cannot seat the party", () => {
+    expect(fitsPartySize(2, 3)).toBe(false);
+    expect(fitsPartySize(4, 3)).toBe(true);
+    expect(fitsPartySize(2, 2)).toBe(true);
+  });
+
+  it("defaults unknown capacity to the structural party max", () => {
+    expect(fitsPartySize(null, PARTY_MAX_SIZE)).toBe(true);
+    expect(fitsPartySize(undefined, PARTY_MAX_SIZE + 1)).toBe(false);
+  });
+
+  it("labels testing and couch options", () => {
+    expect(partyGameOptionLabel("OpenHV", { testing: true })).toBe("OpenHV (testing)");
+    expect(partyGameOptionLabel("Lovers", { couch: true })).toBe("Lovers (couch co-op)");
+    expect(partyGameOptionLabel("OpenHV", { testing: true, couch: true })).toBe(
+      "OpenHV (testing) (couch co-op)"
+    );
   });
 });

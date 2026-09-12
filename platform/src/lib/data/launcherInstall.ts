@@ -54,6 +54,8 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     url: "https://mirror.playbound.club/games/goldeneye-source/5.0.6/GoldenEye_Source_v5.0.6_full.exe",
     fileName: "GoldenEye_Source_v5.0.6_full.exe",
     versionLabel: "5.0.6",
+    // hl2 is Source SDK Base 2007 — gesource_run is only a handoff stub.
+    exeHint: "hl2|gesource_run",
     knownExePaths: [
       "%PROGRAMFILES(X86)%\\Steam\\steamapps\\sourcemods\\gesource\\gesource_run.exe",
       "%PROGRAMFILES(X86)%\\Steam\\steamapps\\sourcemods\\gesource_run.exe",
@@ -62,7 +64,8 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     ],
     connectArgs: ["+connect", "{host}:{port}"],
     steamPrerequisites: [{ appId: "218", name: "Source SDK Base 2007" }],
-    note: "Installs Source SDK Base 2007 through Steam first, then runs the official GoldenEye: Source setup.",
+    note:
+      "Requires Steam. PlayBound installs Source SDK Base 2007, then the official GoldenEye: Source setup into Steam's sourcemods folder. There is no standalone non-Steam install — Play launches via Steam (-applaunch 218).",
   },
   "volleyball-legends": {
     enabled: true,
@@ -95,7 +98,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
       "%PROGRAMFILES(X86)%\\Dune Legacy\\dunelegacy.exe",
       "dunelegacy.exe",
     ],
-    note: "Official standalone Windows installer with bundled Dune II PAK assets.",
+    note: "Official standalone Windows installer with bundled Dune II PAK assets. Do not use the GitHub engine-only zip.",
   },
   "c-dogs-retrarch": {
     enabled: true,

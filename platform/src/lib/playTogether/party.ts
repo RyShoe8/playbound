@@ -37,6 +37,7 @@ import {
   normalizePartyName,
   OPENRA_MODS,
 } from "@/lib/playTogether/types";
+import { openRaEditionAllowsStockModPicker } from "@/lib/multiplayer/openRaMod";
 import { STALE_AFTER_MS } from "@/lib/presence/types";
 import { sharedCacheGet, sharedCacheSet } from "@/lib/realtime/sharedCache";
 import { trackPartyEvent, trackPartyFailure } from "@/lib/playTogether/partyTelemetry";
@@ -479,7 +480,7 @@ async function findActiveLeaderParty(userId: string) {
   return Party.findOne({
     leaderId: matchUser,
     status: { $nin: ["ended"] },
-    lastActivity: { $gte: cutoff },
+    $or: [{ lastActivity: { $gte: cutoff } }, { status: { $in: ["launching", "playing"] } }],
   }).lean();
 }
 
@@ -490,8 +491,8 @@ function activePartyFilterForUser(userId: string, keepPartyId?: string) {
   const matchUser = userObjId ? { $in: [userId, userObjId] } : userId;
   const base: Record<string, unknown> = {
     status: { $nin: ["ended"] },
-    lastActivity: { $gte: cutoff },
-    $or: [{ leaderId: matchUser }, { "members.userId": matchUser }],
+    $or: [{ lastActivity: { $gte: cutoff } }, { status: { $in: ["launching", "playing"] } }],
+    $and: [{ $or: [{ leaderId: matchUser }, { "members.userId": matchUser }] }],
   };
   if (keepPartyId) {
     const keepObjId = Types.ObjectId.isValid(keepPartyId) ? new Types.ObjectId(keepPartyId) : null;
@@ -1519,6 +1520,16 @@ export async function setPartyGame(
    */
   const editions = await listEditionsForGame(game);
   doc.editionSlug = preferredPartyEditionSlug(editions, doc.editionSlug, slug);
+  /*
+   * openRaMod only applies to stock OpenRA Official. Leaving it set when the
+   * party switches to another game (or a fixed-mod OpenRA edition) made VPS
+   * provision / joins keep Game.Mod=ra against the wrong portable.
+   */
+  if (slug !== "openra") {
+    doc.openRaMod = null;
+  } else if (!openRaEditionAllowsStockModPicker(doc.editionSlug)) {
+    doc.openRaMod = null;
+  }
   doc.lastActivity = new Date();
   await doc.save();
 
@@ -1588,7 +1599,7 @@ export async function setPartyHostMode(
   if (!isValidHostMode(slug, hostMode)) {
     return { error: "That hosting option is not available for this game", status: 400 };
   }
-  if (doc.status === "playing" || doc.status === "launching" || doc.hosted?.roomId) {
+  if (doc.status === "playing" || doc.status === "launching") {
     return { error: "Can't change hosting while a room is live", status: 400 };
   }
 
@@ -1787,6 +1798,16 @@ export async function setPartyEdition(
     for (const member of doc.members) member.ready = false;
   }
   doc.editionSlug = newEdition;
+  if (String(doc.gameSlug) === "openra") {
+    if (openRaEditionAllowsStockModPicker(newEdition)) {
+      // Switching onto Official from a fixed-mod edition: default Red Alert.
+      if (!openRaEditionAllowsStockModPicker(previousEdition)) {
+        doc.openRaMod = null;
+      }
+    } else {
+      doc.openRaMod = null;
+    }
+  }
   doc.lastActivity = new Date();
   await doc.save();
 
@@ -2008,7 +2029,7 @@ export async function joinPartyGame(
    */
   if (hostMode === "couch" && !isLeader) {
     return {
-      error: "This game plays on the host's PC — open the controller link on your phone.",
+      error: "This game plays on the host's PC — open the controller join link instead.",
       status: 400,
     };
   }
@@ -2338,7 +2359,7 @@ export async function listDiscoverableParties(
     "members.userId": { $in: memberMatch, $nin: ninMatch },
     visibility: "friends",
     status: { $nin: ["ended"] },
-    lastActivity: { $gte: cutoff },
+    $or: [{ lastActivity: { $gte: cutoff } }, { status: { $in: ["launching", "playing"] } }],
   })
     .sort({ lastActivity: -1 })
     .limit(20)
@@ -2794,6 +2815,30 @@ async function checkConfigSyncUncached(
 }
 
 /* ─── sweep stale parties (cron) ─────────────────────────────────────────── */
+
+/**
+ * Keep in-session parties visible while someone is actively playing.
+ *
+ * Presence heartbeats do not mutate the party document, so without this
+ * lastActivity freezes at launch and list filters / idle sweeps treat a live
+ * match as abandoned after fifteen minutes.
+ */
+export async function touchPartyActivityFromPresence(
+  userId: string,
+  presenceStatus: string | null | undefined
+): Promise<void> {
+  if (presenceStatus !== "playing") return;
+  await dbConnect();
+  const userObjId = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : null;
+  const matchUser = userObjId ? { $in: [userId, userObjId] } : userId;
+  await Party.updateMany(
+    {
+      status: { $in: ["launching", "playing"] },
+      "members.userId": matchUser,
+    },
+    { $set: { lastActivity: new Date() } }
+  );
+}
 
 export async function sweepStaleParties(now = new Date()) {
   await dbConnect();

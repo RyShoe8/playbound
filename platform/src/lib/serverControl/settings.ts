@@ -1002,6 +1002,21 @@ const FREEDOOM: ServerSettingProfile = {
       backend: "startup",
     },
     {
+      key: "difficulty",
+      label: "Difficulty",
+      type: "enum",
+      default: 3,
+      options: [
+        { value: 1, label: "I'm too young to die (Easiest)" },
+        { value: 2, label: "Hey, not too rough (Easy)" },
+        { value: 3, label: "Hurt me plenty (Normal)" },
+        { value: 4, label: "Ultra-Violence (Hard)" },
+        { value: 5, label: "Nightmare! (Very Hard)" },
+      ],
+      apply: "restart",
+      backend: "startup",
+    },
+    {
       key: "sv_maxplayers",
       label: "Player slots",
       feature: "slots",

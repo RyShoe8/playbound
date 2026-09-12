@@ -20,7 +20,7 @@ import path from "node:path";
 import { createReadStream, createWriteStream } from "node:fs";
 import { copyFile, mkdir, rename, rm, stat } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
-import { Readable } from "node:stream";
+import { Readable, Transform } from "node:stream";
 import { generateRconPassword, isRconAuthFailure, sendRcon } from "./rcon.js";
 import { shouldRestartRoom, MAX_RESTARTS } from "./roomRestart.js";
 import {
@@ -59,6 +59,25 @@ const byParty = new Map();
 const usedPorts = new Set();
 /** relative archive path → in-flight/completed transfer state for this agent lifetime. */
 const archiveJobs = new Map();
+
+/** Update an in-flight archive job's byte progress (polled by GET /mirror/archive). */
+function setArchiveProgress(relativePath, patch) {
+  const job = archiveJobs.get(relativePath);
+  if (!job || job.status !== "uploading") return;
+  Object.assign(job, patch);
+}
+
+function progressCounter(relativePath, startingBytes) {
+  let received = Number(startingBytes) || 0;
+  setArchiveProgress(relativePath, { bytesReceived: received });
+  return new Transform({
+    transform(chunk, _enc, cb) {
+      received += chunk.length;
+      setArchiveProgress(relativePath, { bytesReceived: received });
+      cb(null, chunk);
+    },
+  });
+}
 
 /**
  * @typedef {{
@@ -362,6 +381,11 @@ async function archiveFromUrl({ url, relativePath, sha256, sizeBytes }, abortSig
   }
 
   const temp = `${target}.partial-${crypto.randomBytes(6).toString("hex")}`;
+  setArchiveProgress(relativePath, {
+    sizeBytes: Number(sizeBytes),
+    bytesReceived: 0,
+    tempPath: temp,
+  });
   try {
     await mkdir(path.dirname(target), { recursive: true });
     /*
@@ -394,6 +418,7 @@ async function archiveFromUrl({ url, relativePath, sha256, sizeBytes }, abortSig
               if (sha256 && actual.toLowerCase() !== String(sha256).toLowerCase()) {
                 return { error: "Archive checksum mismatch" };
               }
+              setArchiveProgress(relativePath, { bytesReceived: sourceFile.size });
               return { ok: true, sizeBytes: sourceFile.size };
             }
             const copied = await stat(temp);
@@ -406,6 +431,7 @@ async function archiveFromUrl({ url, relativePath, sha256, sizeBytes }, abortSig
                 return { error: "Archive checksum mismatch" };
               }
             }
+            setArchiveProgress(relativePath, { bytesReceived: copied.size });
             await rename(temp, target);
             return { ok: true, sizeBytes: copied.size };
           }
@@ -461,7 +487,11 @@ async function archiveFromUrl({ url, relativePath, sha256, sizeBytes }, abortSig
         if (contentLength && received + contentLength > MIRROR_ARCHIVE_MAX_BYTES) {
           throw new Error("Archive exceeds the host limit");
         }
-        await pipeline(stream, createWriteStream(temp, { flags: received > 0 ? "a" : "w" }));
+        await pipeline(
+          stream,
+          progressCounter(relativePath, received),
+          createWriteStream(temp, { flags: received > 0 ? "a" : "w" })
+        );
         const file = await stat(temp);
         if (file.size !== Number(sizeBytes)) {
           throw new Error(`Archive size mismatch (expected ${sizeBytes}, got ${file.size})`);
@@ -491,7 +521,21 @@ async function archiveStatus(relativePath) {
   const target = archivePath(relativePath);
   if (!target) return { error: "Invalid archive path" };
   const job = archiveJobs.get(relativePath);
-  if (job?.status === "uploading") return { status: "uploading" };
+  if (job?.status === "uploading") {
+    let bytesReceived = Number(job.bytesReceived) || 0;
+    if (job.tempPath) {
+      try {
+        bytesReceived = Math.max(bytesReceived, (await stat(job.tempPath)).size);
+      } catch {
+        /* partial not created yet */
+      }
+    }
+    return {
+      status: "uploading",
+      bytesReceived,
+      sizeBytes: Number(job.sizeBytes) > 0 ? Number(job.sizeBytes) : undefined,
+    };
+  }
   if (job?.status === "failed") return { status: "missing", error: job.error || "Archive transfer failed" };
   try {
     const file = await stat(target);
@@ -516,13 +560,19 @@ async function queueArchive(input) {
   if (existing.status === "uploading") return existing;
 
   const controller = new AbortController();
-  archiveJobs.set(input.relativePath, { status: "uploading", controller });
+  archiveJobs.set(input.relativePath, {
+    status: "uploading",
+    controller,
+    sizeBytes: Number(input?.sizeBytes) || 0,
+    bytesReceived: 0,
+    tempPath: null,
+  });
   void archiveFromUrl(input, controller.signal).then((result) => {
     archiveJobs.set(input.relativePath, result.error
       ? { status: "failed", error: result.error }
       : { status: "verified", sizeBytes: result.sizeBytes });
   });
-  return { status: "uploading" };
+  return { status: "uploading", bytesReceived: 0, sizeBytes: Number(input?.sizeBytes) || undefined };
 }
 
 async function deleteArchivedFile(relativePath) {

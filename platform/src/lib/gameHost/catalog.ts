@@ -274,13 +274,20 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     portEnd: 1270,
     protocol: "tcp",
   },
-  "re-volt-rvgl": {
-    slug: "re-volt-rvgl",
-    title: "Re-Volt (RVGL)",
-    defaultPort: 2310,
-    portEnd: 2330,
-    protocol: "udp",
+  "earth-2140-trilogy": {
+    slug: "earth-2140-trilogy",
+    title: "Earth 2140 Trilogy (OpenE2140)",
+    defaultPort: 1234,
+    portEnd: 1250,
+    protocol: "tcp",
   },
+  /*
+   * Re-Volt (RVGL) is a peer-hosted lobby game. RVGL has no headless dedicated
+   * server support with admin delegation: -dedicated is ignored, and running
+   * headless under xvfb leaves the VPS as the host player (Player 1) with no
+   * human controlling it to choose tracks or click "Start Race". RVGL is played
+   * via client-hosted lobbies ("Host on my computer").
+   */
 };
 
 export const HOSTABLE_SLUGS = Object.keys(HOSTABLE_GAMES);
@@ -298,8 +305,7 @@ const HOSTABLE_SLUG_ALIASES: Record<string, string> = {
   wesnoth: "battle-for-wesnoth",
   doom: "freedoom",
   ss14: "space-station-14",
-  rvgl: "re-volt-rvgl",
-  revolt: "re-volt-rvgl",
+  opene2140: "earth-2140-trilogy",
 };
 
 export function isHostableGame(slug: string | null | undefined): boolean {

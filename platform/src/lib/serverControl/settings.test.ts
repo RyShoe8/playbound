@@ -284,6 +284,8 @@ describe("coverage of the games PlayBound hosts", () => {
       "The agent has a full recipe, but the slug is not in HOSTABLE_GAMES and its adapter is official — so nothing ever asks for a Teeworlds room.",
     "zero-k":
       "Assessed and found to have nothing a server can change — battles are configured in Zero-K's lobby. The profile records that; PlayBound stopped provisioning Zero-K rooms once it turned out spring-dedicated takes a start script rather than the flags the recipe passed.",
+    "re-volt-rvgl":
+      "RVGL has no headless dedicated server support. The -dedicated flag is ignored and the headless process remains the lobby host with no human to select tracks or start races. RVGL is played via client-hosted lobbies.",
   };
 
   it("knows which profiles are for games PlayBound does not actually host", async () => {

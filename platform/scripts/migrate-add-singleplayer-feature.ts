@@ -24,12 +24,12 @@
  * other game is left untouched unless it needs deduping:
  *
  *   - 0ad, freeciv, openciv3, openra, warzone-2100, zero-k, beyond-all-reason,
- *     battle-for-wesnoth: skirmish/campaign vs AI
+ *     battle-for-wesnoth: skirmish/campaign vs bots
  *   - endless-sky, naev, mega-man-unlimited, shattered-pixel-dungeon,
  *     supertux, mindustry, tinywind-pixel-pirate-sailing-game: singleplayer
  *     by design, multiplayer (if any) is secondary
  *   - flightgear, luanti, openttd, veloren: solo sandbox play is a core mode
- *   - hedgewars, next-gen-chess, supertuxkart, asphalt-legends: vs-AI /
+ *   - hedgewars, next-gen-chess, supertuxkart, asphalt-legends: vs bots /
  *     challenge modes alongside multiplayer
  *   - xonotic: ships with bots for offline play
  *   - unvanquished: bot support confirmed via `\bot` console command and the

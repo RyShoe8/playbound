@@ -5,6 +5,11 @@
 "use strict";
 
 const SHIPPED = {
+  "keyboard-mouse": {
+    id: "keyboard-mouse",
+    label: "Keyboard & Mouse",
+    capture: "keyboard-mouse",
+  },
   "standard-gamepad": {
     id: "standard-gamepad",
     label: "Standard Gamepad",

@@ -141,10 +141,18 @@ export const PARTY_COPY = {
   lanPending: "Setting up the party network…",
   lanFailed:
     "Could not set up the party network. The discovery reflector may not be running on the NetBird VPS.",
-  couchBadge: "Couch co-op · no online play",
-  couchLeaderNext: "Start Game and your party gets a controller link.",
-  couchMemberNext: "When the host starts the game you will get a link to open on your phone.",
-  couchFailed: "Could not start phone controllers on the host's PC.",
+  /*
+   * LOCAL_COUCH_GAMES: Connect's online multiplayer is host PC + remote pads
+   * (± host video). Never say "no online play" — that contradicts the product.
+   */
+  couchBadge: "Online multiplayer · Connect",
+  couchLeaderNext: "Start Game to open online multiplayer — friends join with the link (keyboard & mouse by default).",
+  couchMemberNext: "When the host starts, use Join online — keyboard & mouse by default; pads optional.",
+  couchFailed: "Could not start online controllers on the host's PC.",
+  joinOnline: "Join online",
+  waitingForController: "Waiting for host…",
+  waitingForControllerTitle: "The host is starting online multiplayer — your join link appears in a moment",
+  openControllerTitle: "Join the host session — keyboard & mouse by default (pads optional)",
   /*
    * A host with an administrable server has no way to discover that from the
    * party panel, and the moment they want it — mid-match, wrong map — is the
@@ -212,21 +220,34 @@ export function computePartyActions(input: PartyActionsInput): PartyActions {
       (Boolean(lan.enabled) && lan.status === "failed"));
 
   /*
-   * Couch games have one running copy and it is the leader's. Members join by
-   * opening the controller link on a phone, so they get no join button at all
-   * rather than a disabled one.
+   * Couch / online local-co-op: leader starts the host session; members Join
+   * online by opening the controller link (pads ± stream), never a second game copy.
    */
-  const canJoin = hasGame && !ended && (isReady || inFlight) && (!couchOn || isLeader);
+  const couchReady =
+    couchOn &&
+    String(couch.status || "") === "ready" &&
+    Boolean(couch.joinCode || couch.joinUrl);
+  const couchMemberWaiting =
+    couchOn && !isLeader && (isReady || inFlight) && !couchReady && !ended;
+  const canJoin =
+    hasGame &&
+    !ended &&
+    (isReady || inFlight) &&
+    (!couchOn || isLeader || couchReady || couchMemberWaiting);
   const waitingForServer = !isLeader && memberWaitingForConnect && !waitingForLeader;
 
   const label =
-    isLeader && !inFlight
-      ? PARTY_COPY.startGame
-      : waitingForLeader
-        ? PARTY_COPY.waitingForHost
-        : waitingForServer
-          ? PARTY_COPY.serverStarting
-          : PARTY_COPY.joinGame;
+    couchOn && !isLeader
+      ? couchReady
+        ? PARTY_COPY.joinOnline
+        : PARTY_COPY.waitingForController
+      : isLeader && !inFlight
+        ? PARTY_COPY.startGame
+        : waitingForLeader
+          ? PARTY_COPY.waitingForHost
+          : waitingForServer
+            ? PARTY_COPY.serverStarting
+            : PARTY_COPY.joinGame;
 
   /*
    * Failure is checked before "still starting", which is the opposite of the
@@ -239,15 +260,20 @@ export function computePartyActions(input: PartyActionsInput): PartyActions {
     hosted.status === "failed" || lan.status === "failed"
       ? hosted.error || lan.error || PARTY_COPY.connectFailed
       : "";
-  const title = waitingForLeader
-      ? PARTY_COPY.hostMustStart
-      : connectError
-        ? connectError
-        : waitingForServer
-          ? PARTY_COPY.serverStillStarting
-          : hosted.status === "pending" || lan.status === "pending"
-            ? PARTY_COPY.serverPending
-            : "";
+  const title =
+    couchOn && !isLeader
+      ? couchReady
+        ? PARTY_COPY.openControllerTitle
+        : PARTY_COPY.waitingForControllerTitle
+      : waitingForLeader
+        ? PARTY_COPY.hostMustStart
+        : connectError
+          ? connectError
+          : waitingForServer
+            ? PARTY_COPY.serverStillStarting
+            : hosted.status === "pending" || lan.status === "pending"
+              ? PARTY_COPY.serverPending
+              : "";
 
   const notes: PartyActionNote[] = [];
   if (input.hostMode === "public" && hosted.enabled && hosted.status !== "ready") {
@@ -263,6 +289,10 @@ export function computePartyActions(input: PartyActionsInput): PartyActions {
     notes.push({ tone: "error", text: lan.error || PARTY_COPY.lanFailed });
   }
 
+  const joinEnabled = couchOn && !isLeader
+    ? couchReady
+    : !(joinConnectFailed || waitingForLeader || memberWaitingForConnect);
+
   return {
     ready: button({
       visible: !ended && !inFlight,
@@ -275,13 +305,20 @@ export function computePartyActions(input: PartyActionsInput): PartyActions {
     join: button({
       visible: canJoin,
       label,
-      enabled: !(joinConnectFailed || waitingForLeader || memberWaitingForConnect),
+      enabled: joinEnabled,
       title,
-      icon: waitingForLeader || waitingForServer ? "loader" : "play",
+      icon:
+        couchOn && !isLeader
+          ? couchReady
+            ? "phone"
+            : "loader"
+          : waitingForLeader || waitingForServer
+            ? "loader"
+            : "play",
       tone: "primary",
     }),
     joinArmed: button({
-      visible: canJoin,
+      visible: canJoin && !(couchOn && !isLeader),
       label: PARTY_COPY.joinArmed,
       /*
        * Stays clickable: the only thing left to ask of it is "stop waiting",
@@ -297,13 +334,13 @@ export function computePartyActions(input: PartyActionsInput): PartyActions {
       ? {
           badge: PARTY_COPY.couchBadge,
           where: isLeader
-            ? "Runs on your PC. Everyone else plays on it with their phone as a controller."
-            : `Runs on ${input.leaderUsername || "the host"}'s PC. Everyone else plays on it with their phone as a controller.`,
+            ? "Online multiplayer on your PC — friends join with the link (keyboard & mouse by default)."
+            : `Online multiplayer on ${input.leaderUsername || "the host"}'s PC — join with the link (keyboard & mouse by default).`,
           status: (couch.status as PartyCouchPanel["status"]) || "none",
           joinCode: couch.joinCode || null,
           joinUrl:
             couch.joinUrl ||
-            (couch.joinCode ? `https://playbound.club/controller/${couch.joinCode}` : null),
+            (couch.joinCode ? `https://playbound.club/c/${couch.joinCode}` : null),
           note:
             couch.status === "failed"
               ? couch.error || PARTY_COPY.couchFailed

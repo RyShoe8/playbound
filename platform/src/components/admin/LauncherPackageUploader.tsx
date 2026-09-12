@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
+import { formatDataVolume, vpsTransferPercent } from "@/lib/mirrors/vpsProgress";
 
 type InstalledPackage = { url: string; kind: "direct-zip" | "direct-7z"; fileName: string };
 
@@ -27,10 +28,6 @@ type Pending = {
 const VPS_POLL_CEILING_MS = 45 * 60 * 1000;
 const VPS_POLL_INTERVAL_MS = 3000;
 
-function mb(bytes: number) {
-  return `${(bytes / 1048576).toFixed(bytes >= 1073741824 ? 2 : 0)} MB`;
-}
-
 function clock(ms: number) {
   const total = Math.floor(ms / 1000);
   return `${Math.floor(total / 60)}m ${String(total % 60).padStart(2, "0")}s`;
@@ -51,11 +48,12 @@ export function LauncherPackageUploader({
   const [stagedUrl, setStagedUrl] = useState("");
   const [stagedFileName, setStagedFileName] = useState("");
   const [stagedSizeBytes, setStagedSizeBytes] = useState("");
-  /** null while idle; 0-100 during the Blob upload; -1 for the VPS copy, which reports no percentage. */
+  /** null while idle; 0-100 during Blob or VPS transfer. */
   const [percent, setPercent] = useState<number | null>(null);
   const [transferred, setTransferred] = useState("");
   const [elapsed, setElapsed] = useState("");
   const [pending, setPending] = useState<Pending | null>(null);
+  const [phase, setPhase] = useState<"idle" | "blob" | "vps">("idle");
 
   /*
    * Survives a reload or a closed tab. A multi-gigabyte copy outlives the
@@ -93,7 +91,9 @@ export function LauncherPackageUploader({
       sizeBytes: job.sizeBytes,
     };
     const startedAt = Date.now();
-    setPercent(-1);
+    setPhase("vps");
+    setPercent(0);
+    setTransferred(formatDataVolume(0) + " of " + formatDataVolume(job.sizeBytes));
     while (Date.now() - startedAt < VPS_POLL_CEILING_MS) {
       setElapsed(clock(Date.now() - startedAt));
       setState("Copying to VPS and verifying…");
@@ -107,14 +107,24 @@ export function LauncherPackageUploader({
       if (result.ok && body?.status === "verified") {
         rememberPending(null);
         setPercent(null);
+        setPhase("idle");
         onInstalled?.(body as InstalledPackage);
         setState(`Live on VPS: ${(body as InstalledPackage).url}`);
         return;
+      }
+      if (result.status === 202 && body?.status === "uploading") {
+        const received = Number(body.bytesReceived) || 0;
+        const total = Number(body.sizeBytes) || job.sizeBytes;
+        const pct = vpsTransferPercent(received, total);
+        setPercent(pct ?? 0);
+        setTransferred(`${formatDataVolume(received)} of ${formatDataVolume(total)}`);
+        continue;
       }
       if (result.status !== 202) throw new Error(body?.error || "VPS verification failed");
     }
     // Deliberately keeps the job so "Resume VPS check" can pick it up later.
     setPercent(null);
+    setPhase("idle");
     throw new Error(
       "Still copying after 45 minutes. The copy keeps running on the host — press Resume VPS check later to finish it."
     );
@@ -138,9 +148,10 @@ export function LauncherPackageUploader({
       return;
     }
     setBusy(true);
+    setPhase("blob");
     setPercent(0);
     setTransferred("");
-    setState(`Uploading ${file.name} (${mb(file.size)})…`);
+    setState(`Uploading ${file.name} (${formatDataVolume(file.size)})…`);
     try {
       const scope = editionSlug ? `editions/${gameSlug}/${editionSlug}` : `games/${gameSlug}`;
       const blob = await upload(`launcher-packages/${scope}/${Date.now()}-${file.name.replace(/[^a-z0-9._-]/gi, "-")}`, file, {
@@ -155,13 +166,14 @@ export function LauncherPackageUploader({
         multipart: true,
         onUploadProgress: ({ percentage, loaded, total }) => {
           setPercent(percentage);
-          setTransferred(`${mb(loaded)} of ${mb(total)}`);
+          setTransferred(`${formatDataVolume(loaded)} of ${formatDataVolume(total)}`);
         },
       });
       setTransferred("");
       await archive(blob.url, file.name, file.size);
     } catch (err) {
       setPercent(null);
+      setPhase("idle");
       setState(err instanceof Error ? err.message : "Package upload failed");
     } finally { setBusy(false); }
   }
@@ -177,6 +189,7 @@ export function LauncherPackageUploader({
     try {
       await archive(stagedUrl.trim(), fileName, sizeBytes);
     } catch (err) {
+      setPhase("idle");
       setState(err instanceof Error ? err.message : "VPS archive failed");
     } finally { setBusy(false); }
   }
@@ -187,6 +200,7 @@ export function LauncherPackageUploader({
     try {
       await pollUntilVerified(pending);
     } catch (err) {
+      setPhase("idle");
       setState(err instanceof Error ? err.message : "VPS verification failed");
     } finally { setBusy(false); }
   }
@@ -204,13 +218,15 @@ export function LauncherPackageUploader({
       <div className="mt-3">
         <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
           <div
-            className={`h-full rounded-full bg-primary transition-[width] duration-300 ${percent < 0 ? "animate-pulse" : ""}`}
-            style={{ width: percent < 0 ? "100%" : `${Math.max(2, percent)}%` }}
+            className="h-full rounded-full bg-primary transition-[width] duration-300"
+            style={{ width: `${Math.max(2, percent)}%` }}
           />
         </div>
         <div className="mt-1.5 flex flex-wrap justify-between gap-2 text-[11px] tabular-nums text-muted-foreground">
-          <span>{percent < 0 ? "Copying to VPS — the host reports no percentage" : `${percent.toFixed(1)}%`}</span>
-          <span>{percent < 0 ? elapsed : transferred}</span>
+          <span>
+            {phase === "vps" ? "Copying to VPS" : "Uploading to Blob"} — {percent.toFixed(1)}%
+          </span>
+          <span>{phase === "vps" ? `${transferred} · ${elapsed}` : transferred}</span>
         </div>
       </div>
     ) : null}

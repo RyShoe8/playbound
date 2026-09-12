@@ -23,4 +23,23 @@ describe("seed edition deletion", () => {
     const visible = mergeStoredAndSeedEditions("holocure", [], new Set());
     expect(visible.some((edition) => edition.slug === "official")).toBe(true);
   });
+
+  it("strips misparented OpenE2140 from openra edition lists", () => {
+    const visible = mergeStoredAndSeedEditions(
+      "openra",
+      [
+        {
+          id: "bad",
+          gameSlug: "openra",
+          slug: "opene2140",
+          name: "OpenE2140",
+          status: "active",
+          visibility: "public",
+        } as never,
+      ],
+      new Set()
+    );
+    expect(visible.some((edition) => edition.slug === "opene2140")).toBe(false);
+    expect(visible.some((edition) => edition.slug === "official")).toBe(true);
+  });
 });

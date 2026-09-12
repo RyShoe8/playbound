@@ -363,9 +363,9 @@ export type PartyPayload = {
     error: string | null;
   };
   /**
-   * Phone-controller session for a couch party. `enabled` means this game has
-   * no networking, so only the leader launches it and everyone else joins by
-   * opening `joinUrl` on a phone.
+   * Online multiplayer session for a local-co-op (couch) party. `enabled` means
+   * the game has no native netcode, so only the leader launches it and everyone
+   * else joins via the controller link (`joinUrl`).
    */
   couch: {
     enabled: boolean;

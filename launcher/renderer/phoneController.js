@@ -208,9 +208,9 @@ export function promptPhoneControllerPairing({ session, title }) {
               <span class="phone-controller-code-label">Room Code</span>
               <span class="phone-controller-code-val">${escapeHtml(code)}</span>
             </div>
-            <p class="phone-controller-qr-hint">or open <span class="phone-controller-url">playbound.club/controller/${escapeHtml(code)}</span></p>
+            <p class="phone-controller-qr-hint">or open <span class="phone-controller-url">playbound.club/c</span> and enter <strong>${escapeHtml(code)}</strong></p>
             <div style="display:flex;gap:8px;align-items:center;">
-              <button type="button" class="btn-secondary btn-sm" id="btn-copy-pairing-link">Copy link</button>
+              <button type="button" class="btn-secondary btn-sm" id="btn-copy-pairing-link">Copy code</button>
             </div>
             <div class="phone-controller-status-pill" id="phone-controller-pair-status">
               <span class="pbc-pulse-dot"></span>
@@ -255,8 +255,8 @@ export function promptPhoneControllerPairing({ session, title }) {
     }
 
     document.getElementById("btn-copy-pairing-link")?.addEventListener("click", async () => {
-      await pb().clipboardWrite(joinUrl);
-      setStatus("Pairing link copied to clipboard");
+      await pb().clipboardWrite(code);
+      setStatus("Code copied — open playbound.club/c on the phone and enter it");
     });
 
     document.getElementById("btn-launch-paired")?.addEventListener("click", () => finish("launch"));
@@ -283,17 +283,17 @@ function showPhoneJoinBanner(state) {
     <img class="phone-controller-banner-qr" src="${qrSrc}" alt="" width="72" height="72" />
     <div class="phone-controller-banner-copy">
       <strong>Phone controller ready</strong>
-      <span>Scan the QR or open playbound.club/controller/${escapeHtml(code)} · then play — the game sees an Xbox pad</span>
+      <span>Scan the QR, or open playbound.club/c and enter ${escapeHtml(code)}</span>
     </div>
-    <button type="button" class="btn-secondary btn-sm" id="phone-controller-banner-copy">Copy link</button>
+    <button type="button" class="btn-secondary btn-sm" id="phone-controller-banner-copy">Copy code</button>
     <button type="button" class="btn-secondary btn-sm" id="phone-controller-banner-dismiss" aria-label="Dismiss">✕</button>
   `;
   bar.querySelector("#phone-controller-banner-dismiss")?.addEventListener("click", () => {
     bar.remove();
   });
   bar.querySelector("#phone-controller-banner-copy")?.addEventListener("click", async () => {
-    await pb().clipboardWrite(joinUrl);
-    setStatus("Phone controller link copied");
+    await pb().clipboardWrite(code);
+    setStatus("Code copied — open playbound.club/c on the phone and enter it");
   });
 }
 

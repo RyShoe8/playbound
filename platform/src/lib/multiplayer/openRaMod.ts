@@ -15,7 +15,7 @@
  * this exists to prevent. Change one, change the other.
  */
 
-export type OpenRaMod = "ra" | "cnc" | "d2k" | "ts" | "ca" | "hv" | "ra2";
+export type OpenRaMod = "ra" | "cnc" | "d2k" | "ts" | "ca" | "hv" | "ra2" | "e2140";
 
 /**
  * Red Alert is the default because it is OpenRA's flagship mod and the one an
@@ -23,6 +23,14 @@ export type OpenRaMod = "ra" | "cnc" | "d2k" | "ts" | "ca" | "hv" | "ra2";
  */
 export function openRaModFor(editionSlug: string | null | undefined): OpenRaMod {
   const raw = String(editionSlug || "").toLowerCase();
+  /*
+   * OpenE2140 before any `dune` / generic OpenRA branches — its portable only
+   * ships mod `e2140`. Mapping it to `ra` (the old fallthrough) made party
+   * members launch OpenE2140.exe with Game.Mod=ra and exit immediately.
+   */
+  if (raw.includes("e2140") || raw.includes("opene2140") || raw.includes("earth-2140")) {
+    return "e2140";
+  }
   /*
    * Character-for-character the agent's rule, including its quirk: a bare
    * `tiberian` match claims Tiberian Sun for `cnc` as well as Tiberian Dawn.
@@ -39,7 +47,18 @@ export function openRaModFor(editionSlug: string | null | undefined): OpenRaMod 
   return "ra";
 }
 
+/**
+ * Official OpenRA portable covers ra/cnc/d2k via party.openRaMod.
+ * Other editions imply a fixed Game.Mod — stock mod picker must hide.
+ */
+export function openRaEditionAllowsStockModPicker(
+  editionSlug: string | null | undefined
+): boolean {
+  const raw = String(editionSlug || "").toLowerCase().trim();
+  return !raw || raw === "official";
+}
+
 /** True for games where the client has to be told which mod to join with. */
 export function needsModArgument(gameSlug: string): boolean {
-  return gameSlug === "openra";
+  return gameSlug === "openra" || gameSlug === "earth-2140-trilogy" || gameSlug === "openhv";
 }

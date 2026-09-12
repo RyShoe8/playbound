@@ -2,6 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BUTTON } from "@/lib/couch/protocol";
+import {
+  applyKeyboardMouseEvent,
+  emptyPadAxes,
+  KEYBOARD_MOUSE_HELP,
+} from "@/lib/couch/keyboardMouseMap";
+
+type InputMode = "keyboard-mouse" | "touch-gamepad" | "standard-gamepad";
 
 type JoinState = {
   sessionId: string;
@@ -65,7 +72,7 @@ const EMPTY: PadState = { buttons: 0, lx: 0, ly: 0, rx: 0, ry: 0, lt: 0, rt: 0 }
 export function ControllerClient({ code }: { code: string }) {
   const [error, setError] = useState<string | null>(null);
   const [join, setJoin] = useState<JoinState | null>(null);
-  const [mode, setMode] = useState<"touch-gamepad" | "standard-gamepad">("touch-gamepad");
+  const [mode, setMode] = useState<InputMode>("keyboard-mouse");
   const [transport, setTransport] = useState<Transport>("connecting");
   const [pingMs, setPingMs] = useState<number | null>(null);
   const [hz, setHz] = useState(0);
@@ -93,6 +100,8 @@ export function ControllerClient({ code }: { code: string }) {
   const lastSentRef = useRef(0);
   const framesRef = useRef(0);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [hasVideo, setHasVideo] = useState(false);
 
   const playerLabel = useMemo(() => {
     if (join?.playerSlot == null) return "…";
@@ -328,6 +337,17 @@ export function ControllerClient({ code }: { code: string }) {
 
     async function startWebRtc() {
       pc = new RTCPeerConnection({ iceServers: session.iceServers });
+      // Receive host game view when the host shares their display.
+      pc.addTransceiver("video", { direction: "recvonly" });
+      pc.ontrack = (ev) => {
+        const el = videoRef.current;
+        const stream = ev.streams?.[0] || (ev.track ? new MediaStream([ev.track]) : null);
+        if (el && stream) {
+          el.srcObject = stream;
+          void el.play().catch(() => {});
+          setHasVideo(true);
+        }
+      };
       dc = pc.createDataChannel("input", { ordered: false, maxRetransmits: 0 });
       dc.binaryType = "arraybuffer";
       dc.onopen = () => {
@@ -564,6 +584,50 @@ export function ControllerClient({ code }: { code: string }) {
     return () => cancelAnimationFrame(raf);
   }, [mode]);
 
+  // Keyboard & mouse → virtual pad (default join mode)
+  useEffect(() => {
+    if (mode !== "keyboard-mouse") return;
+    const heldMove = { up: false, down: false, left: false, right: false };
+    padRef.current = emptyPadAxes();
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.repeat && e.type === "keydown") return;
+      const next = applyKeyboardMouseEvent(padRef.current, heldMove, {
+        type: e.type === "keyup" ? "keyup" : "keydown",
+        code: e.code,
+      });
+      padRef.current = next;
+      e.preventDefault();
+      sendInput();
+    };
+    const onMouse = (e: MouseEvent) => {
+      if (e.button > 2) return;
+      const next = applyKeyboardMouseEvent(padRef.current, heldMove, {
+        type: e.type === "mouseup" ? "mouseup" : "mousedown",
+        button: e.button,
+      });
+      padRef.current = next;
+      if (e.button === 2) e.preventDefault();
+      sendInput();
+    };
+    const onContext = (e: Event) => e.preventDefault();
+
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("keyup", onKey);
+    window.addEventListener("mousedown", onMouse);
+    window.addEventListener("mouseup", onMouse);
+    window.addEventListener("contextmenu", onContext);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keyup", onKey);
+      window.removeEventListener("mousedown", onMouse);
+      window.removeEventListener("mouseup", onMouse);
+      window.removeEventListener("contextmenu", onContext);
+      padRef.current = { ...EMPTY };
+    };
+  }, [mode, sendInput]);
+
   const setBit = (bit: number, down: boolean) => {
     if (down) padRef.current.buttons |= bit;
     else padRef.current.buttons &= ~bit;
@@ -611,7 +675,7 @@ export function ControllerClient({ code }: { code: string }) {
         <Eyebrow>{playerLabel}</Eyebrow>
         <h1 className="pbc-title">{physicalLabel || "Connect a controller"}</h1>
         <p className="pbc-sub">
-          Pair an Xbox, DualSense, Switch, 8BitDo or other browser-supported pad to this phone.
+          Pair an Xbox, DualSense, Switch, 8BitDo or other browser-supported pad to this device.
           PlayBound forwards it to the PC.
         </p>
         <div className={physicalLabel ? "pbc-dot pbc-dot-live" : "pbc-dot"} aria-hidden />
@@ -621,11 +685,58 @@ export function ControllerClient({ code }: { code: string }) {
     );
   }
 
+  if (mode === "keyboard-mouse") {
+    return (
+      <main className={hasVideo ? "pbc-pad is-kbm is-gameview" : "pbc-pad is-kbm"}>
+        <ControllerStyles />
+        <div className={hasVideo ? "pbc-gameview is-live" : "pbc-gameview"} aria-hidden={!hasVideo}>
+          <video ref={videoRef} className="pbc-gameview-video" playsInline muted autoPlay />
+          {!hasVideo ? (
+            <p className="pbc-gameview-wait">Waiting for host game view… keys work either way</p>
+          ) : null}
+        </div>
+        <header className="pbc-hud">
+          <span className="pbc-hud-host">{join.hostLabel}</span>
+          <span className="pbc-hud-player">{playerLabel}</span>
+        </header>
+        <div className="pbc-kbm-panel">
+          <h1 className="pbc-title">Keyboard &amp; mouse</h1>
+          <p className="pbc-sub">{KEYBOARD_MOUSE_HELP}</p>
+          <p className="pbc-sub">Need a pad? Switch to Touch or Pad below.</p>
+          <StatusBar transport={transport} pingMs={pingMs} hz={hz} />
+          <ModeToggle mode={mode} setMode={setMode} />
+        </div>
+      </main>
+    );
+  }
+
   /* ── The Pad ─────────────────────────────────────────────────────────── */
 
   return (
-    <main className={twinStick ? "pbc-pad is-twin-stick" : "pbc-pad"}>
+    <main
+      className={[
+        "pbc-pad",
+        twinStick ? "is-twin-stick" : "",
+        hasVideo ? "is-gameview" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
       <ControllerStyles />
+
+      {/* Host game view (P2P) — online multiplayer for local-only games */}
+      <div className={hasVideo ? "pbc-gameview is-live" : "pbc-gameview"} aria-hidden={!hasVideo}>
+        <video
+          ref={videoRef}
+          className="pbc-gameview-video"
+          playsInline
+          muted
+          autoPlay
+        />
+        {!hasVideo ? (
+          <p className="pbc-gameview-wait">Waiting for host game view… pads work either way</p>
+        ) : null}
+      </div>
 
       {/* Three-zone background ambient glow */}
       <div className="pbc-ambient pbc-ambient-left" aria-hidden />
@@ -634,7 +745,7 @@ export function ControllerClient({ code }: { code: string }) {
       {/* Portrait rotation nudge */}
       <div className="pbc-rotate" aria-hidden>
         <span className="pbc-rotate-icon">⟳</span>
-        Turn your phone sideways
+        Turn sideways for landscape
       </div>
 
       {/* Center Top HUD Telemetry */}
@@ -774,12 +885,19 @@ function ModeToggle({
   setMode,
   compact,
 }: {
-  mode: "touch-gamepad" | "standard-gamepad";
-  setMode: (m: "touch-gamepad" | "standard-gamepad") => void;
+  mode: InputMode;
+  setMode: (m: InputMode) => void;
   compact?: boolean;
 }) {
   return (
     <div className={compact ? "pbc-toggle pbc-toggle-compact" : "pbc-toggle"}>
+      <button
+        type="button"
+        className={mode === "keyboard-mouse" ? "pbc-toggle-btn is-on" : "pbc-toggle-btn"}
+        onClick={() => setMode("keyboard-mouse")}
+      >
+        Keys
+      </button>
       <button
         type="button"
         className={mode === "touch-gamepad" ? "pbc-toggle-btn is-on" : "pbc-toggle-btn"}
@@ -1087,6 +1205,69 @@ function ControllerStyles() {
 .pbc-pad {
   overflow: hidden;
   touch-action: none;
+}
+
+.pbc-gameview {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--pbc-safe-t) + 44px);
+  transform: translateX(-50%);
+  width: min(92vw, 720px);
+  height: min(38vh, 280px);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #050508;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 2;
+  pointer-events: none;
+}
+.pbc-pad.is-gameview .pbc-gameview {
+  height: min(32vh, 240px);
+}
+.pbc-pad.is-gameview .pbc-hud {
+  top: calc(var(--pbc-safe-t) + 8px);
+}
+.pbc-gameview.is-live {
+  border-color: rgba(61, 214, 140, 0.45);
+}
+.pbc-gameview-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+.pbc-gameview-wait {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 12px;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.pbc-kbm-panel {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--pbc-safe-b) + 16px);
+  transform: translateX(-50%);
+  width: min(92vw, 520px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 14px;
+  background: rgba(8, 8, 12, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 3;
+  text-align: center;
+}
+.pbc-pad.is-kbm .pbc-gameview {
+  top: calc(var(--pbc-safe-t) + 40px);
+  height: min(52vh, 420px);
 }
 
 /* ── Three-Zone Ambient Backdrop ─────────────────────────────────────── */

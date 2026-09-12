@@ -3,6 +3,21 @@ import { editions, formatEditionChipNames } from "./editions";
 
 const holocure = editions.filter((e) => e.gameSlug === "holocure");
 
+describe("OpenE2140 seed parenting", () => {
+  it("parents OpenE2140 on earth-2140-trilogy, not openra", () => {
+    const underOpenra = editions.filter(
+      (e) => e.gameSlug === "openra" && (e.slug === "opene2140" || /e2140/i.test(e.slug))
+    );
+    expect(underOpenra).toEqual([]);
+    const row = editions.find((e) => e.slug === "opene2140");
+    expect(row?.gameSlug).toBe("earth-2140-trilogy");
+    expect(row?.installConfig?.playbound_installer?.connectArgs).toEqual([
+      "Game.Mod=e2140",
+      "Launch.Connect={host}:{port}",
+    ]);
+  });
+});
+
 describe("Privateer Gemini Gold editions", () => {
   const geminiGold = editions.filter((e) => e.gameSlug === "privateer-gemini-gold");
 

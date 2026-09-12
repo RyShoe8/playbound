@@ -4586,7 +4586,9 @@ const facts: Game[] = [
     launcherInstall: {
       enabled: true,
       kind: "direct-installer",
-      url: "https://sourceforge.net/projects/dunelegacy/files/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.5-Windows-x64.exe/download",
+      url: "https://downloads.sourceforge.net/project/dunelegacy/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.5-Windows-x64.exe",
+      urlMac: "https://downloads.sourceforge.net/project/dunelegacy/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.5-macOS.dmg",
+      urlLinux: "https://downloads.sourceforge.net/project/dunelegacy/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.3-Linux-x64.tar.gz",
       fileName: "DuneLegacy-0.99.5-Windows-x64.exe",
       versionLabel: "0.99.5",
       exeHint: "dunelegacy",
@@ -4596,7 +4598,7 @@ const facts: Game[] = [
         "%PROGRAMFILES(X86)%\\Dune Legacy\\dunelegacy.exe",
         "dunelegacy.exe",
       ],
-      note: "Official standalone Windows installer with bundled Dune II PAK assets — no separate base-game purchase.",
+      note: "Official standalone Windows installer with bundled Dune II PAK assets — no separate base-game purchase. Do not use the GitHub engine-only zip.",
     },
     complete: true,
   },
@@ -6545,16 +6547,22 @@ const facts: Game[] = [
       versionLabel: "2.0.0",
       exeHint: "OpenBOR|OpenBOR.exe",
       knownExePaths: ["OpenBOR.exe", "openbor.exe"],
-      note: "PlayBound-hosted Windows OpenBOR package on the VPS mirror. Local 4P couch co-op only — no native online.",
+      note: "PlayBound-hosted Windows OpenBOR package on the VPS mirror. Online multiplayer via PlayBound Connect (pads + host game view).",
     },
+    firstPlaySteps: [
+      {
+        platform: "all",
+        text: "Press Escape on the host keyboard to leave the match or quit OpenBOR (no Quit button in some menus).",
+      },
+    ],
     multiplayerGamingSteps: [
       {
         platform: "all",
-        text: "This is local co-op only. Plug in up to four pads, or use PlayBound Couch / phone-as-controller so remote friends join as local players on the host PC.",
+        text: "Online multiplayer via PlayBound Connect: the host starts the party; friends use Join online for a controller (and game view) on the host session.",
       },
       {
         platform: "all",
-        text: "CPU partners can fill empty seats when you cannot gather a full team.",
+        text: "CPU partners can fill empty seats when you cannot gather a full team. On the host PC, press Escape to quit OpenBOR.",
       },
     ],
   },
@@ -6630,16 +6638,22 @@ const facts: Game[] = [
       versionLabel: "1.1.5",
       exeHint: "OpenBOR|OpenBOR.exe",
       knownExePaths: ["OpenBOR.exe", "openbor.exe"],
-      note: "PlayBound-hosted Windows OpenBOR package on the VPS mirror. Local 4P couch co-op only — no native online.",
+      note: "PlayBound-hosted Windows OpenBOR package on the VPS mirror. Online multiplayer via PlayBound Connect (pads + host game view).",
     },
+    firstPlaySteps: [
+      {
+        platform: "all",
+        text: "Press Escape on the host keyboard to leave the match or quit OpenBOR (no Quit button in some menus).",
+      },
+    ],
     multiplayerGamingSteps: [
       {
         platform: "all",
-        text: "This is local co-op only. Plug in up to four pads, or use PlayBound Couch / phone-as-controller so remote friends join as local players on the host PC.",
+        text: "Online multiplayer via PlayBound Connect: the host starts the party; friends use Join online for a controller (and game view) on the host session.",
       },
       {
         platform: "all",
-        text: "Configure controls in Options if needed — Xbox and PlayStation pads work; two players can share a keyboard.",
+        text: "Configure controls in Options if needed — Xbox and PlayStation pads work. On the host PC, press Escape to quit OpenBOR.",
       },
     ],
   },
@@ -6723,16 +6737,16 @@ const facts: Game[] = [
         "C:\\GOG Games\\Relic Hunters Zero Remix\\Relic Hunters Zero Remix.exe",
         "Relic Hunters Zero Remix.exe",
       ],
-      note: "Opens GOG Galaxy on the free title (goggalaxy://). Galaxy optional — DRM-free offline installer also works. Local 2P couch co-op only.",
+      note: "Opens GOG Galaxy on the free title (goggalaxy://). Galaxy optional — DRM-free offline installer also works. Online multiplayer via PlayBound Connect.",
     },
     multiplayerGamingSteps: [
       {
         platform: "all",
-        text: "Local couch co-op only (up to 2 players). Plug in a second pad or share keyboard + pad on the host PC.",
+        text: "Online multiplayer via PlayBound Connect (up to 2 players): host runs the game; friends Join online with a controller link.",
       },
       {
         platform: "all",
-        text: "Friends not in the room: use PlayBound Couch / phone-as-controller so a remote pad appears as player two on the host.",
+        text: "Same room: plug in a second pad or share keyboard + pad on the host PC.",
       },
     ],
   },
@@ -6926,12 +6940,12 @@ const facts: Game[] = [
         "LoversInADangerousSpacetime.exe",
         "Lovers in a Dangerous Spacetime.exe",
       ],
-      note: "Opens GOG Galaxy for your owned copy. Local 1–4P couch co-op only — no native online.",
+      note: "Opens GOG Galaxy for your owned copy. Online multiplayer via PlayBound Connect (pads + host game view).",
     },
     multiplayerGamingSteps: [
       {
         platform: "all",
-        text: "Local couch co-op only (up to 4 players on one ship). Plug in pads, or use PlayBound Couch / phone-as-controller so remote friends join as local crew on the host PC.",
+        text: "Online multiplayer via PlayBound Connect (up to 4 crew on one ship): host runs the game; friends Join online with a controller link.",
       },
       {
         platform: "all",
