@@ -3630,6 +3630,7 @@ const facts: Game[] = [
     launchMethods: ["install"],
     steamDeck: true,
     website: "https://kay-yu.itch.io/holocure",
+    steamAppId: "2420510",
     browserPlayable: false,
     gameOfWeek: false,
     hiddenGem: true,

@@ -797,7 +797,7 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     title: "SuperTuxKart",
     tier: "tier2_automated_server",
     adapterType: "managed-server",
-    protocol: "both",
+    protocol: "enet",
     client: {
       launchArguments: ["--connect-now={host}:{port}"],
     },

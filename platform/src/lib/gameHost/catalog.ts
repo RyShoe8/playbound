@@ -277,8 +277,8 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
   "earth-2140-trilogy": {
     slug: "earth-2140-trilogy",
     title: "Earth 2140 Trilogy (OpenE2140)",
-    defaultPort: 1234,
-    portEnd: 1250,
+    defaultPort: 1275,
+    portEnd: 1290,
     protocol: "tcp",
   },
   /*
