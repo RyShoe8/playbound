@@ -58,7 +58,8 @@ module.exports = [
         "-autostart-headless",
         "-autostart-headless-autociv",
         "-autostart-nonrandom=1",
-        "--port={port}"
+        "--port={port}",
+        "-autostart-matchname={name}"
       ]
     },
     "status": "published",
@@ -1655,7 +1656,9 @@ module.exports = [
       "binaryHint": "freeciv-server",
       "argsTemplate": [
         "-p",
-        "{port}"
+        "{port}",
+        "--ServerName",
+        "{name}"
       ]
     },
     "status": "published",
@@ -3263,7 +3266,10 @@ module.exports = [
       "argsTemplate": [
         "+set",
         "net_port",
-        "{port}"
+        "{port}",
+        "+set",
+        "sv_hostname",
+        "{name}"
       ]
     },
     "status": "published",
@@ -3934,7 +3940,10 @@ module.exports = [
         "1",
         "+set",
         "net_port",
-        "{port}"
+        "{port}",
+        "+set",
+        "sv_hostname",
+        "{name}"
       ]
     },
     "status": "published",
@@ -4192,7 +4201,8 @@ module.exports = [
       "protocol": "tcp",
       "binaryHint": "OpenRA.Server",
       "argsTemplate": [
-        "Server.ListenPort={port}"
+        "Server.ListenPort={port}",
+        "Server.Name={name}"
       ]
     },
     "status": "published",
@@ -8296,7 +8306,7 @@ module.exports = [
       "protocol": "both",
       "binaryHint": "warzone2100",
       "argsTemplate": [
-        "--autohost=playbound",
+        "--autohost={name}",
         "--gameport={port}",
         "--startplayers=1",
         "--headless",
@@ -8754,7 +8764,9 @@ module.exports = [
       "binaryHint": "xonotic-linux64-dedicated",
       "argsTemplate": [
         "+port",
-        "{port}"
+        "{port}",
+        "+hostname",
+        "{name}"
       ]
     },
     "status": "published",

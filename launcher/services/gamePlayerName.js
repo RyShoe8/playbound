@@ -26,6 +26,26 @@ function sanitizePlayerName(name, maxLen = MAX_NAME_LEN) {
   return cleaned.slice(0, maxLen) || "Player";
 }
 
+/** Generate a default server name from a player/PlayBound username. */
+function defaultServerName(playerName) {
+  const safe = sanitizePlayerName(playerName);
+  if (!safe || safe.toLowerCase() === "player") {
+    return "PlayBound Server";
+  }
+  return `${safe}'s Server`;
+}
+
+/** Clean up server/room/session name for game engines. */
+function sanitizeServerName(name, maxLen = 48) {
+  const cleaned = String(name || "")
+    .trim()
+    .replace(/[\r\n\t\0]/g, " ")
+    .replace(/[";\\`]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return cleaned.slice(0, maxLen) || "PlayBound Server";
+}
+
 /** Set or replace a key inside an INI section. */
 function updateIniSetting(text, section, key, value) {
   const lines = String(text || "").split(/\r?\n/);
@@ -188,6 +208,7 @@ async function autoConfigureGamePlayerName(opts = {}) {
     slug,
     gameDir = "",
     playerName,
+    serverName,
     userDataPath = "",
     homeDir = process.env.USERPROFILE || process.env.HOME || "",
     appDataDir = process.env.APPDATA || path.join(homeDir, "AppData", "Roaming"),
@@ -196,6 +217,7 @@ async function autoConfigureGamePlayerName(opts = {}) {
 
   if (!slug || !playerName) return false;
   const name = sanitizePlayerName(playerName);
+  const sName = sanitizeServerName(serverName || defaultServerName(name));
   const s = String(slug).toLowerCase();
 
   try {
@@ -203,8 +225,13 @@ async function autoConfigureGamePlayerName(opts = {}) {
     if (s === "openttd") {
       const privateCfg = path.join(appDataDir, "OpenTTD", "private.cfg");
       const openTtdCfg = path.join(appDataDir, "OpenTTD", "openttd.cfg");
-      await modifyConfigFile(privateCfg, (txt) => updateIniSetting(txt, "network", "client_name", name));
-      await modifyConfigFile(openTtdCfg, (txt) => updateIniSetting(txt, "network", "client_name", name));
+      const candidates = [privateCfg, openTtdCfg, gameDir ? path.join(gameDir, "openttd.cfg") : null].filter(Boolean);
+      for (const p of candidates) {
+        await modifyConfigFile(p, (txt) => {
+          let updated = updateIniSetting(txt, "network", "client_name", name);
+          return updateIniSetting(updated, "network", "server_name", sName);
+        });
+      }
       return true;
     }
 
@@ -212,9 +239,15 @@ async function autoConfigureGamePlayerName(opts = {}) {
     if (s === "openra" || s === "openhv" || s === "earth-2140-trilogy") {
       const openRaYaml = path.join(appDataDir, "OpenRA", "settings.yaml");
       const openHvYaml = path.join(appDataDir, "OpenHV", "settings.yaml");
-      await modifyConfigFile(openRaYaml, (txt) => updateYamlProperty(txt, "Player", "Name", name));
+      await modifyConfigFile(openRaYaml, (txt) => {
+        let updated = updateYamlProperty(txt, "Player", "Name", name);
+        return updateYamlProperty(updated, "Server", "Name", sName);
+      });
       if (s === "openhv") {
-        await modifyConfigFile(openHvYaml, (txt) => updateYamlProperty(txt, "Player", "Name", name));
+        await modifyConfigFile(openHvYaml, (txt) => {
+          let updated = updateYamlProperty(txt, "Player", "Name", name);
+          return updateYamlProperty(updated, "Server", "Name", sName);
+        });
       }
       return true;
     }
@@ -225,7 +258,9 @@ async function autoConfigureGamePlayerName(opts = {}) {
         const userCfg = path.join(base, "user.cfg");
         await modifyConfigFile(userCfg, (txt) => {
           let updated = updateKeyValueSetting(txt, "playername.singleplayer", name, { quote: true });
-          return updateKeyValueSetting(updated, "playername.multiplayer", name, { quote: true });
+          updated = updateKeyValueSetting(updated, "playername.multiplayer", name, { quote: true });
+          updated = updateKeyValueSetting(updated, "autostart.matchname", sName, { quote: true });
+          return updateKeyValueSetting(updated, "multiplayer.server.matchname", sName, { quote: true });
         });
       }
       return true;
@@ -234,7 +269,10 @@ async function autoConfigureGamePlayerName(opts = {}) {
     // 4. OpenArena
     if (s === "openarena") {
       const q3cfg = path.join(appDataDir, "OpenArena", "baseoa", "q3config.cfg");
-      await modifyConfigFile(q3cfg, (txt) => updateCvarSetting(txt, "name", name));
+      await modifyConfigFile(q3cfg, (txt) => {
+        let updated = updateCvarSetting(txt, "name", name);
+        return updateCvarSetting(updated, "sv_hostname", sName);
+      });
       return true;
     }
 
@@ -246,7 +284,10 @@ async function autoConfigureGamePlayerName(opts = {}) {
         gameDir ? path.join(gameDir, "etmain", "profiles", "default", "etconfig.cfg") : null,
       ].filter(Boolean);
       for (const p of candidates) {
-        await modifyConfigFile(p, (txt) => updateCvarSetting(txt, "name", name));
+        await modifyConfigFile(p, (txt) => {
+          let updated = updateCvarSetting(txt, "name", name);
+          return updateCvarSetting(updated, "sv_hostname", sName);
+        });
       }
       return true;
     }
@@ -256,7 +297,8 @@ async function autoConfigureGamePlayerName(opts = {}) {
       const iniPath = path.join(appDataDir, "dunelegacy", "dunelegacy.ini");
       await modifyConfigFile(iniPath, (txt) => {
         let updated = updateIniSetting(txt, "General", "PlayerName", name);
-        return updateIniSetting(updated, "Network", "PlayerName", name);
+        updated = updateIniSetting(updated, "Network", "PlayerName", name);
+        return updateIniSetting(updated, "Network", "ServerName", sName);
       });
       return true;
     }
@@ -264,7 +306,10 @@ async function autoConfigureGamePlayerName(opts = {}) {
     // 7. KeeperFX
     if (s === "keeperfx" && gameDir) {
       const cfgPath = path.join(gameDir, "keeperfx.cfg");
-      await modifyConfigFile(cfgPath, (txt) => updateKeyValueSetting(txt, "PLAYER_NAME", name));
+      await modifyConfigFile(cfgPath, (txt) => {
+        let updated = updateKeyValueSetting(txt, "PLAYER_NAME", name);
+        return updateKeyValueSetting(updated, "SESSION_NAME", sName);
+      });
       return true;
     }
 
@@ -273,6 +318,10 @@ async function autoConfigureGamePlayerName(opts = {}) {
       for (const f of ["tes3mp-client-default.cfg", "tes3mp-client.cfg"]) {
         const p = path.join(gameDir, f);
         await modifyConfigFile(p, (txt) => updateIniSetting(txt, "General", "name", name));
+      }
+      for (const f of ["tes3mp-server-default.cfg", "tes3mp-server.cfg"]) {
+        const p = path.join(gameDir, f);
+        await modifyConfigFile(p, (txt) => updateIniSetting(txt, "General", "hostname", sName));
       }
       return true;
     }
@@ -285,7 +334,11 @@ async function autoConfigureGamePlayerName(opts = {}) {
         path.join(appDataDir, "Luanti", "minetest.conf"),
       ].filter(Boolean);
       for (const p of candidates) {
-        await modifyConfigFile(p, (txt) => updateKeyValueSetting(txt, "name", name));
+        await modifyConfigFile(p, (txt) => {
+          let updated = updateKeyValueSetting(txt, "name", name);
+          updated = updateKeyValueSetting(updated, "server_name", sName);
+          return updateKeyValueSetting(updated, "server_description", sName);
+        });
       }
       return true;
     }
@@ -297,7 +350,10 @@ async function autoConfigureGamePlayerName(opts = {}) {
         gameDir ? path.join(gameDir, "data", "data", "config.cfg") : null,
       ].filter(Boolean);
       for (const p of candidates) {
-        await modifyConfigFile(p, (txt) => updateCvarSetting(txt, "_cl_name", name));
+        await modifyConfigFile(p, (txt) => {
+          let updated = updateCvarSetting(txt, "_cl_name", name);
+          return updateCvarSetting(updated, "hostname", sName);
+        });
       }
       return true;
     }
@@ -305,7 +361,10 @@ async function autoConfigureGamePlayerName(opts = {}) {
     // 11. Unvanquished
     if (s === "unvanquished") {
       const cfgPath = path.join(localAppDataDir, "Unvanquished", "config", "autogen.cfg");
-      await modifyConfigFile(cfgPath, (txt) => updateCvarSetting(txt, "name", name));
+      await modifyConfigFile(cfgPath, (txt) => {
+        let updated = updateCvarSetting(txt, "name", name);
+        return updateCvarSetting(updated, "sv_hostname", sName);
+      });
       return true;
     }
 
@@ -316,7 +375,10 @@ async function autoConfigureGamePlayerName(opts = {}) {
         gameDir ? path.join(gameDir, "zandronum.ini") : null,
       ].filter(Boolean);
       for (const p of candidates) {
-        await modifyConfigFile(p, (txt) => updateIniSetting(txt, "GlobalSettings", "name", name));
+        await modifyConfigFile(p, (txt) => {
+          let updated = updateIniSetting(txt, "GlobalSettings", "name", name);
+          return updateIniSetting(updated, "LocalServer", "sv_hostname", sName);
+        });
       }
       return true;
     }
@@ -330,20 +392,35 @@ async function autoConfigureGamePlayerName(opts = {}) {
       for (const p of candidates) {
         await modifyConfigFile(p, (txt) => updateKeyValueSetting(txt, "name", name, { quote: true, separator: " " }));
       }
+      if (gameDir) {
+        const srvInit = path.join(gameDir, "config", "server_init.cfg");
+        await modifyConfigFile(srvInit, (txt) => updateKeyValueSetting(txt, "serverdesc", sName, { quote: true, separator: " " }));
+      }
       return true;
     }
 
     // 14. Teeworlds
     if (s === "teeworlds") {
       const cfgPath = path.join(appDataDir, "Teeworlds", "settings.cfg");
-      await modifyConfigFile(cfgPath, (txt) => updateKeyValueSetting(txt, "player_name", name, { quote: true, separator: " " }));
+      await modifyConfigFile(cfgPath, (txt) => {
+        let updated = updateKeyValueSetting(txt, "player_name", name, { quote: true, separator: " " });
+        return updateKeyValueSetting(updated, "sv_name", sName, { quote: true, separator: " " });
+      });
+      if (gameDir) {
+        for (const f of ["server.cfg", "autoexec.cfg"]) {
+          await modifyConfigFile(path.join(gameDir, f), (txt) => updateKeyValueSetting(txt, "sv_name", sName, { quote: true, separator: " " }));
+        }
+      }
       return true;
     }
 
     // 15. Freeciv
     if (s === "freeciv") {
       const cfgPath = path.join(appDataDir, "freeciv", "freeciv-client.conf");
-      await modifyConfigFile(cfgPath, (txt) => updateKeyValueSetting(txt, "player.name", name, { quote: true, separator: "=" }));
+      await modifyConfigFile(cfgPath, (txt) => {
+        let updated = updateKeyValueSetting(txt, "player.name", name, { quote: true, separator: "=" });
+        return updateKeyValueSetting(updated, "server.server_name", sName, { quote: true, separator: "=" });
+      });
       return true;
     }
 
@@ -351,7 +428,10 @@ async function autoConfigureGamePlayerName(opts = {}) {
     if (s === "hedgewars") {
       for (const base of [homeDir, appDataDir]) {
         const p = path.join(base, ".hedgewars", "settings.ini");
-        await modifyConfigFile(p, (txt) => updateIniSetting(txt, "net", "nick", name));
+        await modifyConfigFile(p, (txt) => {
+          let updated = updateIniSetting(txt, "net", "nick", name);
+          return updateIniSetting(updated, "net", "servername", sName);
+        });
       }
       return true;
     }
@@ -362,6 +442,11 @@ async function autoConfigureGamePlayerName(opts = {}) {
       await modifyConfigFile(playersXml, (txt) => {
         if (!txt) return txt;
         return txt.replace(/<player\s+name="[^"]*"/i, `<player name="${name.replace(/"/g, "&quot;")}"`);
+      });
+      const serverXml = path.join(appDataDir, "supertuxkart", "config-0.10", "server_config.xml");
+      await modifyConfigFile(serverXml, (txt) => {
+        if (!txt) return txt;
+        return txt.replace(/<server\s+name="[^"]*"/i, `<server name="${sName.replace(/"/g, "&quot;")}"`);
       });
       return true;
     }
@@ -388,7 +473,10 @@ async function autoConfigureGamePlayerName(opts = {}) {
     // 19. C-Dogs SDL
     if (s === "c-dogs-sdl") {
       const cnfPath = path.join(appDataDir, "C-Dogs SDL", "options.cnf");
-      await modifyConfigFile(cnfPath, (txt) => updateIniSetting(txt, "Game", "PlayerName", name));
+      await modifyConfigFile(cnfPath, (txt) => {
+        let updated = updateIniSetting(txt, "Game", "PlayerName", name);
+        return updateIniSetting(updated, "Game", "Server.ServerName", sName);
+      });
       return true;
     }
 
@@ -408,7 +496,10 @@ async function autoConfigureGamePlayerName(opts = {}) {
         path.join(appDataDir, "Warzone 2100 4.x", "config"),
       ];
       for (const p of candidates) {
-        await modifyConfigFile(p, (txt) => updateKeyValueSetting(txt, "playerName", name, { separator: " = " }));
+        await modifyConfigFile(p, (txt) => {
+          let updated = updateKeyValueSetting(txt, "playerName", name, { separator: " = " });
+          return updateKeyValueSetting(updated, "gameName", sName, { separator: " = " });
+        });
       }
       return true;
     }
@@ -428,7 +519,10 @@ async function autoConfigureGamePlayerName(opts = {}) {
     // 23. Managed RetroArch (netplay nickname across libretro games)
     if (userDataPath) {
       const raCfg = path.join(userDataPath, "runtimes", "retroarch", "retroarch.cfg");
-      await modifyConfigFile(raCfg, (txt) => updateKeyValueSetting(txt, "netplay_nickname", name, { quote: true, separator: " = " }));
+      await modifyConfigFile(raCfg, (txt) => {
+        let updated = updateKeyValueSetting(txt, "netplay_nickname", name, { quote: true, separator: " = " });
+        return updateKeyValueSetting(updated, "netplay_mitm_server", sName, { quote: true, separator: " = " });
+      });
     }
 
     return true;
@@ -547,8 +641,83 @@ function getPlayerNameLaunchArgs(slug, playerName, existingArgs = []) {
   return [];
 }
 
+/**
+ * Return non-duplicating engine-specific startup switches to set the server / session name.
+ */
+function getServerNameLaunchArgs(slug, serverName, existingArgs = []) {
+  if (!slug) return [];
+  const s = String(slug).toLowerCase().trim();
+  const name = sanitizeServerName(serverName);
+  const argsStr = existingArgs.join(" ");
+
+  // id Tech 3 & Quake derivatives: OpenArena, Wolf ET, MOHAA, OpenMOHAA
+  if (
+    s === "openarena" ||
+    s === "wolfenstein-enemy-territory" ||
+    s === "medal-of-honor-allied-assault" ||
+    s === "openmohaa"
+  ) {
+    if (!/sv_hostname\b/i.test(argsStr)) {
+      return ["+set", "sv_hostname", name];
+    }
+    return [];
+  }
+
+  // DarkPlaces: Xonotic
+  if (s === "xonotic") {
+    if (!/\+hostname\b/i.test(argsStr)) {
+      return ["+hostname", name];
+    }
+    return [];
+  }
+
+  // Unvanquished
+  if (s === "unvanquished") {
+    if (!/sv_hostname\b/i.test(argsStr)) {
+      return ["+set", "sv_hostname", name];
+    }
+    return [];
+  }
+
+  // OpenRA family
+  if (s === "openra" || s === "openhv" || s === "earth-2140-trilogy") {
+    if (!/Server\.Name=/i.test(argsStr)) {
+      return [`Server.Name=${name}`];
+    }
+    return [];
+  }
+
+  // Freeciv
+  if (s === "freeciv") {
+    if (!/--ServerName\b/i.test(argsStr)) {
+      return ["--ServerName", name];
+    }
+    return [];
+  }
+
+  // AssaultCube
+  if (s === "assaultcube") {
+    if (!/-n\S+/i.test(argsStr) && /-f\d+/i.test(argsStr)) {
+      return [`-n${name}`];
+    }
+    return [];
+  }
+
+  // 0 A.D.
+  if (s === "0ad" || s === "0-ad") {
+    if (!/-autostart-matchname=/i.test(argsStr) && /-autostart/i.test(argsStr)) {
+      return [`-autostart-matchname=${name}`];
+    }
+    return [];
+  }
+
+  return [];
+}
+
 module.exports = {
+  defaultServerName,
   sanitizePlayerName,
+  sanitizeServerName,
   updateIniSetting,
   updateYamlProperty,
   updateCvarSetting,
@@ -556,4 +725,5 @@ module.exports = {
   modifyConfigFile,
   autoConfigureGamePlayerName,
   getPlayerNameLaunchArgs,
+  getServerNameLaunchArgs,
 };

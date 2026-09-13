@@ -26,13 +26,14 @@ function iniValue(value) {
   return String(value ?? "").replace(/[\r\n]/g, " ").trim();
 }
 
-function writeServerConfig(cwd, hostLaunch, port, settings) {
+function writeServerConfig(cwd, hostLaunch, port, settings, serverName) {
   if (!hostLaunch?.configFile) return;
   const configPath = path.join(cwd, hostLaunch.configFile);
   let content = fs.existsSync(configPath) ? fs.readFileSync(configPath, "utf8") : "[General]\n";
+  const defaultHostname = serverName || "PlayBound Server";
   const values = {
     port,
-    hostname: "PlayBound.club Party",
+    hostname: defaultHostname,
     ...(settings || {}),
   };
   const allowed = new Set(hostLaunch.configKeys || []);
@@ -91,11 +92,12 @@ function cvarArgs(settings) {
  * template the VPS recipes are built from, which until now was declared on
  * eleven games and read by nothing.
  */
-function buildServerArgs({ hostLaunch, port, settings }) {
+function buildServerArgs({ hostLaunch, port, settings, serverName }) {
   const template = Array.isArray(hostLaunch?.argsTemplate) ? hostLaunch.argsTemplate : [];
   if (!template.length) return hostLaunch?.configFile ? [] : null;
+  const name = serverName || "PlayBound Server";
   const resolved = template.map((arg) =>
-    String(arg).replace("{port}", String(port)).replace("{name}", "PlayBound.club Party")
+    String(arg).replace("{port}", String(port)).replace("{name}", name)
   );
   return [...resolved, ...cvarArgs(settings)];
 }
@@ -132,17 +134,17 @@ function createLocalServers({ onExit } = {}) {
    * dedicated server that was given its configuration on the command line to
    * take a different one, so the process is the unit of change.
    */
-  function start(partyId, { exe, cwd, hostLaunch, port, settings, revision }) {
-    const args = buildServerArgs({ hostLaunch, port, settings });
+  function start(partyId, { exe, cwd, hostLaunch, port, settings, revision, serverName }) {
+    const args = buildServerArgs({ hostLaunch, port, settings, serverName });
     if (!args) return { error: "This game has no dedicated server PlayBound can start." };
     if (!exe) return { error: "The game is not installed." };
 
     stop(partyId);
 
     try {
-      writeServerConfig(cwd || path.dirname(exe), hostLaunch, port, settings);
+      writeServerConfig(cwd || path.dirname(exe), hostLaunch, port, settings, serverName);
     } catch (err) {
-      return { error: `Could not write server configuration: ${err.message}` };
+      return { error: `Could not write server config: ${err.message}` };
     }
 
     let child;
