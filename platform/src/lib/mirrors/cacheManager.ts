@@ -873,11 +873,24 @@ export async function archiveArtifactToVps(
   }
 
   /*
-   * Prefer a current catalog URL when it names this exact file. Operational
-   * MirrorSource rows are historical telemetry and may contain expired itch
-   * CDN links; HoloCure's recorded source returned 403 even though its curated
-   * package URL was current. Exact filename matching prevents substituting a
-   * sibling edition or a different package.
+   * Explicit sourceUrl from the admin Archive action wins first. Catalog URLs
+   * often point at the VPS path we are trying to fill (GoldenEye 404) — using
+   * them as the pull source loops forever. Prefer the staged Blob / public URL
+   * the operator selected.
+   */
+  const preferred = String(preferredSourceUrl || "").trim();
+  if (preferred.startsWith("https://") && !/itch\.io|hwcdn\.net/i.test(preferred)) {
+    sourceUrl = preferred;
+    sourceLabel = "selected public source";
+  }
+
+  /*
+   * Prefer a current catalog URL when it names this exact file and nothing
+   * else was selected. Operational MirrorSource rows are historical telemetry
+   * and may contain expired itch CDN links; HoloCure's recorded source
+   * returned 403 even though its curated package URL was current. Exact
+   * filename matching prevents substituting a sibling edition or a different
+   * package.
    */
   if (!sourceUrl && (artifact.gameSlug || modSlug) && artifact.filename) {
     const catalogUrl = await catalogArchiveSourceUrl(artifact.gameSlug, editionSlug, modSlug);
@@ -902,7 +915,6 @@ export async function archiveArtifactToVps(
   // The admin cache row already has this exact URL from its Public sources
   // record. Prefer it when supplied so archiving does not depend on a second
   // lookup of historic telemetry identifiers, unless it is an expiring itch link.
-  const preferred = String(preferredSourceUrl || "").trim();
   if (!sourceUrl && preferred.startsWith("https://") && !/itch\.io|hwcdn\.net/i.test(preferred)) {
     sourceUrl = preferred;
     sourceLabel = "selected public source";
