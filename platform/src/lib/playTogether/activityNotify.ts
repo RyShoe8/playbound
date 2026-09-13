@@ -5,6 +5,7 @@ import Notification from "@/lib/models/Notification";
 import Party from "@/lib/models/Party";
 import Presence from "@/lib/models/Presence";
 import { getGame } from "@/lib/catalog";
+import { supportsMultiplayer } from "@/lib/multiplayer/support";
 import { createFriendPlayingNotification } from "@/lib/playTogether/notify";
 import { FRIEND_PLAYING_NOTIFY_COOLDOWN_MS } from "@/lib/playTogether/types";
 
@@ -87,6 +88,7 @@ export async function maybeNotifyFriendsStartedPlaying(opts: {
       getGame(nextGame, { includeTesting: true }),
     ]);
     if (!me || !game) return;
+    if (!supportsMultiplayer(game)) return;
     if (Boolean((me as { preferences?: { appearOffline?: boolean } }).preferences?.appearOffline)) {
       return;
     }
