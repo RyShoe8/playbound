@@ -1483,7 +1483,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     kind: "direct-zip",
     url: "https://mirror.playbound.club/launcher-packages/games/tmnt-rescue-palooza/1789256353987-tmnt-rescue-palooza-1.15.zip",
     fileName: "tmnt-rescue-palooza-1.15.zip",
-    versionLabel: "1.1.5",
+    versionLabel: "1.1.5-clean",
     /* TMNT-only zip (no Balacera/other demos). Pin the full-game exe. */
     exeHint: "TMNT_Rescue_Palooza|TMNT_Rescue_Palooza.exe",
     knownExePaths: [

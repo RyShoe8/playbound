@@ -102,7 +102,7 @@ export function PartyView({
   const [openRaEditions, setOpenRaEditions] = useState<
     { slug: string; name: string }[] | null
   >(null);
-  /** When on: only LOCAL_COUCH_GAMES. When off: online multiplayer (not couch-only). */
+  /** When on: only LOCAL_COUCH_GAMES. When off: all party multiplayer (including Connect couch titles). */
   const [couchCoopFilter, setCouchCoopFilter] = useState(false);
   const { mode, device } = useCompatibilityFilter();
 
@@ -175,7 +175,7 @@ export function PartyView({
         .filter((g) => supportsLauncherParty(g))
         .filter((g) => mode === "all" || isGameCompatible(g, device.type))
         .filter((g) => fitsPartySize(g.maxPlayers, party.members?.length || 1))
-        .filter((g) => (couchCoopFilter ? couchSlugs.has(g.slug) : !couchSlugs.has(g.slug))),
+        .filter((g) => !couchCoopFilter || couchSlugs.has(g.slug)),
       party.requiredPlatforms || []
     );
   }, [
@@ -531,15 +531,15 @@ export function PartyView({
                     onChange={(e) => setCouchCoopFilter(e.target.checked)}
                     title={
                       couchCoopFilter
-                        ? "Showing local couch co-op games only"
-                        : "Showing online multiplayer games"
+                        ? "Showing couch co-op games only"
+                        : "Showing all multiplayer games"
                     }
                   />
                 </label>
                 <p className="text-[11px] text-muted-foreground">
                   {couchCoopFilter
-                    ? "Local couch co-op (online via Connect pads)."
-                    : "Online multiplayer games."}
+                    ? "Couch co-op only (pads on one PC, or Connect for remote pads)."
+                    : "All multiplayer games, including couch co-op with Connect."}
                 </p>
                 <label className="block">
                   <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -553,10 +553,8 @@ export function PartyView({
                   >
                     <option value="">Select a game</option>
                     {/*
-                      Marked in the list, not after the fact: these games have
-                      no online play, and a leader who picked one expecting a
-                      server had already committed the party to it by the time
-                      the card said otherwise.
+                      Marked in the list so leaders see which picks are
+                      couch/Connect before they commit the party.
                     */}
                     {partyGames.map((g) => (
                       <option key={g.slug} value={g.slug}>

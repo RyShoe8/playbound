@@ -6026,7 +6026,7 @@ export const editorial: Record<string, GameEditorial> = {
       },
       {
         platform: "windows",
-        text: "Launch OpenBOR.exe, plug in pads (or use phone-as-controller), and start a co-op game. CPU partners can fill empty seats.",
+        text: "Launch XMArcade/GAMEnew.exe, plug in pads (or use phone-as-controller), and start a co-op game. CPU partners can fill empty seats.",
       },
       {
         platform: "all",
@@ -6109,7 +6109,7 @@ export const editorial: Record<string, GameEditorial> = {
       },
       {
         platform: "windows",
-        text: "Launch OpenBOR.exe, plug in pads (or use phone-as-controller), and start Story or Arcade co-op.",
+        text: "Launch TMNT_Rescue_Palooza.exe, plug in pads (or use phone-as-controller), and start Story or Arcade co-op.",
       },
       {
         platform: "all",

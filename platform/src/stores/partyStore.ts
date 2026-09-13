@@ -89,6 +89,8 @@ const FAST_PARTY_POLL_MS = 1000;
 /** Slowest lane in the same request: friends' joinable parties. */
 const DISCOVERABLE_MIN_MS = 5000;
 let lastDiscoverableAt = 0;
+/** Require two consecutive empty myParties before clearing a live party UI. */
+let emptyMyPartiesStreak = 0;
 
 function refreshFriendsAfterPartyMutation() {
   void useFriendsStore.getState().fetchFriends();
@@ -274,7 +276,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       const data = await res.json();
       if (wantDiscoverable) lastDiscoverableAt = Date.now();
       const myParties: PartyPayload[] = data.myParties || [];
-      const nextActive = myParties[0] || null;
+      let nextActive = myParties[0] || null;
       // Absent means "not asked for this time", which is not the same as none.
       const nextDiscoverable: PartyPayload[] | null = Array.isArray(data.discoverable)
         ? data.discoverable
@@ -282,6 +284,18 @@ export const usePartyStore = create<PartyState>((set, get) => ({
           ? []
           : null;
       set((state) => {
+        if (nextActive) {
+          emptyMyPartiesStreak = 0;
+        } else if (state.activeParty) {
+          emptyMyPartiesStreak += 1;
+          if (emptyMyPartiesStreak < 2) {
+            nextActive = state.activeParty;
+          } else {
+            emptyMyPartiesStreak = 0;
+          }
+        } else {
+          emptyMyPartiesStreak = 0;
+        }
         const keepActive =
           (partyMutationInFlight > 0 && state.activeParty?.id === nextActive?.id) ||
           sameParty(state.activeParty, nextActive);
@@ -405,6 +419,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
     partyMutationInFlight += 1;
     try {
       await fetch(`/api/parties/${partyId}/leave`, { method: "POST" });
+      emptyMyPartiesStreak = 2;
       set({ activeParty: null });
       await get().fetchParties();
       refreshFriendsAfterPartyMutation();
@@ -469,6 +484,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
   endParty: async (partyId) => {
     try {
       await fetch(`/api/parties/${partyId}`, { method: "DELETE" });
+      emptyMyPartiesStreak = 2;
       set({ activeParty: null });
       syncPartyPoll(get);
       refreshFriendsAfterPartyMutation();

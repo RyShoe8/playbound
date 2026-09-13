@@ -290,10 +290,42 @@ const DEFAULT_GAME_PORTS = {
   "alien-swarm": 27015,
   "alien-swarm-reactive-drop": 27015,
   supertuxkart: 2759,
+  /* RVGL lobby; mirrors adapters.ts selfHost.port. */
+  "re-volt-rvgl": 2310,
+  revolt: 2310,
+  rvgl: 2310,
+  "re-volt": 2310,
+};
+
+/**
+ * Transport the host listens on, for party self-host readiness.
+ *
+ * UDP (and ENet) sockets never accept a TCP probe, so the launcher must mark
+ * self-host ready after launch rather than waiting for probeLocalServer.
+ * Default "tcp" keeps the existing probe path for games we have not listed.
+ */
+const DEFAULT_GAME_PROTOCOLS = {
+  "re-volt-rvgl": "udp",
+  revolt: "udp",
+  rvgl: "udp",
+  "re-volt": "udp",
+  /* STK uses ENet; TCP connect to 2759 never succeeds. */
+  supertuxkart: "udp",
+  bombsquad: "udp",
+  openarena: "udp",
+  xonotic: "udp",
+  "wolfenstein-enemy-territory": "udp",
+  teeworlds: "udp",
+  assaultcube: "udp",
 };
 
 function defaultGamePort(slug) {
   return DEFAULT_GAME_PORTS[String(slug || "").toLowerCase()] || 0;
+}
+
+/** "tcp" | "udp" | "both" — drives self-host auto-ready vs TCP probe. */
+function defaultGameProtocol(slug) {
+  return DEFAULT_GAME_PROTOCOLS[String(slug || "").toLowerCase()] || "tcp";
 }
 
 /** Templates for a slug, or null when the client cannot join from the CLI. */
@@ -403,5 +435,6 @@ module.exports = {
   applyConnectTemplates,
   staticLaunchArgs,
   defaultGamePort,
+  defaultGameProtocol,
   openRaModName,
 };

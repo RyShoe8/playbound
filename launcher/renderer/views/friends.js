@@ -676,6 +676,44 @@ function withCachedDiscoverable(data) {
   return { ...data, discoverable: lastDiscoverable };
 }
 
+/*
+ * Stick the last good myParties across a soft party-sync failure or a single
+ * empty read. party-sync returns myParties: [] with errors:["parties"] when
+ * that half fails — painting that blanked the live party until the next poll.
+ * One empty success can also flicker (canonical pick / race); require two
+ * consecutive empties before we treat leave as real.
+ */
+let lastMyParties = [];
+let emptyMyPartiesStreak = 0;
+
+function withCachedMyParties(data) {
+  if (!data || data.error) return data;
+  const errors = Array.isArray(data.errors) ? data.errors : [];
+  const mine = Array.isArray(data.myParties) ? data.myParties : [];
+
+  if (errors.includes("parties")) {
+    return { ...data, myParties: lastMyParties };
+  }
+
+  if (mine.length > 0) {
+    lastMyParties = mine;
+    emptyMyPartiesStreak = 0;
+    return data;
+  }
+
+  emptyMyPartiesStreak += 1;
+  if (emptyMyPartiesStreak < 2 && lastMyParties.length > 0) {
+    return { ...data, myParties: lastMyParties };
+  }
+
+  lastMyParties = [];
+  return data;
+}
+
+function cachePartiesPayload(data) {
+  return withCachedMyParties(withCachedDiscoverable(data));
+}
+
 async function loadParties() {
   if (!window.playbound.getParties) return null;
   const includeDiscoverable = Date.now() - lastDiscoverableAt >= DISCOVERABLE_MIN_MS;
@@ -683,7 +721,7 @@ async function loadParties() {
   const data = await window.playbound.getParties(
     includeDiscoverable ? undefined : { includeDiscoverable: false }
   );
-  return withCachedDiscoverable(data);
+  return cachePartiesPayload(data);
 }
 
 /*
@@ -712,9 +750,10 @@ async function loadFriendsBundle() {
       return {
         friendsData: { friends: data.friends },
         requestsData: { incoming: data.incoming, outgoing: data.outgoing },
-        partiesRaw: withCachedDiscoverable({
+        partiesRaw: cachePartiesPayload({
           myParties: data.myParties,
           ...(Array.isArray(data.discoverable) ? { discoverable: data.discoverable } : {}),
+          ...(Array.isArray(data.errors) ? { errors: data.errors } : {}),
         }),
       };
     }
@@ -1532,13 +1571,14 @@ function partyGameOptionsHtml(selectedSlug, party) {
   const games = filterByDiscovery(partyGamesCache || [])
     .filter((g) => partyCanAllPlay(g, required))
     .filter((g) => fitsPartySize(g.maxPlayers, memberCount))
-    .filter((g) => (partyCouchCoopFilter ? couchOnly.has(g.slug) : !couchOnly.has(g.slug)));
+    /*
+     * Couch co-op on → only Connect/local couch titles. Off → every party game,
+     * including TMNT/X-Men (couch engines that also play online via Connect).
+     */
+    .filter((g) => !partyCouchCoopFilter || couchOnly.has(g.slug));
   /*
-   * Marked in the list, not after the fact. These games have no online play at
-   * all, and a leader who picked one expecting a server had already committed
-   * the party to it by the time the card said otherwise. The slugs come down
-   * on the party payload because the launcher cannot import the registry that
-   * knows which games these are.
+   * Marked in the list so leaders see which picks are couch/Connect. Slugs come
+   * on the party payload — the launcher cannot import the hostModes registry.
    */
   const options = [`<option value="">Select a game</option>`];
   for (const g of games) {
@@ -1749,8 +1789,8 @@ function buildPartyViewHtml(party) {
        </label>
        <p class="view-sub party-couch-filter-hint">${
          partyCouchCoopFilter
-           ? "Showing local couch co-op games (online via Connect)."
-           : "Showing online multiplayer games."
+           ? "Couch co-op only (pads on one PC, or Connect for remote pads)."
+           : "All multiplayer games, including couch co-op with Connect."
        }</p>
        <label class="party-field-label" for="party-game-select">Game</label>
        <select class="input-text party-game-select" id="party-game-select" aria-label="Party game">
@@ -2839,6 +2879,8 @@ function clearPartyAreaOptimistic() {
     slot.dataset.sig = "";
   }
   state._activeParty = null;
+  lastMyParties = [];
+  emptyMyPartiesStreak = 2;
   const startBtn = document.getElementById("btn-toggle-create-party");
   if (startBtn) startBtn.style.display = "";
   syncFriendsPoll();
@@ -2848,13 +2890,9 @@ function paintPartyArea(partiesData, { force = false } = {}) {
   const slot = document.getElementById("friends-party-area");
   if (!slot) return;
   if (partiesData?.error) {
-    // Clearing the DOM without also clearing the signature leaves this
-    // blank forever: the next successful poll can return the exact same
-    // (unchanged) party data, compute the same signature, and the
-    // unchanged-signature guard below would skip repainting — even though
-    // there is nothing on screen to skip repainting over.
-    slot.innerHTML = "";
-    slot.dataset.sig = "";
+    // Keep the last good paint. Clearing here blanked a live party whenever a
+    // single poll 500'd, then the next success often matched the old signature
+    // and skipped repainting — or showed discovery until myParties returned.
     return;
   }
   const mine = Array.isArray(partiesData?.myParties) ? partiesData.myParties : [];
@@ -3498,7 +3536,6 @@ async function isGameReadyToPlay(slug) {
  */
 async function maybeStartPartyCouch(partyId, party) {
   if (!party?.couch?.enabled) return;
-  if (party.couch.status === "ready" && party.couch.joinCode) return;
   try {
     /*
      * Through startCouchSessionQuiet rather than couchStart: it reuses a
@@ -3512,11 +3549,20 @@ async function maybeStartPartyCouch(partyId, party) {
       throw new Error("Could not start online controllers.");
     }
     ensureCouchBackground();
-    // Capture before publishing the code so the first Join gets video tracks in the answer.
+    /*
+     * Always (re)capture — a prior "ready" session may have published a code
+     * with no video tracks (capture failed or was skipped). Re-push so late
+     * Join / Open game view still get renegotiated tracks.
+     */
     const stream = await ensureHostDisplayStream();
     if (stream) {
       setStatus("Sharing game view for online multiplayer…");
       void pushHostDisplayToPeers();
+    } else {
+      setStatus(
+        "Online pads are ready, but game-view sharing failed — run the game windowed/borderless and Start Game again.",
+        true
+      );
     }
     await window.playbound.setPartyCouchSession(partyId, {
       joinCode: session.joinCode,

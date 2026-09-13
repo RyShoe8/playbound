@@ -109,7 +109,27 @@ export function ControllerClient({
   const framesRef = useRef(0);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const remoteStreamRef = useRef<MediaStream | null>(null);
   const [hasVideo, setHasVideo] = useState(false);
+
+  function attachRemoteStream(stream: MediaStream) {
+    remoteStreamRef.current = stream;
+    setHasVideo(true);
+    const el = videoRef.current;
+    if (el && el.srcObject !== stream) {
+      el.srcObject = stream;
+      void el.play().catch(() => {});
+    }
+  }
+
+  function bindVideoEl(el: HTMLVideoElement | null) {
+    videoRef.current = el;
+    const stream = remoteStreamRef.current;
+    if (el && stream && el.srcObject !== stream) {
+      el.srcObject = stream;
+      void el.play().catch(() => {});
+    }
+  }
 
   const playerLabel = useMemo(() => {
     if (join?.playerSlot == null) return "…";
@@ -348,13 +368,8 @@ export function ControllerClient({
       // Receive host game view when the host shares their display.
       pc.addTransceiver("video", { direction: "recvonly" });
       pc.ontrack = (ev) => {
-        const el = videoRef.current;
         const stream = ev.streams?.[0] || (ev.track ? new MediaStream([ev.track]) : null);
-        if (el && stream) {
-          el.srcObject = stream;
-          void el.play().catch(() => {});
-          setHasVideo(true);
-        }
+        if (stream) attachRemoteStream(stream);
       };
       dc = pc.createDataChannel("input", { ordered: false, maxRetransmits: 0 });
       dc.binaryType = "arraybuffer";
@@ -719,7 +734,7 @@ export function ControllerClient({
       >
         <ControllerStyles />
         <div className={hasVideo ? "pbc-gameview is-live" : "pbc-gameview"} aria-hidden={!hasVideo}>
-          <video ref={videoRef} className="pbc-gameview-video" playsInline muted autoPlay />
+          <video ref={bindVideoEl} className="pbc-gameview-video" playsInline muted autoPlay />
           {!hasVideo ? (
             <p className="pbc-gameview-wait">Waiting for host game view… keys work either way</p>
           ) : null}
@@ -772,7 +787,7 @@ export function ControllerClient({
       {/* Host game view (P2P) — online multiplayer for local-only games */}
       <div className={hasVideo ? "pbc-gameview is-live" : "pbc-gameview"} aria-hidden={!hasVideo}>
         <video
-          ref={videoRef}
+          ref={bindVideoEl}
           className="pbc-gameview-video"
           playsInline
           muted
