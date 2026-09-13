@@ -550,7 +550,7 @@ module.exports = [
       "Cross-play",
       "Controller Support"
     ],
-    "multiplayer": false,
+    "multiplayer": true,
     "hasServerBrowser": false,
     "isMultiplayer": true,
     "coverImage": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/brawlhalla/shot-1786843679939.webp",
