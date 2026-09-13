@@ -33,17 +33,17 @@ const DGVOODOO_MS_X86_MIRROR_URL =
   "https://mirror.playbound.club/launcher-packages/runtimes/dgvoodoo/2_87_4/ms-x86.zip";
 
 /**
- * FreeTrain's DirectDraw.NET CLSID — used for identification only.
+ * FreeTrain's DirectDraw.NET CLSID — CLSID_DirectX7 from dx7vb.dll.
  *
- * Do NOT add this to DIRECTDRAW_COM_CLSIDS. {E1211353} is implemented inside
- * DirectDraw.net.dll (a managed .NET wrapper bundled with FreeTrain). It has
- * no system-wide COM registration. Redirecting it to ddraw.dll in HKCU makes
- * CoCreateInstance load dgVoodoo's ddraw.dll and ask for this class, which
- * dgVoodoo does not export → 80040111 (CLASS_E_CLASSNOTAVAILABLE).
+ * FreeTrain uses Managed DirectX via Interop.DxVBLib, which calls
+ * CoCreateInstance on CLSID_DirectX7 ({E1211353-8E94-11D1-8808-00C04FC2C602}).
+ * This class is implemented in dx7vb.dll (DirectX 7 for VB), NOT in ddraw.dll.
+ * Redirecting {E1211353} to ddraw.dll caused 80040111 (CLASS_E_CLASSNOTAVAILABLE).
+ * Removing it caused 80040154 (REGDB_E_CLASSNOTREG).
  *
- * The InjectDll AppCompat shim already loads dgVoodoo's ddraw.dll into the
- * FreeTrain process before CoCreateInstance runs, so the underlying DirectDraw
- * API calls are intercepted without any COM redirection for this CLSID.
+ * Registering {E1211353} in HKCU pointing to relative `dx7vb.dll` resolves the COM
+ * class factory without elevation. dx7vb.dll then delegates DirectDraw calls
+ * to the local ddraw.dll (dgVoodoo2), giving full hardware acceleration.
  */
 const CLSID_DIRECTDRAW = "{E1211353-8E94-11D1-8808-00C04FC2C602}";
 
@@ -53,8 +53,7 @@ const CLSID_DIRECTDRAW = "{E1211353-8E94-11D1-8808-00C04FC2C602}";
  * legitimately implement. Registered as relative `ddraw.dll` (not absolute)
  * so the wrapper beside the exe wins via the process search order.
  *
- * {E1211353} (FreeTrain's DirectDraw.NET CLSID) is intentionally absent —
- * see CLSID_DIRECTDRAW comment above.
+ * {E1211353} (CLSID_DirectX7) points to dx7vb.dll instead — see comment above.
  */
 const DIRECTDRAW_COM_CLSIDS = [
   "{D7B70EE0-4340-11CF-B063-0020AFC2CD35}",
@@ -63,7 +62,7 @@ const DIRECTDRAW_COM_CLSIDS = [
   "{593817A0-7DB3-11CF-A2DE-00AA00B93356}",
 ];
 
-const MS_X86_DLLS = ["DDraw.dll", "D3DImm.dll", "D3D8.dll", "D3D9.dll"];
+const MS_X86_DLLS = ["DDraw.dll", "D3DImm.dll", "D3D8.dll", "D3D9.dll", "dx7vb.dll"];
 
 const FREETRAIN_SLUGS = new Set(["freetrain", "free-train"]);
 
@@ -265,23 +264,16 @@ function registerDirectDrawComHkcu(_ddrawPath) {
   /*
    * Per-user COM redirection — no elevation. CoCreateInstance prefers HKCU.
    *
-   * Use the relative module name `ddraw.dll`, not an absolute path. DDrawCompat
-   * and dgVoodoo both expect the loader to resolve from the app directory.
+   * Use relative module names (`ddraw.dll`, `dx7vb.dll`), not absolute paths.
+   * DDrawCompat, dgVoodoo, and dx7vb all resolve from the app directory.
    *
    * FreeTrain is 32-bit — register under Wow6432Node as well.
    *
-   * {E1211353} (CLSID_DIRECTDRAW) is intentionally excluded from registration.
-   * That CLSID is FreeTrain's own DirectDraw.NET COM class — implemented in
-   * DirectDraw.net.dll, not in dgVoodoo's ddraw.dll. Redirecting it to ddraw.dll
-   * caused CoCreateInstance to load the wrong DLL and return 80040111
-   * (CLASS_E_CLASSNOTAVAILABLE). The InjectDll AppCompat shim preloads
-   * dgVoodoo before the process starts, which is sufficient.
-   *
-   * Also clean up any stale {E1211353} HKCU registration left by older
-   * launcher versions that incorrectly included it.
+   * Standard DirectDraw CLSIDs -> ddraw.dll
+   * CLSID_DIRECTDRAW ({E1211353}) -> dx7vb.dll (DirectX 7 for VB)
    */
   const clsids = DIRECTDRAW_COM_CLSIDS.map((c) => JSON.stringify(c)).join(",");
-  const staleClsid = JSON.stringify(CLSID_DIRECTDRAW);
+  const dx7Clsid = JSON.stringify(CLSID_DIRECTDRAW);
   const script = `
 $ErrorActionPreference = 'Stop'
 $clsids = @(${clsids})
@@ -294,13 +286,12 @@ foreach ($clsid in $clsids) {
     Set-ItemProperty -Path $path -Name 'ThreadingModel' -Value 'Both'
   }
 }
-# Remove any stale {E1211353} registration — that CLSID belongs to
-# DirectDraw.net.dll, not ddraw.dll. Pointing it at ddraw.dll returns 80040111.
+# Point {E1211353} to dx7vb.dll so FreeTrain's DxVBLib.DirectX7Class succeeds without 80040154 or 80040111
 foreach ($root in $roots) {
-  $stalePath = Join-Path $root (${staleClsid} + '\\InprocServer32')
-  if (Test-Path $stalePath) { Remove-Item -Path $stalePath -Recurse -Force -ErrorAction SilentlyContinue }
-  $staleParent = Join-Path $root ${staleClsid}
-  if (Test-Path $staleParent) { Remove-Item -Path $staleParent -Recurse -Force -ErrorAction SilentlyContinue }
+  $dx7Path = Join-Path $root (${dx7Clsid} + '\\InprocServer32')
+  New-Item -Path $dx7Path -Force | Out-Null
+  Set-ItemProperty -Path $dx7Path -Name '(default)' -Value 'dx7vb.dll'
+  Set-ItemProperty -Path $dx7Path -Name 'ThreadingModel' -Value 'Both'
 }
 `;
   const ps = spawnSync("powershell.exe", ["-NoProfile", "-Command", script], {

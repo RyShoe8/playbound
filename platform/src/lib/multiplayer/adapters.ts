@@ -598,23 +598,24 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     tier: "tier2_automated_server",
     adapterType: "managed-server",
     protocol: "udp",
+    selfHost: {
+      kind: "listen",
+      port: 8303,
+      protocol: "udp",
+      verified: true,
+    },
     host: {
       port: 8303,
       protocol: "udp",
       binaryHint: "teeworlds_srv",
-      /*
-       * No argsTemplate on purpose. Teeworlds is configured by a file the
-       * recipe writes rather than by argv, so there is nothing for a local
-       * launcher to template — and buildServerArgs returning null is how the
-       * launcher declines to start one on a player's PC.
-       */
+      argsTemplate: ['"sv_port {port}"', '"sv_name {name}"'],
     },
     client: {
       // The client takes console commands as argv; "connect" is one of them.
       launchArguments: ['"connect {host}:{port}"'],
     },
     notes:
-      "Dedicated teeworlds_srv on the VPS, configured through a generated .cfg. Client joins with a quoted connect command.",
+      "Dedicated teeworlds_srv on the VPS or local PC. In-game listen server and dedicated hosting verified. Client joins with a quoted connect command.",
   },
 
   openarena: {

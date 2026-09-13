@@ -178,6 +178,8 @@ function renderDeepLinkView(ctx) {
         }
         if (await api.finishPartyInstallReturn?.(ctx.slug)) {
           /* install-detected may also fire; first caller wins. */
+        } else if (ctx.slug) {
+          api.openGameDetail(ctx.slug);
         } else {
           api.navigateTo("library");
         }
@@ -342,7 +344,11 @@ function renderDeepLinkView(ctx) {
             /* panel can still finish even if the context clear fails */
           }
           setStatus("Mod installed.");
-          api.navigateTo("library");
+          if (ctx.slug) {
+            api.openModDetail(ctx.slug);
+          } else {
+            api.navigateTo("library");
+          }
         } catch (err) {
           setStatus(err.message || String(err), true);
           const btn = document.getElementById("dl-act-run");

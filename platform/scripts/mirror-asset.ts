@@ -15,6 +15,7 @@
  */
 import { createReadStream, statSync } from "fs";
 import { basename } from "path";
+import { Transform } from "stream";
 import { loadEnvConfig } from "@next/env";
 import { put } from "@vercel/blob";
 
@@ -34,6 +35,27 @@ async function main() {
   const { size } = statSync(source);
   console.log(`Mirroring ${basename(source)} (${(size / 1024 / 1024).toFixed(1)} MB) → ${destination}`);
 
+  let uploaded = 0;
+  let lastLog = Date.now();
+  const startTime = Date.now();
+
+  const tracker = new Transform({
+    transform(chunk, _encoding, callback) {
+      uploaded += chunk.length;
+      const now = Date.now();
+      if (now - lastLog >= 1500 || uploaded === size) {
+        lastLog = now;
+        const pct = ((uploaded / size) * 100).toFixed(1);
+        const mb = (uploaded / 1024 / 1024).toFixed(1);
+        const totalMb = (size / 1024 / 1024).toFixed(1);
+        const elapsedSec = (now - startTime) / 1000;
+        const speedMb = elapsedSec > 0 ? (uploaded / 1024 / 1024 / elapsedSec).toFixed(1) : "0.0";
+        process.stdout.write(`\rUploading: ${pct}% (${mb} / ${totalMb} MB) · ${speedMb} MB/s...   `);
+      }
+      callback(null, chunk);
+    },
+  });
+
   /*
    * Streamed, not readFileSync'd. Node's readFileSync refuses anything over
    * 2 GiB outright (ERR_FS_FILE_TOO_LARGE) — the GoldenEye: Source installer
@@ -46,7 +68,7 @@ async function main() {
    * infer from, and multipart is the correct mode for every file worth using
    * this script on.
    */
-  const blob = await put(destination, createReadStream(source), {
+  const blob = await put(destination, createReadStream(source).pipe(tracker), {
     access: "public",
     addRandomSuffix: false,
     allowOverwrite: true,
@@ -54,6 +76,7 @@ async function main() {
     token: process.env.BLOB_READ_WRITE_TOKEN,
   });
 
+  process.stdout.write("\n");
   console.log(`\nMirrored: ${blob.url}`);
 }
 

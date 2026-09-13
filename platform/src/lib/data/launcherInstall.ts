@@ -1546,4 +1546,22 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     ],
     note: "Opens GOG Galaxy for your owned copy. Official online offline; LAN via PlayBound Connect.",
   },
+  "stalker-lost-alpha": {
+    enabled: true,
+    kind: "external",
+    url: "https://www.moddb.com/mods/lost-alpha/downloads/lost-alpha-developers-cut-v14007",
+    exeHint: "XR_3DA",
+    knownExePaths: [
+      "bins\\XR_3DA.exe",
+      "XR_3DA.exe",
+      "Lost Alpha Configurator.exe",
+      "Lost Alpha.exe",
+    ],
+    registryTitles: [
+      "S.T.A.L.K.E.R. - Lost Alpha DC",
+      "Lost Alpha DC",
+      "Lost Alpha",
+    ],
+    note: "Install standalone Lost Alpha Developer's Cut from ModDB (~9.5 GB). PlayBound launches bins\\XR_3DA.exe.",
+  },
 };

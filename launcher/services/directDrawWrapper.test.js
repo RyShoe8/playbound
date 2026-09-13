@@ -14,6 +14,7 @@ const {
   looksLikeAvBlock,
   AV_BLOCK_MSG,
   dirHasMsX86Dlls,
+  MS_X86_DLLS,
   createDirectDrawWrapper,
 } = require("./directDrawWrapper");
 
@@ -54,12 +55,13 @@ test("CLSID_DIRECTDRAW is the classic DirectDraw class", () => {
   assert.equal(CLSID_DIRECTDRAW, "{E1211353-8E94-11D1-8808-00C04FC2C602}");
 });
 
-test("COM redirection covers DDrawCompat CLSIDs but NOT FreeTrain's .NET CLSID", () => {
-  // {E1211353} is FreeTrain's own DirectDraw.NET COM class (in DirectDraw.net.dll).
+test("COM redirection covers DDrawCompat CLSIDs and maps FreeTrain CLSID to dx7vb.dll", () => {
+  // {E1211353} is FreeTrain's DxVBLib.DirectX7Class (implemented in dx7vb.dll).
   // Redirecting it to ddraw.dll causes 80040111 (CLASS_E_CLASSNOTAVAILABLE).
-  // The InjectDll AppCompat shim handles dgVoodoo injection instead.
+  // It is registered to dx7vb.dll while standard DirectDraw CLSIDs map to ddraw.dll.
   assert.ok(!DIRECTDRAW_COM_CLSIDS.includes(CLSID_DIRECTDRAW), "{E1211353} must not be in DIRECTDRAW_COM_CLSIDS");
   assert.ok(DIRECTDRAW_COM_CLSIDS.some((c) => c.startsWith("{D7B70EE0")));
+  assert.ok(MS_X86_DLLS.includes("dx7vb.dll"), "dx7vb.dll must be in MS_X86_DLLS");
 });
 
 test("ensureDdrawFilenamePair mirrors DDraw.dll to ddraw.dll", () => {
@@ -81,7 +83,7 @@ test("ensureForGame copies from a local MS/x86 source without GitHub", async () 
   const userData = fs.mkdtempSync(path.join(os.tmpdir(), "pb-dd-ud-"));
   const gameDir = fs.mkdtempSync(path.join(os.tmpdir(), "pb-dd-game-"));
   const bundle = fs.mkdtempSync(path.join(os.tmpdir(), "pb-dd-bundle-"));
-  for (const name of ["DDraw.dll", "D3DImm.dll", "D3D8.dll", "D3D9.dll"]) {
+  for (const name of ["DDraw.dll", "D3DImm.dll", "D3D8.dll", "D3D9.dll", "dx7vb.dll"]) {
     fs.writeFileSync(path.join(bundle, name), "dll");
   }
 
@@ -93,7 +95,7 @@ test("ensureForGame copies from a local MS/x86 source without GitHub", async () 
 
   // Seed game dir empty; monkey-patch by putting DLLs in game after resolve via game-dir path:
   // First call with DLLs already in gameDir.
-  for (const name of ["DDraw.dll", "D3DImm.dll", "D3D8.dll", "D3D9.dll"]) {
+  for (const name of ["DDraw.dll", "D3DImm.dll", "D3D8.dll", "D3D9.dll", "dx7vb.dll"]) {
     fs.copyFileSync(path.join(bundle, name), path.join(gameDir, name));
   }
   assert.equal(dirHasMsX86Dlls(gameDir), true);

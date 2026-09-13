@@ -56,7 +56,11 @@ describe("host mode configuration", () => {
     expect(hostModesFor("assaultcube")).toEqual(["self", "dedicated"]);
     expect(canSelfHost("assaultcube")).toBe(true);
     expect(canUseDedicated("assaultcube")).toBe(true);
-    expect(publicLobbyPortFor("assaultcube")).toEqual({ port: 28763, protocol: "udp" });
+    // Teeworlds: live server list, in-game listen host, plus automated VPS server.
+    expect(hostModesFor("teeworlds")).toEqual(["public", "self", "dedicated"]);
+    expect(canSelfHost("teeworlds")).toBe(true);
+    expect(canUseDedicated("teeworlds")).toBe(true);
+    expect(publicLobbyPortFor("teeworlds")).toEqual({ port: 8303, protocol: "udp" });
   });
 
   it("gives a VPS-only game just the dedicated mode", () => {

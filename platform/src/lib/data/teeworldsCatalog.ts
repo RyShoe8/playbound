@@ -10,6 +10,7 @@ export const teeworldsPlatforms = ["Windows", "macOS", "Linux"] as const;
 export const teeworldsFeatures = [
   "Multiplayer",
   "LAN Support",
+  "Dedicated Servers",
   "Open Source",
   "Controller Support",
 ] as const;

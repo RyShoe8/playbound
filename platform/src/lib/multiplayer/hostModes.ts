@@ -124,6 +124,9 @@ export const CLIENT_HOSTING_VERIFIED: ReadonlySet<string> = new Set<string>([
 
   // The client offers "Host Networked Game" alongside starting a local one.
   "triplea",
+
+  // In-game LAN / server host in client menus, plus bundled teeworlds_srv / DDNet-Server.
+  "teeworlds",
 ]);
 
 /**
