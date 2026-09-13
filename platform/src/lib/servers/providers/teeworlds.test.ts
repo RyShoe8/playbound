@@ -29,8 +29,8 @@ describe("Teeworlds master server parser", () => {
       maxPlayers: 16,
       map: "dm1",
       gameType: "dm",
-      password: false,
-      country: "DE",
+      protected: false,
+      location: { countryCode: "DE" },
     });
   });
 

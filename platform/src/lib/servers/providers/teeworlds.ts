@@ -57,8 +57,8 @@ export function parseTeeworldsServers(servers: DdnetServerAddress[]): GameServer
       maxPlayers,
       map: mapName,
       gameType: info.game_type || "dm",
-      password: Boolean(info.passworded),
-      country: countryCode,
+      location: countryCode ? { countryCode } : null,
+      protected: Boolean(info.passworded),
     });
   }
 
