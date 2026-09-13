@@ -94,7 +94,7 @@ export function latencyFit(ms) {
 export function controllerFit(support, features) {
   const kind = support?.kind;
   if (kind === "native") {
-    return { score: 1, label: "Plug in and play", confidence: "native" };
+    return { score: 1, label: null, confidence: "native" };
   }
   if (kind === "config") {
     return support.verified
