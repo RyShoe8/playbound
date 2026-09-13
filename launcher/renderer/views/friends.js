@@ -1517,7 +1517,7 @@ async function ensurePartyGames() {
      * partyGameOptionsHtml appends the current slug when the list lacks it.
      */
     .filter((g) => g.isMultiplayer ?? g.multiplayer ?? false)
-    .filter((g) => g.kind !== "external")
+    .filter((g) => g.kind !== "external" || (typeof g.url === "string" && g.url.startsWith("steam://")))
     .filter((g) => filterByCompatibility([g]).length > 0)
     .map((g) => ({
       slug: g.slug,

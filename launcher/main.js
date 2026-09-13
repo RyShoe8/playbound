@@ -7969,6 +7969,14 @@ async function maybeApplyEditionPostInstall(entry, gameDir) {
   ) {
     await maybeRepairWolfensteinEtInstall(entry.slug || "wolfenstein-enemy-territory", { dir: gameDir }, entry.editionSlug);
   }
+
+  if (entry?.slug === "the-legend-of-zelda-book-of-mudora") {
+    await maybeRepairZeldaMudoraInstall(entry.slug, { dir: gameDir });
+  }
+
+  if (entry?.slug === "daggerfall") {
+    await maybeRepairDaggerfallUnityInstall(entry.slug, { dir: gameDir }, entry.editionSlug);
+  }
 }
 
 /**
@@ -8043,6 +8051,176 @@ async function maybeRepairWolfensteinEtInstall(slug, info, edSlug) {
   } catch (err) {
     console.warn("[wolfenstein-et-repair] skipped:", err?.message || err);
     return info?.exe;
+  }
+}
+
+/**
+ * The Legend of Zelda: Book of Mudora repair:
+ * Fixes Solarus 2.0 gamepad crash bug in data.solarus where joypad axis strings
+ * throw Lua errors in arithmetic ("axis % 2"), and maps D-pad buttons to direction controls.
+ */
+async function maybeRepairZeldaMudoraInstall(slug, info) {
+  if (slug !== "the-legend-of-zelda-book-of-mudora") return;
+  const gameDir = info?.dir || (info?.exe ? path.dirname(info.exe) : null);
+  if (!gameDir || !fs.existsSync(gameDir)) return;
+
+  try {
+    let solarusFile = path.join(gameDir, "data.solarus");
+    if (!fs.existsSync(solarusFile)) {
+      const entries = await fsp.readdir(gameDir).catch(() => []);
+      for (const ent of entries) {
+        const sub = path.join(gameDir, ent, "data.solarus");
+        if (fs.existsSync(sub)) {
+          solarusFile = sub;
+          break;
+        }
+      }
+    }
+    if (!fs.existsSync(solarusFile)) return;
+
+    const content = await fsp.readFile(solarusFile);
+    if (!content.includes(Buffer.from("axis % 2"))) {
+      return;
+    }
+
+    const bin = sevenZipBinary();
+    if (!bin) return;
+
+    const tempDir = path.join(app.getPath("temp"), "zbom_patch_" + Date.now());
+    await fsp.mkdir(tempDir, { recursive: true });
+
+    await new Promise((resolve) => {
+      const cp = spawn(bin, ["x", solarusFile, "-o" + tempDir, "scripts/menus/*", "-y"], {
+        windowsHide: true,
+      });
+      cp.on("close", () => resolve());
+      cp.on("error", () => resolve());
+    });
+
+    const patchFiles = ["pause.lua", "warp.lua", "savegames.lua", "language.lua"];
+    const menuDir = path.join(tempDir, "scripts", "menus");
+    let anyPatched = false;
+
+    for (const pf of patchFiles) {
+      const p = path.join(menuDir, pf);
+      if (fs.existsSync(p)) {
+        let code = await fsp.readFile(p, "utf8");
+        const orig = code;
+        code = code.replace(/axis % 2/g, "(tonumber(axis) or 0) % 2");
+        if (pf === "savegames.lua") {
+          code = code.replace(
+            /elseif raw_button == "dpup" or raw_button == "dpdown" or raw_button == "dpleft" or raw_button == "dpright" then\s+handled = self:on_command_pressed\("space"\)/g,
+            `elseif raw_button == "dpup" then\n    handled = self:on_command_pressed("up")\n  elseif raw_button == "dpdown" then\n    handled = self:on_command_pressed("down")\n  elseif raw_button == "dpleft" then\n    handled = self:on_command_pressed("left")\n  elseif raw_button == "dpright" then\n    handled = self:on_command_pressed("right")`
+          );
+        }
+        if (code !== orig) {
+          await fsp.writeFile(p, code, "utf8");
+          anyPatched = true;
+        }
+      }
+    }
+
+    if (anyPatched) {
+      await new Promise((resolve) => {
+        const cp = spawn(bin, ["u", solarusFile, "scripts/menus/*"], {
+          cwd: tempDir,
+          windowsHide: true,
+        });
+        cp.on("close", () => resolve());
+        cp.on("error", () => resolve());
+      });
+    }
+
+    await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+
+    const errTxt = path.join(path.dirname(solarusFile), "error.txt");
+    if (fs.existsSync(errTxt)) {
+      const st = await fsp.stat(errTxt).catch(() => null);
+      if (st && st.size > 10000) {
+        await fsp.writeFile(errTxt, "", "utf8").catch(() => {});
+      }
+    }
+  } catch (err) {
+    console.warn("[zbom-repair] Skipped:", err?.message || err);
+  }
+}
+
+/**
+ * Daggerfall Unity base game files & settings configuration:
+ * Ensures ARENA2 game data (ARCH3D.BSA, BLOCKS.BSA, etc.) is present in arena2/ and GameFiles/ARENA2,
+ * auto-downloads official curated DaggerfallGameFiles.zip if missing, and ensures
+ * PortableAppdata/settings.ini points MyDaggerfallPath to the game directory.
+ */
+async function maybeRepairDaggerfallUnityInstall(slug, info, edSlug) {
+  if (slug !== "daggerfall" || edSlug === "classic-dos") return;
+  const gameDir = info?.dir || (info?.exe ? path.dirname(info.exe) : null);
+  if (!gameDir || !fs.existsSync(gameDir)) return;
+
+  try {
+    const arena2Dir = path.join(gameDir, "arena2");
+    const streamingArena2 = path.join(
+      gameDir,
+      "DaggerfallUnity_Data",
+      "StreamingAssets",
+      "GameFiles",
+      "ARENA2"
+    );
+
+    const hasCompleteArena2 = (dir) =>
+      fs.existsSync(dir) &&
+      fs.existsSync(path.join(dir, "ARCH3D.BSA")) &&
+      fs.existsSync(path.join(dir, "BLOCKS.BSA"));
+
+    if (!hasCompleteArena2(arena2Dir) && !hasCompleteArena2(streamingArena2)) {
+      const url = "https://www.dropbox.com/s/rlkfnjknu32afe4/DaggerfallGameFiles.zip?dl=1";
+      const tempZip = path.join(app.getPath("temp"), "df_files_" + Date.now() + ".zip");
+      try {
+        if (typeof sendProgress === "function") {
+          sendProgress({ phase: "downloading", addon: "Daggerfall Base Game Data" });
+        }
+        await downloadTo(url, tempZip);
+        if (typeof sendProgress === "function") {
+          sendProgress({ phase: "extracting", addon: "Daggerfall Base Game Data" });
+        }
+        await fsp.mkdir(arena2Dir, { recursive: true });
+        const bin = sevenZipBinary();
+        if (bin) {
+          await new Promise((resolve, reject) => {
+            const cp = spawn(bin, ["x", tempZip, "-o" + gameDir, "-y"], {
+              windowsHide: true,
+            });
+            cp.on("close", (code) => (code === 0 ? resolve() : reject(new Error(`7z exit ${code}`))));
+            cp.on("error", reject);
+          });
+        }
+      } finally {
+        await fsp.rm(tempZip, { force: true }).catch(() => {});
+      }
+    }
+
+    if (hasCompleteArena2(arena2Dir) && fs.existsSync(streamingArena2)) {
+      for (const bsa of ["ARCH3D.BSA", "FALL.SND", "WOODS.WLD"]) {
+        const src = path.join(arena2Dir, bsa);
+        const dst = path.join(streamingArena2, bsa);
+        if (fs.existsSync(src) && !fs.existsSync(dst)) {
+          await fsp.copyFile(src, dst).catch(() => {});
+        }
+      }
+    }
+
+    const iniPath = path.join(gameDir, "PortableAppdata", "settings.ini");
+    if (fs.existsSync(iniPath)) {
+      const iniContent = await fsp.readFile(iniPath, "utf8").catch(() => "");
+      if (/MyDaggerfallPath\s*=\s*(?:\r?\n|$)/.test(iniContent)) {
+        const updated = iniContent.replace(
+          /MyDaggerfallPath\s*=\s*(?:\r?\n|$)/,
+          `MyDaggerfallPath = ${gameDir}\r\n`
+        );
+        await fsp.writeFile(iniPath, updated, "utf8").catch(() => {});
+      }
+    }
+  } catch (err) {
+    console.warn("[dfu-repair] Skipped:", err?.message || err);
   }
 }
 
@@ -8602,6 +8780,8 @@ async function playGameInner(slug, join = null, editionSlug = null) {
   let info = game.editions?.[edSlug] || null;
   if (info) {
     await maybeRepairWolfensteinEtInstall(slug, info, edSlug);
+    await maybeRepairZeldaMudoraInstall(slug, info);
+    await maybeRepairDaggerfallUnityInstall(slug, info, edSlug);
   }
   if (!exeOnDisk(info) && exeOnDisk(game)) {
     info = {
@@ -8612,12 +8792,16 @@ async function playGameInner(slug, join = null, editionSlug = null) {
       connectArgs: game.connectArgs,
     };
     await maybeRepairWolfensteinEtInstall(slug, info, edSlug);
+    await maybeRepairZeldaMudoraInstall(slug, info);
+    await maybeRepairDaggerfallUnityInstall(slug, info, edSlug);
   }
   if (!exeOnDisk(info) && game.editions) {
     for (const [key, ed] of Object.entries(game.editions)) {
       if (exeOnDisk(ed)) {
         info = { ...ed, editionSlug: key };
         await maybeRepairWolfensteinEtInstall(slug, info, key);
+        await maybeRepairZeldaMudoraInstall(slug, info);
+        await maybeRepairDaggerfallUnityInstall(slug, info, key);
         break;
       }
     }

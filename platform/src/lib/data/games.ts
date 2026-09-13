@@ -5438,7 +5438,7 @@ const facts: Game[] = [
     license: "Free to Play",
     releaseYear: 2017,
     sizeMB: 2000,
-    status: "testing",
+    status: "published",
     platforms: ["Windows", "macOS"],
     features: ["Multiplayer", "Singleplayer", "Shared/Split Screen PvP", "Controller Support", "Leaderboards", "Custom Lobbies", "Tournament Mode"],
     launchMethods: ["install", "server"],

@@ -90,7 +90,7 @@ export function supportsMultiplayer(game: MultiplayerInput | null | undefined): 
 const UNPARTYABLE_KINDS = new Set(["external"]);
 
 type LauncherPartyInput = MultiplayerInput & {
-  launcherInstall?: { enabled?: boolean; kind?: string } | null;
+  launcherInstall?: { enabled?: boolean; kind?: string; url?: string | null } | null;
 };
 
 /**
@@ -105,6 +105,9 @@ export function supportsLauncherParty(game: LauncherPartyInput | null | undefine
   if (!game || !supportsMultiplayer(game)) return false;
   const install = game.launcherInstall;
   if (!install?.enabled) return false;
+  if (install.kind === "external") {
+    return Boolean(install.url && install.url.startsWith("steam://"));
+  }
   return !UNPARTYABLE_KINDS.has(String(install.kind));
 }
 
