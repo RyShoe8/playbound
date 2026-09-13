@@ -603,8 +603,27 @@ function allowedExecutableRoots() {
   try {
     const settings = loadSettings();
     roots.push(settings.gamesDir || DEFAULT_GAMES_DIR);
-    // Folders a person picked in the file dialog. See rememberLocatedRoot.
+    if (Array.isArray(settings.formerGamesDirs)) roots.push(...settings.formerGamesDirs);
     if (Array.isArray(settings.locatedRoots)) roots.push(...settings.locatedRoots);
+    try {
+      for (const r of playBoundGamesRoots()) roots.push(r);
+    } catch {
+      /* ignore */
+    }
+    try {
+      const state = loadState();
+      for (const [slug, raw] of Object.entries(state || {})) {
+        if (!slug || slug.startsWith("__")) continue;
+        if (raw?.dir) roots.push(raw.dir);
+        if (raw?.exe) roots.push(path.dirname(raw.exe));
+        for (const info of listEditionEntries(raw)) {
+          if (info?.dir) roots.push(info.dir);
+          if (info?.exe) roots.push(path.dirname(info.exe));
+        }
+      }
+    } catch {
+      /* ignore */
+    }
   } catch {
     roots.push(DEFAULT_GAMES_DIR);
   }
@@ -10711,6 +10730,7 @@ function healFormerGamesDirsFromInstalls() {
 
 function isPlayBoundManagedInstallDir(slug, dir) {
   if (!slug || !dir) return false;
+  healFormerGamesDirsFromInstalls();
   const resolved = path.resolve(dir);
   if (isPlayBoundCompatPrefixDir(slug, dir)) return true;
 
@@ -11086,6 +11106,14 @@ async function tryRemovePlayBoundInstallDir(
     if (leftover) return leftover;
     if (isPlayBoundManagedInstallDir(slug, dir) && isProtectedSaveDirectory(dir)) {
       return "Removed from PlayBound. Save data in a protected folder was left on disk.";
+    }
+    const isSteamGame = Boolean(
+      entry?.steamAppId ||
+      (entry?.url && /^steam:\/\/install\/(\d+)/i.test(entry.url)) ||
+      (dir && /steamapps[/\\]common/i.test(dir))
+    );
+    if (isSteamGame) {
+      return "Removed from PlayBound. To delete game files from disk, uninstall the game in Steam.";
     }
     return "Removed from PlayBound. Files outside the PlayBound games folder were left on disk — finish uninstall from Windows Apps & features if needed.";
   }
@@ -12812,8 +12840,16 @@ ipcMain.handle("save-settings", (_event, patch) => {
     const next = String(patch.gamesDir || "").trim();
     if (prev && next && !sameFsPath(prev, next)) {
       rememberFormerGamesDir(prev, { force: true });
+      const list = Array.isArray(settings.formerGamesDirs)
+        ? settings.formerGamesDirs.map((r) => String(r || "").trim()).filter(Boolean)
+        : [];
+      if (!list.some((r) => sameFsPath(r, prev))) {
+        list.push(prev);
+        settings.formerGamesDirs = list.slice(-12);
+      }
     }
     settings.gamesDir = next;
+    healFormerGamesDirsFromInstalls();
   }
   if (patch.compatibilityFilter === "compatible" || patch.compatibilityFilter === "all") {
     settings.compatibilityFilter = patch.compatibilityFilter;

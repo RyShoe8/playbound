@@ -1780,27 +1780,14 @@ function buildPartyViewHtml(party) {
    * anybody readies up: the game has no online play. Without it a couch party
    * is indistinguishable from an online one until Start Game, because the host
    * picker hides itself when there is only one mode to pick.
-   */
-  const couchBadgeHtml = couch.enabled
-    ? `<p class="party-couch-badge">${escapeHtml(
-        (actions && actions.couch && actions.couch.badge) || "Online multiplayer · Connect"
-      )}</p>
-       <p class="party-game-platform-note">${escapeHtml(
-         (actions && actions.couch && actions.couch.where) ||
-           (isLeader
-             ? "Online multiplayer on your PC — friends join with a controller link."
-             : `Online multiplayer on ${party.leaderUsername || "the host"}'s PC — join with a controller link.`)
-       )}</p>`
-    : "";
-
   const gameHtml = isLeader && !ended
     ? `<label class="party-field-label" for="party-game-select">Game</label>
        <select class="input-text party-game-select" id="party-game-select" aria-label="Party game">
          ${partyGameOptionsHtml(party.gameSlug || "", party)}
-       </select>${openRaModHtml}${couchBadgeHtml}${platformNoteHtml}`
+       </select>${openRaModHtml}${platformNoteHtml}`
     : hasGame
     ? `<p class="party-field-label">Game</p>
-       <p class="party-game-label">${escapeHtml(party.gameTitle || party.gameSlug)}</p>${openRaModHtml}${couchBadgeHtml}${
+       <p class="party-game-label">${escapeHtml(party.gameTitle || party.gameSlug)}</p>${openRaModHtml}${
         !couch.enabled && Array.isArray(party.hostModes) && party.hostModes.length > 1
           ? `<p class="party-game-platform-note">Host: ${escapeHtml(
               /*
@@ -1949,8 +1936,13 @@ function buildPartyViewHtml(party) {
    * button and this picks between them — rather than writing its own labels,
    * which is how the two panels forked in the first place.
    */
+  const isCouchMode = Boolean(partyCouchCoopFilter || party.multiplayerType === "couch");
   const autoJoinArmed = pendingJoin?.partyId === party.id && !ended;
   const joinBtn = actions ? (autoJoinArmed ? actions.joinArmed : actions.join) : null;
+  if (!isCouchMode && joinBtn) {
+    if (joinBtn.icon === "phone") joinBtn.icon = "play";
+    if (joinBtn.label === "Join online") joinBtn.label = "Join Game";
+  }
   const joinGameHtml = joinBtn && joinBtn.visible
     ? `<div class="party-join-wrap">
          <button type="button" id="btn-party-join-game" class="party-btn ${
@@ -2053,20 +2045,20 @@ function buildPartyViewHtml(party) {
    * then members are told what is about to happen rather than shown nothing.
    */
   // Code, link and the what-happens-next line all come from actions.couch.
-  const couchPanel = actions ? actions.couch : null;
-  const couchHtml = !couchPanel
+  const couchPanel = isCouchMode && actions ? actions.couch : null;
+  const couchHtml = !isCouchMode || !couchPanel
     ? ""
     : couchPanel.status === "ready" && couchPanel.joinCode
     ? `<div class="party-couch">
-         <p class="party-section-label">Join online</p>
+         <p class="party-section-label">Join couch co-op</p>
          <p class="party-couch-code">Code <strong>${escapeHtml(String(couchPanel.joinCode))}</strong></p>
-         <p class="view-sub">Friends on a computer: Join online opens the game view (PC or phone controls). Phones can open playbound.club/c with the code for the touch pad.</p>
+         <p class="view-sub">Players use their phone or controller to join on the host screen. Open playbound.club/c with the code for the touch controller.</p>
          <button type="button" id="btn-party-couch-copy" class="party-btn btn-secondary" data-code="${escapeHtml(
            String(couchPanel.joinCode)
          )}">${ICON.phone} Copy code</button>
          <button type="button" id="btn-party-couch-open" class="party-btn btn-primary" data-url="${escapeHtml(
            couchPanel.joinUrl || `https://playbound.club/c/${couchPanel.joinCode}`
-         )}">${ICON.phone} Open game view</button>
+         )}">${ICON.phone} Open controller view</button>
        </div>`
     : `<p class="${
         couchPanel.status === "failed"
@@ -3192,7 +3184,8 @@ function wirePartyView(slot, party) {
        * launching a second copy of the game on their PC.
        */
       const couch = party.couch || {};
-      if (couch.enabled && !isLeader) {
+      const isCouchMode = Boolean(partyCouchCoopFilter || party.multiplayerType === "couch");
+      if (isCouchMode && couch.enabled && !isLeader) {
         const base =
           couch.joinUrl ||
           (couch.joinCode ? `https://playbound.club/c/${couch.joinCode}` : "");

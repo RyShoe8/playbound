@@ -78,3 +78,12 @@ test("the launch guard itself is unchanged", () => {
   const guard = src.slice(guardStart, src.indexOf("}", src.indexOf("return", guardStart)));
   assert.match(guard, /allowedExecutableRoots\(\)/);
 });
+
+test("allowedExecutableRoots trusts formerGamesDirs, playBoundGamesRoots, and installed games", () => {
+  const fnStart = src.indexOf("function allowedExecutableRoots(");
+  assert.notEqual(fnStart, -1);
+  const fnBody = src.slice(fnStart, src.indexOf("function isAllowedExecutablePath(", fnStart));
+  assert.match(fnBody, /formerGamesDirs/);
+  assert.match(fnBody, /playBoundGamesRoots/);
+  assert.match(fnBody, /loadState/);
+});
