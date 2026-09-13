@@ -23,10 +23,21 @@ let cachedHwHtml = null;
 
 async function renderSettingsView() {
   const container = views.settings;
-  try {
-    state.accountState = await window.playbound.getAccount();
-  } catch {
-    /* keep previous */
+  /*
+   * Only re-fetch account from main if we don't already have a populated
+   * state (i.e. boot/onAccount hasn't run yet, or state has no userId).
+   * Blindly calling getAccount() every render makes a live HTTP round-trip
+   * that can return { connected: false } on transient errors, overwriting
+   * perfectly-good auth state and hiding the signed-in indicator + the
+   * admin channel switcher.
+   */
+  if (!state.accountState.connected && !state.accountState.userId) {
+    try {
+      const fresh = await window.playbound.getAccount();
+      if (fresh) state.accountState = { ...state.accountState, ...fresh };
+    } catch {
+      /* keep previous */
+    }
   }
   const settings = await window.playbound.getSettings();
   const overlayShortcut = window.playbound.getOverlayShortcut
