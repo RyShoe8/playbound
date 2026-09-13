@@ -54,8 +54,11 @@ test("CLSID_DIRECTDRAW is the classic DirectDraw class", () => {
   assert.equal(CLSID_DIRECTDRAW, "{E1211353-8E94-11D1-8808-00C04FC2C602}");
 });
 
-test("COM redirection covers FreeTrain and DDrawCompat CLSIDs", () => {
-  assert.ok(DIRECTDRAW_COM_CLSIDS.includes(CLSID_DIRECTDRAW));
+test("COM redirection covers DDrawCompat CLSIDs but NOT FreeTrain's .NET CLSID", () => {
+  // {E1211353} is FreeTrain's own DirectDraw.NET COM class (in DirectDraw.net.dll).
+  // Redirecting it to ddraw.dll causes 80040111 (CLASS_E_CLASSNOTAVAILABLE).
+  // The InjectDll AppCompat shim handles dgVoodoo injection instead.
+  assert.ok(!DIRECTDRAW_COM_CLSIDS.includes(CLSID_DIRECTDRAW), "{E1211353} must not be in DIRECTDRAW_COM_CLSIDS");
   assert.ok(DIRECTDRAW_COM_CLSIDS.some((c) => c.startsWith("{D7B70EE0")));
 });
 

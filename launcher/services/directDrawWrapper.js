@@ -32,18 +32,31 @@ const DGVOODOO_MS_X86_MIRROR_URL =
   process.env.PLAYBOUND_DGVOODOO_MS_X86_URL ||
   "https://mirror.playbound.club/launcher-packages/runtimes/dgvoodoo/2_87_4/ms-x86.zip";
 
-/** Classic DirectDraw COM class FreeTrain's DirectDraw.NET constructs. */
+/**
+ * FreeTrain's DirectDraw.NET CLSID — used for identification only.
+ *
+ * Do NOT add this to DIRECTDRAW_COM_CLSIDS. {E1211353} is implemented inside
+ * DirectDraw.net.dll (a managed .NET wrapper bundled with FreeTrain). It has
+ * no system-wide COM registration. Redirecting it to ddraw.dll in HKCU makes
+ * CoCreateInstance load dgVoodoo's ddraw.dll and ask for this class, which
+ * dgVoodoo does not export → 80040111 (CLASS_E_CLASSNOTAVAILABLE).
+ *
+ * The InjectDll AppCompat shim already loads dgVoodoo's ddraw.dll into the
+ * FreeTrain process before CoCreateInstance runs, so the underlying DirectDraw
+ * API calls are intercepted without any COM redirection for this CLSID.
+ */
 const CLSID_DIRECTDRAW = "{E1211353-8E94-11D1-8808-00C04FC2C602}";
 
 /**
- * COM CLSIDs that legacy DirectDraw titles may CoCreateInstance.
- * FreeTrain uses DirectDraw.NET's E1211353; most titles use the DDrawCompat set.
- * All are registered to the local `ddraw.dll` name (not an absolute path) so
- * the wrapper beside the exe wins — absolute HKCU paths made dgVoodoo load but
- * returned 80040111 (CLASS_E_CLASSNOTAVAILABLE) for some builds.
+ * Standard DirectDraw COM CLSIDs to redirect to the local ddraw.dll.
+ * These are the well-known system CLSIDs that DDrawCompat and similar wrappers
+ * legitimately implement. Registered as relative `ddraw.dll` (not absolute)
+ * so the wrapper beside the exe wins via the process search order.
+ *
+ * {E1211353} (FreeTrain's DirectDraw.NET CLSID) is intentionally absent —
+ * see CLSID_DIRECTDRAW comment above.
  */
 const DIRECTDRAW_COM_CLSIDS = [
-  CLSID_DIRECTDRAW,
   "{D7B70EE0-4340-11CF-B063-0020AFC2CD35}",
   "{D7B70EE0-4340-11CF-B063-444553540000}",
   "{3C305196-50DB-11D3-9CFE-00C04FD930C5}",
@@ -253,13 +266,22 @@ function registerDirectDrawComHkcu(_ddrawPath) {
    * Per-user COM redirection — no elevation. CoCreateInstance prefers HKCU.
    *
    * Use the relative module name `ddraw.dll`, not an absolute path. DDrawCompat
-   * and dgVoodoo both expect the loader to resolve from the app directory; an
-   * absolute InprocServer32 made CoCreateInstance load dgVoodoo yet still return
-   * 80040111 for FreeTrain's DirectDraw.NET CLSID.
+   * and dgVoodoo both expect the loader to resolve from the app directory.
    *
    * FreeTrain is 32-bit — register under Wow6432Node as well.
+   *
+   * {E1211353} (CLSID_DIRECTDRAW) is intentionally excluded from registration.
+   * That CLSID is FreeTrain's own DirectDraw.NET COM class — implemented in
+   * DirectDraw.net.dll, not in dgVoodoo's ddraw.dll. Redirecting it to ddraw.dll
+   * caused CoCreateInstance to load the wrong DLL and return 80040111
+   * (CLASS_E_CLASSNOTAVAILABLE). The InjectDll AppCompat shim preloads
+   * dgVoodoo before the process starts, which is sufficient.
+   *
+   * Also clean up any stale {E1211353} HKCU registration left by older
+   * launcher versions that incorrectly included it.
    */
   const clsids = DIRECTDRAW_COM_CLSIDS.map((c) => JSON.stringify(c)).join(",");
+  const staleClsid = JSON.stringify(CLSID_DIRECTDRAW);
   const script = `
 $ErrorActionPreference = 'Stop'
 $clsids = @(${clsids})
@@ -271,6 +293,14 @@ foreach ($clsid in $clsids) {
     Set-ItemProperty -Path $path -Name '(default)' -Value 'ddraw.dll'
     Set-ItemProperty -Path $path -Name 'ThreadingModel' -Value 'Both'
   }
+}
+# Remove any stale {E1211353} registration — that CLSID belongs to
+# DirectDraw.net.dll, not ddraw.dll. Pointing it at ddraw.dll returns 80040111.
+foreach ($root in $roots) {
+  $stalePath = Join-Path $root (${staleClsid} + '\\InprocServer32')
+  if (Test-Path $stalePath) { Remove-Item -Path $stalePath -Recurse -Force -ErrorAction SilentlyContinue }
+  $staleParent = Join-Path $root ${staleClsid}
+  if (Test-Path $staleParent) { Remove-Item -Path $staleParent -Recurse -Force -ErrorAction SilentlyContinue }
 }
 `;
   const ps = spawnSync("powershell.exe", ["-NoProfile", "-Command", script], {
