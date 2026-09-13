@@ -78,7 +78,7 @@ function ensureWired() {
 
   pb().onCouchStatus?.((payload) => {
     const msg = payload?.message;
-    if (msg) setStatus(msg);
+    if (msg && couchViewVisible()) setStatus(msg);
   });
 
   pb().onCouchPeerSend?.((msg) => {
@@ -198,8 +198,21 @@ async function attachDisplayTracks(pc) {
   try {
     const display = await ensureHostDisplayStream();
     if (!display) return false;
-    const senders = pc.getSenders();
-    for (const track of display.getTracks()) {
+    const track = display.getVideoTracks()[0];
+    if (!track) return false;
+
+    const transceivers = pc.getTransceivers ? pc.getTransceivers() : [];
+    const videoTransceiver = transceivers.find(
+      (t) => t.receiver?.track?.kind === "video" || t.sender?.track?.kind === "video"
+    );
+
+    if (videoTransceiver) {
+      videoTransceiver.direction = "sendonly";
+      if (videoTransceiver.sender && videoTransceiver.sender.replaceTrack) {
+        await videoTransceiver.sender.replaceTrack(track);
+      }
+    } else {
+      const senders = pc.getSenders();
       const already = senders.some((s) => s.track && s.track.id === track.id);
       if (!already) pc.addTrack(track, display);
     }
@@ -262,13 +275,6 @@ async function answerOffer(controllerId, remoteSdp, session) {
   pc = new RTCPeerConnection({ iceServers });
   peers.set(controllerId, pc);
 
-  /*
-   * Online multiplayer for local-co-op games: push host screen to the phone so
-   * remotes see the game while sending pads. Capture is best-effort — if the
-   * host declines the picker, pads still work.
-   */
-  await attachDisplayTracks(pc);
-
   pc.ondatachannel = (ev) => {
     const dc = ev.channel;
     channels.set(controllerId, dc);
@@ -327,6 +333,13 @@ async function answerOffer(controllerId, remoteSdp, session) {
   };
 
   await pc.setRemoteDescription(remoteSdp);
+
+  /*
+   * Online multiplayer for local-co-op games: push host application window to the peer so
+   * remotes see the game while sending pads. Capture is best-effort.
+   */
+  await attachDisplayTracks(pc);
+
   const answer = await pc.createAnswer();
   await pc.setLocalDescription(answer);
   await pb().couchSignalPost({

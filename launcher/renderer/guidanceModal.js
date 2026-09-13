@@ -76,11 +76,18 @@ export function showLaunchGuidanceModal(opts = {}) {
       })
       .join("");
 
+    const hasControls = firstPlaySteps.some((s) => {
+      const t = String(typeof s === "string" ? s : s?.text || "").toLowerCase();
+      return t.includes("controls") || t.includes("keyboard") || t.includes("controller") || t.includes("quit");
+    });
+    const sectionBadge = hasControls ? "Controls & Tips" : `First-Time Setup (Launch ${launchCount} of 2)`;
+    const sectionTitle = hasControls ? "Controls & How to Quit" : "First Play Guide";
+
     firstPlayHtml = `
       <div class="guidance-section guidance-section-firstplay">
         <div class="guidance-section-header">
-          <span class="guidance-badge guidance-badge-firstplay">First-Time Setup (Launch ${launchCount} of 2)</span>
-          <h3 class="guidance-section-title">First Play Guide</h3>
+          <span class="guidance-badge guidance-badge-firstplay">${escapeHtml(sectionBadge)}</span>
+          <h3 class="guidance-section-title">${escapeHtml(sectionTitle)}</h3>
         </div>
         <ol class="guidance-step-list">
           ${stepItems}
@@ -144,8 +151,8 @@ export function showLaunchGuidanceModal(opts = {}) {
     <div class="guidance-card">
       <div class="guidance-header">
         <div>
-          <h2 id="launch-guidance-title" class="guidance-title">${escapeHtml(title)} Launched</h2>
-          <p class="guidance-subtitle">Quick guidance for your play session</p>
+          <h2 id="launch-guidance-title" class="guidance-title">${escapeHtml(title)} · Controls &amp; Guide</h2>
+          <p class="guidance-subtitle">Quick controls and session guidance</p>
         </div>
         <button type="button" class="guidance-btn-close" id="guidance-close-top" aria-label="Close">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>

@@ -6553,7 +6553,15 @@ const facts: Game[] = [
     firstPlaySteps: [
       {
         platform: "all",
-        text: "Press Escape on the host keyboard to leave the match or quit (no Quit button in some menus).",
+        text: "Keyboard Controls: Arrow keys to move · A to Attack · S to Jump · D for Mutant Power · Enter to Start · Escape to leave the game / exit to menu.",
+      },
+      {
+        platform: "all",
+        text: "Controller Controls: D-Pad / Left Stick to move · X / Square to Attack · A / Cross to Jump · Y / Triangle for Mutant Power · Start to Pause.",
+      },
+      {
+        platform: "all",
+        text: "Press Escape on the host keyboard to leave the game or quit OpenBOR (no Quit button in some menus).",
       },
     ],
     multiplayerGamingSteps: [
@@ -6651,7 +6659,15 @@ const facts: Game[] = [
     firstPlaySteps: [
       {
         platform: "all",
-        text: "Press Escape on the host keyboard to leave the match or quit OpenBOR (no Quit button in some menus).",
+        text: "Keyboard Controls: Arrow keys to move · A to Attack · S to Jump · D for Special Attack · Enter to Pause / Start · Escape to leave the game / exit to menu.",
+      },
+      {
+        platform: "all",
+        text: "Controller Controls: D-Pad / Left Stick to move · X / Square to Attack · A / Cross to Jump · Y / Triangle for Special Attack · Start to Pause.",
+      },
+      {
+        platform: "all",
+        text: "Press Escape on the host keyboard to leave the game or quit OpenBOR (no Quit button in some menus).",
       },
     ],
     multiplayerGamingSteps: [
