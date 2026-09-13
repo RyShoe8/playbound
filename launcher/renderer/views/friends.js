@@ -3587,21 +3587,6 @@ async function maybeStartPartyCouch(partyId, party) {
       throw new Error("Could not start online controllers.");
     }
     ensureCouchBackground();
-    /*
-     * Always (re)capture — a prior "ready" session may have published a code
-     * with no video tracks (capture failed or was skipped). Re-push so late
-     * Join / Open game view still get renegotiated tracks.
-     */
-    const stream = await ensureHostDisplayStream();
-    if (stream) {
-      setStatus("Sharing game view for online multiplayer…");
-      void pushHostDisplayToPeers();
-    } else {
-      setStatus(
-        "Online pads are ready, but game-view sharing failed — run the game windowed/borderless and Start Game again.",
-        true
-      );
-    }
     await window.playbound.setPartyCouchSession(partyId, {
       joinCode: session.joinCode,
       joinUrl: session.joinUrl || "",
@@ -4006,6 +3991,20 @@ async function launchPartyGame(party) {
           slug,
           address: peerConnect?.host ? `${peerConnect.host}:${peerConnect.port}` : null,
         });
+        if (party.couch?.enabled && isLeader) {
+          // The game process is running now — capture its application window and stream to peers
+          void ensureHostDisplayStream(true).then((stream) => {
+            if (stream) {
+              setStatus("Sharing game view for online multiplayer…");
+              void pushHostDisplayToPeers();
+            } else {
+              setStatus(
+                "Online pads ready — run the game windowed or borderless if game view doesn't stream.",
+                true
+              );
+            }
+          });
+        }
         if (!(isLeader && party.hostMode === "self")) {
           setStatus(
             peerConnect?.host

@@ -42,3 +42,4 @@ signing.env
 # growth sequencing. Local-only; the repo is public.
 /SEO-STRATEGY.md
 /SEO-STRATEGY-*.md
+.tmp/

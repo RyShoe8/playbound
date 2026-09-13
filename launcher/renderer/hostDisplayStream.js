@@ -6,9 +6,13 @@
 let hostDisplayStream = null;
 
 /**
+ * @param {boolean} [forceNew=false]
  * @returns {Promise<MediaStream|null>}
  */
-export async function ensureHostDisplayStream() {
+export async function ensureHostDisplayStream(forceNew = false) {
+  if (forceNew && hostDisplayStream) {
+    stopHostDisplayStream();
+  }
   if (hostDisplayStream && hostDisplayStream.active) {
     return hostDisplayStream;
   }

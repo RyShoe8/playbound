@@ -304,7 +304,7 @@ function createHostService(deps) {
     if (!ensured.ok) {
       throw new Error(
         ensured.reason ||
-          "Could not enable controllers. Try Start Couch Mode again and allow the Windows prompt."
+          "Could not enable controllers. Try again and allow the Windows prompt."
       );
     }
 
@@ -321,7 +321,8 @@ function createHostService(deps) {
       console.warn("[couch] prewarm slot 0 failed:", err?.message || err);
     }
 
-    notify("Starting Couch Mode…");
+    const isParty = Boolean(opts?.hostLabel?.includes("Party") || opts?.party);
+    notify(isParty ? "Starting online multiplayer…" : "Starting controllers…");
     const res = await fetch(`${getApiBase()}/api/couch/sessions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -345,7 +346,7 @@ function createHostService(deps) {
       driverReason: probe.ok
         ? null
         : probe.reason ||
-          "Controllers are still setting up. Try Start Couch Mode again.",
+          "Controllers are still setting up. Try again in a moment.",
       driverInstalledNow: Boolean(ensured.installed),
     };
 

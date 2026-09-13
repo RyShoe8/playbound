@@ -399,7 +399,14 @@ export function ControllerClient({
       pc.addTransceiver("video", { direction: "recvonly" });
       pc.ontrack = (ev) => {
         const stream = ev.streams?.[0] || (ev.track ? new MediaStream([ev.track]) : null);
-        if (stream) attachRemoteStream(stream);
+        if (stream) {
+          attachRemoteStream(stream);
+          if (ev.track) {
+            ev.track.onunmute = () => {
+              attachRemoteStream(stream);
+            };
+          }
+        }
       };
       dc = pc.createDataChannel("input", { ordered: false, maxRetransmits: 0 });
       dc.binaryType = "arraybuffer";

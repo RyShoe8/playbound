@@ -9643,9 +9643,27 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     "streets-of-rage-remake":
       "Press Escape on the host keyboard to quit (some menus have no Quit button; Alt+F4 also works).",
     "tmnt-rescue-palooza":
-      "Press Escape on the host keyboard to leave the match or quit TMNT Rescue-Palooza.",
+      "Press Escape on the host keyboard to leave the game or quit TMNT Rescue-Palooza.",
     "x-men-arcade-remake":
-      "Press Escape on the host keyboard to leave the match or quit OpenBOR.",
+      "Press Escape on the host keyboard to leave the game or quit OpenBOR.",
+  };
+
+  const GAME_CONTROLS_HINTS = {
+    "tmnt-rescue-palooza": [
+      { platform: "all", text: "Keyboard Controls: Arrow keys to move · A: Attack · S: Jump · D: Special Attack · Enter: Pause / Start · Escape: Leave game / Exit to menu." },
+      { platform: "all", text: "Controller Controls: D-Pad / Left Stick to move · X / Square: Attack · A / Cross: Jump · Y / Triangle: Special · Start: Pause." },
+      { platform: "all", text: "How to Quit: Press Escape on the host keyboard to leave the game or quit." },
+    ],
+    "x-men-arcade-remake": [
+      { platform: "all", text: "Keyboard Controls: Arrow keys to move · A: Attack · S: Jump · D: Mutant Power · Enter: Start · Escape: Leave game / Exit to menu." },
+      { platform: "all", text: "Controller Controls: D-Pad / Left Stick to move · X / Square: Attack · A / Cross: Jump · Y / Triangle: Mutant Power · Start: Pause." },
+      { platform: "all", text: "How to Quit: Press Escape on the host keyboard to leave the game or quit OpenBOR." },
+    ],
+    "streets-of-rage-remake": [
+      { platform: "all", text: "Keyboard Controls: Arrow keys to move · C: Attack · B: Jump · X: Special Attack · Enter: Pause · Escape: Quit." },
+      { platform: "all", text: "Controller Controls: D-Pad / Left Stick to move · X / Square: Attack · A / Cross: Jump · Y / Triangle: Special · Start: Pause." },
+      { platform: "all", text: "How to Quit: Press Escape on the host keyboard to quit (Alt+F4 also works)." },
+    ],
   };
 
   // Resolve First Play Steps and Multiplayer Gaming Steps
@@ -9687,17 +9705,21 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     });
   };
 
-  let firstPlaySteps = newLaunchCount <= 2 ? formatStepList(rawFirstPlay) : null;
-  const quitHint = ESCAPE_QUIT_HINTS[slug];
-  if (quitHint && newLaunchCount <= 2) {
-    const list = Array.isArray(firstPlaySteps) ? [...firstPlaySteps] : [];
-    const already = list.some((s) =>
-      String(s?.text || s)
-        .toLowerCase()
-        .includes("escape")
-    );
-    if (!already) list.push({ platform: "all", text: quitHint });
-    firstPlaySteps = list.length ? list : null;
+  let firstPlaySteps = formatStepList(rawFirstPlay);
+  if (GAME_CONTROLS_HINTS[slug] && (!firstPlaySteps || firstPlaySteps.length <= 1)) {
+    firstPlaySteps = GAME_CONTROLS_HINTS[slug];
+  } else {
+    const quitHint = ESCAPE_QUIT_HINTS[slug];
+    if (quitHint && newLaunchCount <= 2) {
+      const list = Array.isArray(firstPlaySteps) ? [...firstPlaySteps] : [];
+      const already = list.some((s) =>
+        String(s?.text || s)
+          .toLowerCase()
+          .includes("escape")
+      );
+      if (!already) list.push({ platform: "all", text: quitHint });
+      firstPlaySteps = list.length ? list : null;
+    }
   }
   const multiplayerGamingSteps = formatStepList(rawMultiplayer);
 
@@ -15355,7 +15377,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      backgroundThrottling: true,
+      backgroundThrottling: false,
     },
   });
   if (!appIcon.isEmpty()) win.setIcon(appIcon);
@@ -15565,24 +15587,116 @@ if (gotLock) {
 
     configureYoutubeEmbedIdentity();
 
+    /**
+     * Find the application window for the actively running game process.
+     * Captures the game window directly rather than physical display screens.
+     */
+    async function findGameWindowSource(slug, retries = 5, delayMs = 500) {
+      const entry = slug ? catalogEntry(slug) : null;
+      const launch = slug ? activeLaunches.get(slug) : null;
+
+      const titleTokens = (entry?.title || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .split(" ")
+        .filter((w) => w.length > 2);
+      const slugTokens = (slug || "")
+        .toLowerCase()
+        .split("-")
+        .filter((w) => w.length > 2);
+      const imageTokens = (launch?.imageNames || []).map((img) =>
+        img.toLowerCase().replace(/\.exe$/i, "").replace(/[^a-z0-9]+/g, " ")
+      );
+      if (slug && /tmnt/i.test(slug)) {
+        titleTokens.push("openbor", "rescue", "palooza", "tmnt", "ninja", "turtles");
+      }
+
+      for (let attempt = 0; attempt < retries; attempt++) {
+        try {
+          const sources = await desktopCapturer.getSources({
+            types: ["window", "screen"],
+            thumbnailSize: { width: 0, height: 0 },
+          });
+
+          const windowSources = sources.filter((s) => s.id && s.id.startsWith("window:"));
+
+          let bestMatch = null;
+          let bestScore = 0;
+
+          for (const w of windowSources) {
+            const name = (w.name || "").trim().toLowerCase();
+            if (!name) continue;
+            // Exclude PlayBound itself, DevTools, and common OS system windows
+            if (/^playbound/i.test(name) || /devtools/i.test(name)) continue;
+            if (/program manager|windows input|task switching|taskbar|settings|visual studio code/i.test(name)) continue;
+
+            let score = 0;
+            if (entry?.title && name.includes(entry.title.toLowerCase())) score += 10;
+            for (const t of titleTokens) {
+              if (name.includes(t)) score += 3;
+            }
+            for (const s of slugTokens) {
+              if (name.includes(s)) score += 2;
+            }
+            for (const img of imageTokens) {
+              if (img && name.includes(img)) score += 5;
+            }
+
+            if (score > bestScore) {
+              bestScore = score;
+              bestMatch = w;
+            }
+          }
+
+          if (bestMatch && bestScore > 0) {
+            return bestMatch;
+          }
+        } catch {
+          /* retry */
+        }
+
+        if (attempt < retries - 1) {
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
+      }
+
+      try {
+        // Fallback 1: any non-PlayBound top window
+        const allSources = await desktopCapturer.getSources({
+          types: ["window", "screen"],
+          thumbnailSize: { width: 0, height: 0 },
+        });
+        const anyAppWindow = allSources.find((w) => {
+          if (!w.id || !w.id.startsWith("window:")) return false;
+          const n = (w.name || "").trim().toLowerCase();
+          return n && !/^playbound/i.test(n) && !/program manager|taskbar|settings/i.test(n);
+        });
+        if (anyAppWindow) return anyAppWindow;
+
+        // Fallback 2: primary screen
+        const screens = allSources.filter((s) => s.id && s.id.startsWith("screen:"));
+        const primaryId = String(screen.getPrimaryDisplay()?.id || "");
+        return screens.find((s) => String(s.display_id) === primaryId) || screens[0] || null;
+      } catch {
+        return null;
+      }
+    }
+
     /*
-     * Connect online multiplayer (local co-op): host shares the game view via
-     * getDisplayMedia in the renderer. Prefer the primary screen automatically
-     * so party Start does not block on a picker mid-launch.
+     * Connect online multiplayer (local co-op): host shares the game application window via
+     * getDisplayMedia in the renderer. Automatically captures the game's window so party
+     * members see the game view without capturing desktop or background apps.
      */
     try {
       session.defaultSession.setDisplayMediaRequestHandler(async (_request, callback) => {
         try {
-          const sources = await desktopCapturer.getSources({
-            types: ["screen"],
-            thumbnailSize: { width: 0, height: 0 },
-          });
-          const primary = sources[0];
-          if (!primary) {
+          const slug = playingGameSlug();
+          const target = await findGameWindowSource(slug);
+          if (!target) {
             callback({});
             return;
           }
-          callback({ video: primary });
+          callback({ video: target });
         } catch (err) {
           console.warn("[couch] display media handler failed:", err?.message || err);
           callback({});
