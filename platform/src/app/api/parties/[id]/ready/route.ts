@@ -13,8 +13,14 @@ export async function POST(req: Request, ctx: RouteContext) {
 
   try {
     const { id } = await ctx.params;
-    const body = await req.json();
-    const ready = body.ready === true;
+    let ready = true;
+    try {
+      const body = (await req.json()) as { ready?: unknown };
+      ready = body.ready === true;
+    } catch {
+      // Empty / non-JSON body — treat as ready-up (launcher always sends JSON).
+      ready = true;
+    }
 
     const result = await setReady(id, userId, ready);
     if ("error" in result) {
@@ -23,6 +29,12 @@ export async function POST(req: Request, ctx: RouteContext) {
     return NextResponse.json({ party: result.party });
   } catch (err) {
     console.error("POST /api/parties/[id]/ready failed:", err);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "Internal Server Error",
+        detail: err instanceof Error ? err.message : String(err),
+      },
+      { status: 500 }
+    );
   }
 }

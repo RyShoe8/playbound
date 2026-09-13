@@ -174,6 +174,27 @@ test("a peer game's host launches differently from its joiners", () => {
   );
 });
 
+test("Freedoom joiners get distinct Doom colorsets by party seat", () => {
+  assert.deepEqual(
+    applyConnectTemplates(CLIENT_CONNECT_ARGS.freedoom, {
+      host: "10.0.0.1",
+      port: 10666,
+      playerNumber: 1,
+      name: "Host",
+    }),
+    ["-iwad", "freedoom2.wad", "+connect", "10.0.0.1:10666", "+colorset", "0"]
+  );
+  assert.deepEqual(
+    applyConnectTemplates(CLIENT_CONNECT_ARGS.freedoom, {
+      host: "10.0.0.1",
+      port: 10666,
+      playerNumber: 3,
+      name: "Third",
+    }),
+    ["-iwad", "freedoom2.wad", "+connect", "10.0.0.1:10666", "+colorset", "2"]
+  );
+});
+
 test("a game with a real dedicated server has no arbiter launch", () => {
   // The flag decides whether the leader's own game is the server. Claiming it
   // for a game PlayBound hosts would launch the client with flags meant for a

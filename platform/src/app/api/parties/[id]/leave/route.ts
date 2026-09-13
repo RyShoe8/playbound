@@ -20,6 +20,12 @@ export async function POST(req: Request, ctx: RouteContext) {
     return NextResponse.json({ party: result.party, ok: true });
   } catch (err) {
     console.error("POST /api/parties/[id]/leave failed:", err);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "Internal Server Error",
+        detail: err instanceof Error ? err.message : String(err),
+      },
+      { status: 500 }
+    );
   }
 }

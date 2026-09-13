@@ -169,6 +169,15 @@ export default async function LibraryPage() {
     .map((g) => ({ slug: g.slug, title: g.title }))
     .sort((a, b) => a.title.localeCompare(b.title));
 
+  /*
+   * Library entries arrive newest-first from Mongo; the grid must still read
+   * A→Z by title. Only the Add Game picker was sorted before.
+   */
+  const libraryGames = [...games].sort((a, b) => a.title.localeCompare(b.title));
+  const libraryOrphans = [...orphanEntries].sort((a, b) =>
+    String(a.gameSlug).localeCompare(String(b.gameSlug))
+  );
+
   return (
     <div className="space-y-8 px-4 py-6 sm:px-6 lg:px-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -221,9 +230,9 @@ export default async function LibraryPage() {
         </div>
       ) : (
         <LibraryGrid
-          games={games}
+          games={libraryGames}
           entries={entries}
-          orphans={orphanEntries}
+          orphans={libraryOrphans}
           modsByBase={modsByBase}
           editionsByGame={editionsByGame}
         />

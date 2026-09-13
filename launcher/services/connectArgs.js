@@ -91,8 +91,8 @@ const CLIENT_CONNECT_ARGS = {
   "marathon-infinity": ["-connect", "{host}:{port}"],
   "aleph-one": ["-connect", "{host}:{port}"],
   alephone: ["-connect", "{host}:{port}"],
-  freedoom: ["-iwad", "{iwad}", "+connect", "{host}:{port}"],
-  zandronum: ["-iwad", "{iwad}", "+connect", "{host}:{port}"],
+  freedoom: ["-iwad", "{iwad}", "+connect", "{host}:{port}", "+colorset", "{colorset}"],
+  zandronum: ["-iwad", "{iwad}", "+connect", "{host}:{port}", "+colorset", "{colorset}"],
   triplea: ["-Dserver.address={host}", "-Dserver.port={port}"],
   "space-station-14": ["--connect-address", "ss14://{host}:{port}"],
   veloren: ["--connect", "{host}:{port}"],
@@ -373,9 +373,24 @@ function freedoomIwadName(editionSlug) {
   return "freedoom2.wad";
 }
 
+/**
+ * Doom/GZDoom player colorset (0–7). Distinct seats in a party map to distinct
+ * palettes; otherwise hash the display name so two friends don't both spawn green.
+ */
+function doomColorset(join) {
+  const seat = Number(join?.playerNumber);
+  if (Number.isFinite(seat) && seat >= 1) return Math.floor(seat - 1) % 8;
+  const name = String(join?.name || "").trim();
+  if (!name) return 0;
+  let h = 0;
+  for (let i = 0; i < name.length; i += 1) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return h % 8;
+}
+
 function applyConnectTemplates(templates, join, editionSlug) {
   const mod = join?.mod || openRaModName(editionSlug || join?.edition);
   const iwad = freedoomIwadName(editionSlug || join?.edition);
+  const colorset = String(doomColorset(join));
   return templates.map((template) =>
     String(template)
       .replaceAll("{host}", join?.host || "")
@@ -384,6 +399,7 @@ function applyConnectTemplates(templates, join, editionSlug) {
       // OpenRA needs the mod named or it joins with whatever it last had open.
       .replaceAll("{mod}", mod || "ra")
       .replaceAll("{iwad}", iwad)
+      .replaceAll("{colorset}", colorset)
       /*
        * Which seat this player takes in a two-player peer game. Both sides run
        * the same command line except for this, and if they agree on it they
@@ -400,7 +416,7 @@ function applyConnectTemplates(templates, join, editionSlug) {
   );
 }
 
-const TEMPLATE_TOKEN = /\{(host|port|name|mod|playerNumber|iwad|nodes)\}/;
+const TEMPLATE_TOKEN = /\{(host|port|name|mod|playerNumber|iwad|nodes|colorset)\}/;
 
 /**
  * Args to pass on a plain launch — one with no server to join.
@@ -437,4 +453,5 @@ module.exports = {
   defaultGamePort,
   defaultGameProtocol,
   openRaModName,
+  doomColorset,
 };
