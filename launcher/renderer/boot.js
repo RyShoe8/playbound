@@ -789,6 +789,68 @@ function wireMainEvents() {
     }
   });
 
+  window.playbound.onContext((data) => {
+    if (data) {
+      if (data.action === "install" && data.slug) {
+        state.deepLinkCtx = data;
+        if (data.editionSlug) {
+          void api.openEditionDetail?.(data.slug, data.editionSlug);
+        } else {
+          void api.openGameDetail?.(data.slug);
+        }
+        void handleContextInstall(data);
+        return;
+      }
+      const same =
+        state.currentView === "deepLink" && isSameDeepLinkContext(state.deepLinkCtx, data);
+      state.deepLinkCtx = data;
+      // Remounting this panel auto-starts install/mod-install. A second
+      // identical context event must not start a second download.
+      if (same) return;
+      void navigateTo("deepLink", { ctx: data });
+    } else if (state.currentView === "deepLink") {
+      void navigateTo("home");
+    }
+  });
+
+  window.playbound.onCatalogUpdated?.((list) => {
+    setCatalogCache(list);
+    if (state.currentView === "home") api.paintHomeGrids?.(state.catalogCache, state.recentCache);
+    else if (state.currentView === "games") api.paintGamesGrid?.(state.catalogCache);
+    else if (state.currentView === "search") api.paintSearchResults?.(state.catalogCache);
+    else if (state.currentView === "library") api.renderLibraryView?.();
+  });
+}
+
+/**
+ * Tell the main process which controllers are connected.
+ *
+ * The Gamepad API lives only in this context, and it deliberately reports
+ * nothing until a pad has been interacted with — so this reports at startup,
+ * on connect/disconnect, and once more after a short delay to catch a pad that
+ * was already plugged in before the window existed.
+ *
+ * Main uses this to write bindings into games that keep them in a config file,
+ * so the player does not rebind the same pad in every game.
+ */
+function wireGamepadReporting() {
+  const report = () => {
+    try {
+      const pads = Array.from(navigator.getGamepads?.() || [])
+        .filter(Boolean)
+        .map((p) => ({ id: p.id, mapping: p.mapping, connected: p.connected }));
+      void window.playbound.reportGamepads?.(pads);
+    } catch {
+      /* Never block the UI over a controller. */
+    }
+  };
+  window.addEventListener("gamepadconnected", report);
+  window.addEventListener("gamepaddisconnected", report);
+  report();
+  // A pad connected before this window opened stays silent until it is used.
+  window.setTimeout(report, 3000);
+}
+
 const activeContextInstalls = new Set();
 
 async function handleContextInstall(ctx) {
@@ -852,68 +914,6 @@ async function handleContextInstall(ctx) {
   } finally {
     activeContextInstalls.delete(key);
   }
-}
-
-  window.playbound.onContext((data) => {
-    if (data) {
-      if (data.action === "install" && data.slug) {
-        state.deepLinkCtx = data;
-        if (data.editionSlug) {
-          void api.openEditionDetail?.(data.slug, data.editionSlug);
-        } else {
-          void api.openGameDetail?.(data.slug);
-        }
-        void handleContextInstall(data);
-        return;
-      }
-      const same =
-        state.currentView === "deepLink" && isSameDeepLinkContext(state.deepLinkCtx, data);
-      state.deepLinkCtx = data;
-      // Remounting this panel auto-starts install/mod-install. A second
-      // identical context event must not start a second download.
-      if (same) return;
-      void navigateTo("deepLink", { ctx: data });
-    } else if (state.currentView === "deepLink") {
-      void navigateTo("home");
-    }
-  });
-
-  window.playbound.onCatalogUpdated?.((list) => {
-    setCatalogCache(list);
-    if (state.currentView === "home") api.paintHomeGrids?.(state.catalogCache, state.recentCache);
-    else if (state.currentView === "games") api.paintGamesGrid?.(state.catalogCache);
-    else if (state.currentView === "search") api.paintSearchResults?.(state.catalogCache);
-    else if (state.currentView === "library") api.renderLibraryView?.();
-  });
-}
-
-/**
- * Tell the main process which controllers are connected.
- *
- * The Gamepad API lives only in this context, and it deliberately reports
- * nothing until a pad has been interacted with — so this reports at startup,
- * on connect/disconnect, and once more after a short delay to catch a pad that
- * was already plugged in before the window existed.
- *
- * Main uses this to write bindings into games that keep them in a config file,
- * so the player does not rebind the same pad in every game.
- */
-function wireGamepadReporting() {
-  const report = () => {
-    try {
-      const pads = Array.from(navigator.getGamepads?.() || [])
-        .filter(Boolean)
-        .map((p) => ({ id: p.id, mapping: p.mapping, connected: p.connected }));
-      void window.playbound.reportGamepads?.(pads);
-    } catch {
-      /* Never block the UI over a controller. */
-    }
-  };
-  window.addEventListener("gamepadconnected", report);
-  window.addEventListener("gamepaddisconnected", report);
-  report();
-  // A pad connected before this window opened stays silent until it is used.
-  window.setTimeout(report, 3000);
 }
 
 async function boot() {
