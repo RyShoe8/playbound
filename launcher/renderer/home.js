@@ -172,7 +172,7 @@ function topNonControllerReason(entry) {
 }
 
 function controllerBadge(controller) {
-  if (!controller?.label) return null;
+  if (!controller?.label || controller.label === "Plug in and play") return null;
   const el = document.createElement("span");
   el.className = `home-pad-badge home-pad-${controller.confidence}`;
   el.textContent = controller.label;

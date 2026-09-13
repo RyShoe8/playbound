@@ -61,7 +61,7 @@ test("controller confidence ladder outranks the catalog's claim", () => {
   assert.ok(config.score > claimed.score);
   assert.equal(nothing.score, 0);
   assert.equal(nothing.label, null, "an unassessed game gets no badge at all");
-  assert.equal(native.label, "Plug in and play");
+  assert.equal(native.label, null, "native controller games show no redundant plug in and play tag");
   // The weakest tier must not imply PlayBound will configure anything — it
   // only knows the catalog says the game takes a pad.
   assert.equal(claimed.label, "Works with a controller");
@@ -71,13 +71,13 @@ test("controller confidence ladder outranks the catalog's claim", () => {
 test("a controller badge does not depend on a pad being plugged in", () => {
   const candidate = {
     game: game("ysoccer"),
-    controllerSupport: { kind: "native" },
+    controllerSupport: { kind: "config", verified: true },
   };
   const unplugged = scorePlayable(candidate, { padConnected: false });
   const plugged = scorePlayable(candidate, { padConnected: true });
 
-  assert.equal(unplugged.controller.label, "Plug in and play");
-  assert.equal(plugged.controller.label, "Plug in and play");
+  assert.equal(unplugged.controller.label, "Controller ready — we set it up");
+  assert.equal(plugged.controller.label, "Controller ready — we set it up");
   assert.ok(plugged.score > unplugged.score, "connecting a pad should raise the weight");
   assert.ok(unplugged.score > 0, "an unplugged pad is still a pad you own");
 });
