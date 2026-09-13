@@ -1774,12 +1774,6 @@ function buildPartyViewHtml(party) {
           )}${openRaStockMod ? ` · Mod: ${escapeHtml(openRaModLabel)}` : ""}</p>`
       : "";
 
-  /*
-   * Sits under the game, where "Host: Public server" sits for every other
-   * party, and says the one thing that makes this party different before
-   * anybody readies up: the game has no online play. Without it a couch party
-   * is indistinguishable from an online one until Start Game, because the host
-   * picker hides itself when there is only one mode to pick.
   const gameHtml = isLeader && !ended
     ? `<label class="party-field-label" for="party-game-select">Game</label>
        <select class="input-text party-game-select" id="party-game-select" aria-label="Party game">
