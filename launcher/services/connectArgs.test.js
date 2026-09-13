@@ -17,6 +17,7 @@ const {
   CLIENT_CONNECT_ARGS,
   applyConnectTemplates,
   defaultGamePort,
+  defaultGameProtocol,
   joinsFromInGameMenu,
   staticLaunchArgs,
   arbiterLaunchArgs,
@@ -91,6 +92,11 @@ test("new peer-hosted games expose the address and port their launch path needs"
   assert.equal(CLIENT_CONNECT_ARGS.bombsquad, null);
   assert.equal(joinsFromInGameMenu("bombsquad"), true);
   assert.equal(defaultGamePort("bombsquad"), 43210);
+  assert.equal(defaultGamePort("re-volt-rvgl"), 2310);
+  assert.equal(defaultGamePort("revolt"), 2310);
+  assert.equal(defaultGameProtocol("re-volt-rvgl"), "udp");
+  assert.equal(defaultGameProtocol("supertuxkart"), "udp");
+  assert.equal(defaultGameProtocol("openra"), "tcp");
   assert.equal(clientConnectArgs("bombsquad"), null);
   // AssaultCube joins via official URL protocol after the host creates a server.
   assert.equal(defaultGamePort("assaultcube"), 28763);

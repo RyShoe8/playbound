@@ -6640,7 +6640,7 @@ const facts: Game[] = [
       kind: "direct-zip",
       url: "https://mirror.playbound.club/launcher-packages/games/tmnt-rescue-palooza/1789256353987-tmnt-rescue-palooza-1.15.zip",
       fileName: "tmnt-rescue-palooza-1.15.zip",
-      versionLabel: "1.1.5",
+      versionLabel: "1.1.5-clean",
       exeHint: "TMNT_Rescue_Palooza|TMNT_Rescue_Palooza.exe",
       knownExePaths: [
         "TMNT Rescue-Palooza 1.15/TMNT_Rescue_Palooza.exe",

@@ -93,6 +93,7 @@ const {
   applyConnectTemplates,
   staticLaunchArgs,
   defaultGamePort,
+  defaultGameProtocol,
 } = require("./services/connectArgs");
 const { createHostService } = require("./services/couch/hostService");
 const openMwConfig = require("./services/openMwConfig");
@@ -4223,7 +4224,7 @@ function knownExecutablePathsFor(entry) {
 
 function findExecutable(dir, exeHint) {
   if (!dir || !fs.existsSync(dir)) return null;
-  const candidates = [];
+  let candidates = [];
   /*
    * `wininst` is setuptools' bundled installer stub. A game that ships its own
    * Python carries several of them under Lib/site-packages, and they are plain
@@ -4338,6 +4339,16 @@ function findExecutable(dir, exeHint) {
   }
 
   if (candidates.length === 0) return null;
+
+  /*
+   * Merso multi-demo packs (old TMNT zip) ship Balacera / Bloody Paws /
+   * Buccaneers beside the real game. Size-fallback preferred those demos
+   * (~30MB) over TMNT_Rescue_Palooza.exe (~2MB). Drop them when anything else
+   * is present so a wrong/missing OpenBOR hint cannot relaunch an ad demo.
+   */
+  const PACK_DEMO_EXE = /^(Balacera_brothers|bloody_paws_demo|buccaneers_demo)/i;
+  const withoutPackDemos = candidates.filter((e) => !PACK_DEMO_EXE.test(e.name));
+  if (withoutPackDemos.length > 0) candidates = withoutPackDemos;
 
   if (exeHint) {
     const parts = String(exeHint)
@@ -12701,6 +12712,11 @@ ipcMain.handle("get-connect-meta", (_event, slug) => ({
    * answer before it launches the leader — see arbiterLaunchArgs.
    */
   arbiterHosted: hasArbiterLaunch(slug),
+  /*
+   * UDP / ENet hosts never accept a TCP probe. Friends uses this to auto-mark
+   * selfHostReady after launch (Re-Volt, SuperTuxKart, …).
+   */
+  protocol: defaultGameProtocol(slug),
 }));
 
 ipcMain.handle("get-party-sync", async (_event, opts = {}) => {

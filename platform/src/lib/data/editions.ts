@@ -3598,7 +3598,7 @@ export const editions: EditionSeed[] = [
       min: "1.0 GHz CPU / 512 MB RAM / OpenGL 2.1 / 500 MB storage",
       recommended: "Dual-Core CPU / 2 GB RAM / Dedicated GPU / USB Gamepad",
     },
-    features: ["Singleplayer", "Multiplayer", "Controller Support", "Split-Screen", "Dedicated Servers", "LAN Support", "Custom Tracks"],
+    features: ["Singleplayer", "Multiplayer", "Controller Support", "Split-Screen", "LAN Support", "Custom Tracks"],
     tags: ["Racing", "Arcade", "RC Cars", "Multiplayer", "Classic"],
     aliases: ["Re-Volt RVGL", "RVGL PC", "Re-Volt Original"],
     version: "23.1030a",
