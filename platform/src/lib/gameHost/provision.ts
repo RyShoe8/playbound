@@ -4,6 +4,7 @@
  */
 
 import type { Document } from "mongoose";
+import User from "@/lib/models/User";
 import { getHostedInGameSteps } from "@/lib/multiplayer/adapters";
 import { createHostRoom, deleteHostRoom, isGameHostConfigured, listHostRooms } from "./client";
 import {
@@ -38,6 +39,8 @@ export type PartyHostFields = {
 type PartyLike = Document & {
   _id: { toString(): string };
   gameSlug: string;
+  leaderId?: string | null;
+  name?: string | null;
   /** Leader's OS, so these server-side events can be attributed. */
   leaderOs?: string | null;
   editionSlug?: string | null;
@@ -95,7 +98,18 @@ export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
   hosted.error = null;
   await party.save();
 
-  const name = "PlayBound.club Party";
+  let name = typeof party.name === "string" && party.name.trim() ? party.name.trim() : "";
+  if (!name && party.leaderId) {
+    try {
+      const leader = await User.findById(party.leaderId).select("username").lean();
+      if (leader?.username) {
+        name = `${leader.username}'s Server`;
+      }
+    } catch {
+      /* ignore db lookup failures, fallback to default below */
+    }
+  }
+  if (!name) name = "PlayBound Server";
   /*
    * The agent keys its recipes by its own slug, which is not always the
    * catalog's — 0 A.D. is `0ad` here and `0-ad` on the box. Sending the

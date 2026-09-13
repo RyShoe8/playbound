@@ -71,7 +71,9 @@ const portMapping = require("./services/portMapping");
 const { ensureOpenTtdClientName } = require("./services/openTtdPlayerName");
 const {
   autoConfigureGamePlayerName,
+  defaultServerName,
   getPlayerNameLaunchArgs,
+  getServerNameLaunchArgs,
   sanitizePlayerName,
 } = require("./services/gamePlayerName");
 const { reconcileCatalog, startupCatalog } = require("./services/catalogMerge");
@@ -8682,13 +8684,14 @@ async function playGameInner(slug, join = null, editionSlug = null) {
   }
 
   /*
-   * Auto-set player name / username / profile across all supported games to
+   * Auto-set player name / username / profile and server name across all supported games to
    * the player's PlayBound username by default.
    */
   let activePlayerName = join?.name || null;
   if (!activePlayerName) {
     activePlayerName = await getActivePlayerName();
   }
+  const activeServerName = join?.serverName || defaultServerName(activePlayerName);
   if (activePlayerName) {
     if (join && !join.name) {
       join.name = activePlayerName;
@@ -8699,6 +8702,7 @@ async function playGameInner(slug, join = null, editionSlug = null) {
         gameDir: info.dir || path.dirname(info.exe || ""),
         exePath: info.exe,
         playerName: activePlayerName,
+        serverName: activeServerName,
         userDataPath: app.getPath("userData"),
       });
     } catch (err) {
@@ -8812,6 +8816,7 @@ async function playGameInner(slug, join = null, editionSlug = null) {
       port,
       settings: {},
       revision: Date.now(),
+      serverName: activeServerName,
     });
     if (!started.ok) throw new Error(started.error || "Could not start the TES3MP server.");
     resolvedJoin = { host: "127.0.0.1", port };
@@ -8841,6 +8846,10 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     const nameArgs = getPlayerNameLaunchArgs(slug, activePlayerName, args);
     if (nameArgs.length) {
       args.push(...nameArgs);
+    }
+    const serverArgs = getServerNameLaunchArgs(slug, activeServerName, args);
+    if (serverArgs.length) {
+      args.push(...serverArgs);
     }
   }
 
@@ -14764,6 +14773,9 @@ async function reconcileSelfHostServer(partyId) {
   const { exe, cwd, hostLaunch } = resolved;
   const port = Number(hostLaunch?.port) || defaultGamePort(slug) || 0;
 
+  const activePlayerName = await getActivePlayerName();
+  const serverName = desired.serverName || (activePlayerName ? `${activePlayerName}'s Server` : "PlayBound Server");
+
   const result = localServers.start(partyId, {
     exe,
     cwd,
@@ -14771,6 +14783,7 @@ async function reconcileSelfHostServer(partyId) {
     port,
     settings: desired.settings || {},
     revision: Number(desired.desiredRevision || 0),
+    serverName,
   });
 
   if (result.error) {

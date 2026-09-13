@@ -90,4 +90,27 @@ describe("starting a room with what the host planned", () => {
     const opts = await provisionWith({});
     expect(opts?.settings).toBeUndefined();
   });
+
+  it("uses the party name as the room name when present", async () => {
+    vi.doMock("./client", () => ({
+      isGameHostConfigured: () => true,
+      listHostRooms: async () => ({ ok: true as const, rooms: [] }),
+      deleteHostRoom: async () => true,
+      createHostRoom: async (opts: Record<string, unknown>) => {
+        created.push(opts);
+        return { roomId: "room_b", host: "203.0.113.10", port: 2100, name: opts.name };
+      },
+    }));
+    const { provisionPartyHost } = await import("./provision");
+    const party = {
+      _id: { toString: () => "party_named" },
+      gameSlug: "openra",
+      name: "Custom Game Session",
+      hosted: { status: "none", settings: {} },
+      save: async () => {},
+    };
+    await provisionPartyHost(party as unknown as Parameters<typeof provisionPartyHost>[0]);
+    const latest = created[created.length - 1];
+    expect(latest?.name).toBe("Custom Game Session");
+  });
 });

@@ -63,6 +63,16 @@ test("substitutes into templates that carry the port inside a longer argument", 
   assert.deepEqual(args, ["Server.ListenPort=1255"]);
 });
 
+test("substitutes serverName into host templates with {name}", () => {
+  const args = buildServerArgs({
+    hostLaunch: { argsTemplate: ["+set", "sv_hostname", "{name}"] },
+    port: 27960,
+    serverName: "Alice's Server",
+    settings: {},
+  });
+  assert.deepEqual(args, ["+set", "sv_hostname", "Alice's Server"]);
+});
+
 test("writes TES3MP config-file server settings", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "playbound-tes3mp-"));
   const file = path.join(dir, "tes3mp-server-default.cfg");
