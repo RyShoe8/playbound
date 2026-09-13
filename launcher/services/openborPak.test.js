@@ -50,6 +50,22 @@ test("writes DualSense P1 keys only while keyboard defaults remain", () => {
   assert.equal(applyOpenBorP1Keys(next, profile), null, "second apply must no-op");
 });
 
+test("rewrites DualSense template that left special on keyboard F", () => {
+  const buf = Buffer.alloc(348, 0);
+  buf.writeUInt32LE(OPENBOR_CFG_VERSION, 0);
+  // Broken first ship: joy dirs + jump, special still F
+  const broken = [628, 630, 631, 629, 602, 601, 122, 120, 603, 102, 610, 614];
+  broken.forEach((k, i) => buf.writeInt32LE(k, P1_KEYS_OFFSET + i * 4));
+  const profile = { family: "dualsense", label: "PS5 Controller" };
+  const next = applyOpenBorP1Keys(buf, profile);
+  assert.ok(next);
+  assert.equal(next.readInt32LE(P1_KEYS_OFFSET + 4 * 4), 602, "attack btn2");
+  assert.equal(next.readInt32LE(P1_KEYS_OFFSET + 8 * 4), 603, "jump btn3");
+  assert.equal(next.readInt32LE(P1_KEYS_OFFSET + 9 * 4), 601, "special btn1");
+  assert.equal(next.readInt32LE(P1_KEYS_OFFSET + 10 * 4), 610, "start btn10");
+  assert.equal(next.readInt32LE(P1_KEYS_OFFSET + 11 * 4), 614, "screenshot btn14");
+});
+
 test("pads a shorter logo scene to the original pack entry size", () => {
   // Minimal fake pack: magic + version + one file + directory + headerstart
   const fileBody = Buffer.from(

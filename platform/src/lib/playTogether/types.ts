@@ -242,6 +242,11 @@ export type PartyPayload = {
   editionSlug: string | null;
   modSlugs: string[];
   /**
+   * True after the host picks a version to install (edition picker or Install).
+   * Guests should not see Install until this is set (or the host already has the game).
+   */
+  versionSelectedByHost: boolean;
+  /**
    * For `gameSlug === "openra"` only: which of Red Alert / Tiberian Dawn /
    * Dune 2000 the party is playing. Null means unset — joiners resolve to
    * "ra" the same way they always have, so this is purely additive.

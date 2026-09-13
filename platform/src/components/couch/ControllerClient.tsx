@@ -80,6 +80,24 @@ export function ControllerClient({
   const gameLayout = layout === "game";
   const [error, setError] = useState<string | null>(null);
   const [join, setJoin] = useState<JoinState | null>(null);
+  /**
+   * Game-view joiners on a computer pick PC vs phone once — same choice as
+   * launching a local game. Phone pads still open the default layout (QR).
+   */
+  const [controlChoice, setControlChoice] = useState<"undecided" | "pc" | "phone">(() => {
+    if (!gameLayout) return "pc";
+    if (typeof window === "undefined") return "undecided";
+    try {
+      const coarse =
+        window.matchMedia?.("(pointer: coarse)").matches &&
+        (navigator.maxTouchPoints ?? 0) > 0 &&
+        window.innerWidth < 900;
+      if (coarse) return "pc";
+    } catch {
+      /* ignore */
+    }
+    return "undecided";
+  });
   // Phones scanning the QR want the touch pad, not keyboard+stream chrome.
   const [mode, setMode] = useState<InputMode>(() => {
     if (typeof window === "undefined") return "keyboard-mouse";
@@ -587,7 +605,9 @@ export function ControllerClient({
 
   // Physical gamepad polling
   useEffect(() => {
-    if (mode !== "standard-gamepad") {
+    const usePad =
+      mode === "standard-gamepad" || (gameLayout && controlChoice === "pc");
+    if (!usePad) {
       setPhysicalLabel(null);
       return;
     }
@@ -628,17 +648,22 @@ export function ControllerClient({
         };
       } else {
         setPhysicalLabel(null);
-        padRef.current = { ...EMPTY };
+        // In game-view PC mode, keyboard owns the pad when no hardware pad is
+        // connected — clearing here would wipe every keypress every frame.
+        if (mode === "standard-gamepad") {
+          padRef.current = { ...EMPTY };
+        }
       }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [mode]);
+  }, [mode, gameLayout, controlChoice]);
 
   // Keyboard & mouse → virtual pad (default join mode)
   useEffect(() => {
     if (mode !== "keyboard-mouse") return;
+    if (controlChoice === "phone") return;
     const heldMove = { up: false, down: false, left: false, right: false };
     padRef.current = emptyPadAxes();
 
@@ -678,7 +703,7 @@ export function ControllerClient({
       window.removeEventListener("contextmenu", onContext);
       padRef.current = { ...EMPTY };
     };
-  }, [mode, sendInput]);
+  }, [mode, controlChoice, sendInput]);
 
   const setBit = (bit: number, down: boolean) => {
     if (down) padRef.current.buttons |= bit;
@@ -721,7 +746,34 @@ export function ControllerClient({
     );
   }
 
-  if (mode === "standard-gamepad") {
+  if (gameLayout && controlChoice === "undecided") {
+    return (
+      <Shell>
+        <Eyebrow>Controller supported</Eyebrow>
+        <h1 className="pbc-title">How do you want to play?</h1>
+        <p className="pbc-sub">
+          You&apos;re joining {join.hostLabel}&apos;s game view. Pick how you&apos;ll control it —
+          same choice as launching a game on your PC.
+        </p>
+        <div className="pbc-choice-row">
+          <button type="button" className="pbc-choice-btn" onClick={() => setControlChoice("pc")}>
+            <strong>Play with PC controls</strong>
+            <span>Keyboard, mouse, or a controller plugged into this computer</span>
+          </button>
+          <button
+            type="button"
+            className="pbc-choice-btn is-featured"
+            onClick={() => setControlChoice("phone")}
+          >
+            <strong>Use phone as controller</strong>
+            <span>Scan a QR code — no app required on your phone</span>
+          </button>
+        </div>
+      </Shell>
+    );
+  }
+
+  if (mode === "standard-gamepad" && !gameLayout) {
     return (
       <Shell>
         <Eyebrow>{playerLabel}</Eyebrow>
@@ -737,7 +789,14 @@ export function ControllerClient({
     );
   }
 
-  if (mode === "keyboard-mouse") {
+  if (mode === "keyboard-mouse" || gameLayout) {
+    const phoneJoinUrl =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/c/${encodeURIComponent(code)}`
+        : `https://playbound.club/c/${encodeURIComponent(code)}`;
+    const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
+      phoneJoinUrl
+    )}`;
     return (
       <main
         className={[
@@ -771,6 +830,18 @@ export function ControllerClient({
             </button>
           ) : null}
         </header>
+        {gameLayout && controlChoice === "phone" ? (
+          <div className="pbc-phone-qr">
+            <img src={qrSrc} alt="QR code to open the phone controller" width={220} height={220} />
+            <p className="pbc-sub">
+              Scan with your phone — this window stays the game view. Code{" "}
+              <strong>{code}</strong>
+            </p>
+            <button type="button" className="pbc-choice-btn" onClick={() => setControlChoice("pc")}>
+              Use PC controls instead
+            </button>
+          </div>
+        ) : null}
         {!gameLayout || !hasVideo ? (
           <div className="pbc-kbm-panel">
             <h1 className="pbc-title">Keyboard &amp; mouse</h1>
@@ -778,8 +849,8 @@ export function ControllerClient({
             <p className="pbc-sub">Need a pad? Switch to Touch or Pad below.</p>
           </div>
         ) : null}
-        <StatusBar transport={transport} pingMs={pingMs} hz={hz} />
-        <ModeToggle mode={mode} setMode={setMode} />
+        {!gameLayout ? <StatusBar transport={transport} pingMs={pingMs} hz={hz} /> : null}
+        {!gameLayout ? <ModeToggle mode={mode} setMode={setMode} /> : null}
       </main>
     );
   }
@@ -1275,6 +1346,54 @@ function ControllerStyles() {
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
+}
+
+.pbc-choice-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(420px, 92vw);
+  margin: 20px auto 0;
+}
+.pbc-choice-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+  color: inherit;
+  cursor: pointer;
+}
+.pbc-choice-btn strong { font-size: 15px; }
+.pbc-choice-btn span { font-size: 12px; opacity: 0.75; line-height: 1.35; }
+.pbc-choice-btn.is-featured {
+  border-color: rgba(61, 214, 140, 0.45);
+  background: rgba(61, 214, 140, 0.08);
+}
+.pbc-phone-qr {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--pbc-safe-b) + 24px);
+  transform: translateX(-50%);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: rgba(8, 8, 12, 0.92);
+  border: 1px solid rgba(255,255,255,0.1);
+  max-width: min(320px, 92vw);
+  text-align: center;
+}
+.pbc-phone-qr img {
+  border-radius: 8px;
+  background: #fff;
 }
 
 .pbc-pad {

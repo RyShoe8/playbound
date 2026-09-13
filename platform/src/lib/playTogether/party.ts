@@ -756,6 +756,7 @@ function serializeParty(
     gameTitle,
     editionSlug: (doc.editionSlug as string) || null,
     modSlugs: (doc.modSlugs as string[]) || [],
+    versionSelectedByHost: Boolean(doc.versionSelectedByHost),
     openRaMod: (doc.openRaMod as PartyPayload["openRaMod"]) || null,
     status: (doc.status as PartyStatus) || "forming",
     visibility: (doc.visibility as PartyVisibility) || "friends",
@@ -1547,10 +1548,20 @@ export async function dropOfflinePartyMembers(now = new Date()): Promise<{ dropp
   if (memberIds.length === 0) return { dropped: 0 };
 
   const cutoff = new Date(now.getTime() - STALE_AFTER_MS);
+  /*
+   * Installing can block the launcher event loop longer than two missed beats
+   * (large downloads, extract). Dropping the host mid-install ended the party
+   * for everyone else until they came back to Friends. Keep installers alive
+   * for a longer window as long as they still report status "installing".
+   */
+  const installingCutoff = new Date(now.getTime() - 20 * 60 * 1000);
   const live = await Presence.find({
     userId: { $in: memberIds },
     status: { $ne: "offline" },
-    lastHeartbeat: { $gte: cutoff },
+    $or: [
+      { lastHeartbeat: { $gte: cutoff } },
+      { status: "installing", lastHeartbeat: { $gte: installingCutoff } },
+    ],
   })
     .select("userId")
     .lean();
@@ -1788,6 +1799,11 @@ export async function setPartyGame(
      * disambiguate.
      */
     doc.modSlugs = [];
+    /*
+     * Preferred edition from the catalog is not the same as the host choosing
+     * one — guests must wait until Install / the edition picker runs.
+     */
+    doc.versionSelectedByHost = false;
     /*
      * Host mode belongs to the game, not the party: "my computer" is a valid
      * choice for a peer-hostable game and meaningless for one that only runs
@@ -2081,6 +2097,11 @@ export async function setPartyEdition(
     for (const member of doc.members) member.ready = false;
   }
   doc.editionSlug = newEdition;
+  /*
+   * Host explicitly chose this version (picker or Install). Guests may install
+   * from here — preferredPartyEditionSlug alone must not unlock guest Install.
+   */
+  doc.versionSelectedByHost = true;
   if (String(doc.gameSlug) === "openra") {
     if (openRaEditionAllowsStockModPicker(newEdition)) {
       // Switching onto Official from a fixed-mod edition: default Red Alert.

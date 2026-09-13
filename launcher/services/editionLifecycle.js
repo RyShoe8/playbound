@@ -18,7 +18,17 @@ function isInstallerBackedEntry(entry) {
  * path may also run the product uninstaller.
  */
 function mayRunNativeUninstaller(editionSlug, entry = null, opts = {}) {
-  if (!editionSlug) return true;
+  /*
+   * Full-game uninstall (no editionSlug): only installer-backed recipes should
+   * invoke a vendor/registry uninstaller. Zip and portable exe games are just
+   * folders under the PlayBound games directory — launching Apps & features for
+   * those (title match on "Xonotic", "Warzone 2100", …) opens a unrelated
+   * Windows uninstall UI while leaving the managed folder behind.
+   */
+  if (!editionSlug) {
+    if (!entry) return true;
+    return isInstallerBackedEntry(entry);
+  }
   if (opts.lastOwnerOfInstallPath && isInstallerBackedEntry(entry)) return true;
   if (editionSlug !== "official") return false;
   return isInstallerBackedEntry(entry);

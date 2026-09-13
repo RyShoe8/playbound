@@ -32,6 +32,7 @@ const {
   applyOpenBorP1Keys,
   isOpenBorCfg,
   p1StillKeyboard,
+  p1HasBrokenDualSenseSpecial,
 } = require("./openborCfg");
 
 /**
@@ -468,7 +469,10 @@ const GAMES = {
       ]);
     },
     needsConfig(buf) {
-      return isOpenBorCfg(buf) && p1StillKeyboard(buf);
+      return (
+        isOpenBorCfg(buf) &&
+        (p1StillKeyboard(buf) || p1HasBrokenDualSenseSpecial(buf))
+      );
     },
     apply(buf, profile) {
       return applyOpenBorP1Keys(buf, profile);

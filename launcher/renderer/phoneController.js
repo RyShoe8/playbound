@@ -347,7 +347,10 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
   if (choice === "normal") {
     if (isBridgeableGamepadConnected()) {
       setStatus("Enabling Universal Gamepad Bridge for controller…");
-      void enableGamepadBridge();
+      const bridged = await enableGamepadBridge();
+      if (!bridged) {
+        setStatus("Could not enable controller bridge — launching anyway", true);
+      }
     }
   }
 

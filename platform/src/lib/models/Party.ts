@@ -175,6 +175,12 @@ const PartySchema = new Schema(
     gameSlug: { type: String, default: "", index: true },
     editionSlug: { type: String, default: null },
     modSlugs: { type: [String], default: [] },
+    /*
+     * Host clicked a version (Install / edition pick). Preferred edition from
+     * setPartyGame alone is not enough — guests must wait until the host
+     * actually chooses, so they do not install ahead of / differently from the host.
+     */
+    versionSelectedByHost: { type: Boolean, default: false },
 
     /*
      * Which of OpenRA's bundled games (Red Alert / Tiberian Dawn / Dune 2000)
@@ -337,6 +343,7 @@ export type PartyDoc = {
   gameSlug: string;
   editionSlug?: string | null;
   modSlugs: string[];
+  versionSelectedByHost?: boolean;
   openRaMod?: "ra" | "cnc" | "d2k" | null;
   status: string;
   visibility: string;
