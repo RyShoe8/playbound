@@ -346,6 +346,12 @@ function httpsGetStream(targetUrl, { headers, signal, maxRedirects = 5 } = {}) {
       const client = parsed.protocol === "http:" ? http : https;
       const req = client.get(parsed, { headers: defaultHeaders, signal }, (res) => {
         req.setTimeout(0);
+        res.setTimeout(60_000, () => {
+          res.destroy(new Error("Download stream stalled (60s without data)"));
+        });
+        res.on("data", () => {
+          res.setTimeout(60_000);
+        });
         const status = res.statusCode || 0;
         if (status >= 300 && status < 400 && res.headers.location) {
           res.resume();
@@ -499,6 +505,7 @@ async function archiveFromUrl({ url, relativePath, sha256, sizeBytes }, abortSig
         } catch {
           /* First attempt, or a prior attempt did not create a partial file. */
         }
+        console.log(`[archive] attempt ${attempt}/${maxAttempts} for ${relativePath} (resuming: ${received > 0 ? `${received} bytes` : "no"})`);
         const headers = received > 0 ? { Range: `bytes=${received}-` } : undefined;
         const { statusCode, headers: resHeaders, stream } = await httpsGetStream(source, { signal, headers });
         if (statusCode < 200 || statusCode >= 300) {
@@ -522,8 +529,13 @@ async function archiveFromUrl({ url, relativePath, sha256, sizeBytes }, abortSig
           createWriteStream(temp, { flags: received > 0 ? "a" : "w" })
         );
         const file = await stat(temp);
-        if (file.size !== Number(sizeBytes)) {
-          throw new Error(`Archive size mismatch (expected ${sizeBytes}, got ${file.size})`);
+        const expectedBytes = Number(sizeBytes);
+        if (file.size !== expectedBytes) {
+          if (contentLength > 0 && file.size === contentLength) {
+            console.log(`[archive] size matches source content-length (${file.size} bytes), accepting`);
+          } else {
+            throw new Error(`Archive size mismatch (expected ${sizeBytes}, got ${file.size})`);
+          }
         }
         if (sha256) {
           const actual = await sha256File(temp);
@@ -532,9 +544,11 @@ async function archiveFromUrl({ url, relativePath, sha256, sizeBytes }, abortSig
           }
         }
         await rename(temp, target);
+        console.log(`[archive] verified & live: ${relativePath} (${file.size} bytes)`);
         return { ok: true, sizeBytes: file.size };
       } catch (err) {
         lastError = err instanceof Error ? err.message : "Could not archive artifact";
+        console.warn(`[archive] attempt ${attempt} error for ${relativePath}:`, lastError);
         if (abortSignal?.aborted || attempt === maxAttempts) break;
       }
     }
@@ -579,14 +593,18 @@ async function queueArchive(input) {
   const target = archivePath(input?.relativePath);
   if (!target) return { error: "Invalid archive path" };
   const existing = await archiveStatus(input.relativePath);
-  if (existing.error) {
-    // A failed transfer is retryable. Keeping the failed in-memory job made
-    // every later Archive click replay the old 403 forever without issuing a
-    // new request, even after its source URL was corrected.
+  if (existing.error || existing.status === "missing") {
     archiveJobs.delete(input.relativePath);
   }
   if (existing.status === "verified") return existing;
-  if (existing.status === "uploading") return existing;
+  if (existing.status === "uploading") {
+    if (input.force) {
+      archiveJobs.get(input.relativePath)?.controller?.abort();
+      archiveJobs.delete(input.relativePath);
+    } else {
+      return existing;
+    }
+  }
 
   const controller = new AbortController();
   archiveJobs.set(input.relativePath, {
@@ -596,6 +614,7 @@ async function queueArchive(input) {
     bytesReceived: 0,
     tempPath: null,
   });
+  console.log(`[archive] queuing ${input.relativePath} from ${input.url}`);
   void archiveFromUrl(input, controller.signal).then((result) => {
     archiveJobs.set(input.relativePath, result.error
       ? { status: "failed", error: result.error }

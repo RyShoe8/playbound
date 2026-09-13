@@ -124,7 +124,10 @@ export function LauncherPackageUploader({
         setTransferred(`${formatDataVolume(received)} of ${formatDataVolume(total)}`);
         continue;
       }
-      if (result.status !== 202) throw new Error(body?.error || "VPS verification failed");
+      rememberPending(null);
+      setPercent(null);
+      setPhase("idle");
+      throw new Error(body?.error || (body?.status ? `VPS transfer status: ${body.status}` : "VPS verification failed"));
     }
     // Deliberately keeps the job so "Resume VPS check" can pick it up later.
     setPercent(null);
@@ -161,12 +164,6 @@ export function LauncherPackageUploader({
       const blob = await upload(`launcher-packages/${scope}/${Date.now()}-${file.name.replace(/[^a-z0-9._-]/gi, "-")}`, file, {
         access: "public",
         handleUploadUrl: "/api/admin/launcher-package/upload",
-        /*
-         * Required at this size, not an optimisation. A single PUT of a
-         * multi-gigabyte body has no resume and no progress: one dropped
-         * connection loses the whole transfer, which is how a 2 GB package
-         * can appear to upload for a long time and never land.
-         */
         multipart: true,
         onUploadProgress: ({ percentage, loaded, total }) => {
           setPercent(percentage);
@@ -182,16 +179,65 @@ export function LauncherPackageUploader({
     } finally { setBusy(false); }
   }
 
+  async function inspectStagedUrl(url: string) {
+    const trimmed = url.trim();
+    if (!/^https:\/\//i.test(trimmed)) return;
+    try {
+      const urlObj = new URL(trimmed);
+      const rawName = decodeURIComponent(urlObj.pathname.split("/").pop() || "").replace(/^[0-9]+-/, "");
+      if (!stagedFileName && /\.(zip|7z)$/i.test(rawName)) {
+        setStagedFileName(rawName);
+      }
+      if (!stagedSizeBytes) {
+        const head = await fetch(trimmed, { method: "HEAD" });
+        const len = Number(head.headers.get("content-length") || 0);
+        if (len > 0) setStagedSizeBytes(String(len));
+      }
+    } catch {
+      /* ignore probe failures */
+    }
+  }
+
   async function archiveStaged() {
-    const fileName = stagedFileName.trim();
-    const sizeBytes = Number(stagedSizeBytes);
-    if (!/^https:\/\//i.test(stagedUrl.trim()) || !/\.(zip|7z)$/i.test(fileName) || !Number.isInteger(sizeBytes) || sizeBytes <= 0) {
-      setState("Enter an HTTPS ZIP/7z URL, filename, and exact byte size.");
+    let fileName = stagedFileName.trim();
+    let sizeBytes = Number(stagedSizeBytes);
+    const url = stagedUrl.trim();
+    if (!/^https:\/\//i.test(url)) {
+      setState("Enter a valid HTTPS package URL.");
+      return;
+    }
+    if (!fileName) {
+      try {
+        const rawName = decodeURIComponent(new URL(url).pathname.split("/").pop() || "").replace(/^[0-9]+-/, "");
+        if (/\.(zip|7z)$/i.test(rawName)) fileName = rawName;
+      } catch {
+        /* ignore */
+      }
+    }
+    if (!/\.(zip|7z)$/i.test(fileName)) {
+      setState("Enter a .zip or .7z filename.");
+      return;
+    }
+    if (!Number.isInteger(sizeBytes) || sizeBytes <= 0) {
+      try {
+        setState("Probing package size…");
+        const head = await fetch(url, { method: "HEAD" });
+        const len = Number(head.headers.get("content-length") || 0);
+        if (len > 0) {
+          sizeBytes = len;
+          setStagedSizeBytes(String(len));
+        }
+      } catch {
+        /* proceed to validation */
+      }
+    }
+    if (!Number.isInteger(sizeBytes) || sizeBytes <= 0) {
+      setState("Could not detect package size. Please enter the exact size in bytes.");
       return;
     }
     setBusy(true);
     try {
-      await archive(stagedUrl.trim(), fileName, sizeBytes);
+      await archive(url, fileName, sizeBytes);
     } catch (err) {
       setPhase("idle");
       setState(err instanceof Error ? err.message : "VPS archive failed");
@@ -269,7 +315,17 @@ export function LauncherPackageUploader({
     ) : null}
 
     <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_11rem_9rem_auto]">
-      <input value={stagedUrl} onChange={(e) => setStagedUrl(e.target.value)} placeholder="Existing HTTPS package URL" disabled={busy} className="min-w-0 rounded-md border border-input bg-background px-3 py-2 text-xs" />
+      <input
+        value={stagedUrl}
+        onChange={(e) => {
+          const val = e.target.value;
+          setStagedUrl(val);
+          void inspectStagedUrl(val);
+        }}
+        placeholder="Existing HTTPS package URL"
+        disabled={busy}
+        className="min-w-0 rounded-md border border-input bg-background px-3 py-2 text-xs"
+      />
       <input value={stagedFileName} onChange={(e) => setStagedFileName(e.target.value)} placeholder="File name.zip" disabled={busy} className="min-w-0 rounded-md border border-input bg-background px-3 py-2 text-xs" />
       <input value={stagedSizeBytes} onChange={(e) => setStagedSizeBytes(e.target.value)} inputMode="numeric" placeholder="Size in bytes" disabled={busy} className="min-w-0 rounded-md border border-input bg-background px-3 py-2 text-xs" />
       <button type="button" disabled={busy || !gameSlug} onClick={() => void archiveStaged()} className="rounded-full border border-primary/40 px-4 py-2 text-xs font-bold text-primary disabled:opacity-60">

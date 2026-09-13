@@ -13,7 +13,7 @@ const payload = z.object({
   editionSlug: z.string().trim().regex(/^[a-z0-9][a-z0-9-]{0,119}$/).optional(),
   sourceUrl: z.string().url().refine((value) => new URL(value).protocol === "https:", "Package URL must use HTTPS"),
   fileName: z.string().trim().regex(/^.+\.(zip|7z)$/i, "Upload a .zip or .7z package").max(180),
-  sizeBytes: z.number().int().positive().max(10 * 1024 * 1024 * 1024),
+  sizeBytes: z.number().int().positive().max(20 * 1024 * 1024 * 1024),
   relativePath: z.string().trim().min(1).max(400).optional(),
 });
 
@@ -78,13 +78,27 @@ export async function POST(req: Request) {
     }
 
     const archive = await archivedArtifactStatusOnHost(relativePath);
-    if (archive?.status !== "verified") {
+    if (!archive) {
+      return NextResponse.json({ error: "Game host unreachable", status: "failed" }, { status: 502 });
+    }
+    if (archive.message) {
+      return NextResponse.json(
+        { error: archive.message, status: "failed" },
+        { status: archive.status === "missing" ? 404 : 500 }
+      );
+    }
+    if (archive.status === "missing") {
+      return NextResponse.json(
+        { error: "Archive job not found on VPS or transfer failed", status: "missing" },
+        { status: 404 }
+      );
+    }
+    if (archive.status !== "verified") {
       return NextResponse.json(
         {
-          status: archive?.status || "missing",
-          error: archive?.message || null,
-          bytesReceived: archive?.bytesReceived ?? 0,
-          sizeBytes: archive?.sizeBytes || input.sizeBytes,
+          status: archive.status,
+          bytesReceived: archive.bytesReceived ?? 0,
+          sizeBytes: archive.sizeBytes || input.sizeBytes,
         },
         { status: 202 }
       );
