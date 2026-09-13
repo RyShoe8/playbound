@@ -40,6 +40,28 @@ function loadIndex(initial) {
   return new Function(
     "initial",
     `let catalog = initial; let catalogIndex = null;
+     const INSTALLED_SLUG_ALIASES = ${JSON.stringify(
+       (() => {
+         const start = MAIN.indexOf("\nconst INSTALLED_SLUG_ALIASES =");
+         if (start < 0) return {};
+         const brace = MAIN.indexOf("{", start);
+         let d = 0;
+         let i = brace;
+         for (; i < MAIN.length; i += 1) {
+           if (MAIN[i] === "{") d += 1;
+           else if (MAIN[i] === "}") {
+             d -= 1;
+             if (d === 0) break;
+           }
+         }
+         try {
+           // eslint-disable-next-line no-new-func
+           return new Function(`return (${MAIN.slice(brace, i + 1)})`)();
+         } catch {
+           return {};
+         }
+       })()
+     )};
      ${grab("setCatalog")} ${grab("catalogEntry")}
      return { catalogEntry, setCatalog, current: () => catalog };`
   )(initial);

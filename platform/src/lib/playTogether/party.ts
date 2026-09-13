@@ -1374,7 +1374,25 @@ export async function leaveParty(
 
   const rp = toRuleParty(doc.toObject());
   const check = canLeaveParty(rp, userId);
-  if (!check.ok) return { error: check.reason || "Cannot leave", status: 400 };
+  if (!check.ok) {
+    /*
+     * Already ended — treat as success so a stuck client can clear itself.
+     * Membership may already be gone from a prior half-finished leave.
+     */
+    if (doc.status === "ended" || check.reason === "Party has already ended") {
+      try {
+        await releaseActiveMembership(userId, partyId);
+        await setPresenceParty(userId, { partyId: null });
+      } catch (err) {
+        console.warn(
+          `[party] leave cleanup for ended party ${partyId}:`,
+          err instanceof Error ? err.message : err
+        );
+      }
+      return { party: null, status: 200 };
+    }
+    return { error: check.reason || "Cannot leave", status: 400 };
+  }
 
   const newLeaderId = rp.leaderId === userId ? nextLeader(rp.members, userId) : rp.leaderId;
   if (
@@ -1385,102 +1403,64 @@ export async function leaveParty(
     return { error: "End the current game before transferring the host", status: 400 };
   }
 
-  const now = new Date();
-  const updated = await Party.findOneAndUpdate(
-    {
-      _id: doc._id,
-      leaderId: doc.leaderId,
-      "members.userId": Types.ObjectId.isValid(userId)
-        ? new Types.ObjectId(userId)
-        : userId,
-    },
-    [
-      {
-        $set: {
-          members: {
-            $map: {
-              input: {
-                $filter: {
-                  input: "$members",
-                  as: "member",
-                  cond: { $ne: [{ $toString: "$$member.userId" }, userId] },
-                },
-              },
-              as: "member",
-              in: {
-                $mergeObjects: [
-                  "$$member",
-                  {
-                    role: newLeaderId
-                      ? {
-                          $cond: [
-                            { $eq: [{ $toString: "$$member.userId" }, newLeaderId] },
-                            "leader",
-                            "member",
-                          ],
-                        }
-                      : "member",
-                  },
-                ],
-              },
-            },
-          },
-          ...(newLeaderId && { leaderId: new Types.ObjectId(newLeaderId) }),
-          lastActivity: now,
-        },
-      },
-      {
-        $set: {
-          status: {
-            $cond: [
-              { $eq: [{ $size: "$members" }, 0] },
-              "ended",
-              {
-                $cond: [
-                  { $in: ["$status", ["launching", "playing"]] },
-                  "$status",
-                  {
-                    $cond: [
-                      {
-                        $allElementsTrue: [
-                          { $map: { input: "$members", as: "member", in: "$$member.ready" } },
-                        ],
-                      },
-                      "ready",
-                      "forming",
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-          endedAt: {
-            $cond: [{ $eq: [{ $size: "$members" }, 0] }, now, "$endedAt"],
-          },
-        },
-      },
-    ],
-    { new: true }
+  const remaining = (doc.members || []).filter(
+    (m: { userId: unknown }) => String(m.userId) !== userId
   );
-  if (!updated) {
-    return { error: "Party changed while leaving. Try again.", status: 400 };
+  for (const m of remaining as Array<{ userId: unknown; role?: string }>) {
+    m.role = newLeaderId && String(m.userId) === newLeaderId ? "leader" : "member";
+  }
+  doc.members = remaining as typeof doc.members;
+  if (newLeaderId) {
+    doc.leaderId = new Types.ObjectId(newLeaderId);
+  }
+  doc.lastActivity = new Date();
+  if (remaining.length === 0) {
+    doc.status = "ended";
+    doc.endedAt = new Date();
+    // Clear invalid-in-flight host states so save() cannot fail schema validation
+    // on a dying party (e.g. a stale status from a prior half-finished release).
+    if (doc.hosted) {
+      const hs = String(doc.hosted.status || "none");
+      if (!["none", "pending", "ready", "failed", "release-pending"].includes(hs)) {
+        doc.hosted.status = "none";
+      }
+    }
+  } else if (doc.status !== "launching" && doc.status !== "playing") {
+    doc.status = remaining.every((m: { ready?: boolean }) => Boolean(m.ready))
+      ? "ready"
+      : "forming";
   }
 
-  await releaseActiveMembership(userId, partyId);
-  await setPresenceParty(userId, { partyId: null });
-  if (updated.status === "ended") {
+  try {
+    await doc.save();
+  } catch (err) {
+    console.error(`[party] leave save failed for ${partyId}:`, err);
+    throw err;
+  }
+
+  try {
+    await releaseActiveMembership(userId, partyId);
+    await setPresenceParty(userId, { partyId: null });
+  } catch (err) {
+    console.warn(
+      `[party] leave presence cleanup failed for ${partyId}:`,
+      err instanceof Error ? err.message : err
+    );
+  }
+
+  if (doc.status === "ended") {
     /*
      * Membership is already committed. Host/LAN/Discord cleanup must not turn
      * a successful leave into a 500 — e.g. hosted.status "release-pending"
      * used to fail schema validation on save.
      */
     try {
-      await releasePartyHost(updated);
-      await releasePartyLan(updated);
-      await updated.save();
+      await releasePartyHost(doc);
+      await releasePartyLan(doc);
+      await doc.save();
       await releasePartyMemberships(partyId);
-      await clearPresenceForParty(String(updated._id));
-      await cleanupPartyDiscordVoice(updated);
+      await clearPresenceForParty(String(doc._id));
+      await cleanupPartyDiscordVoice(doc);
     } catch (err) {
       console.warn(
         `[party] leave cleanup failed for ${partyId}:`,
@@ -1489,16 +1469,16 @@ export async function leaveParty(
     }
   }
 
-  const gameSlug = String(updated.gameSlug || "") || null;
+  const gameSlug = String(doc.gameSlug || "") || null;
   trackPartyEvent("party_left", {
-    partyId: String(updated._id),
+    partyId: String(doc._id),
     gameSlug,
     userId,
-    ended: updated.status === "ended",
+    ended: doc.status === "ended",
   });
-  if (updated.status === "ended") {
+  if (doc.status === "ended") {
     trackPartyEvent("party_ended", {
-      partyId: String(updated._id),
+      partyId: String(doc._id),
       gameSlug,
       userId,
       reason: "empty",
@@ -2274,61 +2254,37 @@ export async function setReady(
     return { error: "Cannot change ready state now", status: 400 };
   }
 
-  const memberId = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : userId;
-  if (!doc.members.some((member: { userId: unknown }) => String(member.userId) === userId)) {
+  const member = doc.members.find(
+    (m: { userId: unknown }) => String(m.userId) === userId
+  );
+  if (!member) {
     return { error: "Not in this party", status: 400 };
   }
 
-  const now = new Date();
-  const updated = await Party.findOneAndUpdate(
-    {
-      _id: doc._id,
-      status: { $in: ["forming", "ready"] },
-      gameSlug: { $ne: "" },
-      "members.userId": memberId,
-    },
-    [
-      {
-        $set: {
-          members: {
-            $map: {
-              input: "$members",
-              as: "member",
-              in: {
-                $cond: [
-                  { $eq: [{ $toString: "$$member.userId" }, userId] },
-                  { $mergeObjects: ["$$member", { ready }] },
-                  "$$member",
-                ],
-              },
-            },
-          },
-          lastActivity: now,
-        },
-      },
-      {
-        $set: {
-          status: {
-            $cond: [
-              {
-                $allElementsTrue: [
-                  { $map: { input: "$members", as: "member", in: "$$member.ready" } },
-                ],
-              },
-              "ready",
-              "forming",
-            ],
-          },
-        },
-      },
-    ],
-    { new: true }
-  );
-  if (!updated) return { error: "Party changed while updating readiness", status: 400 };
-  await maybeProvisionPartyConnect(updated);
+  member.ready = ready;
+  doc.lastActivity = new Date();
+  doc.status = doc.members.every((m: { ready?: boolean }) => Boolean(m.ready))
+    ? "ready"
+    : "forming";
+
+  try {
+    await doc.save();
+  } catch (err) {
+    console.error(`[party] ready save failed for ${partyId}:`, err);
+    throw err;
+  }
+
+  try {
+    await maybeProvisionPartyConnect(doc);
+  } catch (err) {
+    console.warn(
+      `[party] ready provision failed for ${partyId}:`,
+      err instanceof Error ? err.message : err
+    );
+  }
 
   return {
-    party: await partyPayloadForDoc(updated.toObject()),
+    party: await partyPayloadForDoc(doc.toObject()),
     status: 200,
   };
 }
