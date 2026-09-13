@@ -599,7 +599,6 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     adapterType: "managed-server",
     protocol: "udp",
     selfHost: {
-      kind: "listen",
       port: 8303,
       protocol: "udp",
       verified: true,
