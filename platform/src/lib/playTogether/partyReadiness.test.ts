@@ -118,10 +118,11 @@ describe("nothing to decide yet", () => {
     expect(r.phase).toBe("no_game");
   });
 
-  it("does not flash a warning before the first sync arrives", () => {
+  it("does not treat a missing sync as everyone having the files", () => {
     /*
-     * The panel renders before config-sync lands. Defaulting to "blocked" would
-     * show a red card to a party that is perfectly fine.
+     * The panel renders before config-sync lands. Missing membership is
+     * unknown, not synchronized — fail-open here let a party launch before
+     * anyone's install was checked.
      */
     const r = computePartyReadiness({
       gameSlug: "holocure",
@@ -129,7 +130,8 @@ describe("nothing to decide yet", () => {
       members: [{ userId: "a", ready: false }],
       sync: null,
     });
-    expect(r.phase).toBe("waiting_ready");
+    expect(r.phase).toBe("checking");
+    expect(r.allInSync).toBe(false);
     expect(r.blockedUserIds).toEqual([]);
   });
 });

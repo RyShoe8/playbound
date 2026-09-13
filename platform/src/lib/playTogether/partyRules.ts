@@ -7,7 +7,6 @@
  */
 
 import type { PartyStatus, PartyVisibility, PartyMemberRole } from "@/lib/playTogether/types";
-import { PARTY_STATUSES } from "@/lib/playTogether/types";
 
 /* ────────────────────────────────────────────────────────────────────────── */
 /*  Member types for rule evaluation (DB-agnostic)                         */
@@ -26,6 +25,7 @@ export type RuleParty = {
   status: PartyStatus;
   visibility: PartyVisibility;
   maxSize: number;
+  eventId?: string | null;
 };
 
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -36,7 +36,9 @@ export function canJoinParty(
   party: RuleParty,
   userId: string,
   isFriend: boolean,
-  passwordOk = false
+  passwordOk = false,
+  hasInvite = false,
+  eventEligible = false
 ): { ok: boolean; reason?: string } {
   if (party.status === "ended") {
     return { ok: false, reason: "Party has ended" };
@@ -54,6 +56,10 @@ export function canJoinParty(
     return { ok: false, reason: "Party is full" };
   }
 
+  if ((party.eventId || party.visibility === "event") && !eventEligible) {
+    return { ok: false, reason: "RSVP to this event before joining its party" };
+  }
+
   if (party.visibility === "public") {
     return { ok: true };
   }
@@ -66,9 +72,9 @@ export function canJoinParty(
   }
 
   if (party.visibility === "invite_only") {
-    // Invite-only parties require an accepted invitation — the caller
-    // (service layer) handles the invite check separately.
-    return { ok: true };
+    return hasInvite
+      ? { ok: true }
+      : { ok: false, reason: "This party is invite-only" };
   }
 
   if (party.visibility === "friends") {
@@ -78,8 +84,6 @@ export function canJoinParty(
     return { ok: true };
   }
 
-  // "event" visibility — anyone attending the event can join.
-  // Event attendance check is done in the service layer.
   return { ok: true };
 }
 

@@ -80,7 +80,19 @@ export function ControllerClient({
   const gameLayout = layout === "game";
   const [error, setError] = useState<string | null>(null);
   const [join, setJoin] = useState<JoinState | null>(null);
-  const [mode, setMode] = useState<InputMode>("keyboard-mouse");
+  // Phones scanning the QR want the touch pad, not keyboard+stream chrome.
+  const [mode, setMode] = useState<InputMode>(() => {
+    if (typeof window === "undefined") return "keyboard-mouse";
+    try {
+      const coarse =
+        window.matchMedia?.("(pointer: coarse)").matches ||
+        (navigator.maxTouchPoints ?? 0) > 0;
+      if (coarse && !gameLayout) return "touch-gamepad";
+    } catch {
+      /* ignore */
+    }
+    return "keyboard-mouse";
+  });
   const [transport, setTransport] = useState<Transport>("connecting");
   const [pingMs, setPingMs] = useState<number | null>(null);
   const [hz, setHz] = useState(0);
@@ -484,7 +496,10 @@ export function ControllerClient({
           if (!usingWebrtc) setTransport("offline");
           return;
         }
-        const url = urls[idx++]!;
+        const raw = urls[idx++]!;
+        const url = session.wsToken
+          ? `${raw}${raw.includes("?") ? "&" : "?"}token=${encodeURIComponent(session.wsToken)}`
+          : raw;
         try {
           ws = new WebSocket(url);
         } catch {
@@ -1391,7 +1406,14 @@ function ControllerStyles() {
 
 /* ── Hit-Slop Expansion on all interactive controls ─────────────────── */
 
-.pbc-face-btn::before,
+.pbc-face-btn::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: inherit;
+  z-index: 1;
+}
+
 .pbc-bumper::before,
 .pbc-trigger::before,
 .pbc-dpad-key::before,
@@ -1730,8 +1752,9 @@ function ControllerStyles() {
   --face-btn-size: clamp(66px, 17.5vmin, 94px);
   --face-font-size: clamp(22px, 5.2vmin, 32px);
   position: relative;
-  width: calc(var(--face-btn-size) * 2.28);
-  height: calc(var(--face-btn-size) * 2.28);
+  /* 2.55 leaves ~0.275×size gap between adjacent ABXY circles (was overlapping at 2.28). */
+  width: calc(var(--face-btn-size) * 2.55);
+  height: calc(var(--face-btn-size) * 2.55);
   flex-shrink: 0;
 }
 
@@ -1740,8 +1763,8 @@ function ControllerStyles() {
   --face-btn-size: clamp(48px, 12vmin, 68px);
   --face-font-size: clamp(16px, 3.6vmin, 22px);
   position: relative;
-  width: calc(var(--face-btn-size) * 2.28);
-  height: calc(var(--face-btn-size) * 2.28);
+  width: calc(var(--face-btn-size) * 2.55);
+  height: calc(var(--face-btn-size) * 2.55);
   flex-shrink: 0;
 }
 

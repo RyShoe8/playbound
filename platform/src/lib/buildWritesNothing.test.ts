@@ -20,7 +20,13 @@ const pkg = JSON.parse(
 ) as { scripts: Record<string, string> };
 
 /** Anything that reaches the database. Read-only steps are fine. */
-const WRITING_STEPS = [/\bseed[:\-]/i, /\bmigrate\b/i, /\bsync:?catalog\b/i];
+const WRITING_STEPS = [
+  /\bseed[:\-]/i,
+  /\bmigrate\b/i,
+  /\bsync:?catalog\b/i,
+  /\binsert:catalog-wave\b/i,
+  /\bsync:game-host\b/i,
+];
 
 function stepsOf(script: string): string[] {
   return script
@@ -30,9 +36,18 @@ function stepsOf(script: string): string[] {
 }
 
 describe("the build chain", () => {
-  it("runs insert:catalog-wave after next build", () => {
-    expect(pkg.scripts.build).toBe(
-      "next build && npm run check:auth-urls && npm run insert:catalog-wave && npm run sync:game-host"
+  it("does not write catalog or VPS state during next build", () => {
+    expect(pkg.scripts.build).toBe("next build && npm run check:auth-urls");
+    for (const step of stepsOf(pkg.scripts.build)) {
+      for (const pattern of WRITING_STEPS) {
+        expect(step, `${step} must not mutate external state`).not.toMatch(pattern);
+      }
+    }
+  });
+
+  it("keeps catalog and host sync as an explicit post-deploy job", () => {
+    expect(pkg.scripts["postdeploy:catalog"]).toBe(
+      "npm run insert:catalog-wave && npm run sync:game-host"
     );
   });
 

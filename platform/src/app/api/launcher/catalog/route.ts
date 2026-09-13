@@ -15,7 +15,7 @@ import { requestIncludesTesting } from "@/lib/requestIncludesTesting";
 import { gameAccessTiers, tierFor } from "@/lib/access/tiers";
 import { accessFieldsForLauncher } from "@/lib/launcherCommerce";
 import { formatEditionChipNames } from "@/lib/data/editions";
-import { listEditionsForGame } from "@/lib/editions";
+import { listEditionsForGames } from "@/lib/editions";
 import { supportsController } from "@/lib/controller/support";
 import { getMultiplayerAdapter } from "@/lib/multiplayer/adapters";
 
@@ -27,10 +27,11 @@ export async function GET(req: Request) {
       listGames({ includeTesting }),
       gameAccessTiers(),
     ]);
+    const editionsBySlug = await listEditionsForGames(games, { includeInactive: false });
     const entries = (
       await Promise.all(
         games.map(async (g) => {
-        const publicActiveEditions = (await listEditionsForGame(g, { includeInactive: false })).filter(
+        const publicActiveEditions = (editionsBySlug.get(g.slug) || []).filter(
           (edition) => edition.visibility === "public"
         );
         const onlyEdition = publicActiveEditions[0];

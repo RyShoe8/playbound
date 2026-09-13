@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import type { PartyPayload, PartyVisibility } from "@/lib/playTogether/types";
+import type { PublicPartyPayload } from "@/lib/playTogether/party";
 import { presenceSnapshot, usePresenceStore } from "@/stores/presenceStore";
 import { useFriendsStore } from "@/stores/friendsStore";
 import { CADENCE } from "@/lib/realtime/cadence";
@@ -18,7 +19,7 @@ interface PartyState {
   /** The party the current user is a member of (if any). */
   activeParty: PartyPayload | null;
   /** Friend parties visible to the user. */
-  discoverableParties: PartyPayload[];
+  discoverableParties: PublicPartyPayload[];
   loading: boolean;
   error: string | null;
 
@@ -85,9 +86,9 @@ let requestedPollMs = 5000;
 let partyMutationInFlight = 0;
 
 const DEFAULT_PARTY_POLL_MS = CADENCE.friendsPollMs;
-const FAST_PARTY_POLL_MS = 1000;
+const FAST_PARTY_POLL_MS = CADENCE.livePartyPollMs;
 /** Slowest lane in the same request: friends' joinable parties. */
-const DISCOVERABLE_MIN_MS = 5000;
+const DISCOVERABLE_MIN_MS = CADENCE.discoverablePartiesMinMs;
 let lastDiscoverableAt = 0;
 /** Require two consecutive empty myParties before clearing a live party UI. */
 let emptyMyPartiesStreak = 0;
@@ -271,17 +272,26 @@ export const usePartyStore = create<PartyState>((set, get) => ({
        * to stay current to the second.
        */
       const wantDiscoverable = Date.now() - lastDiscoverableAt >= DISCOVERABLE_MIN_MS;
-      const res = await fetch(wantDiscoverable ? "/api/parties" : "/api/parties?discoverable=0");
+      const res = await fetch(wantDiscoverable ? "/api/party-sync" : "/api/party-sync?discoverable=0");
       if (!res.ok) return;
       const data = await res.json();
-      if (wantDiscoverable) lastDiscoverableAt = Date.now();
-      const myParties: PartyPayload[] = data.myParties || [];
+      if (wantDiscoverable && Array.isArray(data.discoverable)) lastDiscoverableAt = Date.now();
+      if (Array.isArray(data.friends) || Array.isArray(data.incoming) || Array.isArray(data.outgoing)) {
+        useFriendsStore.getState().applyPartySync({
+          friends: data.friends,
+          incoming: data.incoming,
+          outgoing: data.outgoing,
+        });
+      }
+      // A failed parties section is omitted so we keep the last good roster.
+      if (!Array.isArray(data.myParties)) return;
+      const myParties: PartyPayload[] = data.myParties;
       let nextActive = myParties[0] || null;
-      // Absent means "not asked for this time", which is not the same as none.
-      const nextDiscoverable: PartyPayload[] | null = Array.isArray(data.discoverable)
+      // Absent means "not asked for this time" or "this section failed".
+      const nextDiscoverable: PublicPartyPayload[] | null = Array.isArray(data.discoverable)
         ? data.discoverable
         : wantDiscoverable
-          ? []
+          ? null
           : null;
       set((state) => {
         if (nextActive) {
@@ -358,7 +368,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       syncPartyPoll(get);
       refreshFriendsAfterPartyMutation();
       return party;
-    } catch (err) {
+    } catch {
       const recovered = await recoverActivePartyAfterCreate(get);
       if (recovered) {
         set({ activeParty: recovered, loading: false, error: null });
@@ -407,7 +417,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       syncPartyPoll(get);
       refreshFriendsAfterPartyMutation();
       return party;
-    } catch (err) {
+    } catch {
       set({ error: "Network error", loading: false });
       return null;
     } finally {
@@ -418,9 +428,14 @@ export const usePartyStore = create<PartyState>((set, get) => ({
   leaveParty: async (partyId) => {
     partyMutationInFlight += 1;
     try {
-      await fetch(`/api/parties/${partyId}/leave`, { method: "POST" });
+      const res = await fetch(`/api/parties/${partyId}/leave`, { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        set({ error: data.error || "Failed to leave party" });
+        return;
+      }
       emptyMyPartiesStreak = 2;
-      set({ activeParty: null });
+      set({ activeParty: null, error: null });
       await get().fetchParties();
       refreshFriendsAfterPartyMutation();
     } catch (err) {
@@ -483,9 +498,14 @@ export const usePartyStore = create<PartyState>((set, get) => ({
 
   endParty: async (partyId) => {
     try {
-      await fetch(`/api/parties/${partyId}`, { method: "DELETE" });
+      const res = await fetch(`/api/parties/${partyId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        set({ error: data.error || "Failed to end party" });
+        return;
+      }
       emptyMyPartiesStreak = 2;
-      set({ activeParty: null });
+      set({ activeParty: null, error: null });
       syncPartyPoll(get);
       refreshFriendsAfterPartyMutation();
     } catch (err) {

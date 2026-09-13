@@ -14,6 +14,7 @@ const { createProvider } = require("./VirtualControllerProvider");
 const { createMetrics } = require("./metrics");
 const { createPlainWebSocketServer } = require("./wsServer");
 const { ensureVigem } = require("./ensureVigem");
+const { authenticateCouchClient, bindInputToSlot } = require("./inputAuth");
 
 /**
  * @param {object} deps
@@ -38,6 +39,8 @@ function createHostService(deps) {
 
   /** controllerId -> { playerSlot, sessionToken, transport } */
   const clients = new Map();
+  /** controllerId -> Set of socket/context objects that can be closed on kick */
+  const socketsByController = new Map();
 
   function lanAddresses() {
     const nets = os.networkInterfaces();
@@ -94,27 +97,63 @@ function createHostService(deps) {
     }
   }
 
+  function approvedControllers() {
+    return session?.snapshot?.controllers || [];
+  }
+
+  function rememberSocket(controllerId, ctx) {
+    if (!controllerId || !ctx) return;
+    let set = socketsByController.get(controllerId);
+    if (!set) {
+      set = new Set();
+      socketsByController.set(controllerId, set);
+    }
+    set.add(ctx);
+  }
+
+  function forgetSocket(controllerId, ctx) {
+    const set = socketsByController.get(controllerId);
+    if (!set) return;
+    set.delete(ctx);
+    if (set.size === 0) socketsByController.delete(controllerId);
+  }
+
+  function closeControllerTransport(controllerId) {
+    const set = socketsByController.get(controllerId);
+    if (set) {
+      for (const ctx of set) {
+        try {
+          ctx.close?.();
+        } catch {
+          /* ignore */
+        }
+      }
+      socketsByController.delete(controllerId);
+    }
+    const client = clients.get(controllerId);
+    if (client && client.playerSlot != null) releaseSlot(client.playerSlot);
+    clients.delete(controllerId);
+  }
+
   /**
    * Apply an input packet from any transport.
+   * Slot comes from the authenticated binding, never from the packet.
    */
   async function applyInput(packet, meta = {}) {
     const parsed = parseInputPacketV1(packet);
     if (!parsed) return false;
-    const handle = await ensureSlot(parsed.p);
-    const tHost = Date.now();
-    handle.applyState(parsed);
+    const boundSlot = Number.isInteger(meta.playerSlot) ? meta.playerSlot : null;
+    if (boundSlot == null) return false;
+    const bound = bindInputToSlot(parsed, boundSlot);
+    if (!bound) return false;
+    const handle = await ensureSlot(bound.p);
+    handle.applyState(bound);
     if (meta.controllerId) {
-      const captureToHostMs =
-        typeof packet.t === "number" ? Math.max(0, performanceNowFallback() - packet.t) : null;
-      // packet.t is performance.now on phone — not comparable across devices.
-      // Use host receive pacing instead for debug; optional RTT from ping.
       metrics.recordPacket(meta.controllerId, {
         transport: meta.transport || "unknown",
-        seq: parsed.seq,
+        seq: bound.seq,
         captureToHostMs: typeof meta.rttMs === "number" ? meta.rttMs : undefined,
       });
-      void tHost;
-      void captureToHostMs;
     }
     return true;
   }
@@ -123,72 +162,106 @@ function createHostService(deps) {
     return Date.now();
   }
 
-  function handleControlMessage(msg, ctx) {
+  async function handleControlMessage(msg, ctx) {
     if (!msg || typeof msg !== "object") return;
-    if (msg.type === "auth") {
-      if (msg.wsToken !== wsToken) {
+    if (msg.type === "auth" || msg.type === "hello") {
+      const requireWsToken = (ctx.transport || "websocket") === "websocket";
+      const attempt = () =>
+        authenticateCouchClient(msg, {
+          expectedWsToken: wsToken,
+          requireWsToken,
+          controllers: approvedControllers(),
+        });
+      let result = attempt();
+      if (!result.ok && (result.reason === "not-approved" || result.reason === "no-slot")) {
+        await refreshSnapshot();
+        result = attempt();
+      }
+      if (!result.ok) {
         ctx.close?.();
         return;
       }
-      clients.set(msg.controllerId, {
-        playerSlot: msg.playerSlot,
-        sessionToken: msg.sessionToken,
-        transport: "websocket",
-      });
-      metrics.setTransport(msg.controllerId, "websocket");
-      ctx.send?.(JSON.stringify({ type: "welcome", playerSlot: msg.playerSlot }));
-      emitState();
-      return;
-    }
-    if (msg.type === "hello") {
-      clients.set(msg.controllerId, {
-        playerSlot: msg.playerSlot,
-        sessionToken: msg.sessionToken,
+      if (ctx.auth?.controllerId && ctx.auth.controllerId !== result.controllerId) {
+        forgetSocket(ctx.auth.controllerId, ctx);
+      }
+      ctx.auth = {
+        controllerId: result.controllerId,
+        playerSlot: result.playerSlot,
+        sessionToken: result.sessionToken,
+      };
+      rememberSocket(result.controllerId, ctx);
+      clients.set(result.controllerId, {
+        playerSlot: result.playerSlot,
+        sessionToken: result.sessionToken,
         transport: ctx.transport || "websocket",
       });
-      metrics.setTransport(msg.controllerId, ctx.transport || "websocket");
+      metrics.setTransport(result.controllerId, ctx.transport || "websocket");
       ctx.send?.(
         JSON.stringify({
           type: "welcome",
-          playerSlot: msg.playerSlot,
-          sessionToken: msg.sessionToken,
+          playerSlot: result.playerSlot,
+          sessionToken: result.sessionToken,
         })
       );
       emitState();
       return;
     }
+    if (!ctx.auth) {
+      ctx.close?.();
+      return;
+    }
     if (msg.type === "ping") {
       ctx.send?.(JSON.stringify({ type: "pong", t: msg.t }));
-      return;
     }
   }
 
   async function startWsServer() {
     if (wsServer) return { port: wsPort, token: wsToken };
     wsToken = require("crypto").randomBytes(16).toString("hex");
-    wsServer = createPlainWebSocketServer((socket, text) => {
-      let msg;
-      try {
-        msg = JSON.parse(text);
-      } catch {
-        return;
+    wsServer = createPlainWebSocketServer(
+      (socket, text) => {
+        let msg;
+        try {
+          msg = JSON.parse(text);
+        } catch {
+          return;
+        }
+        const ctx =
+          socket.couchCtx ||
+          (socket.couchCtx = {
+            auth: null,
+            transport: "websocket",
+            send: (s) => socket.send(s),
+            close: () => socket.close(),
+          });
+        if (msg && msg.type) {
+          void handleControlMessage(msg, ctx);
+          return;
+        }
+        if (msg && msg.v === 1) {
+          if (!ctx.auth) {
+            ctx.close();
+            return;
+          }
+          void applyInput(msg, {
+            controllerId: ctx.auth.controllerId,
+            playerSlot: ctx.auth.playerSlot,
+            transport: "websocket",
+          });
+        }
+      },
+      {
+        verifyUpgrade(req) {
+          try {
+            const url = new URL(req.url || "/", "http://localhost");
+            const token = url.searchParams.get("token");
+            return !token || token === wsToken;
+          } catch {
+            return false;
+          }
+        },
       }
-      const ctx = {
-        transport: "websocket",
-        send: (s) => socket.send(s),
-        close: () => socket.close(),
-      };
-      if (msg && msg.type) {
-        handleControlMessage(msg, ctx);
-        return;
-      }
-      if (msg && msg.v === 1) {
-        const controllerId = [...clients.entries()].find(
-          ([, c]) => c.playerSlot === msg.p
-        )?.[0];
-        void applyInput(msg, { controllerId, transport: "websocket" });
-      }
-    });
+    );
     wsPort = await wsServer.listen(0);
     return { port: wsPort, token: wsToken };
   }
@@ -321,11 +394,7 @@ function createHostService(deps) {
     if (!res.ok) throw new Error(data.error || "Controller action failed");
     session.snapshot = data.snapshot || session.snapshot;
     if (action === "kick" || action === "reject") {
-      const slot = [...handles.keys()].find((s) => {
-        /* best-effort: release if we know mapping */
-        return true;
-      });
-      void slot;
+      closeControllerTransport(controllerId);
     }
     emitState();
     return getState();
@@ -350,6 +419,16 @@ function createHostService(deps) {
     }
     session = null;
     clients.clear();
+    for (const set of socketsByController.values()) {
+      for (const ctx of set) {
+        try {
+          ctx.close?.();
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+    socketsByController.clear();
     metrics.clear();
 
     for (const slot of [...handles.keys()]) releaseSlot(slot);
@@ -382,15 +461,25 @@ function createHostService(deps) {
   async function onRendererMessage(payload) {
     if (!payload) return { ok: false };
     if (payload.type === "input" && payload.packet) {
+      const client = clients.get(payload.controllerId);
+      if (!client) return { ok: false };
       await applyInput(payload.packet, {
         controllerId: payload.controllerId,
+        playerSlot: client.playerSlot,
         transport: "webrtc",
         rttMs: payload.rttMs,
       });
       return { ok: true };
     }
     if (payload.type === "control" && payload.message) {
-      handleControlMessage(payload.message, {
+      const ctx = {
+        auth: clients.has(payload.controllerId)
+          ? {
+              controllerId: payload.controllerId,
+              playerSlot: clients.get(payload.controllerId).playerSlot,
+              sessionToken: clients.get(payload.controllerId).sessionToken,
+            }
+          : null,
         transport: "webrtc",
         send: (s) => {
           broadcast("couch-peer-send", {
@@ -398,8 +487,11 @@ function createHostService(deps) {
             data: s,
           });
         },
-      });
-      metrics.setTransport(payload.controllerId, "webrtc");
+        close: () => {
+          broadcast("couch-peer-close", { controllerId: payload.controllerId });
+        },
+      };
+      await handleControlMessage(payload.message, ctx);
       return { ok: true };
     }
     if (payload.type === "transport") {

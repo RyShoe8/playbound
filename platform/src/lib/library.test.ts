@@ -6,6 +6,7 @@ import {
   mintLauncherHandoffCode,
   mintLauncherToken,
 } from "@/lib/library";
+import { libraryDeleteAllPlatforms } from "@/lib/libraryPlatform";
 
 describe("launcher tokens", () => {
   it("mints opaque tokens and hashes stably", () => {
@@ -23,5 +24,15 @@ describe("launcher tokens", () => {
     expect(code).not.toContain("/");
     expect(LAUNCHER_HANDOFF_TTL_MS).toBe(2 * 60 * 1000);
     expect(LAUNCHER_TOKEN_TTL_MS).toBe(90 * 24 * 60 * 60 * 1000);
+  });
+});
+
+describe("libraryDeleteAllPlatforms", () => {
+  it("only deletes every platform when the caller opts in with 1", () => {
+    expect(libraryDeleteAllPlatforms("1")).toBe(true);
+    expect(libraryDeleteAllPlatforms("0")).toBe(false);
+    expect(libraryDeleteAllPlatforms(null)).toBe(false);
+    expect(libraryDeleteAllPlatforms(undefined)).toBe(false);
+    expect(libraryDeleteAllPlatforms("true")).toBe(false);
   });
 });

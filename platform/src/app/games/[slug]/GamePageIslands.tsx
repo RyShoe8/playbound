@@ -23,7 +23,11 @@ import { issueForGame } from "@/lib/weekly";
 import { AdaptiveAddToLibraryButton } from "@/components/AdaptiveAddToLibraryButton";
 import { LocateGameButton } from "@/components/LocateGameButton";
 import { PlayCta } from "@/components/GameCard";
-import { GetGameStoreButtons } from "@/components/GameCommerce";
+import {
+  GetGameStoreButtons,
+  GameCommerce,
+  type StoreAffiliateMap,
+} from "@/components/GameCommerce";
 import { bestPurchase } from "@/lib/access/offers";
 import { directPurchaseRequired, isBaseGameRequirement } from "@/lib/access/resolver";
 import { getStoreAffiliateMap } from "@/lib/commerce/affiliates";
@@ -128,7 +132,9 @@ export async function GameHeroActions({
       ) : isCommercialPurchaseOnly ? null : (
         <PlayCta game={game} size="lg" emphasis={installEmphasis} />
       )}
-      <GetGameStoreButtons game={game} size="lg" affiliates={affiliates} />
+      {!initiallyInLibrary ? (
+        <GetGameStoreButtons game={game} size="lg" affiliates={affiliates} />
+      ) : null}
       {!initiallyInLibrary && <LocateGameButton slug={game.slug} size="lg" />}
       <AdaptiveAddToLibraryButton
         game={game}
@@ -163,7 +169,7 @@ export function GameHeroActionsFallback({
       ) : isCommercialPurchaseOnly ? null : (
         <PlayCta game={game} size="lg" emphasis={buy && !isBaseGameReq ? "secondary" : "primary"} />
       )}
-      <GetGameStoreButtons game={game} size="lg" />
+      {/* Omit Get Game here — GameHeroActions hides it once library membership resolves. */}
       <LocateGameButton slug={game.slug} size="lg" />
       <AdaptiveAddToLibraryButton
         game={game}
@@ -351,4 +357,17 @@ export async function GameFeaturingAside({ gameSlug }: { gameSlug: string }) {
       </div>
     </div>
   );
+}
+
+/** Purchase card — hidden once the signed-in viewer already has this title. */
+export async function GameCommerceSection({
+  game,
+  affiliates,
+}: {
+  game: Game;
+  affiliates?: StoreAffiliateMap;
+}) {
+  const { initiallyInLibrary } = await resolveInitiallyInLibrary(game.slug);
+  if (initiallyInLibrary) return null;
+  return <GameCommerce game={game} affiliates={affiliates} />;
 }

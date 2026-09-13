@@ -49,6 +49,17 @@ export function platformFromRequest(req: Request): LibraryPlatform {
 }
 
 /**
+ * Cross-platform library deletion is opt-in only.
+ *
+ * A missing or unknown `allPlatforms` value must stay scoped to the device
+ * making the request. Treating anything other than `"0"` as "everywhere"
+ * deleted desktop installs when a phone omitted the flag.
+ */
+export function libraryDeleteAllPlatforms(value: string | null | undefined): boolean {
+  return value === "1";
+}
+
+/**
  * Platforms whose entries should be visible to a viewer on `platform`.
  *
  * Browser games are included everywhere: they need no install and run on

@@ -227,6 +227,14 @@ const PartySchema = new Schema(
     // was clicked and is not safe for members to connect to.
     selfHostReady: { type: Boolean, default: false },
     selfHostReadyAt: { type: Date, default: null },
+    selfHostPort: {
+      port: { type: Number, min: 1, max: 65535, default: null },
+      protocol: {
+        type: String,
+        enum: ["udp", "tcp", "both"],
+        default: "tcp",
+      },
+    },
 
     /*
      * Community dedicated server picked from the live list. Only meaningful
@@ -339,6 +347,10 @@ export type PartyDoc = {
   hostMode?: "self" | "dedicated" | "public" | null;
   selfHostReady?: boolean;
   selfHostReadyAt?: Date | null;
+  selfHostPort?: {
+    port?: number | null;
+    protocol?: "udp" | "tcp" | "both";
+  } | null;
   publicServer?: {
     id?: string | null;
     name?: string | null;

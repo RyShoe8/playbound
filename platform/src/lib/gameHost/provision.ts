@@ -159,7 +159,12 @@ export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
   hosted.roomCode = result.roomCode || null;
   hosted.error = null;
   hosted.provisionedAt = new Date();
-  await party.save();
+  try {
+    await party.save();
+  } catch (err) {
+    await deleteHostRoom(result.roomId);
+    throw err;
+  }
   trackPartyOk("host", { op: "provision", ...partyEventProps(party), gameSlug: slug });
   trackPartyEvent("party_hosted_ready", {
     ...partyEventProps(party),
@@ -183,7 +188,12 @@ export async function releasePartyHost(party: PartyLike): Promise<void> {
     return;
   }
 
-  await deleteHostRoom(hosted.roomId);
+  const deleted = await deleteHostRoom(hosted.roomId);
+  if (!deleted) {
+    hosted.status = "release-pending";
+    hosted.error = "Failed to release host room; retry later";
+    return;
+  }
   hosted.roomId = null;
   hosted.status = "none";
   hosted.host = null;

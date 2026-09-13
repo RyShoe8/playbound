@@ -11,6 +11,7 @@ import { sendMail } from "@/lib/mailer";
 import { userFromLauncherBearer } from "@/lib/library";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import { recaptchaErrorMessage, verifyRecaptcha } from "@/lib/recaptcha";
+import { escapeHtml } from "@/lib/newsletterEmail";
 
 const createSchema = z.object({
   title: z.string().trim().min(3).max(160),
@@ -47,17 +48,19 @@ export async function POST(req: Request) {
     const body = await req.json();
     const data = createSchema.parse(body);
 
-    // Site form should send reCAPTCHA; launcher may omit (token absent → skip when disabled).
-    if (data.source === "website" || data.recaptchaToken) {
+    const session = await getServerSession(authOptions);
+    const launcherUser = session?.user?.id ? null : await userFromLauncherBearer(req);
+    const submittedBy = session?.user?.id || launcherUser?._id?.toString() || null;
+
+    if (data.source === "launcher" && !submittedBy) {
+      return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+    }
+    if (data.source !== "launcher" || !submittedBy) {
       const captcha = await verifyRecaptcha(data.recaptchaToken, "bug_report");
       if (!captcha.ok) {
         return NextResponse.json({ error: recaptchaErrorMessage(captcha.reason) }, { status: 400 });
       }
     }
-
-    const session = await getServerSession(authOptions);
-    const launcherUser = session?.user?.id ? null : await userFromLauncherBearer(req);
-    const submittedBy = session?.user?.id || launcherUser?._id?.toString() || null;
 
     await dbConnect();
     const report = await BugReport.create({
@@ -84,10 +87,10 @@ export async function POST(req: Request) {
         await sendMail(
           founder,
           `Bug report (${data.source}): ${data.title}`,
-          `<p><strong>${data.title}</strong></p>
-           <p>Source: ${data.source}</p>
-           ${data.pageUrl ? `<p>Page: ${data.pageUrl}</p>` : ""}
-           <p>${data.description.slice(0, 800)}</p>
+          `<p><strong>${escapeHtml(data.title)}</strong></p>
+           <p>Source: ${escapeHtml(data.source)}</p>
+           ${data.pageUrl ? `<p>Page: ${escapeHtml(data.pageUrl)}</p>` : ""}
+           <p>${escapeHtml(data.description.slice(0, 800))}</p>
            <p>Review in Admin → Bugs.</p>`
         );
       } catch (err) {

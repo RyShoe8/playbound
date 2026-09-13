@@ -2,6 +2,7 @@ import {
   createMultiplayerSession,
   getMultiplayerSessionByCode,
   getMultiplayerSessionById,
+  joinMultiplayerSession,
   postSessionSignal,
   pollSessionSignals,
   updateSessionStatus,
@@ -31,37 +32,44 @@ export function createSession(params: {
   });
 }
 
-export function getSessionByCode(joinCode: string): HoloCureSession | null {
+export function getSessionByCode(joinCode: string): Promise<HoloCureSession | null> {
   return getMultiplayerSessionByCode(joinCode);
 }
 
-export function getSessionById(sessionId: string): HoloCureSession | null {
+export function getSessionById(sessionId: string): Promise<HoloCureSession | null> {
   return getMultiplayerSessionById(sessionId);
+}
+
+export function joinSession(joinCode: string) {
+  return joinMultiplayerSession(joinCode);
 }
 
 export function postSignalingMessage(
   sessionId: string,
+  token: string,
   message: Omit<SignalingMessage, "id" | "timestamp">
 ) {
-  return postSessionSignal(sessionId, message);
+  return postSessionSignal(sessionId, token, message);
 }
 
 export function pollSignalingMessages(
   sessionId: string,
+  token: string,
   forRole: "host" | "client",
   sinceTimestamp = 0
 ) {
-  return pollSessionSignals(sessionId, forRole, sinceTimestamp);
+  return pollSessionSignals(sessionId, token, forRole, sinceTimestamp);
 }
 
 export function updateSessionHeartbeat(
   sessionId: string,
+  hostToken: string,
   playerCount?: number,
   status?: "waiting" | "in_game" | "ended"
 ) {
-  return updateSessionStatus(sessionId, playerCount, status);
+  return updateSessionStatus(sessionId, hostToken, playerCount, status);
 }
 
-export function endSession(sessionId: string, hostToken?: string) {
+export function endSession(sessionId: string, hostToken: string) {
   return deleteMultiplayerSession(sessionId, hostToken);
 }

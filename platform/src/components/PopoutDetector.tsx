@@ -9,15 +9,23 @@ function PopoutDetectorInner() {
 
   useEffect(() => {
     const isPopout = searchParams?.get("popout") === "true";
+    // QR / deep links use /c/{CODE}; legacy /controller still works.
+    // Without this, cleanup removed is-controller-pwa that /c/layout set,
+    // and the pad rendered inside the full site chrome (mixed stream page).
     const isController =
       typeof pathname === "string" &&
-      (pathname === "/controller" || pathname.startsWith("/controller/"));
+      (pathname === "/c" ||
+        pathname.startsWith("/c/") ||
+        pathname === "/controller" ||
+        pathname.startsWith("/controller/"));
 
     document.body.classList.toggle("is-popout", isPopout);
     document.body.classList.toggle("is-controller-pwa", isController);
 
     return () => {
-      document.body.classList.remove("is-controller-pwa");
+      if (!isController) {
+        document.body.classList.remove("is-controller-pwa");
+      }
     };
   }, [searchParams, pathname]);
 

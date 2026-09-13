@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import dbConnect from "@/lib/db";
+import Party from "@/lib/models/Party";
 import { getFriendsUserId } from "@/lib/friendsAuth";
 import { checkConfigSync } from "@/lib/playTogether/party";
 
@@ -13,6 +15,15 @@ export async function GET(req: Request, ctx: RouteContext) {
 
   try {
     const { id } = await ctx.params;
+    await dbConnect();
+    const isMember = await Party.exists({
+      _id: id,
+      "members.userId": userId,
+      status: { $ne: "ended" },
+    });
+    if (!isMember) {
+      return NextResponse.json({ error: "Party membership required" }, { status: 403 });
+    }
     const result = await checkConfigSync(id);
     if ("error" in result) {
       return NextResponse.json({ error: result.error }, { status: result.status });

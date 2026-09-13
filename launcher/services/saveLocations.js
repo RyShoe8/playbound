@@ -252,7 +252,46 @@ const LOCATIONS = {
     verified: "documented — portable save / config in install folder",
     resolve: (c) => (c.installDir ? path.join(c.installDir, "save") : null),
   },
+  /*
+   * Neo Geo create-a-team progress is battery NVRAM written by FBNeo under
+   * RetroArch's savefiles directory. The managed runtime is shared, so only
+   * this set's files are included — never the whole fbneo folder.
+   */
+  "baseball-stars-2": {
+    verified:
+      "documented — FBNeo stores Neo Geo NVRAM in SAVEFILES_DIRECTORY/fbneo as " +
+      "bstars2.fs (and occasionally .nv); PlayBound's managed RetroArch uses that layout",
+    resolve: (c) => resolveManagedFbneoSaveDir(c),
+    include: ["bstars2.fs", "bstars2.nv"],
+    note: "Create-a-team / battery progress. Exit the game cleanly so FBNeo flushes NVRAM.",
+  },
 };
+
+/**
+ * FBNeo NVRAM folder under the PlayBound-managed RetroArch runtime.
+ *
+ * Prefer an existing `fbneo` / `FBNeo` subfolder (case varies by core build).
+ * When none exists yet, return the canonical lowercase path beside the binary
+ * so the first create-a-team session has a place to land.
+ */
+function resolveManagedFbneoSaveDir(c) {
+  const userData = c.userData;
+  if (!userData) return null;
+  const current = path.join(userData, "runtimes", "retroarch", "current");
+  const binaryParents = [
+    path.join(current, "RetroArch-Win64"),
+    current,
+    path.join(current, "RetroArch.app", "Contents", "Resources"),
+  ];
+  for (const parent of binaryParents) {
+    for (const name of ["fbneo", "FBNeo"]) {
+      const dir = path.join(parent, "saves", name);
+      if (fs.existsSync(dir)) return dir;
+    }
+  }
+  const preferredParent = binaryParents.find((p) => fs.existsSync(p)) || binaryParents[0];
+  return path.join(preferredParent, "saves", "fbneo");
+}
 
 /**
  * Games with no local saves to protect.
@@ -339,12 +378,16 @@ function defaultContext() {
   return { home, appData, documents, localAppData };
 }
 
-/** Absolute save directory for a game, or null when we do not know one. */
+/**
+ * Absolute save directory for a game, or null when we do not know one.
+ * Callers should pass `userData` (Electron) and `installDir` when available —
+ * several entries need one or both.
+ */
 function saveDirFor(gameSlug, ctx = defaultContext()) {
   const entry = LOCATIONS[gameSlug];
   if (!entry) return null;
   try {
-    return entry.resolve(ctx) || null;
+    return entry.resolve({ ...defaultContext(), ...ctx }) || null;
   } catch {
     return null;
   }

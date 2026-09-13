@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { mergeStoredAndSeedEditions, parseSeedEditionId } from "./editions";
+import {
+  listedEditionsFromStored,
+  mergeStoredAndSeedEditions,
+  parseSeedEditionId,
+} from "./editions";
+import type { Game } from "@/lib/data/types";
 
 describe("seed edition deletion", () => {
   it("parses the synthetic id used by the admin edit and delete routes", () => {
@@ -41,5 +46,16 @@ describe("seed edition deletion", () => {
     );
     expect(visible.some((edition) => edition.slug === "opene2140")).toBe(false);
     expect(visible.some((edition) => edition.slug === "official")).toBe(true);
+  });
+});
+
+describe("listedEditionsFromStored", () => {
+  const game = { slug: "holocure", title: "HoloCure", tagline: "" } as Game;
+
+  it("synthesizes a virtual official edition when nothing is stored", () => {
+    const listed = listedEditionsFromStored(game, []);
+    expect(listed).toHaveLength(1);
+    expect(listed[0]?.slug).toBe("official");
+    expect(listed[0]?.virtual).toBe(true);
   });
 });

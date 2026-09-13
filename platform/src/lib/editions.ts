@@ -488,12 +488,11 @@ export interface EditionQuery {
  * is what makes this safe to call for any game in the catalog including static
  * seed games that have no database row at all.
  */
-export async function listEditionsForGame(
+export function listedEditionsFromStored(
   game: Game,
+  stored: Edition[],
   opts: EditionQuery = {}
-): Promise<Edition[]> {
-  const stored = await loadStoredForGame(game.slug);
-
+): Edition[] {
   if (stored.length === 0) {
     return [deriveVirtualEdition(game)];
   }
@@ -514,6 +513,79 @@ export async function listEditionsForGame(
     sorted[0] = { ...sorted[0], isDefault: true };
   }
   return sorted;
+}
+
+export async function listEditionsForGame(
+  game: Game,
+  opts: EditionQuery = {}
+): Promise<Edition[]> {
+  const stored = await loadStoredForGame(game.slug);
+  return listedEditionsFromStored(game, stored, opts);
+}
+
+async function fetchEditionStateForGames(
+  gameSlugs: string[]
+): Promise<Map<string, { editions: Edition[]; occupiedSeedSlugs: Set<string> }>> {
+  const bySlug = new Map<string, { editions: Edition[]; occupiedSeedSlugs: Set<string> }>();
+  for (const slug of gameSlugs) {
+    bySlug.set(slug, { editions: [], occupiedSeedSlugs: new Set() });
+  }
+  if (gameSlugs.length === 0) return bySlug;
+  await dbConnect();
+  const docs = await EditionModel.find({ gameSlug: { $in: gameSlugs } })
+    .sort({ sortOrder: 1, name: 1 })
+    .lean();
+  for (const doc of docs) {
+    const lean = doc as LeanEdition;
+    const slug = str(lean.gameSlug);
+    const bucket = bySlug.get(slug) || { editions: [], occupiedSeedSlugs: new Set() };
+    bucket.occupiedSeedSlugs.add(str(lean.slug));
+    if (lean.suppressesSeed !== true) {
+      bucket.editions.push(toEdition(lean));
+    }
+    bySlug.set(slug, bucket);
+  }
+  return bySlug;
+}
+
+/**
+ * One Mongo query for every game's editions, then the same merge/filter as
+ * `listEditionsForGame`. The launcher catalog used to call that helper once
+ * per game and fan out hundreds of identical finds.
+ */
+export async function listEditionsForGames(
+  games: Game[],
+  opts: EditionQuery = {}
+): Promise<Map<string, Edition[]>> {
+  const result = new Map<string, Edition[]>();
+  let stateBySlug: Map<string, { editions: Edition[]; occupiedSeedSlugs: Set<string> }>;
+  try {
+    stateBySlug = await fetchEditionStateForGames(games.map((game) => game.slug));
+  } catch (err) {
+    console.error("[editions] batch read failed:", err);
+    for (const game of games) {
+      const seeds = seedEditions.filter((s) => s.gameSlug === game.slug);
+      result.set(
+        game.slug,
+        listedEditionsFromStored(
+          game,
+          filterRetiredEditions(game.slug, seeds.map(seedToEdition)),
+          opts
+        )
+      );
+    }
+    return result;
+  }
+
+  for (const game of games) {
+    const state = stateBySlug.get(game.slug) || {
+      editions: [],
+      occupiedSeedSlugs: new Set<string>(),
+    };
+    const stored = mergeStoredAndSeedEditions(game.slug, state.editions, state.occupiedSeedSlugs);
+    result.set(game.slug, listedEditionsFromStored(game, stored, opts));
+  }
+  return result;
 }
 
 /** Editions shown in listings — public visibility only. */

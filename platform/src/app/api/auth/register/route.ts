@@ -11,6 +11,7 @@ import { sendMail, verificationEmailHtml } from "@/lib/mailer";
 import { clientIpFrom, recaptchaErrorMessage, verifyRecaptcha } from "@/lib/recaptcha";
 import { checkRateLimit } from "@/lib/discussion/rateLimit";
 import { absoluteUrl } from "@/lib/site";
+import { normalizeUsername } from "@/lib/username";
 
 const registerSchema = z.object({
   username: z.string().min(3).max(20),
@@ -89,8 +90,9 @@ export async function POST(req: Request) {
       );
     }
 
+    const usernameNormalized = normalizeUsername(username);
     const existingUser = await User.findOne({
-      $or: [{ email: normalizedEmail }, { username }],
+      $or: [{ email: normalizedEmail }, { usernameNormalized }, { username }],
     });
     if (existingUser) {
       return NextResponse.json(
@@ -105,6 +107,7 @@ export async function POST(req: Request) {
 
     const user = await User.create({
       username,
+      usernameNormalized,
       email: normalizedEmail,
       password: hashedPassword,
       role: isFounderAdminEmail(normalizedEmail) ? "admin" : "user",

@@ -7,7 +7,7 @@ import LibraryEntry from "@/lib/models/LibraryEntry";
 import { gamesFor, getGame } from "@/lib/catalog";
 import type { LibraryEntryDTO } from "@/lib/library";
 import { saveEvent } from "@/lib/telemetry/server/saveEvent";
-import { platformFromRequest } from "@/lib/libraryPlatform";
+import { libraryDeleteAllPlatforms, platformFromRequest } from "@/lib/libraryPlatform";
 import { buildLibraryUnionEntries } from "@/lib/libraryUnion";
 import { removeLibraryModsForGame, revalidateLibraryPages } from "@/lib/libraryCascade";
 
@@ -223,7 +223,7 @@ export async function DELETE(req: Request) {
     // Scoped to the device making the request: removing a game from your phone
     // must not also remove the desktop copy you still have installed.
     // `?allPlatforms=1` is the deliberate opt-out for "remove everywhere".
-    const allPlatforms = url.searchParams.get("allPlatforms") !== "0";
+    const allPlatforms = libraryDeleteAllPlatforms(url.searchParams.get("allPlatforms"));
     const platform = platformFromRequest(req);
     const cleanSlug = slug.replace(/^custom-/, "");
     const slugFilter = slug.startsWith("custom-")

@@ -24,6 +24,7 @@ type SharedGame = {
 };
 
 import type { PartyPayload } from "@/lib/playTogether/types";
+import type { PublicPartyPayload } from "@/lib/playTogether/party";
 import { PartyCard } from "./PartyCard";
 
 /**
@@ -40,7 +41,7 @@ export function PlayWithFriends({
   const [playing, setPlaying] = useState<PlayingFriend[]>([]);
   const [shared, setShared] = useState<SharedGame[]>([]);
   const [activeParties, setActiveParties] = useState<PartyPayload[]>([]);
-  const [discoverableParties, setDiscoverableParties] = useState<PartyPayload[]>([]);
+  const [discoverableParties, setDiscoverableParties] = useState<PublicPartyPayload[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {

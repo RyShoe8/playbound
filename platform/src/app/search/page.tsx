@@ -83,12 +83,12 @@ export default async function SearchPage({
    * Both start together; sort=players is the only path that has to await the
    * stats before searching, so every other sort keeps the parallel fetch.
    */
-  const liveStatsPromise = getCatalogLiveStats();
   const ctxPromise = getDiscoveryContext();
+  const liveStatsPromise = hasAny ? getCatalogLiveStats() : Promise.resolve(null);
   let games = hasAny
     ? await searchGames(filter, {
         includeTesting,
-        playingNow: sort === "players" ? playingNowBySlug(await liveStatsPromise) : undefined,
+        playingNow: sort === "players" ? playingNowBySlug((await liveStatsPromise)!) : undefined,
       })
     : ([] as Awaited<ReturnType<typeof searchGames>>);
   const [liveStats, ctx] = await Promise.all([liveStatsPromise, ctxPromise]);
@@ -133,7 +133,10 @@ export default async function SearchPage({
       )}
 
       {games.length > 0 && (
-        <SearchGameResults games={games} playingNowBySlug={playingNowBySlug(liveStats)} />
+        <SearchGameResults
+          games={games}
+          playingNowBySlug={liveStats ? playingNowBySlug(liveStats) : {}}
+        />
       )}
 
       {editionResults.length > 0 && <SearchEditionResults hits={editionResults} />}

@@ -5,7 +5,7 @@
  * Keep this list in sync with platform/game-host/recipes.js.
  */
 
-export const HOSTED_STATUSES = ["none", "pending", "ready", "failed"] as const;
+export const HOSTED_STATUSES = ["none", "pending", "ready", "failed", "release-pending"] as const;
 export type HostedStatus = (typeof HOSTED_STATUSES)[number];
 
 export type HostableGame = {

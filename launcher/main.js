@@ -4068,6 +4068,33 @@ async function unwrapSingleRootDirectory(dir) {
  * archive actually provides are touched — sibling packages the player
  * installed separately, in the same games/ or mods/ folder, are left alone.
  */
+async function promoteStagingDir(stagingDir, gameDir, siblingEditionNames) {
+  const backupDir = `${gameDir}.playbound-prev`;
+  await fsp.rm(backupDir, { recursive: true, force: true });
+  if (siblingEditionNames && siblingEditionNames.size && fs.existsSync(gameDir)) {
+    const items = await fsp.readdir(gameDir, { withFileTypes: true });
+    for (const item of items) {
+      if (!item.isDirectory() || !siblingEditionNames.has(item.name.toLowerCase())) continue;
+      const dest = path.join(stagingDir, item.name);
+      if (!fs.existsSync(dest)) {
+        await fsp.rename(path.join(gameDir, item.name), dest);
+      }
+    }
+  }
+  if (fs.existsSync(gameDir)) {
+    await fsp.rename(gameDir, backupDir);
+  }
+  try {
+    await fsp.rename(stagingDir, gameDir);
+  } catch (err) {
+    if (fs.existsSync(backupDir) && !fs.existsSync(gameDir)) {
+      await fsp.rename(backupDir, gameDir);
+    }
+    throw err;
+  }
+  await fsp.rm(backupDir, { recursive: true, force: true }).catch(() => {});
+}
+
 async function extractOverlayReplacing(archivePath, destDir) {
   /*
    * Staged beside the destination rather than in the system temp dir: the swap
@@ -7104,54 +7131,70 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   }
 
   sendProgress({ phase: "extracting" });
-  // Only wipe the edition-specific folder — never sibling edition folders in the parent game folder.
   const isParentGameRoot = sameFsPath(gameDir, path.join(gamesRoot(), entry.slug));
-  if (isParentGameRoot && fs.existsSync(gameDir)) {
-    try {
-      const items = await fsp.readdir(gameDir, { withFileTypes: true });
-      const edSlugs = new Set((entry?.editions || []).map((e) => (e.slug || "").toLowerCase()));
-      edSlugs.add("playbound");
-      edSlugs.add("community");
-      for (const item of items) {
-        if (item.isDirectory() && edSlugs.has(item.name.toLowerCase())) {
-          continue; // preserve sibling edition subdirectories
-        }
-        await fsp.rm(path.join(gameDir, item.name), { recursive: true, force: true });
-      }
-    } catch {
-      await fsp.rm(gameDir, { recursive: true, force: true });
+  const siblingEditionNames = new Set(
+    (entry?.editions || []).map((e) => String(e.slug || "").toLowerCase()).filter(Boolean)
+  );
+  siblingEditionNames.add("playbound");
+  siblingEditionNames.add("community");
+  const stagingDir = `${gameDir}.playbound-staging`;
+  await fsp.rm(stagingDir, { recursive: true, force: true });
+  await fsp.mkdir(path.dirname(gameDir), { recursive: true });
+  try {
+    await extractArchive(downloadPath, stagingDir);
+    await removeFileWithRetries(downloadPath);
+    if (entry.unwrapSingleRoot) {
+      await unwrapSingleRootDirectory(stagingDir);
     }
-  } else {
-    await fsp.rm(gameDir, { recursive: true, force: true });
-  }
-  await extractArchive(downloadPath, gameDir);
-  await removeFileWithRetries(downloadPath);
-  if (entry.unwrapSingleRoot) {
-    await unwrapSingleRootDirectory(gameDir);
+
+    if (entry.overlayUrl) {
+      sendProgress({ phase: "downloading", addon: "Game Assets" });
+      const overlayName = entry.overlayFileName || "overlay.zip";
+      const overlayPath = path.join(app.getPath("temp"), "playbound-launcher", overlayName);
+      await downloadTo(entry.overlayUrl, overlayPath);
+      sendProgress({ phase: "extracting" });
+      const overlayDir = resolveInsideGameDir(stagingDir, entry.overlayDest || "");
+      if (!overlayDir) throw new Error("Game-assets archive has an unsafe destination path");
+      await fsp.mkdir(overlayDir, { recursive: true });
+      await extractOverlayReplacing(overlayPath, overlayDir);
+      await removeFileWithRetries(overlayPath);
+      await flattenWadFiles(stagingDir);
+    }
+
+    await prepareClassicDosInstall(entry, stagingDir);
+
+    const stagedExe =
+      entry.slug === "ysoccer"
+        ? findYSoccerOnlineJar(stagingDir) ||
+          findExecutable(stagingDir, exeHintFor(entry)) ||
+          findNamedPortableExe(stagingDir, "ysoccer.exe")
+        : findExecutable(stagingDir, exeHintFor(entry));
+    if (!stagedExe) {
+      const handled = await maybeHandleInstallerPackage(slug, entry, stagingDir, editionExtra, dl);
+      if (handled) {
+        await promoteStagingDir(
+          stagingDir,
+          gameDir,
+          isParentGameRoot ? siblingEditionNames : null
+        );
+        return handled;
+      }
+      throw new Error("Extracted, but no executable found");
+    }
+
+    await promoteStagingDir(stagingDir, gameDir, isParentGameRoot ? siblingEditionNames : null);
+  } catch (err) {
+    await fsp.rm(stagingDir, { recursive: true, force: true }).catch(() => {});
+    throw err;
   }
 
-  if (entry.overlayUrl) {
-    sendProgress({ phase: "downloading", addon: "Game Assets" });
-    const overlayName = entry.overlayFileName || "overlay.zip";
-    const overlayPath = path.join(app.getPath("temp"), "playbound-launcher", overlayName);
-    await downloadTo(entry.overlayUrl, overlayPath);
-    sendProgress({ phase: "extracting" });
-    const overlayDir = resolveInsideGameDir(gameDir, entry.overlayDest || "");
-    if (!overlayDir) throw new Error("Game-assets archive has an unsafe destination path");
-    await fsp.mkdir(overlayDir, { recursive: true });
-    await extractOverlayReplacing(overlayPath, overlayDir);
-    await removeFileWithRetries(overlayPath);
-    await flattenWadFiles(gameDir);
-  }
-
-  await prepareClassicDosInstall(entry, gameDir);
-
-  const exe = entry.slug === "ysoccer"
-    ? findYSoccerOnlineJar(gameDir) || findExecutable(gameDir, exeHintFor(entry)) || findNamedPortableExe(gameDir, "ysoccer.exe")
-    : findExecutable(gameDir, exeHintFor(entry));
+  const exe =
+    entry.slug === "ysoccer"
+      ? findYSoccerOnlineJar(gameDir) ||
+        findExecutable(gameDir, exeHintFor(entry)) ||
+        findNamedPortableExe(gameDir, "ysoccer.exe")
+      : findExecutable(gameDir, exeHintFor(entry));
   if (!exe) {
-    const handled = await maybeHandleInstallerPackage(slug, entry, gameDir, editionExtra, dl);
-    if (handled) return handled;
     throw new Error("Extracted, but no executable found");
   }
 
@@ -9082,13 +9125,19 @@ async function playGameInner(slug, join = null, editionSlug = null) {
    * FreeTrain (and any needsDirectDrawWrapper title) CoCreateInstances
    * CLSID_DirectDraw. Drop dgVoodoo MS/x86 DLLs beside the exe and register
    * that CLSID under HKCU so Play works without an admin DirectX redist.
+   *
+   * Prefer info.dir; fall back to the exe folder so a missing dir field does
+   * not skip the wrapper and surface the raw .NET DirectDraw crash.
    */
-  if (directDrawWrapper.needsDirectDrawWrapper(entry, slug) && info?.dir) {
+  const directDrawDir =
+    (info?.dir && fs.existsSync(info.dir) && info.dir) ||
+    (info?.exe ? path.dirname(info.exe) : null);
+  if (directDrawWrapper.needsDirectDrawWrapper(entry, slug) && directDrawDir) {
     sendProgress({
       phase: "compatibility",
       message: "Checking DirectDraw compatibility…",
     });
-    const dd = await directDrawWrapper.ensureForGame(info.dir, { slug, entry });
+    const dd = await directDrawWrapper.ensureForGame(directDrawDir, { slug, entry });
     if (!dd.ok && !dd.skipped) {
       const message =
         dd.error ||
@@ -9653,10 +9702,26 @@ function startSystemIdleWatch() {
  * being held open. Failures are logged and swallowed; a backup must never be
  * able to interfere with having just finished playing.
  */
+function saveContextFor(slug) {
+  const state = loadState();
+  const game = ensureGameInstallRecord(state[slug]);
+  const edition =
+    game?.editions && game.editionSlug ? game.editions[game.editionSlug] : null;
+  const installDir =
+    (edition && edition.dir) ||
+    game?.dir ||
+    (game?.exe ? path.dirname(game.exe) : null) ||
+    null;
+  return {
+    userData: app.getPath("userData"),
+    installDir: installDir && fs.existsSync(installDir) ? installDir : installDir,
+  };
+}
+
 async function snapshotSavesAfterPlay(slug) {
   try {
     if (!saveLocations.supportsCloudSaves(slug)) return;
-    const saveDir = saveLocations.saveDirFor(slug);
+    const saveDir = saveLocations.saveDirFor(slug, saveContextFor(slug));
     if (!saveDir || !fs.existsSync(saveDir)) return;
 
     const state = loadState();
@@ -11084,6 +11149,17 @@ function clearContext() {
 
 ipcMain.handle("get-context", () => buildContextPayload());
 
+function isTrustedIpcSender(event) {
+  const url = event?.senderFrame?.url || event?.sender?.getURL?.() || "";
+  return typeof url === "string" && url.startsWith("file:");
+}
+
+function requireTrustedIpc(event) {
+  if (!isTrustedIpcSender(event)) {
+    throw new Error("Rejected IPC from an untrusted frame");
+  }
+}
+
 ipcMain.handle("choose-directory", async (_event, defaultPath) => {
   const result = await dialog.showOpenDialog(win, {
     title: "Choose install location",
@@ -11094,9 +11170,10 @@ ipcMain.handle("choose-directory", async (_event, defaultPath) => {
   return result.filePaths[0];
 });
 
-  ipcMain.handle("install", (_event, slug, targetDir, editionSlug, addons) =>
-    installGame(slug, targetDir, editionSlug || null, addons)
-  );
+  ipcMain.handle("install", (event, slug, targetDir, editionSlug, addons) => {
+    requireTrustedIpc(event);
+    return installGame(slug, targetDir, editionSlug || null, addons);
+  });
 ipcMain.handle("get-install-queue", () => getInstallQueueSnapshot());
 ipcMain.handle("cancel-install-queue-item", (_event, slug, editionSlug) =>
   cancelInstallQueueItem(slug, editionSlug || null)
@@ -11223,9 +11300,10 @@ ipcMain.handle("post-telemetry", async (_event, payload) => {
     return { ok: false };
   }
 });
-ipcMain.handle("uninstall", (_event, slug, editionSlug) =>
-  confirmAndUninstallGame(slug, editionSlug || null)
-);
+ipcMain.handle("uninstall", (event, slug, editionSlug) => {
+  requireTrustedIpc(event);
+  return confirmAndUninstallGame(slug, editionSlug || null);
+});
 ipcMain.handle("get-installed", () => listInstalledGames());
 ipcMain.handle("get-installed-mods", () => listInstalledMods());
 ipcMain.handle("get-cloud-library", async () => {
@@ -11258,7 +11336,7 @@ ipcMain.handle("saves-list", async (_event, slug, editionSlug) => {
       snapshots: [],
     };
   }
-  const saveDir = saveLocations.saveDirFor(slug);
+  const saveDir = saveLocations.saveDirFor(slug, saveContextFor(slug));
   const snapshots = await saveData.list(slug, editionSlug || DEFAULT_EDITION_SLUG);
   return {
     supported: true,
@@ -11277,12 +11355,13 @@ ipcMain.handle("saves-list", async (_event, slug, editionSlug) => {
 /** Back up the current saves on demand, rather than waiting for the game to exit. */
 ipcMain.handle("saves-snapshot", async (_event, slug, editionSlug) => {
   if (!saveLocations.supportsCloudSaves(slug)) throw new Error("Saves are not supported for this game yet.");
-  const saveDir = saveLocations.saveDirFor(slug);
+  const saveDir = saveLocations.saveDirFor(slug, saveContextFor(slug));
   if (!saveDir || !fs.existsSync(saveDir)) throw new Error("No save folder found for this game yet.");
   const policy = saveLocations.policyFor(slug);
   const result = await saveData.snapshot(slug, editionSlug || DEFAULT_EDITION_SLUG, saveDir, {
     reason: "manual",
     maxSnapshotMb: policy.maxSnapshotMb,
+    only: policy.only,
   });
   if (result.status === "captured") await saveData.prune(slug, editionSlug || DEFAULT_EDITION_SLUG, policy.keep);
   return result;
@@ -11296,7 +11375,7 @@ ipcMain.handle("saves-snapshot", async (_event, slug, editionSlug) => {
  */
 ipcMain.handle("saves-restore", async (_event, slug, editionSlug, snapshotId) => {
   if (!snapshotId) throw new Error("No snapshot chosen.");
-  const saveDir = saveLocations.saveDirFor(slug);
+  const saveDir = saveLocations.saveDirFor(slug, saveContextFor(slug));
   if (!saveDir) throw new Error("No save folder is known for this game.");
   return saveData.restore(slug, editionSlug || DEFAULT_EDITION_SLUG, saveDir, snapshotId);
 });
@@ -11313,7 +11392,7 @@ ipcMain.handle("saves-sync-status", async (_event, slug, editionSlug) => {
   if (!saveLocations.supportsCloudSaves(slug)) return { supported: false };
   if (!loadSettings().launcherToken) return { supported: true, signedIn: false };
 
-  const saveDir = saveLocations.saveDirFor(slug);
+  const saveDir = saveLocations.saveDirFor(slug, saveContextFor(slug));
   const [local] = await saveData.list(slug, ed);
   let remote = [];
   try {
@@ -11355,7 +11434,7 @@ function markSynced(slug, editionSlug) {
 
 ipcMain.handle("saves-upload", async (_event, slug, editionSlug) => {
   const ed = editionSlug || DEFAULT_EDITION_SLUG;
-  const saveDir = saveLocations.saveDirFor(slug);
+  const saveDir = saveLocations.saveDirFor(slug, saveContextFor(slug));
   if (!saveDir) throw new Error("No save folder is known for this game.");
   const result = await cloudSaves.upload(slug, ed, saveDir, {
     maxSnapshotMb: saveLocations.cloudPolicyFor().maxSnapshotMb,
@@ -11366,7 +11445,7 @@ ipcMain.handle("saves-upload", async (_event, slug, editionSlug) => {
 
 ipcMain.handle("saves-download", async (_event, slug, editionSlug, snapshotId) => {
   const ed = editionSlug || DEFAULT_EDITION_SLUG;
-  const saveDir = saveLocations.saveDirFor(slug);
+  const saveDir = saveLocations.saveDirFor(slug, saveContextFor(slug));
   if (!saveDir) throw new Error("No save folder is known for this game.");
   const result = await cloudSaves.download(slug, ed, saveDir, snapshotId || null);
   if (result.status === "restored") markSynced(slug, ed);
@@ -12219,7 +12298,8 @@ const couchHost = createHostService({
   },
 });
 
-ipcMain.handle("couch-start", async (_event, opts) => {
+ipcMain.handle("couch-start", async (event, opts) => {
+  requireTrustedIpc(event);
   try {
     return { ok: true, state: await couchHost.createSession(opts || {}) };
   } catch (err) {
@@ -14894,13 +14974,13 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      backgroundThrottling: false,
+      backgroundThrottling: true,
     },
   });
   if (!appIcon.isEmpty()) win.setIcon(appIcon);
   else if (fs.existsSync(appIconPath)) win.setIcon(appIconPath);
 
-  win.webContents.setWindowOpenHandler(({ url, features }) => {
+  win.webContents.setWindowOpenHandler(({ url }) => {
     if (url.includes("popout=true")) {
       return {
         action: "allow",
@@ -14919,7 +14999,7 @@ function createWindow() {
         }
       };
     }
-    return { action: "allow" };
+    return { action: "deny" };
   });
 
   win.loadFile(path.join(__dirname, "renderer", "index.html"));

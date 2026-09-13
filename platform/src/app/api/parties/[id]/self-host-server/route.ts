@@ -3,6 +3,7 @@ import dbConnect from "@/lib/db";
 import Party from "@/lib/models/Party";
 import { getFriendsUserId } from "@/lib/friendsAuth";
 import { getServerSettingProfile, defaultSettingValues } from "@/lib/serverControl/settings";
+import { getSelfHostConfig } from "@/lib/multiplayer/adapters";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -73,27 +74,78 @@ export async function POST(req: Request, ctx: RouteContext) {
       error?: string | null;
     };
 
-    doc.selfHostControl = doc.selfHostControl || {};
-    if (Number.isFinite(body.appliedRevision)) {
-      /*
-       * Never move backwards. A slow reply from a previous poll arriving after
-       * a newer one would otherwise re-open a change that is already applied,
-       * and the panel would sit at "pending" forever.
-       */
-      doc.selfHostControl.appliedRevision = Math.max(
-        Number(doc.selfHostControl.appliedRevision) || 0,
-        Number(body.appliedRevision)
-      );
-      doc.selfHostControl.lastAppliedAt = new Date();
+    const desiredRevision = Number(doc.selfHostControl?.desiredRevision) || 0;
+    const hasRevision = body.appliedRevision !== undefined;
+    const appliedRevision = Number(body.appliedRevision);
+    if (
+      hasRevision &&
+      (!Number.isSafeInteger(appliedRevision) ||
+        appliedRevision < 0 ||
+        appliedRevision > desiredRevision)
+    ) {
+      return NextResponse.json({ error: "Invalid applied revision" }, { status: 400 });
     }
-    doc.selfHostControl.lastError = body.error ? String(body.error).slice(0, 500) : null;
-    if (typeof body.ready === "boolean") doc.selfHostReady = body.ready;
-    if (Number.isFinite(body.port) && body.port) {
-      doc.selfHostPort = { ...(doc.selfHostPort || {}), port: Number(body.port) };
-    }
-    await doc.save();
 
-    return NextResponse.json({ ok: true, appliedRevision: doc.selfHostControl.appliedRevision });
+    const hostConfig = getSelfHostConfig(String(doc.gameSlug || ""));
+    const hasPort = body.port !== undefined;
+    const port = Number(body.port);
+    if (
+      hasPort &&
+      (!Number.isSafeInteger(port) ||
+        port < 1 ||
+        port > 65535 ||
+        (hostConfig?.port && port !== hostConfig.port))
+    ) {
+      return NextResponse.json({ error: "Invalid self-host port" }, { status: 400 });
+    }
+
+    if (
+      body.ready === true &&
+      (doc.status !== "launching" ||
+        !hasRevision ||
+        appliedRevision !== desiredRevision ||
+        !hasPort)
+    ) {
+      return NextResponse.json(
+        { error: "The current launch revision must be listening before it can be ready" },
+        { status: 400 }
+      );
+    }
+
+    const now = new Date();
+    const $set: Record<string, unknown> = {
+      "selfHostControl.lastError": body.error ? String(body.error).slice(0, 500) : null,
+    };
+    if (hasRevision) $set["selfHostControl.lastAppliedAt"] = now;
+    if (typeof body.ready === "boolean") {
+      $set.selfHostReady = body.ready;
+      $set.selfHostReadyAt = body.ready ? now : null;
+    }
+    if (hasPort) {
+      $set.selfHostPort = {
+        port,
+        protocol: hostConfig?.protocol || "tcp",
+      };
+    }
+
+    const updated = await Party.findOneAndUpdate(
+      { _id: doc._id, leaderId: doc.leaderId },
+      {
+        $set,
+        ...(hasRevision && {
+          $max: { "selfHostControl.appliedRevision": appliedRevision },
+        }),
+      },
+      { new: true }
+    );
+    if (!updated) {
+      return NextResponse.json({ error: "Party changed while applying the acknowledgement" }, { status: 409 });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      appliedRevision: updated.selfHostControl?.appliedRevision || 0,
+    });
   } catch (err) {
     console.error("[self-host-server] ack failed:", err);
     return NextResponse.json({ error: "Could not record the server state" }, { status: 500 });

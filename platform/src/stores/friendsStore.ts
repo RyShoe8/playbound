@@ -59,6 +59,15 @@ type FriendsState = {
   
   fetchFriends: () => Promise<void>;
   fetchRequests: () => Promise<void>;
+  /**
+   * Apply friends/request slices from `/api/party-sync` without wiping
+   * previous values when a section was omitted after a partial failure.
+   */
+  applyPartySync: (data: {
+    friends?: FriendUser[];
+    incoming?: FriendRequest[];
+    outgoing?: FriendRequest[];
+  }) => void;
   sendRequest: (targetUserId: string) => Promise<{ success: boolean; error?: string }>;
   acceptRequest: (requestId: string) => Promise<void>;
   declineRequest: (requestId: string) => Promise<void>;
@@ -105,6 +114,47 @@ let pollSubscribers = 0;
 let requestsPollInterval: ReturnType<typeof setInterval> | null = null;
 let requestsPollSubscribers = 0;
 
+function groupFriends(friends: FriendUser[]): Pick<
+  FriendsState,
+  | "friends"
+  | "playingFriends"
+  | "awayFriends"
+  | "onlineFriends"
+  | "offlineFriends"
+  | "lookingFriends"
+  | "inPartyFriends"
+> {
+  const playing = friends.filter((f) => f.presence.status === "playing");
+  const away = friends.filter((f) => f.presence.status === "away");
+  const online = friends.filter((f) =>
+    ["online", "browsing", "viewing_game", "installing", "launching"].includes(f.presence.status)
+  );
+  const looking = friends.filter((f) => Boolean(f.presence.lookingForPlayers));
+  const inParty = friends.filter((f) => Boolean(f.presence.currentPartyId));
+  const offline = friends.filter(
+    (f) =>
+      f.presence.status === "offline" ||
+      ![
+        "playing",
+        "online",
+        "browsing",
+        "away",
+        "viewing_game",
+        "installing",
+        "launching",
+      ].includes(f.presence.status)
+  );
+  return {
+    friends,
+    playingFriends: playing,
+    awayFriends: away,
+    onlineFriends: online,
+    offlineFriends: offline,
+    lookingFriends: looking,
+    inPartyFriends: inParty,
+  };
+}
+
 export const useFriendsStore = create<FriendsState>((set, get) => ({
   friends: [],
   playingFriends: [],
@@ -119,45 +169,23 @@ export const useFriendsStore = create<FriendsState>((set, get) => ({
   loading: false,
   selectedFriend: null,
 
+  applyPartySync: (data) => {
+    const patch: Partial<FriendsState> = {};
+    if (Array.isArray(data.friends)) {
+      Object.assign(patch, groupFriends(data.friends));
+    }
+    if (Array.isArray(data.incoming)) patch.incomingRequests = data.incoming;
+    if (Array.isArray(data.outgoing)) patch.outgoingRequests = data.outgoing;
+    if (Object.keys(patch).length > 0) set(patch);
+  },
+
   fetchFriends: async () => {
     try {
       const res = await fetch("/api/friends");
       if (res.ok) {
         const data = await res.json();
         const friends: FriendUser[] = data.friends || [];
-
-        const playing = friends.filter((f) => f.presence.status === "playing");
-        const away = friends.filter((f) => f.presence.status === "away");
-        const online = friends.filter((f) =>
-          ["online", "browsing", "viewing_game", "installing", "launching"].includes(
-            f.presence.status
-          )
-        );
-        const looking = friends.filter((f) => Boolean(f.presence.lookingForPlayers));
-        const inParty = friends.filter((f) => Boolean(f.presence.currentPartyId));
-        const offline = friends.filter(
-          (f) =>
-            f.presence.status === "offline" ||
-            ![
-              "playing",
-              "online",
-              "browsing",
-              "away",
-              "viewing_game",
-              "installing",
-              "launching",
-            ].includes(f.presence.status)
-        );
-
-        set({
-          friends,
-          playingFriends: playing,
-          awayFriends: away,
-          onlineFriends: online,
-          offlineFriends: offline,
-          lookingFriends: looking,
-          inPartyFriends: inParty,
-        });
+        set(groupFriends(friends));
       }
     } catch (err) {
       console.error("Failed to fetch friends", err);

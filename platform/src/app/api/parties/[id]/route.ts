@@ -124,7 +124,8 @@ export async function PATCH(req: Request, ctx: RouteContext) {
       const result = await setVisibility(
         id,
         userId,
-        body.visibility as PartyVisibility
+        body.visibility as PartyVisibility,
+        typeof body.password === "string" ? body.password : undefined
       );
       if ("error" in result) {
         return NextResponse.json({ error: result.error }, { status: result.status });

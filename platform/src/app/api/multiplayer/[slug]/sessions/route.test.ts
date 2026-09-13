@@ -1,7 +1,21 @@
-import { describe, it, expect } from "vitest";
+import { afterAll, beforeAll, describe, it, expect } from "vitest";
+import mongoose from "mongoose";
+import { MongoMemoryServer } from "mongodb-memory-server";
 import { POST as createGenericSession } from "./route";
 import { POST as joinGenericSession } from "./[id]/join/route";
 import { POST as postGenericSignal, GET as getGenericSignal } from "./[id]/signal/route";
+
+let mongod: MongoMemoryServer;
+
+beforeAll(async () => {
+  mongod = await MongoMemoryServer.create();
+  await mongoose.connect(mongod.getUri(), { dbName: "generic-multiplayer-test" });
+}, 120_000);
+
+afterAll(async () => {
+  await mongoose.disconnect();
+  await mongod.stop();
+});
 
 describe("Generic Multiplayer API Endpoints", () => {
   it("creates and joins a multi-game room for KeeperFX and Wesnoth", async () => {
@@ -28,7 +42,9 @@ describe("Generic Multiplayer API Endpoints", () => {
       `http://localhost/api/multiplayer/keeperfx/sessions/${dataKeeper.joinCode}/join`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ gameVersion: "0.5.0" }),
       }
     );
@@ -46,7 +62,10 @@ describe("Generic Multiplayer API Endpoints", () => {
       `http://localhost/api/multiplayer/keeperfx/sessions/${dataKeeper.sessionId}/signal`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${joinData.clientToken}`,
+        },
         body: JSON.stringify({
           senderRole: "client",
           recipientRole: "host",
@@ -62,7 +81,8 @@ describe("Generic Multiplayer API Endpoints", () => {
 
     // 4. Poll signal
     const pollReq = new Request(
-      `http://localhost/api/multiplayer/keeperfx/sessions/${dataKeeper.sessionId}/signal?forRole=host&since=0`
+      `http://localhost/api/multiplayer/keeperfx/sessions/${dataKeeper.sessionId}/signal?forRole=host&since=0`,
+      { headers: { Authorization: `Bearer ${dataKeeper.hostToken}` } }
     );
     const pollRes = await getGenericSignal(pollReq, {
       params: Promise.resolve({ slug: "keeperfx", id: dataKeeper.sessionId }),

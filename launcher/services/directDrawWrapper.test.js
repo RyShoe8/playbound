@@ -79,7 +79,10 @@ test("ensureForGame copies from a local MS/x86 source without GitHub", async () 
   }
   assert.equal(dirHasMsX86Dlls(gameDir), true);
 
-  const result = await wrapper.ensureForGame(gameDir, { slug: "freetrain" });
+  const result = await wrapper.ensureForGame(gameDir, {
+    slug: "freetrain",
+    skipComRegistration: true,
+  });
   assert.equal(result.ok, true);
   assert.equal(result.source, "game-dir");
   assert.ok(fs.existsSync(path.join(gameDir, "dgVoodoo.conf")));

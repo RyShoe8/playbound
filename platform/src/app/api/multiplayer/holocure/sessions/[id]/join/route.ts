@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSessionByCode, getSessionById } from "@/lib/holocure/sessionManager";
+import { joinSession } from "@/lib/holocure/sessionManager";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -18,20 +18,15 @@ export async function POST(req: Request, context: RouteContext) {
       return NextResponse.json({ error: "Missing room code" }, { status: 400 });
     }
 
-    const session = getSessionByCode(code) || (getSessionById(code) ? getSessionById(code) : undefined);
-    if (!session) {
+    const joined = await joinSession(code);
+    if (!joined) {
       return NextResponse.json(
         { error: "Session not found or expired. Check the room code." },
         { status: 404 }
       );
     }
 
-    if (session.status === "ended") {
-      return NextResponse.json(
-        { error: "This game session has ended." },
-        { status: 410 }
-      );
-    }
+    const session = joined.session;
 
     const body = await req.json().catch(() => ({}));
     const clientModVersion = body.modVersion;
@@ -42,9 +37,6 @@ export async function POST(req: Request, context: RouteContext) {
       (clientGameVersion && clientGameVersion !== session.gameVersion) ||
       (clientModVersion && clientModVersion !== session.modVersion);
 
-    const vpsIp = process.env.GAME_HOST_PUBLIC_IP || "127.0.0.1";
-    const stunPort = process.env.STUN_PORT || "3478";
-
     return NextResponse.json({
       sessionId: session.sessionId,
       joinCode: session.joinCode,
@@ -53,15 +45,10 @@ export async function POST(req: Request, context: RouteContext) {
       modVersion: session.modVersion,
       playerCount: session.playerCount,
       maxPlayers: session.maxPlayers,
+      clientToken: joined.clientToken,
       versionMismatch,
-      stunServers: [`stun:${vpsIp}:${stunPort}`, "stun:stun.l.google.com:19302"],
-      turnServers: [
-        {
-          urls: `turn:${vpsIp}:${stunPort}`,
-          username: "playbound_guest",
-          credential: "guest_session_token",
-        },
-      ],
+      stunServers: joined.stunServers,
+      turnServers: joined.turnServers,
     });
   } catch (err) {
     console.error("POST /api/multiplayer/holocure/sessions/[code]/join failed:", err);

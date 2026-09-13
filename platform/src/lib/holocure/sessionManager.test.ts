@@ -1,18 +1,32 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import mongoose from "mongoose";
+import { MongoMemoryServer } from "mongodb-memory-server";
 import {
   createSession,
   getSessionByCode,
   getSessionById,
+  joinSession,
   postSignalingMessage,
   pollSignalingMessages,
   updateSessionHeartbeat,
   endSession,
-  purgeStaleSessions,
 } from "./sessionManager";
 
+let mongod: MongoMemoryServer;
+
+beforeAll(async () => {
+  mongod = await MongoMemoryServer.create();
+  await mongoose.connect(mongod.getUri(), { dbName: "holocure-session-test" });
+}, 120_000);
+
+afterAll(async () => {
+  await mongoose.disconnect();
+  await mongod.stop();
+});
+
 describe("HoloCure Multiplayer Session Manager", () => {
-  it("creates a session with a valid 6-character room code", () => {
-    const res = createSession({
+  it("creates a session with a valid 6-character room code", async () => {
+    const res = await createSession({
       gameVersion: "0.7.1746645739",
       modVersion: "1.5.0-playbound",
       maxPlayers: 4,
@@ -26,28 +40,29 @@ describe("HoloCure Multiplayer Session Manager", () => {
     expect(res.stunServers.length).toBeGreaterThan(0);
   });
 
-  it("resolves session by case-insensitive join code", () => {
-    const { session } = createSession({
+  it("resolves session by case-insensitive join code", async () => {
+    const { session } = await createSession({
       gameVersion: "0.7.x",
       modVersion: "1.5.0",
     });
 
-    const foundUpper = getSessionByCode(session.joinCode.toUpperCase());
-    const foundLower = getSessionByCode(session.joinCode.toLowerCase());
+    const foundUpper = await getSessionByCode(session.joinCode.toUpperCase());
+    const foundLower = await getSessionByCode(session.joinCode.toLowerCase());
 
     expect(foundUpper).toBeDefined();
     expect(foundUpper?.sessionId).toBe(session.sessionId);
     expect(foundLower?.sessionId).toBe(session.sessionId);
   });
 
-  it("exchanges signaling messages between host and client", () => {
-    const { session } = createSession({
+  it("exchanges signaling messages between host and client", async () => {
+    const { session } = await createSession({
       gameVersion: "0.7.x",
       modVersion: "1.5.0",
     });
+    const joined = await joinSession(session.joinCode);
+    expect(joined?.clientToken).toBeTruthy();
 
-    // Client posts offer/rendezvous payload to host
-    const clientOffer = postSignalingMessage(session.sessionId, {
+    const clientOffer = await postSignalingMessage(session.sessionId, joined!.clientToken, {
       senderRole: "client",
       recipientRole: "host",
       senderPeerId: "peer-client-123",
@@ -55,61 +70,62 @@ describe("HoloCure Multiplayer Session Manager", () => {
     });
     expect(clientOffer).toBeDefined();
 
-    // Host polls for incoming client messages
-    const hostInbox = pollSignalingMessages(session.sessionId, "host", 0);
+    const hostInbox = await pollSignalingMessages(session.sessionId, session.hostToken, "host", 0);
     expect(hostInbox).toHaveLength(1);
-    expect(hostInbox[0].payload).toBe("GNS_OFFER_BLOB_BASE64");
+    expect(hostInbox?.[0].payload).toBe("GNS_OFFER_BLOB_BASE64");
 
-    // Client polling for client messages gets nothing
-    const clientInbox = pollSignalingMessages(session.sessionId, "client", 0);
+    const clientInbox = await pollSignalingMessages(
+      session.sessionId,
+      joined!.clientToken,
+      "client",
+      0
+    );
     expect(clientInbox).toHaveLength(0);
 
-    // Host posts answer payload to client
-    postSignalingMessage(session.sessionId, {
+    await postSignalingMessage(session.sessionId, session.hostToken, {
       senderRole: "host",
       recipientRole: "client",
       senderPeerId: "peer-host-0",
       payload: "GNS_ANSWER_BLOB_BASE64",
     });
 
-    const clientInboxAfterAnswer = pollSignalingMessages(
+    const clientInboxAfterAnswer = await pollSignalingMessages(
       session.sessionId,
+      joined!.clientToken,
       "client",
       0
     );
     expect(clientInboxAfterAnswer).toHaveLength(1);
-    expect(clientInboxAfterAnswer[0].payload).toBe("GNS_ANSWER_BLOB_BASE64");
+    expect(clientInboxAfterAnswer?.[0].payload).toBe("GNS_ANSWER_BLOB_BASE64");
   });
 
-  it("updates session heartbeat and player count", () => {
-    const { session } = createSession({
+  it("updates session heartbeat and player count", async () => {
+    const { session } = await createSession({
       gameVersion: "0.7.x",
       modVersion: "1.5.0",
     });
 
-    const updated = updateSessionHeartbeat(session.sessionId, 3, "in_game");
+    const updated = await updateSessionHeartbeat(session.sessionId, session.hostToken, 3, "in_game");
     expect(updated).toBe(true);
 
-    const fetched = getSessionById(session.sessionId);
+    const fetched = await getSessionById(session.sessionId);
     expect(fetched?.playerCount).toBe(3);
     expect(fetched?.status).toBe("in_game");
   });
 
-  it("ends session and protects against unauthorized deletion", () => {
-    const { session } = createSession({
+  it("ends session and protects against unauthorized deletion", async () => {
+    const { session } = await createSession({
       gameVersion: "0.7.x",
       modVersion: "1.5.0",
     });
 
-    // Wrong token fails
-    const badEnd = endSession(session.sessionId, "invalid-token");
+    const badEnd = await endSession(session.sessionId, "invalid-token");
     expect(badEnd).toBe(false);
-    expect(getSessionById(session.sessionId)).not.toBeNull();
+    expect(await getSessionById(session.sessionId)).not.toBeNull();
 
-    // Correct token succeeds
-    const goodEnd = endSession(session.sessionId, session.hostToken);
+    const goodEnd = await endSession(session.sessionId, session.hostToken);
     expect(goodEnd).toBe(true);
-    expect(getSessionById(session.sessionId)).toBeNull();
-    expect(getSessionByCode(session.joinCode)).toBeNull();
+    expect(await getSessionById(session.sessionId)).toBeNull();
+    expect(await getSessionByCode(session.joinCode)).toBeNull();
   });
 });

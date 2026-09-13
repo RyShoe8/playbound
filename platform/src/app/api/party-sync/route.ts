@@ -3,6 +3,7 @@ import { getFriendsUserId } from "@/lib/friendsAuth";
 import { listFriendsForUser } from "@/lib/friends/friendsList";
 import { listFriendRequests } from "@/lib/friends/requests";
 import { listPartiesForUser, listDiscoverableParties } from "@/lib/playTogether/party";
+import { partySyncResponseBody } from "@/lib/playTogether/partySyncResponse";
 
 /**
  * GET /api/party-sync — friends, friend requests and parties in one request.
@@ -23,9 +24,9 @@ import { listPartiesForUser, listDiscoverableParties } from "@/lib/playTogether/
  * fresh. Omitted from the response entirely when not asked for, so a client
  * can tell "not requested" from "none".
  *
- * Sections fail independently: one failing read returns its empty value with
- * an `errors` entry naming it, rather than 500-ing the whole poll and blanking
- * a panel that was mostly fine. A failed auth is still a hard 401.
+ * Sections fail independently: a failed read is omitted (with an `errors`
+ * entry naming it) rather than 500-ing the whole poll or returning `[]`,
+ * which clients could not tell from "none". A failed auth is still a hard 401.
  */
 export async function GET(req: Request) {
   const userId = await getFriendsUserId(req);
@@ -40,33 +41,35 @@ export async function GET(req: Request) {
     listFriendsForUser(userId).catch((err) => {
       console.error("party-sync: friends failed:", err);
       errors.push("friends");
-      return [];
+      return undefined;
     }),
     listFriendRequests(userId).catch((err) => {
       console.error("party-sync: requests failed:", err);
       errors.push("requests");
-      return { incoming: [], outgoing: [] };
+      return undefined;
     }),
     listPartiesForUser(userId).catch((err) => {
       console.error("party-sync: parties failed:", err);
       errors.push("parties");
-      return [];
+      return undefined;
     }),
     wantDiscoverable
       ? listDiscoverableParties(userId).catch((err) => {
           console.error("party-sync: discoverable failed:", err);
           errors.push("discoverable");
-          return [];
+          return undefined;
         })
       : Promise.resolve(null),
   ]);
 
-  return NextResponse.json({
-    friends,
-    incoming: requests.incoming,
-    outgoing: requests.outgoing,
-    myParties,
-    ...(discoverable !== null ? { discoverable } : {}),
-    ...(errors.length > 0 ? { errors } : {}),
-  });
+  return NextResponse.json(
+    partySyncResponseBody({
+      friends,
+      incoming: requests?.incoming,
+      outgoing: requests?.outgoing,
+      myParties,
+      discoverable,
+      errors,
+    })
+  );
 }

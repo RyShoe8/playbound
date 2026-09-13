@@ -66,6 +66,8 @@ async function main() {
   await check("restore returns the older save content", () =>
     assert.equal(fs.readFileSync(path.join(saveDir, "slot1.sav"), "utf8"), "ORIGINAL-1"));
   await check("restore records a safety snapshot", () => assert.ok(restored.safetySnapshot));
+  await check("restore replaces the live tree instead of merging", () =>
+    assert.ok(!fs.existsSync(path.join(saveDir, "slot2.sav"))));
   await check("restore is reversible — replaced state is still on disk", () => {
     const safety = path.join(sd.gameRoot("0ad", null), restored.safetySnapshot);
     assert.equal(fs.readFileSync(path.join(safety, "slot1.sav"), "utf8"), "PROGRESSED-2");

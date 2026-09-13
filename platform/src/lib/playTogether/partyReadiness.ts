@@ -17,6 +17,8 @@
 export type PartyReadinessPhase =
   /** Nothing picked yet — there is no question to answer. */
   | "no_game"
+  /** Config-sync has not arrived yet — files are unknown, not assumed present. */
+  | "checking"
   /** Somebody is missing the game, an edition, or mods. */
   | "installing"
   /** Everyone has the files; still waiting on Ready Up. */
@@ -90,22 +92,27 @@ export function computePartyReadiness(input: {
     return {
       ...base,
       phase: "playing",
-      allInSync: input.sync?.allInSync ?? true,
+      allInSync: input.sync?.allInSync ?? false,
       headline: "Session in progress",
       detail: "Join any time — you do not have to wait for anyone else.",
     };
   }
 
-  /*
-   * No sync payload yet. Treated as not-blocked rather than blocked: the panel
-   * appears before the first config-sync lands, and defaulting to "someone is
-   * missing files" would flash a red warning at a party that is fine.
-   */
   const sync = input.sync ?? null;
-  const blocked = (sync?.members ?? [])
+  if (!sync) {
+    return {
+      ...base,
+      phase: "checking",
+      allInSync: false,
+      headline: "Checking installs",
+      detail: "Waiting to see who already has this version.",
+    };
+  }
+
+  const blocked = (sync.members ?? [])
     .filter((m) => !m.hasGame || !m.hasEdition || m.missingMods.length > 0)
     .map((m) => m.userId);
-  const allInSync = sync ? sync.allInSync && blocked.length === 0 : true;
+  const allInSync = sync.allInSync && blocked.length === 0;
 
   if (!allInSync) {
     return {
