@@ -43,7 +43,8 @@
     "test:edition-lifecycle": "node services/editionLifecycle.test.js",
     "test:vigem": "node services/couch/windowsVigem.test.js",
     "test:elevate": "node services/GameLauncher.elevate.test.js",
-    "test:game-controls": "node services/gameControls.test.js"
+    "test:game-controls": "node services/gameControls.test.js",
+    "test:game-player-name": "node services/gamePlayerName.test.js"
   },
   "author": "PlayBound",
   "license": "MIT",

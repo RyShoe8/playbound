@@ -69,6 +69,11 @@ const {
 const { prepareOpenRaNetwork, isOpenRaFamily } = require("./services/openraNat");
 const portMapping = require("./services/portMapping");
 const { ensureOpenTtdClientName } = require("./services/openTtdPlayerName");
+const {
+  autoConfigureGamePlayerName,
+  getPlayerNameLaunchArgs,
+  sanitizePlayerName,
+} = require("./services/gamePlayerName");
 const { reconcileCatalog, startupCatalog } = require("./services/catalogMerge");
 const virtualLan = require("./services/virtualLan");
 const {
@@ -1215,6 +1220,15 @@ async function validateLauncherToken(token) {
     // Don't wipe token (or admin channel) on transient errors.
     if (!res.ok) return { valid: true, canUseAdminChannel: linkedCanUseAdminChannel, transient: true };
     const data = await res.json();
+    if (data.username) {
+      try {
+        const s = loadSettings();
+        if (s.cachedUsername !== data.username) {
+          s.cachedUsername = data.username;
+          saveSettings(s);
+        }
+      } catch {}
+    }
     return {
       valid: data.valid !== false,
       userId: data.userId || null,
@@ -1225,6 +1239,22 @@ async function validateLauncherToken(token) {
   } catch {
     return { valid: true, canUseAdminChannel: linkedCanUseAdminChannel, transient: true };
   }
+}
+
+async function getActivePlayerName() {
+  try {
+    const settings = loadSettings();
+    if (settings.cachedUsername) return settings.cachedUsername;
+    if (settings.launcherToken) {
+      const check = await validateLauncherToken(settings.launcherToken);
+      if (check?.username) {
+        settings.cachedUsername = check.username;
+        saveSettings(settings);
+        return check.username;
+      }
+    }
+  } catch {}
+  return null;
 }
 
 function getAutoUpdater() {
@@ -1317,6 +1347,7 @@ async function refreshAdminUpdateChannel() {
 function clearLocalToken(message) {
   const settings = loadSettings();
   delete settings.launcherToken;
+  delete settings.cachedUsername;
   saveSettings(settings);
   setLinkedCanUseAdminChannel(false);
   notifyAccount({
@@ -8650,18 +8681,28 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     }
   }
 
-  if (slug === "openttd") {
+  /*
+   * Auto-set player name / username / profile across all supported games to
+   * the player's PlayBound username by default.
+   */
+  let activePlayerName = join?.name || null;
+  if (!activePlayerName) {
+    activePlayerName = await getActivePlayerName();
+  }
+  if (activePlayerName) {
+    if (join && !join.name) {
+      join.name = activePlayerName;
+    }
     try {
-      const settings = loadSettings();
-      let playerName = null;
-      if (settings.launcherToken) {
-        const check = await validateLauncherToken(settings.launcherToken);
-        playerName = check.username || null;
-      }
-      if (!playerName && join?.name) playerName = join.name;
-      if (playerName) await ensureOpenTtdClientName(playerName);
+      await autoConfigureGamePlayerName({
+        slug,
+        gameDir: info.dir || path.dirname(info.exe || ""),
+        exePath: info.exe,
+        playerName: activePlayerName,
+        userDataPath: app.getPath("userData"),
+      });
     } catch (err) {
-      console.warn("[openttd] client name setup skipped:", err?.message || err);
+      console.warn(`[player-name] auto-config skipped for ${slug}:`, err?.message || err);
     }
   }
 
@@ -8794,6 +8835,13 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     args.push(...applyConnectTemplates(connectArgs, resolvedJoin, edSlug));
   } else {
     args.push(...staticLaunchArgs(connectArgs));
+  }
+
+  if (activePlayerName) {
+    const nameArgs = getPlayerNameLaunchArgs(slug, activePlayerName, args);
+    if (nameArgs.length) {
+      args.push(...nameArgs);
+    }
   }
 
   if (resolvedJoin?.host) {
