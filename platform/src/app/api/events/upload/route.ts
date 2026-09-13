@@ -5,6 +5,10 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { userFromLauncherBearer } from "@/lib/library";
 import { blobToDetachedBuffer, compressImageBuffer } from "@/lib/compressImage";
+import { requireAdminSession } from "@/lib/requireAdmin";
+import dbConnect from "@/lib/db";
+import PlatformEvent from "@/lib/models/PlatformEvent";
+import { checkRateLimit } from "@/lib/discussion/rateLimit";
 
 export async function POST(req: Request) {
   try {
@@ -19,7 +23,38 @@ export async function POST(req: Request) {
       );
     }
 
+    const quota = await checkRateLimit(`event-upload:${userId}`, {
+      max: 8,
+      windowMs: 60 * 60 * 1000,
+    });
+    if (!quota.ok) {
+      return NextResponse.json(
+        { error: "Too many event uploads. Try again later." },
+        { status: 429, headers: { "Retry-After": String(quota.retryAfterSec) } }
+      );
+    }
+
     const form = await req.formData();
+    const eventId = String(form.get("eventId") || "").trim();
+    const admin = await requireAdminSession();
+    if (admin.error) {
+      if (!eventId) {
+        return NextResponse.json(
+          { error: "Upload a cover for an event draft you organize." },
+          { status: 403 }
+        );
+      }
+      await dbConnect();
+      const event = await PlatformEvent.findById(eventId).select("organizerId createdBy status");
+      if (!event) {
+        return NextResponse.json({ error: "Event not found" }, { status: 404 });
+      }
+      const owner = String(event.organizerId || event.createdBy || "");
+      if (owner !== userId) {
+        return NextResponse.json({ error: "Not allowed to upload for this event" }, { status: 403 });
+      }
+    }
+
     const file = form.get("file");
 
     if (!(file instanceof File)) {

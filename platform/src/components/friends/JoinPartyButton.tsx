@@ -11,7 +11,7 @@ export function JoinPartyButton({
   party,
   className,
 }: {
-  party: PartyPayload;
+  party: Pick<PartyPayload, "id" | "hasPassword" | "status">;
   className?: string;
 }) {
   const { status } = useSession();

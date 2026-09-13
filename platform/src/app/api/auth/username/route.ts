@@ -5,6 +5,7 @@ import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
+import { normalizeUsername } from "@/lib/username";
 
 /** Same rules as the profile editor, so a username means one thing everywhere. */
 const usernameSchema = z.object({
@@ -45,8 +46,12 @@ export async function POST(req: Request) {
 
     await dbConnect();
 
+    const usernameNormalized = normalizeUsername(username);
     const taken = await User.findOne({
-      username: { $regex: new RegExp(`^${escapeRegex(username)}$`, "i") },
+      $or: [
+        { usernameNormalized },
+        { username: { $regex: new RegExp(`^${escapeRegex(username)}$`, "i") } },
+      ],
       _id: { $ne: session.user.id },
     });
     if (taken) {
@@ -55,7 +60,7 @@ export async function POST(req: Request) {
 
     const user = await User.findByIdAndUpdate(
       session.user.id,
-      { username, needsUsername: false },
+      { username, usernameNormalized, needsUsername: false },
       { returnDocument: "after" }
     );
     if (!user) {
@@ -90,7 +95,10 @@ export async function GET(req: Request) {
   try {
     await dbConnect();
     const taken = await User.findOne({
-      username: { $regex: new RegExp(`^${escapeRegex(username)}$`, "i") },
+      $or: [
+        { usernameNormalized: normalizeUsername(username) },
+        { username: { $regex: new RegExp(`^${escapeRegex(username)}$`, "i") } },
+      ],
     });
     return NextResponse.json({
       available: !taken,

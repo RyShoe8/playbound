@@ -39,7 +39,6 @@ import { cn } from "@/lib/utils";
 import { modsForGame } from "@/lib/mods";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
 import { QualityBarPanel } from "@/components/QualityBarPanel";
-import { GameCommerce } from "@/components/GameCommerce";
 import { MasterCopyUnlocks } from "@/components/MasterCopyUnlocks";
 import { getStoreAffiliateMap } from "@/lib/commerce/affiliates";
 import { FreeOfferBanner } from "@/components/FreeOfferBanner";
@@ -71,6 +70,7 @@ import { deriveInstallSteps, deriveFaq } from "@/lib/enrich";
 import {
   GameActivityAside,
   GameActivityAsideFallback,
+  GameCommerceSection,
   GameCommunityAside,
   GameEditionsBlock,
   GameFeaturingAside,
@@ -500,7 +500,7 @@ async function OverviewTab({
       <div className="min-w-0 space-y-10">
         {unlocks ? <MasterCopyUnlocks game={game} unlocks={unlocks} affiliates={affiliates} /> : null}
 
-        <GameCommerce game={game} affiliates={affiliates} />
+        <GameCommerceSection game={game} affiliates={affiliates} />
 
         {game.thatOneThing && (
           <section className="relative overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/15 via-card to-card p-6 shadow-sm sm:p-7">

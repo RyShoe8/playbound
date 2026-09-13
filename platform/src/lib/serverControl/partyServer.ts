@@ -12,6 +12,7 @@
  */
 
 import { isHostableGame, getHostableGame } from "@/lib/gameHost/catalog";
+import { resolvedHostMode } from "@/lib/multiplayer/hostModes";
 import type { ServerControlAdapter } from "./adapter";
 import { getServerSettingProfile, type ServerSettingValues } from "./settings";
 import { createVpsAgentAdapter, type VpsAgentClient } from "./vpsAgent";
@@ -69,12 +70,13 @@ export type ServerControlAvailability =
 export function serverControlAvailability(party: PartyServerSource): ServerControlAvailability {
   const slug = String(party.gameSlug || "");
   const title = party.gameTitle || slug || "this game";
+  const hostMode = resolvedHostMode(slug, party.hostMode, party.hosted);
 
-  if (party.hostMode === "public" || party.hostMode === "couch") {
+  if (hostMode === "public" || hostMode === "couch") {
     return {
       available: false,
       reason:
-        party.hostMode === "public"
+        hostMode === "public"
           ? "This party is on a community server, which PlayBound does not administer."
           : "This party is playing on one PC, so there is no server to control.",
     };
@@ -104,7 +106,7 @@ export function serverControlAvailability(party: PartyServerSource): ServerContr
    * owns the dedicated process — see localAdapter. The room existing is the
    * launcher's business, not ours, so there is no roomId to wait for.
    */
-  if (party.hostMode === "self") return { available: true, phase: "live" };
+  if (hostMode === "self") return { available: true, phase: "live" };
 
   /*
    * A room that has not started is the best moment to choose its settings, not
@@ -151,7 +153,7 @@ export function createPartyServerAdapter(
 
   const slug = String(party.gameSlug);
 
-  if (party.hostMode === "self") {
+  if (resolvedHostMode(slug, party.hostMode, party.hosted) === "self") {
     return createLocalAdapter({
       room: {
         partyId: String(party._id),

@@ -1,4 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { afterAll, beforeAll, describe, it, expect } from "vitest";
+import mongoose from "mongoose";
+import { MongoMemoryServer } from "mongodb-memory-server";
 import { POST as createSessionRoute } from "./route";
 import { POST as joinSessionRoute } from "./[id]/join/route";
 import {
@@ -9,6 +11,18 @@ import {
   POST as heartbeatRoute,
   DELETE as deleteSessionRoute,
 } from "./[id]/heartbeat/route";
+
+let mongod: MongoMemoryServer;
+
+beforeAll(async () => {
+  mongod = await MongoMemoryServer.create();
+  await mongoose.connect(mongod.getUri(), { dbName: "holocure-route-test" });
+}, 120_000);
+
+afterAll(async () => {
+  await mongoose.disconnect();
+  await mongod.stop();
+});
 
 describe("HoloCure Multiplayer API Endpoints", () => {
   it("executes full session lifecycle (create -> join -> signal -> heartbeat -> delete)", async () => {
@@ -58,13 +72,17 @@ describe("HoloCure Multiplayer API Endpoints", () => {
     const joinData = await joinRes.json();
     expect(joinData.sessionId).toBe(sessionId);
     expect(joinData.versionMismatch).toBe(false);
+    expect(joinData.clientToken).toBeTruthy();
 
     // 3. Client posts signaling offer to Host
     const postSignalReq = new Request(
       `http://localhost/api/multiplayer/holocure/sessions/${sessionId}/signal`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${joinData.clientToken}`,
+        },
         body: JSON.stringify({
           senderRole: "client",
           recipientRole: "host",
@@ -80,7 +98,8 @@ describe("HoloCure Multiplayer API Endpoints", () => {
 
     // 4. Host polls for signaling messages
     const getSignalReq = new Request(
-      `http://localhost/api/multiplayer/holocure/sessions/${sessionId}/signal?forRole=host&since=0`
+      `http://localhost/api/multiplayer/holocure/sessions/${sessionId}/signal?forRole=host&since=0`,
+      { headers: { Authorization: `Bearer ${hostToken}` } }
     );
     const pollRes = await getSignalRoute(getSignalReq, {
       params: Promise.resolve({ id: sessionId }),
@@ -95,7 +114,10 @@ describe("HoloCure Multiplayer API Endpoints", () => {
       `http://localhost/api/multiplayer/holocure/sessions/${sessionId}/heartbeat`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${hostToken}`,
+        },
         body: JSON.stringify({
           playerCount: 2,
           status: "in_game",

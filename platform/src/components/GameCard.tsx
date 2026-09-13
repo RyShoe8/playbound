@@ -267,7 +267,7 @@ export function GameCard({
             genres={game.genres}
             tags={game.tags}
             size="md"
-            className="mt-1 min-w-0"
+            className="mt-2 min-w-0"
           />
           {displayEditions.length > 0 ? (
             <div className="mt-1.5 flex flex-wrap items-center gap-1">

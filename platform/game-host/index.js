@@ -36,6 +36,7 @@ import { ET_SLUG, verifyEtLegacyReady } from "./etLegacyInstall.js";
 import { collectMetrics } from "./metrics.js";
 import { getLastSpawnTests, recordSpawnTest } from "./spawnTests.js";
 import { getCachedGameVersions } from "./gameVersions.js";
+import { createStartCoordinator } from "./startLock.js";
 
 const SECRET = process.env.GAME_HOST_SECRET || "";
 const PUBLIC_IP = process.env.GAME_HOST_PUBLIC_IP || "";
@@ -57,6 +58,10 @@ const rooms = new Map();
 const byParty = new Map();
 /** `${slug}:${port}` */
 const usedPorts = new Set();
+const startCoordinator = createStartCoordinator({
+  maxRooms: () => MAX_ROOMS,
+  occupiedCount: () => rooms.size,
+});
 /** relative archive path → in-flight/completed transfer state for this agent lifetime. */
 const archiveJobs = new Map();
 
@@ -715,15 +720,30 @@ function stopRoom(room) {
   if (byParty.get(room.partyId) === room.roomId) byParty.delete(room.partyId);
 }
 
-async function startRoom({ gameSlug, partyId, name, editionSlug, mod, settings }) {
+async function startRoom(opts) {
+  return startCoordinator.withPartyLock(String(opts.partyId || ""), () => startRoomUnlocked(opts));
+}
+
+async function startRoomUnlocked({ gameSlug, partyId, name, editionSlug, mod, settings }) {
   const existingId = byParty.get(partyId);
   if (existingId && rooms.has(existingId)) {
     return { room: rooms.get(existingId) };
   }
 
-  if (rooms.size >= MAX_ROOMS) {
+  if (!startCoordinator.reserveCapacity()) {
     return { error: `Host is at capacity (${MAX_ROOMS} rooms)` };
   }
+  byParty.set(partyId, existingId || "pending");
+
+  try {
+    return await startRoomReserved({ gameSlug, partyId, name, editionSlug, mod, settings });
+  } finally {
+    startCoordinator.releaseCapacity();
+    if (byParty.get(partyId) === "pending") byParty.delete(partyId);
+  }
+}
+
+async function startRoomReserved({ gameSlug, partyId, name, editionSlug, mod, settings }) {
 
   const roomCtx = { editionSlug, mod, partyId, name, settings };
   let resolved = resolveRecipe(gameSlug, roomCtx);
@@ -832,7 +852,7 @@ async function startRoom({ gameSlug, partyId, name, editionSlug, mod, settings }
       cwd,
       env: spawnEnv,
       stdio: ["pipe", "pipe", "pipe"],
-      detached: true,
+      detached: false,
     });
 
     const roomId = `room_${crypto.randomBytes(8).toString("hex")}`;
@@ -846,6 +866,7 @@ async function startRoom({ gameSlug, partyId, name, editionSlug, mod, settings }
       pid: child.pid || null,
       child,
       createdAt: Date.now(),
+      lastActivityAt: Date.now(),
       // When the current process started, which is what the restart decision
       // measures. Not createdAt: a restarted room keeps its original identity.
       processStartedAt: Date.now(),
@@ -870,11 +891,13 @@ async function startRoom({ gameSlug, partyId, name, editionSlug, mod, settings }
     };
 
     child.stdout?.on("data", (buf) => {
+      room.lastActivityAt = Date.now();
       pushLog(buf);
       const line = String(buf).trim();
       if (line) console.log(`[${gameSlug}:${port}] ${line.slice(0, 200)}`);
     });
     child.stderr?.on("data", (buf) => {
+      room.lastActivityAt = Date.now();
       pushLog(buf);
       const line = String(buf).trim();
       if (line) console.warn(`[${gameSlug}:${port}] ${line.slice(0, 200)}`);
@@ -910,7 +933,7 @@ async function startRoom({ gameSlug, partyId, name, editionSlug, mod, settings }
           `[${gameSlug}:${port}] restarting (${room.restarts}/${MAX_RESTARTS}) — ${decision.reason}`
         );
         try {
-          const next = spawn(binary, args, { cwd, env: spawnEnv, stdio: ["pipe", "pipe", "pipe"], detached: true });
+          const next = spawn(binary, args, { cwd, env: spawnEnv, stdio: ["pipe", "pipe", "pipe"], detached: false });
           room.child = next;
           room.pid = next.pid || null;
           room.processStartedAt = Date.now();
@@ -1241,6 +1264,7 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       try {
+        room.lastActivityAt = Date.now();
         const response = await sendRcon({
           port: room.port,
           password: room.rconPassword,
@@ -1284,7 +1308,8 @@ const server = http.createServer(async (req, res) => {
 setInterval(() => {
   const now = Date.now();
   for (const room of rooms.values()) {
-    if (now - room.createdAt > IDLE_MS) {
+    const lastActive = room.lastActivityAt || room.createdAt;
+    if (now - lastActive > IDLE_MS) {
       console.log(`idle-stop ${room.roomId} ${room.gameSlug}:${room.port}`);
       stopRoom(room);
     }

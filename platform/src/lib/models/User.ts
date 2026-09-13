@@ -2,6 +2,8 @@ import { Schema, model, models } from "mongoose";
 
 const UserSchema = new Schema({
   username: { type: String, unique: true, required: true },
+  /** Lowercased username for a unique case-insensitive index. */
+  usernameNormalized: { type: String, unique: true, sparse: true, index: true },
   email: { type: String, unique: true, required: true, lowercase: true, trim: true },
   /**
    * Only required for password accounts. Google users never set one, so this
@@ -83,6 +85,13 @@ const UserSchema = new Schema({
     },
   },
   createdAt: { type: Date, default: Date.now },
+});
+
+UserSchema.pre("validate", function normalizeUsernameField() {
+  const username = this.get("username");
+  if (typeof username === "string") {
+    this.set("usernameNormalized", username.trim().toLowerCase());
+  }
 });
 
 const User = models.User || model("User", UserSchema);

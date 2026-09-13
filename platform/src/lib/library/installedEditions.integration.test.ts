@@ -1,25 +1,15 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import mongoose from "mongoose";
+import { MongoMemoryServer } from "mongodb-memory-server";
 import LibraryEntry from "@/lib/models/LibraryEntry";
 import { groupInstallsBySlug, editionsFromRow } from "./installedEditions";
 import { libraryHasRequiredEdition } from "@/lib/playTogether/editionMatch";
 
 /*
- * `mongodb-memory-server` is deliberately NOT a dependency of this project.
- * It pulls a mongod binary, and every Vercel build installs devDependencies —
- * a cost the deploy should not carry for a test. Install it when you want to
- * run this file and it runs; otherwise these skip:
- *
- *   npm install --no-save mongodb-memory-server && npx vitest run src/lib/library
+ * This suite must run in CI: the bug class lives in Mongo's unique-index and
+ * update behavior and cannot be proven with a model mock.
  */
-// @ts-expect-error optional dev dependency for local integration runs
-let MongoMemoryServer: typeof import("mongodb-memory-server").MongoMemoryServer | null = null;
-try {
-  ({ MongoMemoryServer } = require("mongodb-memory-server"));
-} catch {
-  MongoMemoryServer = null;
-}
-const withMongo = MongoMemoryServer ? describe : describe.skip;
+const withMongo = describe;
 
 /**
  * The write path, against a real MongoDB.
@@ -32,7 +22,7 @@ const withMongo = MongoMemoryServer ? describe : describe.skip;
  * Uses an in-process mongod, so it touches nothing outside this test.
  */
 
-let mongod: InstanceType<NonNullable<typeof MongoMemoryServer>>;
+let mongod: MongoMemoryServer;
 
 beforeAll(async () => {
   mongod = await MongoMemoryServer!.create();

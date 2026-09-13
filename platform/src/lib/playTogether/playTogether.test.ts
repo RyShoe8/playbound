@@ -8,9 +8,10 @@ import {
   isDuplicatePendingInvite,
   nextInviteStatus,
 } from "@/lib/playTogether/inviteRules";
-import { getPartyCapability } from "@/lib/playTogether/party";
+import { getPartyCapability, toPublicPartyPayload } from "@/lib/playTogether/party";
 import { canJoinParty, nextLeader, derivePartyStatus, type RuleParty, type RuleMember } from "@/lib/playTogether/partyRules";
 import { LFG_TTL_MS } from "@/lib/playTogether/types";
+import type { PartyPayload } from "@/lib/playTogether/types";
 
 describe("isMultiplayerGame", () => {
   it("detects Multiplayer feature", () => {
@@ -169,6 +170,29 @@ describe("party rules", () => {
       expect(canJoinParty(p, "user2", false, true).ok).toBe(true);
     });
 
+    it("requires an actual invitation for invite-only parties", () => {
+      const p = mockParty({ visibility: "invite_only" });
+      expect(canJoinParty(p, "user2", true, false, false).ok).toBe(false);
+      expect(canJoinParty(p, "user2", false, false, true).ok).toBe(true);
+    });
+
+    it("requires event eligibility for event parties", () => {
+      const p = mockParty({ visibility: "event" });
+      expect(canJoinParty(p, "user2", true, false, true, false).ok).toBe(false);
+      expect(canJoinParty(p, "user2", false, false, false, true).ok).toBe(true);
+    });
+
+    it("requires event eligibility when a public party is still tied to an event", () => {
+      const p = mockParty({ visibility: "public", eventId: "evt1" });
+      expect(canJoinParty(p, "user2", false).ok).toBe(false);
+      expect(canJoinParty(p, "user2", false, false, false, true).ok).toBe(true);
+    });
+
+    it("still allows anyone to join a public party with no event", () => {
+      const p = mockParty({ visibility: "public" });
+      expect(canJoinParty(p, "user2", false).ok).toBe(true);
+    });
+
     it("rejects duplicate join — server returns existing roster instead", () => {
       const p = mockParty({
         members: [
@@ -223,5 +247,35 @@ describe("party rules", () => {
       ];
       expect(derivePartyStatus("forming", members)).toBe("forming");
     });
+  });
+});
+
+describe("public party serialization", () => {
+  it("does not expose roster identities or connection credentials", () => {
+    const full = {
+      id: "party-1",
+      leaderUsername: "Host",
+      name: "Game night",
+      members: [{ userId: "secret-user" }],
+      gameSlug: "openra",
+      gameTitle: "OpenRA",
+      status: "forming",
+      visibility: "public",
+      maxSize: 8,
+      hasPassword: false,
+      hostMode: "self",
+      lastActivity: "2026-09-12T00:00:00.000Z",
+      createdAt: "2026-09-12T00:00:00.000Z",
+      discord: { inviteUrl: "https://secret.invalid" },
+      hosted: { roomCode: "SECRET", host: "10.0.0.1" },
+      configSync: { allInSync: true },
+    } as unknown as PartyPayload;
+
+    const publicPayload = toPublicPartyPayload(full);
+    expect(publicPayload.memberCount).toBe(1);
+    expect(publicPayload).not.toHaveProperty("members");
+    expect(publicPayload).not.toHaveProperty("discord");
+    expect(publicPayload).not.toHaveProperty("hosted");
+    expect(publicPayload).not.toHaveProperty("configSync");
   });
 });

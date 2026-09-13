@@ -1,10 +1,18 @@
 import Link from "next/link";
 import { Users } from "lucide-react";
 import { JoinPartyButton } from "@/components/friends/JoinPartyButton";
-import { partyDisplayName, type PartyPayload } from "@/lib/playTogether/types";
+import { partyDisplayName } from "@/lib/playTogether/types";
+import type { PublicPartyPayload } from "@/lib/playTogether/party";
 
-function groupByGame(parties: PartyPayload[]): { slug: string; title: string; parties: PartyPayload[] }[] {
-  const map = new Map<string, { slug: string; title: string; parties: PartyPayload[] }>();
+function groupByGame(parties: PublicPartyPayload[]): {
+  slug: string;
+  title: string;
+  parties: PublicPartyPayload[];
+}[] {
+  const map = new Map<
+    string,
+    { slug: string; title: string; parties: PublicPartyPayload[] }
+  >();
   for (const party of parties) {
     const slug = party.gameSlug;
     if (!slug) continue;
@@ -22,7 +30,7 @@ function groupByGame(parties: PartyPayload[]): { slug: string; title: string; pa
   return [...map.values()].sort((a, b) => a.title.localeCompare(b.title));
 }
 
-export function OpenPartiesSection({ parties }: { parties: PartyPayload[] }) {
+export function OpenPartiesSection({ parties }: { parties: PublicPartyPayload[] }) {
   const groups = groupByGame(parties);
 
   return (
@@ -73,7 +81,7 @@ export function OpenPartiesSection({ parties }: { parties: PartyPayload[] }) {
                       </div>
                       <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold">
                         <Users className="size-3" />
-                        {party.members.length}/{party.maxSize}
+                        {party.memberCount}/{party.maxSize}
                       </span>
                     </div>
                     <div className="mt-auto flex items-center justify-end">

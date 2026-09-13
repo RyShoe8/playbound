@@ -22,7 +22,7 @@ import { supportsMultiplayer } from "@/lib/multiplayer/support";
 type SortOption = "name" | "players";
 type HwFilter = "" | "great" | "playable";
 
-interface SerializedGame {
+export interface SerializedGame {
   slug: string;
   title: string;
   tagline: string;
@@ -40,6 +40,25 @@ interface SerializedGame {
 }
 
 /* ── Main component ─────────────────────────────────────────── */
+
+export function toDiscoverCard(g: Game): SerializedGame {
+  return {
+    slug: g.slug,
+    title: g.title,
+    tagline: g.tagline,
+    genres: g.genres,
+    tags: g.tags,
+    features: g.features,
+    sizeMB: g.sizeMB,
+    launchMethods: g.launchMethods,
+    art: g.art,
+    coverImage: g.coverImage,
+    browserPlayable: g.browserPlayable,
+    steamDeck: g.steamDeck,
+    platforms: g.platforms,
+    hardwareRequirements: g.hardwareRequirements,
+  };
+}
 
 export function DiscoverFilters({
   games,
@@ -101,27 +120,7 @@ export function DiscoverFilters({
 
   const gamesBySlug = useMemo(() => new Map(games.map((g) => [g.slug, g])), [games]);
 
-  /* Serialize Game → SerializedGame once (strip unneeded fields) */
-  const serialized = useMemo<SerializedGame[]>(
-    () =>
-      games.map((g) => ({
-        slug: g.slug,
-        title: g.title,
-        tagline: g.tagline,
-        genres: g.genres,
-        tags: g.tags,
-        features: g.features,
-        sizeMB: g.sizeMB,
-        launchMethods: g.launchMethods,
-        art: g.art,
-        coverImage: g.coverImage,
-        browserPlayable: g.browserPlayable,
-        steamDeck: g.steamDeck,
-        platforms: g.platforms,
-        hardwareRequirements: g.hardwareRequirements,
-      })),
-    [games]
-  );
+  const serialized = useMemo(() => games.map(toDiscoverCard), [games]);
 
   /* Filter games based on current filter states (before genre split) */
   const baseFiltered = useMemo(() => {

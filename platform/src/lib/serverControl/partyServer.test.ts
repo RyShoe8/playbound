@@ -28,12 +28,24 @@ describe("whether a party has a server to control", () => {
   });
 
   it("treats an old party with no host mode as the game's default", () => {
-    // hostMode predates nothing here — parties created before host modes exist
-    // with null, and for a hostable game that has always meant the VPS.
+    // A live VPS room pins dedicated even when hostMode is null.
     expect(serverControlAvailability(party({ hostMode: null }))).toEqual({
       available: true,
       phase: "live",
     });
+  });
+
+  it("does not treat a null host mode as VPS when the game defaults to public", () => {
+    expect(
+      serverControlAvailability(
+        party({
+          gameSlug: "openra",
+          gameTitle: "OpenRA",
+          hostMode: null,
+          hosted: { roomId: null, status: "none" },
+        })
+      ).available
+    ).toBe(false);
   });
 
   it("controls a room on the leader's own PC through their launcher", () => {

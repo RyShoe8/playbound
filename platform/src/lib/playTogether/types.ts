@@ -341,7 +341,7 @@ export type PartyPayload = {
   hosted: {
     enabled: boolean;
     configured?: boolean;
-    status: "none" | "pending" | "ready" | "failed";
+    status: "none" | "pending" | "ready" | "failed" | "release-pending";
     host: string | null;
     port: number | null;
     name: string | null;

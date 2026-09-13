@@ -20,6 +20,7 @@ import Party from "@/lib/models/Party";
 import Review from "@/lib/models/Review";
 import StoreMatchSuggestion from "@/lib/models/StoreMatchSuggestion";
 import WeeklyIssue from "@/lib/models/WeeklyIssue";
+import MultiplayerSession from "@/lib/models/MultiplayerSession";
 
 /**
  * Every collection that stores a game slug as a foreign key.
@@ -85,6 +86,7 @@ const REFERENCES: SlugReference[] = [
   },
   { label: "reviews", model: Review, field: "gameSlug" },
   { label: "weeklyIssues", model: WeeklyIssue, field: "gameSlug" },
+  { label: "multiplayerSessions", model: MultiplayerSession, field: "gameSlug" },
 ];
 
 export type SlugRenameReport = Record<string, number>;

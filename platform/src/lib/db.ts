@@ -9,6 +9,11 @@ const cached =
   global.__mongooseCache ?? (global.__mongooseCache = { conn: null, promise: null });
 
 async function connectOnce() {
+  if (mongoose.connection.readyState === 1) {
+    cached.conn = mongoose;
+    return cached.conn;
+  }
+
   const MONGODB_URI = process.env.MONGODB_URI;
   if (!MONGODB_URI) {
     throw new Error(
@@ -16,11 +21,7 @@ async function connectOnce() {
     );
   }
 
-  if (cached.conn && mongoose.connection.readyState === 1) {
-    return cached.conn;
-  }
-
-  if (cached.conn && mongoose.connection.readyState !== 1) {
+  if (cached.conn) {
     cached.conn = null;
     cached.promise = null;
   }

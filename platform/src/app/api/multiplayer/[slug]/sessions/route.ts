@@ -15,7 +15,7 @@ export async function POST(req: Request, context: RouteContext) {
     const body = await req.json().catch(() => ({}));
     const { gameVersion, modVersion, packageHash, maxPlayers, extraConfig } = body;
 
-    const result = createMultiplayerSession({
+    const result = await createMultiplayerSession({
       gameSlug: slug,
       gameVersion: typeof gameVersion === "string" ? gameVersion : "1.0",
       modVersion: typeof modVersion === "string" ? modVersion : undefined,

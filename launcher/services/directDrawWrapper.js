@@ -196,14 +196,27 @@ function registerDirectDrawComHkcu(ddrawPath) {
   if (!fs.existsSync(abs)) {
     return { ok: false, error: `DDRAW.dll missing at ${abs}` };
   }
-  // Per-user COM registration — no elevation. CoCreateInstance prefers HKCU.
+  /*
+   * Per-user COM registration — no elevation. CoCreateInstance prefers HKCU.
+   *
+   * FreeTrain is 32-bit. On 64-bit Windows, a 32-bit process reads the COM
+   * class from Wow6432Node; writing only the native CLSID path leaves
+   * CoCreateInstance with 80040154 even when DDraw.dll sits beside the exe.
+   */
+  const dll = abs.replace(/'/g, "''");
   const script = `
 $ErrorActionPreference = 'Stop'
 $clsid = '${CLSID_DIRECTDRAW}'
-$path = 'HKCU:\\Software\\Classes\\CLSID\\' + $clsid + '\\InprocServer32'
-New-Item -Path $path -Force | Out-Null
-Set-ItemProperty -Path $path -Name '(default)' -Value '${abs.replace(/'/g, "''")}'
-Set-ItemProperty -Path $path -Name 'ThreadingModel' -Value 'Both'
+$dll = '${dll}'
+$paths = @(
+  ('HKCU:\\Software\\Classes\\CLSID\\' + $clsid + '\\InprocServer32'),
+  ('HKCU:\\Software\\Classes\\Wow6432Node\\CLSID\\' + $clsid + '\\InprocServer32')
+)
+foreach ($path in $paths) {
+  New-Item -Path $path -Force | Out-Null
+  Set-ItemProperty -Path $path -Name '(default)' -Value $dll
+  Set-ItemProperty -Path $path -Name 'ThreadingModel' -Value 'Both'
+}
 `;
   const ps = spawnSync("powershell.exe", ["-NoProfile", "-Command", script], {
     windowsHide: true,
@@ -290,7 +303,7 @@ function createDirectDrawWrapper(deps) {
     }
   }
 
-  async function installWrapperIntoGameDir(gameDir) {
+  async function installWrapperIntoGameDir(gameDir, opts = {}) {
     if (process.platform !== "win32") {
       return { ok: true, skipped: true, reason: "windows-only" };
     }
@@ -325,9 +338,16 @@ function createDirectDrawWrapper(deps) {
     const ddraw = path.join(gameDir, "DDraw.dll");
     const ddrawAlt = path.join(gameDir, "ddraw.dll");
     const ddrawPath = fs.existsSync(ddraw) ? ddraw : ddrawAlt;
-    const reg = registerDirectDrawComHkcu(ddrawPath);
-    if (!reg.ok) {
-      return { ok: false, error: reg.error };
+    /*
+     * Unit tests must not rewrite HKCU CLSID_DirectDraw — a temp gameDir
+     * would otherwise leave CoCreateInstance pointing at a deleted path and
+     * FreeTrain would crash with 80040154 until the next real Play.
+     */
+    if (!opts.skipComRegistration) {
+      const reg = registerDirectDrawComHkcu(ddrawPath);
+      if (!reg.ok) {
+        return { ok: false, error: reg.error };
+      }
     }
 
     return { ok: true, ddrawPath, source: prepared.source };
@@ -344,7 +364,7 @@ function createDirectDrawWrapper(deps) {
       return { ok: true, skipped: true };
     }
     try {
-      return await installWrapperIntoGameDir(gameDir);
+      return await installWrapperIntoGameDir(gameDir, opts);
     } catch (err) {
       const msg = String(err?.message || err || "");
       if (looksLikeAvBlock(msg, "")) {

@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const { gameVersion, modVersion, packageHash, maxPlayers } = body;
 
-    const result = createSession({
+    const result = await createSession({
       gameVersion: typeof gameVersion === "string" ? gameVersion : "0.7.x",
       modVersion: typeof modVersion === "string" ? modVersion : "1.0.0-playbound",
       packageHash: typeof packageHash === "string" ? packageHash : undefined,

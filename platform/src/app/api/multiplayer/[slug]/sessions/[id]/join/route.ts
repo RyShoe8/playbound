@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getMultiplayerSessionByCode } from "@/lib/multiplayer/sessionManager";
+import { joinMultiplayerSession } from "@/lib/multiplayer/sessionManager";
 
 interface RouteContext {
   params: Promise<{ slug: string; id: string }>;
@@ -18,20 +18,15 @@ export async function POST(req: Request, context: RouteContext) {
       return NextResponse.json({ error: "Missing room code" }, { status: 400 });
     }
 
-    const session = getMultiplayerSessionByCode(code);
-    if (!session) {
+    const joined = await joinMultiplayerSession(code);
+    if (!joined) {
       return NextResponse.json(
         { error: "Session not found or expired. Check the room code." },
         { status: 404 }
       );
     }
 
-    if (session.status === "ended") {
-      return NextResponse.json(
-        { error: "This game session has ended." },
-        { status: 410 }
-      );
-    }
+    const session = joined.session;
 
     // Verify game slug matches if provided
     if (slug && session.gameSlug !== slug.toLowerCase()) {
@@ -50,9 +45,6 @@ export async function POST(req: Request, context: RouteContext) {
       (clientGameVersion && clientGameVersion !== session.gameVersion) ||
       (clientModVersion && session.modVersion && clientModVersion !== session.modVersion);
 
-    const vpsIp = process.env.GAME_HOST_PUBLIC_IP || "127.0.0.1";
-    const stunPort = process.env.STUN_PORT || "3478";
-
     return NextResponse.json({
       sessionId: session.sessionId,
       gameSlug: session.gameSlug,
@@ -62,15 +54,10 @@ export async function POST(req: Request, context: RouteContext) {
       modVersion: session.modVersion,
       playerCount: session.playerCount,
       maxPlayers: session.maxPlayers,
+      clientToken: joined.clientToken,
       versionMismatch,
-      stunServers: [`stun:${vpsIp}:${stunPort}`, "stun:stun.l.google.com:19302"],
-      turnServers: [
-        {
-          urls: `turn:${vpsIp}:${stunPort}`,
-          username: "playbound_guest",
-          credential: "guest_session_token",
-        },
-      ],
+      stunServers: joined.stunServers,
+      turnServers: joined.turnServers,
       extraConfig: session.extraConfig,
     });
   } catch (err) {

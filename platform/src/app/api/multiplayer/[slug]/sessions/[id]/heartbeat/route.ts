@@ -15,10 +15,12 @@ interface RouteContext {
 export async function POST(req: Request, context: RouteContext) {
   try {
     const { id: sessionId } = await context.params;
+    const token = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") || "";
+    if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const body = await req.json().catch(() => ({}));
     const { playerCount, status } = body;
 
-    const ok = updateSessionStatus(sessionId, playerCount, status);
+    const ok = await updateSessionStatus(sessionId, token, playerCount, status);
     if (!ok) {
       return NextResponse.json(
         { error: "Session not found or expired" },
@@ -43,7 +45,7 @@ export async function DELETE(req: Request, context: RouteContext) {
     const authHeader = req.headers.get("authorization") || "";
     const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
 
-    const ok = deleteMultiplayerSession(sessionId, token || undefined);
+    const ok = await deleteMultiplayerSession(sessionId, token);
     if (!ok) {
       return NextResponse.json(
         { error: "Unauthorized or session does not exist" },

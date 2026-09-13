@@ -22,6 +22,7 @@
 const fs = require("fs");
 const fsp = require("fs/promises");
 const path = require("path");
+const crypto = require("crypto");
 
 /** Keep this many snapshots per game before pruning the oldest. */
 const DEFAULT_KEEP = 10;
@@ -93,7 +94,13 @@ function snapshotKey(gameSlug, editionSlug) {
  * per directory.
  */
 function newSnapshotId(now = new Date()) {
-  return now.toISOString().replace(/[:.]/g, "-");
+  const stamp = now.toISOString().replace(/[:.]/g, "-");
+  return `${stamp}-${crypto.randomBytes(4).toString("hex")}`;
+}
+
+function isSafeSnapshotId(snapshotId) {
+  const id = String(snapshotId || "");
+  return /^[0-9A-Za-z._-]+$/.test(id) && !id.includes("..");
 }
 
 async function pathExists(p) {
@@ -288,6 +295,9 @@ function createSaveData({ snapshotRoot }) {
     if (isDangerousRoot(target)) {
       throw new Error("Refusing to restore into a system or home directory");
     }
+    if (!isSafeSnapshotId(snapshotId)) {
+      throw new Error("Refusing to restore from an invalid snapshot id");
+    }
     const from = path.join(gameRoot(gameSlug, editionSlug), snapshotId);
     if (!isInside(from, root)) throw new Error("Refusing to restore from outside the save root");
     if (!(await pathExists(from))) throw new Error(`Snapshot ${snapshotId} not found`);
@@ -297,11 +307,27 @@ function createSaveData({ snapshotRoot }) {
       now,
     });
 
-    await fsp.mkdir(target, { recursive: true });
-    const { files } = await copyTree(from, target, {
+    const staging = `${target}.playbound-restore-staging`;
+    const backup = `${target}.playbound-restore-old`;
+    await fsp.rm(staging, { recursive: true, force: true });
+    await fsp.rm(backup, { recursive: true, force: true });
+    const { files } = await copyTree(from, staging, {
       // The metadata file belongs to the snapshot, not the game.
       skip: new Set([...SKIP_ENTRIES, ".playbound-snapshot.json"]),
     });
+    if (await pathExists(target)) {
+      await fsp.rename(target, backup);
+    }
+    try {
+      await fsp.rename(staging, target);
+    } catch (err) {
+      if ((await pathExists(backup)) && !(await pathExists(target))) {
+        await fsp.rename(backup, target);
+      }
+      await fsp.rm(staging, { recursive: true, force: true }).catch(() => {});
+      throw err;
+    }
+    await fsp.rm(backup, { recursive: true, force: true }).catch(() => {});
 
     return {
       status: "restored",
@@ -327,6 +353,7 @@ function createSaveData({ snapshotRoot }) {
 
 module.exports = {
   createSaveData,
+  isSafeSnapshotId,
   snapshotKey,
   newSnapshotId,
   isInside,

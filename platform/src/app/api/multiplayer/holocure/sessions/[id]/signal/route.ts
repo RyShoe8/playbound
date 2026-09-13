@@ -16,17 +16,24 @@ interface RouteContext {
 export async function POST(req: Request, context: RouteContext) {
   try {
     const { id: sessionId } = await context.params;
+    const token = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") || "";
     const body = await req.json().catch(() => ({}));
     const { senderRole, recipientRole, senderPeerId, payload } = body;
 
-    if (!senderRole || !recipientRole || !payload) {
+    if (
+      !token ||
+      !["host", "client"].includes(senderRole) ||
+      !["host", "client"].includes(recipientRole) ||
+      typeof payload !== "string" ||
+      !payload
+    ) {
       return NextResponse.json(
         { error: "Invalid signaling payload. Required: senderRole, recipientRole, payload." },
         { status: 400 }
       );
     }
 
-    const message = postSignalingMessage(sessionId, {
+    const message = await postSignalingMessage(sessionId, token, {
       senderRole,
       recipientRole,
       senderPeerId: senderPeerId || "anonymous",
@@ -35,8 +42,8 @@ export async function POST(req: Request, context: RouteContext) {
 
     if (!message) {
       return NextResponse.json(
-        { error: "Session not found or inactive." },
-        { status: 404 }
+        { error: "Invalid session capability." },
+        { status: 401 }
       );
     }
 
@@ -54,22 +61,27 @@ export async function POST(req: Request, context: RouteContext) {
 export async function GET(req: Request, context: RouteContext) {
   try {
     const { id: sessionId } = await context.params;
+    const token = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") || "";
     const url = new URL(req.url);
     const forRole = url.searchParams.get("forRole");
     const since = parseInt(url.searchParams.get("since") || "0", 10);
 
-    if (forRole !== "host" && forRole !== "client") {
+    if (!token || (forRole !== "host" && forRole !== "client")) {
       return NextResponse.json(
         { error: "Invalid or missing forRole query param ('host' | 'client')." },
         { status: 400 }
       );
     }
 
-    const messages = pollSignalingMessages(
+    const messages = await pollSignalingMessages(
       sessionId,
+      token,
       forRole as "host" | "client",
       since
     );
+    if (!messages) {
+      return NextResponse.json({ error: "Invalid session capability." }, { status: 401 });
+    }
 
     return NextResponse.json({ messages });
   } catch (err) {

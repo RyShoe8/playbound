@@ -20,7 +20,11 @@ import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import Presence from "@/lib/models/Presence";
 import PartyMessage from "@/lib/models/PartyMessage";
 import PlayInvite from "@/lib/models/PlayInvite";
+import PlatformEvent from "@/lib/models/PlatformEvent";
+import EventRsvp from "@/lib/models/EventRsvp";
+import ActivePartyMembership from "@/lib/models/ActivePartyMembership";
 import { getGame } from "@/lib/catalog";
+import { SITE_URL } from "@/lib/site";
 import { requiredPlatformsFor } from "@/lib/playTogether/partyPlatforms";
 import { listEditionsForGame } from "@/lib/editions";
 import {
@@ -40,7 +44,7 @@ import {
 import { openRaEditionAllowsStockModPicker } from "@/lib/multiplayer/openRaMod";
 import { STALE_AFTER_MS } from "@/lib/presence/types";
 import { sharedCacheGet, sharedCacheSet } from "@/lib/realtime/sharedCache";
-import { trackPartyEvent, trackPartyFailure } from "@/lib/playTogether/partyTelemetry";
+import { trackPartyEvent } from "@/lib/playTogether/partyTelemetry";
 import { setPresenceParty, clearPresenceForParty } from "@/lib/presence/server";
 import {
   cleanupPartyDiscordVoice,
@@ -105,10 +109,8 @@ import {
   canLeaveParty,
   canRemoveMember,
   canLaunch,
-  canTransitionTo,
   nextLeader,
   derivePartyStatus,
-  isLeader,
   readySummary,
   type RuleParty,
   type RuleMember,
@@ -390,6 +392,7 @@ function toRuleParty(doc: Record<string, unknown>): RuleParty {
     status: (doc.status as PartyStatus) || "forming",
     visibility: (doc.visibility as PartyVisibility) || "friends",
     maxSize: (doc.maxSize as number) || PARTY_MAX_SIZE,
+    eventId: doc.eventId ? String(doc.eventId) : null,
   };
 }
 
@@ -471,6 +474,65 @@ const SKIP_VOICE: PartyVoiceFollowup = {
 
 function isMongoDuplicateKey(err: unknown): boolean {
   return typeof err === "object" && err !== null && (err as { code?: number }).code === 11000;
+}
+
+async function reserveActiveMembership(
+  userId: string,
+  partyId: string,
+  retryStale = true
+): Promise<"claimed" | "existing" | "conflict"> {
+  if (!Types.ObjectId.isValid(userId) || !Types.ObjectId.isValid(partyId)) {
+    return "conflict";
+  }
+  try {
+    const result = await ActivePartyMembership.updateOne(
+      { userId: new Types.ObjectId(userId), partyId: new Types.ObjectId(partyId) },
+      {
+        $setOnInsert: {
+          userId: new Types.ObjectId(userId),
+          partyId: new Types.ObjectId(partyId),
+        },
+      },
+      { upsert: true }
+    );
+    return result.upsertedCount ? "claimed" : "existing";
+  } catch (err) {
+    if (isMongoDuplicateKey(err)) {
+      const existing = await ActivePartyMembership.findOne({
+        userId: new Types.ObjectId(userId),
+      }).lean();
+      if (String(existing?.partyId || "") === partyId) return "existing";
+      if (existing && retryStale) {
+        const liveParty = await Party.exists({
+          _id: existing.partyId,
+          status: { $nin: ["ended"] },
+          "members.userId": new Types.ObjectId(userId),
+        });
+        if (!liveParty) {
+          await ActivePartyMembership.deleteOne({
+            _id: existing._id,
+            partyId: existing.partyId,
+          });
+          return reserveActiveMembership(userId, partyId, false);
+        }
+      }
+      return "conflict";
+    }
+    throw err;
+  }
+}
+
+async function releaseActiveMembership(userId: string, partyId: string): Promise<void> {
+  if (!Types.ObjectId.isValid(userId) || !Types.ObjectId.isValid(partyId)) return;
+  await ActivePartyMembership.deleteOne({
+    userId: new Types.ObjectId(userId),
+    partyId: new Types.ObjectId(partyId),
+  });
+}
+
+async function releasePartyMemberships(partyId: string): Promise<void> {
+  if (!Types.ObjectId.isValid(partyId)) return;
+  await ActivePartyMembership.deleteMany({ partyId: new Types.ObjectId(partyId) });
 }
 
 async function findActiveLeaderParty(userId: string) {
@@ -758,6 +820,45 @@ function serializeParty(
   };
 }
 
+export type PublicPartyPayload = Pick<
+  PartyPayload,
+  | "id"
+  | "leaderUsername"
+  | "name"
+  | "gameSlug"
+  | "gameTitle"
+  | "status"
+  | "visibility"
+  | "maxSize"
+  | "hasPassword"
+  | "hostMode"
+  | "lastActivity"
+  | "createdAt"
+> & { memberCount: number };
+
+/**
+ * Anonymous discovery deliberately receives no capabilities or connection
+ * material. Room addresses, Discord invites, roster identities/platforms,
+ * config sync, and Couch/LAN state belong only to party members.
+ */
+export function toPublicPartyPayload(party: PartyPayload): PublicPartyPayload {
+  return {
+    id: party.id,
+    leaderUsername: party.leaderUsername,
+    name: party.name,
+    gameSlug: party.gameSlug,
+    gameTitle: party.gameTitle,
+    status: party.status,
+    visibility: party.visibility,
+    maxSize: party.maxSize,
+    memberCount: party.members.length,
+    hasPassword: party.hasPassword,
+    hostMode: party.hostMode,
+    lastActivity: party.lastActivity,
+    createdAt: party.createdAt,
+  };
+}
+
 async function attachConfigSync(
   party: PartyPayload,
   viewerUserId?: string,
@@ -917,6 +1018,7 @@ export async function createParty(opts: {
   if (existing) {
     const existingId = String(existing._id);
     await leaveOtherActiveParties(opts.userId, existingId);
+    await reserveActiveMembership(opts.userId, existingId);
     const healed = await Party.findById(existingId);
     const existingDoc = healed
       ? ((await ensureLeaderMembership(
@@ -938,6 +1040,21 @@ export async function createParty(opts: {
   await leaveOtherActiveParties(opts.userId);
 
   const visibility = opts.visibility || "friends";
+  if (visibility === "event") {
+    if (!opts.eventId || !Types.ObjectId.isValid(opts.eventId)) {
+      return { error: "A valid event is required for an event party", status: 400 };
+    }
+    const event = await PlatformEvent.findById(opts.eventId)
+      .select("organizerId createdBy status")
+      .lean();
+    if (!event) return { error: "Event not found", status: 404 };
+    const organizerId = String(event.organizerId || event.createdBy || "");
+    if (organizerId !== opts.userId) {
+      return { error: "Only the event organizer can create its party", status: 400 };
+    }
+  } else if (opts.eventId) {
+    return { error: "eventId is only valid for event parties", status: 400 };
+  }
   const wantVoice = opts.wantVoice !== false;
   let passwordSalt: string | null = null;
   let passwordHash: string | null = null;
@@ -951,9 +1068,15 @@ export async function createParty(opts: {
   }
 
   const now = new Date();
+  const partyObjectId = new Types.ObjectId();
+  const reservation = await reserveActiveMembership(opts.userId, String(partyObjectId));
+  if (reservation === "conflict") {
+    return { error: "You are already joining another party. Try again.", status: 400 };
+  }
   let doc;
   try {
     doc = await Party.create({
+      _id: partyObjectId,
       leaderId: opts.userId,
       members: [
         {
@@ -989,11 +1112,13 @@ export async function createParty(opts: {
       lastActivity: now,
     });
   } catch (err) {
+    await releaseActiveMembership(opts.userId, String(partyObjectId));
     if (isMongoDuplicateKey(err)) {
       const raced = await findActiveLeaderParty(opts.userId);
       if (raced) {
         const racedId = String(raced._id);
         await leaveOtherActiveParties(opts.userId, racedId);
+        await reserveActiveMembership(opts.userId, racedId);
         try {
           await setPresenceParty(opts.userId, {
             partyId: racedId,
@@ -1066,7 +1191,10 @@ export async function joinParty(
     rp.members.some((m) => friendIds.includes(m.userId));
 
   let hasInvite = false;
-  if (!isFriend && (doc.visibility === "friends" || doc.visibility === "invite_only")) {
+  if (
+    doc.visibility === "invite_only" ||
+    (!isFriend && doc.visibility === "friends")
+  ) {
     const userObjId = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : null;
     const inviteDoc = await PlayInvite.findOne({
       recipientId: userObjId ? { $in: [userId, userObjId] } : userId,
@@ -1076,6 +1204,21 @@ export async function joinParty(
     if (inviteDoc) {
       hasInvite = true;
     }
+  }
+
+  let eventEligible = false;
+  if (doc.eventId) {
+    const attendee = await EventRsvp.exists({
+      eventId: doc.eventId,
+      userId: Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : userId,
+      status: "going",
+    });
+    const event = await PlatformEvent.findById(doc.eventId)
+      .select("organizerId createdBy")
+      .lean();
+    eventEligible =
+      Boolean(attendee) ||
+      String(event?.organizerId || event?.createdBy || "") === userId;
   }
 
   let passwordOk = false;
@@ -1096,6 +1239,10 @@ export async function joinParty(
 
   const alreadyMember = rp.members.some((m) => m.userId === userId);
   if (alreadyMember) {
+    const reservation = await reserveActiveMembership(userId, partyId);
+    if (reservation === "conflict") {
+      return { error: "You are already joining another party. Try again.", status: 400 };
+    }
     await setPresenceParty(userId, { partyId: String(doc._id), gameSlug: String(doc.gameSlug) });
     return {
       party: await partyPayloadForDoc(doc.toObject()),
@@ -1104,7 +1251,14 @@ export async function joinParty(
     };
   }
 
-  const check = canJoinParty(rp, userId, isFriend || hasInvite, passwordOk);
+  const check = canJoinParty(
+    rp,
+    userId,
+    isFriend || hasInvite,
+    passwordOk,
+    hasInvite,
+    eventEligible
+  );
   if (!check.ok) return { error: check.reason || "Cannot join", status: 403 };
 
   /*
@@ -1124,6 +1278,10 @@ export async function joinParty(
   if (!seat.ok) return { error: seat.reason || "Party is full", status: 403 };
 
   const now = new Date();
+  const reservation = await reserveActiveMembership(userId, partyId);
+  if (reservation === "conflict") {
+    return { error: "You are already joining another party. Try again.", status: 400 };
+  }
 
   /*
    * The membership check and the write have to be one operation.
@@ -1139,7 +1297,12 @@ export async function joinParty(
    */
   const userIdObj = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : null;
   const claimed = await Party.updateOne(
-    { _id: doc._id, "members.userId": { $nin: userIdObj ? [userId, userIdObj] : [userId] } },
+    {
+      _id: doc._id,
+      status: { $nin: ["ended", "launching", "playing"] },
+      "members.userId": { $nin: userIdObj ? [userId, userIdObj] : [userId] },
+      $expr: { $lt: [{ $size: "$members" }, "$maxSize"] },
+    },
     {
       $push: { members: { userId: userIdObj || userId, role: "member", ready: false, joinedAt: now } },
       $set: { lastActivity: now },
@@ -1152,9 +1315,26 @@ export async function joinParty(
    * anything else would surface a scary message for a duplicate click.
    */
   const refreshed = await Party.findById(partyId);
-  if (!refreshed) return { error: "Party not found", status: 404 };
+  if (!refreshed) {
+    if (reservation === "claimed") await releaseActiveMembership(userId, partyId);
+    return { error: "Party not found", status: 404 };
+  }
   if (!claimed.modifiedCount) {
-    console.warn(`[party] duplicate join ignored for ${userId} in ${partyId}`);
+    const joined = refreshed.members.some(
+      (member: { userId: unknown }) => String(member.userId) === userId
+    );
+    if (!joined) {
+      if (reservation === "claimed") await releaseActiveMembership(userId, partyId);
+      return {
+        error:
+          refreshed.status === "ended" ||
+          refreshed.status === "launching" ||
+          refreshed.status === "playing"
+            ? "Party is not accepting members"
+            : "Party is full",
+        status: 403,
+      };
+    }
   }
   doc = refreshed;
 
@@ -1186,7 +1366,7 @@ export async function joinParty(
 export async function leaveParty(
   partyId: string,
   userId: string
-): Promise<{ party: PartyPayload | null; status: 200 } | { error: string; status: 400 | 404 }> {
+): Promise<{ party: null; status: 200 } | { error: string; status: 400 | 404 }> {
   await dbConnect();
 
   const doc = await Party.findById(partyId);
@@ -1196,85 +1376,123 @@ export async function leaveParty(
   const check = canLeaveParty(rp, userId);
   if (!check.ok) return { error: check.reason || "Cannot leave", status: 400 };
 
+  const newLeaderId = rp.leaderId === userId ? nextLeader(rp.members, userId) : rp.leaderId;
+  if (
+    rp.leaderId === userId &&
+    newLeaderId &&
+    (doc.status === "launching" || doc.status === "playing")
+  ) {
+    return { error: "End the current game before transferring the host", status: 400 };
+  }
+
   const now = new Date();
-  doc.members = doc.members.filter(
-    (m: { userId: unknown }) => String(m.userId) !== userId
+  const updated = await Party.findOneAndUpdate(
+    {
+      _id: doc._id,
+      leaderId: doc.leaderId,
+      "members.userId": Types.ObjectId.isValid(userId)
+        ? new Types.ObjectId(userId)
+        : userId,
+    },
+    [
+      {
+        $set: {
+          members: {
+            $map: {
+              input: {
+                $filter: {
+                  input: "$members",
+                  as: "member",
+                  cond: { $ne: [{ $toString: "$$member.userId" }, userId] },
+                },
+              },
+              as: "member",
+              in: {
+                $mergeObjects: [
+                  "$$member",
+                  {
+                    role: newLeaderId
+                      ? {
+                          $cond: [
+                            { $eq: [{ $toString: "$$member.userId" }, newLeaderId] },
+                            "leader",
+                            "member",
+                          ],
+                        }
+                      : "member",
+                  },
+                ],
+              },
+            },
+          },
+          ...(newLeaderId && { leaderId: new Types.ObjectId(newLeaderId) }),
+          lastActivity: now,
+        },
+      },
+      {
+        $set: {
+          status: {
+            $cond: [
+              { $eq: [{ $size: "$members" }, 0] },
+              "ended",
+              {
+                $cond: [
+                  { $in: ["$status", ["launching", "playing"]] },
+                  "$status",
+                  {
+                    $cond: [
+                      {
+                        $allElementsTrue: [
+                          { $map: { input: "$members", as: "member", in: "$$member.ready" } },
+                        ],
+                      },
+                      "ready",
+                      "forming",
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+          endedAt: {
+            $cond: [{ $eq: [{ $size: "$members" }, 0] }, now, "$endedAt"],
+          },
+        },
+      },
+    ],
+    { new: true }
   );
-  doc.lastActivity = now;
-
-  // Leadership handoff.
-  if (rp.leaderId === userId) {
-    const newLeaderId = nextLeader(rp.members, userId);
-    if (newLeaderId) {
-      doc.leaderId = newLeaderId;
-      const leaderMember = doc.members.find(
-        (m: { userId: unknown }) => String(m.userId) === newLeaderId
-      );
-      if (leaderMember) leaderMember.role = "leader";
-    } else {
-      // Last person leaving — end the party.
-      doc.status = "ended";
-      doc.endedAt = now;
-      await releasePartyHost(doc);
-      await releasePartyLan(doc);
-      await doc.save();
-      await setPresenceParty(userId, { partyId: null });
-      await clearPresenceForParty(String(doc._id));
-      await cleanupPartyDiscordVoice(doc);
-      trackPartyEvent("party_left", {
-        partyId: String(doc._id),
-        gameSlug: String(doc.gameSlug || "") || null,
-        userId,
-        ended: true,
-      });
-      trackPartyEvent("party_ended", {
-        partyId: String(doc._id),
-        gameSlug: String(doc.gameSlug || "") || null,
-        userId,
-        reason: "last_member",
-      });
-      return { party: null, status: 200 };
-    }
+  if (!updated) {
+    return { error: "Party changed while leaving. Try again.", status: 400 };
   }
 
-  // Re-derive status.
-  const newRp = toRuleParty(doc.toObject());
-  doc.status = derivePartyStatus(doc.status as PartyStatus, newRp.members);
-  if (doc.members.length === 0) {
-    doc.status = "ended";
-    doc.endedAt = now;
-  }
-
-  if (doc.status === "ended") {
-    await releasePartyHost(doc);
-    await releasePartyLan(doc);
-  }
-  await doc.save();
+  await releaseActiveMembership(userId, partyId);
   await setPresenceParty(userId, { partyId: null });
-  if (doc.status === "ended") {
-    await clearPresenceForParty(String(doc._id));
-    await cleanupPartyDiscordVoice(doc);
+  if (updated.status === "ended") {
+    await releasePartyHost(updated);
+    await releasePartyLan(updated);
+    await updated.save();
+    await releasePartyMemberships(partyId);
+    await clearPresenceForParty(String(updated._id));
+    await cleanupPartyDiscordVoice(updated);
   }
 
-  const leftParty = await partyPayloadForDoc(doc.toObject());
+  const leftParty = await partyPayloadForDoc(updated.toObject());
   trackPartyEvent("party_left", {
-    partyId: String(doc._id),
+    partyId: String(updated._id),
     gameSlug: leftParty.gameSlug || null,
     userId,
-    ended: doc.status === "ended",
+    ended: updated.status === "ended",
   });
-  if (doc.status === "ended") {
+  if (updated.status === "ended") {
     trackPartyEvent("party_ended", {
-      partyId: String(doc._id),
+      partyId: String(updated._id),
       gameSlug: leftParty.gameSlug || null,
       userId,
       reason: "empty",
     });
   }
-  return {
-    party: leftParty,
-    status: 200,
-  };
+  return { party: null, status: 200 };
 }
 
 /**
@@ -1384,18 +1602,57 @@ export async function removeMember(
   if (!check.ok) return { error: check.reason || "Cannot remove", status: 403 };
 
   const now = new Date();
-  doc.members = doc.members.filter(
-    (m: { userId: unknown }) => String(m.userId) !== targetId
+  const updated = await Party.findOneAndUpdate(
+    {
+      _id: doc._id,
+      leaderId: Types.ObjectId.isValid(actorId) ? new Types.ObjectId(actorId) : actorId,
+      "members.userId": Types.ObjectId.isValid(targetId)
+        ? new Types.ObjectId(targetId)
+        : targetId,
+    },
+    [
+      {
+        $set: {
+          members: {
+            $filter: {
+              input: "$members",
+              as: "member",
+              cond: { $ne: [{ $toString: "$$member.userId" }, targetId] },
+            },
+          },
+          lastActivity: now,
+        },
+      },
+      {
+        $set: {
+          status: {
+            $cond: [
+              { $in: ["$status", ["launching", "playing"]] },
+              "$status",
+              {
+                $cond: [
+                  {
+                    $allElementsTrue: [
+                      { $map: { input: "$members", as: "member", in: "$$member.ready" } },
+                    ],
+                  },
+                  "ready",
+                  "forming",
+                ],
+              },
+            ],
+          },
+        },
+      },
+    ],
+    { new: true }
   );
-  doc.lastActivity = now;
-
-  const newRp = toRuleParty(doc.toObject());
-  doc.status = derivePartyStatus(doc.status as PartyStatus, newRp.members);
-  await doc.save();
+  if (!updated) return { error: "Party changed while removing that member", status: 400 };
+  await releaseActiveMembership(targetId, partyId);
   await setPresenceParty(targetId, { partyId: null });
 
   return {
-    party: await partyPayloadForDoc(doc.toObject()),
+    party: await partyPayloadForDoc(updated.toObject()),
     status: 200,
   };
 }
@@ -1415,6 +1672,9 @@ export async function transferLeadership(
   if (String(doc.leaderId) !== currentLeaderId) {
     return { error: "Only the current leader can transfer leadership", status: 403 };
   }
+  if (doc.status === "launching" || doc.status === "playing") {
+    return { error: "End the current game before transferring the host", status: 400 };
+  }
 
   const targetMember = doc.members.find(
     (m: { userId: unknown }) => String(m.userId) === newLeaderId
@@ -1424,20 +1684,53 @@ export async function transferLeadership(
   }
 
   const now = new Date();
-  // Demote current leader.
-  const oldLeaderMember = doc.members.find(
-    (m: { userId: unknown }) => String(m.userId) === currentLeaderId
+  const updated = await Party.findOneAndUpdate(
+    {
+      _id: doc._id,
+      leaderId: Types.ObjectId.isValid(currentLeaderId)
+        ? new Types.ObjectId(currentLeaderId)
+        : currentLeaderId,
+      "members.userId": Types.ObjectId.isValid(newLeaderId)
+        ? new Types.ObjectId(newLeaderId)
+        : newLeaderId,
+      status: { $nin: ["launching", "playing", "ended"] },
+    },
+    [
+      {
+        $set: {
+          leaderId: new Types.ObjectId(newLeaderId),
+          members: {
+            $map: {
+              input: "$members",
+              as: "member",
+              in: {
+                $mergeObjects: [
+                  "$$member",
+                  {
+                    role: {
+                      $cond: [
+                        { $eq: [{ $toString: "$$member.userId" }, newLeaderId] },
+                        "leader",
+                        "member",
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+          lastActivity: now,
+        },
+      },
+    ],
+    { new: true }
   );
-  if (oldLeaderMember) oldLeaderMember.role = "member";
-
-  // Promote new leader.
-  targetMember.role = "leader";
-  doc.leaderId = newLeaderId;
-  doc.lastActivity = now;
-  await doc.save();
+  if (!updated) {
+    return { error: "Party changed while transferring leadership", status: 400 };
+  }
 
   return {
-    party: await partyPayloadForDoc(doc.toObject()),
+    party: await partyPayloadForDoc(updated.toObject()),
     status: 200,
   };
 }
@@ -1677,19 +1970,17 @@ export async function setPartyCouchSession(
       doc.couch.joinUrl = null;
     } else {
       const joinCode = typeof o.joinCode === "string" ? o.joinCode.trim() : "";
-      const joinUrl = typeof o.joinUrl === "string" ? o.joinUrl.trim() : "";
       // Codes come from createCouchSession; anything else is a client bug or a
       // forged call, and a bad code would send the whole party to a dead page.
       if (!/^[A-Za-z0-9-]{4,16}$/.test(joinCode)) {
         return { error: "That couch code is not valid.", status: 400 };
       }
-      if (joinUrl && !/^https:\/\/[^\s]{1,300}$/.test(joinUrl)) {
-        return { error: "That couch link is not valid.", status: 400 };
-      }
       doc.couch.status = "ready";
       doc.couch.error = null;
       doc.couch.joinCode = joinCode;
-      doc.couch.joinUrl = joinUrl || null;
+      // Never persist a launcher-supplied URL. Even the leader is not allowed
+      // to turn a party response into an arbitrary phishing link.
+      doc.couch.joinUrl = `${SITE_URL}/c/${encodeURIComponent(joinCode)}`;
       doc.couch.startedAt = new Date();
     }
   }
@@ -1915,7 +2206,8 @@ export async function setPartyName(
 export async function setVisibility(
   partyId: string,
   leaderId: string,
-  visibility: PartyVisibility
+  visibility: PartyVisibility,
+  password?: string
 ): Promise<{ party: PartyPayload; status: 200 } | { error: string; status: 400 | 403 | 404 }> {
   await dbConnect();
 
@@ -1928,7 +2220,20 @@ export async function setVisibility(
   if (doc.status === "ended") {
     return { error: "Party has ended", status: 400 };
   }
+  if (doc.eventId && visibility !== "event") {
+    return { error: "Event parties must stay on event visibility", status: 400 };
+  }
 
+  if (visibility === "password") {
+    if (String(password || "").length < 4) {
+      return { error: "Password must be at least 4 characters", status: 400 };
+    }
+    doc.passwordSalt = randomBytes(16).toString("hex");
+    doc.passwordHash = hashPartyPassword(String(password), doc.passwordSalt);
+  } else {
+    doc.passwordSalt = null;
+    doc.passwordHash = null;
+  }
   doc.visibility = visibility;
   doc.lastActivity = new Date();
   await doc.save();
@@ -1957,23 +2262,61 @@ export async function setReady(
     return { error: "Cannot change ready state now", status: 400 };
   }
 
-  const member = doc.members.find(
-    (m: { userId: unknown }) => String(m.userId) === userId
+  const memberId = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : userId;
+  if (!doc.members.some((member: { userId: unknown }) => String(member.userId) === userId)) {
+    return { error: "Not in this party", status: 400 };
+  }
+
+  const now = new Date();
+  const updated = await Party.findOneAndUpdate(
+    {
+      _id: doc._id,
+      status: { $in: ["forming", "ready"] },
+      gameSlug: { $ne: "" },
+      "members.userId": memberId,
+    },
+    [
+      {
+        $set: {
+          members: {
+            $map: {
+              input: "$members",
+              as: "member",
+              in: {
+                $cond: [
+                  { $eq: [{ $toString: "$$member.userId" }, userId] },
+                  { $mergeObjects: ["$$member", { ready }] },
+                  "$$member",
+                ],
+              },
+            },
+          },
+          lastActivity: now,
+        },
+      },
+      {
+        $set: {
+          status: {
+            $cond: [
+              {
+                $allElementsTrue: [
+                  { $map: { input: "$members", as: "member", in: "$$member.ready" } },
+                ],
+              },
+              "ready",
+              "forming",
+            ],
+          },
+        },
+      },
+    ],
+    { new: true }
   );
-  if (!member) return { error: "Not in this party", status: 400 };
-
-  member.ready = ready;
-  doc.lastActivity = new Date();
-
-  // Auto-derive status: forming ↔ ready.
-  const rp = toRuleParty(doc.toObject());
-  doc.status = derivePartyStatus(doc.status as PartyStatus, rp.members);
-
-  await doc.save();
-  await maybeProvisionPartyConnect(doc);
+  if (!updated) return { error: "Party changed while updating readiness", status: 400 };
+  await maybeProvisionPartyConnect(updated);
 
   return {
-    party: await partyPayloadForDoc(doc.toObject()),
+    party: await partyPayloadForDoc(updated.toObject()),
     status: 200,
   };
 }
@@ -2206,7 +2549,9 @@ export async function markSelfHostReady(
   if (resolvedHostMode(String(doc.gameSlug || ""), doc.hostMode, doc.hosted) !== "self") {
     return { error: "Party is not self-hosted", status: 400 };
   }
-  if (doc.status === "ended") return { error: "Party has ended", status: 400 };
+  if (doc.status !== "launching") {
+    return { error: "The party must be launching before the host can become ready", status: 400 };
+  }
   doc.selfHostReady = true;
   doc.selfHostReadyAt = new Date();
   doc.status = "playing";
@@ -2236,6 +2581,7 @@ export async function endParty(
   await releasePartyHost(doc);
   await releasePartyLan(doc);
   await doc.save();
+  await releasePartyMemberships(partyId);
   await clearPresenceForParty(String(doc._id));
   await cleanupPartyDiscordVoice(doc);
   trackPartyEvent("party_ended", {
@@ -2253,11 +2599,21 @@ export async function endParty(
 export async function getParty(
   partyId: string,
   viewerUserId?: string
-): Promise<{ party: PartyPayload; status: 200 } | { error: string; status: 404 }> {
+): Promise<
+  { party: PartyPayload; status: 200 } | { error: string; status: 403 | 404 }
+> {
   await dbConnect();
 
   const doc = await Party.findById(partyId).lean();
   if (!doc) return { error: "Party not found", status: 404 };
+  if (
+    !viewerUserId ||
+    !(doc.members as Array<{ userId: unknown }>).some(
+      (member) => String(member.userId) === viewerUserId
+    )
+  ) {
+    return { error: "Party membership required", status: 403 };
+  }
 
   return {
     party: await attachConfigSync(
@@ -2338,7 +2694,7 @@ export async function listPartiesForUser(
 
 export async function listDiscoverableParties(
   userId: string
-): Promise<PartyPayload[]> {
+): Promise<PublicPartyPayload[]> {
   await dbConnect();
 
   const friendIds = await acceptedFriendIds(userId);
@@ -2374,7 +2730,8 @@ export async function listDiscoverableParties(
       )
   );
 
-  return serializePartyDocs(filtered as Array<Record<string, unknown>>);
+  const parties = await serializePartyDocs(filtered as Array<Record<string, unknown>>);
+  return parties.map(toPublicPartyPayload);
 }
 
 const OPEN_PARTY_STATUSES = ["forming", "ready", "playing"] as const;
@@ -2428,7 +2785,9 @@ async function serializePartyDocs(
 }
 
 /** Public, joinable parties — waiting for players or in-progress with space. */
-export async function listOpenPublicParties(limit = 50): Promise<PartyPayload[]> {
+export async function listOpenPublicParties(
+  limit = 50
+): Promise<PublicPartyPayload[]> {
   try {
     await dbConnect();
     const docs = await Party.find({
@@ -2445,7 +2804,10 @@ export async function listOpenPublicParties(limit = 50): Promise<PartyPayload[]>
       const maxSize = (d.maxSize as number) || PARTY_MAX_SIZE;
       return members.length < maxSize;
     });
-    return serializePartyDocs(open.slice(0, limit) as Array<Record<string, unknown>>);
+    const parties = await serializePartyDocs(
+      open.slice(0, limit) as Array<Record<string, unknown>>
+    );
+    return parties.map(toPublicPartyPayload);
   } catch (err) {
     console.error("listOpenPublicParties failed:", err);
     return [];
@@ -2909,6 +3271,8 @@ export async function sweepStaleParties(now = new Date()) {
     await releasePartyHost(doc);
     await releasePartyLan(doc);
     await doc.save();
+    await releasePartyMemberships(String(doc._id));
+    await clearPresenceForParty(String(doc._id));
     await cleanupPartyDiscordVoice(doc);
     ended += 1;
   }

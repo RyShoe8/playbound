@@ -74,8 +74,9 @@ function decodeFrames(buffer, onText) {
 
 /**
  * @param {(socket: { send: (s: string) => void, close: () => void }, msg: string) => void} onMessage
+ * @param {{ verifyUpgrade?: (req: import("http").IncomingMessage) => boolean }} [opts]
  */
-function createPlainWebSocketServer(onMessage) {
+function createPlainWebSocketServer(onMessage, opts = {}) {
   const server = http.createServer((_req, res) => {
     res.writeHead(200, { "Content-Type": "text/plain" });
     res.end("PlayBound Couch Input");
@@ -84,6 +85,11 @@ function createPlainWebSocketServer(onMessage) {
   server.on("upgrade", (req, socket) => {
     const key = req.headers["sec-websocket-key"];
     if (!key) {
+      socket.destroy();
+      return;
+    }
+    if (typeof opts.verifyUpgrade === "function" && !opts.verifyUpgrade(req)) {
+      socket.write("HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n");
       socket.destroy();
       return;
     }
