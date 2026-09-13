@@ -176,7 +176,9 @@ export function PartyView({
         .filter((g) => supportsLauncherParty(g))
         .filter((g) => mode === "all" || isGameCompatible(g, device.type))
         .filter((g) => fitsPartySize(g.maxPlayers, party.members?.length || 1))
-        .filter((g) => !couchCoopFilter || couchSlugs.has(g.slug)),
+        .filter((g) =>
+          couchCoopFilter ? couchSlugs.has(g.slug) : !couchSlugs.has(g.slug)
+        ),
       party.requiredPlatforms || []
     );
   }, [
@@ -328,13 +330,22 @@ export function PartyView({
      * Online local-co-op: members open the controller join URL instead of
      * launching their own game copy.
      */
-    if (party.couch?.enabled && !isLeader) {
+    if (couchCoopFilter && party.couch?.enabled && !isLeader) {
       e?.preventDefault();
-      const base =
+      let base =
         actions.couch?.joinUrl ||
         party.couch.joinUrl ||
         (party.couch.joinCode ? `https://playbound.club/c/${party.couch.joinCode}` : "");
       if (!base) return;
+      try {
+        const u = new URL(base);
+        if (u.protocol === "http:") {
+          u.protocol = "https:";
+          base = u.toString();
+        }
+      } catch {
+        if (base.startsWith("http://")) base = `https://${base.slice(7)}`;
+      }
       const sep = base.includes("?") ? "&" : "?";
       const url = `${base}${sep}view=game`;
       window.open(url, "playbound-game-view", "noopener,noreferrer");
@@ -517,7 +528,7 @@ export function PartyView({
                   title={
                     couchCoopFilter
                       ? "Showing couch co-op games only"
-                      : "Showing all multiplayer games"
+                      : "Showing online multiplayer games only"
                   }
                 >
                   <option value="online">Online</option>
@@ -970,11 +981,12 @@ export function PartyView({
               </ol>
             )}
 
-          {actions.couch &&
+          {couchCoopFilter &&
+            actions.couch &&
             (actions.couch.status === "ready" && actions.couch.joinCode ? (
               <div className="w-full space-y-2 self-start">
                 <p className="text-sm font-semibold">
-                  Join online · code {actions.couch.joinCode}
+                  Join couch co-op · code {actions.couch.joinCode}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Open the game view in a separate window (keyboard &amp; mouse by default). Phones
@@ -986,9 +998,18 @@ export function PartyView({
                       type="button"
                       className={partyButtonClass("primary")}
                       onClick={() => {
-                        const base =
+                        let base =
                           actions.couch!.joinUrl ||
                           `https://playbound.club/c/${actions.couch!.joinCode}`;
+                        try {
+                          const u = new URL(base);
+                          if (u.protocol === "http:") {
+                            u.protocol = "https:";
+                            base = u.toString();
+                          }
+                        } catch {
+                          if (base.startsWith("http://")) base = `https://${base.slice(7)}`;
+                        }
                         const sep = base.includes("?") ? "&" : "?";
                         const url = `${base}${sep}view=game`;
                         const w = Math.max(1024, Math.floor(window.screen.availWidth * 0.92));

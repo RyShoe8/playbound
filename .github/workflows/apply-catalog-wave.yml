@@ -1,11 +1,25 @@
 # Catalog wave apply.
 # Never runs seed:editions / seed:mods / seed:launcher-install / sync-single-game.
 # Writes only allowlisted inserts plus named field patches from insert:catalog-wave.
+#
+# This is how allowlisted catalog changes reach production Mongo.
+# Do not apply catalog waves from a local machine (no env pull, no vercel env run).
 
 name: Apply catalog wave
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "platform/scripts/insert-catalog-wave.allowlist.ts"
+      - "platform/scripts/insert-catalog-wave.ts"
+      - "platform/scripts/migrate-cop-anomaly-to-stalker-anomaly.ts"
+      - "platform/src/lib/data/games.ts"
+      - "platform/src/lib/data/editions.ts"
+      - "platform/src/lib/data/editorial.ts"
+      - "platform/src/lib/data/mods.ts"
+      - ".github/workflows/apply-catalog-wave.yml"
 
 jobs:
   apply:
@@ -43,6 +57,12 @@ jobs:
       - name: Insert / field-patch allowlisted catalog rows
         if: steps.check_mongo.outputs.has_mongo == 'true'
         run: npm run insert:catalog-wave
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+
+      - name: Migrate CoP anomaly library/party rows to stalker-anomaly
+        if: steps.check_mongo.outputs.has_mongo == 'true'
+        run: npm run migrate:cop-anomaly-to-stalker-anomaly:apply
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
 

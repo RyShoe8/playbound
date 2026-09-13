@@ -1,5 +1,6 @@
 /**
- * Catalog wave — runs on deploy (`npm run build` → insert:catalog-wave).
+ * Catalog wave — applied by `.github/workflows/apply-catalog-wave.yml`
+ * (`npm run insert:catalog-wave` / `postdeploy:catalog`). Not part of `build`.
  *
  * Contract:
  *   - explicit allowlists only (never the whole seed catalog)

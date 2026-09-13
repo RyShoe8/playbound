@@ -23,12 +23,15 @@ export const NEW_GAME_SLUGS: readonly string[] = [
   "srb2kart",
   "lovers-in-a-dangerous-spacetime",
   "flatout-2",
+  "stalker-anomaly",
+  "s-t-a-l-k-e-r-clear-sky",
 ];
 
 /** `gameSlug/editionSlug` pairs to create only when absent. */
 export const NEW_EDITION_KEYS: readonly string[] = [
   "s-t-a-l-k-e-r-call-of-pripyat/official",
-  "s-t-a-l-k-e-r-call-of-pripyat/anomaly",
+  "stalker-anomaly/official",
+  "s-t-a-l-k-e-r-clear-sky/official",
   "s-t-a-l-k-e-r-shadow-of-chernobyl/official",
   "s-t-a-l-k-e-r-shadow-of-chernobyl/lost-alpha",
   "s-t-a-l-k-e-r-shadow-of-chernobyl/true-stalker",
@@ -163,23 +166,23 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
 /** Existing editions: $set ONLY these fields. */
 export const PATCH_EDITION_FIELDS: Readonly<Record<string, readonly string[]>> = {
   "s-t-a-l-k-e-r-call-of-pripyat/official": ["name", "description"],
-  "s-t-a-l-k-e-r-call-of-pripyat/anomaly": [
-    "name",
-    "description",
-    "shortDescription",
-    "visibility",
-    "status",
-    "installMethod",
-    "installConfig",
-    "requirements",
-    "hardwareRequirements",
-  ],
   // OpenMW 0.51 ships Windows-x64.exe; live recipe still pointed at win64.zip.
   "morrowind/openmw": ["installConfig"],
   // Keep TES3MP desktop zip pattern in sync (VR-latest miss).
   "morrowind/tes3mp": ["installConfig"],
-  // Lost Alpha: launch XR_3DA, not the Configurator tweaker UI.
-  "s-t-a-l-k-e-r-shadow-of-chernobyl/lost-alpha": ["installMethod", "installConfig"],
+  // Lost Alpha / True Stalker: Standalone labeling (+ Lost Alpha XR_3DA launch).
+  "s-t-a-l-k-e-r-shadow-of-chernobyl/lost-alpha": [
+    "name",
+    "description",
+    "shortDescription",
+    "installMethod",
+    "installConfig",
+  ],
+  "s-t-a-l-k-e-r-shadow-of-chernobyl/true-stalker": [
+    "name",
+    "description",
+    "shortDescription",
+  ],
   // Dune Legacy: SourceForge 0.99.4 path 404s; use 0.98.0aplpha/0.99.5 with PAKs.
   "dune-legacy/modern-engine": ["installConfig"],
   "dune-legacy/playbound-edition": ["installConfig"],
@@ -188,11 +191,12 @@ export const PATCH_EDITION_FIELDS: Readonly<Record<string, readonly string[]>> =
 /**
  * Existing editions to retire (hide from public listings). $set only
  * visibility + status — never delete, never upsert.
- * Anomaly is restored this wave (see NEW_EDITION_KEYS + PATCH_EDITION_FIELDS).
+ * CoP/anomaly moves to game stalker-anomaly; seed no longer rematerializes it.
  */
 export const RETIRE_EDITION_KEYS: readonly string[] = [
   "s-t-a-l-k-e-r-call-of-pripyat/gamma",
   "s-t-a-l-k-e-r-call-of-pripyat/gunslinger",
+  "s-t-a-l-k-e-r-call-of-pripyat/anomaly",
 ];
 
 /**

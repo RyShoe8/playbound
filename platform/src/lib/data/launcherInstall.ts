@@ -1562,6 +1562,27 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
       "Lost Alpha DC",
       "Lost Alpha",
     ],
-    note: "Install standalone Lost Alpha Developer's Cut from ModDB (~9.5 GB). PlayBound launches bins\\XR_3DA.exe.",
+    note:
+      "Legacy alias only — Lost Alpha is the SoC edition lost-alpha, not a CatalogGame. Install standalone Lost Alpha Developer's Cut from ModDB (~9.5 GB). PlayBound launches bins\\XR_3DA.exe.",
+  },
+  "stalker-anomaly": {
+    enabled: true,
+    kind: "external",
+    url: "https://www.moddb.com/mods/stalker-anomaly",
+    exeHint: "AnomalyDX11EXE|AnomalyDX9EXE|AnomalyLauncher",
+    knownExePaths: [
+      "bin\\AnomalyDX11EXE.exe",
+      "bin\\AnomalyDX9EXE.exe",
+      "AnomalyLauncher.exe",
+      "AnomalyDX11EXE.exe",
+    ],
+    note: "Standalone ModDB install — no Call of Pripyat GOG copy required.",
+  },
+  "s-t-a-l-k-e-r-clear-sky": {
+    enabled: true,
+    kind: "external",
+    url: "https://www.gog.com/en/game/stalker_clear_sky",
+    knownExePaths: ["bin\\xrEngine.exe", "xrEngine.exe"],
+    note: "Uses GOG's DRM-free offline installer.",
   },
 };

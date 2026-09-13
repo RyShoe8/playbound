@@ -1496,6 +1496,7 @@ let partyGamesCache = null;
 let partyGamesCacheKey = null;
 /** Party game picker: true = couch only; false = online multiplayer list. */
 let partyCouchCoopFilter = false;
+let partyCouchFilterExplicit = false;
 /** Blocks poll repaints from undoing an in-flight party game pick. */
 let partyMutationInFlight = 0;
 
@@ -1587,10 +1588,10 @@ function partyGameOptionsHtml(selectedSlug, party) {
     .filter((g) => partyCanAllPlay(g, required))
     .filter((g) => fitsPartySize(g.maxPlayers, memberCount))
     /*
-     * Couch Multiplayer Type → only Connect/local couch titles. Online → every
-     * party game, including TMNT/X-Men (couch engines that also play via Connect).
+     * Couch Multiplayer Type → only Connect/local couch titles. Online → only
+     * online multiplayer titles (excluding couch-only games like TMNT/X-Men).
      */
-    .filter((g) => !partyCouchCoopFilter || couchOnly.has(g.slug));
+    .filter((g) => (partyCouchCoopFilter ? couchOnly.has(g.slug) : !couchOnly.has(g.slug)));
   const options = [`<option value="">Select a game</option>`];
   for (const g of games) {
     const label = partyGameOptionLabel(g.title, {
@@ -1866,6 +1867,12 @@ function buildPartyViewHtml(party) {
          </div>`
       : "";
 
+  const couchOnly = new Set(party.couchOnlyGames || []);
+  const isCurrentGameCouchOnly = Boolean(party.gameSlug && couchOnly.has(party.gameSlug));
+  if (isCurrentGameCouchOnly && !partyCouchFilterExplicit) {
+    partyCouchCoopFilter = true;
+  }
+
   const multiplayerTypeHtml =
     isLeader && !ended
       ? `<div class="party-field-group">
@@ -1873,7 +1880,7 @@ function buildPartyViewHtml(party) {
            <select class="input-text party-multiplayer-type-select" id="party-multiplayer-type-select" aria-label="Multiplayer Type" title="${
              partyCouchCoopFilter
                ? "Showing couch co-op games only"
-               : "Showing all multiplayer games"
+               : "Showing online multiplayer games only"
            }">
              <option value="online"${partyCouchCoopFilter ? "" : " selected"}>Online</option>
              <option value="couch"${partyCouchCoopFilter ? " selected" : ""}>Couch</option>
@@ -1930,7 +1937,12 @@ function buildPartyViewHtml(party) {
    * button and this picks between them — rather than writing its own labels,
    * which is how the two panels forked in the first place.
    */
-  const isCouchMode = Boolean(party.couch?.enabled || party.hostMode === "couch");
+  /*
+   * Couch join code / QR only when Multiplayer Type = Couch. Server hostMode
+   * stays "couch" for titles like TMNT even when the leader is browsing Online,
+   * and that must not keep the couch panel on screen.
+   */
+  const isCouchMode = Boolean(partyCouchCoopFilter);
   const autoJoinArmed = pendingJoin?.partyId === party.id && !ended;
   const joinBtn = actions ? (autoJoinArmed ? actions.joinArmed : actions.join) : null;
   const joinGameHtml = joinBtn && joinBtn.visible
@@ -2033,10 +2045,11 @@ function buildPartyViewHtml(party) {
    * The one thing a couch party needs on screen: the join link for remotes.
    * The leader's launcher publishes the code when it starts the session, so until
    * then members are told what is about to happen rather than shown nothing.
+   * Multiplayer Type (client filter) gates this — not server hostMode alone.
    */
   // Code, link and the what-happens-next line all come from actions.couch.
-  const couchPanel = actions ? actions.couch : null;
-  const couchHtml = !couchPanel
+  const couchPanel = isCouchMode && actions ? actions.couch : null;
+  const couchHtml = !isCouchMode || !couchPanel
     ? ""
     : couchPanel.status === "ready" && couchPanel.joinCode
     ? `<div class="party-couch">
@@ -2964,9 +2977,24 @@ function applyPartyResult(res, fallbackMessage) {
     setStatus(res?.error || fallbackMessage, true);
     return false;
   }
-  const slot = document.getElementById("friends-party-area");
-  if (slot) slot.dataset.sig = "";
-  blurPartyFocus();
+  /*
+   * Prefer the mutation payload over the next poll. Waiting on refresh alone
+   * left lastMyParties on the pre-pick party, so sticky empties (~15s) briefly
+   * wiped the game the host just selected.
+   */
+  if (res.party?.id) {
+    state._activeParty = res.party;
+    lastMyParties = [res.party];
+    emptyMyPartiesStreak = 0;
+    const slot = document.getElementById("friends-party-area");
+    if (slot) slot.dataset.sig = "";
+    blurPartyFocus();
+    paintPartyArea({ myParties: [res.party], discoverable: [] }, { force: true });
+  } else {
+    const slot = document.getElementById("friends-party-area");
+    if (slot) slot.dataset.sig = "";
+    blurPartyFocus();
+  }
   void api.refreshFriendsData();
   return true;
 }
@@ -2991,6 +3019,7 @@ function wirePartyView(slot, party) {
   if (multiplayerType) {
     multiplayerType.addEventListener("change", () => {
       partyCouchCoopFilter = multiplayerType.value === "couch";
+      partyCouchFilterExplicit = true;
       slot.dataset.sig = "";
       paintPartyArea({ myParties: [state._activeParty], discoverable: [] }, { force: true });
     });
@@ -3009,19 +3038,23 @@ function wirePartyView(slot, party) {
           gameTitle: pickedTitle,
           editionSlug: null,
           modSlugs: [],
+          // Clear stale sync until the API returns a fresh check.
+          configSync: null,
         };
+        lastMyParties = [state._activeParty];
+        emptyMyPartiesStreak = 0;
         slot.dataset.sig = "";
         paintPartyArea({ myParties: [state._activeParty], discoverable: [] }, { force: true });
       }
       try {
         const res = await window.playbound.setPartyGame(partyId, slug);
-        partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
         applyPartyResult(res, "Couldn't set the party game.");
         void window.playbound.syncLibraryNow?.({ quiet: true });
       } catch (err) {
-        partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
         setStatus(err.message || "Couldn't set the party game.", true);
         void api.refreshFriendsData();
+      } finally {
+        partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
       }
     });
     enhanceSelect(gameSelect);
@@ -3171,12 +3204,15 @@ function wirePartyView(slot, party) {
       if (joinInFlight) return;
       /*
        * Online local-co-op: members join by opening the controller link, not by
-       * launching a second copy of the game on their PC.
+       * launching a second copy of the game on their PC. Only when Multiplayer
+       * Type is Couch (filter) — TMNT stays hostMode=couch under Online too.
        */
       const couch = party.couch || {};
-      const hasCouchStream = Boolean(couch.enabled || party.hostMode === "couch");
+      const hasCouchStream = Boolean(
+        partyCouchCoopFilter && (couch.enabled || party.hostMode === "couch")
+      );
       if (hasCouchStream && !isLeader) {
-        const base =
+        let base =
           party.actions?.couch?.joinUrl ||
           couch.joinUrl ||
           (couch.joinCode ? `https://playbound.club/c/${couch.joinCode}` : "");
@@ -3184,11 +3220,25 @@ function wirePartyView(slot, party) {
           setStatus("Waiting for the host to start online multiplayer…");
           return;
         }
+        // Always HTTPS — http join URLs show Chrome "Not secure" and break mixed content.
+        try {
+          const u = new URL(base);
+          if (u.protocol === "http:") {
+            u.protocol = "https:";
+            base = u.toString();
+          }
+        } catch {
+          if (base.startsWith("http://")) base = `https://${base.slice(7)}`;
+        }
         // Game view only — no phone-controller chrome. PC vs phone is asked in that window.
         const sep = base.includes("?") ? "&" : "?";
         const url = `${base}${sep}view=game`;
-        const opened = window.open(url, "playbound-game-view", "noopener,noreferrer");
-        if (!opened && window.playbound.openExternal) window.playbound.openExternal(url);
+        // Prefer system browser so Electron popups cannot load as insecure/local.
+        if (window.playbound.openExternal) {
+          void window.playbound.openExternal(url);
+        } else {
+          window.open(url, "playbound-game-view", "noopener,noreferrer");
+        }
         setStatus("Opened game view — streaming game from host PC.");
         return;
       }
@@ -3992,19 +4042,24 @@ async function launchPartyGame(party) {
           slug,
           address: peerConnect?.host ? `${peerConnect.host}:${peerConnect.port}` : null,
         });
-        if (party.couch?.enabled && isLeader) {
-          // The game process is running now — capture its application window and stream to peers
-          void ensureHostDisplayStream(true).then((stream) => {
-            if (stream) {
+        if (party.couch?.enabled && isLeader && partyCouchCoopFilter) {
+          // The game process is running now — capture its application window and stream to peers.
+          // Retry: OpenBOR / fullscreen often aren't capturable for a few seconds after launch.
+          void (async () => {
+            const delays = [0, 1500, 3500, 7000];
+            for (const wait of delays) {
+              if (wait) await new Promise((r) => setTimeout(r, wait));
+              const stream = await ensureHostDisplayStream(wait > 0);
+              if (!stream) continue;
               setStatus("Sharing game view for online multiplayer…");
-              void pushHostDisplayToPeers();
-            } else {
-              setStatus(
-                "Online pads ready — run the game windowed or borderless if game view doesn't stream.",
-                true
-              );
+              const ok = await pushHostDisplayToPeers();
+              if (ok) return;
             }
-          });
+            setStatus(
+              "Online pads ready — run the game windowed or borderless if game view doesn't stream.",
+              true
+            );
+          })();
         }
         if (!(isLeader && party.hostMode === "self")) {
           setStatus(

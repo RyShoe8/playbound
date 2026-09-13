@@ -817,7 +817,16 @@ export function ControllerClient({
         <div className={hasVideo ? "pbc-gameview is-live" : "pbc-gameview"} aria-hidden={!hasVideo}>
           <video ref={bindVideoEl} className="pbc-gameview-video" playsInline muted autoPlay />
           {!hasVideo ? (
-            <p className="pbc-gameview-wait">Waiting for host game view… keys work either way</p>
+            <p className="pbc-gameview-wait">
+              Waiting for host game view…
+              {transport === "webrtc" || transport === "websocket"
+                ? " host may still be launching — keep this tab open"
+                : transport === "connecting"
+                  ? " connecting to host…"
+                  : transport === "offline"
+                    ? " can't reach host (network)"
+                    : ""}
+            </p>
           ) : null}
         </div>
         <header className="pbc-hud">
@@ -887,7 +896,16 @@ export function ControllerClient({
           autoPlay
         />
         {!hasVideo ? (
-          <p className="pbc-gameview-wait">Waiting for host game view… pads work either way</p>
+          <p className="pbc-gameview-wait">
+            Waiting for host game view…
+            {transport === "webrtc" || transport === "websocket"
+              ? " host may still be launching — keep this tab open"
+              : transport === "connecting"
+                ? " connecting to host…"
+                : transport === "offline"
+                  ? " can't reach host (network)"
+                  : ""}
+          </p>
         ) : null}
       </div>
 

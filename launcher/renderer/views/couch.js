@@ -226,21 +226,18 @@ async function attachDisplayTracks(pc) {
 /**
  * Re-push host game view onto every live peer (e.g. capture started after Join).
  * Controllers stay on recvonly; we renegotiate so late capture still lands.
+ *
+ * Always replaceTrack on the existing video transceiver when possible — a bare
+ * addTrack after the first answer often skips renegotiation when the track id
+ * already matched a dead sender, leaving joiners on "Waiting for host game view".
  */
 export async function pushHostDisplayToPeers() {
   const display = await ensureHostDisplayStream();
   if (!display || peers.size === 0) return Boolean(display);
   for (const [controllerId, pc] of peers.entries()) {
     try {
-      const senders = pc.getSenders();
-      let added = false;
-      for (const track of display.getTracks()) {
-        if (!senders.some((s) => s.track && s.track.id === track.id)) {
-          pc.addTrack(track, display);
-          added = true;
-        }
-      }
-      if (!added) continue;
+      const attached = await attachDisplayTracks(pc);
+      if (!attached) continue;
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       await pb().couchSignalPost({

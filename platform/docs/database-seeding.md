@@ -14,6 +14,32 @@ seeds on its own. The risk is only ever at write time.
 
 ---
 
+## How allowlisted catalog changes reach production
+
+**Use the GitHub Action — do not apply from a local machine.**
+
+Production Mongo credentials are not for local shells, `vercel env pull`, or
+`vercel env run`. Catalog writes that belong on an allowlist go through
+[`.github/workflows/apply-catalog-wave.yml`](../../.github/workflows/apply-catalog-wave.yml):
+
+1. Edit seed (`games.ts` / `editions.ts` / `editorial.ts` / …) and put the
+   intended inserts / field patches / edition retires on
+   `scripts/insert-catalog-wave.allowlist.ts`.
+2. Merge to `main` (or run **Actions → Apply catalog wave → Run workflow**).
+3. The workflow runs `npm run insert:catalog-wave` against the repository
+   `MONGODB_URI` secret. New games land as **draft**; publish in Admin after
+   editorial/media check.
+4. Never `POST /api/admin/games/sync` to “fix” an existing SoC/CoP (or any
+   curated) row from seed. Never `DELETE` catalog games.
+
+Pushing allowlist/seed changes to `main` triggers the workflow automatically.
+`npm run build` still writes nothing to the database — that stays intentional.
+
+Local `seed:missing-* --dry-run` is fine for reading blast radius when a
+usable URI is already in the environment. It is not the production apply path.
+
+---
+
 ## The safe scripts
 
 All three follow the same contract:
@@ -38,16 +64,19 @@ Add `--dry-run` to any of them to print what would be created without writing.
 Do that first. It costs nothing and it is the only way to see the blast radius
 before it happens.
 
-### On deploy: nothing
+### On build: nothing — on catalog wave: allowlisted writes only
 
-**A build writes nothing to the database.** `npm run build` is `next build`
+**`npm run build` writes nothing to the database.** It is `next build`
 followed by `check:auth-urls`, which only reads.
 
 It used to end with `seed:deploy`. That was appropriate while the catalog was
 still being filled in and a deploy creating an absent row was useful. The
-catalog is curated now, so the right number of rows for a build to create is
-zero — and a build that *can* write is a build that can surprise you on a day
-you were only shipping a CSS change.
+catalog is curated now, so the right number of rows for a **build** to create
+is zero — and a build that *can* write is a build that can surprise you on a
+day you were only shipping a CSS change.
+
+Allowlisted production writes use **Apply catalog wave** (see above), not
+`build`.
 
 `seed:deploy` is still defined and still works. It is a manual tool:
 
@@ -56,15 +85,15 @@ npm run seed:missing-mods -- --games <slug> --dry-run   # look first
 npm run seed:deploy                                     # then write
 ```
 
-**Do not put it back in `build`.** If you ever need seeding on deploy again,
-argue for it explicitly rather than restoring it by reflex.
+**Do not put seeding back in `build`.** Catalog-wave applies stay in the
+GitHub Action / `postdeploy:catalog` path.
 
 The `VERCEL_ENV === "production"` guard inside each script stays regardless. It
 is now a second line of defence rather than the only one, and it is worth
 keeping because preview deploys carry production's environment variables — a
 branch build would otherwise write to the live catalog.
 
-And if you ever do reintroduce a deploy-time step, do not try to guard it in
+And if you ever do reintroduce a build-time step, do not try to guard it in
 package.json. The obvious shape —
 
 ```
