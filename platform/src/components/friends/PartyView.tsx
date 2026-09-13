@@ -67,6 +67,7 @@ export type PartyGameOption = {
    */
   features?: string[];
   tags?: string[];
+  genres?: string[];
 };
 
 export function PartyView({
@@ -502,6 +503,26 @@ export function PartyView({
                 </PremiumSelect>
               </div>
             )}
+
+            {isLeader && party.status !== "ended" && (
+              <div className="w-44">
+                <label className="block text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wide">
+                  Multiplayer Type
+                </label>
+                <PremiumSelect
+                  value={couchCoopFilter ? "couch" : "online"}
+                  onChange={(e) => setCouchCoopFilter(e.target.value === "couch")}
+                  title={
+                    couchCoopFilter
+                      ? "Showing couch co-op games only"
+                      : "Showing all multiplayer games"
+                  }
+                >
+                  <option value="online">Online</option>
+                  <option value="couch">Couch</option>
+                </PremiumSelect>
+              </div>
+            )}
           </div>
         </div>
 
@@ -522,25 +543,6 @@ export function PartyView({
               */}
             {isLeader && party.status !== "ended" ? (
               <div className="max-w-[240px] space-y-2">
-                <label className="flex cursor-pointer items-center justify-between gap-3 rounded-md border border-border/80 bg-secondary/20 px-2.5 py-1.5">
-                  <span className="text-xs font-semibold text-foreground">Couch co-op</span>
-                  <input
-                    type="checkbox"
-                    className="size-4 accent-primary"
-                    checked={couchCoopFilter}
-                    onChange={(e) => setCouchCoopFilter(e.target.checked)}
-                    title={
-                      couchCoopFilter
-                        ? "Showing couch co-op games only"
-                        : "Showing all multiplayer games"
-                    }
-                  />
-                </label>
-                <p className="text-[11px] text-muted-foreground">
-                  {couchCoopFilter
-                    ? "Couch co-op only (pads on one PC, or Connect for remote pads)."
-                    : "All multiplayer games, including couch co-op with Connect."}
-                </p>
                 <label className="block">
                   <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Game
@@ -561,6 +563,7 @@ export function PartyView({
                         {partyGameOptionLabel(g.title, {
                           testing: g.status === "testing",
                           couch: couchOnly.has(g.slug),
+                          genres: g.genres,
                         })}
                       </option>
                     ))}

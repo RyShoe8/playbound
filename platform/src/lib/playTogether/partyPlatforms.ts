@@ -90,15 +90,33 @@ export function fitsPartySize(
   return seats >= need;
 }
 
-/** Option label for the party game picker (testing + couch suffixes). */
+/**
+ * Option label for the party game picker.
+ *
+ * Genres and status markers share one tag trail so Testing stands out the same
+ * way Strategy or Couch co-op does — a parenthetical "(testing)" was too easy
+ * to miss in a long select list.
+ */
 export function partyGameOptionLabel(
   title: string,
-  opts: { testing?: boolean; couch?: boolean } = {}
+  opts: {
+    testing?: boolean;
+    couch?: boolean;
+    genres?: readonly string[] | null;
+  } = {}
 ): string {
-  let label = title;
-  if (opts.testing) label = `${label} (testing)`;
-  if (opts.couch) label = `${label} (couch co-op)`;
-  return label;
+  const tags: string[] = [];
+  for (const genre of opts.genres || []) {
+    const trimmed = String(genre || "").trim();
+    if (!trimmed) continue;
+    if (tags.some((t) => t.toLowerCase() === trimmed.toLowerCase())) continue;
+    tags.push(trimmed);
+    if (tags.length >= 3) break;
+  }
+  if (opts.testing) tags.push("Testing");
+  if (opts.couch) tags.push("Couch co-op");
+  if (tags.length === 0) return title;
+  return `${title} · ${tags.join(" · ")}`;
 }
 
 /** Filter a game list down to what the whole party can run. */

@@ -45,6 +45,7 @@ const { createSaveData } = require("./services/SaveData");
 const saveLocations = require("./services/saveLocations");
 const controllerProfiles = require("./services/controllerProfiles");
 const gameControllerConfig = require("./services/gameControllerConfig");
+const openborPak = require("./services/openborPak");
 const { createCloudSaves } = require("./services/CloudSaves");
 const { createSettings } = require("./services/settings");
 const { createSecurity } = require("./services/security");
@@ -259,6 +260,14 @@ function setCatalog(next) {
   catalogIndex = null;
 }
 
+/**
+ * Legacy install keys that must resolve to a live catalog slug.
+ * Keep in sync with platform/src/lib/catalogGameAliases.ts where relevant.
+ */
+const INSTALLED_SLUG_ALIASES = {
+  "c-dogs-retrarch": "c-dogs-sdl",
+};
+
 /** The catalog entry for a slug, or null. */
 function catalogEntry(slug) {
   const key = String(slug || "");
@@ -273,7 +282,33 @@ function catalogEntry(slug) {
       }
     }
   }
-  return catalogIndex.get(key) || null;
+  return catalogIndex.get(key) || catalogIndex.get(INSTALLED_SLUG_ALIASES[key] || "") || null;
+}
+
+/**
+ * Rewrite installed.json keys that still use a renamed catalog slug so library
+ * title/cover and Play/sync hit the live entry.
+ */
+function migrateInstalledSlugAliases(state) {
+  if (!state || typeof state !== "object") return state;
+  let changed = false;
+  for (const [from, to] of Object.entries(INSTALLED_SLUG_ALIASES)) {
+    if (!Object.prototype.hasOwnProperty.call(state, from)) continue;
+    const legacy = state[from];
+    const current = state[to];
+    if (!current) {
+      state[to] = legacy;
+    } else if (legacy && typeof legacy === "object") {
+      // Prefer whichever record still has a playable install path.
+      const legacyReady = Boolean(legacy.exe || legacy.dir);
+      const currentReady = Boolean(current.exe || current.dir);
+      if (legacyReady && !currentReady) state[to] = legacy;
+    }
+    delete state[from];
+    changed = true;
+  }
+  if (changed) saveState(state);
+  return state;
 }
 
 /**
@@ -1747,7 +1782,8 @@ async function loadModIntoContext(slug) {
 
 function loadState() {
   try {
-    return JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
+    const state = JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
+    return migrateInstalledSlugAliases(state);
   } catch {
     return {};
   }
@@ -5898,13 +5934,19 @@ async function applyControllerConfig(slug, installDir) {
   const padConnected = Boolean(profile);
   if (!profile) profile = controllerProfiles.defaultProfile();
 
-  let current = "";
+  const entry = gameControllerConfig.GAMES[slug];
+  const binary = Boolean(entry?.binary);
+
+  let current;
   try {
-    current = await fsp.readFile(configPath, "utf8");
+    current = binary
+      ? await fsp.readFile(configPath)
+      : await fsp.readFile(configPath, "utf8");
   } catch {
     // No config yet is normal on a first run; the game writes one at exit.
-    current = "";
+    current = binary ? null : "";
   }
+  if (binary && !current) return false;
 
   /*
    * Work out whether there is anything to do *before* asking. Prompting and
@@ -5924,7 +5966,8 @@ async function applyControllerConfig(slug, installDir) {
   try {
     const dir = path.dirname(configPath);
     await fsp.mkdir(dir, { recursive: true });
-    await fsp.writeFile(configPath, next, "utf8");
+    if (binary) await fsp.writeFile(configPath, next);
+    else await fsp.writeFile(configPath, next, "utf8");
     console.log(`[controller] configured ${profile.label} for ${slug}`);
     return true;
   } catch (err) {
@@ -8517,6 +8560,16 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     await applyControllerConfig(slug, info.dir || path.dirname(info.exe || ""));
   } catch (err) {
     console.warn("[controller] auto-config skipped:", err?.message || err);
+  }
+
+  if (slug === "tmnt-rescue-palooza") {
+    try {
+      const root = info.dir || path.dirname(info.exe || "");
+      const result = await openborPak.stripTmntBootAds(root);
+      if (result.changed) console.log("[tmnt] stripped boot ads from", result.pakPath);
+    } catch (err) {
+      console.warn("[tmnt] boot-ad strip skipped:", err?.message || err);
+    }
   }
 
   if (slug === OPENCIV3_SLUG) {

@@ -153,7 +153,11 @@ class GameLauncher {
     if (isUnknownHorizonsSlug(opts.gameSlug)) {
       const uh = resolveUnknownHorizonsLaunch(launchPath, opts.cwd || path.dirname(launchPath));
       if (uh && path.resolve(uh.exe) !== path.resolve(launchPath)) {
-        return this.spawnGame(uh.exe, [...uh.args, ...args], { ...opts, cwd: uh.cwd });
+        return this.spawnGame(uh.exe, [...uh.args, ...args], {
+          ...opts,
+          cwd: uh.cwd,
+          env: { ...(opts.env || {}), ...(uh.env || {}) },
+        });
       }
     }
 

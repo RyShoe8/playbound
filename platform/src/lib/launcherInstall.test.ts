@@ -169,7 +169,7 @@ describe("first-party MMO launcher installs", () => {
 describe("multiplayer testing-wave installers", () => {
   const slugs = [
     "volleyball-legends",
-    "c-dogs-retrarch",
+    "c-dogs-sdl",
     "sven-co-op",
     "teeworlds",
     "assaultcube",

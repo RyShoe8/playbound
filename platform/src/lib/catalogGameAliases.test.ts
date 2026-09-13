@@ -9,6 +9,8 @@ describe("catalogGameAliases", () => {
   it("maps keeperfx and alephone to canonical catalog games", () => {
     expect(canonicalCatalogGameSlug("keeperfx")).toBe("dungeon-keeper-gold");
     expect(canonicalCatalogGameSlug("alephone")).toBe("marathon-2");
+    expect(canonicalCatalogGameSlug("c-dogs-retrarch")).toBe("c-dogs-sdl");
+    expect(canonicalCatalogGameSlug("c-dogs-sdl")).toBe("c-dogs-sdl");
     expect(canonicalCatalogGameSlug("gradius-remake")).toBe("gradius");
     expect(canonicalCatalogGameSlug("gradius")).toBe("gradius");
     expect(canonicalCatalogGameSlug("metal-slug")).toBe("metal-slug-remake");

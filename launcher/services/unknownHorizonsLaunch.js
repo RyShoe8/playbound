@@ -21,7 +21,7 @@ function isUnknownHorizonsSlug(slug) {
 /**
  * @param {string} launchPath
  * @param {string | null | undefined} [installDir]
- * @returns {{ exe: string, args: string[], cwd: string } | null}
+ * @returns {{ exe: string, args: string[], cwd: string, env?: Record<string, string> } | null}
  */
 function resolveUnknownHorizonsLaunch(launchPath, installDir) {
   const p = String(launchPath || "");
@@ -49,11 +49,35 @@ function resolveUnknownHorizonsLaunch(launchPath, installDir) {
     const gameDir = path.join(root, "unknown-horizons");
     const script = path.join(gameDir, "run_uh.py");
     if (!fs.existsSync(script)) continue;
-    const pythonw = path.join(root, "python", "pythonw.exe");
-    const python = path.join(root, "python", "python.exe");
-    const exe = fs.existsSync(pythonw) ? pythonw : fs.existsSync(python) ? python : null;
+    const pythonDir = path.join(root, "python");
+    const pythonw = path.join(pythonDir, "pythonw.exe");
+    const python = path.join(pythonDir, "python.exe");
+    /*
+     * Prefer python.exe over pythonw so launch failures surface in logs the
+     * way the official run_uh.bat does. pythonw hides the console and made
+     * FIFE DLL errors look like an immediate silent exit.
+     */
+    const exe = fs.existsSync(python) ? python : fs.existsSync(pythonw) ? pythonw : null;
     if (!exe) continue;
-    return { exe, args: [script], cwd: gameDir };
+    /*
+     * FIFE ships SDL_image + libpng beside the Python package. Without that
+     * directory on PATH, Windows reports "Failed loading libpng16-16.dll" and
+     * the process dies during engine init — even though the DLL is installed.
+     */
+    const fifeDir = path.join(pythonDir, "Lib", "site-packages", "fife");
+    const pathPrefix = [fifeDir, pythonDir].filter((dir) => fs.existsSync(dir));
+    const env =
+      pathPrefix.length > 0
+        ? {
+            PATH: `${pathPrefix.join(path.delimiter)}${path.delimiter}${process.env.PATH || ""}`,
+          }
+        : undefined;
+    return {
+      exe,
+      args: [script, "--debug-log-only"],
+      cwd: gameDir,
+      env,
+    };
   }
 
   return null;
