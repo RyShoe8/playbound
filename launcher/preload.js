@@ -109,6 +109,7 @@ contextBridge.exposeInMainWorld("playbound", {
   syncHardwareProfile: () => ipcRenderer.invoke("sync-hardware-profile"),
   getHardwareCompatibility: (gameSlug, opts) =>
     ipcRenderer.invoke("get-hardware-compatibility", gameSlug, opts || {}),
+  getGameControls: (slug) => ipcRenderer.invoke("get-game-controls", slug),
   ensureManagedJava: (opts) => ipcRenderer.invoke("ensure-managed-java", opts || {}),
   getJavaStatus: () => ipcRenderer.invoke("get-java-status"),
   removeFriend: (friendId) => ipcRenderer.invoke("remove-friend", friendId),

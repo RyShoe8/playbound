@@ -100,6 +100,7 @@ const {
 const { createHostService } = require("./services/couch/hostService");
 const openMwConfig = require("./services/openMwConfig");
 const gamepadBridge = require("./services/gamepadBridge");
+const { resolveControlsForGame, resolveQuitHint } = require("./services/gameControls");
 
 function loadHardwareModule() {
   try {
@@ -9634,37 +9635,9 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     /* ignore */
   }
 
-  /*
-   * Finicky fullscreen remakes (SoR / OpenBOR) often hide Quit — Escape is the
-   * host's exit. Injected here so Mongo-only titles like streets-of-rage-remake
-   * still get the tip without a seed entry.
-   */
-  const ESCAPE_QUIT_HINTS = {
-    "streets-of-rage-remake":
-      "Press Escape on the host keyboard to quit (some menus have no Quit button; Alt+F4 also works).",
-    "tmnt-rescue-palooza":
-      "Press Escape on the host keyboard to leave the game or quit TMNT Rescue-Palooza.",
-    "x-men-arcade-remake":
-      "Press Escape on the host keyboard to leave the game or quit OpenBOR.",
-  };
-
-  const GAME_CONTROLS_HINTS = {
-    "tmnt-rescue-palooza": [
-      { platform: "all", text: "Keyboard Controls: Arrow keys to move · A: Attack · S: Jump · D: Special Attack · Enter: Pause / Start · Escape: Leave game / Exit to menu." },
-      { platform: "all", text: "Controller Controls: D-Pad / Left Stick to move · X / Square: Attack · A / Cross: Jump · Y / Triangle: Special · Start: Pause." },
-      { platform: "all", text: "How to Quit: Press Escape on the host keyboard to leave the game or quit." },
-    ],
-    "x-men-arcade-remake": [
-      { platform: "all", text: "Keyboard Controls: Arrow keys to move · A: Attack · S: Jump · D: Mutant Power · Enter: Start · Escape: Leave game / Exit to menu." },
-      { platform: "all", text: "Controller Controls: D-Pad / Left Stick to move · X / Square: Attack · A / Cross: Jump · Y / Triangle: Mutant Power · Start: Pause." },
-      { platform: "all", text: "How to Quit: Press Escape on the host keyboard to leave the game or quit OpenBOR." },
-    ],
-    "streets-of-rage-remake": [
-      { platform: "all", text: "Keyboard Controls: Arrow keys to move · C: Attack · B: Jump · X: Special Attack · Enter: Pause · Escape: Quit." },
-      { platform: "all", text: "Controller Controls: D-Pad / Left Stick to move · X / Square: Attack · A / Cross: Jump · Y / Triangle: Special · Start: Pause." },
-      { platform: "all", text: "How to Quit: Press Escape on the host keyboard to quit (Alt+F4 also works)." },
-    ],
-  };
+  // Resolve controls and quit guidance for all games
+  const controls = resolveControlsForGame(slug, entry);
+  const howToQuit = resolveQuitHint(slug);
 
   // Resolve First Play Steps and Multiplayer Gaming Steps
   const editionObj = entry?.editions?.find((ed) => ed.slug === (info.editionSlug || edSlug));
@@ -9706,25 +9679,22 @@ async function playGameInner(slug, join = null, editionSlug = null) {
   };
 
   let firstPlaySteps = formatStepList(rawFirstPlay);
-  if (GAME_CONTROLS_HINTS[slug] && (!firstPlaySteps || firstPlaySteps.length <= 1)) {
-    firstPlaySteps = GAME_CONTROLS_HINTS[slug];
-  } else {
-    const quitHint = ESCAPE_QUIT_HINTS[slug];
-    if (quitHint && newLaunchCount <= 2) {
-      const list = Array.isArray(firstPlaySteps) ? [...firstPlaySteps] : [];
-      const already = list.some((s) =>
-        String(s?.text || s)
-          .toLowerCase()
-          .includes("escape")
-      );
-      if (!already) list.push({ platform: "all", text: quitHint });
-      firstPlaySteps = list.length ? list : null;
-    }
+  if (Array.isArray(firstPlaySteps)) {
+    // Filter out redundant escape hints if present, because howToQuit displays it prominently
+    firstPlaySteps = firstPlaySteps.filter((s) => {
+      const txt = String(s?.text || s).toLowerCase();
+      return !txt.includes("escape on the host keyboard") && !txt.includes("leave the match") && !txt.includes("leave the game");
+    });
+    if (!firstPlaySteps.length) firstPlaySteps = null;
   }
   const multiplayerGamingSteps = formatStepList(rawMultiplayer);
 
   return {
     status: "launched",
+    slug,
+    title: entry?.title || slug,
+    controls,
+    howToQuit,
     connect: args.length > 0 && join?.host ? `${join.host}:${join.port}` : null,
     manualConnect: Boolean(join?.host && join?.port && !connectArgs?.length),
     editionSlug: info.editionSlug || edSlug,
@@ -10295,13 +10265,24 @@ async function playMod(slug) {
     if (!settings.recentlyPlayed) settings.recentlyPlayed = {};
     settings.recentlyPlayed[info.baseGameSlug || slug] = { lastPlayed: new Date().toISOString() };
     saveSettings(settings);
-    return { status: "launched", portable: true, exe, baseGameSlug: info.baseGameSlug || null };
+    const baseSlug = info.baseGameSlug || slug;
+    const baseEntry = catalogEntry(baseSlug);
+    return {
+      status: "launched",
+      portable: true,
+      exe,
+      slug,
+      title: info.title || slug,
+      controls: resolveControlsForGame(baseSlug, baseEntry),
+      howToQuit: resolveQuitHint(baseSlug),
+      baseGameSlug: baseSlug,
+    };
   }
 
   const base = info.baseGameSlug;
   if (!base) throw new Error("Mod has no base game to launch");
   const result = await playGame(base);
-  return { ...result, portable: false, baseGameSlug: base };
+  return { ...result, portable: false, baseGameSlug: base, slug, title: info.title || result?.title || slug };
 }
 
 async function openGameFolder(slug) {
@@ -11577,6 +11558,9 @@ ipcMain.handle("play", (_event, slug, join, editionSlug) =>
   playGame(slug, join || null, editionSlug || null)
 );
 ipcMain.handle("play-mod", (_event, slug) => playMod(slug));
+ipcMain.handle("get-game-controls", (_event, slug) =>
+  resolveControlsForGame(slug, catalogEntry(slug))
+);
 
 /**
  * Whether "Join Multiplayer" can do what it says for this game.

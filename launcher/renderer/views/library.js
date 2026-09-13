@@ -1598,11 +1598,16 @@ function buildJoinMultiplayerButton(game, ed, opts = {}) {
       }
       const s = best.server;
       setStatus(`Joining ${s.name || `${s.host}:${s.port}`} — ${s.players}/${s.maxPlayers} players`);
-      await window.playbound.play(
+      const res = await window.playbound.play(
         slug,
         { host: s.host, port: s.port, name: s.name, mod: s.mod || undefined },
         ed?.slug || undefined
       );
+      maybeShowLaunchGuidance(res, {
+        title: game?.title || slug,
+        slug,
+        address: `${s.host}:${s.port}`,
+      });
     } catch (err) {
       setStatus(err?.message || String(err), true);
     } finally {
@@ -1649,7 +1654,11 @@ function buildModsDisclosure(gameMods, modTitles) {
       e.stopPropagation();
       try {
         setStatus(`Launching ${title}…`);
-        await window.playbound.playMod(mod.slug);
+        const res = await window.playbound.playMod(mod.slug);
+        maybeShowLaunchGuidance(res, {
+          title: title || mod.title || mod.slug,
+          slug: mod.slug,
+        });
         setStatus(`Launched ${title}`);
       } catch (err) {
         setStatus(err.message || String(err), true);

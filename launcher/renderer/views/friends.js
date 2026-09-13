@@ -1930,7 +1930,7 @@ function buildPartyViewHtml(party) {
    * button and this picks between them — rather than writing its own labels,
    * which is how the two panels forked in the first place.
    */
-  const isCouchMode = Boolean(partyCouchCoopFilter || party.multiplayerType === "couch");
+  const isCouchMode = Boolean(party.couch?.enabled || party.hostMode === "couch");
   const autoJoinArmed = pendingJoin?.partyId === party.id && !ended;
   const joinBtn = actions ? (autoJoinArmed ? actions.joinArmed : actions.join) : null;
   const joinGameHtml = joinBtn && joinBtn.visible
@@ -2035,8 +2035,8 @@ function buildPartyViewHtml(party) {
    * then members are told what is about to happen rather than shown nothing.
    */
   // Code, link and the what-happens-next line all come from actions.couch.
-  const couchPanel = isCouchMode && actions ? actions.couch : null;
-  const couchHtml = !isCouchMode || !couchPanel
+  const couchPanel = actions ? actions.couch : null;
+  const couchHtml = !couchPanel
     ? ""
     : couchPanel.status === "ready" && couchPanel.joinCode
     ? `<div class="party-couch">
@@ -3174,9 +3174,10 @@ function wirePartyView(slot, party) {
        * launching a second copy of the game on their PC.
        */
       const couch = party.couch || {};
-      const isCouchMode = Boolean(partyCouchCoopFilter || party.multiplayerType === "couch");
-      if (isCouchMode && couch.enabled && !isLeader) {
+      const hasCouchStream = Boolean(couch.enabled || party.hostMode === "couch");
+      if (hasCouchStream && !isLeader) {
         const base =
+          party.actions?.couch?.joinUrl ||
           couch.joinUrl ||
           (couch.joinCode ? `https://playbound.club/c/${couch.joinCode}` : "");
         if (!base) {
@@ -3188,7 +3189,7 @@ function wirePartyView(slot, party) {
         const url = `${base}${sep}view=game`;
         const opened = window.open(url, "playbound-game-view", "noopener,noreferrer");
         if (!opened && window.playbound.openExternal) window.playbound.openExternal(url);
-        setStatus("Opened game view — choose PC controls or phone as controller there.");
+        setStatus("Opened game view — streaming game from host PC.");
         return;
       }
       joinInFlight = true;

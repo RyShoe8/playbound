@@ -1,6 +1,7 @@
 /**
- * In-launcher guidance modal for First Play Steps & Multiplayer Gaming Steps.
- * Shown when launching a game if firstPlaySteps or multiplayerGamingSteps are returned.
+ * In-launcher guidance modal for all games:
+ * Controls (Keyboard & Controller), How to Leave the Game, and Quick Tips.
+ * Shown when launching any game so players always know the controls and how to exit.
  */
 
 function escapeHtml(s) {
@@ -9,6 +10,34 @@ function escapeHtml(s) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function renderSingleKeyCombo(combo) {
+  if (!combo) return "";
+  if (combo.includes(" + ")) {
+    return combo
+      .split(" + ")
+      .map((k) => `<kbd class="guidance-key">${escapeHtml(k.trim())}</kbd>`)
+      .join('<span class="guidance-key-join">+</span>');
+  }
+  if (/\b(Ctrl|Alt|Shift)\+[A-Za-z0-9]+/i.test(combo)) {
+    return combo
+      .split("+")
+      .map((k) => `<kbd class="guidance-key">${escapeHtml(k.trim())}</kbd>`)
+      .join('<span class="guidance-key-join">+</span>');
+  }
+  return `<kbd class="guidance-key">${escapeHtml(combo)}</kbd>`;
+}
+
+function renderKeyBadges(inputStr) {
+  if (!inputStr) return "";
+  if (inputStr.includes(" / ")) {
+    return inputStr
+      .split(" / ")
+      .map((part) => renderSingleKeyCombo(part.trim()))
+      .join('<span class="guidance-key-sep">or</span>');
+  }
+  return renderSingleKeyCombo(inputStr);
 }
 
 function ensureGuidanceRoot() {
@@ -32,31 +61,174 @@ export function hideLaunchGuidanceModal() {
   }
 }
 
+const CONTROL_SCHEME_LABELS = {
+  keyboard: "Mouse & Keyboard",
+  controller: "Controller",
+  flightstick: "Flightstick",
+  touch: "Touch",
+};
+
+const CONTROL_GROUP_ORDER = [
+  "Movement",
+  "Combat",
+  "Interaction",
+  "Interface",
+  "Camera",
+  "Inventory",
+  "Multiplayer",
+  "Vehicle",
+  "Flight",
+  "Building",
+  "Other",
+];
+
 /**
- * Show a modal with First Play Steps and/or Multiplayer Gaming Steps.
+ * Show a modal with Controls, How to Leave the Game, First Play Steps, and/or Multiplayer Steps.
  */
 export function showLaunchGuidanceModal(opts = {}) {
   const {
     title = "Game",
+    controls = null,
+    howToQuit = null,
     firstPlaySteps = null,
     multiplayerGamingSteps = null,
-    launchCount = 1,
     address = null,
   } = opts;
-
-  if (
-    (!Array.isArray(firstPlaySteps) || firstPlaySteps.length === 0) &&
-    (!Array.isArray(multiplayerGamingSteps) || multiplayerGamingSteps.length === 0)
-  ) {
-    return;
-  }
 
   const root = ensureGuidanceRoot();
   root.classList.remove("hidden");
 
+  // 1. Leave the game callout
+  const leaveText =
+    howToQuit ||
+    "Press Escape on the keyboard to leave the game or exit to menu (Alt+F4 also works).";
+
+  const leaveHtml = `
+    <div class="guidance-leave-callout">
+      <div class="guidance-leave-callout-header">
+        <span class="guidance-badge guidance-badge-quit">How to Leave</span>
+        <span class="guidance-leave-title">Leaving the Game</span>
+      </div>
+      <p class="guidance-leave-desc">${escapeHtml(leaveText)}</p>
+    </div>
+  `;
+
+  // 2. Controls Section (Keyboard & Controller)
+  let controlsHtml = "";
+  const schemes = Array.isArray(controls?.schemes)
+    ? controls.schemes.filter((s) => s && (s.bindings?.length || s.notes || s.supported === false))
+    : [];
+
+  if (schemes.length > 0) {
+    const tabsHtml = schemes
+      .map((s, idx) => {
+        const label = CONTROL_SCHEME_LABELS[s.scheme] || s.scheme;
+        return `
+          <button type="button" class="guidance-tab-btn ${idx === 0 ? "active" : ""}" data-scheme="${escapeHtml(s.scheme)}">
+            ${escapeHtml(label)}
+          </button>
+        `;
+      })
+      .join("");
+
+    const panelsHtml = schemes
+      .map((s, idx) => {
+        if (s.supported === false) {
+          return `
+            <div class="guidance-scheme-panel ${idx === 0 ? "" : "hidden"}" data-scheme-panel="${escapeHtml(s.scheme)}">
+              <p class="guidance-controls-note">${escapeHtml(title)} does not support this input method.</p>
+            </div>
+          `;
+        }
+
+        const buckets = new Map();
+        for (const b of s.bindings || []) {
+          const g = b.group || "Other";
+          if (!buckets.has(g)) buckets.set(g, []);
+          buckets.get(g).push(b);
+        }
+
+        const sortedGroups = CONTROL_GROUP_ORDER.filter((g) => buckets.has(g));
+        // Add any groups not in the predefined order
+        for (const g of buckets.keys()) {
+          if (!sortedGroups.includes(g)) sortedGroups.push(g);
+        }
+
+        const groupsHtml = sortedGroups
+          .map((g) => {
+            const rows = buckets
+              .get(g)
+              .map(
+                (b) => `
+                <div class="guidance-binding-row">
+                  <div class="guidance-binding-info">
+                    <span class="guidance-binding-action">${escapeHtml(b.action)}</span>
+                    ${b.note ? `<span class="guidance-binding-note">${escapeHtml(b.note)}</span>` : ""}
+                  </div>
+                  <div class="guidance-binding-keys">
+                    ${renderKeyBadges(b.input)}
+                  </div>
+                </div>
+              `
+              )
+              .join("");
+
+            return `
+              <div class="guidance-group-block">
+                <div class="guidance-group-header">
+                  <span class="guidance-group-title">${escapeHtml(g)}</span>
+                </div>
+                <div class="guidance-binding-list">
+                  ${rows}
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+
+        const noteHtml = s.notes
+          ? `<p class="guidance-controls-note">${escapeHtml(s.notes)}</p>`
+          : "";
+
+        return `
+          <div class="guidance-scheme-panel ${idx === 0 ? "" : "hidden"}" data-scheme-panel="${escapeHtml(s.scheme)}">
+            ${groupsHtml || "<p class=\"guidance-controls-note\">Default controls active.</p>"}
+            ${noteHtml}
+          </div>
+        `;
+      })
+      .join("");
+
+    const overallNotes = controls?.notes
+      ? `<p class="guidance-controls-note" style="margin-top: 10px;">${escapeHtml(controls.notes)}</p>`
+      : "";
+
+    controlsHtml = `
+      <div class="guidance-section guidance-section-controls">
+        <div class="guidance-section-header">
+          <span class="guidance-badge guidance-badge-controls">Controls</span>
+          <h3 class="guidance-section-title">In-Game Controls</h3>
+        </div>
+        <div class="guidance-controls-tabs">
+          ${tabsHtml}
+        </div>
+        ${panelsHtml}
+        ${overallNotes}
+      </div>
+    `;
+  }
+
+  // 3. First Play Tips (filtered to avoid duplicating leave instructions)
   let firstPlayHtml = "";
-  if (Array.isArray(firstPlaySteps) && firstPlaySteps.length > 0) {
-    const stepItems = firstPlaySteps
+  const filteredFirstPlay = Array.isArray(firstPlaySteps)
+    ? firstPlaySteps.filter((s) => {
+        const text = String(typeof s === "string" ? s : s?.text || "").toLowerCase();
+        return !text.includes("escape on the host") && !text.includes("leave the game") && !text.includes("leave the match");
+      })
+    : [];
+
+  if (filteredFirstPlay.length > 0) {
+    const stepItems = filteredFirstPlay
       .map((s, idx) => {
         const text = typeof s === "string" ? s : s?.text || "";
         const cmd = typeof s === "object" ? s?.command : null;
@@ -65,29 +237,18 @@ export function showLaunchGuidanceModal(opts = {}) {
             <span class="guidance-step-num">${idx + 1}</span>
             <div class="guidance-step-content">
               <p class="guidance-step-text">${escapeHtml(text)}</p>
-              ${
-                cmd
-                  ? `<pre class="guidance-step-cmd"><code>${escapeHtml(cmd)}</code></pre>`
-                  : ""
-              }
+              ${cmd ? `<pre class="guidance-step-cmd"><code>${escapeHtml(cmd)}</code></pre>` : ""}
             </div>
           </li>
         `;
       })
       .join("");
 
-    const hasControls = firstPlaySteps.some((s) => {
-      const t = String(typeof s === "string" ? s : s?.text || "").toLowerCase();
-      return t.includes("controls") || t.includes("keyboard") || t.includes("controller") || t.includes("quit");
-    });
-    const sectionBadge = hasControls ? "Controls & Tips" : `First-Time Setup (Launch ${launchCount} of 2)`;
-    const sectionTitle = hasControls ? "Controls & How to Quit" : "First Play Guide";
-
     firstPlayHtml = `
       <div class="guidance-section guidance-section-firstplay">
         <div class="guidance-section-header">
-          <span class="guidance-badge guidance-badge-firstplay">${escapeHtml(sectionBadge)}</span>
-          <h3 class="guidance-section-title">${escapeHtml(sectionTitle)}</h3>
+          <span class="guidance-badge guidance-badge-firstplay">Quick Tips</span>
+          <h3 class="guidance-section-title">First Play Guide</h3>
         </div>
         <ol class="guidance-step-list">
           ${stepItems}
@@ -96,6 +257,7 @@ export function showLaunchGuidanceModal(opts = {}) {
     `;
   }
 
+  // 4. Multiplayer connection
   let multiplayerHtml = "";
   if (Array.isArray(multiplayerGamingSteps) && multiplayerGamingSteps.length > 0) {
     const stepItems = multiplayerGamingSteps
@@ -107,11 +269,7 @@ export function showLaunchGuidanceModal(opts = {}) {
             <span class="guidance-step-num guidance-step-num-multi">${idx + 1}</span>
             <div class="guidance-step-content">
               <p class="guidance-step-text">${escapeHtml(text)}</p>
-              ${
-                cmd
-                  ? `<pre class="guidance-step-cmd"><code>${escapeHtml(cmd)}</code></pre>`
-                  : ""
-              }
+              ${cmd ? `<pre class="guidance-step-cmd"><code>${escapeHtml(cmd)}</code></pre>` : ""}
             </div>
           </li>
         `;
@@ -151,8 +309,8 @@ export function showLaunchGuidanceModal(opts = {}) {
     <div class="guidance-card">
       <div class="guidance-header">
         <div>
-          <h2 id="launch-guidance-title" class="guidance-title">${escapeHtml(title)} · Controls &amp; Guide</h2>
-          <p class="guidance-subtitle">Quick controls and session guidance</p>
+          <h2 id="launch-guidance-title" class="guidance-title">${escapeHtml(title)} · Controls &amp; Help</h2>
+          <p class="guidance-subtitle">In-game controls, how to leave the game, and quick tips</p>
         </div>
         <button type="button" class="guidance-btn-close" id="guidance-close-top" aria-label="Close">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -160,8 +318,10 @@ export function showLaunchGuidanceModal(opts = {}) {
       </div>
 
       <div class="guidance-body">
-        ${firstPlayHtml}
+        ${leaveHtml}
+        ${controlsHtml}
         ${multiplayerHtml}
+        ${firstPlayHtml}
       </div>
 
       <div class="guidance-actions">
@@ -171,6 +331,22 @@ export function showLaunchGuidanceModal(opts = {}) {
       </div>
     </div>
   `;
+
+  // Attach tab events
+  root.querySelectorAll(".guidance-tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const scheme = btn.getAttribute("data-scheme");
+      root.querySelectorAll(".guidance-tab-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      root.querySelectorAll(".guidance-scheme-panel").forEach((panel) => {
+        if (panel.getAttribute("data-scheme-panel") === scheme) {
+          panel.classList.remove("hidden");
+        } else {
+          panel.classList.add("hidden");
+        }
+      });
+    });
+  });
 
   const closeTop = root.querySelector("#guidance-close-top");
   const dismissBtn = root.querySelector("#guidance-dismiss-btn");
@@ -182,7 +358,7 @@ export function showLaunchGuidanceModal(opts = {}) {
   };
 
   const handleKey = (e) => {
-    if (e.key === "Escape") cleanup();
+    if (e.key === "Escape" || e.key === "Enter") cleanup();
   };
 
   closeTop?.addEventListener("click", cleanup);
@@ -206,23 +382,35 @@ export function showLaunchGuidanceModal(opts = {}) {
 }
 
 /**
- * Convenience helper to inspect play() result and show modal if steps present.
+ * Convenience helper to inspect play() result and show help panel for any game.
  */
-export function maybeShowLaunchGuidance(res, context = {}) {
-  if (!res) return;
-  const firstPlaySteps = res.firstPlaySteps;
-  const multiplayerGamingSteps = res.multiplayerGamingSteps;
+export async function maybeShowLaunchGuidance(res, context = {}) {
+  const slug = res?.slug || context.slug || "";
+  const title = res?.title || context.title || context.slug || "Game";
+  let controls = res?.controls || context.controls || null;
+  const howToQuit = res?.howToQuit || context.howToQuit || null;
+  const firstPlaySteps = res?.firstPlaySteps || context.firstPlaySteps || null;
+  const multiplayerGamingSteps =
+    res?.multiplayerGamingSteps || context.multiplayerGamingSteps || null;
+  const address = context.address || res?.connect || null;
+  const launchCount = res?.launchCount || 1;
 
-  if (
-    (Array.isArray(firstPlaySteps) && firstPlaySteps.length > 0) ||
-    (Array.isArray(multiplayerGamingSteps) && multiplayerGamingSteps.length > 0)
-  ) {
-    showLaunchGuidanceModal({
-      title: context.title || context.slug || "Game",
-      firstPlaySteps,
-      multiplayerGamingSteps,
-      launchCount: res.launchCount || 1,
-      address: context.address || res.connect || null,
-    });
+  if (!controls && slug && window.playbound?.getGameControls) {
+    try {
+      controls = await window.playbound.getGameControls(slug);
+    } catch {
+      // ignore
+    }
   }
+
+  showLaunchGuidanceModal({
+    title,
+    slug,
+    controls,
+    howToQuit,
+    firstPlaySteps,
+    multiplayerGamingSteps,
+    launchCount,
+    address,
+  });
 }

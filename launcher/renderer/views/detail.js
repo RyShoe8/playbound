@@ -1966,7 +1966,11 @@ async function renderGameDetailView(slug, opts = {}) {
       card.querySelector(".btn-mod-play")?.addEventListener("click", async () => {
         try {
           setStatus(`Launching ${mod.title}…`);
-          await window.playbound.playMod(mod.slug);
+          const res = await window.playbound.playMod(mod.slug);
+          maybeShowLaunchGuidance(res, {
+            title: mod.title || mod.slug,
+            slug: mod.slug,
+          });
           setStatus(`Launched ${mod.title}`);
         } catch (err) {
           setStatus(err.message || String(err), true);
@@ -2372,7 +2376,11 @@ async function renderModDetailView(slug) {
     document.getElementById("mod-act-play")?.addEventListener("click", async () => {
       try {
         setStatus(`Launching ${detail.title}…`);
-        await window.playbound.playMod(slug);
+        const res = await window.playbound.playMod(slug);
+        maybeShowLaunchGuidance(res, {
+          title: detail.title || slug,
+          slug,
+        });
         setStatus(`Launched ${detail.title}`);
       } catch (err) {
         setStatus(err.message || String(err), true);

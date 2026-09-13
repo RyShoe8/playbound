@@ -1,5 +1,6 @@
 import { createFreeOfferCard, createGameCard } from "./cards.js";
 import { rankPlayableNow, scorePlayable } from "./homeRanking.js";
+import { maybeShowLaunchGuidance } from "./guidanceModal.js";
 import {
   api,
   buildMultiplayerStatsHtml,
@@ -205,11 +206,16 @@ async function joinBestServer(game, server) {
   setStatus(
     `Joining ${s.name || `${s.host}:${s.port}`} — ${formatStatNumber(s.players)}/${formatStatNumber(s.maxPlayers)} players`
   );
-  await window.playbound.play(
+  const res = await window.playbound.play(
     slug,
     { host: s.host, port: s.port, name: s.name, mod: s.mod || undefined },
     undefined
   );
+  maybeShowLaunchGuidance(res, {
+    title: game.title || slug,
+    slug,
+    address: `${s.host}:${s.port}`,
+  });
 }
 
 /* ------------------------------------------------------------------ *
@@ -280,7 +286,8 @@ function paintResume(entry) {
       } else if (server) {
         await joinBestServer(game, server);
       } else {
-        await window.playbound.play(game.slug);
+        const res = await window.playbound.play(game.slug);
+        maybeShowLaunchGuidance(res, { title: game.title, slug: game.slug });
       }
     } catch (err) {
       setStatus(err?.message || String(err), true);

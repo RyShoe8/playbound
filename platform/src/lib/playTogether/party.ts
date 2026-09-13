@@ -2361,7 +2361,7 @@ export async function joinPartyGame(
    */
   if (hostMode === "couch" && !isLeader) {
     return {
-      error: "This game plays on the host's PC — open the controller join link instead.",
+      error: "This game plays on the host's PC — use Join online to stream the game from the host.",
       status: 400,
     };
   }
