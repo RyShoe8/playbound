@@ -93,9 +93,22 @@ export type GameHostMetrics = {
 };
 
 function hostConfig(): { base: string; secret: string; publicIp: string } | null {
-  const base = process.env.GAME_HOST_URL?.replace(/\/$/, "");
+  const rawBase = process.env.GAME_HOST_URL?.trim();
   const secret = process.env.GAME_HOST_SECRET;
-  if (!base || !secret) return null;
+  if (!rawBase || !secret) return null;
+  let base = rawBase.replace(/\/+$/, "");
+  if (!/^https?:\/\//i.test(base)) {
+    base = `http://${base}`;
+  }
+  try {
+    const parsed = new URL(base);
+    if (!parsed.port && parsed.protocol === "http:") {
+      parsed.port = "8741";
+    }
+    base = parsed.origin;
+  } catch {
+    // preserve base if URL parsing fails
+  }
   return {
     base,
     secret,
