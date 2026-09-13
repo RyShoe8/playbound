@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDown, Download, ExternalLink, FolderOpen, Play, Trash2, Users } from "lucide-react";
+import { ChevronDown, Download, ExternalLink, FolderOpen, Play, Trash2, UserPlus, Users } from "lucide-react";
 import type { Game } from "@/lib/data/types";
 import {
   launcherInstallUrl,
@@ -18,12 +18,14 @@ import { CardCategoryTags } from "@/components/CardCategoryTags";
 import { LibraryModsDisclosure, type LibraryModItem } from "@/components/LibraryModsDisclosure";
 import { LibraryDeviceHint } from "@/components/LibraryDeviceHint";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
+import { CreatePartyPanel } from "@/components/friends/CreatePartyPanel";
 import { Badge } from "@/components/ui/bits";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { isGameCompatible } from "@/lib/compatibility/compatibility";
 import { shouldOfferLauncher, resolveMobileOutbound, parseMobileOs } from "@/lib/mobilePlay";
 import { MobileOutboundCta } from "@/components/MobileOutboundCta";
-import { hasServerBrowser } from "@/lib/multiplayer/support";
+import { hasServerBrowser, supportsLauncherParty } from "@/lib/multiplayer/support";
+import { usePartyStore } from "@/stores/partyStore";
 import { cn } from "@/lib/utils";
 
 /**
@@ -290,6 +292,61 @@ function JoinMultiplayerButton({
 }
 
 /**
+ * Start (or view) a party for a launcher-partyable library game.
+ *
+ * Panel sits on `basis-full` so it drops under the chip row inside flex-wrap
+ * action strips. When the user already has an active party, Friends refuses a
+ * second create — link them there instead.
+ */
+function LibraryStartPartyButton({
+  slug,
+  className,
+}: {
+  slug: string;
+  className?: string;
+}) {
+  const activeParty = usePartyStore((s) => s.activeParty);
+  const [open, setOpen] = useState(false);
+  const chip =
+    className ??
+    "inline-flex min-h-8 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold";
+
+  if (activeParty) {
+    return (
+      <Link
+        href="/friends"
+        className={cn(chip, "bg-secondary text-secondary-foreground hover:bg-secondary/70")}
+        title="You're already in a party"
+      >
+        <Users className="size-3" /> View Party
+      </Link>
+    );
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          chip,
+          open
+            ? "bg-primary text-primary-foreground"
+            : "bg-secondary text-secondary-foreground hover:bg-secondary/70"
+        )}
+      >
+        <UserPlus className="size-3" /> {open ? "Close" : "Start Party"}
+      </button>
+      {open ? (
+        <div className="basis-full w-full">
+          <CreatePartyPanel gameSlug={slug} onCreated={() => setOpen(false)} />
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+/**
  * Uninstall from this PC, for a whole game.
  *
  * Shared rather than inlined because a game with editions needs it too, and it
@@ -345,11 +402,13 @@ function DesktopInstalledActions({
   editionSlug,
   title,
   hasServerBrowser,
+  canStartParty,
 }: {
   slug: string;
   editionSlug?: string | null;
   title: string;
   hasServerBrowser?: boolean;
+  canStartParty?: boolean;
 }) {
   const [hidden, setHidden] = useState(false);
   const chip =
@@ -368,6 +427,7 @@ function DesktopInstalledActions({
       {hasServerBrowser ? (
         <JoinMultiplayerButton slug={slug} title={title} className={chip} />
       ) : null}
+      {canStartParty ? <LibraryStartPartyButton slug={slug} className={chip} /> : null}
       <a
         href={launcherOpenFolderUrl(slug)}
         className={cn(chip, "bg-secondary text-secondary-foreground hover:bg-secondary/70")}
@@ -480,11 +540,17 @@ function MobileLibraryRow({
             <Download className="size-3.5" /> Install
           </MobileOutboundCta>
         ) : null}
+        {supportsLauncherParty(game) ? (
+          <LibraryStartPartyButton
+            slug={game.slug}
+            className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full px-3 text-sm font-bold"
+          />
+        ) : null}
         <Link
           href={`/games/${game.slug}`}
           className={cn(
             "inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full bg-secondary px-3 text-sm font-bold",
-            installed || ownedElsewhere ? "flex-none" : "flex-1"
+            installed || ownedElsewhere || supportsLauncherParty(game) ? "flex-none" : "flex-1"
           )}
         >
           <ExternalLink className="size-3.5" /> Open
@@ -686,6 +752,12 @@ function DesktopLibraryRow({
               })}
             </div>
             <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              {supportsLauncherParty(game) ? (
+                <LibraryStartPartyButton
+                  slug={game.slug}
+                  className="inline-flex min-h-7 items-center gap-1 rounded-full px-2.5 text-[11px] font-bold"
+                />
+              ) : null}
               {installed ? (
                 <>
                   <a
@@ -721,6 +793,7 @@ function DesktopLibraryRow({
                 editionSlug={editions[0]?.slug}
                 title={game.title}
                 hasServerBrowser={hasServerBrowser(game)}
+                canStartParty={supportsLauncherParty(game)}
               />
             ) : ownedElsewhere && showLauncherActions ? (
               <div className="flex flex-wrap items-center gap-2">
@@ -729,15 +802,18 @@ function DesktopLibraryRow({
                   label="Install on this PC"
                   className="!px-4 !py-1.5 !text-xs"
                 />
+                {supportsLauncherParty(game) ? <LibraryStartPartyButton slug={game.slug} /> : null}
                 <RemoveFromLibraryButton slug={game.slug} />
               </div>
             ) : ownedElsewhere ? (
               <div className="flex flex-wrap items-center gap-2">
                 <MobileOwnedElsewhereInstall game={game} />
+                {supportsLauncherParty(game) ? <LibraryStartPartyButton slug={game.slug} /> : null}
                 <RemoveFromLibraryButton slug={game.slug} />
               </div>
             ) : (
               <div className="flex flex-wrap items-center gap-2">
+                {supportsLauncherParty(game) ? <LibraryStartPartyButton slug={game.slug} /> : null}
                 <Link
                   href={`/games/${game.slug}`}
                   className="inline-flex min-h-8 items-center justify-center gap-1 rounded-full bg-secondary px-3 text-xs font-bold"
