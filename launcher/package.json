@@ -1,6 +1,6 @@
 {
   "name": "playbound-launcher",
-  "version": "0.3.67",
+  "version": "0.3.68",
   "description": "PlayBound App — discover, install, update, and launch free PC games and servers.",
   "main": "bootstrap.js",
   "scripts": {
@@ -42,7 +42,8 @@
     "test:launch-fail": "node services/classifyLaunchFailure.test.js",
     "test:edition-lifecycle": "node services/editionLifecycle.test.js",
     "test:vigem": "node services/couch/windowsVigem.test.js",
-    "test:elevate": "node services/GameLauncher.elevate.test.js"
+    "test:elevate": "node services/GameLauncher.elevate.test.js",
+    "test:game-controls": "node services/gameControls.test.js"
   },
   "author": "PlayBound",
   "license": "MIT",
