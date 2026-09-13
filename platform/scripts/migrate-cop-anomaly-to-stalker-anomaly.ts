@@ -76,7 +76,9 @@ async function main() {
     const platform = row.platform ?? "desktop";
     const hadAnomalyPrimary = row.editionSlug === ANOMALY_EDITION;
     const installed = Array.isArray(row.installedEditions)
-      ? row.installedEditions.filter((e) => e && e !== ANOMALY_EDITION)
+      ? (row.installedEditions as string[]).filter(
+          (e: string) => e && e !== ANOMALY_EDITION
+        )
       : [];
     const copStillInstalled = installed.length > 0 || (!hadAnomalyPrimary && row.installed);
 
