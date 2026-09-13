@@ -14,7 +14,21 @@ export function couchJoinPath(joinCode: string): string {
 }
 
 export function couchJoinUrl(joinCode: string, siteUrl = SITE_URL): string {
-  return `${siteUrl.replace(/\/$/, "")}${couchJoinPath(joinCode)}`;
+  let base = String(siteUrl || "https://playbound.club").replace(/\/$/, "");
+  try {
+    const u = new URL(base);
+    // Public join pages must be HTTPS — http:// shows "Not secure" and breaks
+    // secure APIs / mixed-content fallbacks for remote controllers.
+    if (u.protocol === "http:" && !/^(localhost|127\.0\.0\.1)$/i.test(u.hostname)) {
+      u.protocol = "https:";
+      base = u.origin;
+    }
+  } catch {
+    if (base.startsWith("http://") && !/^http:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/i.test(base)) {
+      base = `https://${base.slice(7)}`;
+    }
+  }
+  return `${base}${couchJoinPath(joinCode)}`;
 }
 
 /** What hosts tell people to type: playbound.club/c */

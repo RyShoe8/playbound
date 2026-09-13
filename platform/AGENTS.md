@@ -34,10 +34,15 @@ appropriate.
 
 Editing `games.ts` or `editorial.ts` is fine and does nothing on its own.
 
-**A deploy writes nothing to the database.** `npm run build` used to end with
+**A build writes nothing to the database.** `npm run build` used to end with
 `seed:deploy`; it no longer does. The catalog is fully curated, so the correct
 number of rows for a build to create is zero, and a build that can write is a
 build that can surprise you.
+
+Allowlisted catalog inserts/patches/retires reach production via the
+**Apply catalog wave** GitHub Action (`insert:catalog-wave`), not via local
+env pulls. See `docs/database-seeding.md` → *How allowlisted catalog changes
+reach production*.
 
 `seed:deploy` still exists and still works — it is a manual tool now. Run it by
 hand when a named game genuinely needs its seed mods created:

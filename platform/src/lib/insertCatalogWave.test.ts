@@ -73,8 +73,10 @@ describe("insert-catalog-wave allowlists", () => {
         "lovers-in-a-dangerous-spacetime",
         "populous-the-beginning",
         "relic-hunters-zero-remix",
+        "s-t-a-l-k-e-r-clear-sky",
         "soccer-brawl",
         "srb2kart",
+        "stalker-anomaly",
         "super-sidekicks",
         "the-spike-cross",
         "tmnt-rescue-palooza",
@@ -92,12 +94,13 @@ describe("insert-catalog-wave allowlists", () => {
         "earth-2140-trilogy/opene2140",
         "populous-the-beginning/official",
         "populous-the-beginning/populous-reincarnated",
-        "s-t-a-l-k-e-r-call-of-pripyat/anomaly",
         "s-t-a-l-k-e-r-call-of-pripyat/official",
+        "s-t-a-l-k-e-r-clear-sky/official",
         "s-t-a-l-k-e-r-shadow-of-chernobyl/lost-alpha",
         "s-t-a-l-k-e-r-shadow-of-chernobyl/official",
         "s-t-a-l-k-e-r-shadow-of-chernobyl/true-stalker",
         "soccer-brawl/official",
+        "stalker-anomaly/official",
         "super-sidekicks/official",
       ].sort()
     );
@@ -107,9 +110,10 @@ describe("insert-catalog-wave allowlists", () => {
     expect(NEW_MOD_SLUGS).toEqual([]);
   });
 
-  it("retires CoP gamma/gunslinger only (Anomaly restored)", () => {
+  it("retires CoP gamma/gunslinger/anomaly (Anomaly is its own game)", () => {
     expect([...RETIRE_EDITION_KEYS].sort()).toEqual(
       [
+        "s-t-a-l-k-e-r-call-of-pripyat/anomaly",
         "s-t-a-l-k-e-r-call-of-pripyat/gamma",
         "s-t-a-l-k-e-r-call-of-pripyat/gunslinger",
       ].sort()
@@ -165,29 +169,31 @@ describe("insert-catalog-wave allowlists", () => {
     expect(PATCH_GAME_FIELDS["the-dark-mod"]).toContain("platforms");
   });
 
-  it("patches CoP official + restores Anomaly edition + OpenMW/TES3MP/Lost Alpha install recipes", () => {
+  it("patches CoP official + SoC standalone labels + OpenMW/TES3MP/Lost Alpha recipes", () => {
     expect(Object.keys(PATCH_EDITION_FIELDS).sort()).toEqual(
       [
         "dune-legacy/modern-engine",
         "dune-legacy/playbound-edition",
         "morrowind/openmw",
         "morrowind/tes3mp",
-        "s-t-a-l-k-e-r-call-of-pripyat/anomaly",
         "s-t-a-l-k-e-r-call-of-pripyat/official",
         "s-t-a-l-k-e-r-shadow-of-chernobyl/lost-alpha",
+        "s-t-a-l-k-e-r-shadow-of-chernobyl/true-stalker",
       ].sort()
-    );
-    expect(PATCH_EDITION_FIELDS["s-t-a-l-k-e-r-call-of-pripyat/anomaly"]).toContain(
-      "visibility"
-    );
-    expect(PATCH_EDITION_FIELDS["s-t-a-l-k-e-r-call-of-pripyat/anomaly"]).toContain(
-      "hardwareRequirements"
     );
     expect(PATCH_EDITION_FIELDS["morrowind/openmw"]).toEqual(["installConfig"]);
     expect(PATCH_EDITION_FIELDS["morrowind/tes3mp"]).toEqual(["installConfig"]);
     expect(PATCH_EDITION_FIELDS["s-t-a-l-k-e-r-shadow-of-chernobyl/lost-alpha"]).toEqual([
+      "name",
+      "description",
+      "shortDescription",
       "installMethod",
       "installConfig",
+    ]);
+    expect(PATCH_EDITION_FIELDS["s-t-a-l-k-e-r-shadow-of-chernobyl/true-stalker"]).toEqual([
+      "name",
+      "description",
+      "shortDescription",
     ]);
     expect(PATCH_EDITION_FIELDS["dune-legacy/modern-engine"]).toEqual(["installConfig"]);
     expect(PATCH_EDITION_FIELDS["dune-legacy/playbound-edition"]).toEqual(["installConfig"]);
@@ -269,19 +275,28 @@ describe("insert-catalog-wave allowlists", () => {
     expect(sevenKingdomsLauncherInstall.registryTitles).toContain("Seven Kingdoms AA");
   });
 
-  it("keeps CoP official + Anomaly in seed; keeps SoC Lost Alpha + True Stalker", () => {
+  it("keeps CoP official only; Anomaly is its own game; SoC keeps Lost Alpha + True Stalker", () => {
     const cop = editions.filter((e) => e.gameSlug === "s-t-a-l-k-e-r-call-of-pripyat");
-    expect(cop.map((e) => e.slug).sort()).toEqual(["anomaly", "official"]);
-    const anomaly = cop.find((e) => e.slug === "anomaly");
-    expect(anomaly?.visibility).toBe("public");
-    expect(anomaly?.status).toBe("active");
+    expect(cop.map((e) => e.slug).sort()).toEqual(["official"]);
+    expect(gamesBySlug.has("stalker-anomaly")).toBe(true);
+    expect(gamesBySlug.has("s-t-a-l-k-e-r-clear-sky")).toBe(true);
+    const anomaly = editions.filter((e) => e.gameSlug === "stalker-anomaly");
+    expect(anomaly.map((e) => e.slug)).toEqual(["official"]);
+    expect(anomaly[0]?.isDefault).toBe(true);
+    const clearSky = editions.filter((e) => e.gameSlug === "s-t-a-l-k-e-r-clear-sky");
+    expect(clearSky.map((e) => e.slug)).toEqual(["official"]);
     const soc = editions.filter((e) => e.gameSlug === "s-t-a-l-k-e-r-shadow-of-chernobyl");
     expect(soc.map((e) => e.slug).sort()).toEqual(["lost-alpha", "official", "true-stalker"]);
     const lostAlpha = soc.find((e) => e.slug === "lost-alpha");
+    expect(lostAlpha?.name).toMatch(/Standalone/i);
+    expect(lostAlpha?.shortDescription).toMatch(/no Shadow of Chornobyl GOG/i);
     expect(lostAlpha?.installMethod).toBe("playbound_installer");
     expect(lostAlpha?.installConfig?.playbound_installer?.knownExePaths).toContain(
       "bins\\XR_3DA.exe"
     );
+    const trueStalker = soc.find((e) => e.slug === "true-stalker");
+    expect(trueStalker?.name).toMatch(/Standalone/i);
+    expect(trueStalker?.shortDescription).toMatch(/no Shadow of Chornobyl GOG/i);
   });
 
   it("keeps holocure-rich-presence unpublished in seed", () => {

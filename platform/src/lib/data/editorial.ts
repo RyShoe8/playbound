@@ -356,6 +356,77 @@ export const editorial: Record<string, GameEditorial> = {
     installSteps: [{ platform: "windows", text: "Download the DRM-free Call of Pripyat offline installer from GOG. Galaxy is optional." }, { platform: "windows", text: "Run the installer, launch once, and confirm a new save works." }],
     faq: [{ q: "Is Call of Pripyat free?", a: "No. It is a paid commercial master copy; the GOG release is DRM-free." }, { q: "Where do I install from?", a: "GOG — use the DRM-free offline installer from your library. PlayBound opens the store page; there is no separate redistributable URL." }, { q: "Does it have multiplayer?", a: "The original includes multiplayer, but activity is community-dependent." }],
   },
+  "s-t-a-l-k-e-r-clear-sky": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "Clear Sky clears the PlayBound Bar as the faction-war prequel that makes the Zone feel contested rather than empty, with a DRM-free GOG master easy to own.",
+      lastVerified: "2026-09-13",
+    },
+    maintenanceCheck: {
+      kind: "manual",
+      url: "https://www.gog.com/en/game/stalker_clear_sky",
+      checkedAt: "2026-09-13",
+      note: "Commercial classic; verify the GOG offline installer and campaign launch manually before publish.",
+    },
+    thatOneThing: "Faction wars turn every map into contested ground instead of a scavenger's private sandbox.",
+    longDescription:
+      "Clear Sky is the middle chapter of the original trilogy: Scar investigates a Great Emission while Clear Sky, Duty, Freedom, and bandits fight over the same roads. The shooting and anomaly systems sit between Shadow of Chornobyl and Call of Pripyat — familiar Zone logic with more open faction conflict.\n\nPlayBound lists the DRM-free GOG master as the official install. Galaxy is optional. Finish editorial media and the publish checklist in Admin before making this page public.",
+    whyWePickedIt:
+      "We picked Clear Sky to complete the paid trilogy on PlayBound beside Shadow of Chornobyl and Call of Pripyat, with the same GOG-first Install path.",
+    bestFor: ["Players finishing the original trilogy in release or chronological order", "Anyone who wants faction warfare layered on classic Zone survival"],
+    notFor: ["Players who need modern UI polish or a gentle onboarding curve", "Anyone looking for a free redistributable — Clear Sky is a paid GOG master"],
+    comparableTo: ["S.T.A.L.K.E.R.: Shadow of Chornobyl", "S.T.A.L.K.E.R.: Call of Pripyat"],
+    installSteps: [
+      { platform: "windows", text: "Download the DRM-free Clear Sky offline installer from GOG. Galaxy is optional." },
+      { platform: "windows", text: "Run the installer, launch once, and confirm a new save works." },
+    ],
+    faq: [
+      { q: "Is Clear Sky free?", a: "No. It is a paid commercial master copy; the GOG release is DRM-free." },
+      { q: "Where do I install from?", a: "GOG — use the DRM-free offline installer from your library." },
+      { q: "Does it need Shadow of Chornobyl?", a: "No. Clear Sky is a separate purchase and install." },
+    ],
+  },
+  "stalker-anomaly": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "Anomaly clears the PlayBound Bar as a finished free standalone Zone sandbox — no GOG purchase required — with enough systems depth to reward long free-roam runs.",
+      lastVerified: "2026-09-13",
+    },
+    maintenanceCheck: {
+      kind: "manual",
+      url: "https://www.moddb.com/mods/stalker-anomaly",
+      checkedAt: "2026-09-13",
+      note: "Community standalone; verify ModDB download, first launch, and save creation before publish.",
+    },
+    thatOneThing: "The whole trilogy's map set opens as one free-roaming survival sandbox with faction starts you choose.",
+    longDescription:
+      "S.T.A.L.K.E.R. Anomaly is a free community standalone that rebuilds the Zone into an open-ended survival sandbox: major regions, story routes, faction starts, and deep tuning. It does not require Call of Pripyat or Shadow of Chornobyl from GOG.\n\nPlayBound catalogs Anomaly as its own game with a ModDB Install path. Complete media and the Admin publish checklist before making the page public.",
+    whyWePickedIt:
+      "We picked Anomaly because it is the Zone's definitive free standalone sandbox, and it deserves a first-class catalog page instead of hiding under Call of Pripyat.",
+    bestFor: ["Players who want free-roam Zone survival without buying the trilogy", "Anyone who enjoys deep inventory, faction, and difficulty tuning"],
+    notFor: ["Players who want a short linear campaign with modern UI", "Anyone unwilling to install a large ModDB package"],
+    comparableTo: ["S.T.A.L.K.E.R.: Call of Pripyat", "Fallout: New Vegas"],
+    installSteps: [
+      { platform: "windows", text: "Download the current Anomaly standalone package from ModDB (PlayBound opens the project page)." },
+      { platform: "windows", text: "Run the installer into its own folder — do not overwrite a GOG Call of Pripyat install." },
+      { platform: "windows", text: "Launch Anomaly once and confirm a new save works before adding optional add-ons." },
+    ],
+    faq: [
+      { q: "Is Anomaly free?", a: "Yes. It is a free community standalone distributed via ModDB." },
+      { q: "Do I need Call of Pripyat?", a: "No. Anomaly is standalone — no GOG purchase is required." },
+      { q: "Is this the same as GAMMA?", a: "No. GAMMA is a separate add-on ecosystem; PlayBound lists Anomaly on its own." },
+    ],
+  },
   "star-wars-knights-of-the-old-republic": {
     qualityBar: { genuinelyFree: true, finished: true, activelyMaintained: true, standsAlone: true, highQuality: true, verdict: "KOTOR clears the PlayBound Bar because its choices matter most when they change how a companion sees you, not when a meter changes color.", lastVerified: "2026-08-25" },
     maintenanceCheck: { kind: "manual", url: "https://www.gog.com/en/game/star_wars_knights_of_the_old_republic", checkedAt: "2026-08-25", note: "Commercial classic; verify the GOG offline installer and KOTOR Community Patch compatibility manually." },

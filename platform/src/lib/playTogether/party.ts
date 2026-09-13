@@ -25,6 +25,7 @@ import EventRsvp from "@/lib/models/EventRsvp";
 import ActivePartyMembership from "@/lib/models/ActivePartyMembership";
 import { getGame } from "@/lib/catalog";
 import { SITE_URL } from "@/lib/site";
+import { couchJoinUrl } from "@/lib/couch/joinUrl";
 import { requiredPlatformsFor } from "@/lib/playTogether/partyPlatforms";
 import { listEditionsForGame } from "@/lib/editions";
 import {
@@ -1988,7 +1989,7 @@ export async function setPartyCouchSession(
       doc.couch.joinCode = joinCode;
       // Never persist a launcher-supplied URL. Even the leader is not allowed
       // to turn a party response into an arbitrary phishing link.
-      doc.couch.joinUrl = `${SITE_URL}/c/${encodeURIComponent(joinCode)}`;
+      doc.couch.joinUrl = couchJoinUrl(joinCode, SITE_URL);
       doc.couch.startedAt = new Date();
     }
   }
