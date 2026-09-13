@@ -97,3 +97,12 @@ test("says no rather than throwing on nonsense", () => {
   assert.equal(resolve("C:\\nope", null), null);
   assert.equal(resolve("C:\\definitely\\not\\here", { binaryHint: "x" }), null);
 });
+
+test("finds DDNet-Server inside versioned release subfolder", () => {
+  const dir = fixture(["DDNet-19.9-win64/DDNet-Server.exe", "DDNet-19.9-win64/DDNet.exe"]);
+  const resolve = loadResolver("win32");
+  assert.equal(
+    resolve(dir, { binaryHint: "teeworlds_srv" }),
+    path.join(dir, "DDNet-19.9-win64", "DDNet-Server.exe")
+  );
+});

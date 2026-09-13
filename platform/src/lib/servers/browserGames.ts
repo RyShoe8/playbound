@@ -39,6 +39,7 @@ const DEDICATED_SERVER_GAMES: ReadonlySet<string> = new Set([
   "renegade-x",
   "openmohaa",
   "medal-of-honor-allied-assault",
+  "teeworlds",
 ]);
 
 /**

@@ -100,3 +100,12 @@ test("other games keep the executable directory as their working directory", () 
     path.join("C:", "Games", "Example", "bin")
   );
 });
+
+test("Lost Alpha bins/XR_3DA.exe resolves working directory to package root", () => {
+  const exe = path.join("C:", "Games", "stalker-lost-alpha", "bins", "XR_3DA.exe");
+  assert.equal(
+    GameLauncher.resolveWorkingDirectory(exe, "stalker-lost-alpha"),
+    path.join("C:", "Games", "stalker-lost-alpha")
+  );
+});
+

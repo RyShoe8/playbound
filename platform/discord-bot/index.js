@@ -310,33 +310,73 @@ function franchiseCategoryName(title) {
   return String(title || "Game").trim().slice(0, 100) || "Game";
 }
 
+function formatAbsoluteMediaUrl(raw) {
+  if (!raw || typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `${SITE_URL}${trimmed.startsWith("/") ? trimmed : `/${trimmed}`}`;
+}
+
 function welcomeBody(game) {
   const slug = game.slug;
-  return [
-    `Welcome to the PlayBound **${game.title}** channel.`,
-    "",
-    `Game page: ${SITE_URL}/games/${slug}`,
-    `Install: ${SITE_URL}/games/${slug}?tab=install`,
-    `Servers: ${SITE_URL}/games/${slug}?tab=servers`,
-    `Discussion: ${SITE_URL}/games/${slug}?tab=discussion`,
-    "",
-    "Use this channel for live conversation and finding players.",
-    "Use the PlayBound Discussion tab for guides, technical questions,",
-    "solutions and information that should remain searchable.",
-  ].join("\n");
+  const url = `${SITE_URL}/games/${slug}`;
+  const title = String(game.title || "Game").slice(0, 256);
+  const overview = String(
+    game.thatOneThing || game.tagline || game.description || ""
+  )
+    .replace(/https?:\/\/\S+/gi, "")
+    .trim()
+    .slice(0, 2000);
+
+  const rawCover =
+    game.coverImage || (Array.isArray(game.screenshots) ? game.screenshots.find((u) => u?.trim()) : null);
+  const imageUrl = formatAbsoluteMediaUrl(rawCover);
+
+  const embed = new EmbedBuilder()
+    .setColor(0x8b5cf6)
+    .setTitle(title)
+    .setURL(url);
+
+  if (overview) {
+    embed.setDescription(overview);
+  }
+  if (imageUrl) {
+    embed.setImage(imageUrl);
+  }
+
+  return { embeds: [embed] };
 }
 
 function editionWelcomeBody(game, edition) {
-  return [
-    `Welcome to the PlayBound **${edition.name}** channel (${game.title}).`,
-    "",
-    `Edition page: ${SITE_URL}/games/${game.slug}/editions/${edition.slug}`,
-    `Game hub: ${SITE_URL}/games/${game.slug}`,
-    `All editions: ${SITE_URL}/games/${game.slug}#editions`,
-    "",
-    "Use this channel for live chat about this edition.",
-    "Use PlayBound Discussion on the edition page for searchable help.",
-  ].join("\n");
+  const url = `${SITE_URL}/games/${game.slug}/editions/${edition.slug}`;
+  const title = `${edition.name} (${game.title})`.slice(0, 256);
+  const overview = String(
+    edition.description || game.thatOneThing || game.tagline || ""
+  )
+    .replace(/https?:\/\/\S+/gi, "")
+    .trim()
+    .slice(0, 2000);
+
+  const rawCover =
+    edition.coverImage ||
+    game.coverImage ||
+    (Array.isArray(game.screenshots) ? game.screenshots.find((u) => u?.trim()) : null);
+  const imageUrl = formatAbsoluteMediaUrl(rawCover);
+
+  const embed = new EmbedBuilder()
+    .setColor(0x8b5cf6)
+    .setTitle(title)
+    .setURL(url);
+
+  if (overview) {
+    embed.setDescription(overview);
+  }
+  if (imageUrl) {
+    embed.setImage(imageUrl);
+  }
+
+  return { embeds: [embed] };
 }
 
 function playboundRecord(channel, invite, previous) {

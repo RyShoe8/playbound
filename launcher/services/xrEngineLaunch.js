@@ -15,7 +15,7 @@ function isXr3daClient(launchPath) {
 
 function isXrEngineLaunch(launchPath, gameSlug) {
   const slug = String(gameSlug || "").toLowerCase();
-  if (slug === "s-t-a-l-k-e-r-shadow-of-chernobyl" || slug === "lost-alpha") return true;
+  if (slug === "s-t-a-l-k-e-r-shadow-of-chernobyl" || slug === "lost-alpha" || slug === "stalker-lost-alpha") return true;
   return isXr3daClient(launchPath);
 }
 

@@ -4265,6 +4265,30 @@ async function extractArchive(archivePath, destDir) {
     await extractZip(archivePath, destDir);
   }
   repairUnixExtractedBinaries(destDir);
+  await unpackNestedArchives(destDir);
+}
+
+async function unpackNestedArchives(destDir) {
+  if (!destDir || !fs.existsSync(destDir)) return;
+  try {
+    const entries = fs.readdirSync(destDir);
+    for (const name of entries) {
+      if (/\b(?:bins?|engine|patch|update|configurator)\b.*\.(?:7z|zip)$/i.test(name)) {
+        const full = path.join(destDir, name);
+        try {
+          if (fs.statSync(full).isFile()) {
+            if (name.toLowerCase().endsWith(".7z") && sevenZipBinary()) {
+              await extract7z(full, destDir);
+            } else {
+              await extractZip(full, destDir);
+            }
+          }
+        } catch (e) {
+          console.warn("[nested-archive] failed to unpack:", name, e?.message || e);
+        }
+      }
+    }
+  } catch {}
 }
 
 function repairUnixExtractedBinaries(destDir) {
@@ -4349,14 +4373,14 @@ function findExecutable(dir, exeHint) {
    * Unknown Horizons the picker chose wininst-14.0-amd64.exe over the game.
    * Nothing anyone ships as an actual game is named this.
    */
-  const skip = /unins|setup|install|crash|report|vcredist|dxsetup|wininst/i;
+  const skip = /unins|setup|install|crash|report|vcredist|dxsetup|wininst|savandt|sound commit/i;
   /*
    * Shipped alongside the game rather than being it: level editors, config
    * front-ends, benchmarks. Demoted rather than skipped, so a package whose
    * only executable is one of these still launches — the rank only decides
    * which wins when there is something else to prefer.
    */
-  const tool = /editor|maker|config|settings|benchmark|dedicated|tweaker|configurator/i;
+  const tool = /editor|maker|config|settings|benchmark|dedicated|tweaker|configurator|savandt|sound attribute|sound commit/i;
   /*
    * EasyAntiCheat's bootstrap. A protected game ships this beside its real
    * binary and Steam is configured to run it: it brings up the EAC service and
@@ -4396,7 +4420,15 @@ function findExecutable(dir, exeHint) {
           candidates.push({ full, name, size: stat.size, rank: 300 });
           continue;
         }
+        // Audio / sound asset subtrees never hold game executables.
+        if (/^(?:sounds?|audio|music|voice|characters_voice)$/i.test(name) && /gamedata|assets|resources/i.test(d)) {
+          continue;
+        }
         walk(full, depth + 1, ignoreSkip);
+        continue;
+      }
+      // Never pick binaries nested inside sound/texture asset folders.
+      if (/[\\/](?:sounds?|audio|textures)[\\/]/i.test(full)) {
         continue;
       }
       const lower = name.toLowerCase();
@@ -14639,9 +14671,26 @@ function resolveLocalServerBinary(gameDir, hostLaunch) {
   if (process.platform === "win32" && !/\.(exe|bat|cmd|jar)$/i.test(hint)) {
     names.push(`${hint}.exe`);
   }
+  if (/teeworlds/i.test(hint) || /teeworlds/i.test(gameDir)) {
+    if (process.platform === "win32") {
+      names.push("DDNet-Server.exe", "teeworlds_srv.exe");
+    } else {
+      names.push("DDNet-Server", "teeworlds_srv");
+    }
+  }
   // Shallow on purpose: a server binary sits beside the client or one level
   // down. Walking a whole install to find one is a lot of disk for a guess.
   const roots = [gameDir, path.join(gameDir, "bin")];
+  try {
+    const subs = fs.readdirSync(gameDir);
+    for (const sub of subs) {
+      if (names.includes(sub)) continue;
+      const full = path.join(gameDir, sub);
+      try {
+        if (fs.statSync(full).isDirectory()) roots.push(full);
+      } catch {}
+    }
+  } catch {}
   for (const root of roots) {
     for (const name of names) {
       try {

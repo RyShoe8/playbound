@@ -54,6 +54,7 @@ export function LauncherPackageUploader({
   const [elapsed, setElapsed] = useState("");
   const [pending, setPending] = useState<Pending | null>(null);
   const [phase, setPhase] = useState<"idle" | "blob" | "vps">("idle");
+  const cancelRef = useRef(false);
 
   /*
    * Survives a reload or a closed tab. A multi-gigabyte copy outlives the
@@ -90,14 +91,17 @@ export function LauncherPackageUploader({
       fileName: job.fileName,
       sizeBytes: job.sizeBytes,
     };
+    cancelRef.current = false;
     const startedAt = Date.now();
     setPhase("vps");
     setPercent(0);
     setTransferred(formatDataVolume(0) + " of " + formatDataVolume(job.sizeBytes));
     while (Date.now() - startedAt < VPS_POLL_CEILING_MS) {
+      if (cancelRef.current) return;
       setElapsed(clock(Date.now() - startedAt));
       setState("Copying to VPS and verifying…");
       await new Promise((resolve) => window.setTimeout(resolve, VPS_POLL_INTERVAL_MS));
+      if (cancelRef.current) return;
       const result = await fetch("/api/admin/launcher-package", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -222,11 +226,29 @@ export function LauncherPackageUploader({
             style={{ width: `${Math.max(2, percent)}%` }}
           />
         </div>
-        <div className="mt-1.5 flex flex-wrap justify-between gap-2 text-[11px] tabular-nums text-muted-foreground">
+        <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px] tabular-nums text-muted-foreground">
           <span>
             {phase === "vps" ? "Copying to VPS" : "Uploading to Blob"} — {percent.toFixed(1)}%
           </span>
-          <span>{phase === "vps" ? `${transferred} · ${elapsed}` : transferred}</span>
+          <div className="flex items-center gap-2">
+            <span>{phase === "vps" ? `${transferred} · ${elapsed}` : transferred}</span>
+            {busy ? (
+              <button
+                type="button"
+                onClick={() => {
+                  cancelRef.current = true;
+                  rememberPending(null);
+                  setBusy(false);
+                  setPhase("idle");
+                  setPercent(null);
+                  setState("Operation cancelled.");
+                }}
+                className="text-[11px] font-semibold text-destructive underline hover:opacity-80"
+              >
+                Cancel
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
     ) : null}

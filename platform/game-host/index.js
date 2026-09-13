@@ -345,6 +345,7 @@ function httpsGetStream(targetUrl, { headers, signal, maxRedirects = 5 } = {}) {
       const parsed = typeof u === "string" ? new URL(u) : u;
       const client = parsed.protocol === "http:" ? http : https;
       const req = client.get(parsed, { headers: defaultHeaders, signal }, (res) => {
+        req.setTimeout(0);
         const status = res.statusCode || 0;
         if (status >= 300 && status < 400 && res.headers.location) {
           res.resume();
@@ -356,6 +357,9 @@ function httpsGetStream(targetUrl, { headers, signal, maxRedirects = 5 } = {}) {
           return;
         }
         resolve({ statusCode: status, headers: res.headers, stream: res });
+      });
+      req.setTimeout(45_000, () => {
+        req.destroy(new Error("Connection timed out waiting for server response"));
       });
       req.on("error", reject);
     };

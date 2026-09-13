@@ -705,23 +705,24 @@ function wireMainEvents() {
     markViewDirty(views.library, views.gameDetail, views.editionDetail);
     if (returnToParty) {
       /* navigateTo("friends") above already refreshed the party panel. */
+    } else if (data?.slug && !data?.uninstalled && data?.scanned == null) {
+      // When a game finishes installing, take you to the game page for that game
+      if (
+        state.currentView === "editionDetail" &&
+        state.currentEditionDetail?.gameSlug === data.slug
+      ) {
+        api.renderEditionDetailView?.(
+          state.currentEditionDetail.gameSlug,
+          state.currentEditionDetail.editionSlug,
+          { force: true }
+        );
+      } else if (state.currentView === "gameDetail" && state.currentDetailSlug === data.slug) {
+        api.renderGameDetailView?.(data.slug, { force: true });
+      } else {
+        void api.openGameDetail?.(data.slug);
+      }
     } else if (state.currentView === "library") api.renderLibraryView?.();
     else if (state.currentView === "home") api.paintHomeGrids?.(state.catalogCache, state.recentCache);
-    else if (state.currentView === "gameDetail" && data?.slug && state.currentDetailSlug === data.slug) {
-      api.renderGameDetailView?.(data.slug, { force: true });
-    } else if (
-      // Installing an edition now leaves you on the edition page, so that page
-      // has to pick the finished install up itself and swap Install for Play.
-      state.currentView === "editionDetail" &&
-      data?.slug &&
-      state.currentEditionDetail?.gameSlug === data.slug
-    ) {
-      api.renderEditionDetailView?.(
-        state.currentEditionDetail.gameSlug,
-        state.currentEditionDetail.editionSlug,
-        { force: true }
-      );
-    }
     /* Party config-sync needs a fresh poll after install so “wrong version” clears. */
     if (returnToParty || state.currentView === "friends" || state._activeParty) {
       const areaSlot = document.getElementById("friends-party-area");
@@ -788,8 +789,83 @@ function wireMainEvents() {
     }
   });
 
+const activeContextInstalls = new Set();
+
+async function handleContextInstall(ctx) {
+  if (!ctx || !ctx.slug) return;
+  const key = `${ctx.slug}::${ctx.editionSlug || ""}`;
+  if (activeContextInstalls.has(key)) {
+    const title = ctx.entry?.title || ctx.slug;
+    setStatus(`${title} is already installing — see the queue in the status bar.`);
+    return;
+  }
+  activeContextInstalls.add(key);
+
+  const title = ctx.entry?.title || ctx.slug;
+  setStatus(`Installing ${title}…`);
+  setProgress("indeterminate");
+
+  try {
+    const addons = Array.isArray(ctx.addons) ? ctx.addons : [];
+    const res = await window.playbound.install(ctx.slug, null, ctx.editionSlug || null, addons);
+    try {
+      await window.playbound.clearContext();
+    } catch {}
+
+    if (res?.status === "installer-opened") {
+      setStatus("Installer opened — waiting for installer to finish…");
+      setProgress(null);
+      if (ctx.editionSlug) {
+        void api.openEditionDetail?.(ctx.slug, ctx.editionSlug);
+      } else {
+        void api.openGameDetail?.(ctx.slug);
+      }
+      return;
+    }
+
+    if (res?.status === "installed") {
+      setStatus(res.note || "Install complete!");
+      setProgress(null);
+      const mods = Array.isArray(ctx.modSlugs) ? ctx.modSlugs : [];
+      if (mods.length > 0) {
+        for (let i = 0; i < mods.length; i++) {
+          setStatus(`Installing mod ${i + 1} of ${mods.length}…`);
+          try {
+            await window.playbound.installMod(mods[i], null);
+          } catch (err) {
+            console.warn(`install-mod ${mods[i]} failed:`, err?.message || err);
+          }
+        }
+        setStatus(`Install complete — ${mods.length} mod${mods.length === 1 ? "" : "s"} added.`);
+      }
+      if (await api.finishPartyInstallReturn?.(ctx.slug)) {
+        // Party return handled
+      } else if (ctx.editionSlug) {
+        void api.openEditionDetail?.(ctx.slug, ctx.editionSlug);
+      } else {
+        void api.openGameDetail?.(ctx.slug);
+      }
+    }
+  } catch (err) {
+    setStatus(err?.message || String(err), true);
+    setProgress(null);
+  } finally {
+    activeContextInstalls.delete(key);
+  }
+}
+
   window.playbound.onContext((data) => {
     if (data) {
+      if (data.action === "install" && data.slug) {
+        state.deepLinkCtx = data;
+        if (data.editionSlug) {
+          void api.openEditionDetail?.(data.slug, data.editionSlug);
+        } else {
+          void api.openGameDetail?.(data.slug);
+        }
+        void handleContextInstall(data);
+        return;
+      }
       const same =
         state.currentView === "deepLink" && isSameDeepLinkContext(state.deepLinkCtx, data);
       state.deepLinkCtx = data;
@@ -864,7 +940,16 @@ async function boot() {
     applyAccountToSidebar(bootState.account);
     if (bootState.context) {
       state.deepLinkCtx = bootState.context;
-      await navigateTo("deepLink", { ctx: bootState.context });
+      if (bootState.context.action === "install" && bootState.context.slug) {
+        if (bootState.context.editionSlug) {
+          await api.openEditionDetail?.(bootState.context.slug, bootState.context.editionSlug);
+        } else {
+          await api.openGameDetail?.(bootState.context.slug);
+        }
+        void handleContextInstall(bootState.context);
+      } else {
+        await navigateTo("deepLink", { ctx: bootState.context });
+      }
     } else {
       await navigateTo("home");
     }
