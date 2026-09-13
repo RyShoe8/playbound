@@ -1487,7 +1487,7 @@ const ICON = {
  */
 let partyGamesCache = null;
 let partyGamesCacheKey = null;
-/** Party game picker: true = couch co-op only; false = online multiplayer only. */
+/** Party game picker: true = couch only; false = online multiplayer list. */
 let partyCouchCoopFilter = false;
 /** Blocks poll repaints from undoing an in-flight party game pick. */
 let partyMutationInFlight = 0;
@@ -1522,6 +1522,7 @@ async function ensurePartyGames() {
       maxPlayers: typeof g.maxPlayers === "number" ? g.maxPlayers : null,
       platforms: Array.isArray(g.platforms) ? g.platforms : [],
       browserPlayable: Boolean(g.browserPlayable),
+      genres: Array.isArray(g.genres) ? g.genres.map(String).filter(Boolean) : [],
     }))
     .sort((a, b) => a.title.localeCompare(b.title));
   partyGamesCacheKey = cacheKey;
@@ -1557,11 +1558,19 @@ function fitsPartySize(maxPlayers, memberCount) {
   return seats >= need;
 }
 
-function partyGameOptionLabel(title, { testing = false, couch = false } = {}) {
-  let label = title;
-  if (testing) label = `${label} (testing)`;
-  if (couch) label = `${label} (couch co-op)`;
-  return label;
+function partyGameOptionLabel(title, { testing = false, couch = false, genres = [] } = {}) {
+  const tags = [];
+  for (const genre of genres || []) {
+    const trimmed = String(genre || "").trim();
+    if (!trimmed) continue;
+    if (tags.some((t) => t.toLowerCase() === trimmed.toLowerCase())) continue;
+    tags.push(trimmed);
+    if (tags.length >= 3) break;
+  }
+  if (testing) tags.push("Testing");
+  if (couch) tags.push("Couch co-op");
+  if (tags.length === 0) return title;
+  return `${title} · ${tags.join(" · ")}`;
 }
 
 function partyGameOptionsHtml(selectedSlug, party) {
@@ -1585,6 +1594,7 @@ function partyGameOptionsHtml(selectedSlug, party) {
     const label = partyGameOptionLabel(g.title, {
       testing: Boolean(g.testing || g.status === "testing"),
       couch: couchOnly.has(g.slug),
+      genres: g.genres,
     });
     options.push(
       `<option value="${escapeHtml(g.slug)}"${g.slug === selectedSlug ? " selected" : ""}>${escapeHtml(
@@ -1783,16 +1793,7 @@ function buildPartyViewHtml(party) {
     : "";
 
   const gameHtml = isLeader && !ended
-    ? `<label class="party-couch-filter">
-         <span>Couch co-op</span>
-         <input type="checkbox" id="party-couch-coop-filter"${partyCouchCoopFilter ? " checked" : ""} />
-       </label>
-       <p class="view-sub party-couch-filter-hint">${
-         partyCouchCoopFilter
-           ? "Couch co-op only (pads on one PC, or Connect for remote pads)."
-           : "All multiplayer games, including couch co-op with Connect."
-       }</p>
-       <label class="party-field-label" for="party-game-select">Game</label>
+    ? `<label class="party-field-label" for="party-game-select">Game</label>
        <select class="input-text party-game-select" id="party-game-select" aria-label="Party game">
          ${partyGameOptionsHtml(party.gameSlug || "", party)}
        </select>${openRaModHtml}${couchBadgeHtml}${platformNoteHtml}`
@@ -1879,6 +1880,21 @@ function buildPartyViewHtml(party) {
                    PARTY_VISIBILITY_LABELS[o.value]
                  )}</option>`
              ).join("")}
+           </select>
+         </div>`
+      : "";
+
+  const multiplayerTypeHtml =
+    isLeader && !ended
+      ? `<div class="party-field-group">
+           <label class="party-field-label" for="party-multiplayer-type-select">Multiplayer Type</label>
+           <select class="input-text party-multiplayer-type-select" id="party-multiplayer-type-select" aria-label="Multiplayer Type" title="${
+             partyCouchCoopFilter
+               ? "Showing couch co-op games only"
+               : "Showing all multiplayer games"
+           }">
+             <option value="online"${partyCouchCoopFilter ? "" : " selected"}>Online</option>
+             <option value="couch"${partyCouchCoopFilter ? " selected" : ""}>Couch</option>
            </select>
          </div>`
       : "";
@@ -2090,6 +2106,7 @@ function buildPartyViewHtml(party) {
             <div class="party-header-controls">
               ${hostModeHtml}
               ${visibilityHtml}
+              ${multiplayerTypeHtml}
             </div>
           </div>
           <div class="party-header-grid">
@@ -2962,10 +2979,10 @@ function wirePartyView(slot, party) {
   }
 
   const gameSelect = slot.querySelector("#party-game-select");
-  const couchFilter = slot.querySelector("#party-couch-coop-filter");
-  if (couchFilter) {
-    couchFilter.addEventListener("change", () => {
-      partyCouchCoopFilter = Boolean(couchFilter.checked);
+  const multiplayerType = slot.querySelector("#party-multiplayer-type-select");
+  if (multiplayerType) {
+    multiplayerType.addEventListener("change", () => {
+      partyCouchCoopFilter = multiplayerType.value === "couch";
       slot.dataset.sig = "";
       paintPartyArea({ myParties: [state._activeParty], discoverable: [] }, { force: true });
     });

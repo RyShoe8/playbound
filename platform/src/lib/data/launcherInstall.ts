@@ -100,7 +100,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     ],
     note: "Official standalone Windows installer with bundled Dune II PAK assets. Do not use the GitHub engine-only zip.",
   },
-  "c-dogs-retrarch": {
+  "c-dogs-sdl": {
     enabled: true,
     kind: "github-zip",
     repo: "cxong/cdogs-sdl",

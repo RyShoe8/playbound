@@ -1469,25 +1469,37 @@ export async function leaveParty(
   await releaseActiveMembership(userId, partyId);
   await setPresenceParty(userId, { partyId: null });
   if (updated.status === "ended") {
-    await releasePartyHost(updated);
-    await releasePartyLan(updated);
-    await updated.save();
-    await releasePartyMemberships(partyId);
-    await clearPresenceForParty(String(updated._id));
-    await cleanupPartyDiscordVoice(updated);
+    /*
+     * Membership is already committed. Host/LAN/Discord cleanup must not turn
+     * a successful leave into a 500 — e.g. hosted.status "release-pending"
+     * used to fail schema validation on save.
+     */
+    try {
+      await releasePartyHost(updated);
+      await releasePartyLan(updated);
+      await updated.save();
+      await releasePartyMemberships(partyId);
+      await clearPresenceForParty(String(updated._id));
+      await cleanupPartyDiscordVoice(updated);
+    } catch (err) {
+      console.warn(
+        `[party] leave cleanup failed for ${partyId}:`,
+        err instanceof Error ? err.message : err
+      );
+    }
   }
 
-  const leftParty = await partyPayloadForDoc(updated.toObject());
+  const gameSlug = String(updated.gameSlug || "") || null;
   trackPartyEvent("party_left", {
     partyId: String(updated._id),
-    gameSlug: leftParty.gameSlug || null,
+    gameSlug,
     userId,
     ended: updated.status === "ended",
   });
   if (updated.status === "ended") {
     trackPartyEvent("party_ended", {
       partyId: String(updated._id),
-      gameSlug: leftParty.gameSlug || null,
+      gameSlug,
       userId,
       reason: "empty",
     });

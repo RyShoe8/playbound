@@ -34,7 +34,8 @@ const PartyHostedSchema = new Schema(
     roomId: { type: String, default: null },
     status: {
       type: String,
-      enum: ["none", "pending", "ready", "failed"],
+      // release-pending: deleteHostRoom failed; retry later (see releasePartyHost)
+      enum: ["none", "pending", "ready", "failed", "release-pending"],
       default: "none",
     },
     host: { type: String, default: null },

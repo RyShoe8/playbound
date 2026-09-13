@@ -54,6 +54,7 @@ export default async function FriendsPage() {
            */
           features: g.features,
           tags: g.tags,
+          genres: g.genres,
         }))}
         genres={[...GENRES]}
       />

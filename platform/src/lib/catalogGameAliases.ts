@@ -9,6 +9,11 @@
 
 export const CATALOG_GAME_SLUG_ALIASES: Record<string, string> = {
   alephone: "marathon-2",
+  /*
+   * Pre-rename typo slug. Catalog/install/adapters use c-dogs-sdl; local
+   * installed.json and some Mongo previousSlugs still carry the old key.
+   */
+  "c-dogs-retrarch": "c-dogs-sdl",
   keeperfx: "dungeon-keeper-gold",
   "dungeon-keeper": "dungeon-keeper-gold",
   /*

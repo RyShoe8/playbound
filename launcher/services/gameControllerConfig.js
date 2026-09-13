@@ -28,6 +28,11 @@ const fs = require("fs");
 const os = require("os");
 const { defaultContext } = require("./saveLocations");
 const { CONTROLLER_MAPPINGS } = require("./openMwConfig");
+const {
+  applyOpenBorP1Keys,
+  isOpenBorCfg,
+  p1StillKeyboard,
+} = require("./openborCfg");
 
 /**
  * The first of these paths that exists, or null.
@@ -447,6 +452,28 @@ const rvglEntry = {
 };
 
 const GAMES = {
+  /**
+   * OpenBOR binary Saves/*.cfg — P1 ships on keyboard until Options remap.
+   * DualSense capture from a real TMNT session; Xbox uses a sibling template.
+   */
+  "tmnt-rescue-palooza": {
+    binary: true,
+    verified:
+      "read from C:\\Games\\tmnt-rescue-palooza after DualSense remap — P1 keys at 0x34",
+    resolve({ installDir }) {
+      if (!installDir) return null;
+      return firstExisting([
+        path.join(installDir, "Saves", "TMNT_RP_1_1_5.cfg"),
+        path.join(installDir, "TMNT Rescue-Palooza 1.15", "Saves", "TMNT_RP_1_1_5.cfg"),
+      ]);
+    },
+    needsConfig(buf) {
+      return isOpenBorCfg(buf) && p1StillKeyboard(buf);
+    },
+    apply(buf, profile) {
+      return applyOpenBorP1Keys(buf, profile);
+    },
+  },
   "re-volt-rvgl": rvglEntry,
   "rvgl-original": rvglEntry,
   "rvgl-online": rvglEntry,
@@ -1117,10 +1144,6 @@ const NO_CONFIG_NEEDED = {
     kind: "native",
     note: "OpenBOR binds pads natively for up to 4 local players; no PlayBound config write needed.",
   },
-  "tmnt-rescue-palooza": {
-    kind: "native",
-    note: "Full TMNT Rescue-Palooza binds pads natively for up to 4 local players; no PlayBound config write needed.",
-  },
   "relic-hunters-zero-remix": {
     kind: "native",
     note: "Native twin-stick gamepad support for local 2P couch co-op; no PlayBound config write needed.",
@@ -1206,11 +1229,16 @@ function configPathFor(gameSlug, installDir, ctx = defaultContext()) {
  * configured, unrecognised format, no pad — so the caller has one branch
  * rather than four.
  */
-function applyProfile(gameSlug, text, profile) {
+function applyProfile(gameSlug, textOrBuf, profile) {
   const entry = GAMES[gameSlug];
   if (!entry || !profile) return null;
-  if (!entry.needsConfig(text, profile)) return null;
-  return entry.apply(text, profile);
+  if (entry.binary) {
+    const buf = Buffer.isBuffer(textOrBuf) ? textOrBuf : Buffer.from(String(textOrBuf || ""), "latin1");
+    if (!entry.needsConfig(buf, profile)) return null;
+    return entry.apply(buf, profile);
+  }
+  if (!entry.needsConfig(textOrBuf, profile)) return null;
+  return entry.apply(textOrBuf, profile);
 }
 
 
