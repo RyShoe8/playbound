@@ -93,15 +93,13 @@ export function fitsPartySize(
 /**
  * Option label for the party game picker.
  *
- * Genres and status markers share one tag trail so Testing stands out the same
- * way Strategy or Couch co-op does — a parenthetical "(testing)" was too easy
- * to miss in a long select list.
+ * Genres and Testing share one tag trail. Couch co-op is not tagged here —
+ * Multiplayer Type already filters the list to couch or online.
  */
 export function partyGameOptionLabel(
   title: string,
   opts: {
     testing?: boolean;
-    couch?: boolean;
     genres?: readonly string[] | null;
   } = {}
 ): string {
@@ -114,7 +112,6 @@ export function partyGameOptionLabel(
     if (tags.length >= 3) break;
   }
   if (opts.testing) tags.push("Testing");
-  if (opts.couch) tags.push("Couch co-op");
   if (tags.length === 0) return title;
   return `${title} · ${tags.join(" · ")}`;
 }

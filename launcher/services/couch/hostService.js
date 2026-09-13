@@ -312,6 +312,15 @@ function createHostService(deps) {
     provider = createProvider();
     const probe = await provider.probe();
 
+    // Phone-as-controller games (Hurrican, etc.) enumerate pads at startup.
+    // Create player-one's virtual XInput device now so in-game setup sees a pad
+    // even before the phone connects and sends its first input packet.
+    try {
+      await ensureSlot(0);
+    } catch (err) {
+      console.warn("[couch] prewarm slot 0 failed:", err?.message || err);
+    }
+
     notify("Starting Couch Mode…");
     const res = await fetch(`${getApiBase()}/api/couch/sessions`, {
       method: "POST",
@@ -522,6 +531,15 @@ function createHostService(deps) {
     return ensureVigem(() => {});
   }
 
+  /** Exposed for Play — warm a ViGEm slot when couch is already live. */
+  async function warmControllerSlot(slot = 0) {
+    const ensured = await ensureVigem(() => {});
+    if (!ensured.ok) return ensured;
+    if (!provider) provider = createProvider();
+    await ensureSlot(slot);
+    return { ok: true };
+  }
+
   return {
     createSession,
     stopSession,
@@ -531,6 +549,7 @@ function createHostService(deps) {
     getState,
     probeDriver,
     applyInput,
+    warmControllerSlot,
   };
 }
 

@@ -330,12 +330,14 @@ export function PartyView({
      */
     if (party.couch?.enabled && !isLeader) {
       e?.preventDefault();
-      const url =
+      const base =
         actions.couch?.joinUrl ||
         party.couch.joinUrl ||
         (party.couch.joinCode ? `https://playbound.club/c/${party.couch.joinCode}` : "");
-      if (!url) return;
-      window.open(url, "_blank", "noopener,noreferrer");
+      if (!base) return;
+      const sep = base.includes("?") ? "&" : "?";
+      const url = `${base}${sep}view=game`;
+      window.open(url, "playbound-game-view", "noopener,noreferrer");
       return;
     }
     if (waitForHostedRoom) {
@@ -554,15 +556,14 @@ export function PartyView({
                     }}
                   >
                     <option value="">Select a game</option>
-                    {/*
-                      Marked in the list so leaders see which picks are
-                      couch/Connect before they commit the party.
+                      {/*
+                      Game list is already filtered by Multiplayer Type; labels
+                      only need genres + Testing.
                     */}
                     {partyGames.map((g) => (
                       <option key={g.slug} value={g.slug}>
                         {partyGameOptionLabel(g.title, {
                           testing: g.status === "testing",
-                          couch: couchOnly.has(g.slug),
                           genres: g.genres,
                         })}
                       </option>

@@ -26,11 +26,12 @@ const csp = [
   // real allowlist for optimized images.
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://analytics.google.com https://analytics.ahrefs.com https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://www.recaptcha.net https://*.steamstatic.com https://steamcdn-a.akamaihd.net https://cdn.cookie-script.com https://eu.cookie-script.com https://vercel.com https://*.blob.vercel-storage.com https://*.public.blob.vercel-storage.com",
+  "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://analytics.google.com https://analytics.ahrefs.com https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://www.recaptcha.net https://*.steamstatic.com https://steamcdn-a.akamaihd.net https://cdn.cookie-script.com https://eu.cookie-script.com https://vercel.com https://*.blob.vercel-storage.com https://*.public.blob.vercel-storage.com ws: wss: blob:",
   // reCAPTCHA's challenge plus the trailer embeds produced by
   // classifyMediaUrl() in lib/mediaEmbed.ts.
   "frame-src 'self' https://www.google.com https://www.gstatic.com https://www.recaptcha.net https://www.youtube-nocookie.com https://www.youtube.com https://player.vimeo.com",
-  "media-src 'self' https:",
+  // Host game-view streams arrive as MediaStream blobs over WebRTC.
+  "media-src 'self' https: blob: mediastream:",
   "worker-src 'self' blob:",
   "manifest-src 'self'",
 ].join("; ");

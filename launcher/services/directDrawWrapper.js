@@ -35,6 +35,21 @@ const DGVOODOO_MS_X86_MIRROR_URL =
 /** Classic DirectDraw COM class FreeTrain's DirectDraw.NET constructs. */
 const CLSID_DIRECTDRAW = "{E1211353-8E94-11D1-8808-00C04FC2C602}";
 
+/**
+ * COM CLSIDs that legacy DirectDraw titles may CoCreateInstance.
+ * FreeTrain uses DirectDraw.NET's E1211353; most titles use the DDrawCompat set.
+ * All are registered to the local `ddraw.dll` name (not an absolute path) so
+ * the wrapper beside the exe wins — absolute HKCU paths made dgVoodoo load but
+ * returned 80040111 (CLASS_E_CLASSNOTAVAILABLE) for some builds.
+ */
+const DIRECTDRAW_COM_CLSIDS = [
+  CLSID_DIRECTDRAW,
+  "{D7B70EE0-4340-11CF-B063-0020AFC2CD35}",
+  "{D7B70EE0-4340-11CF-B063-444553540000}",
+  "{3C305196-50DB-11D3-9CFE-00C04FD930C5}",
+  "{593817A0-7DB3-11CF-A2DE-00AA00B93356}",
+];
+
 const MS_X86_DLLS = ["DDraw.dll", "D3DImm.dll", "D3D8.dll", "D3D9.dll"];
 
 const FREETRAIN_SLUGS = new Set(["freetrain", "free-train"]);
@@ -190,32 +205,72 @@ AppControlledScreenMode = true
   fs.writeFileSync(confPath, body, "utf8");
 }
 
-function registerDirectDrawComHkcu(ddrawPath) {
-  if (process.platform !== "win32") return { ok: true, skipped: true };
-  const abs = path.resolve(ddrawPath);
-  if (!fs.existsSync(abs)) {
-    return { ok: false, error: `DDRAW.dll missing at ${abs}` };
+/** Ensure both DDraw.dll and ddraw.dll exist — COM redirection uses the lowercase name. */
+function ensureDdrawFilenamePair(gameDir) {
+  if (!gameDir || !fs.existsSync(gameDir)) return null;
+  const upper = path.join(gameDir, "DDraw.dll");
+  const lower = path.join(gameDir, "ddraw.dll");
+  if (fs.existsSync(upper) && !fs.existsSync(lower)) {
+    fs.copyFileSync(upper, lower);
+  } else if (fs.existsSync(lower) && !fs.existsSync(upper)) {
+    fs.copyFileSync(lower, upper);
   }
-  /*
-   * Per-user COM registration — no elevation. CoCreateInstance prefers HKCU.
-   *
-   * FreeTrain is 32-bit. On 64-bit Windows, a 32-bit process reads the COM
-   * class from Wow6432Node; writing only the native CLSID path leaves
-   * CoCreateInstance with 80040154 even when DDraw.dll sits beside the exe.
-   */
-  const dll = abs.replace(/'/g, "''");
+  if (fs.existsSync(lower)) return lower;
+  if (fs.existsSync(upper)) return upper;
+  return null;
+}
+
+/**
+ * Load the wrapper DLL before CoCreateInstance runs (FreeTrain / quartz.dll cases).
+ * HKCU Layers shim — no admin, per user, per exe.
+ */
+function applyInjectDllCompatShim(exePath, dllName = "DDraw.dll") {
+  if (process.platform !== "win32" || !exePath) return { ok: true, skipped: true };
+  const absExe = path.resolve(exePath);
+  if (!fs.existsSync(absExe)) return { ok: true, skipped: true };
+  const layersKey = "HKCU:\\Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers";
+  const layerValue = `InjectDll(${dllName})`;
+  const exeEsc = absExe.replace(/'/g, "''");
+  const layerEsc = layerValue.replace(/'/g, "''");
   const script = `
 $ErrorActionPreference = 'Stop'
-$clsid = '${CLSID_DIRECTDRAW}'
-$dll = '${dll}'
-$paths = @(
-  ('HKCU:\\Software\\Classes\\CLSID\\' + $clsid + '\\InprocServer32'),
-  ('HKCU:\\Software\\Classes\\Wow6432Node\\CLSID\\' + $clsid + '\\InprocServer32')
-)
-foreach ($path in $paths) {
-  New-Item -Path $path -Force | Out-Null
-  Set-ItemProperty -Path $path -Name '(default)' -Value $dll
-  Set-ItemProperty -Path $path -Name 'ThreadingModel' -Value 'Both'
+New-Item -Path '${layersKey}' -Force | Out-Null
+Set-ItemProperty -Path '${layersKey}' -Name '${exeEsc}' -Value '${layerEsc}'
+`;
+  const ps = spawnSync("powershell.exe", ["-NoProfile", "-Command", script], {
+    windowsHide: true,
+    encoding: "utf8",
+  });
+  if (ps.status !== 0) {
+    return { ok: false, error: (ps.stderr || ps.stdout || "InjectDll shim failed").trim() };
+  }
+  return { ok: true };
+}
+
+function registerDirectDrawComHkcu(_ddrawPath) {
+  if (process.platform !== "win32") return { ok: true, skipped: true };
+  /*
+   * Per-user COM redirection — no elevation. CoCreateInstance prefers HKCU.
+   *
+   * Use the relative module name `ddraw.dll`, not an absolute path. DDrawCompat
+   * and dgVoodoo both expect the loader to resolve from the app directory; an
+   * absolute InprocServer32 made CoCreateInstance load dgVoodoo yet still return
+   * 80040111 for FreeTrain's DirectDraw.NET CLSID.
+   *
+   * FreeTrain is 32-bit — register under Wow6432Node as well.
+   */
+  const clsids = DIRECTDRAW_COM_CLSIDS.map((c) => JSON.stringify(c)).join(",");
+  const script = `
+$ErrorActionPreference = 'Stop'
+$clsids = @(${clsids})
+$roots = @('HKCU:\\Software\\Classes\\CLSID', 'HKCU:\\Software\\Classes\\Wow6432Node\\CLSID')
+foreach ($clsid in $clsids) {
+  foreach ($root in $roots) {
+    $path = Join-Path $root ($clsid + '\\InprocServer32')
+    New-Item -Path $path -Force | Out-Null
+    Set-ItemProperty -Path $path -Name '(default)' -Value 'ddraw.dll'
+    Set-ItemProperty -Path $path -Name 'ThreadingModel' -Value 'Both'
+  }
 }
 `;
   const ps = spawnSync("powershell.exe", ["-NoProfile", "-Command", script], {
@@ -335,9 +390,14 @@ function createDirectDrawWrapper(deps) {
 
     writeDgVoodooConf(gameDir);
 
-    const ddraw = path.join(gameDir, "DDraw.dll");
-    const ddrawAlt = path.join(gameDir, "ddraw.dll");
-    const ddrawPath = fs.existsSync(ddraw) ? ddraw : ddrawAlt;
+    const ddrawPath = ensureDdrawFilenamePair(gameDir);
+    if (!ddrawPath) {
+      return {
+        ok: false,
+        error:
+          "DirectDraw compatibility DLLs are missing beside the game executable. " + AV_BLOCK_MSG,
+      };
+    }
     /*
      * Unit tests must not rewrite HKCU CLSID_DirectDraw — a temp gameDir
      * would otherwise leave CoCreateInstance pointing at a deleted path and
@@ -347,6 +407,13 @@ function createDirectDrawWrapper(deps) {
       const reg = registerDirectDrawComHkcu(ddrawPath);
       if (!reg.ok) {
         return { ok: false, error: reg.error };
+      }
+      if (isFreeTrainSlug(opts.slug)) {
+        const exe = opts.exePath || path.join(gameDir, "FreeTrain.exe");
+        const shim = applyInjectDllCompatShim(exe, "DDraw.dll");
+        if (!shim.ok && !shim.skipped) {
+          console.warn("[directdraw] InjectDll shim skipped:", shim.error);
+        }
       }
     }
 
@@ -395,6 +462,9 @@ module.exports = {
   DGVOODOO_MS_X86_MIRROR_URL,
   writeDgVoodooConf,
   registerDirectDrawComHkcu,
+  DIRECTDRAW_COM_CLSIDS,
+  ensureDdrawFilenamePair,
+  applyInjectDllCompatShim,
   findMsX86Dir,
   bundledMsX86Dir,
   dirHasMsX86Dlls,

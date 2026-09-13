@@ -20,14 +20,16 @@ const JOY_LIST_FIRST = 600;
 
 /**
  * DualSense / PS-class pads on this 2014 OpenBOR build (SDL joystick 0).
- * attack3/attack4 left on Z/X — the in-game remap left them there.
+ * Button indices are JOY_LIST_FIRST + SDL button number.
+ *   attack=2, special=1, jump=3, start=10, screenshot=14
+ * attack2 uses button 0; attack3/attack4 stay on keyboard Z/X (in-game remap left them).
  */
 const DUALSENSE_P1_KEYS = [
   628, 630, 631, 629, // up down left right (axes/hat)
-  602, 601, // attack, attack2
-  122, 120, // attack3=Z, attack4=X (keyboard leftovers from capture)
-  603, 102, // jump, special=F
-  610, 614, // start, screenshot
+  602, 600, // attack=btn2, attack2=btn0
+  122, 120, // attack3=Z, attack4=X
+  603, 601, // jump=btn3, special=btn1
+  610, 614, // start=btn10, screenshot=btn14
 ];
 
 /**
@@ -63,21 +65,38 @@ function p1StillKeyboard(buf) {
   return keys.slice(0, 4).every((k) => k < JOY_LIST_FIRST);
 }
 
+/**
+ * First PlayBound DualSense template left special on keyboard F (102) while
+ * jump was already on joy button 3. Re-write so existing installs pick up the
+ * correct special/attack2 mapping without wiping a player's own remap.
+ */
+function p1HasBrokenDualSenseSpecial(buf) {
+  if (!isOpenBorCfg(buf)) return false;
+  const keys = readP1Keys(buf);
+  const dirsAreJoy = keys.slice(0, 4).every((k) => k >= JOY_LIST_FIRST);
+  // jump=603 (btn3), special=102 (F) — the broken shipped template
+  return dirsAreJoy && keys[8] === 603 && keys[9] === 102;
+}
+
 function keysForProfile(profile) {
   const family = String(profile?.family || "");
   if (family === "xbox") return XBOX_P1_KEYS;
-  // DualSense capture; also the best default for DualShock / generic pads on
-  // this build (same SDL joystick numbering in practice for PS-class devices).
+  // DualSense / DualShock / generic PS-class on this build.
   return DUALSENSE_P1_KEYS;
 }
 
 /**
- * Write P1 joystick bindings when the cfg is still on keyboard defaults.
+ * Write P1 joystick bindings when the cfg is still on keyboard defaults,
+ * or when it still has the broken DualSense special=F template.
  * Returns a new Buffer, or null when nothing should change.
  */
 function applyOpenBorP1Keys(buf, profile) {
   if (!isOpenBorCfg(buf) || !profile) return null;
-  if (!p1StillKeyboard(buf)) return null;
+  const family = String(profile.family || "");
+  const shouldFix =
+    p1StillKeyboard(buf) ||
+    (family !== "xbox" && p1HasBrokenDualSenseSpecial(buf));
+  if (!shouldFix) return null;
   const keys = keysForProfile(profile);
   const next = Buffer.from(buf);
   for (let i = 0; i < KEYS_PER_PLAYER; i += 1) {
@@ -95,5 +114,6 @@ module.exports = {
   isOpenBorCfg,
   readP1Keys,
   p1StillKeyboard,
+  p1HasBrokenDualSenseSpecial,
   applyOpenBorP1Keys,
 };

@@ -298,7 +298,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
           emptyMyPartiesStreak = 0;
         } else if (state.activeParty) {
           emptyMyPartiesStreak += 1;
-          if (emptyMyPartiesStreak < 2) {
+          if (emptyMyPartiesStreak < 5) {
             nextActive = state.activeParty;
           } else {
             emptyMyPartiesStreak = 0;

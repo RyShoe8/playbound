@@ -680,8 +680,9 @@ function withCachedDiscoverable(data) {
  * Stick the last good myParties across a soft party-sync failure or a single
  * empty read. party-sync returns myParties: [] with errors:["parties"] when
  * that half fails — painting that blanked the live party until the next poll.
- * One empty success can also flicker (canonical pick / race); require two
- * consecutive empties before we treat leave as real.
+ * One empty success can also flicker (canonical pick / race); require a few
+ * consecutive empties before we treat leave as real. While returning from a
+ * party Install, never clear — the host is still in the party.
  */
 let lastMyParties = [];
 let emptyMyPartiesStreak = 0;
@@ -701,8 +702,14 @@ function withCachedMyParties(data) {
     return data;
   }
 
+  if (state.returnToFriendsParty && lastMyParties.length > 0) {
+    return { ...data, myParties: lastMyParties };
+  }
+
   emptyMyPartiesStreak += 1;
-  if (emptyMyPartiesStreak < 2 && lastMyParties.length > 0) {
+  // Five consecutive empties (~15s at live poll) before we believe leave is real.
+  // Intermittent party-sync races were blanking the Friends panel mid-lobby.
+  if (emptyMyPartiesStreak < 5 && lastMyParties.length > 0) {
     return { ...data, myParties: lastMyParties };
   }
 
@@ -1558,7 +1565,7 @@ function fitsPartySize(maxPlayers, memberCount) {
   return seats >= need;
 }
 
-function partyGameOptionLabel(title, { testing = false, couch = false, genres = [] } = {}) {
+function partyGameOptionLabel(title, { testing = false, genres = [] } = {}) {
   const tags = [];
   for (const genre of genres || []) {
     const trimmed = String(genre || "").trim();
@@ -1568,7 +1575,6 @@ function partyGameOptionLabel(title, { testing = false, couch = false, genres = 
     if (tags.length >= 3) break;
   }
   if (testing) tags.push("Testing");
-  if (couch) tags.push("Couch co-op");
   if (tags.length === 0) return title;
   return `${title} · ${tags.join(" · ")}`;
 }
@@ -1581,19 +1587,14 @@ function partyGameOptionsHtml(selectedSlug, party) {
     .filter((g) => partyCanAllPlay(g, required))
     .filter((g) => fitsPartySize(g.maxPlayers, memberCount))
     /*
-     * Couch co-op on → only Connect/local couch titles. Off → every party game,
-     * including TMNT/X-Men (couch engines that also play online via Connect).
+     * Couch Multiplayer Type → only Connect/local couch titles. Online → every
+     * party game, including TMNT/X-Men (couch engines that also play via Connect).
      */
     .filter((g) => !partyCouchCoopFilter || couchOnly.has(g.slug));
-  /*
-   * Marked in the list so leaders see which picks are couch/Connect. Slugs come
-   * on the party payload — the launcher cannot import the hostModes registry.
-   */
   const options = [`<option value="">Select a game</option>`];
   for (const g of games) {
     const label = partyGameOptionLabel(g.title, {
       testing: Boolean(g.testing || g.status === "testing"),
-      couch: couchOnly.has(g.slug),
       genres: g.genres,
     });
     options.push(
@@ -2059,7 +2060,7 @@ function buildPartyViewHtml(party) {
     ? `<div class="party-couch">
          <p class="party-section-label">Join online</p>
          <p class="party-couch-code">Code <strong>${escapeHtml(String(couchPanel.joinCode))}</strong></p>
-         <p class="view-sub">Friends: open the game view in a separate window (keyboard &amp; mouse by default). Phones can use playbound.club/c with the code.</p>
+         <p class="view-sub">Friends on a computer: Join online opens the game view (PC or phone controls). Phones can open playbound.club/c with the code for the touch pad.</p>
          <button type="button" id="btn-party-couch-copy" class="party-btn btn-secondary" data-code="${escapeHtml(
            String(couchPanel.joinCode)
          )}">${ICON.phone} Copy code</button>
@@ -2234,6 +2235,8 @@ function buildPartyConfigSyncHtml(party, userId) {
 
   const hostMember = (sync.members || []).find((m) => m.isHost);
   const hostHasGame = Boolean(hostMember?.hasGame) || sync.referenceSource === "host";
+  const versionSelectedByHost = Boolean(party.versionSelectedByHost);
+  const hostVersionReady = hostHasGame || versionSelectedByHost;
   const installEdition =
     (sync.editionSlug && sync.editionSlug !== "__base__" ? sync.editionSlug : null) ||
     (hostMember?.installedEditionSlug && hostMember.installedEditionSlug !== "__base__"
@@ -2251,7 +2254,8 @@ function buildPartyConfigSyncHtml(party, userId) {
     .map((m) => {
       const missing = missingSummary(m, sync.editionSlug);
       const isYou = String(m.userId) === String(userId);
-      const showInstall = isYou;
+      const showInstall = isYou && (isYouHost || hostVersionReady);
+      const waitingOnHost = isYou && !isYouHost && !hostVersionReady;
       const showEditionPicker =
         showInstall && !m.hasGame && sync.referenceSource === "party" && !installEdition;
       return `<li class="party-sync-row">
@@ -2259,7 +2263,11 @@ function buildPartyConfigSyncHtml(party, userId) {
           <div class="party-member-avatar">${escapeHtml((m.username || "?").charAt(0).toUpperCase())}</div>
           <span class="party-sync-who">${escapeHtml(isYou ? "You" : m.username)}</span>
           <span class="party-member-sub">${escapeHtml(
-            isYou ? `need ${missing.join(" and ")}` : `needs ${missing.join(" and ")} — they can install it from their party panel`
+            waitingOnHost
+              ? "waiting for the host to pick a version"
+              : isYou
+              ? `need ${missing.join(" and ")}`
+              : `needs ${missing.join(" and ")} — they can install it from their party panel`
           )}</span>
         </div>
         ${
@@ -2270,7 +2278,9 @@ function buildPartyConfigSyncHtml(party, userId) {
             : showInstall
             ? `<button type="button" class="party-sync-install btn-party-install" data-href="${escapeHtml(
                 href
-              )}">${ICON.download} ${escapeHtml(installLabel)}</button>`
+              )}" data-edition="${escapeHtml(installEdition || "")}" data-confirm-version="${
+                isYouHost && !versionSelectedByHost ? "1" : "0"
+              }">${ICON.download} ${escapeHtml(installLabel)}</button>`
             : ""
         }
       </li>`;
@@ -2283,7 +2293,9 @@ function buildPartyConfigSyncHtml(party, userId) {
       : sync.hostUsername
       ? `This party is playing ${sync.hostUsername}'s setup. Anyone who doesn't have it yet can install it from their own party panel.`
       : "Some members are missing files this party needs. They won't be able to launch with the party until they install them."
-    : "Some members are missing files this party needs. They won't be able to launch with the party until they install them.";
+    : hostVersionReady
+    ? "The host picked a version. Install it from your party panel so everyone matches."
+    : "Waiting for the host to pick which version to play — then everyone else can install the same one.";
 
   return `<div class="party-sync-card party-sync-blocked">
     <div class="party-sync-blocked-head">Not everyone can play yet</div>
@@ -2837,6 +2849,7 @@ function partyAreaSignature(active, discoverable) {
       gameSlug: active.gameSlug,
       gameTitle: active.gameTitle,
       editionSlug: active.editionSlug || null,
+      versionSelectedByHost: Boolean(active.versionSelectedByHost),
       openRaMod: active.openRaMod || null,
       leaderId: active.leaderId,
       maxSize: active.maxSize,
@@ -2851,11 +2864,24 @@ function partyAreaSignature(active, discoverable) {
       // picker has to repaint when this does.
       requiredPlatforms: (active.requiredPlatforms || []).join(","),
       members: (active.members || []).map((m) => [m.userId, m.username, m.role, m.ready]),
-      hosted: active.hosted || null,
-      lan: active.lan || null,
+      hosted: active.hosted
+        ? [
+            active.hosted.enabled,
+            active.hosted.status,
+            active.hosted.host || null,
+            active.hosted.port || null,
+            active.hosted.error || null,
+          ]
+        : null,
+      lan: active.lan
+        ? [active.lan.enabled, active.lan.status, active.lan.error || null]
+        : null,
       // Members find out the controller link exists through this, so it has to
-      // be part of what a repaint compares.
-      couch: active.couch || null,
+      // be part of what a repaint compares — but only stable fields, or the
+      // panel flickers every poll when incidental couch fields reshuffle.
+      couch: active.couch
+        ? [active.couch.enabled, active.couch.status, active.couch.joinCode || null]
+        : null,
       discord: active.discord || null,
       voiceEnabled: active.voiceEnabled !== false,
       configSync: active.configSync
@@ -2897,7 +2923,7 @@ function clearPartyAreaOptimistic() {
   }
   state._activeParty = null;
   lastMyParties = [];
-  emptyMyPartiesStreak = 2;
+  emptyMyPartiesStreak = 5;
   const startBtn = document.getElementById("btn-toggle-create-party");
   if (startBtn) startBtn.style.display = "";
   syncFriendsPoll();
@@ -3124,9 +3150,18 @@ function wirePartyView(slot, party) {
   }
 
   slot.querySelectorAll(".btn-party-install").forEach((btn) => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       const href = btn.dataset.href;
       if (!href || !window.playbound.openDeepLink) return;
+      /*
+       * Host Install must lock the version before navigating away — otherwise
+       * preferredPartyEditionSlug alone never unlocks guest Install, and the
+       * host leaving Friends mid-download used to look like the party vanished.
+       */
+      if (btn.dataset.confirmVersion === "1" && window.playbound.setPartyEdition) {
+        const edition = btn.dataset.edition || null;
+        await window.playbound.setPartyEdition(partyId, edition);
+      }
       markPartyInstallReturn(party.gameSlug);
       void window.playbound.openDeepLink(href);
     });
@@ -3158,16 +3193,19 @@ function wirePartyView(slot, party) {
        */
       const couch = party.couch || {};
       if (couch.enabled && !isLeader) {
-        const url =
+        const base =
           couch.joinUrl ||
           (couch.joinCode ? `https://playbound.club/c/${couch.joinCode}` : "");
-        if (!url) {
+        if (!base) {
           setStatus("Waiting for the host to start online multiplayer…");
           return;
         }
-        if (window.playbound.openExternal) window.playbound.openExternal(url);
-        else window.open(url, "_blank", "noopener,noreferrer");
-        setStatus("Opened join link — use your controller (game view streams when the host shares).");
+        // Game view only — no phone-controller chrome. PC vs phone is asked in that window.
+        const sep = base.includes("?") ? "&" : "?";
+        const url = `${base}${sep}view=game`;
+        const opened = window.open(url, "playbound-game-view", "noopener,noreferrer");
+        if (!opened && window.playbound.openExternal) window.playbound.openExternal(url);
+        setStatus("Opened game view — choose PC controls or phone as controller there.");
         return;
       }
       joinInFlight = true;

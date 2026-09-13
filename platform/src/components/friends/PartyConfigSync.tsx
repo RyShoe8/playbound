@@ -60,6 +60,10 @@ export function PartyConfigSync({
   const readiness = usePartyStore((s) =>
     s.activeParty?.id === partyId ? s.activeParty.readiness : undefined
   );
+  const versionSelectedByHost = usePartyStore((s) =>
+    s.activeParty?.id === partyId ? Boolean(s.activeParty.versionSelectedByHost) : false
+  );
+  const setEdition = usePartyStore((s) => s.setEdition);
   const sync = storeSync ?? null;
   const fetchParties = usePartyStore((s) => s.fetchParties);
 
@@ -125,6 +129,7 @@ export function PartyConfigSync({
   const hostMember = sync.members.find((m) => m.isHost);
   const hostHasGame =
     Boolean(hostMember?.hasGame) || sync.referenceSource === "host";
+  const hostVersionReady = hostHasGame || versionSelectedByHost;
 
   const outOfSync = sync.members.filter((m) => {
     return missingSummary(m, sync.editionSlug).length > 0;
@@ -163,10 +168,15 @@ export function PartyConfigSync({
                 launch with the party until they install them.
               </>
             )
+          ) : hostVersionReady ? (
+            <>
+              The host picked a version. Install it from your party panel so everyone
+              matches.
+            </>
           ) : (
             <>
-              Some members are missing files this party needs. They won&apos;t be able to
-              launch with the party until they install them.
+              Waiting for the host to pick which version to play — then everyone else can
+              install the same one.
             </>
           )}
         </p>
@@ -175,7 +185,8 @@ export function PartyConfigSync({
           {outOfSync.map((m) => {
             const missing = missingSummary(m, sync.editionSlug);
             const isYou = Boolean(currentUserId) && m.userId === currentUserId;
-            const showInstall = isYou;
+            const showInstall = isYou && (isYouHost || hostVersionReady);
+            const waitingOnHost = isYou && !isYouHost && !hostVersionReady;
 
             return (
               <li
@@ -188,9 +199,11 @@ export function PartyConfigSync({
                   </div>
                   <span className="font-semibold">{isYou ? "You" : m.username}</span>
                   <span className="truncate text-muted-foreground">
-                    {isYou
-                      ? `need ${missing.join(" and ")}`
-                      : `needs ${missing.join(" and ")} — they can install it from their party panel`}
+                    {waitingOnHost
+                      ? "waiting for the host to pick a version"
+                      : isYou
+                        ? `need ${missing.join(" and ")}`
+                        : `needs ${missing.join(" and ")} — they can install it from their party panel`}
                   </span>
                 </div>
 
@@ -211,14 +224,21 @@ export function PartyConfigSync({
                 ) : showInstall ? (
                   <a
                     href={href}
-                    onClick={() =>
+                    onClick={(e) => {
                       telemetry.track("party_config_sync_install_clicked", {
                         partyId,
                         gameSlug,
                         editionSlug: installEdition,
                         modCount: sync.modSlugs.length,
-                      })
-                    }
+                      });
+                      if (isYouHost && !versionSelectedByHost) {
+                        e.preventDefault();
+                        void (async () => {
+                          await setEdition(partyId, installEdition);
+                          window.location.href = href;
+                        })();
+                      }
+                    }}
                     className="flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-xs font-bold text-primary-foreground"
                   >
                     <Download className="size-3" />{" "}

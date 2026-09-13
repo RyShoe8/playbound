@@ -35,6 +35,7 @@ const {
   tdmInstallerPollMaxMs,
 } = require("./services/tdmInstall");
 const { isUnknownHorizonsSlug } = require("./services/unknownHorizonsLaunch");
+const { ensureUnknownHorizonsSafeDisplay } = require("./services/unknownHorizonsSettings");
 const { createManagedDosBox } = require("./services/ManagedDosBox");
 const { createManagedDotNet, requiredDotNetMajor } = require("./services/ManagedDotNet");
 const { createDirectDrawWrapper } = require("./services/directDrawWrapper");
@@ -6627,6 +6628,8 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
     activeInstallTask = task;
     activeDownloadSignal = abortController.signal;
     broadcastInstallQueue();
+    // Keep the party host from looking offline while a long install runs.
+    void beatLauncherPresence();
     sendProgress({
       phase: "resolving",
       slug,
@@ -6666,6 +6669,7 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
       if (idx >= 0) installQueue.splice(idx, 1);
       task.releaseQueue();
       broadcastInstallQueue();
+      void beatLauncherPresence();
     }
   })()
     .catch((err) => {
@@ -7257,7 +7261,11 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   }
   if (directDrawWrapper.needsDirectDrawWrapper(entry, slug)) {
     try {
-      const dd = await directDrawWrapper.ensureForGame(gameDir, { slug, entry });
+      const dd = await directDrawWrapper.ensureForGame(gameDir, {
+        slug,
+        entry,
+        exePath: exe || null,
+      });
       if (!dd.ok && !dd.skipped) {
         console.warn("[directdraw] install-time wrapper failed:", dd.error);
       }
@@ -8562,6 +8570,16 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     console.warn("[controller] auto-config skipped:", err?.message || err);
   }
 
+  // Couch / phone-controller: make sure player one's virtual pad exists before
+  // the game process enumerates devices (Hurrican's DX8 setup screen).
+  if (couchHost?.getState?.()?.active) {
+    try {
+      await couchHost.warmControllerSlot(0);
+    } catch (err) {
+      console.warn("[controller] couch slot prewarm skipped:", err?.message || err);
+    }
+  }
+
   if (slug === "tmnt-rescue-palooza") {
     try {
       const root = info.dir || path.dirname(info.exe || "");
@@ -8577,6 +8595,14 @@ async function playGameInner(slug, join = null, editionSlug = null) {
       await ensureDefaultDisplaySettings(info.exe || info.dir);
     } catch (err) {
       console.warn("[openciv3] display ensure skipped:", err?.message || err);
+    }
+  }
+
+  if (isUnknownHorizonsSlug(slug)) {
+    try {
+      await ensureUnknownHorizonsSafeDisplay();
+    } catch (err) {
+      console.warn("[unknown-horizons] display ensure skipped:", err?.message || err);
     }
   }
 
@@ -9190,7 +9216,11 @@ async function playGameInner(slug, join = null, editionSlug = null) {
       phase: "compatibility",
       message: "Checking DirectDraw compatibility…",
     });
-    const dd = await directDrawWrapper.ensureForGame(directDrawDir, { slug, entry });
+    const dd = await directDrawWrapper.ensureForGame(directDrawDir, {
+      slug,
+      entry,
+      exePath: info?.exe || null,
+    });
     if (!dd.ok && !dd.skipped) {
       const message =
         dd.error ||
@@ -10583,26 +10613,238 @@ function isPlayBoundCompatPrefixDir(slug, dir) {
   }
 }
 
+/**
+ * True when `root` looks like a PlayBound (or legacy) games library folder.
+ * Used to heal formerGamesDirs from install records without treating GOG/Steam
+ * parents as owned library roots.
+ */
+function looksLikePlayBoundGamesRoot(root) {
+  if (!root) return false;
+  try {
+    return path.basename(path.resolve(root)).toLowerCase() === "games";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Current + former + platform-default games library roots.
+ * Players often change Settings → games folder; installs stay on the old drive
+ * and must still uninstall (C:\\Games\\xonotic after switching to D:\\Games).
+ */
+function playBoundGamesRoots() {
+  const settings = loadSettings();
+  const roots = [];
+  const add = (raw) => {
+    if (!raw) return;
+    try {
+      const resolved = path.resolve(String(raw).trim());
+      if (!resolved) return;
+      if (roots.some((r) => sameFsPath(r, resolved))) return;
+      roots.push(resolved);
+    } catch {
+      /* ignore */
+    }
+  };
+  add(gamesRoot());
+  add(DEFAULT_GAMES_DIR);
+  for (const r of settings.formerGamesDirs || []) add(r);
+  return roots;
+}
+
+function rememberFormerGamesDir(dir, { force = false } = {}) {
+  if (!dir) return;
+  let resolved;
+  try {
+    resolved = path.resolve(String(dir).trim());
+  } catch {
+    return;
+  }
+  if (!resolved) return;
+  if (!force && !looksLikePlayBoundGamesRoot(resolved)) return;
+  try {
+    if (sameFsPath(resolved, path.resolve(gamesRoot()))) return;
+  } catch {
+    /* ignore */
+  }
+  const settings = loadSettings();
+  const list = Array.isArray(settings.formerGamesDirs)
+    ? settings.formerGamesDirs.map((r) => String(r || "").trim()).filter(Boolean)
+    : [];
+  if (list.some((r) => sameFsPath(r, resolved))) return;
+  list.push(resolved);
+  settings.formerGamesDirs = list.slice(-12);
+  saveSettings(settings);
+}
+
+/** Infer former library roots from installs still recorded under …/Games/<slug>. */
+function healFormerGamesDirsFromInstalls() {
+  try {
+    const state = loadState();
+    for (const [slug, raw] of Object.entries(state || {})) {
+      if (!slug || slug.startsWith("__")) continue;
+      let game;
+      try {
+        game = ensureGameInstallRecord(raw);
+      } catch {
+        continue;
+      }
+      for (const info of listEditionEntries(game)) {
+        const d = info?.dir || (info?.exe ? path.dirname(info.exe) : null);
+        if (!d) continue;
+        let cur = path.resolve(d);
+        for (let i = 0; i < 5; i++) {
+          if (path.basename(cur).toLowerCase() === String(slug).toLowerCase()) {
+            rememberFormerGamesDir(path.dirname(cur));
+            break;
+          }
+          const parent = path.dirname(cur);
+          if (sameFsPath(parent, cur)) break;
+          cur = parent;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("[uninstall] former gamesDir heal failed:", err?.message || err);
+  }
+}
+
 function isPlayBoundManagedInstallDir(slug, dir) {
   if (!slug || !dir) return false;
-  const root = path.resolve(gamesRoot());
-  const slugRoot = path.resolve(path.join(root, slug));
   const resolved = path.resolve(dir);
-  if (sameFsPath(resolved, root)) return false;
-  if (sameFsPath(resolved, slugRoot)) return true;
   if (isPlayBoundCompatPrefixDir(slug, dir)) return true;
-  if (process.platform === "win32") {
-    const relToSlug = path.relative(slugRoot.toLowerCase(), resolved.toLowerCase());
-    if (relToSlug === "" || (!relToSlug.startsWith("..") && !path.isAbsolute(relToSlug))) {
+
+  for (const root of playBoundGamesRoots()) {
+    if (sameFsPath(resolved, root)) continue;
+    const slugRoot = path.resolve(path.join(root, slug));
+    if (sameFsPath(resolved, slugRoot)) return true;
+    if (process.platform === "win32") {
+      const relToSlug = path.relative(slugRoot.toLowerCase(), resolved.toLowerCase());
+      if (relToSlug === "" || (!relToSlug.startsWith("..") && !path.isAbsolute(relToSlug))) {
+        return true;
+      }
+      // Only the slug folder (and below) under a known library root — never a
+      // sibling like C:\\Games\\OtherTitle when uninstalling this slug.
+      const relToGames = path.relative(root.toLowerCase(), resolved.toLowerCase());
+      if (
+        relToGames !== "" &&
+        !relToGames.startsWith("..") &&
+        !path.isAbsolute(relToGames)
+      ) {
+        const first = relToGames.split(/[/\\]/)[0];
+        if (first && first.toLowerCase() === String(slug).toLowerCase()) return true;
+      }
+    } else if (pathUnderRoot(resolved, slugRoot)) {
       return true;
     }
-    // Any folder under gamesRoot is managed by PlayBound
-    const relToGames = path.relative(root.toLowerCase(), resolved.toLowerCase());
-    if (relToGames !== "" && !relToGames.startsWith("..") && !path.isAbsolute(relToGames)) {
-      return true;
+  }
+  return false;
+}
+
+/**
+ * Best folder to delete for an edition uninstall.
+ * Prefer the recorded dir; fall back to the exe's folder or the canonical
+ * edition install path when those are still under the PlayBound games root —
+ * Locate / stale records otherwise left zip games on disk after "uninstall".
+ */
+function resolveEditionUninstallDir(slug, editionSlug, info) {
+  const candidates = [];
+  if (info?.dir) candidates.push(info.dir);
+  if (info?.exe) candidates.push(path.dirname(info.exe));
+  if (editionSlug && editionSlug !== DEFAULT_EDITION_SLUG) {
+    candidates.push(editionInstallDir(slug, editionSlug));
+  }
+  for (const root of playBoundGamesRoots()) {
+    candidates.push(path.join(root, slug));
+    if (editionSlug && editionSlug !== DEFAULT_EDITION_SLUG) {
+      candidates.push(path.join(root, slug, editionSlug));
     }
-  } else {
-    if (pathUnderRoot(resolved, slugRoot) || pathUnderRoot(resolved, root)) return true;
+  }
+
+  const seen = new Set();
+  for (const raw of candidates) {
+    if (!raw) continue;
+    const resolved = path.resolve(raw);
+    const key = process.platform === "win32" ? resolved.toLowerCase() : resolved;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (!fs.existsSync(resolved)) continue;
+    if (isPlayBoundManagedInstallDir(slug, resolved) && !isUnsafeUninstallDir(resolved)) {
+      return resolved;
+    }
+  }
+  // Last resort: recorded dir even if outside (caller decides whether to delete).
+  return info?.dir && fs.existsSync(info.dir) ? path.resolve(info.dir) : null;
+}
+
+/**
+ * Every folder we should try to remove for a full-game uninstall.
+ * Includes edition dirs, exe parents, the slug games-root folder, and catalog
+ * knownExePaths parents (BZFlag → Program Files\\BZFlag, etc.).
+ */
+function collectGameUninstallDirs(slug, game, entry) {
+  const out = [];
+  const seen = new Set();
+  const push = (raw) => {
+    if (!raw) return;
+    try {
+      const resolved = path.resolve(raw);
+      if (!fs.existsSync(resolved)) return;
+      const key = process.platform === "win32" ? resolved.toLowerCase() : resolved;
+      if (seen.has(key)) return;
+      seen.add(key);
+      out.push(resolved);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  for (const info of listEditionEntries(game)) {
+    push(resolveEditionUninstallDir(slug, info.editionSlug || DEFAULT_EDITION_SLUG, info));
+    // Outside games-root but still the recorded install (installer games).
+    if (info.dir) push(info.dir);
+    if (info.exe) push(path.dirname(info.exe));
+  }
+  push(resolveEditionUninstallDir(slug, null, { dir: game.dir, exe: game.exe }));
+  if (game.dir) push(game.dir);
+  if (game.exe) push(path.dirname(game.exe));
+  for (const root of playBoundGamesRoots()) {
+    push(path.join(root, slug));
+  }
+
+  for (const raw of entry?.knownExePaths || []) {
+    try {
+      const full = expandWinPath(String(raw));
+      if (!full || !path.isAbsolute(full)) continue;
+      if (fs.existsSync(full)) push(path.dirname(full));
+      else if (fs.existsSync(path.dirname(full))) push(path.dirname(full));
+    } catch {
+      /* ignore */
+    }
+  }
+  return out;
+}
+
+/**
+ * Catalog knownExePaths that name a dedicated product folder (not a drive root
+ * or Program Files itself). Installer games like BZFlag land here; after the
+ * vendor uninstaller runs we still need permission to delete leftovers.
+ */
+function isCatalogKnownInstallDir(entry, dir) {
+  if (!entry || !dir) return false;
+  const resolved = path.resolve(dir);
+  if (isUnsafeUninstallDir(resolved)) return false;
+  for (const raw of entry.knownExePaths || []) {
+    try {
+      const full = expandWinPath(String(raw));
+      if (!full || !path.isAbsolute(full)) continue;
+      const knownDir = path.resolve(path.dirname(full));
+      if (isUnsafeUninstallDir(knownDir)) continue;
+      if (sameFsPath(resolved, knownDir)) return true;
+      if (pathUnderRoot(resolved, knownDir)) return true;
+    } catch {
+      /* ignore */
+    }
   }
   return false;
 }
@@ -10820,8 +11062,13 @@ async function tryRemovePlayBoundInstallDir(
     !sameFsPath(path.resolve(dir), path.join(process.env.LOCALAPPDATA, "Programs"))
   );
   const isSourcemodDir = isDedicatedSourcemodDir(dir);
+  const isKnownVendorDir = isCatalogKnownInstallDir(entry, dir);
+  const mayDelete =
+    (isManaged || isDedicatedProgramDir || isSourcemodDir || isKnownVendorDir) &&
+    !isUnsafeUninstallDir(dir) &&
+    !isProtectedSaveDirectory(dir);
 
-  if ((isManaged || isDedicatedProgramDir || isSourcemodDir) && !isUnsafeUninstallDir(dir) && !isProtectedSaveDirectory(dir)) {
+  if (mayDelete) {
     try {
       prepareDirRemoval(slug, [{ dir }]);
       await removeDirWithRetries(dir);
@@ -10835,10 +11082,12 @@ async function tryRemovePlayBoundInstallDir(
   } else {
     console.warn(`[uninstall] skipping folder PlayBound does not own: ${dir}`);
     await maybeRemoveCompatPrefix(slug);
-    return (
-      leftoverVendorInstallWarning(entry) ||
-      "Removed from PlayBound. Files outside the PlayBound games folder were left on disk — finish uninstall from Windows Apps & features if needed."
-    );
+    const leftover = leftoverVendorInstallWarning(entry);
+    if (leftover) return leftover;
+    if (isPlayBoundManagedInstallDir(slug, dir) && isProtectedSaveDirectory(dir)) {
+      return "Removed from PlayBound. Save data in a protected folder was left on disk.";
+    }
+    return "Removed from PlayBound. Files outside the PlayBound games folder were left on disk — finish uninstall from Windows Apps & features if needed.";
   }
 }
 
@@ -10935,24 +11184,46 @@ async function uninstallGame(slug, editionSlug = null) {
         listEditionEntries(game).some((e) => {
           const otherSlug = e.editionSlug || DEFAULT_EDITION_SLUG;
           if (otherSlug === editionSlug) return false;
+          const otherHasFiles =
+            Boolean(exeOnDisk(e)) || Boolean(e.dir && fs.existsSync(e.dir));
+          if (!otherHasFiles) return false;
           if (info.dir && e.dir && sameFsPath(e.dir, info.dir)) return true;
           if (info.exe && e.exe && sameFsPath(e.exe, info.exe)) return true;
           if (info.dir && e.exe && sameFsPath(path.dirname(e.exe), info.dir)) return true;
           if (info.exe && e.dir && sameFsPath(e.dir, path.dirname(info.exe))) return true;
           return false;
         });
-      // Shared vendor install (e.g. UQM editions in one Program Files tree):
-      // drop only this edition's state row so siblings keep the files.
-      if (info.dir && !siblingsSharePath) {
-        const warning = await tryRemovePlayBoundInstallDir(slug, info.dir, entry, {
+      /*
+       * Zip editions (Re-Volt RVGL, etc.) live under the PlayBound games folder.
+       * Resolve the real folder from dir / exe / canonical edition path so a
+       * stale Locate path cannot leave the download behind after uninstall.
+       */
+      const uninstallDir = resolveEditionUninstallDir(slug, editionSlug, info);
+      if (uninstallDir && !siblingsSharePath) {
+        const warning = await tryRemovePlayBoundInstallDir(slug, uninstallDir, entry, {
           editionSlug,
           lastOwnerOfInstallPath: true,
         });
         if (warning) warnings.push(warning);
+      } else if (uninstallDir && siblingsSharePath) {
+        console.warn(
+          `[uninstall] keeping shared install path for ${slug}/${editionSlug}: ${uninstallDir}`
+        );
       }
       delete game.editions[editionSlug];
     }
     if (Object.keys(game.editions).length === 0) {
+      // Last edition gone — sweep the game slug folder under every known library root.
+      for (const root of playBoundGamesRoots()) {
+        const slugRoot = path.join(root, slug);
+        if (fs.existsSync(slugRoot) && isPlayBoundManagedInstallDir(slug, slugRoot)) {
+          const warning = await tryRemovePlayBoundInstallDir(slug, slugRoot, entry, {
+            editionSlug,
+            lastOwnerOfInstallPath: true,
+          });
+          if (warning) warnings.push(warning);
+        }
+      }
       delete state[slug];
     } else {
       syncGameInstallSummary(game);
@@ -10968,16 +11239,29 @@ async function uninstallGame(slug, editionSlug = null) {
   }
 
   const editions = listEditionEntries(game);
-  const dirs = [
-    ...editions.map((info) => info.dir),
-    game.dir,
-  ].filter(Boolean);
+  const dirs = collectGameUninstallDirs(slug, game, entry);
+  // Prefer running the vendor uninstaller once against the primary dir before
+  // sweeping every candidate folder (installer games in Program Files).
+  if (
+    dirs.length > 0 &&
+    editionLifecycle.mayRunNativeUninstaller(null, entry, { lastOwnerOfInstallPath: true })
+  ) {
+    try {
+      await runGameUninstaller(slug, entry, dirs[0]);
+      await new Promise((r) => setTimeout(r, 2000));
+    } catch (err) {
+      console.warn(`[uninstall] pre-sweep uninstaller error:`, err?.message || err);
+    }
+  }
   const seen = new Set();
   for (const dir of dirs) {
     const key = process.platform === "win32" ? path.resolve(dir).toLowerCase() : path.resolve(dir);
     if (seen.has(key)) continue;
     seen.add(key);
-    const warning = await tryRemovePlayBoundInstallDir(slug, dir, entry);
+    if (!fs.existsSync(dir)) continue;
+    const warning = await tryRemovePlayBoundInstallDir(slug, dir, entry, {
+      lastOwnerOfInstallPath: true,
+    });
     if (warning) warnings.push(warning);
   }
 
@@ -12523,7 +12807,14 @@ ipcMain.handle("save-settings", (_event, patch) => {
       console.warn("save-settings rejected apiBase:", patch.apiBase);
     }
   }
-  if (patch.gamesDir != null) settings.gamesDir = patch.gamesDir;
+  if (patch.gamesDir != null) {
+    const prev = String(settings.gamesDir || DEFAULT_GAMES_DIR || "").trim();
+    const next = String(patch.gamesDir || "").trim();
+    if (prev && next && !sameFsPath(prev, next)) {
+      rememberFormerGamesDir(prev, { force: true });
+    }
+    settings.gamesDir = next;
+  }
   if (patch.compatibilityFilter === "compatible" || patch.compatibilityFilter === "all") {
     settings.compatibilityFilter = patch.compatibilityFilter;
     void pushCompatibilityPreference(patch.compatibilityFilter);
@@ -13710,10 +14001,11 @@ async function beatLauncherPresence() {
   const settings = loadSettings();
   if (!settings.launcherToken) return;
   const playingSlug = playingGameSlug();
+  const installingSlug = activeInstallTask?.slug || null;
   const body = {
-    status: playingSlug ? "playing" : "online",
+    status: playingSlug ? "playing" : installingSlug ? "installing" : "online",
     page: "/launcher",
-    gameId: playingSlug,
+    gameId: playingSlug || installingSlug,
     sessionId: presenceSessionId,
   };
   try {
@@ -15266,6 +15558,9 @@ if (gotLock) {
 
     // Cheap, and it is what lets an unattended launcher stop polling.
     startSystemIdleWatch();
+
+    // Keep uninstall working after Settings → games folder moves (C:\Games → D:\Games).
+    healFormerGamesDirsFromInstalls();
 
     void flushLastCrashReport();
 

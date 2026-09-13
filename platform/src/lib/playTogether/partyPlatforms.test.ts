@@ -101,16 +101,14 @@ describe("party size seating", () => {
     expect(fitsPartySize(undefined, PARTY_MAX_SIZE + 1)).toBe(false);
   });
 
-  it("labels genres, testing, and couch as shared tags", () => {
+  it("labels genres and testing as shared tags", () => {
     expect(partyGameOptionLabel("OpenHV", { testing: true })).toBe("OpenHV · Testing");
-    expect(partyGameOptionLabel("Lovers", { couch: true })).toBe("Lovers · Couch co-op");
     expect(
       partyGameOptionLabel("OpenHV", {
         testing: true,
-        couch: true,
         genres: ["Strategy", "Simulation"],
       })
-    ).toBe("OpenHV · Strategy · Simulation · Testing · Couch co-op");
+    ).toBe("OpenHV · Strategy · Simulation · Testing");
     expect(
       partyGameOptionLabel("OpenRA", {
         genres: ["Strategy", "RTS", "Indie", "Extra"],

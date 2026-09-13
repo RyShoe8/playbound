@@ -9,6 +9,8 @@ const {
   needsDirectDrawWrapper,
   isFreeTrainSlug,
   CLSID_DIRECTDRAW,
+  DIRECTDRAW_COM_CLSIDS,
+  ensureDdrawFilenamePair,
   looksLikeAvBlock,
   AV_BLOCK_MSG,
   dirHasMsX86Dlls,
@@ -50,6 +52,20 @@ test("findMsX86Dir accepts flat MS/x86-only extract root", () => {
 
 test("CLSID_DIRECTDRAW is the classic DirectDraw class", () => {
   assert.equal(CLSID_DIRECTDRAW, "{E1211353-8E94-11D1-8808-00C04FC2C602}");
+});
+
+test("COM redirection covers FreeTrain and DDrawCompat CLSIDs", () => {
+  assert.ok(DIRECTDRAW_COM_CLSIDS.includes(CLSID_DIRECTDRAW));
+  assert.ok(DIRECTDRAW_COM_CLSIDS.some((c) => c.startsWith("{D7B70EE0")));
+});
+
+test("ensureDdrawFilenamePair mirrors DDraw.dll to ddraw.dll", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pb-dd-pair-"));
+  fs.writeFileSync(path.join(dir, "DDraw.dll"), "x");
+  const resolved = ensureDdrawFilenamePair(dir);
+  assert.equal(resolved, path.join(dir, "ddraw.dll"));
+  assert.ok(fs.existsSync(path.join(dir, "ddraw.dll")));
+  fs.rmSync(dir, { recursive: true, force: true });
 });
 
 test("looksLikeAvBlock detects Defender wording", () => {
