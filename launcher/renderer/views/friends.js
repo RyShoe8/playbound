@@ -1933,10 +1933,6 @@ function buildPartyViewHtml(party) {
   const isCouchMode = Boolean(partyCouchCoopFilter || party.multiplayerType === "couch");
   const autoJoinArmed = pendingJoin?.partyId === party.id && !ended;
   const joinBtn = actions ? (autoJoinArmed ? actions.joinArmed : actions.join) : null;
-  if (!isCouchMode && joinBtn) {
-    if (joinBtn.icon === "phone") joinBtn.icon = "play";
-    if (joinBtn.label === "Join online") joinBtn.label = "Join Game";
-  }
   const joinGameHtml = joinBtn && joinBtn.visible
     ? `<div class="party-join-wrap">
          <button type="button" id="btn-party-join-game" class="party-btn ${
