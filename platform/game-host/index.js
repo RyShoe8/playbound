@@ -488,9 +488,11 @@ async function archiveFromUrl({ url, relativePath, sha256, sizeBytes }, abortSig
     const MIN_THROUGHPUT_BYTES_PER_SEC = 1024 * 1024;
     const MIN_TIMEOUT_MS = 60 * 60 * 1000;
     const MAX_TIMEOUT_MS = 8 * 60 * 60 * 1000;
-    const timeoutMs = Math.min(
-      MAX_TIMEOUT_MS,
-      Math.max(MIN_TIMEOUT_MS, (Number(sizeBytes) / MIN_THROUGHPUT_BYTES_PER_SEC) * 1000)
+    const timeoutMs = Math.round(
+      Math.min(
+        MAX_TIMEOUT_MS,
+        Math.max(MIN_TIMEOUT_MS, (Number(sizeBytes) / MIN_THROUGHPUT_BYTES_PER_SEC) * 1000)
+      )
     );
     const timeout = AbortSignal.timeout(timeoutMs);
     const signal = abortSignal ? AbortSignal.any([timeout, abortSignal]) : timeout;
