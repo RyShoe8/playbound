@@ -315,19 +315,11 @@ function showPhoneJoinBanner(state) {
  * Returns false if the user cancelled.
  */
 export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
-  /*
-   * Connect couch already owns virtual pads + WebRTC. Never prompt again and
-   * never enable Gamepad Bridge (it mirrors the host pad into a second ViGEm
-   * and makes one stick drive OpenBOR P1+P2).
-   */
+  let couchAlreadyActive = false;
   try {
-    const couch = await window.playbound?.couchState?.();
-    if (couch?.active) {
-      await playFn({ inputMode: "phone" });
-      return true;
-    }
+    couchAlreadyActive = Boolean((await window.playbound?.couchState?.())?.active);
   } catch {
-    /* fall through to normal prompt */
+    couchAlreadyActive = false;
   }
 
   const isSupported = await gameSupportsController(detail, slug || detail?.slug);
@@ -336,6 +328,8 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
     return true;
   }
 
+  // Always ask — even when party couch already started. Skipping used to force
+  // inputMode "phone" and hide keyboard/controller, which felt broken on both PCs.
   const choice = await promptPlayControllerChoice({
     title: detail?.title || detail?.editionName || "This game",
   });
@@ -348,43 +342,44 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
 
   if (choice === "phone") {
     finalMode = "phone";
-    setStatus("Setting up phone controller…");
-    const state = await startCouchSessionQuiet();
-    if (!state?.active || !state.session) {
-      setStatus("Could not enable phone controller — launching with PC controls", true);
-      finalMode = "controller";
-    } else {
+    if (couchAlreadyActive) {
+      // Online multiplayer already owns the couch session — don't mint a second one
+      // or enable Gamepad Bridge (that mirrored host pad into OpenBOR P1+P2).
       ensureCouchBackground();
-      
-      const pairChoice = await promptPhoneControllerPairing({
-        session: state.session,
-        title: detail?.title || detail?.editionName || "This game",
-      });
-
-      if (pairChoice === "cancel") {
-        document.getElementById("phone-controller-banner")?.remove();
-        setStatus("Launch cancelled");
-        return false;
-      }
-      if (pairChoice === "skip") {
-        document.getElementById("phone-controller-banner")?.remove();
-        setStatus("Launching with PC controller…");
+      setStatus("Online controllers already active — launching…");
+    } else {
+      setStatus("Setting up phone controller…");
+      const state = await startCouchSessionQuiet();
+      if (!state?.active || !state.session) {
+        setStatus("Could not enable phone controller — launching with PC controls", true);
         finalMode = "controller";
       } else {
-        showPhoneJoinBanner(state);
-        setStatus("Phone controller paired — launching game…");
+        ensureCouchBackground();
+
+        const pairChoice = await promptPhoneControllerPairing({
+          session: state.session,
+          title: detail?.title || detail?.editionName || "This game",
+        });
+
+        if (pairChoice === "cancel") {
+          document.getElementById("phone-controller-banner")?.remove();
+          setStatus("Launch cancelled");
+          return false;
+        }
+        if (pairChoice === "skip") {
+          document.getElementById("phone-controller-banner")?.remove();
+          setStatus("Launching with PC controller…");
+          finalMode = "controller";
+        } else {
+          showPhoneJoinBanner(state);
+          setStatus("Phone controller paired — launching game…");
+        }
       }
     }
   } else if (choice === "controller") {
     finalMode = "controller";
     // Hard rule: never bridge while a couch session is running.
-    let couchActive = false;
-    try {
-      couchActive = Boolean((await window.playbound?.couchState?.())?.active);
-    } catch {
-      couchActive = false;
-    }
-    if (!couchActive && isBridgeableGamepadConnected()) {
+    if (!couchAlreadyActive && isBridgeableGamepadConnected()) {
       setStatus("Enabling Universal Gamepad Bridge for controller…");
       const bridged = await enableGamepadBridge();
       if (!bridged) {

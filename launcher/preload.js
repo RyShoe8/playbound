@@ -77,6 +77,7 @@ contextBridge.exposeInMainWorld("playbound", {
   openFolder: (dir) => ipcRenderer.invoke("open-folder", dir),
   clearContext: () => ipcRenderer.invoke("clear-context"),
   openExternal: (url, opts) => ipcRenderer.invoke("open-external", url, opts || null),
+  openCouchGameView: (url) => ipcRenderer.invoke("open-couch-game-view", url),
   openDeepLink: (url) => ipcRenderer.invoke("open-deep-link", url),
   closeWindow: () => ipcRenderer.invoke("close-window"),
   openFriendsPopout: () => ipcRenderer.invoke("open-friends-popout"),

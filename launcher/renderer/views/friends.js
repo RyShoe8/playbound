@@ -3233,15 +3233,15 @@ function wirePartyView(slot, party) {
         // Game view only — no phone-controller chrome. PC vs phone is asked in that window.
         const sep = base.includes("?") ? "&" : "?";
         const url = `${base}${sep}view=game`;
-        const features =
-          "popup=yes,noopener,noreferrer,width=" +
-          Math.max(1024, Math.floor(window.screen.availWidth * 0.92)) +
-          ",height=" +
-          Math.max(640, Math.floor(window.screen.availHeight * 0.92)) +
-          ",left=40,top=20";
-        // Prefer an in-app popup: it inherits launcher Chromium flags that allow LAN WebRTC.
-        const opened = window.open(url, "playbound-game-view", features);
-        if (!opened && window.playbound.openExternal) {
+        // Real Electron BrowserWindow (not window.open → denied → Chrome).
+        // Inherits launcher Chromium flags so LAN WebRTC can work like when it succeeded before.
+        if (window.playbound.openCouchGameView) {
+          const res = await window.playbound.openCouchGameView(url);
+          if (!res?.ok) {
+            setStatus(res?.error || "Could not open game view", true);
+            return;
+          }
+        } else if (window.playbound.openExternal) {
           void window.playbound.openExternal(url);
         }
         setStatus("Opened game view — streaming game from host PC.");
@@ -3357,14 +3357,14 @@ function wirePartyView(slot, party) {
       if (!url) return;
       const sep = url.includes("?") ? "&" : "?";
       const gameViewUrl = `${url}${sep}view=game`;
-      const features =
-        "popup=yes,noopener,noreferrer,width=" +
-        Math.max(1024, Math.floor(window.screen.availWidth * 0.92)) +
-        ",height=" +
-        Math.max(640, Math.floor(window.screen.availHeight * 0.92)) +
-        ",left=40,top=20";
-      const opened = window.open(gameViewUrl, "playbound-game-view", features);
-      if (!opened && window.playbound.openExternal) window.playbound.openExternal(gameViewUrl);
+      void (async () => {
+        if (window.playbound.openCouchGameView) {
+          const res = await window.playbound.openCouchGameView(gameViewUrl);
+          if (!res?.ok) setStatus(res?.error || "Could not open game view", true);
+          return;
+        }
+        if (window.playbound.openExternal) void window.playbound.openExternal(gameViewUrl);
+      })();
     });
   }
 
