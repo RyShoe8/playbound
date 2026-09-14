@@ -319,8 +319,12 @@ async function main() {
         continue;
       }
       const install = seed.launcherInstall ?? launcherInstallBySlug[slug] ?? null;
+      const ed = editorial[slug];
+      // Always merge editorial.ts — do not rely solely on withEditorial on the
+      // games export. Patch allowlists often name longDescription / faq / etc.
       source = {
         ...(seed as unknown as Record<string, unknown>),
+        ...((ed ?? {}) as unknown as Record<string, unknown>),
         launcherInstall: install,
       };
     }
