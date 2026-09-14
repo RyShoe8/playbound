@@ -230,6 +230,17 @@ export const PATCH_EDITION_FIELDS: Readonly<Record<string, readonly string[]>> =
     "hardwareRequirements",
     "installConfig",
   ],
+  "stalker-anomaly/gamma": [
+    "name",
+    "description",
+    "shortDescription",
+    "aliases",
+    "links",
+    "installMethod",
+    "installConfig",
+    "requirements",
+    "hardwareRequirements",
+  ],
   // OpenMW 0.51 ships Windows-x64.exe; live recipe still pointed at win64.zip.
   "morrowind/openmw": ["installConfig"],
   // Keep TES3MP desktop zip pattern in sync (VR-latest miss).

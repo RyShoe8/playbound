@@ -2303,11 +2303,12 @@ const facts: Game[] = [
         "AnomalyLauncher.exe",
         "AnomalyDX11EXE.exe",
       ],
-      note: "Standalone ModDB install — no Shadow of Chornobyl or Call of Pripyat GOG copy required. Use the GAMMA edition only after a working Anomaly install.",
+      note: "Standalone ModDB install — no Shadow of Chornobyl or Call of Pripyat GOG copy required. For G.A.M.M.A., install this Anomaly edition first, then use the GAMMA edition (https://github.com/Grokitach/Stalker_GAMMA).",
     },
     firstPlaySteps: [
       { platform: "windows", text: "Download Anomaly 1.5.x from ModDB and install into its own folder — do not overwrite a GOG trilogy install." },
       { platform: "windows", text: "Run AnomalyLauncher once, reach the main menu, and confirm a new save works before adding GAMMA or other packs." },
+      { platform: "windows", text: "Optional hardcore pack: switch to the GAMMA edition and follow https://github.com/Grokitach/Stalker_GAMMA/wiki/Installing-GAMMA after Anomaly works." },
     ],
   },
   {

@@ -392,6 +392,10 @@ async function main() {
       installMethod: seed.installMethod,
       requirements: seed.requirements,
       hardwareRequirements: seed.hardwareRequirements,
+      aliases: seed.aliases,
+      links: seed.links,
+      features: seed.features,
+      tags: seed.tags,
     };
     const payload = pickFields(source, fields);
     for (const field of fields) {
