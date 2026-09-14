@@ -135,14 +135,10 @@ export function computePartyReadiness(input: {
       allInSync: true,
       waitingUserIds: waiting,
       headline: "Everyone has the right version",
-      /*
-       * Says what is outstanding without implying anyone is blocked — a member
-       * who has readied can launch now regardless of the others.
-       */
       detail:
         waiting.length === 1
-          ? "Waiting on 1 player to ready up. You can join the game as soon as you are ready."
-          : `Waiting on ${waiting.length} players to ready up. You can join the game as soon as you are ready.`,
+          ? "Waiting on 1 player to ready up before the party can start."
+          : `Waiting on ${waiting.length} players to ready up before the party can start.`,
     };
   }
 

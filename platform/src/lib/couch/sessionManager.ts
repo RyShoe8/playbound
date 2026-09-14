@@ -4,6 +4,10 @@
 
 import crypto from "crypto";
 import { COUCH_MAX_PLAYERS } from "./protocol";
+import {
+  defaultIceServers as sharedDefaultIceServers,
+  sessionIceServers,
+} from "@/lib/realtime/iceServers";
 import type {
   ICouchController,
   ICouchHostEndpoints,
@@ -315,7 +319,8 @@ export async function setHostEndpoints(
   session.hostEndpoints = {
     wsUrls: Array.isArray(endpoints.wsUrls) ? endpoints.wsUrls.slice(0, 8) : [],
     wsToken: String(endpoints.wsToken || "").slice(0, 128),
-    iceServers: endpoints.iceServers,
+    // Platform owns ICE (STUN + TURN). Ignore host-published iceServers so a
+    // narrow launcher list cannot wipe coturn / expanded STUN on join.
   };
   session.lastHeartbeat = Date.now();
   await saveSession(session);
@@ -372,6 +377,7 @@ export function pollCouchSignals(
 }
 
 export function publicCouchSnapshot(session: CouchSession) {
+  const iceServers = sessionIceServers(session.sessionId);
   return {
     sessionId: session.sessionId,
     joinCode: session.joinCode,
@@ -382,9 +388,9 @@ export function publicCouchSnapshot(session: CouchSession) {
     hostEndpoints: session.hostEndpoints
       ? {
           wsUrls: session.hostEndpoints.wsUrls,
-          iceServers: session.hostEndpoints.iceServers || defaultIceServers(),
+          iceServers,
         }
-      : { iceServers: defaultIceServers() },
+      : { iceServers },
     controllers: session.controllers
       .filter((c) => c.status !== "kicked")
       .map((c) => ({
@@ -398,12 +404,9 @@ export function publicCouchSnapshot(session: CouchSession) {
   };
 }
 
+/** @deprecated Prefer sessionIceServers(sessionId); kept for callers without a session. */
 export function defaultIceServers(): { urls: string }[] {
-  return [
-    { urls: "stun:stun.l.google.com:19302" },
-    { urls: "stun:stun1.l.google.com:19302" },
-    { urls: "stun:stun2.l.google.com:19302" },
-    { urls: "stun:stun.cloudflare.com:3478" },
-    { urls: "stun:global.stun.twilio.com:3478" },
-  ];
+  return sharedDefaultIceServers() as { urls: string }[];
 }
+
+export { sessionIceServers };

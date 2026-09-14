@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import dbConnect from "@/lib/db";
 import MultiplayerSessionModel from "@/lib/models/MultiplayerSession";
 import MultiplayerSignalModel from "@/lib/models/MultiplayerSignal";
+import { multiplayerRelayServers } from "@/lib/realtime/iceServers";
 
 export interface SignalingMessage {
   id: string;
@@ -71,25 +72,7 @@ function publicSession(doc: Record<string, unknown>): MultiplayerSession {
 }
 
 function relayServers(sessionId: string) {
-  const vpsIp = process.env.GAME_HOST_PUBLIC_IP;
-  const stunPort = process.env.STUN_PORT || "3478";
-  const stunServers = [
-    ...(vpsIp ? [`stun:${vpsIp}:${stunPort}`] : []),
-    "stun:stun.l.google.com:19302",
-  ];
-  const turnSecret = process.env.TURN_SHARED_SECRET;
-  if (!vpsIp || !turnSecret) return { stunServers };
-
-  const expires = Math.floor(Date.now() / 1000) + 60 * 60;
-  const username = `${expires}:${sessionId}`;
-  const credential = crypto
-    .createHmac("sha1", turnSecret)
-    .update(username)
-    .digest("base64");
-  return {
-    stunServers,
-    turnServers: [{ urls: `turn:${vpsIp}:${stunPort}`, username, credential }],
-  };
+  return multiplayerRelayServers(sessionId);
 }
 
 function activeFilter(now = new Date()) {

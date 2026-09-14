@@ -39,6 +39,7 @@ describe("the contradiction that started this", () => {
     expect(r.headline).toBe("Everyone has the right version");
     // …and it must not claim readiness either.
     expect(r.headline).not.toMatch(/ready/i);
+    expect(r.detail).toMatch(/before the party can start/);
   });
 
   it("says everyone is ready only when both things are true", () => {

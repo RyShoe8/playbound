@@ -2370,6 +2370,12 @@ export async function joinPartyGame(
   }
 
   const firstLaunch = doc.status !== "playing" && doc.status !== "launching";
+  if (firstLaunch) {
+    const { allReady } = readySummary(doc.members);
+    if (!allReady) {
+      return { error: "Everyone must ready up before starting", status: 400 };
+    }
+  }
   const hostMode = resolvedHostMode(String(doc.gameSlug), doc.hostMode, doc.hosted);
   const isLeader = String(doc.leaderId) === userId;
   /*
