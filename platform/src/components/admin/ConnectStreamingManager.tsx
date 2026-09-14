@@ -99,7 +99,8 @@ export function ConnectStreamingManager() {
         <div>
           <p className="text-sm font-semibold">Collect streaming metrics</p>
           <p className="text-xs text-muted-foreground">
-            When on, the host launcher posts pad/stream stats for open Couch sessions.
+            When on, hosts with a live session (heartbeat in the last ~90s) post pad/stream
+            stats. Abandoned sessions are removed from this list automatically.
           </p>
         </div>
         <div className="flex items-center gap-2">

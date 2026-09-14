@@ -28,6 +28,8 @@ const memoryByCode = new Map<string, string>();
 
 const SESSION_TTL_MS = 4 * 60 * 60 * 1000;
 const MESSAGE_TTL_MS = 2 * 60 * 1000;
+/** Host PATCH/GET heartbeats every ~20s; treat older as abandoned. */
+export const COUCH_HOST_STALE_MS = 90_000;
 const CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
 
 /** Force memory store (unit tests). */
@@ -91,25 +93,64 @@ async function saveSession(session: CouchSession): Promise<void> {
   memoryByCode.set(session.joinCode, session.sessionId);
 }
 
+export function isCouchHostLive(
+  session: Pick<CouchSession, "status" | "lastHeartbeat">
+): boolean {
+  if (session.status !== "open") return false;
+  return Date.now() - Number(session.lastHeartbeat || 0) <= COUCH_HOST_STALE_MS;
+}
+
+async function dropIfStale(session: CouchSession | null): Promise<CouchSession | null> {
+  if (!session || isCouchHostLive(session)) return session;
+  await endCouchSession(session);
+  return null;
+}
+
 async function loadById(sessionId: string): Promise<CouchSession | null> {
+  let session: CouchSession | null = null;
   if (await useMongo()) {
     const Model = await getModel();
     const doc = await Model.findOne({ sessionId, status: "open" }).lean();
-    return doc ? (doc as unknown as CouchSession) : null;
+    session = doc ? (doc as unknown as CouchSession) : null;
+  } else {
+    session = memoryById.get(sessionId) || null;
   }
-  return memoryById.get(sessionId) || null;
+  return dropIfStale(session);
 }
 
 async function loadByCode(code: string): Promise<CouchSession | null> {
   const normalized = String(code || "").toUpperCase();
+  let session: CouchSession | null = null;
   if (await useMongo()) {
     const Model = await getModel();
     const doc = await Model.findOne({ joinCode: normalized, status: "open" }).lean();
-    return doc ? (doc as unknown as CouchSession) : null;
+    session = doc ? (doc as unknown as CouchSession) : null;
+  } else {
+    const id = memoryByCode.get(normalized);
+    session = id ? memoryById.get(id) || null : null;
   }
-  const id = memoryByCode.get(normalized);
-  if (!id) return null;
-  return memoryById.get(id) || null;
+  return dropIfStale(session);
+}
+
+/** Remove open Couch rows whose host stopped heartbeating (launcher quit without DELETE). */
+export async function purgeStaleCouchSessions(): Promise<number> {
+  const cutoff = Date.now() - COUCH_HOST_STALE_MS;
+  if (await useMongo()) {
+    const Model = await getModel();
+    const res = await Model.deleteMany({
+      status: "open",
+      lastHeartbeat: { $lt: cutoff },
+    });
+    return res.deletedCount ?? 0;
+  }
+  let removed = 0;
+  for (const session of memoryById.values()) {
+    if (session.status === "open" && session.lastHeartbeat < cutoff) {
+      await endCouchSession(session);
+      removed += 1;
+    }
+  }
+  return removed;
 }
 
 export async function createCouchSession(params: {
