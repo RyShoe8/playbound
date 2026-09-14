@@ -214,47 +214,16 @@ export function ControllerClient({
       el.srcObject = stream;
       void el.play().catch(() => {});
     }
-    // Track can arrive with a black exclusive-fullscreen capture (non-zero size
-    // but no useful pixels). Prefer waiting until frames look non-black.
     clearVideoFrameWatch();
     setVideoWaiting(true);
     setHasVideo(false);
     const track = stream.getVideoTracks()[0];
-    let darkSamples = 0;
-
-    const sampleLooksBlack = (v: HTMLVideoElement) => {
-      try {
-        if (v.videoWidth < 2 || v.videoHeight < 2) return true;
-        const canvas = document.createElement("canvas");
-        canvas.width = 32;
-        canvas.height = 18;
-        const ctx = canvas.getContext("2d", { willReadFrequently: true });
-        if (!ctx) return false;
-        ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
-        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-        let sum = 0;
-        for (let i = 0; i < data.length; i += 4) {
-          sum += data[i]! + data[i + 1]! + data[i + 2]!;
-        }
-        const avg = sum / ((data.length / 4) * 3);
-        return avg < 6;
-      } catch {
-        return false;
-      }
-    };
 
     const markLive = () => {
       const v = videoRef.current;
+      // Dark game menus are common — do not treat low luminance as "blank capture".
+      // Only wait until the decoder reports real dimensions.
       if (!v || v.videoWidth <= 0 || v.videoHeight <= 0) return false;
-      if (sampleLooksBlack(v)) {
-        darkSamples += 1;
-        // A few dark frames at boot are normal; sustained black = bad capture.
-        if (darkSamples < 6) return false;
-        setVideoWaiting(true);
-        setHasVideo(false);
-        return false;
-      }
-      darkSamples = 0;
       setHasVideo(true);
       setVideoWaiting(false);
       clearVideoFrameWatch();
@@ -262,18 +231,18 @@ export function ControllerClient({
     };
     if (track) {
       track.onunmute = () => {
-        darkSamples = 0;
         void videoRef.current?.play().catch(() => {});
+        markLive();
       };
     }
     videoFrameWatchRef.current = setInterval(() => {
       if (markLive()) return;
       const v = videoRef.current;
       if (v) void v.play().catch(() => {});
-    }, 500);
+    }, 400);
     window.setTimeout(() => {
       markLive();
-    }, 100);
+    }, 80);
   }
 
   function bindVideoEl(el: HTMLVideoElement | null) {
@@ -1071,14 +1040,14 @@ export function ControllerClient({
 
   if (gameLayout && controlChoice === "undecided") {
     return (
-      <Shell>
+      <Shell tone="setup">
         <Eyebrow>Input Setup</Eyebrow>
         <h1 className="pbc-title">How do you want to play?</h1>
-        <p className="pbc-sub">
-          You&apos;re joining {join.hostLabel}&apos;s game view. Same choices as launching a game
-          on your PC.
+        <p className="pbc-sub pbc-sub-wide">
+          Joining <strong>{join.hostLabel}</strong>&apos;s game view — same three options as the
+          PlayBound launcher.
         </p>
-        <div className="pbc-choice-row">
+        <div className="pbc-choice-row pbc-choice-row-h">
           <button
             type="button"
             className="pbc-choice-btn"
@@ -1087,8 +1056,14 @@ export function ControllerClient({
               setControlChoice("keyboard");
             }}
           >
+            <span className="pbc-choice-icon" aria-hidden>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+                <rect x="2" y="6" width="20" height="12" rx="2" />
+                <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h.01M18 14h.01M9 14h6" />
+              </svg>
+            </span>
             <strong>Mouse and Keyboard</strong>
-            <span>Play using standard keyboard and mouse controls</span>
+            <span>Keys and mouse on this computer</span>
           </button>
           <button
             type="button"
@@ -1098,16 +1073,28 @@ export function ControllerClient({
               setControlChoice("controller");
             }}
           >
-            <strong>Controller (Gamepad)</strong>
-            <span>Xbox, DualSense, Switch Pro, or USB pad plugged into this computer</span>
+            <span className="pbc-choice-icon" aria-hidden>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+                <rect x="2" y="6" width="20" height="12" rx="2" />
+                <path d="M6 12h4M8 10v4M15 11h.01M18 13h.01" />
+              </svg>
+            </span>
+            <strong>Controller</strong>
+            <span>Xbox, DualSense, Switch, or USB pad</span>
           </button>
           <button
             type="button"
             className="pbc-choice-btn is-featured"
             onClick={() => setControlChoice("phone")}
           >
+            <span className="pbc-choice-icon" aria-hidden>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+                <rect x="7" y="2" width="10" height="20" rx="2" />
+                <path d="M11 18h2" />
+              </svg>
+            </span>
             <strong>Phone as Controller</strong>
-            <span>Scan a QR code — no app or account required on your phone</span>
+            <span>Scan a QR — no app needed</span>
           </button>
         </div>
       </Shell>
@@ -1164,9 +1151,9 @@ export function ControllerClient({
           {!hasVideo ? (
             <p className="pbc-gameview-wait">
               {videoWaiting
-                ? "Connected — host capture looks blank. Host should update the launcher (screen share) or run the game borderless/windowed on the main monitor."
+                ? "Connected — waiting for the first video frame from the host…"
                 : transport === "webrtc" || transport === "websocket"
-                  ? "Waiting for host game view… host may still be launching — keep this tab open"
+                  ? "Waiting for host game view… host may still be launching — keep this window open"
                   : transport === "connecting"
                     ? "Connecting to host…"
                     : transport === "offline"
@@ -1270,9 +1257,9 @@ export function ControllerClient({
         {!hasVideo ? (
           <p className="pbc-gameview-wait">
             {videoWaiting
-              ? "Connected — host capture looks blank. Host should update the launcher (screen share) or run the game borderless/windowed on the main monitor."
+              ? "Connected — waiting for the first video frame from the host…"
               : transport === "webrtc" || transport === "websocket"
-                ? "Waiting for host game view… host may still be launching — keep this tab open"
+                ? "Waiting for host game view… host may still be launching — keep this window open"
                 : transport === "connecting"
                   ? "Connecting to host…"
                   : transport === "offline"
@@ -1389,9 +1376,23 @@ export function ControllerClient({
 
 /* ── Chrome ──────────────────────────────────────────────────────────── */
 
-function Shell({ children, tone }: { children: React.ReactNode; tone?: "bad" }) {
+function Shell({
+  children,
+  tone,
+}: {
+  children: React.ReactNode;
+  tone?: "bad" | "setup";
+}) {
   return (
-    <main className={tone === "bad" ? "pbc-shell pbc-shell-bad" : "pbc-shell"}>
+    <main
+      className={[
+        "pbc-shell",
+        tone === "bad" ? "pbc-shell-bad" : "",
+        tone === "setup" ? "pbc-shell-setup" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
       <ControllerStyles />
       <div className="pbc-shell-inner">{children}</div>
     </main>
@@ -1712,21 +1713,22 @@ function ControllerStyles() {
   return (
     <style>{`
 :root {
-  --pbc-ground: #07060B;
-  --pbc-ink: #F8FAFC;
-  --pbc-muted: #94A3B8;
-  --pbc-line: rgba(255,255,255,.12);
-  --pbc-raise: rgba(255,255,255,.06);
-  --pbc-accent: #8B6DFF;
-  --pbc-live: #3DD68C;
+  /* Align with site tokens (globals.css dark theme) */
+  --pbc-ground: oklch(0.165 0.014 278);
+  --pbc-ink: oklch(0.96 0.005 280);
+  --pbc-muted: oklch(0.68 0.015 280);
+  --pbc-line: oklch(1 0 0 / 9%);
+  --pbc-raise: oklch(0.21 0.016 278);
+  --pbc-raise-2: oklch(0.27 0.02 278);
+  --pbc-accent: oklch(0.62 0.21 288);
+  --pbc-live: oklch(0.74 0.19 152);
+  --pbc-live-fg: oklch(0.17 0.03 155);
 
-  /* Canonical Xbox face colours: High vibrancy & contrast */
   --pbc-a: #3DD68C;
   --pbc-b: #FF5C5C;
   --pbc-x: #38BDF8;
   --pbc-y: #FBBF24;
 
-  /* Safe area insets for notches / home indicator */
   --pbc-safe-t: env(safe-area-inset-top, 0px);
   --pbc-safe-r: env(safe-area-inset-right, 0px);
   --pbc-safe-b: env(safe-area-inset-bottom, 0px);
@@ -1736,14 +1738,24 @@ function ControllerStyles() {
 .pbc-shell, .pbc-pad {
   position: fixed;
   inset: 0;
-  background: var(--pbc-ground);
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, oklch(0.35 0.08 288 / 35%), transparent 55%),
+    var(--pbc-ground);
   color: var(--pbc-ink);
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
+}
+
+.pbc-shell-setup .pbc-shell-inner {
+  max-width: 920px;
+  width: min(920px, 94vw);
+  margin: 0 auto;
+  padding: clamp(28px, 6vh, 56px) 8px;
+  text-align: center;
 }
 
 .pbc-choice-row {
@@ -1753,25 +1765,85 @@ function ControllerStyles() {
   width: min(420px, 92vw);
   margin: 20px auto 0;
 }
+.pbc-choice-row-h {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: 16px;
+  width: 100%;
+  max-width: 900px;
+  margin: 28px auto 0;
+}
 .pbc-choice-btn {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 4px;
+  gap: 6px;
   text-align: left;
-  padding: 14px 16px;
+  padding: 18px 18px 16px;
   border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--pbc-line);
+  background: var(--pbc-raise);
   color: inherit;
   cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
 }
-.pbc-choice-btn strong { font-size: 15px; }
-.pbc-choice-btn span { font-size: 12px; opacity: 0.75; line-height: 1.35; }
+.pbc-choice-row-h .pbc-choice-btn {
+  flex: 1 1 240px;
+  max-width: 280px;
+  min-height: 148px;
+}
+.pbc-choice-btn:hover {
+  border-color: oklch(1 0 0 / 16%);
+  background: var(--pbc-raise-2);
+  transform: translateY(-1px);
+}
+.pbc-choice-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 4px;
+  border-radius: 10px;
+  background: oklch(1 0 0 / 6%);
+  color: var(--pbc-ink);
+}
+.pbc-choice-btn strong {
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+.pbc-choice-btn > span:last-child {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--pbc-muted);
+  opacity: 1;
+}
 .pbc-choice-btn.is-featured {
-  border-color: rgba(61, 214, 140, 0.45);
-  background: rgba(61, 214, 140, 0.08);
+  border-color: oklch(0.74 0.19 152 / 45%);
+  background: oklch(0.74 0.19 152 / 10%);
 }
+.pbc-choice-btn.is-featured .pbc-choice-icon {
+  background: oklch(0.74 0.19 152 / 18%);
+  color: var(--pbc-live);
+}
+.pbc-choice-btn.is-featured:hover {
+  border-color: oklch(0.74 0.19 152 / 65%);
+  background: oklch(0.74 0.19 152 / 14%);
+}
+
+.pbc-sub-wide {
+  max-width: 36rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+.pbc-sub-wide strong {
+  color: var(--pbc-ink);
+  font-weight: 600;
+}
+
 .pbc-phone-qr {
   position: absolute;
   left: 50%;
@@ -2037,27 +2109,27 @@ function ControllerStyles() {
 }
 
 .pbc-eyebrow {
-  margin: 0;
+  margin: 0 0 10px;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: .2em;
+  letter-spacing: .16em;
   text-transform: uppercase;
-  color: var(--pbc-muted);
+  color: var(--pbc-accent);
 }
 
 .pbc-title {
   margin: 0;
-  font-size: clamp(22px, 6vw, 32px);
-  font-weight: 800;
+  font-size: clamp(26px, 4vw, 36px);
+  font-weight: 700;
   line-height: 1.15;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   text-wrap: balance;
 }
 
 .pbc-sub {
-  margin: 0;
+  margin: 12px 0 0;
   color: var(--pbc-muted);
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.55;
 }
 
