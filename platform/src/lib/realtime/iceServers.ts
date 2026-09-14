@@ -13,6 +13,13 @@ export type IceServerConfig = {
   credential?: string;
 };
 
+/** Coturn entries always use a single URL string (multiplayer API shape). */
+export type TurnServerConfig = {
+  urls: string;
+  username: string;
+  credential: string;
+};
+
 /** Public STUN plus optional VPS STUN when GAME_HOST_PUBLIC_IP is set. */
 export function defaultStunUrls(): string[] {
   const vpsIp = process.env.GAME_HOST_PUBLIC_IP;
@@ -28,7 +35,7 @@ export function defaultStunUrls(): string[] {
 }
 
 /** Coturn time-limited credentials when VPS IP + TURN_SHARED_SECRET are set. */
-export function turnIceServers(sessionId: string): IceServerConfig[] {
+export function turnIceServers(sessionId: string): TurnServerConfig[] {
   const vpsIp = process.env.GAME_HOST_PUBLIC_IP;
   const stunPort = process.env.STUN_PORT || "3478";
   const turnSecret = process.env.TURN_SHARED_SECRET;
@@ -59,7 +66,7 @@ export function defaultIceServers(): IceServerConfig[] {
 /** Shape used by PlayBound-native multiplayer create/join responses. */
 export function multiplayerRelayServers(sessionId: string): {
   stunServers: string[];
-  turnServers?: IceServerConfig[];
+  turnServers?: TurnServerConfig[];
 } {
   const stunServers = defaultStunUrls();
   const turnServers = turnIceServers(sessionId);
