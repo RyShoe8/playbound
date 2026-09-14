@@ -100,9 +100,9 @@ function hideOverlay() {
 }
 
 /**
- * Modal: play normally, or use phone as a virtual pad (optional).
+ * Modal: choose Mouse & Keyboard, Controller, or Phone.
  * @param {{ title?: string }} opts
- * @returns {Promise<"normal"|"phone"|"cancel">}
+ * @returns {Promise<"keyboard"|"controller"|"phone"|"cancel">}
  */
 export function promptPlayControllerChoice(opts = {}) {
   const title = opts.title || "this game";
@@ -114,7 +114,7 @@ export function promptPlayControllerChoice(opts = {}) {
         <div class="phone-controller-header">
           <div class="phone-controller-badge">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="11" r="1"/><circle cx="18" cy="13" r="1"/></svg>
-            Controller Supported
+            Input Setup
           </div>
           <h2 id="phone-controller-title">How do you want to play?</h2>
           <p class="phone-controller-lead">
@@ -123,16 +123,29 @@ export function promptPlayControllerChoice(opts = {}) {
         </div>
 
         <div class="phone-controller-choices">
-          <button type="button" class="phone-controller-choice-card" data-choice="normal">
-            <div class="phone-controller-choice-icon-wrap icon-normal">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          <button type="button" class="phone-controller-choice-card" data-choice="keyboard">
+            <div class="phone-controller-choice-icon-wrap icon-keyboard">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="8" x2="6" y2="8.01"/><line x1="10" y1="8" x2="10" y2="8.01"/><line x1="14" y1="8" x2="14" y2="8.01"/><line x1="18" y1="8" x2="18" y2="8.01"/><line x1="6" y1="12" x2="6" y2="12.01"/><line x1="18" y1="12" x2="18" y2="12.01"/><line x1="8" y1="16" x2="16" y2="16"/></svg>
             </div>
             <div class="phone-controller-choice-text">
               <div class="phone-controller-choice-header">
-                <span class="phone-controller-choice-title">Play with PC controls</span>
+                <span class="phone-controller-choice-title">Mouse and Keyboard</span>
+                <span class="phone-controller-choice-tag">PC Controls</span>
+              </div>
+              <span class="phone-controller-choice-sub">Play using standard keyboard and mouse controls</span>
+            </div>
+          </button>
+
+          <button type="button" class="phone-controller-choice-card" data-choice="controller">
+            <div class="phone-controller-choice-icon-wrap icon-controller">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="11" r="1"/><circle cx="18" cy="13" r="1"/></svg>
+            </div>
+            <div class="phone-controller-choice-text">
+              <div class="phone-controller-choice-header">
+                <span class="phone-controller-choice-title">Controller (Gamepad)</span>
                 <span class="phone-controller-choice-tag">Direct</span>
               </div>
-              <span class="phone-controller-choice-sub">Keyboard, mouse, or a controller already plugged into this PC</span>
+              <span class="phone-controller-choice-sub">Play with an Xbox, PlayStation, Switch Pro, or USB controller</span>
             </div>
           </button>
 
@@ -142,7 +155,7 @@ export function promptPlayControllerChoice(opts = {}) {
             </div>
             <div class="phone-controller-choice-text">
               <div class="phone-controller-choice-header">
-                <span class="phone-controller-choice-title">Use phone as controller</span>
+                <span class="phone-controller-choice-title">Phone as Controller</span>
                 <span class="phone-controller-choice-tag is-brand">Touch / Mobile Pad</span>
               </div>
               <span class="phone-controller-choice-sub">Scan a QR code — no app or account required on your phone</span>
@@ -310,7 +323,7 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
   try {
     const couch = await window.playbound?.couchState?.();
     if (couch?.active) {
-      await playFn();
+      await playFn({ inputMode: "phone" });
       return true;
     }
   } catch {
@@ -319,7 +332,7 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
 
   const isSupported = await gameSupportsController(detail, slug || detail?.slug);
   if (!isSupported) {
-    await playFn();
+    await playFn({ inputMode: "keyboard" });
     return true;
   }
 
@@ -331,11 +344,15 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
     return false;
   }
 
+  let finalMode = "keyboard";
+
   if (choice === "phone") {
+    finalMode = "phone";
     setStatus("Setting up phone controller…");
     const state = await startCouchSessionQuiet();
     if (!state?.active || !state.session) {
-      setStatus("Could not enable phone controller — launching without it", true);
+      setStatus("Could not enable phone controller — launching with PC controls", true);
+      finalMode = "controller";
     } else {
       ensureCouchBackground();
       
@@ -351,15 +368,15 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
       }
       if (pairChoice === "skip") {
         document.getElementById("phone-controller-banner")?.remove();
-        setStatus("Launching with PC controls…");
+        setStatus("Launching with PC controller…");
+        finalMode = "controller";
       } else {
         showPhoneJoinBanner(state);
         setStatus("Phone controller paired — launching game…");
       }
     }
-  }
-
-  if (choice === "normal") {
+  } else if (choice === "controller") {
+    finalMode = "controller";
     // Hard rule: never bridge while a couch session is running.
     let couchActive = false;
     try {
@@ -374,9 +391,12 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
         setStatus("Could not enable controller bridge — launching anyway", true);
       }
     }
+  } else {
+    // choice === "keyboard"
+    finalMode = "keyboard";
   }
 
-  await playFn();
+  await playFn({ inputMode: finalMode });
   return true;
 }
 

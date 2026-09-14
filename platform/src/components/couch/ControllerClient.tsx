@@ -9,6 +9,11 @@ import {
 } from "@/lib/couch/keyboardMouseMap";
 import { CADENCE } from "@/lib/realtime/cadence";
 import { couchControllerJoinLabel } from "@/lib/couch/joinLabel";
+import {
+  addRemoteIceCandidate,
+  iceServersIncludeTurn,
+  isPublicHttpsOrigin,
+} from "@/lib/couch/rtcSignal";
 
 type InputMode = "keyboard-mouse" | "touch-gamepad" | "standard-gamepad";
 
@@ -116,6 +121,7 @@ export function ControllerClient({
     return "keyboard-mouse";
   });
   const [transport, setTransport] = useState<Transport>("connecting");
+  const [connectHint, setConnectHint] = useState<string | null>(null);
   const [pingMs, setPingMs] = useState<number | null>(null);
   const [hz, setHz] = useState(0);
   const [physicalLabel, setPhysicalLabel] = useState<string | null>(null);
@@ -594,9 +600,11 @@ export function ControllerClient({
       };
 
       pc.onicecandidate = (ev) => {
-        if (ev.candidate) {
-          void postSignal({ kind: "ice", candidate: ev.candidate, from: session.controllerId });
-        }
+        void postSignal(
+          ev.candidate
+            ? { kind: "ice", candidate: ev.candidate, from: session.controllerId }
+            : { kind: "ice", complete: true, from: session.controllerId }
+        );
       };
 
       const offer = await pc.createOffer();
@@ -661,7 +669,8 @@ export function ControllerClient({
             let payload: {
               kind?: string;
               sdp?: RTCSessionDescriptionInit;
-              candidate?: RTCIceCandidateInit;
+              candidate?: RTCIceCandidateInit | null;
+              complete?: boolean;
               to?: string;
             };
             try {
@@ -689,12 +698,8 @@ export function ControllerClient({
             if (payload.kind === "answer" && payload.sdp && pc.signalingState !== "stable") {
               await pc.setRemoteDescription(payload.sdp);
             }
-            if (payload.kind === "ice" && payload.candidate) {
-              try {
-                await pc.addIceCandidate(payload.candidate);
-              } catch {
-                /* ignore */
-              }
+            if (payload.kind === "ice") {
+              await addRemoteIceCandidate(pc, payload.candidate, payload.complete);
             }
           }
         } catch {
@@ -723,14 +728,25 @@ export function ControllerClient({
         }, 5000);
       }
 
-      // Connection timeout: only declare offline after 25 seconds of failed attempts
-      window.setTimeout(() => {
-        if (!closed && !usingWebrtc && (!ws || ws.readyState !== WebSocket.OPEN)) {
-          if (pc?.connectionState === "failed" || pc?.iceConnectionState === "failed") {
-            setTransport("offline");
-          }
+      function markOfflineIfFailed() {
+        if (closed || usingWebrtc || ws?.readyState === WebSocket.OPEN) return;
+        const ice = pc?.iceConnectionState;
+        const conn = pc?.connectionState;
+        if (ice !== "failed" && conn !== "failed" && ice !== "disconnected") return;
+        if (isPublicHttpsOrigin() && !iceServersIncludeTurn(session.iceServers)) {
+          setConnectHint(
+            " Browser blocked direct LAN access from playbound.club — open game view from the PlayBound launcher popup, or ensure Connect TURN is configured."
+          );
+        } else {
+          setConnectHint(null);
         }
-      }, 25000);
+        setTransport("offline");
+      }
+
+      // Give ICE time on LAN; only fail once the peer connection is actually failed.
+      window.setTimeout(() => {
+        markOfflineIfFailed();
+      }, 45_000);
     }
 
     async function startWsFallback() {
@@ -745,9 +761,13 @@ export function ControllerClient({
         if (u.startsWith("ws://127.0.0.1") || u.startsWith("ws://localhost")) return true;
         return false;
       });
-      if (!urls.length || !session.wsToken) {
-        // If on HTTPS without secure WS, don't prematurely kill an in-flight WebRTC negotiation
+        if (!urls.length || !session.wsToken) {
         if (!usingWebrtc && (pc?.connectionState === "failed" || pc?.iceConnectionState === "failed")) {
+          if (isPublicHttpsOrigin() && !iceServersIncludeTurn(session.iceServers)) {
+            setConnectHint(
+              " Browser blocked direct LAN access from playbound.club — open game view from the PlayBound launcher popup, or ensure Connect TURN is configured."
+            );
+          }
           setTransport("offline");
         }
         return;
@@ -1080,7 +1100,7 @@ export function ControllerClient({
                 : transport === "connecting"
                   ? " connecting to host…"
                   : transport === "offline"
-                    ? " can't reach host (network)"
+                    ? connectHint || " can't reach host (network)"
                     : ""}
             </p>
           ) : null}
@@ -1181,7 +1201,7 @@ export function ControllerClient({
               : transport === "connecting"
                 ? " connecting to host…"
                 : transport === "offline"
-                  ? " can't reach host (network)"
+                  ? connectHint || " can't reach host (network)"
                   : ""}
           </p>
         ) : null}

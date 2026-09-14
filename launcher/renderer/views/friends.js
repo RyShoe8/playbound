@@ -3233,11 +3233,16 @@ function wirePartyView(slot, party) {
         // Game view only — no phone-controller chrome. PC vs phone is asked in that window.
         const sep = base.includes("?") ? "&" : "?";
         const url = `${base}${sep}view=game`;
-        // Prefer system browser so Electron popups cannot load as insecure/local.
-        if (window.playbound.openExternal) {
+        const features =
+          "popup=yes,noopener,noreferrer,width=" +
+          Math.max(1024, Math.floor(window.screen.availWidth * 0.92)) +
+          ",height=" +
+          Math.max(640, Math.floor(window.screen.availHeight * 0.92)) +
+          ",left=40,top=20";
+        // Prefer an in-app popup: it inherits launcher Chromium flags that allow LAN WebRTC.
+        const opened = window.open(url, "playbound-game-view", features);
+        if (!opened && window.playbound.openExternal) {
           void window.playbound.openExternal(url);
-        } else {
-          window.open(url, "playbound-game-view", "noopener,noreferrer");
         }
         setStatus("Opened game view — streaming game from host PC.");
         return;
@@ -3722,7 +3727,7 @@ async function launchPartyGame(party) {
     try {
       const launched = await maybeOfferPhoneControllerThenPlay(
         detail,
-        async () => {
+        async (launchOpts) => {
           setStatus(`Joining ${address}…`);
           const res = await window.playbound.play(
             slug,
@@ -3735,7 +3740,8 @@ async function launchPartyGame(party) {
               // alone can't say which one the party actually started.
               mod: party.openRaMod || undefined,
             },
-            party.editionSlug || null
+            party.editionSlug || null,
+            launchOpts
           );
           startGameSession(slug, party.gameTitle || slug);
           maybeShowLaunchGuidance(res, {
@@ -3957,7 +3963,7 @@ async function launchPartyGame(party) {
   try {
     const launched = await maybeOfferPhoneControllerThenPlay(
       detail,
-      async () => {
+      async (launchOpts) => {
         setStatus("Checking Java / launching…");
         const edition = party.editionSlug || party.installedEditionSlug || null;
         let launchConnect = peerConnect;
@@ -3987,7 +3993,8 @@ async function launchPartyGame(party) {
             : party.openRaMod
               ? { mod: party.openRaMod }
               : launchConnect,
-          edition
+          edition,
+          launchOpts
         );
         startGameSession(slug, party.gameTitle || slug);
         if (isLeader && party.hostMode === "self") {
