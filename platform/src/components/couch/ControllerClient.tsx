@@ -8,6 +8,7 @@ import {
   KEYBOARD_MOUSE_HELP,
 } from "@/lib/couch/keyboardMouseMap";
 import { CADENCE } from "@/lib/realtime/cadence";
+import { couchControllerJoinLabel } from "@/lib/couch/joinLabel";
 
 type InputMode = "keyboard-mouse" | "touch-gamepad" | "standard-gamepad";
 
@@ -97,7 +98,9 @@ export function ControllerClient({
     } catch {
       /* ignore */
     }
-    return "undecided";
+    // Desktop game-view joiners almost always use a local pad or KBM — skip the
+    // phone-QR path unless they opt in.
+    return "pc";
   });
   // Phones scanning the QR want the touch pad, not keyboard+stream chrome.
   const [mode, setMode] = useState<InputMode>(() => {
@@ -293,18 +296,35 @@ export function ControllerClient({
     });
   };
 
+  const joinDisplayLabel = useMemo(
+    () =>
+      couchControllerJoinLabel({
+        mode,
+        gameLayout,
+        controlChoice,
+        gamepadId: physicalLabel,
+      }),
+    [mode, gameLayout, controlChoice, physicalLabel]
+  );
+
   // Join / reconnect (profile changes do not create a new controller)
   useEffect(() => {
     let cancelled = false;
     async function run() {
       setError(null);
       const stored = loadStored(code);
+      const label = couchControllerJoinLabel({
+        mode,
+        gameLayout,
+        controlChoice,
+        gamepadId: null,
+      });
       try {
         const res = await fetch(`/api/couch/sessions/${encodeURIComponent(code)}/join`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            label: "Phone",
+            label,
             profile: mode,
             controllerId: stored?.controllerId,
             controllerToken: stored?.controllerToken,
@@ -338,7 +358,38 @@ export function ControllerClient({
     return () => {
       cancelled = true;
     };
-  }, [code, mode]);
+  }, [code, mode, gameLayout, controlChoice]);
+
+  // Refresh controller row label when PC/gamepad choice becomes known.
+  useEffect(() => {
+    if (!join?.controllerId || !join?.controllerToken) return;
+    const { controllerId, controllerToken } = join;
+    async function syncLabel() {
+      try {
+        await fetch(`/api/couch/sessions/${encodeURIComponent(code)}/join`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            label: joinDisplayLabel,
+            deviceLabel: physicalLabel || undefined,
+            profile: mode,
+            controllerId,
+            controllerToken,
+          }),
+        });
+      } catch {
+        /* ignore */
+      }
+    }
+    void syncLabel();
+  }, [
+    code,
+    join?.controllerId,
+    join?.controllerToken,
+    joinDisplayLabel,
+    physicalLabel,
+    mode,
+  ]);
 
   // Poll until approved + refresh endpoints
   useEffect(() => {

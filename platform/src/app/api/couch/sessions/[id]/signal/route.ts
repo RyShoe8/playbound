@@ -7,6 +7,7 @@ import {
   getCouchSession,
   pollCouchSignals,
   postCouchSignal,
+  touchCouchSessionActivity,
 } from "@/lib/couch/sessionManager";
 
 interface RouteContext {
@@ -44,6 +45,7 @@ export async function POST(req: Request, context: RouteContext) {
       if (!c || c.status === "kicked") {
         return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
       }
+      await touchCouchSessionActivity(session, c);
     }
 
     const message = await postCouchSignal(session, {
@@ -92,6 +94,7 @@ export async function GET(req: Request, context: RouteContext) {
       if (!c) {
         return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
       }
+      await touchCouchSessionActivity(session, c);
     }
 
     const messages = pollCouchSignals(session, forRole, since);
