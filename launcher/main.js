@@ -16083,6 +16083,7 @@ if (gotLock) {
       ensureTray();
       return;
     }
+    stopLauncherPresenceLoop();
     if (process.platform !== "darwin") app.quit();
   });
 
@@ -16097,6 +16098,7 @@ if (gotLock) {
 
   app.on("before-quit", () => {
     isAppQuitting = true;
+    stopLauncherPresenceLoop();
     // Close any play session still open. Fire-and-forget: quitting must not
     // wait on the network, and an unreported session is better than a hang.
     void telemetry.flushOpenSessions();
