@@ -5,13 +5,14 @@ import { BUTTON } from "@/lib/couch/protocol";
 import {
   applyKeyboardMouseEvent,
   emptyPadAxes,
-  KEYBOARD_MOUSE_HELP,
+  KEYBOARD_MOUSE_LEGEND,
 } from "@/lib/couch/keyboardMouseMap";
 import { CADENCE } from "@/lib/realtime/cadence";
 import { couchControllerJoinLabel, type CouchControlChoice } from "@/lib/couch/joinLabel";
 import {
   addRemoteIceCandidate,
   iceServersIncludeTurn,
+  isPlayBoundLauncherGameView,
   isPublicHttpsOrigin,
 } from "@/lib/couch/rtcSignal";
 
@@ -390,7 +391,8 @@ export function ControllerClient({
     return () => {
       cancelled = true;
     };
-  }, [code, mode, gameLayout, controlChoice]);
+    // Join once per code — do not tear down when the player picks keyboard/controller/phone.
+  }, [code, gameLayout]);
 
   // Refresh controller row label when PC/gamepad choice becomes known.
   useEffect(() => {
@@ -741,10 +743,11 @@ export function ControllerClient({
           u.startsWith("ws://localhost")
       );
 
-      if (hasWsCandidates) {
+      // Prefer LAN WebSocket early when the in-app game view can use ws://.
+      if (hasWsCandidates || isPlayBoundLauncherGameView()) {
         window.setTimeout(() => {
           if (!closed && !usingWebrtc && !ws) void startWsFallback();
-        }, 5000);
+        }, isPlayBoundLauncherGameView() ? 2000 : 5000);
       }
 
       function markOfflineIfFailed() {
@@ -771,20 +774,21 @@ export function ControllerClient({
     async function startWsFallback() {
       if (ws || closed) return;
       const isHttps = typeof window !== "undefined" && window.location.protocol === "https:";
+      const allowLanWs = isPlayBoundLauncherGameView();
       const candidateUrls = session.wsUrls || [];
       const urls = candidateUrls.filter((u) => {
         if (!isHttps) return true;
-        // On HTTPS pages, connecting to plain ws:// on remote hosts triggers mixed-content warnings ("Not secure")
-        // and is blocked by modern browsers. Only allow wss:// or loopback ws://.
         if (u.startsWith("wss://")) return true;
         if (u.startsWith("ws://127.0.0.1") || u.startsWith("ws://localhost")) return true;
+        // In-app game view: allow plain LAN ws:// (webSecurity disabled on that window).
+        if (allowLanWs && u.startsWith("ws://")) return true;
         return false;
       });
-        if (!urls.length || !session.wsToken) {
+      if (!urls.length || !session.wsToken) {
         if (!usingWebrtc && (pc?.connectionState === "failed" || pc?.iceConnectionState === "failed")) {
-          if (isPublicHttpsOrigin() && !iceServersIncludeTurn(session.iceServers)) {
+          if (isPublicHttpsOrigin() && !iceServersIncludeTurn(session.iceServers) && !allowLanWs) {
             setConnectHint(
-              " Browser blocked direct LAN access from playbound.club — open game view from the PlayBound launcher popup, or ensure Connect TURN is configured."
+              " Browser blocked direct LAN access from playbound.club — open game view from the PlayBound launcher, or ensure Connect TURN is configured."
             );
           }
           setTransport("offline");
@@ -893,7 +897,8 @@ export function ControllerClient({
       sendFnRef.current = () => {};
       clearVideoFrameWatch();
     };
-  }, [join, mode, sendInput]);
+    // Keep the peer connection across input-mode changes (keyboard ↔ controller).
+  }, [join?.sessionId, join?.controllerId, join?.status, join?.playerSlot, join?.sessionToken, sendInput]);
 
   // Physical gamepad polling
   useEffect(() => {
@@ -1212,10 +1217,37 @@ export function ControllerClient({
             </button>
           </div>
         ) : null}
-        {!gameLayout || !hasVideo ? (
+        {gameLayout && controlChoice === "keyboard" ? (
+          <ControlsLegend
+            compact={hasVideo}
+            onChange={() => setControlChoice("undecided")}
+          />
+        ) : null}
+        {gameLayout && controlChoice === "controller" ? (
+          <div className={hasVideo ? "pbc-controls-legend is-compact" : "pbc-controls-legend"}>
+            <div className="pbc-controls-legend-head">
+              <p className="pbc-controls-legend-eyebrow">Controller</p>
+              <h2 className="pbc-controls-legend-title">
+                {physicalLabel || "Connect a gamepad"}
+              </h2>
+              <p className="pbc-controls-legend-lead">
+                Use the pad plugged into this computer. Buttons map 1:1 to the host virtual
+                controller.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="pbc-controls-legend-change"
+              onClick={() => setControlChoice("undecided")}
+            >
+              Change input
+            </button>
+          </div>
+        ) : null}
+        {!gameLayout ? (
           <div className="pbc-kbm-panel">
             <h1 className="pbc-title">Keyboard &amp; mouse</h1>
-            <p className="pbc-sub">{KEYBOARD_MOUSE_HELP}</p>
+            <ControlsLegend embedded />
             <p className="pbc-sub">Need a pad? Switch to Touch or Pad below.</p>
           </div>
         ) : null}
@@ -1375,6 +1407,59 @@ export function ControllerClient({
 }
 
 /* ── Chrome ──────────────────────────────────────────────────────────── */
+
+function ControlsLegend({
+  compact = false,
+  embedded = false,
+  onChange,
+}: {
+  compact?: boolean;
+  embedded?: boolean;
+  onChange?: () => void;
+}) {
+  return (
+    <div
+      className={[
+        "pbc-controls-legend",
+        compact ? "is-compact" : "",
+        embedded ? "is-embedded" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      {!embedded ? (
+        <div className="pbc-controls-legend-head">
+          <p className="pbc-controls-legend-eyebrow">Control scheme</p>
+          <h2 className="pbc-controls-legend-title">Keyboard &amp; mouse</h2>
+          {!compact ? (
+            <p className="pbc-controls-legend-lead">
+              These keys drive the host&apos;s virtual pad for your player slot.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+      <div className="pbc-controls-grid" role="list">
+        {KEYBOARD_MOUSE_LEGEND.map((row) => (
+          <div key={row.action} className="pbc-controls-row" role="listitem">
+            <span className="pbc-controls-action">{row.action}</span>
+            <span className="pbc-controls-keys">
+              {row.keys.map((key) => (
+                <kbd key={key} className="pbc-key">
+                  {key}
+                </kbd>
+              ))}
+            </span>
+          </div>
+        ))}
+      </div>
+      {onChange ? (
+        <button type="button" className="pbc-controls-legend-change" onClick={onChange}>
+          Change input
+        </button>
+      ) : null}
+    </div>
+  );
+}
 
 function Shell({
   children,
@@ -2015,17 +2100,151 @@ function ControllerStyles() {
   left: 50%;
   bottom: calc(var(--pbc-safe-b) + 16px);
   transform: translateX(-50%);
-  width: min(92vw, 520px);
+  width: min(94vw, 640px);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 16px;
+  align-items: stretch;
+  gap: 14px;
+  padding: 18px 20px;
   border-radius: 14px;
-  background: rgba(8, 8, 12, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: oklch(0.21 0.016 278 / 92%);
+  border: 1px solid var(--pbc-line);
   z-index: 3;
-  text-align: center;
+  text-align: left;
+  backdrop-filter: blur(12px);
+}
+
+.pbc-controls-legend {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--pbc-safe-b) + 20px);
+  transform: translateX(-50%);
+  z-index: 6;
+  width: min(94vw, 720px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px 16px;
+  border-radius: 14px;
+  background: oklch(0.21 0.016 278 / 94%);
+  border: 1px solid var(--pbc-line);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 48px oklch(0 0 0 / 35%);
+  pointer-events: auto;
+}
+.pbc-controls-legend.is-compact {
+  width: min(94vw, 560px);
+  padding: 12px 14px;
+  gap: 10px;
+  opacity: 0.92;
+}
+.pbc-controls-legend.is-embedded {
+  position: static;
+  left: auto;
+  bottom: auto;
+  transform: none;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.pbc-controls-legend-head {
+  text-align: left;
+}
+.pbc-controls-legend-eyebrow {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--pbc-accent);
+}
+.pbc-controls-legend-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--pbc-ink);
+}
+.pbc-controls-legend-lead {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--pbc-muted);
+}
+.pbc-controls-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 20px;
+}
+.pbc-controls-legend.is-compact .pbc-controls-grid {
+  gap: 8px 14px;
+}
+@media (max-width: 640px) {
+  .pbc-controls-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.pbc-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 32px;
+}
+.pbc-controls-action {
+  flex: 0 0 auto;
+  min-width: 5.5rem;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pbc-ink);
+  letter-spacing: -0.01em;
+}
+.pbc-controls-keys {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.pbc-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid oklch(1 0 0 / 14%);
+  background: oklch(0.27 0.02 278);
+  color: var(--pbc-ink);
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  box-shadow: inset 0 -1px 0 oklch(0 0 0 / 35%);
+}
+.pbc-controls-legend.is-compact .pbc-key {
+  padding: 3px 6px;
+  font-size: 10px;
+}
+.pbc-controls-legend-change {
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--pbc-line);
+  background: transparent;
+  color: var(--pbc-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pbc-controls-legend-change:hover {
+  color: var(--pbc-ink);
+  border-color: oklch(1 0 0 / 18%);
+  background: oklch(1 0 0 / 4%);
 }
 
 /* ── Three-Zone Ambient Backdrop ─────────────────────────────────────── */

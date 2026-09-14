@@ -105,3 +105,18 @@ export function applyKeyboardMouseEvent(
 
 export const KEYBOARD_MOUSE_HELP =
   "WASD / arrows move · Z/J/Space attack · X/K/Shift · C/L · V/U · Q/E shoulders · Enter start · click = A / right-click = B";
+
+/** Structured legend for the game-view / join UI (readable keycaps). */
+export const KEYBOARD_MOUSE_LEGEND: ReadonlyArray<{
+  action: string;
+  keys: ReadonlyArray<string>;
+}> = [
+  { action: "Move", keys: ["W A S D", "Arrows"] },
+  { action: "A / Attack", keys: ["Z", "J", "Space", "LMB"] },
+  { action: "B", keys: ["X", "K", "Shift", "RMB"] },
+  { action: "X", keys: ["C", "L"] },
+  { action: "Y", keys: ["V", "U"] },
+  { action: "Shoulders", keys: ["Q", "E"] },
+  { action: "Start", keys: ["Enter"] },
+  { action: "Back", keys: ["Backspace"] },
+];
