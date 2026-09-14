@@ -1212,7 +1212,10 @@ module.exports = [
       "%PROGRAMFILES(X86)%\\Dune Legacy\\dunelegacy.exe",
       "dunelegacy.exe"
     ],
-    "note": "Official standalone Windows installer with bundled Dune II PAK assets — no separate base-game purchase. Do not use the GitHub engine-only zip.",
+    "overlayUrl": "https://mirror.playbound.club/games/dune-legacy/data/dune2-shareware-pak-data.zip",
+    "overlayFileName": "dune2-shareware-pak-data.zip",
+    "overlayDest": "data",
+    "note": "Official standalone Windows installer with curated Dune II PAK assets from PlayBound mirror.",
     "hostLaunch": null,
     "status": "published",
     "testing": false,

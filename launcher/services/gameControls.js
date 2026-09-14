@@ -27,6 +27,10 @@ const QUIT_HINTS_BY_SLUG = {
     "Press Escape to leave the game or open the game menu.",
   "old-school-runescape":
     "Use in-game Logout or the close button to leave the game.",
+  "hindstrike":
+    "Press Escape to pause or exit the mission.",
+  "hindstrike-homebrew-retroarch":
+    "Press Escape to pause or exit the mission.",
 };
 
 const STANDARD_CONTROLS_FALLBACK = {

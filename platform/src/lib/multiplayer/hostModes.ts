@@ -158,6 +158,8 @@ const LOCAL_COUCH_GAMES = new Set([
   "tmnt-rescue-palooza",
   "relic-hunters-zero-remix",
   "lovers-in-a-dangerous-spacetime",
+  "hindstrike",
+  "hindstrike-homebrew-retroarch",
 ]);
 
 /**

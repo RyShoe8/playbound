@@ -98,7 +98,22 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
       "%PROGRAMFILES(X86)%\\Dune Legacy\\dunelegacy.exe",
       "dunelegacy.exe",
     ],
-    note: "Official standalone Windows installer with bundled Dune II PAK assets. Do not use the GitHub engine-only zip.",
+    overlayUrl: "https://mirror.playbound.club/games/dune-legacy/data/dune2-shareware-pak-data.zip",
+    overlayFileName: "dune2-shareware-pak-data.zip",
+    overlayDest: "data",
+    note: "Official standalone Windows installer paired with curated Dune II PAK assets from PlayBound mirror.",
+  },
+  "hindstrike": {
+    enabled: true,
+    kind: "direct-zip",
+    exeHint: "hindstrike|hind_strike|hind",
+    note: "Portable Hind Strike release with controller and local co-op support.",
+  },
+  "hindstrike-homebrew-retroarch": {
+    enabled: true,
+    kind: "direct-zip",
+    exeHint: "hindstrike|hind_strike|hind",
+    note: "Portable Hind Strike release with controller and local co-op support.",
   },
   "c-dogs-sdl": {
     enabled: true,
