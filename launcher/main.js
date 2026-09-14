@@ -15981,8 +15981,21 @@ if (gotLock) {
     configureYoutubeEmbedIdentity();
 
     /**
+     * Prefer the primary screen for Connect streaming. Exclusive-fullscreen /
+     * Direct3D games (OpenBOR, many emulators) often yield a black window
+     * capture while the desktop compositor still has pixels — screen capture
+     * is what made party game view work when it worked before.
+     */
+    function findPrimaryScreenSource(sources) {
+      const screens = (sources || []).filter((s) => s.id && s.id.startsWith("screen:"));
+      if (!screens.length) return null;
+      const primaryId = String(screen.getPrimaryDisplay()?.id || "");
+      return screens.find((s) => String(s.display_id) === primaryId) || screens[0] || null;
+    }
+
+    /**
      * Find the application window for the actively running game process.
-     * Captures the game window directly rather than physical display screens.
+     * Used as a secondary preference; Connect prefers screen (see handler).
      */
     async function findGameWindowSource(slug, retries = 5, delayMs = 500) {
       const entry = slug ? catalogEntry(slug) : null;
@@ -16066,30 +16079,39 @@ if (gotLock) {
         });
         if (anyAppWindow) return anyAppWindow;
 
-        // Fallback 2: primary screen
-        const screens = allSources.filter((s) => s.id && s.id.startsWith("screen:"));
-        const primaryId = String(screen.getPrimaryDisplay()?.id || "");
-        return screens.find((s) => String(s.display_id) === primaryId) || screens[0] || null;
+        // Fallback: primary screen
+        return findPrimaryScreenSource(allSources);
       } catch {
         return null;
       }
     }
 
     /*
-     * Connect online multiplayer (local co-op): host shares the game application window via
-     * getDisplayMedia in the renderer. Automatically captures the game's window so party
-     * members see the game view without capturing desktop or background apps.
+     * Connect online multiplayer: host shares the primary display by default.
+     * Window capture looks cleaner when it works, but exclusive fullscreen
+     * often streams solid black — guests then see RTT/Hz with an empty frame.
      */
     try {
       session.defaultSession.setDisplayMediaRequestHandler(async (_request, callback) => {
         try {
-          const slug = playingGameSlug();
-          const target = await findGameWindowSource(slug);
-          if (!target) {
-            callback({});
+          const sources = await desktopCapturer.getSources({
+            types: ["screen", "window"],
+            thumbnailSize: { width: 0, height: 0 },
+          });
+          const screenSource = findPrimaryScreenSource(sources);
+          if (screenSource) {
+            console.log("[couch] display capture → screen", screenSource.name || screenSource.id);
+            callback({ video: screenSource });
             return;
           }
-          callback({ video: target });
+          const slug = playingGameSlug();
+          const windowSource = await findGameWindowSource(slug, 2, 400);
+          if (windowSource) {
+            console.log("[couch] display capture → window", windowSource.name || windowSource.id);
+            callback({ video: windowSource });
+            return;
+          }
+          callback({});
         } catch (err) {
           console.warn("[couch] display media handler failed:", err?.message || err);
           callback({});

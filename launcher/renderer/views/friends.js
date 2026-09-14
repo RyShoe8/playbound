@@ -4055,10 +4055,11 @@ async function launchPartyGame(party) {
           // The game process is running now — capture its application window and stream to peers.
           // Retry: OpenBOR / fullscreen often aren't capturable for a few seconds after launch.
           void (async () => {
-            const delays = [0, 1500, 3500, 7000];
+            const delays = [0, 1500, 3500, 7000, 12000, 20000];
             let captured = false;
             for (const wait of delays) {
               if (wait) await new Promise((r) => setTimeout(r, wait));
+              // Retries force a new capture in case the first grab was pre-game / black.
               const stream = await ensureHostDisplayStream(wait > 0);
               if (!stream) continue;
               captured = true;
@@ -4068,7 +4069,12 @@ async function launchPartyGame(party) {
             }
             if (!captured) {
               setStatus(
-                "Online pads ready — run the game windowed or borderless if game view doesn't stream.",
+                "Online pads ready — could not capture the display. Keep the game on the main monitor.",
+                true
+              );
+            } else {
+              setStatus(
+                "Pads connected but game view did not reach guests — try Join Game again on their side.",
                 true
               );
             }

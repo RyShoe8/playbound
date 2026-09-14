@@ -1,6 +1,9 @@
 /**
  * Shared host display capture for Connect online multiplayer (local-co-op games).
  * One stream is reused across all phone/controller peer connections.
+ *
+ * Capture source is chosen in main via setDisplayMediaRequestHandler (prefers
+ * primary screen so exclusive-fullscreen games are not solid black).
  */
 
 let hostDisplayStream = null;
@@ -14,7 +17,9 @@ export async function ensureHostDisplayStream(forceNew = false) {
     stopHostDisplayStream();
   }
   if (hostDisplayStream && hostDisplayStream.active) {
-    return hostDisplayStream;
+    const live = hostDisplayStream.getVideoTracks().some((t) => t.readyState === "live");
+    if (live) return hostDisplayStream;
+    stopHostDisplayStream();
   }
   if (!navigator.mediaDevices?.getDisplayMedia) {
     console.warn("[couch] getDisplayMedia not available");
@@ -30,23 +35,35 @@ export async function ensureHostDisplayStream(forceNew = false) {
       audio: false,
     });
     const track = hostDisplayStream.getVideoTracks()[0];
-    if (track) {
-      try {
-        track.contentHint = "motion";
-      } catch {
-        /* contentHint is best-effort */
-      }
-      track.addEventListener("ended", () => {
-        hostDisplayStream = null;
-      });
-      try {
-        await track.applyConstraints({
-          frameRate: { ideal: 60, max: 60 },
-        });
-      } catch {
-        /* constraints best-effort */
-      }
+    if (!track || track.readyState !== "live") {
+      console.warn("[couch] display capture returned no live video track");
+      stopHostDisplayStream();
+      return null;
     }
+    try {
+      track.contentHint = "motion";
+    } catch {
+      /* contentHint is best-effort */
+    }
+    track.addEventListener("ended", () => {
+      hostDisplayStream = null;
+    });
+    try {
+      await track.applyConstraints({
+        frameRate: { ideal: 60, max: 60 },
+      });
+    } catch {
+      /* constraints best-effort */
+    }
+    const settings = typeof track.getSettings === "function" ? track.getSettings() : {};
+    console.log(
+      "[couch] display track live",
+      settings.width || "?",
+      "x",
+      settings.height || "?",
+      "@",
+      settings.frameRate || "?"
+    );
     return hostDisplayStream;
   } catch (err) {
     console.warn("[couch] display capture failed:", err?.message || err);
