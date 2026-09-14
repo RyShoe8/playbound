@@ -185,11 +185,23 @@ describe("insert-catalog-wave allowlists", () => {
         "s-t-a-l-k-e-r-shadow-of-chernobyl/lost-alpha",
         "s-t-a-l-k-e-r-shadow-of-chernobyl/official",
         "s-t-a-l-k-e-r-shadow-of-chernobyl/true-stalker",
+        "stalker-anomaly/gamma",
         "stalker-anomaly/official",
       ].sort()
     );
     expect(PATCH_EDITION_FIELDS["morrowind/openmw"]).toEqual(["installConfig"]);
     expect(PATCH_EDITION_FIELDS["morrowind/tes3mp"]).toEqual(["installConfig"]);
+    expect(PATCH_EDITION_FIELDS["stalker-anomaly/gamma"]).toEqual([
+      "name",
+      "description",
+      "shortDescription",
+      "aliases",
+      "links",
+      "installMethod",
+      "installConfig",
+      "requirements",
+      "hardwareRequirements",
+    ]);
     expect(PATCH_EDITION_FIELDS["s-t-a-l-k-e-r-shadow-of-chernobyl/lost-alpha"]).toEqual([
       "name",
       "description",
@@ -301,6 +313,11 @@ describe("insert-catalog-wave allowlists", () => {
     const gamma = anomaly.find((e) => e.slug === "gamma");
     expect(gamma?.isDefault).toBe(false);
     expect(gamma?.shortDescription).toMatch(/Requires Anomaly/i);
+    expect(gamma?.installMethod).toBe("playbound_installer");
+    expect(gamma?.installConfig?.playbound_installer?.url).toMatch(
+      /Grokitach\/Stalker_GAMMA/
+    );
+    expect(gamma?.links?.github).toBe("https://github.com/Grokitach/Stalker_GAMMA");
     const clearSky = editions.filter((e) => e.gameSlug === "s-t-a-l-k-e-r-clear-sky");
     expect(clearSky.map((e) => e.slug)).toEqual(["official"]);
     const soc = editions.filter((e) => e.gameSlug === "s-t-a-l-k-e-r-shadow-of-chernobyl");

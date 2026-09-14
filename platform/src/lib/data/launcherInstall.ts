@@ -1576,7 +1576,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
       "AnomalyLauncher.exe",
       "AnomalyDX11EXE.exe",
     ],
-    note: "Standalone ModDB install — no Call of Pripyat GOG copy required.",
+    note: "Standalone ModDB install — no Call of Pripyat GOG copy required. For G.A.M.M.A. hardcore, install Anomaly first then use edition gamma → https://github.com/Grokitach/Stalker_GAMMA/wiki/Installing-GAMMA",
   },
   "s-t-a-l-k-e-r-clear-sky": {
     enabled: true,

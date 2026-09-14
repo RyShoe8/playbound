@@ -732,9 +732,9 @@ export const editions: EditionSeed[] = [
     name: "G.A.M.M.A. — Hardcore Survival Pack",
     version: "0.9.4",
     shortDescription:
-      "Requires Anomaly first. Grok's curated hardcore survival overhaul (400+ mods) installed via the G.A.M.M.A. launcher.",
+      "Requires Anomaly (default edition) first. Grok's curated hardcore survival overhaul — install from the official Grokitach/Stalker_GAMMA GitHub guide.",
     description:
-      "G.A.M.M.A. (Grok's Automated Modular Modpack for Anomaly) is a hardcore, curated survival overhaul built on Anomaly — crafting, economy, ballistics, AI, and graphics reshaped into one balanced package. It is not Call of Pripyat and not a GOG-only path: install a clean Anomaly 1.5.x first, then follow the official GitHub wiki / G.A.M.M.A. launcher. Expect a large download and a long first install. Optional: GOG also ships a one-click GAMMA package if you prefer that storefront.",
+      "G.A.M.M.A. (Grok's Automated Modular Modpack for Anomaly) is a hardcore, curated survival overhaul built on Anomaly — crafting, economy, ballistics, AI, and graphics reshaped into one balanced package via Mod Organizer 2 and the G.A.M.M.A. launcher.\n\nInstall order: (1) install PlayBound's Anomaly — Standalone (Default) edition and launch once to the main menu; (2) follow Installing-GAMMA on the official GitHub repo https://github.com/Grokitach/Stalker_GAMMA (wiki + G.A.M.M.A. launcher). Do not overwrite a GOG trilogy folder. Expect a large download and a long first install. Optional alternate: GOG one-click GAMMA if you prefer that storefront.",
     type: "community",
     status: "active",
     visibility: "public",
@@ -744,19 +744,31 @@ export const editions: EditionSeed[] = [
       website: "https://www.stalkergamma.com/",
       github: "https://github.com/Grokitach/Stalker_GAMMA",
     },
-    installMethod: "external_installer",
+    installMethod: "playbound_installer",
     installConfig: {
-      external_installer: {
+      playbound_installer: {
+        kind: "external",
         url: "https://github.com/Grokitach/Stalker_GAMMA/wiki/Installing-GAMMA",
+        exeHint: "AnomalyLauncher|AnomalyDX11EXE|AnomalyDX9EXE|G.A.M.M.A. Launcher",
+        knownExePaths: [
+          "bin\\AnomalyDX11EXE.exe",
+          "bin\\AnomalyDX9EXE.exe",
+          "AnomalyLauncher.exe",
+          ".Grok's Modpack Installer\\G.A.M.M.A. Launcher.exe",
+        ],
+        note:
+          "Requires a working Anomaly 1.5.x install first (PlayBound Anomaly — Standalone edition). Then open the official Grokitach/Stalker_GAMMA Installing-GAMMA wiki and run the G.A.M.M.A. launcher — it pulls addons from ModDB/GitHub automatically. Large download; SSD recommended.",
       },
     },
     features: ["Singleplayer", "Mod Support", "Community Content", "Story Campaign"],
     tags: ["Open World", "Mods", "Survival", "Hardcore"],
-    aliases: ["GAMMA", "G.A.M.M.A.", "Stalker GAMMA", "Grok GAMMA"],
+    aliases: ["GAMMA", "G.A.M.M.A.", "Stalker GAMMA", "Grok GAMMA", "Stalker_GAMMA"],
     verificationLevel: "community_verified",
     requirements: {
       min: "Working Anomaly 1.5.x · Windows 10 · Quad-core · 8 GB RAM · DX11 GPU · ~80 GB free for downloads",
       recommended: "Windows 10/11 · 16 GB RAM · modern DX11 GPU · 130 GB+ free storage · SSD strongly preferred",
+      notes:
+        "Requires PlayBound's Anomaly — Standalone (Default) edition installed and launched once before running the G.A.M.M.A. launcher from https://github.com/Grokitach/Stalker_GAMMA",
     },
     hardwareRequirements: {
       min: {
