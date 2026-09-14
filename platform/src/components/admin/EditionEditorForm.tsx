@@ -450,12 +450,33 @@ export function EditionEditorForm({
     setBusy(true);
     setError("");
     try {
+      const cleanConfig = { ...form.installConfig };
+      if (cleanConfig.manual?.steps) {
+        const cleanSteps = cleanConfig.manual.steps.filter(
+          (s) => s && typeof s.text === "string" && s.text.trim().length > 0
+        );
+        if (cleanSteps.length > 0) {
+          cleanConfig.manual = { ...cleanConfig.manual, steps: cleanSteps };
+        } else {
+          delete cleanConfig.manual;
+        }
+      }
+      if (form.installMethod === "playbound_installer") {
+        cleanConfig.playbound_installer = {
+          kind: cleanConfig.playbound_installer?.kind || "direct-zip",
+          ...(cleanConfig.playbound_installer || {}),
+        };
+      }
+      const payload = {
+        ...form,
+        installConfig: cleanConfig,
+      };
       const res = await fetch(
         mode === "create" ? "/api/editions" : `/api/editions/${initial.id}`,
         {
           method: mode === "create" ? "POST" : "PATCH",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify(form),
+          body: JSON.stringify(payload),
         }
       );
       const data = await res.json().catch(() => null);
@@ -898,7 +919,16 @@ export function EditionEditorForm({
           <label className={label}>Install method</label>
           <PremiumSelect
             value={form.installMethod}
-            onChange={(e) => patch("installMethod", e.target.value as InstallMethod)}
+            onChange={(e) => {
+              const nextMethod = e.target.value as InstallMethod;
+              patch("installMethod", nextMethod);
+              if (
+                nextMethod === "playbound_installer" &&
+                !form.installConfig.playbound_installer?.kind
+              ) {
+                patchConfig("playbound_installer", { kind: "direct-zip" });
+              }
+            }}
             className={field}
           >
             {INSTALL_METHODS.map((m) => (
@@ -922,7 +952,11 @@ export function EditionEditorForm({
                 });
               }}
             />
-          ) : null}
+          ) : (
+            <p className="rounded-lg border border-border/70 bg-secondary/30 p-3 text-xs text-muted-foreground">
+              💡 <strong>Note:</strong> Save this edition first to enable the <strong>Upload launcher package</strong> tool (which uploads and mirrors .zip/.7z archives to the VPS), or configure a direct URL below.
+            </p>
+          )}
           <InstallMethodFields
             method={form.installMethod}
             config={form.installConfig}
@@ -1738,6 +1772,11 @@ function ManualSteps({
     <div>
       <label className={label}>Install steps</label>
       <div className="mt-2 space-y-2">
+        {list.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-border p-3 text-center text-xs text-muted-foreground">
+            No manual install steps added yet. Click &quot;Add step&quot; below to add instructions.
+          </p>
+        ) : null}
         {list.map((step, i) => (
           <div key={i} className="flex items-start gap-2 rounded-lg border border-border p-2">
             <span className="mt-2 w-4 shrink-0 text-center text-xs font-bold text-muted-foreground">
