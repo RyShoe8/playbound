@@ -92,20 +92,10 @@ export function ControllerClient({
    * launching a local game. Phone pads still open the default layout (QR).
    */
   const [controlChoice, setControlChoice] = useState<"undecided" | "pc" | "phone">(() => {
+    // Default layout is already the phone/touch pad — no chooser needed.
     if (!gameLayout) return "pc";
-    if (typeof window === "undefined") return "undecided";
-    try {
-      const coarse =
-        window.matchMedia?.("(pointer: coarse)").matches &&
-        (navigator.maxTouchPoints ?? 0) > 0 &&
-        window.innerWidth < 900;
-      if (coarse) return "pc";
-    } catch {
-      /* ignore */
-    }
-    // Desktop game-view joiners almost always use a local pad or KBM — skip the
-    // phone-QR path unless they opt in.
-    return "pc";
+    // Game view: always ask PC vs phone once (desktop + tablet).
+    return "undecided";
   });
   // Phones scanning the QR want the touch pad, not keyboard+stream chrome.
   const [mode, setMode] = useState<InputMode>(() => {

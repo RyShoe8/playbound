@@ -12260,6 +12260,51 @@ ipcMain.handle("open-external", async (_event, url, opts) => {
     return false;
   }
 });
+
+/** Dedicated in-app window for Couch game view (HTTPS). Avoids Chrome PNA + openExternal. */
+let couchGameViewWin = null;
+ipcMain.handle("open-couch-game-view", async (_event, rawUrl) => {
+  try {
+    const url = assertOpenExternalUrl(String(rawUrl || ""));
+    if (!/^https:\/\//i.test(url)) {
+      return { ok: false, error: "Game view must be https." };
+    }
+    const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+    const w = Math.max(1024, Math.floor(width * 0.92));
+    const h = Math.max(640, Math.floor(height * 0.92));
+    if (couchGameViewWin && !couchGameViewWin.isDestroyed()) {
+      await couchGameViewWin.loadURL(url);
+      if (couchGameViewWin.isMinimized()) couchGameViewWin.restore();
+      couchGameViewWin.focus();
+      return { ok: true };
+    }
+    couchGameViewWin = new BrowserWindow({
+      width: w,
+      height: h,
+      x: Math.max(0, Math.floor((width - w) / 2)),
+      y: Math.max(0, Math.floor((height - h) / 2)),
+      show: true,
+      backgroundColor: "#0c0a12",
+      title: "PlayBound — Game view",
+      autoHideMenuBar: true,
+      webPreferences: {
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+        backgroundThrottling: false,
+      },
+    });
+    couchGameViewWin.on("closed", () => {
+      couchGameViewWin = null;
+    });
+    couchGameViewWin.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+    await couchGameViewWin.loadURL(url);
+    return { ok: true };
+  } catch (err) {
+    console.warn("open-couch-game-view failed:", err?.message || err);
+    return { ok: false, error: err?.message || String(err) };
+  }
+});
 ipcMain.handle("open-deep-link", (_event, url) => {
   const raw = String(url || "");
   if (!/^playbound:\/\//i.test(raw)) {
