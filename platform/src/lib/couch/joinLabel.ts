@@ -1,11 +1,14 @@
 /**
  * Human-readable controller row labels for Couch join + Admin streaming.
+ * Matches launcher Input Setup: keyboard | controller | phone.
  */
+
+export type CouchControlChoice = "undecided" | "keyboard" | "controller" | "phone";
 
 export type CouchJoinLabelInput = {
   mode: "keyboard-mouse" | "touch-gamepad" | "standard-gamepad" | string;
   gameLayout: boolean;
-  controlChoice: "undecided" | "pc" | "phone";
+  controlChoice: CouchControlChoice;
   /** navigator.getGamepads()[n].id when a pad is connected */
   gamepadId?: string | null;
 };
@@ -26,9 +29,9 @@ export function couchControllerJoinLabel(input: CouchJoinLabelInput): string {
 
   if (gamepadId) return shortenGamepadId(gamepadId);
 
-  if (mode === "standard-gamepad") return "Gamepad";
-  if (gameLayout && controlChoice === "pc") return "PC controls";
-  if (mode === "keyboard-mouse") return "Keyboard & mouse";
+  if (controlChoice === "controller" || mode === "standard-gamepad") return "Gamepad";
+  if (controlChoice === "keyboard" || mode === "keyboard-mouse") return "Keyboard & mouse";
+  if (gameLayout && controlChoice === "undecided") return "Controller";
 
   return "Controller";
 }
