@@ -15981,21 +15981,54 @@ if (gotLock) {
     configureYoutubeEmbedIdentity();
 
     /**
-     * Prefer the primary screen for Connect streaming. Exclusive-fullscreen /
-     * Direct3D games (OpenBOR, many emulators) often yield a black window
-     * capture while the desktop compositor still has pixels — screen capture
-     * is what made party game view work when it worked before.
+     * Screen sources for Connect when window capture isn't available.
+     * On multi-monitor hosts, primary is often the wrong display — pick the
+     * screen whose thumbnail has the most pixel variance (active game content).
      */
-    function findPrimaryScreenSource(sources) {
+    function thumbnailVariance(img) {
+      try {
+        if (!img || img.isEmpty?.()) return 0;
+        const { width, height } = img.getSize();
+        if (!width || !height) return 0;
+        const buf = img.toBitmap();
+        if (!buf || buf.length < 16) return 0;
+        let sum = 0;
+        let sumSq = 0;
+        let n = 0;
+        // BGRA stride; sample every 4th pixel for speed
+        for (let i = 0; i + 2 < buf.length; i += 16) {
+          const y = (buf[i] + buf[i + 1] + buf[i + 2]) / 3;
+          sum += y;
+          sumSq += y * y;
+          n += 1;
+        }
+        if (n < 8) return 0;
+        const mean = sum / n;
+        return sumSq / n - mean * mean;
+      } catch {
+        return 0;
+      }
+    }
+
+    function findBestScreenSource(sources) {
       const screens = (sources || []).filter((s) => s.id && s.id.startsWith("screen:"));
       if (!screens.length) return null;
+      let best = null;
+      let bestVar = -1;
+      for (const s of screens) {
+        const v = thumbnailVariance(s.thumbnail);
+        if (v > bestVar) {
+          bestVar = v;
+          best = s;
+        }
+      }
+      if (best && bestVar > 20) return best;
       const primaryId = String(screen.getPrimaryDisplay()?.id || "");
       return screens.find((s) => String(s.display_id) === primaryId) || screens[0] || null;
     }
 
     /**
      * Find the application window for the actively running game process.
-     * Used as a secondary preference; Connect prefers screen (see handler).
      */
     async function findGameWindowSource(slug, retries = 5, delayMs = 500) {
       const entry = slug ? catalogEntry(slug) : null;
@@ -16079,36 +16112,41 @@ if (gotLock) {
         });
         if (anyAppWindow) return anyAppWindow;
 
-        // Fallback: primary screen
-        return findPrimaryScreenSource(allSources);
+        // Fallback: most-active screen (multi-monitor)
+        return findBestScreenSource(allSources);
       } catch {
         return null;
       }
     }
 
     /*
-     * Connect online multiplayer: host shares the primary display by default.
-     * Window capture looks cleaner when it works, but exclusive fullscreen
-     * often streams solid black — guests then see RTT/Hz with an empty frame.
+     * Connect streaming: prefer the matched game window (correct on multi-monitor
+     * when the title is windowed/borderless). Fall back to the screen that looks
+     * most active — not always the primary display.
      */
     try {
       session.defaultSession.setDisplayMediaRequestHandler(async (_request, callback) => {
         try {
-          const sources = await desktopCapturer.getSources({
-            types: ["screen", "window"],
-            thumbnailSize: { width: 0, height: 0 },
-          });
-          const screenSource = findPrimaryScreenSource(sources);
-          if (screenSource) {
-            console.log("[couch] display capture → screen", screenSource.name || screenSource.id);
-            callback({ video: screenSource });
-            return;
-          }
           const slug = playingGameSlug();
-          const windowSource = await findGameWindowSource(slug, 2, 400);
+          const windowSource = await findGameWindowSource(slug, 4, 400);
           if (windowSource) {
             console.log("[couch] display capture → window", windowSource.name || windowSource.id);
             callback({ video: windowSource });
+            return;
+          }
+          const sources = await desktopCapturer.getSources({
+            types: ["screen"],
+            thumbnailSize: { width: 160, height: 90 },
+          });
+          const screenSource = findBestScreenSource(sources);
+          if (screenSource) {
+            console.log(
+              "[couch] display capture → screen",
+              screenSource.name || screenSource.id,
+              "display_id=",
+              screenSource.display_id
+            );
+            callback({ video: screenSource });
             return;
           }
           callback({});
