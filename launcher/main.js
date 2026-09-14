@@ -16068,6 +16068,8 @@ if (gotLock) {
       if (/tmnt/i.test(slug)) {
         titleTokens.push("openbor", "rescue", "palooza", "tmnt", "ninja", "turtles");
       }
+      // Engine / binary names that often ARE the window title (exact or prefix).
+      const engineNames = ["openbor", "hurrican", "dosbox", "gzdoom", "zandronum", "retroarch"];
 
       const excludeName = (name) =>
         /^playbound/i.test(name) ||
@@ -16076,8 +16078,8 @@ if (gotLock) {
           name
         );
 
-      /** Minimum score so a weak token hit cannot steal capture from another app. */
-      const MIN_SCORE = 8;
+      /** Confident enough to avoid random apps; OpenBOR title alone must pass. */
+      const MIN_SCORE = 5;
 
       for (let attempt = 0; attempt < retries; attempt++) {
         try {
@@ -16097,6 +16099,12 @@ if (gotLock) {
             let score = 0;
             const title = (entry?.title || "").toLowerCase();
             if (title && name.includes(title)) score += 20;
+            // Window titled exactly like the engine (common for OpenBOR).
+            for (const eng of engineNames) {
+              if (name === eng || name.startsWith(eng + " ") || name.startsWith(eng + "-")) {
+                score += 12;
+              }
+            }
             for (const t of titleTokens) {
               if (name.includes(t)) score += 4;
             }

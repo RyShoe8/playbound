@@ -2,8 +2,8 @@
  * Shared host display capture for Connect online multiplayer (local-co-op games).
  * One stream is reused across all phone/controller peer connections.
  *
- * Capture source is chosen in main via setDisplayMediaRequestHandler (prefers
- * primary screen so exclusive-fullscreen games are not solid black).
+ * Capture source is chosen in main via setDisplayMediaRequestHandler
+ * (confident game-window match, else most-active screen).
  */
 
 let hostDisplayStream = null;

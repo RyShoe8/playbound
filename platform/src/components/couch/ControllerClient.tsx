@@ -222,18 +222,35 @@ export function ControllerClient({
 
     const markLive = () => {
       const v = videoRef.current;
-      // Dark game menus are common — do not treat low luminance as "blank capture".
-      // Only wait until the decoder reports real dimensions.
-      if (!v || v.videoWidth <= 0 || v.videoHeight <= 0) return false;
-      setHasVideo(true);
-      setVideoWaiting(false);
-      clearVideoFrameWatch();
-      return true;
+      if (!v) return false;
+      // Some captures report dimensions only after play() + unmute.
+      if (v.readyState >= 2 && (v.videoWidth > 0 || v.videoHeight > 0)) {
+        setHasVideo(true);
+        setVideoWaiting(false);
+        clearVideoFrameWatch();
+        return true;
+      }
+      if (v.videoWidth > 0 && v.videoHeight > 0) {
+        setHasVideo(true);
+        setVideoWaiting(false);
+        clearVideoFrameWatch();
+        return true;
+      }
+      return false;
     };
     if (track) {
+      try {
+        track.enabled = true;
+      } catch {
+        /* ignore */
+      }
       track.onunmute = () => {
         void videoRef.current?.play().catch(() => {});
         markLive();
+      };
+      track.onended = () => {
+        setHasVideo(false);
+        setVideoWaiting(true);
       };
     }
     videoFrameWatchRef.current = setInterval(() => {
