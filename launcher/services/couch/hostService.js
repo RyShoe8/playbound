@@ -138,24 +138,52 @@ function createHostService(deps) {
   /**
    * Apply an input packet from any transport.
    * Slot comes from the authenticated binding, never from the packet.
+   * Hot path is sync when the ViGEm slot is already warm (hello / prewarm).
    */
-  async function applyInput(packet, meta = {}) {
+  function applyInput(packet, meta = {}) {
     const parsed = parseInputPacketV1(packet);
     if (!parsed) return false;
     const boundSlot = Number.isInteger(meta.playerSlot) ? meta.playerSlot : null;
     if (boundSlot == null) return false;
     const bound = bindInputToSlot(parsed, boundSlot);
     if (!bound) return false;
-    const handle = await ensureSlot(bound.p);
-    handle.applyState(bound);
-    if (meta.controllerId) {
-      metrics.recordPacket(meta.controllerId, {
-        transport: meta.transport || "unknown",
-        seq: bound.seq,
-        captureToHostMs: typeof meta.rttMs === "number" ? meta.rttMs : undefined,
-      });
+    const existing = handles.get(bound.p);
+    if (existing) {
+      existing.applyState(bound);
+      if (meta.controllerId) {
+        metrics.recordPacket(meta.controllerId, {
+          transport: meta.transport || "unknown",
+          seq: bound.seq,
+          captureToHostMs: typeof meta.rttMs === "number" ? meta.rttMs : undefined,
+        });
+      }
+      return true;
     }
+    // First packet before hello finished warming — create async, don't block IPC.
+    void ensureSlot(bound.p).then((handle) => {
+      handle.applyState(bound);
+      if (meta.controllerId) {
+        metrics.recordPacket(meta.controllerId, {
+          transport: meta.transport || "unknown",
+          seq: bound.seq,
+          captureToHostMs: typeof meta.rttMs === "number" ? meta.rttMs : undefined,
+        });
+      }
+    });
     return true;
+  }
+
+  /** Renderer → main input path (ipcMain.on). No promise / no reply. */
+  function applyInputFast(payload) {
+    if (!payload || payload.type !== "input" || !payload.packet) return;
+    const client = clients.get(payload.controllerId);
+    if (!client) return;
+    applyInput(payload.packet, {
+      controllerId: payload.controllerId,
+      playerSlot: client.playerSlot,
+      transport: "webrtc",
+      rttMs: payload.rttMs,
+    });
   }
 
   function performanceNowFallback() {
@@ -196,6 +224,10 @@ function createHostService(deps) {
         transport: ctx.transport || "websocket",
       });
       metrics.setTransport(result.controllerId, ctx.transport || "websocket");
+      // Warm ViGEm before the first pad frames so applyInput stays sync.
+      if (Number.isInteger(result.playerSlot)) {
+        void ensureSlot(result.playerSlot);
+      }
       ctx.send?.(
         JSON.stringify({
           type: "welcome",
@@ -467,14 +499,8 @@ function createHostService(deps) {
   async function onRendererMessage(payload) {
     if (!payload) return { ok: false };
     if (payload.type === "input" && payload.packet) {
-      const client = clients.get(payload.controllerId);
-      if (!client) return { ok: false };
-      await applyInput(payload.packet, {
-        controllerId: payload.controllerId,
-        playerSlot: client.playerSlot,
-        transport: "webrtc",
-        rttMs: payload.rttMs,
-      });
+      // Prefer couch-renderer-input (send); keep this for older preload paths.
+      applyInputFast(payload);
       return { ok: true };
     }
     if (payload.type === "control" && payload.message) {
@@ -546,6 +572,7 @@ function createHostService(deps) {
     getState,
     probeDriver,
     applyInput,
+    applyInputFast,
     warmControllerSlot,
   };
 }

@@ -12985,6 +12985,9 @@ ipcMain.handle("get-controller-support", (_event, slug) => {
     return { kind: "unknown", note: err?.message };
   }
 });
+ipcMain.on("couch-renderer-input", (_event, payload) => {
+  couchHost.applyInputFast(payload || {});
+});
 ipcMain.handle("couch-renderer-message", async (_event, payload) =>
   couchHost.onRendererMessage(payload || {})
 );

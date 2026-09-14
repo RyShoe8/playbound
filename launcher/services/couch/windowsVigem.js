@@ -11,6 +11,7 @@ const { spawn } = require("child_process");
 const { emptyPadState } = require("./protocol");
 
 const HOST_PS1 = "PlayBound.VigemHost.ps1";
+const HOST_EXE = "PlayBound.VigemHost.exe";
 
 /**
  * The report the pad will actually receive, as a comparable key.
@@ -18,11 +19,11 @@ const HOST_PS1 = "PlayBound.VigemHost.ps1";
  * Mirrors the host's own conversion: axes are rounded to int16, triggers to a
  * byte, and the Y axes are inverted. Comparing after that quantization rather
  * than on the raw floats is the whole point — a phone streams input on a fixed
- * 60Hz timer whether or not anything moved, and small analog noise below one
+ * timer whether or not anything moved, and small analog noise below one
  * int16 step produces a byte-identical report. Both cases are frames the pad
  * cannot tell apart.
  *
- * Must agree exactly with the conversion in PlayBound.VigemHost.ps1, or a
+ * Must agree exactly with the conversion in PlayBound.VigemHost (ps1 / exe), or a
  * frame the pad would have rendered differently could be skipped here. The
  * host writes its rounding as Floor(x + 0.5) for that reason — PowerShell's
  * [Math]::Round breaks exact .5 ties toward even, where Math.round always
@@ -68,7 +69,13 @@ function resolveVigemDir() {
     /* ignore */
   }
   for (const dir of candidates) {
-    if (dir && fs.existsSync(path.join(dir, HOST_PS1))) return dir;
+    if (
+      dir &&
+      (fs.existsSync(path.join(dir, HOST_EXE)) ||
+        fs.existsSync(path.join(dir, HOST_PS1)))
+    ) {
+      return dir;
+    }
   }
   return null;
 }
@@ -102,16 +109,26 @@ function createWindowsVigemProvider() {
         "Controller host missing from this PlayBound build. Reinstall PlayBound."
       );
     }
-    const script = path.join(dir, HOST_PS1);
-    child = spawn(
-      "powershell.exe",
-      ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script],
-      {
+    // Prefer the self-contained .NET host (no PowerShell ~1.7ms/update tax).
+    const exe = path.join(dir, HOST_EXE);
+    if (fs.existsSync(exe)) {
+      child = spawn(exe, [], {
         cwd: dir,
         stdio: ["pipe", "pipe", "pipe"],
         windowsHide: true,
-      }
-    );
+      });
+    } else {
+      const script = path.join(dir, HOST_PS1);
+      child = spawn(
+        "powershell.exe",
+        ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script],
+        {
+          cwd: dir,
+          stdio: ["pipe", "pipe", "pipe"],
+          windowsHide: true,
+        }
+      );
+    }
     buf = "";
     child.stdout.setEncoding("utf8");
     child.stdout.on("data", (chunk) => {
@@ -189,7 +206,7 @@ function createWindowsVigemProvider() {
   }
 
   return {
-    id: "windows-vigem-ps",
+    id: "windows-vigem",
     probe,
     async createController(slot) {
       const res = await send({ cmd: "create", slot }, true);

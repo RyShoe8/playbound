@@ -136,6 +136,7 @@ export function ControllerClient({
   const seqRef = useRef(0);
   const sendFnRef = useRef<(obj: unknown) => void>(() => {});
   const lastSentRef = useRef(0);
+  const lastPadKeyRef = useRef("");
   const framesRef = useRef(0);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -222,10 +223,22 @@ export function ControllerClient({
     return `Player ${join.playerSlot + 1}`;
   }, [join?.playerSlot]);
 
-  const sendInput = useCallback(() => {
+  const sendInput = useCallback((opts?: { force?: boolean }) => {
     const j = join;
     if (!j || j.status !== "approved" || j.playerSlot == null || !j.sessionToken) return;
     const pad = padRef.current;
+    const key = [
+      pad.buttons >>> 0,
+      Math.round(pad.lx * 1000),
+      Math.round(pad.ly * 1000),
+      Math.round(pad.rx * 1000),
+      Math.round(pad.ry * 1000),
+      Math.round(pad.lt * 255),
+      Math.round(pad.rt * 255),
+    ].join("|");
+    // Skip unchanged reports (host ViGEm already dedupes; this cuts wire + IPC).
+    if (!opts?.force && key === lastPadKeyRef.current) return;
+    lastPadKeyRef.current = key;
     seqRef.current += 1;
     const packet = {
       v: 1,
@@ -716,16 +729,24 @@ export function ControllerClient({
       framesRef.current = 0;
     }, 1000);
 
-    const inputLoop = window.setInterval(() => {
-      sendInput();
-    }, 1000 / 60);
+    // rAF + change detection instead of a blind 60Hz setInterval.
+    let raf = 0;
+    let lastForce = performance.now();
+    const tick = (now: number) => {
+      // Heartbeat every 250ms so the host knows the pad is alive even when idle.
+      const force = now - lastForce >= 250;
+      if (force) lastForce = now;
+      sendInput(force ? { force: true } : undefined);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
 
     return () => {
       closed = true;
       if (pollTimer) window.clearInterval(pollTimer);
       if (pingTimer) window.clearInterval(pingTimer);
       if (hzTimer) window.clearInterval(hzTimer);
-      window.clearInterval(inputLoop);
+      cancelAnimationFrame(raf);
       try {
         dc?.close();
       } catch {
@@ -982,6 +1003,13 @@ export function ControllerClient({
           <span className="pbc-hud-player">{playerLabel}</span>
           {gameLayout ? (
             <>
+              <span
+                className="pbc-hud-rtt"
+                title="Pad round-trip to host (network). High values feel like input lag."
+              >
+                {pingMs != null ? `${pingMs.toFixed(0)}ms` : "…ms"}
+                {hz > 0 ? ` · ${hz}Hz` : ""}
+              </span>
               <button
                 type="button"
                 className={`pbc-hud-fs ${cropTitleBar ? "is-active" : ""}`}
@@ -2023,6 +2051,16 @@ function ControllerStyles() {
 .pbc-hud-player {
   font-weight: 700;
   color: var(--pbc-ink);
+}
+
+.pbc-hud-rtt {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--pbc-ink);
+  opacity: 0.85;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.25);
 }
 
 .pbc-hud-sep {
