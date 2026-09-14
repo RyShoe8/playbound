@@ -14,6 +14,9 @@ const {
   DUALSENSE_P1_KEYS,
   OPENBOR_CFG_VERSION,
   P1_KEYS_OFFSET,
+  JOY_LIST_FIRST,
+  JOY_MAX_INPUTS,
+  readPlayerKeys,
 } = require("./openborCfg");
 
 let passed = 0;
@@ -47,6 +50,19 @@ test("writes DualSense P1 keys only while keyboard defaults remain", () => {
   DUALSENSE_P1_KEYS.forEach((k, i) => {
     assert.equal(next.readInt32LE(P1_KEYS_OFFSET + i * 4), k);
   });
+  const p1 = readPlayerKeys(next, 0);
+  const p2 = readPlayerKeys(next, 1);
+  assert.ok(
+    p1.slice(0, 4).every((k) => k >= JOY_LIST_FIRST && k < JOY_LIST_FIRST + JOY_MAX_INPUTS),
+    "P1 on joy port 0"
+  );
+  assert.ok(
+    p2.slice(0, 4).every(
+      (k) => k >= JOY_LIST_FIRST + JOY_MAX_INPUTS && k < JOY_LIST_FIRST + 2 * JOY_MAX_INPUTS
+    ),
+    "P2 on joy port 1"
+  );
+  assert.notEqual(p1[0], p2[0], "P1 and P2 joy bases must differ");
   assert.equal(applyOpenBorP1Keys(next, profile), null, "second apply must no-op");
 });
 

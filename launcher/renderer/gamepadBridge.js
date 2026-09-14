@@ -132,17 +132,17 @@ export function isBridgeableGamepadConnected() {
   if (!pad) return false;
 
   const id = (pad.id || "").toLowerCase();
-  // DualSense, DualShock, Switch Pro, or generic DirectInput / Bluetooth controllers
+  // DualSense, DualShock, Switch Pro — not Xbox / XInput (those work natively).
+  // Do not use !id.includes("xinput"): that matched almost every pad and mirrored
+  // the host stick into a second ViGEm during Connect, driving OpenBOR P1+P2.
   return (
     id.includes("dualsense") ||
     id.includes("dualshock") ||
-    id.includes("wireless controller") ||
     id.includes("054c") ||
     id.includes("0ce6") ||
     id.includes("nintendo") ||
     id.includes("switch") ||
-    id.includes("sony") ||
-    !id.includes("xinput")
+    id.includes("sony")
   );
 }
 
@@ -151,6 +151,13 @@ export function isBridgeableGamepadConnected() {
  */
 export async function enableGamepadBridge() {
   if (bridgeLoopActive) return true;
+
+  try {
+    const couch = await window.playbound?.couchState?.();
+    if (couch?.active) return false;
+  } catch {
+    /* continue */
+  }
 
   const pads = navigator.getGamepads ? Array.from(navigator.getGamepads()) : [];
   const pad = pads.find((p) => p && p.connected);

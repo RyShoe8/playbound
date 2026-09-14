@@ -28,6 +28,7 @@ import {
   ShieldCheck,
   ShoppingBag,
   Store,
+  MonitorPlay,
   Bot,
   type LucideIcon,
 } from "lucide-react";
@@ -247,6 +248,12 @@ const CONNECT_CHILDREN: NavChild[] = [
     icon: Users,
     href: "/admin/connect/parties",
     match: (p) => p.startsWith("/admin/connect/parties"),
+  },
+  {
+    label: "Streaming",
+    icon: MonitorPlay,
+    href: "/admin/connect/streaming",
+    match: (p) => p.startsWith("/admin/connect/streaming"),
   },
   {
     label: "Event Planner",

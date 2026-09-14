@@ -36,6 +36,7 @@ function createHostService(deps) {
   let wsToken = "";
   let heartbeatTimer = null;
   let pollTimer = null;
+  let metricsTimer = null;
 
   /** controllerId -> { playerSlot, sessionToken, transport } */
   const clients = new Map();
@@ -340,13 +341,13 @@ function createHostService(deps) {
     provider = createProvider();
     const probe = await provider.probe();
 
-    // Phone-as-controller games (Hurrican, etc.) enumerate pads at startup.
-    // Create player-one's virtual XInput device now so in-game setup sees a pad
-    // even before the phone connects and sends its first input packet.
+    // When the host physical pad owns OpenBOR P1, remotes start at ViGEm slot 1.
+    const reserveHostSlot = Boolean(opts.reserveHostSlot);
+    const prewarmSlot = reserveHostSlot ? 1 : 0;
     try {
-      await ensureSlot(0);
+      await ensureSlot(prewarmSlot);
     } catch (err) {
-      console.warn("[couch] prewarm slot 0 failed:", err?.message || err);
+      console.warn(`[couch] prewarm slot ${prewarmSlot} failed:`, err?.message || err);
     }
 
     const isParty = Boolean(opts?.hostLabel?.includes("Party") || opts?.party);
@@ -358,6 +359,7 @@ function createHostService(deps) {
         hostLabel: opts.hostLabel || "PlayBound",
         maxPlayers: opts.maxPlayers || COUCH_MAX_PLAYERS,
         autoApprove: opts.autoApprove !== false,
+        reserveHostSlot,
       }),
     });
     const data = await res.json();
@@ -370,6 +372,8 @@ function createHostService(deps) {
       joinUrl: data.joinUrl,
       joinPath: data.joinPath,
       snapshot: data.snapshot,
+      reserveHostSlot,
+      streamingMetricsEnabled: Boolean(data.streamingMetricsEnabled),
       driverOk: probe.ok,
       driverReason: probe.ok
         ? null
@@ -386,11 +390,23 @@ function createHostService(deps) {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hostToken: session.hostToken }),
-      }).catch(() => {});
+      })
+        .then(async (r) => {
+          if (!r.ok) return;
+          const snap = await r.json().catch(() => null);
+          if (snap && typeof snap.streamingMetricsEnabled === "boolean") {
+            session.streamingMetricsEnabled = snap.streamingMetricsEnabled;
+          }
+        })
+        .catch(() => {});
     }, 20_000);
 
     pollTimer = setInterval(() => {
       void refreshSnapshot();
+    }, 2000);
+
+    metricsTimer = setInterval(() => {
+      void uploadMetricsIfEnabled();
     }, 2000);
 
     emitState();
@@ -405,7 +421,11 @@ function createHostService(deps) {
         `${getApiBase()}/api/couch/sessions/${session.sessionId}?hostToken=${encodeURIComponent(session.hostToken)}`
       );
       if (!res.ok) return null;
-      session.snapshot = await res.json();
+      const snap = await res.json();
+      session.snapshot = snap;
+      if (typeof snap.streamingMetricsEnabled === "boolean") {
+        session.streamingMetricsEnabled = snap.streamingMetricsEnabled;
+      }
       emitState();
       return session.snapshot;
     } catch {
@@ -438,11 +458,46 @@ function createHostService(deps) {
     return getState();
   }
 
+  async function uploadMetricsIfEnabled() {
+    if (!session?.streamingMetricsEnabled || !session.hostToken) return;
+    const snap = metrics.snapshot();
+    const byId = new Map(snap.map((m) => [m.controllerId, m]));
+    const controllers = [...clients.entries()].map(([controllerId, c]) => {
+      const m = byId.get(controllerId) || {};
+      return {
+        controllerId,
+        playerSlot: c.playerSlot,
+        status: "approved",
+        transport: c.transport || m.transport || "unknown",
+        pingMs: m.pingMs ?? null,
+        jitterMs: m.jitterMs ?? null,
+        hz: m.hz ?? 0,
+        packets: m.packets ?? 0,
+        packetLoss: m.packetLoss ?? 0,
+      };
+    });
+    try {
+      await fetch(`${getApiBase()}/api/couch/sessions/${session.sessionId}/metrics`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hostToken: session.hostToken,
+          controllers,
+          collectedAt: new Date().toISOString(),
+        }),
+      });
+    } catch {
+      /* ignore */
+    }
+  }
+
   async function stopSession() {
     if (heartbeatTimer) clearInterval(heartbeatTimer);
     if (pollTimer) clearInterval(pollTimer);
+    if (metricsTimer) clearInterval(metricsTimer);
     heartbeatTimer = null;
     pollTimer = null;
+    metricsTimer = null;
 
     if (session) {
       try {

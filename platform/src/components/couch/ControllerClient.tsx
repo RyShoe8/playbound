@@ -1041,13 +1041,6 @@ export function ControllerClient({
           <span className="pbc-hud-player">{playerLabel}</span>
           {gameLayout ? (
             <>
-              <span
-                className="pbc-hud-rtt"
-                title="Pad round-trip to host (network). High values feel like input lag."
-              >
-                {pingMs != null ? `${pingMs.toFixed(0)}ms` : "…ms"}
-                {hz > 0 ? ` · ${hz}Hz` : ""}
-              </span>
               <button
                 type="button"
                 className={`pbc-hud-fs ${cropTitleBar ? "is-active" : ""}`}
@@ -1066,6 +1059,15 @@ export function ControllerClient({
             </>
           ) : null}
         </header>
+        {gameLayout ? (
+          <div
+            className="pbc-rtt-pin"
+            title="Pad round-trip to host (network). High values feel like input lag."
+          >
+            {pingMs != null ? `${pingMs.toFixed(0)}ms` : "…ms"}
+            {hz > 0 ? ` · ${hz}Hz` : ""}
+          </div>
+        ) : null}
         {gameLayout && controlChoice === "phone" ? (
           <div className="pbc-phone-qr">
             <img src={qrSrc} alt="QR code to open the phone controller" width={220} height={220} />
@@ -2099,6 +2101,24 @@ function ControllerStyles() {
   padding: 2px 6px;
   border-radius: 4px;
   background: rgba(0, 0, 0, 0.25);
+}
+
+/* Always visible in game view — not part of the auto-hiding HUD. */
+.pbc-rtt-pin {
+  position: absolute;
+  top: calc(var(--pbc-safe-t) + 10px);
+  right: calc(var(--pbc-safe-r) + 10px);
+  z-index: 12;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+  letter-spacing: 0.02em;
 }
 
 .pbc-hud-sep {
