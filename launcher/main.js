@@ -7247,6 +7247,9 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     const known = findKnownExecutable(entry);
     if (known) {
       const result = markInstalledFromExe(slug, { ...entry, ...editionExtra }, known, dl.version);
+      if (entry.overlayUrl && result?.dir) {
+        await applyOwnedCopySetup(slug, entry, result.dir, result.exe);
+      }
       void reportInstall(slug);
       void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version, ...editionExtra }));
       return result;
@@ -7257,6 +7260,9 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
         else resolve(installed);
       });
     });
+    if (entry.overlayUrl && result?.dir) {
+      await applyOwnedCopySetup(slug, entry, result.dir, result.exe);
+    }
     void reportInstall(slug);
     void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version, ...editionExtra }));
     return result;
@@ -8979,23 +8985,45 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
 
   /*
    * Dune Legacy needs Dune II PAK assets beside the exe (or under
-   * %APPDATA%\dunelegacy\data). The SourceForge installer ships them; the
-   * henricj GitHub zip does not. Party Join Game often targets the
-   * modern-engine edition path, so a PAK-less zip install fails here even when
-   * Library Play still hits a located SourceForge install that works.
+   * %APPDATA%\dunelegacy\data). When missing, fetch the curated PAK overlay
+   * from mirror.playbound.club before failing.
    */
   if (slug === "dune-legacy" && !duneLegacyHasPakData(info.exe, info.dir)) {
-    const message =
-      "This Dune Legacy install is missing Dune II data files (PAKs). Remove it from your library and install again — PlayBound uses the official Windows package that includes them (not the GitHub engine-only zip).";
-    void telemetry.launchFailed({
-      ...launchInfo(),
-      code: "DUNE_LEGACY_MISSING_PAK",
-      message,
-      phase: "resolve-install",
-    });
-    const pakErr = new Error(message);
-    pakErr.__launchFailedReported = true;
-    throw pakErr;
+    const pakOverlayUrl =
+      entry?.overlayUrl ||
+      "https://mirror.playbound.club/games/dune-legacy/data/dune2-shareware-pak-data.zip";
+    if (pakOverlayUrl) {
+      try {
+        const destDir = info.dir
+          ? path.join(info.dir, "data")
+          : process.env.APPDATA
+          ? path.join(process.env.APPDATA, "dunelegacy", "data")
+          : null;
+        if (destDir) {
+          await fsp.mkdir(destDir, { recursive: true });
+          const overlayName = entry?.overlayFileName || "dune2-shareware-pak-data.zip";
+          const overlayPath = path.join(app.getPath("temp"), "playbound-launcher", overlayName);
+          await downloadTo(pakOverlayUrl, overlayPath);
+          await extractOverlayReplacing(overlayPath, destDir);
+          await removeFileWithRetries(overlayPath);
+        }
+      } catch (overlayErr) {
+        console.warn("[dune-legacy] auto-provisioning PAK overlay failed:", overlayErr?.message || overlayErr);
+      }
+    }
+    if (!duneLegacyHasPakData(info.exe, info.dir)) {
+      const message =
+        "This Dune Legacy install is missing Dune II data files (PAKs). Place DUNE.PAK or ATRE.PAK in the game data folder or %APPDATA%\\dunelegacy\\data to play.";
+      void telemetry.launchFailed({
+        ...launchInfo(),
+        code: "DUNE_LEGACY_MISSING_PAK",
+        message,
+        phase: "resolve-install",
+      });
+      const pakErr = new Error(message);
+      pakErr.__launchFailedReported = true;
+      throw pakErr;
+    }
   }
 
   // Prefer connectArgs stored on the edition install; fall back to catalog entry.

@@ -9928,5 +9928,139 @@
       }
     ],
     "notes": "Press Escape on the host keyboard to leave the game or quit OpenBOR."
+  },
+  "hindstrike": {
+    "schemes": [
+      {
+        "scheme": "keyboard",
+        "supported": true,
+        "bindings": [
+          {
+            "action": "Steer / Pitch / Move",
+            "input": "Arrow Keys / W, A, S, D",
+            "group": "Movement"
+          },
+          {
+            "action": "Primary Gun / Fire",
+            "input": "Space / Z",
+            "group": "Combat"
+          },
+          {
+            "action": "Secondary Weapon / Missiles",
+            "input": "X / Left Ctrl",
+            "group": "Combat"
+          },
+          {
+            "action": "Flares / Special",
+            "input": "C / Left Shift",
+            "group": "Combat"
+          },
+          {
+            "action": "Pause / Menu",
+            "input": "Escape / Enter",
+            "group": "Interface"
+          }
+        ]
+      },
+      {
+        "scheme": "controller",
+        "supported": true,
+        "bindings": [
+          {
+            "action": "Steer / Pitch / Move",
+            "input": "Left Stick / D-Pad",
+            "group": "Movement"
+          },
+          {
+            "action": "Primary Gun / Fire",
+            "input": "A / Cross (or RT)",
+            "group": "Combat"
+          },
+          {
+            "action": "Secondary Weapon / Missiles",
+            "input": "X / Square",
+            "group": "Combat"
+          },
+          {
+            "action": "Flares / Special",
+            "input": "B / Circle",
+            "group": "Combat"
+          },
+          {
+            "action": "Pause / Menu",
+            "input": "Start",
+            "group": "Interface"
+          }
+        ]
+      }
+    ],
+    "notes": "Local 2-player co-op / versus with controller support. Online multiplayer uses PlayBound Connect Couch Mode."
+  },
+  "hindstrike-homebrew-retroarch": {
+    "schemes": [
+      {
+        "scheme": "keyboard",
+        "supported": true,
+        "bindings": [
+          {
+            "action": "Steer / Pitch / Move",
+            "input": "Arrow Keys / W, A, S, D",
+            "group": "Movement"
+          },
+          {
+            "action": "Primary Gun / Fire",
+            "input": "Space / Z",
+            "group": "Combat"
+          },
+          {
+            "action": "Secondary Weapon / Missiles",
+            "input": "X / Left Ctrl",
+            "group": "Combat"
+          },
+          {
+            "action": "Flares / Special",
+            "input": "C / Left Shift",
+            "group": "Combat"
+          },
+          {
+            "action": "Pause / Menu",
+            "input": "Escape / Enter",
+            "group": "Interface"
+          }
+        ]
+      },
+      {
+        "scheme": "controller",
+        "supported": true,
+        "bindings": [
+          {
+            "action": "Steer / Pitch / Move",
+            "input": "Left Stick / D-Pad",
+            "group": "Movement"
+          },
+          {
+            "action": "Primary Gun / Fire",
+            "input": "A / Cross (or RT)",
+            "group": "Combat"
+          },
+          {
+            "action": "Secondary Weapon / Missiles",
+            "input": "X / Square",
+            "group": "Combat"
+          },
+          {
+            "action": "Flares / Special",
+            "input": "B / Circle",
+            "group": "Combat"
+          },
+          {
+            "action": "Pause / Menu",
+            "input": "Start",
+            "group": "Interface"
+          }
+        ]
+      }
+    ],
+    "notes": "Local 2-player co-op / versus with controller support. Online multiplayer uses PlayBound Connect Couch Mode."
   }
 }

@@ -11,6 +11,8 @@ export const partyMaxPlayersBySlug: Readonly<Record<string, number>> = {
   "baseball-stars-2": 2,
   "super-sidekicks": 2,
   "metal-slug-community-remake": 2,
+  hindstrike: 2,
+  "hindstrike-homebrew-retroarch": 2,
 
   // Common party / online multiplayer capacities
   freedoom: 64,

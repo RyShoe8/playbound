@@ -1736,6 +1736,16 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       "No network transport: local 2P couch co-op only. PlayBound Connect uses couch mode and remote controllers.",
   },
 
+  "hindstrike": {
+    gameSlug: "hindstrike",
+    title: "Hind Strike",
+    tier: "tier1_improved",
+    adapterType: "official",
+    protocol: "official",
+    notes:
+      "No network transport: local 2P couch co-op. PlayBound Connect uses couch mode and remote controllers.",
+  },
+
   srb2kart: {
     gameSlug: "srb2kart",
     title: "SRB2Kart",
@@ -2209,6 +2219,7 @@ const ADAPTER_SLUG_ALIASES: Record<string, string> = {
   openmohaa: "medal-of-honor-allied-assault",
   opentyrian: "opentyrian-2000",
   opene2140: "earth-2140-trilogy",
+  "hindstrike-homebrew-retroarch": "hindstrike",
 };
 
 /**
@@ -2231,11 +2242,13 @@ export const EXPECTED_NON_CATALOG_ADAPTERS: ReadonlySet<string> = new Set([
   "marathon",
   "alephone",
   "aleph-one",
+  "hindstrike-homebrew-retroarch",
   // Now editions of another game.
   "keeperfx", // Dungeon Keeper
   "tes3mp", // Morrowind
   // Live catalog / launcher-install slug; not yet in the seed games.ts file.
   "assaultcube",
+  "hindstrike",
   // RetroArch netplay ROM game; pending catalog entry.
   "baseball-stars",
 ]);

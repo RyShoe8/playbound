@@ -212,6 +212,8 @@ const CLIENT_CONNECT_ARGS = {
   starcraft: null,
   openlara: null,
   "flatout-2": null,
+  hindstrike: null,
+  "hindstrike-homebrew-retroarch": null,
 };
 
 /**
