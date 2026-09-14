@@ -1289,7 +1289,7 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       requiresBroadcast: true,
       inGameSteps: ["Leader: Multiplayer → Local Network → Create", "Everyone else: open Local Network and join the leader's server"],
     },
-    notes: "Multiplayer belongs to the original Call of Pripyat master. Anomaly, GAMMA, and Gunslinger are single-player editions and do not inherit this adapter at launch.",
+    notes: "Multiplayer belongs to the original Call of Pripyat master. Anomaly and GAMMA are single-player (GAMMA is an Anomaly edition) and do not inherit this adapter at launch.",
   },
 
   "dune-legacy": {
