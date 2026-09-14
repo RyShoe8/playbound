@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { canLaunch } from "./partyRules";
+import { canLaunch, type RuleParty } from "./partyRules";
 
 describe("canLaunch", () => {
-  const party = {
+  const joinedAt = new Date("2026-01-01T00:00:00Z");
+  const party: RuleParty = {
     leaderId: "leader",
-    status: "forming" as const,
+    status: "forming",
+    visibility: "friends",
+    maxSize: 4,
     members: [
-      { userId: "leader", ready: true },
-      { userId: "guest", ready: false },
+      { userId: "leader", role: "leader", ready: true, joinedAt },
+      { userId: "guest", role: "member", ready: false, joinedAt },
     ],
   };
 
@@ -22,8 +25,8 @@ describe("canLaunch", () => {
       {
         ...party,
         members: [
-          { userId: "leader", ready: true },
-          { userId: "guest", ready: true },
+          { userId: "leader", role: "leader", ready: true, joinedAt },
+          { userId: "guest", role: "member", ready: true, joinedAt },
         ],
       },
       "leader"
