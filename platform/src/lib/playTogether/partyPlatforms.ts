@@ -92,18 +92,18 @@ export function fitsPartySize(
 
 /**
  * Option label for the party game picker.
- *
- * Genres and Testing share one tag trail. Couch co-op is not tagged here —
- * Multiplayer Type already filters the list to couch or online.
+ * Genres, Couch and Testing share one tag trail.
  */
 export function partyGameOptionLabel(
   title: string,
   opts: {
     testing?: boolean;
     genres?: readonly string[] | null;
+    couch?: boolean;
   } = {}
 ): string {
   const tags: string[] = [];
+  if (opts.couch) tags.push("Couch");
   for (const genre of opts.genres || []) {
     const trimmed = String(genre || "").trim();
     if (!trimmed) continue;

@@ -37,6 +37,7 @@ function seedToEdition(seed: EditionSeed): Edition {
     visibility: seed.visibility ?? "public",
     sortOrder: seed.sortOrder ?? 10,
     isDefault: Boolean(seed.isDefault),
+    isStandalone: Boolean(seed.isStandalone),
     branding: {
       logo: seed.branding?.logo ?? undefined,
       heroImage: seed.branding?.heroImage ?? undefined,
@@ -188,6 +189,10 @@ function toEdition(doc: LeanEdition): Edition {
 
       sortOrder: useCuratedFreedoomMetadata ? seedMatch!.sortOrder ?? 0 : Number(doc.sortOrder) || 0,
       isDefault: useCuratedFreedoomMetadata ? Boolean(seedMatch!.isDefault) : Boolean(doc.isDefault),
+      isStandalone:
+        doc.isStandalone !== undefined
+          ? Boolean(doc.isStandalone)
+          : Boolean(seedMatch?.isStandalone),
 
       branding: {
         logo: (branding.logo as string) || undefined,

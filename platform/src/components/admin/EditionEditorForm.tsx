@@ -706,7 +706,7 @@ export function EditionEditorForm({
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-3">
           <div>
             <label className={label}>Sort order</label>
             <input
@@ -725,6 +725,15 @@ export function EditionEditorForm({
               className="size-4"
             />
             Default edition
+          </label>
+          <label className="flex items-center gap-2 self-end pb-2 text-sm font-semibold">
+            <input
+              type="checkbox"
+              checked={Boolean(form.isStandalone)}
+              onChange={(e) => patch("isStandalone", e.target.checked)}
+              className="size-4"
+            />
+            Standalone (runs without base game)
           </label>
         </div>
       </AdminCollapsibleSection>

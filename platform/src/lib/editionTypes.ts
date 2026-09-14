@@ -317,6 +317,8 @@ export interface Edition {
   /** Ascending. The default edition is pinned first regardless. */
   sortOrder: number;
   isDefault: boolean;
+  /** When true, this edition runs standalone and does not require owning the base game. */
+  isStandalone?: boolean;
 
   branding: EditionBranding;
   links: EditionLinks;

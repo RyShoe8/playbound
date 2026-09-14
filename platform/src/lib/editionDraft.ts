@@ -29,6 +29,7 @@ export interface EditionDraft {
   visibility: string;
   sortOrder: number;
   isDefault: boolean;
+  isStandalone?: boolean;
   branding: {
     logo: string;
     heroImage: string;
@@ -68,6 +69,7 @@ export function emptyEditionDraft(gameSlug: string): EditionDraft {
     visibility: "public",
     sortOrder: 0,
     isDefault: false,
+    isStandalone: false,
     branding: { logo: "", heroImage: "", screenshots: [], videos: [], artHue: undefined },
     links: { website: "", discord: "", wiki: "", github: "", forum: "" },
     installMethod: "manual",
@@ -106,6 +108,7 @@ export function editionToDraft(edition: Edition): EditionDraft {
     visibility: edition.visibility,
     sortOrder: edition.sortOrder,
     isDefault: edition.isDefault,
+    isStandalone: Boolean(edition.isStandalone),
     branding: {
       logo: edition.branding.logo ?? "",
       heroImage: edition.branding.heroImage ?? "",

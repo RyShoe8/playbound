@@ -540,7 +540,7 @@ async function OverviewTab({
             Morrowind rendered OpenMW, TES3MP, Classic GOTY and Tamriel
             Rebuilt twice on one page. Games with no master-copy block still
             need this, and it is the only place their editions appear. */}
-        {unlocks && unlocks.editions.length > 0 ? null : (
+        {unlocks && (unlocks.editions.length > 0 || (unlocks.standaloneEditions?.length ?? 0) > 0) ? null : (
           <Suspense fallback={<EditionsSectionFallback game={game} editions={editions} />}>
             <GameEditionsBlock game={game} editions={editions} />
           </Suspense>

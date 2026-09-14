@@ -451,30 +451,40 @@ function paintMasterCopyUnlocks(detail) {
   const unlocks = detail.unlocks || {};
   const games = Array.isArray(unlocks.games) ? unlocks.games : [];
   const editions = Array.isArray(unlocks.editions) ? unlocks.editions : [];
+  const standaloneGames = Array.isArray(unlocks.standaloneGames) ? unlocks.standaloneGames : [];
+  const standaloneEditions = Array.isArray(unlocks.standaloneEditions) ? unlocks.standaloneEditions : [];
   const mods = Array.isArray(unlocks.mods) ? unlocks.mods : [];
   root.replaceChildren();
 
-  if (!games.length && !editions.length && !mods.length) {
+  const hasUnlocks = games.length > 0 || editions.length > 0 || mods.length > 0;
+  const hasStandalones = standaloneGames.length > 0 || standaloneEditions.length > 0;
+
+  if (!hasUnlocks && !hasStandalones) {
     const empty = document.createElement("p");
     empty.className = "view-sub";
     empty.textContent =
-      "Nothing is wired to this copy yet. Games, editions, and mods that require owning it will appear here.";
+      "Nothing is wired to this copy yet. Games, editions, and mods that connect to it will appear here.";
     root.appendChild(empty);
     return;
   }
 
-  const titleCount = games.length + editions.length;
   const sectionTitle = document.querySelector("#detail-unlocks-sec .detail-section-title");
-  if (sectionTitle && titleCount > 0) {
-    sectionTitle.textContent = `What this copy unlocks (${titleCount})`;
+  if (sectionTitle) {
+    if (hasUnlocks) {
+      const unlockCount = games.length + editions.length;
+      sectionTitle.textContent = `What this copy unlocks${unlockCount > 0 ? ` (${unlockCount})` : ""}`;
+    } else if (hasStandalones) {
+      const standaloneCount = standaloneGames.length + standaloneEditions.length;
+      sectionTitle.textContent = `Standalone games from this series (${standaloneCount})`;
+    }
   }
 
-  if (games.length) {
+  function renderGamesGrid(list) {
     const grid = document.createElement("div");
     grid.className = "unlocks-game-grid";
     grid.style.marginTop = "12px";
     grid.style.marginBottom = "18px";
-    for (const game of games) {
+    for (const game of list) {
       const wrap = document.createElement("div");
       wrap.className = "unlock-game-wrap";
       wrap.appendChild(createGameCard(game));
@@ -503,14 +513,14 @@ function paintMasterCopyUnlocks(detail) {
       }
       grid.appendChild(wrap);
     }
-    root.appendChild(grid);
+    return grid;
   }
 
-  if (editions.length) {
+  function renderEditionsGrid(list) {
     const grid = document.createElement("div");
     grid.className = "detail-editions-grid unlocks-editions-grid";
     grid.style.marginBottom = "18px";
-    for (const ed of editions) {
+    for (const ed of list) {
       const card = document.createElement("div");
       card.className = "detail-edition-card";
       const cover = ed.coverImage || "";
@@ -523,6 +533,7 @@ function paintMasterCopyUnlocks(detail) {
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
             <span class="detail-edition-card-title">${escapeHtml(ed.editionName)}</span>
             ${ed.isDefault ? `<span class="chip chip-accent" style="font-size:10px;padding:2px 8px">Default</span>` : ""}
+            ${ed.isStandalone ? `<span class="chip" style="font-size:10px;padding:2px 8px">Standalone</span>` : ""}
           </div>
           <div class="detail-edition-card-desc">${escapeHtml(ed.shortDescription || "")}</div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:8px">
@@ -536,19 +547,55 @@ function paintMasterCopyUnlocks(detail) {
       });
       grid.appendChild(card);
     }
-    root.appendChild(grid);
+    return grid;
   }
 
-  if (mods.length) {
+  if (hasUnlocks) {
+    if (games.length) {
+      root.appendChild(renderGamesGrid(games));
+    }
+    if (editions.length) {
+      root.appendChild(renderEditionsGrid(editions));
+    }
+    if (mods.length) {
+      const heading = document.createElement("h3");
+      heading.className = "detail-section-title";
+      heading.textContent = `Mods (${mods.length})`;
+      const grid = document.createElement("div");
+      grid.className = "game-grid";
+      grid.style.marginTop = "12px";
+      grid.style.marginBottom = "18px";
+      for (const mod of mods) grid.appendChild(createModCard(mod));
+      root.appendChild(heading);
+      root.appendChild(grid);
+    }
+  }
+
+  if (hasStandalones) {
+    const standaloneCount = standaloneGames.length + standaloneEditions.length;
+    const block = document.createElement("div");
+    block.style.marginTop = hasUnlocks ? "24px" : "0px";
+
     const heading = document.createElement("h3");
     heading.className = "detail-section-title";
-    heading.textContent = `Mods (${mods.length})`;
-    const grid = document.createElement("div");
-    grid.className = "game-grid";
-    grid.style.marginTop = "12px";
-    for (const mod of mods) grid.appendChild(createModCard(mod));
-    root.appendChild(heading);
-    root.appendChild(grid);
+    heading.textContent = `Standalone games from this series (${standaloneCount})`;
+
+    const sub = document.createElement("p");
+    sub.className = "view-sub";
+    sub.style.marginTop = "4px";
+    sub.style.marginBottom = "12px";
+    sub.textContent = "These standalone releases run independently — no purchase or base game required.";
+
+    block.appendChild(heading);
+    block.appendChild(sub);
+
+    if (standaloneGames.length) {
+      block.appendChild(renderGamesGrid(standaloneGames));
+    }
+    if (standaloneEditions.length) {
+      block.appendChild(renderEditionsGrid(standaloneEditions));
+    }
+    root.appendChild(block);
   }
 }
 

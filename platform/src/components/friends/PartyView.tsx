@@ -177,7 +177,7 @@ export function PartyView({
         .filter((g) => mode === "all" || isGameCompatible(g, device.type))
         .filter((g) => fitsPartySize(g.maxPlayers, party.members?.length || 1))
         .filter((g) =>
-          couchCoopFilter ? couchSlugs.has(g.slug) : !couchSlugs.has(g.slug)
+          couchCoopFilter ? couchSlugs.has(g.slug) : true
         ),
       party.requiredPlatforms || []
     );
@@ -330,7 +330,13 @@ export function PartyView({
      * Online local-co-op: members open the controller join URL instead of
      * launching their own game copy.
      */
-    if (couchCoopFilter && party.couch?.enabled && !isLeader) {
+    const hasCouchStream = Boolean(
+      party.couch?.enabled ||
+      party.hostMode === "couch" ||
+      (party.gameSlug && couchOnly.has(party.gameSlug)) ||
+      couchCoopFilter
+    );
+    if (hasCouchStream && !isLeader) {
       e?.preventDefault();
       let base =
         actions.couch?.joinUrl ||
@@ -528,7 +534,7 @@ export function PartyView({
                   title={
                     couchCoopFilter
                       ? "Showing couch co-op games only"
-                      : "Showing online multiplayer games only"
+                      : "Showing all multiplayer games"
                   }
                 >
                   <option value="online">Online</option>
@@ -576,6 +582,7 @@ export function PartyView({
                         {partyGameOptionLabel(g.title, {
                           testing: g.status === "testing",
                           genres: g.genres,
+                          couch: couchOnly.has(g.slug),
                         })}
                       </option>
                     ))}
@@ -981,8 +988,7 @@ export function PartyView({
               </ol>
             )}
 
-          {couchCoopFilter &&
-            actions.couch &&
+          {actions.couch &&
             (actions.couch.status === "ready" && actions.couch.joinCode ? (
               <div className="w-full space-y-2 self-start">
                 <p className="text-sm font-semibold">
