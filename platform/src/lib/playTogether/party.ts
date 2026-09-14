@@ -543,7 +543,7 @@ async function findActiveLeaderParty(userId: string) {
   return Party.findOne({
     leaderId: matchUser,
     status: { $nin: ["ended"] },
-    $or: [{ lastActivity: { $gte: cutoff } }, { status: { $in: ["launching", "playing"] } }],
+    lastActivity: { $gte: cutoff },
   }).lean();
 }
 
@@ -554,7 +554,7 @@ function activePartyFilterForUser(userId: string, keepPartyId?: string) {
   const matchUser = userObjId ? { $in: [userId, userObjId] } : userId;
   const base: Record<string, unknown> = {
     status: { $nin: ["ended"] },
-    $or: [{ lastActivity: { $gte: cutoff } }, { status: { $in: ["launching", "playing"] } }],
+    lastActivity: { $gte: cutoff },
     $and: [{ $or: [{ leaderId: matchUser }, { "members.userId": matchUser }] }],
   };
   if (keepPartyId) {
@@ -1397,12 +1397,11 @@ export async function leaveParty(
   }
 
   const newLeaderId = rp.leaderId === userId ? nextLeader(rp.members, userId) : rp.leaderId;
-  if (
-    rp.leaderId === userId &&
-    newLeaderId &&
-    (doc.status === "launching" || doc.status === "playing")
-  ) {
-    return { error: "End the current game before transferring the host", status: 400 };
+  const wasPlaying = doc.status === "launching" || doc.status === "playing";
+  if (rp.leaderId === userId && wasPlaying) {
+    // If the host leaves during a match, release host and LAN allocations
+    await releasePartyHost(doc);
+    await releasePartyLan(doc);
   }
 
   const remaining = (doc.members || []).filter(
@@ -1427,7 +1426,7 @@ export async function leaveParty(
         doc.hosted.status = "none";
       }
     }
-  } else if (doc.status !== "launching" && doc.status !== "playing") {
+  } else {
     doc.status = remaining.every((m: { ready?: boolean }) => Boolean(m.ready))
       ? "ready"
       : "forming";
@@ -1536,7 +1535,7 @@ export async function leavePartiesOnDisconnect(userId: string): Promise<number> 
  */
 export async function dropOfflinePartyMembers(now = new Date()): Promise<{ dropped: number }> {
   await dbConnect();
-  const active = await Party.find({ status: { $nin: ["ended", "launching", "playing"] } });
+  const active = await Party.find({ status: { $nin: ["ended"] } });
   if (active.length === 0) return { dropped: 0 };
 
   const memberIds = [
@@ -1570,7 +1569,42 @@ export async function dropOfflinePartyMembers(now = new Date()): Promise<{ dropp
 
   let dropped = 0;
   for (const doc of active) {
-    const gone = (doc.members || []).filter(
+    const isSession = doc.status === "launching" || doc.status === "playing";
+    const leaderGone = !liveSet.has(String(doc.leaderId));
+
+    if (isSession) {
+      if (leaderGone) {
+        // The host running the game session went offline — session is terminated.
+        doc.status = "ended";
+        doc.endedAt = now;
+        await releasePartyHost(doc);
+        await releasePartyLan(doc);
+        await doc.save();
+        await releasePartyMemberships(String(doc._id));
+        await clearPresenceForParty(String(doc._id));
+        await cleanupPartyDiscordVoice(doc);
+        dropped += 1;
+      }
+      // While the host remains live, don't drop in-game players on transient heartbeat gaps.
+      continue;
+    }
+
+    // For lobby parties (forming / ready), if leader is gone and alone, end immediately.
+    const mems = doc.members || [];
+    if (leaderGone && mems.length <= 1) {
+      doc.status = "ended";
+      doc.endedAt = now;
+      await releasePartyHost(doc);
+      await releasePartyLan(doc);
+      await doc.save();
+      await releasePartyMemberships(String(doc._id));
+      await clearPresenceForParty(String(doc._id));
+      await cleanupPartyDiscordVoice(doc);
+      dropped += 1;
+      continue;
+    }
+
+    const gone = mems.filter(
       (m: { userId: unknown }) => !liveSet.has(String(m.userId))
     );
     for (const m of gone) {
@@ -2622,6 +2656,31 @@ export async function listPartiesForUser(
 ): Promise<PartyPayload[]> {
   await dbConnect();
 
+  const userObjId = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : null;
+  const matchUser = userObjId ? { $in: [userId, userObjId] } : userId;
+  const cutoff = new Date(Date.now() - PARTY_IDLE_TIMEOUT_MS);
+
+  // Opportunistic cleanup: any expired party where this user is leader or member
+  try {
+    const expired = await Party.find({
+      status: { $nin: ["ended"] },
+      lastActivity: { $lt: cutoff },
+      $or: [{ leaderId: matchUser }, { "members.userId": matchUser }],
+    });
+    for (const exp of expired) {
+      exp.status = "ended";
+      exp.endedAt = new Date();
+      await releasePartyHost(exp);
+      await releasePartyLan(exp);
+      await exp.save();
+      await releasePartyMemberships(String(exp._id));
+      await clearPresenceForParty(String(exp._id));
+      await cleanupPartyDiscordVoice(exp);
+    }
+  } catch (err) {
+    console.warn("[party] in-band stale cleanup error:", err);
+  }
+
   const docs = await Party.find(activePartyFilterForUser(userId))
     .sort({ lastActivity: -1 })
     .limit(10)
@@ -2705,7 +2764,7 @@ export async function listDiscoverableParties(
     "members.userId": { $in: memberMatch, $nin: ninMatch },
     visibility: "friends",
     status: { $nin: ["ended"] },
-    $or: [{ lastActivity: { $gte: cutoff } }, { status: { $in: ["launching", "playing"] } }],
+    lastActivity: { $gte: cutoff },
   })
     .sort({ lastActivity: -1 })
     .limit(20)
@@ -3243,10 +3302,12 @@ export async function sweepStaleParties(now = new Date()) {
   let ended = 0;
   let kept = 0;
   for (const doc of stale) {
+    const leaderLive = liveSet.has(String(doc.leaderId));
     const stillThere = (doc.members || []).some((m: { userId: unknown }) =>
       liveSet.has(String(m.userId))
     );
-    if (stillThere) {
+    // If the host/leader is gone, or all members are gone, the party cannot stay alive.
+    if (leaderLive && stillThere) {
       /*
        * Touched rather than merely skipped, so the party is not re-examined on
        * every pass for as long as it runs.
@@ -3297,6 +3358,51 @@ export async function sweepStaleParties(now = new Date()) {
   const { deleted: messagesDeleted } = await sweepOldPartyMessages();
 
   return { ended, channelsCleaned, messagesDeleted };
+}
+
+/**
+ * Called when a user's presence session ends (e.g. launcher quits).
+ * Immediately cleans up any party where the user was the host or a member.
+ */
+export async function handleUserPresenceEnded(userId: string): Promise<void> {
+  await dbConnect();
+  const userObjId = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : null;
+  const matchUser = userObjId ? { $in: [userId, userObjId] } : userId;
+
+  try {
+    const leaderParties = await Party.find({
+      leaderId: matchUser,
+      status: { $nin: ["ended"] },
+    });
+
+    for (const doc of leaderParties) {
+      const mems = doc.members || [];
+      if (mems.length <= 1 || doc.status === "launching" || doc.status === "playing") {
+        doc.status = "ended";
+        doc.endedAt = new Date();
+        await releasePartyHost(doc);
+        await releasePartyLan(doc);
+        await doc.save();
+        await releasePartyMemberships(String(doc._id));
+        await clearPresenceForParty(String(doc._id));
+        await cleanupPartyDiscordVoice(doc);
+      } else {
+        await safeLeaveParty(String(doc._id), userId);
+      }
+    }
+
+    const memberParties = await Party.find({
+      leaderId: { $ne: matchUser },
+      "members.userId": matchUser,
+      status: { $nin: ["ended"] },
+    });
+
+    for (const doc of memberParties) {
+      await safeLeaveParty(String(doc._id), userId);
+    }
+  } catch (err) {
+    console.warn("[party] handleUserPresenceEnded error:", err);
+  }
 }
 
 /**

@@ -73,7 +73,7 @@ export async function listFriendsForUser(userId: string) {
     listSharedLibraryByFriend(userId, friendIdStrings),
     Party.find({
       status: { $nin: ["ended"] },
-      $or: [{ lastActivity: { $gte: partyCutoff } }, { status: { $in: ["launching", "playing"] } }],
+      lastActivity: { $gte: partyCutoff },
       "members.userId": { $in: friendIds },
     })
       .select("_id members.userId")

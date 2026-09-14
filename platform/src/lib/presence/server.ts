@@ -389,6 +389,13 @@ export async function endPresence(ctx: PresenceContext, sessionId?: string | nul
   const filter: Record<string, unknown> = { userId: ctx.userId, status: "active" };
   if (sessionId) filter.sessionId = sessionId;
   await PlatformSession.updateMany(filter, closeSessionUpdate(now), { updatePipeline: true });
+
+  try {
+    const { handleUserPresenceEnded } = await import("@/lib/playTogether/party");
+    await handleUserPresenceEnded(ctx.userId);
+  } catch (err) {
+    console.warn("[presence] handleUserPresenceEnded error:", err);
+  }
 }
 
 /**
