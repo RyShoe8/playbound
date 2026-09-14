@@ -3,6 +3,7 @@ import type { Game } from "@/lib/data/types";
 import {
   alternateEditionsUnlockedByMaster,
   gamesRequiringMaster,
+  isEditionStandalone,
   masterCopyUnlocksEmpty,
   toLauncherUnlocks,
 } from "./masterCopy";
@@ -73,11 +74,65 @@ describe("gamesRequiringMaster", () => {
   });
 });
 
+describe("isEditionStandalone", () => {
+  it("recognizes explicit isStandalone: true", () => {
+    const ed = { name: "Custom", shortDescription: "Mod", isStandalone: true } as Edition;
+    expect(isEditionStandalone(ed)).toBe(true);
+  });
+
+  it("respects explicit isStandalone: false even if name mentions standalone", () => {
+    const ed = { name: "Standalone Mod", shortDescription: "Addon", isStandalone: false } as Edition;
+    expect(isEditionStandalone(ed)).toBe(false);
+  });
+
+  it("falls back to standalone substring in name or shortDescription if isStandalone is undefined", () => {
+    const ed1 = { name: "Lost Alpha: Developer's Cut — Standalone", shortDescription: "" } as Edition;
+    const ed2 = { name: "True Stalker", shortDescription: "Standalone story mod" } as Edition;
+    const ed3 = { name: "OpenMW", shortDescription: "Requires Morrowind GOTY" } as Edition;
+
+    expect(isEditionStandalone(ed1)).toBe(true);
+    expect(isEditionStandalone(ed2)).toBe(true);
+    expect(isEditionStandalone(ed3)).toBe(false);
+  });
+
+  it("requiresBaseDir always overrides standalone detection", () => {
+    const ed = {
+      name: "Standalone Overlay",
+      shortDescription: "Standalone",
+      installConfig: { playbound_installer: { requiresBaseDir: true } },
+    } as Edition;
+    expect(isEditionStandalone(ed)).toBe(false);
+  });
+});
+
 describe("masterCopyUnlocksEmpty", () => {
-  it("is true until games, editions, or mods are wired", () => {
-    expect(masterCopyUnlocksEmpty({ games: [], editions: [], mods: [] })).toBe(true);
+  it("is true until games, editions, standalones, or mods are wired", () => {
     expect(
-      masterCopyUnlocksEmpty({ games: [game({ slug: "keeperfx" })], editions: [], mods: [] })
+      masterCopyUnlocksEmpty({
+        games: [],
+        editions: [],
+        standaloneGames: [],
+        standaloneEditions: [],
+        mods: [],
+      })
+    ).toBe(true);
+    expect(
+      masterCopyUnlocksEmpty({
+        games: [game({ slug: "keeperfx" })],
+        editions: [],
+        standaloneGames: [],
+        standaloneEditions: [],
+        mods: [],
+      })
+    ).toBe(false);
+    expect(
+      masterCopyUnlocksEmpty({
+        games: [],
+        editions: [],
+        standaloneGames: [game({ slug: "stalker-anomaly" })],
+        standaloneEditions: [],
+        mods: [],
+      })
     ).toBe(false);
   });
 });
@@ -94,7 +149,7 @@ describe("alternateEditionsUnlockedByMaster", () => {
 });
 
 describe("toLauncherUnlocks", () => {
-  it("sends catalog-shaped game cards with absolute covers", () => {
+  it("sends catalog-shaped game cards with absolute covers and distinguishes standalones", () => {
     const fx = game({
       slug: "keeperfx",
       title: "KeeperFX",
@@ -102,20 +157,58 @@ describe("toLauncherUnlocks", () => {
       coverImage: "/covers/fx.png",
       art: { from: "#111", to: "#222", icon: "Gamepad2" },
     });
+    const anomaly = game({
+      slug: "stalker-anomaly",
+      title: "S.T.A.L.K.E.R. Anomaly",
+      tagline: "Standalone sandbox",
+      coverImage: "/covers/anomaly.png",
+      art: { from: "#333", to: "#444", icon: "Gamepad2" },
+    });
+    const lostAlpha = {
+      id: "soc-la",
+      slug: "lost-alpha",
+      name: "Lost Alpha: Developer's Cut — Standalone",
+      type: "community",
+      shortDescription: "Standalone overhaul",
+      isDefault: false,
+      isStandalone: true,
+      branding: {},
+    } as Edition;
+
     const payload = toLauncherUnlocks(
-      { games: [fx], editions: [], mods: [] },
+      {
+        games: [fx],
+        editions: [],
+        standaloneGames: [anomaly],
+        standaloneEditions: [{ game: game({ slug: "stalker-soc" }), edition: lostAlpha }],
+        mods: [],
+      },
       "https://playbound.club"
     );
+
     expect(payload.games).toEqual([
       expect.objectContaining({
         slug: "keeperfx",
         title: "KeeperFX",
-        tagline: "Open-source Dungeon Keeper",
         coverImage: "https://playbound.club/covers/fx.png",
-        testing: false,
+      }),
+    ]);
+    expect(payload.standaloneGames).toEqual([
+      expect.objectContaining({
+        slug: "stalker-anomaly",
+        title: "S.T.A.L.K.E.R. Anomaly",
+        coverImage: "https://playbound.club/covers/anomaly.png",
+      }),
+    ]);
+    expect(payload.standaloneEditions).toEqual([
+      expect.objectContaining({
+        editionSlug: "lost-alpha",
+        editionName: "Lost Alpha: Developer's Cut — Standalone",
+        isStandalone: true,
       }),
     ]);
     expect(payload.editions).toEqual([]);
     expect(payload.mods).toEqual([]);
   });
 });
+

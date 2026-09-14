@@ -13,6 +13,8 @@ export type MasterCopyEditionUnlock = {
 export type MasterCopyUnlocks = {
   games: Game[];
   editions: MasterCopyEditionUnlock[];
+  standaloneGames: Game[];
+  standaloneEditions: MasterCopyEditionUnlock[];
   mods: CatalogModPublic[];
 };
 
@@ -40,6 +42,32 @@ export type LauncherUnlocksPayload = {
     shortDescription: string;
     coverImage: string | null;
     isDefault: boolean;
+    isStandalone: boolean;
+  }>;
+  standaloneGames: Array<{
+    slug: string;
+    title: string;
+    blurb: string;
+    tagline: string;
+    coverImage: string | null;
+    art: [string, string];
+    genres: string[];
+    tags: string[];
+    approxSize: string | null;
+    browserPlayable: boolean;
+    launchMethods: string[];
+    platforms: string[];
+    testing: boolean;
+  }>;
+  standaloneEditions: Array<{
+    gameSlug: string;
+    editionSlug: string;
+    editionName: string;
+    editionType: string;
+    shortDescription: string;
+    coverImage: string | null;
+    isDefault: boolean;
+    isStandalone: boolean;
   }>;
   mods: Array<{
     slug: string;
@@ -67,8 +95,21 @@ export function gamesRequiringMaster(masterSlug: string, catalog: Game[]): Game[
   );
 }
 
+/** Whether an edition runs standalone and does not require owning the base game. */
+export function isEditionStandalone(edition: Edition): boolean {
+  if (edition.installConfig?.playbound_installer?.requiresBaseDir) return false;
+  if (typeof edition.isStandalone === "boolean") return edition.isStandalone;
+  return /standalone/i.test(edition.name) || /standalone/i.test(edition.shortDescription ?? "");
+}
+
 export function masterCopyUnlocksEmpty(unlocks: MasterCopyUnlocks): boolean {
-  return unlocks.games.length === 0 && unlocks.editions.length === 0 && unlocks.mods.length === 0;
+  return (
+    unlocks.games.length === 0 &&
+    unlocks.editions.length === 0 &&
+    (unlocks.standaloneGames?.length ?? 0) === 0 &&
+    (unlocks.standaloneEditions?.length ?? 0) === 0 &&
+    unlocks.mods.length === 0
+  );
 }
 
 /**
@@ -85,6 +126,8 @@ export function alternateEditionsUnlockedByMaster(editions: Edition[]): Edition[
 /**
  * Reverse of Requires: published games that need this copy, those games'
  * public choosable editions and mods, plus mods whose base game is the master.
+ * Standalone editions and games are partitioned into their own collection so
+ * readers are not told owning the master unlocks independent titles.
  */
 export async function listUnlockedByMaster(
   slug: string,
@@ -95,6 +138,8 @@ export async function listUnlockedByMaster(
   const dependents = gamesRequiringMaster(slug, catalog);
 
   const editions: MasterCopyEditionUnlock[] = [];
+  const standaloneEditions: MasterCopyEditionUnlock[] = [];
+  const standaloneGames: Game[] = [];
   const mods: CatalogModPublic[] = [];
   const seenMods = new Set<string>();
 
@@ -113,19 +158,21 @@ export async function listUnlockedByMaster(
    * The master's own alternate editions — OpenRCT2 for RollerCoaster Tycoon,
    * OpenMW for Morrowind — unlock no separate game entry, so the dependents
    * loop below never sees them; it only walks games that require this master,
-   * not the master itself. They are still exactly what this section promises
+   * not the master itself. They are still what this section promises
    * ("the games, editions, and mods below"), so they are added directly here.
    *
-   * Deliberately skips the hasChoosableEditions(≥2) gate the dependents loop
-   * applies: that gate exists to avoid advertising "an edition" when a
-   * dependent game only has one and installing it normally is the same
-   * thing. Here the one edition (OpenRCT2) *is* the alternate to owning the
-   * commercial data outright, so it is worth showing even alone.
+   * Standalone editions (e.g. Lost Alpha, True Stalker) are split out so
+   * they display under "Standalone games from this series" rather than
+   * claiming purchase is required.
    */
   if (master) {
     const ownEditions = await listPublicEditionsForGame(master);
     for (const edition of alternateEditionsUnlockedByMaster(ownEditions)) {
-      editions.push({ game: master, edition });
+      if (isEditionStandalone(edition)) {
+        standaloneEditions.push({ game: master, edition });
+      } else {
+        editions.push({ game: master, edition });
+      }
     }
   }
 
@@ -142,13 +189,17 @@ export async function listUnlockedByMaster(
   for (const row of perDependent) {
     if (hasChoosableEditions(row.publicEditions)) {
       for (const edition of row.publicEditions) {
-        editions.push({ game: row.game, edition });
+        if (isEditionStandalone(edition)) {
+          standaloneEditions.push({ game: row.game, edition });
+        } else {
+          editions.push({ game: row.game, edition });
+        }
       }
     }
     addMods(row.gameMods);
   }
 
-  return { games: dependents, editions, mods };
+  return { games: dependents, editions, standaloneGames, standaloneEditions, mods };
 }
 
 export function toLauncherUnlocks(
@@ -166,35 +217,46 @@ export function toLauncherUnlocks(
     titles.set(game.slug, game.title);
     covers.set(game.slug, game.coverImage);
   }
+  for (const game of unlocks.standaloneGames ?? []) {
+    titles.set(game.slug, game.title);
+    covers.set(game.slug, game.coverImage);
+  }
+
+  const mapGame = (game: Game) => ({
+    slug: game.slug,
+    title: game.title,
+    blurb: game.tagline,
+    tagline: game.tagline,
+    coverImage: absoluteMediaUrl(game.coverImage, origin),
+    art: [game.art.from, game.art.to] as [string, string],
+    genres: game.genres || [],
+    tags: game.tags || [],
+    approxSize: sizeLabelFromMB(game.sizeMB) || null,
+    browserPlayable: Boolean(game.browserPlayable),
+    launchMethods: Array.isArray(game.launchMethods) ? game.launchMethods : [],
+    platforms: Array.isArray(game.platforms) ? game.platforms : [],
+    testing: game.status === "testing",
+  });
+
+  const mapEdition = ({ game, edition }: MasterCopyEditionUnlock) => ({
+    gameSlug: game.slug,
+    editionSlug: edition.slug,
+    editionName: edition.name,
+    editionType: edition.type,
+    shortDescription: edition.shortDescription || "",
+    coverImage: absoluteMediaUrl(
+      edition.branding.heroImage || edition.branding.logo || game.coverImage || null,
+      origin
+    ),
+    isDefault: Boolean(edition.isDefault),
+    isStandalone: isEditionStandalone(edition),
+  });
 
   return {
-    games: unlocks.games.map((game) => ({
-      slug: game.slug,
-      title: game.title,
-      blurb: game.tagline,
-      tagline: game.tagline,
-      coverImage: absoluteMediaUrl(game.coverImage, origin),
-      art: [game.art.from, game.art.to],
-      genres: game.genres || [],
-      tags: game.tags || [],
-      approxSize: sizeLabelFromMB(game.sizeMB) || null,
-      browserPlayable: Boolean(game.browserPlayable),
-      launchMethods: Array.isArray(game.launchMethods) ? game.launchMethods : [],
-      platforms: Array.isArray(game.platforms) ? game.platforms : [],
-      testing: game.status === "testing",
-    })),
-    editions: unlocks.editions.map(({ game, edition }) => ({
-      gameSlug: game.slug,
-      editionSlug: edition.slug,
-      editionName: edition.name,
-      editionType: edition.type,
-      shortDescription: edition.shortDescription || "",
-      coverImage: absoluteMediaUrl(
-        edition.branding.heroImage || edition.branding.logo || game.coverImage || null,
-        origin
-      ),
-      isDefault: Boolean(edition.isDefault),
-    })),
+    games: unlocks.games.map(mapGame),
+    editions: unlocks.editions.map(mapEdition),
+    standaloneGames: (unlocks.standaloneGames ?? []).map(mapGame),
+    standaloneEditions: (unlocks.standaloneEditions ?? []).map(mapEdition),
     mods: unlocks.mods.map((mod) => ({
       slug: mod.slug,
       title: mod.title,

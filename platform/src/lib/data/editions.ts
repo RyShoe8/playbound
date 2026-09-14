@@ -33,6 +33,7 @@ export type EditionSeed = {
   visibility?: EditionVisibility;
   sortOrder?: number;
   isDefault?: boolean;
+  isStandalone?: boolean;
   branding?: {
     logo?: string | null;
     heroImage?: string | null;
@@ -686,6 +687,7 @@ export const editions: EditionSeed[] = [
     status: "active",
     visibility: "public",
     isDefault: true,
+    isStandalone: true,
     sortOrder: 5,
     links: { website: "https://www.moddb.com/mods/stalker-anomaly" },
     installMethod: "external_installer",
@@ -855,6 +857,7 @@ export const editions: EditionSeed[] = [
     status: "active",
     visibility: "public",
     isDefault: false,
+    isStandalone: true,
     sortOrder: 20,
     links: { website: "https://www.moddb.com/mods/lost-alpha" },
     installMethod: "playbound_installer",
@@ -917,6 +920,7 @@ export const editions: EditionSeed[] = [
     status: "active",
     visibility: "public",
     isDefault: false,
+    isStandalone: true,
     sortOrder: 30,
     links: { website: "https://www.moddb.com/mods/true-stalker" },
     installMethod: "external_installer",

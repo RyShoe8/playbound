@@ -46,20 +46,27 @@ export async function GET(
 
     const rawUnlocks = game.masterCopy
       ? await listUnlockedByMaster(slug, { includeTesting })
-      : { games: [], editions: [], mods: [] };
+      : { games: [], editions: [], standaloneGames: [], standaloneEditions: [], mods: [] };
     const unlocks = toLauncherUnlocks(rawUnlocks, origin, game);
     const unlockBySlug = new Map(rawUnlocks.games.map((g) => [g.slug, g]));
+    for (const g of rawUnlocks.standaloneGames ?? []) {
+      unlockBySlug.set(g.slug, g);
+    }
+
+    const enrichGame = (entry: (typeof unlocks.games)[number]) => {
+      const full = unlockBySlug.get(entry.slug);
+      const t = tierFor(tiers, entry.slug);
+      return {
+        ...entry,
+        ...accessFieldsForLauncher(t),
+        commerce: toLauncherCommerce(full ?? { slug: entry.slug }, t, affiliates),
+      };
+    };
+
     const launcherUnlocks = {
       ...unlocks,
-      games: unlocks.games.map((entry) => {
-        const full = unlockBySlug.get(entry.slug);
-        const t = tierFor(tiers, entry.slug);
-        return {
-          ...entry,
-          ...accessFieldsForLauncher(t),
-          commerce: toLauncherCommerce(full ?? { slug: entry.slug }, t, affiliates),
-        };
-      }),
+      games: unlocks.games.map(enrichGame),
+      standaloneGames: unlocks.standaloneGames.map(enrichGame),
     };
 
     return NextResponse.json(

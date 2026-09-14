@@ -102,6 +102,8 @@ const EditionSchema = new Schema(
     sortOrder: { type: Number, default: 0 },
     /** Exactly one per game; enforced in the API, not by the schema. */
     isDefault: { type: Boolean, default: false },
+    /** When true, this edition runs standalone without requiring the base game. */
+    isStandalone: { type: Boolean, default: false, index: true },
 
     branding: { type: BrandingSchema, default: () => ({}) },
     links: { type: LinksSchema, default: () => ({}) },

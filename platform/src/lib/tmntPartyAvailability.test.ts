@@ -42,7 +42,32 @@ describe("Teenage Mutant Ninja Turtles party availability", () => {
 
   it("supports couch mode with remote controller joining", () => {
     expect(couchOnlyGameSlugs()).toContain("tmnt-rescue-palooza");
+    expect(couchOnlyGameSlugs()).toContain("x-men-arcade-remake");
     expect(canUseCouch("tmnt-rescue-palooza")).toBe(true);
+    expect(canUseCouch("x-men-arcade-remake")).toBe(true);
+  });
+
+  it("appears in party game selection list when online filter is active (not filtered out)", () => {
+    const couchSlugs = new Set(couchOnlyGameSlugs());
+    const couchCoopFilter = false; // "Online" mode in dropdown
+    const filterPredicate = (g: { slug: string }) =>
+      couchCoopFilter ? couchSlugs.has(g.slug) : true;
+
+    expect(filterPredicate(tmnt!)).toBe(true);
+    const xmen = games.find((g) => g.slug === "x-men-arcade-remake");
+    expect(xmen).toBeDefined();
+    expect(filterPredicate(xmen!)).toBe(true);
+  });
+
+  it("appears in party game selection list when couch filter is active", () => {
+    const couchSlugs = new Set(couchOnlyGameSlugs());
+    const couchCoopFilter = true; // "Couch" mode in dropdown
+    const filterPredicate = (g: { slug: string }) =>
+      couchCoopFilter ? couchSlugs.has(g.slug) : true;
+
+    expect(filterPredicate(tmnt!)).toBe(true);
+    const xmen = games.find((g) => g.slug === "x-men-arcade-remake");
+    expect(filterPredicate(xmen!)).toBe(true);
   });
 
   it("has a registered multiplayer adapter matching canonical title", () => {

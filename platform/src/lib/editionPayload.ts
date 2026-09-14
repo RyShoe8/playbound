@@ -155,6 +155,7 @@ export const editionPayloadSchema = z
 
     sortOrder: z.number().int().min(0).max(9999).default(0),
     isDefault: z.boolean().default(false),
+    isStandalone: z.boolean().default(false),
 
     branding: z
       .object({

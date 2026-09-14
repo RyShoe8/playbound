@@ -1566,8 +1566,9 @@ function fitsPartySize(maxPlayers, memberCount) {
   return seats >= need;
 }
 
-function partyGameOptionLabel(title, { testing = false, genres = [] } = {}) {
+function partyGameOptionLabel(title, { testing = false, genres = [], couch = false } = {}) {
   const tags = [];
+  if (couch) tags.push("Couch");
   for (const genre of genres || []) {
     const trimmed = String(genre || "").trim();
     if (!trimmed) continue;
@@ -1588,15 +1589,16 @@ function partyGameOptionsHtml(selectedSlug, party) {
     .filter((g) => partyCanAllPlay(g, required))
     .filter((g) => fitsPartySize(g.maxPlayers, memberCount))
     /*
-     * Couch Multiplayer Type → only Connect/local couch titles. Online → only
-     * online multiplayer titles (excluding couch-only games like TMNT/X-Men).
+     * Couch Multiplayer Type → only Connect/local couch titles. Online → all
+     * party multiplayer titles (including Connect couch titles like TMNT/X-Men).
      */
-    .filter((g) => (partyCouchCoopFilter ? couchOnly.has(g.slug) : !couchOnly.has(g.slug)));
+    .filter((g) => (partyCouchCoopFilter ? couchOnly.has(g.slug) : true));
   const options = [`<option value="">Select a game</option>`];
   for (const g of games) {
     const label = partyGameOptionLabel(g.title, {
       testing: Boolean(g.testing || g.status === "testing"),
       genres: g.genres,
+      couch: couchOnly.has(g.slug),
     });
     options.push(
       `<option value="${escapeHtml(g.slug)}"${g.slug === selectedSlug ? " selected" : ""}>${escapeHtml(
@@ -1880,7 +1882,7 @@ function buildPartyViewHtml(party) {
            <select class="input-text party-multiplayer-type-select" id="party-multiplayer-type-select" aria-label="Multiplayer Type" title="${
              partyCouchCoopFilter
                ? "Showing couch co-op games only"
-               : "Showing online multiplayer games only"
+               : "Showing all multiplayer games"
            }">
              <option value="online"${partyCouchCoopFilter ? "" : " selected"}>Online</option>
              <option value="couch"${partyCouchCoopFilter ? " selected" : ""}>Couch</option>
@@ -1938,11 +1940,15 @@ function buildPartyViewHtml(party) {
    * which is how the two panels forked in the first place.
    */
   /*
-   * Couch join code / QR only when Multiplayer Type = Couch. Server hostMode
-   * stays "couch" for titles like TMNT even when the leader is browsing Online,
-   * and that must not keep the couch panel on screen.
+   * Couch join code / QR: show when Multiplayer Type = Couch, or when the
+   * current game is a couch title (like TMNT / X-Men), or when couch is enabled.
    */
-  const isCouchMode = Boolean(partyCouchCoopFilter);
+  const isCouchMode = Boolean(
+    partyCouchCoopFilter ||
+    isCurrentGameCouchOnly ||
+    party.hostMode === "couch" ||
+    party.couch?.enabled
+  );
   const autoJoinArmed = pendingJoin?.partyId === party.id && !ended;
   const joinBtn = actions ? (autoJoinArmed ? actions.joinArmed : actions.join) : null;
   const joinGameHtml = joinBtn && joinBtn.visible
@@ -3204,12 +3210,16 @@ function wirePartyView(slot, party) {
       if (joinInFlight) return;
       /*
        * Online local-co-op: members join by opening the controller link, not by
-       * launching a second copy of the game on their PC. Only when Multiplayer
-       * Type is Couch (filter) — TMNT stays hostMode=couch under Online too.
+       * launching a second copy of the game on their PC.
        */
       const couch = party.couch || {};
+      const couchOnly = new Set(party.couchOnlyGames || []);
+      const isCouchGame = Boolean(party.gameSlug && couchOnly.has(party.gameSlug));
       const hasCouchStream = Boolean(
-        partyCouchCoopFilter && (couch.enabled || party.hostMode === "couch")
+        couch.enabled ||
+        party.hostMode === "couch" ||
+        isCouchGame ||
+        partyCouchCoopFilter
       );
       if (hasCouchStream && !isLeader) {
         let base =
@@ -4042,7 +4052,7 @@ async function launchPartyGame(party) {
           slug,
           address: peerConnect?.host ? `${peerConnect.host}:${peerConnect.port}` : null,
         });
-        if (party.couch?.enabled && isLeader && partyCouchCoopFilter) {
+        if (party.couch?.enabled && isLeader) {
           // The game process is running now — capture its application window and stream to peers.
           // Retry: OpenBOR / fullscreen often aren't capturable for a few seconds after launch.
           void (async () => {
