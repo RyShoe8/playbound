@@ -100,6 +100,7 @@ describe("insert-catalog-wave allowlists", () => {
         "s-t-a-l-k-e-r-shadow-of-chernobyl/official",
         "s-t-a-l-k-e-r-shadow-of-chernobyl/true-stalker",
         "soccer-brawl/official",
+        "stalker-anomaly/gamma",
         "stalker-anomaly/official",
         "super-sidekicks/official",
       ].sort()
@@ -130,10 +131,13 @@ describe("insert-catalog-wave allowlists", () => {
         "idle-slayer",
         "morrowind",
         "s-t-a-l-k-e-r-call-of-pripyat",
+        "s-t-a-l-k-e-r-clear-sky",
+        "s-t-a-l-k-e-r-shadow-of-chernobyl",
         "seven-kingdoms-ancient-adversaries",
         "sky-children-of-the-light",
         "slapshot-rebound",
         "space-station-14",
+        "stalker-anomaly",
         "teeworlds",
         "the-dark-mod",
         "the-spike-cross",
@@ -169,7 +173,7 @@ describe("insert-catalog-wave allowlists", () => {
     expect(PATCH_GAME_FIELDS["the-dark-mod"]).toContain("platforms");
   });
 
-  it("patches CoP official + SoC standalone labels + OpenMW/TES3MP/Lost Alpha recipes", () => {
+  it("patches CoP/SoC/Anomaly/Clear Sky editions + OpenMW/TES3MP/Lost Alpha recipes", () => {
     expect(Object.keys(PATCH_EDITION_FIELDS).sort()).toEqual(
       [
         "dune-legacy/modern-engine",
@@ -177,8 +181,11 @@ describe("insert-catalog-wave allowlists", () => {
         "morrowind/openmw",
         "morrowind/tes3mp",
         "s-t-a-l-k-e-r-call-of-pripyat/official",
+        "s-t-a-l-k-e-r-clear-sky/official",
         "s-t-a-l-k-e-r-shadow-of-chernobyl/lost-alpha",
+        "s-t-a-l-k-e-r-shadow-of-chernobyl/official",
         "s-t-a-l-k-e-r-shadow-of-chernobyl/true-stalker",
+        "stalker-anomaly/official",
       ].sort()
     );
     expect(PATCH_EDITION_FIELDS["morrowind/openmw"]).toEqual(["installConfig"]);
@@ -187,6 +194,9 @@ describe("insert-catalog-wave allowlists", () => {
       "name",
       "description",
       "shortDescription",
+      "aliases",
+      "requirements",
+      "hardwareRequirements",
       "installMethod",
       "installConfig",
     ]);
@@ -194,6 +204,10 @@ describe("insert-catalog-wave allowlists", () => {
       "name",
       "description",
       "shortDescription",
+      "aliases",
+      "requirements",
+      "hardwareRequirements",
+      "installConfig",
     ]);
     expect(PATCH_EDITION_FIELDS["dune-legacy/modern-engine"]).toEqual(["installConfig"]);
     expect(PATCH_EDITION_FIELDS["dune-legacy/playbound-edition"]).toEqual(["installConfig"]);
@@ -275,14 +289,18 @@ describe("insert-catalog-wave allowlists", () => {
     expect(sevenKingdomsLauncherInstall.registryTitles).toContain("Seven Kingdoms AA");
   });
 
-  it("keeps CoP official only; Anomaly is its own game; SoC keeps Lost Alpha + True Stalker", () => {
+  it("keeps CoP official only; Anomaly is its own game with GAMMA edition; SoC keeps Lost Alpha + True Stalker", () => {
     const cop = editions.filter((e) => e.gameSlug === "s-t-a-l-k-e-r-call-of-pripyat");
     expect(cop.map((e) => e.slug).sort()).toEqual(["official"]);
     expect(gamesBySlug.has("stalker-anomaly")).toBe(true);
     expect(gamesBySlug.has("s-t-a-l-k-e-r-clear-sky")).toBe(true);
     const anomaly = editions.filter((e) => e.gameSlug === "stalker-anomaly");
-    expect(anomaly.map((e) => e.slug)).toEqual(["official"]);
-    expect(anomaly[0]?.isDefault).toBe(true);
+    expect(anomaly.map((e) => e.slug).sort()).toEqual(["gamma", "official"]);
+    const anomalyOfficial = anomaly.find((e) => e.slug === "official");
+    expect(anomalyOfficial?.isDefault).toBe(true);
+    const gamma = anomaly.find((e) => e.slug === "gamma");
+    expect(gamma?.isDefault).toBe(false);
+    expect(gamma?.shortDescription).toMatch(/Requires Anomaly/i);
     const clearSky = editions.filter((e) => e.gameSlug === "s-t-a-l-k-e-r-clear-sky");
     expect(clearSky.map((e) => e.slug)).toEqual(["official"]);
     const soc = editions.filter((e) => e.gameSlug === "s-t-a-l-k-e-r-shadow-of-chernobyl");

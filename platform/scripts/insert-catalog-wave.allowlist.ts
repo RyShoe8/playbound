@@ -31,6 +31,7 @@ export const NEW_GAME_SLUGS: readonly string[] = [
 export const NEW_EDITION_KEYS: readonly string[] = [
   "s-t-a-l-k-e-r-call-of-pripyat/official",
   "stalker-anomaly/official",
+  "stalker-anomaly/gamma",
   "s-t-a-l-k-e-r-clear-sky/official",
   "s-t-a-l-k-e-r-shadow-of-chernobyl/official",
   "s-t-a-l-k-e-r-shadow-of-chernobyl/lost-alpha",
@@ -95,10 +96,60 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   ],
   "seven-kingdoms-ancient-adversaries": ["launcherInstall"],
   "s-t-a-l-k-e-r-call-of-pripyat": [
+    "description",
+    "aliases",
     "longDescription",
     "whyWePickedIt",
     "installSteps",
     "faq",
+    "systemRequirements",
+    "hardwareRequirements",
+    "launcherInstall",
+    "firstPlaySteps",
+  ],
+  "s-t-a-l-k-e-r-shadow-of-chernobyl": [
+    "description",
+    "aliases",
+    "installSteps",
+    "faq",
+    "systemRequirements",
+    "hardwareRequirements",
+    "launcherInstall",
+    "firstPlaySteps",
+  ],
+  "stalker-anomaly": [
+    "description",
+    "aliases",
+    "qualityBar",
+    "longDescription",
+    "whyWePickedIt",
+    "thatOneThing",
+    "bestFor",
+    "notFor",
+    "comparableTo",
+    "faq",
+    "installSteps",
+    "systemRequirements",
+    "hardwareRequirements",
+    "launcherInstall",
+    "firstPlaySteps",
+  ],
+  "s-t-a-l-k-e-r-clear-sky": [
+    "description",
+    "aliases",
+    "qualityBar",
+    "longDescription",
+    "whyWePickedIt",
+    "thatOneThing",
+    "bestFor",
+    "notFor",
+    "comparableTo",
+    "faq",
+    "installSteps",
+    "systemRequirements",
+    "hardwareRequirements",
+    "launcherInstall",
+    "firstPlaySteps",
   ],
   "sky-children-of-the-light": [
     "platforms",
@@ -165,7 +216,20 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
 
 /** Existing editions: $set ONLY these fields. */
 export const PATCH_EDITION_FIELDS: Readonly<Record<string, readonly string[]>> = {
-  "s-t-a-l-k-e-r-call-of-pripyat/official": ["name", "description"],
+  "s-t-a-l-k-e-r-call-of-pripyat/official": [
+    "name",
+    "description",
+    "shortDescription",
+  ],
+  "stalker-anomaly/official": [
+    "name",
+    "description",
+    "shortDescription",
+    "aliases",
+    "requirements",
+    "hardwareRequirements",
+    "installConfig",
+  ],
   // OpenMW 0.51 ships Windows-x64.exe; live recipe still pointed at win64.zip.
   "morrowind/openmw": ["installConfig"],
   // Keep TES3MP desktop zip pattern in sync (VR-latest miss).
@@ -175,10 +239,27 @@ export const PATCH_EDITION_FIELDS: Readonly<Record<string, readonly string[]>> =
     "name",
     "description",
     "shortDescription",
+    "aliases",
+    "requirements",
+    "hardwareRequirements",
     "installMethod",
     "installConfig",
   ],
   "s-t-a-l-k-e-r-shadow-of-chernobyl/true-stalker": [
+    "name",
+    "description",
+    "shortDescription",
+    "aliases",
+    "requirements",
+    "hardwareRequirements",
+    "installConfig",
+  ],
+  "s-t-a-l-k-e-r-shadow-of-chernobyl/official": [
+    "name",
+    "description",
+    "shortDescription",
+  ],
+  "s-t-a-l-k-e-r-clear-sky/official": [
     "name",
     "description",
     "shortDescription",
@@ -191,7 +272,7 @@ export const PATCH_EDITION_FIELDS: Readonly<Record<string, readonly string[]>> =
 /**
  * Existing editions to retire (hide from public listings). $set only
  * visibility + status — never delete, never upsert.
- * CoP/anomaly moves to game stalker-anomaly; seed no longer rematerializes it.
+ * CoP/anomaly → game stalker-anomaly; CoP/gamma → stalker-anomaly/gamma (new insert).
  */
 export const RETIRE_EDITION_KEYS: readonly string[] = [
   "s-t-a-l-k-e-r-call-of-pripyat/gamma",

@@ -286,19 +286,6 @@ async function main() {
       source = { ...alienSwarmPatchSource };
     } else if (slug === SEVEN_KINGDOMS_SLUG) {
       source = { launcherInstall: sevenKingdomsLauncherInstall };
-    } else if (slug === "s-t-a-l-k-e-r-call-of-pripyat") {
-      const ed = editorial["s-t-a-l-k-e-r-call-of-pripyat"];
-      if (!ed) {
-        console.warn(`insert-catalog-wave — no editorial for ${slug}, skipping`);
-        gamesPatchSkipped++;
-        continue;
-      }
-      source = {
-        longDescription: ed.longDescription,
-        whyWePickedIt: ed.whyWePickedIt,
-        installSteps: ed.installSteps,
-        faq: ed.faq,
-      };
     } else if (slug === "space-station-14") {
       const seed = games.find((g) => g.slug === slug);
       const ed = editorial["space-station-14"];
