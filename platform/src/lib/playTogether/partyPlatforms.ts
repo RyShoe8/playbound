@@ -92,18 +92,17 @@ export function fitsPartySize(
 
 /**
  * Option label for the party game picker.
- * Genres, Couch and Testing share one tag trail.
+ *
+ * Genres and Testing share one tag trail.
  */
 export function partyGameOptionLabel(
   title: string,
   opts: {
     testing?: boolean;
     genres?: readonly string[] | null;
-    couch?: boolean;
   } = {}
 ): string {
   const tags: string[] = [];
-  if (opts.couch) tags.push("Couch");
   for (const genre of opts.genres || []) {
     const trimmed = String(genre || "").trim();
     if (!trimmed) continue;

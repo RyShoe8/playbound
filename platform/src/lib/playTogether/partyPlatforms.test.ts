@@ -114,11 +114,5 @@ describe("party size seating", () => {
         genres: ["Strategy", "RTS", "Indie", "Extra"],
       })
     ).toBe("OpenRA · Strategy · RTS · Indie");
-    expect(
-      partyGameOptionLabel("Teenage Mutant Ninja Turtles: Rescue-Palooza!", {
-        couch: true,
-        genres: ["Beat 'em up", "Action"],
-      })
-    ).toBe("Teenage Mutant Ninja Turtles: Rescue-Palooza! · Couch · Beat 'em up · Action");
   });
 });

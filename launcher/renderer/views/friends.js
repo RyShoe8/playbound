@@ -1566,9 +1566,8 @@ function fitsPartySize(maxPlayers, memberCount) {
   return seats >= need;
 }
 
-function partyGameOptionLabel(title, { testing = false, genres = [], couch = false } = {}) {
+function partyGameOptionLabel(title, { testing = false, genres = [] } = {}) {
   const tags = [];
-  if (couch) tags.push("Couch");
   for (const genre of genres || []) {
     const trimmed = String(genre || "").trim();
     if (!trimmed) continue;
@@ -1598,7 +1597,6 @@ function partyGameOptionsHtml(selectedSlug, party) {
     const label = partyGameOptionLabel(g.title, {
       testing: Boolean(g.testing || g.status === "testing"),
       genres: g.genres,
-      couch: couchOnly.has(g.slug),
     });
     options.push(
       `<option value="${escapeHtml(g.slug)}"${g.slug === selectedSlug ? " selected" : ""}>${escapeHtml(
@@ -1871,9 +1869,6 @@ function buildPartyViewHtml(party) {
 
   const couchOnly = new Set(party.couchOnlyGames || []);
   const isCurrentGameCouchOnly = Boolean(party.gameSlug && couchOnly.has(party.gameSlug));
-  if (isCurrentGameCouchOnly && !partyCouchFilterExplicit) {
-    partyCouchCoopFilter = true;
-  }
 
   const multiplayerTypeHtml =
     isLeader && !ended
@@ -1940,15 +1935,10 @@ function buildPartyViewHtml(party) {
    * which is how the two panels forked in the first place.
    */
   /*
-   * Couch join code / QR: show when Multiplayer Type = Couch, or when the
-   * current game is a couch title (like TMNT / X-Men), or when couch is enabled.
+   * Couch join code / QR: show strictly when Multiplayer Type = Couch.
+   * When in Online mode, this panel must never be displayed under Join Game.
    */
-  const isCouchMode = Boolean(
-    partyCouchCoopFilter ||
-    isCurrentGameCouchOnly ||
-    party.hostMode === "couch" ||
-    party.couch?.enabled
-  );
+  const isCouchMode = Boolean(partyCouchCoopFilter);
   const autoJoinArmed = pendingJoin?.partyId === party.id && !ended;
   const joinBtn = actions ? (autoJoinArmed ? actions.joinArmed : actions.join) : null;
   const joinGameHtml = joinBtn && joinBtn.visible
@@ -4057,18 +4047,22 @@ async function launchPartyGame(party) {
           // Retry: OpenBOR / fullscreen often aren't capturable for a few seconds after launch.
           void (async () => {
             const delays = [0, 1500, 3500, 7000];
+            let captured = false;
             for (const wait of delays) {
               if (wait) await new Promise((r) => setTimeout(r, wait));
               const stream = await ensureHostDisplayStream(wait > 0);
               if (!stream) continue;
+              captured = true;
               setStatus("Sharing game view for online multiplayer…");
               const ok = await pushHostDisplayToPeers();
               if (ok) return;
             }
-            setStatus(
-              "Online pads ready — run the game windowed or borderless if game view doesn't stream.",
-              true
-            );
+            if (!captured) {
+              setStatus(
+                "Online pads ready — run the game windowed or borderless if game view doesn't stream.",
+                true
+              );
+            }
           })();
         }
         if (!(isLeader && party.hostMode === "self")) {

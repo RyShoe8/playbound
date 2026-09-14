@@ -3,6 +3,7 @@ import { unstable_rethrow } from "next/navigation";
 import { ensureCouchStore } from "@/lib/couch/ensureStore";
 import {
   assertController,
+  defaultIceServers,
   getCouchSession,
   getCouchSessionByCode,
   joinCouchSession,
@@ -61,7 +62,10 @@ export async function POST(req: Request, context: RouteContext) {
         controller.status === "approved" && session.hostEndpoints
           ? session.hostEndpoints.wsUrls
           : [],
-      iceServers: snap.hostEndpoints?.iceServers || [],
+      iceServers:
+        snap.hostEndpoints?.iceServers && snap.hostEndpoints.iceServers.length > 0
+          ? snap.hostEndpoints.iceServers
+          : defaultIceServers(),
     });
   } catch (err) {
     console.error("POST /api/couch/sessions/[id]/join failed:", err);
@@ -103,6 +107,10 @@ export async function GET(req: Request, context: RouteContext) {
         c.status === "approved" && session.hostEndpoints
           ? session.hostEndpoints.wsUrls
           : [],
+      iceServers:
+        snap.hostEndpoints?.iceServers && snap.hostEndpoints.iceServers.length > 0
+          ? snap.hostEndpoints.iceServers
+          : defaultIceServers(),
     });
   } catch (err) {
     // Let Next's own control-flow errors through — see unstable_rethrow.

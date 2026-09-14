@@ -582,7 +582,6 @@ export function PartyView({
                         {partyGameOptionLabel(g.title, {
                           testing: g.status === "testing",
                           genres: g.genres,
-                          couch: couchOnly.has(g.slug),
                         })}
                       </option>
                     ))}
@@ -988,7 +987,8 @@ export function PartyView({
               </ol>
             )}
 
-          {actions.couch &&
+          {couchCoopFilter &&
+            actions.couch &&
             (actions.couch.status === "ready" && actions.couch.joinCode ? (
               <div className="w-full space-y-2 self-start">
                 <p className="text-sm font-semibold">
