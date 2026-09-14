@@ -55,6 +55,7 @@ import {
   ALIEN_SWARM_SLUG,
   alienSwarmPatchSource,
 } from "@/lib/data/alienSwarmCatalog";
+import { ASSAULTCUBE_SLUG } from "@/lib/data/assaultCubeSpecs";
 import { mods } from "@/lib/data/mods";
 import { getMultiplayerAdapter } from "@/lib/multiplayer/adapters";
 
@@ -337,6 +338,65 @@ describe("insert-catalog-wave allowlists", () => {
   it("keeps holocure-rich-presence unpublished in seed", () => {
     const mod = mods.find((m) => m.slug === "holocure-rich-presence");
     expect(mod?.published).toBe(false);
+  });
+
+  it("has default-path patch sources for every allowlisted game and edition field", () => {
+    // Dedicated patch objects in insert-catalog-wave.ts (covered by other tests).
+    const specialCasedGamePatches = new Set([
+      ALIEN_SWARM_SLUG,
+      ASSAULTCUBE_SLUG,
+      FREETRAIN_SLUG,
+      IDLE_SLAYER_SLUG,
+      SEVEN_KINGDOMS_SLUG,
+      SKY_CHILDREN_SLUG,
+      SLAPSHOT_REBOUND_SLUG,
+      "space-station-14",
+      TEEWORLDS_SLUG,
+      THE_DARK_MOD_SLUG,
+      SPIKE_CROSS_SLUG,
+      UNKNOWN_HORIZONS_SLUG,
+    ]);
+    for (const slug of Object.keys(PATCH_GAME_FIELDS)) {
+      if (specialCasedGamePatches.has(slug)) continue;
+      const fields = PATCH_GAME_FIELDS[slug]!;
+      const seed = gamesBySlug.get(slug);
+      const ed = editorial[slug];
+      expect(seed || ed, `no seed/editorial for default-path patch ${slug}`).toBeTruthy();
+      const source = {
+        ...(seed as unknown as Record<string, unknown> | undefined),
+        ...((ed ?? {}) as unknown as Record<string, unknown>),
+      };
+      for (const field of fields) {
+        // launcherInstall may live only on launcherInstallBySlug for some games;
+        // those use the default seed.launcherInstall ?? overlay path at apply time.
+        if (field === "launcherInstall" && source[field] === undefined) continue;
+        expect(source[field], `${slug}.${field}`).not.toBeUndefined();
+      }
+    }
+    for (const key of Object.keys(PATCH_EDITION_FIELDS)) {
+      const [gameSlug, editionSlug] = key.split("/");
+      const seed = editions.find((e) => e.gameSlug === gameSlug && e.slug === editionSlug);
+      expect(seed, `missing edition seed ${key}`).toBeTruthy();
+      const source: Record<string, unknown> = {
+        name: seed!.name,
+        description: seed!.description,
+        version: seed!.version,
+        installConfig: seed!.installConfig,
+        shortDescription: seed!.shortDescription,
+        visibility: seed!.visibility,
+        status: seed!.status,
+        installMethod: seed!.installMethod,
+        requirements: seed!.requirements,
+        hardwareRequirements: seed!.hardwareRequirements,
+        aliases: seed!.aliases,
+        links: seed!.links,
+        features: seed!.features,
+        tags: seed!.tags,
+      };
+      for (const field of PATCH_EDITION_FIELDS[key]!) {
+        expect(source[field], `${key}.${field}`).not.toBeUndefined();
+      }
+    }
   });
 
   it("has seed rows for every allowlisted insert game and edition", () => {
