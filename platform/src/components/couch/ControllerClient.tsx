@@ -460,7 +460,44 @@ export function ControllerClient({
       pc = new RTCPeerConnection({ iceServers: session.iceServers });
       // Receive host game view when the host shares their display.
       pc.addTransceiver("video", { direction: "recvonly" });
+
+      pc.onconnectionstatechange = () => {
+        const state = pc?.connectionState;
+        if (state === "connected") {
+          usingWebrtc = true;
+          setTransport("webrtc");
+        } else if (state === "failed") {
+          console.warn("[couch] WebRTC connection failed, attempting ICE restart...");
+          try {
+            pc?.restartIce();
+            void (async () => {
+              if (!pc) return;
+              const offer = await pc.createOffer({ iceRestart: true });
+              await pc.setLocalDescription(offer);
+              await postSignal({
+                kind: "offer",
+                sdp: offer,
+                from: session.controllerId,
+                playerSlot: session.playerSlot,
+              });
+            })();
+          } catch {
+            if (!ws) void startWsFallback();
+          }
+        }
+      };
+
+      pc.oniceconnectionstatechange = () => {
+        const ice = pc?.iceConnectionState;
+        if (ice === "connected" || ice === "completed") {
+          usingWebrtc = true;
+          setTransport("webrtc");
+        }
+      };
+
       pc.ontrack = (ev) => {
+        usingWebrtc = true;
+        setTransport("webrtc");
         const stream = ev.streams?.[0] || (ev.track ? new MediaStream([ev.track]) : null);
         if (stream) {
           attachRemoteStream(stream);
@@ -545,6 +582,8 @@ export function ControllerClient({
                   sdp: answer,
                   from: session.controllerId,
                 });
+                usingWebrtc = true;
+                setTransport("webrtc");
               } catch {
                 /* ignore renegotiation races */
               }
@@ -565,10 +604,31 @@ export function ControllerClient({
         }
       }, 500);
 
-      // If no DC open soon, fall back
+      // Check if local WebSocket fallback exists (LAN or localhost)
+      const candidateUrls = session.wsUrls || [];
+      const hasWsCandidates = candidateUrls.some(
+        (u) =>
+          typeof window === "undefined" ||
+          window.location.protocol !== "https:" ||
+          u.startsWith("wss://") ||
+          u.startsWith("ws://127.0.0.1") ||
+          u.startsWith("ws://localhost")
+      );
+
+      if (hasWsCandidates) {
+        window.setTimeout(() => {
+          if (!closed && !usingWebrtc && !ws) void startWsFallback();
+        }, 5000);
+      }
+
+      // Connection timeout: only declare offline after 25 seconds of failed attempts
       window.setTimeout(() => {
-        if (!closed && !usingWebrtc) void startWsFallback();
-      }, 4000);
+        if (!closed && !usingWebrtc && (!ws || ws.readyState !== WebSocket.OPEN)) {
+          if (pc?.connectionState === "failed" || pc?.iceConnectionState === "failed") {
+            setTransport("offline");
+          }
+        }
+      }, 25000);
     }
 
     async function startWsFallback() {
@@ -584,7 +644,10 @@ export function ControllerClient({
         return false;
       });
       if (!urls.length || !session.wsToken) {
-        if (!usingWebrtc) setTransport("offline");
+        // If on HTTPS without secure WS, don't prematurely kill an in-flight WebRTC negotiation
+        if (!usingWebrtc && (pc?.connectionState === "failed" || pc?.iceConnectionState === "failed")) {
+          setTransport("offline");
+        }
         return;
       }
       let idx = 0;

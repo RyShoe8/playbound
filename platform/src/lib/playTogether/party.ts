@@ -1540,9 +1540,10 @@ export async function dropOfflinePartyMembers(now = new Date()): Promise<{ dropp
 
   const memberIds = [
     ...new Set(
-      active.flatMap((doc) =>
-        (doc.members || []).map((m: { userId: unknown }) => String(m.userId))
-      )
+      active.flatMap((doc) => [
+        String(doc.leaderId),
+        ...(doc.members || []).map((m: { userId: unknown }) => String(m.userId)),
+      ])
     ),
   ];
   if (memberIds.length === 0) return { dropped: 0 };
