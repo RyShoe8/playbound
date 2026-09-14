@@ -41,6 +41,7 @@ describe("join button", () => {
   it("reads Start Game for the leader and Join Game for a ready member", () => {
     const leader = computePartyActions(base({ members: [{ userId: "u1", ready: true }] }));
     expect(leader.join.label).toBe(PARTY_COPY.startGame);
+    expect(leader.join.enabled).toBe(true);
 
     const member = computePartyActions(
       base({
@@ -54,6 +55,34 @@ describe("join button", () => {
       })
     );
     expect(member.join.label).toBe(PARTY_COPY.joinGame);
+  });
+
+  it("disables Start Game until every member has readied", () => {
+    const a = computePartyActions(
+      base({
+        members: [
+          { userId: "u1", ready: true },
+          { userId: "u2", ready: false },
+        ],
+      })
+    );
+    expect(a.join.visible).toBe(true);
+    expect(a.join.label).toBe(PARTY_COPY.startGame);
+    expect(a.join.enabled).toBe(false);
+    expect(a.join.title).toBe(PARTY_COPY.waitingForPartyReady);
+  });
+
+  it("enables Start Game once the whole party is ready", () => {
+    const a = computePartyActions(
+      base({
+        members: [
+          { userId: "u1", ready: true },
+          { userId: "u2", ready: true },
+        ],
+      })
+    );
+    expect(a.join.enabled).toBe(true);
+    expect(a.join.title).toBe("");
   });
 
   it("holds a member on Waiting for host until the host has started", () => {

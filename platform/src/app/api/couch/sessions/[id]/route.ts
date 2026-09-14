@@ -55,7 +55,6 @@ export async function PATCH(req: Request, context: RouteContext) {
           ? body.hostEndpoints.wsUrls.map(String)
           : [],
         wsToken: String(body.hostEndpoints.wsToken || ""),
-        iceServers: body.hostEndpoints.iceServers,
       });
     }
     return NextResponse.json(publicCouchSnapshot(session));

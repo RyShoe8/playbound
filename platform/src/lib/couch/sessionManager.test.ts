@@ -7,6 +7,8 @@ import {
   approveController,
   getCouchSessionByCode,
   rejectOrKickController,
+  setHostEndpoints,
+  publicCouchSnapshot,
 } from "@/lib/couch/sessionManager";
 
 describe("couch protocol", () => {
@@ -86,5 +88,30 @@ describe("couch sessions", () => {
       expect(approved.playerSlot).toBe(0);
     }
     expect(await rejectOrKickController(session, joined.controller.controllerId)).toBe(true);
+  });
+
+  it("ignores host-published iceServers and serves platform ICE on snapshot", async () => {
+    const prevIp = process.env.GAME_HOST_PUBLIC_IP;
+    const prevSecret = process.env.TURN_SHARED_SECRET;
+    process.env.GAME_HOST_PUBLIC_IP = "203.0.113.10";
+    process.env.TURN_SHARED_SECRET = "test-secret";
+    try {
+      const session = await createCouchSession({});
+      await setHostEndpoints(session, {
+        wsUrls: ["ws://192.168.1.2:9"],
+        wsToken: "tok",
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+      });
+      const snap = publicCouchSnapshot(session);
+      expect(snap.hostEndpoints?.wsUrls).toEqual(["ws://192.168.1.2:9"]);
+      const urls = (snap.hostEndpoints?.iceServers || []).map((s) => s.urls);
+      expect(urls).toContain("stun:stun.cloudflare.com:3478");
+      expect(urls).toContain("turn:203.0.113.10:3478");
+    } finally {
+      if (prevIp === undefined) delete process.env.GAME_HOST_PUBLIC_IP;
+      else process.env.GAME_HOST_PUBLIC_IP = prevIp;
+      if (prevSecret === undefined) delete process.env.TURN_SHARED_SECRET;
+      else process.env.TURN_SHARED_SECRET = prevSecret;
+    }
   });
 });

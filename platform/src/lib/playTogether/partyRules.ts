@@ -226,5 +226,9 @@ export function canLaunch(
   if (party.members.length < 2) {
     return { ok: false, reason: "Need at least 2 members to launch" };
   }
+  const { allReady } = readySummary(party.members);
+  if (!allReady) {
+    return { ok: false, reason: "Everyone must ready up before starting" };
+  }
   return { ok: true };
 }

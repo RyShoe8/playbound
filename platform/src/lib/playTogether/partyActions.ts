@@ -153,6 +153,7 @@ export const PARTY_COPY = {
   waitingForController: "Waiting for host…",
   waitingForControllerTitle: "The host is starting online multiplayer — your join link appears in a moment",
   openControllerTitle: "Join the host session — keyboard & mouse by default (pads optional)",
+  waitingForPartyReady: "Everyone must ready up before starting",
   /*
    * A host with an administrable server has no way to discover that from the
    * party panel, and the moment they want it — mid-match, wrong map — is the
@@ -229,6 +230,9 @@ export function computePartyActions(input: PartyActionsInput): PartyActions {
     Boolean(couch.joinCode || couch.joinUrl);
   const couchMemberWaiting =
     couchOn && !isLeader && (isReady || inFlight) && !couchReady && !ended;
+  const allReadyUp =
+    input.members.length > 0 && input.members.every((m) => Boolean(m.ready));
+  const waitingForPartyReady = !inFlight && !allReadyUp && hasGame;
   const canJoin =
     hasGame &&
     !ended &&
@@ -261,7 +265,9 @@ export function computePartyActions(input: PartyActionsInput): PartyActions {
       ? hosted.error || lan.error || PARTY_COPY.connectFailed
       : "";
   const title =
-    couchOn && !isLeader
+    waitingForPartyReady && (isLeader || isReady)
+      ? PARTY_COPY.waitingForPartyReady
+      : couchOn && !isLeader
       ? couchReady
         ? PARTY_COPY.openControllerTitle
         : PARTY_COPY.waitingForControllerTitle
@@ -291,7 +297,12 @@ export function computePartyActions(input: PartyActionsInput): PartyActions {
 
   const joinEnabled = couchOn && !isLeader
     ? couchReady
-    : !(joinConnectFailed || waitingForLeader || memberWaitingForConnect);
+    : !(
+        joinConnectFailed ||
+        waitingForLeader ||
+        memberWaitingForConnect ||
+        waitingForPartyReady
+      );
 
   return {
     ready: button({
