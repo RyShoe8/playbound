@@ -7,6 +7,7 @@ import {
   emptyPadAxes,
   KEYBOARD_MOUSE_HELP,
 } from "@/lib/couch/keyboardMouseMap";
+import { CADENCE } from "@/lib/realtime/cadence";
 
 type InputMode = "keyboard-mouse" | "touch-gamepad" | "standard-gamepad";
 
@@ -556,7 +557,17 @@ export function ControllerClient({
         playerSlot: session.playerSlot,
       });
 
-      pollTimer = window.setInterval(async () => {
+      /*
+       * Same bursty pattern as the host: fast while handshake messages arrive,
+       * then idle. Flat 500ms forever wasted ~120 empty GETs/min after connect.
+       */
+      const SIGNAL_ACTIVE_MS = CADENCE.couchSignalActiveMs;
+      const SIGNAL_IDLE_MS = CADENCE.couchSignalIdleMs;
+      const SIGNAL_IDLE_AFTER = CADENCE.couchSignalIdleAfterEmptyPolls;
+      let emptySignalPolls = 0;
+      let signalPollMs = SIGNAL_ACTIVE_MS;
+
+      const pollSignalsOnce = async () => {
         if (closed || !pc) return;
         try {
           const qs = new URLSearchParams({
@@ -571,7 +582,30 @@ export function ControllerClient({
           );
           const data = await res.json();
           if (!res.ok) return;
-          for (const m of data.messages || []) {
+          const messages = data.messages || [];
+          if (messages.length > 0) {
+            emptySignalPolls = 0;
+            if (signalPollMs !== SIGNAL_ACTIVE_MS) {
+              signalPollMs = SIGNAL_ACTIVE_MS;
+              if (pollTimer) window.clearInterval(pollTimer);
+              pollTimer = window.setInterval(() => {
+                void pollSignalsOnce();
+              }, SIGNAL_ACTIVE_MS);
+            }
+          } else {
+            emptySignalPolls += 1;
+            if (
+              emptySignalPolls >= SIGNAL_IDLE_AFTER &&
+              signalPollMs !== SIGNAL_IDLE_MS
+            ) {
+              signalPollMs = SIGNAL_IDLE_MS;
+              if (pollTimer) window.clearInterval(pollTimer);
+              pollTimer = window.setInterval(() => {
+                void pollSignalsOnce();
+              }, SIGNAL_IDLE_MS);
+            }
+          }
+          for (const m of messages) {
             signalSince = Math.max(signalSince, m.timestamp || 0);
             let payload: {
               kind?: string;
@@ -615,7 +649,11 @@ export function ControllerClient({
         } catch {
           /* ignore */
         }
-      }, 500);
+      };
+
+      pollTimer = window.setInterval(() => {
+        void pollSignalsOnce();
+      }, SIGNAL_ACTIVE_MS);
 
       // Check if local WebSocket fallback exists (LAN or localhost)
       const candidateUrls = session.wsUrls || [];
