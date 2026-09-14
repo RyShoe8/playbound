@@ -351,6 +351,11 @@ async function answerOffer(controllerId, remoteSdp, session) {
   // Prefer platform-published ICE (STUN ± TURN from sessionIceServers). Fallback
   // public STUN list must stay aligned with platform/src/lib/realtime/iceServers.ts
   // defaultStunUrls() (non-VPS entries) — do not shrink this to Google-only.
+  try {
+    await pb().couchRefresh?.();
+  } catch {
+    /* ignore */
+  }
   const fresh = await pb().couchState?.().catch(() => null);
   const snapSession = fresh?.session || session;
   const hostIce = snapSession?.snapshot?.hostEndpoints?.iceServers;

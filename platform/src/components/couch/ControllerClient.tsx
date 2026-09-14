@@ -137,6 +137,8 @@ export function ControllerClient({
   const sendFnRef = useRef<(obj: unknown) => void>(() => {});
   const lastSentRef = useRef(0);
   const lastPadKeyRef = useRef("");
+  const joinRef = useRef(join);
+  joinRef.current = join;
   const framesRef = useRef(0);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -442,30 +444,36 @@ export function ControllerClient({
     mode,
   ]);
 
-  // Poll until approved + refresh endpoints
+  // Poll until approved + keep refreshing endpoints (host LAN IPs / ICE can land late).
   useEffect(() => {
-    if (!join) return;
-    const session = join;
-    if (session.status === "approved" && session.wsUrls.length > 0) return;
-    const id = window.setInterval(async () => {
+    if (!join?.controllerId || !join?.controllerToken || !join?.sessionId) return;
+    const controllerId = join.controllerId;
+    const controllerToken = join.controllerToken;
+    const sessionId = join.sessionId;
+    let cancelled = false;
+    let timer: number | null = null;
+    let delayMs = 1500;
+
+    const tick = async () => {
+      if (cancelled) return;
       try {
-        const qs = new URLSearchParams({
-          controllerId: session.controllerId,
-          controllerToken: session.controllerToken,
-        });
+        const qs = new URLSearchParams({ controllerId, controllerToken });
         const res = await fetch(
-          `/api/couch/sessions/${encodeURIComponent(session.sessionId)}/join?${qs}`
+          `/api/couch/sessions/${encodeURIComponent(sessionId)}/join?${qs}`
         );
         const data = await res.json();
-        if (!res.ok) return;
+        if (!res.ok || cancelled) return;
+        let hasEndpoints = false;
         setJoin((prev) => {
           if (!prev) return prev;
+          const wsUrls = data.wsUrls || prev.wsUrls;
+          hasEndpoints = Array.isArray(wsUrls) && wsUrls.length > 0;
           const next = {
             ...prev,
             status: data.status,
             playerSlot: data.playerSlot,
             sessionToken: data.sessionToken,
-            wsUrls: data.wsUrls || prev.wsUrls,
+            wsUrls,
             wsToken: data.wsToken ?? prev.wsToken,
             iceServers:
               data.iceServers && data.iceServers.length > 0
@@ -475,12 +483,27 @@ export function ControllerClient({
           saveStored(code, next);
           return next;
         });
+        if (data.status === "approved" && hasEndpoints) {
+          delayMs = 8000;
+        } else {
+          delayMs = 1500;
+        }
       } catch {
         /* ignore */
+      } finally {
+        if (!cancelled) {
+          timer = window.setTimeout(() => {
+            void tick();
+          }, delayMs);
+        }
       }
-    }, 1500);
-    return () => window.clearInterval(id);
-  }, [join, code]);
+    };
+    void tick();
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [join?.sessionId, join?.controllerId, join?.controllerToken, code]);
 
   // Wake lock
   useEffect(() => {
@@ -761,18 +784,25 @@ export function ControllerClient({
       );
 
       // Prefer LAN WebSocket early when the in-app game view can use ws://.
+      // hasWsCandidates currently ignores plain LAN ws:// on HTTPS — still start
+      // fallback in the launcher window where webSecurity is off.
       if (hasWsCandidates || isPlayBoundLauncherGameView()) {
         window.setTimeout(() => {
           if (!closed && !usingWebrtc && !ws) void startWsFallback();
-        }, isPlayBoundLauncherGameView() ? 2000 : 5000);
+        }, isPlayBoundLauncherGameView() ? 600 : 5000);
       }
 
       function markOfflineIfFailed() {
         if (closed || usingWebrtc || ws?.readyState === WebSocket.OPEN) return;
         const ice = pc?.iceConnectionState;
         const conn = pc?.connectionState;
-        if (ice !== "failed" && conn !== "failed" && ice !== "disconnected") return;
-        if (isPublicHttpsOrigin() && !iceServersIncludeTurn(session.iceServers)) {
+        // "disconnected" is often transient — only treat hard failure as offline.
+        if (ice !== "failed" && conn !== "failed") return;
+        if (
+          isPublicHttpsOrigin() &&
+          !iceServersIncludeTurn(session.iceServers) &&
+          !isPlayBoundLauncherGameView()
+        ) {
           setConnectHint(
             " Browser blocked direct LAN access from playbound.club — open game view from the PlayBound launcher popup, or ensure Connect TURN is configured."
           );
@@ -782,7 +812,11 @@ export function ControllerClient({
         setTransport("offline");
       }
 
-      // Give ICE time on LAN; only fail once the peer connection is actually failed.
+      // Give ICE time on LAN; retry WS and only fail once the peer is actually failed.
+      window.setTimeout(() => {
+        if (!closed && !usingWebrtc && !ws) void startWsFallback();
+        markOfflineIfFailed();
+      }, 20_000);
       window.setTimeout(() => {
         markOfflineIfFailed();
       }, 45_000);
@@ -792,7 +826,11 @@ export function ControllerClient({
       if (ws || closed) return;
       const isHttps = typeof window !== "undefined" && window.location.protocol === "https:";
       const allowLanWs = isPlayBoundLauncherGameView();
-      const candidateUrls = session.wsUrls || [];
+      // Prefer latest endpoints — host may publish LAN/NetBird URLs after approve.
+      const latest = joinRef.current;
+      const candidateUrls = latest?.wsUrls?.length ? latest.wsUrls : session.wsUrls || [];
+      const wsToken = latest?.wsToken || session.wsToken;
+      const sessionToken = latest?.sessionToken || session.sessionToken;
       const urls = candidateUrls.filter((u) => {
         if (!isHttps) return true;
         if (u.startsWith("wss://")) return true;
@@ -801,7 +839,7 @@ export function ControllerClient({
         if (allowLanWs && u.startsWith("ws://")) return true;
         return false;
       });
-      if (!urls.length || !session.wsToken) {
+      if (!urls.length || !wsToken) {
         if (!usingWebrtc && (pc?.connectionState === "failed" || pc?.iceConnectionState === "failed")) {
           if (isPublicHttpsOrigin() && !iceServersIncludeTurn(session.iceServers) && !allowLanWs) {
             setConnectHint(
@@ -819,8 +857,8 @@ export function ControllerClient({
           return;
         }
         const raw = urls[idx++]!;
-        const url = session.wsToken
-          ? `${raw}${raw.includes("?") ? "&" : "?"}token=${encodeURIComponent(session.wsToken)}`
+        const url = wsToken
+          ? `${raw}${raw.includes("?") ? "&" : "?"}token=${encodeURIComponent(wsToken)}`
           : raw;
         try {
           ws = new WebSocket(url);
@@ -834,15 +872,15 @@ export function ControllerClient({
             JSON.stringify({
               type: "auth",
               controllerId: session.controllerId,
-              sessionToken: session.sessionToken,
-              wsToken: session.wsToken,
+              sessionToken,
+              wsToken,
               playerSlot: session.playerSlot,
             })
           );
           send({
             type: "hello",
             controllerId: session.controllerId,
-            sessionToken: session.sessionToken,
+            sessionToken,
             playerSlot: session.playerSlot,
             profile: mode,
           });
@@ -915,7 +953,16 @@ export function ControllerClient({
       clearVideoFrameWatch();
     };
     // Keep the peer connection across input-mode changes (keyboard ↔ controller).
-  }, [join?.sessionId, join?.controllerId, join?.status, join?.playerSlot, join?.sessionToken, sendInput]);
+    // Restart when LAN endpoints arrive so WS fallback can use them.
+  }, [
+    join?.sessionId,
+    join?.controllerId,
+    join?.status,
+    join?.playerSlot,
+    join?.sessionToken,
+    join?.wsUrls?.length,
+    sendInput,
+  ]);
 
   // Physical gamepad polling
   useEffect(() => {
