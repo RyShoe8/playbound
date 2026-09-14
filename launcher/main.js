@@ -8,6 +8,11 @@ app.commandLine.appendSwitch("enable-accelerated-2d-canvas");
 app.commandLine.appendSwitch("enable-features", "VaapiVideoDecoder,CanvasOopRasterization,SmoothScrolling");
 // Set disk cache to 256MB so cover images and assets are cached permanently on disk
 app.commandLine.appendSwitch("disk-cache-size", "268435456");
+// HTTPS playbound.club → LAN host WebRTC: Chromium PNA otherwise blocks host candidates.
+app.commandLine.appendSwitch(
+  "disable-features",
+  "PrivateNetworkAccessSendPreflights,PrivateNetworkAccessRespectPreflightResults,BlockInsecurePrivateNetworkRequests"
+);
 
 const { spawn, exec, execFile, execFileSync } = require("child_process");
 const crypto = require("crypto");
@@ -46,6 +51,7 @@ const { createSaveData } = require("./services/SaveData");
 const saveLocations = require("./services/saveLocations");
 const controllerProfiles = require("./services/controllerProfiles");
 const gameControllerConfig = require("./services/gameControllerConfig");
+const deviceControllerStorage = require("./services/deviceControllerStorage");
 const openborPak = require("./services/openborPak");
 const { createCloudSaves } = require("./services/CloudSaves");
 const { createSettings } = require("./services/settings");
@@ -5998,53 +6004,74 @@ async function shouldConfigureController(slug, profile, opts = {}) {
   return allow;
 }
 
-async function applyControllerConfig(slug, installDir) {
+async function applyControllerConfig(slug, installDir, opts = {}) {
   if (!gameControllerConfig.supportsControllerConfig(slug)) return false;
   const configPath = gameControllerConfig.configPathFor(slug, installDir);
   if (!configPath) return false;
 
-  let profile = controllerProfiles.pickPrimary(lastKnownGamepads);
-  const couchActive = Boolean(couchHost?.getState?.()?.active);
-  if (!profile && couchActive) {
-    profile = { family: "xbox", label: "Phone Controller", rawId: "Controller (GC101 1.03)" };
-  }
-  /*
-   * Nothing plugged in is not a reason to stay quiet.
-   *
-   * Several of these games only detect a pad if their config already names
-   * one, so the useful moment to write it is before the player connects
-   * anything — and a game that supports a controller should make the same
-   * offer either way. YSoccer used to be special-cased into configuring
-   * silently, which is why it never asked.
-   */
-  const padConnected = Boolean(profile);
-  if (!profile) profile = controllerProfiles.defaultProfile();
-
   const entry = gameControllerConfig.GAMES[slug];
   const binary = Boolean(entry?.binary);
+  const userDataPath = app.getPath("userData");
 
+  const inputMode = opts?.inputMode || (couchHost?.getState?.()?.active ? "phone" : null);
+
+  // 1. If player chose Mouse & Keyboard, never apply controller configurations
+  if (inputMode === "keyboard") {
+    if (deviceControllerStorage.hasDeviceConfig(userDataPath, slug, "keyboard")) {
+      await deviceControllerStorage.restoreDeviceConfig(userDataPath, slug, "keyboard", configPath, binary);
+    }
+    deviceControllerStorage.recordActiveDevice(slug, "keyboard", configPath, binary);
+    console.log(`[controller] user selected mouse and keyboard for ${slug}; skipping controller config`);
+    return false;
+  }
+
+  let profile = null;
+  let deviceId = "controller";
+
+  if (inputMode === "phone" || Boolean(couchHost?.getState?.()?.active)) {
+    profile = { family: "xbox", label: "Phone Controller", rawId: "Controller (GC101 1.03)" };
+    deviceId = "phone";
+  } else {
+    profile = controllerProfiles.pickPrimary(lastKnownGamepads);
+    if (profile) {
+      deviceId = profile.family || "controller";
+    } else {
+      profile = controllerProfiles.defaultProfile();
+      deviceId = "controller";
+    }
+  }
+
+  // 2. If the user already has a saved/customized config for this game on this device, restore it directly
+  if (deviceControllerStorage.hasDeviceConfig(userDataPath, slug, deviceId)) {
+    console.log(`[controller] restoring saved ${deviceId} config for ${slug}`);
+    await deviceControllerStorage.restoreDeviceConfig(userDataPath, slug, deviceId, configPath, binary);
+    deviceControllerStorage.recordActiveDevice(slug, deviceId, configPath, binary);
+    return true;
+  }
+
+  // 3. No saved config yet for this device: initial setup
+  const padConnected = Boolean(profile);
   let current;
   try {
     current = binary
       ? await fsp.readFile(configPath)
       : await fsp.readFile(configPath, "utf8");
   } catch {
-    // No config yet is normal on a first run; the game writes one at exit.
     current = binary ? null : "";
   }
   if (binary && !current) return false;
 
-  /*
-   * Work out whether there is anything to do *before* asking. Prompting and
-   * then discovering the game is already configured would be a dialog that
-   * changes nothing, which is how players learn to dismiss dialogs.
-   */
   const next = gameControllerConfig.applyProfile(slug, current, profile);
-  if (next == null) return false;
+  if (next == null) {
+    if (current) {
+      await deviceControllerStorage.saveDeviceConfig(userDataPath, slug, deviceId, configPath, binary);
+    }
+    deviceControllerStorage.recordActiveDevice(slug, deviceId, configPath, binary);
+    return false;
+  }
 
-  // Couch mode is already the player asking for a controller, so it does not
-  // ask again. Everything else gets the same prompt, pad or no pad.
-  if (!couchActive && !(await shouldConfigureController(slug, profile, { padConnected }))) {
+  const couchActive = Boolean(couchHost?.getState?.()?.active) || inputMode === "phone";
+  if (!couchActive && inputMode !== "controller" && !(await shouldConfigureController(slug, profile, { padConnected }))) {
     console.log(`[controller] declined for ${slug}`);
     return false;
   }
@@ -6055,6 +6082,10 @@ async function applyControllerConfig(slug, installDir) {
     if (binary) await fsp.writeFile(configPath, next);
     else await fsp.writeFile(configPath, next, "utf8");
     console.log(`[controller] configured ${profile.label} for ${slug}`);
+
+    // Snapshot initial config for this device so future loads and switches preserve it
+    await deviceControllerStorage.saveDeviceConfig(userDataPath, slug, deviceId, configPath, binary);
+    deviceControllerStorage.recordActiveDevice(slug, deviceId, configPath, binary);
     return true;
   } catch (err) {
     console.error(`[controller] failed to write config for ${slug}:`, err);
@@ -8649,9 +8680,9 @@ async function installModInner(slug, baseDirOverride) {
  * launch_failed event instead of silently rejecting the IPC call.
  * playGameInner tags errors it already reported so this doesn't double them.
  */
-async function playGame(slug, join = null, editionSlug = null) {
+async function playGame(slug, join = null, editionSlug = null, opts = null) {
   try {
-    return await playGameInner(slug, join, editionSlug);
+    return await playGameInner(slug, join, editionSlug, opts);
   } catch (err) {
     if (!err || !err.__launchFailedReported) {
       try {
@@ -8765,7 +8796,7 @@ async function maybePrepareRenegadeX(info) {
   }
 }
 
-async function playGameInner(slug, join = null, editionSlug = null) {
+async function playGameInner(slug, join = null, editionSlug = null, opts = null) {
   const state = loadState();
   const game = ensureGameInstallRecord(state[slug]);
   const edSlug = editionSlug || game.editionSlug || DEFAULT_EDITION_SLUG;
@@ -8834,7 +8865,7 @@ async function playGameInner(slug, join = null, editionSlug = null) {
    * game that refuses to start is a bug.
    */
   try {
-    await applyControllerConfig(slug, info.dir || path.dirname(info.exe || ""));
+    await applyControllerConfig(slug, info.dir || path.dirname(info.exe || ""), opts);
   } catch (err) {
     console.warn("[controller] auto-config skipped:", err?.message || err);
   }
@@ -9990,6 +10021,11 @@ function sendGameExited(slug) {
   // the window is hidden to the tray or the game outlived the launcher UI.
   void telemetry.editionExited(editionInfoFor(slug));
   void snapshotSavesAfterPlay(slug);
+  try {
+    void deviceControllerStorage.onGameExited(app.getPath("userData"), slug);
+  } catch (err) {
+    console.warn("[device-controller] onGameExited error:", err?.message || err);
+  }
   if (win && !win.isDestroyed()) {
     win.webContents.send("game-exited", { slug });
   }
@@ -11830,8 +11866,8 @@ ipcMain.handle("add-custom-game", (_event, customTitle) =>
   addCustomGameExecutable(customTitle || null)
 );
 ipcMain.handle("dismiss-pending-install", (_event, slug) => dismissPendingInstall(slug));
-ipcMain.handle("play", (_event, slug, join, editionSlug) =>
-  playGame(slug, join || null, editionSlug || null)
+ipcMain.handle("play", (_event, slug, join, editionSlug, opts) =>
+  playGame(slug, join || null, editionSlug || null, opts || null)
 );
 ipcMain.handle("play-mod", (_event, slug) => playMod(slug));
 ipcMain.handle("get-game-controls", (_event, slug) =>

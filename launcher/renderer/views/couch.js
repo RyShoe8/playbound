@@ -156,7 +156,30 @@ function stopSignalPoll() {
   signalPollMs = SIGNAL_ACTIVE_MS;
 }
 
+async function addRemoteIceCandidate(pc, candidate, complete) {
+  if (complete || candidate === null) {
+    try {
+      await pc.addIceCandidate(undefined);
+    } catch {
+      try {
+        await pc.addIceCandidate({ candidate: "", sdpMid: "0", sdpMLineIndex: 0 });
+      } catch {
+        /* ignore */
+      }
+    }
+    return;
+  }
+  if (!candidate) return;
+  try {
+    await pc.addIceCandidate(candidate);
+  } catch {
+    /* ignore trickle races */
+  }
+}
+
 async function pollSignals() {
+  const state = await pb().couchState?.().catch(() => null);
+  if (state?.active) lastState = state;
   const session = lastState?.session;
   if (!session) return;
   const res = await pb().couchSignalPoll(signalSince);
@@ -194,14 +217,10 @@ async function pollSignals() {
         }
       }
     }
-    if (payload.kind === "ice" && payload.from && payload.candidate) {
+    if (payload.kind === "ice" && payload.from) {
       const pc = peers.get(payload.from);
       if (pc) {
-        try {
-          await pc.addIceCandidate(payload.candidate);
-        } catch {
-          /* ignore */
-        }
+        await addRemoteIceCandidate(pc, payload.candidate, payload.complete);
       }
     }
   }
@@ -310,7 +329,9 @@ async function answerOffer(controllerId, remoteSdp, session) {
   // Prefer platform-published ICE (STUN ± TURN from sessionIceServers). Fallback
   // public STUN list must stay aligned with platform/src/lib/realtime/iceServers.ts
   // defaultStunUrls() (non-VPS entries) — do not shrink this to Google-only.
-  const hostIce = session?.snapshot?.hostEndpoints?.iceServers;
+  const fresh = await pb().couchState?.().catch(() => null);
+  const snapSession = fresh?.session || session;
+  const hostIce = snapSession?.snapshot?.hostEndpoints?.iceServers;
   const iceServers =
     Array.isArray(hostIce) && hostIce.length > 0
       ? hostIce
@@ -369,15 +390,14 @@ async function answerOffer(controllerId, remoteSdp, session) {
   };
 
   pc.onicecandidate = (ev) => {
-    if (!ev.candidate) return;
     void pb().couchSignalPost({
       recipientRole: "controller",
       senderPeerId: "host",
-      payload: JSON.stringify({
-        kind: "ice",
-        candidate: ev.candidate,
-        to: controllerId,
-      }),
+      payload: JSON.stringify(
+        ev.candidate
+          ? { kind: "ice", candidate: ev.candidate, to: controllerId }
+          : { kind: "ice", complete: true, to: controllerId }
+      ),
     });
   };
 

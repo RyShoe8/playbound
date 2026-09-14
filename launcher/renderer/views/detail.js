@@ -1713,9 +1713,9 @@ async function renderGameDetailView(slug, opts = {}) {
       try {
         const launched = await maybeOfferPhoneControllerThenPlay(
           detail,
-          async () => {
+          async (launchOpts) => {
             setStatus("Checking Java / launching…");
-            const res = await window.playbound.play(slug);
+            const res = await window.playbound.play(slug, null, null, launchOpts);
             startGameSession(slug, detail.title || slug);
             maybeShowLaunchGuidance(res, {
               title: detail.title || slug,
@@ -3038,9 +3038,9 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
           hasControllerSupport:
             edition.hasControllerSupport ?? gameDetail?.hasControllerSupport,
         },
-        async () => {
+        async (launchOpts) => {
           setStatus("Checking Java / launching…");
-          const res = await window.playbound.play(gameSlug, null, editionSlug);
+          const res = await window.playbound.play(gameSlug, null, editionSlug, launchOpts);
           startGameSession(gameSlug, edition.gameTitle || gameSlug);
           maybeShowLaunchGuidance(res, {
             title: edition.editionName || edition.gameTitle || gameSlug,

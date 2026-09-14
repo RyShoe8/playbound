@@ -851,9 +851,9 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
       try {
         const launched = await maybeOfferPhoneControllerThenPlay(
           detail,
-          async () => {
+          async (launchOpts) => {
             setStatus(`Checking Java / launching ${game.title} (${ed.name})…`);
-            const res = await window.playbound.play(game.slug, null, ed.slug);
+            const res = await window.playbound.play(game.slug, null, ed.slug, launchOpts);
             startGameSession(game.slug, game.title);
             maybeShowLaunchGuidance(res, {
               title: game.title,

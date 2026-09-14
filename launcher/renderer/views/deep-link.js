@@ -220,8 +220,8 @@ function renderDeepLinkView(ctx) {
       setStatus(`Launching ${title}…`);
       try {
         const detail = ctx.entry || { title };
-        const launched = await maybeOfferPhoneControllerThenPlay(detail, async () => {
-          const res = await window.playbound.play(ctx.slug, ctx.join, ctx.editionSlug || null);
+        const launched = await maybeOfferPhoneControllerThenPlay(detail, async (launchOpts) => {
+          const res = await window.playbound.play(ctx.slug, ctx.join, ctx.editionSlug || null, launchOpts);
           try {
             await window.playbound.clearContext();
           } catch {
@@ -273,11 +273,12 @@ function renderDeepLinkView(ctx) {
       setStatus(`Joining ${host}:${port}…`);
       try {
         const detail = ctx.entry || { title };
-        const launched = await maybeOfferPhoneControllerThenPlay(detail, async () => {
+        const launched = await maybeOfferPhoneControllerThenPlay(detail, async (launchOpts) => {
           const res = await window.playbound.play(
             ctx.slug,
             { host, port, name: ctx.join?.name || "", mod: ctx.join?.gameMod || undefined },
-            ctx.editionSlug || null
+            ctx.editionSlug || null,
+            launchOpts
           );
           try {
             await window.playbound.clearContext();

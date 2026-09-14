@@ -25,7 +25,7 @@ contextBridge.exposeInMainWorld("playbound", {
   addScannedGames: (slugs) => ipcRenderer.invoke("add-scanned-games", slugs || []),
   addCustomGame: (customTitle) => ipcRenderer.invoke("add-custom-game", customTitle || null),
   dismissPendingInstall: (slug) => ipcRenderer.invoke("dismiss-pending-install", slug),
-  play: (slug, join, editionSlug) => {
+  play: (slug, join, editionSlug, opts) => {
     try {
       const pads = Array.from(navigator.getGamepads?.() || [])
         .filter(Boolean)
@@ -34,7 +34,7 @@ contextBridge.exposeInMainWorld("playbound", {
     } catch {
       /* ignore */
     }
-    return ipcRenderer.invoke("play", slug, join || null, editionSlug || null);
+    return ipcRenderer.invoke("play", slug, join || null, editionSlug || null, opts || null);
   },
   playMod: (slug) => ipcRenderer.invoke("play-mod", slug),
   /**
