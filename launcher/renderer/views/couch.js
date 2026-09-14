@@ -8,6 +8,7 @@
 import { escapeHtml, setStatus, views, api } from "../shared.js";
 import { CADENCE } from "../cadence.js";
 import { ensureHostDisplayStream, stopHostDisplayStream } from "../hostDisplayStream.js";
+import { disableGamepadBridge } from "../gamepadBridge.js";
 
 let wired = false;
 let signalSince = 0;
@@ -49,6 +50,13 @@ export function ensureCouchBackground() {
 /** Start a phone-controller session without painting the Couch page. */
 export async function startCouchSessionQuiet(opts = {}) {
   ensureWired();
+  // Never leave the DualSense→ViGEm mirror running into Connect — it drives
+  // OpenBOR P1 and P2 from the same host stick.
+  try {
+    await disableGamepadBridge();
+  } catch {
+    /* ignore */
+  }
   const existing = await pb().couchState();
   if (existing?.active) {
     lastState = existing;

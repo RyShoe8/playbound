@@ -93,6 +93,25 @@ function p1HasBrokenDualSenseSpecial(buf) {
   return dirsAreJoy && keys[8] === 603 && keys[9] === 102;
 }
 
+function joyPortOfKey(code) {
+  const n = Number(code) | 0;
+  if (n < JOY_LIST_FIRST) return -1;
+  return Math.floor((n - JOY_LIST_FIRST) / JOY_MAX_INPUTS);
+}
+
+/**
+ * True when P1 and P2 movement both sit on the same SDL joystick port —
+ * one physical pad (or a bridge mirror of it) then drives both characters.
+ */
+function playersShareJoyPort(buf) {
+  if (!isOpenBorCfg(buf)) return false;
+  const p1 = readPlayerKeys(buf, 0);
+  const p2 = readPlayerKeys(buf, 1);
+  const port1 = joyPortOfKey(p1[0]);
+  const port2 = joyPortOfKey(p2[0]);
+  return port1 >= 0 && port2 >= 0 && port1 === port2;
+}
+
 function keysForProfile(profile) {
   const family = String(profile?.family || "");
   if (family === "xbox") return XBOX_P1_KEYS;
@@ -109,6 +128,7 @@ function applyOpenBorP1Keys(buf, profile) {
   const family = String(profile.family || "");
   const shouldFix =
     p1StillKeyboard(buf) ||
+    playersShareJoyPort(buf) ||
     (family !== "xbox" && p1HasBrokenDualSenseSpecial(buf));
   if (!shouldFix) return null;
   const p1Keys = keysForProfile(profile);
@@ -135,7 +155,9 @@ module.exports = {
   readPlayerKeys,
   playerKeysOffset,
   shiftJoyKeysToPort,
+  joyPortOfKey,
   p1StillKeyboard,
   p1HasBrokenDualSenseSpecial,
+  playersShareJoyPort,
   applyOpenBorP1Keys,
 };

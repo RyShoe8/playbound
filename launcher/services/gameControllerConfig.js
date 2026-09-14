@@ -30,6 +30,7 @@ const { defaultContext } = require("./saveLocations");
 const { CONTROLLER_MAPPINGS } = require("./openMwConfig");
 const {
   applyOpenBorP1Keys,
+  playersShareJoyPort,
   isOpenBorCfg,
   p1StillKeyboard,
   p1HasBrokenDualSenseSpecial,
@@ -471,7 +472,9 @@ const GAMES = {
     needsConfig(buf) {
       return (
         isOpenBorCfg(buf) &&
-        (p1StillKeyboard(buf) || p1HasBrokenDualSenseSpecial(buf))
+        (p1StillKeyboard(buf) ||
+          playersShareJoyPort(buf) ||
+          p1HasBrokenDualSenseSpecial(buf))
       );
     },
     apply(buf, profile) {
