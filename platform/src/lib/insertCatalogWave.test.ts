@@ -55,6 +55,12 @@ import {
   ALIEN_SWARM_SLUG,
   alienSwarmPatchSource,
 } from "@/lib/data/alienSwarmCatalog";
+import {
+  SUPER_NOVA_STRIKE_SLUG,
+  superNovaStrikeAndroidStoreUrl,
+  superNovaStrikeIosStoreUrl,
+  superNovaStrikePatchSource,
+} from "@/lib/data/superNovaStrikeCatalog";
 import { ASSAULTCUBE_SLUG } from "@/lib/data/assaultCubeSpecs";
 import { mods } from "@/lib/data/mods";
 import { getMultiplayerAdapter } from "@/lib/multiplayer/adapters";
@@ -139,6 +145,7 @@ describe("insert-catalog-wave allowlists", () => {
         "slapshot-rebound",
         "space-station-14",
         "stalker-anomaly",
+        "super-nova-strike",
         "teeworlds",
         "the-dark-mod",
         "the-spike-cross",
@@ -147,6 +154,10 @@ describe("insert-catalog-wave allowlists", () => {
         "tmnt-rescue-palooza",
       ].sort()
     );
+    expect(PATCH_GAME_FIELDS["super-nova-strike"]).toContain("androidStoreUrl");
+    expect(PATCH_GAME_FIELDS["super-nova-strike"]).toContain("iosStoreUrl");
+    expect(PATCH_GAME_FIELDS["super-nova-strike"]).toContain("qualityBar");
+    expect(PATCH_GAME_FIELDS["super-nova-strike"]).toContain("longDescription");
     expect(PATCH_GAME_FIELDS["sky-children-of-the-light"]).toContain("installSteps");
     expect(PATCH_GAME_FIELDS["alien-swarm"]).toContain("longDescription");
     expect(PATCH_GAME_FIELDS["alien-swarm"]).not.toContain("launcherInstall");
@@ -300,6 +311,16 @@ describe("insert-catalog-wave allowlists", () => {
       true
     );
     expect(sevenKingdomsLauncherInstall.registryTitles).toContain("Seven Kingdoms AA");
+
+    expect(SUPER_NOVA_STRIKE_SLUG).toBe("super-nova-strike");
+    expect(superNovaStrikePatchSource.platforms).toEqual(["Android", "iOS"]);
+    expect(superNovaStrikePatchSource.androidStoreUrl).toBe(superNovaStrikeAndroidStoreUrl);
+    expect(superNovaStrikePatchSource.iosStoreUrl).toBe(superNovaStrikeIosStoreUrl);
+    expect(superNovaStrikePatchSource.launcherInstall.enabled).toBe(false);
+    expect(superNovaStrikePatchSource.installSteps.length).toBeGreaterThan(0);
+    expect(superNovaStrikePatchSource.qualityBar.genuinelyFree).toBe(true);
+    expect(superNovaStrikePatchSource.faq.length).toBeGreaterThanOrEqual(4);
+    expect(superNovaStrikePatchSource.developerSlug).toBe("borgmobile");
   });
 
   it("keeps CoP official only; Anomaly is its own game with GAMMA edition; SoC keeps Lost Alpha + True Stalker", () => {
@@ -354,6 +375,7 @@ describe("insert-catalog-wave allowlists", () => {
       TEEWORLDS_SLUG,
       THE_DARK_MOD_SLUG,
       SPIKE_CROSS_SLUG,
+      SUPER_NOVA_STRIKE_SLUG,
       UNKNOWN_HORIZONS_SLUG,
     ]);
     for (const slug of Object.keys(PATCH_GAME_FIELDS)) {
@@ -421,6 +443,7 @@ describe("insert-catalog-wave allowlists", () => {
     expect(src).toMatch(/UNKNOWN_HORIZONS_SLUG/);
     expect(src).toMatch(/SPIKE_CROSS_SLUG/);
     expect(src).toMatch(/ALIEN_SWARM_SLUG/);
+    expect(src).toMatch(/SUPER_NOVA_STRIKE_SLUG/);
     expect(src).toMatch(/space-station-14/);
     expect(src).toContain('from "./insert-catalog-wave.allowlist"');
   });

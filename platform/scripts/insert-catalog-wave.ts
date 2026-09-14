@@ -130,6 +130,9 @@ async function main() {
   const { ALIEN_SWARM_SLUG, alienSwarmPatchSource } = await import(
     "../src/lib/data/alienSwarmCatalog"
   );
+  const { SUPER_NOVA_STRIKE_SLUG, superNovaStrikePatchSource } = await import(
+    "../src/lib/data/superNovaStrikeCatalog"
+  );
 
   await dbConnect();
 
@@ -284,6 +287,8 @@ async function main() {
       source = { ...spikeCrossPatchSource };
     } else if (slug === ALIEN_SWARM_SLUG) {
       source = { ...alienSwarmPatchSource };
+    } else if (slug === SUPER_NOVA_STRIKE_SLUG) {
+      source = { ...superNovaStrikePatchSource };
     } else if (slug === SEVEN_KINGDOMS_SLUG) {
       source = { launcherInstall: sevenKingdomsLauncherInstall };
     } else if (slug === "space-station-14") {

@@ -86,6 +86,104 @@ function preferSteamLaunch({ steamExePath, gesourceDir, connectArgs = [] }) {
   };
 }
 
+function isGoldenEyeInstaller(filePath, slug) {
+  if (slug === GES_SLUG) return true;
+  const base = path.basename(filePath || "").toLowerCase();
+  return (
+    base.startsWith("goldeneye") ||
+    base.startsWith("gesource") ||
+    base.includes("goldeneye_source")
+  );
+}
+
+/**
+ * Unpacks GoldenEye: Source mod files into Steam's sourcemods folder.
+ *
+ * GoldenEye_Source_v5.0.6_full.exe is a 7z SFX containing gesource.7z and gesource_setup.exe.
+ * The legacy NSIS setup checks for an active Steam process and fails with a TaskDialog
+ * if Steam is not already running.
+ *
+ * This unpacks gesource.7z directly into steamapps/sourcemods/gesource without running
+ * the interactive NSIS wizard or requiring Steam to already be running.
+ */
+async function unpackGoldenEyeSource(installerPath, sourcemodsDir, opts = {}) {
+  const childProcess = opts.childProcess || require("child_process");
+  const spawnFn = opts.spawn || childProcess.spawn;
+  const fspImpl = opts.fsp || require("fs/promises");
+  const fsImpl = opts.fs || fs;
+  const osImpl = opts.os || require("os");
+  const bin = opts.sevenZipBin;
+  const onProgress = opts.onProgress || (() => {});
+
+  if (!bin || !fsImpl.existsSync(bin)) {
+    throw new Error("7-Zip binary was not found. Please reinstall PlayBound.");
+  }
+  if (!fsImpl.existsSync(installerPath)) {
+    throw new Error(`GoldenEye: Source installer not found at ${installerPath}`);
+  }
+
+  await fspImpl.mkdir(sourcemodsDir, { recursive: true });
+  const targetGameInfo = path.join(sourcemodsDir, MOD_FOLDER, "gameinfo.txt");
+  if (fsImpl.existsSync(targetGameInfo)) {
+    return { ok: true, targetGameInfo, skipped: true };
+  }
+
+  const isBare7z = /\.7z$/i.test(installerPath);
+  const tempDir = path.join(osImpl.tmpdir(), `gesource-unpack-${Date.now()}`);
+
+  try {
+    let archiveToUnpack = installerPath;
+    if (!isBare7z) {
+      await fspImpl.mkdir(tempDir, { recursive: true });
+      onProgress("Extracting GoldenEye: Source archive…");
+      await new Promise((resolve, reject) => {
+        const child = spawnFn(
+          bin,
+          ["e", String(installerPath), "gesource.7z", `-o${tempDir}`, "-y"],
+          { windowsHide: true }
+        );
+        child.on("error", reject);
+        child.on("exit", (code) => {
+          if (code === 0 || code == null) resolve();
+          else reject(new Error(`Failed to extract gesource.7z from installer (exit code ${code})`));
+        });
+      });
+      archiveToUnpack = path.join(tempDir, "gesource.7z");
+      if (!fsImpl.existsSync(archiveToUnpack)) {
+        throw new Error("gesource.7z was not found inside the GoldenEye: Source installer.");
+      }
+    }
+
+    onProgress("Unpacking GoldenEye: Source into Steam sourcemods…");
+    await new Promise((resolve, reject) => {
+      const child = spawnFn(
+        bin,
+        ["x", String(archiveToUnpack), `-o${sourcemodsDir}`, "-y"],
+        { windowsHide: true }
+      );
+      child.on("error", reject);
+      child.on("exit", (code) => {
+        if (code === 0 || code == null) resolve();
+        else reject(new Error(`Failed to unpack gesource into sourcemods (exit code ${code})`));
+      });
+    });
+
+    if (!fsImpl.existsSync(targetGameInfo)) {
+      throw new Error("GoldenEye: Source extraction completed, but gameinfo.txt was not found.");
+    }
+
+    return { ok: true, targetGameInfo };
+  } finally {
+    try {
+      if (fsImpl.existsSync(tempDir)) {
+        await fspImpl.rm(tempDir, { recursive: true, force: true });
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
 module.exports = {
   GES_SLUG,
   SDK_APP_ID,
@@ -93,4 +191,6 @@ module.exports = {
   findGesourceDir,
   preflightGoldeneye,
   preferSteamLaunch,
+  isGoldenEyeInstaller,
+  unpackGoldenEyeSource,
 };

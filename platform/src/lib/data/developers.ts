@@ -2,6 +2,17 @@ import type { Developer } from "./types";
 
 export const developers: Developer[] = [
   {
+    slug: "borgmobile",
+    name: "BorgMobile",
+    tagline: "Modern arcade action and retro space shooters for mobile devices.",
+    about:
+      "BorgMobile is the mobile game development division of TSYBORG LLC, crafting fast-paced retro arcade shooters, responsive touch controls, and cosmic action games.",
+    founded: 2023,
+    location: "Bronx, New York, United States",
+    website: "https://tsyborg.com/borgmobile/",
+    artHue: 205,
+  },
+  {
     slug: "firefly-studios",
     name: "Firefly Studios",
     tagline: "Castles, economies, and the people caught between them.",

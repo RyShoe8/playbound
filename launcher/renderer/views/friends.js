@@ -4054,27 +4054,40 @@ async function launchPartyGame(party) {
         if (party.couch?.enabled && isLeader) {
           // The game process is running now — capture its application window and stream to peers.
           // Retry: OpenBOR / fullscreen often aren't capturable for a few seconds after launch.
+          // Guests may open game view after the first minutes — keep trying while couch is live.
           void (async () => {
-            const delays = [0, 1500, 3500, 7000, 12000, 20000];
+            const delays = [0, 1500, 3500, 7000, 12000, 20000, 35000, 55000, 90000];
             let captured = false;
+            let pushed = false;
             for (const wait of delays) {
               if (wait) await new Promise((r) => setTimeout(r, wait));
+              try {
+                const couch = await window.playbound.couchState?.();
+                if (!couch?.active) return;
+              } catch {
+                return;
+              }
               // Retries force a new capture in case the first grab was pre-game / black.
               const stream = await ensureHostDisplayStream(wait > 0);
               if (!stream) continue;
               captured = true;
               setStatus("Sharing game view for online multiplayer…");
               const ok = await pushHostDisplayToPeers();
-              if (ok) return;
+              if (ok) {
+                pushed = true;
+                setStatus("Game view shared with connected guests.");
+                return;
+              }
+              setStatus("Game view ready — waiting for guests to open Join Game…");
             }
             if (!captured) {
               setStatus(
                 "Online pads ready — could not capture the display. Keep the game on the main monitor.",
                 true
               );
-            } else {
+            } else if (!pushed) {
               setStatus(
-                "Pads connected but game view did not reach guests — try Join Game again on their side.",
+                "Pads ready — open Join Game on the guest PC so game view can connect.",
                 true
               );
             }

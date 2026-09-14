@@ -239,7 +239,8 @@ async function attachDisplayTracks(pc) {
     const display = await ensureHostDisplayStream();
     if (!display) return false;
     const track = display.getVideoTracks()[0];
-    if (!track || track.readyState !== "live") return false;
+    // Only skip ended tracks — muted/live-but-pending still renegotiate.
+    if (!track || track.readyState === "ended") return false;
 
     const transceivers = pc.getTransceivers ? pc.getTransceivers() : [];
     let videoTransceiver = transceivers.find(
@@ -375,6 +376,7 @@ async function answerOffer(controllerId, remoteSdp, session) {
         controllerId,
         transport: "webrtc",
       });
+      void pushHostDisplayToPeers();
     };
     dc.onmessage = (e) => {
       if (typeof e.data !== "string") return;
@@ -441,6 +443,14 @@ async function answerOffer(controllerId, remoteSdp, session) {
       to: controllerId,
     }),
   });
+
+  // Guest may have offered before capture was ready — push again shortly.
+  window.setTimeout(() => {
+    void pushHostDisplayToPeers();
+  }, 800);
+  window.setTimeout(() => {
+    void pushHostDisplayToPeers();
+  }, 3000);
 }
 
 function paint(state) {

@@ -57,6 +57,10 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     // hl2 is Source SDK Base 2007 — gesource_run is only a handoff stub.
     exeHint: "hl2|gesource_run",
     knownExePaths: [
+      "%PROGRAMFILES(X86)%\\Steam\\steamapps\\sourcemods\\gesource\\gameinfo.txt",
+      "%PROGRAMFILES%\\Steam\\steamapps\\sourcemods\\gesource\\gameinfo.txt",
+      "%PROGRAMFILES(X86)%\\Steam\\steamapps\\common\\Source SDK Base 2007\\hl2.exe",
+      "%PROGRAMFILES%\\Steam\\steamapps\\common\\Source SDK Base 2007\\hl2.exe",
       "%PROGRAMFILES(X86)%\\Steam\\steamapps\\sourcemods\\gesource\\gesource_run.exe",
       "%PROGRAMFILES(X86)%\\Steam\\steamapps\\sourcemods\\gesource_run.exe",
       "%PROGRAMFILES%\\Steam\\steamapps\\sourcemods\\gesource\\gesource_run.exe",
