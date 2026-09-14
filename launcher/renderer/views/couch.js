@@ -233,7 +233,8 @@ async function attachDisplayTracks(pc) {
  */
 export async function pushHostDisplayToPeers() {
   const display = await ensureHostDisplayStream();
-  if (!display || peers.size === 0) return Boolean(display);
+  if (!display || peers.size === 0) return false;
+  let sentAny = false;
   for (const [controllerId, pc] of peers.entries()) {
     try {
       const attached = await attachDisplayTracks(pc);
@@ -249,11 +250,12 @@ export async function pushHostDisplayToPeers() {
           to: controllerId,
         }),
       });
+      sentAny = true;
     } catch (err) {
       console.warn("[couch] renegotiate display failed:", err?.message || err);
     }
   }
-  return true;
+  return sentAny;
 }
 
 async function answerOffer(controllerId, remoteSdp, session) {
@@ -266,9 +268,14 @@ async function answerOffer(controllerId, remoteSdp, session) {
     }
   }
 
-  const iceServers = session?.snapshot?.hostEndpoints?.iceServers || [
-    { urls: "stun:stun.l.google.com:19302" },
-  ];
+  const hostIce = session?.snapshot?.hostEndpoints?.iceServers;
+  const iceServers =
+    Array.isArray(hostIce) && hostIce.length > 0
+      ? hostIce
+      : [
+          { urls: "stun:stun.l.google.com:19302" },
+          { urls: "stun:stun1.l.google.com:19302" },
+        ];
   pc = new RTCPeerConnection({ iceServers });
   peers.set(controllerId, pc);
 

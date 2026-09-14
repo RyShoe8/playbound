@@ -253,7 +253,10 @@ export function ControllerClient({
           hostLabel: data.hostLabel || "PlayBound",
           wsUrls: data.wsUrls || [],
           wsToken: data.wsToken,
-          iceServers: data.iceServers || [{ urls: "stun:stun.l.google.com:19302" }],
+          iceServers:
+            data.iceServers && data.iceServers.length > 0
+              ? data.iceServers
+              : [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" }],
         };
         setJoin(next);
         saveStored(code, next);
@@ -292,6 +295,10 @@ export function ControllerClient({
             sessionToken: data.sessionToken,
             wsUrls: data.wsUrls || prev.wsUrls,
             wsToken: data.wsToken ?? prev.wsToken,
+            iceServers:
+              data.iceServers && data.iceServers.length > 0
+                ? data.iceServers
+                : prev.iceServers,
           };
           saveStored(code, next);
           return next;
@@ -510,9 +517,18 @@ export function ControllerClient({
 
     async function startWsFallback() {
       if (ws || closed) return;
-      const urls = session.wsUrls || [];
+      const isHttps = typeof window !== "undefined" && window.location.protocol === "https:";
+      const candidateUrls = session.wsUrls || [];
+      const urls = candidateUrls.filter((u) => {
+        if (!isHttps) return true;
+        // On HTTPS pages, connecting to plain ws:// on remote hosts triggers mixed-content warnings ("Not secure")
+        // and is blocked by modern browsers. Only allow wss:// or loopback ws://.
+        if (u.startsWith("wss://")) return true;
+        if (u.startsWith("ws://127.0.0.1") || u.startsWith("ws://localhost")) return true;
+        return false;
+      });
       if (!urls.length || !session.wsToken) {
-        setTransport("offline");
+        if (!usingWebrtc) setTransport("offline");
         return;
       }
       let idx = 0;
