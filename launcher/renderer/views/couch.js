@@ -294,6 +294,9 @@ async function answerOffer(controllerId, remoteSdp, session) {
     }
   }
 
+  // Prefer platform-published ICE (STUN ± TURN from sessionIceServers). Fallback
+  // public STUN list must stay aligned with platform/src/lib/realtime/iceServers.ts
+  // defaultStunUrls() (non-VPS entries) — do not shrink this to Google-only.
   const hostIce = session?.snapshot?.hostEndpoints?.iceServers;
   const iceServers =
     Array.isArray(hostIce) && hostIce.length > 0
