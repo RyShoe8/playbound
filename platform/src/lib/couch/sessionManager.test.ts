@@ -94,7 +94,7 @@ describe("couch sessions", () => {
   it("drops stale open sessions on load", async () => {
     const session = await createCouchSession({});
     expect(await getCouchSession(session.sessionId)).toBeTruthy();
-    session.lastHeartbeat = Date.now() - 120_000;
+    session.lastHeartbeat = Date.now() - 6 * 60 * 1000;
     expect(await getCouchSession(session.sessionId)).toBeNull();
     expect(await getCouchSessionByCode(session.joinCode)).toBeNull();
   });

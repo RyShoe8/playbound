@@ -28,8 +28,12 @@ const memoryByCode = new Map<string, string>();
 
 const SESSION_TTL_MS = 4 * 60 * 60 * 1000;
 const MESSAGE_TTL_MS = 2 * 60 * 1000;
-/** Host PATCH/GET heartbeats every ~20s; treat older as abandoned. */
-export const COUCH_HOST_STALE_MS = 90_000;
+/** Admin streaming table: host heartbeat within this window counts as live. */
+export const COUCH_ADMIN_LIVE_MS = 90_000;
+/** Open session ends when the host stops heartbeating this long (launcher quit). */
+export const COUCH_SESSION_STALE_MS = 5 * 60 * 1000;
+/** @deprecated Use COUCH_SESSION_STALE_MS or COUCH_ADMIN_LIVE_MS */
+export const COUCH_HOST_STALE_MS = COUCH_SESSION_STALE_MS;
 const CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
 
 /** Force memory store (unit tests). */
@@ -97,7 +101,7 @@ export function isCouchHostLive(
   session: Pick<CouchSession, "status" | "lastHeartbeat">
 ): boolean {
   if (session.status !== "open") return false;
-  return Date.now() - Number(session.lastHeartbeat || 0) <= COUCH_HOST_STALE_MS;
+  return Date.now() - Number(session.lastHeartbeat || 0) <= COUCH_SESSION_STALE_MS;
 }
 
 async function dropIfStale(session: CouchSession | null): Promise<CouchSession | null> {
@@ -134,7 +138,7 @@ async function loadByCode(code: string): Promise<CouchSession | null> {
 
 /** Remove open Couch rows whose host stopped heartbeating (launcher quit without DELETE). */
 export async function purgeStaleCouchSessions(): Promise<number> {
-  const cutoff = Date.now() - COUCH_HOST_STALE_MS;
+  const cutoff = Date.now() - COUCH_SESSION_STALE_MS;
   if (await useMongo()) {
     const Model = await getModel();
     const res = await Model.deleteMany({
@@ -279,7 +283,7 @@ export async function joinCouchSession(
     controllerId: crypto.randomUUID(),
     controllerToken: randomToken(16),
     sessionToken: null,
-    label: (params.label || "Phone").slice(0, 64),
+    label: (params.label || "Controller").slice(0, 64),
     profile: (params.profile || "keyboard-mouse").slice(0, 40),
     status: "pending",
     playerSlot: null,
@@ -375,6 +379,17 @@ export async function setHostEndpoints(
 
 export async function heartbeatHost(session: CouchSession): Promise<void> {
   session.lastHeartbeat = Date.now();
+  await saveSession(session);
+}
+
+/** Keep the session alive while a guest is polling/signaling (host may be mid-launch). */
+export async function touchCouchSessionActivity(
+  session: CouchSession,
+  controller?: CouchController | null
+): Promise<void> {
+  const now = Date.now();
+  session.lastHeartbeat = now;
+  if (controller) controller.lastSeen = now;
   await saveSession(session);
 }
 

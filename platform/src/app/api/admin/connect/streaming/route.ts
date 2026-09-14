@@ -3,7 +3,7 @@ import { requireAdminSession } from "@/lib/requireAdmin";
 import { getConnectSettings } from "@/lib/connect/connectSettings";
 import { ensureCouchStore } from "@/lib/couch/ensureStore";
 import {
-  COUCH_HOST_STALE_MS,
+  COUCH_ADMIN_LIVE_MS,
   purgeStaleCouchSessions,
 } from "@/lib/couch/sessionManager";
 import CouchSessionModel from "@/lib/models/CouchSession";
@@ -28,7 +28,7 @@ export async function GET() {
     await ensureCouchStore();
     await purgeStaleCouchSessions();
     const now = Date.now();
-    const heartbeatCutoff = now - COUCH_HOST_STALE_MS;
+    const heartbeatCutoff = now - COUCH_ADMIN_LIVE_MS;
     const rows = await CouchSessionModel.find({
       status: "open",
       lastHeartbeat: { $gte: heartbeatCutoff },
