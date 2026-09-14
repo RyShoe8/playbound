@@ -12289,13 +12289,22 @@ ipcMain.handle("open-external", async (_event, url, opts) => {
   }
 });
 
-/** Dedicated in-app window for Couch game view (HTTPS). Avoids Chrome PNA + openExternal. */
+/** Dedicated in-app window for Couch game view (HTTPS). */
 let couchGameViewWin = null;
 ipcMain.handle("open-couch-game-view", async (_event, rawUrl) => {
   try {
-    const url = assertOpenExternalUrl(String(rawUrl || ""));
+    let url = assertOpenExternalUrl(String(rawUrl || ""));
     if (!/^https:\/\//i.test(url)) {
       return { ok: false, error: "Game view must be https." };
+    }
+    // Mark launcher origin so the page can use LAN ws:// fallback (mixed content
+    // is otherwise blocked on https://playbound.club).
+    try {
+      const u = new URL(url);
+      u.searchParams.set("pbLauncher", "1");
+      url = u.toString();
+    } catch {
+      /* keep url */
     }
     const { width, height } = screen.getPrimaryDisplay().workAreaSize;
     const w = Math.max(1024, Math.floor(width * 0.92));
@@ -12320,6 +12329,9 @@ ipcMain.handle("open-couch-game-view", async (_event, rawUrl) => {
         nodeIntegration: false,
         sandbox: true,
         backgroundThrottling: false,
+        // Same-LAN Couch: allow ws:// to the host and private ICE without Chrome PNA.
+        // Only this window — not the main launcher UI.
+        webSecurity: false,
       },
     });
     couchGameViewWin.on("closed", () => {
@@ -16029,56 +16041,73 @@ if (gotLock) {
 
     /**
      * Find the application window for the actively running game process.
+     * Requires a confident title/exe match — never grab a random window on
+     * another monitor (that shows a yellow share border on the wrong app).
      */
     async function findGameWindowSource(slug, retries = 5, delayMs = 500) {
-      const entry = slug ? catalogEntry(slug) : null;
-      const launch = slug ? activeLaunches.get(slug) : null;
+      if (!slug) return null;
+
+      const entry = catalogEntry(slug);
+      const launch = activeLaunches.get(slug);
 
       const titleTokens = (entry?.title || "")
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, " ")
         .split(" ")
         .filter((w) => w.length > 2);
-      const slugTokens = (slug || "")
+      const slugTokens = String(slug)
         .toLowerCase()
         .split("-")
         .filter((w) => w.length > 2);
       const imageTokens = (launch?.imageNames || []).map((img) =>
-        img.toLowerCase().replace(/\.exe$/i, "").replace(/[^a-z0-9]+/g, " ")
+        String(img)
+          .toLowerCase()
+          .replace(/\.exe$/i, "")
+          .replace(/[^a-z0-9]+/g, "")
       );
-      if (slug && /tmnt/i.test(slug)) {
+      if (/tmnt/i.test(slug)) {
         titleTokens.push("openbor", "rescue", "palooza", "tmnt", "ninja", "turtles");
       }
+
+      const excludeName = (name) =>
+        /^playbound/i.test(name) ||
+        /game view/i.test(name) ||
+        /devtools|chrome|msedge|firefox|discord|slack|spotify|cursor|visual studio|code - |notepad|explorer|program manager|windows input|task switching|taskbar|settings|powershell|cmd\.exe|terminal/i.test(
+          name
+        );
+
+      /** Minimum score so a weak token hit cannot steal capture from another app. */
+      const MIN_SCORE = 8;
 
       for (let attempt = 0; attempt < retries; attempt++) {
         try {
           const sources = await desktopCapturer.getSources({
-            types: ["window", "screen"],
+            types: ["window"],
             thumbnailSize: { width: 0, height: 0 },
           });
-
-          const windowSources = sources.filter((s) => s.id && s.id.startsWith("window:"));
 
           let bestMatch = null;
           let bestScore = 0;
 
-          for (const w of windowSources) {
+          for (const w of sources) {
+            if (!w.id || !w.id.startsWith("window:")) continue;
             const name = (w.name || "").trim().toLowerCase();
-            if (!name) continue;
-            // Exclude PlayBound itself, DevTools, and common OS system windows
-            if (/^playbound/i.test(name) || /devtools/i.test(name)) continue;
-            if (/program manager|windows input|task switching|taskbar|settings|visual studio code/i.test(name)) continue;
+            if (!name || excludeName(name)) continue;
 
             let score = 0;
-            if (entry?.title && name.includes(entry.title.toLowerCase())) score += 10;
+            const title = (entry?.title || "").toLowerCase();
+            if (title && name.includes(title)) score += 20;
             for (const t of titleTokens) {
-              if (name.includes(t)) score += 3;
+              if (name.includes(t)) score += 4;
             }
             for (const s of slugTokens) {
-              if (name.includes(s)) score += 2;
+              if (name.includes(s)) score += 3;
             }
+            const nameCompact = name.replace(/[^a-z0-9]+/g, "");
             for (const img of imageTokens) {
-              if (img && name.includes(img)) score += 5;
+              if (img.length >= 3 && (name.includes(img) || nameCompact.includes(img))) {
+                score += 15;
+              }
             }
 
             if (score > bestScore) {
@@ -16087,8 +16116,26 @@ if (gotLock) {
             }
           }
 
-          if (bestMatch && bestScore > 0) {
+          if (bestMatch && bestScore >= MIN_SCORE) {
+            console.log(
+              "[couch] game window match",
+              bestMatch.name,
+              "score=",
+              bestScore,
+              "slug=",
+              slug
+            );
             return bestMatch;
+          }
+          if (bestMatch) {
+            console.log(
+              "[couch] weak window match ignored",
+              bestMatch.name,
+              "score=",
+              bestScore,
+              "(need",
+              MIN_SCORE + ")"
+            );
           }
         } catch {
           /* retry */
@@ -16099,36 +16146,18 @@ if (gotLock) {
         }
       }
 
-      try {
-        // Fallback 1: any non-PlayBound top window
-        const allSources = await desktopCapturer.getSources({
-          types: ["window", "screen"],
-          thumbnailSize: { width: 0, height: 0 },
-        });
-        const anyAppWindow = allSources.find((w) => {
-          if (!w.id || !w.id.startsWith("window:")) return false;
-          const n = (w.name || "").trim().toLowerCase();
-          return n && !/^playbound/i.test(n) && !/program manager|taskbar|settings/i.test(n);
-        });
-        if (anyAppWindow) return anyAppWindow;
-
-        // Fallback: most-active screen (multi-monitor)
-        return findBestScreenSource(allSources);
-      } catch {
-        return null;
-      }
+      return null;
     }
 
     /*
-     * Connect streaming: prefer the matched game window (correct on multi-monitor
-     * when the title is windowed/borderless). Fall back to the screen that looks
-     * most active — not always the primary display.
+     * Connect streaming: confident game-window match only. Otherwise capture the
+     * most active screen — never "first random window" (wrong yellow border).
      */
     try {
       session.defaultSession.setDisplayMediaRequestHandler(async (_request, callback) => {
         try {
           const slug = playingGameSlug();
-          const windowSource = await findGameWindowSource(slug, 4, 400);
+          const windowSource = slug ? await findGameWindowSource(slug, 4, 400) : null;
           if (windowSource) {
             console.log("[couch] display capture → window", windowSource.name || windowSource.id);
             callback({ video: windowSource });

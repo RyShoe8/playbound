@@ -16,6 +16,17 @@ export function isPublicHttpsOrigin(): boolean {
   return host !== "localhost" && host !== "127.0.0.1";
 }
 
+/** PlayBound game-view BrowserWindow (or Electron) — may use LAN ws:// on HTTPS. */
+export function isPlayBoundLauncherGameView(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    if (new URLSearchParams(window.location.search).get("pbLauncher") === "1") return true;
+  } catch {
+    /* ignore */
+  }
+  return /Electron/i.test(navigator.userAgent || "");
+}
+
 export async function addRemoteIceCandidate(
   pc: RTCPeerConnection,
   candidate: RTCIceCandidateInit | null | undefined,
