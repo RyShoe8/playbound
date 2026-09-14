@@ -216,10 +216,36 @@ async function attachDisplayTracks(pc) {
       const already = senders.some((s) => s.track && s.track.id === track.id);
       if (!already) pc.addTrack(track, display);
     }
+    applyVideoEncodePrefs(pc);
     return true;
   } catch (err) {
     console.warn("[couch] could not attach display track:", err?.message || err);
     return false;
+  }
+}
+
+/**
+ * Prefer smooth game frames over still-image quality when the pipe is tight.
+ * Caps bitrate so remote TURN guests do not stall on unbounded 1080p.
+ */
+function applyVideoEncodePrefs(pc) {
+  if (!pc?.getSenders) return;
+  for (const sender of pc.getSenders()) {
+    if (!sender.track || sender.track.kind !== "video") continue;
+    try {
+      const params = sender.getParameters();
+      if (!params.encodings || params.encodings.length === 0) {
+        params.encodings = [{}];
+      }
+      for (const enc of params.encodings) {
+        enc.maxBitrate = 6_000_000;
+        enc.maxFramerate = 60;
+      }
+      params.degradationPreference = "maintain-framerate";
+      void sender.setParameters(params).catch(() => {});
+    } catch {
+      /* setParameters is best-effort across Chromium builds */
+    }
   }
 }
 

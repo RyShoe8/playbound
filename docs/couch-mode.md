@@ -51,6 +51,8 @@ No separate driver download. PlayBound bundles and installs what it needs.
 
 Sessions are stored in Mongo (`couch_sessions`) so Vercel serverless instances share state. Input and video packets never go through the cloud — only signaling and session metadata. TURN is a rare NAT fallback, not the baseline path.
 
+**Hot path (do not put pads through Mongo):** guest pad → WebRTC DataChannel → Electron renderer → fire-and-forget IPC → ViGEm. Guest video is host `getDisplayMedia` → WebRTC. Signaling poll cadence is for join/ICE only, not steady-state input.
+
 Protocol details: [couch-input-protocol.md](./couch-input-protocol.md).
 
 ## Bundled controller stack (Windows)

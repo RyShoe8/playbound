@@ -240,7 +240,18 @@ contextBridge.exposeInMainWorld("playbound", {
   couchControllerAction: (action, controllerId, playerSlot) =>
     ipcRenderer.invoke("couch-controller-action", action, controllerId, playerSlot),
   couchProbeDriver: () => ipcRenderer.invoke("couch-probe-driver"),
-  couchRendererMessage: (payload) => ipcRenderer.invoke("couch-renderer-message", payload || {}),
+  /*
+   * Input packets are fire-and-forget: invoke() would round-trip main for every
+   * 60Hz pad frame. Control/transport still use invoke when a reply matters.
+   */
+  couchRendererMessage: (payload) => {
+    const body = payload || {};
+    if (body.type === "input") {
+      ipcRenderer.send("couch-renderer-input", body);
+      return Promise.resolve({ ok: true });
+    }
+    return ipcRenderer.invoke("couch-renderer-message", body);
+  },
   couchSignalPost: (body) => ipcRenderer.invoke("couch-signal-post", body || {}),
   couchSignalPoll: (since) => ipcRenderer.invoke("couch-signal-poll", since || 0),
   onCouchState: (cb) => ipcRenderer.on("couch-state", (_event, data) => cb(data || {})),
