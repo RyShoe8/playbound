@@ -72,7 +72,7 @@ export function emptyEditionDraft(gameSlug: string): EditionDraft {
     links: { website: "", discord: "", wiki: "", github: "", forum: "" },
     installMethod: "manual",
     installConfig: {
-      manual: { steps: [{ platform: "all", text: "", command: null }] },
+      manual: { steps: [] },
     },
     requirements: { min: "", recommended: "", notes: "" },
     hardwareRequirements: null,

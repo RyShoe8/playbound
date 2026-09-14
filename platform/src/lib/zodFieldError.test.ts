@@ -162,4 +162,31 @@ describe("edition artwork paths", () => {
       errorFor(editionPayloadSchema, { ...base, links: { website: "/somewhere" } })
     ).toContain("links.website");
   });
+
+  it("filters out empty manual steps without throwing min(1) validation error", () => {
+    const result = editionPayloadSchema.safeParse({
+      ...base,
+      installMethod: "playbound_installer",
+      installConfig: {
+        playbound_installer: { kind: "direct-zip" },
+        manual: { steps: [{ platform: "all", text: "   ", command: null }] },
+      },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.installConfig.manual?.steps).toEqual([]);
+    }
+  });
+
+  it("reports a clear message when manual install has no non-empty steps", () => {
+    const err = errorFor(editionPayloadSchema, {
+      ...base,
+      installMethod: "manual",
+      installConfig: {
+        manual: { steps: [{ platform: "all", text: "", command: null }] },
+      },
+    });
+    expect(err).toContain("Manual install needs at least one instruction step.");
+    expect(err).not.toContain("Too small");
+  });
 });

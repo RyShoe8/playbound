@@ -144,7 +144,7 @@ function paintLibraryList(list, { installed, installedMods, modTitles, catalog, 
       approxSize: catEntry?.approxSize || "",
       testing: Boolean(catEntry?.testing || catEntry?.status === "testing"),
     };
-    cards.push(buildLibraryGameBlock(cloudGame, [], modTitles, { ownedElsewhere: true }));
+    cards.push(buildLibraryGameBlock(cloudGame, [], modTitles, { ownedElsewhere: true, catalogEntry: catEntry }));
   }
 
   const orphanMods = installedMods.filter(
@@ -870,6 +870,15 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
     };
 
     if (allEditions.length > 1) {
+      const partyBtn = buildStartPartyButton(game, opts);
+      if (partyBtn) {
+        const group = document.createElement("div");
+        group.className = "library-action-group";
+        group.appendChild(partyBtn);
+        actions.appendChild(group);
+        head.appendChild(actions);
+      }
+
       const editionsPanel = document.createElement("div");
       editionsPanel.className = "library-card-extra library-card-editions";
 
@@ -1018,6 +1027,9 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
         });
         group.appendChild(play);
 
+        const partyBtn = buildStartPartyButton(game, opts);
+        if (partyBtn) group.appendChild(partyBtn);
+
         const joinBtn = buildJoinMultiplayerButton(game, ed, opts);
         if (joinBtn) group.appendChild(joinBtn);
 
@@ -1073,6 +1085,9 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
           }
         });
         group.appendChild(install);
+
+        const partyBtn = buildStartPartyButton(game, opts);
+        if (partyBtn) group.appendChild(partyBtn);
       }
       actions.appendChild(group);
       head.appendChild(actions);
@@ -1541,6 +1556,108 @@ function buildRunAsAdminMenuItem(game) {
       }
     },
   };
+}
+
+const MULTIPLAYER_PATTERNS = [
+  /multi[-\s]?player/i,
+  /\bco[-\s]?op/i,
+  /\bmmo/i,
+  /\bpvp/i,
+  /hot[-\s]?seat/i,
+  /\blan\b/i,
+  /split[-\s]?screen/i,
+  /\bteam play/i,
+  /cross[-\s]?play/i,
+  /dedicated server/i,
+  /deathmatch|battle royale/i,
+];
+
+function gameSupportsParty(game, opts = {}) {
+  const slug = game?.slug;
+  if (!slug) return false;
+  const cat = opts?.catalogEntry;
+
+  let isMp = false;
+  if (typeof game?.isMultiplayer === "boolean") isMp = game.isMultiplayer;
+  else if (typeof game?.multiplayer === "boolean") isMp = game.multiplayer;
+  else if (typeof cat?.isMultiplayer === "boolean") isMp = cat.isMultiplayer;
+  else if (typeof cat?.multiplayer === "boolean") isMp = cat.multiplayer;
+  else if (Boolean(game?.hasServerBrowser || cat?.hasServerBrowser)) isMp = true;
+  else {
+    const feat = [...(game?.features || []), ...(cat?.features || [])];
+    const tags = [...(game?.tags || []), ...(cat?.tags || [])];
+    const haystack = [...feat, ...tags].join(" | ");
+    isMp = MULTIPLAYER_PATTERNS.some((p) => p.test(haystack));
+  }
+
+  if (!isMp) return false;
+
+  const kind = cat?.kind || game?.kind;
+  const url = cat?.url || game?.url;
+  if (kind === "external" && !(typeof url === "string" && url.startsWith("steam://"))) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Start or view a party for a multiplayer game from the library card.
+ */
+function buildStartPartyButton(game, opts = {}) {
+  if (!gameSupportsParty(game, opts)) return null;
+
+  const inParty = Boolean(state._activeParty && state._activeParty.status !== "ended");
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "btn-secondary btn-sm btn-lib-party";
+  btn.textContent = inParty ? "View Party" : "Start Party";
+  btn.title = inParty
+    ? "You're already in a party — open the party screen"
+    : `Start a party for ${game?.title || game?.slug}`;
+
+  btn.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    if (Boolean(state._activeParty && state._activeParty.status !== "ended")) {
+      api.navigateTo("friends");
+      return;
+    }
+
+    if (!state.accountState?.connected) {
+      setStatus("Sign in to PlayBound to start a party with friends.");
+      api.navigateTo("friends");
+      return;
+    }
+
+    if (btn.disabled) return;
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = "Starting…";
+    try {
+      const res = await window.playbound.createParty?.({
+        gameSlug: game.slug,
+        visibility: "friends",
+        maxSize: 8,
+      });
+      if (res?.error || !res?.party) throw new Error(res?.error || "Couldn't create party.");
+      setStatus(`Party created for ${game.title || game.slug}`);
+      if (res.needsDiscordLink) {
+        window.playbound.linkDiscord?.();
+      } else if (res.inPartyVoice || res.moved) {
+        // Already placed in voice channel
+      } else if (res.inviteUrl || res.party?.discord?.inviteUrl) {
+        window.playbound.openExternal(res.inviteUrl || res.party.discord.inviteUrl);
+      }
+      api.navigateTo("friends");
+    } catch (err) {
+      setStatus(err?.message || String(err), true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  });
+
+  return btn;
 }
 
 /**

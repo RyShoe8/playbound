@@ -110,7 +110,25 @@ const installConfigSchema = z
     external_installer: z
       .object({ url: optionalUrl, instructions: z.string().trim().max(1000).optional() })
       .optional(),
-    manual: z.object({ steps: z.array(installStepSchema).max(30).optional() }).optional(),
+    manual: z
+      .object({
+        steps: z
+          .preprocess(
+            (val) =>
+              Array.isArray(val)
+                ? val.filter(
+                    (s: unknown) =>
+                      s &&
+                      typeof s === "object" &&
+                      "text" in s &&
+                      typeof (s as { text: unknown }).text === "string" &&
+                      (s as { text: string }).text.trim().length > 0
+                  )
+                : val,
+            z.array(installStepSchema).max(30).optional()
+          ),
+      })
+      .optional(),
     browser: z.object({ playUrl: optionalUrl }).optional(),
     mobile_store: z
       .object({ androidUrl: optionalUrl, iosUrl: optionalUrl })
