@@ -82,6 +82,31 @@ test("rewrites DualSense template that left special on keyboard F", () => {
   assert.equal(next.readInt32LE(P1_KEYS_OFFSET + 11 * 4), 614, "screenshot btn14");
 });
 
+test("rewrites cfg when P1 and P2 share the same joy port", () => {
+  const buf = Buffer.alloc(348, 0);
+  buf.writeUInt32LE(OPENBOR_CFG_VERSION, 0);
+  // Both players on joy port 0 (host pad drives everyone).
+  DUALSENSE_P1_KEYS.forEach((k, i) => {
+    buf.writeInt32LE(k, P1_KEYS_OFFSET + i * 4);
+    buf.writeInt32LE(k, P1_KEYS_OFFSET + 48 + i * 4);
+  });
+  const profile = { family: "xbox", label: "Phone Controller" };
+  const next = applyOpenBorP1Keys(buf, profile);
+  assert.ok(next);
+  const p1 = readPlayerKeys(next, 0);
+  const p2 = readPlayerKeys(next, 1);
+  assert.ok(
+    p1.slice(0, 4).every((k) => k >= JOY_LIST_FIRST && k < JOY_LIST_FIRST + JOY_MAX_INPUTS),
+    "P1 on joy port 0"
+  );
+  assert.ok(
+    p2.slice(0, 4).every(
+      (k) => k >= JOY_LIST_FIRST + JOY_MAX_INPUTS && k < JOY_LIST_FIRST + 2 * JOY_MAX_INPUTS
+    ),
+    "P2 on joy port 1"
+  );
+});
+
 test("pads a shorter logo scene to the original pack entry size", () => {
   // Minimal fake pack: magic + version + one file + directory + headerstart
   const fileBody = Buffer.from(

@@ -345,6 +345,7 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
     if (couchAlreadyActive) {
       // Online multiplayer already owns the couch session — don't mint a second one
       // or enable Gamepad Bridge (that mirrored host pad into OpenBOR P1+P2).
+      await disableGamepadBridge();
       ensureCouchBackground();
       setStatus("Online controllers already active — launching…");
     } else {
@@ -379,7 +380,9 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
   } else if (choice === "controller") {
     finalMode = "controller";
     // Hard rule: never bridge while a couch session is running.
-    if (!couchAlreadyActive && isBridgeableGamepadConnected()) {
+    if (couchAlreadyActive) {
+      await disableGamepadBridge();
+    } else if (isBridgeableGamepadConnected()) {
       setStatus("Enabling Universal Gamepad Bridge for controller…");
       const bridged = await enableGamepadBridge();
       if (!bridged) {
@@ -389,6 +392,7 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
   } else {
     // choice === "keyboard"
     finalMode = "keyboard";
+    await disableGamepadBridge();
   }
 
   await playFn({ inputMode: finalMode });

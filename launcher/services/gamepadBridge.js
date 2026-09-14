@@ -28,7 +28,22 @@ function getProvider() {
  * @param {object} [profile] Info about the physical pad being bridged.
  * @returns {Promise<{ ok: boolean, error?: string }>}
  */
+/**
+ * Optional couch guard — set from main so the bridge cannot mint a slot-0
+ * ViGEm while Connect remotes own slots (that mirrored the host into P1+P2).
+ * @type {null | (() => boolean)}
+ */
+let isCouchActive = null;
+
+function setCouchActiveChecker(fn) {
+  isCouchActive = typeof fn === "function" ? fn : null;
+}
+
 async function startBridge(profile = {}) {
+  if (isCouchActive?.()) {
+    console.warn("[gamepad-bridge] refused — couch session is active");
+    return { ok: false, error: "Couch session is active" };
+  }
   if (isBridging && activeHandle) {
     return { ok: true };
   }
@@ -103,5 +118,6 @@ module.exports = {
   stopBridge,
   applyInputFrame,
   getBridgeState,
+  setCouchActiveChecker,
   BUTTON,
 };

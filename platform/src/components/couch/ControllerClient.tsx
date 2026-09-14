@@ -1237,11 +1237,19 @@ export function ControllerClient({
         {gameLayout && controlChoice === "keyboard" ? (
           <ControlsLegend
             compact={hasVideo}
+            hidden={hasVideo && !hudVisible}
             onChange={() => setControlChoice("undecided")}
           />
         ) : null}
         {gameLayout && controlChoice === "controller" ? (
-          <div className={hasVideo ? "pbc-controls-legend is-compact" : "pbc-controls-legend"}>
+          <div
+            className={[
+              hasVideo ? "pbc-controls-legend is-compact" : "pbc-controls-legend",
+              hasVideo && !hudVisible ? "is-hidden" : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+          >
             <div className="pbc-controls-legend-head">
               <p className="pbc-controls-legend-eyebrow">Controller</p>
               <h2 className="pbc-controls-legend-title">
@@ -1428,10 +1436,12 @@ export function ControllerClient({
 function ControlsLegend({
   compact = false,
   embedded = false,
+  hidden = false,
   onChange,
 }: {
   compact?: boolean;
   embedded?: boolean;
+  hidden?: boolean;
   onChange?: () => void;
 }) {
   return (
@@ -1440,6 +1450,7 @@ function ControlsLegend({
         "pbc-controls-legend",
         compact ? "is-compact" : "",
         embedded ? "is-embedded" : "",
+        hidden ? "is-hidden" : "",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -2148,6 +2159,18 @@ function ControllerStyles() {
   backdrop-filter: blur(14px);
   box-shadow: 0 18px 48px oklch(0 0 0 / 35%);
   pointer-events: auto;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.pbc-controls-legend.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 12px);
+}
+.pbc-pad.is-popup-game .pbc-controls-legend,
+.pbc-pad.is-fullscreen .pbc-controls-legend {
+  position: fixed;
+  bottom: 24px;
+  z-index: 10;
 }
 .pbc-controls-legend.is-compact {
   width: min(94vw, 560px);

@@ -71,6 +71,8 @@ const {
   GES_SLUG,
   preflightGoldeneye,
   preferSteamLaunch,
+  isGoldenEyeInstaller,
+  unpackGoldenEyeSource,
 } = require("./services/goldeneyeSource");
 const { prepareOpenRaNetwork, isOpenRaFamily } = require("./services/openraNat");
 const portMapping = require("./services/portMapping");
@@ -761,7 +763,20 @@ async function ensureSteamPrerequisites(entry) {
         message: `Waiting for Steam to finish installing ${name}…`,
       });
     }
-    await safeOpenExternal(`steam://install/${appId}`, { skipUtm: true });
+    const base = steamBaseDir();
+    const steamExe =
+      base && process.platform === "win32" && fs.existsSync(path.join(base, "steam.exe"))
+        ? path.join(base, "steam.exe")
+        : null;
+    if (steamExe) {
+      try {
+        spawn(steamExe, [`steam://install/${appId}`], { detached: true, stdio: "ignore" }).unref();
+      } catch {
+        await safeOpenExternal(`steam://install/${appId}`, { skipUtm: true });
+      }
+    } else {
+      await safeOpenExternal(`steam://install/${appId}`, { skipUtm: true });
+    }
 
     const started = Date.now();
     const maxMs = 45 * 60 * 1000;
@@ -4366,6 +4381,15 @@ function knownExecutablePathsFor(entry) {
       "C:\\Unknown-Horizons\\unknown-horizons\\run_uh.py"
     );
   }
+  if (entry?.slug === GES_SLUG) {
+    for (const root of steamLibraryRoots()) {
+      paths.push(
+        path.join(root, "steamapps", "sourcemods", "gesource", "gameinfo.txt"),
+        path.join(root, "steamapps", "sourcemods", "gesource", "gesource_run.exe"),
+        path.join(root, "steamapps", "common", "Source SDK Base 2007", "hl2.exe")
+      );
+    }
+  }
   return paths;
 }
 
@@ -6046,6 +6070,20 @@ async function applyControllerConfig(slug, installDir, opts = {}) {
     console.log(`[controller] restoring saved ${deviceId} config for ${slug}`);
     await deviceControllerStorage.restoreDeviceConfig(userDataPath, slug, deviceId, configPath, binary);
     deviceControllerStorage.recordActiveDevice(slug, deviceId, configPath, binary);
+    // Couch/Connect: a saved cfg may still have P1+P2 on the same joy port.
+    if (binary && (couchHost?.getState?.()?.active || inputMode === "phone")) {
+      try {
+        const restored = await fsp.readFile(configPath);
+        const separated = gameControllerConfig.applyProfile(slug, restored, profile);
+        if (separated) {
+          await fsp.writeFile(configPath, separated);
+          await deviceControllerStorage.saveDeviceConfig(userDataPath, slug, deviceId, configPath, binary);
+          console.log(`[controller] separated OpenBOR joy ports for couch on ${slug}`);
+        }
+      } catch (err) {
+        console.warn(`[controller] couch port-separate skipped:`, err?.message || err);
+      }
+    }
     return true;
   }
 
@@ -6942,6 +6980,27 @@ async function openInstallerPath(installerPath, gameSlug, opts = {}) {
         if (code === 0 || code == null) resolve();
         else reject(new Error(`Unknown Horizons setup exited with code ${code}`));
       });
+    });
+    return;
+  }
+
+  if (isGoldenEyeInstaller(installerPath, gameSlug)) {
+    const steamBase = steamBaseDir();
+    if (!steamBase || !fs.existsSync(steamBase)) {
+      throw new Error(
+        "Steam desktop client is required to install GoldenEye: Source. Please install Steam, then try again."
+      );
+    }
+    const sourcemodsDir = path.join(steamBase, "steamapps", "sourcemods");
+    await unpackGoldenEyeSource(installerPath, sourcemodsDir, {
+      sevenZipBin: sevenZipBinary(),
+      onProgress: (msg) => {
+        sendProgress({
+          phase: "extracting",
+          slug: gameSlug,
+          addon: msg,
+        });
+      },
     });
     return;
   }
@@ -8881,6 +8940,11 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
   // host pad owns P1, remotes start at slot 1.
   if (couchHost?.getState?.()?.active) {
     try {
+      gamepadBridge.stopBridge();
+    } catch {
+      /* ignore */
+    }
+    try {
       const couchState = couchHost.getState();
       const warmSlot = couchState?.session?.reserveHostSlot ? 1 : 0;
       await couchHost.warmControllerSlot(warmSlot);
@@ -9688,6 +9752,13 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
       steamAppState,
     });
     if (!check.ok) {
+      if (check.code === "GES_SDK_MISSING" && steamExe) {
+        try {
+          spawn(steamExe, ["steam://install/218"], { detached: true, stdio: "ignore" }).unref();
+        } catch {
+          /* ignore */
+        }
+      }
       const preErr = new Error(check.message);
       preErr.code = check.code;
       void telemetry.launchFailed({
@@ -13065,10 +13136,18 @@ const couchHost = createHostService({
     if (win && !win.isDestroyed()) win.webContents.send(channel, payload);
   },
 });
+gamepadBridge.setCouchActiveChecker(() => Boolean(couchHost?.getState?.()?.active));
 
 ipcMain.handle("couch-start", async (event, opts) => {
   requireTrustedIpc(event);
   try {
+    // Host DualSense bridge on ViGEm slot 0 + remote on slot 1 ⇒ OpenBOR P1+P2
+    // both move from the host stick. Kill the bridge before minting the session.
+    try {
+      gamepadBridge.stopBridge();
+    } catch {
+      /* ignore */
+    }
     return { ok: true, state: await couchHost.createSession(opts || {}) };
   } catch (err) {
     return { ok: false, error: err?.message || String(err) };
