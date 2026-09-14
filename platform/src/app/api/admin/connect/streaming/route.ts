@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import { getConnectSettings } from "@/lib/connect/connectSettings";
 import { ensureCouchStore } from "@/lib/couch/ensureStore";
+import {
+  COUCH_HOST_STALE_MS,
+  purgeStaleCouchSessions,
+} from "@/lib/couch/sessionManager";
 import CouchSessionModel from "@/lib/models/CouchSession";
 
 /**
@@ -22,10 +26,15 @@ export async function GET() {
     }
 
     await ensureCouchStore();
+    await purgeStaleCouchSessions();
     const now = Date.now();
-    const rows = await CouchSessionModel.find({ status: "open" })
+    const heartbeatCutoff = now - COUCH_HOST_STALE_MS;
+    const rows = await CouchSessionModel.find({
+      status: "open",
+      lastHeartbeat: { $gte: heartbeatCutoff },
+    })
       .sort({ lastHeartbeat: -1 })
-      .limit(50)
+      .limit(20)
       .lean();
 
     const sessions = rows.map((s) => ({

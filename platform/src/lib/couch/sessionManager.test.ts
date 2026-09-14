@@ -5,6 +5,7 @@ import {
   createCouchSession,
   joinCouchSession,
   approveController,
+  getCouchSession,
   getCouchSessionByCode,
   rejectOrKickController,
   setHostEndpoints,
@@ -88,6 +89,14 @@ describe("couch sessions", () => {
       expect(approved.playerSlot).toBe(0);
     }
     expect(await rejectOrKickController(session, joined.controller.controllerId)).toBe(true);
+  });
+
+  it("drops stale open sessions on load", async () => {
+    const session = await createCouchSession({});
+    expect(await getCouchSession(session.sessionId)).toBeTruthy();
+    session.lastHeartbeat = Date.now() - 120_000;
+    expect(await getCouchSession(session.sessionId)).toBeNull();
+    expect(await getCouchSessionByCode(session.joinCode)).toBeNull();
   });
 
   it("reserves slot 0 for the host pad and assigns remotes from 1", async () => {
