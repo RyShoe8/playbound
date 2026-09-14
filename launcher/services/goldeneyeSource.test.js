@@ -54,4 +54,33 @@ describe("goldeneyeSource", () => {
     ]);
     assert.ok(launch.watchImages.includes("hl2.exe"));
   });
+
+  it("isGoldenEyeInstaller identifies GES installers and slugs", () => {
+    const { isGoldenEyeInstaller } = require("./goldeneyeSource");
+    assert.equal(isGoldenEyeInstaller("C:\\Downloads\\GoldenEye_Source_v5.0.6_full.exe", "goldeneye-source"), true);
+    assert.equal(isGoldenEyeInstaller("C:\\Downloads\\gesource.7z", "goldeneye-source"), true);
+    assert.equal(isGoldenEyeInstaller("C:\\Downloads\\something.exe", "goldeneye-source"), true);
+    assert.equal(isGoldenEyeInstaller("C:\\Downloads\\GoldenEye_Source_v5.0.6_full.exe", "other-game"), true);
+    assert.equal(isGoldenEyeInstaller("C:\\Downloads\\setup.exe", "other-game"), false);
+  });
+
+  it("unpackGoldenEyeSource skips if already present", async () => {
+    const { unpackGoldenEyeSource } = require("./goldeneyeSource");
+    const root = await fsp.mkdtemp(path.join(os.tmpdir(), "ges-unpack-"));
+    const sourcemods = path.join(root, "sourcemods");
+    const targetDir = path.join(sourcemods, "gesource");
+    await fsp.mkdir(targetDir, { recursive: true });
+    await fsp.writeFile(path.join(targetDir, "gameinfo.txt"), "content");
+    const fakeInstaller = path.join(root, "installer.exe");
+    await fsp.writeFile(fakeInstaller, "fake");
+
+    const result = await unpackGoldenEyeSource(fakeInstaller, sourcemods, {
+      sevenZipBin: "dummy7z",
+      fs: {
+        existsSync: (p) => fs.existsSync(p) || p === "dummy7z",
+      },
+    });
+    assert.equal(result.ok, true);
+    assert.equal(result.skipped, true);
+  });
 });

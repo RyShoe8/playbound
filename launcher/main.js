@@ -4381,8 +4381,9 @@ function knownExecutablePathsFor(entry) {
       "C:\\Unknown-Horizons\\unknown-horizons\\run_uh.py"
     );
   }
-  if (entry?.slug === GES_SLUG) {
-    for (const root of steamLibraryRoots()) {
+  if (entry?.slug === "goldeneye-source") {
+    const roots = typeof steamLibraryRoots === "function" ? steamLibraryRoots() : [];
+    for (const root of roots) {
       paths.push(
         path.join(root, "steamapps", "sourcemods", "gesource", "gameinfo.txt"),
         path.join(root, "steamapps", "sourcemods", "gesource", "gesource_run.exe"),
@@ -12398,11 +12399,13 @@ ipcMain.handle("open-couch-game-view", async (_event, rawUrl) => {
       webPreferences: {
         contextIsolation: true,
         nodeIntegration: false,
-        sandbox: true,
+        // Sandbox + site isolation has blocked LAN ws:// / host ICE for some guests.
+        sandbox: false,
         backgroundThrottling: false,
         // Same-LAN Couch: allow ws:// to the host and private ICE without Chrome PNA.
         // Only this window — not the main launcher UI.
         webSecurity: false,
+        allowRunningInsecureContent: true,
       },
     });
     couchGameViewWin.on("closed", () => {

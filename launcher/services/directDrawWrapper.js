@@ -62,7 +62,23 @@ const DIRECTDRAW_COM_CLSIDS = [
   "{593817A0-7DB3-11CF-A2DE-00AA00B93356}",
 ];
 
-const MS_X86_DLLS = ["DDraw.dll", "D3DImm.dll", "D3D8.dll", "D3D9.dll", "dx7vb.dll"];
+/**
+ * FreeTrain's DirectAudio.net CLSIDs — CLSID_DirectX8 and CLSID_D3DX8 from dx8vb.dll.
+ *
+ * FreeTrain uses DirectAudio.net (Interop.DxVBLibA), which initializes via
+ * CoCreateInstance on CLSID_DirectX8 ({E7FF1300-96A5-11D3-AC85-00C04FC2C602}).
+ * Modern Windows lacks dx8vb.dll and its registration, returning 80040154
+ * (REGDB_E_CLASSNOTREG), which causes audio and sound plugin initialization errors.
+ *
+ * Registering these in HKCU pointing to relative `dx8vb.dll` allows FreeTrain's
+ * music and sound effects (departure bell, ambient, etc.) to load seamlessly.
+ */
+const DIRECTX8_COM_CLSIDS = [
+  "{E7FF1300-96A5-11D3-AC85-00C04FC2C602}", // CLSID_DirectX8
+  "{58356C5D-0BFD-48ED-93C5-F4520B6233DE}", // CLSID_D3DX8
+];
+
+const MS_X86_DLLS = ["DDraw.dll", "D3DImm.dll", "D3D8.dll", "D3D9.dll", "dx7vb.dll", "dx8vb.dll"];
 
 const FREETRAIN_SLUGS = new Set(["freetrain", "free-train"]);
 
@@ -271,12 +287,15 @@ function registerDirectDrawComHkcu(_ddrawPath) {
    *
    * Standard DirectDraw CLSIDs -> ddraw.dll
    * CLSID_DIRECTDRAW ({E1211353}) -> dx7vb.dll (DirectX 7 for VB)
+   * CLSID_DIRECTX8 ({E7FF1300}), CLSID_D3DX8 ({58356C5D}) -> dx8vb.dll (DirectX 8 for VB)
    */
   const clsids = DIRECTDRAW_COM_CLSIDS.map((c) => JSON.stringify(c)).join(",");
   const dx7Clsid = JSON.stringify(CLSID_DIRECTDRAW);
+  const dx8Clsids = DIRECTX8_COM_CLSIDS.map((c) => JSON.stringify(c)).join(",");
   const script = `
 $ErrorActionPreference = 'Stop'
 $clsids = @(${clsids})
+$dx8Clsids = @(${dx8Clsids})
 $roots = @('HKCU:\\Software\\Classes\\CLSID', 'HKCU:\\Software\\Classes\\Wow6432Node\\CLSID')
 foreach ($clsid in $clsids) {
   foreach ($root in $roots) {
@@ -292,6 +311,15 @@ foreach ($root in $roots) {
   New-Item -Path $dx7Path -Force | Out-Null
   Set-ItemProperty -Path $dx7Path -Name '(default)' -Value 'dx7vb.dll'
   Set-ItemProperty -Path $dx7Path -Name 'ThreadingModel' -Value 'Both'
+}
+# Point DirectX8 COM classes to dx8vb.dll so FreeTrain's DirectAudio.net sound loading succeeds without 80040154
+foreach ($clsid in $dx8Clsids) {
+  foreach ($root in $roots) {
+    $dx8Path = Join-Path $root ($clsid + '\\InprocServer32')
+    New-Item -Path $dx8Path -Force | Out-Null
+    Set-ItemProperty -Path $dx8Path -Name '(default)' -Value 'dx8vb.dll'
+    Set-ItemProperty -Path $dx8Path -Name 'ThreadingModel' -Value 'Both'
+  }
 }
 `;
   const ps = spawnSync("powershell.exe", ["-NoProfile", "-Command", script], {
@@ -484,6 +512,7 @@ module.exports = {
   writeDgVoodooConf,
   registerDirectDrawComHkcu,
   DIRECTDRAW_COM_CLSIDS,
+  DIRECTX8_COM_CLSIDS,
   ensureDdrawFilenamePair,
   applyInjectDllCompatShim,
   findMsX86Dir,
