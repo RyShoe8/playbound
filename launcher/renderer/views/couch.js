@@ -231,16 +231,29 @@ async function attachDisplayTracks(pc) {
     const display = await ensureHostDisplayStream();
     if (!display) return false;
     const track = display.getVideoTracks()[0];
-    if (!track) return false;
+    if (!track || track.readyState !== "live") return false;
 
     const transceivers = pc.getTransceivers ? pc.getTransceivers() : [];
-    const videoTransceiver = transceivers.find(
-      (t) => t.receiver?.track?.kind === "video" || t.sender?.track?.kind === "video"
+    let videoTransceiver = transceivers.find(
+      (t) =>
+        t.receiver?.track?.kind === "video" ||
+        t.sender?.track?.kind === "video" ||
+        t.mid === "video"
     );
+    // Guest offers recvonly video — reuse that transceiver as sendonly.
+    if (!videoTransceiver) {
+      videoTransceiver = transceivers.find(
+        (t) => t.direction === "recvonly" || t.direction === "inactive"
+      );
+    }
 
     if (videoTransceiver) {
-      videoTransceiver.direction = "sendonly";
-      if (videoTransceiver.sender && videoTransceiver.sender.replaceTrack) {
+      try {
+        videoTransceiver.direction = "sendonly";
+      } catch {
+        /* direction may already be sendrecv */
+      }
+      if (videoTransceiver.sender?.replaceTrack) {
         await videoTransceiver.sender.replaceTrack(track);
       }
     } else {
