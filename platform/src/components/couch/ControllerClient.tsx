@@ -142,6 +142,8 @@ export function ControllerClient({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const remoteStreamRef = useRef<MediaStream | null>(null);
   const [hasVideo, setHasVideo] = useState(false);
+  const [videoWaiting, setVideoWaiting] = useState(false);
+  const videoFrameWatchRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [cropTitleBar, setCropTitleBar] = useState(true);
   const [hudVisible, setHudVisible] = useState(true);
@@ -199,14 +201,80 @@ export function ControllerClient({
     };
   }, [gameLayout, resetHudTimer]);
 
+  function clearVideoFrameWatch() {
+    if (videoFrameWatchRef.current) {
+      clearInterval(videoFrameWatchRef.current);
+      videoFrameWatchRef.current = null;
+    }
+  }
+
   function attachRemoteStream(stream: MediaStream) {
     remoteStreamRef.current = stream;
-    setHasVideo(true);
     const el = videoRef.current;
     if (el && el.srcObject !== stream) {
       el.srcObject = stream;
       void el.play().catch(() => {});
     }
+    // Track can arrive with a black exclusive-fullscreen capture (non-zero size
+    // but no useful pixels). Prefer waiting until frames look non-black.
+    clearVideoFrameWatch();
+    setVideoWaiting(true);
+    setHasVideo(false);
+    const track = stream.getVideoTracks()[0];
+    let darkSamples = 0;
+
+    const sampleLooksBlack = (v: HTMLVideoElement) => {
+      try {
+        if (v.videoWidth < 2 || v.videoHeight < 2) return true;
+        const canvas = document.createElement("canvas");
+        canvas.width = 32;
+        canvas.height = 18;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) return false;
+        ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        let sum = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          sum += data[i]! + data[i + 1]! + data[i + 2]!;
+        }
+        const avg = sum / ((data.length / 4) * 3);
+        return avg < 6;
+      } catch {
+        return false;
+      }
+    };
+
+    const markLive = () => {
+      const v = videoRef.current;
+      if (!v || v.videoWidth <= 0 || v.videoHeight <= 0) return false;
+      if (sampleLooksBlack(v)) {
+        darkSamples += 1;
+        // A few dark frames at boot are normal; sustained black = bad capture.
+        if (darkSamples < 6) return false;
+        setVideoWaiting(true);
+        setHasVideo(false);
+        return false;
+      }
+      darkSamples = 0;
+      setHasVideo(true);
+      setVideoWaiting(false);
+      clearVideoFrameWatch();
+      return true;
+    };
+    if (track) {
+      track.onunmute = () => {
+        darkSamples = 0;
+        void videoRef.current?.play().catch(() => {});
+      };
+    }
+    videoFrameWatchRef.current = setInterval(() => {
+      if (markLive()) return;
+      const v = videoRef.current;
+      if (v) void v.play().catch(() => {});
+    }, 500);
+    window.setTimeout(() => {
+      markLive();
+    }, 100);
   }
 
   function bindVideoEl(el: HTMLVideoElement | null) {
@@ -560,14 +628,7 @@ export function ControllerClient({
         usingWebrtc = true;
         setTransport("webrtc");
         const stream = ev.streams?.[0] || (ev.track ? new MediaStream([ev.track]) : null);
-        if (stream) {
-          attachRemoteStream(stream);
-          if (ev.track) {
-            ev.track.onunmute = () => {
-              attachRemoteStream(stream);
-            };
-          }
-        }
+        if (stream) attachRemoteStream(stream);
       };
       dc = pc.createDataChannel("input", { ordered: false, maxRetransmits: 0 });
       dc.binaryType = "arraybuffer";
@@ -862,6 +923,7 @@ export function ControllerClient({
         /* ignore */
       }
       sendFnRef.current = () => {};
+      clearVideoFrameWatch();
     };
   }, [join, mode, sendInput]);
 
@@ -1084,14 +1146,15 @@ export function ControllerClient({
           />
           {!hasVideo ? (
             <p className="pbc-gameview-wait">
-              Waiting for host game view…
-              {transport === "webrtc" || transport === "websocket"
-                ? " host may still be launching — keep this tab open"
-                : transport === "connecting"
-                  ? " connecting to host…"
-                  : transport === "offline"
-                    ? connectHint || " can't reach host (network)"
-                    : ""}
+              {videoWaiting
+                ? "Connected — host capture looks blank. Host should update the launcher (screen share) or run the game borderless/windowed on the main monitor."
+                : transport === "webrtc" || transport === "websocket"
+                  ? "Waiting for host game view… host may still be launching — keep this tab open"
+                  : transport === "connecting"
+                    ? "Connecting to host…"
+                    : transport === "offline"
+                      ? connectHint || "Can't reach host (network)"
+                      : "Waiting for host game view…"}
             </p>
           ) : null}
         </div>
@@ -1185,14 +1248,15 @@ export function ControllerClient({
         />
         {!hasVideo ? (
           <p className="pbc-gameview-wait">
-            Waiting for host game view…
-            {transport === "webrtc" || transport === "websocket"
-              ? " host may still be launching — keep this tab open"
-              : transport === "connecting"
-                ? " connecting to host…"
-                : transport === "offline"
-                  ? connectHint || " can't reach host (network)"
-                  : ""}
+            {videoWaiting
+              ? "Connected — host capture looks blank. Host should update the launcher (screen share) or run the game borderless/windowed on the main monitor."
+              : transport === "webrtc" || transport === "websocket"
+                ? "Waiting for host game view… host may still be launching — keep this tab open"
+                : transport === "connecting"
+                  ? "Connecting to host…"
+                  : transport === "offline"
+                    ? connectHint || "Can't reach host (network)"
+                    : "Waiting for host game view…"}
           </p>
         ) : null}
       </div>
