@@ -3632,7 +3632,9 @@ async function maybeStartPartyCouch(partyId, party) {
      * WebRTC signalling poll. Calling the IPC directly mints a code that no
      * phone can ever complete a connection against.
      */
-    const state = await startCouchSessionQuiet();
+    const state = await startCouchSessionQuiet({
+      hostLabel: "PlayBound Party",
+    });
     const session = state?.session;
     if (!state?.active || !session?.joinCode) {
       throw new Error("Could not start online controllers.");

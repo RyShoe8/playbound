@@ -302,6 +302,21 @@ function showPhoneJoinBanner(state) {
  * Returns false if the user cancelled.
  */
 export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
+  /*
+   * Connect couch already owns virtual pads + WebRTC. Never prompt again and
+   * never enable Gamepad Bridge (it mirrors the host pad into a second ViGEm
+   * and makes one stick drive OpenBOR P1+P2).
+   */
+  try {
+    const couch = await window.playbound?.couchState?.();
+    if (couch?.active) {
+      await playFn();
+      return true;
+    }
+  } catch {
+    /* fall through to normal prompt */
+  }
+
   const isSupported = await gameSupportsController(detail, slug || detail?.slug);
   if (!isSupported) {
     await playFn();
@@ -345,7 +360,14 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
   }
 
   if (choice === "normal") {
-    if (isBridgeableGamepadConnected()) {
+    // Hard rule: never bridge while a couch session is running.
+    let couchActive = false;
+    try {
+      couchActive = Boolean((await window.playbound?.couchState?.())?.active);
+    } catch {
+      couchActive = false;
+    }
+    if (!couchActive && isBridgeableGamepadConnected()) {
       setStatus("Enabling Universal Gamepad Bridge for controller…");
       const bridged = await enableGamepadBridge();
       if (!bridged) {

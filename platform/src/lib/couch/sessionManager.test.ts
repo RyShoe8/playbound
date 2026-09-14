@@ -90,6 +90,16 @@ describe("couch sessions", () => {
     expect(await rejectOrKickController(session, joined.controller.controllerId)).toBe(true);
   });
 
+  it("reserves slot 0 for the host pad and assigns remotes from 1", async () => {
+    const session = await createCouchSession({ reserveHostSlot: true });
+    expect(session.reserveHostSlot).toBe(true);
+    const joined = await joinCouchSession(session, { label: "Remote" });
+    expect("controller" in joined).toBe(true);
+    if ("controller" in joined) {
+      expect(joined.controller.playerSlot).toBe(1);
+    }
+  });
+
   it("ignores host-published iceServers and serves platform ICE on snapshot", async () => {
     const prevIp = process.env.GAME_HOST_PUBLIC_IP;
     const prevSecret = process.env.TURN_SHARED_SECRET;

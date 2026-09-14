@@ -6,6 +6,7 @@ import {
 } from "@/lib/couch/sessionManager";
 import { SITE_URL } from "@/lib/site";
 import { couchJoinPath, couchJoinUrl } from "@/lib/couch/joinUrl";
+import { getConnectSettings } from "@/lib/connect/connectSettings";
 
 /**
  * POST /api/couch/sessions — host creates a Couch Mode session.
@@ -14,10 +15,12 @@ export async function POST(req: Request) {
   try {
     await ensureCouchStore();
     const body = await req.json().catch(() => ({}));
+    const settings = await getConnectSettings();
     const session = await createCouchSession({
       hostLabel: typeof body.hostLabel === "string" ? body.hostLabel : "PlayBound",
       maxPlayers: typeof body.maxPlayers === "number" ? body.maxPlayers : undefined,
       autoApprove: body.autoApprove !== false,
+      reserveHostSlot: body.reserveHostSlot === true,
     });
 
     const joinPath = couchJoinPath(session.joinCode);
@@ -29,6 +32,7 @@ export async function POST(req: Request) {
         joinUrl: couchJoinUrl(session.joinCode, SITE_URL),
         joinPath,
         snapshot: publicCouchSnapshot(session),
+        streamingMetricsEnabled: settings.streamingMetricsEnabled,
       },
       { status: 201 }
     );

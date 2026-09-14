@@ -116,6 +116,8 @@ export async function createCouchSession(params: {
   hostLabel?: string;
   maxPlayers?: number;
   autoApprove?: boolean;
+  /** Host physical pad owns OpenBOR P1 — remotes start at slot 1. */
+  reserveHostSlot?: boolean;
 }): Promise<CouchSession> {
   const existing = new Set<string>();
   if (await useMongo()) {
@@ -143,6 +145,8 @@ export async function createCouchSession(params: {
     messages: [],
     hostEndpoints: null,
     autoApprove: params.autoApprove !== false,
+    reserveHostSlot: Boolean(params.reserveHostSlot),
+    runtimeMetrics: null,
     expiresAt: new Date(now + SESSION_TTL_MS),
   };
   await saveSession(session);
@@ -181,7 +185,9 @@ function nextFreeSlot(session: CouchSession): number | null {
       .filter((c) => c.status === "approved" && c.playerSlot != null)
       .map((c) => c.playerSlot as number)
   );
-  for (let i = 0; i < session.maxPlayers; i++) {
+  // When the host physical pad owns OpenBOR P1 / joy0, remotes start at slot 1.
+  const start = session.reserveHostSlot ? 1 : 0;
+  for (let i = start; i < session.maxPlayers; i++) {
     if (!used.has(i)) return i;
   }
   return null;
@@ -376,6 +382,15 @@ export function pollCouchSignals(
   );
 }
 
+export async function setRuntimeMetrics(
+  session: CouchSession,
+  metrics: Record<string, unknown>
+): Promise<void> {
+  session.runtimeMetrics = metrics;
+  session.lastHeartbeat = Date.now();
+  await saveSession(session);
+}
+
 export function publicCouchSnapshot(session: CouchSession) {
   const iceServers = sessionIceServers(session.sessionId);
   return {
@@ -385,6 +400,7 @@ export function publicCouchSnapshot(session: CouchSession) {
     status: session.status,
     maxPlayers: session.maxPlayers,
     autoApprove: session.autoApprove,
+    reserveHostSlot: Boolean(session.reserveHostSlot),
     hostEndpoints: session.hostEndpoints
       ? {
           wsUrls: session.hostEndpoints.wsUrls,

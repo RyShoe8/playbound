@@ -8839,11 +8839,14 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     console.warn("[controller] auto-config skipped:", err?.message || err);
   }
 
-  // Couch / phone-controller: make sure player one's virtual pad exists before
-  // the game process enumerates devices (Hurrican's DX8 setup screen).
+  // Couch / phone-controller: make sure the first remote ViGEm slot exists before
+  // the game process enumerates devices (Hurrican's DX8 setup screen). When the
+  // host pad owns P1, remotes start at slot 1.
   if (couchHost?.getState?.()?.active) {
     try {
-      await couchHost.warmControllerSlot(0);
+      const couchState = couchHost.getState();
+      const warmSlot = couchState?.session?.reserveHostSlot ? 1 : 0;
+      await couchHost.warmControllerSlot(warmSlot);
     } catch (err) {
       console.warn("[controller] couch slot prewarm skipped:", err?.message || err);
     }

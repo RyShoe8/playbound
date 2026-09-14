@@ -9,9 +9,18 @@ import {
   publicCouchSnapshot,
   setHostEndpoints,
 } from "@/lib/couch/sessionManager";
+import { getConnectSettings } from "@/lib/connect/connectSettings";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
+}
+
+async function withMetricsFlag(session: NonNullable<Awaited<ReturnType<typeof getCouchSession>>>) {
+  const settings = await getConnectSettings();
+  return {
+    ...publicCouchSnapshot(session),
+    streamingMetricsEnabled: settings.streamingMetricsEnabled,
+  };
 }
 
 export async function GET(req: Request, context: RouteContext) {
@@ -27,9 +36,8 @@ export async function GET(req: Request, context: RouteContext) {
     if (hostToken && assertHost(session, hostToken)) {
       await heartbeatHost(session);
     }
-    return NextResponse.json(publicCouchSnapshot(session));
+    return NextResponse.json(await withMetricsFlag(session));
   } catch (err) {
-    // Let Next's own control-flow errors through — see unstable_rethrow.
     unstable_rethrow(err);
     console.error("GET /api/couch/sessions/[id] failed:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
@@ -57,7 +65,7 @@ export async function PATCH(req: Request, context: RouteContext) {
         wsToken: String(body.hostEndpoints.wsToken || ""),
       });
     }
-    return NextResponse.json(publicCouchSnapshot(session));
+    return NextResponse.json(await withMetricsFlag(session));
   } catch (err) {
     console.error("PATCH /api/couch/sessions/[id] failed:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
@@ -81,7 +89,6 @@ export async function DELETE(req: Request, context: RouteContext) {
     await endCouchSession(session);
     return NextResponse.json({ ok: true });
   } catch (err) {
-    // Let Next's own control-flow errors through — see unstable_rethrow.
     unstable_rethrow(err);
     console.error("DELETE /api/couch/sessions/[id] failed:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

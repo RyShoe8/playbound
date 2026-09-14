@@ -47,7 +47,7 @@ export function ensureCouchBackground() {
 }
 
 /** Start a phone-controller session without painting the Couch page. */
-export async function startCouchSessionQuiet() {
+export async function startCouchSessionQuiet(opts = {}) {
   ensureWired();
   const existing = await pb().couchState();
   if (existing?.active) {
@@ -55,7 +55,20 @@ export async function startCouchSessionQuiet() {
     startSignalPoll();
     return existing;
   }
-  const res = await pb().couchStart({ hostLabel: "PlayBound" });
+  let reserveHostSlot = opts.reserveHostSlot;
+  if (reserveHostSlot == null) {
+    try {
+      const pads = navigator.getGamepads?.() || [];
+      reserveHostSlot = pads.some((p) => p && p.connected);
+    } catch {
+      reserveHostSlot = false;
+    }
+  }
+  const res = await pb().couchStart({
+    hostLabel: opts.hostLabel || "PlayBound",
+    maxPlayers: opts.maxPlayers,
+    reserveHostSlot: Boolean(reserveHostSlot),
+  });
   if (!res?.ok) {
     setStatus(res?.error || "Failed to start phone controller", true);
     return null;
