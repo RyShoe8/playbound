@@ -8,7 +8,7 @@ import {
   KEYBOARD_MOUSE_HELP,
 } from "@/lib/couch/keyboardMouseMap";
 import { CADENCE } from "@/lib/realtime/cadence";
-import { couchControllerJoinLabel } from "@/lib/couch/joinLabel";
+import { couchControllerJoinLabel, type CouchControlChoice } from "@/lib/couch/joinLabel";
 import {
   addRemoteIceCandidate,
   iceServersIncludeTurn,
@@ -88,13 +88,12 @@ export function ControllerClient({
   const [error, setError] = useState<string | null>(null);
   const [join, setJoin] = useState<JoinState | null>(null);
   /**
-   * Game-view joiners on a computer pick PC vs phone once — same choice as
-   * launching a local game. Phone pads still open the default layout (QR).
+   * Game-view joiners pick the same three options as the launcher Input Setup:
+   * keyboard, controller, or phone. Phone pads still open the default layout (QR).
    */
-  const [controlChoice, setControlChoice] = useState<"undecided" | "pc" | "phone">(() => {
+  const [controlChoice, setControlChoice] = useState<CouchControlChoice>(() => {
     // Default layout is already the phone/touch pad — no chooser needed.
-    if (!gameLayout) return "pc";
-    // Game view: always ask PC vs phone once (desktop + tablet).
+    if (!gameLayout) return "keyboard";
     return "undecided";
   });
   // Phones scanning the QR want the touch pad, not keyboard+stream chrome.
@@ -930,7 +929,7 @@ export function ControllerClient({
   // Physical gamepad polling
   useEffect(() => {
     const usePad =
-      mode === "standard-gamepad" || (gameLayout && controlChoice === "pc");
+      mode === "standard-gamepad" || (gameLayout && controlChoice === "controller");
     if (!usePad) {
       setPhysicalLabel(null);
       return;
@@ -1073,24 +1072,42 @@ export function ControllerClient({
   if (gameLayout && controlChoice === "undecided") {
     return (
       <Shell>
-        <Eyebrow>Controller supported</Eyebrow>
+        <Eyebrow>Input Setup</Eyebrow>
         <h1 className="pbc-title">How do you want to play?</h1>
         <p className="pbc-sub">
-          You&apos;re joining {join.hostLabel}&apos;s game view. Pick how you&apos;ll control it —
-          same choice as launching a game on your PC.
+          You&apos;re joining {join.hostLabel}&apos;s game view. Same choices as launching a game
+          on your PC.
         </p>
         <div className="pbc-choice-row">
-          <button type="button" className="pbc-choice-btn" onClick={() => setControlChoice("pc")}>
-            <strong>Play with PC controls</strong>
-            <span>Keyboard, mouse, or a controller plugged into this computer</span>
+          <button
+            type="button"
+            className="pbc-choice-btn"
+            onClick={() => {
+              setMode("keyboard-mouse");
+              setControlChoice("keyboard");
+            }}
+          >
+            <strong>Mouse and Keyboard</strong>
+            <span>Play using standard keyboard and mouse controls</span>
+          </button>
+          <button
+            type="button"
+            className="pbc-choice-btn"
+            onClick={() => {
+              setMode("standard-gamepad");
+              setControlChoice("controller");
+            }}
+          >
+            <strong>Controller (Gamepad)</strong>
+            <span>Xbox, DualSense, Switch Pro, or USB pad plugged into this computer</span>
           </button>
           <button
             type="button"
             className="pbc-choice-btn is-featured"
             onClick={() => setControlChoice("phone")}
           >
-            <strong>Use phone as controller</strong>
-            <span>Scan a QR code — no app required on your phone</span>
+            <strong>Phone as Controller</strong>
+            <span>Scan a QR code — no app or account required on your phone</span>
           </button>
         </div>
       </Shell>
@@ -1199,8 +1216,12 @@ export function ControllerClient({
               Scan with your phone — this window stays the game view. Code{" "}
               <strong>{code}</strong>
             </p>
-            <button type="button" className="pbc-choice-btn" onClick={() => setControlChoice("pc")}>
-              Use PC controls instead
+            <button
+              type="button"
+              className="pbc-choice-btn"
+              onClick={() => setControlChoice("undecided")}
+            >
+              Choose controls again
             </button>
           </div>
         ) : null}

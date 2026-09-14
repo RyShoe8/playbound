@@ -2,22 +2,22 @@ import { describe, expect, it } from "vitest";
 import { couchControllerJoinLabel } from "./joinLabel";
 
 describe("couchControllerJoinLabel", () => {
-  it("labels game-view PC play without a pad", () => {
+  it("labels game-view keyboard play", () => {
     expect(
       couchControllerJoinLabel({
         mode: "keyboard-mouse",
         gameLayout: true,
-        controlChoice: "pc",
+        controlChoice: "keyboard",
       })
-    ).toBe("PC controls");
+    ).toBe("Keyboard & mouse");
   });
 
   it("uses the connected gamepad id when present", () => {
     expect(
       couchControllerJoinLabel({
-        mode: "keyboard-mouse",
+        mode: "standard-gamepad",
         gameLayout: true,
-        controlChoice: "pc",
+        controlChoice: "controller",
         gamepadId: "DualSense Wireless Controller",
       })
     ).toBe("DualSense Wireless Controller");
@@ -38,7 +38,7 @@ describe("couchControllerJoinLabel", () => {
       couchControllerJoinLabel({
         mode: "touch-gamepad",
         gameLayout: false,
-        controlChoice: "pc",
+        controlChoice: "keyboard",
       })
     ).toBe("Touch pad");
   });
