@@ -141,6 +141,62 @@ export function ControllerClient({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const remoteStreamRef = useRef<MediaStream | null>(null);
   const [hasVideo, setHasVideo] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [cropTitleBar, setCropTitleBar] = useState(true);
+  const [hudVisible, setHudVisible] = useState(true);
+  const hudTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const onFsChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener("fullscreenchange", onFsChange);
+    document.addEventListener("webkitfullscreenchange", onFsChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", onFsChange);
+      document.removeEventListener("webkitfullscreenchange", onFsChange);
+    };
+  }, []);
+
+  const toggleFullscreen = useCallback(async () => {
+    try {
+      if (!document.fullscreenElement) {
+        const root = document.documentElement;
+        if (root.requestFullscreen) {
+          await root.requestFullscreen();
+        } else if ((root as unknown as { webkitRequestFullscreen?: () => Promise<void> }).webkitRequestFullscreen) {
+          await (root as unknown as { webkitRequestFullscreen: () => Promise<void> }).webkitRequestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if ((document as unknown as { webkitExitFullscreen?: () => Promise<void> }).webkitExitFullscreen) {
+          await (document as unknown as { webkitExitFullscreen: () => Promise<void> }).webkitExitFullscreen();
+        }
+      }
+    } catch (err) {
+      console.warn("Fullscreen toggle failed:", err);
+    }
+  }, []);
+
+  const resetHudTimer = useCallback(() => {
+    setHudVisible(true);
+    if (hudTimerRef.current) clearTimeout(hudTimerRef.current);
+    hudTimerRef.current = setTimeout(() => {
+      setHudVisible(false);
+    }, 3000);
+  }, []);
+
+  useEffect(() => {
+    if (!gameLayout) return;
+    const onMove = () => resetHudTimer();
+    window.addEventListener("mousemove", onMove);
+    resetHudTimer();
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      if (hudTimerRef.current) clearTimeout(hudTimerRef.current);
+    };
+  }, [gameLayout, resetHudTimer]);
 
   function attachRemoteStream(stream: MediaStream) {
     remoteStreamRef.current = stream;
@@ -825,13 +881,24 @@ export function ControllerClient({
         className={[
           hasVideo ? "pbc-pad is-kbm is-gameview" : "pbc-pad is-kbm",
           gameLayout ? "is-popup-game" : "",
+          isFullscreen ? "is-fullscreen" : "",
         ]
           .filter(Boolean)
           .join(" ")}
       >
         <ControllerStyles />
-        <div className={hasVideo ? "pbc-gameview is-live" : "pbc-gameview"} aria-hidden={!hasVideo}>
-          <video ref={bindVideoEl} className="pbc-gameview-video" playsInline muted autoPlay />
+        <div
+          className={hasVideo ? "pbc-gameview is-live" : "pbc-gameview"}
+          aria-hidden={!hasVideo}
+          onDoubleClick={gameLayout ? toggleFullscreen : undefined}
+        >
+          <video
+            ref={bindVideoEl}
+            className={["pbc-gameview-video", cropTitleBar ? "is-cropped" : ""].filter(Boolean).join(" ")}
+            playsInline
+            muted
+            autoPlay
+          />
           {!hasVideo ? (
             <p className="pbc-gameview-wait">
               Waiting for host game view…
@@ -845,21 +912,29 @@ export function ControllerClient({
             </p>
           ) : null}
         </div>
-        <header className="pbc-hud">
+        <header
+          className={["pbc-hud", !hudVisible && gameLayout ? "is-hidden" : ""].filter(Boolean).join(" ")}
+        >
           <span className="pbc-hud-host">{join.hostLabel}</span>
           <span className="pbc-hud-player">{playerLabel}</span>
           {gameLayout ? (
-            <button
-              type="button"
-              className="pbc-hud-fs"
-              onClick={() => {
-                const root = document.documentElement;
-                if (!document.fullscreenElement) void root.requestFullscreen?.();
-                else void document.exitFullscreen?.();
-              }}
-            >
-              Fullscreen
-            </button>
+            <>
+              <button
+                type="button"
+                className={`pbc-hud-fs ${cropTitleBar ? "is-active" : ""}`}
+                onClick={() => setCropTitleBar((prev) => !prev)}
+                title="Crop out window title bar / program bar"
+              >
+                {cropTitleBar ? "Crop Bar: ON" : "Crop Bar: OFF"}
+              </button>
+              <button
+                type="button"
+                className="pbc-hud-fs"
+                onClick={toggleFullscreen}
+              >
+                {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+              </button>
+            </>
           ) : null}
         </header>
         {gameLayout && controlChoice === "phone" ? (
@@ -896,6 +971,7 @@ export function ControllerClient({
         twinStick ? "is-twin-stick" : "",
         hasVideo ? "is-gameview" : "",
         gameLayout ? "is-popup-game" : "",
+        isFullscreen ? "is-fullscreen" : "",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -903,10 +979,14 @@ export function ControllerClient({
       <ControllerStyles />
 
       {/* Host game view (P2P) — online multiplayer for local-only games */}
-      <div className={hasVideo ? "pbc-gameview is-live" : "pbc-gameview"} aria-hidden={!hasVideo}>
+      <div
+        className={hasVideo ? "pbc-gameview is-live" : "pbc-gameview"}
+        aria-hidden={!hasVideo}
+        onDoubleClick={gameLayout ? toggleFullscreen : undefined}
+      >
         <video
           ref={bindVideoEl}
-          className="pbc-gameview-video"
+          className={["pbc-gameview-video", cropTitleBar ? "is-cropped" : ""].filter(Boolean).join(" ")}
           playsInline
           muted
           autoPlay
@@ -1456,51 +1536,119 @@ function ControllerStyles() {
   z-index: 2;
   pointer-events: none;
 }
-.pbc-pad.is-popup-game .pbc-gameview {
-  inset: 0;
-  left: 0;
-  top: 0;
-  transform: none;
-  width: 100%;
-  height: 100%;
-  border-radius: 0;
-  border: none;
-  z-index: 1;
+
+/* Fullscreen / popup-game fills 100% of viewport without restriction */
+.pbc-pad.is-popup-game .pbc-gameview,
+.pbc-pad.is-fullscreen .pbc-gameview,
+.pbc-pad:fullscreen .pbc-gameview,
+:fullscreen .pbc-gameview {
+  position: fixed !important;
+  inset: 0 !important;
+  left: 0 !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  transform: none !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  border-radius: 0 !important;
+  border: none !important;
+  z-index: 1 !important;
+  background: #000 !important;
+  pointer-events: auto !important;
+  cursor: default;
 }
+
 .pbc-pad.is-popup-game .pbc-hud {
-  background: linear-gradient(to bottom, rgba(0,0,0,.65), transparent);
-  z-index: 3;
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  left: auto;
+  transform: none;
+  background: rgba(10, 10, 16, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+  border-radius: 999px;
+  padding: 5px 14px;
+  gap: 10px;
+  z-index: 10;
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
+
+.pbc-pad.is-popup-game .pbc-hud.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px);
+}
+
+.pbc-pad.is-popup-game .pbc-hud:hover {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  transform: none !important;
+}
+
 .pbc-pad.is-popup-game .pbc-status,
 .pbc-pad.is-popup-game .pbc-modes {
   z-index: 3;
 }
+
 .pbc-hud-fs {
   margin-left: auto;
-  border: 1px solid rgba(255,255,255,.25);
-  background: rgba(0,0,0,.45);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.45);
   color: #fff;
   border-radius: 999px;
   padding: 4px 10px;
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
-.pbc-pad.is-gameview .pbc-gameview {
+
+.pbc-hud-fs:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.pbc-hud-fs.is-active {
+  background: rgba(61, 214, 140, 0.2);
+  border-color: rgba(61, 214, 140, 0.6);
+  color: #3dd68c;
+}
+
+/* Phone pad preview sizes (when NOT in popup or fullscreen) */
+.pbc-pad.is-gameview:not(.is-popup-game):not(.is-fullscreen) .pbc-gameview {
   height: min(32vh, 240px);
 }
-.pbc-pad.is-gameview .pbc-hud {
+.pbc-pad.is-gameview:not(.is-popup-game):not(.is-fullscreen) .pbc-hud {
   top: calc(var(--pbc-safe-t) + 8px);
 }
+.pbc-pad.is-kbm:not(.is-popup-game):not(.is-fullscreen) .pbc-gameview {
+  top: calc(var(--pbc-safe-t) + 40px);
+  height: min(52vh, 420px);
+}
+
 .pbc-gameview.is-live {
   border-color: rgba(61, 214, 140, 0.45);
 }
+
 .pbc-gameview-video {
   width: 100%;
   height: 100%;
   object-fit: contain;
   background: #000;
+  transition: transform 0.25s ease-out;
 }
+
+/* Scale up and shift video upward to crop out the Windows program/caption bar (~32px) and borders */
+.pbc-gameview-video.is-cropped {
+  transform: scale(1.05) translateY(-2.2%);
+  transform-origin: center center;
+}
+
 .pbc-gameview-wait {
   position: absolute;
   inset: 0;
@@ -1529,10 +1677,6 @@ function ControllerStyles() {
   border: 1px solid rgba(255, 255, 255, 0.08);
   z-index: 3;
   text-align: center;
-}
-.pbc-pad.is-kbm .pbc-gameview {
-  top: calc(var(--pbc-safe-t) + 40px);
-  height: min(52vh, 420px);
 }
 
 /* ── Three-Zone Ambient Backdrop ─────────────────────────────────────── */
