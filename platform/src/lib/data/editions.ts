@@ -55,6 +55,8 @@ export type EditionSeed = {
   platforms?: string[];
   features?: string[];
   tags?: string[];
+  hasControllerSupport?: boolean;
+  hasFlightstickSupport?: boolean;
   aliases?: string[];
   serverName?: string | null;
   languages?: string[];

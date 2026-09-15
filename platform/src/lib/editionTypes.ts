@@ -333,6 +333,10 @@ export interface Edition {
   platforms?: string[];
   features: string[];
   tags: string[];
+  /** Explicit controller / gamepad support override. When undefined, derived from features/tags. */
+  hasControllerSupport?: boolean;
+  /** Explicit flightstick / HOTAS support override. When undefined, derived from features/tags. */
+  hasFlightstickSupport?: boolean;
   /**
    * Alternate names people actually type. "Turtle", "TWoW" and "Turtle WoW"
    * should all reach the same edition, and none of those belong in the

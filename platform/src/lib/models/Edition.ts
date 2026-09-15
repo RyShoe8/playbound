@@ -147,6 +147,8 @@ const EditionSchema = new Schema(
     platforms: { type: [String], default: [] },
     features: { type: [String], default: [] },
     tags: { type: [String], default: [], index: true },
+    hasControllerSupport: { type: Boolean, default: null },
+    hasFlightstickSupport: { type: Boolean, default: null },
     /** Alternate search names — "Turtle", "TWoW". Indexed; never displayed. */
     aliases: { type: [String], default: [], index: true },
     /** In-game server name, when this edition is a server. */

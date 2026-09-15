@@ -163,6 +163,8 @@ const CatalogGameSchema = new Schema(
     sizeMB: { type: Number, required: true },
     platforms: { type: [String], default: [] },
     features: { type: [String], default: [] },
+    hasControllerSupport: { type: Boolean, default: null },
+    hasFlightstickSupport: { type: Boolean, default: null },
     /**
      * Real max concurrent players in a single session, for the games that have
      * one — a lobby cap, a match size, a server slot count. Null for
