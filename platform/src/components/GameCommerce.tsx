@@ -7,12 +7,12 @@ import type { RetailOffer } from "@/lib/access/types";
 import { formatCents, gameRequiresPurchase, isBaseGameRequirement } from "@/lib/access/resolver";
 import { activeOffers, bestPurchase, heroPurchases } from "@/lib/access/offers";
 import { withOutboundUtm } from "@/lib/utm";
-import { withStoreAffiliate } from "@/lib/access/storeUrls";
+import { withStoreAffiliate, type StoreAffiliateMap } from "@/lib/access/storeUrls";
 import { TelemetryAnchor } from "@/components/TelemetryAnchor";
 import { useGameTier } from "@/components/AccessTiersProvider";
 import { cn } from "@/lib/utils";
 
-export type StoreAffiliateMap = Record<string, { id: string; param: string }>;
+export type { StoreAffiliateMap };
 
 const ctaSizes = {
   sm: "h-8 px-3 text-xs",
@@ -22,12 +22,13 @@ const ctaSizes = {
 
 function purchaseHref(offer: RetailOffer, slug: string, affiliates: StoreAffiliateMap = {}): string {
   const stamp = affiliates[offer.retailer];
-  const tagged = withStoreAffiliate(offer.url, {
+  const withUtm = withOutboundUtm(offer.url, { campaign: "game_get", content: slug });
+  return withStoreAffiliate(withUtm, {
     affiliate: offer.affiliate,
     id: stamp?.id,
     param: stamp?.param,
+    template: stamp?.template,
   });
-  return withOutboundUtm(tagged, { campaign: "game_get", content: slug });
 }
 
 export function GetGameCta({

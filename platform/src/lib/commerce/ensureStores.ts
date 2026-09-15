@@ -33,6 +33,12 @@ export async function ensureCommerceStores() {
       const canIngest = STORE_CAPABILITIES[seed.slug].freeOfferIngest;
       $set.freeOffersEnabled = canIngest && existing.active !== false;
     }
+    if (seed.affiliateUrlTemplate && !existing.affiliateUrlTemplate) {
+      $set.affiliateUrlTemplate = seed.affiliateUrlTemplate;
+    }
+    if (seed.affiliateId && !existing.affiliateId) {
+      $set.affiliateId = seed.affiliateId;
+    }
     if (Object.keys($set).length > 0) {
       await StoreProvider.updateOne({ slug: seed.slug }, { $set });
     }

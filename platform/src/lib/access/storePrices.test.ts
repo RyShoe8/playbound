@@ -60,10 +60,38 @@ describe("withStoreAffiliate", () => {
     ).toBe("https://www.gog.com/game/x");
   });
 
-  it("does nothing without an id or param", () => {
+  it("does nothing without an id or param or template", () => {
     expect(
       withStoreAffiliate("https://www.gog.com/game/x", { affiliate: true, id: "", param: "pp" })
     ).toBe("https://www.gog.com/game/x");
+  });
+
+  it("wraps product URLs using an affiliate template (e.g. Adtraction)", () => {
+    const template =
+      "https://track.adtraction.com/t/t?a=1578845460&as=2103608854&t=2&tk=1&url={url}";
+    const dest = "https://www.gog.com/en/game/dead_space";
+    const wrapped = withStoreAffiliate(dest, { affiliate: true, template });
+    expect(wrapped).toBe(
+      `https://track.adtraction.com/t/t?a=1578845460&as=2103608854&t=2&tk=1&url=${encodeURIComponent(dest)}`
+    );
+  });
+
+  it("appends &url= when the template lacks a {url} placeholder", () => {
+    const template =
+      "https://track.adtraction.com/t/t?a=1578845460&as=2103608854&t=2&tk=1";
+    const dest = "https://www.gog.com/en/game/dead_space";
+    const wrapped = withStoreAffiliate(dest, { affiliate: true, template });
+    expect(wrapped).toBe(
+      `https://track.adtraction.com/t/t?a=1578845460&as=2103608854&t=2&tk=1&url=${encodeURIComponent(dest)}`
+    );
+  });
+
+  it("does not double-wrap an existing tracking URL", () => {
+    const template =
+      "https://track.adtraction.com/t/t?a=1578845460&as=2103608854&t=2&tk=1&url={url}";
+    const alreadyWrapped =
+      "https://track.adtraction.com/t/t?a=1578845460&as=2103608854&t=2&tk=1&url=https%3A%2F%2Fwww.gog.com";
+    expect(withStoreAffiliate(alreadyWrapped, { affiliate: true, template })).toBe(alreadyWrapped);
   });
 });
 

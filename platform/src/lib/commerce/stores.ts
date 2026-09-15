@@ -140,6 +140,9 @@ export const SEED_COMMERCE_STORES: Array<{
   matchingEnabled: boolean;
   priceRefreshEnabled: boolean;
   affiliateDefault: boolean;
+  affiliateId?: string | null;
+  affiliateParam?: string | null;
+  affiliateUrlTemplate?: string | null;
   freeOffersEnabled: boolean;
   discovery: StoreDiscovery;
 }> = [
@@ -162,6 +165,8 @@ export const SEED_COMMERCE_STORES: Array<{
     matchingEnabled: true,
     priceRefreshEnabled: true,
     affiliateDefault: true,
+    affiliateId: "2103608854",
+    affiliateUrlTemplate: "https://track.adtraction.com/t/t?a=1578845460&as=2103608854&t=2&tk=1&url={url}",
     freeOffersEnabled: true,
     discovery: "api",
   },
