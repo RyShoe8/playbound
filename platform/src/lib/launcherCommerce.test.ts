@@ -93,6 +93,27 @@ describe("toLauncherCommerce", () => {
     expect(commerce.requires).toEqual([]);
   });
 
+  it("wraps store URL into an affiliate template when configured", () => {
+    const commerce = toLauncherCommerce(
+      { slug: "dungeon-keeper-gold", access: paidAccess() },
+      valueTier,
+      {
+        GOG: {
+          template:
+            "https://track.adtraction.com/t/t?a=1578845460&as=2103608854&t=2&tk=1&url={url}",
+        },
+      }
+    );
+    expect(commerce.buy?.retailer).toBe("GOG");
+    expect(commerce.buy?.url).toContain(
+      "track.adtraction.com/t/t?a=1578845460&as=2103608854&t=2&tk=1&url="
+    );
+    expect(commerce.buy?.url).toContain(
+      encodeURIComponent("https://www.gog.com/en/game/dungeon_keeper")
+    );
+    expect(commerce.buy?.url).toContain(encodeURIComponent("utm_medium=launcher"));
+  });
+
   it("points an engine at the paid original, not at itself", () => {
     const commerce = toLauncherCommerce(
       {

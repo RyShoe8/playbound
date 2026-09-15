@@ -51,6 +51,7 @@ export async function GET() {
         affiliateDefault: s.affiliateDefault !== false,
         affiliateId: typeof s.affiliateId === "string" ? s.affiliateId : "",
         affiliateParam: typeof s.affiliateParam === "string" ? s.affiliateParam : "",
+        affiliateUrlTemplate: typeof s.affiliateUrlTemplate === "string" ? s.affiliateUrlTemplate : "",
         defaultAffiliateParam: slug ? AFFILIATE_PARAM_DEFAULTS[slug] || "" : "",
         discovery: s.discovery || caps?.discovery || "manual",
         feedUrl: s.feedUrl || "",
@@ -77,6 +78,7 @@ const patchSchema = z.object({
     .regex(/^[A-Za-z0-9_-]*$/, "Query param must be letters, numbers, _ or -.")
     .nullable()
     .optional(),
+  affiliateUrlTemplate: z.string().trim().max(2000).nullable().optional(),
   feedUrl: z.string().trim().max(2000).nullable().optional(),
 });
 
@@ -95,9 +97,14 @@ export async function PATCH(req: Request) {
   if (body.affiliateDefault != null) $set.affiliateDefault = body.affiliateDefault;
   if (body.affiliateId !== undefined) $set.affiliateId = body.affiliateId || null;
   if (body.affiliateParam !== undefined) $set.affiliateParam = body.affiliateParam || null;
+  if (body.affiliateUrlTemplate !== undefined) $set.affiliateUrlTemplate = body.affiliateUrlTemplate || null;
   if (body.feedUrl !== undefined) $set.feedUrl = body.feedUrl || null;
   await StoreProvider.updateOne({ slug: body.slug }, { $set }, { upsert: false });
-  if (body.affiliateId !== undefined || body.affiliateParam !== undefined) {
+  if (
+    body.affiliateId !== undefined ||
+    body.affiliateParam !== undefined ||
+    body.affiliateUrlTemplate !== undefined
+  ) {
     revalidateTag("store-affiliates", { expire: 0 });
   }
   return NextResponse.json({ ok: true });

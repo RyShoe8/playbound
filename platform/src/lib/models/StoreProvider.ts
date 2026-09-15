@@ -27,6 +27,7 @@ const StoreProviderSchema = new Schema(
     affiliateDefault: { type: Boolean, default: true },
     affiliateId: { type: String, default: null },
     affiliateParam: { type: String, default: null },
+    affiliateUrlTemplate: { type: String, default: null },
     discovery: { type: String, enum: ["api", "feed", "manual"], default: "manual" },
     feedUrl: { type: String, default: null },
   },

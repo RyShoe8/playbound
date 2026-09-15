@@ -8,12 +8,14 @@ import {
   storeSlugToRetailer,
 } from "./stores";
 
-export type StoreAffiliateStamp = { id: string; param: string };
+import type { StoreAffiliateStamp } from "@/lib/access/storeUrls";
+
+export type { StoreAffiliateStamp };
 
 async function readAffiliateMap(): Promise<Record<string, StoreAffiliateStamp>> {
   await dbConnect();
   const docs = await StoreProvider.find()
-    .select("slug affiliateId affiliateParam")
+    .select("slug affiliateId affiliateParam affiliateUrlTemplate")
     .lean();
   const out: Record<string, StoreAffiliateStamp> = {};
   for (const doc of docs) {
@@ -21,11 +23,15 @@ async function readAffiliateMap(): Promise<Record<string, StoreAffiliateStamp>> 
     if (!isCommerceStoreSlug(slug)) continue;
     const retailer = storeSlugToRetailer(slug);
     if (!retailer) continue;
+    const template = typeof doc.affiliateUrlTemplate === "string" ? doc.affiliateUrlTemplate.trim() : "";
     const id = typeof doc.affiliateId === "string" ? doc.affiliateId.trim() : "";
     const stored = typeof doc.affiliateParam === "string" ? doc.affiliateParam.trim() : "";
     const param = stored || AFFILIATE_PARAM_DEFAULTS[slug] || "";
-    if (!id || !param) continue;
-    out[retailer] = { id, param };
+    if (template) {
+      out[retailer] = { id: id || undefined, param: param || undefined, template };
+    } else if (id && param) {
+      out[retailer] = { id, param };
+    }
   }
   return out;
 }

@@ -14,6 +14,7 @@ type StoreRow = {
   affiliateDefault: boolean;
   affiliateId: string;
   affiliateParam: string;
+  affiliateUrlTemplate: string;
   defaultAffiliateParam: string;
   discovery: string;
   feedUrl: string;
@@ -246,9 +247,26 @@ export function EcommerceStoresManager() {
                       />
                     </label>
                   </div>
+                  <label className="block text-sm">
+                    <span className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                      Affiliate URL Template
+                    </span>
+                    <input
+                      key={`aff-template-${store.slug}-${store.affiliateUrlTemplate}`}
+                      type="text"
+                      defaultValue={store.affiliateUrlTemplate}
+                      placeholder="https://track.adtraction.com/t/t?a=...&as=...&t=2&tk=1&url={url}"
+                      className="mt-1 w-full rounded-lg border border-border bg-secondary px-3 py-2 text-xs font-mono"
+                      onBlur={(e) => {
+                        const next = e.currentTarget.value.trim();
+                        if (next !== (store.affiliateUrlTemplate || "")) {
+                          void patch(store.slug, { affiliateUrlTemplate: next });
+                        }
+                      }}
+                    />
+                  </label>
                   <p className="text-[11px] text-muted-foreground">
-                    Optional. Stamped on Get Game links when the source is marked affiliate.
-                    Leave the param blank to use {store.defaultAffiliateParam || "nothing until you set one"}.
+                    Optional. For affiliate networks like Adtraction (GOG), set the URL template with <code className="rounded bg-muted px-1">{"{url}"}</code> to wrap product links. If left blank, PlayBound falls back to appending the query param ({store.defaultAffiliateParam || "none"}).
                   </p>
                   {caps?.feedIngest ? (
                     <div className="space-y-1">

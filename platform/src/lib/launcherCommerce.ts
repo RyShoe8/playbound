@@ -12,10 +12,10 @@ import type { GameTier } from "@/lib/access/tierMap";
 import { FREE_TIER } from "@/lib/access/tierMap";
 import { gameRequiresPurchase } from "@/lib/access/resolver";
 import { activeOffers, bestPurchase } from "@/lib/access/offers";
-import { withStoreAffiliate } from "@/lib/access/storeUrls";
+import { withStoreAffiliate, type StoreAffiliateMap } from "@/lib/access/storeUrls";
 import { withOutboundUtm } from "@/lib/utm";
 
-export type StoreAffiliateMap = Record<string, { id: string; param: string }>;
+export type { StoreAffiliateMap };
 
 export type LauncherAccessFields = {
   accessTier: GameTier["tier"];
@@ -57,15 +57,16 @@ function purchaseHref(
   affiliates: StoreAffiliateMap
 ): string {
   const stamp = affiliates[offer.retailer];
-  const tagged = withStoreAffiliate(offer.url, {
-    affiliate: offer.affiliate,
-    id: stamp?.id,
-    param: stamp?.param,
-  });
-  return withOutboundUtm(tagged, {
+  const withUtm = withOutboundUtm(offer.url, {
     campaign: "game_get",
     content: slug,
     medium: "launcher",
+  });
+  return withStoreAffiliate(withUtm, {
+    affiliate: offer.affiliate,
+    id: stamp?.id,
+    param: stamp?.param,
+    template: stamp?.template,
   });
 }
 
