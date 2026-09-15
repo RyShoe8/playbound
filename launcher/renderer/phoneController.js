@@ -34,15 +34,22 @@ function firstNonEmptyList(...candidates) {
  * by the parent game — pass `detail.gameSlug` or the game slug as `slug`.
  */
 export async function gameSupportsController(detail, slug) {
-  // Prefer parent game slug: edition slugs like `rvgl-online` are not in the
-  // controller config map and would falsely skip the Play prompt.
-  const gameSlug = detail?.gameSlug || slug || detail?.slug;
-  const clean = gameSlug ? String(gameSlug).toLowerCase().replace(/^custom-/, "") : "";
+  // Prefer parent game slug, but check both: edition slugs like `ddnet` or `rvgl-online`
+  // and parent game slugs like `teeworlds` should both be probed.
+  const candidates = [
+    detail?.gameSlug,
+    slug,
+    detail?.slug,
+    detail?.editionSlug,
+  ]
+    .filter(Boolean)
+    .map((s) => String(s).toLowerCase().replace(/^custom-/, ""));
+  const uniqueCandidates = [...new Set(candidates)];
 
-  // 1. Controller configuration profile or native runner exists for this title
-  if (clean) {
+  // 1. Controller configuration profile or native runner exists for this title or edition
+  for (const candidate of uniqueCandidates) {
     try {
-      const support = await window.playbound.getControllerSupport?.(clean);
+      const support = await window.playbound.getControllerSupport?.(candidate);
       if (support && (support.kind === "native" || support.kind === "config" || support.kind === "unwritable")) {
         return true;
       }
@@ -57,8 +64,14 @@ export async function gameSupportsController(detail, slug) {
 
   // 3. Features / tags indicating controller support
   if (detail) {
-    const features = firstNonEmptyList(detail.features, detail.gameFeatures);
-    const tags = firstNonEmptyList(detail.tags, detail.gameTags);
+    const features = [
+      ...firstNonEmptyList(detail.features),
+      ...firstNonEmptyList(detail.gameFeatures),
+    ];
+    const tags = [
+      ...firstNonEmptyList(detail.tags),
+      ...firstNonEmptyList(detail.gameTags),
+    ];
     const hay = [
       ...features,
       ...tags,
@@ -72,7 +85,8 @@ export async function gameSupportsController(detail, slug) {
       if (/\b(no controller|controller not supported|unsupported)\b/.test(hay)) return false;
       if (/\b(controller|gamepad|joystick|flightstick|hotas|wheel|marathon|alephone|aleph one)\b/.test(hay)) return true;
     }
-    if (detail.hasControllerSupport === false) return false;
+    // Only treat hasControllerSupport === false as definitive rejection if parent game also has no controller features
+    if (detail.hasControllerSupport === false && !hay.includes("controller") && !hay.includes("gamepad")) return false;
   }
 
   return false;

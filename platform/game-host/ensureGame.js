@@ -107,6 +107,13 @@ const ENSURE_SPECS = {
     ],
     linkAs: "ac_server",
   },
+  teeworlds: {
+    archiveUrl:
+      process.env.TEEWORLDS_SERVER_URL ||
+      "https://github.com/teeworlds/teeworlds/releases/download/0.7.5/teeworlds-0.7.5-linux_x86_64.tar.gz",
+    binaryNames: ["teeworlds_srv"],
+    linkAs: "teeworlds_srv",
+  },
 };
 
 export function canEnsure(slug) {

@@ -113,6 +113,7 @@ const {
   defaultGameProtocol,
 } = require("./services/connectArgs");
 const { createHostService } = require("./services/couch/hostService");
+const { ensureVigem, probeProvider } = require("./services/couch/ensureVigem");
 const openMwConfig = require("./services/openMwConfig");
 const gamepadBridge = require("./services/gamepadBridge");
 const { resolveControlsForGame, resolveQuitHint } = require("./services/gameControls");
@@ -2286,6 +2287,8 @@ function catalogEntryFromEdition(edition) {
   const cfg = edition.installConfig?.playbound_installer;
   if (cfg?.kind) {
     registerDownloadHostFromUrl(cfg.url);
+    registerDownloadHostFromUrl(cfg.urlMac);
+    registerDownloadHostFromUrl(cfg.urlLinux);
     registerDownloadHostFromUrl(cfg.overlayUrl);
     // Mod-loader payloads are downloaded later (at install and again as a
     // launch-time repair), long after the catalog fetch that would normally
@@ -2304,6 +2307,8 @@ function catalogEntryFromEdition(edition) {
       assetPatternLinux: cfg.assetPatternLinux || undefined,
       exeHint: cfg.exeHint || undefined,
       url: cfg.url || undefined,
+      urlMac: cfg.urlMac || undefined,
+      urlLinux: cfg.urlLinux || undefined,
       fileName: cfg.fileName || undefined,
       versionLabel: cfg.versionLabel || undefined,
       gameJoltBuildId: cfg.gameJoltBuildId || undefined,
@@ -12412,6 +12417,17 @@ ipcMain.handle("open-couch-game-view", async (_event, rawUrl) => {
       couchGameViewWin = null;
     });
     couchGameViewWin.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+    couchGameViewWin.webContents.on("render-process-gone", (_e, details) => {
+      console.warn("couchGameViewWin render-process-gone:", details?.reason, details?.exitCode);
+      void telemetry.track("couch_stream_crashed", {
+        reason: details?.reason,
+        exitCode: details?.exitCode,
+      });
+    });
+    couchGameViewWin.webContents.on("unresponsive", () => {
+      console.warn("couchGameViewWin became unresponsive");
+      void telemetry.track("couch_stream_unresponsive", {});
+    });
     await couchGameViewWin.loadURL(url);
     return { ok: true };
   } catch (err) {
@@ -13109,6 +13125,64 @@ ipcMain.handle("get-java-status", async () => {
     };
   } catch (err) {
     return { error: err.message, managed: { installed: false }, systemAvailable: false, usable: false };
+  }
+});
+ipcMain.handle("get-netbird-status", async () => {
+  try {
+    const cli = virtualLan.findCli();
+    return { installed: Boolean(cli), cli: cli || null };
+  } catch (err) {
+    return { installed: false, cli: null, error: err.message };
+  }
+});
+ipcMain.handle("install-netbird", async () => {
+  try {
+    void telemetry.track("netbird_install_started", {});
+    const outcome = await virtualLan.autoInstallNetBird((msg) => {
+      sendProgress?.({ phase: "netbird", message: msg });
+    });
+    if (outcome && outcome.ok) {
+      void telemetry.track("netbird_install_succeeded", {});
+      return { ok: true };
+    }
+    const error = outcome?.error || "NetBird installation failed";
+    void telemetry.track("netbird_install_failed", { message: error });
+    return { ok: false, error };
+  } catch (err) {
+    void telemetry.track("netbird_install_failed", { message: err.message });
+    return { ok: false, error: err.message };
+  }
+});
+ipcMain.handle("get-vigem-status", async () => {
+  try {
+    if (process.platform !== "win32") {
+      return { supported: false, installed: false };
+    }
+    const probe = await probeProvider();
+    return { supported: true, installed: Boolean(probe && probe.ok), reason: probe?.reason || null };
+  } catch (err) {
+    return { supported: true, installed: false, error: err.message };
+  }
+});
+ipcMain.handle("install-vigem", async () => {
+  try {
+    if (process.platform !== "win32") {
+      return { ok: false, error: "ViGEm is Windows only." };
+    }
+    void telemetry.track("vigem_install_started", {});
+    const outcome = await ensureVigem((msg) => {
+      sendProgress?.({ phase: "vigem", message: msg });
+    });
+    if (outcome && outcome.ok) {
+      void telemetry.track("vigem_install_succeeded", {});
+      return { ok: true };
+    }
+    const error = outcome?.reason || "ViGEm setup failed";
+    void telemetry.track("vigem_install_failed", { message: error });
+    return { ok: false, error };
+  } catch (err) {
+    void telemetry.track("vigem_install_failed", { message: err.message });
+    return { ok: false, error: err.message };
   }
 });
 ipcMain.handle("get-app-version", () => ({
@@ -15064,7 +15138,7 @@ function resolveLocalServerBinary(gameDir, hostLaunch) {
   if (process.platform === "win32" && !/\.(exe|bat|cmd|jar)$/i.test(hint)) {
     names.push(`${hint}.exe`);
   }
-  if (/teeworlds/i.test(hint) || /teeworlds/i.test(gameDir)) {
+  if (/teeworlds|ddnet/i.test(hint) || /teeworlds|ddnet/i.test(gameDir)) {
     if (process.platform === "win32") {
       names.push("DDNet-Server.exe", "teeworlds_srv.exe");
     } else {

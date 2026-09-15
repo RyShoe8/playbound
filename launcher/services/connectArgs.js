@@ -49,6 +49,7 @@ const CLIENT_CONNECT_ARGS = {
   "earth-2140-trilogy": ["Game.Mod=e2140", "Launch.Connect={host}:{port}"],
   // The client takes console commands as argv, quoted as one token.
   teeworlds: ['"connect {host}:{port}"'],
+  ddnet: ['"connect {host}:{port}"'],
   /*
    * BombSquad and Hurry Curry prompt for the address in-game — their adapter
    * rows specify inGameJoinPrompt. Declared null so the launcher knows there

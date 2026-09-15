@@ -22,6 +22,7 @@ import {
   isModDesktopCompatible,
   selectExecutableLabel,
   markViewReady,
+  postTelemetry,
   setStatus,
   startGameSession,
   state,
@@ -598,6 +599,8 @@ if (!playPollWired) {
 
 /** Tell the server the local game closed; retry until presence catches up. */
 async function notifyPartyGameClosed(slug) {
+  pendingJoin = null;
+  setStatus("");
   const party = state._activeParty;
   if (!party?.id || party.gameSlug !== slug) return;
   if (slug === "hedgewars") void window.playbound.stopHedgewarsLocalServer?.();
@@ -1485,7 +1488,86 @@ const ICON = {
   send: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>`,
   lock: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
   refresh: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>`,
+  alert: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
 };
+
+let cachedNetBirdStatus = null;
+let cachedJavaStatus = null;
+let cachedVigemStatus = null;
+const loggedMissingReqs = new Set();
+
+function partyRequirementsFor(party) {
+  if (!party?.gameSlug) return { needsNetBird: false, needsJava: false, needsVigem: false };
+  const slug = String(party.gameSlug || "").toLowerCase();
+  const hostMode = String(party.hostMode || "");
+  const isLanEnabled = Boolean(party.lan?.enabled);
+  const isP2POrLanGame = /re-volt|rvgl|direct-ip|virtual-lan|hedgewars|bombsquad/i.test(slug);
+  const needsNetBird = isLanEnabled || hostMode === "self" || isP2POrLanGame;
+  const needsJava = /mindustry|triplea|freecol|megaglest/i.test(slug);
+
+  // Couch-over-online titles (e.g. TMNT Rescue-Palooza, X-Men, Streets of Rage, Lovers in a Dangerous Spacetime):
+  // When played in an online party, host runs the game and remote guests connect their pads via ViGEm.
+  const couchOnly = new Set(party.couchOnlyGames || []);
+  const isCouchGame = Boolean(
+    couchOnly.has(party.gameSlug) ||
+    /tmnt|rescue-palooza|x-men|streets-of-rage|metal-slug-remake|relic-hunters-zero|lovers-in-a-dangerous/i.test(slug)
+  );
+  const needsVigem = Boolean(party.couch?.enabled || hostMode === "couch" || isCouchGame);
+
+  return { needsNetBird, needsJava, needsVigem };
+}
+
+function buildRequirementsBannerHtml(party, isLeader = false) {
+  const reqs = partyRequirementsFor(party);
+  if (!reqs.needsNetBird && !reqs.needsJava && (!isLeader || !reqs.needsVigem)) return "";
+
+  if (isLeader && reqs.needsVigem && cachedVigemStatus !== null && !cachedVigemStatus.installed) {
+    return `
+      <div class="party-req-banner party-req-warning">
+        <div class="party-req-icon">${ICON.alert}</div>
+        <div class="party-req-body">
+          <p class="party-req-title">Virtual Controller Driver (ViGEm) Required</p>
+          <p class="party-req-desc">Hosting ${escapeHtml(party.gameTitle || "this game")} online requires the ViGEm driver so remote friends can connect as Player 2, 3, or 4.</p>
+        </div>
+        <button type="button" id="btn-party-install-vigem" class="party-btn btn-primary party-req-btn">
+          ${ICON.download} Install ViGEm Driver
+        </button>
+      </div>
+    `;
+  }
+
+  if (reqs.needsNetBird && cachedNetBirdStatus !== null && !cachedNetBirdStatus.installed) {
+    return `
+      <div class="party-req-banner party-req-warning">
+        <div class="party-req-icon">${ICON.alert}</div>
+        <div class="party-req-body">
+          <p class="party-req-title">Virtual LAN (NetBird) Required</p>
+          <p class="party-req-desc">This game connects players directly over PlayBound's Virtual Network. NetBird is required to connect to the host.</p>
+        </div>
+        <button type="button" id="btn-party-install-netbird" class="party-btn btn-primary party-req-btn">
+          ${ICON.download} Install NetBird
+        </button>
+      </div>
+    `;
+  }
+
+  if (reqs.needsJava && cachedJavaStatus !== null && !cachedJavaStatus.usable) {
+    return `
+      <div class="party-req-banner party-req-warning">
+        <div class="party-req-icon">${ICON.alert}</div>
+        <div class="party-req-body">
+          <p class="party-req-title">Java Runtime Required</p>
+          <p class="party-req-desc">This game requires a Java 17 runtime to launch and play multiplayer.</p>
+        </div>
+        <button type="button" id="btn-party-install-java" class="party-btn btn-primary party-req-btn">
+          ${ICON.download} Install Java
+        </button>
+      </div>
+    `;
+  }
+
+  return "";
+}
 
 /**
  * Catalog used to populate the party game picker. The website's friends page
@@ -1888,6 +1970,17 @@ function buildPartyViewHtml(party) {
   const membersHtml = (party.members || [])
     .map((m) => {
       const isMe = String(m.userId) === String(userId);
+      const reqs = partyRequirementsFor(party);
+      let memberReqWarning = "";
+      if (isMe) {
+        if (reqs.needsNetBird && cachedNetBirdStatus && !cachedNetBirdStatus.installed) {
+          memberReqWarning = ` · <span class="party-member-warn" title="NetBird Virtual LAN required on this PC">⚠️ NetBird needed</span>`;
+        } else if (reqs.needsJava && cachedJavaStatus && !cachedJavaStatus.usable) {
+          memberReqWarning = ` · <span class="party-member-warn" title="Java Runtime required on this PC">⚠️ Java needed</span>`;
+        } else if (isLeader && reqs.needsVigem && cachedVigemStatus && !cachedVigemStatus.installed) {
+          memberReqWarning = ` · <span class="party-member-warn" title="ViGEm controller driver required on Host">⚠️ ViGEm needed</span>`;
+        }
+      }
       return `
         <li class="party-member">
           <div class="party-member-main">
@@ -1900,7 +1993,7 @@ function buildPartyViewHtml(party) {
                 ${m.role === "leader" ? `<span class="party-crown">${ICON.crown}</span>` : ""}
                 ${isMe ? `<span class="party-member-you">(You)</span>` : ""}
               </p>
-              <p class="party-member-sub">${m.ready ? "Ready" : "Not ready"}</p>
+              <p class="party-member-sub">${m.ready ? "Ready" : "Not ready"}${memberReqWarning}</p>
             </div>
           </div>
           ${
@@ -2116,6 +2209,10 @@ function buildPartyViewHtml(party) {
         <div class="party-members">
           <h4 class="party-section-label">Members</h4>
           <ul class="party-member-list">${membersHtml}</ul>
+        </div>
+
+        <div id="party-requirements-container">
+          ${buildRequirementsBannerHtml(party, isLeader)}
         </div>
 
         <div class="party-actions">
@@ -2907,6 +3004,8 @@ function blurPartyFocus() {
 }
 
 function clearPartyAreaOptimistic() {
+  pendingJoin = null;
+  setStatus("");
   const slot = document.getElementById("friends-party-area");
   if (slot) {
     slot.innerHTML = "";
@@ -3042,6 +3141,8 @@ function wirePartyView(slot, party) {
         slot.dataset.sig = "";
         paintPartyArea({ myParties: [state._activeParty], discoverable: [] }, { force: true });
       }
+      pendingJoin = null;
+      setStatus("");
       try {
         const res = await window.playbound.setPartyGame(partyId, slug);
         applyPartyResult(res, "Couldn't set the party game.");
@@ -3059,6 +3160,8 @@ function wirePartyView(slot, party) {
   const openRaModSelect = slot.querySelector("#party-openra-mod-select");
   if (openRaModSelect) {
     openRaModSelect.addEventListener("change", async () => {
+      pendingJoin = null;
+      setStatus("");
       const val = openRaModSelect.value || null;
       partyMutationInFlight += 1;
       try {
@@ -3508,6 +3611,189 @@ function wirePartyView(slot, party) {
         return;
       }
       void refreshPartyChat(party, { force: true });
+    });
+  }
+
+  void wireRequirementsCheck(slot, party);
+}
+
+async function wireRequirementsCheck(slot, party) {
+  const reqs = partyRequirementsFor(party);
+  const isLeader = String(party.leaderId) === String(currentUserId(party));
+  if (!reqs.needsNetBird && !reqs.needsJava && (!isLeader || !reqs.needsVigem)) return;
+
+  const container = slot.querySelector("#party-requirements-container");
+  if (!container) return;
+
+  if (reqs.needsNetBird && cachedNetBirdStatus === null && window.playbound?.getNetBirdStatus) {
+    try {
+      cachedNetBirdStatus = await window.playbound.getNetBirdStatus();
+    } catch {
+      cachedNetBirdStatus = { installed: false };
+    }
+  }
+
+  if (reqs.needsJava && cachedJavaStatus === null && window.playbound?.getJavaStatus) {
+    try {
+      cachedJavaStatus = await window.playbound.getJavaStatus();
+    } catch {
+      cachedJavaStatus = { usable: false };
+    }
+  }
+
+  if (isLeader && reqs.needsVigem && cachedVigemStatus === null && window.playbound?.getVigemStatus) {
+    try {
+      cachedVigemStatus = await window.playbound.getVigemStatus();
+    } catch {
+      cachedVigemStatus = { installed: false };
+    }
+  }
+
+  const partyKey = `${party.id}:${party.gameSlug}`;
+  if (reqs.needsNetBird && cachedNetBirdStatus && !cachedNetBirdStatus.installed) {
+    const logKey = `${partyKey}:netbird`;
+    if (!loggedMissingReqs.has(logKey)) {
+      loggedMissingReqs.add(logKey);
+      postTelemetry("party_requirement_missing", {
+        partyId: party.id,
+        gameSlug: party.gameSlug,
+        requirement: "netbird",
+        role: isLeader ? "leader" : "member",
+      });
+    }
+  }
+  if (reqs.needsJava && cachedJavaStatus && !cachedJavaStatus.usable) {
+    const logKey = `${partyKey}:java`;
+    if (!loggedMissingReqs.has(logKey)) {
+      loggedMissingReqs.add(logKey);
+      postTelemetry("party_requirement_missing", {
+        partyId: party.id,
+        gameSlug: party.gameSlug,
+        requirement: "java",
+        role: isLeader ? "leader" : "member",
+      });
+    }
+  }
+  if (isLeader && reqs.needsVigem && cachedVigemStatus && !cachedVigemStatus.installed) {
+    const logKey = `${partyKey}:vigem`;
+    if (!loggedMissingReqs.has(logKey)) {
+      loggedMissingReqs.add(logKey);
+      postTelemetry("party_requirement_missing", {
+        partyId: party.id,
+        gameSlug: party.gameSlug,
+        requirement: "vigem",
+        role: "leader",
+      });
+    }
+  }
+
+  const bannerHtml = buildRequirementsBannerHtml(party, isLeader);
+  if (container.innerHTML.trim() !== bannerHtml.trim()) {
+    container.innerHTML = bannerHtml;
+  }
+
+  const vigemBtn = container.querySelector("#btn-party-install-vigem");
+  if (vigemBtn) {
+    vigemBtn.addEventListener("click", async () => {
+      vigemBtn.disabled = true;
+      vigemBtn.innerHTML = `${ICON.loader} Setting up ViGEm driver (approve Windows prompt)…`;
+      try {
+        const res = await window.playbound.installVigem?.();
+        if (res && res.ok) {
+          cachedVigemStatus = { installed: true };
+          container.innerHTML = `
+            <div class="party-req-banner party-req-success">
+              <div class="party-req-icon">${ICON.check}</div>
+              <div class="party-req-body">
+                <p class="party-req-title">ViGEm Driver Ready</p>
+                <p class="party-req-desc">Virtual controllers are ready to host remote players.</p>
+              </div>
+            </div>
+          `;
+          setTimeout(() => {
+            if (slot.dataset.sig) slot.dataset.sig = "";
+            void api.refreshFriendsData();
+          }, 2000);
+        } else {
+          vigemBtn.disabled = false;
+          vigemBtn.innerHTML = `${ICON.download} Retry Install ViGEm`;
+          setStatus(res?.error || "ViGEm setup failed. Please approve the Windows prompt.", true);
+        }
+      } catch (err) {
+        vigemBtn.disabled = false;
+        vigemBtn.innerHTML = `${ICON.download} Retry Install ViGEm`;
+        setStatus(err?.message || "Failed to setup controller driver.", true);
+      }
+    });
+  }
+
+  const netBirdBtn = container.querySelector("#btn-party-install-netbird");
+  if (netBirdBtn) {
+    netBirdBtn.addEventListener("click", async () => {
+      netBirdBtn.disabled = true;
+      netBirdBtn.innerHTML = `${ICON.loader} Installing NetBird (approve Windows prompt)…`;
+      try {
+        const res = await window.playbound.installNetBird?.();
+        if (res && res.ok) {
+          cachedNetBirdStatus = { installed: true };
+          container.innerHTML = `
+            <div class="party-req-banner party-req-success">
+              <div class="party-req-icon">${ICON.check}</div>
+              <div class="party-req-body">
+                <p class="party-req-title">NetBird Installed</p>
+                <p class="party-req-desc">Virtual LAN is ready for this party session.</p>
+              </div>
+            </div>
+          `;
+          setTimeout(() => {
+            if (slot.dataset.sig) slot.dataset.sig = "";
+            void api.refreshFriendsData();
+          }, 2000);
+        } else {
+          netBirdBtn.disabled = false;
+          netBirdBtn.innerHTML = `${ICON.download} Retry Install NetBird`;
+          setStatus(res?.error || "NetBird installation failed. Ensure you approve the Windows prompt.", true);
+        }
+      } catch (err) {
+        netBirdBtn.disabled = false;
+        netBirdBtn.innerHTML = `${ICON.download} Retry Install NetBird`;
+        setStatus(err?.message || "Failed to launch NetBird installer.", true);
+      }
+    });
+  }
+
+  const javaBtn = container.querySelector("#btn-party-install-java");
+  if (javaBtn) {
+    javaBtn.addEventListener("click", async () => {
+      javaBtn.disabled = true;
+      javaBtn.innerHTML = `${ICON.loader} Downloading Java 17…`;
+      try {
+        const res = await window.playbound.ensureManagedJava?.({ promptUser: false });
+        if (res && res.installed) {
+          cachedJavaStatus = { usable: true };
+          container.innerHTML = `
+            <div class="party-req-banner party-req-success">
+              <div class="party-req-icon">${ICON.check}</div>
+              <div class="party-req-body">
+                <p class="party-req-title">Java 17 Installed</p>
+                <p class="party-req-desc">Java runtime is ready to launch this game.</p>
+              </div>
+            </div>
+          `;
+          setTimeout(() => {
+            if (slot.dataset.sig) slot.dataset.sig = "";
+            void api.refreshFriendsData();
+          }, 2000);
+        } else {
+          javaBtn.disabled = false;
+          javaBtn.innerHTML = `${ICON.download} Retry Install Java`;
+          setStatus(res?.error || "Java installation failed.", true);
+        }
+      } catch (err) {
+        javaBtn.disabled = false;
+        javaBtn.innerHTML = `${ICON.download} Retry Install Java`;
+        setStatus(err?.message || "Failed to install Java.", true);
+      }
     });
   }
 }

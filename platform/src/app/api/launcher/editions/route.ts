@@ -73,7 +73,9 @@ export async function GET(req: Request) {
           verified: edition.verified,
           tags: edition.tags || [],
           features: edition.features || [],
-          hasControllerSupport: supportsController(edition),
+          hasControllerSupport:
+            supportsController(edition) ||
+            (edition.hasControllerSupport !== false && supportsController(game)),
           genres: game.genres || [],
           /*
            * Edition first, game as fallback — same pattern as sizeMB below.

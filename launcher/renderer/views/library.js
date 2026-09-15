@@ -846,6 +846,7 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
           catEd?.hasControllerSupport === true ||
           catalogEntry?.hasControllerSupport === true ||
           game.hasControllerSupport === true ||
+          (catalogEntry?.features && catalogEntry.features.some((f) => /controller|gamepad/i.test(f))) ||
           (curEd?.hasControllerSupport ?? catEd?.hasControllerSupport ?? catalogEntry?.hasControllerSupport ?? game.hasControllerSupport),
       };
       try {

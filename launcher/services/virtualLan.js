@@ -535,6 +535,7 @@ async function writeAdapterFile(gameDir, adapterFile, adapterName) {
 }
 
 module.exports = {
+  autoInstallNetBird,
   DOWNLOAD_URL,
   describeOverlayDetail,
   findCli,

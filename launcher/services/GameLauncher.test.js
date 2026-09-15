@@ -109,3 +109,20 @@ test("Lost Alpha bins/XR_3DA.exe resolves working directory to package root", ()
   );
 });
 
+test("buildGameLaunchCommand adds --args on macOS for open commands with arguments", () => {
+  const Platform = require("../platform");
+  const orig = Platform.getGameLaunchCommand;
+  try {
+    Platform.getGameLaunchCommand = (p) => ["open", p];
+    const withArgs = GameLauncher.buildGameLaunchCommand("/Applications/Teeworlds.app", ["connect 1.2.3.4:8303"]);
+    assert.equal(withArgs.cmd, "open");
+    assert.deepEqual(withArgs.finalArgs, ["/Applications/Teeworlds.app", "--args", "connect 1.2.3.4:8303"]);
+
+    const withoutArgs = GameLauncher.buildGameLaunchCommand("/Applications/Teeworlds.app", []);
+    assert.equal(withoutArgs.cmd, "open");
+    assert.deepEqual(withoutArgs.finalArgs, ["/Applications/Teeworlds.app"]);
+  } finally {
+    Platform.getGameLaunchCommand = orig;
+  }
+});
+

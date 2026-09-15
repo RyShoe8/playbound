@@ -3036,7 +3036,10 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
           gameTags: pickList(gameDetail?.tags),
           controllerSupport: edition.controllerSupport || gameDetail?.controllerSupport,
           hasControllerSupport:
-            edition.hasControllerSupport ?? gameDetail?.hasControllerSupport,
+            edition.hasControllerSupport === true ||
+            gameDetail?.hasControllerSupport === true ||
+            (gameDetail?.features && gameDetail.features.some((f) => /controller|gamepad/i.test(f))) ||
+            (edition.hasControllerSupport ?? gameDetail?.hasControllerSupport),
         },
         async (launchOpts) => {
           setStatus("Checking Java / launching…");

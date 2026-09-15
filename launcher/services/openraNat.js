@@ -47,6 +47,19 @@ function configureOpenRaSettings(contents) {
     text = text.replace(/NatDiscoveryTimeout\s*:\s*\d+/i, "NatDiscoveryTimeout: 1000");
   }
 
+  // Set OrderLatency to 5 to provide a buffer for packet jitter and prevent lockstep freezes
+  if (/OrderLatency\s*:\s*\d+/i.test(text)) {
+    const match = text.match(/OrderLatency\s*:\s*(\d+)/i);
+    const current = Number(match ? match[1] : 3);
+    if (current < 5) {
+      text = text.replace(/OrderLatency\s*:\s*\d+/i, "OrderLatency: 5");
+    }
+  } else if (/^Server:\s*$/m.test(text)) {
+    text = text.replace(/^Server:\s*$/m, "Server:\n\tOrderLatency: 5");
+  } else if (/DiscoverNatDevices\s*:\s*False/i.test(text)) {
+    text = text.replace(/DiscoverNatDevices\s*:\s*False/i, "DiscoverNatDevices: False\n\tOrderLatency: 5");
+  }
+
   return text;
 }
 
