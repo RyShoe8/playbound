@@ -116,6 +116,10 @@ export interface Game {
   status?: "draft" | "watchlist" | "testing" | "published";
   platforms: string[];
   features: string[];
+  /** Explicit controller / gamepad support override. When undefined, derived from features/tags. */
+  hasControllerSupport?: boolean;
+  /** Explicit flightstick / HOTAS support override. When undefined, derived from features/tags. */
+  hasFlightstickSupport?: boolean;
   /** Real max concurrent players in one session. Null until verified — never a guess. */
   maxPlayers?: number | null;
   launchMethods: LaunchMethod[];
