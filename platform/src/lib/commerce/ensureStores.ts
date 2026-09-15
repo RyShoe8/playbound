@@ -19,6 +19,9 @@ export async function ensureCommerceStores() {
       affiliateDefault?: boolean;
       freeOffersEnabled?: boolean;
       discovery?: string;
+      affiliateId?: string | null;
+      affiliateParam?: string | null;
+      affiliateUrlTemplate?: string | null;
     } | null;
     if (!existing) {
       await StoreProvider.create(seed);
@@ -38,6 +41,9 @@ export async function ensureCommerceStores() {
     }
     if (seed.affiliateId && !existing.affiliateId) {
       $set.affiliateId = seed.affiliateId;
+    }
+    if (seed.affiliateParam && !existing.affiliateParam) {
+      $set.affiliateParam = seed.affiliateParam;
     }
     if (Object.keys($set).length > 0) {
       await StoreProvider.updateOne({ slug: seed.slug }, { $set });
