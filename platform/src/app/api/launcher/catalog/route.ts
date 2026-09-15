@@ -56,7 +56,7 @@ export async function GET(req: Request) {
           platforms: Array.isArray(e.platforms) ? e.platforms : [],
           features: Array.isArray(e.features) ? e.features : [],
           tags: Array.isArray(e.tags) ? e.tags : [],
-          hasControllerSupport: supportsController(e),
+          hasControllerSupport: supportsController(e) || (e.hasControllerSupport !== false && supportsController(g)),
         }));
 
         // PC-installable games: full launcher recipe

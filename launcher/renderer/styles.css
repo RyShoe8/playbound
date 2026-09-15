@@ -5984,6 +5984,71 @@ textarea.input-text {
   color: var(--text-muted);
 }
 .party-inline-note { margin: 0; font-size: 12px; align-self: center; }
+
+/* ── Party Lobby Requirements Banner ────────────────────────────── */
+.party-req-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  margin: 12px 0 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+  border: 1px solid transparent;
+}
+.party-req-warning {
+  background: rgba(255, 171, 0, 0.08);
+  border-color: rgba(255, 171, 0, 0.28);
+  color: #ffe082;
+}
+.party-req-success {
+  background: rgba(46, 213, 115, 0.08);
+  border-color: rgba(46, 213, 115, 0.28);
+  color: #a8e6cf;
+}
+.party-req-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+}
+.party-req-warning .party-req-icon {
+  color: #ffb74d;
+}
+.party-req-success .party-req-icon {
+  color: #2ed573;
+}
+.party-req-body {
+  flex: 1;
+  min-width: 0;
+}
+.party-req-title {
+  margin: 0 0 2px;
+  font-weight: 700;
+  font-size: 13px;
+  color: #fff;
+}
+.party-req-desc {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.party-req-btn {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.party-member-warn {
+  color: #ffb74d;
+  font-weight: 600;
+}
 /* The overlay hint sits with the other party notes but wraps like a sentence
    rather than a status line — it names a key, and a key has to look like one. */
 .party-overlay-hint {

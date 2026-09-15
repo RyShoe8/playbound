@@ -215,9 +215,7 @@ class GameLauncher {
       });
     }
 
-    const launchCommand = Platform.getGameLaunchCommand(launchPath);
-    const cmd = launchCommand[0];
-    const finalArgs = [...launchCommand.slice(1), ...args];
+    const { cmd, finalArgs } = this.buildGameLaunchCommand(launchPath, args);
 
     // For .app bundles, cwd should be the parent of the bundle, not Contents/.
     // Callers (Unknown Horizons) may pass an explicit cwd when the exe is not
@@ -292,6 +290,21 @@ class GameLauncher {
       xrEngineWorkingDirectory(launchPath, gameSlug) ||
       path.dirname(launchPath)
     );
+  }
+
+  /**
+   * Resolves the executable command and arguments for launching a game.
+   * On macOS with .app bundles (invoked via `open`), additional arguments
+   * must be preceded by `--args` so they are delivered to the app's argv.
+   */
+  static buildGameLaunchCommand(launchPath, args = []) {
+    const launchCommand = Platform.getGameLaunchCommand(launchPath);
+    const cmd = launchCommand[0];
+    const finalArgs =
+      cmd === "open" && args.length > 0
+        ? [...launchCommand.slice(1), "--args", ...args]
+        : [...launchCommand.slice(1), ...args];
+    return { cmd, finalArgs };
   }
 }
 

@@ -1053,7 +1053,10 @@ export function startGameSession(slug, title) {
 }
 
 export function endGameSession() {
-  if (!state._activeGameSession) return;
+  if (!state._activeGameSession) {
+    setStatus("");
+    return;
+  }
   const durationMs = Math.max(0, Date.now() - state._activeGameSession.startedAt);
   postTelemetry("game_finished", {
     gameSlug: state._activeGameSession.slug,
@@ -1066,6 +1069,7 @@ export function endGameSession() {
   } catch {
     /* ignore */
   }
+  setStatus("");
 }
 
 export function enhanceSelect(selectEl) {

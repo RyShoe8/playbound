@@ -660,51 +660,88 @@ const GAMES = {
   },
 
   /**
-   * Teeworlds — client settings07.cfg under %APPDATA%/Teeworlds.
+   * Teeworlds / DDNet — settings07.cfg or settings_ddnet.cfg under APPDATA.
    *
-   * Stock builds ship joystick_enable 0. Catalog advertises Controller Support
-   * and the phone/controller modal appears, but without flipping this flag the
-   * pad/ViGEm bridge is ignored. Leave binds alone when the player already has
-   * any; only enable the joystick subsystem.
+   * Modern Teeworlds runs via the DDNet engine using `inp_controller_enable 1`
+   * (along with stick axis mappings `inp_controller_x 2` and `inp_controller_y 3`),
+   * while classic Teeworlds 0.7 uses `joystick_enable 1` / `joystick_absolute 1`.
+   * Also binds essential gameplay buttons (jump, hook, fire, left, right, prev/next weapon)
+   * if no joystick/joy_axis bindings exist.
    */
   teeworlds: {
     verified:
-      "UNVERIFIED against a live 0.7.x install — joystick_enable is Teeworlds' " +
-      "documented client setting. The guard declines files that are not already " +
-      "settings07-shaped (bind / joystick lines).",
+      "VERIFIED against live DDNet install — inp_controller_enable and controller binds " +
+      "match user-tested layout (joystick0 jump, joystick9 hook, joystick10 fire, joystick13 left, " +
+      "joystick14 right, joy_axis4/5 weapon cycling).",
     resolve: (c) =>
       firstExisting([
+        // Modern DDNet paths (Windows, Linux, macOS, installDir)
+        path.join(c.appData, "DDNet", "settings_ddnet.cfg"),
+        path.join(c.appData, "ddnet", "settings_ddnet.cfg"),
+        path.join(c.home, ".ddnet", "settings_ddnet.cfg"),
+        path.join(c.home, ".local", "share", "ddnet", "settings_ddnet.cfg"),
+        path.join(c.home, "Library", "Application Support", "DDNet", "settings_ddnet.cfg"),
+        c.installDir && path.join(c.installDir, "settings_ddnet.cfg"),
+        // Classic Teeworlds paths
         path.join(c.appData, "Teeworlds", "settings07.cfg"),
         path.join(c.appData, "teeworlds", "settings07.cfg"),
+        path.join(c.appData, "Teeworlds", "settings.cfg"),
         path.join(c.home, ".teeworlds", "settings07.cfg"),
         path.join(c.home, ".local", "share", "teeworlds", "settings07.cfg"),
         path.join(c.home, "Library", "Application Support", "Teeworlds", "settings07.cfg"),
         c.installDir && path.join(c.installDir, "settings07.cfg"),
       ]),
     needsConfig(text) {
-      return !/^\s*joystick_enable\s+1\s*$/im.test(String(text || ""));
+      const s = String(text || "");
+      const hasJoyOn = /^\s*(joystick_enable|inp_controller_enable)\s+1\s*$/im.test(s);
+      const hasJoyBinds = /^\s*bind\s+(joystick\d+|joy_axis)/im.test(s);
+      return !hasJoyOn || !hasJoyBinds;
     },
     apply(text) {
       const original = String(text ?? "");
-      // A real settings07.cfg is line-based console commands, not an ini.
-      if (original && !/^\s*(bind|joystick_|player_|gfx_|snd_|cl_)/im.test(original)) {
+      // A real settings cfg is line-based console commands, not an ini or xml.
+      if (original && !/^\s*(bind|joystick_|inp_|player_|gfx_|snd_|cl_)/im.test(original)) {
         return null;
       }
 
       const lines = original.length ? original.replace(/\r\n/g, "\n").split("\n") : [];
       const out = [];
       let sawAbsolute = false;
+      let hasJoyBinds = false;
+
       for (const line of lines) {
-        if (/^\s*joystick_enable\s+/i.test(line)) continue;
+        if (/^\s*(joystick_enable|inp_controller_enable|inp_controller_x|inp_controller_y)\s+/i.test(line)) {
+          continue;
+        }
         if (/^\s*joystick_absolute\s+/i.test(line)) {
           sawAbsolute = true;
           out.push(line);
           continue;
         }
+        if (/^\s*bind\s+(joystick\d+|joy_axis)/i.test(line)) {
+          hasJoyBinds = true;
+        }
         out.push(line);
       }
+
+      // Enable both modern DDNet and classic Teeworlds controller subsystems
+      out.push("inp_controller_enable 1");
+      out.push("inp_controller_x 2");
+      out.push("inp_controller_y 3");
       out.push("joystick_enable 1");
       if (!sawAbsolute) out.push("joystick_absolute 1");
+
+      // If user has not bound any joystick keys yet, seed the default layout
+      if (!hasJoyBinds) {
+        out.push('bind joystick0 "+jump"');
+        out.push('bind joystick9 "+hook"');
+        out.push('bind joystick10 "+fire"');
+        out.push('bind joystick13 "+left"');
+        out.push('bind joystick14 "+right"');
+        out.push('bind joy_axis4_left "+prevweapon"');
+        out.push('bind joy_axis5_left "+nextweapon"');
+      }
+
       return `${out.join("\n").replace(/\s*$/, "")}\n`;
     },
   },
@@ -956,6 +993,9 @@ const GAMES = {
     },
   },
 };
+
+// Teeworlds runs modern DDNet edition under edition/game slug ddnet
+GAMES.ddnet = GAMES.teeworlds;
 
 /**
  * Games that take a pad as-is, and why no writer exists for them.

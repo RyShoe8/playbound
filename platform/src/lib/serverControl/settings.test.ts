@@ -32,9 +32,20 @@ describe("server setting profiles", () => {
       if (src[i] === "{") depth += 1;
       else if (src[i] === "}" && --depth === 0) break;
     }
-    const agentDefaults = new Function(`return ${src.slice(open, i + 1)};`)();
+    const warzoneDefaults = new Function(`return ${src.slice(open, i + 1)};`)();
+    expect(defaultSettingValues("warzone-2100")).toEqual(warzoneDefaults);
 
-    expect(defaultSettingValues("warzone-2100")).toEqual(agentDefaults);
+    const teeworldsStart = src.indexOf("export const TEEWORLDS_DEFAULT_SETTINGS = {");
+    expect(teeworldsStart, "TEEWORLDS_DEFAULT_SETTINGS not found in recipes.js").not.toBe(-1);
+    const teeworldsOpen = src.indexOf("{", teeworldsStart);
+    let teeworldsDepth = 0;
+    let j = teeworldsOpen;
+    for (; j < src.length; j++) {
+      if (src[j] === "{") teeworldsDepth += 1;
+      else if (src[j] === "}" && --teeworldsDepth === 0) break;
+    }
+    const teeworldsDefaults = new Function(`return ${src.slice(teeworldsOpen, j + 1)};`)();
+    expect(defaultSettingValues("teeworlds")).toEqual(teeworldsDefaults);
   });
 
   it("every setting a game declares has a default of its own type", () => {
@@ -284,8 +295,6 @@ describe("coverage of the games PlayBound hosts", () => {
    * to write is what this catches.
    */
   const READY_BUT_NOT_HOSTED: Record<string, string> = {
-    teeworlds:
-      "The agent has a full recipe, but the slug is not in HOSTABLE_GAMES and its adapter is official — so nothing ever asks for a Teeworlds room.",
     "zero-k":
       "Assessed and found to have nothing a server can change — battles are configured in Zero-K's lobby. The profile records that; PlayBound stopped provisioning Zero-K rooms once it turned out spring-dedicated takes a start script rather than the flags the recipe passed.",
     "re-volt-rvgl":

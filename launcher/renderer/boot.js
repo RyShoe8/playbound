@@ -472,7 +472,10 @@ function wireMainEvents() {
   window.addEventListener("beforeunload", () => endGameSession());
   window.playbound.onGameExited?.((data) => {
     const slug = data?.slug;
-    if (!slug || !state._activeGameSession || state._activeGameSession.slug !== slug) return;
+    if (!slug || !state._activeGameSession || state._activeGameSession.slug !== slug) {
+      setStatus("");
+      return;
+    }
     endGameSession();
   });
 

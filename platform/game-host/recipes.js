@@ -73,6 +73,18 @@ export const WARZONE_DEFAULT_SETTINGS = {
 };
 
 /**
+ * Teeworlds defaults. Kept in sync with platform/src/lib/serverControl/settings.ts.
+ */
+export const TEEWORLDS_DEFAULT_SETTINGS = {
+  sv_map: "dm1",
+  sv_gametype: "dm",
+  sv_max_clients: 16,
+  sv_scorelimit: 20,
+  sv_timelimit: 10,
+  sv_spectator_slots: 0,
+};
+
+/**
  * Enemy Territory's settings that can only be delivered at spawn.
  *
  * `sv_maxclients` is latched in the Quake 3 engine — rcon accepts a new value
@@ -98,6 +110,7 @@ function etStartupSettings(settings) {
 /** Games with spawn-time defaults of their own. */
 const RECIPE_DEFAULT_SETTINGS = {
   "warzone-2100": WARZONE_DEFAULT_SETTINGS,
+  teeworlds: TEEWORLDS_DEFAULT_SETTINGS,
 };
 
 function typesOf(values) {
@@ -116,6 +129,7 @@ function typesOf(values) {
 const RECIPE_SETTING_TYPES = {
   morrowind: { gameMode: "string", hostname: "string", maximumPlayers: "number", password: "string" },
   "warzone-2100": typesOf(WARZONE_DEFAULT_SETTINGS),
+  teeworlds: typesOf(TEEWORLDS_DEFAULT_SETTINGS),
   "wolfenstein-enemy-territory": { sv_maxclients: "number" },
   openarena: { sv_maxclients: "number" },
   supertuxkart: { mode: "number", difficulty: "number", "max-players": "number" },
@@ -411,18 +425,26 @@ export const recipes = {
     args: (_port, ctx) => ["-f", teeworldsConfigPath(ctx)],
     prepareSpawn: async (port, ctx) => {
       fs.mkdirSync(TEEWORLDS_CONFIG_DIR, { recursive: true });
+      const s = effectiveSettings("teeworlds", ctx.settings);
+      const safeMap = String(s.sv_map || "dm1").replace(/[^a-zA-Z0-9_-]/g, "") || "dm1";
+      const safeMode = String(s.sv_gametype || "dm").replace(/[^a-zA-Z0-9_-]/g, "") || "dm";
+      const maxClients = Number.isFinite(Number(s.sv_max_clients)) ? Number(s.sv_max_clients) : 16;
+      const specSlots = Number.isFinite(Number(s.sv_spectator_slots)) ? Number(s.sv_spectator_slots) : 0;
+      const scoreLimit = Number.isFinite(Number(s.sv_scorelimit)) ? Number(s.sv_scorelimit) : 20;
+      const timeLimit = Number.isFinite(Number(s.sv_timelimit)) ? Number(s.sv_timelimit) : 10;
+
       fs.writeFileSync(
         teeworldsConfigPath(ctx),
         [
           `sv_name ${teeworldsServerName(ctx.name)}`,
           `sv_port ${port}`,
           "sv_register 0",
-          "sv_map dm1",
-          "sv_gametype dm",
-          "sv_max_clients 16",
-          "sv_spectator_slots 0",
-          "sv_scorelimit 20",
-          "sv_timelimit 10",
+          `sv_map ${safeMap}`,
+          `sv_gametype ${safeMode}`,
+          `sv_max_clients ${maxClients}`,
+          `sv_spectator_slots ${specSlots}`,
+          `sv_scorelimit ${scoreLimit}`,
+          `sv_timelimit ${timeLimit}`,
           "sv_motd Private PlayBound party server",
           "",
         ].join("\n")
@@ -527,6 +549,7 @@ export const recipes = {
       `Server.ListenPort=${port}`,
       "Server.AdvertiseOnline=False",
       "Server.EnableSingleplayer=False",
+      "Server.OrderLatency=5",
     ],
   },
   "earth-2140-trilogy": {
@@ -543,6 +566,7 @@ export const recipes = {
       `Server.ListenPort=${port}`,
       "Server.AdvertiseOnline=False",
       "Server.EnableSingleplayer=False",
+      "Server.OrderLatency=5",
     ],
   },
   openttd: {
@@ -1225,6 +1249,7 @@ export const recipes = {
       `Server.Name=${ctx.name || "PlayBound.club Party"}`,
       `Server.ListenPort=${port}`,
       "Server.AdvertiseOnline=False",
+      "Server.OrderLatency=5",
     ],
   },
   "re-volt-rvgl": {

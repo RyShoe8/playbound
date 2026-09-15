@@ -348,16 +348,49 @@ test("auto-configures Trigger Rally with joystick block", () => {
   assert.ok(out.includes("<axis name=\"steer\""));
 });
 
-test("Teeworlds enables joystick_enable without clobbering binds", () => {
+test("Teeworlds enables controller support and supplies default binds when missing", () => {
   const pad = pickPrimary([{ id: "Xbox 360 Controller", connected: true }]);
   const cfg = ["bind mouse1 +fire", "joystick_enable 0", "player_name \"demo\"", ""].join("\n");
   assert.equal(GAMES.teeworlds.needsConfig(cfg), true);
   const out = applyProfile("teeworlds", cfg, pad);
   assert.ok(/^joystick_enable 1$/m.test(out));
   assert.ok(/^joystick_absolute 1$/m.test(out));
+  assert.ok(/^inp_controller_enable 1$/m.test(out));
+  assert.ok(/^inp_controller_x 2$/m.test(out));
+  assert.ok(/^inp_controller_y 3$/m.test(out));
   assert.ok(out.includes('bind mouse1 +fire'));
   assert.ok(out.includes('player_name "demo"'));
+  assert.ok(out.includes('bind joystick0 "+jump"'));
+  assert.ok(out.includes('bind joystick9 "+hook"'));
+  assert.ok(out.includes('bind joystick10 "+fire"'));
+  assert.ok(out.includes('bind joystick13 "+left"'));
+  assert.ok(out.includes('bind joystick14 "+right"'));
+  assert.ok(out.includes('bind joy_axis4_left "+prevweapon"'));
+  assert.ok(out.includes('bind joy_axis5_left "+nextweapon"'));
   assert.equal(GAMES.teeworlds.needsConfig(out), false);
+});
+
+test("Teeworlds preserves existing joystick binds without overriding them", () => {
+  const pad = pickPrimary([{ id: "Xbox 360 Controller", connected: true }]);
+  const cfg = [
+    "inp_controller_enable 0",
+    "bind joystick0 +fire",
+    "bind joystick1 +jump",
+    "player_name \"custom\"",
+  ].join("\n");
+  assert.equal(GAMES.teeworlds.needsConfig(cfg), true);
+  const out = applyProfile("teeworlds", cfg, pad);
+  assert.ok(/^inp_controller_enable 1$/m.test(out));
+  assert.ok(out.includes("bind joystick0 +fire"));
+  assert.ok(out.includes("bind joystick1 +jump"));
+  assert.ok(!out.includes('bind joystick9 "+hook"'));
+  assert.equal(GAMES.teeworlds.needsConfig(out), false);
+});
+
+test("ddnet alias works for Teeworlds controller support", () => {
+  assert.strictEqual(GAMES.ddnet, GAMES.teeworlds);
+  assert.strictEqual(controllerSupportFor("ddnet").kind, "config");
+  assert.strictEqual(controllerSupportFor("teeworlds").kind, "config");
 });
 
 test("Teeworlds declines a foreign config file", () => {
