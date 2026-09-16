@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -30,6 +31,7 @@ import {
   Store,
   MonitorPlay,
   Bot,
+  Loader2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -301,12 +303,16 @@ function NavPill({
   label,
   icon: Icon,
   active,
+  pending,
+  onClick,
   sub,
 }: {
   href: string;
   label: string;
   icon: LucideIcon;
   active: boolean;
+  pending?: boolean;
+  onClick?: () => void;
   sub?: boolean;
 }) {
   const base = sub
@@ -316,13 +322,19 @@ function NavPill({
     ? sub
       ? "bg-secondary text-foreground"
       : "bg-primary text-primary-foreground"
-    : "text-muted-foreground hover:bg-secondary hover:text-foreground";
+    : pending
+      ? "bg-secondary/80 text-foreground"
+      : "text-muted-foreground hover:bg-secondary hover:text-foreground";
   return (
     // Every admin destination is dynamic and many run live Mongo/analytics
     // queries. Prefetching the entire visible nav fans those expensive routes
     // out on every admin page load and can exhaust the small database pool.
-    <Link href={href} prefetch={false} className={`${base} ${tone}`}>
-      <Icon className={sub ? "size-3" : "size-3.5"} />
+    <Link href={href} prefetch={false} onClick={onClick} className={`${base} ${tone}`}>
+      {pending ? (
+        <Loader2 className={`animate-spin ${sub ? "size-3" : "size-3.5"}`} />
+      ) : (
+        <Icon className={sub ? "size-3" : "size-3.5"} />
+      )}
       {label}
     </Link>
   );
@@ -330,6 +342,12 @@ function NavPill({
 
 export function AdminNav() {
   const pathname = usePathname();
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPendingHref(null);
+  }, [pathname]);
+
   const gameSlug = gameSlugFromPath(pathname);
   const section = activeSection(pathname, gameSlug);
 
@@ -345,6 +363,10 @@ export function AdminNav() {
             // The section stays lit while you are anywhere inside it; the row
             // below says which page.
             active={inSection(pathname, item)}
+            pending={pendingHref === item.href && !inSection(pathname, item)}
+            onClick={() => {
+              if (pathname !== item.href) setPendingHref(item.href);
+            }}
           />
         ))}
       </div>
@@ -363,6 +385,10 @@ export function AdminNav() {
               label={child.label}
               icon={child.icon}
               active={child.match(pathname)}
+              pending={pendingHref === child.href && !child.match(pathname)}
+              onClick={() => {
+                if (pathname !== child.href) setPendingHref(child.href);
+              }}
               sub
             />
           ))}

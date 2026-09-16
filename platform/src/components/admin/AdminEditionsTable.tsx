@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import Link from "next/link";
 import { Search } from "lucide-react";
 import type { Edition } from "@/lib/editionTypes";
@@ -12,6 +12,7 @@ interface Props {
 
 export function AdminEditionsTable({ editions, gameTitlesBySlug }: Props) {
   const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
   const [selectedGame, setSelectedGame] = useState("");
   const [selectedVisibility, setSelectedVisibility] = useState("all");
 
@@ -23,7 +24,7 @@ export function AdminEditionsTable({ editions, gameTitlesBySlug }: Props) {
     if (selectedVisibility !== "all") {
       list = list.filter((e) => (e.visibility || "public") === selectedVisibility);
     }
-    const q = query.trim().toLowerCase();
+    const q = deferredQuery.trim().toLowerCase();
     if (q) {
       list = list.filter((e) => {
         const gameName = gameTitlesBySlug[e.gameSlug] || e.gameSlug;
@@ -31,7 +32,7 @@ export function AdminEditionsTable({ editions, gameTitlesBySlug }: Props) {
       });
     }
     return list;
-  }, [editions, query, selectedGame, selectedVisibility, gameTitlesBySlug]);
+  }, [editions, deferredQuery, selectedGame, selectedVisibility, gameTitlesBySlug]);
 
   const uniqueGames = useMemo(() => {
     const set = new Set(editions.map((e) => e.gameSlug));

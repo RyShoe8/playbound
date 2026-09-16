@@ -22,7 +22,21 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
   // independently, so the layout's opt-out does not cover this page.
   await connection();
   const { slug } = await params;
-  const game = await getGame(slug, { includeUnpublished: true });
+  const [game, doc, developers, allGames, catalogTiers] = await Promise.all([
+    getGame(slug, { includeUnpublished: true }),
+    (async () => {
+      try {
+        await dbConnect();
+        return await CatalogGame.findOne({ slug }).lean();
+      } catch {
+        return null;
+      }
+    })(),
+    listDevelopers(),
+    CatalogGame.find({}).select("slug title access.priceType").sort({ title: 1 }).lean(),
+    gameAccessTiers(),
+  ]);
+
   if (!game) notFound();
 
   let published = true;
@@ -31,28 +45,23 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
   let managedBy: "admin" | "developer" = "admin";
   let ownerUserId: string | null = null;
   let serverLobbyAuth: GamePayload["serverLobbyAuth"] = null;
-  try {
-    await dbConnect();
-    const doc = await CatalogGame.findOne({ slug }).lean();
-    if (doc) {
-      status = normalizeStatus(doc as { status?: unknown; published?: unknown });
-      published = status === "published";
-      submissionId = doc.submissionId ? String(doc.submissionId) : null;
-      managedBy = (doc.managedBy as "admin" | "developer") || "admin";
-      ownerUserId = doc.ownerUserId ? String(doc.ownerUserId) : null;
-      const auth = doc.serverLobbyAuth as
-        | { username?: string | null; password?: string | null }
-        | null
-        | undefined;
-      if (auth?.username || auth?.password) {
-        serverLobbyAuth = {
-          username: auth.username ?? null,
-          password: auth.password ?? null,
-        };
-      }
+
+  if (doc) {
+    status = normalizeStatus(doc as { status?: unknown; published?: unknown });
+    published = status === "published";
+    submissionId = doc.submissionId ? String(doc.submissionId) : null;
+    managedBy = (doc.managedBy as "admin" | "developer") || "admin";
+    ownerUserId = doc.ownerUserId ? String(doc.ownerUserId) : null;
+    const auth = doc.serverLobbyAuth as
+      | { username?: string | null; password?: string | null }
+      | null
+      | undefined;
+    if (auth?.username || auth?.password) {
+      serverLobbyAuth = {
+        username: auth.username ?? null,
+        password: auth.password ?? null,
+      };
     }
-  } catch {
-    /* seed-only */
   }
 
   const initial: GamePayload = {
@@ -91,12 +100,6 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
     comparableTo: game.comparableTo ?? [],
     access: toPayloadAccess(game.access),
   };
-
-  const [developers, allGames, catalogTiers] = await Promise.all([
-    listDevelopers(),
-    CatalogGame.find({}).select("slug title access.priceType").sort({ title: 1 }).lean(),
-    gameAccessTiers(),
-  ]);
 
   return (
     <div className="space-y-6 px-4 py-6 sm:px-6 lg:px-8">

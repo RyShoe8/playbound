@@ -3,7 +3,8 @@ import { connection } from "next/server";
 import type { Metadata } from "next";
 import { Plus } from "lucide-react";
 import { listAllCollections } from "@/lib/collections";
-import { listGames } from "@/lib/catalog";
+import dbConnect from "@/lib/db";
+import CatalogGame from "@/lib/models/CatalogGame";
 
 export const metadata: Metadata = { title: "Admin · Collections" };
 
@@ -11,8 +12,12 @@ export default async function AdminCollectionsPage() {
   // Never prerendered — see the layout. Each segment prerenders
   // independently, so the layout's opt-out does not cover this page.
   await connection();
-  const [collections, games] = await Promise.all([listAllCollections(), listGames()]);
-  const known = new Set(games.map((g) => g.slug));
+  await dbConnect();
+  const [collections, games] = await Promise.all([
+    listAllCollections(),
+    CatalogGame.find({ published: true }).select("slug").lean(),
+  ]);
+  const known = new Set(games.map((g) => String((g as { slug: string }).slug)));
 
   return (
     <div className="space-y-6 px-4 py-6 sm:px-6 lg:px-8">

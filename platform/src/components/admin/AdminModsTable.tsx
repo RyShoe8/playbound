@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import Link from "next/link";
 import { Search } from "lucide-react";
 import type { CatalogModPublic } from "@/lib/mods";
@@ -16,6 +16,7 @@ interface Props {
 
 export function AdminModsTable({ mods, gameTitlesBySlug }: Props) {
   const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
   const [selectedGame, setSelectedGame] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
 
@@ -27,7 +28,7 @@ export function AdminModsTable({ mods, gameTitlesBySlug }: Props) {
     if (selectedStatus !== "all") {
       list = list.filter((m) => (m.status || "published") === selectedStatus);
     }
-    const q = query.trim().toLowerCase();
+    const q = deferredQuery.trim().toLowerCase();
     if (q) {
       list = list.filter((m) => {
         const gameName = gameTitlesBySlug[m.baseGameSlug] || m.baseGameSlug;
@@ -36,7 +37,7 @@ export function AdminModsTable({ mods, gameTitlesBySlug }: Props) {
       });
     }
     return list;
-  }, [mods, query, selectedGame, selectedStatus, gameTitlesBySlug]);
+  }, [mods, deferredQuery, selectedGame, selectedStatus, gameTitlesBySlug]);
 
   const uniqueGames = useMemo(() => {
     const set = new Set(mods.map((m) => m.baseGameSlug));

@@ -739,8 +739,7 @@ export async function listAllEditions(includeHidden = true): Promise<Edition[]> 
   }
 }
 
-/** How many editions each of the given games has stored, for admin lists. */
-export async function editionCountsByGame(): Promise<Map<string, number>> {
+async function computeEditionCounts(): Promise<[string, number][]> {
   const counts = new Map<string, number>();
   for (const s of seedEditions) {
     counts.set(s.gameSlug, (counts.get(s.gameSlug) || 0) + 1);
@@ -756,7 +755,16 @@ export async function editionCountsByGame(): Promise<Map<string, number>> {
   } catch (err) {
     console.error("[editions] counts failed:", err);
   }
-  return counts;
+  return Array.from(counts.entries());
+}
+
+/** How many editions each of the given games has stored, for admin lists. */
+export async function editionCountsByGame(): Promise<Map<string, number>> {
+  const entries = await unstable_cache(computeEditionCounts, ["admin-edition-counts"], {
+    revalidate: 60,
+    tags: ["editions"],
+  })();
+  return new Map(entries);
 }
 
 async function editionControllerSupportByGameUncached(): Promise<Record<string, boolean>> {

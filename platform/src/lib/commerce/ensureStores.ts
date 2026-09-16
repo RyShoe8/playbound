@@ -2,6 +2,9 @@ import dbConnect from "@/lib/db";
 import StoreProvider from "@/lib/models/StoreProvider";
 import { SEED_COMMERCE_STORES, STORE_CAPABILITIES } from "./stores";
 
+let lastEnsured = 0;
+const ONE_HOUR = 60 * 60 * 1000;
+
 /**
  * Insert missing store rows and backfill new flags on older documents.
  *
@@ -9,7 +12,10 @@ import { SEED_COMMERCE_STORES, STORE_CAPABILITIES } from "./stores";
  * matching, price refresh) get the seed default so Steam/GOG/Epic keep
  * ingesting giveaways without a checkbox pass.
  */
-export async function ensureCommerceStores() {
+export async function ensureCommerceStores(force = false) {
+  const now = Date.now();
+  if (!force && now - lastEnsured < ONE_HOUR) return;
+  lastEnsured = now;
   await dbConnect();
   for (const seed of SEED_COMMERCE_STORES) {
     const existing = (await StoreProvider.findOne({ slug: seed.slug }).lean()) as {

@@ -38,6 +38,7 @@ export default async function AdminGamesPage() {
           <ProvisionDiscordAllButton />
           <Link
             href="/admin/games/new"
+            prefetch={false}
             className="flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground hover:brightness-110"
           >
             <Plus className="size-4" /> New game

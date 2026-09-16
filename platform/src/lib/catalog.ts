@@ -614,15 +614,32 @@ type AdminGame = Game & {
 async function computeAllGames(): Promise<AdminGame[]> {
   try {
     await dbConnect();
-    const docs = await CatalogGame.find().sort({ adminUpdatedAt: -1, updatedAt: -1 }).lean();
+    const docs = await CatalogGame.find().sort({ adminUpdatedAt: -1, updatedAt: -1 })
+      .select(
+        "-description -longDescription -whyWePickedIt -thatOneThing -installSteps -firstPlaySteps -multiplayerGamingSteps -faq -screenshots -videos -hardwareRequirements -reviews -evidence -sourceMaterial"
+      )
+      .lean();
     const dbGames = docs.map((d) => {
       const lean = d as LeanGame;
       const status = normalizeStatus(lean);
       const adminDate = (d as { adminUpdatedAt?: Date | null }).adminUpdatedAt;
       const fallbackDate = (d as { updatedAt?: Date }).updatedAt;
       const effectiveDate = adminDate ?? fallbackDate;
+      const game = toGame(lean);
       return {
-        ...toGame(lean),
+        ...game,
+        description: "",
+        longDescription: undefined,
+        whyWePickedIt: undefined,
+        thatOneThing: undefined,
+        installSteps: undefined,
+        firstPlaySteps: undefined,
+        multiplayerGamingSteps: undefined,
+        faq: undefined,
+        screenshots: [],
+        videos: [],
+        systemRequirements: { min: "", recommended: "" },
+        hardwareRequirements: undefined,
         published: status === "published",
         status,
         adminUpdatedAt: adminDate ? new Date(adminDate).toISOString() : null,
