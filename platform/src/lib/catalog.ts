@@ -19,14 +19,14 @@ import { listCollections } from "@/lib/collections";
 import { listDevelopers } from "@/lib/developers";
 import { searchEditions } from "@/lib/editions";
 import type { Edition } from "@/lib/editionTypes";
-import type { Collection, Developer } from "@/lib/data/types";
 import { mongoVisibleFilter, normalizeStatus, type CatalogStatus } from "@/lib/catalogStatus";
-import { normalizeQualityBar, normalizeTags, GENRES } from "@/lib/gamePayload";
+import { normalizeQualityBar, normalizeTags, GENRES, FEATURES } from "@/lib/gamePayload";
 import { accessFromDoc } from "@/lib/access/docs";
 import { pickHardwareRequirements, pickSystemRequirements } from "@/lib/catalogRequirements";
 import { repairMorrowindMultiplayerFromSeed } from "@/lib/catalog/morrowindMultiplayerRepair";
 
 export type { Game } from "@/lib/data/types";
+import type { Collection, Developer } from "@/lib/data/types";
 // Developers are deliberately no longer re-exported here. They are database
 // backed now, so reaching for the static list would silently serve only the
 // nineteen seed entries and miss anything added through the admin — import
@@ -196,6 +196,7 @@ function repairControllerClaims(game: Game): Game {
 }
 
 const ALLOWED_GENRES = new Set<string>(GENRES);
+const ALLOWED_FEATURES = new Set<string>(FEATURES);
 
 function sanitizeGenres(genres: Genre[]): Genre[] {
   return genres.filter((g) => ALLOWED_GENRES.has(g));
@@ -204,6 +205,10 @@ function sanitizeGenres(genres: Genre[]): Genre[] {
 function sanitizeTags(tags: string[]): string[] {
   const normalized = normalizeTags(tags);
   return Array.isArray(normalized) ? (normalized as string[]) : tags;
+}
+
+function sanitizeFeatures(features: string[]): string[] {
+  return features.filter((f) => ALLOWED_FEATURES.has(f));
 }
 
 function pickPlatforms(docPlatforms?: string[], seedPlatforms?: string[]): string[] {
@@ -230,12 +235,14 @@ function toGame(doc: LeanGame): Game {
     tagline: String(doc.tagline) || seed?.tagline || "",
     description: String(doc.description) || seed?.description || "",
     developerSlug: String(doc.developerSlug) || seed?.developerSlug || "",
-    genres: sanitizeGenres(
-      (doc.genres as Genre[])?.length ? (doc.genres as Genre[]) : (seed?.genres ?? [])
-    ),
-    tags: sanitizeTags(
-      (doc.tags as string[])?.length ? (doc.tags as string[]) : (seed?.tags ?? [])
-    ),
+    genres: (() => {
+      const fromDoc = sanitizeGenres((doc.genres as Genre[]) ?? []);
+      return fromDoc.length ? fromDoc : (seed?.genres ?? []);
+    })(),
+    tags: (() => {
+      const fromDoc = sanitizeTags((doc.tags as string[]) ?? []);
+      return fromDoc.length ? fromDoc : (seed?.tags ?? []);
+    })(),
     aliases: (doc.aliases as string[])?.length ? (doc.aliases as string[]) : (seed?.aliases ?? []),
     license: String(doc.license) || seed?.license || "",
     releaseYear: (typeof doc.releaseYear === "number" && doc.releaseYear > 1970 ? doc.releaseYear : seed?.releaseYear) || 0,
@@ -245,7 +252,10 @@ function toGame(doc: LeanGame): Game {
     // explicitly drafted game back into a public one.
     status,
     platforms: pickPlatforms(doc.platforms as string[], seed?.platforms),
-    features: (doc.features as string[])?.length ? (doc.features as string[]) : (seed?.features ?? []),
+    features: (() => {
+      const fromDoc = sanitizeFeatures((doc.features as string[]) ?? []);
+      return fromDoc.length ? fromDoc : (seed?.features ?? []);
+    })(),
     maxPlayers:
       typeof doc.maxPlayers === "number"
         ? doc.maxPlayers
@@ -648,6 +658,38 @@ async function computeAllGames(): Promise<AdminGame[]> {
         installCount: Number((d as { installCount?: number }).installCount) || 0,
       };
     });
+
+    // Merge in seed games that have not yet been inserted into MongoDB so that
+    // newly drafted catalog additions appear on the admin games dashboard.
+    const seenSlugs = new Set(dbGames.map((g) => g.slug));
+    for (const seed of seedGames) {
+      if (!seenSlugs.has(seed.slug)) {
+        const full = seedGameWithInstall(seed);
+        const status = full.status || "draft";
+        dbGames.push({
+          ...full,
+          description: "",
+          longDescription: undefined,
+          whyWePickedIt: undefined,
+          thatOneThing: undefined,
+          installSteps: undefined,
+          firstPlaySteps: undefined,
+          multiplayerGamingSteps: undefined,
+          faq: undefined,
+          screenshots: [],
+          videos: [],
+          systemRequirements: { min: "", recommended: "" },
+          hardwareRequirements: undefined,
+          published: status === "published",
+          status,
+          adminUpdatedAt: null,
+          updatedAt: undefined,
+          publishedAt: null,
+          installCount: 0,
+        });
+      }
+    }
+
     return dbGames;
   } catch (err) {
     console.error("[catalog] listAllGames failed:", err);
@@ -692,6 +734,11 @@ export async function getGame(
     if (doc) return toGame(doc as LeanGame);
   } catch (err) {
     console.error("[catalog] getGame failed:", err);
+  }
+
+  if (opts?.includeUnpublished) {
+    const seed = seedBySlug.get(slug);
+    if (seed) return seedGameWithInstall(seed);
   }
 
   return undefined;

@@ -142,6 +142,8 @@ describe("insert-catalog-wave allowlists", () => {
         "hurry-curry",
         "idle-slayer",
         "morrowind",
+        "pokemmo",
+        "pokemon-blaze-online",
         "s-t-a-l-k-e-r-call-of-pripyat",
         "s-t-a-l-k-e-r-clear-sky",
         "s-t-a-l-k-e-r-shadow-of-chernobyl",
@@ -188,6 +190,16 @@ describe("insert-catalog-wave allowlists", () => {
     expect(PATCH_GAME_FIELDS["space-station-14"]).toEqual(["launcherInstall", "installSteps"]);
     expect(PATCH_GAME_FIELDS.teeworlds).toContain("launcherInstall");
     expect(PATCH_GAME_FIELDS["the-dark-mod"]).toContain("platforms");
+    expect(PATCH_GAME_FIELDS["pokemon-blaze-online"]).toContain("qualityBar");
+    expect(PATCH_GAME_FIELDS["pokemon-blaze-online"]).toContain("longDescription");
+    expect(PATCH_GAME_FIELDS["pokemon-blaze-online"]).toContain("features");
+    expect(PATCH_GAME_FIELDS["pokemon-blaze-online"]).toContain("tags");
+    expect(PATCH_GAME_FIELDS["pokemon-blaze-online"]).toContain("sizeMB");
+    expect(PATCH_GAME_FIELDS.pokemmo).toContain("qualityBar");
+    expect(PATCH_GAME_FIELDS.pokemmo).toContain("longDescription");
+    expect(PATCH_GAME_FIELDS.pokemmo).toContain("features");
+    expect(PATCH_GAME_FIELDS.pokemmo).toContain("tags");
+    expect(PATCH_GAME_FIELDS.pokemmo).toContain("sizeMB");
   });
 
   it("patches CoP/SoC/Anomaly/Clear Sky editions + OpenMW/TES3MP/Lost Alpha recipes", () => {
@@ -197,6 +209,9 @@ describe("insert-catalog-wave allowlists", () => {
         "dune-legacy/playbound-edition",
         "morrowind/openmw",
         "morrowind/tes3mp",
+        "pokemon-blaze-online/official",
+        "pokemon-blaze-online/windows-32",
+        "pokemmo/official",
         "s-t-a-l-k-e-r-call-of-pripyat/official",
         "s-t-a-l-k-e-r-clear-sky/official",
         "s-t-a-l-k-e-r-shadow-of-chernobyl/lost-alpha",
@@ -208,6 +223,21 @@ describe("insert-catalog-wave allowlists", () => {
     );
     expect(PATCH_EDITION_FIELDS["morrowind/openmw"]).toEqual(["installConfig"]);
     expect(PATCH_EDITION_FIELDS["morrowind/tes3mp"]).toEqual(["installConfig"]);
+    expect(PATCH_EDITION_FIELDS["pokemon-blaze-online/official"]).toEqual([
+      "features",
+      "tags",
+      "installConfig",
+    ]);
+    expect(PATCH_EDITION_FIELDS["pokemon-blaze-online/windows-32"]).toEqual([
+      "features",
+      "tags",
+      "installConfig",
+    ]);
+    expect(PATCH_EDITION_FIELDS["pokemmo/official"]).toEqual([
+      "features",
+      "tags",
+      "installConfig",
+    ]);
     expect(PATCH_EDITION_FIELDS["stalker-anomaly/gamma"]).toEqual([
       "name",
       "description",
