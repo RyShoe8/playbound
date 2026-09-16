@@ -200,6 +200,10 @@ contextBridge.exposeInMainWorld("playbound", {
   getServerSettings: (partyId) => ipcRenderer.invoke("get-server-settings", partyId),
   applyServerSettings: (partyId, settings) =>
     ipcRenderer.invoke("apply-server-settings", partyId, settings),
+  getTes3mpClaimAdmin: (partyId) => ipcRenderer.invoke("get-tes3mp-claim-admin", partyId),
+  claimTes3mpAdmin: (partyId, accountName) =>
+    ipcRenderer.invoke("claim-tes3mp-admin", partyId, accountName),
+  setTes3mpHour: (partyId, hour) => ipcRenderer.invoke("set-tes3mp-hour", partyId, hour),
   getConnectMeta: (slug) => ipcRenderer.invoke("get-connect-meta", slug),
   pingServers: (servers) => ipcRenderer.invoke("ping-servers", servers),
   getAllServers: () => ipcRenderer.invoke("get-all-servers"),

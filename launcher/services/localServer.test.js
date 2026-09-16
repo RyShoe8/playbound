@@ -94,3 +94,26 @@ test("writes TES3MP config-file server settings", () => {
   assert.match(fs.readFileSync(path.join(scriptsDir, "config.lua"), "utf8"), /^config\.gameMode = "Roleplay"$/m);
   fs.rmSync(dir, { recursive: true, force: true });
 });
+
+test("prepareTes3mpAdmin injects party-host allowlist into server/", () => {
+  const { prepareTes3mpAdmin } = require("./localServer");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "playbound-tes3mp-admin-"));
+  const scriptsDir = path.join(dir, "server", "scripts");
+  fs.mkdirSync(scriptsDir, { recursive: true });
+  fs.writeFileSync(path.join(scriptsDir, "customScripts.lua"), "-- custom\n", "utf8");
+  prepareTes3mpAdmin(
+    dir,
+    { configFile: "tes3mp-server-default.cfg", binaryHint: "tes3mp-server" },
+    ["PartyHost"]
+  );
+  const allowlist = JSON.parse(
+    fs.readFileSync(path.join(dir, "server", "data", "playbound-admins.json"), "utf8")
+  );
+  assert.deepEqual(allowlist, ["PartyHost"]);
+  assert.ok(fs.existsSync(path.join(dir, "server", "scripts", "custom", "playboundAdmin.lua")));
+  assert.match(
+    fs.readFileSync(path.join(scriptsDir, "customScripts.lua"), "utf8"),
+    /require\("custom\/playboundAdmin"\)/
+  );
+  fs.rmSync(dir, { recursive: true, force: true });
+});

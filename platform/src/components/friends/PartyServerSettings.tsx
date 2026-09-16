@@ -218,10 +218,17 @@ export function PartyServerSettings({ partyId }: { partyId: string }) {
         */}
       <p className="text-xs text-muted-foreground">
         In game: press <kbd className="rounded border border-border px-1 font-mono">Ctrl</kbd>{" "}
-        + <kbd className="rounded border border-border px-1 font-mono">`</kbd>{" "}
+        + <kbd className="rounded border border-border px-1 font-mono">P</kbd>{" "}
         to open these controls in the PlayBound overlay without closing the game. The
         shortcut is changeable in the launcher&rsquo;s settings.
       </p>
+
+      {data.gameSlug === "morrowind" && !preLaunch && data.canEdit ? (
+        <>
+          <Tes3mpClaimAdmin partyId={partyId} />
+          <Tes3mpSetHour partyId={partyId} />
+        </>
+      ) : null}
 
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
       {notice ? <p className="text-xs text-muted-foreground">{notice}</p> : null}
@@ -247,6 +254,189 @@ export function PartyServerSettings({ partyId }: { partyId: string }) {
       ) : (
         <p className="text-xs text-muted-foreground">Only the party leader can change these.</p>
       )}
+    </div>
+  );
+}
+
+type Tes3mpAccount = { accountName: string; online: boolean; staffRank: number };
+
+function Tes3mpClaimAdmin({ partyId }: { partyId: string }) {
+  const [accounts, setAccounts] = useState<Tes3mpAccount[]>([]);
+  const [adminAccount, setAdminAccount] = useState<string | null>(null);
+  const [selected, setSelected] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function read() {
+      try {
+        const res = await fetch(`/api/parties/${encodeURIComponent(partyId)}/tes3mp-claim-admin`);
+        const json = await res.json();
+        if (cancelled) return;
+        if (!res.ok) {
+          setError(json.error || "Could not load TES3MP accounts");
+          return;
+        }
+        setAccounts(Array.isArray(json.accounts) ? json.accounts : []);
+        setAdminAccount(json.adminAccount || null);
+        if (Array.isArray(json.accounts) && json.accounts.length === 1) {
+          setSelected(json.accounts[0].accountName);
+        }
+      } catch {
+        if (!cancelled) setError("Could not reach PlayBound");
+      }
+    }
+    void read();
+    return () => {
+      cancelled = true;
+    };
+  }, [partyId, reloadKey]);
+
+  async function claim() {
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await fetch(`/api/parties/${encodeURIComponent(partyId)}/tes3mp-claim-admin`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ accountName: selected || null }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error || "Could not claim admin");
+        if (Array.isArray(json.accounts)) setAccounts(json.accounts);
+        return;
+      }
+      setNotice(`TES3MP admin linked to ${json.accountName}.`);
+      setAdminAccount(json.adminAccount || json.accountName || null);
+      setReloadKey((k) => k + 1);
+    } catch {
+      setError("Could not reach PlayBound");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="space-y-2 rounded-md border border-border bg-secondary/40 p-3">
+      <p className="text-xs font-semibold">TES3MP admin</p>
+      {adminAccount ? (
+        <p className="text-xs text-muted-foreground">
+          Linked to <span className="font-semibold text-foreground">{adminAccount}</span>
+        </p>
+      ) : (
+        <>
+          <p className="text-xs text-muted-foreground">
+            Log into the server in TES3MP first, then claim admin for your account.
+          </p>
+          {accounts.length ? (
+            <select
+              value={selected}
+              disabled={busy}
+              onChange={(e) => setSelected(e.target.value)}
+              className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm disabled:opacity-60"
+            >
+              {accounts.map((a) => (
+                <option key={a.accountName} value={a.accountName}>
+                  {a.accountName}
+                  {a.online ? " (online)" : ""}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <p className="text-xs text-muted-foreground">No accounts yet — finish login in TES3MP.</p>
+          )}
+          <button
+            type="button"
+            disabled={busy || !accounts.length}
+            onClick={() => void claim()}
+            className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {busy ? <RotateCw className="size-3.5 animate-spin" /> : null}
+            {busy ? "Claiming…" : "Claim admin"}
+          </button>
+        </>
+      )}
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      {notice ? <p className="text-xs text-muted-foreground">{notice}</p> : null}
+    </div>
+  );
+}
+
+function Tes3mpSetHour({ partyId }: { partyId: string }) {
+  const [hour, setHour] = useState(12);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  async function apply() {
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await fetch(`/api/parties/${encodeURIComponent(partyId)}/tes3mp-set-hour`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ hour }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error || "Could not set hour");
+        return;
+      }
+      setNotice(`Time of day set to hour ${json.hour} (same as /sethour ${json.hour}).`);
+    } catch {
+      setError("Could not reach PlayBound");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="space-y-2 rounded-md border border-border bg-secondary/40 p-3">
+      <p className="text-xs font-semibold">Time of day</p>
+      <p className="text-xs text-muted-foreground">
+        Sets the hour for everyone — same as the admin chat command{" "}
+        <code className="rounded border border-border px-1 font-mono text-[0.7rem]">/sethour</code>.
+      </p>
+      <label className="block space-y-1.5">
+        <span className="text-xs font-semibold">Hour (0–23)</span>
+        <select
+          value={hour}
+          disabled={busy}
+          onChange={(e) => setHour(Number(e.target.value))}
+          className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm disabled:opacity-60"
+        >
+          {Array.from({ length: 24 }, (_, h) => (
+            <option key={h} value={h}>
+              {h === 0
+                ? "0 — midnight"
+                : h === 6
+                  ? "6 — dawn"
+                  : h === 12
+                    ? "12 — noon"
+                    : h === 18
+                      ? "18 — dusk"
+                      : String(h)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => void apply()}
+        className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {busy ? <RotateCw className="size-3.5 animate-spin" /> : null}
+        {busy ? "Setting…" : "Set hour"}
+      </button>
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      {notice ? <p className="text-xs text-muted-foreground">{notice}</p> : null}
     </div>
   );
 }

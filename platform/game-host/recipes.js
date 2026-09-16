@@ -11,11 +11,14 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { createRequire } from "node:module";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { verifyEtLegacyReady } from "./etLegacyInstall.js";
 
 const execFileAsync = promisify(execFile);
+const require = createRequire(import.meta.url);
+const { injectPlayboundAdmin } = require("./tes3mp/injectPlayboundAdmin.cjs");
 
 const GAMES_ROOT = process.env.GAME_HOST_GAMES_DIR || "/opt/playbound-host/games";
 const HOST_ROOT = path.dirname(GAMES_ROOT);
@@ -412,6 +415,18 @@ export const recipes = {
           `config.gameMode = "${safeMode}"`
         );
         fs.writeFileSync(luaConfig, lua, "utf8");
+      }
+      /*
+       * Always install the admin hook. Pre-seeding the allowlist with the
+       * PlayBound username is best-effort only — the reliable path is Claim
+       * admin in the Ctrl+P panel after the host logs into TES3MP.
+       */
+      const injected = injectPlayboundAdmin(
+        roomServer,
+        ctx.leaderUsername ? [ctx.leaderUsername] : []
+      );
+      if (!injected.ok) {
+        console.warn(`[morrowind] playbound admin inject skipped: ${injected.reason}`);
       }
     },
     args: () => ["--resources", path.join(GAMES_ROOT, "morrowind", "resources")],

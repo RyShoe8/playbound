@@ -34,6 +34,11 @@ export type PartyHostFields = {
   provisionedAt?: Date | null;
   /** What the host chose before the room was asked for. See serverControl. */
   settings?: Record<string, unknown> | null;
+  /**
+   * Party leader PlayBound username — TES3MP admin allowlist. Kept on the
+   * hosted payload so a settings restart can re-inject without another User lookup.
+   */
+  leaderUsername?: string | null;
 };
 
 type PartyLike = Document & {
@@ -99,11 +104,13 @@ export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
   await party.save();
 
   let name = typeof party.name === "string" && party.name.trim() ? party.name.trim() : "";
-  if (!name && party.leaderId) {
+  let leaderUsername: string | null = null;
+  if (party.leaderId) {
     try {
       const leader = await User.findById(party.leaderId).select("username").lean();
       if (leader?.username) {
-        name = `${leader.username}'s Server`;
+        leaderUsername = String(leader.username);
+        if (!name) name = `${leader.username}'s Server`;
       }
     } catch {
       /* ignore db lookup failures, fallback to default below */
@@ -145,6 +152,7 @@ export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
     editionSlug: party.editionSlug || null,
     mod: stockOpenRaMod,
     settings: Object.keys(planned.values).length ? planned.values : undefined,
+    leaderUsername,
   });
 
   if ("error" in result) {
@@ -172,6 +180,7 @@ export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
   hosted.name = result.name || name;
   hosted.roomCode = result.roomCode || null;
   hosted.error = null;
+  hosted.leaderUsername = leaderUsername;
   hosted.provisionedAt = new Date();
   try {
     await party.save();

@@ -4020,7 +4020,16 @@ async function launchPartyGame(party) {
             {
               host: hosted.host,
               port: Number(hosted.port),
-              name: state.accountState?.username || hosted.name || party.gameTitle || "",
+              /*
+               * Morrowind/TES3MP: do not force PlayBound username — staffRank is
+               * keyed on the client login name already in tes3mp-client*.cfg.
+               * Other games still get the PlayBound username as join.name.
+               */
+              name:
+                slug === "morrowind"
+                  ? undefined
+                  : state.accountState?.username || hosted.name || party.gameTitle || "",
+              partyId: party.id,
               // Explicit override for OpenRA's "official" edition, which is one
               // client covering Red Alert/Tiberian Dawn/Dune 2000 — editionSlug
               // alone can't say which one the party actually started.

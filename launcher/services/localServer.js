@@ -21,9 +21,14 @@
 const { spawn } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
+const { injectPlayboundAdmin } = require("./tes3mp/injectPlayboundAdmin.cjs");
 
 function iniValue(value) {
   return String(value ?? "").replace(/[\r\n]/g, " ").trim();
+}
+
+function isTes3mpHostLaunch(hostLaunch) {
+  return /tes3mp/i.test(String(hostLaunch?.configFile || "")) || /tes3mp/i.test(String(hostLaunch?.binaryHint || ""));
 }
 
 function writeServerConfig(cwd, hostLaunch, port, settings, serverName) {
@@ -57,6 +62,20 @@ function writeServerConfig(cwd, hostLaunch, port, settings, serverName) {
       if (re.test(script)) script = script.replace(re, `config.${key} = "${value}"`);
     }
     fs.writeFileSync(scriptPath, script, "utf8");
+  }
+}
+
+/**
+ * After config writes, promote the party host on TES3MP via CoreScripts.
+ */
+function prepareTes3mpAdmin(cwd, hostLaunch, adminNames) {
+  if (!isTes3mpHostLaunch(hostLaunch)) return;
+  const serverDir = path.join(cwd, "server");
+  if (!fs.existsSync(serverDir)) return;
+  const names = Array.isArray(adminNames) ? adminNames : [];
+  const injected = injectPlayboundAdmin(serverDir, names);
+  if (!injected.ok) {
+    console.warn(`[local-server] TES3MP admin inject skipped: ${injected.reason}`);
   }
 }
 
@@ -134,15 +153,17 @@ function createLocalServers({ onExit } = {}) {
    * dedicated server that was given its configuration on the command line to
    * take a different one, so the process is the unit of change.
    */
-  function start(partyId, { exe, cwd, hostLaunch, port, settings, revision, serverName }) {
+  function start(partyId, { exe, cwd, hostLaunch, port, settings, revision, serverName, adminNames }) {
     const args = buildServerArgs({ hostLaunch, port, settings, serverName });
     if (!args) return { error: "This game has no dedicated server PlayBound can start." };
     if (!exe) return { error: "The game is not installed." };
 
     stop(partyId);
 
+    const serverCwd = cwd || path.dirname(exe);
     try {
-      writeServerConfig(cwd || path.dirname(exe), hostLaunch, port, settings, serverName);
+      writeServerConfig(serverCwd, hostLaunch, port, settings, serverName);
+      prepareTes3mpAdmin(serverCwd, hostLaunch, adminNames);
     } catch (err) {
       return { error: `Could not write server config: ${err.message}` };
     }
@@ -150,7 +171,7 @@ function createLocalServers({ onExit } = {}) {
     let child;
     try {
       child = spawn(exe, args, {
-        cwd: cwd || path.dirname(exe),
+        cwd: serverCwd,
         stdio: ["ignore", "pipe", "pipe"],
         detached: false,
       });
@@ -184,4 +205,11 @@ function createLocalServers({ onExit } = {}) {
   return { start, stop, stopAll, get, running };
 }
 
-module.exports = { createLocalServers, buildServerArgs, cvarArgs, writeServerConfig };
+module.exports = {
+  createLocalServers,
+  buildServerArgs,
+  cvarArgs,
+  writeServerConfig,
+  prepareTes3mpAdmin,
+  isTes3mpHostLaunch,
+};
