@@ -24,6 +24,7 @@ import { mongoVisibleFilter, normalizeStatus, type CatalogStatus } from "@/lib/c
 import { normalizeQualityBar, normalizeTags, GENRES } from "@/lib/gamePayload";
 import { accessFromDoc } from "@/lib/access/docs";
 import { pickHardwareRequirements, pickSystemRequirements } from "@/lib/catalogRequirements";
+import { repairMorrowindMultiplayerFromSeed } from "@/lib/catalog/morrowindMultiplayerRepair";
 
 export type { Game } from "@/lib/data/types";
 // Developers are deliberately no longer re-exported here. They are database
@@ -344,7 +345,9 @@ function toGame(doc: LeanGame): Game {
     gogStoreUrl: (doc.gogStoreUrl as string) || undefined,
     externalIds: (doc.externalIds as Game["externalIds"]) || undefined,
   };
-  return repairControllerClaims(repairBrowserOnlyFromSeed(attachLauncherInstall(base, doc)));
+  return repairControllerClaims(
+    repairBrowserOnlyFromSeed(attachLauncherInstall(repairMorrowindMultiplayerFromSeed(base, seed), doc))
+  );
 }
 
 function mapCommunityLinks(raw: unknown): Game["communityLinks"] | undefined {
@@ -421,7 +424,12 @@ function overlayForMongoOnly(slug: string) {
 }
 
 function seedGameWithInstall(g: Game): Game {
-  return repairControllerClaims(repairBrowserOnlyFromSeed(attachLauncherInstall(g)));
+  const seed = seedBySlug.get(g.slug);
+  return repairControllerClaims(
+    repairBrowserOnlyFromSeed(
+      attachLauncherInstall(repairMorrowindMultiplayerFromSeed(g, seed || g))
+    )
+  );
 }
 
 /** Seed local /games/... paths mostly 404; only keep remote seed media. */

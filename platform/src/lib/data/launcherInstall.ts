@@ -1262,6 +1262,23 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     note: "Bethesda's freeware Classic DOS release, configured automatically and launched through PlayBound-managed DOSBox Staging. Daggerfall Unity is available as its own edition.",
   },
 
+  /**
+   * Default install is OpenMW (engine). Party / dedicated play uses the TES3MP
+   * edition — keep Multiplayer + server launchMethods on the parent game so the
+   * party picker does not treat Morrowind as singleplayer-only.
+   */
+  morrowind: {
+    enabled: true,
+    kind: "github-installer",
+    repo: "OpenMW/openmw",
+    assetPattern: "OpenMW-.*-Windows-x64\\.exe$",
+    assetPatternMac: "OpenMW-.*-macOS-.*\\.dmg$",
+    exeHint: "openmw.exe",
+    knownExePaths: ["openmw.exe", "openmw-launcher.exe"],
+    versionLabel: "OpenMW 0.51",
+    note: "Install OpenMW, then point it at your legal Morrowind GOTY data folder. Use the TES3MP edition for multiplayer.",
+  },
+
   "tes-arena": {
     enabled: true,
     kind: "direct-zip",

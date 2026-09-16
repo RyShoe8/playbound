@@ -7,6 +7,12 @@ const freedoom = [
   { slug: "dsda-doom", isDefault: false, features: ["Singleplayer", "Speedrunning"] },
 ];
 
+const morrowind = [
+  { slug: "openmw", isDefault: true, features: ["Singleplayer"] },
+  { slug: "tes3mp", isDefault: false, features: ["Multiplayer", "Dedicated Servers", "Co-op"] },
+  { slug: "classic-goty", isDefault: false, features: ["Singleplayer"] },
+];
+
 describe("preferredPartyEditionSlug", () => {
   it("repairs a stale singleplayer party edition", () => {
     expect(preferredPartyEditionSlug(freedoom, "gzdoom", "freedoom")).toBe("zandronum");
@@ -23,6 +29,11 @@ describe("preferredPartyEditionSlug", () => {
       features: ["Singleplayer"],
     }));
     expect(preferredPartyEditionSlug(staleFreedoom, "gzdoom", "freedoom")).toBe("zandronum");
+  });
+
+  it("requires TES3MP for Morrowind parties instead of OpenMW", () => {
+    expect(preferredPartyEditionSlug(morrowind, "openmw", "morrowind")).toBe("tes3mp");
+    expect(preferredPartyEditionSlug(morrowind, "tes3mp", "morrowind")).toBe("tes3mp");
   });
 
   it("does not lock a single-edition game", () => {
