@@ -1378,6 +1378,28 @@ export const developers: Developer[] = [
     website: "https://www.suncyan.com/",
     artHue: 35,
   },
+  {
+    slug: "pokemon-blaze-online-team",
+    name: "Pokémon Blaze Online Team",
+    tagline: "Expansive fan-made Pokémon MMORPG with cross-platform worlds and co-op battles.",
+    about:
+      "The independent development team behind Pokémon Blaze Online, a free cross-platform MMORPG featuring four regions, live trading, co-op battles, and native desktop and browser clients.",
+    location: "Worldwide",
+    founded: 2018,
+    website: "https://www.pokemonblazeonline.com/",
+    artHue: 18,
+  },
+  {
+    slug: "pokemmo-team",
+    name: "PokeMMO Team",
+    tagline: "The definitive multiplayer creature-catching MMO engine across multiple classic regions.",
+    about:
+      "The long-standing independent team behind PokeMMO, creating a high-performance cross-platform multiplayer MMO client that seamlessly unites multiple classic generations with competitive tournaments, global trading, and native controller support.",
+    location: "Worldwide",
+    founded: 2012,
+    website: "https://pokemmo.com/",
+    artHue: 215,
+  },
 ];
 
 export const developersBySlug = new Map(developers.map((d) => [d.slug, d]));

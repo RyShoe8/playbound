@@ -43,4 +43,6 @@ export const partyMaxPlayersBySlug: Readonly<Record<string, number>> = {
   "openttd": 255,
   "widelands": 8,
   "battle-for-wesnoth": 8,
+  "pokemon-blaze-online": 64,
+  pokemmo: 64,
 };

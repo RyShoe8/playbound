@@ -2209,6 +2209,40 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       "Public servers announce themselves to registry.hurrycurry.org, which is where " +
       "the server list and player counts come from.",
   },
+
+  "pokemon-blaze-online": {
+    gameSlug: "pokemon-blaze-online",
+    title: "Pokémon Blaze Online",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    client: {
+      inGameSteps: [
+        "Launch the game client from the PlayBound Launcher.",
+        "Sign in or register your trainer account on the title screen.",
+        "Meet up in the shared world to trade, battle, or group up for co-op battles and crew wars.",
+      ],
+    },
+    notes:
+      "Full MMORPG infrastructure managed by the PBO team. Connect handles party launch and presence while world sync, trades, and battles operate on official servers.",
+  },
+
+  pokemmo: {
+    gameSlug: "pokemmo",
+    title: "PokeMMO",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    client: {
+      inGameSteps: [
+        "Launch PokeMMO from PlayBound.",
+        "If this is your first run, supply your legal ROM files (Black/White required) in the prompt.",
+        "Log in with your PokeMMO account, select your server/channel, and meet friends in any shared region.",
+      ],
+    },
+    notes:
+      "Official multi-region MMO infrastructure. Connect synchronizes your party launch and presence; gameplay, battles, tournaments, and trading run through official PokeMMO game servers.",
+  },
 };
 
 /**
