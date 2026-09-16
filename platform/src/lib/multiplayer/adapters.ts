@@ -315,6 +315,15 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       scriptConfigFile: "server/scripts/config.lua",
       scriptConfigKeys: ["gameMode"],
     },
+    selfHost: {
+      port: 25565,
+      protocol: "udp",
+      verified: true,
+      inGameSteps: [
+        "Host: run tes3mp-server (or use PlayBound dedicated / local host)",
+        "Friends: Join Game in the launcher, or connect with --connect=host:port",
+      ],
+    },
     notes: "TES3MP client and dedicated server with managed local configuration.",
   },
 

@@ -4203,6 +4203,7 @@ const facts: Game[] = [
     masterCopy: true,
     gameOfWeek: false,
     hiddenGem: false,
+    maxPlayers: 64,
     art: { from: "#78350f", to: "#d97706", icon: "Flame" },
     coverImage: "https://images.igdb.com/igdb/image/upload/t_cover_big/co1x18.webp",
     screenshots: [

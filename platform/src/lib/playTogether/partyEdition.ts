@@ -12,6 +12,8 @@ export type PartyEditionOption = {
 
 const REQUIRED_PARTY_EDITIONS: Readonly<Record<string, string>> = {
   freedoom: "zandronum",
+  // OpenMW is the SP remaster default; parties need TES3MP.
+  morrowind: "tes3mp",
 };
 
 /** Editions whose network protocol is the only one supported by a party adapter. */

@@ -31,6 +31,7 @@ export const partyMaxPlayersBySlug: Readonly<Record<string, number>> = {
   "warzone-2100": 8,
   mindustry: 32,
   "space-station-14": 80,
+  morrowind: 64,
   "xonotic": 32,
   "unvanquished": 32,
   "openarena": 16,
