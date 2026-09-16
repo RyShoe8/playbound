@@ -41,6 +41,7 @@ three games.
   case for this.
 - Verify: green Install dot for the game on `/admin/games`, and actually run
   the install once.
+- **Multi-version & architecture wiring**: Ensure games are wired for all versions, architectures, and platforms they support (Windows 64-bit/32-bit, Linux, macOS). If distinct architectures or engine variations exist (such as legacy 32-bit Windows builds or community forks), create dedicated Editions (`src/lib/data/editions.ts`) or per-platform recipe URLs (`urlLinux`, `urlMac`, `urlMacX64`) so players on any supported configuration have a one-click install.
 
 ## 2. Editorial — every field on the edit page, in PlayBound's voice
 

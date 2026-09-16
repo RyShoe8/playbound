@@ -6536,6 +6536,146 @@ export const editorial: Record<string, GameEditorial> = {
       },
     ],
   },
+  "pokemon-blaze-online": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "A vibrant 2D Pokémon MMO that turns four nostalgic regions into a living world of co-op raids, trading hubs, and lively crew battles.",
+      lastVerified: "2026-09-16",
+    },
+    thatOneThing:
+      "Four regions woven into one seamless MMO canvas, letting you tackle natural horde encounters and co-op Gym battles alongside real players.",
+    longDescription:
+      "Pokémon Blaze Online (PBO) takes the foundational charm of third-generation handheld monster-catching and translates it into a lively, community-centric online world. Rather than confining the adventure to a solitary trek across Route 1, PBO places hundreds of trainers into the same persistent tall grass, cities, and cavern systems. You create a custom character, pick a starting companion from four available regions—Kanto, Johto, Hoenn, or Sinnoh—and immediately see real players trading, battling, and discussing strategies in local and global chats.\n\nMoment to moment, PBO respects the strategic cadence of turn-based battles while injecting the social velocity of a modern MMO. Encountering wild Pokémon can trigger natural hordes, where teams of wild creatures gang up on solo trainers, rewarding strategic spread moves and teamwork. The game features co-op double battles, where you and a party member can enter boss fights and gym leader chambers side by side. Progression isn't just about collecting eight badges; it is also about joining a crew, building reputation, competing in seasonal Crew Wars, and trading prized catches on the in-game Trade House.\n\nFrom a technical and access perspective, PBO is remarkably accessible. The developers maintain clean, native desktop clients for Windows, Linux, and macOS that install without auxiliary dependencies or third-party wrappers, alongside an experimental browser client. Controls translate naturally to gamepads, and PlayBound provides direct one-click desktop installation for both modern 64-bit rigs and legacy 32-bit machines.\n\nWe picked Pokémon Blaze Online for PlayBound because it exemplifies what dedicated fan communities can build: an authentic, lovingly rendered 2D creature-taming adventure that turns single-player nostalgia into a genuine, cooperative shared memory.",
+    whyWePickedIt:
+      "We picked Pokémon Blaze Online because it delivers a vibrant, multiplayer monster-battling world without gatekeeping, offering genuine co-op battles, crew rivalries, and native desktop builds across all platforms.",
+    bestFor: [
+      "Trainers who loved classic 2D GBA-era Pokémon but always wished they could explore the world with real friends",
+      "Players seeking co-op boss battles and strategic natural horde encounters",
+      "Anyone who loves trading markets, crew rivalries, and social online communities",
+      "Laptops and lightweight desktop setups looking for a lightweight, beautiful MMO",
+    ],
+    notFor: [
+      "Purists who only want an untouched, offline single-player story with zero MMO mechanics",
+      "Players looking for high-fidelity 3D modern engine graphics",
+      "Those who dislike seeing other players running across their route while hunting",
+      "Competitors seeking automated simulator matchmaking without grinding team levels",
+    ],
+    comparableTo: [
+      "PokeMMO",
+      "Pokémon Revolution Online",
+      "Temtem",
+      "Cassette Beasts",
+    ],
+    installSteps: [
+      {
+        platform: "all",
+        text: "Click Install in the PlayBound Launcher to extract the official client package for your operating system.",
+      },
+      {
+        platform: "windows",
+        text: "Windows 64-bit is installed by default. If running an older 32-bit Windows system, select the Windows 32-bit edition in PlayBound.",
+      },
+      {
+        platform: "all",
+        text: "Launch the game, click Register on the title screen to create your free game account, and step into the world.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Pokémon Blaze Online free to play?",
+        a: "Yes. PBO is completely free to download and play without mandatory subscriptions or pay-to-win barriers.",
+      },
+      {
+        q: "Do I need separate ROM files or an emulator to run PBO?",
+        a: "No. Unlike PokeMMO, Pokémon Blaze Online is a fully standalone custom game client that requires no ROM files or external emulator software.",
+      },
+      {
+        q: "Does Pokémon Blaze Online support gamepads and controllers?",
+        a: "Yes. Standard gamepads (Xbox, PlayStation, and generic USB/Bluetooth controllers) are supported natively for world traversal and battle selection.",
+      },
+      {
+        q: "Can I play across different platforms with the same account?",
+        a: "Yes. Your trainer account, inventory, and Pokémon roster sync seamlessly across desktop (Windows, Linux, macOS) and mobile versions.",
+      },
+    ],
+  },
+  pokemmo: {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "The undisputed titan of creature-catching MMOs, uniting five classic generations into an endlessly deep competitive and cooperative world.",
+      lastVerified: "2026-09-16",
+    },
+    thatOneThing:
+      "A single trainer profile that can journey across Kanto, Hoenn, Sinnoh, Unova, and Johto, retaining all badges, team rosters, and competitive rankings.",
+    longDescription:
+      "PokeMMO is the most ambitious and enduring multiplayer conversion in monster-taming gaming history. Originally launched in 2012, the project takes the reverse-engineered rom engines of generations three, four, and five and binds them together using an ultra-optimized custom Java client and high-capacity dedicated servers. The result is a sprawling, persistent online universe where thousands of players roam the towns, oceans, and victory roads of five iconic regions on a shared clock.\n\nWhat sets PokeMMO fundamentally apart from casual fan games is its unflinching mechanical rigor and polished user experience. Battles follow strict competitive rulesets with full EV/IV stat transparency, accurate ability logic, updated battle mechanics, and comprehensive item interactions. The economy is fully player-driven via the Global Trade Link, where trainers buy, sell, and auction breeding specimens, cosmetic clothing items, competitive hold items, and shiny trophies. Rather than breezing through dumbed-down gym leaders, enemy AI in PokeMMO is sharp, tactical, and built to punish complacency.\n\nFrom an architectural standpoint, PokeMMO operates under an emulated data model: the client is distributed as clean, legal software that requires the user to supply their own legally acquired handheld ROM files. Once pointed at Pokémon Black/White (which provides base assets and modern engine geometry) and companion ROMs for other regions, the client generates crisp HD textures, supports custom user interfaces, runs silky smooth at 60 FPS, and natively bridges gamepads, Steam Deck controls, and touchscreens.\n\nWe picked PokeMMO for PlayBound because it represents the gold standard of community game engineering: over a decade of continuous development, immaculate stability, cross-platform parity, and a thriving global community that keeps competitive leagues and seasonal events alive year after year.",
+    whyWePickedIt:
+      "We picked PokeMMO because it is the definitive, technically superior multiplayer monster-taming experience—unifying five classic regions into a rich, persistent MMO with unmatched competitive depth.",
+    bestFor: [
+      "Competitive Pokémon veterans looking for challenging battle AI, strict tier ladders, and tournaments",
+      "Trainers wanting to play through Kanto, Johto, Hoenn, Sinnoh, and Unova with one shared character",
+      "Anyone who appreciates deep, player-driven breeding economies and the Global Trade Link",
+      "Steam Deck and controller players looking for a seamless, console-like handheld MMO experience",
+    ],
+    notFor: [
+      "Players who want a single-click game that contains all copyrighted ROM assets out of the box",
+      "Casual players expecting trivial, brainless Gym battles like the vanilla cartridge originals",
+      "Those who dislike interacting with MMO chat, player-driven pricing, and MMO seasonal events",
+      "Players with no access to legal base ROMs",
+    ],
+    comparableTo: [
+      "Pokémon Blaze Online",
+      "Temtem",
+      "Pokemon Showdown",
+      "Cassette Beasts",
+    ],
+    installSteps: [
+      {
+        platform: "all",
+        text: "Click Install in the PlayBound Launcher to extract the official portable PokeMMO client.",
+      },
+      {
+        platform: "all",
+        text: "Launch the game. The initial setup window will prompt you to select your legal ROM files.",
+      },
+      {
+        platform: "all",
+        text: "Point to Pokémon Black or White (v1) as the mandatory base game file. Optionally select FireRed, Emerald, Platinum, or HeartGold/SoulSilver to unlock additional regions and visual upgrades.",
+      },
+      {
+        platform: "all",
+        text: "Log in with your free PokeMMO account, select your server channel, and begin your journey.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is PokeMMO free?",
+        a: "Yes. The client and online servers are completely free. You must supply your own legal ROM dumps to populate the game content.",
+      },
+      {
+        q: "Which ROM is required to play?",
+        a: "Pokémon Black 1 or Pokémon White 1 is required for the client to run. Adding FireRed, Emerald, Platinum, and HeartGold/SoulSilver is optional but strongly recommended to unlock their respective regions and 3D overworld graphics.",
+      },
+      {
+        q: "Does PokeMMO have controller support?",
+        a: "Yes. PokeMMO has comprehensive native controller support with custom button remapping, analog stick sensitivity, and full Steam Deck verification.",
+      },
+      {
+        q: "Can I travel between different regions?",
+        a: "Yes! Once you acquire four badges in your starting region, you can board the ferry in major port cities (like Castelia, Slateport, or Vermilion) to travel to other regions with your existing trainer.",
+      },
+    ],
+  },
 };
 
 /** Merge editorial content onto a factual catalog entry. */

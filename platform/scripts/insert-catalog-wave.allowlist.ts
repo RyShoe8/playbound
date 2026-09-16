@@ -25,6 +25,8 @@ export const NEW_GAME_SLUGS: readonly string[] = [
   "flatout-2",
   "stalker-anomaly",
   "s-t-a-l-k-e-r-clear-sky",
+  "pokemon-blaze-online",
+  "pokemmo",
 ];
 
 /** `gameSlug/editionSlug` pairs to create only when absent. */
@@ -43,6 +45,9 @@ export const NEW_EDITION_KEYS: readonly string[] = [
   "super-sidekicks/official",
   "baseball-stars-2/official",
   "soccer-brawl/official",
+  "pokemon-blaze-online/official",
+  "pokemon-blaze-online/windows-32",
+  "pokemmo/official",
 ];
 
 /**
