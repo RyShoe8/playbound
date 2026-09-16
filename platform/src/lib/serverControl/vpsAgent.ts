@@ -50,6 +50,7 @@ export interface VpsAgentClient {
     editionSlug?: string | null;
     mod?: string | null;
     settings?: ServerSettingValues;
+    leaderUsername?: string | null;
   }): Promise<GameHostRoom | { error: string }>;
   deleteRoom(roomId: string): Promise<boolean>;
   sendCommand(
@@ -82,6 +83,8 @@ export interface VpsRoomRef {
   mod: string | null;
   /** What the host has chosen so far. Empty means "all defaults". */
   settings: ServerSettingValues;
+  /** Party leader PlayBound username (TES3MP staffRank allowlist). */
+  leaderUsername?: string | null;
 }
 
 /**
@@ -195,6 +198,7 @@ export function createVpsAgentAdapter(opts: VpsAgentAdapterOptions): ServerContr
       editionSlug: ref.editionSlug,
       mod: ref.mod,
       settings,
+      leaderUsername: ref.leaderUsername || null,
     });
     if ("error" in created) {
       return {

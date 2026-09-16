@@ -142,7 +142,7 @@ async function runTests() {
     assert.match(keeperContent, /PLAYER_NAME = Jacky Daytona/);
     assert.match(keeperContent, /SESSION_NAME = Jacky Daytona's Server/);
 
-    // TES3MP test (player name + server hostname)
+    // TES3MP: preserve an existing client login name (staffRank keys on it).
     await fsp.writeFile(path.join(gameDir, "tes3mp-client-default.cfg"), "[General]\nname = Old\n");
     await fsp.writeFile(path.join(gameDir, "tes3mp-server-default.cfg"), "[General]\nhostname = OldHost\n");
     await autoConfigureGamePlayerName({
@@ -152,9 +152,20 @@ async function runTests() {
       appDataDir: appData,
     });
     const tes3mpContent = await fsp.readFile(path.join(gameDir, "tes3mp-client-default.cfg"), "utf8");
-    assert.match(tes3mpContent, /name = Jacky Daytona/);
+    assert.match(tes3mpContent, /name = Old/);
     const tes3mpSrvContent = await fsp.readFile(path.join(gameDir, "tes3mp-server-default.cfg"), "utf8");
     assert.match(tes3mpSrvContent, /hostname = Jacky Daytona's Server/);
+
+    // TES3MP: fill a blank client name from PlayBound username.
+    await fsp.writeFile(path.join(gameDir, "tes3mp-client.cfg"), "[General]\nname =\n");
+    await autoConfigureGamePlayerName({
+      slug: "tes3mp",
+      gameDir,
+      playerName: "Jacky Daytona",
+      appDataDir: appData,
+    });
+    assert.match(await fsp.readFile(path.join(gameDir, "tes3mp-client.cfg"), "utf8"), /name = Jacky Daytona/);
+    assert.strictEqual(require("./gamePlayerName").readTes3mpClientName(gameDir), "Jacky Daytona");
 
     // OpenTTD test (client_name + server_name)
     await autoConfigureGamePlayerName({

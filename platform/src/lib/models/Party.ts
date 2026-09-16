@@ -51,6 +51,8 @@ const PartyHostedSchema = new Schema(
      * profile did not accept. Empty means the recipe's own defaults.
      */
     settings: { type: Schema.Types.Mixed, default: () => ({}) },
+    /** Party leader username for game-side admin hooks (e.g. TES3MP staffRank). */
+    leaderUsername: { type: String, default: null },
   },
   { _id: false }
 );
@@ -388,6 +390,7 @@ export type PartyDoc = {
     provisionedAt?: Date | null;
     /** Per-game, declared and validated by src/lib/serverControl/settings.ts. */
     settings?: Record<string, string | number | boolean> | null;
+    leaderUsername?: string | null;
   };
   selfHostControl?: {
     settings?: Record<string, string | number | boolean> | null;

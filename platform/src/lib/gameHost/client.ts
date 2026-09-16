@@ -228,6 +228,11 @@ export async function createHostRoom(opts: {
   mod?: string | null;
   /** Host-chosen server settings, already coerced against the game's schema. */
   settings?: Record<string, string | number | boolean>;
+  /**
+   * Party leader's PlayBound username. TES3MP sets the client login to this
+   * name; the agent promotes it to staffRank 2 after authenticate.
+   */
+  leaderUsername?: string | null;
 }): Promise<GameHostRoom | { error: string }> {
   const cfg = hostConfig();
   if (!cfg) return { error: "Game host is not configured" };
@@ -244,6 +249,7 @@ export async function createHostRoom(opts: {
           editionSlug: opts.editionSlug || null,
           mod: opts.mod || null,
           settings: opts.settings || undefined,
+          leaderUsername: opts.leaderUsername || null,
         }),
       },
       CREATE_ROOM_TIMEOUT_MS
@@ -396,6 +402,126 @@ export async function sendRoomCommand(
     const data = (await res.json().catch(() => ({}))) as { response?: string; error?: string };
     if (!res.ok) return { ok: false, error: data.error || `Game host returned ${res.status}` };
     return { ok: true, response: String(data.response ?? "") };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Game host unreachable" };
+  }
+}
+
+/**
+ * Merge login names into a TES3MP room's admin allowlist (staffRank promote hook).
+ * Used when the party leader's in-game name is not their PlayBound username.
+ */
+export async function updateRoomAdmins(
+  roomId: string,
+  names: string[]
+): Promise<{ ok: true; admins: string[] } | { ok: false; error: string }> {
+  if (!roomId) return { ok: false, error: "No room" };
+  try {
+    const res = await hostFetch(`/rooms/${encodeURIComponent(roomId)}/admins`, {
+      method: "POST",
+      body: JSON.stringify({ names }),
+    });
+    if (!res) return { ok: false, error: "Game host is not configured" };
+    const data = (await res.json().catch(() => ({}))) as { admins?: string[]; error?: string };
+    if (!res.ok) return { ok: false, error: data.error || `Game host returned ${res.status}` };
+    return { ok: true, admins: Array.isArray(data.admins) ? data.admins : [] };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Game host unreachable" };
+  }
+}
+
+export type Tes3mpAccountRow = {
+  accountName: string;
+  online: boolean;
+  staffRank: number;
+};
+
+export async function listRoomTes3mpAccounts(
+  roomId: string
+): Promise<
+  | { ok: true; accounts: Tes3mpAccountRow[]; adminAccount: string | null }
+  | { ok: false; error: string }
+> {
+  if (!roomId) return { ok: false, error: "No room" };
+  try {
+    const res = await hostFetch(`/rooms/${encodeURIComponent(roomId)}/tes3mp/accounts`, {
+      method: "GET",
+    });
+    if (!res) return { ok: false, error: "Game host is not configured" };
+    const data = (await res.json().catch(() => ({}))) as {
+      accounts?: Tes3mpAccountRow[];
+      adminAccount?: string | null;
+      error?: string;
+    };
+    if (!res.ok) return { ok: false, error: data.error || `Game host returned ${res.status}` };
+    return {
+      ok: true,
+      accounts: Array.isArray(data.accounts) ? data.accounts : [],
+      adminAccount: data.adminAccount || null,
+    };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Game host unreachable" };
+  }
+}
+
+export async function claimRoomTes3mpAdmin(
+  roomId: string,
+  accountName?: string | null
+): Promise<
+  | {
+      ok: true;
+      accountName: string;
+      accounts: Tes3mpAccountRow[];
+      adminAccount: string | null;
+    }
+  | { ok: false; error: string; accounts?: Tes3mpAccountRow[]; adminAccount?: string | null }
+> {
+  if (!roomId) return { ok: false, error: "No room" };
+  try {
+    const res = await hostFetch(`/rooms/${encodeURIComponent(roomId)}/tes3mp/claim-admin`, {
+      method: "POST",
+      body: JSON.stringify({ accountName: accountName || null }),
+    });
+    if (!res) return { ok: false, error: "Game host is not configured" };
+    const data = (await res.json().catch(() => ({}))) as {
+      accountName?: string;
+      accounts?: Tes3mpAccountRow[];
+      adminAccount?: string | null;
+      error?: string;
+    };
+    if (!res.ok) {
+      return {
+        ok: false,
+        error: data.error || `Game host returned ${res.status}`,
+        accounts: Array.isArray(data.accounts) ? data.accounts : undefined,
+        adminAccount: data.adminAccount ?? null,
+      };
+    }
+    return {
+      ok: true,
+      accountName: String(data.accountName || accountName || ""),
+      accounts: Array.isArray(data.accounts) ? data.accounts : [],
+      adminAccount: data.adminAccount || null,
+    };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Game host unreachable" };
+  }
+}
+
+export async function setRoomTes3mpHour(
+  roomId: string,
+  hour: number
+): Promise<{ ok: true; hour: number } | { ok: false; error: string }> {
+  if (!roomId) return { ok: false, error: "No room" };
+  try {
+    const res = await hostFetch(`/rooms/${encodeURIComponent(roomId)}/tes3mp/set-hour`, {
+      method: "POST",
+      body: JSON.stringify({ hour }),
+    });
+    if (!res) return { ok: false, error: "Game host is not configured" };
+    const data = (await res.json().catch(() => ({}))) as { hour?: number; error?: string };
+    if (!res.ok) return { ok: false, error: data.error || `Game host returned ${res.status}` };
+    return { ok: true, hour: Number(data.hour) };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Game host unreachable" };
   }

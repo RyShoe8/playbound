@@ -10,7 +10,19 @@
 const root = document.getElementById("root");
 const subject = document.getElementById("subject");
 
-let state = { data: null, draft: {}, partyId: null, busy: false, error: null, notice: null };
+let state = {
+  data: null,
+  draft: {},
+  partyId: null,
+  busy: false,
+  error: null,
+  notice: null,
+  tes3mp: null,
+  tes3mpAccount: "",
+  tes3mpBusy: false,
+  tes3mpHour: 12,
+  tes3mpHourBusy: false,
+};
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -158,8 +170,61 @@ function render() {
       }</button>`
     : `<p class="note">Only the party leader can change these.</p>`;
 
+  const tes3mp = state.tes3mp;
+  let tes3mpHtml = "";
+  if (data.gameSlug === "morrowind" && !preLaunch && data.canEdit) {
+    let adminBlock = "";
+    if (!tes3mp) {
+      adminBlock = `<p class="note">TES3MP admin: loading accounts…</p>`;
+    } else if (tes3mp.adminAccount) {
+      adminBlock = `<p class="note">TES3MP admin: <strong>${escapeHtml(
+        tes3mp.adminAccount
+      )}</strong></p>`;
+    } else {
+      const accounts = Array.isArray(tes3mp.accounts) ? tes3mp.accounts : [];
+      const options = accounts
+        .map(
+          (a) =>
+            `<option value="${escapeHtml(a.accountName)}" ${
+              state.tes3mpAccount === a.accountName ? "selected" : ""
+            }>${escapeHtml(a.accountName)}${a.online ? " (online)" : ""}</option>`
+        )
+        .join("");
+      adminBlock = `
+        <p class="note">Log into TES3MP first, then claim admin for your account.</p>
+        ${
+          accounts.length
+            ? `<label class="row"><span>Your TES3MP account</span>
+                <select id="tes3mp-account">${options}</select>
+              </label>`
+            : `<p class="note">No accounts yet — finish login in TES3MP, then reopen this panel.</p>`
+        }
+        <button class="apply" id="tes3mp-claim" ${
+          state.tes3mpBusy || !accounts.length ? "disabled" : ""
+        }>${state.tes3mpBusy ? "Claiming…" : "Claim admin"}</button>`;
+    }
+
+    const hourOptions = Array.from({ length: 24 }, (_, h) => {
+      const label =
+        h === 0 ? "0 — midnight" : h === 6 ? "6 — dawn" : h === 12 ? "12 — noon" : h === 18 ? "18 — dusk" : String(h);
+      return `<option value="${h}" ${Number(state.tes3mpHour) === h ? "selected" : ""}>${label}</option>`;
+    }).join("");
+
+    tes3mpHtml = `<div class="tes3mp">
+      ${adminBlock}
+      <p class="note">Time of day (same as <code>/sethour</code>)</p>
+      <label class="row"><span>Hour</span>
+        <select id="tes3mp-hour">${hourOptions}</select>
+      </label>
+      <button class="apply" id="tes3mp-set-hour" ${state.tes3mpHourBusy ? "disabled" : ""}>${
+        state.tes3mpHourBusy ? "Setting…" : "Set hour"
+      }</button>
+    </div>`;
+  }
+
   root.innerHTML = `
     <p class="note">${escapeHtml(statusLine)}</p>
+    ${tes3mpHtml}
     ${controls}
     ${warning}
     ${state.error ? `<p class="error">${escapeHtml(state.error)}</p>` : ""}
@@ -187,6 +252,82 @@ function render() {
 
   const applyBtn = document.getElementById("apply");
   if (applyBtn) applyBtn.addEventListener("click", () => void apply());
+
+  const accountSelect = document.getElementById("tes3mp-account");
+  if (accountSelect) {
+    accountSelect.addEventListener("change", () => {
+      state.tes3mpAccount = accountSelect.value;
+    });
+    if (!state.tes3mpAccount && accountSelect.value) state.tes3mpAccount = accountSelect.value;
+  }
+  const claimBtn = document.getElementById("tes3mp-claim");
+  if (claimBtn) claimBtn.addEventListener("click", () => void claimTes3mp());
+
+  const hourSelect = document.getElementById("tes3mp-hour");
+  if (hourSelect) {
+    hourSelect.addEventListener("change", () => {
+      state.tes3mpHour = Number(hourSelect.value);
+    });
+  }
+  const setHourBtn = document.getElementById("tes3mp-set-hour");
+  if (setHourBtn) setHourBtn.addEventListener("click", () => void setTes3mpHour());
+}
+
+async function loadTes3mpClaim() {
+  if (!state.partyId || !window.playbound?.getTes3mpClaimAdmin) {
+    state.tes3mp = null;
+    return;
+  }
+  if (state.data?.gameSlug !== "morrowind" || state.data?.phase === "pre-launch") {
+    state.tes3mp = null;
+    return;
+  }
+  const tes3mp = await window.playbound.getTes3mpClaimAdmin(state.partyId);
+  state.tes3mp = tes3mp?.error && !tes3mp.accounts ? { accounts: [], error: tes3mp.error } : tes3mp;
+  if (!state.tes3mpAccount && Array.isArray(tes3mp?.accounts) && tes3mp.accounts.length === 1) {
+    state.tes3mpAccount = tes3mp.accounts[0].accountName;
+  }
+}
+
+async function claimTes3mp() {
+  if (!state.partyId || state.tes3mpBusy) return;
+  state.tes3mpBusy = true;
+  state.error = null;
+  state.notice = null;
+  render();
+  const accountName =
+    state.tes3mpAccount ||
+    (state.tes3mp?.accounts?.length === 1 ? state.tes3mp.accounts[0].accountName : "");
+  const result = await window.playbound.claimTes3mpAdmin(state.partyId, accountName || null);
+  state.tes3mpBusy = false;
+  if (!result || result.error) {
+    state.error = result?.error || "Could not claim admin";
+    if (Array.isArray(result?.accounts)) state.tes3mp = { ...state.tes3mp, accounts: result.accounts };
+  } else {
+    state.notice = `TES3MP admin linked to ${result.accountName || "your account"}. Move once in-game if commands are not live yet.`;
+    state.tes3mp = {
+      ...(state.tes3mp || {}),
+      accounts: result.accounts || state.tes3mp?.accounts || [],
+      adminAccount: result.adminAccount || result.accountName,
+    };
+  }
+  render();
+}
+
+async function setTes3mpHour() {
+  if (!state.partyId || state.tes3mpHourBusy || !window.playbound?.setTes3mpHour) return;
+  state.tes3mpHourBusy = true;
+  state.error = null;
+  state.notice = null;
+  render();
+  const result = await window.playbound.setTes3mpHour(state.partyId, Number(state.tes3mpHour));
+  state.tes3mpHourBusy = false;
+  if (!result || result.error) {
+    state.error = result?.error || "Could not set hour";
+  } else {
+    state.notice = `Time of day set to hour ${result.hour}. Move once in-game if it has not updated yet.`;
+  }
+  render();
 }
 
 async function load() {
@@ -219,6 +360,10 @@ async function load() {
   state.draft = data?.supported ? { ...data.values } : {};
   state.error = null;
   render();
+  if (data?.supported) {
+    await loadTes3mpClaim();
+    render();
+  }
 }
 
 async function apply() {

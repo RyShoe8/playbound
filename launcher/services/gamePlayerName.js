@@ -90,6 +90,44 @@ function updateIniSetting(text, section, key, value) {
   return joined.endsWith("\n") ? joined : `${joined}\n`;
 }
 
+/** Read a key from an INI section (first match). */
+function readIniSetting(text, section, key) {
+  const lines = String(text || "").split(/\r?\n/);
+  const sectionLower = String(section || "").toLowerCase();
+  const keyRe = new RegExp(`^\\s*${escapeRegExp(key)}\\s*=\\s*(.*)$`, "i");
+  let inSection = false;
+  for (const line of lines) {
+    const sectMatch = line.match(/^\[([^\]]+)\]\s*$/);
+    if (sectMatch) {
+      inSection = sectMatch[1].toLowerCase() === sectionLower;
+      continue;
+    }
+    if (!inSection) continue;
+    const m = line.match(keyRe);
+    if (m) return String(m[1] || "").trim();
+  }
+  return "";
+}
+
+/**
+ * TES3MP account/login name from the client cfg (staffRank is keyed on this).
+ * Prefers tes3mp-client.cfg over the default template.
+ */
+function readTes3mpClientName(gameDir) {
+  if (!gameDir) return "";
+  for (const f of ["tes3mp-client.cfg", "tes3mp-client-default.cfg"]) {
+    const p = path.join(gameDir, f);
+    if (!fs.existsSync(p)) continue;
+    try {
+      const name = sanitizePlayerName(readIniSetting(fs.readFileSync(p, "utf8"), "General", "name"));
+      if (name && name.toLowerCase() !== "player") return name;
+    } catch {
+      /* try next */
+    }
+  }
+  return "";
+}
+
 /** Set or replace a property inside an OpenRA-style YAML section. */
 function updateYamlProperty(text, section, key, value) {
   const lines = String(text || "").split(/\r?\n/);
@@ -314,10 +352,17 @@ async function autoConfigureGamePlayerName(opts = {}) {
     }
 
     // 8. TES3MP / Morrowind
+    // Keep an existing client login name — that is the account staffRank keys
+    // on. PlayBound username is only a fallback when the cfg has no name yet.
     if ((s === "tes3mp" || s === "morrowind") && gameDir) {
       for (const f of ["tes3mp-client-default.cfg", "tes3mp-client.cfg"]) {
         const p = path.join(gameDir, f);
-        await modifyConfigFile(p, (txt) => updateIniSetting(txt, "General", "name", name));
+        await modifyConfigFile(p, (txt) => {
+          const existing = readIniSetting(txt, "General", "name");
+          const keep =
+            existing && existing.toLowerCase() !== "player" ? sanitizePlayerName(existing) : name;
+          return updateIniSetting(txt, "General", "name", keep);
+        });
       }
       for (const f of ["tes3mp-server-default.cfg", "tes3mp-server.cfg"]) {
         const p = path.join(gameDir, f);
@@ -719,6 +764,8 @@ module.exports = {
   sanitizePlayerName,
   sanitizeServerName,
   updateIniSetting,
+  readIniSetting,
+  readTes3mpClientName,
   updateYamlProperty,
   updateCvarSetting,
   updateKeyValueSetting,

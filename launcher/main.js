@@ -82,6 +82,7 @@ const {
   defaultServerName,
   getPlayerNameLaunchArgs,
   getServerNameLaunchArgs,
+  readTes3mpClientName,
   sanitizePlayerName,
 } = require("./services/gamePlayerName");
 const { reconcileCatalog, startupCatalog } = require("./services/catalogMerge");
@@ -9037,6 +9038,33 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
   }
 
   /*
+   * Dedicated TES3MP: staffRank keys on the client login name, which is often
+   * not the PlayBound username. After preserving/filling the cfg, tell the VPS
+   * allowlist who the party leader actually is before they authenticate.
+   */
+  if (
+    slug === "morrowind" &&
+    join?.partyId &&
+    join?.host &&
+    String(join.host) !== "127.0.0.1"
+  ) {
+    const gameDir = info.dir || path.dirname(info.exe || "");
+    const tes3mpLogin =
+      readTes3mpClientName(gameDir) ||
+      (activePlayerName ? sanitizePlayerName(activePlayerName) : "");
+    if (tes3mpLogin) {
+      try {
+        await launcherJson(`/api/parties/${encodeURIComponent(String(join.partyId))}/tes3mp-admin`, {
+          method: "POST",
+          body: { adminName: tes3mpLogin },
+        });
+      } catch (err) {
+        console.warn(`[tes3mp-admin] register skipped: ${err?.message || err}`);
+      }
+    }
+  }
+
+  /*
    * OpenMW and TES3MP re-check their config on the way in, not just at
    * install. Two reasons: a copy installed before this code knew about BSAs is
    * sitting there with a pink main menu and would otherwise need a reinstall
@@ -9157,6 +9185,7 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
     const local = localDedicatedServerFor(slug, edSlug);
     if (!local.ok) throw new Error(local.reason);
     const port = Number(local.hostLaunch.port) || 25565;
+    const tes3mpLogin = readTes3mpClientName(local.cwd) || activePlayerName;
     const started = localServers.start(`standalone:${slug}:${edSlug}`, {
       exe: local.exe,
       cwd: local.cwd,
@@ -9165,6 +9194,7 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
       settings: {},
       revision: Date.now(),
       serverName: activeServerName,
+      adminNames: tes3mpLogin ? [tes3mpLogin] : [],
     });
     if (!started.ok) throw new Error(started.error || "Could not start the TES3MP server.");
     resolvedJoin = { host: "127.0.0.1", port };
@@ -15291,6 +15321,8 @@ async function reconcileSelfHostServer(partyId) {
 
   const activePlayerName = await getActivePlayerName();
   const serverName = desired.serverName || (activePlayerName ? `${activePlayerName}'s Server` : "PlayBound Server");
+  const tes3mpLogin =
+    slug === "morrowind" ? readTes3mpClientName(cwd) || activePlayerName : activePlayerName;
 
   const result = localServers.start(partyId, {
     exe,
@@ -15300,6 +15332,7 @@ async function reconcileSelfHostServer(partyId) {
     settings: desired.settings || {},
     revision: Number(desired.desiredRevision || 0),
     serverName,
+    adminNames: tes3mpLogin ? [tes3mpLogin] : [],
   });
 
   if (result.error) {
@@ -15545,6 +15578,125 @@ ipcMain.handle("apply-server-settings", async (_event, partyId, settings) => {
       method: "PATCH",
       body: { settings: settings || {} },
     });
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+function localTes3mpServerDir() {
+  const resolved = localDedicatedServerFor("morrowind", "tes3mp");
+  if (!resolved.ok) {
+    const fallback = localDedicatedServerFor("morrowind");
+    if (!fallback.ok) return null;
+    return path.join(fallback.cwd, "server");
+  }
+  return path.join(resolved.cwd, "server");
+}
+
+ipcMain.handle("get-tes3mp-claim-admin", async (_event, partyId) => {
+  if (!partyId) return { error: "No party" };
+  try {
+    const remote = await launcherJson(
+      `/api/parties/${encodeURIComponent(partyId)}/tes3mp-claim-admin`
+    );
+    if (remote?.hostMode === "self" || /self-hosted/i.test(String(remote?.error || ""))) {
+      const { listTes3mpAccounts } = require("./services/tes3mp/injectPlayboundAdmin.cjs");
+      const serverDir = localTes3mpServerDir();
+      if (!serverDir || !fs.existsSync(serverDir)) {
+        return {
+          ok: true,
+          hostMode: "self",
+          accounts: [],
+          adminAccount: null,
+          canClaim: true,
+          note: "Start the TES3MP server and log in first.",
+        };
+      }
+      const listed = listTes3mpAccounts(serverDir);
+      return { ok: true, hostMode: "self", canClaim: true, ...listed };
+    }
+    return remote;
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("claim-tes3mp-admin", async (_event, partyId, accountName) => {
+  if (!partyId) return { error: "No party" };
+
+  function claimLocal() {
+    const { claimTes3mpAdmin } = require("./services/tes3mp/injectPlayboundAdmin.cjs");
+    const serverDir = localTes3mpServerDir();
+    if (!serverDir || !fs.existsSync(serverDir)) {
+      return { error: "Log into TES3MP on this PC first, then claim admin." };
+    }
+    const claimed = claimTes3mpAdmin(serverDir, accountName || null);
+    if (!claimed.ok) {
+      return {
+        error:
+          claimed.reason === "ambiguous"
+            ? "Several accounts are on this server — pick which one is yours."
+            : claimed.reason === "no-accounts"
+              ? "Log into TES3MP first, then claim admin."
+              : claimed.reason || "Could not claim admin",
+        accounts: claimed.accounts || [],
+        adminAccount: claimed.adminAccount || null,
+      };
+    }
+    return {
+      ok: true,
+      accountName: claimed.accountName,
+      accounts: claimed.accounts,
+      adminAccount: claimed.adminAccount,
+    };
+  }
+
+  try {
+    const remote = await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/tes3mp-claim-admin`, {
+      method: "POST",
+      body: { accountName: accountName || null },
+    });
+    if (remote?.ok) return remote;
+    if (/self-hosted|host launcher/i.test(String(remote?.error || ""))) {
+      return claimLocal();
+    }
+    return remote;
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("set-tes3mp-hour", async (_event, partyId, hour) => {
+  if (!partyId) return { error: "No party" };
+
+  function setLocal() {
+    const { requestTes3mpSetHour } = require("./services/tes3mp/injectPlayboundAdmin.cjs");
+    const serverDir = localTes3mpServerDir();
+    if (!serverDir || !fs.existsSync(serverDir)) {
+      return { error: "TES3MP server folder not found on this PC." };
+    }
+    const set = requestTes3mpSetHour(serverDir, hour);
+    if (!set.ok) {
+      return {
+        error:
+          set.reason === "invalid-hour"
+            ? "Hour must be a whole number from 0 to 23 (same as /sethour)."
+            : set.reason || "Could not set hour",
+      };
+    }
+    return { ok: true, hour: set.hour };
+  }
+
+  try {
+    const remote = await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/tes3mp-set-hour`, {
+      method: "POST",
+      body: { hour },
+    });
+    if (remote?.ok) return remote;
+    if (/self-hosted|host launcher/i.test(String(remote?.error || ""))) {
+      return setLocal();
+    }
+    return remote;
   } catch (err) {
     return { error: err.message };
   }

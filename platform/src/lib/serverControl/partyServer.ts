@@ -43,6 +43,7 @@ export interface PartyServerSource {
     error?: string | null;
     provisionedAt?: Date | null;
     settings?: ServerSettingValues | null;
+    leaderUsername?: string | null;
   } | null;
 }
 
@@ -189,6 +190,7 @@ export function createPartyServerAdapter(
       editionSlug: party.editionSlug || null,
       mod: party.openRaMod || null,
       settings: party.hosted?.settings || {},
+      leaderUsername: party.hosted?.leaderUsername || null,
     },
     onRoomChanged: async (next) => {
       const hosted = party.hosted ?? (party.hosted = {});

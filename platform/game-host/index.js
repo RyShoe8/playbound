@@ -17,6 +17,7 @@ import dgram from "node:dgram";
 import { spawn } from "node:child_process";
 import crypto from "node:crypto";
 import path from "node:path";
+import { createRequire } from "node:module";
 import { createReadStream, createWriteStream } from "node:fs";
 import { copyFile, mkdir, rename, rm, stat } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
@@ -37,6 +38,11 @@ import { collectMetrics } from "./metrics.js";
 import { getLastSpawnTests, recordSpawnTest } from "./spawnTests.js";
 import { getCachedGameVersions } from "./gameVersions.js";
 import { createStartCoordinator } from "./startLock.js";
+
+const require = createRequire(import.meta.url);
+const { injectPlayboundAdmin, listTes3mpAccounts, claimTes3mpAdmin, requestTes3mpSetHour } = require(
+  "./tes3mp/injectPlayboundAdmin.cjs"
+);
 
 const SECRET = process.env.GAME_HOST_SECRET || "";
 const PUBLIC_IP = process.env.GAME_HOST_PUBLIC_IP || "";
@@ -749,7 +755,7 @@ async function startRoom(opts) {
   return startCoordinator.withPartyLock(String(opts.partyId || ""), () => startRoomUnlocked(opts));
 }
 
-async function startRoomUnlocked({ gameSlug, partyId, name, editionSlug, mod, settings }) {
+async function startRoomUnlocked({ gameSlug, partyId, name, editionSlug, mod, settings, leaderUsername }) {
   const existingId = byParty.get(partyId);
   if (existingId && rooms.has(existingId)) {
     return { room: rooms.get(existingId) };
@@ -761,16 +767,24 @@ async function startRoomUnlocked({ gameSlug, partyId, name, editionSlug, mod, se
   byParty.set(partyId, existingId || "pending");
 
   try {
-    return await startRoomReserved({ gameSlug, partyId, name, editionSlug, mod, settings });
+    return await startRoomReserved({
+      gameSlug,
+      partyId,
+      name,
+      editionSlug,
+      mod,
+      settings,
+      leaderUsername,
+    });
   } finally {
     startCoordinator.releaseCapacity();
     if (byParty.get(partyId) === "pending") byParty.delete(partyId);
   }
 }
 
-async function startRoomReserved({ gameSlug, partyId, name, editionSlug, mod, settings }) {
+async function startRoomReserved({ gameSlug, partyId, name, editionSlug, mod, settings, leaderUsername }) {
 
-  const roomCtx = { editionSlug, mod, partyId, name, settings };
+  const roomCtx = { editionSlug, mod, partyId, name, settings, leaderUsername };
   let resolved = resolveRecipe(gameSlug, roomCtx);
   if (!resolved) return { error: `Game ${gameSlug} is not hostable` };
 
@@ -831,6 +845,11 @@ async function startRoomReserved({ gameSlug, partyId, name, editionSlug, mod, se
     mod: mod || "",
     settings: settings && typeof settings === "object" ? settings : {},
     /*
+     * PlayBound username of the party leader. TES3MP uses it as the client
+     * login name; prepareSpawn may promote that account to staffRank 2.
+     */
+    leaderUsername: typeof leaderUsername === "string" ? leaderUsername.trim() : "",
+    /*
      * Generated here and kept here. The platform can ask this agent to run a
      * command on a room it owns, but never learns the password, so it cannot
      * administer a game server directly and a leaked platform token does not
@@ -890,6 +909,7 @@ async function startRoomReserved({ gameSlug, partyId, name, editionSlug, mod, se
       port,
       pid: child.pid || null,
       child,
+      cwd,
       createdAt: Date.now(),
       lastActivityAt: Date.now(),
       // When the current process started, which is what the restart decision
@@ -1187,6 +1207,7 @@ const server = http.createServer(async (req, res) => {
          * with the shared secret and must not trust a body to be well-formed.
          */
         settings: body.settings,
+        leaderUsername: body.leaderUsername,
       });
       if (result.error) {
         json(res, 409, { error: result.error });
@@ -1308,6 +1329,121 @@ const server = http.createServer(async (req, res) => {
         console.warn(`[rcon] ${room.gameSlug}:${room.port} ${command.split(" ")[0]}: ${message}`);
         json(res, 502, { error: message });
       }
+      return;
+    }
+
+    /*
+     * Merge TES3MP admin allowlist names. The platform sends the party leader's
+     * real client login name (often not their PlayBound username) before they
+     * authenticate so playboundAdmin.lua can promote them.
+     */
+    const adminsMatch = url.pathname.match(/^\/rooms\/([^/]+)\/admins$/);
+    if (req.method === "POST" && adminsMatch) {
+      const room = rooms.get(decodeURIComponent(adminsMatch[1]));
+      if (!room) {
+        json(res, 404, { error: "No such room" });
+        return;
+      }
+      if (room.gameSlug !== "morrowind") {
+        json(res, 409, { error: "Only Morrowind/TES3MP rooms take an admin allowlist" });
+        return;
+      }
+      if (!room.cwd) {
+        json(res, 409, { error: "Room has no server directory" });
+        return;
+      }
+      const body = await readBody(req);
+      const names = Array.isArray(body.names) ? body.names : [];
+      const serverDir = path.join(room.cwd, "server");
+      const injected = injectPlayboundAdmin(serverDir, names);
+      if (!injected.ok) {
+        json(res, 400, { error: injected.reason || "Could not update admins" });
+        return;
+      }
+      room.lastActivityAt = Date.now();
+      json(res, 200, { ok: true, admins: injected.admins });
+      return;
+    }
+
+    const tes3mpAccountsMatch = url.pathname.match(/^\/rooms\/([^/]+)\/tes3mp\/accounts$/);
+    if (req.method === "GET" && tes3mpAccountsMatch) {
+      const room = rooms.get(decodeURIComponent(tes3mpAccountsMatch[1]));
+      if (!room) {
+        json(res, 404, { error: "No such room" });
+        return;
+      }
+      if (room.gameSlug !== "morrowind" || !room.cwd) {
+        json(res, 409, { error: "Not a TES3MP room" });
+        return;
+      }
+      const listed = listTes3mpAccounts(path.join(room.cwd, "server"));
+      json(res, 200, { ok: true, ...listed });
+      return;
+    }
+
+    const tes3mpClaimMatch = url.pathname.match(/^\/rooms\/([^/]+)\/tes3mp\/claim-admin$/);
+    if (req.method === "POST" && tes3mpClaimMatch) {
+      const room = rooms.get(decodeURIComponent(tes3mpClaimMatch[1]));
+      if (!room) {
+        json(res, 404, { error: "No such room" });
+        return;
+      }
+      if (room.gameSlug !== "morrowind" || !room.cwd) {
+        json(res, 409, { error: "Not a TES3MP room" });
+        return;
+      }
+      const body = await readBody(req);
+      const claimed = claimTes3mpAdmin(path.join(room.cwd, "server"), body.accountName);
+      if (!claimed.ok) {
+        const status = claimed.reason === "ambiguous" || claimed.reason === "no-accounts" ? 409 : 400;
+        json(res, status, {
+          error:
+            claimed.reason === "ambiguous"
+              ? "Several accounts are on this server — pick which one is yours."
+              : claimed.reason === "no-accounts"
+                ? "Log into TES3MP first, then claim admin."
+                : claimed.reason === "unknown-account"
+                  ? "That account has not logged into this server yet."
+                  : claimed.reason || "Could not claim admin",
+          accounts: claimed.accounts || [],
+          adminAccount: claimed.adminAccount || null,
+        });
+        return;
+      }
+      room.lastActivityAt = Date.now();
+      json(res, 200, {
+        ok: true,
+        accountName: claimed.accountName,
+        accounts: claimed.accounts,
+        adminAccount: claimed.adminAccount,
+      });
+      return;
+    }
+
+    const tes3mpSetHourMatch = url.pathname.match(/^\/rooms\/([^/]+)\/tes3mp\/set-hour$/);
+    if (req.method === "POST" && tes3mpSetHourMatch) {
+      const room = rooms.get(decodeURIComponent(tes3mpSetHourMatch[1]));
+      if (!room) {
+        json(res, 404, { error: "No such room" });
+        return;
+      }
+      if (room.gameSlug !== "morrowind" || !room.cwd) {
+        json(res, 409, { error: "Not a TES3MP room" });
+        return;
+      }
+      const body = await readBody(req);
+      const set = requestTes3mpSetHour(path.join(room.cwd, "server"), body.hour);
+      if (!set.ok) {
+        json(res, 400, {
+          error:
+            set.reason === "invalid-hour"
+              ? "Hour must be a whole number from 0 to 23 (same as /sethour)."
+              : set.reason || "Could not set hour",
+        });
+        return;
+      }
+      room.lastActivityAt = Date.now();
+      json(res, 200, { ok: true, hour: set.hour });
       return;
     }
 
