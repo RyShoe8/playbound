@@ -1,7 +1,7 @@
 "use client";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, UserPlus } from "lucide-react";
 import { upload } from "@vercel/blob/client";
@@ -13,6 +13,7 @@ import {
   PLATFORMS,
   TAGS,
   defaultArtFor,
+  emptyGameDraft,
   slugifyTitle,
   toPayloadLauncherInstall,
 
@@ -215,6 +216,23 @@ export function GameEditorForm({
       developerSlug: slug || prev.developerSlug || "indie-web",
     }));
   }
+
+  useEffect(() => {
+    if (mode === "create") {
+      setForm(initial);
+      setImportUrl(initial.website || "");
+      setError("");
+      setWarning("");
+      setMediaNote("");
+      setVideoUrlDraft("");
+      setEvidence([]);
+      setSourceMaterial(null);
+      setSuggestions({ bestFor: [], notFor: [] });
+      setLauncherDiscoverNote("");
+      setIsCustomDev(Boolean(initial.developerSlug && !developers.some((d) => d.slug === initial.developerSlug)));
+      setCustomDevName(initial.developerName || "");
+    }
+  }, [initial, mode, developers]);
 
   // Mirrors the server-side publish gate so nothing is a surprise on save.
   // Must apply the same derivation first — the server fills install steps and
@@ -704,6 +722,22 @@ export function GameEditorForm({
         setError(data?.error ?? "Save failed");
         setBusy(false);
         return;
+      }
+      if (mode === "create") {
+        const clean = emptyGameDraft();
+        clean.website = "https://example.com";
+        setForm(clean);
+        setImportUrl("");
+        setEvidence([]);
+        setSourceMaterial(null);
+        setSuggestions({ bestFor: [], notFor: [] });
+        setError("");
+        setWarning("");
+        setMediaNote("");
+        setVideoUrlDraft("");
+        setLauncherDiscoverNote("");
+        setIsCustomDev(false);
+        setCustomDevName("");
       }
       router.push("/admin/games");
       router.refresh();

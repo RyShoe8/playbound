@@ -504,14 +504,12 @@ export async function getModAdmin(slug: string) {
   return null;
 }
 
-export async function modCountsByGame(opts?: {
-  includeUnpublished?: boolean;
-}): Promise<Map<string, number>> {
+async function computeModCounts(includeUnpublished?: boolean): Promise<[string, number][]> {
   const counts = new Map<string, number>();
   try {
     await dbConnect();
     const pipeline: PipelineStage[] = [];
-    if (!opts?.includeUnpublished) {
+    if (!includeUnpublished) {
       pipeline.push({ $match: mongoVisibleFilter({ includeTesting: false }) });
     }
     pipeline.push({ $group: { _id: "$baseGameSlug", count: { $sum: 1 } } });
@@ -522,5 +520,20 @@ export async function modCountsByGame(opts?: {
   } catch (err) {
     console.error("[mods] counts failed:", err);
   }
-  return counts;
+  return Array.from(counts.entries());
+}
+
+export async function modCountsByGame(opts?: {
+  includeUnpublished?: boolean;
+}): Promise<Map<string, number>> {
+  const includeUnpublished = Boolean(opts?.includeUnpublished);
+  const entries = await unstable_cache(
+    () => computeModCounts(includeUnpublished),
+    ["admin-mod-counts", String(includeUnpublished)],
+    {
+      revalidate: 60,
+      tags: ["mods"],
+    }
+  )();
+  return new Map(entries);
 }

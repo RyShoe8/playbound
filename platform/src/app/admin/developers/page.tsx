@@ -3,7 +3,8 @@ import { connection } from "next/server";
 import type { Metadata } from "next";
 import { Plus } from "lucide-react";
 import { listAllDevelopers } from "@/lib/developers";
-import { listAllGames } from "@/lib/catalog";
+import dbConnect from "@/lib/db";
+import CatalogGame from "@/lib/models/CatalogGame";
 
 export const metadata: Metadata = { title: "Admin · Developers" };
 
@@ -11,11 +12,16 @@ export default async function AdminDevelopersPage() {
   // Never prerendered — see the layout. Each segment prerenders
   // independently, so the layout's opt-out does not cover this page.
   await connection();
-  const [developers, games] = await Promise.all([listAllDevelopers(), listAllGames()]);
+  await dbConnect();
+  const [developers, games] = await Promise.all([
+    listAllDevelopers(),
+    CatalogGame.find().select("developerSlug").lean(),
+  ]);
 
   const gameCount = new Map<string, number>();
   for (const game of games) {
-    gameCount.set(game.developerSlug, (gameCount.get(game.developerSlug) ?? 0) + 1);
+    const slug = (game as { developerSlug?: string }).developerSlug;
+    if (slug) gameCount.set(slug, (gameCount.get(slug) ?? 0) + 1);
   }
 
   // A game pointing at a developer that no longer exists shows a broken credit

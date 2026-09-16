@@ -3,7 +3,8 @@ import { connection } from "next/server";
 import type { Metadata } from "next";
 import { Plus } from "lucide-react";
 import { listAllEditions } from "@/lib/editions";
-import { listAllGames } from "@/lib/catalog";
+import dbConnect from "@/lib/db";
+import CatalogGame from "@/lib/models/CatalogGame";
 import { AdminEditionsTable } from "@/components/admin/AdminEditionsTable";
 
 export const metadata: Metadata = {
@@ -14,14 +15,15 @@ export default async function AdminAllEditionsPage() {
   // Never prerendered — see the layout. Each segment prerenders
   // independently, so the layout's opt-out does not cover this page.
   await connection();
+  await dbConnect();
   const [editions, games] = await Promise.all([
     listAllEditions(true),
-    listAllGames(),
+    CatalogGame.find().select("slug title").lean(),
   ]);
 
   const gameTitlesBySlug: Record<string, string> = {};
   for (const g of games) {
-    gameTitlesBySlug[g.slug] = g.title;
+    gameTitlesBySlug[String(g.slug)] = String(g.title);
   }
 
   return (

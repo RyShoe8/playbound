@@ -3,8 +3,9 @@ import { connection } from "next/server";
 import type { Metadata } from "next";
 import { Plus } from "lucide-react";
 import { listAllMods } from "@/lib/mods";
-import { listAllGames } from "@/lib/catalog";
-import { getModClassificationTree, getModClassificationsWithAncestry } from "@/lib/modClassifications";
+import dbConnect from "@/lib/db";
+import CatalogGame from "@/lib/models/CatalogGame";
+import { getModClassificationTree } from "@/lib/modClassifications";
 import { AdminModsTable } from "@/components/admin/AdminModsTable";
 
 export const metadata: Metadata = {
@@ -15,18 +16,18 @@ export default async function AdminAllModsPage() {
   // Never prerendered — see the layout. Each segment prerenders
   // independently, so the layout's opt-out does not cover this page.
   await connection();
-  const [mods, games] = await Promise.all([
+  await dbConnect();
+  const [mods, games, { flat }] = await Promise.all([
     listAllMods(),
-    listAllGames(),
+    CatalogGame.find().select("slug title").lean(),
+    getModClassificationTree(true),
   ]);
 
   const gameTitlesBySlug: Record<string, string> = {};
   for (const g of games) {
-    gameTitlesBySlug[g.slug] = g.title;
+    gameTitlesBySlug[String(g.slug)] = String(g.title);
   }
 
-  // Preload all classification tags
-  const { flat } = await getModClassificationTree(true);
   const byId = new Map(flat.map((f) => [f.id, f]));
 
   const modsWithClassifications = mods.map((m) => {

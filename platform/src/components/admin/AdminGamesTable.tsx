@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, X, ArrowUp, ArrowDown } from "lucide-react";
+import { Search, X, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from "lucide-react";
 import type { Game } from "@/lib/data/types";
 import { CATALOG_STATUSES, type CatalogStatus } from "@/lib/catalogStatus";
 import type { GameHealthArea, GameHealthStatus } from "@/lib/admin/gameHealth";
@@ -45,9 +45,12 @@ export function AdminGamesTable({
 }) {
   const [rows, setRows] = useState(games);
   const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortCol, setSortCol] = useState<string>("Updated");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(50);
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
   const [statusPendingSlug, setStatusPendingSlug] = useState<string | null>(null);
   /**
@@ -168,7 +171,7 @@ export function AdminGamesTable({
 
   const filtered = useMemo(() => {
     let result = rows;
-    const q = query.trim().toLowerCase();
+    const q = deferredQuery.trim().toLowerCase();
 
     if (q) {
       result = rows.filter((g) =>
@@ -255,7 +258,14 @@ export function AdminGamesTable({
       if (aVal > bVal) return sortDir === "asc" ? 1 : -1;
       return 0;
     });
-  }, [rows, query, statusFilter, sortCol, sortDir, modCounts]);
+  }, [rows, deferredQuery, statusFilter, sortCol, sortDir, modCounts]);
+
+  const totalPages = pageSize > 0 ? Math.max(1, Math.ceil(filtered.length / pageSize)) : 1;
+  const paginatedRows = useMemo(() => {
+    if (pageSize <= 0) return filtered;
+    const start = (page - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, page, pageSize]);
 
   const SortableHeader = ({ label }: { label: string }) => (
     <th
@@ -285,7 +295,10 @@ export function AdminGamesTable({
           <input
             type="search"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPage(1);
+            }}
             placeholder="Search by name, slug, developer, platform…"
             aria-label="Search games"
             className="h-9 w-full rounded-lg border border-input bg-secondary/50 pr-9 pl-9 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/40"
@@ -293,7 +306,10 @@ export function AdminGamesTable({
           {query && (
             <button
               type="button"
-              onClick={() => setQuery("")}
+              onClick={() => {
+                setQuery("");
+                setPage(1);
+              }}
               aria-label="Clear search"
               className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
             >
@@ -304,7 +320,10 @@ export function AdminGamesTable({
 
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setPage(1);
+          }}
           aria-label="Filter by status"
           className="h-9 rounded-lg border border-input bg-secondary/50 px-3 text-sm font-medium outline-none focus:border-ring focus:ring-2 focus:ring-ring/40"
         >
@@ -343,14 +362,14 @@ export function AdminGamesTable({
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {paginatedRows.length === 0 ? (
               <tr>
                 <td colSpan={14} className="px-4 py-8 text-center text-muted-foreground">
                   No games match the current filters.
                 </td>
               </tr>
             ) : (
-              filtered.map((g) => {
+              paginatedRows.map((g) => {
                 const editions = editionCounts[g.slug] ?? 0;
                 const mods = modCounts?.[g.slug] ?? 0;
                 const isComplete = Boolean(g.complete);
@@ -550,6 +569,59 @@ export function AdminGamesTable({
           </tbody>
         </table>
       </div>
+
+      {filtered.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground pt-1">
+          <div className="flex items-center gap-2">
+            <span>Rows per page:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setPage(1);
+              }}
+              className="h-7 rounded border border-input bg-secondary/50 px-2 text-xs font-semibold outline-none"
+            >
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+              <option value={250}>250</option>
+              <option value={-1}>All ({filtered.length})</option>
+            </select>
+            {pageSize > 0 && (
+              <span>
+                Showing {Math.min((page - 1) * pageSize + 1, filtered.length)}–
+                {Math.min(page * pageSize, filtered.length)} of {filtered.length}
+              </span>
+            )}
+          </div>
+
+          {pageSize > 0 && totalPages > 1 && (
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="flex size-7 items-center justify-center rounded border border-border bg-secondary hover:bg-secondary/80 disabled:opacity-40"
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="size-4" />
+              </button>
+              <span className="px-2 font-semibold">
+                Page {page} of {totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                className="flex size-7 items-center justify-center rounded border border-border bg-secondary hover:bg-secondary/80 disabled:opacity-40"
+                aria-label="Next page"
+              >
+                <ChevronRight className="size-4" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
