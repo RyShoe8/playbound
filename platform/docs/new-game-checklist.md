@@ -139,3 +139,44 @@ three games.
   QoL/balance overhaul the community broadly recommends over the base game —
   package it as its own Edition instead of leaving it buried as a mod entry
   nobody browsing the game page will find.
+
+## 7. Field Correlation Reference & Schema Directory
+
+Every field in the Admin Game Form (`/admin/games/[slug]/edit`), the TypeScript schema (`GamePayload` in `src/lib/gamePayload.ts`), and the database model (`CatalogGame` in `src/lib/models/CatalogGame.ts`) serves a distinct purpose. **Never leave fields with scraped placeholder values, duplicates, or guesses.**
+
+| UI Section | UI Field Label | Schema / Code Field | Type & Constraints | Strict Rules & Requirements |
+| :--- | :--- | :--- | :--- | :--- |
+| **Basics** | Title | `title` | `string` (min 1, max 100) | Canonical game title. |
+| **Basics** | Slug | `slug` | `string` (kebab-case, unique) | URL identifier. Renaming updates cascades automatically. |
+| **Basics** | Tagline | `tagline` | `string` (min 1, max 200) | **Must NEVER equal Description.** A punchy hook or promise (e.g. *"A community-driven Pokemon MMO with rich real-time battles."*). Scraped drafts often duplicate description here; you must rewrite it! |
+| **Basics** | Description | `description` | `string` (min 1, max 1000) | Summary for game cards, search snippets, and meta descriptions (1–2 paragraphs). Distinct from Tagline and distinct from Long Description. |
+| **Basics** | Developer | `developerSlug`, `developerName` | `string` | Developer organization or author slug. Pick existing or create new. |
+| **Basics** | License | `license` | `string` | e.g. "Freeware", "GPL-3.0", "MIT", "Proprietary / Free to Play". |
+| **Basics** | Release year | `releaseYear` | `number` (1970–present) | Year the game was originally or publicly released. |
+| **Basics** | Size (MB) | `sizeMB` | `number` (integer MB > 0) | **Mandatory.** Actual disk footprint / archive size in MB. Inspect upstream package or extracted folder. **Never leave 0 MB or empty.** |
+| **Basics** | Website | `website` | `string` (url) | Official project or download website. |
+| **Basics** | Steam App ID | `steamAppId` | `string \| null` | Numeric Steam App ID if available. |
+| **Basics** | GitHub Repo | `githubRepo` | `string \| null` | `owner/repo` string if open-source. |
+| **Access & pricing** | Access Tier | `access.priceType` | `"free" \| "pwyw" \| "freemium" \| "paid"` | Pricing classification. |
+| **Cover & media** | Cover Image | `coverImage` | `string` (URL) | Vertical box-art or hero image. |
+| **Cover & media** | Screenshots | `screenshots` | `string[]` (max 20) | In-game action screenshots. |
+| **Cover & media** | Videos | `videos` | `string[]` (max 10) | YouTube, Vimeo, or direct MP4/WebM video URLs. |
+| **Editorial** | Quality Bar Verdict | `qualityBar.verdict` | `string` (present tense) | How the game feels to play. Punchy and concrete. |
+| **Editorial** | Tested by PlayBound | `qualityBar.playboundTested` | `boolean` | Check ONLY after verified hands-on testing. |
+| **Editorial** | Verification Date | `qualityBar.testedOn` | `string` (YYYY-MM-DD) | Date verified hands-on. |
+| **Editorial** | That One Thing | `thatOneThing` | `string` (min 4 words) | The memorable single hook you would excitedly tell a friend. |
+| **Editorial** | Long Description | `longDescription` | `string` (min 150 words, target 400–600) | In-depth original editorial prose detailing mechanics, feel, and context. |
+| **Editorial** | Why We Picked It | `whyWePickedIt` | `string` (min 20 words, ~100 words) | Mission-framed explanation of why PlayBound curates this game. |
+| **Editorial** | Best For | `bestFor` | `string[]` (≥2 items) | Specific player profiles or situations (e.g. "LAN parties", "Pokemon fans wanting MMO mechanics"). |
+| **Editorial** | Not For | `notFor` | `string[]` (≥2 items) | Honest caveats or limitations (e.g. "Players wanting single-player story without grinding"). |
+| **Editorial** | Comparable To | `comparableTo` | `string[]` | Paid / commercial games this resembles (for discovery/alternatives). |
+| **Taxonomy** | Launch Methods | `launchMethods` | `("browser" \| "install" \| "server")[]` | **Desktop install games must have `"install"`.** Only use `"browser"` for genuine WebGL/HTML5 games playable in a web browser tab. If a game has a native downloadable client, it is `"install"`. |
+| **Taxonomy** | Browser Playable | `browserPlayable` | `boolean` | **Must be `false` for downloadable desktop games.** Scraped website imports mistakenly default this to `true`. Always uncheck if the game runs locally on PC! |
+| **Taxonomy** | Platforms | `platforms` | `("Windows" \| "macOS" \| "Linux" \| "Android" \| "iOS" \| "Web")[]` | Real supported operating systems. **Never select `"Web"` for a native PC executable/installer.** Select `"Windows"`, `"Linux"`, and/or `"macOS"` based on actual binaries provided. |
+| **Taxonomy** | Genres | `genres` | `Genre[]` (from closed `GENRES` list) | Primary gameplay genres (e.g. `"MMO"`, `"RPG"`, `"Action"`). |
+| **Taxonomy** | Features | `features` | `string[]` (from closed `FEATURES` list) | Must match closed `FEATURES` array in `src/lib/gamePayload.ts` (e.g. `"Multiplayer"`, `"Co-op"`, `"Controller Support"`, `"Cross-play"`, `"LAN Support"`, `"Dedicated Servers"`). |
+| **Taxonomy** | Max Players | `maxPlayers` | `number \| null` | Lobby or concurrent player limit when Multiplayer is selected. |
+| **Taxonomy** | Tags | `tags` | `string[]` | Normalized tags (e.g. `"Creature Collector"`, `"Indie"`, `"Open World"`). |
+| **Taxonomy** | Search Aliases | `aliases` | `string[]` | Alternative names, acronyms, or common abbreviations (one per line). |
+| **Install** | Launcher Install | `launcherInstall` | `LauncherInstall` object | Direct one-click recipe for the launcher (`direct-zip`, `github-zip`, `direct-installer`, etc.). |
+| **System & servers**| System Requirements| `systemRequirements` | `{ min: string, recommended: string }` | Minimum and recommended hardware specifications. |

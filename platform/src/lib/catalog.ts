@@ -221,6 +221,14 @@ function pickPlatforms(docPlatforms?: string[], seedPlatforms?: string[]): strin
   ) {
     return seedPlatforms;
   }
+  // If the stored document has only ["Web"] (common artifact of website scraper),
+  // but seed defines real client platforms, honor the curated seed platforms.
+  if (
+    seedPlatforms?.length &&
+    (!docPlatforms?.length || (docPlatforms.length === 1 && docPlatforms[0] === "Web" && !seedPlatforms.includes("Web")))
+  ) {
+    return seedPlatforms;
+  }
   return docPlatforms?.length ? docPlatforms : (seedPlatforms ?? []);
 }
 
@@ -229,11 +237,39 @@ function toGame(doc: LeanGame): Game {
   const extra = overlayForMongoOnly(String(doc.slug));
   const status = normalizeStatus(doc);
 
+  // Scraped website imports often set tagline = description.slice(0, 200). If seed has a distinct tagline, use it.
+  const docTagline = String(doc.tagline || "").trim();
+  const docDesc = String(doc.description || "").trim();
+  const tagline =
+    docTagline && (!docDesc || docTagline !== docDesc || !seed?.tagline)
+      ? docTagline
+      : seed?.tagline || docTagline || "";
+
+  // Scraped website imports default to ["browser"] and browserPlayable: true.
+  // If seed defines install recipes and browserPlayable: false, do not let scraped web defaults stick.
+  const isScrapedWebDefault =
+    doc.browserPlayable === true &&
+    Array.isArray(doc.launchMethods) &&
+    doc.launchMethods.length === 1 &&
+    doc.launchMethods[0] === "browser" &&
+    seed?.browserPlayable === false &&
+    seed?.launchMethods?.includes("install");
+
+  const launchMethods = isScrapedWebDefault
+    ? (seed?.launchMethods ?? ["install"])
+    : (doc.launchMethods as LaunchMethod[])?.length
+      ? (doc.launchMethods as LaunchMethod[])
+      : (seed?.launchMethods ?? ["install"]);
+
+  const browserPlayable = isScrapedWebDefault
+    ? false
+    : Boolean(doc.browserPlayable ?? seed?.browserPlayable);
+
   const base: Game = {
     slug: String(doc.slug),
     title: String(doc.title) || seed?.title || "",
-    tagline: String(doc.tagline) || seed?.tagline || "",
-    description: String(doc.description) || seed?.description || "",
+    tagline,
+    description: docDesc || seed?.description || "",
     developerSlug: String(doc.developerSlug) || seed?.developerSlug || "",
     genres: (() => {
       const fromDoc = sanitizeGenres((doc.genres as Genre[]) ?? []);
@@ -261,8 +297,8 @@ function toGame(doc: LeanGame): Game {
         ? doc.maxPlayers
         : partyMaxPlayersBySlug[String(doc.slug)] ??
           (typeof seed?.maxPlayers === "number" ? seed.maxPlayers : null),
-    launchMethods: (doc.launchMethods as LaunchMethod[])?.length ? (doc.launchMethods as LaunchMethod[]) : (seed?.launchMethods ?? ["install"]),
-    browserPlayable: Boolean(doc.browserPlayable ?? seed?.browserPlayable),
+    launchMethods,
+    browserPlayable,
     steamDeck: Boolean(doc.steamDeck ?? seed?.steamDeck),
     website: String(doc.website) || seed?.website || "",
     steamAppId: (doc.steamAppId as string) || seed?.steamAppId,
