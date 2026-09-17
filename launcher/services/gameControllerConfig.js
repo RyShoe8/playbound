@@ -1214,6 +1214,14 @@ const NO_CONFIG_NEEDED = {
   yorg: { kind: "native", note: "Native SDL2 multi-gamepad split-screen support." },
   torcs: { kind: "native", note: "Native steering wheel, joystick, and controller input." },
   "stunt-rally": { kind: "native", note: "Native 2-4 player gamepad and split-screen controller support." },
+  "pokemon-blaze-online": {
+    kind: "native",
+    note: "In-game Settings -> Controls supports gamepad and joystick input binding natively; no PlayBound config write needed.",
+  },
+  pokemmo: {
+    kind: "native",
+    note: "Client Settings -> Control -> Gamepad provides native direct gamepad and joystick mapping; no PlayBound config write needed.",
+  },
   mindustry: {
     kind: "unwritable",
     note: "Settings live in a binary settings.bin, which we will not rewrite.",
