@@ -6676,6 +6676,144 @@ export const editorial: Record<string, GameEditorial> = {
       },
     ],
   },
+  "castlevania-revamped": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "A tour-de-force retro reimagining that fuses the raw 8-bit spirit of the NES original with modern 8-way whipping, wall-jumping, and expansive Metroidvania exploration.",
+      lastVerified: "2026-09-16",
+    },
+    thatOneThing:
+      "Fluid 8-directional whip strikes combined with wall-jumping, sliding, and an item card upgrade system that transforms Dracula's castle into an interconnected playground.",
+    longDescription:
+      "Castlevania ReVamped is what happens when a passionate developer looks at Konami's foundational 1986 action-platformer and asks how it would feel if designed with thirty-five years of genre evolution in mind. Created by Lv.4 Games (led by William Perez), this standalone passion project does not simply slap a fresh coat of pixel paint onto the NES ROM. Instead, it completely rebuilds Simon Belmont's legendary descent into darkness from scratch, converting the strict, stage-by-stage linear gauntlet into a seamless, sprawling Metroidvania.\n\nFrom the moment you crack the leather whip outside the drawbridge gates, the transformation is undeniable. Gone is the rigid, deliberate commitment of the original Famicom physics. Simon now moves with responsive precision, capable of whipping in eight directions, wall-jumping up vertical masonry, sliding under low gargoyle traps, and backflipping out of incoming bat swarms. Yet despite this modern agility, ReVamped preserves the palpable gothic tension that defined early Castlevania. Enemies strike hard, candle positioning demands intention, and classic sub-weapons—the holy water, cross boomerang, and silver dagger—remain essential tactical instruments rather than decorative novelties.\n\nThe real brilliance lies in the world architecture. Rather than six disconnected blocks, Dracula's fortress unfolds as an interconnected gothic network laden with secret breakable walls, cryptic lore cards, upgrade shrines, and branching corridors. Exploring deep into the subterranean catacombs or scaling the clock tower rewards observant players with health expansions, whip upgrades, and passive relics that open up previously inaccessible chambers. Boss encounters, from the giant phantom bat to the iconic Grim Reaper, have been completely re-choreographed with multi-phase attack patterns that test your spatial mastery without relying on cheap knockback traps.\n\nWe picked Castlevania ReVamped for PlayBound because it exemplifies the peak of tribute game craft: it respects the authentic visual aesthetic and chiptune soul of the original hardware while delivering the fluid, rewarding gameplay loop of modern indie platforming royalty.",
+    whyWePickedIt:
+      "We picked Castlevania ReVamped because it is the rare fan recreation that transcends homage—reimagining an 8-bit classic into a tight, responsive, and wonderfully atmospheric Metroidvania.",
+    bestFor: [
+      "Metroidvania purists who crave dense castle exploration, hidden breakable walls, and rewarding traversal upgrades",
+      "Classic retro platformer fans who loved Symphony of the Night and Aria of Sorrow",
+      "Anyone who wanted the original NES Castlevania with fluid 8-directional combat, sliding, and wall-jumping",
+      "Steam Deck and controller players looking for a tight, pixel-perfect 60 FPS platforming challenge",
+    ],
+    notFor: [
+      "Players who only want the rigid, stiff, commit-to-your-jump movement mechanics of the 1986 original",
+      "Anyone expecting 3D visuals or modern high-definition cinematic cutscenes",
+      "Those who dislike backtracking through interconnected chambers to find hidden relics and keys",
+      "Players seeking casual, frictionless action where boss patterns require zero dodging or pattern recognition",
+    ],
+    comparableTo: [
+      "Castlevania: Symphony of the Night",
+      "Castlevania: Aria of Sorrow",
+      "Bloodstained: Ritual of the Night",
+      "The Messenger",
+      "Axiom Verge",
+    ],
+    installSteps: [
+      {
+        platform: "all",
+        text: "Click Install in the PlayBound Launcher to download and unpack the standalone game archive.",
+      },
+      {
+        platform: "all",
+        text: "Connect your preferred controller (Xbox, PlayStation, or generic USB/Bluetooth gamepad).",
+      },
+      {
+        platform: "all",
+        text: "Launch the game directly from your PlayBound library and begin your assault on Dracula's castle.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Castlevania ReVamped free?",
+        a: "Yes. Castlevania ReVamped is an open-source, non-commercial fan game distributed completely free of charge.",
+      },
+      {
+        q: "Does this require an emulator or original ROM?",
+        a: "No. ReVamped is a standalone PC game built on a custom engine. It does not require an emulator or any base ROM files.",
+      },
+      {
+        q: "Does it support gamepads and controllers?",
+        a: "Yes! Full native XInput and DirectInput controller support is built right into the engine, making it seamless to play on PC and handheld devices like the Steam Deck.",
+      },
+      {
+        q: "Can I save my progress?",
+        a: "Yes. The castle features dedicated save rooms throughout each wing where Simon can record progress and fully restore health.",
+      },
+    ],
+  },
+  "hawken-hawkening": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "A glorious community resurrection of Adhesive Games' dirt-and-diesel mech shooter, restoring thunderous 6v6 tactical arena warfare with dedicated servers and blistering mobility.",
+      lastVerified: "2026-09-16",
+    },
+    thatOneThing:
+      "Tactical boost-dodging and cooling management inside detailed, grimy cockpits that makes piloting heavy mechanized armor feel tactile, dangerous, and exhilarating.",
+    longDescription:
+      "When Hawken originally exploded onto the PC gaming scene in 2012, it was hailed as a visual and mechanical revelation. It abandoned the lumbering, slow-motion simulation of traditional tank-like mech games in favor of high-speed verticality, intense thruster dogfights, and immersive, screen-shaking cockpit perspective. Following the closure of the official commercial servers in 2018, the game was considered lost to history. Hawken: Hawkening is the triumphant, community-led resurrection that reverse-engineered the network backend, restored matchmaking, and revived dedicated 6v6 arena warfare for pilots around the globe.\n\nAt the core of Hawkening's thrill is its masterclass in mech combat design. You are not a camera floating above a robot; you are locked into a cramped, vibrating cockpit surrounded by analog CRT displays, thruster gauges, heat dials, and mechanical diagnostic readouts. Movement is defined by the boost dodge system—a high-risk, high-reward burst of kinetic lateral propulsion that lets agile mechs juke incoming rocket salvos, leap across ruined rooftops, and flank heavily armored brawlers in tight industrial choke points. Balancing your thruster fuel and weapon heat is constant and demanding: redline your weapons, and your cannons lock up while enemy autocannons shred your composite plating.\n\nTeam composition is everything. Hawkening features three distinct mech weight classes spanning specialized roles: agile scout skirmishers like the Berserker and Raider, frontline medium assault chassis like the CR-T and Assault, and hulking heavy artillery titans like the Brawler and Vanguard. Matches take place across striking, dystopian cyberpunk industrial complexes and smog-choked scrap canyons, where vertical positioning and team crossfire determine victory across modes like Team Deathmatch and Missile Assault.\n\nWe picked Hawken: Hawkening because it represents everything PlayBound stands for: preserving irreplaceable, peerless multiplayer masterpieces that the commercial games industry abandoned, keeping community servers thriving, and providing seamless one-click onboarding for new pilots to strap in and fight.",
+    whyWePickedIt:
+      "We picked Hawken: Hawkening because it revives one of the greatest, most tactile mech shooters ever created—bringing back blistering 6v6 combat, gritty cockpit immersion, and dedicated community servers.",
+    bestFor: [
+      "Pilots who love fast-paced, high-mobility mech combat with dodging, verticality, and tactical heat management",
+      "Fans of arena shooters who appreciate gritty, industrial sci-fi aesthetic and tactile cockpit immersion",
+      "Squads looking for competitive, team-oriented 6v6 tactical gunplay with distinct mech classes",
+      "Anyone who mourned the original Hawken's shutdown and wants to experience its peak online multiplayer again",
+    ],
+    notFor: [
+      "Players seeking a traditional, slow-paced lumbering tank-simulator mech game like MechWarrior",
+      "Solo players looking for an extensive offline single-player story campaign with voice acting",
+      "Those who dislike fast twitch movement, boost-dodging, and fast-paced tracking aim",
+      "Anyone who refuses to register a free community pilot account on the Hawkening website",
+    ],
+    comparableTo: [
+      "Titanfall 2",
+      "Armored Core VI: Fires of Rubicon",
+      "MechWarrior Online",
+      "Overwatch 2",
+      "Unreal Tournament",
+    ],
+    installSteps: [
+      {
+        platform: "all",
+        text: "Visit hawakening.com to register your free pilot callsign and credentials.",
+      },
+      {
+        platform: "all",
+        text: "Click Install in the PlayBound Launcher to run the Hawkening setup package.",
+      },
+      {
+        platform: "all",
+        text: "Launch the game from PlayBound, log in with your pilot credentials, configure your mech loadouts, and queue for live matches.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Hawken: Hawkening free to play?",
+        a: "Yes! Hawkening is a completely free, community-operated revival project. All mechs, weapons, and customization options are unlocked through gameplay progression without microtransactions.",
+      },
+      {
+        q: "Do I need a pilot account to play online?",
+        a: "Yes. Because multiplayer runs on dedicated Hawkening community servers, you must create a free pilot account at hawakening.com to save your loadouts and stats.",
+      },
+      {
+        q: "Does Hawkening support controllers?",
+        a: "Yes. Hawken features native Xbox and gamepad controller integration with customizable sticks, sensitivity, and button mappings.",
+      },
+      {
+        q: "What game modes are available?",
+        a: "Hawkening supports Team Deathmatch, Deathmatch, and tactical objective modes like Missile Assault and Siege on dedicated community servers.",
+      },
+    ],
+  },
 };
 
 /** Merge editorial content onto a factual catalog entry. */
