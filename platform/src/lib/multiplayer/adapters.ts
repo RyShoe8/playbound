@@ -2243,6 +2243,23 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes:
       "Official multi-region MMO infrastructure. Connect synchronizes your party launch and presence; gameplay, battles, tournaments, and trading run through official PokeMMO game servers.",
   },
+
+  "hawken-hawkening": {
+    gameSlug: "hawken-hawkening",
+    title: "Hawken: Hawkening",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    client: {
+      inGameSteps: [
+        "Register your callsign on hawakening.com.",
+        "Launch Hawkening from PlayBound with your squad in Connect.",
+        "Log into the client and queue for 6v6 matchmaking or select a community dedicated server.",
+      ],
+    },
+    notes:
+      "Official community server revival infrastructure. Connect handles squad party launch and presence while dedicated servers run high-mobility 6v6 mech battles.",
+  },
 };
 
 /**

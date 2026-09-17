@@ -75,8 +75,10 @@ describe("insert-catalog-wave allowlists", () => {
     expect([...NEW_GAME_SLUGS].sort()).toEqual(
       [
         "baseball-stars-2",
+        "castlevania-revamped",
         "earth-2140-trilogy",
         "flatout-2",
+        "hawken-hawkening",
         "lovers-in-a-dangerous-spacetime",
         "pokemon-blaze-online",
         "pokemmo",
@@ -99,8 +101,10 @@ describe("insert-catalog-wave allowlists", () => {
     expect([...NEW_EDITION_KEYS].sort()).toEqual(
       [
         "baseball-stars-2/official",
+        "castlevania-revamped/official",
         "earth-2140-trilogy/official",
         "earth-2140-trilogy/opene2140",
+        "hawken-hawkening/official",
         "pokemon-blaze-online/official",
         "pokemon-blaze-online/windows-32",
         "pokemmo/official",
@@ -137,8 +141,10 @@ describe("insert-catalog-wave allowlists", () => {
     expect(Object.keys(PATCH_GAME_FIELDS).sort()).toEqual(
       [
         "alien-swarm",
+        "castlevania-revamped",
         "dune-legacy",
         "freetrain",
+        "hawken-hawkening",
         "hurry-curry",
         "idle-slayer",
         "morrowind",
@@ -205,8 +211,10 @@ describe("insert-catalog-wave allowlists", () => {
   it("patches CoP/SoC/Anomaly/Clear Sky editions + OpenMW/TES3MP/Lost Alpha recipes", () => {
     expect(Object.keys(PATCH_EDITION_FIELDS).sort()).toEqual(
       [
+        "castlevania-revamped/official",
         "dune-legacy/modern-engine",
         "dune-legacy/playbound-edition",
+        "hawken-hawkening/official",
         "morrowind/openmw",
         "morrowind/tes3mp",
         "pokemon-blaze-online/official",

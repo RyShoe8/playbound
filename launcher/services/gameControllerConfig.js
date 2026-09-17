@@ -1222,6 +1222,14 @@ const NO_CONFIG_NEEDED = {
     kind: "native",
     note: "Client Settings -> Control -> Gamepad provides native direct gamepad and joystick mapping; no PlayBound config write needed.",
   },
+  "castlevania-revamped": {
+    kind: "native",
+    note: "Engine includes native XInput and DirectInput controller detection and 8-way whip controls; no PlayBound config write needed.",
+  },
+  "hawken-hawkening": {
+    kind: "native",
+    note: "Unreal Engine client features native gamepad and Xbox controller support for boost-dodging and mech control; no PlayBound config write needed.",
+  },
   mindustry: {
     kind: "unwritable",
     note: "Settings live in a binary settings.bin, which we will not rewrite.",

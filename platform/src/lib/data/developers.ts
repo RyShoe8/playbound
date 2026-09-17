@@ -1400,6 +1400,28 @@ export const developers: Developer[] = [
     website: "https://pokemmo.com/",
     artHue: 215,
   },
+  {
+    slug: "lv4-games",
+    name: "Lv.4 Games",
+    tagline: "Retro reimagining specialists and indie engine creators.",
+    about:
+      "Lv.4 Games (led by William 'Lv.4 WALL' Perez) is the creator of Castlevania ReVamped, a ground-up open-source Metroidvania reimagining of the 1986 NES masterpiece with modern 8-way whip mechanics, fluid movement, and interconnecting level design.",
+    location: "United States",
+    founded: 2023,
+    website: "https://github.com/LSDonkeyKong/Castlevania-ReVamped-Open-Source-Edition",
+    artHue: 340,
+  },
+  {
+    slug: "hawkening-project",
+    name: "Hawkening Community Team",
+    tagline: "Community engineers resurrecting high-octane mech combat.",
+    about:
+      "A dedicated group of veteran Hawken pilots, modders, and network engineers who successfully reverse-engineered Hawken's server architecture to revive official 6v6 mech multiplayer combat with dedicated servers and persistent progression.",
+    location: "Worldwide",
+    founded: 2023,
+    website: "https://hawakening.com/",
+    artHue: 195,
+  },
 ];
 
 export const developersBySlug = new Map(developers.map((d) => [d.slug, d]));

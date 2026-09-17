@@ -45,4 +45,5 @@ export const partyMaxPlayersBySlug: Readonly<Record<string, number>> = {
   "battle-for-wesnoth": 8,
   "pokemon-blaze-online": 64,
   pokemmo: 64,
+  "hawken-hawkening": 12,
 };
