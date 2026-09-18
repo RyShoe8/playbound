@@ -28,15 +28,15 @@ export function HomeServerPreviews({ rows }: { rows: HomeServerPreview[] }) {
   return (
     <section>
       <SectionHeader
-        title="Live Servers"
+        title="Live Multiplayer & Servers"
         subtitle="Public multiplayer right now — open the full browser for every title"
-        href="/servers"
+        href="/multiplayer"
       />
       <div className="grid gap-3 sm:grid-cols-3">
         {visible.map((row) => (
           <Link
             key={row.slug}
-            href={`/servers?game=${encodeURIComponent(row.slug)}`}
+            href={`/multiplayer?game=${encodeURIComponent(row.slug)}`}
             className="rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40"
           >
             <p className="flex items-center gap-1.5 font-bold">

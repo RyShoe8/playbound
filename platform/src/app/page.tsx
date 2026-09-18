@@ -81,9 +81,9 @@ function HomeLiveServersFallback() {
   return (
     <section>
       <SectionHeader
-        title="Live Servers"
+        title="Live Multiplayer & Servers"
         subtitle="Public multiplayer right now — open the full browser for every title"
-        href="/servers"
+        href="/multiplayer"
       />
       <div className="grid gap-3 sm:grid-cols-3">
         {HOME_SERVER_SLUGS.map((slug) => (

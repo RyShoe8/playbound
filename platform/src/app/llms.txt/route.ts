@@ -84,7 +84,7 @@ async function buildLlmsTxt(): Promise<string> {
     lines.push(`  - Install guide: ${SITE_URL}/games/${game.slug}/install`);
     if (game.launchMethods.includes("server")) {
       lines.push(
-        `  - Live servers: ${SITE_URL}/games/${game.slug}/servers`
+        `  - Live multiplayer & servers: ${SITE_URL}/multiplayer?game=${game.slug}`
       );
     }
     lines.push(`  - Official site: ${game.website}`);

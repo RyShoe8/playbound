@@ -91,7 +91,7 @@ const PARAM_TABS = tabs;
 
 /** Servers deep-link with edition gameType filter when the browser supports it. */
 function serversHref(gameSlug: string, editionSlug: string) {
-  return `/servers?game=${encodeURIComponent(gameSlug)}&edition=${encodeURIComponent(editionSlug)}`;
+  return `/multiplayer?game=${encodeURIComponent(gameSlug)}&edition=${encodeURIComponent(editionSlug)}`;
 }
 
 /** A failed UGC read must not take the whole edition page down with it. */
