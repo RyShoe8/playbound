@@ -19,6 +19,9 @@ export const NOTIFICATION_TYPES = [
   "party_ready",
   "party_launched",
   "party_leader_changed",
+  // Looking to Party Matching
+  "ltp_match_found",
+  "ltp_party_ready",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

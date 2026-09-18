@@ -253,3 +253,79 @@ export async function createPartyLeaderChangedNotification(opts: {
     console.error("createPartyLeaderChangedNotification failed:", err);
   }
 }
+
+export async function createLtpMatchNotification(opts: {
+  userId: string;
+  matchedUsername: string;
+  matchedUserId: string;
+  partyId?: string | null;
+  gameSlug: string;
+  gameTitle: string;
+}) {
+  try {
+    await dbConnect();
+    // 15-min cooldown to avoid spam
+    const recent = await Notification.findOne({
+      userId: opts.userId,
+      type: "ltp_match_found",
+      "meta.matchedUserId": opts.matchedUserId,
+      "meta.gameSlug": opts.gameSlug,
+      createdAt: { $gte: new Date(Date.now() - 15 * 60 * 1000) },
+    }).lean();
+    if (recent) return;
+
+    await Notification.create({
+      userId: opts.userId,
+      type: "ltp_match_found",
+      title: `${opts.matchedUsername} also wants to play ${opts.gameTitle}`,
+      body: opts.partyId ? "A party has been opened. Click to join!" : "Click to view multiplayer.",
+      href: opts.partyId ? `/friends?party=${encodeURIComponent(opts.partyId)}` : `/multiplayer`,
+      meta: {
+        matchedUserId: opts.matchedUserId,
+        matchedUsername: opts.matchedUsername,
+        partyId: opts.partyId || null,
+        gameSlug: opts.gameSlug,
+        gameTitle: opts.gameTitle,
+      },
+    });
+  } catch (err) {
+    console.error("createLtpMatchNotification failed:", err);
+  }
+}
+
+export async function createLtpPartyReadyNotification(opts: {
+  userId: string;
+  partyId: string;
+  gameSlug: string;
+  gameTitle: string;
+  partyLeaderUsername: string;
+}) {
+  try {
+    await dbConnect();
+    // 15-min cooldown
+    const recent = await Notification.findOne({
+      userId: opts.userId,
+      type: "ltp_party_ready",
+      "meta.partyId": opts.partyId,
+      createdAt: { $gte: new Date(Date.now() - 15 * 60 * 1000) },
+    }).lean();
+    if (recent) return;
+
+    await Notification.create({
+      userId: opts.userId,
+      type: "ltp_party_ready",
+      title: `An open ${opts.gameTitle} Party is waiting for you`,
+      body: `Hosted by ${opts.partyLeaderUsername}. Click to jump in!`,
+      href: `/friends?party=${encodeURIComponent(opts.partyId)}`,
+      meta: {
+        partyId: opts.partyId,
+        gameSlug: opts.gameSlug,
+        gameTitle: opts.gameTitle,
+        partyLeaderUsername: opts.partyLeaderUsername,
+      },
+    });
+  } catch (err) {
+    console.error("createLtpPartyReadyNotification failed:", err);
+  }
+}
+

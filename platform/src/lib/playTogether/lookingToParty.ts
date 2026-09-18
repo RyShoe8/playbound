@@ -66,6 +66,30 @@ export async function countLookingToParty(): Promise<number> {
   }
 }
 
+export async function countLookingToPartyByGame(): Promise<Record<string, number>> {
+  try {
+    const { presences } = await visibleLookingPresences();
+    const counts: Record<string, number> = {};
+    for (const p of presences) {
+      const wanted: string[] =
+        Array.isArray(p.lookingForPlayersGameIds) && p.lookingForPlayersGameIds.length > 0
+          ? (p.lookingForPlayersGameIds as string[])
+          : p.lookingForPlayersGameId
+          ? [String(p.lookingForPlayersGameId)]
+          : [];
+      for (const slug of wanted) {
+        if (slug) {
+          counts[slug] = (counts[slug] || 0) + 1;
+        }
+      }
+    }
+    return counts;
+  } catch (err) {
+    console.error("countLookingToPartyByGame failed:", err);
+    return {};
+  }
+}
+
 export async function listLookingToParty(limit = 100): Promise<LookingToPartyEntry[]> {
   const { presences, users } = await visibleLookingPresences();
   if (presences.length === 0) return [];

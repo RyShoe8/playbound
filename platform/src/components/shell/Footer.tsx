@@ -8,7 +8,7 @@ const links = [
   { href: "/discover", label: "Games" },
   { href: "/gear", label: "Gear" },
   { href: "/mods", label: "Mods" },
-  { href: "/servers", label: "Servers" },
+  { href: "/multiplayer", label: "Multiplayer" },
   { href: "/connect", label: "Connect" },
   { href: "/play-with-friends", label: "Play Together" },
   { href: "/guides", label: "Guides" },

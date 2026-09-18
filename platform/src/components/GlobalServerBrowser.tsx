@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { telemetry } from "@/lib/telemetry";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { isGameCompatible } from "@/lib/compatibility/compatibility";
+import { usePartyStore } from "@/stores/partyStore";
 
 const WITH_PLAYERS_PREF = "playbound_servers_with_players";
 
@@ -163,8 +164,42 @@ export function GlobalServerBrowser({
   const [sortKey, setSortKey] = useState<SortKey>("players");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const { mode, device } = useCompatibilityFilter();
+  const { activeParty, createParty, setPublicServer } = usePartyStore();
+  const [partyTargeting, setPartyTargeting] = useState<string | null>(null);
   const lastViewedSlug = useRef<string | null>(null);
   const urlSyncSkip = useRef(true);
+
+  async function handleJoinWithParty(server: GameServer) {
+    const srvKey = server.id || `${server.host}:${server.port}`;
+    setPartyTargeting(srvKey);
+    try {
+      let partyId = activeParty?.id;
+      if (!partyId) {
+        const newParty = await createParty({
+          gameSlug: effectiveGameSlug,
+          hostMode: "public",
+          name: `${server.name} Party`,
+          visibility: "public",
+        });
+        partyId = newParty?.id;
+      }
+      if (partyId) {
+        await setPublicServer(partyId, {
+          id: server.id || srvKey,
+          name: server.name,
+          host: server.host,
+          port: server.port,
+          mod: server.mod || null,
+          protected: server.protected,
+        });
+        router.push(`/friends?party=${partyId}`);
+      }
+    } catch (err) {
+      console.error("Failed to join server with party:", err);
+    } finally {
+      setPartyTargeting(null);
+    }
+  }
 
   function setSort(key: SortKey) {
     if (key === sortKey) {
@@ -699,7 +734,7 @@ export function GlobalServerBrowser({
       )}
       {effectiveGameSlug && data?.supported ? (
         <p className="text-sm font-semibold text-muted-foreground">
-          {totalPlayers} player{totalPlayers === 1 ? "" : "s"} · {rows.length} server
+          {totalPlayers} server player{totalPlayers === 1 ? "" : "s"} · {rows.length} tracked server
           {rows.length === 1 ? "" : "s"}
         </p>
       ) : null}
@@ -743,7 +778,7 @@ export function GlobalServerBrowser({
             <thead className="border-b border-border bg-secondary/50 text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
                 {sortLabel("name", "Server")}
-                {sortLabel("players", "Players")}
+                {sortLabel("players", "Server Players")}
                 {sortLabel("map", "Map / Mode")}
                 {sortLabel("location", "Location")}
                 {sortLabel("est", "Est.", "GeoIP estimate, not a real ping")}
@@ -779,7 +814,7 @@ export function GlobalServerBrowser({
                     <td className="px-3 py-3 text-muted-foreground">{formatLocation(s)}</td>
                     <td className="px-3 py-3 tabular-nums text-muted-foreground">{formatEstMs(estFor(s))}</td>
                     <td className="px-3 py-3">
-                      <div className="flex flex-wrap gap-1.5">
+                      <div className="flex flex-wrap items-center gap-1.5">
                         {s.gameType === "steam-concurrent" ? (
                           installedGames.has(effectiveGameSlug) ? (
                             <a
@@ -830,6 +865,17 @@ export function GlobalServerBrowser({
                                 label="Install"
                                 className="px-3 py-1 text-xs"
                               />
+                            )}
+                            {signedIn && (
+                              <button
+                                type="button"
+                                disabled={partyTargeting === (s.id || addr)}
+                                onClick={() => handleJoinWithParty(s)}
+                                className="rounded-full bg-primary/20 hover:bg-primary/30 border border-primary/40 px-2.5 py-1 text-xs font-bold text-primary transition-colors disabled:opacity-50"
+                                title="Target this server with your party or start a party for it"
+                              >
+                                {partyTargeting === (s.id || addr) ? "Connecting…" : "Join With Party"}
+                              </button>
                             )}
                             <button
                               type="button"
