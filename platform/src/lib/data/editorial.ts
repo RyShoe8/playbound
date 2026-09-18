@@ -304,6 +304,12 @@ export const maintenanceChecks: Record<string, MaintenanceCheck> = {
     checkedAt: "2026-09-11",
     note: "GOG DRM-free Windows/Linux build (Bugbear). Verify Galaxy install and LAN multiplayer over Connect (official online offline).",
   },
+  opents: {
+    kind: "manual",
+    url: "https://github.com/OpenTS-Developers/OpenTS",
+    checkedAt: "2026-09-18",
+    note: "Active open-source Tiberian Sun engine reconstruction on GitHub with releases and nightly builds.",
+  },
 };
 
 /** All published criteria met — the common case, since failing one means exclusion. */
@@ -6837,6 +6843,72 @@ export const editorial: Record<string, GameEditorial> = {
       {
         q: "What game modes are available?",
         a: "Hawkening supports Team Deathmatch, Deathmatch, and tactical objective modes like Missile Assault and Siege on dedicated community servers.",
+      },
+    ],
+  },
+  opents: {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "Classic Command & Conquer Tiberian Sun rebuilt from the ground up: crisp modern bgfx graphics, lag-free UDP multiplayer, robust mission scripting, and total fidelity to Westwood's 1999 RTS masterpiece.",
+      lastVerified: "2026-09-18",
+    },
+    longDescription:
+      "Command & Conquer: Tiberian Sun was the atmospheric pinnacle of Westwood Studios' Tiberium saga. Released in 1999, it immersed players in an eerie eco-dystopian future where terraforming alien Tiberium consumed the Earth while the Global Defense Initiative and Kane's Brotherhood of Nod fought across ion storms, subterranean creep, and walker-dominated skirmishes.\n\nFor decades, playing Tiberian Sun on modern Windows systems meant wrestling with broken 16-bit DirectDraw surfaces, sluggish menu frame rates, and obsolete IPX protocol workarounds. OpenTS changes all of that. Rather than patching the legacy executable, OpenTS is a clean, community-led source reconstruction built from Electronic Arts' GPL-released engine code and meticulous reverse engineering.\n\nBy replacing DirectDraw with the modern cross-platform bgfx rendering framework, OpenTS runs flawlessly at arbitrary desktop resolutions without display glitches or black screens. Networking has been modernized to direct UDP over port 1234, eliminating the need for IPX encapsulation. Hundreds of vanilla engine limits and bugs — from trigger resolution logic and veterancy armor calculation to vehicle factory exit queues — have been thoroughly fixed.\n\nOpenTS targets the definitive Tiberian Sun 2.03 and Firestorm expansion experience, offering skirmish against AI, original story campaigns, and peer-to-peer multiplayer. It is the gold standard for preserving and playing Tiberian Sun today.",
+    whyWePickedIt:
+      "Preserving Westwood's RTS golden era requires more than compatibility wrappers. OpenTS shows what dedicated preservation engineers can accomplish: a faithful, modern, open-source engine that keeps classic Tiberian Sun vibrant, moddable, and playable for decades to come.",
+    thatOneThing:
+      "Playing Tiberian Sun at native 1440p or 4K with instantaneous bgfx rendering, smooth scrolling, and zero legacy DirectDraw stutter.",
+    bestFor: [
+      "Veterans seeking the most authentic, stable way to play Command & Conquer: Tiberian Sun and Firestorm",
+      "RTS enthusiasts who love subterranean units, hunter-seeker drones, ion storms, and bipedal mech walkers",
+      "LAN and online skirmishers wanting reliable peer-to-peer UDP matches without virtual IPX adapters",
+    ],
+    notFor: [
+      "Players expecting a 3D remake or modernized controls (OpenTS is a faithful engine reconstruction)",
+      "Anyone without access to base Tiberian Sun game data files",
+    ],
+    comparableTo: [
+      "OpenRA",
+      "Command & Conquer: Red Alert",
+      "Command & Conquer: Tiberian Dawn",
+      "Dune 2000",
+      "Warzone 2100",
+    ],
+    installSteps: [
+      {
+        platform: "all",
+        text: "Click Install in PlayBound Launcher to download and extract the OpenTS standalone engine release.",
+      },
+      {
+        platform: "all",
+        text: "Provide your Tiberian Sun game data files (from the freeware release, original CDs, or Steam / EA App) into the OpenTS directory or specify -DATADIR=<path>.",
+      },
+      {
+        platform: "all",
+        text: "Launch OpenTS to enjoy campaign missions, skirmishes, or UDP multiplayer games.",
+      },
+    ],
+    faq: [
+      {
+        q: "What is OpenTS?",
+        a: "OpenTS is an open-source source reconstruction of Electronic Arts' Command & Conquer: Tiberian Sun and Firestorm. It rebuilds the game engine as a modern standalone program.",
+      },
+      {
+        q: "Does OpenTS require original game data?",
+        a: "Yes. OpenTS provides the open-source game engine. Game assets (maps, audio, mix archives) must come from a legitimate copy of Tiberian Sun (such as the official EA freeware release, CDs, or digital store releases).",
+      },
+      {
+        q: "How does multiplayer work in OpenTS?",
+        a: "OpenTS replaces obsolete 1990s IPX networking with standard UDP networking over port 1234. You can play over local area networks (LAN) or virtual private networks with friends.",
+      },
+      {
+        q: "Does OpenTS include the Firestorm expansion?",
+        a: "Yes! If FIRESTRM.INI is detected in your game data directory, the Firestorm expansion campaign, units, and maps are automatically available.",
       },
     ],
   },

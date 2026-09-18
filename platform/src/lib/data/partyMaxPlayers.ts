@@ -17,6 +17,7 @@ export const partyMaxPlayersBySlug: Readonly<Record<string, number>> = {
   // Common party / online multiplayer capacities
   freedoom: 64,
   openra: 8,
+  opents: 8,
   teeworlds: 16,
   assaultcube: 32,
   holocure: 4,

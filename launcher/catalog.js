@@ -9468,5 +9468,65 @@ module.exports = [
     "editions": [],
     "accessTier": "FREE",
     "fromPriceCents": null
+  },
+  {
+    "slug": "opents",
+    "title": "OpenTS",
+    "blurb": "Open-source reconstruction of Command & Conquer: Tiberian Sun.",
+    "kind": "github-zip",
+    "repo": "OpenTS-Developers/OpenTS",
+    "assetPattern": "^OpenTS-.*\\.zip$",
+    "exeHint": "Game|OpenTS",
+    "art": [
+      "#14532d",
+      "#22c55e"
+    ],
+    "approxSize": "~15 MB",
+    "genres": [
+      "RTS",
+      "Strategy"
+    ],
+    "tags": [
+      "Classic",
+      "Sci-Fi",
+      "Base Building",
+      "Multiplayer",
+      "Mods",
+      "LAN"
+    ],
+    "launchMethods": [
+      "install",
+      "server"
+    ],
+    "features": [
+      "Singleplayer",
+      "Multiplayer",
+      "LAN Support",
+      "Mod Support",
+      "Custom Maps",
+      "Story Campaign",
+      "Skirmish"
+    ],
+    "multiplayer": true,
+    "hasServerBrowser": false,
+    "isMultiplayer": true,
+    "coverImage": "/games/opents/cover.webp",
+    "knownExePaths": [
+      "%GAMES%\\opents\\Game.exe",
+      "Game.exe"
+    ],
+    "versionLabel": "v0.1.0",
+    "status": "published",
+    "testing": false,
+    "maxPlayers": 8,
+    "platforms": [
+      "Windows"
+    ],
+    "browserPlayable": false,
+    "steamDeck": true,
+    "note": "Extracts the standalone OpenTS engine. Reads Tiberian Sun game data from the Run directory or a legitimate installation.",
+    "editions": [],
+    "accessTier": "FREE",
+    "fromPriceCents": null
   }
 ];

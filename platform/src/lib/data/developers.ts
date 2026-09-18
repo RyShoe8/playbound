@@ -1422,6 +1422,17 @@ export const developers: Developer[] = [
     website: "https://hawakening.com/",
     artHue: 195,
   },
+  {
+    slug: "opents-developers",
+    name: "OpenTS Developers",
+    tagline: "Reconstructing the Tiberian Sun engine for modern platforms and modders.",
+    about:
+      "OpenTS Developers is an open-source community collective dedicated to faithfully reconstructing and modernizing Electronic Arts' 1999 Command & Conquer: Tiberian Sun engine as a standalone modern executable with bgfx graphics, UDP netcode, and comprehensive modding tools.",
+    location: "Global / Distributed",
+    founded: 2024,
+    website: "https://github.com/OpenTS-Developers/OpenTS",
+    artHue: 142,
+  },
 ];
 
 export const developersBySlug = new Map(developers.map((d) => [d.slug, d]));
