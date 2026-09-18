@@ -871,7 +871,7 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
     };
 
     if (allEditions.length > 1) {
-      const partyBtn = buildStartPartyButton(game, opts);
+      const partyBtn = buildStartPartyButton(game, { ...opts, editions: allEditions });
       if (partyBtn) {
         const group = document.createElement("div");
         group.className = "library-action-group";
@@ -950,6 +950,9 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
           });
           rowActions.appendChild(playBtn);
 
+          const edPartyBtn = buildStartPartyButton(game, { ...opts, editions: allEditions }, ed);
+          if (edPartyBtn) rowActions.appendChild(edPartyBtn);
+
           const rowMenuItems = [];
           rowMenuItems.push({
             label: "Open folder",
@@ -996,6 +999,9 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
             api.openEditionDetail(game.slug, ed.slug, "library");
           });
           rowActions.appendChild(installBtn);
+
+          const edPartyBtn = buildStartPartyButton(game, { ...opts, editions: allEditions }, ed);
+          if (edPartyBtn) rowActions.appendChild(edPartyBtn);
         }
 
         row.appendChild(rowActions);
@@ -1028,7 +1034,7 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
         });
         group.appendChild(play);
 
-        const partyBtn = buildStartPartyButton(game, opts);
+        const partyBtn = buildStartPartyButton(game, { ...opts, editions: allEditions });
         if (partyBtn) group.appendChild(partyBtn);
 
         const joinBtn = buildJoinMultiplayerButton(game, ed, opts);
@@ -1087,7 +1093,7 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
         });
         group.appendChild(install);
 
-        const partyBtn = buildStartPartyButton(game, opts);
+        const partyBtn = buildStartPartyButton(game, { ...opts, editions: allEditions });
         if (partyBtn) group.appendChild(partyBtn);
       }
       actions.appendChild(group);
@@ -1571,12 +1577,42 @@ const MULTIPLAYER_PATTERNS = [
   /cross[-\s]?play/i,
   /dedicated server/i,
   /deathmatch|battle royale/i,
+  /\bnetcode\b/i,
+  /\branked ladder\b/i,
+  /\bmatchmaking\b/i,
 ];
+
+function editionSupportsParty(ed, game, opts = {}) {
+  if (!ed) return false;
+  const catEd = ed.catalogRecord || ed;
+  const feat = (catEd.features || []).map((f) => String(f).toLowerCase());
+  const tags = (catEd.tags || []).map((t) => String(t).toLowerCase());
+  const haystack = [...feat, ...tags].join(" | ");
+  if (MULTIPLAYER_PATTERNS.some((p) => p.test(haystack))) return true;
+  if (catEd.type === "private" || ed.type === "private") return true;
+  if (feat.length > 0 && feat.some((f) => f.includes("singleplayer"))) return false;
+  const desc = `${catEd.name || ed.name || ""} ${catEd.shortDescription || ""} ${catEd.description || ""}`;
+  if (MULTIPLAYER_PATTERNS.some((p) => p.test(desc))) return true;
+
+  const cat = opts?.catalogEntry;
+  const gameMp =
+    typeof game?.isMultiplayer === "boolean"
+      ? game.isMultiplayer
+      : typeof game?.multiplayer === "boolean"
+      ? game.multiplayer
+      : typeof cat?.isMultiplayer === "boolean"
+      ? cat.isMultiplayer
+      : typeof cat?.multiplayer === "boolean"
+      ? cat.multiplayer
+      : false;
+  return gameMp;
+}
 
 function gameSupportsParty(game, opts = {}) {
   const slug = game?.slug;
   if (!slug) return false;
   const cat = opts?.catalogEntry;
+  const allEds = opts?.editions || game?.editions || [];
 
   let isMp = false;
   if (typeof game?.isMultiplayer === "boolean") isMp = game.isMultiplayer;
@@ -1591,31 +1627,36 @@ function gameSupportsParty(game, opts = {}) {
     isMp = MULTIPLAYER_PATTERNS.some((p) => p.test(haystack));
   }
 
-  if (!isMp) return false;
-
-  const kind = cat?.kind || game?.kind;
-  const url = cat?.url || game?.url;
-  if (kind === "external" && !(typeof url === "string" && url.startsWith("steam://"))) {
-    return false;
+  if (!isMp && allEds.length > 0) {
+    isMp = allEds.some((ed) => editionSupportsParty(ed, game, opts));
   }
 
-  return true;
+  return isMp;
 }
 
 /**
- * Start or view a party for a multiplayer game from the library card.
+ * Start or view a party for a multiplayer game or edition from the library card.
  */
-function buildStartPartyButton(game, opts = {}) {
-  if (!gameSupportsParty(game, opts)) return null;
+function buildStartPartyButton(game, opts = {}, edition = null) {
+  if (edition) {
+    if (!editionSupportsParty(edition, game, opts)) return null;
+  } else {
+    if (!gameSupportsParty(game, opts)) return null;
+  }
 
   const inParty = Boolean(state._activeParty && state._activeParty.status !== "ended");
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.className = "btn-secondary btn-sm btn-lib-party";
+  btn.className = edition
+    ? "btn-secondary btn-xs btn-lib-party"
+    : "btn-secondary btn-sm btn-lib-party";
   btn.textContent = inParty ? "View Party" : "Start Party";
+  const targetTitle = edition
+    ? `${game?.title || game?.slug} (${edition.name})`
+    : (game?.title || game?.slug);
   btn.title = inParty
     ? "You're already in a party — open the party screen"
-    : `Start a party for ${game?.title || game?.slug}`;
+    : `Start a party for ${targetTitle}`;
 
   btn.addEventListener("click", async (e) => {
     e.stopPropagation();
@@ -1635,13 +1676,17 @@ function buildStartPartyButton(game, opts = {}) {
     const original = btn.textContent;
     btn.textContent = "Starting…";
     try {
-      const res = await window.playbound.createParty?.({
+      const payload = {
         gameSlug: game.slug,
         visibility: "friends",
         maxSize: 8,
-      });
+      };
+      if (edition?.slug) {
+        payload.editionSlug = edition.slug;
+      }
+      const res = await window.playbound.createParty?.(payload);
       if (res?.error || !res?.party) throw new Error(res?.error || "Couldn't create party.");
-      setStatus(`Party created for ${game.title || game.slug}`);
+      setStatus(`Party created for ${targetTitle}`);
       if (res.needsDiscordLink) {
         window.playbound.linkDiscord?.();
       } else if (res.inPartyVoice || res.moved) {

@@ -21,7 +21,15 @@ const VISIBILITY_OPTIONS: { value: Exclude<PartyVisibility, "event">; hint: stri
   { value: "invite_only", hint: "People you invite can join." },
 ];
 
-export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; onCreated?: () => void }) {
+export function CreatePartyPanel({
+  gameSlug,
+  editionSlug,
+  onCreated,
+}: {
+  gameSlug?: string;
+  editionSlug?: string;
+  onCreated?: () => void;
+}) {
   const { createParty, inviteFriends, provisionDiscord, error: storeError } = usePartyStore();
   const { friends } = useFriendsStore();
   const [busy, setBusy] = useState(false);
@@ -59,6 +67,7 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; o
     try {
       telemetry.track("party_create_clicked", {
         gameSlug: gameSlug || "",
+        editionSlug: editionSlug || "",
         visibility,
         wantVoice,
         hostMode: hostMode || "",
@@ -66,6 +75,7 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; o
       const party = await createParty({
         name: name.trim() || null,
         gameSlug: gameSlug || null,
+        editionSlug: editionSlug || null,
         visibility,
         maxSize: 8,
         password: visibility === "password" ? password.trim() : null,

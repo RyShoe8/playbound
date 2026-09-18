@@ -47,6 +47,9 @@ const MULTIPLAYER_PATTERNS: readonly RegExp[] = [
   /cross[-\s]?play/i,
   /dedicated server/i,
   /deathmatch|battle royale/i,
+  /\bnetcode\b/i,
+  /\branked ladder\b/i,
+  /\bmatchmaking\b/i,
 ];
 
 type MultiplayerInput = {
@@ -122,6 +125,7 @@ export type EditionMultiplayerInput = {
   type?: string;
   name?: string;
   shortDescription?: string;
+  description?: string;
 };
 
 /**
@@ -129,7 +133,8 @@ export type EditionMultiplayerInput = {
  * Excludes strictly singleplayer editions (e.g. speedrunning or vanilla SP ports).
  */
 export function editionSupportsMultiplayer(
-  edition: EditionMultiplayerInput | null | undefined
+  edition: EditionMultiplayerInput | null | undefined,
+  parentGame?: MultiplayerInput | null
 ): boolean {
   if (!edition) return false;
   const feat = (edition.features || []).map((f) => f.toLowerCase());
@@ -146,9 +151,18 @@ export function editionSupportsMultiplayer(
     return false;
   }
 
-  // Fallback to searching name and shortDescription for multiplayer keywords
-  const descHaystack = `${edition.name || ""} ${edition.shortDescription || ""}`;
-  return MULTIPLAYER_PATTERNS.some((pattern) => pattern.test(descHaystack));
+  // Fallback to searching name, shortDescription, and description for multiplayer keywords
+  const descHaystack = `${edition.name || ""} ${edition.shortDescription || ""} ${edition.description || ""}`;
+  if (MULTIPLAYER_PATTERNS.some((pattern) => pattern.test(descHaystack))) {
+    return true;
+  }
+
+  // If parent game is multiplayer and this edition has not marked itself SP-only
+  if (parentGame && supportsMultiplayer(parentGame)) {
+    return true;
+  }
+
+  return false;
 }
 
 /**
@@ -170,3 +184,17 @@ export function editionSupportsPartyPlay(
   return false;
 }
 
+/**
+ * True when a game or any of its editions is suitable for starting a party from the library.
+ */
+export function gameSupportsParty(
+  game: MultiplayerInput | null | undefined,
+  editions?: EditionMultiplayerInput[] | null
+): boolean {
+  if (!game) return false;
+  if (supportsMultiplayer(game)) return true;
+  if (Array.isArray(editions) && editions.some((ed) => editionSupportsMultiplayer(ed, game))) {
+    return true;
+  }
+  return false;
+}

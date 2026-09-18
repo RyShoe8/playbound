@@ -24,7 +24,7 @@ import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { isGameCompatible } from "@/lib/compatibility/compatibility";
 import { shouldOfferLauncher, resolveMobileOutbound, parseMobileOs } from "@/lib/mobilePlay";
 import { MobileOutboundCta } from "@/components/MobileOutboundCta";
-import { hasServerBrowser, supportsLauncherParty } from "@/lib/multiplayer/support";
+import { hasServerBrowser, editionSupportsMultiplayer, gameSupportsParty } from "@/lib/multiplayer/support";
 import { usePartyStore } from "@/stores/partyStore";
 import { cn } from "@/lib/utils";
 
@@ -141,6 +141,10 @@ export type LibraryEditionItem = {
   name: string;
   type?: string;
   isDefault?: boolean;
+  features?: string[];
+  tags?: string[];
+  shortDescription?: string;
+  description?: string;
 };
 
 export type LibraryEntryMeta = {
@@ -300,9 +304,11 @@ function JoinMultiplayerButton({
  */
 function LibraryStartPartyButton({
   slug,
+  editionSlug,
   className,
 }: {
   slug: string;
+  editionSlug?: string;
   className?: string;
 }) {
   const activeParty = usePartyStore((s) => s.activeParty);
@@ -339,7 +345,7 @@ function LibraryStartPartyButton({
       </button>
       {open ? (
         <div className="basis-full w-full">
-          <CreatePartyPanel gameSlug={slug} onCreated={() => setOpen(false)} />
+          <CreatePartyPanel gameSlug={slug} editionSlug={editionSlug} onCreated={() => setOpen(false)} />
         </div>
       ) : null}
     </>
@@ -483,14 +489,17 @@ function MobileLibraryRow({
   game,
   meta,
   mods,
+  editions = [],
 }: {
   game: Game;
   meta?: LibraryEntryMeta;
   mods: LibraryModItem[];
+  editions?: LibraryEditionItem[];
 }) {
   const installed = Boolean(meta?.installed);
   const saved = Boolean(meta?.saved);
   const ownedElsewhere = Boolean(meta?.ownedElsewhere) && !installed;
+  const canParty = gameSupportsParty(game, editions);
   const [os, setOs] = useState<"android" | "ios" | "other">("other");
 
   useEffect(() => {
@@ -540,7 +549,7 @@ function MobileLibraryRow({
             <Download className="size-3.5" /> Install
           </MobileOutboundCta>
         ) : null}
-        {supportsLauncherParty(game) ? (
+        {canParty ? (
           <LibraryStartPartyButton
             slug={game.slug}
             className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full px-3 text-sm font-bold"
@@ -550,7 +559,7 @@ function MobileLibraryRow({
           href={`/games/${game.slug}`}
           className={cn(
             "inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full bg-secondary px-3 text-sm font-bold",
-            installed || ownedElsewhere || supportsLauncherParty(game) ? "flex-none" : "flex-1"
+            installed || ownedElsewhere || canParty ? "flex-none" : "flex-1"
           )}
         >
           <ExternalLink className="size-3.5" /> Open
@@ -640,6 +649,7 @@ function DesktopLibraryRow({
   const installed = Boolean(meta?.installed);
   const saved = Boolean(meta?.saved);
   const ownedElsewhere = Boolean(meta?.ownedElsewhere) && !installed;
+  const canParty = gameSupportsParty(game, editions);
 
   const installedEditionsList =
     Array.isArray(meta?.installedEditions) && meta.installedEditions.length > 0
@@ -697,6 +707,7 @@ function DesktopLibraryRow({
             <div className={cn("mt-1.5 space-y-1.5", !editionsOpen && "hidden")}>
               {editions.map((ed) => {
                 const isEdInstalled = installedEditionsSet.has(ed.slug);
+                const isEdParty = editionSupportsMultiplayer(ed, game);
                 return (
                   <div
                     key={ed.slug}
@@ -746,13 +757,20 @@ function DesktopLibraryRow({
                           <Download className="size-3" /> Install
                         </a>
                       )}
+                      {isEdParty ? (
+                        <LibraryStartPartyButton
+                          slug={game.slug}
+                          editionSlug={ed.slug}
+                          className="inline-flex min-h-7 items-center gap-1 rounded-full px-2.5 text-[11px] font-bold"
+                        />
+                      ) : null}
                     </div>
                   </div>
                 );
               })}
             </div>
             <div className="flex flex-wrap items-center gap-1.5 pt-1">
-              {supportsLauncherParty(game) ? (
+              {canParty ? (
                 <LibraryStartPartyButton
                   slug={game.slug}
                   className="inline-flex min-h-7 items-center gap-1 rounded-full px-2.5 text-[11px] font-bold"
@@ -793,7 +811,7 @@ function DesktopLibraryRow({
                 editionSlug={editions[0]?.slug}
                 title={game.title}
                 hasServerBrowser={hasServerBrowser(game)}
-                canStartParty={supportsLauncherParty(game)}
+                canStartParty={canParty}
               />
             ) : ownedElsewhere && showLauncherActions ? (
               <div className="flex flex-wrap items-center gap-2">
@@ -802,18 +820,18 @@ function DesktopLibraryRow({
                   label="Install on this PC"
                   className="!px-4 !py-1.5 !text-xs"
                 />
-                {supportsLauncherParty(game) ? <LibraryStartPartyButton slug={game.slug} /> : null}
+                {canParty ? <LibraryStartPartyButton slug={game.slug} /> : null}
                 <RemoveFromLibraryButton slug={game.slug} />
               </div>
             ) : ownedElsewhere ? (
               <div className="flex flex-wrap items-center gap-2">
                 <MobileOwnedElsewhereInstall game={game} />
-                {supportsLauncherParty(game) ? <LibraryStartPartyButton slug={game.slug} /> : null}
+                {canParty ? <LibraryStartPartyButton slug={game.slug} /> : null}
                 <RemoveFromLibraryButton slug={game.slug} />
               </div>
             ) : (
               <div className="flex flex-wrap items-center gap-2">
-                {supportsLauncherParty(game) ? <LibraryStartPartyButton slug={game.slug} /> : null}
+                {canParty ? <LibraryStartPartyButton slug={game.slug} /> : null}
                 <Link
                   href={`/games/${game.slug}`}
                   className="inline-flex min-h-8 items-center justify-center gap-1 rounded-full bg-secondary px-3 text-xs font-bold"
