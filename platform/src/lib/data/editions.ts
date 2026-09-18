@@ -5282,6 +5282,92 @@ export const editions: EditionSeed[] = [
     tags: ["Open Source", "Tiberian Sun", "Firestorm", "C&C"],
     verificationLevel: "official",
   },
+  {
+    gameSlug: "star-wars-galactic-battlegrounds-saga",
+    slug: "expanding-fronts",
+    name: "Star Wars: Galactic Battlegrounds — Expanding Fronts",
+    version: "1.5.5",
+    shortDescription:
+      "The definitive modern community expansion for Galactic Battlegrounds, introducing widescreen support, new civilizations, overhauled campaigns, and refined balance.",
+    description:
+      "Expanding Fronts is a massive, fan-created expansion that revitalizes Star Wars: Galactic Battlegrounds for modern systems. Building upon the classic Genie Engine foundation, it introduces entire new playable factions including the Resistance, First Order, Zann Consortium, and Geonosians, while expanding existing rosters with authentic units and technologies from across the Star Wars timeline.\n\nCritically, Expanding Fronts completely resolves resolution and rendering limitations of the 2001 release, integrating high-resolution widescreen rendering, smooth frame pacing, enhanced AI routines, and modernized multiplayer stability. It preserves full campaign compatibility alongside new and remastered scenarios, making it the premier way to experience Galactic Battlegrounds today.",
+    type: "community",
+    status: "active",
+    visibility: "public",
+    sortOrder: 1,
+    branding: {
+      heroImage:
+        "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/356500/library_600x900_2x.jpg",
+    },
+    links: {
+      website: "https://www.moddb.com/mods/star-wars-galactic-battlegrounds-expanding-fronts",
+      wiki: "https://expanding-fronts.fandom.com/wiki/SWGB:_Expanding_Fronts_Wiki",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "locate-then-zip",
+        requiresBaseDir: true,
+        overlayUrl: "https://www.moddb.com/mods/star-wars-galactic-battlegrounds-expanding-fronts/downloads",
+        overlayFileName: "SWGB_Expanding_Fronts_Setup.zip",
+        versionLabel: "1.5.5",
+        exeHint: "battlegrounds_x2",
+        knownExePaths: [
+          "Game/battlegrounds_x2.exe",
+          "battlegrounds_x2.exe",
+          "Game/Expanding Fronts.exe",
+          "Expanding Fronts.exe",
+        ],
+        note: "Requires a legitimate Star Wars: Galactic Battlegrounds Saga install (GOG or Steam). PlayBound copies your base game files to a dedicated folder and applies Expanding Fronts, keeping your original untouched.",
+        steps: [
+          {
+            platform: "windows",
+            text: "Install Star Wars: Galactic Battlegrounds Saga from GOG or Steam on your system.",
+          },
+          {
+            platform: "windows",
+            text: "Click Install with PlayBound and select your Galactic Battlegrounds installation directory (containing battlegrounds_x1.exe).",
+          },
+          {
+            platform: "windows",
+            text: "PlayBound copies the base game assets and overlays the Expanding Fronts modern expansion files.",
+          },
+          {
+            platform: "windows",
+            text: "Click Play. The Expanding Fronts configurator will launch on first run to configure your desired widescreen resolution and visual preferences.",
+          },
+        ],
+      },
+    },
+    platforms: ["Windows"],
+    features: [
+      "Singleplayer",
+      "Multiplayer",
+      "LAN Support",
+      "Widescreen Support",
+      "New Civilizations",
+      "Custom Campaigns",
+      "Balance Overhaul",
+      "Modern AI",
+    ],
+    tags: [
+      "Expanding Fronts",
+      "Expanding Frontiers",
+      "SWGB EF",
+      "Community Expansion",
+      "Modern RTS",
+      "Star Wars",
+    ],
+    aliases: [
+      "Expanding Frontiers",
+      "SWGB Expanding Fronts",
+      "SWGB EF",
+      "Expanding Fronts 1.5",
+    ],
+    verificationLevel: "community_verified",
+    verificationNote:
+      "Verified against the official Expanding Fronts ModDB distribution and community installation standard.",
+  },
 ];
 
 /** Clean display name for an edition pill/chip (e.g. removes trailing parenthesized subtitles). */

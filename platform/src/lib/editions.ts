@@ -451,6 +451,7 @@ export function mergeStoredAndSeedEditions(
 }
 
 async function fetchEditions(filter: Record<string, unknown>): Promise<Edition[]> {
+  if (!process.env.MONGODB_URI) return [];
   await dbConnect();
   const docs = await EditionModel.find({
     ...filter,
@@ -463,6 +464,9 @@ async function fetchEditions(filter: Record<string, unknown>): Promise<Edition[]
 async function fetchEditionStateForGame(
   gameSlug: string
 ): Promise<{ editions: Edition[]; occupiedSeedSlugs: Set<string> }> {
+  if (!process.env.MONGODB_URI) {
+    return { editions: [], occupiedSeedSlugs: new Set() };
+  }
   await dbConnect();
   const docs = await EditionModel.find({ gameSlug }).sort({ sortOrder: 1, name: 1 }).lean();
   const occupiedSeedSlugs = new Set(docs.map((d) => str((d as LeanEdition).slug)));
@@ -543,7 +547,7 @@ async function fetchEditionStateForGames(
   for (const slug of gameSlugs) {
     bySlug.set(slug, { editions: [], occupiedSeedSlugs: new Set() });
   }
-  if (gameSlugs.length === 0) return bySlug;
+  if (gameSlugs.length === 0 || !process.env.MONGODB_URI) return bySlug;
   await dbConnect();
   const docs = await EditionModel.find({ gameSlug: { $in: gameSlugs } })
     .sort({ sortOrder: 1, name: 1 })

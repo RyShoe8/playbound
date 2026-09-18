@@ -6912,6 +6912,72 @@ export const editorial: Record<string, GameEditorial> = {
       },
     ],
   },
+  "star-wars-galactic-battlegrounds-saga": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: false,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "Age of Empires II reimagined with heavy turbolasers, energy shield generators, and stomping AT-AT walkers. Familiar economy, thrilling sci-fi warfare.",
+      lastVerified: "2026-09-18",
+    },
+    thatOneThing:
+      "Deploying Gungan energy shields and marching a phalanx of Imperial Mech AT-AT walkers across volcanic planets to the original John Williams score.",
+    longDescription:
+      "Released in late 2001 by LucasArts and Ensemble Studios, Star Wars: Galactic Battlegrounds is the golden-era answer to a question millions of strategy players asked: what if Age of Empires II had blasters, repulsorlifts, and planetary orbital strikes? Built directly on Ensemble's celebrated Genie Engine, Battlegrounds didn't just borrow mechanics from AoE2 — it adopted the entire tactical framework of villagers, town centers, and upgrade ages, transforming food, wood, gold, and stone into carbon, ore, nova crystals, and food supplies.\n\nThe genius of Galactic Battlegrounds lies in how thoroughly it remaps Star Wars doctrine onto RTS fundamentals. Rather than generic mirrors, each faction has a defined tactical character. The Galactic Empire relies on overwhelming heavy mechanized armor and walkers; the Rebel Alliance leverages mobile hit-and-run speed and starfighter air superiority; the Trade Federation floods choke points with cheap, expendable battle droids; while the Gungans command biological technology with mobile energy shield generators that can protect whole siege lines.\n\nThe included Clone Campaigns expansion further escalates the conflict, adding the Galactic Republic and the Confederacy of Independent Systems along with atmospheric air cruisers, Geonosian warriors, and decimation weapons. Combat spans land, sea, and airspace, giving siege warfare a multi-tier verticality that vanilla medieval RTS never possessed.\n\nToday, Galactic Battlegrounds Saga stands as one of the most mechanically satisfying Star Wars strategy games ever published. For strategy purists who love classic base building, tech trees, and macro management, its rhythmic resource flow and legendary sound design make it an unforgettable staple of PC strategy history.",
+    whyWePickedIt:
+      "Too many licensed games treat beloved universes as mere cosmetic skins. Galactic Battlegrounds took the undisputed pinnacle of 2D real-time strategy engines and rebuilt it into a legitimate, deeply strategic Star Wars conflict. We curated it because its campaign depth, faction variety, and thriving community expansion scene make it just as exhilarating to command today as it was in 2001.",
+    bestFor: [
+      "Age of Empires II veterans who want familiar, responsive macro and micro mechanics in a sci-fi setting",
+      "Star Wars enthusiasts looking for authentic planetary campaigns spanning the Original Trilogy and Clone Wars",
+      "LAN strategists seeking deep 8-player matches with varied factions, air combat, and custom scenarios",
+    ],
+    notFor: [
+      "Players expecting modern full-3D tactical cameras or squad-based cover systems like Company of Heroes",
+      "Anyone unwilling to learn classic resource gathering, villager micro, and tech age progression",
+    ],
+    comparableTo: [
+      "Age of Empires II",
+      "Star Wars: Empire at War",
+      "Command & Conquer: Tiberian Sun",
+      "Total Annihilation",
+      "StarCraft",
+    ],
+    installSteps: [
+      {
+        platform: "all",
+        text: "Acquire Star Wars: Galactic Battlegrounds Saga on GOG or Steam and complete the download.",
+      },
+      {
+        platform: "all",
+        text: "Install through your digital store or offline installer so game assets are ready in your local directory.",
+      },
+      {
+        platform: "all",
+        text: "Launch through PlayBound, or install the Expanding Fronts edition for high-resolution widescreen rendering and modern system compatibility.",
+      },
+    ],
+    faq: [
+      {
+        q: "What is included in Star Wars: Galactic Battlegrounds Saga?",
+        a: "The Saga edition bundles the original base game Star Wars: Galactic Battlegrounds and the official Clone Campaigns expansion, providing 16 full single-player campaigns and 8 distinct playable civilizations.",
+      },
+      {
+        q: "Does the game run on modern Windows 10 and 11?",
+        a: "Yes. The GOG and Steam digital releases include modern DirectDraw fixes. Additionally, community packages like Expanding Fronts provide native widescreen, modern resolution scalers, and stability patches.",
+      },
+      {
+        q: "Can I play multiplayer with friends today?",
+        a: "Yes. Galactic Battlegrounds supports direct TCP/IP and LAN multiplayer. Using PlayBound Connect or virtual LAN adapters, up to 8 players can coordinate in skirmishes, team battles, and custom scenarios.",
+      },
+      {
+        q: "What is the Expanding Fronts edition in PlayBound?",
+        a: "Expanding Fronts is a massive, highly acclaimed community expansion that adds new civilizations (First Order, Resistance, Zann Consortium), modern widescreen support, campaign remasters, and balance overhauls. PlayBound offers a one-click install edition that overlays it seamlessly onto your base game.",
+      },
+    ],
+  },
 };
 
 /** Merge editorial content onto a factual catalog entry. */
