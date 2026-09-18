@@ -130,7 +130,16 @@ export default async function LibraryPage() {
     { includeUnpublished: true }
   );
 
-  const editionsByGame: Record<string, { slug: string; name: string; type?: string; isDefault?: boolean }[]> = {};
+  const editionsByGame: Record<string, {
+    slug: string;
+    name: string;
+    type?: string;
+    isDefault?: boolean;
+    features?: string[];
+    tags?: string[];
+    shortDescription?: string;
+    description?: string;
+  }[]> = {};
   await Promise.all(
     games.map(async (game) => {
       try {
@@ -140,6 +149,10 @@ export default async function LibraryPage() {
           name: e.name,
           type: e.type,
           isDefault: Boolean(e.isDefault),
+          features: e.features || [],
+          tags: e.tags || [],
+          shortDescription: e.shortDescription,
+          description: e.description,
         }));
       } catch {
         editionsByGame[game.slug] = [];
