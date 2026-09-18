@@ -7453,7 +7453,7 @@ const facts: Game[] = [
     aliases: ["Castlevania Revamped", "Castlevania ReVamped", "CV ReVamped"],
     license: "Free Fan Game / Open Source Engine",
     releaseYear: 2024,
-    sizeMB: 125,
+    sizeMB: 550,
     status: "draft",
     platforms: ["Windows", "Linux"],
     features: ["Singleplayer", "Controller Support"],
@@ -7470,14 +7470,14 @@ const facts: Game[] = [
     coverImage: "https://raw.githubusercontent.com/LSDonkeyKong/Castlevania-ReVamped-Open-Source-Edition/main/icon.png",
     screenshots: [],
     systemRequirements: {
-      min: "Windows 7/10 64-bit or Linux x86_64 · 1.5 GHz Dual-Core CPU · 2 GB RAM · DirectX 9.0c / OpenGL 2.0 GPU · 200 MB storage",
+      min: "Windows 7/10 64-bit or Linux x86_64 · 1.5 GHz Dual-Core CPU · 2 GB RAM · DirectX 9.0c / OpenGL 2.0 GPU · 600 MB storage",
       recommended: "Windows 10/11 or Linux · 2.0 GHz+ CPU · 4 GB RAM · Dedicated GPU · Gamepad / Controller",
     },
     hardwareRequirements: {
       min: {
         os: ["windows", "linux"],
         ramMB: 2048,
-        storageMB: 200,
+        storageMB: 600,
         apis: ["opengl", "dx9"],
         cpuText: "1.5 GHz Dual-Core CPU",
         gpuText: "DirectX 9.0c or OpenGL 2.0 capable GPU",
@@ -7485,7 +7485,7 @@ const facts: Game[] = [
       recommended: {
         os: ["windows", "linux"],
         ramMB: 4096,
-        storageMB: 300,
+        storageMB: 800,
         apis: ["opengl", "dx9"],
         cpuText: "2.0 GHz Quad-Core CPU",
         gpuText: "Dedicated Graphics Card with Gamepad Support",
@@ -7500,9 +7500,9 @@ const facts: Game[] = [
     launcherInstall: {
       enabled: true,
       kind: "direct-zip",
-      url: "https://github.com/LSDonkeyKong/Castlevania-ReVamped-Open-Source-Edition/archive/refs/heads/main.zip",
-      urlLinux: "https://github.com/LSDonkeyKong/Castlevania-ReVamped-Open-Source-Edition/archive/refs/heads/main.zip",
-      fileName: "castlevania-revamped.zip",
+      url: "https://archive.org/download/castlevania-revamped/Castlevania%20ReVamped%20%28Windows%29.zip",
+      urlLinux: "https://archive.org/download/castlevania-revamped/Castlevania%20ReVamped%20%28Ubuntu%29.zip",
+      fileName: "Castlevania ReVamped (Windows).zip",
       versionLabel: "v1.1.1 Standalone",
       exeHint: "Castlevania ReVamped|CastlevaniaReVamped|Castlevania_ReVamped|Castlevania",
       knownExePaths: [

@@ -157,7 +157,9 @@ function toEdition(doc: LeanEdition): Edition {
           (editionSlugStr === "classic-dos" || editionSlugStr === "daggerfall-unity")) ||
         (gameSlugStr === "privateer-gemini-gold" && editionSlugStr === "gemini-gold-1-03") ||
         (gameSlugStr === "holocure" &&
-          (editionSlugStr === "playbound" || editionSlugStr === "official")))
+          (editionSlugStr === "playbound" || editionSlugStr === "official")) ||
+        (gameSlugStr === "castlevania-revamped" &&
+          (editionSlugStr === "official" || JSON.stringify(installConfig).includes("archive/refs/heads/main.zip"))))
     ) {
       installConfig = seedMatch.installConfig ?? installConfig;
       installMethod = seedMatch.installMethod ?? installMethod;

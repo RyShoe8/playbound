@@ -1680,9 +1680,9 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
   "castlevania-revamped": {
     enabled: true,
     kind: "direct-zip",
-    url: "https://github.com/LSDonkeyKong/Castlevania-ReVamped-Open-Source-Edition/archive/refs/heads/main.zip",
-    urlLinux: "https://github.com/LSDonkeyKong/Castlevania-ReVamped-Open-Source-Edition/archive/refs/heads/main.zip",
-    fileName: "castlevania-revamped.zip",
+    url: "https://archive.org/download/castlevania-revamped/Castlevania%20ReVamped%20%28Windows%29.zip",
+    urlLinux: "https://archive.org/download/castlevania-revamped/Castlevania%20ReVamped%20%28Ubuntu%29.zip",
+    fileName: "Castlevania ReVamped (Windows).zip",
     versionLabel: "v1.1.1 Standalone",
     exeHint: "Castlevania ReVamped|CastlevaniaReVamped|Castlevania_ReVamped|Castlevania",
     knownExePaths: [
