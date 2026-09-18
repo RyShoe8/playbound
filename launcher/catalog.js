@@ -9524,6 +9524,14 @@ module.exports = [
     ],
     "browserPlayable": false,
     "steamDeck": true,
+    "hostLaunch": {
+      "port": 1234,
+      "protocol": "udp",
+      "binaryHint": "Game",
+      "argsTemplate": [
+        "-DATADIR=Run"
+      ]
+    },
     "note": "Extracts the standalone OpenTS engine. Reads Tiberian Sun game data from the Run directory or a legitimate installation.",
     "editions": [],
     "accessTier": "FREE",

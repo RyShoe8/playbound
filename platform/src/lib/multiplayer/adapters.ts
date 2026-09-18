@@ -525,6 +525,49 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "OpenE2140 portable — Game.Mod must be e2140, never stock OpenRA ra.",
   },
 
+  opents: {
+    gameSlug: "opents",
+    title: "OpenTS",
+    tier: "tier1_improved",
+    adapterType: "virtual-lan",
+    protocol: "udp",
+    host: {
+      port: 1234,
+      protocol: "udp",
+      binaryHint: "Game",
+      argsTemplate: ["-DATADIR=Run"],
+    },
+    client: {
+      inGameJoinPrompt: true,
+      inGameSteps: [
+        "From the main menu, click Network",
+        "Host: Click New to configure map, starting credits, and tech level, then click Host",
+        "Friends: Click Network — the host's game appears in the lobby list; click Join",
+        "Select your faction (GDI, Nod) and color, then the host clicks Start Game",
+      ],
+    },
+    selfHost: {
+      port: 1234,
+      protocol: "udp",
+      verified: true,
+      inGameSteps: [
+        "PlayBound Launcher maps UDP port 1234 via UPnP / NAT-PMP",
+        "Host launches OpenTS and selects Network → New",
+        "Friends select Network to find the host across the shared network segment",
+      ],
+    },
+    virtualLan: {
+      requiresBroadcast: true,
+      inGameSteps: [
+        "Party members share the PlayBound virtual network overlay",
+        "Host: Select Network → New to host the match",
+        "Friends: Select Network to find the host in the local lobby list",
+      ],
+    },
+    notes:
+      "Command & Conquer: Tiberian Sun engine reconstruction. Operates over peer-to-peer UDP broadcast on port 1234. Supported via PlayBound Virtual LAN overlay and self-hosted UPnP port mapping.",
+  },
+
   /*
    * 0 A.D. lived here twice, byte-identical under "0-ad" and "0ad". The
    * catalog publishes it as "0ad", so that is the entry kept; "0-ad" — the

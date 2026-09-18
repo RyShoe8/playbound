@@ -118,6 +118,8 @@ const CLIENT_CONNECT_ARGS = {
    */
   "zero-k": null,
   flightgear: ["--multiplay=out,10,{host},{port}"],
+  // OpenTS joins via in-game Network over Virtual LAN / UDP broadcast.
+  opents: null,
   mrboom: ["-C", "{host}"],
   /*
    * RetroArch netplay ROM games — same -C join mechanism as Mr. Boom.
