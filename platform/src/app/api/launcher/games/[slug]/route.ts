@@ -17,21 +17,23 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
-    const includeTesting = await requestIncludesTesting(req);
+    const testingPromise = requestIncludesTesting(req);
     const origin = new URL(req.url).origin || "https://playbound.club";
-    const [game, tiers, affiliates, developers] = await Promise.all([
-      getGame(slug, { includeTesting }),
+    const [game, tiers, affiliates, developers, gameMods] = await Promise.all([
+      testingPromise.then((includeTesting) => getGame(slug, { includeTesting })),
       gameAccessTiers(),
       getStoreAffiliateMap(),
       listDevelopers(),
+      testingPromise.then((includeTesting) => listMods({ baseGameSlug: slug, includeTesting, view: "card" })),
     ]);
+    const includeTesting = await testingPromise;
     if (!game) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
     const gameTier = tierFor(tiers, slug);
 
     const baseCover = absoluteMediaUrl(game.coverImage, origin);
-    const mods = (await listMods({ baseGameSlug: slug, includeTesting, view: "card" })).map((m) => ({
+    const mods = gameMods.map((m) => ({
       slug: m.slug,
       title: m.title,
       tagline: m.tagline,

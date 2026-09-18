@@ -186,6 +186,11 @@ export { cacheInvalidate, cacheInvoke, cachePeek, cachePut };
 export function prefetchGameDetail(slug) {
   if (!slug || !window.playbound?.getGameDetail) return;
   void cacheInvoke(`game:${slug}`, CACHE_TTL.gameDetail, () => window.playbound.getGameDetail(slug));
+  if (window.playbound.getEditions) {
+    void cacheInvoke(`editions:${slug}`, CACHE_TTL.editions, () =>
+      window.playbound.getEditions(slug)
+    ).catch(() => null);
+  }
 }
 
 export function prefetchModDetail(slug) {
