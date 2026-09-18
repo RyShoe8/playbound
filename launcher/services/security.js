@@ -225,8 +225,10 @@ function createSecurity({ isPackaged, getApiBase }) {
     const host = String(hostname || "").toLowerCase();
     if (!host) return false;
     if (dynamicAllowedDownloadHosts.has(host)) return true;
-    // GitHub itself is pinned to the two apex forms; its asset traffic arrives
-    // on githubusercontent and the objects-* hosts instead.
+    // Repository archive URLs redirect to this exact GitHub download host.
+    if (host === "codeload.github.com") return true;
+    // GitHub itself is pinned to the two apex forms; release asset traffic
+    // arrives on githubusercontent and the objects-* hosts instead.
     if (host === "github.com" || host === "www.github.com") return true;
     if (host.endsWith(".github.com") && host.includes("objects")) return true;
     if (DOWNLOAD_DOMAINS.some((d) => exactOrSubdomain(host, d))) return true;

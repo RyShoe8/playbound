@@ -14798,7 +14798,11 @@ ipcMain.handle("invite-friend-by-email", async (_event, email) => {
 // ----------------------------
 ipcMain.handle("get-recently-played", () => listRecentlyPlayed());
 ipcMain.handle("get-game-detail", async (_event, slug) => {
-  let entry = (await ensureCatalogEntry(slug)) || catalogEntry(slug);
+  // The live catalog already supplies external entries as well as installers.
+  // Only resolve a missing recipe, in parallel with the editorial request.
+  const entryPromise = catalogEntry(slug)
+    ? Promise.resolve(catalogEntry(slug))
+    : ensureCatalogEntry(slug);
 
   let rich = null;
   try {
@@ -14809,6 +14813,7 @@ ipcMain.handle("get-game-detail", async (_event, slug) => {
   } catch {
     /* offline */
   }
+  let entry = (await entryPromise) || catalogEntry(slug);
 
   /*
    * Paid Master Copies often have no PlayBound installer, so they never land

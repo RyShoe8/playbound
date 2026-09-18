@@ -709,9 +709,15 @@ async function renderGameDetailView(slug, opts = {}) {
   if (!cachePeek(`game:${slug}`, CACHE_TTL.gameDetail)) {
     container.innerHTML = `<p class="view-sub">Loading game details...</p>`;
   }
-  const detail = await cacheInvoke(`game:${slug}`, CACHE_TTL.gameDetail, () =>
-    window.playbound.getGameDetail(slug)
-  );
+  const [detail, editionsRes] = await Promise.all([
+    cacheInvoke(`game:${slug}`, CACHE_TTL.gameDetail, () =>
+      window.playbound.getGameDetail(slug)
+    ),
+    cacheInvoke(`editions:${slug}`, CACHE_TTL.editions, () =>
+      window.playbound.getEditions?.(slug)
+    ).catch(() => null),
+  ]);
+  if (renderToken !== detailRenderToken) return;
   if (!detail) {
     container.innerHTML = `<p class="view-sub">Game not found.</p>`;
     return;
@@ -745,9 +751,6 @@ async function renderGameDetailView(slug, opts = {}) {
     window.playbound.getLiveStats?.({ game: slug })
   ).catch(() => null);
 
-  const editionsRes = await cacheInvoke(`editions:${slug}`, CACHE_TTL.editions, () =>
-    window.playbound.getEditions?.(slug)
-  ).catch(() => null);
   const editions = Array.isArray(editionsRes?.editions) ? editionsRes.editions : [];
   // Drives whether the Editions nav entry appears for this game.
   state.currentDetailEditionCount = editions.length;

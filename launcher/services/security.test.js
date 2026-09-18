@@ -127,6 +127,7 @@ for (const d of DOMAINS) {
 }
 for (const extra of [
   "", "objects.github.com", "objects-origin.github.com", "notobjects.github.com",
+  "codeload.github.com", "evil.codeload.github.com", "codeload.github.com.attacker.example",
   "cdn.public.blob.vercel-storage.com", "itchio-mirror.hwcdn.net", "itchio-mirror-7.b-cdn.net",
   "itchio-mirror.attacker.example", "sourceforge.net.attacker.example",
   "playbound-preview.vercel.app", "playbound-attacker.vercel.app", "someoneelse.vercel.app",
@@ -145,10 +146,12 @@ for (const packaged of [true, false]) {
   const sec = createSecurity({ isPackaged: () => packaged, getApiBase: () => API_BASE });
   const mismatches = [];
   for (const host of corpus) {
-    if (sec.hostAllowedForDownload(host) !== reference(host)) mismatches.push(host);
+    // Intentional addition: GitHub's exact repository archive redirect host.
+    const expected = host === "codeload.github.com" || reference(host);
+    if (sec.hostAllowedForDownload(host) !== expected) mismatches.push(host);
   }
   check(
-    `download allowlist matches the original for all ${corpus.size} hosts (packaged=${packaged})`,
+    `download allowlist matches the original plus codeload for all ${corpus.size} hosts (packaged=${packaged})`,
     mismatches.length === 0,
     mismatches.slice(0, 5).join(", ")
   );
@@ -199,6 +202,13 @@ for (const packaged of [true, false]) {
   check("rejects http on a non-loopback host", throws(() => sec.assertDownloadUrl("http://github.com/a/b.zip")));
   check("rejects a disallowed host", throws(() => sec.assertDownloadUrl("https://attacker.example/a.exe")));
   check("rejects a malformed URL", throws(() => sec.assertDownloadUrl("://nope")));
+  const archiveUrl = "https://github.com/LSDonkeyKong/Castlevania-ReVamped-Open-Source-Edition/archive/refs/heads/main.zip";
+  const redirectUrl = "https://codeload.github.com/LSDonkeyKong/Castlevania-ReVamped-Open-Source-Edition/zip/refs/heads/main";
+  check("allows the Castlevania archive's initial GitHub URL", sec.assertDownloadUrl(archiveUrl) === archiveUrl);
+  check("allows its codeload redirect", sec.assertDownloadUrl(new URL(redirectUrl, archiveUrl).toString()) === redirectUrl);
+  check("rejects codeload lookalikes", throws(() => sec.assertDownloadUrl("https://codeload.github.com.attacker.example/game.zip")));
+  check("rejects arbitrary codeload subdomains", throws(() => sec.assertDownloadUrl("https://evil.codeload.github.com/game.zip")));
+  check("rejects plain HTTP codeload downloads", throws(() => sec.assertDownloadUrl(redirectUrl.replace("https:", "http:"))));
 
   /*
    * RetroArch and every libretro core come from buildbot.libretro.com. The host

@@ -78,3 +78,29 @@ test("invalidating through shared.js clears what a prefetch cached", async () =>
   shared.cacheInvalidate("game");
   assert.equal(shared.cachePeek("game:tes3mp", 60_000), null);
 });
+
+test("game hover warms editions while its detail request is still pending", async () => {
+  let finishDetail;
+  const originalDetail = window.playbound.getGameDetail;
+  window.playbound.getGameDetail = () => new Promise((resolve) => { finishDetail = resolve; });
+  let editionSlug;
+  window.playbound.getEditions = async (slug) => {
+    editionSlug = slug;
+    return { editions: [{ editionSlug: "official" }] };
+  };
+  try {
+    shared.prefetchGameDetail("parallel-test");
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(editionSlug, "parallel-test");
+    assert.deepEqual(shared.cachePeek("editions:parallel-test", 60_000)?.data,
+      { editions: [{ editionSlug: "official" }] });
+    assert.equal(shared.cachePeek("game:parallel-test", 60_000), null);
+  } finally {
+    finishDetail?.({ slug: "parallel-test" });
+    window.playbound.getGameDetail = originalDetail;
+    delete window.playbound.getEditions;
+    await new Promise((resolve) => setImmediate(resolve));
+    shared.cacheInvalidate("game:parallel-test");
+    shared.cacheInvalidate("editions:parallel-test");
+  }
+});
