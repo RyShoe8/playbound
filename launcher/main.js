@@ -31,6 +31,7 @@ const { duneLegacyHasPakData } = require("./services/duneLegacyData");
 const { createManagedJava } = require("./services/ManagedJava");
 const { createLocalServers } = require("./services/localServer");
 const { createTransferMeter } = require("./services/transferMeter");
+const { writeDownloadBody } = require("./services/downloadBody");
 const { toQueueSnapshot } = require("./services/installQueueView");
 const { chooseExeFromListing, isUninstallerExe, isInstallerExe } = require("./services/exeCandidates");
 const {
@@ -57,6 +58,7 @@ const { createCloudSaves } = require("./services/CloudSaves");
 const { createSettings } = require("./services/settings");
 const { createSecurity } = require("./services/security");
 const { resolveGameJoltBuild } = require("./services/gameJoltBuild");
+const { isLostAlphaElevatedLaunch } = require("./services/xrEngineLaunch");
 const { createDeepLinks } = require("./services/deepLinks");
 const { withOutboundUtm } = require("./utm");
 const {
@@ -3403,7 +3405,6 @@ async function downloadTo(url, dest, attempts = 3) {
       const total = Number(res.headers.get("content-length")) || 0;
       await fsp.mkdir(path.dirname(dest), { recursive: true });
       const file = fs.createWriteStream(dest);
-      const reader = res.body.getReader();
       let received = 0;
       let lastSent = 0;
       // Emit initial download progress immediately so UI updates right away
@@ -3414,24 +3415,18 @@ async function downloadTo(url, dest, attempts = 3) {
        * across the gap.
        */
       const meter = createTransferMeter();
-      for (;;) {
-        if (activeDownloadSignal?.aborted) {
-          throw new Error("Download cancelled");
-        }
-        const { done, value } = await reader.read();
-        if (done) break;
-        received += value.length;
-        if (!file.write(Buffer.from(value))) {
-          await new Promise((r) => file.once("drain", r));
-        }
-        const now = Date.now();
-        if (now - lastSent > 250) {
-          lastSent = now;
-          const { bytesPerSecond, etaMs } = meter.update(received, total, now);
-          sendProgress({ phase: "downloading", received, total, bytesPerSecond, etaMs });
-        }
-      }
-      await new Promise((r, j) => file.end((err) => (err ? j(err) : r())));
+      await writeDownloadBody(res.body, file, {
+        signal: activeDownloadSignal || undefined,
+        onChunk(bytes) {
+          received += bytes;
+          const now = Date.now();
+          if (now - lastSent > 250) {
+            lastSent = now;
+            const { bytesPerSecond, etaMs } = meter.update(received, total, now);
+            sendProgress({ phase: "downloading", received, total, bytesPerSecond, etaMs });
+          }
+        },
+      });
       sendProgress({ phase: "downloading", received, total: total || received, etaMs: 0 });
       return;
     } catch (err) {
@@ -3453,7 +3448,15 @@ async function downloadTo(url, dest, attempts = 3) {
         await new Promise((r) => setTimeout(r, 1000 * attempt));
         continue;
       }
-      throw new Error(`Download failed (${detail})`);
+      if (["EPERM", "EACCES", "EBUSY"].includes(err?.code)) {
+        const failure = new Error(
+          `PlayBound couldn't write the download file "${dest}" (${err.code}). Another program or security software may be blocking it. Close any program using the file and check Windows Security's Protection history, then retry.`,
+          { cause: err }
+        );
+        failure.code = err.code;
+        throw failure;
+      }
+      throw new Error(`Download failed (${detail})`, { cause: err });
     }
   }
   throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
@@ -5972,7 +5975,12 @@ async function spawnWithElevationFallback(slug, launchPath, args, opts) {
    * second time — a UAC prompt for something that just had one.
    */
   const alreadyElevated =
-    opts?.elevate ?? Boolean(entry?.needsAdmin || elevationRemembered(slug));
+    opts?.elevate ??
+    Boolean(
+      entry?.needsAdmin ||
+      elevationRemembered(slug) ||
+      (process.platform === "win32" && isLostAlphaElevatedLaunch(launchPath, slug))
+    );
 
   try {
     return await spawnTrackedExe(slug, launchPath, args, { ...opts, elevate: alreadyElevated });
@@ -10477,7 +10485,11 @@ function spawnTrackedExe(slug, exePath, args = [], opts = {}) {
        */
       elevate:
         opts.elevate ??
-        Boolean(catalogEntry(slug)?.needsAdmin || elevationRemembered(slug)),
+        Boolean(
+          catalogEntry(slug)?.needsAdmin ||
+          elevationRemembered(slug) ||
+          (process.platform === "win32" && isLostAlphaElevatedLaunch(exePath, slug))
+        ),
       env: opts.env,
     });
   } catch (err) {

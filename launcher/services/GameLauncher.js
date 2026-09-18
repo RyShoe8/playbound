@@ -6,7 +6,7 @@ const { shouldLaunchThroughDosBox, dosExecutableMessage } = require("./executabl
 const { dosBoxLaunchSpec } = require("./ManagedDosBox");
 const { requiresCompatibilityRunner, buildRunnerLaunchSpec } = require("./CompatibilityRunner");
 const { assaultCubeWorkingDirectory } = require("./assaultCubeLaunch");
-const { xrEngineWorkingDirectory } = require("./xrEngineLaunch");
+const { xrEngineWorkingDirectory, isLostAlphaElevatedLaunch } = require("./xrEngineLaunch");
 const { resolveUnknownHorizonsLaunch, isUnknownHorizonsSlug } = require("./unknownHorizonsLaunch");
 
 const JAVA_MISSING_MSG =
@@ -244,7 +244,10 @@ class GameLauncher {
      * which surfaces as a launch failure — correct, because the game did not
      * start.
      */
-    if (opts.elevate && process.platform === "win32") {
+    const shouldElevate =
+      Boolean(opts.elevate || (process.platform === "win32" && isLostAlphaElevatedLaunch(launchPath, opts.gameSlug)));
+
+    if (shouldElevate && process.platform === "win32") {
       const psArgs = [
         "-NoProfile",
         "-ExecutionPolicy",

@@ -1591,6 +1591,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
   "stalker-lost-alpha": {
     enabled: true,
     kind: "external",
+    needsAdmin: true,
     url: "https://www.moddb.com/mods/lost-alpha/downloads/lost-alpha-developers-cut-v14007",
     exeHint: "XR_3DA",
     knownExePaths: [

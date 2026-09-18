@@ -866,6 +866,7 @@ export const editions: EditionSeed[] = [
     installConfig: {
       playbound_installer: {
         kind: "external",
+        needsAdmin: true,
         url: "https://www.moddb.com/mods/lost-alpha",
         exeHint: "XR_3DA",
         knownExePaths: ["bins\\XR_3DA.exe", "XR_3DA.exe"],

@@ -34,9 +34,23 @@ function xrEngineWorkingDirectory(launchPath, gameSlug) {
   return xrEnginePackageRoot(path.dirname(launchPath));
 }
 
+/**
+ * Lost Alpha Developer's Cut XR_3DA.exe embeds a requireAdministrator manifest
+ * or requires elevated access to write its logs/appdata in Program Files / game root.
+ */
+function isLostAlphaElevatedLaunch(launchPath, gameSlug) {
+  if (process.platform !== "win32") return false;
+  const slug = String(gameSlug || "").toLowerCase();
+  if (slug === "stalker-lost-alpha" || slug === "lost-alpha") return true;
+  const p = String(launchPath || "").toLowerCase();
+  return p.includes("lost alpha") && isXr3daClient(launchPath);
+}
+
 module.exports = {
   isXr3daClient,
   isXrEngineLaunch,
   xrEnginePackageRoot,
   xrEngineWorkingDirectory,
+  isLostAlphaElevatedLaunch,
 };
+
