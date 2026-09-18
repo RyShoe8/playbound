@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const path = require("path");
 const GameLauncher = require("./GameLauncher");
 const { requiresCompatibilityRunner, buildRunnerLaunchSpec } = require("./CompatibilityRunner");
+const { isLostAlphaElevatedLaunch } = require("./xrEngineLaunch");
 
 test("GameLauncher respects requiresCompatibilityRunner", () => {
   if (process.platform === "win32") {
@@ -125,4 +126,16 @@ test("buildGameLaunchCommand adds --args on macOS for open commands with argumen
     Platform.getGameLaunchCommand = orig;
   }
 });
+
+test("isLostAlphaElevatedLaunch returns true on win32 for Lost Alpha slugs and XR_3DA paths", () => {
+  if (process.platform === "win32") {
+    assert.equal(isLostAlphaElevatedLaunch("C:\\Games\\Lost Alpha\\bins\\XR_3DA.exe", "stalker-lost-alpha"), true);
+    assert.equal(isLostAlphaElevatedLaunch("C:\\Games\\Lost Alpha\\bins\\XR_3DA.exe", "lost-alpha"), true);
+    assert.equal(isLostAlphaElevatedLaunch("C:\\Games\\S.T.A.L.K.E.R. - Lost Alpha DC\\bins\\XR_3DA.exe", null), true);
+    assert.equal(isLostAlphaElevatedLaunch("C:\\Games\\STALKER\\bin\\XR_3DA.exe", "s-t-a-l-k-e-r-shadow-of-chernobyl"), false);
+  } else {
+    assert.equal(isLostAlphaElevatedLaunch("C:\\Games\\Lost Alpha\\bins\\XR_3DA.exe", "stalker-lost-alpha"), false);
+  }
+});
+
 
