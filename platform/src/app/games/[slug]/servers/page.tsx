@@ -10,5 +10,5 @@ export default async function GameServersRedirect({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  permanentRedirect(`/servers?game=${encodeURIComponent(slug)}`);
+  permanentRedirect(`/multiplayer?game=${encodeURIComponent(slug)}`);
 }

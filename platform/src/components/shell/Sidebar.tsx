@@ -17,6 +17,7 @@ import {
   Server,
   Shield,
   ShieldCheck,
+  Swords,
   Users,
 } from "lucide-react";
 import { SITE_DISCORD_INVITE } from "@/lib/site";
@@ -31,7 +32,7 @@ const nav = [
   { href: "/", label: "Home", icon: Home, exact: true },
   { href: "/discover", label: "Games", icon: Gamepad2 },
   { href: "/mods", label: "Mods", icon: Puzzle },
-  { href: "/servers", label: "Servers", icon: Server },
+  { href: "/multiplayer", label: "Multiplayer", icon: Swords },
   { href: "/events", label: "Events", icon: CalendarDays },
   { href: "/friends", label: "Friends", icon: Users },
   { href: "/library", label: "Library", icon: LibraryBig },

@@ -34,6 +34,8 @@ import { gameScopedUgcFilter } from "@/lib/ugcTarget";
 import { getDiscordPresence } from "@/lib/discordPresence";
 import { withOutboundUtm } from "@/lib/utm";
 import { GameFriendsWidget } from "@/components/friends/GameFriendsWidget";
+import { GameMultiplayerSection } from "@/components/GameMultiplayerSection";
+import { supportsMultiplayer } from "@/lib/multiplayer/support";
 import { Avatar, Badge, EmptyHint } from "@/components/ui/bits";
 import { cn } from "@/lib/utils";
 import { modsForGame } from "@/lib/mods";
@@ -501,6 +503,10 @@ async function OverviewTab({
         {unlocks ? <MasterCopyUnlocks game={game} unlocks={unlocks} affiliates={affiliates} /> : null}
 
         <GameCommerceSection game={game} affiliates={affiliates} />
+
+        {supportsMultiplayer(game) && (
+          <GameMultiplayerSection gameSlug={game.slug} gameTitle={game.title} />
+        )}
 
         {game.thatOneThing && (
           <section className="relative overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/15 via-card to-card p-6 shadow-sm sm:p-7">
