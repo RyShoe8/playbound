@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useSearchParams, usePathname } from "next/navigation";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 import { Checkbox } from "@/components/ui/Checkbox";
 import type { Game, Genre } from "@/lib/data/types";
@@ -71,16 +72,41 @@ export function DiscoverFilters({
   const { mode, device } = useCompatibilityFilter();
   const { mode: discoveryMode } = useDiscoveryMode();
   const tiers = useAccessTiers();
-  const [selectedGenre, setSelectedGenre] = useState<string>("");
-  /*
-   * Tags are a long tail — dozens of them against a dozen genres — so they
-   * start collapsed. Genre is the choice most people want; showing every tag
-   * by default would bury it under a wall of chips.
-   */
-  const [tagsOpen, setTagsOpen] = useState(false);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [featuresOpen, setFeaturesOpen] = useState(false);
-  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
+  const allCatalogGenres = useMemo(() => Array.from(new Set(games.flatMap((g) => g.genres))), [games]);
+  const allCatalogTags = useMemo(() => Array.from(new Set(games.flatMap((g) => g.tags))), [games]);
+  const allCatalogFeatures = useMemo(() => Array.from(new Set(games.flatMap((g) => g.features))), [games]);
+
+  const initialGenre = useMemo(() => {
+    const raw = searchParams.get("genre") || searchParams.get("genres") || "";
+    if (!raw) return "";
+    const match = allCatalogGenres.find((gen) => gen.toLowerCase() === raw.toLowerCase());
+    return match || raw;
+  }, [searchParams, allCatalogGenres]);
+
+  const initialTags = useMemo(() => {
+    const fromMultiple = searchParams.getAll("tag");
+    const fromComma = searchParams.get("tags")?.split(",") || [];
+    const raw = [...fromMultiple, ...fromComma].map((t) => t.trim()).filter(Boolean);
+    if (raw.length === 0) return [];
+    return raw.map((t) => allCatalogTags.find((ct) => ct.toLowerCase() === t.toLowerCase()) || t);
+  }, [searchParams, allCatalogTags]);
+
+  const initialFeatures = useMemo(() => {
+    const fromMultiple = searchParams.getAll("feature");
+    const fromComma = searchParams.get("features")?.split(",") || [];
+    const raw = [...fromMultiple, ...fromComma].map((f) => f.trim()).filter(Boolean);
+    if (raw.length === 0) return [];
+    return raw.map((f) => allCatalogFeatures.find((cf) => cf.toLowerCase() === f.toLowerCase()) || f);
+  }, [searchParams, allCatalogFeatures]);
+
+  const [selectedGenre, setSelectedGenre] = useState<string>(() => initialGenre);
+  const [tagsOpen, setTagsOpen] = useState(() => initialTags.length > 0);
+  const [selectedTags, setSelectedTags] = useState<string[]>(() => initialTags);
+  const [featuresOpen, setFeaturesOpen] = useState(() => initialFeatures.length > 0);
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>(() => initialFeatures);
   const [sort, setSort] = useState<SortOption>("name");
   const [multiplayerOnly, setMultiplayerOnly] = useState(false);
   /** Only games with someone in them right now, per the shared live snapshot. */
@@ -274,17 +300,101 @@ export function DiscoverFilters({
       .map(([name, count]) => ({ name, count }));
   }, [baseFiltered, selectedFeatures]);
 
+  const syncUrl = useCallback(
+    (updates: { genre?: string; tags?: string[]; features?: string[] }) => {
+      const g = updates.genre !== undefined ? updates.genre : selectedGenre;
+      const t = updates.tags !== undefined ? updates.tags : selectedTags;
+      const f = updates.features !== undefined ? updates.features : selectedFeatures;
+
+      const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+      if (g) {
+        params.set("genre", g);
+        params.delete("genres");
+      } else {
+        params.delete("genre");
+        params.delete("genres");
+      }
+
+      params.delete("tag");
+      if (t.length > 0) {
+        params.set("tags", t.join(","));
+      } else {
+        params.delete("tags");
+      }
+
+      params.delete("feature");
+      if (f.length > 0) {
+        params.set("features", f.join(","));
+      } else {
+        params.delete("features");
+      }
+
+      const qs = params.toString();
+      const nextUrl = qs ? `${pathname}?${qs}` : pathname;
+      if (typeof window !== "undefined") {
+        window.history.replaceState(null, "", nextUrl);
+      }
+    },
+    [pathname, selectedGenre, selectedTags, selectedFeatures]
+  );
+
+  function handleSelectGenre(name: string) {
+    const next = selectedGenre === name ? "" : name;
+    setSelectedGenre(next);
+    syncUrl({ genre: next });
+  }
+
   function toggleFeature(name: string) {
-    setSelectedFeatures((prev) =>
-      prev.includes(name) ? prev.filter((f) => f !== name) : [...prev, name]
-    );
+    const next = selectedFeatures.includes(name)
+      ? selectedFeatures.filter((f) => f !== name)
+      : [...selectedFeatures, name];
+    setSelectedFeatures(next);
+    syncUrl({ features: next });
+  }
+
+  function clearFeatures() {
+    setSelectedFeatures([]);
+    syncUrl({ features: [] });
   }
 
   function toggleTag(name: string) {
-    setSelectedTags((prev) =>
-      prev.includes(name) ? prev.filter((t) => t !== name) : [...prev, name]
-    );
+    const next = selectedTags.includes(name)
+      ? selectedTags.filter((t) => t !== name)
+      : [...selectedTags, name];
+    setSelectedTags(next);
+    syncUrl({ tags: next });
   }
+
+  function clearTags() {
+    setSelectedTags([]);
+    syncUrl({ tags: [] });
+  }
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const sp = new URLSearchParams(window.location.search);
+      const rawGenre = sp.get("genre") || sp.get("genres") || "";
+      const matchedGenre = allCatalogGenres.find((gen) => gen.toLowerCase() === rawGenre.toLowerCase()) || rawGenre;
+      setSelectedGenre(matchedGenre);
+
+      const fromMultipleTags = sp.getAll("tag");
+      const fromCommaTags = sp.get("tags")?.split(",") || [];
+      const rawTags = [...fromMultipleTags, ...fromCommaTags].map((t) => t.trim()).filter(Boolean);
+      const matchedTags = rawTags.map((t) => allCatalogTags.find((ct) => ct.toLowerCase() === t.toLowerCase()) || t);
+      setSelectedTags(matchedTags);
+      if (matchedTags.length > 0) setTagsOpen(true);
+
+      const fromMultipleFeatures = sp.getAll("feature");
+      const fromCommaFeatures = sp.get("features")?.split(",") || [];
+      const rawFeatures = [...fromMultipleFeatures, ...fromCommaFeatures].map((f) => f.trim()).filter(Boolean);
+      const matchedFeatures = rawFeatures.map((f) => allCatalogFeatures.find((cf) => cf.toLowerCase() === f.toLowerCase()) || f);
+      setSelectedFeatures(matchedFeatures);
+      if (matchedFeatures.length > 0) setFeaturesOpen(true);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [allCatalogGenres, allCatalogTags, allCatalogFeatures]);
 
   /* Group games by genre */
   const genreSections = useMemo(() => {
@@ -353,7 +463,7 @@ export function DiscoverFilters({
       <div className="-mx-1 flex flex-wrap items-center gap-2 px-1 py-1">
         <button
           type="button"
-          onClick={() => setSelectedGenre("")}
+          onClick={() => handleSelectGenre("")}
           className={cn(
             "shrink-0 flex flex-col items-center justify-center rounded-xl px-4 py-2 text-sm font-bold transition-all duration-150 border leading-tight min-w-[70px]",
             selectedGenre === ""
@@ -380,7 +490,7 @@ export function DiscoverFilters({
             <button
               key={name}
               type="button"
-              onClick={() => setSelectedGenre(isSelected ? "" : name)}
+              onClick={() => handleSelectGenre(name)}
               className={cn(
                 "shrink-0 flex flex-col items-center justify-center rounded-xl px-4 py-2 text-sm font-bold transition-all duration-150 border leading-tight min-w-[70px]",
                 isSelected
@@ -458,7 +568,7 @@ export function DiscoverFilters({
               items={allTagsWithCounts}
               selected={selectedTags}
               onPick={toggleTag}
-              onClear={() => setSelectedTags([])}
+              onClear={clearTags}
               clearLabel="Clear Tags"
             />
           )}
@@ -468,7 +578,7 @@ export function DiscoverFilters({
               items={allFeaturesWithCounts}
               selected={selectedFeatures}
               onPick={toggleFeature}
-              onClear={() => setSelectedFeatures([])}
+              onClear={clearFeatures}
               clearLabel="Clear Features"
             />
           )}

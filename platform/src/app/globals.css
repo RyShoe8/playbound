@@ -208,7 +208,7 @@ body.is-popout .shell-main {
   }
 
   html.compat-show-all [data-mobile-compat="false"] {
-    display: revert;
+    display: flex;
   }
 }
 

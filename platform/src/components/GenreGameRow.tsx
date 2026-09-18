@@ -107,7 +107,7 @@ export function GenreGameRow({
           className="no-scrollbar -mx-1 flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto px-1 pt-1 pb-2 scroll-smooth"
         >
           {games.map((g) => (
-            <div key={g.slug} className="shrink-0 snap-start">
+            <div key={g.slug} className="flex h-full shrink-0 snap-start">
               <GameCard game={g} playingNow={playingNowBySlug[g.slug] ?? 0} />
             </div>
           ))}
