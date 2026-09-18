@@ -14,8 +14,7 @@ export default async function AdminNewModPage() {
   // Never prerendered — see the layout. Each segment prerenders
   // independently, so the layout's opt-out does not cover this page.
   await connection();
-  const games = await listAllGames();
-  const developers = await listDevelopers();
+  const [games, developers] = await Promise.all([listAllGames(), listDevelopers()]);
 
   return (
     <div className="space-y-6 px-4 py-6 sm:px-6 lg:px-8">

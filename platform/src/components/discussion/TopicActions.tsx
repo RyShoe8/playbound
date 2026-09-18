@@ -123,7 +123,7 @@ export function ReplyComposer({
   if (!isSignedIn) {
     return (
       <p className="text-sm text-muted-foreground">
-        <Link href={signInHref} className="font-semibold text-primary hover:underline">
+        <Link prefetch={false} rel="nofollow" href={signInHref} className="font-semibold text-primary hover:underline">
           Sign in
         </Link>{" "}
         to reply.

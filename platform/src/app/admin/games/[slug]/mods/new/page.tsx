@@ -21,10 +21,11 @@ export default async function AdminGameNewModPage({
   // independently, so the layout's opt-out does not cover this page.
   await connection();
   const { slug } = await params;
-  const game = await getGame(slug, { includeUnpublished: true });
+  const [game, games, developers] = await Promise.all([
+    getGame(slug, { includeUnpublished: true }), listAllGames(), listDevelopers(),
+  ]);
   if (!game) notFound();
 
-  const games = await listAllGames();
 
   return (
     <div className="space-y-6 px-4 py-6 sm:px-6 lg:px-8">
@@ -43,7 +44,7 @@ export default async function AdminGameNewModPage({
       <ModEditorForm
         mode="create"
         initial={emptyModDraft(game.slug)}
-        developers={(await listDevelopers()).map((d) => ({ slug: d.slug, name: d.name }))}
+        developers={developers.map((d) => ({ slug: d.slug, name: d.name }))}
         games={games.map((g) => ({ slug: g.slug, title: g.title }))}
       />
     </div>

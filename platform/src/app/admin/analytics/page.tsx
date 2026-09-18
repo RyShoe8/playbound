@@ -4,6 +4,7 @@ import dbConnect from "@/lib/db";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
 import User from "@/lib/models/User";
 import { Types } from "mongoose";
+import { loadAnalyticsSummary } from "@/lib/admin/analyticsSummary";
 import { SectionHeader, StatTile } from "@/components/ui/bits";
 import { LocalTime } from "@/components/LocalTime";
 
@@ -13,18 +14,6 @@ type SearchParams = Promise<{
   to?: string;
   includeBots?: string;
 }>;
-
-function startOfDay(d: Date): Date {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
-}
-
-function daysAgo(n: number): Date {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return startOfDay(d);
-}
 
 interface TelemetryDoc {
   _id: unknown;
@@ -50,14 +39,6 @@ async function loadAnalytics(filters: {
 }) {
   await dbConnect();
 
-  const now = new Date();
-  const today = startOfDay(now);
-  const yesterday = daysAgo(1);
-  const d7 = daysAgo(7);
-  const d14 = daysAgo(14);
-  const d30 = daysAgo(30);
-  const d60 = daysAgo(60);
-
   const botCondition = filters.includeBots ? {} : { isBot: { $ne: true } };
   const recentFilter: Record<string, unknown> = { ...botCondition };
   if (filters.event) recentFilter.event = filters.event;
@@ -72,95 +53,27 @@ async function loadAnalytics(filters: {
   }
   if (Object.keys(createdAt).length) recentFilter.createdAt = createdAt;
 
-  const [
-    eventsToday,
-    events7d,
-    events30d,
-    uniqueSessions7d,
-    identifiedUsers7d,
-    topEvents,
-    dailyVolume,
-    recent,
-    eventsTodayPrev,
-    events7dPrev,
-    events30dPrev,
-    uniqueSessions7dPrev,
-    identifiedUsers7dPrev,
-  ] = await Promise.all([
-    TelemetryEvent.countDocuments({ ...botCondition, createdAt: { $gte: today } }),
-    TelemetryEvent.countDocuments({ ...botCondition, createdAt: { $gte: d7 } }),
-    TelemetryEvent.countDocuments({ ...botCondition, createdAt: { $gte: d30 } }),
-    TelemetryEvent.distinct("sessionId", {
-      ...botCondition,
-      createdAt: { $gte: d7 },
-      sessionId: { $nin: [null, ""] },
-    }).then((ids) => ids.length),
-    TelemetryEvent.distinct("userId", {
-      ...botCondition,
-      createdAt: { $gte: d7 },
-      userId: { $nin: [null, ""] },
-    }).then((ids) => ids.length),
-    TelemetryEvent.aggregate<{ _id: string; count: number }>([
-      { $match: { ...botCondition, createdAt: { $gte: d7 } } },
-      { $group: { _id: "$event", count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 15 },
-    ]),
-    TelemetryEvent.aggregate<{ _id: string; count: number }>([
-      { $match: { ...botCondition, createdAt: { $gte: d14 } } },
-      {
-        $group: {
-          _id: {
-            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
-          },
-          count: { $sum: 1 },
-        },
-      },
-      { $sort: { _id: 1 } },
-    ]),
+  // Recent events remain live; only the expensive aggregate cards are shared.
+  const [summary, recent] = await Promise.all([
+    loadAnalyticsSummary(Boolean(filters.includeBots)),
     TelemetryEvent.find(recentFilter)
       .sort({ createdAt: -1 })
       .limit(40)
       .select("event userId sessionId url country browser os device isBot createdAt properties")
-      .lean(),
-    TelemetryEvent.countDocuments({ ...botCondition, createdAt: { $gte: yesterday, $lt: today } }),
-    TelemetryEvent.countDocuments({ ...botCondition, createdAt: { $gte: d14, $lt: d7 } }),
-    TelemetryEvent.countDocuments({ createdAt: { $gte: d60, $lt: d30 } }),
-    TelemetryEvent.distinct("sessionId", {
-      createdAt: { $gte: d14, $lt: d7 },
-      sessionId: { $nin: [null, ""] },
-    }).then((ids) => ids.length),
-    TelemetryEvent.distinct("userId", {
-      createdAt: { $gte: d14, $lt: d7 },
-      userId: { $nin: [null, ""] },
-    }).then((ids) => ids.length),
+      .lean<TelemetryDoc[]>(),
   ]);
 
-  const uniqueUserIds = Array.from(new Set(recent.map((doc: any) => doc.userId).filter(Boolean)))
-    .filter((id: any) => typeof id === "string" && Types.ObjectId.isValid(id));
-  const users = await User.find({ _id: { $in: uniqueUserIds } }).select("username").lean();
-  const usernameMap = new Map(users.map((u: any) => [String(u._id), u.username]));
+  const uniqueUserIds = Array.from(new Set(recent.map((doc) => doc.userId)))
+    .filter((id): id is string => typeof id === "string" && Types.ObjectId.isValid(id));
+  const users = await User.find({ _id: { $in: uniqueUserIds } }).select("username").lean<Array<{ _id: unknown; username: string }>>();
+  const usernameMap = new Map(users.map((u) => [String(u._id), u.username]));
 
-  const recentWithUsernames = recent.map((doc: any) => ({
+  const recentWithUsernames = recent.map((doc) => ({
     ...doc,
     username: doc.userId ? usernameMap.get(doc.userId) || null : null
   }));
 
-  return {
-    eventsToday,
-    events7d,
-    events30d,
-    uniqueSessions7d,
-    identifiedUsers7d,
-    topEvents,
-    dailyVolume,
-    recent: recentWithUsernames,
-    eventsTodayPrev,
-    events7dPrev,
-    events30dPrev,
-    uniqueSessions7dPrev,
-    identifiedUsers7dPrev,
-  };
+  return { ...summary, recent: recentWithUsernames };
 }
 
 function pathFromEvent(doc: {
@@ -211,7 +124,7 @@ export default async function AdminAnalyticsPage({
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight">Analytics</h1>
         <p className="mt-1 text-muted-foreground">
-          Product telemetry stored in MongoDB via the Telemetry SDK.
+          Summary metrics refresh every minute. Recent events are live.
         </p>
       </div>
 

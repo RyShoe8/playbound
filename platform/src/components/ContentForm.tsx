@@ -90,6 +90,8 @@ export function ContentForm({
     return (
       <p className="text-sm text-muted-foreground">
         <Link
+          prefetch={false}
+          rel="nofollow"
           href={`/login?callbackUrl=${encodeURIComponent(`${pageBase}?tab=${kind === "review" ? "reviews" : "guides"}`)}`}
           className="font-semibold text-primary hover:underline"
         >
