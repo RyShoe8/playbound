@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { connection } from "next/server";
 import Link from "next/link";
 import { ConnectManager } from "@/components/admin/ConnectManager";
+import { ConnectPartyHistory } from "@/components/admin/ConnectPartyHistory";
 import { PlatformLimitsEditor } from "@/components/admin/PlatformLimitsEditor";
 import { getPlatformLimits, getPoolStatus } from "@/lib/entitlements/pool";
 
@@ -69,6 +70,10 @@ export default async function ConnectPartiesPage() {
       <section className="space-y-3">
         <h2 className="text-xl font-bold tracking-tight">Live parties</h2>
         <ConnectManager view="parties" />
+      </section>
+
+      <section className="space-y-3">
+        <ConnectPartyHistory />
       </section>
     </div>
   );

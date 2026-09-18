@@ -136,6 +136,24 @@ const PartyMemberSchema = new Schema(
   { _id: false }
 );
 
+const PartyHistoricalMemberSchema = new Schema(
+  {
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    role: {
+      type: String,
+      enum: PARTY_MEMBER_ROLES,
+      default: "member",
+    },
+    joinedAt: { type: Date, default: Date.now },
+    leftAt: { type: Date, default: null },
+  },
+  { _id: false }
+);
+
 const PartySchema = new Schema(
   {
     leaderId: {
@@ -159,6 +177,12 @@ const PartySchema = new Schema(
       },
     },
 
+    /** All participants who were ever in the party, for session history. */
+    historicalMembers: {
+      type: [PartyHistoricalMemberSchema],
+      default: [],
+    },
+
     name: { type: String, default: null, maxlength: 60 },
 
     /**
@@ -175,6 +199,8 @@ const PartySchema = new Schema(
 
     // Game configuration — optional at create; leader picks it in the party window.
     gameSlug: { type: String, default: "", index: true },
+    /** All game slugs played during this party session. */
+    gamesPlayed: { type: [String], default: [] },
     editionSlug: { type: String, default: null },
     modSlugs: { type: [String], default: [] },
     /*
@@ -327,6 +353,10 @@ PartySchema.index(
   { partialFilterExpression: { eventId: { $ne: null } } }
 );
 
+// Party history: ended parties ordered newest first.
+PartySchema.index({ status: 1, endedAt: -1 });
+PartySchema.index({ status: 1, createdAt: -1 });
+
 export type PartyMemberDoc = {
   userId: Types.ObjectId;
   role: string;
@@ -335,10 +365,19 @@ export type PartyMemberDoc = {
   joinedAt: Date;
 };
 
+export type PartyHistoricalMemberDoc = {
+  userId: Types.ObjectId;
+  role: string;
+  joinedAt: Date;
+  leftAt?: Date | null;
+};
+
 export type PartyDoc = {
   _id: Types.ObjectId;
   leaderId: Types.ObjectId;
   members: PartyMemberDoc[];
+  historicalMembers?: PartyHistoricalMemberDoc[];
+  gamesPlayed?: string[];
   name?: string | null;
   /** Leader's OS at creation; null for parties predating the field. */
   leaderOs?: string | null;
