@@ -7252,6 +7252,33 @@ const facts: Game[] = [
       registryTitles: ["Pokémon Blaze Online", "Pokemon Blaze Online"],
       note: "Extracts official 64-bit PBO desktop build. Linux uses native x86_64 tarball; macOS uses DMG package.",
     },
+    installSteps: [
+      {
+        platform: "all",
+        text: "Click Install in the PlayBound Launcher to automatically download and extract the official native desktop client.",
+      },
+      {
+        platform: "windows",
+        text: "On Windows, PlayBound installs the 64-bit client by default. If running an older 32-bit machine, select the Windows 32-bit Legacy edition in PlayBound. For manual installs, extract pbo-windows.zip and launch pbo.exe.",
+      },
+      {
+        platform: "linux",
+        text: "On Linux, download the official native tarball and extract it, or install directly through PlayBound Launcher. Mark the binary executable before running.",
+        command: "tar -xzf pbo-linux.tar.gz && chmod +x pbo && ./pbo",
+      },
+      {
+        platform: "macos",
+        text: "On macOS, open the official pbo-mac.dmg disk image and drag the Pokémon Blaze Online app into your Applications folder. On first launch, right-click and select Open if macOS Gatekeeper prompts you.",
+      },
+      {
+        platform: "all",
+        text: "Launch the game and click Register on the title screen (or register online at pokemonblazeonline.com) to create your free trainer account.",
+      },
+      {
+        platform: "all",
+        text: "Customize your trainer sprite, select your starting region (Kanto, Johto, Hoenn, or Sinnoh), and step into the persistent MMO world.",
+      },
+    ],
     firstPlaySteps: [
       {
         platform: "all",
@@ -7354,6 +7381,37 @@ const facts: Game[] = [
       registryTitles: ["PokeMMO"],
       note: "Unpacks official portable client. Runs PokeMMO.exe on Windows, PokeMMO.sh on Linux. Supply your legal ROMs (Black/White required; FireRed/Emerald/Platinum/HeartGold optional) on initial launch.",
     },
+    installSteps: [
+      {
+        platform: "all",
+        text: "Click Install in the PlayBound Launcher to extract the official portable PokeMMO client package into your games directory.",
+      },
+      {
+        platform: "windows",
+        text: "On Windows, PlayBound runs the official PokeMMO.exe. Java is packaged with the client, so no separate JRE installation is required.",
+      },
+      {
+        platform: "linux",
+        text: "On Linux, install OpenJDK 11 or newer if not already present, make the shell script executable, and launch PokeMMO.sh.",
+        command: "chmod +x PokeMMO.sh && ./PokeMMO.sh",
+      },
+      {
+        platform: "macos",
+        text: "On macOS, open the PokeMMO client bundle and launch PokeMMO. Ensure Java 11+ is installed on your system if running the portable tarball.",
+      },
+      {
+        platform: "all",
+        text: "Provide Required Base ROM: On first launch, the ROM management window will open. You MUST provide a clean, legal Nintendo DS dump of Pokémon Black Version or Pokémon White Version (v1.0). This supplies the core game engine, modern graphics, and battle system.",
+      },
+      {
+        platform: "all",
+        text: "Add Optional Region ROMs: To travel to other regions and unlock extra visuals, provide: Pokémon FireRed (Kanto storyline), Pokémon Emerald (Hoenn & Battle Frontier), Pokémon Platinum (Sinnoh region), and Pokémon HeartGold / SoulSilver (walking Pokémon overworld follower sprites). Place them in the 'roms/' folder or select them in the client dialog.",
+      },
+      {
+        platform: "all",
+        text: "Register a free account at pokemmo.com/account, log in with your trainer credentials, select your server channel, and start your journey.",
+      },
+    ],
     firstPlaySteps: [
       {
         platform: "all",

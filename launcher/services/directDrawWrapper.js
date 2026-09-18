@@ -78,7 +78,27 @@ const DIRECTX8_COM_CLSIDS = [
   "{58356C5D-0BFD-48ED-93C5-F4520B6233DE}", // CLSID_D3DX8
 ];
 
-const MS_X86_DLLS = ["DDraw.dll", "D3DImm.dll", "D3D8.dll", "D3D9.dll", "dx7vb.dll", "dx8vb.dll"];
+/**
+ * FreeTrain's DirectDraw AlphaBlend CLSID — AlphaBlender Class from DirectDraw.AlphaBlend.dll.
+ *
+ * FreeTrain's org.kohsuke.directdraw.Surface initializes AlphaBlender via COM
+ * ({B6803A0F-671C-4730-A802-BB0C2C4BDAC4}). Modern Windows has no registration for this,
+ * throwing System.TypeInitializationException with COMException 80040154 (REGDB_E_CLASSNOTREG).
+ *
+ * Registering this in HKCU pointing to relative `DirectDraw.AlphaBlend.dll` resolves the COM
+ * class factory without elevation.
+ */
+const CLSID_ALPHABLEND = "{B6803A0F-671C-4730-A802-BB0C2C4BDAC4}";
+
+const MS_X86_DLLS = [
+  "DDraw.dll",
+  "D3DImm.dll",
+  "D3D8.dll",
+  "D3D9.dll",
+  "dx7vb.dll",
+  "dx8vb.dll",
+  "DirectDraw.AlphaBlend.dll",
+];
 
 const FREETRAIN_SLUGS = new Set(["freetrain", "free-train"]);
 
@@ -288,10 +308,12 @@ function registerDirectDrawComHkcu(_ddrawPath) {
    * Standard DirectDraw CLSIDs -> ddraw.dll
    * CLSID_DIRECTDRAW ({E1211353}) -> dx7vb.dll (DirectX 7 for VB)
    * CLSID_DIRECTX8 ({E7FF1300}), CLSID_D3DX8 ({58356C5D}) -> dx8vb.dll (DirectX 8 for VB)
+   * CLSID_ALPHABLEND ({B6803A0F}) -> DirectDraw.AlphaBlend.dll
    */
   const clsids = DIRECTDRAW_COM_CLSIDS.map((c) => JSON.stringify(c)).join(",");
   const dx7Clsid = JSON.stringify(CLSID_DIRECTDRAW);
   const dx8Clsids = DIRECTX8_COM_CLSIDS.map((c) => JSON.stringify(c)).join(",");
+  const alphaClsid = JSON.stringify(CLSID_ALPHABLEND);
   const script = `
 $ErrorActionPreference = 'Stop'
 $clsids = @(${clsids})
@@ -320,6 +342,13 @@ foreach ($clsid in $dx8Clsids) {
     Set-ItemProperty -Path $dx8Path -Name '(default)' -Value 'dx8vb.dll'
     Set-ItemProperty -Path $dx8Path -Name 'ThreadingModel' -Value 'Both'
   }
+}
+# Point {B6803A0F} to DirectDraw.AlphaBlend.dll so FreeTrain's org.kohsuke.directdraw.Surface succeeds without 80040154
+foreach ($root in $roots) {
+  $alphaPath = Join-Path $root (${alphaClsid} + '\\InprocServer32')
+  New-Item -Path $alphaPath -Force | Out-Null
+  Set-ItemProperty -Path $alphaPath -Name '(default)' -Value 'DirectDraw.AlphaBlend.dll'
+  Set-ItemProperty -Path $alphaPath -Name 'ThreadingModel' -Value 'Both'
 }
 `;
   const ps = spawnSync("powershell.exe", ["-NoProfile", "-Command", script], {
@@ -495,6 +524,7 @@ function createDirectDrawWrapper(deps) {
     needsDirectDrawWrapper,
     isFreeTrainSlug,
     CLSID_DIRECTDRAW,
+    CLSID_ALPHABLEND,
     resolveMsX86Source,
     bundledMsX86Dir,
     DGVOODOO_MS_X86_MIRROR_URL: mirrorUrl,
@@ -506,6 +536,7 @@ module.exports = {
   needsDirectDrawWrapper,
   isFreeTrainSlug,
   CLSID_DIRECTDRAW,
+  CLSID_ALPHABLEND,
   MS_X86_DLLS,
   AV_BLOCK_MSG,
   DGVOODOO_MS_X86_MIRROR_URL,
