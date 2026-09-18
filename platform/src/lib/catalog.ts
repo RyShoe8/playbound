@@ -138,6 +138,20 @@ function attachLauncherInstall(game: Game, doc?: LeanGame): Game {
       ];
       if (seed?.registryTitles) merged.registryTitles = seed.registryTitles;
     }
+    if (
+      game.slug === "castlevania-revamped" &&
+      seed?.kind === "direct-zip" &&
+      (typeof merged.url !== "string" || /archive\/refs\/heads\/main\.zip/i.test(merged.url))
+    ) {
+      merged.kind = seed.kind;
+      merged.url = seed.url;
+      merged.urlLinux = seed.urlLinux;
+      merged.fileName = seed.fileName;
+      merged.exeHint = seed.exeHint;
+      merged.knownExePaths = seed.knownExePaths;
+      merged.versionLabel = seed.versionLabel;
+      merged.note = seed.note;
+    }
     // GoldenEye: Source — gesource_run exits 0 after handing off to hl2.exe.
     // Without hl2 in exeHint, spawnTrackedExe treats a successful Steam handoff
     // as EARLY_EXIT. Seed fills missing/outdated Mongo recipes at read time.
