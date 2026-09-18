@@ -19,10 +19,11 @@ export default async function AdminEditModPage({ params }: { params: Promise<{ s
   // independently, so the layout's opt-out does not cover this page.
   await connection();
   const { slug } = await params;
-  const doc = await getModAdmin(slug);
+  const [doc, games, developers] = await Promise.all([
+    getModAdmin(slug), listAllGames(), listDevelopers(),
+  ]);
   if (!doc) notFound();
 
-  const games = await listAllGames();
   const initial: ModPayload = {
     slug: String(doc.slug),
     title: String(doc.title),
@@ -78,7 +79,7 @@ export default async function AdminEditModPage({ params }: { params: Promise<{ s
       <ModEditorForm
         mode="edit"
         initial={initial}
-        developers={(await listDevelopers()).map((d) => ({ slug: d.slug, name: d.name }))}
+        developers={developers.map((d) => ({ slug: d.slug, name: d.name }))}
         games={games.map((g) => ({ slug: g.slug, title: g.title }))}
       />
     </div>

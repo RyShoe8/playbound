@@ -91,6 +91,8 @@ export function TopicComposer({
     return (
       <p className="text-sm text-muted-foreground">
         <Link
+          prefetch={false}
+          rel="nofollow"
           href={`/login?callbackUrl=${encodeURIComponent(`${pageBase}?tab=discussion`)}`}
           className="font-semibold text-primary hover:underline"
         >

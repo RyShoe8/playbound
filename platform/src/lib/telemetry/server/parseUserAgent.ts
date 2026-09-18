@@ -46,7 +46,7 @@ export function parseLauncherUserAgent(raw: string): ParsedUserAgent | null {
 }
 
 const BOT_PATTERN =
-  /\b(bot|crawler|spider|scraper|slurp|headless|phantom|puppeteer|playwright|selenium|wget|curl|python-requests|node-fetch|axios|postman|bytespider|gptbot|claudebot|perplexity|semrush|ahrefs|mj12bot|dotbot|googlebot|bingbot|yandexbot|duckduckbot|baiduspider)\b/i;
+  /\b(bot|crawler|spider|scraper|slurp|headless(?:chrome)?|phantom|puppeteer|playwright|selenium|wget|curl|python-requests|node-fetch|axios|postman|bytespider|gptbot|claudebot|perplexity|semrush|ahrefs|mj12bot|dotbot|googlebot|bingbot|yandexbot|duckduckbot|baiduspider)\b/i;
 
 export function isBotUserAgent(ua: string | null | undefined): boolean {
   const raw = (ua || "").trim();

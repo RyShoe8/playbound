@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { launcherOsLabel, parseUserAgent } from "./parseUserAgent";
+import { isBotUserAgent, launcherOsLabel, parseUserAgent } from "./parseUserAgent";
 
 /**
  * Launcher events were landing in the analytics Client column as
@@ -96,5 +96,14 @@ describe("launcherOsLabel", () => {
     expect(launcherOsLabel("")).toBeNull();
     expect(launcherOsLabel(undefined)).toBeNull();
     expect(launcherOsLabel(42)).toBeNull();
+  });
+});
+
+
+describe("bot detection", () => {
+  it("recognizes HeadlessChrome without flagging regular Chrome on Linux", () => {
+    const prefix = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) ";
+    expect(isBotUserAgent(prefix + "HeadlessChrome/131.0.0.0 Safari/537.36")).toBe(true);
+    expect(isBotUserAgent(prefix + "Chrome/131.0.0.0 Safari/537.36")).toBe(false);
   });
 });
