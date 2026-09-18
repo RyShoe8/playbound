@@ -7636,6 +7636,108 @@ const facts: Game[] = [
       },
     ],
   },
+  {
+    slug: "opents",
+    title: "OpenTS",
+    tagline: "Open-source reconstruction of Command & Conquer: Tiberian Sun.",
+    description:
+      "OpenTS is an open-source, community-led reconstruction of Command & Conquer: Tiberian Sun 2.03 Firestorm. Built from Electronic Arts' GPL release and careful reverse engineering, OpenTS replaces the 1999 binary with a modern standalone engine featuring high-resolution bgfx rendering, UDP networking, robust mission scripting, and expanded modding capabilities while remaining completely faithful to Westwood's classic RTS mechanics.",
+    developerSlug: "opents-developers",
+    genres: ["RTS", "Strategy"],
+    tags: ["Classic", "Sci-Fi", "Base Building", "Multiplayer", "Mods", "LAN"],
+    aliases: [
+      "Tiberian Sun",
+      "C&C Tiberian Sun",
+      "Command & Conquer Tiberian Sun",
+      "Firestorm",
+      "Open Tiberian Sun",
+    ],
+    license: "Open Source (GPL-3.0)",
+    releaseYear: 2026,
+    sizeMB: 15,
+    platforms: ["Windows"],
+    features: [
+      "Singleplayer",
+      "Multiplayer",
+      "LAN Support",
+      "Mod Support",
+      "Custom Maps",
+      "Story Campaign",
+      "Skirmish",
+    ],
+    maxPlayers: 8,
+    launchMethods: ["install", "server"],
+    steamDeck: true,
+    website: "https://opents-developers.github.io/OpenTS/",
+    githubRepo: "OpenTS-Developers/OpenTS",
+    browserPlayable: false,
+    gameOfWeek: false,
+    hiddenGem: true,
+    art: { from: "#14532d", to: "#22c55e", icon: "Shield" },
+    coverImage: "/games/opents/cover.webp",
+    systemRequirements: {
+      min: "SSE2 CPU (Pentium 4 or newer) · 2 GB RAM · DirectX 11 / OpenGL 3.3 GPU · 1 GB storage",
+      recommended: "Modern quad-core CPU · 4 GB RAM · Dedicated Vulkan / DirectX 11 GPU · 2 GB storage",
+    },
+    hardwareRequirements: {
+      min: {
+        ramMB: 2048,
+        storageMB: 1024,
+        cpuText: "SSE2 CPU",
+        gpuText: "DirectX 11 / OpenGL 3.3 GPU",
+        apis: ["dx11", "opengl"],
+      },
+      recommended: {
+        ramMB: 4096,
+        storageMB: 2048,
+        cpuText: "Modern quad-core CPU",
+        gpuText: "Dedicated Vulkan / DirectX 11 GPU",
+        apis: ["dx11", "vulkan"],
+        gpuTier: "entry",
+      },
+    },
+    launcherInstall: {
+      enabled: true,
+      kind: "github-zip",
+      repo: "OpenTS-Developers/OpenTS",
+      assetPattern: "^OpenTS-.*\\.zip$",
+      exeHint: "Game|OpenTS",
+      knownExePaths: [
+        "%GAMES%\\opents\\Game.exe",
+        "Game.exe",
+      ],
+      versionLabel: "v0.1.0",
+      note: "Extracts the standalone OpenTS engine. Reads Tiberian Sun game data from the Run directory or a legitimate installation.",
+    },
+    firstPlaySteps: [
+      {
+        platform: "all",
+        text: "Click Install in PlayBound Launcher to download and unpack the latest OpenTS standalone engine.",
+      },
+      {
+        platform: "all",
+        text: "Place game data files from a legitimate copy of Command & Conquer: Tiberian Sun (freeware release, original CDs, or Steam / EA App build) into the game folder, or launch with -DATADIR=<path>. If FIRESTRM.INI is present, Firestorm expansion content is enabled automatically.",
+      },
+      {
+        platform: "all",
+        text: "Launch OpenTS to play skirmish, campaign missions, or host UDP multiplayer matches over your local network or VPN.",
+      },
+    ],
+    multiplayerGamingSteps: [
+      {
+        platform: "all",
+        text: "Start a party in PlayBound Connect with friends to coordinate game settings and factions.",
+      },
+      {
+        platform: "all",
+        text: "Ensure all participants have the same OpenTS version and Tiberian Sun game data installed.",
+      },
+      {
+        platform: "all",
+        text: "Host a Network match in-game over UDP port 1234. Connect directly via LAN or over a shared virtual network.",
+      },
+    ],
+  },
 ];
 
 export const games: Game[] = facts.map(withEditorial);

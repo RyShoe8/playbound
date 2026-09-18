@@ -334,6 +334,19 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     // launches directly into the target mod (e.g. Red Alert) instead of modchooser.
     connectArgs: ["Game.Mod=ra", "Launch.Connect={host}:{port}"],
   },
+  opents: {
+    enabled: true,
+    kind: "github-zip",
+    repo: "OpenTS-Developers/OpenTS",
+    assetPattern: "^OpenTS-.*\\.zip$",
+    exeHint: "Game|OpenTS",
+    knownExePaths: [
+      "%GAMES%\\opents\\Game.exe",
+      "Game.exe",
+    ],
+    versionLabel: "v0.1.0",
+    note: "Downloads the standalone OpenTS engine. Reads Tiberian Sun game data from the Run directory or a legitimate installation.",
+  },
   "endless-sky": {
     enabled: true,
     kind: "github-zip",

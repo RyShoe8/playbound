@@ -5247,6 +5247,41 @@ export const editions: EditionSeed[] = [
     hasControllerSupport: true,
     verificationLevel: "official",
   },
+  {
+    gameSlug: "opents",
+    slug: "official",
+    name: "OpenTS Official Release",
+    shortDescription:
+      "Modern standalone open-source reconstruction of Command & Conquer: Tiberian Sun.",
+    description:
+      "The official standalone release of the OpenTS engine. Replaces legacy 16-bit DirectDraw with cross-platform bgfx graphics, replaces IPX with UDP networking, fixes engine limits and vanilla bugs, and provides a modern platform for Tiberian Sun and Firestorm.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: true,
+    sortOrder: 10,
+    links: {
+      website: "https://opents-developers.github.io/OpenTS/",
+      github: "https://github.com/OpenTS-Developers/OpenTS",
+      discord: "https://opents.net/discord",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "github-zip",
+        repo: "OpenTS-Developers/OpenTS",
+        assetPattern: "^OpenTS-.*\\.zip$",
+        exeHint: "Game|OpenTS",
+        knownExePaths: ["Game.exe"],
+        versionLabel: "v0.1.0",
+        note: "Standalone OpenTS engine release from GitHub.",
+      },
+    },
+    platforms: ["Windows"],
+    features: ["Multiplayer", "Skirmish", "Campaign", "bgfx Renderer", "UDP Netcode", "Firestorm"],
+    tags: ["Open Source", "Tiberian Sun", "Firestorm", "C&C"],
+    verificationLevel: "official",
+  },
 ];
 
 /** Clean display name for an edition pill/chip (e.g. removes trailing parenthesized subtitles). */
