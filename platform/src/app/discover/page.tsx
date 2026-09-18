@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { listGames } from "@/lib/catalog";
 import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { DiscoverFilters } from "@/components/DiscoverFilters";
+import DiscoverLoading from "./loading";
 import { getCatalogLiveStats, playingNowBySlug } from "@/lib/liveActivity";
 import type { CatalogLiveStats } from "@/lib/liveActivity";
 import { pageMetadata } from "@/lib/seo";
@@ -76,10 +78,12 @@ export default async function DiscoverPage() {
       </div>
 
       {/* Client-side filters + grid */}
-      <DiscoverFilters
-        games={games}
-        playingNowBySlug={liveStats ? playingNowBySlug(liveStats) : {}}
-      />
+      <Suspense fallback={<DiscoverLoading />}>
+        <DiscoverFilters
+          games={games}
+          playingNowBySlug={liveStats ? playingNowBySlug(liveStats) : {}}
+        />
+      </Suspense>
 
       {/* SEO fallback: ensure crawlers see links to all games even without JS */}
       <noscript>

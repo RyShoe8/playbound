@@ -253,37 +253,38 @@ export function GameCard({
         className
       )}
     >
-      <div className="relative shrink-0 overflow-hidden">
-        <GameArt game={game} className="aspect-[3/4]" />
+      <div className="relative w-full aspect-[3/4] shrink-0 overflow-hidden">
+        <GameArt game={game} className="size-full" />
         <IncompatibleCorner game={game} />
         <div className="absolute top-2 right-2 z-20">
           <LaunchBadge game={game} />
         </div>
       </div>
-      <div className="flex items-start justify-between gap-2 border-t border-border/70 bg-card/90 px-2.5 py-2">
+      <div className="flex flex-1 flex-col justify-between gap-2 border-t border-border/70 bg-card/90 px-2.5 py-2">
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-extrabold tracking-wide text-muted-foreground">{price}</p>
           <CardCategoryTags
             genres={game.genres}
             tags={game.tags}
-            size="md"
-            className="mt-2 min-w-0"
+            size="sm"
+            max={3}
+            className="mt-1.5 min-w-0"
           />
           {displayEditions.length > 0 ? (
-            <div className="mt-1.5 flex flex-wrap items-center gap-1">
-              <span className="text-[12px] font-bold text-primary/75">Editions:</span>
-              {displayEditions.slice(0, 3).map((e) => (
+            <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px]">
+              <span className="font-bold text-primary/75 text-[11px]">Editions:</span>
+              {displayEditions.slice(0, 2).map((e) => (
                 <span
                   key={e.slug}
-                  className="rounded-md border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[12px] font-semibold text-foreground/80 leading-none"
+                  className="max-w-[110px] truncate rounded-md border border-primary/20 bg-primary/10 px-1.5 py-0.5 font-semibold text-foreground/80 leading-tight"
                   title={e.name}
                 >
                   {formatEditionChipName(e.name)}
                 </span>
               ))}
-              {displayEditions.length > 3 ? (
-                <span className="text-[12px] font-medium text-muted-foreground">
-                  +{displayEditions.length - 3}
+              {displayEditions.length > 2 ? (
+                <span className="text-[11px] font-medium text-muted-foreground">
+                  +{displayEditions.length - 2}
                 </span>
               ) : null}
             </div>
