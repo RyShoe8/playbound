@@ -1088,6 +1088,15 @@ export async function createParty(opts: {
           joinedAt: now,
         },
       ],
+      historicalMembers: [
+        {
+          userId: opts.userId,
+          role: "leader",
+          joinedAt: now,
+          leftAt: null,
+        },
+      ],
+      gamesPlayed: gameSlug ? [gameSlug] : [],
       name: normalizePartyName(opts.name),
       leaderOs: opts.leaderOs || null,
       gameSlug,
@@ -1306,7 +1315,10 @@ export async function joinParty(
       $expr: { $lt: [{ $size: "$members" }, "$maxSize"] },
     },
     {
-      $push: { members: { userId: userIdObj || userId, role: "member", ready: false, joinedAt: now } },
+      $push: {
+        members: { userId: userIdObj || userId, role: "member", ready: false, joinedAt: now },
+        historicalMembers: { userId: userIdObj || userId, role: "member", joinedAt: now, leftAt: null },
+      },
       $set: { lastActivity: now },
     }
   );
@@ -1414,10 +1426,26 @@ export async function leaveParty(
   if (newLeaderId) {
     doc.leaderId = new Types.ObjectId(newLeaderId);
   }
-  doc.lastActivity = new Date();
+  const now = new Date();
+  doc.lastActivity = now;
+  if (Array.isArray(doc.historicalMembers)) {
+    for (let i = doc.historicalMembers.length - 1; i >= 0; i--) {
+      const hm = doc.historicalMembers[i];
+      if (String(hm.userId) === userId && !hm.leftAt) {
+        hm.leftAt = now;
+        break;
+      }
+    }
+  }
+
   if (remaining.length === 0) {
     doc.status = "ended";
-    doc.endedAt = new Date();
+    doc.endedAt = now;
+    if (Array.isArray(doc.historicalMembers)) {
+      for (const hm of doc.historicalMembers) {
+        if (!hm.leftAt) hm.leftAt = now;
+      }
+    }
     // Clear invalid-in-flight host states so save() cannot fail schema validation
     // on a dying party (e.g. a stale status from a prior half-finished release).
     if (doc.hosted) {
@@ -1578,6 +1606,11 @@ export async function dropOfflinePartyMembers(now = new Date()): Promise<{ dropp
         // The host running the game session went offline — session is terminated.
         doc.status = "ended";
         doc.endedAt = now;
+        if (Array.isArray(doc.historicalMembers)) {
+          for (const hm of doc.historicalMembers) {
+            if (!hm.leftAt) hm.leftAt = now;
+          }
+        }
         await releasePartyHost(doc);
         await releasePartyLan(doc);
         await doc.save();
@@ -1595,6 +1628,11 @@ export async function dropOfflinePartyMembers(now = new Date()): Promise<{ dropp
     if (leaderGone && mems.length <= 1) {
       doc.status = "ended";
       doc.endedAt = now;
+      if (Array.isArray(doc.historicalMembers)) {
+        for (const hm of doc.historicalMembers) {
+          if (!hm.leftAt) hm.leftAt = now;
+        }
+      }
       await releasePartyHost(doc);
       await releasePartyLan(doc);
       await doc.save();
@@ -1817,6 +1855,12 @@ export async function setPartyGame(
   }
 
   doc.gameSlug = slug;
+  if (!Array.isArray(doc.gamesPlayed)) {
+    doc.gamesPlayed = [];
+  }
+  if (slug && !doc.gamesPlayed.includes(slug)) {
+    doc.gamesPlayed.push(slug);
+  }
   if (switchingGame) {
     /*
      * Leaving this null was fine for a single-edition game, but a game like
@@ -2609,6 +2653,11 @@ export async function endParty(
   doc.status = "ended";
   doc.endedAt = now;
   doc.lastActivity = now;
+  if (Array.isArray(doc.historicalMembers)) {
+    for (const hm of doc.historicalMembers) {
+      if (!hm.leftAt) hm.leftAt = now;
+    }
+  }
   await releasePartyHost(doc);
   await releasePartyLan(doc);
   await doc.save();
@@ -3326,6 +3375,11 @@ export async function sweepStaleParties(now = new Date()) {
     }
     doc.status = "ended";
     doc.endedAt = now;
+    if (Array.isArray(doc.historicalMembers)) {
+      for (const hm of doc.historicalMembers) {
+        if (!hm.leftAt) hm.leftAt = now;
+      }
+    }
     await releasePartyHost(doc);
     await releasePartyLan(doc);
     await doc.save();
