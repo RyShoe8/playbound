@@ -76,7 +76,7 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/alternatives`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${SITE_URL}/compare`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${SITE_URL}/gear`, changeFrequency: "weekly", priority: 0.6 },
-    { url: `${SITE_URL}/servers`, changeFrequency: "hourly", priority: 0.7 },
+    { url: `${SITE_URL}/multiplayer`, changeFrequency: "hourly", priority: 0.8 },
     { url: `${SITE_URL}/connect`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/play-with-friends`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${SITE_URL}/guides`, changeFrequency: "weekly", priority: 0.8 },

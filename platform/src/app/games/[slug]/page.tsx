@@ -108,7 +108,7 @@ type Tab = (typeof tabs)[number];
  * Install stays on the hub as ?tab=install (legacy /install redirects there).
  */
 const PROMOTED_ROUTES = [
-  { key: "servers", label: "servers", href: (slug: string) => `/servers?game=${encodeURIComponent(slug)}` },
+  { key: "servers", label: "servers", href: (slug: string) => `/multiplayer?game=${encodeURIComponent(slug)}` },
   /*
    * Controls is a real URL for the same reason servers is: "<game> keybinds"
    * is a search with intent, and a ?tab= cannot rank because this page's
