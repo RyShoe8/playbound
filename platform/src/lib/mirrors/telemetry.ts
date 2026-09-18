@@ -87,7 +87,8 @@ export async function recordDownloadTelemetry(
       gameSlug: payload.gameSlug,
       version: payload.version,
       filename: payload.filename,
-      sizeBytes: bytes || null,
+      // A failed/invalid download describes a partial file, not the package size.
+      sizeBytes: isSuccess && !isChecksumFailure ? bytes || null : null,
       artifactType: payload.artifactType,
     });
     if (payload.sourceType === "public") {

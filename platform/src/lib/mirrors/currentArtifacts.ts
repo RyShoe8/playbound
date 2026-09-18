@@ -97,13 +97,13 @@ export async function filterCurrentArtifacts<T extends MinimalArtifact>(
     if (!activeGameMap.has(slug)) continue;
     const recipe = activeGameMap.get(slug);
 
-    let matched = arts.find(
-      (a) =>
-        (recipe?.fileName && a.filename === recipe.fileName) ||
-        (recipe?.version && a.version === recipe.version)
-    );
+    // A version label is not a package identity: an add-on and the full game
+    // can report the same version. Never let that hide the exact catalog file.
+    let matched = recipe?.fileName
+      ? arts.find((a) => a.filename === recipe.fileName)
+      : arts.find((a) => recipe?.version && a.version === recipe.version);
 
-    if (!matched) {
+    if (!matched && !recipe?.fileName) {
       matched = arts.slice().sort((a, b) => compareSemVer(b.version, a.version))[0];
     }
 

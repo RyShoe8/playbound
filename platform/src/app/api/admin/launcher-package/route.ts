@@ -7,6 +7,7 @@ import EditionModel from "@/lib/models/Edition";
 import { editions as seedEditions } from "@/lib/data/editions";
 import { archiveArtifactOnHost, archivedArtifactStatusOnHost } from "@/lib/gameHost/client";
 import { requireAdminSession } from "@/lib/requireAdmin";
+import { registerVerifiedUploadedPackage } from "@/lib/mirrors/uploadedPackages";
 
 const payload = z.object({
   gameSlug: z.string().trim().regex(/^[a-z0-9][a-z0-9-]{0,119}$/),
@@ -106,12 +107,14 @@ export async function POST(req: Request) {
 
     await dbConnect();
     const url = mirrorUrl(relativePath);
+    let version = "unknown";
     if (input.editionSlug) {
       let edition = await EditionModel.findOne({ gameSlug: input.gameSlug, slug: input.editionSlug })
-        .select("_id installConfig")
+        .select("_id installConfig version")
         .lean();
       if (!edition) edition = await materializeExactSeed(input.gameSlug, input.editionSlug);
       if (!edition) return NextResponse.json({ error: "Edition not found" }, { status: 404 });
+      version = edition.version || "unknown";
       // Older/watchlist records can explicitly store installConfig as null.
       // Dotted $set paths cannot create children below null, so replace this
       // one config object while preserving any other installer methods.
@@ -140,6 +143,7 @@ export async function POST(req: Request) {
         .select("_id launcherInstall")
         .lean();
       if (!game) return NextResponse.json({ error: "Game not found" }, { status: 404 });
+      version = game.launcherInstall?.versionLabel || "unknown";
       // Watchlist imports commonly have launcherInstall: null. Merge at the
       // object boundary instead of setting children beneath that null value.
       const launcherInstall =
@@ -161,6 +165,10 @@ export async function POST(req: Request) {
       );
       if (!result.matchedCount) return NextResponse.json({ error: "Game not found" }, { status: 404 });
     }
+    await registerVerifiedUploadedPackage({
+      gameSlug: input.gameSlug, editionSlug: input.editionSlug, version,
+      filename: input.fileName, relativePath, sizeBytes: archive.sizeBytes || input.sizeBytes,
+    });
     revalidateTag("catalog", { expire: 0 });
     return NextResponse.json({ status: "verified", url, kind, fileName: input.fileName });
   } catch (err) {

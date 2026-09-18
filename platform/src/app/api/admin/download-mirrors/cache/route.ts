@@ -10,6 +10,7 @@ import {
 } from "@/lib/mirrors/cacheManager";
 import { filterCurrentArtifacts } from "@/lib/mirrors/currentArtifacts";
 import { launcherPlatformFromArtifactId, pickLatestLauncherArtifact } from "@/lib/mirrors/semver";
+import { syncUploadedPackageArtifacts } from "@/lib/mirrors/uploadedPackages";
 
 export async function GET() {
   const { error } = await requireAdminSession();
@@ -17,6 +18,7 @@ export async function GET() {
 
   try {
     await dbConnect();
+    await syncUploadedPackageArtifacts();
     await refreshUploadingVpsArtifacts();
 
     const rawArtifacts = await Artifact.find({}).sort({ r2Status: 1, r2PromotionScore: -1 });
