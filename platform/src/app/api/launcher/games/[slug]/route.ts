@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { unstable_rethrow } from "next/navigation";
 import { getGame } from "@/lib/catalog";
+import { deriveInstallSteps } from "@/lib/enrich";
 import { absoluteMediaUrl, sizeLabelFromMB, hasServerBrowser, supportsMultiplayer } from "@/lib/launcherInstall";
 import { listMods } from "@/lib/mods";
 import { listDevelopers } from "@/lib/developers";
@@ -103,6 +104,14 @@ export async function GET(
         hardwareRequirements: game.hardwareRequirements || null,
         // Same block the web controls page renders, so the two cannot drift.
         controls: game.controls || null,
+        installSteps:
+          Array.isArray(game.installSteps) && game.installSteps.length > 0
+            ? game.installSteps
+            : deriveInstallSteps(game),
+        firstPlaySteps: Array.isArray(game.firstPlaySteps) ? game.firstPlaySteps : [],
+        multiplayerGamingSteps: Array.isArray(game.multiplayerGamingSteps)
+          ? game.multiplayerGamingSteps
+          : [],
         faq: Array.isArray(game.faq) ? game.faq : [],
         bestFor: Array.isArray(game.bestFor) ? game.bestFor : [],
         notFor: Array.isArray(game.notFor) ? game.notFor : [],

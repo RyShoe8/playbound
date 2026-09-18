@@ -6574,15 +6574,28 @@ export const editorial: Record<string, GameEditorial> = {
     installSteps: [
       {
         platform: "all",
-        text: "Click Install in the PlayBound Launcher to extract the official client package for your operating system.",
+        text: "Click Install in the PlayBound Launcher to automatically download and extract the official native desktop client.",
       },
       {
         platform: "windows",
-        text: "Windows 64-bit is installed by default. If running an older 32-bit Windows system, select the Windows 32-bit edition in PlayBound.",
+        text: "On Windows, PlayBound installs the 64-bit client by default. If running an older 32-bit machine, select the Windows 32-bit Legacy edition in PlayBound. For manual installs, extract pbo-windows.zip and launch pbo.exe.",
+      },
+      {
+        platform: "linux",
+        text: "On Linux, download the official native tarball and extract it, or install directly through PlayBound Launcher. Mark the binary executable before running.",
+        command: "tar -xzf pbo-linux.tar.gz && chmod +x pbo && ./pbo",
+      },
+      {
+        platform: "macos",
+        text: "On macOS, open the official pbo-mac.dmg disk image and drag the Pokémon Blaze Online app into your Applications folder. On first launch, right-click and select Open if macOS Gatekeeper prompts you.",
       },
       {
         platform: "all",
-        text: "Launch the game, click Register on the title screen to create your free game account, and step into the world.",
+        text: "Launch the game and click Register on the title screen (or register online at pokemonblazeonline.com) to create your free trainer account.",
+      },
+      {
+        platform: "all",
+        text: "Customize your trainer sprite, select your starting region (Kanto, Johto, Hoenn, or Sinnoh), and step into the persistent MMO world.",
       },
     ],
     faq: [
@@ -6642,19 +6655,32 @@ export const editorial: Record<string, GameEditorial> = {
     installSteps: [
       {
         platform: "all",
-        text: "Click Install in the PlayBound Launcher to extract the official portable PokeMMO client.",
+        text: "Click Install in the PlayBound Launcher to extract the official portable PokeMMO client package into your games directory.",
+      },
+      {
+        platform: "windows",
+        text: "On Windows, PlayBound runs the official PokeMMO.exe. Java is packaged with the client, so no separate JRE installation is required.",
+      },
+      {
+        platform: "linux",
+        text: "On Linux, install OpenJDK 11 or newer if not already present, make the shell script executable, and launch PokeMMO.sh.",
+        command: "chmod +x PokeMMO.sh && ./PokeMMO.sh",
+      },
+      {
+        platform: "macos",
+        text: "On macOS, open the PokeMMO client bundle and launch PokeMMO. Ensure Java 11+ is installed on your system if running the portable tarball.",
       },
       {
         platform: "all",
-        text: "Launch the game. The initial setup window will prompt you to select your legal ROM files.",
+        text: "Provide Required Base ROM: On first launch, the ROM management window will open. You MUST provide a clean, legal Nintendo DS dump of Pokémon Black Version or Pokémon White Version (v1.0). This supplies the core game engine, modern graphics, and battle system.",
       },
       {
         platform: "all",
-        text: "Point to Pokémon Black or White (v1) as the mandatory base game file. Optionally select FireRed, Emerald, Platinum, or HeartGold/SoulSilver to unlock additional regions and visual upgrades.",
+        text: "Add Optional Region ROMs: To travel to other regions and unlock extra visuals, provide: Pokémon FireRed (Kanto storyline), Pokémon Emerald (Hoenn & Battle Frontier), Pokémon Platinum (Sinnoh region), and Pokémon HeartGold / SoulSilver (walking Pokémon overworld follower sprites). Place them in the 'roms/' folder or select them in the client dialog.",
       },
       {
         platform: "all",
-        text: "Log in with your free PokeMMO account, select your server channel, and begin your journey.",
+        text: "Register a free account at pokemmo.com/account, log in with your trainer credentials, select your server channel, and start your journey.",
       },
     ],
     faq: [

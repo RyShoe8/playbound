@@ -8,3 +8,4 @@ Files:
 - `DDraw.dll`, `D3DImm.dll`, `D3D8.dll`, `D3D9.dll` (dgVoodoo2 v2.87.4 MS/x86)
 - `dx7vb.dll` (Microsoft DirectX 7 for Visual Basic, enables DirectDraw COM class for FreeTrain)
 - `dx8vb.dll` (Microsoft DirectX 8 for Visual Basic, enables DirectAudio.net COM class for FreeTrain sound effects & departure bells)
+- `DirectDraw.AlphaBlend.dll` (FreeTrain AlphaBlender COM component for org.kohsuke.directdraw.Surface alpha blending)
