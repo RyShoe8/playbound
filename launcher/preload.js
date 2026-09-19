@@ -185,6 +185,7 @@ contextBridge.exposeInMainWorld("playbound", {
   refreshCatalog: () => ipcRenderer.invoke("get-catalog", { refresh: true }),
   getServers: (slug) => ipcRenderer.invoke("get-servers", slug),
   getServerIndex: () => ipcRenderer.invoke("get-server-index"),
+  getMultiplayerActivity: (opts) => ipcRenderer.invoke("get-multiplayer-activity", opts || {}),
   getPartySync: (opts) => ipcRenderer.invoke("get-party-sync", opts || {}),
 
   // In-game overlay. See docs/server-control.md.

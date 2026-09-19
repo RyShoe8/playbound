@@ -58,20 +58,19 @@ test("cannot be broken out of with a quote", () => {
   assert.ok(!/(^|[^'])'([^']|$)/.test(inner), `unpaired quote survived: ${quoted}`);
 });
 
-test("builds a Start-Process command that elevates and waits", () => {
+test("builds a command that elevates and waits", () => {
   const cmd = buildElevatedStartProcess("C:\\Games\\MS\\msawminloader.exe", [], "C:\\Games\\MS");
-  assert.ok(cmd.includes("-Verb RunAs"), "must elevate");
-  // Without -Wait the PowerShell process exits at once and the early-exit
-  // watch reports a launch failure for a game that started fine.
-  assert.ok(cmd.includes("-Wait"), "must wait for the game to exit");
+  assert.ok(cmd.includes("Verb = 'RunAs'"), "must elevate");
+  assert.ok(cmd.includes("ErrorDialog = $true"), "must set ErrorDialog to avoid Error 50");
+  assert.ok(cmd.includes("$p.WaitForExit()"), "must wait for the game to exit");
   assert.ok(cmd.includes("'C:\\Games\\MS\\msawminloader.exe'"), "path must be quoted verbatim");
-  assert.ok(cmd.includes("-WorkingDirectory 'C:\\Games\\MS'"));
-  assert.ok(!cmd.includes("-ArgumentList"), "no args means no ArgumentList");
+  assert.ok(cmd.includes("$psi.WorkingDirectory = 'C:\\Games\\MS'"));
+  assert.ok(!cmd.includes("$psi.Arguments"), "no args means no Arguments assignment");
 });
 
-test("passes arguments as a quoted, comma-separated list", () => {
+test("passes arguments properly formatted", () => {
   const cmd = buildElevatedStartProcess("C:\\g\\a.exe", ["+connect", "1.2.3.4:27015"], "C:\\g");
-  assert.ok(cmd.includes("-ArgumentList '+connect','1.2.3.4:27015'"), cmd);
+  assert.ok(cmd.includes("$psi.Arguments = '+connect 1.2.3.4:27015'"), cmd);
 });
 
 test("quotes a path containing spaces and an apostrophe", () => {
@@ -81,7 +80,8 @@ test("quotes a path containing spaces and an apostrophe", () => {
     "C:\\Games\\Rock 'n' Roll"
   );
   assert.ok(cmd.includes("'C:\\Games\\Rock ''n'' Roll\\game.exe'"), cmd);
-  assert.ok(cmd.includes("-WorkingDirectory 'C:\\Games\\Rock ''n'' Roll'"), cmd);
+  assert.ok(cmd.includes("$psi.WorkingDirectory = 'C:\\Games\\Rock ''n'' Roll'"), cmd);
+  assert.ok(cmd.includes("$psi.Arguments = '-windowed'"), cmd);
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

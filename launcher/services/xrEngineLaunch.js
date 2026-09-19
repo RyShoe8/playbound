@@ -35,15 +35,42 @@ function xrEngineWorkingDirectory(launchPath, gameSlug) {
 }
 
 /**
- * Lost Alpha Developer's Cut XR_3DA.exe embeds a requireAdministrator manifest
- * or requires elevated access to write its logs/appdata in Program Files / game root.
+ * Lost Alpha Developer's Cut XR_3DA.exe embeds a requireAdministrator manifest,
+ * but __COMPAT_LAYER=RunAsInvoker suppresses that requirement cleanly without UAC.
+ * Elevation is not needed and avoided so direct child tracking succeeds.
  */
-function isLostAlphaElevatedLaunch(launchPath, gameSlug) {
-  if (process.platform !== "win32") return false;
+function isLostAlphaElevatedLaunch(_launchPath, _gameSlug) {
+  return false;
+}
+
+/**
+ * Standard launch arguments for Lost Alpha.
+ * -noprefetch prevents 32-bit address space exhaustion and crashes during loading.
+ * -nospawncheck disables redundant all-spawn verification passes.
+ */
+function xrEngineDefaultArgs(launchPath, gameSlug) {
   const slug = String(gameSlug || "").toLowerCase();
-  if (slug === "stalker-lost-alpha" || slug === "lost-alpha") return true;
+  if (slug === "stalker-lost-alpha" || slug === "lost-alpha") {
+    return ["-noprefetch", "-nospawncheck"];
+  }
   const p = String(launchPath || "").toLowerCase();
-  return p.includes("lost alpha") && isXr3daClient(launchPath);
+  if (p.includes("lost alpha") && isXr3daClient(launchPath)) {
+    return ["-noprefetch", "-nospawncheck"];
+  }
+  return [];
+}
+
+/**
+ * Environment variables for X-Ray engine launches.
+ * Sets __COMPAT_LAYER=RunAsInvoker to suppress manifest elevation demands on
+ * user-directory installs when elevated launch is not used.
+ */
+function xrEngineEnvironment(launchPath, gameSlug) {
+  if (process.platform !== "win32") return {};
+  if (!isXrEngineLaunch(launchPath, gameSlug)) return {};
+  return {
+    __COMPAT_LAYER: "RunAsInvoker",
+  };
 }
 
 module.exports = {
@@ -52,5 +79,8 @@ module.exports = {
   xrEnginePackageRoot,
   xrEngineWorkingDirectory,
   isLostAlphaElevatedLaunch,
+  xrEngineDefaultArgs,
+  xrEngineEnvironment,
 };
+
 

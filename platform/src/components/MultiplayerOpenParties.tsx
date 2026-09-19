@@ -11,13 +11,28 @@ type Props = {
   signedIn: boolean;
   onStartParty?: () => void;
   initialParties?: PublicPartyPayload[];
+  installedGameSlugs?: string[];
+  installedOnly?: boolean;
 };
 
-export function MultiplayerOpenParties({ signedIn, onStartParty, initialParties }: Props) {
+export function MultiplayerOpenParties({
+  signedIn,
+  onStartParty,
+  initialParties,
+  installedGameSlugs,
+  installedOnly = false,
+}: Props) {
   const [parties, setParties] = useState<PublicPartyPayload[]>(initialParties || []);
   const [loading, setLoading] = useState(!initialParties);
   const { joinParty, activeParty } = usePartyStore();
   const [joiningId, setJoiningId] = useState<string | null>(null);
+
+  const displayedParties = parties.filter((p) => {
+    if (installedOnly && installedGameSlugs && installedGameSlugs.length > 0) {
+      return p.gameSlug && installedGameSlugs.includes(p.gameSlug);
+    }
+    return true;
+  });
 
   useEffect(() => {
     let mounted = true;
@@ -56,13 +71,17 @@ export function MultiplayerOpenParties({ signedIn, onStartParty, initialParties 
     );
   }
 
-  if (parties.length === 0) {
+  if (displayedParties.length === 0) {
     return (
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-dashed border-border/70 bg-secondary/10 p-5">
         <div>
-          <h3 className="text-sm font-bold text-foreground">No Open Parties Active</h3>
+          <h3 className="text-sm font-bold text-foreground">
+            {installedOnly ? "No Open Parties for Installed Games" : "No Open Parties Active"}
+          </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Be the first to open a party! Open parties appear here for any signed-in player to discover and join.
+            {installedOnly
+              ? "None of your currently installed games have open parties right now."
+              : "Be the first to open a party! Open parties appear here for any signed-in player to discover and join."}
           </p>
         </div>
         {signedIn && onStartParty && (
@@ -84,7 +103,7 @@ export function MultiplayerOpenParties({ signedIn, onStartParty, initialParties 
       <div className="flex items-center justify-between">
         <h2 className="text-base font-extrabold tracking-tight flex items-center gap-2">
           <Users className="size-4 text-primary" />
-          Open PlayBound Parties ({parties.length})
+          Open PlayBound Parties ({displayedParties.length})
         </h2>
         {signedIn && onStartParty && (
           <button
@@ -99,7 +118,7 @@ export function MultiplayerOpenParties({ signedIn, onStartParty, initialParties 
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {parties.map((party) => {
+        {displayedParties.map((party) => {
           const isMember = activeParty?.id === party.id;
           const count = party.memberCount || 1;
           const isFull = count >= party.maxSize;

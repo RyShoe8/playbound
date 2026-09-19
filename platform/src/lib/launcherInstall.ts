@@ -139,6 +139,8 @@ export type LauncherInstall = {
    * overlaid. Already honoured by the launcher and by edition install configs.
    */
   requiresBaseDir?: boolean;
+  /** Initial window size to set/center when launched. */
+  windowSize?: { width: number; height: number; processName?: string } | null;
 };
 
 /** Shape returned to the Electron launcher (catalog row). */
@@ -201,6 +203,8 @@ export type LauncherCatalogEntry = {
   needsDotNetMajor?: number;
   /** Ask the player to locate a copy they own before installing anything. */
   requiresBaseDir?: boolean;
+  /** Initial window size to set/center when launched. */
+  windowSize?: { width: number; height: number; processName?: string } | null;
 };
 
 export function absoluteMediaUrl(pathOrUrl: string | null | undefined, origin: string): string | null {
@@ -393,6 +397,7 @@ export function toLauncherCatalogEntry(input: {
    * only the mapping was missing.
    */
   if (li.requiresBaseDir) entry.requiresBaseDir = true;
+  if (li.windowSize) entry.windowSize = li.windowSize;
   return entry;
 }
 

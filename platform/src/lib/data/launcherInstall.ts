@@ -1604,7 +1604,8 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
   "stalker-lost-alpha": {
     enabled: true,
     kind: "external",
-    needsAdmin: true,
+    needsAdmin: false,
+    launchArgs: ["-noprefetch", "-nospawncheck"],
     url: "https://www.moddb.com/mods/lost-alpha/downloads/lost-alpha-developers-cut-v14007",
     exeHint: "XR_3DA",
     knownExePaths: [
@@ -1625,12 +1626,17 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     enabled: true,
     kind: "external",
     url: "https://www.moddb.com/mods/stalker-anomaly",
-    exeHint: "AnomalyDX11EXE|AnomalyDX9EXE|AnomalyLauncher",
+    exeHint: "AnomalyLauncher|AnomalyDX11|AnomalyDX10|AnomalyDX9|AnomalyDX8|AnomalyDX11AVX|AnomalyDX10AVX|AnomalyDX9AVX|AnomalyDX8AVX|AnomalyDX11EXE|AnomalyDX9EXE",
     knownExePaths: [
+      "AnomalyLauncher.exe",
+      "bin\\AnomalyDX11.exe",
+      "bin\\AnomalyDX11AVX.exe",
+      "bin\\AnomalyDX10.exe",
+      "bin\\AnomalyDX10AVX.exe",
+      "bin\\AnomalyDX9.exe",
+      "bin\\AnomalyDX8.exe",
       "bin\\AnomalyDX11EXE.exe",
       "bin\\AnomalyDX9EXE.exe",
-      "AnomalyLauncher.exe",
-      "AnomalyDX11EXE.exe",
     ],
     note: "Standalone ModDB install — no Call of Pripyat GOG copy required. For G.A.M.M.A. hardcore, install Anomaly first then use edition gamma → https://github.com/Grokitach/Stalker_GAMMA/wiki/Installing-GAMMA",
   },
@@ -1692,6 +1698,11 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
       "CastlevaniaReVamped.exe",
     ],
     registryTitles: ["Castlevania ReVamped"],
+    windowSize: {
+      width: 1280,
+      height: 720,
+      processName: "Castlevania ReVamped",
+    },
     note: "Extracts standalone Metroidvania engine. Native XInput and DirectInput gamepad support out of the box.",
   },
   "hawken-hawkening": {

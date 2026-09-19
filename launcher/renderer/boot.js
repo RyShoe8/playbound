@@ -60,6 +60,7 @@ const KEEP_ALIVE = new Set([
   "mods",
   "gear",
   "events",
+  "multiplayer",
   "servers",
   "friends",
   "settings",
@@ -95,6 +96,7 @@ const viewLoaders = {
   mods: () => import("./views/mods.js"),
   events: () => import("./views/events.js"),
   eventDetail: () => import("./views/events.js"),
+  multiplayer: () => import("./views/multiplayer.js"),
   servers: () => import("./views/servers.js"),
   settings: () => import("./views/settings.js"),
   gameDetail: () => import("./views/detail.js"),
@@ -132,13 +134,17 @@ function applyNavChrome(viewName) {
           ? "events"
           : viewName === "gearDetail"
             ? "gear"
-            : viewName;
+            : viewName === "servers"
+              ? "multiplayer"
+              : viewName;
   navBtns.forEach((btn) => {
     const isGamesParent = btn.dataset.view === "games" && !btn.classList.contains("sub-nav-btn");
     const isEventsParent = btn.dataset.view === "events";
     const isGearParent = btn.dataset.view === "gear";
+    const isMultiplayerParent = btn.dataset.view === "multiplayer";
     const active =
       (Boolean(navKey) && btn.dataset.view === navKey) ||
+      (isMultiplayerParent && (viewName === "multiplayer" || viewName === "servers")) ||
       (isEventsParent && (viewName === "events" || viewName === "eventDetail")) ||
       (isGearParent && (viewName === "gear" || viewName === "gearDetail")) ||
       (isGamesParent &&
@@ -163,6 +169,7 @@ function routeKeyFor(viewName, params = {}) {
   if (viewName === "gearDetail") return `gearDetail:${params.slug}`;
   if (viewName === "editionDetail") return `editionDetail:${params.gameSlug}:${params.editionSlug}`;
   if (viewName === "eventDetail") return `eventDetail:${params.eventId}`;
+  if (viewName === "multiplayer") return `multiplayer:${params.tab || "overview"}`;
   if (viewName === "editions") return `editions:${params.gameSlug || editionsContextSlug() || ""}`;
   return viewName;
 }
@@ -199,6 +206,9 @@ export async function goBack() {
 }
 
 export async function navigateTo(viewName, params = {}) {
+  if (viewName === "servers") {
+    return navigateTo("multiplayer", { tab: "servers", ...params });
+  }
   if (viewName === "editions" && !editionsContextSlug() && !params.gameSlug) {
     return navigateTo("games");
   }
@@ -240,6 +250,7 @@ export async function navigateTo(viewName, params = {}) {
   }
   if (viewName === "editions") return api.renderEditionsView?.(params.gameSlug);
   if (viewName === "mods") return api.renderModsView?.();
+  if (viewName === "multiplayer") return api.renderMultiplayerView?.(params);
   if (viewName === "servers") return api.renderServersView?.();
   if (viewName === "events") return api.renderEventsView?.();
   if (viewName === "eventDetail") {
