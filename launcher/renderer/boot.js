@@ -664,14 +664,16 @@ function wireMainEvents() {
       setStatus(`${titlePrefix}${prefix} ${detail}${queuedText}`);
       setProgress(pct != null ? pct : "indeterminate");
     } else if (phase === "extracting") {
-      const what = addon ? addon : "game files";
+      const actionText = message
+        ? message.replace(/[.…]+$/, "").replace(/\s*\d{1,3}%$/, "")
+        : `Unpacking ${addon ? String(addon).replace(/^unpacking\s+/i, "").replace(/[.…]+$/, "") : "game files"}`;
       if (data.pct != null) {
-        setStatus(`${titlePrefix}Unpacking ${what}… ${data.pct}%${queuedText}`);
+        setStatus(`${titlePrefix}${actionText}… ${data.pct}%${queuedText}`);
         setProgress(data.pct);
       } else {
         tickPhase(
           phaseStartedAt,
-          withElapsed(`${titlePrefix}Unpacking ${what}… large games take a few minutes`)
+          withElapsed(`${titlePrefix}${actionText}… large games take a few minutes`)
         );
         setProgress("indeterminate");
       }
@@ -688,6 +690,10 @@ function wireMainEvents() {
       setProgress(null);
     } else if (phase === "cancelled") {
       setStatus(message || `${titlePrefix}Install cancelled.`);
+      setProgress(null);
+    } else if (phase === "error") {
+      stopPhaseTicker();
+      setStatus(message || `${titlePrefix}Install failed.`, true);
       setProgress(null);
     }
   });

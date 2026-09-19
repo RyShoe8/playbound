@@ -6884,6 +6884,12 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
       task.status = "error";
       task.phase = "error";
       task.message = err?.message || String(err);
+      sendProgress({
+        phase: "error",
+        slug,
+        title,
+        message: err?.message || String(err),
+      });
       throw err;
     } finally {
       if (activeInstallTask === task) {
@@ -7065,12 +7071,20 @@ async function openInstallerPath(installerPath, gameSlug, opts = {}) {
     const sourcemodsDir = path.join(steamBase, "steamapps", "sourcemods");
     await unpackGoldenEyeSource(installerPath, sourcemodsDir, {
       sevenZipBin: sevenZipBinary(),
-      onProgress: (msg) => {
-        sendProgress({
-          phase: "extracting",
-          slug: gameSlug,
-          addon: msg,
-        });
+      onProgress: (progress) => {
+        if (typeof progress === "string") {
+          sendProgress({
+            phase: "extracting",
+            slug: gameSlug,
+            addon: progress,
+          });
+        } else if (progress && typeof progress === "object") {
+          sendProgress({
+            phase: "extracting",
+            slug: gameSlug,
+            ...progress,
+          });
+        }
       },
     });
     return;
@@ -8459,12 +8473,10 @@ async function maybeRepairDaggerfallUnityInstall(slug, info, edSlug) {
         await fsp.mkdir(arena2Dir, { recursive: true });
         const bin = sevenZipBinary();
         if (bin) {
-          await new Promise((resolve, reject) => {
-            const cp = spawn(bin, ["x", tempZip, "-o" + gameDir, "-y"], {
-              windowsHide: true,
-            });
-            cp.on("close", (code) => (code === 0 ? resolve() : reject(new Error(`7z exit ${code}`))));
-            cp.on("error", reject);
+          await extract7z(tempZip, gameDir, (pct) => {
+            if (typeof sendProgress === "function") {
+              sendProgress({ phase: "extracting", addon: "Daggerfall Base Game Data", pct });
+            }
           });
         }
       } finally {

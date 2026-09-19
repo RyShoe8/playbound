@@ -96,6 +96,78 @@ function isGoldenEyeInstaller(filePath, slug) {
   );
 }
 
+function run7zWithProgress(spawnFn, bin, args, onPercent) {
+  return new Promise((resolve, reject) => {
+    const finalArgs = [...args];
+    if (!finalArgs.includes("-bso0")) finalArgs.push("-bso0");
+    if (!finalArgs.includes("-bsp1")) finalArgs.push("-bsp1");
+
+    const child = spawnFn(bin, finalArgs, { windowsHide: true });
+    let last = -1;
+    let err = "";
+    let stdoutErrors = "";
+
+    if (typeof onPercent === "function" && child?.stdout) {
+      child.stdout.on?.("data", (chunk) => {
+        const matches = String(chunk).match(/(\d{1,3})%/g);
+        if (!matches?.length) return;
+        const pct = Number(matches[matches.length - 1].replace("%", ""));
+        if (!Number.isFinite(pct) || pct === last) return;
+        last = pct;
+        onPercent(Math.min(100, Math.max(0, pct)));
+      });
+    }
+
+    if (child?.stderr) {
+      child.stderr.on?.("data", (d) => (err += d));
+    }
+    if (child?.stdout) {
+      child.stdout.on?.("data", (d) => {
+        const text = String(d);
+        if (/error|fail|cannot|disk full|space|corrupt|damaged|break signaled/i.test(text)) {
+          stdoutErrors += text;
+        }
+      });
+    }
+
+    let settled = false;
+    const finish = (errOrNull) => {
+      if (settled) return;
+      settled = true;
+      if (errOrNull) reject(errOrNull);
+      else resolve();
+    };
+
+    if (child) {
+      child.on?.("error", (e) => finish(e));
+      child.on?.("exit", (code) => {
+        if (code === 0 || code == null) finish(null);
+        else {
+          const detail = (err || stdoutErrors).trim();
+          finish(
+            new Error(
+              detail ? `7-Zip failed (${code}): ${detail}` : `7-Zip failed with exit code ${code}`
+            )
+          );
+        }
+      });
+      child.on?.("close", (code) => {
+        if (code === 0 || code == null) finish(null);
+        else {
+          const detail = (err || stdoutErrors).trim();
+          finish(
+            new Error(
+              detail ? `7-Zip failed (${code}): ${detail}` : `7-Zip failed with exit code ${code}`
+            )
+          );
+        }
+      });
+    } else {
+      finish(new Error("Failed to spawn 7-Zip process"));
+    }
+  });
+}
+
 /**
  * Unpacks GoldenEye: Source mod files into Steam's sourcemods folder.
  *
@@ -123,49 +195,151 @@ async function unpackGoldenEyeSource(installerPath, sourcemodsDir, opts = {}) {
   }
 
   await fspImpl.mkdir(sourcemodsDir, { recursive: true });
-  const targetGameInfo = path.join(sourcemodsDir, MOD_FOLDER, "gameinfo.txt");
+  const targetModDir = path.join(sourcemodsDir, MOD_FOLDER);
+  const targetGameInfo = path.join(targetModDir, "gameinfo.txt");
   if (fsImpl.existsSync(targetGameInfo)) {
     return { ok: true, targetGameInfo, skipped: true };
   }
 
+  const emitProgress = (payload) => {
+    if (typeof onProgress !== "function") return;
+    const item = {
+      ...payload,
+      toString() {
+        return this.message || this.addon || "";
+      },
+    };
+    onProgress(item);
+  };
+
+  // Self-heal: If an earlier run extracted loose files into sourcemods/ instead of
+  // sourcemods/gesource/, move them into the proper mod directory.
+  const looseGameInfo = path.join(sourcemodsDir, "gameinfo.txt");
+  if (fsImpl.existsSync(looseGameInfo)) {
+    try {
+      let isGes = false;
+      if (typeof fsImpl.readFileSync === "function") {
+        const header = fsImpl.readFileSync(looseGameInfo, "utf8");
+        isGes = header.includes("GoldenEye: Source");
+      } else {
+        isGes = true;
+      }
+      if (isGes) {
+        await fspImpl.mkdir(targetModDir, { recursive: true });
+        const items = await fspImpl.readdir(sourcemodsDir);
+        for (const item of items) {
+          if (item.toLowerCase() === MOD_FOLDER.toLowerCase()) continue;
+          const src = path.join(sourcemodsDir, item);
+          const dst = path.join(targetModDir, item);
+          try {
+            await fspImpl.rename(src, dst);
+          } catch {
+            await fspImpl.cp(src, dst, { recursive: true, force: true }).catch(() => {});
+            await fspImpl.rm(src, { recursive: true, force: true }).catch(() => {});
+          }
+        }
+        if (fsImpl.existsSync(targetGameInfo)) {
+          emitProgress({
+            step: 1,
+            totalSteps: 1,
+            pct: 100,
+            stagePct: 100,
+            addon: "GoldenEye: Source into Steam sourcemods",
+            message: "GoldenEye: Source ready in Steam sourcemods",
+          });
+          return { ok: true, targetGameInfo, migrated: true };
+        }
+      }
+    } catch {
+      /* proceed with normal extraction if migration fails */
+    }
+  }
+
   const isBare7z = /\.7z$/i.test(installerPath);
+  const totalSteps = isBare7z ? 1 : 2;
   const tempDir = path.join(osImpl.tmpdir(), `gesource-unpack-${Date.now()}`);
 
   try {
     let archiveToUnpack = installerPath;
     if (!isBare7z) {
       await fspImpl.mkdir(tempDir, { recursive: true });
-      onProgress("Extracting GoldenEye: Source archive…");
-      await new Promise((resolve, reject) => {
-        const child = spawnFn(
-          bin,
-          ["e", String(installerPath), "gesource.7z", `-o${tempDir}`, "-y"],
-          { windowsHide: true }
-        );
-        child.on("error", reject);
-        child.on("exit", (code) => {
-          if (code === 0 || code == null) resolve();
-          else reject(new Error(`Failed to extract gesource.7z from installer (exit code ${code})`));
-        });
+      emitProgress({
+        step: 1,
+        totalSteps: 2,
+        pct: 0,
+        stagePct: 0,
+        addon: "installer archive (step 1 of 2)",
+        message: "Extracting installer archive (step 1 of 2)",
       });
+      await run7zWithProgress(
+        spawnFn,
+        bin,
+        ["e", String(installerPath), "gesource.7z", `-o${tempDir}`, "-y"],
+        (stagePct) => {
+          // Step 1 represents 0% - 15% of total unpack work
+          const pct = Math.min(15, Math.round(stagePct * 0.15));
+          emitProgress({
+            step: 1,
+            totalSteps: 2,
+            pct,
+            stagePct,
+            addon: "installer archive (step 1 of 2)",
+            message: "Extracting installer archive (step 1 of 2)",
+          });
+        }
+      );
       archiveToUnpack = path.join(tempDir, "gesource.7z");
       if (!fsImpl.existsSync(archiveToUnpack)) {
         throw new Error("gesource.7z was not found inside the GoldenEye: Source installer.");
       }
     }
 
-    onProgress("Unpacking GoldenEye: Source into Steam sourcemods…");
-    await new Promise((resolve, reject) => {
-      const child = spawnFn(
-        bin,
-        ["x", String(archiveToUnpack), `-o${sourcemodsDir}`, "-y"],
-        { windowsHide: true }
-      );
-      child.on("error", reject);
-      child.on("exit", (code) => {
-        if (code === 0 || code == null) resolve();
-        else reject(new Error(`Failed to unpack gesource into sourcemods (exit code ${code})`));
-      });
+    await fspImpl.mkdir(targetModDir, { recursive: true });
+
+    emitProgress({
+      step: isBare7z ? 1 : 2,
+      totalSteps,
+      pct: isBare7z ? 0 : 15,
+      stagePct: 0,
+      addon: isBare7z
+        ? "GoldenEye: Source into Steam sourcemods"
+        : "GoldenEye: Source into Steam sourcemods (step 2 of 2)",
+      message: isBare7z
+        ? "Unpacking GoldenEye: Source into Steam sourcemods"
+        : "Unpacking GoldenEye: Source into Steam sourcemods (step 2 of 2)",
+    });
+
+    await run7zWithProgress(
+      spawnFn,
+      bin,
+      ["x", String(archiveToUnpack), `-o${targetModDir}`, "-y"],
+      (stagePct) => {
+        // Step 2 represents 15% - 100% of total unpack work (or 0-100% for bare 7z)
+        const pct = isBare7z ? stagePct : Math.min(100, Math.round(15 + stagePct * 0.85));
+        emitProgress({
+          step: isBare7z ? 1 : 2,
+          totalSteps,
+          pct,
+          stagePct,
+          addon: isBare7z
+            ? "GoldenEye: Source into Steam sourcemods"
+            : "GoldenEye: Source into Steam sourcemods (step 2 of 2)",
+          message: isBare7z
+            ? "Unpacking GoldenEye: Source into Steam sourcemods"
+            : "Unpacking GoldenEye: Source into Steam sourcemods (step 2 of 2)",
+        });
+      }
+    );
+
+    emitProgress({
+      step: totalSteps,
+      totalSteps,
+      pct: 100,
+      stagePct: 100,
+      addon: isBare7z
+        ? "GoldenEye: Source into Steam sourcemods"
+        : "GoldenEye: Source into Steam sourcemods (step 2 of 2)",
+      message: "Unpacking GoldenEye: Source into Steam sourcemods complete",
     });
 
     if (!fsImpl.existsSync(targetGameInfo)) {
