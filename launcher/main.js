@@ -2332,6 +2332,8 @@ function catalogEntryFromEdition(edition) {
       needsAdmin: Boolean(cfg.needsAdmin),
       needsDirectDrawWrapper: Boolean(cfg.needsDirectDrawWrapper),
       requiresBaseDir: Boolean(cfg.requiresBaseDir),
+      baseExeHint: cfg.baseExeHint || undefined,
+      overlayBrowseUrl: cfg.overlayBrowseUrl || undefined,
       checksumMd5: cfg.checksumMd5 || cfg.md5 || undefined,
       modLoader: cfg.modLoader || undefined,
       art: Array.isArray(edition.art) ? edition.art : ["#312e81", "#a78bfa"],
@@ -8519,30 +8521,72 @@ async function maybeOpenEditionPostInstallHandoff(entry, gameDir) {
  * the edition dir, then merge an overlay zip (P99Files) without wiping assets.
  */
 async function installLocateThenZip(slug, entry, editionExtra) {
-  const baseExeHint = entry.exeHint || "eqgame";
-  const result = await dialog.showOpenDialog(win || undefined, {
-    title: `Select the existing ${entry.title || slug} folder (${baseExeHint})`,
-    properties: ["openDirectory"],
-  });
-  if (result.canceled || !result.filePaths?.[0]) {
-    const wiki =
-      entry?.editionLinks?.wiki ||
-      entry?.note ||
-      "https://www.project1999.com/";
-    try {
-      await safeOpenExternal(
-        typeof wiki === "string" && wiki.startsWith("http") ? wiki : "https://wiki.project1999.com/"
-      );
-    } catch {
-      /* ignore */
+  const baseExeHint =
+    entry.baseExeHint ||
+    (/eqgame/i.test(entry.exeHint) ? "eqgame" : entry.exeHint) ||
+    "eqgame";
+
+  let sourceDir = null;
+  const state = loadState();
+  const gameRecord = state[slug];
+  if (gameRecord) {
+    const candidates = [
+      gameRecord.editions?.[DEFAULT_EDITION_SLUG]?.dir,
+      gameRecord.dir,
+      gameRecord.exe ? path.dirname(gameRecord.exe) : null,
+      ...(listEditionEntries(gameRecord)
+        .filter((e) => e.editionSlug !== editionExtra?.editionSlug)
+        .map((e) => e.dir)),
+    ].filter(Boolean);
+
+    for (const cand of candidates) {
+      if (fs.existsSync(cand)) {
+        if (findExecutable(cand, baseExeHint)) {
+          sourceDir = cand;
+          break;
+        }
+        try {
+          const nested = fs
+            .readdirSync(cand, { withFileTypes: true })
+            .filter((d) => d.isDirectory())
+            .map((d) => path.join(cand, d.name))
+            .find((dir) => Boolean(findExecutable(dir, baseExeHint)));
+          if (nested) {
+            sourceDir = nested;
+            break;
+          }
+        } catch {
+          /* ignore */
+        }
+      }
     }
-    return {
-      status: "cancelled",
-      note: `Select the legal base-game folder containing ${baseExeHint}, then try Install again.`,
-    };
   }
 
-  let sourceDir = result.filePaths[0];
+  if (!sourceDir) {
+    const result = await dialog.showOpenDialog(win || undefined, {
+      title: `Select the existing ${entry.title || slug} folder (${baseExeHint})`,
+      properties: ["openDirectory"],
+    });
+    if (result.canceled || !result.filePaths?.[0]) {
+      const wiki =
+        entry?.editionLinks?.wiki ||
+        entry?.note ||
+        "https://www.project1999.com/";
+      try {
+        await safeOpenExternal(
+          typeof wiki === "string" && wiki.startsWith("http") ? wiki : "https://wiki.project1999.com/"
+        );
+      } catch {
+        /* ignore */
+      }
+      return {
+        status: "cancelled",
+        note: `Select the legal base-game folder containing ${baseExeHint}, then try Install again.`,
+      };
+    }
+    sourceDir = result.filePaths[0];
+  }
+
   if (!findExecutable(sourceDir, baseExeHint)) {
     // Allow picking a parent; search one level down.
     const nested = fs
@@ -8589,12 +8633,31 @@ async function installLocateThenZip(slug, entry, editionExtra) {
   const downloadPath = path.join(app.getPath("temp"), "playbound-launcher", overlayName);
   await downloadTo(overlay.url, downloadPath);
   sendProgress({ phase: "extracting" });
-  // Merge overlay into the copied Titanium tree (do not delete gameDir).
+  // Merge overlay into the copied base game tree (do not delete gameDir).
   await extractArchive(downloadPath, gameDir);
   await removeFileWithRetries(downloadPath);
 
-  const exe = findExecutable(gameDir, baseExeHint);
-  if (!exe) throw new Error(`Install copied, but ${baseExeHint} was not found.`);
+  // If the base game was copied flat into gameDir, but the overlay archive had
+  // a GAME/ subfolder (e.g. Expanding Fronts), merge gameDir/GAME into gameDir.
+  const targetExeHint = entry.exeHint || baseExeHint;
+  const nestedGame = [path.join(gameDir, "GAME"), path.join(gameDir, "Game")].find(
+    (p) => fs.existsSync(p) && fs.statSync(p).isDirectory()
+  );
+  if (nestedGame && !findExecutable(nestedGame, baseExeHint)) {
+    const items = await fsp.readdir(nestedGame);
+    for (const item of items) {
+      const src = path.join(nestedGame, item);
+      const dst = path.join(gameDir, item);
+      await fsp.cp(src, dst, { recursive: true, force: true });
+    }
+    await fsp.rm(nestedGame, { recursive: true, force: true }).catch(() => {});
+  }
+
+  const exe =
+    findExecutable(gameDir, exeHintFor(entry)) ||
+    findExecutable(gameDir, targetExeHint) ||
+    findExecutable(gameDir, baseExeHint);
+  if (!exe) throw new Error(`Install copied, but neither ${targetExeHint} nor ${baseExeHint} was found.`);
 
   const version = entry.versionLabel || overlay.version || "located+overlay";
   markInstalled(slug, {

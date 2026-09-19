@@ -216,6 +216,17 @@ export interface EditionInstallConfig {
     needsAdmin?: boolean;
     /** Prompt user to pick an existing base client folder first. */
     requiresBaseDir?: boolean;
+    /**
+     * Exe hint for the *base game* (not the edition) when verifying an
+     * already-located install directory.  Defaults to exeHint when absent.
+     */
+    baseExeHint?: string;
+    /**
+     * Browse URL opened in the player's browser when no direct download link
+     * is available (e.g. ModDB interstitial pages).  After the player manually
+     * downloads the archive, the launcher shows a file picker for the zip.
+     */
+    overlayBrowseUrl?: string | null;
     /** Numbered get-to-playing steps shown on the edition page + launcher. */
     steps?: { platform?: string; text: string; command?: string | null }[];
     /**

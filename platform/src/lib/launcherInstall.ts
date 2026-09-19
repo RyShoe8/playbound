@@ -139,6 +139,8 @@ export type LauncherInstall = {
    * overlaid. Already honoured by the launcher and by edition install configs.
    */
   requiresBaseDir?: boolean;
+  /** Exe hint for the base game when checking an existing install. */
+  baseExeHint?: string;
   /** Initial window size to set/center when launched. */
   windowSize?: { width: number; height: number; processName?: string } | null;
 };
@@ -203,6 +205,10 @@ export type LauncherCatalogEntry = {
   needsDotNetMajor?: number;
   /** Ask the player to locate a copy they own before installing anything. */
   requiresBaseDir?: boolean;
+  /** Exe hint for the base game (not the edition) when checking an existing install. */
+  baseExeHint?: string;
+  /** Browse URL for manual download when no direct overlay link is available. */
+  overlayBrowseUrl?: string;
   /** Initial window size to set/center when launched. */
   windowSize?: { width: number; height: number; processName?: string } | null;
 };
@@ -397,6 +403,7 @@ export function toLauncherCatalogEntry(input: {
    * only the mapping was missing.
    */
   if (li.requiresBaseDir) entry.requiresBaseDir = true;
+  if (li.baseExeHint) entry.baseExeHint = li.baseExeHint;
   if (li.windowSize) entry.windowSize = li.windowSize;
   return entry;
 }
