@@ -51,6 +51,7 @@ export default async function EditDeveloperPage({
           website: dev.website,
           artHue: dev.artHue,
           published: dev.published,
+          ownerUserId: dev.ownerUserId ?? null,
         }}
         usage={usage}
       />

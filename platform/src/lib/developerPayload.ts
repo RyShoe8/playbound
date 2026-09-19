@@ -35,6 +35,10 @@ export const developerPayloadSchema = z.object({
     }),
   artHue: z.number().int().min(0).max(360).default(210),
   published: z.boolean().default(true),
+  ownerUserId: z
+    .union([z.string().trim().min(1), z.literal(""), z.null()])
+    .optional()
+    .transform((v) => (!v ? null : v)),
 });
 
 export type DeveloperPayload = z.infer<typeof developerPayloadSchema>;

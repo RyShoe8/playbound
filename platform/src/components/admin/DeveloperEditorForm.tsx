@@ -10,7 +10,7 @@ const field =
 const area =
   "mt-1 w-full resize-y rounded-lg border border-input bg-secondary/50 px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/40";
 
-export type DeveloperDraft = Developer & { published: boolean };
+export type DeveloperDraft = Developer & { published: boolean; ownerUserId?: string | null };
 
 export function DeveloperEditorForm({
   mode,
@@ -218,6 +218,18 @@ export function DeveloperEditorForm({
           />
           Published
         </label>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className={label}>Owner user ID (optional)</label>
+          <input
+            value={form.ownerUserId ?? ""}
+            onChange={(e) => patch("ownerUserId", e.target.value || null)}
+            placeholder="User ObjectId for self-management"
+            className={field}
+          />
+        </div>
       </div>
 
       {mode === "edit" && referenceCount > 0 && (

@@ -31,7 +31,7 @@ const UserSchema = new Schema({
    * a review or discussion under an auto-generated placeholder.
    */
   needsUsername: { type: Boolean, default: false },
-  role: { type: String, enum: ["user", "admin"], default: "user" },
+  role: { type: String, enum: ["user", "developer", "admin"], default: "user" },
   /** Unsigned launcher channel + testing catalog; independent of admin CMS access. */
   tester: { type: Boolean, default: false, index: true },
   disabled: { type: Boolean, default: false, index: true },

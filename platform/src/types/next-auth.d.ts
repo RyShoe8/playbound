@@ -6,7 +6,7 @@ declare module "next-auth" {
     user: {
       id: string;
       username: string;
-      role: "user" | "admin";
+      role: "user" | "developer" | "admin";
       tester?: boolean;
       /** True until an OAuth signup picks a PlayBound username on /welcome. */
       needsUsername?: boolean;
@@ -18,7 +18,7 @@ declare module "next-auth" {
 
   interface User {
     id: string;
-    role: "user" | "admin";
+    role: "user" | "developer" | "admin";
     tester?: boolean;
     needsUsername?: boolean;
   }
@@ -28,7 +28,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     id?: string;
     username?: string;
-    role?: "user" | "admin";
+    role?: "user" | "developer" | "admin";
     tester?: boolean;
     needsUsername?: boolean;
     roleCheckedAt?: number;
