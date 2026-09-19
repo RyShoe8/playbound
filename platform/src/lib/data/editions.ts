@@ -5308,17 +5308,19 @@ export const editions: EditionSeed[] = [
       playbound_installer: {
         kind: "locate-then-zip",
         requiresBaseDir: true,
-        overlayUrl: "https://www.moddb.com/mods/star-wars-galactic-battlegrounds-expanding-fronts/downloads",
-        overlayFileName: "SWGB_Expanding_Fronts_Setup.zip",
+        overlayUrl:
+          "https://mirror.playbound.club/launcher-packages/editions/star-wars-galactic-battlegrounds-saga/expanding-fronts/SWGB_EF_v1.5.5_Full5.zip",
+        overlayFileName: "SWGB_EF_v1.5.5_Full5.zip",
         versionLabel: "1.5.5",
         exeHint: "battlegrounds_x2",
+        baseExeHint: "battlegrounds_x1",
         knownExePaths: [
           "Game/battlegrounds_x2.exe",
           "battlegrounds_x2.exe",
           "Game/Expanding Fronts.exe",
           "Expanding Fronts.exe",
         ],
-        note: "Requires a legitimate Star Wars: Galactic Battlegrounds Saga install (GOG or Steam). PlayBound copies your base game files to a dedicated folder and applies Expanding Fronts, keeping your original untouched.",
+        note: "Requires a legitimate Star Wars: Galactic Battlegrounds Saga install (GOG or Steam). If already added to PlayBound, installation is one-click: PlayBound copies your base game files to a dedicated folder and applies Expanding Fronts, keeping your original untouched.",
         steps: [
           {
             platform: "windows",

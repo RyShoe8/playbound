@@ -104,6 +104,8 @@ const installConfigSchema = z
         unwrapSingleRoot: z.boolean().optional(),
         needsDosBox: z.boolean().optional(),
         requiresBaseDir: z.boolean().optional(),
+        baseExeHint: z.string().trim().max(200).optional(),
+        overlayBrowseUrl: z.string().trim().max(500).nullish(),
         steps: z.array(installStepSchema).max(30).optional(),
       })
       .optional(),

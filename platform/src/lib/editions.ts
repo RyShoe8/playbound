@@ -303,6 +303,7 @@ function deriveInstallMethod(game: Game): { method: InstallMethod; config: Editi
           // silently lose the flag and install unelevated.
           needsAdmin: recipe.needsAdmin || undefined,
           requiresBaseDir: recipe.requiresBaseDir || undefined,
+          baseExeHint: recipe.baseExeHint || undefined,
         },
       },
     };
