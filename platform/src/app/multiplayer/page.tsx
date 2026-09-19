@@ -9,6 +9,9 @@ import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import { MultiplayerHome } from "@/components/MultiplayerHome";
 import { pageMetadata } from "@/lib/seo";
 import { listDiscoverableGames } from "@/lib/access/discover";
+import { getMultiplayerActivitySnapshot } from "@/lib/multiplayer/activity";
+import { listOpenPublicParties } from "@/lib/playTogether/party";
+import { listPublicEvents } from "@/lib/events/service";
 
 export const metadata: Metadata = pageMetadata({
   title: "Multiplayer — Open Parties, Live Servers & Looking to Play · PlayBound",
@@ -22,7 +25,13 @@ export default async function MultiplayerPage() {
   const session = await getServerSession(authOptions);
   let installedGameSlugs: string[] = [];
   let installedModSlugs: string[] = [];
-  const discoverable = await listDiscoverableGames();
+
+  const [discoverable, initialActivity, initialParties, initialEvents] = await Promise.all([
+    listDiscoverableGames().catch(() => []),
+    getMultiplayerActivitySnapshot().catch(() => null),
+    listOpenPublicParties(20).catch(() => []),
+    listPublicEvents({ limit: 4 }).catch(() => []),
+  ]);
   const allowedSlugs = discoverable.map((g) => g.slug);
 
   if (session?.user) {
@@ -52,6 +61,9 @@ export default async function MultiplayerPage() {
         installedModSlugs={installedModSlugs}
         signedIn={Boolean(session?.user)}
         allowedSlugs={allowedSlugs}
+        initialActivity={initialActivity}
+        initialParties={initialParties}
+        initialEvents={initialEvents}
       />
     </Suspense>
   );

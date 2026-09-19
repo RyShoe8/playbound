@@ -10,11 +10,12 @@ import { usePartyStore } from "@/stores/partyStore";
 type Props = {
   signedIn: boolean;
   onStartParty?: () => void;
+  initialParties?: PublicPartyPayload[];
 };
 
-export function MultiplayerOpenParties({ signedIn, onStartParty }: Props) {
-  const [parties, setParties] = useState<PublicPartyPayload[]>([]);
-  const [loading, setLoading] = useState(true);
+export function MultiplayerOpenParties({ signedIn, onStartParty, initialParties }: Props) {
+  const [parties, setParties] = useState<PublicPartyPayload[]>(initialParties || []);
+  const [loading, setLoading] = useState(!initialParties);
   const { joinParty, activeParty } = usePartyStore();
   const [joiningId, setJoiningId] = useState<string | null>(null);
 

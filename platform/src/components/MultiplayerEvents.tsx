@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CalendarDays, Users, Trophy, Sparkles, ArrowRight } from "lucide-react";
 
-type PlatformEvent = {
+export type PlatformEvent = {
   id: string;
   title: string;
   eventType: string;
@@ -16,9 +16,13 @@ type PlatformEvent = {
   featured?: boolean;
 };
 
-export function MultiplayerEvents() {
-  const [events, setEvents] = useState<PlatformEvent[]>([]);
-  const [loading, setLoading] = useState(true);
+type Props = {
+  initialEvents?: PlatformEvent[];
+};
+
+export function MultiplayerEvents({ initialEvents }: Props = {}) {
+  const [events, setEvents] = useState<PlatformEvent[]>(initialEvents ? initialEvents.slice(0, 4) : []);
+  const [loading, setLoading] = useState(!initialEvents);
 
   useEffect(() => {
     let mounted = true;
