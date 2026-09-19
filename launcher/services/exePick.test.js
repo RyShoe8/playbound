@@ -83,7 +83,11 @@ const { findExecutable, exeHintFor } = loadPicker();
 function makeInstall(files) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pb-exepick-"));
   for (const [name, size] of Object.entries(files)) {
-    fs.writeFileSync(path.join(dir, name), Buffer.alloc(size, 0));
+    const full = path.join(dir, name);
+    fs.mkdirSync(path.dirname(full), { recursive: true });
+    const fd = fs.openSync(full, "w");
+    fs.ftruncateSync(fd, size);
+    fs.closeSync(fd);
   }
   return dir;
 }
@@ -236,3 +240,24 @@ test("installer hints are ignored for any recipe", () => {
   assert.equal(exeHintFor({ exeHint: "unins000.exe" }), undefined);
   assert.equal(exeHintFor({ exeHint: "installer.exe", knownExePaths: ["Game.exe"] }), "Game.exe");
 });
+
+test("stalker-anomaly resolves AnomalyDX11 or AnomalyLauncher from bin or root", () => {
+  const anomalyDir = makeInstall({
+    "AnomalyLauncher.exe": 5_000_000,
+    "bin/AnomalyDX11.exe": 18_000_000,
+    "bin/AnomalyDX10.exe": 17_000_000,
+    "tools/db_unpacker.exe": 500_000,
+  });
+  try {
+    const hint = exeHintFor({ slug: "stalker-anomaly" });
+    assert.ok(hint.includes("AnomalyLauncher"));
+    assert.ok(hint.includes("AnomalyDX11"));
+    const picked = findExecutable(anomalyDir, hint);
+    assert.ok(picked);
+    const base = path.basename(picked);
+    assert.ok(base === "AnomalyDX11.exe" || base === "AnomalyLauncher.exe");
+  } finally {
+    fs.rmSync(anomalyDir, { recursive: true, force: true });
+  }
+});
+

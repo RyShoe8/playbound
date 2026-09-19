@@ -6,7 +6,13 @@ const { shouldLaunchThroughDosBox, dosExecutableMessage } = require("./executabl
 const { dosBoxLaunchSpec } = require("./ManagedDosBox");
 const { requiresCompatibilityRunner, buildRunnerLaunchSpec } = require("./CompatibilityRunner");
 const { assaultCubeWorkingDirectory } = require("./assaultCubeLaunch");
-const { xrEngineWorkingDirectory, isLostAlphaElevatedLaunch } = require("./xrEngineLaunch");
+const {
+  xrEngineWorkingDirectory,
+  isLostAlphaElevatedLaunch,
+  xrEngineEnvironment,
+  xrEngineDefaultArgs,
+  isXrEngineLaunch,
+} = require("./xrEngineLaunch");
 const { resolveUnknownHorizonsLaunch, isUnknownHorizonsSlug } = require("./unknownHorizonsLaunch");
 
 const JAVA_MISSING_MSG =
@@ -118,11 +124,12 @@ class GameLauncher {
    * @returns {import("child_process").ChildProcess}
    */
   static spawnGame(targetPath, args = [], opts = {}) {
-    const env =
-      opts.env && typeof opts.env === "object"
-        ? { ...process.env, ...opts.env }
-        : undefined;
     const launchPath = this.preferJarBesideLauncher(targetPath);
+    const env = {
+      ...(process.env || {}),
+      ...(xrEngineEnvironment(launchPath, opts.gameSlug) || {}),
+      ...(opts.env && typeof opts.env === "object" ? opts.env : {}),
+    };
 
     if (/\.jar$/i.test(launchPath)) {
       const javaBin = this.assertJavaReady();
@@ -215,7 +222,15 @@ class GameLauncher {
       });
     }
 
-    const { cmd, finalArgs } = this.buildGameLaunchCommand(launchPath, args);
+    const effectiveArgs = [...args];
+    const xrDefaults = xrEngineDefaultArgs(launchPath, opts.gameSlug);
+    for (const d of xrDefaults) {
+      if (!effectiveArgs.includes(d)) {
+        effectiveArgs.push(d);
+      }
+    }
+
+    const { cmd, finalArgs } = this.buildGameLaunchCommand(launchPath, effectiveArgs);
 
     // For .app bundles, cwd should be the parent of the bundle, not Contents/.
     // Callers (Unknown Horizons) may pass an explicit cwd when the exe is not
@@ -245,7 +260,10 @@ class GameLauncher {
      * start.
      */
     const shouldElevate =
-      Boolean(opts.elevate || (process.platform === "win32" && isLostAlphaElevatedLaunch(launchPath, opts.gameSlug)));
+      Boolean(
+        (opts.elevate || (process.platform === "win32" && isLostAlphaElevatedLaunch(launchPath, opts.gameSlug))) &&
+        !isXrEngineLaunch(launchPath, opts.gameSlug)
+      );
 
     if (shouldElevate && process.platform === "win32") {
       const psArgs = [
@@ -317,7 +335,14 @@ function psQuote(value) {
 }
 
 /**
- * The Start-Process command that runs a game elevated.
+ * The PowerShell command that runs a game elevated.
+ *
+ * In Windows PowerShell 5.1, the Start-Process cmdlet defaults
+ * ProcessStartInfo.ErrorDialog to false (setting SEE_MASK_FLAG_NO_UI), which causes
+ * ShellExecuteEx with Verb='RunAs' to fail with Win32 Error 50 ("The request
+ * is not supported") when invoked from hidden or background processes.
+ * Setting ErrorDialog = $true ensures Windows properly displays the UAC
+ * consent prompt without early failure.
  *
  * Built as a string rather than passed as arguments because -Command takes a
  * script, so every path has to be quoted for PowerShell itself. Paths here come
@@ -325,20 +350,20 @@ function psQuote(value) {
  * but they routinely contain spaces and apostrophes.
  */
 function buildElevatedStartProcess(cmd, args, cwd) {
-  const parts = [
-    "Start-Process",
-    "-FilePath",
-    psQuote(cmd),
-    "-WorkingDirectory",
-    psQuote(cwd),
-    "-Verb",
-    "RunAs",
-    "-Wait",
-  ];
-  if (args.length > 0) {
-    parts.push("-ArgumentList", args.map(psQuote).join(","));
-  }
-  return parts.join(" ");
+  const argParts =
+    args.length > 0
+      ? `$psi.Arguments = ${psQuote(args.join(" "))}; `
+      : "";
+  return (
+    `$psi = New-Object System.Diagnostics.ProcessStartInfo; ` +
+    `$psi.FileName = ${psQuote(cmd)}; ` +
+    `$psi.WorkingDirectory = ${psQuote(cwd)}; ` +
+    argParts +
+    `$psi.Verb = 'RunAs'; ` +
+    `$psi.UseShellExecute = $true; ` +
+    `$psi.ErrorDialog = $true; ` +
+    `try { $p = [System.Diagnostics.Process]::Start($psi); if ($p) { $p.WaitForExit(); exit $p.ExitCode } else { exit 1 } } catch { exit 1 }`
+  );
 }
 
 function isWindowsAppsStub(filePath) {

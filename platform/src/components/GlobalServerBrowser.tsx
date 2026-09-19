@@ -59,6 +59,9 @@ type Props = {
   signedIn: boolean;
   /** When set, hide games whose resolved access is VALUE (FREE discovery mode). */
   allowedSlugs?: string[] | null;
+  installedOnly?: boolean;
+  onInstalledOnlyChange?: (val: boolean) => void;
+  hideInstalledToggle?: boolean;
 };
 
 type ApiResponse = {
@@ -132,6 +135,9 @@ export function GlobalServerBrowser({
   installedModSlugs,
   signedIn,
   allowedSlugs = null,
+  installedOnly: propInstalledOnly,
+  onInstalledOnlyChange,
+  hideInstalledToggle = false,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -149,7 +155,9 @@ export function GlobalServerBrowser({
   const [gameSlug, setGameSlug] = useState(queryGame);
   const [modSlug, setModSlug] = useState(queryMod);
   const [editionSlug, setEditionSlug] = useState(queryEdition);
-  const [installedOnly, setInstalledOnly] = useState(false);
+  const [internalInstalledOnly, setInternalInstalledOnly] = useState(false);
+  const installedOnly = propInstalledOnly !== undefined ? propInstalledOnly : internalInstalledOnly;
+  const setInstalledOnly = onInstalledOnlyChange || setInternalInstalledOnly;
   const [withPlayersOnly, setWithPlayersOnly] = useState(true);
 
   useEffect(() => {
@@ -684,20 +692,22 @@ export function GlobalServerBrowser({
             className="h-10 rounded-xl border border-border bg-secondary px-3 text-sm font-semibold text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/40"
           />
         </label>
-        <div
-          className={cn(
-            "flex h-10 items-center rounded-xl border border-border bg-secondary px-3.5 text-sm font-semibold",
-            !signedIn && "opacity-60"
-          )}
-          title={!signedIn ? "Sign in and sync the launcher to use Installed only" : undefined}
-        >
-          <Checkbox
-            checked={installedOnly}
-            disabled={!signedIn}
-            onCheckedChange={setInstalledOnly}
-            label="Installed only"
-          />
-        </div>
+        {!hideInstalledToggle && (
+          <div
+            className={cn(
+              "flex h-10 items-center rounded-xl border border-border bg-secondary px-3.5 text-sm font-semibold",
+              !signedIn && "opacity-60"
+            )}
+            title={!signedIn ? "Sign in and sync the launcher to use Installed only" : undefined}
+          >
+            <Checkbox
+              checked={installedOnly}
+              disabled={!signedIn}
+              onCheckedChange={setInstalledOnly}
+              label="Installed only"
+            />
+          </div>
+        )}
         <div className="flex h-10 items-center rounded-xl border border-border bg-secondary px-3.5 text-sm font-semibold">
           <Checkbox
             checked={withPlayersOnly}
@@ -730,7 +740,7 @@ export function GlobalServerBrowser({
         </button>
       </div>
 
-      {!signedIn && (
+      {!signedIn && !hideInstalledToggle && (
         <p className="text-xs text-muted-foreground">
           <Link href="/login?callbackUrl=/multiplayer" className="font-semibold text-primary hover:underline">
             Sign in

@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const path = require("path");
 const GameLauncher = require("./GameLauncher");
 const { requiresCompatibilityRunner, buildRunnerLaunchSpec } = require("./CompatibilityRunner");
-const { isLostAlphaElevatedLaunch } = require("./xrEngineLaunch");
+const { isLostAlphaElevatedLaunch, xrEngineDefaultArgs } = require("./xrEngineLaunch");
 
 test("GameLauncher respects requiresCompatibilityRunner", () => {
   if (process.platform === "win32") {
@@ -127,15 +127,20 @@ test("buildGameLaunchCommand adds --args on macOS for open commands with argumen
   }
 });
 
-test("isLostAlphaElevatedLaunch returns true on win32 for Lost Alpha slugs and XR_3DA paths", () => {
-  if (process.platform === "win32") {
-    assert.equal(isLostAlphaElevatedLaunch("C:\\Games\\Lost Alpha\\bins\\XR_3DA.exe", "stalker-lost-alpha"), true);
-    assert.equal(isLostAlphaElevatedLaunch("C:\\Games\\Lost Alpha\\bins\\XR_3DA.exe", "lost-alpha"), true);
-    assert.equal(isLostAlphaElevatedLaunch("C:\\Games\\S.T.A.L.K.E.R. - Lost Alpha DC\\bins\\XR_3DA.exe", null), true);
-    assert.equal(isLostAlphaElevatedLaunch("C:\\Games\\STALKER\\bin\\XR_3DA.exe", "s-t-a-l-k-e-r-shadow-of-chernobyl"), false);
-  } else {
-    assert.equal(isLostAlphaElevatedLaunch("C:\\Games\\Lost Alpha\\bins\\XR_3DA.exe", "stalker-lost-alpha"), false);
-  }
+test("isLostAlphaElevatedLaunch returns false because RunAsInvoker is used instead", () => {
+  assert.equal(isLostAlphaElevatedLaunch("C:\\Games\\Lost Alpha\\bins\\XR_3DA.exe", "stalker-lost-alpha"), false);
+  assert.equal(isLostAlphaElevatedLaunch("C:\\Games\\Lost Alpha\\bins\\XR_3DA.exe", "lost-alpha"), false);
+  assert.equal(isLostAlphaElevatedLaunch("C:\\Games\\S.T.A.L.K.E.R. - Lost Alpha DC\\bins\\XR_3DA.exe", null), false);
+  assert.equal(isLostAlphaElevatedLaunch("C:\\Games\\STALKER\\bin\\XR_3DA.exe", "s-t-a-l-k-e-r-shadow-of-chernobyl"), false);
 });
+
+test("xrEngineDefaultArgs provides standard Lost Alpha arguments", () => {
+  assert.deepEqual(xrEngineDefaultArgs("C:\\Games\\Lost Alpha\\bins\\XR_3DA.exe", "stalker-lost-alpha"), [
+    "-noprefetch",
+    "-nospawncheck",
+  ]);
+  assert.deepEqual(xrEngineDefaultArgs("C:\\Games\\STALKER\\bin\\XR_3DA.exe", "s-t-a-l-k-e-r-shadow-of-chernobyl"), []);
+});
+
 
 

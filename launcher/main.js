@@ -58,7 +58,7 @@ const { createCloudSaves } = require("./services/CloudSaves");
 const { createSettings } = require("./services/settings");
 const { createSecurity } = require("./services/security");
 const { resolveGameJoltBuild } = require("./services/gameJoltBuild");
-const { isLostAlphaElevatedLaunch } = require("./services/xrEngineLaunch");
+const { isLostAlphaElevatedLaunch, isXrEngineLaunch } = require("./services/xrEngineLaunch");
 const { createDeepLinks } = require("./services/deepLinks");
 const { withOutboundUtm } = require("./utm");
 const {
@@ -4091,6 +4091,23 @@ function sevenZipBinary() {
   return null;
 }
 
+/** Check available free bytes on the filesystem hosting targetPath. */
+function getAvailableDiskSpace(targetPath) {
+  if (!targetPath) return null;
+  try {
+    let p = path.resolve(targetPath);
+    while (!fs.existsSync(p)) {
+      const parent = path.dirname(p);
+      if (parent === p) break;
+      p = parent;
+    }
+    const stat = fs.statfsSync(p);
+    return Number(BigInt(stat.bavail) * BigInt(stat.bsize));
+  } catch {
+    return null;
+  }
+}
+
 /** Extract a .7z or .rar. Mirrors extractZip: shell out, no extraction library. */
 function extract7z(archivePath, destDir, onPercent) {
   return new Promise((resolve, reject) => {
@@ -4132,13 +4149,29 @@ function extract7z(archivePath, destDir, onPercent) {
       });
     }
     let err = "";
+    let stdoutErrors = "";
     child.stderr?.on("data", (d) => (err += d));
+    child.stdout?.on("data", (d) => {
+      const text = String(d);
+      if (/error|fail|cannot|disk full|space|corrupt|damaged|break signaled/i.test(text)) {
+        stdoutErrors += text;
+      }
+    });
     child.on("error", (spawnErr) =>
       reject(new Error(`7z extract failed to start (${spawnErr.code || spawnErr.message}).`))
     );
-    child.on("close", (code) =>
-      code === 0 ? resolve() : reject(new Error(`7z extract failed: ${err.trim() || code}`))
-    );
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve();
+      } else {
+        const errorDetail = (err || stdoutErrors).trim();
+        reject(
+          new Error(
+            `7z extract failed (${code})${errorDetail ? `: ${errorDetail}` : ". Check free disk space or archive integrity."}`
+          )
+        );
+      }
+    });
   });
 }
 
@@ -4288,6 +4321,10 @@ async function extractArchive(archivePath, destDir) {
         sendProgress({ phase: "extracting", pct })
       );
     } catch (err) {
+      const isSevenZipOnly = /\.(7z|rar)$/i.test(String(archivePath));
+      if (isSevenZipOnly) {
+        throw err;
+      }
       console.warn("[7z] extract failed, falling back to system unzipper:", err?.message || err);
       await extractZip(archivePath, destDir);
     }
@@ -4354,6 +4391,9 @@ function exeHintFor(entry) {
   if (entry?.slug === "the-dark-mod") {
     return "TheDarkModx64|TheDarkMod|DarkMod";
   }
+  if (entry?.slug === "stalker-anomaly") {
+    return "AnomalyLauncher|AnomalyDX11|AnomalyDX10|AnomalyDX9|AnomalyDX8|AnomalyDX11AVX|AnomalyDX10AVX|AnomalyDX9AVX|AnomalyDX8AVX|AnomalyDX11EXE|AnomalyDX9EXE";
+  }
   if (entry?.exeHint && !isUninstallerExe(entry.exeHint)) return entry.exeHint;
   const bases = knownExecutablePathsFor(entry)
     .map((raw) => {
@@ -4383,6 +4423,19 @@ function knownExecutablePathsFor(entry) {
     for (const root of [process.env["ProgramFiles(x86)"], process.env.ProgramFiles]) {
       if (root) paths.push(path.join(root, "7kaa", "7kaa.exe"));
     }
+  }
+  if (entry?.slug === "stalker-anomaly") {
+    paths.push(
+      "AnomalyLauncher.exe",
+      "bin\\AnomalyDX11.exe",
+      "bin\\AnomalyDX11AVX.exe",
+      "bin\\AnomalyDX10.exe",
+      "bin\\AnomalyDX10AVX.exe",
+      "bin\\AnomalyDX9.exe",
+      "bin\\AnomalyDX8.exe",
+      "bin\\AnomalyDX11EXE.exe",
+      "bin\\AnomalyDX9EXE.exe"
+    );
   }
   if (process.platform === "win32" && isUnknownHorizonsSlug(entry?.slug)) {
     paths.push(
@@ -5977,9 +6030,10 @@ async function spawnWithElevationFallback(slug, launchPath, args, opts) {
   const alreadyElevated =
     opts?.elevate ??
     Boolean(
-      entry?.needsAdmin ||
-      elevationRemembered(slug) ||
-      (process.platform === "win32" && isLostAlphaElevatedLaunch(launchPath, slug))
+      !isXrEngineLaunch(launchPath, slug) &&
+      (entry?.needsAdmin ||
+        elevationRemembered(slug) ||
+        (process.platform === "win32" && isLostAlphaElevatedLaunch(launchPath, slug)))
     );
 
   try {
@@ -7187,11 +7241,65 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     return installLocateThenZip(slug, entry, editionExtra);
   }
 
-  const gameDir =
+  let gameDir =
     targetDir ||
     (editionExtra.editionSlug && editionExtra.editionSlug !== DEFAULT_EDITION_SLUG
       ? editionInstallDir(entry.slug, editionExtra.editionSlug)
       : path.join(gamesRoot(), entry.slug));
+
+  // Estimate download & extraction requirements
+  let approxBytes = 0;
+  if (typeof entry.approxSize === "string") {
+    const m = entry.approxSize.match(/([\d.]+)\s*(GB|MB)/i);
+    if (m) {
+      const num = parseFloat(m[1]);
+      approxBytes = m[2].toUpperCase() === "GB" ? num * 1024 * 1024 * 1024 : num * 1024 * 1024;
+    }
+  }
+  const estimatedDownloadBytes =
+    Number(entry.sizeBytes) ||
+    approxBytes ||
+    (typeof entry.sizeMB === "number" && entry.sizeMB > 0 ? entry.sizeMB * 1024 * 1024 : 1024 * 1024 * 1024);
+  const estimatedExtractBytes =
+    typeof entry.sizeMB === "number" && entry.sizeMB > 0
+      ? entry.sizeMB * 1024 * 1024
+      : Math.max(estimatedDownloadBytes * 2.5, 2 * 1024 * 1024 * 1024);
+
+  // If no explicit targetDir was passed and the default gameDir lacks free space, check candidate alternate roots
+  if (!targetDir) {
+    const currentTargetFree = getAvailableDiskSpace(path.dirname(gameDir));
+    if (currentTargetFree !== null && currentTargetFree < estimatedExtractBytes) {
+      const candidateRoots = [];
+      try {
+        const s = typeof loadSettings === "function" ? loadSettings() : null;
+        if (s?.gamesDir) candidateRoots.push(s.gamesDir);
+        if (Array.isArray(s?.formerGamesDirs)) {
+          for (const d of s.formerGamesDirs) {
+            if (d && !candidateRoots.includes(d)) candidateRoots.push(d);
+          }
+        }
+        if (process.platform === "win32") {
+          for (const driveLetter of ["D", "E", "F", "G"]) {
+            const candidate = `${driveLetter}:\\Games`;
+            if (fs.existsSync(candidate) && !candidateRoots.includes(candidate)) {
+              candidateRoots.push(candidate);
+            }
+          }
+        }
+      } catch {}
+      const fallbackRoot = candidateRoots.find((r) => {
+        const free = getAvailableDiskSpace(r);
+        return free !== null && free >= estimatedExtractBytes + 5 * 1024 * 1024 * 1024;
+      });
+      if (fallbackRoot) {
+        console.log(`[install] Target directory switched to ${fallbackRoot} due to space on default root.`);
+        gameDir =
+          editionExtra.editionSlug && editionExtra.editionSlug !== DEFAULT_EDITION_SLUG
+            ? path.join(fallbackRoot, `${entry.slug}--${editionExtra.editionSlug}`)
+            : path.join(fallbackRoot, entry.slug);
+      }
+    }
+  }
 
   if (entry.kind === "steamcmd") {
     const appId = String(entry.steamAppId || "").trim();
@@ -7226,7 +7334,49 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
 
   sendProgress({ phase: "resolving" });
   const dl = await resolveDownload(entry);
-  const downloadPath = path.join(app.getPath("temp"), "playbound-launcher", dl.name);
+
+  const defaultTempDir = path.join(app.getPath("temp"), "playbound-launcher");
+  const tempFree = getAvailableDiskSpace(defaultTempDir);
+  const targetDirFree = getAvailableDiskSpace(path.dirname(gameDir));
+  const tempDriveRoot = path.parse(path.resolve(defaultTempDir)).root.toLowerCase();
+  const targetDriveRoot = path.parse(path.resolve(gameDir)).root.toLowerCase();
+  const sameDrive = tempDriveRoot === targetDriveRoot;
+
+  let downloadDir = defaultTempDir;
+  if (sameDrive) {
+    if (tempFree !== null && tempFree < estimatedDownloadBytes + estimatedExtractBytes) {
+      const totalGB = ((estimatedDownloadBytes + estimatedExtractBytes) / (1024 * 1024 * 1024)).toFixed(1);
+      const freeGB = (tempFree / (1024 * 1024 * 1024)).toFixed(1);
+      const drive = path.parse(path.resolve(gameDir)).root;
+      throw new Error(
+        `Not enough free disk space on drive ${drive}. ` +
+          `${entry.title || slug} requires ~${totalGB} GB during installation (download + extraction), but only ${freeGB} GB is available. ` +
+          `Please install to a drive with more space in Settings.`
+      );
+    }
+  } else {
+    if (targetDirFree !== null && targetDirFree < estimatedExtractBytes) {
+      const neededGB = (estimatedExtractBytes / (1024 * 1024 * 1024)).toFixed(1);
+      const freeGB = (targetDirFree / (1024 * 1024 * 1024)).toFixed(1);
+      const drive = path.parse(path.resolve(gameDir)).root;
+      throw new Error(
+        `Not enough free disk space on target drive ${drive}. ` +
+          `${entry.title || slug} requires at least ${neededGB} GB, but only ${freeGB} GB is available.`
+      );
+    }
+    // If temp drive (often C:) has less than 2x the download size, stage download on target drive (e.g. D:)
+    if (
+      tempFree !== null &&
+      tempFree < estimatedDownloadBytes * 2 &&
+      targetDirFree !== null &&
+      targetDirFree >= estimatedDownloadBytes + estimatedExtractBytes
+    ) {
+      downloadDir = path.join(path.dirname(gameDir), ".playbound-download");
+    }
+  }
+
+  await fsp.mkdir(downloadDir, { recursive: true });
+  const downloadPath = path.join(downloadDir, dl.name);
   // Mirror records must identify the exact edition archive, not merely its
   // parent game. A game can have several differently-sized packages; a
   // game-slug lookup must never replace the selected edition with a sibling.
@@ -7386,6 +7536,9 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   try {
     await extractArchive(downloadPath, stagingDir);
     await removeFileWithRetries(downloadPath);
+    if (downloadDir !== defaultTempDir) {
+      await fsp.rm(downloadDir, { recursive: true, force: true }).catch(() => {});
+    }
     if (entry.unwrapSingleRoot) {
       await unwrapSingleRootDirectory(stagingDir);
     }
@@ -7428,6 +7581,10 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     await promoteStagingDir(stagingDir, gameDir, isParentGameRoot ? siblingEditionNames : null);
   } catch (err) {
     await fsp.rm(stagingDir, { recursive: true, force: true }).catch(() => {});
+    await removeFileWithRetries(downloadPath).catch(() => {});
+    if (downloadDir !== defaultTempDir) {
+      await fsp.rm(downloadDir, { recursive: true, force: true }).catch(() => {});
+    }
     throw err;
   }
 
@@ -10486,9 +10643,10 @@ function spawnTrackedExe(slug, exePath, args = [], opts = {}) {
       elevate:
         opts.elevate ??
         Boolean(
-          catalogEntry(slug)?.needsAdmin ||
-          elevationRemembered(slug) ||
-          (process.platform === "win32" && isLostAlphaElevatedLaunch(exePath, slug))
+          !isXrEngineLaunch(exePath, slug) &&
+          (catalogEntry(slug)?.needsAdmin ||
+            elevationRemembered(slug) ||
+            (process.platform === "win32" && isLostAlphaElevatedLaunch(exePath, slug)))
         ),
       env: opts.env,
     });
@@ -10541,6 +10699,41 @@ function spawnTrackedExe(slug, exePath, args = [], opts = {}) {
           windowsHide: true,
           stdio: "ignore",
         });
+        bg.unref();
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  if (process.platform === "win32" && (slug === "castlevania-revamped" || entry?.windowSize)) {
+    try {
+      const candidates = [
+        path.join(process.resourcesPath || "", "scripts", "resize-window.ps1"),
+        path.join(__dirname, "resources", "scripts", "resize-window.ps1"),
+      ];
+      const script = candidates.find((p) => p && fs.existsSync(p));
+      if (script) {
+        const targetW = entry?.windowSize?.width || 1280;
+        const targetH = entry?.windowSize?.height || 720;
+        const targetName = entry?.windowSize?.processName || "Castlevania ReVamped";
+        const bg = spawn(
+          "powershell.exe",
+          [
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            script,
+            targetName,
+            String(targetW),
+            String(targetH),
+          ],
+          {
+            windowsHide: true,
+            stdio: "ignore",
+          }
+        );
         bg.unref();
       }
     } catch {
@@ -13745,6 +13938,19 @@ ipcMain.handle("get-parties", async (_event, opts = {}) => {
   }
 });
 
+ipcMain.handle("get-multiplayer-activity", async (_event, opts = {}) => {
+  const slug = opts?.slug ? `?slug=${encodeURIComponent(opts.slug)}` : "";
+  try {
+    return await launcherJson(`/api/multiplayer/activity${slug}`);
+  } catch (err) {
+    return {
+      error: err.message,
+      summary: { totalServerPlayers: 0, totalServersOnline: 0, totalOpenParties: 0, totalUsersLooking: 0 },
+      games: [],
+    };
+  }
+});
+
 /*
  * Friends + friend requests + parties in one request.
  *
@@ -14614,11 +14820,22 @@ ipcMain.handle("get-lfg", async () => {
   }
 });
 
-ipcMain.handle("set-lfg", async (_event, enabled, gameSlug) => {
+ipcMain.handle("set-lfg", async (_event, enabled, gameSlugOrSlugs) => {
   try {
+    const isArray = Array.isArray(gameSlugOrSlugs);
+    const gameSlugs = isArray
+      ? gameSlugOrSlugs
+      : gameSlugOrSlugs
+      ? [gameSlugOrSlugs]
+      : [];
+    const gameSlug = gameSlugs[0] || null;
     return await launcherJson("/api/presence/lfg", {
       method: "POST",
-      body: { enabled: Boolean(enabled), gameSlug: enabled ? gameSlug || null : null },
+      body: {
+        enabled: Boolean(enabled),
+        gameSlug: enabled ? gameSlug : null,
+        gameSlugs: enabled ? gameSlugs : [],
+      },
     });
   } catch (err) {
     return { error: err.message };

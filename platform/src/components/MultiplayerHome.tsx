@@ -96,6 +96,8 @@ export function MultiplayerHome({
   const [ltpSelectedSlugs, setLtpSelectedSlugs] = useState<string[]>([]);
   const [ltpBusy, setLtpBusy] = useState(false);
   const [ltpSearchQuery, setLtpSearchQuery] = useState("");
+  const [installedOnly, setInstalledOnly] = useState(false);
+  const installedSet = useMemo(() => new Set(installedGameSlugs || []), [installedGameSlugs]);
 
   // Game filter state
   const [gameSearch, setGameSearch] = useState("");
@@ -145,45 +147,45 @@ export function MultiplayerHome({
         } else {
           setLtpActive(false);
         }
-      } catch {
-        /* ignore */
+      } catch (err) {
+        console.error("Failed to check Looking to Party status:", err);
       }
     }
     checkMyLtp();
   }, [signedIn]);
 
-  // Handle Starting / Stopping Looking to Party
-  async function handleToggleLtp(slugs?: string[]) {
+  // Toggle or update Looking to Party
+  async function handleToggleLtp(slugs: string[]) {
     if (!signedIn) {
       window.location.href = "/login?callbackUrl=/multiplayer";
       return;
     }
-
     setLtpBusy(true);
     try {
-      const targetSlugs = slugs !== undefined ? slugs : ltpSelectedSlugs;
-      const willEnable = targetSlugs.length > 0 || !ltpActive;
-
-      const res = await fetch("/api/presence/lfg", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          enabled: willEnable,
-          gameSlugs: willEnable ? targetSlugs : [],
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setLtpActive(data.active);
-        setLtpSelectedSlugs(data.gameSlugs || []);
-        if (!data.active) {
+      if (slugs.length === 0 && ltpActive) {
+        const res = await fetch("/api/presence/looking-for-players", {
+          method: "DELETE",
+        });
+        if (res.ok) {
+          setLtpActive(false);
+          setLtpSelectedSlugs([]);
           setLtpDrawerOpen(false);
         }
-        void loadActivity();
+      } else {
+        const res = await fetch("/api/presence/looking-for-players", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ gameSlugs: slugs, note: "" }),
+        });
+        if (res.ok) {
+          setLtpActive(true);
+          setLtpSelectedSlugs(slugs);
+          setLtpDrawerOpen(false);
+        }
       }
+      void loadActivity();
     } catch (err) {
-      console.error("Failed to toggle looking to party:", err);
+      console.error("Failed to update Looking to Party:", err);
     } finally {
       setLtpBusy(false);
     }
@@ -195,6 +197,11 @@ export function MultiplayerHome({
     return gamesList.filter((game) => {
       // Access allowed slugs filter
       if (allowedSlugs && allowedSlugs.length > 0 && !allowedSlugs.includes(game.gameSlug)) {
+        return false;
+      }
+
+      // Global installed filter
+      if (installedOnly && !installedSet.has(game.gameSlug)) {
         return false;
       }
 
@@ -214,7 +221,37 @@ export function MultiplayerHome({
 
       return true;
     });
-  }, [gamesList, allowedSlugs, gameSearch, filterType]);
+  }, [gamesList, allowedSlugs, installedOnly, installedSet, gameSearch, filterType]);
+
+  // Spotlight active games for Overview
+  const activeSpotlightGames = useMemo(() => {
+    const active = filteredGames.filter(
+      (g) => g.openPartyCount > 0 || g.usersLookingCount > 0 || g.serverPlayerCount > 0 || g.serversOnline > 0
+    );
+    return (active.length > 0 ? active : filteredGames).slice(0, 6);
+  }, [filteredGames]);
+
+  // Available games for LTP picker, sorting installed games first
+  const ltpAvailableGames = useMemo(() => {
+    const q = ltpSearchQuery.trim().toLowerCase();
+    const filtered = gamesList.filter((g) => {
+      if (!q) return true;
+      return (
+        g.gameTitle.toLowerCase().includes(q) ||
+        g.genre?.toLowerCase().includes(q) ||
+        g.tags?.some((t) => t.toLowerCase().includes(q))
+      );
+    });
+
+    return filtered.sort((a, b) => {
+      const aInstalled = installedSet.has(a.gameSlug) ? 1 : 0;
+      const bInstalled = installedSet.has(b.gameSlug) ? 1 : 0;
+      if (aInstalled !== bInstalled) {
+        return bInstalled - aInstalled; // Installed games first!
+      }
+      return a.gameTitle.localeCompare(b.gameTitle);
+    });
+  }, [gamesList, ltpSearchQuery, installedSet]);
 
   // Handle tab switching with URL sync
   function handleTabChange(tab: "overview" | "games" | "parties" | "servers" | "events") {
@@ -490,16 +527,12 @@ export function MultiplayerHome({
               onChange={(e) => setLtpSearchQuery(e.target.value)}
               className="w-full rounded-xl border border-border bg-secondary/50 px-4 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30"
             />
-            <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-1">
-              {gamesList
-                .filter((g) =>
-                  ltpSearchQuery.trim()
-                    ? g.gameTitle.toLowerCase().includes(ltpSearchQuery.toLowerCase())
-                    : true
-                )
-                .slice(0, 16)
+            <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto p-1">
+              {ltpAvailableGames
+                .slice(0, 32)
                 .map((g) => {
                   const isSelected = ltpSelectedSlugs.includes(g.gameSlug);
+                  const isInstalled = installedSet.has(g.gameSlug);
                   return (
                     <button
                       key={g.gameSlug}
@@ -515,13 +548,19 @@ export function MultiplayerHome({
                         }
                       }}
                       className={cn(
-                        "rounded-lg px-2.5 py-1 text-xs font-semibold transition-all",
+                        "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all",
                         isSelected
                           ? "bg-amber-500 text-black font-bold"
+                          : isInstalled
+                          ? "border border-emerald-500/40 bg-emerald-500/10 text-foreground hover:bg-emerald-500/20"
                           : "border border-border bg-secondary text-foreground hover:bg-secondary/80 disabled:opacity-40"
                       )}
+                      title={isInstalled ? `Installed · ${g.gameTitle}` : g.gameTitle}
                     >
-                      {g.gameTitle}
+                      {isInstalled && !isSelected && (
+                        <span className="size-1.5 rounded-full bg-emerald-400 inline-block" title="Installed" />
+                      )}
+                      <span>{g.gameTitle}</span>
                     </button>
                   );
                 })}
@@ -560,25 +599,6 @@ export function MultiplayerHome({
           </div>
         </div>
       )}
-
-      {/* Friends Active Section */}
-      <MultiplayerFriendsSection
-        signedIn={signedIn}
-        onJoinLtpWithFriend={(friendSlugs) => {
-          setLtpSelectedSlugs(friendSlugs);
-          setLtpDrawerOpen(true);
-        }}
-      />
-
-      {/* Open Parties Section */}
-      <MultiplayerOpenParties
-        signedIn={signedIn}
-        initialParties={initialParties}
-        onStartParty={() => {
-          setCreatePartyOpen(true);
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        }}
-      />
 
       {/* Main Navigation Tabs */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/60 pb-3">
@@ -631,10 +651,22 @@ export function MultiplayerHome({
           >
             Events
           </button>
+
+          {/* Global Filter: Installed Only (placed to the right of events) */}
+          <div className="h-5 w-px bg-border/60 mx-1.5" />
+          <label className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer select-none px-2 py-1 rounded-lg hover:bg-secondary/50 transition-colors">
+            <input
+              type="checkbox"
+              checked={installedOnly}
+              onChange={(e) => setInstalledOnly(e.target.checked)}
+              className="size-3.5 rounded border-border text-primary accent-primary focus:ring-primary/20 cursor-pointer"
+            />
+            <span>Installed only</span>
+          </label>
         </div>
 
         {/* Search for Games */}
-        {(activeTab === "overview" || activeTab === "games") && (
+        {activeTab === "games" && (
           <div className="relative min-w-[200px] flex-1 sm:max-w-xs">
             <Search className="absolute left-3 top-2.5 size-3.5 text-muted-foreground" />
             <input
@@ -648,17 +680,124 @@ export function MultiplayerHome({
         )}
       </div>
 
-      {/* View: Overview & Games Grid */}
-      {(activeTab === "overview" || activeTab === "games") && (
+      {/* View: Overview (All Activity Feed) */}
+      {activeTab === "overview" && (
+        <div className="space-y-8">
+          {/* Friends Active Section */}
+          <MultiplayerFriendsSection
+            signedIn={signedIn}
+            onJoinLtpWithFriend={(friendSlugs) => {
+              setLtpSelectedSlugs(friendSlugs);
+              setLtpDrawerOpen(true);
+            }}
+          />
+
+          {/* Open Parties Section */}
+          <MultiplayerOpenParties
+            signedIn={signedIn}
+            initialParties={initialParties}
+            installedGameSlugs={installedGameSlugs}
+            installedOnly={installedOnly}
+            onStartParty={() => {
+              setCreatePartyOpen(true);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+          />
+
+          {/* Spotlight Shelf: Active Right Now */}
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-base font-extrabold tracking-tight flex items-center gap-2">
+                  <Swords className="size-4 text-primary" />
+                  Active Right Now
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Multiplayer games with live parties, players looking to play, or active servers.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleTabChange("games")}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-secondary/60 px-3 py-1.5 text-xs font-bold text-foreground hover:bg-secondary transition-colors"
+              >
+                Browse all {filteredGames.length} games
+                <ArrowRight className="size-3.5" />
+              </button>
+            </div>
+
+            {activityLoading ? (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-44 rounded-2xl border border-border/50 bg-secondary/20 animate-pulse" />
+                ))}
+              </div>
+            ) : activeSpotlightGames.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border/70 bg-secondary/10 p-8 text-center">
+                <p className="text-sm font-semibold text-muted-foreground">
+                  {installedOnly
+                    ? "No installed multiplayer games found with active players. Try turning off 'Installed only'."
+                    : "No active multiplayer games right now. Start a party or check the server browser below!"}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {activeSpotlightGames.map((game) => (
+                  <MultiplayerGameCard
+                    key={game.gameSlug}
+                    activity={game}
+                    onSelectGameForLtp={handleSelectForLtp}
+                    onBrowseServers={handleBrowseServers}
+                    onStartParty={handleStartPartyForGame}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Live Servers Ecosystem */}
+          <div ref={serverBrowserRef} className="space-y-4 pt-4 border-t border-border/50">
+            <div>
+              <div className="inline-flex items-center gap-1.5 rounded-md bg-cyan-500/20 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-cyan-300 border border-cyan-500/30">
+                <Server className="size-3" />
+                Live Server Ecosystem
+              </div>
+              <h2 className="text-lg font-extrabold tracking-tight mt-1 text-foreground">
+                Live Community & Dedicated Servers
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Real-time query data from official master lists and community game servers.
+              </p>
+            </div>
+
+            <GlobalServerBrowser
+              installedGameSlugs={installedGameSlugs}
+              installedModSlugs={installedModSlugs}
+              signedIn={signedIn}
+              allowedSlugs={allowedSlugs}
+              hideInstalledToggle={true}
+              installedOnly={installedOnly}
+            />
+          </div>
+
+          {/* Events */}
+          <div className="pt-4 border-t border-border/50">
+            <MultiplayerEvents initialEvents={initialEvents} />
+          </div>
+        </div>
+      )}
+
+      {/* View: Games Directory */}
+      {activeTab === "games" && (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-base font-extrabold tracking-tight flex items-center gap-2">
                 <Swords className="size-4 text-primary" />
-                Active Multiplayer Games ({filteredGames.length})
+                Multiplayer Games Directory ({filteredGames.length})
               </h2>
               <p className="text-xs text-muted-foreground">
-                Ranked by real player activity across PlayBound parties, looking-to-party users, and tracked servers.
+                Explore all multiplayer-supported titles, community servers, and matchmaking.
               </p>
             </div>
 
@@ -716,7 +855,9 @@ export function MultiplayerHome({
           ) : filteredGames.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-border/70 bg-secondary/10 p-8 text-center">
               <p className="text-sm font-semibold text-muted-foreground">
-                No multiplayer games match your current filter.
+                {installedOnly
+                  ? "No installed multiplayer games match your current filter. Try turning off 'Installed only'."
+                  : "No multiplayer games match your current filter."}
               </p>
             </div>
           ) : (
@@ -736,8 +877,8 @@ export function MultiplayerHome({
       )}
 
       {/* View: Live Servers Browser */}
-      {(activeTab === "overview" || activeTab === "servers") && (
-        <div ref={serverBrowserRef} className="space-y-4 pt-4 border-t border-border/50">
+      {activeTab === "servers" && (
+        <div ref={serverBrowserRef} className="space-y-4">
           <div>
             <div className="inline-flex items-center gap-1.5 rounded-md bg-cyan-500/20 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-cyan-300 border border-cyan-500/30">
               <Server className="size-3" />
@@ -756,13 +897,15 @@ export function MultiplayerHome({
             installedModSlugs={installedModSlugs}
             signedIn={signedIn}
             allowedSlugs={allowedSlugs}
+            hideInstalledToggle={true}
+            installedOnly={installedOnly}
           />
         </div>
       )}
 
       {/* View: Events */}
-      {(activeTab === "overview" || activeTab === "events") && (
-        <div className="pt-4 border-t border-border/50">
+      {activeTab === "events" && (
+        <div className="space-y-4">
           <MultiplayerEvents initialEvents={initialEvents} />
         </div>
       )}

@@ -51,74 +51,102 @@ function getDedicatedServerPlayerCount(liveStats, supportedGames) {
   return total;
 }
 
-async function renderServersView() {
-  const container = views.servers;
-  container.innerHTML = `
-    <div class="section-header" style="margin-top: 0">
-      <div>
-        <h1 class="view-title" style="margin: 0">Servers <span class="servers-title-hint">Pick a game to see who&apos;s playing.</span></h1>
+export function buildServersBrowserHtml(hintText = "Pick a game to see who&apos;s playing.") {
+  return `
+    <div class="servers-browser-embedded">
+      <div class="section-header" style="margin-top: 0">
+        <div>
+          <h2 class="view-title" style="font-size: 1.35rem; margin: 0">Live Community &amp; Dedicated Servers <span class="servers-title-hint">${hintText}</span></h2>
+        </div>
+        <button class="btn-secondary btn-sm" id="servers-refresh">
+          <svg class="refresh-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 4px;">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          Refresh Servers
+        </button>
       </div>
-      <button class="btn-secondary btn-sm" id="servers-refresh">
-        <svg class="refresh-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 4px;">
-          <polyline points="23 4 23 10 17 10"></polyline>
-          <polyline points="1 20 1 14 7 14"></polyline>
-          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-        </svg>
-        Refresh
-      </button>
-    </div>
 
-    <div class="servers-toolbar">
-      <div class="servers-field">
-        <span class="servers-field-label">Game</span>
-        <select class="input-text" id="servers-game" aria-label="Base game"></select>
+      <div class="servers-toolbar">
+        <div class="servers-field">
+          <span class="servers-field-label">Game</span>
+          <select class="input-text" id="servers-game" aria-label="Base game"></select>
+        </div>
+        <div class="servers-field">
+          <span class="servers-field-label">Mod</span>
+          <select class="input-text" id="servers-mod" aria-label="Mod"></select>
+        </div>
+        <div class="servers-field servers-field-grow">
+          <span class="servers-field-label">Search</span>
+          <input type="search" class="input-text" id="servers-search" placeholder="Name, map, players…" value="${escapeHtml(state.serversState.search)}" />
+        </div>
+        <div class="servers-filter-options" aria-label="Server filters">
+          <label class="servers-filter-toggle"><input type="checkbox" id="servers-with-players" ${state.serversState.withPlayersOnly ? "checked" : ""} /><span>Servers with players</span></label>
+        </div>
       </div>
-      <div class="servers-field">
-        <span class="servers-field-label">Mod</span>
-        <select class="input-text" id="servers-mod" aria-label="Mod"></select>
-      </div>
-      <div class="servers-field servers-field-grow">
-        <span class="servers-field-label">Search</span>
-        <input type="search" class="input-text" id="servers-search" placeholder="Name, map, players…" value="${escapeHtml(state.serversState.search)}" />
-      </div>
-      <div class="servers-filter-options" aria-label="Server filters">
-        <label class="servers-filter-toggle"><input type="checkbox" id="servers-installed-only" ${state.serversState.installedOnly ? "checked" : ""} /><span>Installed only</span></label>
-        <label class="servers-filter-toggle"><input type="checkbox" id="servers-with-players" ${state.serversState.withPlayersOnly ? "checked" : ""} /><span>Servers with players</span></label>
-      </div>
+      <p class="view-sub" id="servers-note" style="margin-top: 8px"></p>
+      <p class="servers-stats" id="servers-stats"></p>
+      <div id="servers-table-wrap"></div>
     </div>
-    <p class="view-sub" id="servers-note" style="margin-top: 8px"></p>
-    <p class="servers-stats" id="servers-stats"></p>
-    <div id="servers-table-wrap"></div>
   `;
+}
 
-  document.getElementById("servers-refresh").addEventListener("click", () => {
-    state.serversState.pingById = {};
-    api.renderServersView();
-  });
-  document.getElementById("servers-search").addEventListener("input", (e) => {
-    state.serversState.search = e.target.value;
-    paintServersTable();
-  });
-  document.getElementById("servers-installed-only").addEventListener("change", (e) => {
-    state.serversState.installedOnly = e.target.checked;
-    state.serversState.pingById = {};
-    void refreshServersPickersAndList();
-  });
-  document.getElementById("servers-with-players").addEventListener("change", (e) => {
-    state.serversState.withPlayersOnly = e.target.checked;
-    try {
-      localStorage.setItem("playbound_servers_with_players", String(e.target.checked));
-    } catch {
-      /* ignore */
-    }
-    paintServersTable();
-  });
+export async function wireServersBrowser(container, selectedGameSlug = null) {
+  if (selectedGameSlug) {
+    state.serversState.selectedSlug = selectedGameSlug;
+    state.serversState.selectedModSlug = "";
+  }
+  const refreshBtn = document.getElementById("servers-refresh");
+  if (refreshBtn) {
+    refreshBtn.onclick = () => {
+      state.serversState.pingById = {};
+      void loadServersBrowser();
+    };
+  }
+  const searchInput = document.getElementById("servers-search");
+  if (searchInput) {
+    searchInput.oninput = (e) => {
+      state.serversState.search = e.target.value;
+      paintServersTable();
+    };
+  }
+  const installedOnlyBox = document.getElementById("servers-installed-only");
+  if (installedOnlyBox) {
+    installedOnlyBox.onchange = (e) => {
+      state.serversState.installedOnly = e.target.checked;
+      state.serversState.pingById = {};
+      void refreshServersPickersAndList();
+    };
+  }
+  const withPlayersBox = document.getElementById("servers-with-players");
+  if (withPlayersBox) {
+    withPlayersBox.onchange = (e) => {
+      state.serversState.withPlayersOnly = e.target.checked;
+      try {
+        localStorage.setItem("playbound_servers_with_players", String(e.target.checked));
+      } catch {
+        /* ignore */
+      }
+      paintServersTable();
+    };
+  }
 
   if (state._supportedServerGames && state._supportedServerGames.length > 0) {
     void refreshServersPickersAndList();
   }
   await loadServersBrowser();
-  markViewReady(container);
+  if (container) markViewReady(container);
+}
+
+export async function renderServersView(opts = {}) {
+  if (api.renderMultiplayerView) {
+    return api.renderMultiplayerView({ tab: "servers", ...opts });
+  }
+  const container = views.servers;
+  if (!container) return;
+  container.innerHTML = buildServersBrowserHtml();
+  await wireServersBrowser(container, opts.game);
 }
 
 let _serversCache = { slug: null, servers: [], title: "", note: "", error: "" };
@@ -169,7 +197,7 @@ function gamesForServerPicker() {
   return list;
 }
 
-async function refreshServersPickersAndList() {
+export async function refreshServersPickersAndList() {
   const gameSelect = document.getElementById("servers-game");
   const note = document.getElementById("servers-note");
   const supported = gamesForServerPicker();
@@ -222,7 +250,7 @@ async function refreshServersPickersAndList() {
   await fetchAndShowServers(state.serversState.selectedSlug, selectedModOrNull());
 }
 
-async function loadServersBrowser() {
+export async function loadServersBrowser() {
   const [index, modsRes, installed, installedMods, liveStats] = await Promise.all([
     window.playbound.getServerIndex(),
     window.playbound.getModsCatalog(),
@@ -571,3 +599,5 @@ async function pingVisibleServers() {
 }
 
 api.renderServersView = renderServersView;
+api.buildServersBrowserHtml = buildServersBrowserHtml;
+api.wireServersBrowser = wireServersBrowser;

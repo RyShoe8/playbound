@@ -117,6 +117,16 @@ export const state = {
     sort: "players",
     sortDir: "desc",
   },
+  multiplayerState: {
+    activeTab: "overview",
+    gameSearch: "",
+    filterType: "all",
+    ltpDrawerOpen: false,
+    createPartyOpen: false,
+    ltpActive: false,
+    ltpSelectedSlugs: [],
+    selectedGameForParty: "",
+  },
   SERVER_SORT_DEFAULT_DIR: {
     name: "asc",
     players: "desc",
@@ -171,6 +181,7 @@ export const CACHE_TTL = {
   freeOffers: 120_000,
   liveStatsGame: 30_000,
   catalogLiveStats: 15 * 60_000,
+  multiplayerActivity: 20_000,
 };
 
 /*
@@ -223,6 +234,7 @@ export function bindViews() {
   views.search = document.getElementById("view-search");
   views.editions = document.getElementById("view-editions");
   views.mods = document.getElementById("view-mods");
+  views.multiplayer = document.getElementById("view-multiplayer");
   views.servers = document.getElementById("view-servers");
   views.events = document.getElementById("view-events");
   views.friends = document.getElementById("view-friends");
@@ -489,6 +501,9 @@ function repaintFilteredViews({ includeLibrary = false } = {}) {
   else if (state.currentView === "events") {
     markViewDirty(views.events);
     api.renderEventsView?.();
+  } else if (state.currentView === "multiplayer") {
+    markViewDirty(views.multiplayer);
+    api.renderMultiplayerView?.();
   } else if (state.currentView === "servers") {
     markViewDirty(views.servers);
     api.renderServersView?.();
