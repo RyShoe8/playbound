@@ -7100,11 +7100,7 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   if (slug === "mrboom" && editionSlug === "retroarch") {
     return installSharedMrBoom(editionSlug);
   }
-  let entry =
-    (await ensureCatalogEntry(slug, true)) ||
-    catalogEntry(slug) ||
-    bundledCatalog.find((e) => e.slug === slug);
-
+  let entry = catalogEntry(slug) || bundledCatalog.find((e) => e.slug === slug);
   let editionMeta = null;
   try {
     editionMeta = await resolveEditionForInstall(slug, editionSlug || null);
@@ -7155,6 +7151,14 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
         }
       }
     }
+  }
+
+  // An edition's installer payload is authoritative and complete. Avoid a
+  // second game-recipe request before starting it; paid parent games commonly
+  // have an external recipe, and that request left edition installs sitting at
+  // "Finding the download" even though the edition archive was already known.
+  if (!editionMeta) {
+    entry = (await ensureCatalogEntry(slug, true)) || entry;
   }
 
   if (!entry) {
@@ -8631,7 +8635,16 @@ async function installLocateThenZip(slug, entry, editionExtra) {
   sendProgress({ phase: "resolving" });
   const overlayName = entry.overlayFileName || overlay.name || "overlay.zip";
   const downloadPath = path.join(app.getPath("temp"), "playbound-launcher", overlayName);
-  await downloadTo(overlay.url, downloadPath);
+  const artifactId = entry.editionId
+    ? `${slug}--${editionExtra.editionSlug || DEFAULT_EDITION_SLUG}--${overlay.version || "unknown"}--${overlayName}`
+    : null;
+  await downloadResilientArtifact({
+    slug,
+    artifactId,
+    version: overlay.version,
+    directUrl: overlay.url,
+    dest: downloadPath,
+  });
   sendProgress({ phase: "extracting" });
   // Merge overlay into the copied base game tree (do not delete gameDir).
   await extractArchive(downloadPath, gameDir);
