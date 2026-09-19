@@ -130,21 +130,18 @@ export function MultiplayerHome({
     if (!signedIn) return;
     async function checkMyLtp() {
       try {
-        const res = await fetch("/api/presence/heartbeat");
+        const res = await fetch("/api/play-together");
         if (!res.ok) return;
         const data = await res.json();
-        if (data.presence?.lookingForPlayersUntil) {
-          const expiresAt = new Date(data.presence.lookingForPlayersUntil).getTime();
-          if (expiresAt > Date.now()) {
-            setLtpActive(true);
-            const slugs = data.presence.lookingForPlayersGameIds || (data.presence.lookingForPlayersGameId ? [data.presence.lookingForPlayersGameId] : []);
-            setLtpSelectedSlugs(slugs);
-          } else {
-            setLtpActive(false);
-          }
-        } else {
-          setLtpActive(false);
-        }
+        const myLfg = data.myLfg;
+        setLtpActive(Boolean(myLfg?.active));
+        setLtpSelectedSlugs(
+          Array.isArray(myLfg?.gameSlugs)
+            ? myLfg.gameSlugs
+            : myLfg?.gameSlug
+            ? [myLfg.gameSlug]
+            : []
+        );
       } catch (err) {
         console.error("Failed to check Looking to Party status:", err);
       }
@@ -161,8 +158,10 @@ export function MultiplayerHome({
     setLtpBusy(true);
     try {
       if (slugs.length === 0 && ltpActive) {
-        const res = await fetch("/api/presence/looking-for-players", {
-          method: "DELETE",
+        const res = await fetch("/api/presence/lfg", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ enabled: false }),
         });
         if (res.ok) {
           setLtpActive(false);
@@ -170,10 +169,10 @@ export function MultiplayerHome({
           setLtpDrawerOpen(false);
         }
       } else {
-        const res = await fetch("/api/presence/looking-for-players", {
+        const res = await fetch("/api/presence/lfg", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ gameSlugs: slugs, note: "" }),
+          body: JSON.stringify({ enabled: true, gameSlugs: slugs }),
         });
         if (res.ok) {
           setLtpActive(true);
