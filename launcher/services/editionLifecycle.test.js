@@ -6,12 +6,23 @@ test("only installer-backed official editions invoke a native product uninstalle
   assert.equal(mayRunNativeUninstaller("tes3mp", { kind: "direct-installer" }), false);
   assert.equal(mayRunNativeUninstaller("official", { kind: "direct-installer" }), true);
   assert.equal(mayRunNativeUninstaller("official", { kind: "github-installer" }), true);
+  assert.equal(mayRunNativeUninstaller("official", { kind: "external" }), true);
   assert.equal(mayRunNativeUninstaller("official", { kind: "direct-zip" }), false);
   assert.equal(mayRunNativeUninstaller(null), true);
   assert.equal(mayRunNativeUninstaller(null, { kind: "direct-zip" }), false);
   assert.equal(mayRunNativeUninstaller(null, { kind: "github-zip" }), false);
   assert.equal(mayRunNativeUninstaller(null, { kind: "direct-exe" }), false);
   assert.equal(mayRunNativeUninstaller(null, { kind: "direct-installer" }), true);
+  assert.equal(mayRunNativeUninstaller(null, { kind: "external" }), true);
+  assert.equal(mayRunNativeUninstaller(null, { kind: "direct-zip" }, { hasUninstaller: true }), true);
+  assert.equal(
+    mayRunNativeUninstaller("lost-alpha", { kind: "direct-zip" }, { hasUninstaller: true, lastOwnerOfInstallPath: true }),
+    true
+  );
+  assert.equal(
+    mayRunNativeUninstaller("lost-alpha", { kind: "external" }, { isStandalone: true }),
+    true
+  );
 });
 
 test("last owner of a shared installer path may run the product uninstaller", () => {
