@@ -1,10 +1,10 @@
 import { unstable_cache, revalidateTag } from "next/cache";
 import dbConnect from "@/lib/db";
 import Party from "@/lib/models/Party";
-import { listGames, getGame } from "@/lib/catalog";
+import { listGames } from "@/lib/catalog";
 import { listDiscoverableGames } from "@/lib/access/discover";
 import { gameRequiresPurchase } from "@/lib/access/resolver";
-import { countLookingToPartyByGame } from "@/lib/playTogether/lookingToParty";
+import { getLookingToPartyCounts } from "@/lib/playTogether/lookingToParty";
 import { getGameLiveStats } from "@/lib/liveActivity";
 import { supportsMultiplayer, supportsLauncherParty } from "@/lib/multiplayer/support";
 
@@ -57,12 +57,15 @@ export async function computeMultiplayerActivitySnapshot(): Promise<MultiplayerA
     console.warn("Multiplayer activity snapshot: DB connection failed, using offline fallback:", dbErr);
   }
 
-  const [discoverable, allGames, ltpCounts, openPartyRows] = await Promise.all([
+  const [discoverable, allGames, ltp, openPartyRows] = await Promise.all([
     listDiscoverableGames().catch(() => []),
     listGames({ includeTesting: false }),
     hasDb
-      ? countLookingToPartyByGame().catch((): Record<string, number> => ({}))
-      : Promise.resolve<Record<string, number>>({}),
+      ? getLookingToPartyCounts().catch((): {
+          total: number;
+          byGame: Record<string, number>;
+        } => ({ total: 0, byGame: {} }))
+      : Promise.resolve({ total: 0, byGame: {} as Record<string, number> }),
     hasDb
       ? Party.aggregate<{ _id: string; count: number }>([
           {
@@ -112,15 +115,11 @@ export async function computeMultiplayerActivitySnapshot(): Promise<MultiplayerA
   let totalServerPlayers = 0;
   let totalServersOnline = 0;
   let totalOpenParties = 0;
-  let totalUsersLooking = 0;
+  const totalUsersLooking = ltp.total;
 
   for (const count of openPartyMap.values()) {
     totalOpenParties += count;
   }
-  for (const count of Object.values(ltpCounts)) {
-    totalUsersLooking += count;
-  }
-
   const activities: GameMultiplayerActivity[] = multiplayerGames.map((game) => {
     const stats = statsMap.get(game.slug) || {
       playingNow: 0,
@@ -129,7 +128,7 @@ export async function computeMultiplayerActivitySnapshot(): Promise<MultiplayerA
       serverCount: 0,
     };
     const openCount = openPartyMap.get(game.slug) || 0;
-    const lookingCount = ltpCounts[game.slug] || 0;
+    const lookingCount = ltp.byGame[game.slug] || 0;
     const srvPlayers = stats.multiplayerPlayers || 0;
     const srvOnline = stats.serverCount || 0;
     const isMmo = isMmoGame(game);
