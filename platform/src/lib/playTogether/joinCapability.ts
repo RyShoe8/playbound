@@ -39,7 +39,7 @@ export function resolveJoinCapability(opts: {
     return {
       capability: "supported",
       label: "Join Game",
-      href: `/servers?game=${encodeURIComponent(slug)}${editionQ}`,
+      href: `/multiplayer?tab=servers&game=${encodeURIComponent(slug)}${editionQ}`,
       reason: "Open the server browser for this game",
     };
   }

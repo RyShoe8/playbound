@@ -327,19 +327,32 @@ export function GlobalServerBrowser({
     return editionSlug && editionOptions.some((e) => e.slug === editionSlug) ? editionSlug : "";
   }, [editionMode, editionSlug, editionOptions]);
 
-  // Keep URL shareable (game + edition/mod).
+  // Keep URL shareable (game + edition/mod) on whatever page embeds the browser.
   useEffect(() => {
     if (!catalogLoaded) return;
     if (urlSyncSkip.current) {
       urlSyncSkip.current = false;
       return;
     }
-    const params = new URLSearchParams();
-    if (effectiveGameSlug) params.set("game", effectiveGameSlug);
-    if (editionMode && effectiveEditionSlug) params.set("edition", effectiveEditionSlug);
-    if (!editionMode && effectiveModSlug) params.set("mod", effectiveModSlug);
+    const basePath = window.location.pathname || "/multiplayer";
+    const params = new URLSearchParams(window.location.search);
+    if (effectiveGameSlug) {
+      params.set("game", effectiveGameSlug);
+    } else {
+      params.delete("game");
+    }
+    if (editionMode && effectiveEditionSlug) {
+      params.set("edition", effectiveEditionSlug);
+    } else {
+      params.delete("edition");
+    }
+    if (!editionMode && effectiveModSlug) {
+      params.set("mod", effectiveModSlug);
+    } else {
+      params.delete("mod");
+    }
     const qs = params.toString();
-    const next = qs ? `/servers?${qs}` : "/servers";
+    const next = qs ? `${basePath}?${qs}` : basePath;
     const current = `${window.location.pathname}${window.location.search}`;
     if (current !== next) {
       router.replace(next, { scroll: false });
@@ -719,7 +732,7 @@ export function GlobalServerBrowser({
 
       {!signedIn && (
         <p className="text-xs text-muted-foreground">
-          <Link href="/login?callbackUrl=/servers" className="font-semibold text-primary hover:underline">
+          <Link href="/login?callbackUrl=/multiplayer" className="font-semibold text-primary hover:underline">
             Sign in
           </Link>{" "}
           and connect the launcher to filter by installed games

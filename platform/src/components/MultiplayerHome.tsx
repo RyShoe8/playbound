@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Swords,
   Users,
@@ -46,13 +47,35 @@ export function MultiplayerHome({
   allowedSlugs,
 }: Props) {
   const { activeParty } = usePartyStore();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const queryTab = searchParams.get("tab");
 
   // Activity aggregation state
   const [activityData, setActivityData] = useState<MultiplayerActivityResponse | null>(null);
   const [activityLoading, setActivityLoading] = useState(true);
 
   // Active section tab
-  const [activeTab, setActiveTab] = useState<"overview" | "games" | "parties" | "servers" | "events">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "games" | "parties" | "servers" | "events">(
+    queryTab === "games" || queryTab === "parties" || queryTab === "servers" || queryTab === "events"
+      ? queryTab
+      : searchParams.get("game")
+      ? "servers"
+      : "overview"
+  );
+
+  useEffect(() => {
+    if (
+      queryTab &&
+      (queryTab === "overview" ||
+        queryTab === "games" ||
+        queryTab === "parties" ||
+        queryTab === "servers" ||
+        queryTab === "events")
+    ) {
+      setActiveTab(queryTab);
+    }
+  }, [queryTab]);
 
   // Create party drawer
   const [createPartyOpen, setCreatePartyOpen] = useState(false);
@@ -182,9 +205,26 @@ export function MultiplayerHome({
     });
   }, [gamesList, allowedSlugs, gameSearch, filterType]);
 
+  // Handle tab switching with URL sync
+  function handleTabChange(tab: "overview" | "games" | "parties" | "servers" | "events") {
+    setActiveTab(tab);
+    const params = new URLSearchParams(window.location.search);
+    if (tab === "overview") {
+      params.delete("tab");
+    } else {
+      params.set("tab", tab);
+    }
+    const qs = params.toString();
+    const next = qs ? `/multiplayer?${qs}` : "/multiplayer";
+    const current = `${window.location.pathname}${window.location.search}`;
+    if (current !== next) {
+      router.replace(next, { scroll: false });
+    }
+  }
+
   // Jump to server browser for a specific game
   function handleBrowseServers(slug: string) {
-    setActiveTab("servers");
+    handleTabChange("servers");
     setTimeout(() => {
       serverBrowserRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 100);
@@ -533,7 +573,7 @@ export function MultiplayerHome({
         <div className="flex items-center gap-1.5 overflow-x-auto">
           <button
             type="button"
-            onClick={() => setActiveTab("overview")}
+            onClick={() => handleTabChange("overview")}
             className={cn(
               "rounded-xl px-4 py-2 text-xs font-bold transition-all",
               activeTab === "overview"
@@ -545,7 +585,7 @@ export function MultiplayerHome({
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab("games")}
+            onClick={() => handleTabChange("games")}
             className={cn(
               "rounded-xl px-4 py-2 text-xs font-bold transition-all",
               activeTab === "games"
@@ -557,7 +597,7 @@ export function MultiplayerHome({
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab("servers")}
+            onClick={() => handleTabChange("servers")}
             className={cn(
               "rounded-xl px-4 py-2 text-xs font-bold transition-all",
               activeTab === "servers"
@@ -569,7 +609,7 @@ export function MultiplayerHome({
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab("events")}
+            onClick={() => handleTabChange("events")}
             className={cn(
               "rounded-xl px-4 py-2 text-xs font-bold transition-all",
               activeTab === "events"
