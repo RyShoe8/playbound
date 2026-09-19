@@ -994,9 +994,26 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
           installBtn.type = "button";
           installBtn.className = "btn-primary btn-xs btn-lib-install";
           installBtn.textContent = "Install";
-          installBtn.addEventListener("click", (e) => {
+          installBtn.addEventListener("click", async (e) => {
             e.stopPropagation();
-            api.openEditionDetail(game.slug, ed.slug, "library");
+            installBtn.disabled = true;
+            installBtn.textContent = "Installing…";
+            setStatus(`Installing ${game.title} — ${ed.name}…`);
+            try {
+              const res = await window.playbound.install(game.slug, null, ed.slug);
+              if (res?.status === "cancelled") {
+                setStatus(res.note || "Install cancelled.");
+              } else if (res?.status === "external" || res?.status === "installer-opened") {
+                setStatus(res.status === "external" ? "Opened download page." : "Installer opened.");
+              } else {
+                setStatus(`Installed ${game.title} — ${ed.name}.`);
+              }
+              await api.renderLibraryView();
+            } catch (err) {
+              setStatus(err?.message || String(err), true);
+              installBtn.disabled = false;
+              installBtn.textContent = "Install";
+            }
           });
           rowActions.appendChild(installBtn);
 
@@ -1083,10 +1100,24 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
         install.type = "button";
         install.className = "btn-primary btn-sm btn-lib-install";
         install.textContent = "Install";
-        install.addEventListener("click", (e) => {
+        install.addEventListener("click", async (e) => {
           e.stopPropagation();
           if (ed.catalogRecord) {
-            api.openEditionDetail(game.slug, ed.slug, "library");
+            install.disabled = true;
+            install.textContent = "Installing…";
+            setStatus(`Installing ${game.title} — ${ed.name}…`);
+            try {
+              const res = await window.playbound.install(game.slug, null, ed.slug);
+              if (res?.status === "cancelled") setStatus(res.note || "Install cancelled.");
+              else if (res?.status === "external" || res?.status === "installer-opened") {
+                setStatus(res.status === "external" ? "Opened download page." : "Installer opened.");
+              } else setStatus(`Installed ${game.title} — ${ed.name}.`);
+              await api.renderLibraryView();
+            } catch (err) {
+              setStatus(err?.message || String(err), true);
+              install.disabled = false;
+              install.textContent = "Install";
+            }
           } else {
             api.openGameDetail(game.slug, "library");
           }

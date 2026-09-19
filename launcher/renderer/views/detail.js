@@ -908,10 +908,10 @@ async function renderGameDetailView(slug, opts = {}) {
                 : ""
             }
             ${
-              editions.length > 1
+              editions.length > 0
                 ? `<section class="detail-section" id="detail-editions-sec">
                      <h2 class="detail-section-title">Available Editions</h2>
-                     <p class="view-sub" style="margin-top:-6px;margin-bottom:12px">${editions.length} ways to play ${escapeHtml(detail.title)}. Each has its own install and community.</p>
+                     <p class="view-sub" style="margin-top:-6px;margin-bottom:12px">${editions.length === 1 ? "A community edition is" : `${editions.length} editions are`} available for ${escapeHtml(detail.title)}. Each installs separately.</p>
                      <div class="detail-editions-grid" id="detail-editions-list"></div>
                    </section>`
                 : ""
@@ -1111,7 +1111,7 @@ async function renderGameDetailView(slug, opts = {}) {
   `;
 
   const editionsList = document.getElementById("detail-editions-list");
-  if (editionsList && editions.length > 1) {
+  if (editionsList && editions.length > 0) {
     for (const ed of editions) {
       const card = document.createElement("div");
       card.className = "detail-edition-card";
