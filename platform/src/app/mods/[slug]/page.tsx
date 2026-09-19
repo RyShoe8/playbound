@@ -228,7 +228,7 @@ export default async function ModPage({
                 <>
                   {" · "}
                   <Link
-                    href={`/servers?game=${encodeURIComponent(baseGame.slug)}&mod=${encodeURIComponent(mod.slug)}`}
+                    href={`/multiplayer?tab=servers&game=${encodeURIComponent(baseGame.slug)}&mod=${encodeURIComponent(mod.slug)}`}
                     className="font-semibold text-primary hover:underline"
                   >
                     Browse servers

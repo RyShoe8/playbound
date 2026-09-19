@@ -169,7 +169,7 @@ export default function ConnectPage() {
       )}
 
       <p className="text-sm">
-        <Link href="/servers" className="font-semibold text-primary hover:underline">
+        <Link href="/multiplayer?tab=servers" className="font-semibold text-primary hover:underline">
           Browse live public servers
         </Link>
         {" · "}

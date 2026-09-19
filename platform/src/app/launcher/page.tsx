@@ -110,7 +110,7 @@ const social = [
     icon: Server,
     title: "Live server browser",
     text: "Public community servers for dozens of titles, pinged live so you can see what is actually up before you join.",
-    href: "/servers",
+    href: "/multiplayer?tab=servers",
     linkLabel: "Browse servers",
   },
 ];
