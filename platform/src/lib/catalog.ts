@@ -709,37 +709,6 @@ async function computeAllGames(): Promise<AdminGame[]> {
       };
     });
 
-    // Merge in seed games that have not yet been inserted into MongoDB so that
-    // newly drafted catalog additions appear on the admin games dashboard.
-    const seenSlugs = new Set(dbGames.map((g) => g.slug));
-    for (const seed of seedGames) {
-      if (!seenSlugs.has(seed.slug)) {
-        const full = seedGameWithInstall(seed);
-        const status = full.status || "draft";
-        dbGames.push({
-          ...full,
-          description: "",
-          longDescription: undefined,
-          whyWePickedIt: undefined,
-          thatOneThing: undefined,
-          installSteps: undefined,
-          firstPlaySteps: undefined,
-          multiplayerGamingSteps: undefined,
-          faq: undefined,
-          screenshots: [],
-          videos: [],
-          systemRequirements: { min: "", recommended: "" },
-          hardwareRequirements: undefined,
-          published: status === "published",
-          status,
-          adminUpdatedAt: null,
-          updatedAt: undefined,
-          publishedAt: null,
-          installCount: 0,
-        });
-      }
-    }
-
     return dbGames;
   } catch (err) {
     console.error("[catalog] listAllGames failed:", err);
@@ -784,11 +753,6 @@ export async function getGame(
     if (doc) return toGame(doc as LeanGame);
   } catch (err) {
     console.error("[catalog] getGame failed:", err);
-  }
-
-  if (opts?.includeUnpublished) {
-    const seed = seedBySlug.get(slug);
-    if (seed) return seedGameWithInstall(seed);
   }
 
   return undefined;
