@@ -11577,15 +11577,29 @@ function collectGameUninstallDirs(slug, game, entry) {
     }
   };
 
+  const pushWithParent = (raw) => {
+    if (!raw) return;
+    push(raw);
+    try {
+      const resolved = path.resolve(raw);
+      const b = path.basename(resolved).toLowerCase();
+      if (["bin", "bins", "system", "game", "win32", "win64", "x86", "x64"].includes(b)) {
+        push(path.dirname(resolved));
+      }
+    } catch {
+      /* ignore */
+    }
+  };
+
   for (const info of listEditionEntries(game)) {
     push(resolveEditionUninstallDir(slug, info.editionSlug || DEFAULT_EDITION_SLUG, info));
     // Outside games-root but still the recorded install (installer games).
-    if (info.dir) push(info.dir);
-    if (info.exe) push(path.dirname(info.exe));
+    if (info.dir) pushWithParent(info.dir);
+    if (info.exe) pushWithParent(path.dirname(info.exe));
   }
   push(resolveEditionUninstallDir(slug, null, { dir: game.dir, exe: game.exe }));
-  if (game.dir) push(game.dir);
-  if (game.exe) push(path.dirname(game.exe));
+  if (game.dir) pushWithParent(game.dir);
+  if (game.exe) pushWithParent(path.dirname(game.exe));
   for (const root of playBoundGamesRoots()) {
     push(path.join(root, slug));
   }
@@ -11594,13 +11608,49 @@ function collectGameUninstallDirs(slug, game, entry) {
     try {
       const full = expandWinPath(String(raw));
       if (!full || !path.isAbsolute(full)) continue;
-      if (fs.existsSync(full)) push(path.dirname(full));
-      else if (fs.existsSync(path.dirname(full))) push(path.dirname(full));
+      if (fs.existsSync(full)) pushWithParent(path.dirname(full));
+      else if (fs.existsSync(path.dirname(full))) pushWithParent(path.dirname(full));
     } catch {
       /* ignore */
     }
   }
   return out;
+}
+
+/**
+ * Find an uninstaller executable inside an install directory or its immediate parent
+ * (e.g. if the game exe was in bins/ or bin/).
+ * Matches Inno Setup (unins000.exe), NSIS (uninstall.exe, uninst.exe), and generic uninstallers.
+ */
+function findUninstallerBinary(dir) {
+  if (!dir || process.platform !== "win32") return null;
+  const dirsToCheck = [];
+  try {
+    const resolved = path.resolve(dir);
+    dirsToCheck.push(resolved);
+    const base = path.basename(resolved).toLowerCase();
+    if (["bin", "bins", "system", "game", "win32", "win64", "x86", "x64"].includes(base)) {
+      dirsToCheck.push(path.dirname(resolved));
+    }
+  } catch {
+    dirsToCheck.push(dir);
+  }
+
+  for (const d of dirsToCheck) {
+    if (!fs.existsSync(d)) continue;
+    try {
+      const files = fs.readdirSync(d);
+      const uninstallerFile = files.find((f) =>
+        /^(unins.*|uninstall.*|uninst.*)\.exe$/i.test(f)
+      );
+      if (uninstallerFile) {
+        return path.join(d, uninstallerFile);
+      }
+    } catch (err) {
+      console.warn(`[uninstall] readdir failed for ${d}:`, err?.message);
+    }
+  }
+  return null;
 }
 
 /**
@@ -11645,12 +11695,12 @@ function isUnsafeUninstallDir(dir) {
   return sameFsPath(resolved, path.resolve(gamesRoot()));
 }
 
-function findUninstallStringFromRegistry(entry) {
-  if (process.platform !== "win32" || !entry) return null;
+function findUninstallStringFromRegistry(entry, dir = null) {
+  if (process.platform !== "win32" || (!entry && !dir)) return null;
   const titles = [
-    String(entry.title || "").trim(),
-    ...((entry.registryTitles || []).map((t) => String(t || "").trim())),
-    entry.slug,
+    String(entry?.title || "").trim(),
+    ...((entry?.registryTitles || []).map((t) => String(t || "").trim())),
+    entry?.slug,
   ].filter(Boolean);
 
   const seenTitles = new Set();
@@ -11661,17 +11711,21 @@ function findUninstallStringFromRegistry(entry) {
     return true;
   });
 
-  const knownBases = knownExecutablePathsFor(entry)
-    .map((p) => path.basename(expandWinPath(p)).toLowerCase())
-    .filter(Boolean);
+  const knownBases = entry
+    ? knownExecutablePathsFor(entry)
+        .map((p) => path.basename(expandWinPath(p)).toLowerCase())
+        .filter(Boolean)
+    : [];
 
-  if (titleList.length === 0 && knownBases.length === 0) return null;
+  const targetDir = dir ? path.resolve(dir) : null;
+  if (titleList.length === 0 && knownBases.length === 0 && !targetDir) return null;
 
   try {
     const ps = `
 $ErrorActionPreference = 'SilentlyContinue'
 $titles = @(${titleList.map((t) => JSON.stringify(t)).join(",")})
 $bases = @(${knownBases.map((b) => JSON.stringify(b)).join(",")})
+$targetDir = ${JSON.stringify(targetDir || "")}
 $paths = @(
   'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*',
   'HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*',
@@ -11680,20 +11734,37 @@ $paths = @(
 $items = Get-ItemProperty $paths | Where-Object { $_.DisplayName -or $_.DisplayIcon -or $_.InstallLocation -or $_.UninstallString }
 function Normalize($s) { ([string]$s).ToLower() -replace '[^a-z0-9]', '' }
 $hit = $null
-foreach ($title in $titles) {
-  if (-not $title) { continue }
-  $hit = $items |
-    Where-Object { $_.DisplayName -and ($_.DisplayName -eq $title -or $_.DisplayName -like ($title + '*')) } |
-    Select-Object -First 1 DisplayName, InstallLocation, DisplayIcon, UninstallString, QuietUninstallString
-  if ($hit) { break }
+if ($targetDir) {
+  $hit = $items | Where-Object {
+    $loc = [string]$_.InstallLocation
+    $un = [string]$_.UninstallString
+    if ($loc -and (Test-Path $loc) -and ((Resolve-Path $loc).Path.TrimEnd('\\').ToLower() -eq $targetDir.TrimEnd('\\').ToLower())) { return $true }
+    if ($un -and ($un.ToLower().Contains($targetDir.ToLower()))) { return $true }
+    $false
+  } | Select-Object -First 1 DisplayName, InstallLocation, DisplayIcon, UninstallString, QuietUninstallString
+  if (-not $hit) {
+    $parentDir = Split-Path -Parent $targetDir
+    if ($parentDir) {
+      $hit = $items | Where-Object {
+        $loc = [string]$_.InstallLocation
+        $un = [string]$_.UninstallString
+        if ($loc -and (Test-Path $loc) -and ((Resolve-Path $loc).Path.TrimEnd('\\').ToLower() -eq $parentDir.TrimEnd('\\').ToLower())) { return $true }
+        if ($un -and ($un.ToLower().Contains($parentDir.ToLower()))) { return $true }
+        $false
+      } | Select-Object -First 1 DisplayName, InstallLocation, DisplayIcon, UninstallString, QuietUninstallString
+    }
+  }
 }
 if (-not $hit) {
-  # Installer-generated DisplayNames routinely drop punctuation an exact/prefix
-  # match needs — "GoldenEye: Source" ships as an NSIS installer whose
-  # DisplayName has no colon, so this normalized substring pass catches title
-  # variants the strict pass above misses without risking a short/generic
-  # title matching something unrelated (titles here are always a full game
-  # name, not a bare word).
+  foreach ($title in $titles) {
+    if (-not $title) { continue }
+    $hit = $items |
+      Where-Object { $_.DisplayName -and ($_.DisplayName -eq $title -or $_.DisplayName -like ($title + '*')) } |
+      Select-Object -First 1 DisplayName, InstallLocation, DisplayIcon, UninstallString, QuietUninstallString
+    if ($hit) { break }
+  }
+}
+if (-not $hit) {
   foreach ($title in $titles) {
     if (-not $title -or $title.Length -lt 4) { continue }
     $needle = Normalize $title
@@ -11734,7 +11805,7 @@ if (-not $hit) { return }
       return hit.QuietUninstallString || hit.UninstallString || null;
     }
   } catch (err) {
-    console.warn(`[uninstall] registry lookup failed for ${entry.slug}:`, err?.message);
+    console.warn(`[uninstall] registry lookup failed for ${entry?.slug || dir}:`, err?.message);
   }
   return null;
 }
@@ -11742,46 +11813,91 @@ if (-not $hit) { return }
 async function runGameUninstaller(slug, entry, dir) {
   if (process.platform === "win32") {
     // 1. Look for uninstaller binary in the game's directory
-    if (dir && fs.existsSync(dir)) {
-      try {
-        const files = fs.readdirSync(dir);
-        const uninstallerFile = files.find((f) =>
-          /^unins.*\.exe$/i.test(f) ||
-          /^uninstall.*\.exe$/i.test(f)
-        );
-        if (uninstallerFile) {
-          const uninstallerPath = path.join(dir, uninstallerFile);
-          console.log(`[uninstall] executing uninstaller binary: ${uninstallerPath}`);
-          await new Promise((resolve) => {
-            const child = spawn(uninstallerPath, ["/S", "/SILENT"], {
-              detached: true,
-              stdio: "ignore",
-              windowsHide: false,
-            });
-            child.on("error", (e) => {
-              console.warn(`[uninstall] uninstaller spawn error:`, e?.message);
-              resolve(false);
-            });
-            child.on("exit", (code) => {
-              console.log(`[uninstall] uninstaller exited with code:`, code);
-              resolve(true);
-            });
-            setTimeout(() => resolve(true), 12000);
+    const uninstallerPath = findUninstallerBinary(dir);
+    if (uninstallerPath) {
+      console.log(`[uninstall] executing uninstaller binary: ${uninstallerPath}`);
+      const uninsDir = path.dirname(uninstallerPath);
+      const uninsBase = path.basename(uninstallerPath).toLowerCase();
+      const isInno = /^unins.*\.exe$/i.test(uninsBase);
+      // Inno Setup uses /SILENT; NSIS and others use /S
+      const silentArgs = isInno ? ["/SILENT"] : ["/S"];
+
+      const runViaPowerShell = (args = []) => {
+        return new Promise((resolve) => {
+          const argString = args.length > 0
+            ? `-ArgumentList ${args.map((a) => JSON.stringify(a)).join(",")}`
+            : "";
+          const psCommand = `Start-Process -FilePath ${JSON.stringify(uninstallerPath)} ${argString} -WorkingDirectory ${JSON.stringify(uninsDir)} -Verb RunAs -Wait`;
+          console.log(`[uninstall] launching uninstaller via PowerShell Start-Process with elevation`);
+          execFile(
+            "powershell.exe",
+            ["-NoProfile", "-NonInteractive", "-Command", psCommand],
+            { timeout: 300_000, windowsHide: false },
+            (err) => {
+              if (err) console.warn(`[uninstall] powershell uninstaller error:`, err?.message);
+              resolve(!err);
+            }
+          );
+        });
+      };
+
+      // Try direct spawn first with silent args
+      const directSuccess = await new Promise((resolve) => {
+        let child;
+        try {
+          child = spawn(uninstallerPath, silentArgs, {
+            cwd: uninsDir,
+            detached: true,
+            stdio: "ignore",
+            windowsHide: false,
           });
-          return true;
+        } catch (err) {
+          console.warn(`[uninstall] direct spawn failed:`, err?.message);
+          return resolve(false);
         }
-      } catch (err) {
-        console.warn(`[uninstall] readdir failed for ${dir}:`, err?.message);
-      }
+
+        child.on("error", (e) => {
+          console.warn(`[uninstall] uninstaller spawn error (${e?.code}):`, e?.message);
+          resolve(false);
+        });
+
+        child.on("exit", (code) => {
+          console.log(`[uninstall] uninstaller exited with code:`, code);
+          resolve(code === 0);
+        });
+
+        setTimeout(() => resolve(true), 30_000);
+      });
+
+      if (directSuccess) return true;
+
+      // Fallback: elevated PowerShell execution
+      console.log(`[uninstall] falling back to elevated execution for ${uninstallerPath}`);
+      const psSuccess = await runViaPowerShell(silentArgs);
+      if (psSuccess) return true;
+
+      // Final fallback: interactive elevation
+      return await runViaPowerShell([]);
     }
 
     // 2. Look for UninstallString in Windows Registry
-    const uninstallCmd = findUninstallStringFromRegistry(entry || { slug });
+    const uninstallCmd = findUninstallStringFromRegistry(entry || { slug }, dir);
     if (uninstallCmd) {
       console.log(`[uninstall] executing registry uninstall command: ${uninstallCmd}`);
       await new Promise((resolve) => {
-        exec(uninstallCmd, { timeout: 25000, windowsHide: false }, (err) => {
-          if (err) console.warn(`[uninstall] registry uninstall error:`, err?.message);
+        exec(uninstallCmd, { timeout: 60_000, windowsHide: false, cwd: dir || undefined }, (err) => {
+          if (err) {
+            console.warn(`[uninstall] registry uninstall error:`, err?.message);
+            // Fall back to elevated PowerShell Start-Process cmd /c
+            const psCommand = `Start-Process cmd -ArgumentList '/c',${JSON.stringify(uninstallCmd)} -Verb RunAs -Wait`;
+            execFile(
+              "powershell.exe",
+              ["-NoProfile", "-NonInteractive", "-Command", psCommand],
+              { timeout: 180_000, windowsHide: false },
+              () => resolve(true)
+            );
+            return;
+          }
           resolve(true);
         });
       });
@@ -11810,12 +11926,19 @@ async function tryRemovePlayBoundInstallDir(
 ) {
   if (!dir) return null;
 
-  if (
-    entry &&
-    editionLifecycle.mayRunNativeUninstaller(editionSlug, entry, { lastOwnerOfInstallPath })
-  ) {
+  const hasUninstaller = Boolean(findUninstallerBinary(dir));
+  const mayRunUninstaller =
+    Boolean(entry) &&
+    editionLifecycle.mayRunNativeUninstaller(editionSlug, entry, {
+      lastOwnerOfInstallPath,
+      hasUninstaller,
+      isStandalone: Boolean(entry?.isStandalone),
+    });
+
+  let ranUninstaller = false;
+  if (mayRunUninstaller || hasUninstaller) {
     try {
-      await runGameUninstaller(slug, entry, dir);
+      ranUninstaller = await runGameUninstaller(slug, entry, dir);
     } catch (err) {
       console.warn(`[uninstall] runGameUninstaller error:`, err?.message);
     }
@@ -11823,7 +11946,7 @@ async function tryRemovePlayBoundInstallDir(
 
   // Small delay to let uninstaller finish releasing locks / deleting files
   const waitMs =
-    entry?.slug === "seven-kingdoms-ancient-adversaries" ? 4000 : 1200;
+    entry?.slug === "seven-kingdoms-ancient-adversaries" ? 4000 : 1500;
   await new Promise((r) => setTimeout(r, waitMs));
 
   if (!fs.existsSync(dir)) {
@@ -11873,6 +11996,7 @@ async function tryRemovePlayBoundInstallDir(
     if (isSteamGame) {
       return "Removed from PlayBound. To delete game files from disk, uninstall the game in Steam.";
     }
+    if (ranUninstaller) return null;
     return "Removed from PlayBound. Files outside the PlayBound games folder were left on disk — finish uninstall from Windows Apps & features if needed.";
   }
 }
@@ -11986,9 +12110,12 @@ async function uninstallGame(slug, editionSlug = null) {
        */
       const uninstallDir = resolveEditionUninstallDir(slug, editionSlug, info);
       if (uninstallDir && !siblingsSharePath) {
+        const hasUninstaller = Boolean(findUninstallerBinary(uninstallDir));
         const warning = await tryRemovePlayBoundInstallDir(slug, uninstallDir, entry, {
           editionSlug,
           lastOwnerOfInstallPath: true,
+          hasUninstaller,
+          isStandalone: Boolean(entry?.isStandalone),
         });
         if (warning) warnings.push(warning);
       } else if (uninstallDir && siblingsSharePath) {
@@ -12026,11 +12153,17 @@ async function uninstallGame(slug, editionSlug = null) {
 
   const editions = listEditionEntries(game);
   const dirs = collectGameUninstallDirs(slug, game, entry);
+  const primaryDir = dirs[0];
+  const hasUninstaller = Boolean(primaryDir && findUninstallerBinary(primaryDir));
   // Prefer running the vendor uninstaller once against the primary dir before
   // sweeping every candidate folder (installer games in Program Files).
   if (
     dirs.length > 0 &&
-    editionLifecycle.mayRunNativeUninstaller(null, entry, { lastOwnerOfInstallPath: true })
+    (hasUninstaller ||
+      editionLifecycle.mayRunNativeUninstaller(null, entry, {
+        lastOwnerOfInstallPath: true,
+        hasUninstaller,
+      }))
   ) {
     try {
       await runGameUninstaller(slug, entry, dirs[0]);

@@ -3,7 +3,14 @@
 const fs = require("fs");
 
 function isInstallerBackedEntry(entry) {
-  return entry?.kind === "direct-installer" || entry?.kind === "github-installer";
+  return (
+    entry?.kind === "direct-installer" ||
+    entry?.kind === "github-installer" ||
+    entry?.kind === "external" ||
+    entry?.installMethod === "external_installer" ||
+    entry?.installMethod === "playbound_installer" ||
+    Boolean(entry?.hasUninstaller)
+  );
 }
 
 /**
@@ -18,6 +25,15 @@ function isInstallerBackedEntry(entry) {
  * path may also run the product uninstaller.
  */
 function mayRunNativeUninstaller(editionSlug, entry = null, opts = {}) {
+  // If an uninstaller executable was explicitly found on disk in this directory,
+  // and no other edition shares the path, running the native uninstaller is safe and intended.
+  if (opts.hasUninstaller) {
+    if (!editionSlug) return true;
+    if (opts.lastOwnerOfInstallPath || editionSlug === "official" || opts.isStandalone) {
+      return true;
+    }
+  }
+
   /*
    * Full-game uninstall (no editionSlug): only installer-backed recipes should
    * invoke a vendor/registry uninstaller. Zip and portable exe games are just
@@ -30,6 +46,7 @@ function mayRunNativeUninstaller(editionSlug, entry = null, opts = {}) {
     return isInstallerBackedEntry(entry);
   }
   if (opts.lastOwnerOfInstallPath && isInstallerBackedEntry(entry)) return true;
+  if (opts.isStandalone && isInstallerBackedEntry(entry)) return true;
   if (editionSlug !== "official") return false;
   return isInstallerBackedEntry(entry);
 }
