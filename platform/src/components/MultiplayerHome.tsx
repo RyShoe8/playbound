@@ -42,8 +42,6 @@ type Props = {
   initialEvents?: PlatformEvent[];
 };
 
-const MAX_LFG_GAMES = 6;
-
 export function MultiplayerHome({
   installedGameSlugs,
   installedModSlugs,
@@ -288,7 +286,7 @@ export function MultiplayerHome({
   // Select a game for Looking to Party
   function handleSelectForLtp(slug: string) {
     if (!ltpSelectedSlugs.includes(slug)) {
-      setLtpSelectedSlugs((prev) => [...prev.slice(0, MAX_LFG_GAMES - 1), slug]);
+      setLtpSelectedSlugs((prev) => [...prev, slug]);
     }
     setLtpDrawerOpen(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -471,7 +469,7 @@ export function MultiplayerHome({
                 What games do you want to play right now?
               </h2>
               <p className="text-xs text-muted-foreground">
-                Select up to {MAX_LFG_GAMES} games. PlayBound will match you with other players searching for overlapping games or direct you into open parties.
+                Select games you want to play. PlayBound will match you with other players searching for overlapping games or direct you into open parties.
               </p>
             </div>
             <button
@@ -486,7 +484,7 @@ export function MultiplayerHome({
           {/* Selected Games Chips */}
           <div className="space-y-2">
             <div className="text-xs font-semibold text-muted-foreground">
-              Selected ({ltpSelectedSlugs.length} / {MAX_LFG_GAMES}):
+              Selected ({ltpSelectedSlugs.length}):
             </div>
             <div className="flex flex-wrap gap-2">
               {ltpSelectedSlugs.length === 0 ? (
@@ -537,7 +535,6 @@ export function MultiplayerHome({
                     <button
                       key={g.gameSlug}
                       type="button"
-                      disabled={!isSelected && ltpSelectedSlugs.length >= MAX_LFG_GAMES}
                       onClick={() => {
                         if (isSelected) {
                           setLtpSelectedSlugs((prev) =>

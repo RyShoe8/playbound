@@ -8,9 +8,7 @@ import { getGame } from "@/lib/catalog";
 import { LFG_TTL_MS } from "@/lib/playTogether/types";
 import { createFriendLfgNotification } from "@/lib/playTogether/notify";
 import { findInvolvedFriendIds } from "@/lib/playTogether/activityNotify";
-
-/** Enough to say "any of these", short of a wishlist nobody reads. */
-const MAX_LFG_GAMES = 6;
+import { normalizeLfgGameSlugs } from "@/lib/playTogether/lfgSelection";
 
 export async function POST(req: Request) {
   const userId = await getFriendsUserId(req);
@@ -51,14 +49,7 @@ export async function POST(req: Request) {
       : body.gameSlug
       ? [body.gameSlug]
       : [];
-    const gameSlugs = [
-      ...new Set(
-        requested
-          .map((s) => String(s || "").trim())
-          .filter(Boolean)
-          .slice(0, MAX_LFG_GAMES)
-      ),
-    ];
+    const gameSlugs = normalizeLfgGameSlugs(requested);
 
     for (const slug of gameSlugs) {
       const game = await getGame(slug, { includeTesting: true });

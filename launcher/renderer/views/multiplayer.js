@@ -14,8 +14,6 @@ import {
   wireServersBrowser,
 } from "./servers.js";
 
-const MAX_LFG_GAMES = 6;
-
 let _cachedActivity = null;
 let _cachedParties = [];
 let _cachedEvents = [];
@@ -279,14 +277,14 @@ function paintMultiplayerView(container) {
               <span class="dot" style="background:#fbbf24;"></span> Looking to Party Matchmaking
             </div>
             <h3>What games do you want to play right now?</h3>
-            <p>Select up to ${MAX_LFG_GAMES} games. PlayBound will match you with players searching for overlapping games or direct you into open parties.</p>
+            <p>Select games you want to play. PlayBound will match you with players searching for overlapping games or direct you into open parties.</p>
           </div>
           <button type="button" class="mp-drawer-close" id="mp-close-ltp-drawer">✕</button>
         </div>
 
         <div class="mp-drawer-body">
           <div class="mp-ltp-selected-wrap">
-            <span class="mp-ltp-selected-label">Selected (${state.multiplayerState.ltpSelectedSlugs.length} / ${MAX_LFG_GAMES}):</span>
+            <span class="mp-ltp-selected-label">Selected (${state.multiplayerState.ltpSelectedSlugs.length}):</span>
             <div class="mp-ltp-chips-row" id="mp-ltp-chips-row">
               ${
                 state.multiplayerState.ltpSelectedSlugs.length === 0
@@ -551,7 +549,7 @@ function wireLtpChipListeners() {
       const cur = state.multiplayerState.ltpSelectedSlugs;
       if (cur.includes(slug)) {
         state.multiplayerState.ltpSelectedSlugs = cur.filter((s) => s !== slug);
-      } else if (cur.length < MAX_LFG_GAMES) {
+      } else {
         state.multiplayerState.ltpSelectedSlugs = [...cur, slug];
       }
       // Re-render chips row and buttons

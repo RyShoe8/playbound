@@ -247,9 +247,6 @@ function FriendCard({
   );
 }
 
-/** Cap matches MAX_LFG_GAMES in /api/presence/lfg. */
-const LFG_MAX_GAMES = 6;
-
 /**
  * Picking preferred games when you raise your hand.
  *
@@ -273,7 +270,6 @@ function LfgGamePicker({
   const [selected, setSelected] = useState<string[]>([]);
 
   const titleOf = (slug: string) => games.find((g) => g.slug === slug)?.title || slug;
-  const atLimit = selected.length >= LFG_MAX_GAMES;
 
   const needle = query.trim().toLowerCase();
   const matches = games
@@ -285,8 +281,6 @@ function LfgGamePicker({
     setSelected((prev) =>
       prev.includes(slug)
         ? prev.filter((s) => s !== slug)
-        : prev.length >= LFG_MAX_GAMES
-        ? prev
         : [...prev, slug]
     );
   }
@@ -296,7 +290,7 @@ function LfgGamePicker({
       <div>
         <h4 className="font-bold">What do you want to play?</h4>
         <p className="text-sm text-muted-foreground">
-          Pick up to {LFG_MAX_GAMES}, or skip it and you&apos;ll show as up for anything. Expires
+          Pick games you want to play, or skip it and you&apos;ll show as up for anything. Expires
           in 60 minutes.
         </p>
       </div>
@@ -335,7 +329,6 @@ function LfgGamePicker({
             <button
               key={game.slug}
               type="button"
-              disabled={atLimit}
               onClick={() => toggle(game.slug)}
               className="rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-secondary-foreground hover:bg-secondary/80 disabled:opacity-40"
             >
@@ -344,11 +337,6 @@ function LfgGamePicker({
           ))
         )}
       </div>
-      {atLimit ? (
-        <p className="text-xs text-muted-foreground">
-          That&apos;s {LFG_MAX_GAMES} — remove one to swap it out.
-        </p>
-      ) : null}
 
       <div className="flex flex-wrap gap-2 pt-1">
         <button
