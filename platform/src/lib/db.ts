@@ -15,9 +15,9 @@ async function connectOnce() {
   }
 
   const MONGODB_URI = process.env.MONGODB_URI;
-  if (!MONGODB_URI) {
+  if (!MONGODB_URI || MONGODB_URI === "[SENSITIVE]" || (!MONGODB_URI.startsWith("mongodb://") && !MONGODB_URI.startsWith("mongodb+srv://"))) {
     throw new Error(
-      "Please define the MONGODB_URI environment variable inside .env"
+      "Please define a valid MONGODB_URI (starting with mongodb:// or mongodb+srv://) inside .env"
     );
   }
 

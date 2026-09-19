@@ -452,29 +452,47 @@ export function mergeStoredAndSeedEditions(
 }
 
 async function fetchEditions(filter: Record<string, unknown>): Promise<Edition[]> {
-  if (!process.env.MONGODB_URI) return [];
-  await dbConnect();
-  const docs = await EditionModel.find({
-    ...filter,
-    suppressesSeed: { $ne: true },
-  }).sort({ sortOrder: 1, name: 1 }).lean();
-  return docs.map((d) => toEdition(d as LeanEdition));
+  const uri = process.env.MONGODB_URI;
+  if (!uri || uri === "[SENSITIVE]" || (!uri.startsWith("mongodb://") && !uri.startsWith("mongodb+srv://"))) {
+    return [];
+  }
+  try {
+    await dbConnect();
+    const docs = await EditionModel.find({
+      ...filter,
+      suppressesSeed: { $ne: true },
+    }).sort({ sortOrder: 1, name: 1 }).lean();
+    return docs.map((d) => toEdition(d as LeanEdition));
+  } catch (err) {
+    if (process.env.NEXT_PHASE === "phase-production-build") {
+      return [];
+    }
+    throw err;
+  }
 }
 
 /** Stored editions plus seed slugs deliberately deleted through admin. */
 async function fetchEditionStateForGame(
   gameSlug: string
 ): Promise<{ editions: Edition[]; occupiedSeedSlugs: Set<string> }> {
-  if (!process.env.MONGODB_URI) {
+  const uri = process.env.MONGODB_URI;
+  if (!uri || uri === "[SENSITIVE]" || (!uri.startsWith("mongodb://") && !uri.startsWith("mongodb+srv://"))) {
     return { editions: [], occupiedSeedSlugs: new Set() };
   }
-  await dbConnect();
-  const docs = await EditionModel.find({ gameSlug }).sort({ sortOrder: 1, name: 1 }).lean();
-  const occupiedSeedSlugs = new Set(docs.map((d) => str((d as LeanEdition).slug)));
-  const editions = docs
-    .filter((d) => (d as LeanEdition).suppressesSeed !== true)
-    .map((d) => toEdition(d as LeanEdition));
-  return { editions, occupiedSeedSlugs };
+  try {
+    await dbConnect();
+    const docs = await EditionModel.find({ gameSlug }).sort({ sortOrder: 1, name: 1 }).lean();
+    const occupiedSeedSlugs = new Set(docs.map((d) => str((d as LeanEdition).slug)));
+    const editions = docs
+      .filter((d) => (d as LeanEdition).suppressesSeed !== true)
+      .map((d) => toEdition(d as LeanEdition));
+    return { editions, occupiedSeedSlugs };
+  } catch (err) {
+    if (process.env.NEXT_PHASE === "phase-production-build") {
+      return { editions: [], occupiedSeedSlugs: new Set() };
+    }
+    throw err;
+  }
 }
 
 /**
@@ -548,20 +566,29 @@ async function fetchEditionStateForGames(
   for (const slug of gameSlugs) {
     bySlug.set(slug, { editions: [], occupiedSeedSlugs: new Set() });
   }
-  if (gameSlugs.length === 0 || !process.env.MONGODB_URI) return bySlug;
-  await dbConnect();
-  const docs = await EditionModel.find({ gameSlug: { $in: gameSlugs } })
-    .sort({ sortOrder: 1, name: 1 })
-    .lean();
-  for (const doc of docs) {
-    const lean = doc as LeanEdition;
-    const slug = str(lean.gameSlug);
-    const bucket = bySlug.get(slug) || { editions: [], occupiedSeedSlugs: new Set() };
-    bucket.occupiedSeedSlugs.add(str(lean.slug));
-    if (lean.suppressesSeed !== true) {
-      bucket.editions.push(toEdition(lean));
+  const uri = process.env.MONGODB_URI;
+  if (gameSlugs.length === 0 || !uri || uri === "[SENSITIVE]" || (!uri.startsWith("mongodb://") && !uri.startsWith("mongodb+srv://"))) {
+    return bySlug;
+  }
+  try {
+    await dbConnect();
+    const docs = await EditionModel.find({ gameSlug: { $in: gameSlugs } })
+      .sort({ sortOrder: 1, name: 1 })
+      .lean();
+    for (const doc of docs) {
+      const lean = doc as LeanEdition;
+      const slug = str(lean.gameSlug);
+      const bucket = bySlug.get(slug) || { editions: [], occupiedSeedSlugs: new Set() };
+      bucket.occupiedSeedSlugs.add(str(lean.slug));
+      if (lean.suppressesSeed !== true) {
+        bucket.editions.push(toEdition(lean));
+      }
+      bySlug.set(slug, bucket);
     }
-    bySlug.set(slug, bucket);
+  } catch (err) {
+    if (process.env.NEXT_PHASE !== "phase-production-build") {
+      throw err;
+    }
   }
   return bySlug;
 }

@@ -57,8 +57,13 @@ export async function listPublicEvents(opts?: {
   eventType?: string | null;
   limit?: number;
 }) {
-  await dbConnect();
-  const now = new Date();
+  const uri = process.env.MONGODB_URI;
+  if (!uri || uri === "[SENSITIVE]" || (!uri.startsWith("mongodb://") && !uri.startsWith("mongodb+srv://"))) {
+    return [];
+  }
+  try {
+    await dbConnect();
+    const now = new Date();
   const filter: Record<string, unknown> = {
     visibility: { $ne: "unlisted" },
     status: {
@@ -103,13 +108,17 @@ export async function listPublicEvents(opts?: {
     );
   }
 
-  return events.map((e) =>
-    serializeEvent(
-      e,
-      counts.get(String(e._id)),
-      e.gameSlug ? gameCoverMap.get(e.gameSlug) || null : null
-    )
-  );
+    return events.map((e) =>
+      serializeEvent(
+        e,
+        counts.get(String(e._id)),
+        e.gameSlug ? gameCoverMap.get(e.gameSlug) || null : null
+      )
+    );
+  } catch (err) {
+    console.error("[events] listPublicEvents failed:", err);
+    return [];
+  }
 }
 
 export async function createPlatformEvent(

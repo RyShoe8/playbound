@@ -56,18 +56,23 @@ export async function listDevelopers(): Promise<Developer[]> {
 }
 
 export async function getDeveloper(slug: string): Promise<Developer | undefined> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("developers", `developer-${slug}`);
   if (!slug) return undefined;
   const found = (await loadPublished()).find((d) => d.slug === slug);
   if (found) return found;
   // A draft (unpublished) developer must still resolve for pages that already
   // reference it, otherwise unpublishing one would blank the credit on every
   // game it made rather than just hiding it from the index.
-  try {
-    await dbConnect();
-    const doc = await DeveloperModel.findOne({ slug }).lean();
-    if (doc) return toDeveloper(doc as LeanDeveloper);
-  } catch {
-    // fall through to seed
+  if (process.env.NEXT_PHASE !== "phase-production-build") {
+    try {
+      await dbConnect();
+      const doc = await DeveloperModel.findOne({ slug }).lean();
+      if (doc) return toDeveloper(doc as LeanDeveloper);
+    } catch {
+      // fall through to seed
+    }
   }
   return seedDevelopers.find((d) => d.slug === slug);
 }
