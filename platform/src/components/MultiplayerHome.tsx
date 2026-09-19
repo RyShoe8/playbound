@@ -23,12 +23,13 @@ import { CreatePartyPanel } from "@/components/friends/CreatePartyPanel";
 import { MultiplayerGameCard } from "@/components/MultiplayerGameCard";
 import { MultiplayerFriendsSection } from "@/components/MultiplayerFriendsSection";
 import { MultiplayerOpenParties } from "@/components/MultiplayerOpenParties";
-import { MultiplayerEvents } from "@/components/MultiplayerEvents";
+import { MultiplayerEvents, type PlatformEvent } from "@/components/MultiplayerEvents";
 import { GlobalServerBrowser } from "@/components/GlobalServerBrowser";
+import type { PublicPartyPayload } from "@/lib/playTogether/party";
 import type {
   GameMultiplayerActivity,
   MultiplayerActivityResponse,
-} from "@/app/api/multiplayer/activity/route";
+} from "@/lib/multiplayer/activity";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -36,6 +37,9 @@ type Props = {
   installedModSlugs: string[];
   signedIn: boolean;
   allowedSlugs?: string[] | null;
+  initialActivity?: MultiplayerActivityResponse | null;
+  initialParties?: PublicPartyPayload[];
+  initialEvents?: PlatformEvent[];
 };
 
 const MAX_LFG_GAMES = 6;
@@ -45,15 +49,20 @@ export function MultiplayerHome({
   installedModSlugs,
   signedIn,
   allowedSlugs,
+  initialActivity,
+  initialParties,
+  initialEvents,
 }: Props) {
   const { activeParty } = usePartyStore();
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryTab = searchParams.get("tab");
 
-  // Activity aggregation state
-  const [activityData, setActivityData] = useState<MultiplayerActivityResponse | null>(null);
-  const [activityLoading, setActivityLoading] = useState(true);
+  // Activity aggregation state — pre-hydrated instantly from server cache
+  const [activityData, setActivityData] = useState<MultiplayerActivityResponse | null>(
+    initialActivity || null
+  );
+  const [activityLoading, setActivityLoading] = useState(!initialActivity);
 
   // Active section tab
   const [activeTab, setActiveTab] = useState<"overview" | "games" | "parties" | "servers" | "events">(
@@ -109,10 +118,12 @@ export function MultiplayerHome({
   }, []);
 
   useEffect(() => {
-    loadActivity();
+    if (!initialActivity) {
+      loadActivity();
+    }
     const interval = setInterval(loadActivity, 30_000);
     return () => clearInterval(interval);
-  }, [loadActivity]);
+  }, [loadActivity, initialActivity]);
 
   // Check viewer's own Looking to Party state
   useEffect(() => {
@@ -562,6 +573,7 @@ export function MultiplayerHome({
       {/* Open Parties Section */}
       <MultiplayerOpenParties
         signedIn={signedIn}
+        initialParties={initialParties}
         onStartParty={() => {
           setCreatePartyOpen(true);
           window.scrollTo({ top: 0, behavior: "smooth" });
@@ -751,7 +763,7 @@ export function MultiplayerHome({
       {/* View: Events */}
       {(activeTab === "overview" || activeTab === "events") && (
         <div className="pt-4 border-t border-border/50">
-          <MultiplayerEvents />
+          <MultiplayerEvents initialEvents={initialEvents} />
         </div>
       )}
     </div>
