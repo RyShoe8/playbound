@@ -19,6 +19,7 @@ const links = [
   { href: "/compare", label: "Compare" },
   { href: "/alternatives", label: "Alternatives" },
   { href: "/developers", label: "Developers" },
+  { href: "/developer", label: "Developer Portal" },
   { href: "/launcher", label: "Launcher" },
   { href: "/submit-game", label: "Submit a game" },
   { href: "/report-bug", label: "Report a bug" },
