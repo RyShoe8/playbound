@@ -62,4 +62,19 @@ test("installLocateThenZip merges nested GAME folder if overlay contains one", (
     /nestedGame/,
     "installLocateThenZip must merge nested GAME folder from overlay into gameDir"
   );
+  assert.doesNotMatch(body, /nestedGame\s*&&\s*!findExecutable/);
+  assert.match(body, /Data",\s*"interfac\.drs"/);
+});
+
+test("an explicit edition launch cannot fall back to another installed edition", () => {
+  const body = fn("playGameInner");
+  assert.match(body, /!editionSlug\s*&&\s*!exeOnDisk\(info\)\s*&&\s*exeOnDisk\(game\)/);
+  assert.match(body, /!editionSlug\s*&&\s*!exeOnDisk\(info\)\s*&&\s*game\.editions/);
+});
+
+test("the official GOG SWGB edition uses its player.exe launch contract", () => {
+  const body = fn("playGameInner");
+  assert.match(body, /star-wars-galactic-battlegrounds-saga/);
+  assert.match(body, /player\.exe/);
+  assert.match(body, /xlogo1\.avi.*xintro\.avi.*battlegrounds_x1\.exe/s);
 });

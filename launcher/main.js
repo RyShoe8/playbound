@@ -8656,7 +8656,7 @@ async function installLocateThenZip(slug, entry, editionExtra) {
   const nestedGame = [path.join(gameDir, "GAME"), path.join(gameDir, "Game")].find(
     (p) => fs.existsSync(p) && fs.statSync(p).isDirectory()
   );
-  if (nestedGame && !findExecutable(nestedGame, baseExeHint)) {
+  if (nestedGame) {
     const items = await fsp.readdir(nestedGame);
     for (const item of items) {
       const src = path.join(nestedGame, item);
@@ -8664,6 +8664,15 @@ async function installLocateThenZip(slug, entry, editionExtra) {
       await fsp.cp(src, dst, { recursive: true, force: true });
     }
     await fsp.rm(nestedGame, { recursive: true, force: true }).catch(() => {});
+  }
+
+  if (
+    slug === "star-wars-galactic-battlegrounds-saga" &&
+    !fs.existsSync(path.join(gameDir, "Data", "interfac.drs"))
+  ) {
+    throw new Error(
+      "Expanding Fronts is missing the base game's Data\\interfac.drs. Re-locate a complete Galactic Battlegrounds Saga Game folder, then reinstall this edition."
+    );
   }
 
   const exe =
@@ -9127,7 +9136,7 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
     await maybeRepairZeldaMudoraInstall(slug, info);
     await maybeRepairDaggerfallUnityInstall(slug, info, edSlug);
   }
-  if (!exeOnDisk(info) && exeOnDisk(game)) {
+  if (!editionSlug && !exeOnDisk(info) && exeOnDisk(game)) {
     info = {
       exe: game.exe,
       dir: game.dir,
@@ -9139,7 +9148,7 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
     await maybeRepairZeldaMudoraInstall(slug, info);
     await maybeRepairDaggerfallUnityInstall(slug, info, edSlug);
   }
-  if (!exeOnDisk(info) && game.editions) {
+  if (!editionSlug && !exeOnDisk(info) && game.editions) {
     for (const [key, ed] of Object.entries(game.editions)) {
       if (exeOnDisk(ed)) {
         info = { ...ed, editionSlug: key };
@@ -9166,6 +9175,24 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
     const notInstalledErr = new Error(message);
     notInstalledErr.__launchFailedReported = true;
     throw notInstalledErr;
+  }
+
+  // GOG starts Clone Campaigns through player.exe. Launching battlegrounds_x1
+  // directly fails with "Cannot load interfac.drs" despite valid game data.
+  if (
+    slug === "star-wars-galactic-battlegrounds-saga" &&
+    edSlug === DEFAULT_EDITION_SLUG &&
+    /battlegrounds(?:_x1)?\.exe$/i.test(String(info.exe || ""))
+  ) {
+    const playerExe = path.join(path.dirname(info.exe), "player.exe");
+    if (fs.existsSync(playerExe)) {
+      info = {
+        ...info,
+        exe: playerExe,
+        dir: path.dirname(playerExe),
+        launchArgs: ["xlogo1.avi", "xintro.avi", "battlegrounds_x1.exe"],
+      };
+    }
   }
 
   /*
