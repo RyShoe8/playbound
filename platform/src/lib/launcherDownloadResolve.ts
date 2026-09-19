@@ -182,6 +182,9 @@ export async function launcherDownloadResponseForRequest(req: Request): Promise<
 
     return await windowsLauncherDownloadResponse({ redirectBareToNamed: true });
   } catch (error: unknown) {
+    if ((error as { digest?: string })?.digest?.startsWith("NEXT_PRERENDER")) {
+      throw error;
+    }
     console.error("[Launcher Download Error]:", error);
     return NextResponse.redirect(DEFAULT_WINDOWS_LAUNCHER_DOWNLOAD_URL, 307);
   }

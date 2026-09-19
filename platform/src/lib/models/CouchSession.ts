@@ -64,7 +64,7 @@ const CouchSessionSchema = new Schema(
     autoApprove: { type: Boolean, default: true },
     reserveHostSlot: { type: Boolean, default: false },
     runtimeMetrics: { type: Schema.Types.Mixed, default: null },
-    expiresAt: { type: Date, required: true, index: true },
+    expiresAt: { type: Date, required: true },
   },
   { collection: "couch_sessions" }
 );
