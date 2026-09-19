@@ -66,24 +66,31 @@ export async function countLookingToParty(): Promise<number> {
   }
 }
 
+export async function getLookingToPartyCounts(): Promise<{
+  total: number;
+  byGame: Record<string, number>;
+}> {
+  const { presences } = await visibleLookingPresences();
+  const byGame: Record<string, number> = {};
+
+  for (const p of presences) {
+    const wanted: string[] =
+      Array.isArray(p.lookingForPlayersGameIds) && p.lookingForPlayersGameIds.length > 0
+        ? (p.lookingForPlayersGameIds as string[])
+        : p.lookingForPlayersGameId
+        ? [String(p.lookingForPlayersGameId)]
+        : [];
+    for (const slug of new Set(wanted)) {
+      if (slug) byGame[slug] = (byGame[slug] || 0) + 1;
+    }
+  }
+
+  return { total: presences.length, byGame };
+}
+
 export async function countLookingToPartyByGame(): Promise<Record<string, number>> {
   try {
-    const { presences } = await visibleLookingPresences();
-    const counts: Record<string, number> = {};
-    for (const p of presences) {
-      const wanted: string[] =
-        Array.isArray(p.lookingForPlayersGameIds) && p.lookingForPlayersGameIds.length > 0
-          ? (p.lookingForPlayersGameIds as string[])
-          : p.lookingForPlayersGameId
-          ? [String(p.lookingForPlayersGameId)]
-          : [];
-      for (const slug of wanted) {
-        if (slug) {
-          counts[slug] = (counts[slug] || 0) + 1;
-        }
-      }
-    }
-    return counts;
+    return (await getLookingToPartyCounts()).byGame;
   } catch (err) {
     console.error("countLookingToPartyByGame failed:", err);
     return {};

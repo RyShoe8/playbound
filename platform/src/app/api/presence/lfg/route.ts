@@ -9,6 +9,7 @@ import { LFG_TTL_MS } from "@/lib/playTogether/types";
 import { createFriendLfgNotification } from "@/lib/playTogether/notify";
 import { findInvolvedFriendIds } from "@/lib/playTogether/activityNotify";
 import { normalizeLfgGameSlugs } from "@/lib/playTogether/lfgSelection";
+import { revalidateMultiplayerActivity } from "@/lib/multiplayer/activity";
 
 export async function POST(req: Request) {
   const userId = await getFriendsUserId(req);
@@ -35,6 +36,7 @@ export async function POST(req: Request) {
         },
         { upsert: true }
       );
+      revalidateMultiplayerActivity();
       return NextResponse.json({ active: false, expiresAt: null, gameSlug: null, gameSlugs: [] });
     }
 
@@ -73,6 +75,7 @@ export async function POST(req: Request) {
       },
       { upsert: true, returnDocument: "after" }
     ).lean();
+    revalidateMultiplayerActivity();
 
     // Notify friends (soft-fail). One notification per preferred game would be
     // spam, so friends hear about the first pick only.
