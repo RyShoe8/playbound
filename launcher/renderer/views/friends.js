@@ -144,10 +144,6 @@ function wireFriendsAppearOfflineButton() {
     };
   });
 }
-
-/** Cap matches MAX_LFG_GAMES on /api/presence/lfg. */
-const LFG_MAX_GAMES = 6;
-
 let lfgActive = false;
 let lfgGames = [];
 let lfgSelection = [];
@@ -260,12 +256,10 @@ function renderLfgPicker() {
   const chosenBox = document.getElementById("lfg-chosen");
   const optionsBox = document.getElementById("lfg-options");
   const confirmBtn = document.getElementById("btn-lfg-confirm");
-  const limitNote = document.getElementById("lfg-limit-note");
   if (!chosenBox || !optionsBox) return;
 
   const games = partyGamesCache || [];
   const titleOf = (slug) => games.find((g) => g.slug === slug)?.title || slug;
-  const atLimit = lfgSelection.length >= LFG_MAX_GAMES;
 
   chosenBox.innerHTML = lfgSelection
     .map(
@@ -286,17 +280,11 @@ function renderLfgPicker() {
     ? matches
         .map(
           (g) =>
-            `<button type="button" class="chip lfg-chip" data-add="${escapeHtml(g.slug)}"${
-              atLimit ? " disabled" : ""
-            }>${escapeHtml(g.title)}</button>`
+            `<button type="button" class="chip lfg-chip" data-add="${escapeHtml(g.slug)}">${escapeHtml(g.title)}</button>`
         )
         .join("")
     : `<p class="view-sub" style="margin:0;font-size:12px;">No games match that.</p>`;
 
-  if (limitNote) {
-    limitNote.style.display = atLimit ? "block" : "none";
-    limitNote.textContent = `That's ${LFG_MAX_GAMES} — remove one to swap it out.`;
-  }
   if (confirmBtn) {
     confirmBtn.textContent = lfgSelection.length
       ? `Look for a party (${lfgSelection.length})`
@@ -311,7 +299,6 @@ function renderLfgPicker() {
   });
   optionsBox.querySelectorAll("[data-add]").forEach((el) => {
     el.addEventListener("click", () => {
-      if (lfgSelection.length >= LFG_MAX_GAMES) return;
       lfgSelection = [...lfgSelection, el.dataset.add];
       renderLfgPicker();
     });
@@ -393,13 +380,12 @@ async function renderFriendsView() {
           <div>
             <h2 style="margin: 0; font-size: 16px; font-weight: bold;">What do you want to play?</h2>
             <p class="view-sub" style="margin: 4px 0 0; font-size: 13px;">
-              Pick up to ${LFG_MAX_GAMES}, or skip it and you'll show as up for anything. Expires in 60 minutes.
+              Pick games you want to play, or skip it and you'll show as up for anything. Expires in 60 minutes.
             </p>
           </div>
           <div id="lfg-chosen" class="card-tags" style="margin: 0;"></div>
           <input type="text" class="input-text" id="lfg-search" placeholder="Search games…" autocomplete="off" style="width: 100%;" />
           <div id="lfg-options" class="card-tags" style="margin: 0; max-height: 180px; overflow: auto;"></div>
-          <p class="view-sub" id="lfg-limit-note" style="display: none; margin: 0; font-size: 12px;"></p>
           <div style="display: flex; flex-wrap: wrap; gap: 8px;">
             <button class="btn-primary" id="btn-lfg-confirm">Look for a party</button>
             <button class="btn-secondary" id="btn-lfg-cancel">Cancel</button>
