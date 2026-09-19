@@ -24,6 +24,8 @@ const DeveloperSchema = new Schema(
     /** OKLCH hue (0–360) driving the profile's generated artwork. */
     artHue: { type: Number, default: 210 },
     published: { type: Boolean, default: true, index: true },
+    ownerUserId: { type: Schema.Types.ObjectId, ref: "User", default: null, index: true },
+    claimedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

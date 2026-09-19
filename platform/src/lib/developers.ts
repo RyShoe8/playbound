@@ -110,7 +110,7 @@ export async function listAllDevelopers(): Promise<
  */
 export async function getDeveloperAdmin(
   slug: string
-): Promise<(Developer & { published: boolean }) | undefined> {
+): Promise<(Developer & { published: boolean; ownerUserId?: string | null }) | undefined> {
   try {
     await dbConnect();
     const doc = await DeveloperModel.findOne({ slug }).lean();
@@ -118,13 +118,16 @@ export async function getDeveloperAdmin(
       return {
         ...toDeveloper(doc as LeanDeveloper),
         published: (doc as LeanDeveloper).published !== false,
+        ownerUserId: (doc as { ownerUserId?: unknown }).ownerUserId
+          ? String((doc as { ownerUserId?: unknown }).ownerUserId)
+          : null,
       };
     }
   } catch (err) {
     console.error("[developers] getDeveloperAdmin failed, falling back to seed:", err);
   }
   const seed = seedDevelopers.find((d) => d.slug === slug);
-  return seed ? { ...seed, published: true } : undefined;
+  return seed ? { ...seed, published: true, ownerUserId: null } : undefined;
 }
 
 /** Slug → developer, for callers resolving several at once. */

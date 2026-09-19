@@ -252,7 +252,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.username = token.username as string;
-        session.user.role = token.role as "user" | "admin";
+        session.user.role = token.role as "user" | "developer" | "admin";
         session.user.tester = Boolean(token.tester);
         session.user.needsUsername = Boolean(token.needsUsername);
       }

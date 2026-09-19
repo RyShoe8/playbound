@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   CalendarDays,
+  Code2,
   Gamepad2,
   Home,
   LibraryBig,
@@ -102,8 +103,24 @@ export function Sidebar() {
             {label}
           </Link>
         ))}
+        {(session?.user?.role === "developer" || session?.user?.role === "admin") && (
+          <div className="pt-2">
+            <Link
+              href="/developer"
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors",
+                isActive("/developer")
+                  ? "bg-sidebar-accent text-foreground"
+                  : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground"
+              )}
+            >
+              <Code2 className={cn("size-4.5", isActive("/developer") && "text-primary")} />
+              Developer Portal
+            </Link>
+          </div>
+        )}
         {session?.user?.role === "admin" && (
-          <div className="pt-4">
+          <div className="pt-2">
             <Link
               href="/admin"
               className={cn(

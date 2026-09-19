@@ -290,7 +290,7 @@ const CatalogGameSchema = new Schema(
     },
     submissionId: { type: Schema.Types.ObjectId, ref: "GameSubmission", default: null },
     managedBy: { type: String, enum: ["admin", "developer"], default: "admin" },
-    ownerUserId: { type: Schema.Types.ObjectId, ref: "User", default: null },
+    ownerUserId: { type: Schema.Types.ObjectId, ref: "User", default: null, index: true },
     communityLinks: {
       officialDiscord: {
         inviteUrl: { type: String, default: null },
