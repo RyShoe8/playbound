@@ -250,6 +250,18 @@ for (const packaged of [true, false]) {
   check("allows https", Boolean(sec.assertOpenExternalUrl("https://example.com")));
   check("allows mailto", Boolean(sec.assertOpenExternalUrl("mailto:a@b.com")));
   check("allows steam", Boolean(sec.assertOpenExternalUrl("steam://install/1234")));
+  check(
+    "allows a GOG Galaxy product page",
+    Boolean(sec.assertOpenExternalUrl("goggalaxy://openGameView/1205909172"))
+  );
+  check(
+    "rejects non-product GOG Galaxy actions",
+    throws(() => sec.assertOpenExternalUrl("goggalaxy://launchGame/1205909172"))
+  );
+  check(
+    "rejects non-numeric GOG Galaxy product ids",
+    throws(() => sec.assertOpenExternalUrl("goggalaxy://openGameView/not-a-product"))
+  );
   check("allows http loopback", Boolean(sec.assertOpenExternalUrl("http://localhost:3000")));
   check("blocks file:", throws(() => sec.assertOpenExternalUrl("file:///C:/Windows/System32/calc.exe")));
   check("blocks javascript:", throws(() => sec.assertOpenExternalUrl("javascript:alert(1)")));

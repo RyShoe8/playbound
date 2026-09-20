@@ -282,6 +282,20 @@ function createSecurity({ isPackaged, getApiBase }) {
     if (proto === "mailto:") return u.toString();
     // Steam install / run deep links from catalog external recipes.
     if (proto === "steam:") return u.toString();
+    // GOG catalog recipes may open one numeric product page in Galaxy. Keep
+    // this narrower than allowing the protocol wholesale: shell.openExternal
+    // must not expose arbitrary commands supported by a registered handler.
+    if (
+      proto === "goggalaxy:" &&
+      u.hostname.toLowerCase() === "opengameview" &&
+      /^\/\d+\/?$/.test(u.pathname) &&
+      !u.username &&
+      !u.password &&
+      !u.search &&
+      !u.hash
+    ) {
+      return u.toString();
+    }
     throw new Error(`Blocked external URL scheme: ${proto}`);
   }
 
