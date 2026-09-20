@@ -113,6 +113,33 @@ export function PlayCta({
     );
   }
 
+  const externalClaimUrl =
+    !isInstalled &&
+    !paid &&
+    game.launcherInstall?.kind === "external" &&
+    /^https:\/\//i.test(game.launcherInstall.url || "")
+      ? game.launcherInstall.url
+      : null;
+  if (externalClaimUrl) {
+    const href = withOutboundUtm(externalClaimUrl, {
+      campaign: "game_get",
+      content: game.slug,
+    });
+    return (
+      <TelemetryAnchor
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        className={className}
+        event="official_download_clicked"
+        properties={{ gameSlug: game.slug, url: href, source: "play_cta" }}
+      >
+        <Download className={iconClass} />
+        Get It Free
+      </TelemetryAnchor>
+    );
+  }
+
   const downloadUrl = launcherDownloadUrlForOs(os);
   const osLabel = launcherOsLabel(os);
   const deepLink = isInstalled ? launcherPlayUrl(game.slug) : launcherInstallUrl(game.slug);
