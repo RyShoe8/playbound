@@ -413,7 +413,9 @@ export function GameEditorForm({
       setWarning(typeof data.warning === "string" ? data.warning : "");
       setLauncherDiscoverNote("");
       setBusy(false);
-      router.refresh();
+      // Do NOT call router.refresh() here — in create mode it causes the server
+      // component to re-render with a fresh empty `initial`, which the useEffect
+      // detects and resets the entire form, wiping out the prefilled data.
     } catch {
       setError("Couldn't reach the server.");
       setBusy(false);
