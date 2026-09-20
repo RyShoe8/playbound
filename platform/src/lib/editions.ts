@@ -408,6 +408,13 @@ export function deriveVirtualEdition(game: Game): Edition {
 
 /** Editions removed from seed but possibly still stored in Mongo. */
 function filterRetiredEditions(gameSlug: string, editions: Edition[]): Edition[] {
+  if (
+    gameSlug === "super-sidekicks" ||
+    gameSlug === "baseball-stars-2" ||
+    gameSlug === "soccer-brawl"
+  ) {
+    return editions.filter((e) => e.slug !== "official");
+  }
   if (gameSlug === "wipeout-rewrite") {
     return editions.filter((e) => e.slug !== "phantom-edition");
   }

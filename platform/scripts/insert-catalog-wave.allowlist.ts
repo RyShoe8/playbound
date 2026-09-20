@@ -44,9 +44,6 @@ export const NEW_EDITION_KEYS: readonly string[] = [
   "populous-the-beginning/populous-reincarnated",
   "earth-2140-trilogy/official",
   "earth-2140-trilogy/opene2140",
-  "super-sidekicks/official",
-  "baseball-stars-2/official",
-  "soccer-brawl/official",
   "pokemon-blaze-online/official",
   "pokemon-blaze-online/windows-32",
   "pokemmo/official",
@@ -482,6 +479,9 @@ export const PATCH_EDITION_FIELDS: Readonly<Record<string, readonly string[]>> =
  * CoP/anomaly → game stalker-anomaly; CoP/gamma → stalker-anomaly/gamma (new insert).
  */
 export const RETIRE_EDITION_KEYS: readonly string[] = [
+  "super-sidekicks/official",
+  "baseball-stars-2/official",
+  "soccer-brawl/official",
   "s-t-a-l-k-e-r-call-of-pripyat/gamma",
   "s-t-a-l-k-e-r-call-of-pripyat/gunslinger",
   "s-t-a-l-k-e-r-call-of-pripyat/anomaly",
