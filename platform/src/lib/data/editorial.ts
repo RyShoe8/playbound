@@ -6259,9 +6259,9 @@ export const editorial: Record<string, GameEditorial> = {
     thatOneThing:
       "Couch co-op is two hunters on one PC — not a lobby code, and we do not pretend otherwise.",
     longDescription:
-      "Relic Hunters Zero: Remix is Rogue Snail's free remaster of the million-player twin-stick hit. You pick one of seven hunters, run the Asteroid Dungeon Nemesis, and clear waves of Ducan ducks and turtles with tiny guns that still feel heavy. Adventure Mode is a twelve-level campaign with unlockable relics; Endless and Storm change the pressure; Daily Mode gives everyone the same random seed to chase.\n\nCo-op is local only: up to two players on one screen. Controllers are supported; keyboard plus pad works when you only have one pad. There is no native online co-op on the PC build PlayBound ships through GOG — friends who are not in the room use PlayBound Couch / phone-as-controller so a remote pad appears as player two on the host.\n\nGOG lists it as Play for free with a DRM-free offline installer; Galaxy is optional for cloud saves. PlayBound's Install button opens Galaxy on product 1205909172 (`goggalaxy://openGameView/1205909172`) so claim and install stay one click for Galaxy users. We do not redistribute GOG installers.\n\nWe carry it because free twin-stick co-op with a finished campaign still clears the bar, and because Couch mode covers the second seat without inventing LAN the game does not ship.",
+      "Relic Hunters Zero: Remix is Rogue Snail's free remaster of the million-player twin-stick hit. You pick one of seven hunters, run the Asteroid Dungeon Nemesis, and clear waves of Ducan ducks and turtles with tiny guns that still feel heavy. Adventure Mode is a twelve-level campaign with unlockable relics; Endless and Storm change the pressure; Daily Mode gives everyone the same random seed to chase.\n\nCo-op is local only: up to two players on one screen. Controllers are supported; keyboard plus pad works when you only have one pad. There is no native online co-op on the PC build PlayBound ships through GOG — friends who are not in the room use PlayBound Couch / phone-as-controller so a remote pad appears as player two on the host.\n\nGOG lists it as Play for free with a DRM-free offline installer; Galaxy is optional for cloud saves. Claim the game on its GOG product page first, install it through Galaxy or the offline installer, then return to PlayBound so the launcher can detect the installed copy. We do not redistribute GOG installers.\n\nWe carry it because free twin-stick co-op with a finished campaign still clears the bar, and because Couch mode covers the second seat without inventing LAN the game does not ship.",
     whyWePickedIt:
-      "We picked Relic Hunters Zero: Remix because it is genuinely free on GOG, finished, controller-friendly, and honest about couch-only co-op. Galaxy one-click plus PlayBound Couch covers install and remote friends without lying about netplay.",
+      "We picked Relic Hunters Zero: Remix because it is genuinely free on GOG, finished, controller-friendly, and honest about couch-only co-op. A free GOG claim plus PlayBound Couch covers acquisition and remote friends without lying about netplay.",
     bestFor: [
       "Players who want a free twin-stick / bullet-hell campaign with couch co-op",
       "GOG users who prefer DRM-free offline installs",
@@ -6283,7 +6283,7 @@ export const editorial: Record<string, GameEditorial> = {
     installSteps: [
       {
         platform: "windows",
-        text: "Click Install in PlayBound to open GOG Galaxy on this title (goggalaxy://). Claim the free game and install from Galaxy, or use GOG's offline installer if you prefer.",
+        text: "Click Get It Free to open the GOG product page, claim the game, and install it through Galaxy or GOG's offline installer.",
       },
       {
         platform: "windows",

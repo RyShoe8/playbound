@@ -150,6 +150,7 @@ describe("insert-catalog-wave allowlists", () => {
         "morrowind",
         "pokemmo",
         "pokemon-blaze-online",
+        "relic-hunters-zero-remix",
         "s-t-a-l-k-e-r-call-of-pripyat",
         "s-t-a-l-k-e-r-clear-sky",
         "s-t-a-l-k-e-r-shadow-of-chernobyl",

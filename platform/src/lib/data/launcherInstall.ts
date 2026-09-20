@@ -1550,14 +1550,14 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
   "relic-hunters-zero-remix": {
     enabled: true,
     kind: "external",
-    url: "goggalaxy://openGameView/1205909172",
+    url: "https://www.gog.com/en/game/relic_hunters_zero_remix",
     knownExePaths: [
       "%PROGRAMFILES(X86)%\\GOG Galaxy\\Games\\Relic Hunters Zero Remix\\Relic Hunters Zero Remix.exe",
       "%PROGRAMFILES%\\GOG Galaxy\\Games\\Relic Hunters Zero Remix\\Relic Hunters Zero Remix.exe",
       "C:\\GOG Games\\Relic Hunters Zero Remix\\Relic Hunters Zero Remix.exe",
       "Relic Hunters Zero Remix.exe",
     ],
-    note: "Opens GOG Galaxy on the free title. DRM-free offline installer also works. Local 2P couch co-op only.",
+    note: "Claim the game free from GOG, then install it with Galaxy or GOG's DRM-free offline installer. PlayBound detects the installed copy. Local 2P couch co-op only.",
   },
   srb2kart: {
     enabled: true,

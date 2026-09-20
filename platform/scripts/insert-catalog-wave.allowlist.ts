@@ -290,6 +290,12 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "faq",
     "complete",
   ],
+  "relic-hunters-zero-remix": [
+    "launcherInstall",
+    "longDescription",
+    "whyWePickedIt",
+    "installSteps",
+  ],
   pokemmo: [
     "title",
     "tagline",
