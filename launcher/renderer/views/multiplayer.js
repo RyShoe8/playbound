@@ -13,6 +13,7 @@ import {
   refreshServersPickersAndList,
   wireServersBrowser,
 } from "./servers.js";
+import { readyInstalledGameSlugs } from "../multiplayerInstalled.js";
 
 let _cachedActivity = null;
 let _cachedParties = [];
@@ -38,12 +39,15 @@ function formatEventDate(isoStr) {
 }
 
 async function loadMultiplayerData() {
-  const [actRes, lfgRes, partiesRes, eventsRes] = await Promise.all([
+  const [actRes, lfgRes, partiesRes, eventsRes, installed] = await Promise.all([
     window.playbound.getMultiplayerActivity?.().catch(() => null),
     window.playbound.getLfg?.().catch(() => null),
     window.playbound.getParties?.({ includeDiscoverable: true }).catch(() => null),
     window.playbound.getEvents?.().catch(() => null),
+    window.playbound.getInstalled?.().catch(() => []),
   ]);
+
+  state._installedGameSlugs = readyInstalledGameSlugs(installed);
 
   if (actRes && !actRes.error) {
     _cachedActivity = actRes;
