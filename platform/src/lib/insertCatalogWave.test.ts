@@ -100,7 +100,6 @@ describe("insert-catalog-wave allowlists", () => {
   it("only names the batch editions we intend to create", () => {
     expect([...NEW_EDITION_KEYS].sort()).toEqual(
       [
-        "baseball-stars-2/official",
         "castlevania-revamped/official",
         "earth-2140-trilogy/official",
         "earth-2140-trilogy/opene2140",
@@ -115,10 +114,8 @@ describe("insert-catalog-wave allowlists", () => {
         "s-t-a-l-k-e-r-shadow-of-chernobyl/lost-alpha",
         "s-t-a-l-k-e-r-shadow-of-chernobyl/official",
         "s-t-a-l-k-e-r-shadow-of-chernobyl/true-stalker",
-        "soccer-brawl/official",
         "stalker-anomaly/gamma",
         "stalker-anomaly/official",
-        "super-sidekicks/official",
       ].sort()
     );
   });
@@ -127,12 +124,15 @@ describe("insert-catalog-wave allowlists", () => {
     expect(NEW_MOD_SLUGS).toEqual([]);
   });
 
-  it("retires CoP gamma/gunslinger/anomaly (Anomaly is its own game)", () => {
+  it("retires redundant default editions and misplaced CoP editions", () => {
     expect([...RETIRE_EDITION_KEYS].sort()).toEqual(
       [
+        "baseball-stars-2/official",
         "s-t-a-l-k-e-r-call-of-pripyat/anomaly",
         "s-t-a-l-k-e-r-call-of-pripyat/gamma",
         "s-t-a-l-k-e-r-call-of-pripyat/gunslinger",
+        "soccer-brawl/official",
+        "super-sidekicks/official",
       ].sort()
     );
   });
