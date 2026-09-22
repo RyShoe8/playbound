@@ -264,6 +264,8 @@ describe("coverage of the games PlayBound hosts", () => {
       "Uses server command-line flags and config files; profile pending testing of managed server modes.",
     "earth-2140-trilogy":
       "OpenE2140 uses OpenRA engine flags; profile pending initial production testing.",
+    hypersomnia:
+      "Configured by JSON files in the server's conf.d/, and the server also writes runtime_prefs.json which overrides them on restart — so a live settings change has to go through RCON rather than the spawn config. The recipe pins a fixed 16-slot casual room; expose arena, cycle and slots after a two-client production test establishes which of those survive a restart.",
   };
 
 

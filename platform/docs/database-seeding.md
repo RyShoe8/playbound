@@ -35,6 +35,12 @@ Production Mongo credentials are not for local shells, `vercel env pull`, or
 Pushing allowlist/seed changes to `main` triggers the workflow automatically.
 `npm run build` still writes nothing to the database — that stays intentional.
 
+`postdeploy:catalog` runs `seed:developers` before the wave, because a new game
+names a `developerSlug` that may not have a row yet. That script is insert-only
+per slug and leaves an existing developer completely alone, so admin edits to a
+bio or hue survive every redeploy — which is exactly what made the deleted
+global seed scripts unsafe and makes this one safe to run repeatedly.
+
 Local `seed:missing-* --dry-run` is fine for reading blast radius when a
 usable URI is already in the environment. It is not the production apply path.
 

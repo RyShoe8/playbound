@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build && npm run check:auth-urls",
-    "postdeploy:catalog": "npm run insert:catalog-wave && npm run sync:game-host",
+    "//postdeploy:catalog": "seed:developers runs first because a new game in the wave names a developer that may not exist yet. It is insert-only per slug — an existing developer is never touched, so admin edits survive every redeploy — which is why it is safe here and why the deleted global seed scripts were not.",
+    "postdeploy:catalog": "npm run seed:developers && npm run insert:catalog-wave && npm run sync:game-host",
     "start": "next start",
     "lint": "eslint",
     "load-test:polling": "tsx scripts/load-test-polling.ts",

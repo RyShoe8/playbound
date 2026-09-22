@@ -10,6 +10,14 @@ import { fetchOpenRaPlayerCount, fetchOpenRaServers } from "./providers/openra";
 import { fetchRemoteMaster, fetchViaAdapterOrDirect } from "./providers/remote";
 import { fetchSuperTuxKartServers } from "./providers/supertuxkart";
 import { fetchTeeworldsServers } from "./providers/teeworlds";
+import {
+  fetchHypersomniaPlayerCount,
+  fetchHypersomniaServers,
+} from "./providers/hypersomnia";
+import {
+  fetchHorizonXiPlayerCount,
+  fetchHorizonXiServers,
+} from "./providers/horizonxi";
 import { fetchTeamFortress2Servers } from "./providers/team-fortress-2";
 import { fetchSpaceStation14Servers } from "./providers/space-station-14";
 import { fetchStarCraftServers } from "./providers/starcraft";
@@ -61,6 +69,7 @@ import {
   fetchOnceHumanPlayers,
   fetchPathOfExilePlayers,
   fetchStarTrekOnlinePlayers,
+  fetchQuakeIIPlayers,
 } from "./providers/steam-concurrent";
 import { fetchZeroKServers } from "./providers/zero-k";
 import { fetchLeagueOfLegendsServers } from "./providers/league-of-legends";
@@ -217,6 +226,39 @@ const providers: Record<string, ServerProvider> = {
     // ordinary network, so the adapter is tried first and this is the fallback.
     fetchServers: () =>
       fetchViaAdapterOrDirect("star-wars-galaxies", fetchStarWarsGalaxiesServers),
+  },
+  /*
+   * Hypersomnia's own masterserver list. Counts humans only — `num_online_humans`
+   * rather than `num_playing`, because official instances run bots and the
+   * latter includes them. Private and LAN servers never register, so this is a
+   * floor, and rooms PlayBound hosts are deliberately unadvertised.
+   */
+  hypersomnia: {
+    slug: "hypersomnia",
+    fetchServers: fetchHypersomniaServers,
+    fetchPlayerCount: fetchHypersomniaPlayerCount,
+  },
+  /*
+   * Final Fantasy XI is counted from HorizonXI's own live figure, the same one
+   * its website shows. Retail FFXI has no comparable public source and its
+   * Steam app covers a small slice of a game sold mostly elsewhere, so the two
+   * are never combined. Scope is the Horizon server, which is the only route
+   * PlayBound installs.
+   */
+  "final-fantasy-xi": {
+    slug: "final-fantasy-xi",
+    fetchServers: fetchHorizonXiServers,
+    fetchPlayerCount: fetchHorizonXiPlayerCount,
+  },
+  /*
+   * Quake II is Steam concurrency for app 2320 (the Enhanced remaster), which
+   * is a "Playing on Steam" floor and not the whole population: PlayBound
+   * installs the GOG build, and the remaster's crossplay backend also carries
+   * GOG and console players while exposing no public total.
+   */
+  "quake-ii": {
+    slug: "quake-ii",
+    fetchServers: fetchQuakeIIPlayers,
   },
   mrboom: {
     slug: "mrboom",
@@ -432,6 +474,10 @@ const providers: Record<string, ServerProvider> = {
  *   as proxies, which measured a different audience under the project's name)
  * - keeperfx (direct-IP multiplayer arranged via Discord; the masterserver in
  *   dkfans/keeperfx-masterserver is not deployed anywhere public)
+ * - outrun (single-player only; no multiplayer of any kind and no service to
+ *   query. The convenient proxy here would have been a SEGA OutRun Steam app,
+ *   which measures a different game by a different publisher — the same mistake
+ *   openciv3 and tomb-raider-123 above were corrected for)
  *
  * Slugs that already advertise launchMethods "server" but still lack a provider
  * can be listed in UNSUPPORTED_SERVER_SLUGS so the launcher index can show them

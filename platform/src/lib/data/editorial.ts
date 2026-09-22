@@ -6978,6 +6978,375 @@ export const editorial: Record<string, GameEditorial> = {
       },
     ],
   },
+  "quake-ii": {
+    qualityBar: {
+      genuinelyFree: false,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "Heavy, deliberate, and weirdly tactile — you lean into corners, listen for the Gunner's cough, and learn that the super shotgun is a conversation ender.",
+      lastVerified: "2026-09-22",
+    },
+    thatOneThing:
+      "Ten dollars buys you five campaigns. The 1997 original, both retail mission packs, the Nintendo 64 port's completely different level set, and Call of the Machine — twenty-eight brand-new levels MachineGames built in 2023 for a game that was already twenty-six years old.",
+    longDescription:
+      "Quake II was id Software's hard left turn away from the gothic hellscape of Quake. Out went the runes and the shamblers; in came a military invasion of Stroggos, a planet of industrial corridors, blast furnaces and cyborgs who used to be people. It was also id's first game to give you objectives: hubs you return to, switches that open something three levels back, a computer voice telling you the security grid is down. The change was not universally loved at the time, and it is the reason Quake II plays less like a corridor sprint than its predecessor and more like a grind through a factory you are slowly breaking.\n\nWhat holds up is the weight. The chaingun spins up before it fires and drifts your aim while it does. The railgun punches a blue line through two Gladiators and the wall behind them. The super shotgun is a two-barrel commitment you regret at range. Enemies pause, flinch and stumble — the Berserker winds up its hammer, the Iron Maiden fires rockets that track, the Gunner lobs grenades in an arc you can watch and step out of. Almost nothing in the roster kills you without telegraphing first, which is what makes hard difficulty feel like a fair fight instead of a memory test.\n\nThe 2023 remaster by Nightdive Studios is the version that ships by default now, and it is unusually thorough. Widescreen and 4K, restored AI behaviours that were broken in 1997, colored dynamic lighting, re-rendered cinematics, and a rebuilt multiplayer layer with crossplay, bots and a working server browser. Sonic Mayhem's soundtrack — the one that made half of PC gaming think industrial metal was what shooters sounded like — is intact. MachineGames contributed Call of the Machine, a full new expansion, and the N64 port's separate nineteen-level campaign is thrown in.\n\nMultiplayer is where the price stops mattering. Sixteen players online, four-player co-op through every campaign including the expansions, split-screen for up to eight on one PC, and crossplay against console players. Deathmatch is still railgun-and-rocket movement shooting, and it is still fast.\n\nThe one honest catch: the Enhanced build cannot load the 1997 mod ecosystem, because Quake II mods shipped as native game DLLs compiled against the old engine. This is why the GOG purchase includes the untouched Original executable in the same install — that is the one you point at Action Quake II, Rocket Arena or a two-decade back catalogue of maps. Two builds, one price, and you pick per session.\n\nPlayBound lists paid games when the ratio is absurd, and this is one of the clearest cases in the catalog: five campaigns, two engines, working crossplay multiplayer and an intact mod scene for less than a sandwich.",
+    whyWePickedIt:
+      "We picked Quake II because it is the answer to the argument that preservation and commerce cannot coexist. Nightdive did not re-release a ROM and charge for nostalgia — they fixed bugs id shipped in 1997, restored AI that never worked, wired up crossplay, and then left the original executable in the box so the mod community that kept this game alive for twenty-six years does not lose anything. That is what a remaster should be, and ten dollars for five campaigns is the kind of value our catalog exists to point at.",
+    bestFor: [
+      "Anyone who wants a shooter campaign with weight and readable enemies rather than bullet sponges",
+      "Four friends who want genuine online or split-screen co-op through a full campaign",
+      "Mod archaeologists — the bundled Original build still loads 1997-era game DLLs",
+      "Steam Deck and low-spec owners; even the Enhanced build asks very little",
+    ],
+    notFor: [
+      "Players expecting Quake 1's gothic tone or its pure movement-shooter pacing",
+      "Anyone who wants to mod the Enhanced build — it will not load classic game DLLs, and you need the Original executable instead",
+      "Mac and Linux players; GOG ships a Windows build only, with no official port of the remaster",
+      "People who dislike backtracking through hub levels to flip a switch",
+    ],
+    comparableTo: [
+      "Doom (2016)",
+      "Half-Life",
+      "Unreal",
+      "Turok 2: Seeds of Evil",
+      "Dusk",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Buy Quake II on GOG — the $9.99 listing is the pack, covering the Enhanced build, the 1997 Original, both mission packs, Call of the Machine and Quake II 64.",
+      },
+      {
+        platform: "windows",
+        text: "Run the DRM-free offline installer into its own folder. Roughly 4.3 GB downloads; allow about 5 GB on disk.",
+      },
+      {
+        platform: "windows",
+        text: "Launch the Enhanced build, set resolution and controller bindings, and start a campaign to confirm saves work.",
+      },
+      {
+        platform: "windows",
+        text: "For classic mods, launch the Original executable from the same install folder instead.",
+      },
+    ],
+    faq: [
+      {
+        q: "Which version of Quake II does the GOG purchase give me?",
+        a: "Both. GOG's Quake II listing is a pack containing Quake II (Enhanced) — Nightdive's 2023 remaster — and Quake II (Original), the untouched 1997 build. One purchase installs both, and you choose which executable to launch.",
+      },
+      {
+        q: "Is Quake II free?",
+        a: "No. It is $9.99 on GOG, DRM-free. PlayBound lists it because that price covers five separate campaigns, two engine builds and working online multiplayer, which is the kind of ratio our catalog is for.",
+      },
+      {
+        q: "Does Quake II have controller support?",
+        a: "Yes, full controller support in the Enhanced build — both GOG and Steam list it, and it was built for the console versions of the remaster. The Original 1997 executable's gamepad handling is much rougher.",
+      },
+      {
+        q: "How many people can play Quake II multiplayer?",
+        a: "Sixteen players online in deathmatch and team deathmatch, four players in online or split-screen co-op through any campaign, and up to eight in local split-screen PvP on PC. Crossplay works with Xbox, PlayStation and Switch players, and bots can fill out offline or online matches.",
+      },
+      {
+        q: "Can I use Quake II mods with the remaster?",
+        a: "Not with the Enhanced build. Quake II mods shipped as native game DLLs compiled against the 1997 engine, and the remaster cannot load them. Use the bundled Original executable for Action Quake II, Rocket Arena, custom maps and the rest of the classic scene.",
+      },
+      {
+        q: "Does Quake II run on Linux, macOS or Steam Deck?",
+        a: "GOG ships a Windows build only — there is no official Mac or Linux release of the remaster. It runs well on Steam Deck through Proton, and the Enhanced build's native controller support means it needs no community config.",
+      },
+      {
+        q: "What is Call of the Machine?",
+        a: "A brand-new twenty-eight-level expansion MachineGames built for the 2023 remaster, plus a deathmatch map. It is included at no extra cost and is a genuinely new Quake II campaign, not a remixed one.",
+      },
+    ],
+  },
+  outrun: {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: false,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "Loose and forgiving in exactly the way the arcade cabinet was — you drift the Testarossa through a fork, clip a palm tree, and keep going because the timer cares more than the physics do.",
+      lastVerified: "2026-09-22",
+    },
+    maintenanceCheck: {
+      kind: "manual",
+      url: "https://github.com/ZgzInfinity/OutRun",
+      checkedAt: "2026-09-22",
+      note: "Version 5.0 shipped 7 June 2023 and the repository has had no commits since. This is a finished single-developer project rather than an abandoned one — the game is complete and runs — but do not describe it as actively maintained.",
+    },
+    thatOneThing:
+      "It is not an emulator and there is no ROM anywhere in it. One developer in Zaragoza rewrote the whole thing — the pseudo-3D road, the traffic, the branching forks, the radio you tune before the race — in C++ and SFML, and then added Survival mode, which the 1986 cabinet never had.",
+    longDescription:
+      "Out Run in 1986 was a machine you sat inside. It had a steering wheel with force feedback, a gear stick, a seat that leaned, and a radio you tuned with a button before the flag dropped so you could pick which of three songs carried you down the coast. What it did not have was a track: it had a tree. Each stage ended in a fork, and five stages of left-or-right choices meant fifteen destinations and no two runs alike. That structure, plus a Ferrari Testarossa and a checkpoint clock that only ever gives you a few more seconds, is the whole game.\n\nThis is a rebuild of it, in C++ and SFML, by Rubén Rodríguez. That distinction matters more than it sounds. There is no ROM here and no emulation layer — the sprite-scaling road renderer, the traffic behaviour, the collision model that shrugs you sideways off a palm tree instead of ending your run, the gear system, the radio: all reimplemented from the observable behaviour of the arcade original and the 1991 Mega Drive port. It runs as a 4.8 MB executable next to a Resources folder full of plain text map definitions, which is why the whole thing fits in under 100 MB and starts instantly.\n\nWhat the remake adds is the interesting part. Automatic or manual transmission, chosen at a dedicated gear menu. Difficulty tiers and a separate traffic-density setting, so you can have the original's punishing clock with light traffic or the reverse. Several distinct AI behaviours for the cars you weave through. New maps that were never in any official version. And three modes: Original, which is the arcade run with its forks and its checkpoints; Continuous, which strings stages together without the branch; and Survival, which is exactly what it sounds like and is the mode that will eat your evening.\n\nIt is honest about what it is. The road is 2.5D — sprite scaling and horizon shifting, not polygons — so the corners bend rather than bank, and if you come from modern arcade racers the handling will feel light before it feels good. Give it three runs. The trick, as in 1986, is that braking is almost never the answer: you lift, you steer through the apex, and you take the hit on a tree if the clock is tight.\n\nThere is a real catch to note: development stopped after version 5.0 in June 2023. The project is finished rather than abandoned — it is complete, it runs, and nothing is broken — but nobody is fixing bugs any more, and the GPL-3.0 source is the only recourse if you find one.\n\nPlayBound lists it because it is the best kind of fan project: not a ROM in a wrapper, but someone rebuilding a 40-year-old machine's behaviour in source you can read, and then making it more game than the original was.",
+    whyWePickedIt:
+      "We picked this because fan preservation usually means an emulator and a ROM you had to find somewhere, and this is the other path — one developer reimplementing a 1986 arcade machine's road renderer, traffic AI and branching stage tree from scratch, under GPL-3.0, with the source sitting there to read. It also does the thing the best remakes do: it respects the original's forgiving, clock-driven handling instead of modernising it, then adds Survival and Continuous modes and new maps on top. Free, 95 MB, runs on anything, and legally clean.",
+    bestFor: [
+      "Anyone who wants the arcade Out Run's fork-and-checkpoint structure without hunting for a ROM",
+      "Players on very low-spec machines — it runs on integrated graphics and 1 GB of RAM",
+      "Developers curious how a pseudo-3D sprite-scaling road renderer actually works; the C++ is readable",
+      "Short-session players: a full Original run is about five minutes",
+    ],
+    notFor: [
+      "Anyone who wants a gamepad or wheel — it is keyboard-only, with no joystick support anywhere in the code",
+      "Players expecting multiplayer or split-screen; it is strictly single-player",
+      "People who want modern racing physics with weight transfer and braking that matters",
+      "Anyone who needs an actively developed project — the last release was June 2023",
+    ],
+    comparableTo: [
+      "OutRun 2006: Coast 2 Coast",
+      "Horizon Chase Turbo",
+      "SEGA Ages Out Run",
+      "Slipstream",
+      "Hotshot Racing",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Install through PlayBound. The 89 MB archive extracts to a portable folder containing Outrun.exe, openal32.dll and Resources — nothing is written to the registry.",
+      },
+      {
+        platform: "linux",
+        text: "Install SFML from your package manager first, then run the extracted binary.",
+        command: "sudo apt-get install libsfml-dev && ./Outrun",
+      },
+      {
+        platform: "all",
+        text: "Open Options and set your resolution. The default window is small, and the road renderer scales cleanly to 1080p and above.",
+      },
+      {
+        platform: "all",
+        text: "Visit the Gears menu to choose automatic or manual transmission, then remap the keys if Left Ctrl to accelerate and Left Alt to brake does not suit you.",
+      },
+      {
+        platform: "all",
+        text: "Start in Original mode for the arcade run with its five forks, then try Survival once you can hold a line.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is this an emulator or a ROM of the arcade Out Run?",
+        a: "Neither. It is an original C++ and SFML program that reimplements the game's behaviour — the pseudo-3D road, traffic, forks, gears and radio — from scratch. There is no arcade ROM in the download and nothing to emulate. The source is GPL-3.0 on GitHub.",
+      },
+      {
+        q: "Does OutRun support a controller or a steering wheel?",
+        a: "No. It is keyboard-only. We searched every source and documentation file in the repository for joystick, gamepad, XInput and DirectInput and found nothing, and the shipped settings file binds only keyboard keys. The README's mention of customisable controls means key remapping.",
+      },
+      {
+        q: "What are the three game modes?",
+        a: "Original is the arcade run: five stages, each ending in a left-or-right fork, with a checkpoint clock. Continuous strings stages together without branching. Survival drops you into an endurance run. Difficulty and traffic density are separate settings, so you can tune the challenge independently.",
+      },
+      {
+        q: "Is OutRun free, and is it legal?",
+        a: "Yes to both. The game is free and the source is licensed GPL-3.0. Because it contains no SEGA code or ROM data, it is a clean-room fan remake rather than a redistribution.",
+      },
+      {
+        q: "Which version does PlayBound install?",
+        a: "Version 5.0, the latest release, published 7 June 2023. Earlier 4.0 builds are still on GitHub; PlayBound pins 5.0 for both Windows and Linux because the two platforms are published under separate release tags.",
+      },
+      {
+        q: "Is the project still being developed?",
+        a: "No. The last release was 5.0 in June 2023 and the repository has had no commits since. It is a finished game rather than a broken one — everything works — but nobody is shipping fixes, so treat the GPL-3.0 source as your recourse if you hit a bug.",
+      },
+      {
+        q: "Does it run on Linux?",
+        a: "Yes, there is an official Linux x64 build. It links against system SFML, so install libsfml-dev (or your distribution's equivalent) before running it.",
+      },
+    ],
+  },
+  hypersomnia: {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "Fast and unforgiving from above — you peek a doorway, hear the spread of a shotgun you cannot see, and die in the third of a second it takes to realise the angle was wrong.",
+      lastVerified: "2026-09-22",
+    },
+    thatOneThing:
+      "A round with hundreds of crates, bullets and shell casings flying around costs about 5 KB/s of bandwidth, because the server only ever sends what players pressed. Everything else — every physics object in the map — is simulated identically on every machine, like playing chess over the phone by calling out moves instead of describing the board.",
+    longDescription:
+      "Hypersomnia is a top-down competitive shooter that borrows its economy and its round structure from Counter-Strike and then does something much stranger with the networking. It is free, AGPL-3.0, and developed entirely in the open by Patryk Czachurski and a small collective around him.\n\nMoment to moment it is a bomb-defusal game seen from directly above. Two factions, Metropolis and Resistance, buy weapons between rounds from a shop with real opportunity cost, then fight over a site. Because you are looking down, the information game is inverted from an FPS: you can see the whole room you are standing in but nothing through a doorway, so peeking is a commitment and sound tells you more than sight does. Gunfights resolve in a fraction of a second. Recoil climbs, spread matters, and a shotgun round at close range is simply the end of the conversation. There is a knife, there are grenades that bounce, and there is a satisfying amount of physics debris that gets thrown around when things go off.\n\nThe technical story is the one people talk about. Rather than replicating world state, the server transmits only player inputs — \"moved here, pressed this\" — and every client simulates the rest deterministically. The result is that traffic scales with the number of players rather than the number of objects: two characters in a map full of dynamic crates cost roughly 5 KB/s at a 60 Hz tick. When a new client joins, already-connected clients rebuild their physics state from scratch so everyone's simulation stays bit-identical. That determinism is also what makes the browser client possible — you can host a server in a browser tab and have native clients connect to it.\n\nThe surrounding infrastructure is unusually complete for a free project. There are official ranked and casual server instances per region, a server browser, spectating, a built-in level editor, and custom maps that download automatically over HTTPS when you connect to a server running one — so a group can play an arena nobody else has installed. Ranked has a rating that is shared between the Steam and web versions if you link a Discord account. There is a full single-elimination tournament mode the dedicated server runs on its own, spawning one instance per match and advancing the bracket without anybody managing it by hand.\n\nThat dedicated server is a separate headless binary — under 30 MB — which is why PlayBound can host private rooms for it on request rather than relying on someone's home connection accepting inbound UDP.\n\nOne honest limitation: there is no gamepad support. Nothing in the source or the default configuration reads a joystick, so this is mouse and keyboard only, and we have deliberately not tagged it for controllers.",
+    whyWePickedIt:
+      "We picked Hypersomnia because it is proof that a free game does not have to be a compromised one. It ships a headless dedicated server, a level editor, ranked matchmaking, a browser client and per-region official instances — infrastructure most paid shooters treat as a roadmap item — under AGPL-3.0, with the netcode that makes it work sitting there in public for anyone to read. It also fits PlayBound's harder cases perfectly: 120 MB, runs on integrated graphics, and hosts its own server, which means a party can play it tonight without anyone opening a router.",
+    bestFor: [
+      "Groups who want Counter-Strike's round economy in something that installs in under a minute",
+      "Anyone on a low-spec laptop, Steam Deck or integrated graphics",
+      "LAN parties — it has genuine LAN play and a dedicated server binary",
+      "People who like reading netcode; the rollback implementation is public and documented",
+    ],
+    notFor: [
+      "Controller players — there is no gamepad support anywhere in the game",
+      "Anyone looking for a single-player campaign; this is multiplayer only",
+      "Players who need a large population at any hour — the official servers are busy in bursts, not constantly",
+      "Anyone who dislikes very fast time-to-kill and losing fights before reacting",
+    ],
+    comparableTo: [
+      "Counter-Strike 2",
+      "Hotline Miami",
+      "Teeworlds",
+      "Soldat",
+      "Valorant",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Install through PlayBound. The recipe points at the official always-latest Windows build, and the client patches itself on launch.",
+      },
+      {
+        platform: "linux",
+        text: "The Linux build is an AppImage. Mark it executable and run it; add --appimage-extract-and-run if you do not have FUSE.",
+      },
+      {
+        platform: "macos",
+        text: "Install the official DMG build and drag it to Applications.",
+      },
+      {
+        platform: "all",
+        text: "Set a nickname in Settings, then open Browse servers and pick a regional ranked or casual instance.",
+      },
+      {
+        platform: "all",
+        text: "Play the Duel Practice arena solo once before joining a live round — the recoil pattern and the buy menu decide most early fights.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Hypersomnia free?",
+        a: "Completely. It is AGPL-3.0 open source, free on its own site and free on Steam, with no purchases, battle pass or cosmetics store. The official regional servers are run by the project.",
+      },
+      {
+        q: "Does Hypersomnia support controllers?",
+        a: "No. We searched the source and the default configuration for joystick, gamepad, XInput and DirectInput and found nothing, so it is mouse and keyboard only. We have not tagged it for Controller Support, which also means PlayBound will not offer you phone-as-controller for it.",
+      },
+      {
+        q: "How many players fit in a match?",
+        a: "Sixteen by default — that is the slots value in the game's own default configuration — and a server operator can change it. Official instances run ranked and casual variants, and spectator slots are separate from playing slots.",
+      },
+      {
+        q: "Can PlayBound host a private Hypersomnia server for my party?",
+        a: "Yes. Hypersomnia ships a headless dedicated server, so PlayBound starts a private instance on its VPS when your party hits Connect and joins everyone to it. You can also self-host from your own machine, which the launcher will offer if your connection can accept inbound UDP on 8412.",
+      },
+      {
+        q: "What makes the netcode unusual?",
+        a: "The server sends only player inputs rather than world state, and every client simulates the rest deterministically. Bandwidth therefore scales with player count, not object count — roughly 5 KB/s for two players at a 60 Hz tick, in a map with hundreds of dynamic objects. When someone joins, all clients rebuild their physics state so every simulation stays identical.",
+      },
+      {
+        q: "Do I need to download custom maps before joining a server?",
+        a: "No. Connecting to a server running a community arena downloads the map and its resources automatically, over HTTPS from the map catalogue or directly from the server over UDP if the catalogue is unreachable.",
+      },
+      {
+        q: "Can I play it in a browser?",
+        a: "Yes. There is an official web client, and it interoperates with native clients — you can host a server in a browser tab and have desktop players connect to it. Linking a Discord account to Steam shares your ranked rating between the two.",
+      },
+    ],
+  },
+  "final-fantasy-xi": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "Slow, social and genuinely dangerous — you walk everywhere, you shout in Jeuno for a healer, and the first time a party of six kills something that has been killing you all evening it lands harder than any modern MMO's raid finder.",
+      lastVerified: "2026-09-22",
+    },
+    maintenanceCheck: {
+      kind: "manual",
+      url: "https://horizonxi.com/",
+      checkedAt: "2026-09-22",
+      note: "The game itself is Square Enix's and has no public repository. Maintenance here means the HorizonXI server, which launched in December 2022 at Chains of Promathia and has since patched through Treasures of Aht Urhgan; its launcher is released from HorizonFFXI/HorizonXI-Launcher-Binaries. Re-check the site's news feed and launcher release tag.",
+    },
+    thatOneThing:
+      "The level cap is 75 and it is never going up. Horizon's entire premise is that Final Fantasy XI kept being developed but the cap never moved — so post-75 expansions get rebalanced downward into level-75 content instead of replacing it, and the gear you spent a month earning in 2004 stays worth having.",
+    longDescription:
+      "Final Fantasy XI launched in 2002 and has never gone offline. It is the MMO that ran on a PlayStation 2 with a hard drive attachment, the one where you needed a party to level past your twenties, and the one that expected you to spend twenty minutes walking somewhere and then ask a stranger for a Teleport. Its reputation for being punishing is earned: there is no fast travel worth the name, death costs experience, and mobs do not scale down for you.\n\nPlayBound catalogues it for HorizonXI, a private server that has been running since 17 December 2022 and is built on the AirSkyBoat codebase by a team of over a hundred volunteers. Horizon's design thesis is specific and unusually disciplined: recreate the game as if Square Enix had kept developing it without ever raising the level cap above 75. It launched at Chains of Promathia era content and has patched forward through Treasures of Aht Urhgan, with post-75 content rebalanced downward rather than bolted on. Movement speed is the level-75-cap value of 40. Experience and crafting rates are 1.0. Equipment level-scaling is off. Drop rates and Treasure Hunter follow Square Enix's own era charts. There are no Trusts, no home-point warps, and the auction house is stocked only by players.\n\nWhat that produces is the version of this game people actually remember. Levelling happens in parties at named camps, and the server has quietly added new camps you are expected to find rather than read about. Jobs have been touched — lightly, with a stated rule that every adjustment must push a job closer to its own identity rather than toward a metagame — so the fifteen Chains of Promathia jobs are all viable instead of three being mandatory. Claim shields on prominent notorious monsters stop one linkshell from monopolising them. Dynamis has a weekly account lockout. The server is single-box: one account per IP address, three characters, and you file for an exception on Discord if two people share a house.\n\nThe practical part: it costs nothing and requires nothing you have to buy. The HorizonXI launcher downloads a complete Final Fantasy XI client itself — you do not need a retail copy, a Square Enix account, or a subscription. Budget 25 GB of free space during installation; the finished client settles at about 16 GB. The launcher handles patching, resolution, language and the approved add-on list. Character creation happens on the website before you first log in.\n\nTwo honest caveats. This is a 2002 DirectX 9 engine, and it looks and controls like one — gamepad support is native and good, because the game shipped on PS2, but the UI is menus inside menus. And it is a private server, unaffiliated with Square Enix, which means it exists at a publisher's discretion; Square Enix's own live service is the paid, official alternative and is a different game now, twenty years of level-cap increases later.\n\nHorizon's population sits comfortably in the high hundreds to low thousands concurrent, which for a level-75-era private server is the difference between a museum and a world.",
+    whyWePickedIt:
+      "We picked Final Fantasy XI because Horizon is the strongest argument we know for community preservation of a living game. Square Enix still runs FFXI, but the game it runs is twenty years of level-cap inflation away from the one that made people care, and there is no official way back to it. A hundred volunteers rebuilt that version, committed to never raising the cap, and then did the harder work of rebalancing later expansions downward so the world keeps growing without invalidating itself. It is free, the launcher ships the client, and a couple of thousand people are in there right now — which is what makes it a place rather than an archive.",
+    bestFor: [
+      "Anyone who misses MMOs where you had to ask strangers for help and then knew them afterwards",
+      "Returning FFXI players who want the level-75 era rather than the current retail game",
+      "Controller players — FFXI was built for a PlayStation 2 pad and still plays well on one",
+      "People with time: this is a game about long evenings, not twenty-minute sessions",
+    ],
+    notFor: [
+      "Players who want solo progression, quest markers or a dungeon finder — none of that exists here",
+      "Anyone hoping to dual-box; Horizon allows one account per IP address and three characters",
+      "Households where two people share a connection without filing for an IP exception first",
+      "Anyone who wants the current retail FFXI, its later expansions, or Trusts — Horizon is capped at 75 permanently",
+    ],
+    comparableTo: [
+      "EverQuest",
+      "Final Fantasy XIV",
+      "Dark Age of Camelot",
+      "Asheron's Call",
+      "World of Warcraft Classic",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Register a free account at horizonxi.com and verify your email. Nothing else needs buying — no retail copy, no Square Enix account, no subscription.",
+      },
+      {
+        platform: "windows",
+        text: "Install the HorizonXI edition through PlayBound. It fetches the official 176 MB launcher installer from the project's GitHub releases.",
+      },
+      {
+        platform: "windows",
+        text: "Run the launcher and choose an install location. It downloads the game client itself — keep 25 GB free while it works; the finished client is about 16 GB.",
+      },
+      {
+        platform: "windows",
+        text: "Create your character on the HorizonXI website, choosing a race and nation, then start the game from the launcher and sign in.",
+      },
+      {
+        platform: "windows",
+        text: "Set resolution and enable any approved add-ons from the launcher, then join a linkshell early — Horizon is balanced around group play and it is the fastest way in.",
+      },
+    ],
+    faq: [
+      {
+        q: "Do I need to buy Final Fantasy XI to play on HorizonXI?",
+        a: "No. The HorizonXI launcher downloads a complete game client itself. You do not need a retail copy, a Square Enix account or a monthly subscription — the server is free. Square Enix's official live service is a separate, paid thing that PlayBound does not sell or host.",
+      },
+      {
+        q: "What era of Final Fantasy XI does HorizonXI run?",
+        a: "The level-75 cap era, permanently. It launched in December 2022 with Chains of Promathia content and has patched forward through Treasures of Aht Urhgan, matching a retail patch date of 17 April 2006. The premise is that the cap never rose, so later expansions get rebalanced into level-75 content rather than replacing it.",
+      },
+      {
+        q: "How much disk space does it need?",
+        a: "25 GB free during installation, settling at roughly 16 GB once the client finishes downloading. The launcher itself is a 176 MB installer.",
+      },
+      {
+        q: "Does Final Fantasy XI support a controller?",
+        a: "Yes, natively and well — it shipped on PlayStation 2, so the entire interface was designed around a gamepad. The Windows client handles modern pads, and Steam's listing for the retail version confirms DualShock and DualSense support.",
+      },
+      {
+        q: "Can I play two characters at once, or share a house with another player?",
+        a: "Horizon is a single-box server: one account per IP address and three characters on it. No dual-boxing. If two people in the same home want to play, you request an IP exception in the HorizonXI Discord, and it is worth filing well in advance.",
+      },
+      {
+        q: "How many people play on HorizonXI?",
+        a: "The server publishes its own live count — typically in the high hundreds to low thousands concurrently. PlayBound reads that figure directly from HorizonXI rather than estimating it, so the number on this page is the server's own.",
+      },
+      {
+        q: "What has HorizonXI changed from the original game?",
+        a: "Deliberately little, under a policy it calls Era+. Movement speed 40, 1.0 experience and crafting rates, equipment scaling disabled, era-accurate drop rates and Treasure Hunter. Jobs get light adjustments intended to push each toward its own identity so all fifteen are viable. New experience camps exist but are undocumented on purpose. No Trusts, no home-point warps, a player-stocked auction house, and claim shields on prominent notorious monsters.",
+      },
+      {
+        q: "Is HorizonXI affiliated with Square Enix?",
+        a: "No. It is an unaffiliated volunteer project, and its own site says so. All Final Fantasy XI content and images remain Square Enix's. That also means it runs at a publisher's discretion, which is a risk worth knowing about before you invest months in a character.",
+      },
+    ],
+  },
 };
 
 /** Merge editorial content onto a factual catalog entry. */

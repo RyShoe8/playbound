@@ -7901,6 +7901,562 @@ const facts: Game[] = [
       },
     ],
   },
+  /*
+   * Quake II — GOG's DRM-free master, which is the 2023 Nightdive remaster
+   * plus the untouched 1997 build in one purchase.
+   *
+   * The GOG product (`quake_ii_quad_damage`, id 1443696817) is a pack of two
+   * game rows: Quake II Enhanced (1947927225, 3612 MB installer) and Quake II
+   * (Original) (1441704824, 690 MB). sizeMB is the two together, because
+   * buying it gives you both and the launcher's disk estimate should not
+   * assume you skip one. GOG lists Windows only — there is no Mac or Linux
+   * build of the remaster — so platforms stays a single entry.
+   */
+  {
+    slug: "quake-ii",
+    title: "Quake II",
+    tagline: "The shotgun still kicks, and the Strogg still scream when you hit them.",
+    description:
+      "id Software's 1997 military sci-fi shooter, sold by GOG as Nightdive's 2023 remaster with the original 1997 executable included. One purchase covers the base campaign, both retail mission packs, MachineGames' new Call of the Machine expansion, the Nintendo 64 port, 16-player online deathmatch and 4-player co-op with crossplay.",
+    developerSlug: "id-software",
+    genres: ["FPS", "Shooter", "Action", "Horror"],
+    tags: ["Classic", "Retro", "Sci-Fi", "Arena Shooter", "Mods", "PvP"],
+    aliases: ["Quake 2", "Quake II Enhanced", "Quake II Remastered", "Quad Damage"],
+    license: "Commercial · DRM-free purchase",
+    releaseYear: 1997,
+    sizeMB: 4302,
+    status: "draft",
+    platforms: ["Windows"],
+    features: [
+      "Singleplayer",
+      "Multiplayer",
+      "Co-op",
+      "Split-Screen Co-op",
+      "Couch Co-Op",
+      "Cross-play",
+      "Controller Support",
+      "Mod Support",
+      "Custom Maps",
+      "Community Content",
+      "Story Campaign",
+      "Dedicated Servers",
+    ],
+    launchMethods: ["install"],
+    browserPlayable: false,
+    steamDeck: true,
+    masterCopy: true,
+    maxPlayers: 16,
+    website: "https://www.gog.com/en/game/quake_ii_quad_damage",
+    gogStoreUrl: "https://www.gog.com/en/game/quake_ii_quad_damage",
+    steamAppId: "2320",
+    gameOfWeek: false,
+    hiddenGem: false,
+    access: {
+      priceType: "PAID",
+      regularPriceCents: 999,
+      currentPriceCents: 999,
+      qualifyingPriceCents: 999,
+      currency: "USD",
+      purchaseRequired: true,
+      offers: [
+        {
+          retailer: "GOG",
+          url: "https://www.gog.com/en/game/quake_ii_quad_damage",
+          priceCents: 999,
+          affiliate: false,
+          lastCheckedAt: "2026-09-22",
+          isActive: true,
+          matchSource: "manual",
+        },
+      ],
+    },
+    art: { from: "#431407", to: "#ea580c", icon: "Crosshair" },
+    coverImage:
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2320/header.jpg",
+    screenshots: [
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2320/ss_5b85c7ee18c210a2f75320331b22abb860a10471.1920x1080.jpg",
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2320/ss_8b699b0ffdb585386e3092b31efbd487f9dcf011.1920x1080.jpg",
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2320/ss_863a58fb51dbc1d64b05358b61359ad297fe9459.1920x1080.jpg",
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2320/ss_7df88eccd9b900a60ecd40e50dbce10acad877c3.1920x1080.jpg",
+    ],
+    systemRequirements: {
+      min: "Windows 10 64-bit · Dual-core 2 GHz CPU · 4 GB RAM · DirectX 11 GPU · 5 GB storage",
+      recommended: "Windows 11 · Quad-core CPU · 8 GB RAM · Dedicated DX11/Vulkan GPU · SSD",
+    },
+    hardwareRequirements: {
+      min: {
+        os: ["windows"],
+        ramMB: 4096,
+        storageMB: 5120,
+        apis: ["dx11"],
+        cpuText: "Dual-core 2 GHz CPU",
+        gpuText: "DirectX 11 capable",
+        cpuTier: "entry",
+        gpuTier: "entry",
+        notes: "Enhanced build; the bundled 1997 executable runs on far less",
+      },
+      recommended: {
+        os: ["windows"],
+        ramMB: 8192,
+        storageMB: 6144,
+        apis: ["dx11"],
+        cpuText: "Quad-core CPU",
+        gpuText: "Dedicated DirectX 11 GPU",
+        cpuTier: "mid",
+        gpuTier: "entry",
+      },
+      provenance: {
+        source: "developer",
+        sourceUrl: "https://www.gog.com/en/game/quake_ii_quad_damage",
+        verifiedAt: "2026-09-22",
+      },
+    },
+    launcherInstall: {
+      enabled: true,
+      kind: "external",
+      url: "https://www.gog.com/en/game/quake_ii_quad_damage",
+      knownExePaths: ["quake2ex.exe", "rerelease\\quake2ex.exe", "quake2.exe"],
+      note: "Uses GOG's DRM-free offline installer. Galaxy is optional. The installer lays down both the Enhanced and Original builds.",
+    },
+    firstPlaySteps: [
+      {
+        platform: "windows",
+        text: "Buy Quake II on GOG and run the DRM-free offline installer into its own folder.",
+      },
+      {
+        platform: "windows",
+        text: "Launch the Enhanced build once, set resolution and controller bindings, and confirm a new save works.",
+      },
+      {
+        platform: "windows",
+        text: "For mods, launch the bundled Original executable instead — the Enhanced build does not load 1997-era game DLLs.",
+      },
+    ],
+    multiplayerGamingSteps: [
+      {
+        platform: "all",
+        text: "Create or join a PlayBound Party so everyone launches the same build — Enhanced and Original cannot see each other's games.",
+      },
+      {
+        platform: "all",
+        text: "Use the Enhanced build's in-game server browser for crossplay deathmatch and co-op with console players, up to 16.",
+      },
+      {
+        platform: "all",
+        text: "For a private match, one player hosts from the multiplayer menu and shares the address through the party.",
+      },
+    ],
+  },
+  /*
+   * OutRun — Rubén Rodríguez's from-scratch SFML remake, not an emulator and
+   * not the Amiga port.
+   *
+   * Identified from the binary the user already had installed: `Outrun.exe`
+   * carries no version metadata, but its string table contains `OutRun.cpp`,
+   * `MenuCredits.cpp` and the signature `ZGZ INFINITGAMES`, which is the
+   * author's handle (Zaragoza). A news article about a *different* OutRun fan
+   * project — reassembler's Amiga edition — was the starting point and is not
+   * this game; that one ships 2 MB Amiga disk images, this one is an 89 MB
+   * Windows build. Recorded here because the two are easy to confuse.
+   *
+   * Pinned to the v5.0 release rather than `github-zip`: the Windows and Linux
+   * builds are published under separate tags (`v5.0-Windows`, `v5.0-Linux`),
+   * so "latest release" only ever contains one platform's asset and a pattern
+   * match cannot reach the other.
+   *
+   * No Controller Support: every .cpp/.h/.md in the repo was searched for
+   * joystick, gamepad, xinput and dinput with zero hits, and the shipped
+   * Settings.txt binds only keyboard keys. The README's "configuration of the
+   * controllers customizable" means key remapping.
+   */
+  {
+    slug: "outrun",
+    title: "OutRun (Fan Remake)",
+    tagline: "Pick a fork, hold the gear, and let the radio do the rest.",
+    description:
+      "An open-source rebuild of SEGA's 1986 arcade racer in C++ and SFML — not an emulator and not a ROM. Rubén Rodríguez reimplemented the 2.5D road renderer, the traffic AI, the branching stage forks and the in-car radio from scratch, then added difficulty tiers, all-new maps, and Continuous and Survival modes alongside the faithful Original arcade run.",
+    developerSlug: "zgzinfinity",
+    genres: ["Racing", "Arcade", "Action"],
+    tags: ["Retro", "Classic", "Open Source", "Fangame", "Indie", "Cross-Platform", "2D"],
+    aliases: ["Out Run", "OutRun Remake", "ZgzInfinity OutRun", "Outrun 5.0"],
+    license: "GPL-3.0",
+    releaseYear: 2020,
+    sizeMB: 95,
+    status: "draft",
+    platforms: ["Windows", "Linux"],
+    features: ["Singleplayer", "Community Content"],
+    launchMethods: ["install"],
+    browserPlayable: false,
+    steamDeck: false,
+    masterCopy: false,
+    maxPlayers: 1,
+    website: "https://github.com/ZgzInfinity/OutRun",
+    githubRepo: "ZgzInfinity/OutRun",
+    gameOfWeek: false,
+    hiddenGem: true,
+    access: {
+      priceType: "FREE",
+      regularPriceCents: 0,
+      currentPriceCents: 0,
+      qualifyingPriceCents: 0,
+      currency: "USD",
+      purchaseRequired: false,
+    },
+    art: { from: "#0c4a6e", to: "#f472b6", icon: "Car" },
+    coverImage: "https://i.ibb.co/KwngWQn/Outrun.png",
+    screenshots: [
+      "https://i.ibb.co/0VCNQ2m/Scenario2.png",
+      "https://i.ibb.co/09dF63h/Scenario5.png",
+      "https://i.ibb.co/jWSQLQ1/Scenario6.png",
+      "https://i.ibb.co/hyGj3NX/Scenario8.png",
+      "https://i.ibb.co/bN7s5vt/Scenario10.png",
+      "https://i.ibb.co/MNsyHNY/Radio.png",
+    ],
+    videos: ["https://www.youtube.com/watch?v=CdCh8Meg8Yo"],
+    systemRequirements: {
+      min: "Windows 7 64-bit or Linux · 1.5 GHz CPU · 1 GB RAM · OpenGL 2.1 GPU · 150 MB storage",
+      recommended: "Any modern PC · 2 GB RAM · dedicated GPU for 1080p+ at a locked frame rate",
+    },
+    hardwareRequirements: {
+      min: {
+        os: ["windows", "linux"],
+        ramMB: 1024,
+        storageMB: 150,
+        apis: ["opengl"],
+        cpuText: "1.5 GHz CPU",
+        gpuText: "OpenGL 2.1 capable",
+        cpuTier: "entry",
+        gpuTier: "entry",
+        notes: "SFML 2.5.1 software road renderer; the load is almost entirely CPU",
+      },
+      recommended: {
+        os: ["windows", "linux"],
+        ramMB: 2048,
+        storageMB: 200,
+        apis: ["opengl"],
+        cpuText: "Any modern dual-core CPU",
+        gpuText: "Any dedicated GPU",
+        cpuTier: "entry",
+        gpuTier: "entry",
+      },
+      provenance: {
+        source: "playbound_verified",
+        verifiedAt: "2026-09-22",
+        sourceUrl: "https://github.com/ZgzInfinity/OutRun",
+      },
+    },
+    launcherInstall: {
+      enabled: true,
+      kind: "direct-zip",
+      url: "https://github.com/ZgzInfinity/OutRun/releases/download/v5.0-Windows/outrun-5.0-W64.zip",
+      urlLinux: "https://github.com/ZgzInfinity/OutRun/releases/download/v5.0-Linux/outrun-5.0-linux.zip",
+      fileName: "outrun-5.0-W64.zip",
+      versionLabel: "5.0",
+      exeHint: "Outrun",
+      knownExePaths: ["outrun-5.0-W64\\Outrun.exe", "Outrun.exe"],
+      note: "Portable build — the archive extracts to outrun-5.0-W64/ containing Outrun.exe, openal32.dll and Resources/. The Linux archive needs libsfml-dev from your package manager.",
+    },
+    firstPlaySteps: [
+      {
+        platform: "windows",
+        text: "Install through PlayBound and run Outrun.exe. There is no installer and nothing is written outside the folder.",
+      },
+      {
+        platform: "linux",
+        text: "Install SFML first (sudo apt-get install libsfml-dev), then run ./Outrun from the extracted folder.",
+      },
+      {
+        platform: "all",
+        text: "Open Options first: set your resolution, pick automatic or manual gears, and remap the keys — the defaults put acceleration on Left Ctrl and braking on Left Alt.",
+      },
+    ],
+  },
+  /*
+   * Hypersomnia — AGPL-3.0 top-down shooter with a headless dedicated server,
+   * so PlayBound can host rooms for it on the VPS.
+   *
+   * Deliberately no Controller Support feature: nothing in the repository or
+   * its default_config.json mentions a gamepad, joystick, XInput or DirectInput,
+   * and tagging it would make the launcher offer phone-as-controller for a game
+   * that cannot read it.
+   *
+   * `slots` defaults to 16 in hypersomnia/default_config.json, which is where
+   * maxPlayers comes from.
+   */
+  {
+    slug: "hypersomnia",
+    title: "Hypersomnia",
+    tagline: "Buy a gun, plant the bomb, and win rounds you had no business winning.",
+    description:
+      "A free AGPL-3.0 top-down shooter built around netcode that transmits only player inputs, so a bomb-defusal round with hundreds of physics objects costs about 5 KB/s. Ships a browser client, native Windows, Linux and macOS builds, a level editor, ranked and casual queues, and a headless dedicated server binary anyone can run.",
+    developerSlug: "team-hypersomnia",
+    genres: ["Shooter", "Action", "Arcade"],
+    tags: [
+      "2D",
+      "Pixel Art",
+      "Competitive",
+      "Open Source",
+      "Cross-Platform",
+      "PvP",
+      "Free To Play",
+      "Esports",
+      "LAN",
+      "Tactical",
+    ],
+    aliases: ["Hypersomnia Universe", "TeamHypersomnia"],
+    license: "AGPL-3.0",
+    releaseYear: 2023,
+    sizeMB: 120,
+    status: "draft",
+    platforms: ["Windows", "Linux", "macOS"],
+    features: [
+      "Multiplayer",
+      "Dedicated Servers",
+      "LAN Support",
+      "Cross-play",
+      "Team Play",
+      "Ranked Ladder",
+      "Spectator Mode",
+      "Level Editor",
+      "Custom Maps",
+      "Community Content",
+    ],
+    launchMethods: ["install", "server"],
+    browserPlayable: false,
+    steamDeck: true,
+    masterCopy: false,
+    maxPlayers: 16,
+    website: "https://hypersomnia.io/",
+    githubRepo: "TeamHypersomnia/Hypersomnia",
+    steamAppId: "2660970",
+    gameOfWeek: false,
+    hiddenGem: true,
+    access: {
+      priceType: "FREE",
+      regularPriceCents: 0,
+      currentPriceCents: 0,
+      qualifyingPriceCents: 0,
+      currency: "USD",
+      purchaseRequired: false,
+    },
+    art: { from: "#1e1b4b", to: "#f43f5e", icon: "Crosshair" },
+    coverImage:
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2660970/header.jpg",
+    screenshots: [
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2660970/ss_c1fbebedb46d758f061ba53b087a5ddda769a55a.1920x1080.jpg",
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2660970/ss_88764107ce3d40ce94561fd9d6b9cbe681fee46b.1920x1080.jpg",
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2660970/ss_5de1e262c46898b65327651741225d1db2db1def.1920x1080.jpg",
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2660970/ss_65ea6ccf1e09be8a8b9c435d37d8327bb56142d8.1920x1080.jpg",
+    ],
+    systemRequirements: {
+      min: "Windows 10 / Ubuntu 22.04 / macOS 11 · Dual-core CPU · 2 GB RAM · OpenGL 3.3 GPU · 300 MB storage",
+      recommended: "Any modern PC · 4 GB RAM · a high-refresh display to feel the 60 Hz tick",
+    },
+    hardwareRequirements: {
+      min: {
+        os: ["windows", "linux", "macos"],
+        ramMB: 2048,
+        storageMB: 300,
+        apis: ["opengl"],
+        cpuText: "Dual-core CPU",
+        gpuText: "OpenGL 3.3 capable",
+        cpuTier: "entry",
+        gpuTier: "entry",
+        notes: "2D renderer; runs on integrated graphics and Steam Deck",
+      },
+      recommended: {
+        os: ["windows", "linux", "macos"],
+        ramMB: 4096,
+        storageMB: 500,
+        apis: ["opengl"],
+        cpuText: "Any modern quad-core CPU",
+        gpuText: "Integrated graphics are sufficient",
+        cpuTier: "entry",
+        gpuTier: "entry",
+      },
+      provenance: {
+        source: "developer",
+        sourceUrl: "https://github.com/TeamHypersomnia/Hypersomnia",
+        verifiedAt: "2026-09-22",
+      },
+    },
+    launcherInstall: {
+      enabled: true,
+      kind: "direct-zip",
+      url: "https://hypersomnia.io/builds/latest/Hypersomnia-for-Windows.zip",
+      urlLinux: "https://hypersomnia.io/builds/latest/Hypersomnia.AppImage",
+      urlMac: "https://hypersomnia.io/builds/latest/Hypersomnia-for-MacOS.dmg",
+      fileName: "Hypersomnia-for-Windows.zip",
+      exeHint: "Hypersomnia",
+      knownExePaths: ["Hypersomnia.exe"],
+      note: "Official always-latest build endpoints. The client self-updates on launch, so the pinned URL never goes stale.",
+    },
+    firstPlaySteps: [
+      {
+        platform: "all",
+        text: "Install through PlayBound and launch. The client checks for an update on every start, so the first run may patch itself before the menu appears.",
+      },
+      {
+        platform: "all",
+        text: "Set a nickname in Settings, then use Browse servers — official ranked and casual instances are listed per region.",
+      },
+      {
+        platform: "all",
+        text: "Try the Duel Practice arena solo first. Recoil and the buy menu are the two things that decide early rounds.",
+      },
+    ],
+    multiplayerGamingSteps: [
+      {
+        platform: "all",
+        text: "Create a PlayBound Party and pick Connect — PlayBound starts a private Hypersomnia dedicated server on its VPS and joins everyone to it.",
+      },
+      {
+        platform: "all",
+        text: "To host it yourself instead, choose self-hosted in the party and let the launcher map UDP 8412.",
+      },
+      {
+        platform: "all",
+        text: "Custom maps download automatically on connect, so a party can play an arena nobody else has installed.",
+      },
+    ],
+  },
+  /*
+   * Final Fantasy XI — catalogued for the HorizonXI private server, which is
+   * the `horizon` edition and the only route PlayBound installs.
+   *
+   * The parent game stays PAID because Square Enix's retail service genuinely
+   * is: a client purchase plus a monthly subscription. The Horizon edition is
+   * marked `isStandalone`, because its launcher downloads a complete client and
+   * nothing about it requires the retail product, and `loadAccessGraph` now
+   * drops the parent dependency for a standalone edition so it resolves FREE on
+   * its own merits. Without that, a free server would have inherited a price
+   * it does not charge.
+   *
+   * No `launcherInstall` on the parent. The retail route is a purchase plus a
+   * subscription that PlayBound does not sell, and the Horizon edition carries
+   * the only recipe.
+   */
+  {
+    slug: "final-fantasy-xi",
+    title: "Final Fantasy XI",
+    tagline: "The MMO that still expects you to make friends before you make progress.",
+    description:
+      "Square Enix's 2002 MMORPG, running continuously for over two decades. PlayBound catalogues it for HorizonXI, a free level-75-era private server whose launcher installs the whole client — no retail purchase, no subscription. Square Enix's own live service is a separate, paid route that PlayBound neither sells nor hosts.",
+    developerSlug: "square-enix",
+    genres: ["MMO", "RPG", "Adventure", "Action"],
+    tags: ["Classic", "Fantasy", "Open World", "Competitive", "Free To Play", "Retro"],
+    aliases: ["FFXI", "FF11", "Final Fantasy 11", "Vana'diel", "HorizonXI", "Horizon XI"],
+    license: "Commercial · free on community servers",
+    releaseYear: 2002,
+    sizeMB: 16384,
+    status: "draft",
+    platforms: ["Windows"],
+    features: [
+      "Multiplayer",
+      "Team Play",
+      "Controller Support",
+      "Community Content",
+      "Story Campaign",
+      "Dedicated Servers",
+    ],
+    launchMethods: ["install"],
+    browserPlayable: false,
+    steamDeck: false,
+    masterCopy: true,
+    website: "https://www.finalfantasyxi.com/",
+    steamAppId: "230330",
+    gameOfWeek: false,
+    hiddenGem: true,
+    access: {
+      priceType: "PAID",
+      regularPriceCents: 999,
+      currentPriceCents: 999,
+      qualifyingPriceCents: 999,
+      currency: "USD",
+      purchaseRequired: true,
+      offers: [
+        {
+          retailer: "Steam",
+          url: "https://store.steampowered.com/app/230330/",
+          priceCents: 999,
+          affiliate: false,
+          lastCheckedAt: "2026-09-22",
+          isActive: true,
+          matchSource: "manual",
+        },
+      ],
+    },
+    art: { from: "#0f172a", to: "#38bdf8", icon: "Swords" },
+    coverImage:
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/230330/header.jpg",
+    screenshots: [
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/230330/ss_02c3910d591ebb3dd849674fefffc2c54c1ed002.1920x1080.jpg",
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/230330/ss_c1282a3dc7e411cec8fe9c42cf3b2329879e2640.1920x1080.jpg",
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/230330/ss_7b8637db6393f6f734630dc96cb48bf60fcc9cbe.1920x1080.jpg",
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/230330/ss_33426367eacb0707ba988ca00caaa661a97754df.1920x1080.jpg",
+    ],
+    systemRequirements: {
+      min: "Windows 7 64-bit · Dual-core 2 GHz CPU · 2 GB RAM · DirectX 9 GPU · 25 GB free during install",
+      recommended: "Windows 10/11 · Quad-core CPU · 8 GB RAM · dedicated GPU · SSD (client settles at ~16 GB)",
+    },
+    hardwareRequirements: {
+      min: {
+        os: ["windows"],
+        ramMB: 2048,
+        storageMB: 25600,
+        apis: ["dx9"],
+        cpuText: "Dual-core 2 GHz CPU",
+        gpuText: "DirectX 9 capable",
+        cpuTier: "entry",
+        gpuTier: "entry",
+        notes: "25 GB free is required during install; the finished client is about 16 GB",
+      },
+      recommended: {
+        os: ["windows"],
+        ramMB: 8192,
+        storageMB: 17408,
+        apis: ["dx9"],
+        cpuText: "Quad-core CPU",
+        gpuText: "Any dedicated GPU",
+        cpuTier: "mid",
+        gpuTier: "entry",
+        notes: "A 2002 DX9 engine — an SSD matters far more here than a GPU",
+      },
+      provenance: {
+        source: "developer",
+        sourceUrl: "https://horizonxi.com/play-now",
+        verifiedAt: "2026-09-22",
+      },
+    },
+    firstPlaySteps: [
+      {
+        platform: "windows",
+        text: "Register a free HorizonXI account at https://horizonxi.com and verify your email before installing.",
+      },
+      {
+        platform: "windows",
+        text: "Install the HorizonXI edition through PlayBound. The launcher downloads the game client itself — keep 25 GB free while it runs.",
+      },
+      {
+        platform: "windows",
+        text: "Create your character on the HorizonXI website, then start the game from the launcher and sign in.",
+      },
+    ],
+    multiplayerGamingSteps: [
+      {
+        platform: "all",
+        text: "Use a PlayBound Party for voice and presence — HorizonXI is one shared world, so there is no lobby to join.",
+      },
+      {
+        platform: "all",
+        text: "Party in-game with /invite, and join a linkshell early. Horizon is single-box (one account per IP) and balanced around group play.",
+      },
+      {
+        platform: "all",
+        text: "Two people on the same connection need an IP exception from the HorizonXI Discord before both can log in.",
+      },
+    ],
+  },
 ];
 
 export const games: Game[] = facts.map(withEditorial);

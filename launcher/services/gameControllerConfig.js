@@ -1069,6 +1069,37 @@ const NO_CONFIG_NEEDED = {
     kind: "native",
     note: "Gamepad works on the Windows client; the mobile builds pair a Bluetooth pad directly.",
   },
+  /*
+   * 2026-09-22 additions.
+   *
+   * Quake II and Final Fantasy XI are `native`: both bind a pad themselves and
+   * expose their own remapping UI, so there is nothing for PlayBound to write.
+   * Writing one anyway would break the module's second rule — never write a file
+   * you did not parse — because no hand-configured sample of either format has
+   * been captured.
+   *
+   * OutRun and Hypersomnia are `unsupported`, and that is a verified absence
+   * rather than a gap in our coverage: every .cpp/.h/.md in both projects was
+   * searched for joystick, gamepad, XInput and DirectInput with no hits, and
+   * OutRun's shipped Settings.txt binds only keyboard keys. Saying so here stops
+   * the launcher offering phone-as-controller for a game that cannot read it.
+   */
+  "quake-ii": {
+    kind: "native",
+    note: "The Enhanced build ships full controller support — it was built for the console releases of the 2023 remaster — and remaps in its own options. The bundled 1997 executable is much rougher with a pad.",
+  },
+  "final-fantasy-xi": {
+    kind: "native",
+    note: "Designed around a PlayStation 2 pad in 2002; the Windows client binds modern controllers and remaps in its own config tool.",
+  },
+  outrun: {
+    kind: "unsupported",
+    note: "Keyboard only. No joystick, gamepad, XInput or DirectInput reference exists anywhere in the SFML source, and the shipped Settings.txt binds only keys — the README's \"customizable controllers\" means key remapping.",
+  },
+  hypersomnia: {
+    kind: "unsupported",
+    note: "Mouse and keyboard only. Neither the source nor default_config.json reads a gamepad, and aiming is cursor-driven, so a pad would be a downgrade even if one were wired up.",
+  },
   "apex-legends": { kind: "native", note: "Ships Xbox and PlayStation controller layouts." },
   "among-us": { kind: "native", note: "Native controller navigation and gameplay bindings." },
   "goose-goose-duck": { kind: "native", note: "Steam build ships full Xbox controller support." },
