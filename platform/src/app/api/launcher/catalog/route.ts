@@ -16,6 +16,7 @@ import { gameAccessTiers, tierFor } from "@/lib/access/tiers";
 import { accessFieldsForLauncher } from "@/lib/launcherCommerce";
 import { formatEditionChipNames } from "@/lib/data/editions";
 import { listEditionsForGames } from "@/lib/editions";
+import { TAGS, FEATURES } from "@/lib/gamePayload";
 import { supportsController } from "@/lib/controller/support";
 import { getMultiplayerAdapter } from "@/lib/multiplayer/adapters";
 
@@ -143,8 +144,17 @@ export async function GET(req: Request) {
       )
     ).filter(Boolean);
 
+    /*
+     * The filter vocabulary ships with the catalog.
+     *
+     * The launcher used to hardcode its own tag list, which had drifted into
+     * 37 mostly-invented values that matched almost nothing and looked nothing
+     * like the site's. Sending the canonical lists here means the desktop app
+     * inherits them the same way it inherits the games — one sync, always in
+     * step. Older launchers ignore the extra fields.
+     */
     return NextResponse.json(
-      { games: entries },
+      { games: entries, tags: TAGS, features: FEATURES },
       {
         headers: {
           "Cache-Control": includeTesting

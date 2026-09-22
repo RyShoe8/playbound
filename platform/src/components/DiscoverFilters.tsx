@@ -17,6 +17,27 @@ import { CompatibleGamesFade } from "@/components/compatibility/useFilteredGames
 import { GenreGameRow } from "@/components/GenreGameRow";
 import { cn } from "@/lib/utils";
 import { supportsMultiplayer } from "@/lib/multiplayer/support";
+import { TAGS, FEATURES } from "@/lib/gamePayload";
+
+/*
+ * The filterable tag vocabulary, shared with /search.
+ *
+ * Both pages previously built this list their own way — /search from
+ * TAGS, /discover from whatever strings the catalog happened to contain —
+ * so the two filter panels never offered the same choices. Reading the one
+ * constant is what keeps them honest; widening the vocabulary is an edit to
+ * TAGS, which both pages then pick up.
+ */
+const CANONICAL_TAGS = new Set<string>(TAGS);
+
+/*
+ * Same contract for features. Counting these straight from the games was
+ * safe while every feature in the catalog was also in FEATURES, but that
+ * made the constant unable to retire anything: dropping a feature from it
+ * removed the chip from /search and left it on /discover. Reading the
+ * constant here is what lets a feature actually be retired in one place.
+ */
+const CANONICAL_FEATURES = new Set<string>(FEATURES);
 
 /* ── Types ─────────────────────────────────────────────────── */
 
@@ -267,9 +288,16 @@ export function DiscoverFilters({
     const counts = new Map<string, number>();
     for (const g of baseFiltered) {
       for (const t of g.tags) {
+        // Vocabulary, not free text. Games carry 152 distinct tags between
+        // them and 96 of those appear exactly once, so counting every string
+        // turned this panel into a wall of chips that mostly matched a single
+        // game — and none of them existed on /search, which reads TAGS.
+        if (!CANONICAL_TAGS.has(t)) continue;
         counts.set(t, (counts.get(t) ?? 0) + 1);
       }
     }
+    // A tag already picked stays visible even at zero, or a filter that
+    // narrowed the list to nothing would vanish with no way to undo it.
     for (const t of selectedTags) if (!counts.has(t)) counts.set(t, 0);
     return [...counts.entries()]
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
@@ -283,14 +311,17 @@ export function DiscoverFilters({
    * says what it supports — and merging them into one list made "Co-op" and
    * "Roguelite" look like the same kind of choice.
    *
-   * Both lists are built from the games themselves, so they only ever offer
-   * values the catalog actually uses. Reading the canonical TAGS/FEATURES
-   * constants instead would advertise filters that match nothing.
+   * Features are still counted straight from the games, and that is safe here:
+   * every feature the catalog uses is already in FEATURES, so there is no
+   * off-vocabulary leak to filter out. Tags are the opposite case and are
+   * restricted to CANONICAL_TAGS above. Counting keeps both honest either way
+   * — a value with no matches in the current results is never offered.
    */
   const allFeaturesWithCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const g of baseFiltered) {
       for (const f of g.features) {
+        if (!CANONICAL_FEATURES.has(f)) continue;
         counts.set(f, (counts.get(f) ?? 0) + 1);
       }
     }
