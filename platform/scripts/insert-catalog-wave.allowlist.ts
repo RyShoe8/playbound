@@ -61,6 +61,38 @@ export const NEW_MOD_SLUGS: readonly string[] = [];
  * Existing catalog games: $set ONLY these fields.
  */
 export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
+  /*
+   * releaseYear audit, 2026-09-22.
+   *
+   * Sixteen published games claimed a 2026 release. The stored year was the
+   * year the game was added to PlayBound, not the year it shipped — the
+   * "added" dates line up exactly. Thief Gold did not come out in 2026.
+   *
+   * The first eight take their value from games.ts, which already held the
+   * correct year; only the live row was wrong. red-eclipse, openclonk and
+   * renegade-x have no seed row and are sourced from catalogCorrections.ts,
+   * each with a citation. teeworlds, space-station-14 and
+   * pokemon-blaze-online already had patch entries and are merged below.
+   * next-gen-chess, opents and strikers-club are genuinely 2026.
+   */
+  "thief-gold": ["releaseYear"],
+  mrboom: ["releaseYear"],
+  "rollercoaster-tycoon": ["releaseYear"],
+  "thief-2-the-metal-age": ["releaseYear"],
+  "stronghold-crusader-hd": ["releaseYear"],
+  triplea: ["releaseYear"],
+  "star-wars-knights-of-the-old-republic": ["releaseYear"],
+  "star-wars-knights-of-the-old-republic-ii-the-sith-lords": ["releaseYear"],
+  // Stored 2019 was the 2.0 "Elara" release, not the original.
+  "red-eclipse": ["releaseYear"],
+  openclonk: ["releaseYear"],
+  "renegade-x": ["releaseYear"],
+
+  // Gaps found in the same audit: the only published game with no genres,
+  // and the only one with no thatOneThing.
+  "c-dogs-sdl": ["genres"],
+  "next-gen-chess": ["thatOneThing"],
+
   "alien-swarm": [
     "qualityBar",
     "longDescription",
@@ -175,13 +207,14 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "hardwareRequirements",
     "launcherInstall",
   ],
-  "space-station-14": ["launcherInstall", "installSteps"],
+  "space-station-14": ["launcherInstall", "installSteps", "releaseYear"],
   teeworlds: [
     "platforms",
     "features",
     "launcherInstall",
     "systemRequirements",
     "hardwareRequirements",
+    "releaseYear",
   ],
   "super-nova-strike": [
     "title",

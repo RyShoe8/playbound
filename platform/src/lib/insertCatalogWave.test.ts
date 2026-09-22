@@ -12,6 +12,7 @@ import {
 } from "../../scripts/insert-catalog-wave.allowlist";
 import { editions } from "@/lib/data/editions";
 import { gamesBySlug } from "@/lib/data/games";
+import { correctionsFor } from "@/lib/data/catalogCorrections";
 import { editorial } from "@/lib/data/editorial";
 import { FREETRAIN_SLUG, freetrainLauncherInstall } from "@/lib/data/freetrainCatalog";
 import {
@@ -166,6 +167,20 @@ describe("insert-catalog-wave allowlists", () => {
         "unknown-horizons",
         "x-men-arcade-remake",
         "tmnt-rescue-palooza",
+        // releaseYear audit, 2026-09-22 — see catalogCorrections.ts.
+        "thief-gold",
+        "mrboom",
+        "rollercoaster-tycoon",
+        "thief-2-the-metal-age",
+        "stronghold-crusader-hd",
+        "triplea",
+        "star-wars-knights-of-the-old-republic",
+        "star-wars-knights-of-the-old-republic-ii-the-sith-lords",
+        "red-eclipse",
+        "openclonk",
+        "renegade-x",
+        "c-dogs-sdl",
+        "next-gen-chess",
       ].sort()
     );
     expect(PATCH_GAME_FIELDS["super-nova-strike"]).toContain("androidStoreUrl");
@@ -194,7 +209,11 @@ describe("insert-catalog-wave allowlists", () => {
     expect(PATCH_GAME_FIELDS["dune-legacy"]).toEqual(["launcherInstall"]);
     expect(PATCH_GAME_FIELDS["the-spike-cross"]).toContain("androidStoreUrl");
     expect(PATCH_GAME_FIELDS["slapshot-rebound"]).toContain("hardwareRequirements");
-    expect(PATCH_GAME_FIELDS["space-station-14"]).toEqual(["launcherInstall", "installSteps"]);
+    expect(PATCH_GAME_FIELDS["space-station-14"]).toEqual([
+      "launcherInstall",
+      "installSteps",
+      "releaseYear",
+    ]);
     expect(PATCH_GAME_FIELDS.teeworlds).toContain("launcherInstall");
     expect(PATCH_GAME_FIELDS["the-dark-mod"]).toContain("platforms");
     expect(PATCH_GAME_FIELDS["pokemon-blaze-online"]).toContain("qualityBar");
@@ -427,10 +446,19 @@ describe("insert-catalog-wave allowlists", () => {
       const fields = PATCH_GAME_FIELDS[slug]!;
       const seed = gamesBySlug.get(slug);
       const ed = editorial[slug];
-      expect(seed || ed, `no seed/editorial for default-path patch ${slug}`).toBeTruthy();
+      // A CMS-only game has no seed row, so its values come from
+      // catalogCorrections.ts instead. Still a hard requirement that *some*
+      // source exists — the point of this test is that the wave can never
+      // reach a $set with nothing behind it.
+      const corrections = correctionsFor(slug);
+      expect(
+        seed || ed || corrections,
+        `no seed/editorial/correction for default-path patch ${slug}`
+      ).toBeTruthy();
       const source = {
         ...(seed as unknown as Record<string, unknown> | undefined),
         ...((ed ?? {}) as unknown as Record<string, unknown>),
+        ...((corrections ?? {}) as Record<string, unknown>),
       };
       for (const field of fields) {
         // launcherInstall may live only on launcherInstallBySlug for some games;
