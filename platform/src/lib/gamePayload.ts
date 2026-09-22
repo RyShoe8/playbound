@@ -118,8 +118,6 @@ export const FEATURES = [
   "Ranked Ladder",
   "Spectator Mode",
   "Story Campaign",
-  "Daily Runs",
-  "Procedural Worlds",
   "Team Play",
 ] as const;
 
@@ -250,7 +248,6 @@ export const TAGS = [
   "Pixel Art",
   "Classic",
   "Competitive",
-  "Co-op",
   "LAN",
   "Mods",
   "Open World",
@@ -262,9 +259,31 @@ export const TAGS = [
   "Turn-Based",
   "Arena Shooter",
   "Kart Racing",
-  "Family Friendly",
   "Browser",
   "Indie",
+  /*
+   * Added from catalog usage, not invented: each of these was already applied
+   * to three or more games and was therefore filterable on /discover while
+   * being invisible on /search, which read this list. Promoting them here is
+   * what puts the two pages on one vocabulary.
+   *
+   * "Controller Support" also cleared that bar and is deliberately absent — it
+   * is already in FEATURES, and listing it in both would render the same chip
+   * twice in adjacent sections of the same filter panel.
+   */
+  "Retro",
+  "Base Building",
+  "Esports",
+  "Open Source",
+  "Cross-Platform",
+  "Fangame",
+  "Free To Play",
+  "Historical",
+  "Neo Geo",
+  "Party",
+  "PvP",
+  "Soccer",
+  "Tactical",
 ] as const;
 
 /** Play modes belong in FEATURES. Strip them if they linger on tags. */
