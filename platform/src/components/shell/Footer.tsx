@@ -13,7 +13,9 @@ const links = [
   { href: "/play-with-friends", label: "Play Together" },
   { href: "/guides", label: "Guides" },
   { href: "/events", label: "Events" },
-  { href: "/weekly", label: "Weekly" },
+  // Replaced the /weekly link. That page is still live and still reachable
+  // directly and from the admin; it just left the navigation.
+  { href: "/deals", label: "Game Deals" },
   { href: "/standards", label: "Our Standard" },
   { href: "/open-platform", label: "Trust & Architecture" },
   { href: "/compare", label: "Compare" },

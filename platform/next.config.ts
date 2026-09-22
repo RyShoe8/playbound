@@ -136,11 +136,34 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "avatars.githubusercontent.com" },
       { protocol: "https", hostname: "repository-images.githubusercontent.com" },
       { protocol: "https", hostname: "cdn.microlink.io" },
-      // Free-game offer imagery from store CDNs.
+      /*
+       * Free-game offer imagery from store CDNs.
+       *
+       * One entry per host a provider in lib/freeOffers/providers can emit.
+       * Missing a host is not a degraded image — next/image refuses the request
+       * outright with 400 INVALID_IMAGE_OPTIMIZE_REQUEST, so the card renders
+       * its gradient placeholder and the offer looks broken.
+       *
+       * That is exactly what happened to Prime Gaming and Alienware Arena: both
+       * providers were added with working `coverImage` values (16/16 and 15/15
+       * of live offers), stored fine, and then failed at the optimizer because
+       * their hosts were never allowlisted here. FreeGameCard only sets
+       * `unoptimized` for URLs with no image extension, and both of these have
+       * one — Alienware's query string is still matched by the `(\?|$)` branch —
+       * so neither could bypass the optimizer either.
+       *
+       * lib/freeOffers/providerImageHosts.test.ts asserts this list covers
+       * every provider host, so adding a sixth store fails a test rather than
+       * silently shipping blank cards.
+       */
       { protocol: "https", hostname: "cdn1.epicgames.com" },
       { protocol: "https", hostname: "cdn2.unrealengine.com" },
       { protocol: "https", hostname: "**.unrealengine.com" },
       { protocol: "https", hostname: "images.gog-statics.com" },
+      // Prime Gaming: Amazon's media CDN, e.g. /images/I/<id>._FMwebp_.jpg
+      { protocol: "https", hostname: "m.media-amazon.com" },
+      // Alienware Arena: /media/<hash>.jpg?fit=crop&width=…&quality=…
+      { protocol: "https", hostname: "media.alienwarearena.com" },
     ],
   },
   async rewrites() {

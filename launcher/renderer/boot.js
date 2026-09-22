@@ -90,6 +90,7 @@ const viewLoaders = {
   library: () => import("./views/library.js"),
   couch: () => import("./views/couch.js"),
   friends: () => import("./views/friends.js"),
+  deals: () => import("./views/deals.js"),
   gear: () => import("./views/gear.js"),
   gearDetail: () => import("./views/gear.js"),
   editions: () => import("./views/editions.js"),
@@ -260,6 +261,7 @@ export async function navigateTo(viewName, params = {}) {
   if (viewName === "library") return api.renderLibraryView?.();
   if (viewName === "couch") return api.renderCouchView?.();
   if (viewName === "friends") return api.renderFriendsView?.();
+  if (viewName === "deals") return api.renderDealsView?.();
   if (viewName === "gear") return api.renderGearView?.();
   if (viewName === "gearDetail") {
     if (!force && isViewReady(views.gearDetail, params.slug)) return;
