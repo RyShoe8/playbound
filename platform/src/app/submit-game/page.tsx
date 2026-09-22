@@ -15,7 +15,7 @@ export default function SubmitGamePage() {
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight">Submit a game</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Know a great free game or a standout title regularly available for $15 or less? Tell us about it. Submissions are
+          Know a great free game, or a paid one that earns its price through a deep discount or a thriving mod scene? Tell us about it. Submissions are
           reviewed by the team — approved titles are added to the curated catalog manually.
         </p>
       </div>

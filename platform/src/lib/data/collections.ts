@@ -94,7 +94,7 @@ export const collections: Collection[] = [
     slug: "under-15",
     title: "Best PC Games Under $15",
     description:
-      "Exceptional games that respect your wallet. Outstanding classic and community-enhanced titles regularly available for $15 or less, with zero pay-to-win mechanics.",
+      "Exceptional games that respect your wallet. Outstanding classic and community-enhanced titles you can usually pick up for under $15, with zero pay-to-win mechanics. A budget shortcut into the catalog, not the bar a game has to clear to be listed.",
     gameSlugs: [
       "morrowind",
       "star-wars-knights-of-the-old-republic",

@@ -29,7 +29,7 @@ function ensureGamesShell() {
     <div class="section-header" style="margin-top: 0">
       <div>
         <h1 class="view-title" style="margin: 0">Games</h1>
-        <p class="view-sub" style="margin: 5px 0 0">Free or regularly $15 or less. Tested by PlayBound, with one memorable reason to play.</p>
+        <p class="view-sub" style="margin: 5px 0 0">Free to play, or worth every cent — deep discounts and deep mod support. Tested by PlayBound, with one memorable reason to play.</p>
       </div>
       <button class="btn-secondary btn-sm" id="btn-open-web">Open playbound.club</button>
     </div>

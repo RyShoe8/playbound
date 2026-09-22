@@ -474,7 +474,7 @@ export function syncDiscoveryControls() {
     caption.textContent =
       state.discoveryMode === "FREE"
         ? "Only show me games I can play without spending anything."
-        : "Show me every PlayBound-approved game up to $15.";
+        : "Show me every PlayBound-approved game, free and paid.";
   }
 }
 

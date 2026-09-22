@@ -4,7 +4,6 @@ import type { Metadata } from "next";
 import { ArrowLeft, ShieldCheck, AlertTriangle } from "lucide-react";
 import { loadAccessGraph } from "@/lib/access/graph";
 import { auditAccessGraph, formatCents, resolveAccess } from "@/lib/access/resolver";
-import { DEFAULT_VALUE_PRICE_CEILING_CENTS } from "@/lib/access/types";
 
 export const metadata: Metadata = { title: "Admin · Access Audit" };
 
@@ -20,9 +19,7 @@ export default async function AccessAuditPage() {
   // independently, so the layout's opt-out does not cover this page.
   await connection();
   const graph = await loadAccessGraph();
-  const issues = auditAccessGraph(graph, {
-    ceilingCents: DEFAULT_VALUE_PRICE_CEILING_CENTS,
-  });
+  const issues = auditAccessGraph(graph);
 
   const byKind = { FREE: 0, VALUE: 0 };
   for (const node of graph.values()) {
@@ -69,7 +66,7 @@ export default async function AccessAuditPage() {
           <ShieldCheck className="mx-auto size-8 text-emerald-500" />
           <h2 className="mt-3 text-lg font-bold">No unresolved access issues</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Every dependency chain resolves. Ceiling: {formatCents(DEFAULT_VALUE_PRICE_CEILING_CENTS)}.
+            Every dependency chain resolves.
           </p>
         </div>
       ) : (
@@ -109,7 +106,6 @@ const ISSUE_TITLES: Record<string, string> = {
   UNRESOLVED_DEPENDENCY: "Dependency not in the catalog",
   CIRCULAR_DEPENDENCY: "Circular dependency",
   PAID_WITHOUT_PRICE: "Paid, but no price recorded",
-  PRICE_ABOVE_CEILING: "Above the qualifying price ceiling",
   FREE_WITH_PAID_DEPENDENCY: "Marked free, depends on something paid",
   BASE_GAME_REQUIRED_UNSPECIFIED: "Requires a base game, but none named",
 };

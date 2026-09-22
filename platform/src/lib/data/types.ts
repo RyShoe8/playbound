@@ -56,7 +56,7 @@ export interface GameArt {
  * claimed, and `lastVerified` supplies the recency signal search crawlers weight heavily.
  */
 export interface QualityBar {
-  /** Worth the cost: free or regularly $15 or less, with fair non-pay-to-win monetization. */
+  /** Worth the cost: free, or a deep discount / deep mod support, with fair non-pay-to-win monetization. */
   genuinelyFree: boolean;
   /** Playable and satisfying start to finish today. */
   finished: boolean;

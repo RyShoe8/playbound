@@ -71,8 +71,9 @@ export default async function DiscoverPage() {
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight">Games</h1>
           <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Free or regularly $15 or less. Every game is fun today, tested by PlayBound,
-            and has That One Thing worth telling a friend about.
+            Free to play, or worth every cent — deep discounts and games with years of mods and
+            editions behind them. Every game is fun today, tested by PlayBound, and has That One
+            Thing worth telling a friend about.
           </p>
         </div>
       </div>

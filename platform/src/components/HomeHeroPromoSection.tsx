@@ -290,7 +290,7 @@ export function HomeHeroPromoSection({
                   <Sparkles className="size-3" /> Discover. Play. Connect.
                 </Badge>
                 <span className="text-xs font-semibold text-muted-foreground">
-                  Free and exceptional value up to $15
+                  Free games and deep value — big discounts, big mod scenes
                 </span>
               </div>
 
@@ -342,7 +342,7 @@ export function HomeHeroPromoSection({
                 <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                   {discoveryMode === "FREE"
                     ? "Only show me games I can play without spending anything."
-                    : "Show me every PlayBound-approved game up to $15."}
+                    : "Show me every PlayBound-approved game, free and paid."}
                 </p>
               </div>
             </div>

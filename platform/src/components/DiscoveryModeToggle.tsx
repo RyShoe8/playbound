@@ -16,7 +16,7 @@ const OPTIONS: { value: DiscoveryMode; label: string; short: string }[] = [
 function announce(mode: DiscoveryMode) {
   return mode === "FREE"
     ? "Showing games you can play without spending anything."
-    : "Showing every PlayBound-approved game up to $15.";
+    : "Showing every PlayBound-approved game, free and paid.";
 }
 
 /** Global shell control — sidebar (desktop) or compact topbar (mobile). */

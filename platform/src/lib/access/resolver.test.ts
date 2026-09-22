@@ -6,7 +6,6 @@ import {
   filterByDiscoveryMode,
   isBaseGameRequirement,
   isFreeToAccess,
-  meetsPriceCeiling,
   resolveAccess,
 } from "./resolver";
 import { accessId, FREE_ACCESS, type AccessNode, type GameAccess } from "./types";
@@ -253,22 +252,22 @@ describe("discovery mode", () => {
   });
 });
 
-describe("price ceiling", () => {
-  it("accepts a game at or under the ceiling", () => {
-    expect(meetsPriceCeiling(paid(1500), 1500)).toBe(true);
-    expect(meetsPriceCeiling(paid(499), 1500)).toBe(true);
+describe("price is no longer a qualifying gate", () => {
+  /*
+   * PlayBound used to cap the catalog at $15. That bar is gone: the site now
+   * curates on free and high value (deep discounts, deep mod and edition
+   * support), and a heavily discounted $40 game belongs here. Price still
+   * shows on the page and still drives the /search budget filters; it just
+   * does not decide whether a game qualifies.
+   */
+  it("resolves an expensive game as VALUE rather than excluding it", () => {
+    const g = buildAccessGraph([game("pricey", paid(3999))]);
+    expect(resolveAccess(accessId.game("pricey"), g).tier).toBe("VALUE");
   });
 
-  it("rejects one above it", () => {
-    expect(meetsPriceCeiling(paid(1999), 1500)).toBe(false);
-  });
-
-  it("is configurable rather than fixed at fifteen dollars", () => {
-    expect(meetsPriceCeiling(paid(1999), 2000)).toBe(true);
-  });
-
-  it("always accepts free games", () => {
-    expect(meetsPriceCeiling(FREE_ACCESS, 1500)).toBe(true);
+  it("still resolves free games as FREE", () => {
+    const g = buildAccessGraph([game("gratis", FREE_ACCESS)]);
+    expect(resolveAccess(accessId.game("gratis"), g).tier).toBe("FREE");
   });
 });
 
@@ -297,13 +296,6 @@ describe("audit", () => {
       game("x", { ...paid(0), qualifyingPriceCents: null, currentPriceCents: null }),
     ]);
     expect(auditAccessGraph(g).map((i) => i.code)).toContain("PAID_WITHOUT_PRICE");
-  });
-
-  it("flags a price above the ceiling", () => {
-    const g = buildAccessGraph([game("x", paid(2999))]);
-    expect(auditAccessGraph(g, { ceilingCents: 1500 }).map((i) => i.code)).toContain(
-      "PRICE_ABOVE_CEILING"
-    );
   });
 
   it("flags a base-game requirement that names nothing", () => {

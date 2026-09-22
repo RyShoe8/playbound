@@ -157,7 +157,7 @@ export interface AccessResolution {
  * every function that judges eligibility takes it as an argument rather than
  * reading a constant.
  */
-export const DEFAULT_VALUE_PRICE_CEILING_CENTS: Cents = 1500;
+
 
 export const FREE_ACCESS: GameAccess = {
   priceType: "FREE",

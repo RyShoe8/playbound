@@ -1,5 +1,4 @@
 import {
-  DEFAULT_VALUE_PRICE_CEILING_CENTS,
   type AccessGraph,
   type AccessNode,
   type AccessResolution,
@@ -161,7 +160,6 @@ export type AccessIssueCode =
   | "UNRESOLVED_DEPENDENCY"
   | "CIRCULAR_DEPENDENCY"
   | "PAID_WITHOUT_PRICE"
-  | "PRICE_ABOVE_CEILING"
   | "FREE_WITH_PAID_DEPENDENCY"
   | "BASE_GAME_REQUIRED_UNSPECIFIED";
 
@@ -180,11 +178,7 @@ export interface AccessIssue {
  * asks for money, and that single occurrence costs more trust than the feature
  * earns.
  */
-export function auditAccessGraph(
-  graph: AccessGraph,
-  opts: { ceilingCents?: Cents } = {}
-): AccessIssue[] {
-  const ceiling = opts.ceilingCents ?? DEFAULT_VALUE_PRICE_CEILING_CENTS;
+export function auditAccessGraph(graph: AccessGraph): AccessIssue[] {
   const issues: AccessIssue[] = [];
 
   for (const node of graph.values()) {
@@ -212,15 +206,6 @@ export function auditAccessGraph(
           nodeId: node.id,
           label,
           detail: "Marked paid but carries no price, so eligibility cannot be judged.",
-        });
-      }
-
-      if (paid && typeof price === "number" && price > ceiling) {
-        issues.push({
-          code: "PRICE_ABOVE_CEILING",
-          nodeId: node.id,
-          label,
-          detail: `Qualifying price ${formatCents(price)} is above the ${formatCents(ceiling)} ceiling.`,
         });
       }
 
@@ -264,17 +249,6 @@ export function auditAccessGraph(
   }
 
   return issues;
-}
-
-/** Whether a game may be listed at all, given the configured ceiling. */
-export function meetsPriceCeiling(
-  access: GameAccess | undefined,
-  ceilingCents: Cents = DEFAULT_VALUE_PRICE_CEILING_CENTS
-): boolean {
-  if (!access || access.priceType === "FREE") return true;
-  const price = access.qualifyingPriceCents ?? access.currentPriceCents;
-  if (typeof price !== "number") return false;
-  return price <= ceilingCents;
 }
 
 export function formatCents(cents: Cents | null | undefined): string {
