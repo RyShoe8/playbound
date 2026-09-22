@@ -16,7 +16,7 @@ export const metadata = pageMetadata({
 const FAQ = [
   {
     q: "What does PlayBound mean by 'worth the cost'?",
-    a: "The game is free, or regularly obtainable for $15 or less from an authorized source. Cosmetic shops, battle passes, and premium extras are acceptable when they remain optional. Paid competitive advantages, a trial pretending to be a full game, paywalled core content, and bait-and-switch pricing fail the bar. A genuinely free live-service game can qualify, and so can a $5.99 classic you own outright.",
+    a: "The game is free, or it returns far more than it asks for — a deep discount from an authorized source, or years of mods, editions and community servers behind it. There is no fixed price ceiling; what matters is the gap between what you pay and what you get, and in practice that keeps the catalog cheap. Cosmetic shops, battle passes, and premium extras are acceptable when they remain optional. Paid competitive advantages, a trial pretending to be a full game, paywalled core content, and bait-and-switch pricing fail the bar. A genuinely free live-service game can qualify, and so can a $5.99 classic you own outright.",
   },
   {
     q: "Why does PlayBound have so few games?",
@@ -108,20 +108,26 @@ export default async function StandardsPage() {
       </ol>
 
       <section className="mt-12 overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/15 via-card to-card p-6 sm:p-8">
-        <p className="text-xs font-extrabold tracking-[0.18em] text-primary uppercase">The $15 rule</p>
+        <p className="text-xs font-extrabold tracking-[0.18em] text-primary uppercase">The value rule</p>
         <h2 className="mt-2 text-2xl font-extrabold tracking-tight">Small price. Ridiculous value.</h2>
         <div className="mt-3 max-w-3xl space-y-3 leading-relaxed text-muted-foreground">
           <p>
-            PlayBound is not trying to be Steam or catalog every worthwhile game. We focus on
-            budget-friendly games that deliver disproportionate value: genuinely good free games,
-            affordable classics, and living communities where mods, editions, servers, and
-            open-source engines can turn a $5–$15 purchase into years of play.
+            PlayBound is not trying to be Steam or catalog every worthwhile game. We focus on games
+            that return far more than they ask for: genuinely good free games, and paid ones that
+            earn their place through a deep discount or a living community where mods, editions,
+            servers, and open-source engines turn one purchase into years of play.
           </p>
           <p>
-            Fifteen dollars is our regular-price ceiling, not a claim that developers should work
-            for less. Good developers deserve to be paid. We simply know who we are building for:
-            players who want a deep library, great multiplayer nights, and far more game than their
-            budget should normally buy.
+            There is no fixed price ceiling any more. A game at full price with nothing behind it
+            does not belong here; the same game at seventy percent off, or with a decade of mods and
+            a dozen playable editions, very much does. What we measure is the gap between what a
+            game costs and what you get, rather than one number on the store page. In practice that
+            still means a cheap catalog — you will not find full-price blockbusters here.
+          </p>
+          <p>
+            None of this is a claim that developers should work for less. Good developers deserve
+            to be paid. We simply know who we are building for: players who want a deep library,
+            great multiplayer nights, and far more game than their budget should normally buy.
           </p>
         </div>
       </section>

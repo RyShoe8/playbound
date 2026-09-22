@@ -32,6 +32,11 @@ const mediaShopHref = withOutboundUtm("https://themediashop.co", { campaign: "ab
 export default async function AboutPage() {
   const games = await listGames();
   const verifiedCount = games.filter((g) => g.qualityBar).length;
+  // Deliberately not a "free games" count: Free vs Value resolves from the
+  // dependency graph, not from a price on the game row, and this page does
+  // not load that graph. Mod support is the other half of the new standard
+  // and is readable straight off the catalog.
+  const modSupportedCount = games.filter((g) => g.features?.includes("Mod Support")).length;
 
   const pillars = [
     {
@@ -106,8 +111,9 @@ export default async function AboutPage() {
         </h1>
         <p className="max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
           We built PlayBound around a simple belief: a small budget should still buy years of great
-          play. Exceptional free games and $5–$15 classics get drowned out by store clutter,
-          pay-to-win systems, and catalogs built for volume instead of trust.
+          play. Outstanding free games, and the paid ones that hand you a deep discount or a decade
+          of mods, get drowned out by store clutter, pay-to-win systems, and catalogs built for
+          volume instead of trust.
         </p>
       </header>
 
@@ -118,8 +124,8 @@ export default async function AboutPage() {
           <div className="mt-1 text-xs font-medium text-muted-foreground">Curated Games</div>
         </div>
         <div className="rounded-xl border border-border/70 bg-card/50 p-4 text-center">
-          <div className="text-2xl font-black text-primary sm:text-3xl">$15</div>
-          <div className="mt-1 text-xs font-medium text-muted-foreground">Regular-Price Cap</div>
+          <div className="text-2xl font-black text-primary sm:text-3xl">{modSupportedCount}</div>
+          <div className="mt-1 text-xs font-medium text-muted-foreground">Mod-Supported</div>
         </div>
         <div className="rounded-xl border border-border/70 bg-card/50 p-4 text-center">
           <div className="text-2xl font-black text-foreground sm:text-3xl">{verifiedCount}</div>

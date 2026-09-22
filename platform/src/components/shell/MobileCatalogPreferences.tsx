@@ -112,7 +112,7 @@ export function MobileCatalogPreferences({ className }: { className?: string }) 
                     {!isFreeOnly && <Check className="size-3" />} All Games
                   </span>
                   <span className={cn("text-[10px] font-normal", !isFreeOnly ? "text-primary-foreground/80" : "text-muted-foreground")}>
-                    Up to $15
+                    Free &amp; paid
                   </span>
                 </button>
               </div>

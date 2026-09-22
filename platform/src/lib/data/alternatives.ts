@@ -916,7 +916,7 @@ export const alternativePages: AlternativePage[] = [
     aliases: ["BG3", "Baldur's Gate", "D&D RPG"],
     title: "Cheap & Free Alternatives to Baldur's Gate 3",
     intro:
-      "Baldur's Gate 3 set a new standard for narrative roleplaying and tactical D&D combat. If your budget is under $15 or you want rich classic party RPGs with branching dialogue and memorable companions, these masterworks deliver.",
+      "Baldur's Gate 3 set a new standard for narrative roleplaying and tactical D&D combat. If you are working to a tight budget, or you just want rich classic party RPGs with branching dialogue and memorable companions, these masterworks deliver.",
     topPick: "star-wars-knights-of-the-old-republic",
     picks: [
       {

@@ -94,7 +94,7 @@ export const QUALITY_BAR = [
     key: "genuinelyFree" as const,
     title: "Worth the cost",
     description:
-      "Free, or regularly available for $15 or less. Good developers deserve to be paid, and optional cosmetics, expansions, and premium extras are welcome. But we won't list games that sell competitive advantages, disguise a trial as free, or charge again to finish the core experience.",
+      "Free, or returning far more than it asks for — a deep discount, or years of mods, editions and community servers behind it. There is no fixed price ceiling; what counts is the gap between what you pay and what you get. Good developers deserve to be paid, and optional cosmetics, expansions, and premium extras are welcome. But we won't list games that sell competitive advantages, disguise a trial as free, or charge again to finish the core experience.",
   },
   {
     key: "finished" as const,
