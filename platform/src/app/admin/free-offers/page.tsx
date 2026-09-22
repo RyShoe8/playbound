@@ -41,7 +41,7 @@ export default async function AdminFreeOffersPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Free Game Offers</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Automated discovery from Epic, Steam, GOG, and Prime Gaming. ({activeCount} active, {unmatchedCount} unmatched)
+            Automated discovery from Epic, Steam, GOG, Prime Gaming, and Alienware Arena. ({activeCount} active, {unmatchedCount} unmatched)
           </p>
         </div>
 

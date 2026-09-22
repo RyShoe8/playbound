@@ -13,6 +13,7 @@ const STORE_NAMES: Record<StoreSlug, string> = {
   steam: "Steam",
   gog: "GOG",
   prime_gaming: "Amazon Prime Gaming",
+  alienware_arena: "Alienware Arena",
 };
 
 export function storeDisplayName(store: StoreSlug): string {
@@ -26,6 +27,7 @@ export function storeShortName(store: StoreSlug): string {
     steam: "Steam",
     gog: "GOG",
     prime_gaming: "Prime Gaming",
+    alienware_arena: "Alienware",
   };
   return short[store] ?? store;
 }
@@ -63,6 +65,7 @@ export function claimCtaLabel(store: StoreSlug): string {
     steam: "Get on Steam",
     gog: "Claim on GOG",
     prime_gaming: "Claim with Prime",
+    alienware_arena: "Get key on Alienware",
   };
   return ctas[store] ?? `Claim on ${storeShortName(store)}`;
 }
@@ -152,6 +155,7 @@ export function storeColor(store: StoreSlug): string {
     steam: "oklch(0.68 0.14 250)",  // Steam blue-purple
     gog: "oklch(0.72 0.18 310)",    // GOG purple
     prime_gaming: "oklch(0.72 0.18 170)", // Prime teal
+    alienware_arena: "oklch(0.66 0.17 30)", // Alienware orange
   };
   return colors[store] ?? "oklch(0.68 0.15 280)";
 }

@@ -63,7 +63,7 @@ export default async function AboutPage() {
       icon: Gift,
       title: "Aggregated Free Deals",
       description:
-        "Daily automated discovery across Epic Games Store, Steam, GOG, and Prime Gaming so you never miss limited-time 100% free promotions.",
+        "Daily automated discovery across Epic Games Store, Steam, GOG, Prime Gaming, and Alienware Arena so you never miss limited-time 100% free promotions.",
     },
     {
       icon: Layers,

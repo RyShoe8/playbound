@@ -174,6 +174,35 @@ function toEdition(doc: LeanEdition): Edition {
       }
     }
 
+    /*
+     * A stored edition that is really a separate storefront product.
+     *
+     * Alien Swarm: Reactive Drop is a community edition of alien-swarm here,
+     * but on Steam it is its own app (563560, not the parent's 630). Its row
+     * carries no install recipe of its own, so the launcher fell back to the
+     * parent game's external hand-off and opened Steam on Alien Swarm — the
+     * edition the player chose never installed.
+     *
+     * launcherInstall.ts already keys a recipe by the edition slug for exactly
+     * this case. It was unreachable because deriveInstallMethod only ever looks
+     * up launcherInstallBySlug[game.slug], and no game has that slug. Consult it
+     * by edition slug here, and only when the edition has nothing actionable of
+     * its own, so a real stored recipe always wins.
+     */
+    const hasOwnInstall = Boolean(
+      installConfig.playbound_installer?.kind ||
+        installConfig.official_download?.url ||
+        installConfig.external_installer?.url
+    );
+    const editionRecipe = launcherInstallBySlug[editionSlugStr];
+    if (!hasOwnInstall && editionRecipe?.enabled && editionRecipe.url) {
+      installMethod = "external_installer";
+      installConfig = {
+        ...installConfig,
+        external_installer: { url: editionRecipe.url, instructions: editionRecipe.note ?? undefined },
+      };
+    }
+
     return {
       id: String(doc._id),
       gameId: doc.gameId ? String(doc.gameId) : undefined,
@@ -278,6 +307,19 @@ function deriveInstallMethod(game: Game): { method: InstallMethod; config: Editi
     (game.launcherInstall as LauncherInstall | undefined) ||
     launcherInstallBySlug[game.slug] ||
     null;
+  /*
+   * An external recipe is still an install, just one another storefront
+   * performs. It was falling through every branch below, so a game whose only
+   * recipe is external (Alien Swarm -> steam://install/630) produced an
+   * Official edition pointing at its marketing site instead of the store, and
+   * the launcher could not act on it at all.
+   */
+  if (recipe?.enabled && recipe.kind === "external" && recipe.url) {
+    return {
+      method: "external_installer",
+      config: { external_installer: { url: recipe.url, instructions: recipe.note ?? undefined } },
+    };
+  }
   if (recipe?.enabled && recipe.kind && recipe.kind !== "external") {
     return {
       method: "playbound_installer",
@@ -531,6 +573,30 @@ export interface EditionQuery {
  * is what makes this safe to call for any game in the catalog including static
  * seed games that have no database row at all.
  */
+/**
+ * Can this game be installed on its own, independent of any edition?
+ *
+ * Only a real recipe counts. `deriveInstallMethod` always returns something —
+ * it falls back to `official_download` pointing at the game's website — and
+ * treating that fallback as installable would list an Official edition whose
+ * only action is "visit the homepage" beside a working community edition.
+ */
+function gameInstallsOnItsOwn(game: Game): boolean {
+  const recipe = (game.launcherInstall as LauncherInstall | undefined) || launcherInstallBySlug[game.slug];
+  if (recipe?.enabled && recipe.kind) return true;
+  return Boolean(game.browserPlayable || game.steamAppId || game.installSteps?.length);
+}
+
+/**
+ * Does any stored edition already stand for the base game?
+ *
+ * An edition named `official`, or typed `official`, is the base game's own
+ * row. Community editions are additions to it, never replacements.
+ */
+function storedCoversBaseGame(stored: Edition[]): boolean {
+  return stored.some((e) => e.slug === "official" || e.type === "official");
+}
+
 export function listedEditionsFromStored(
   game: Game,
   stored: Edition[],
@@ -548,6 +614,27 @@ export function listedEditionsFromStored(
   // Everything stored could be hidden from this viewer; never return nothing.
   if (visible.length === 0) {
     return opts.includeHidden ? stored : [deriveVirtualEdition(game)];
+  }
+
+  /*
+   * The base game is not an edition, and adding a row for it would be one more
+   * edition to curate. But a game with any stored edition used to list only
+   * those, so the base game silently became unplayable the moment a community
+   * edition was added: Alien Swarm's single Reactive Drop edition (Steam app
+   * 563560) hid Alien Swarm itself (app 630) entirely.
+   *
+   * Synthesize the Official edition instead of storing one, and only when the
+   * game genuinely installs on its own — `deriveInstallMethod` resolving to a
+   * real recipe. A game that is only playable through a community edition
+   * (no recipe of its own) still lists just that edition, so this does not
+   * invent a base game where none exists.
+   */
+  if (!storedCoversBaseGame(visible) && gameInstallsOnItsOwn(game)) {
+    const base = deriveVirtualEdition(game);
+    // A stored edition that is already the default keeps that role; otherwise
+    // the base game is the obvious default.
+    const storedDefault = visible.some((e) => e.isDefault);
+    visible = [{ ...base, isDefault: !storedDefault, sortOrder: -1 }, ...visible];
   }
 
   const sorted = [...visible].sort(compareEditions);

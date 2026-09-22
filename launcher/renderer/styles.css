@@ -10145,6 +10145,39 @@ textarea.input-text {
   color: rgba(255, 255, 255, 0.9);
 }
 
+/* Slow-start warning: amber, so it reads as "wait", not "something broke". */
+.guidance-slowstart-callout {
+  background: rgba(245, 158, 11, 0.09);
+  border: 1px solid rgba(245, 158, 11, 0.32);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.guidance-slowstart-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.guidance-badge-slowstart {
+  background: #f59e0b;
+  color: #1f1300;
+}
+
+.guidance-slowstart-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fcd34d;
+}
+
+.guidance-slowstart-desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.9);
+}
+
 .guidance-section {
   border-radius: 12px;
   padding: 16px;

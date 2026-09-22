@@ -27,6 +27,7 @@ function StoreIcon({ store, className }: { store: string; className?: string }) 
       {store === "steam" && "S"}
       {store === "gog" && "G"}
       {store === "prime_gaming" && "P"}
+      {store === "alienware_arena" && "A"}
     </span>
   );
 }

@@ -1192,8 +1192,9 @@ const NO_CONFIG_NEEDED = {
     note: "OpenBOR binds pads natively for up to 4 local players; no PlayBound config write needed.",
   },
   "relic-hunters-zero-remix": {
-    kind: "native",
-    note: "Native twin-stick gamepad support for local 2P couch co-op; no PlayBound config write needed.",
+    kind: "unwritable",
+    note:
+      "The GOG GameMaker build has built-in XInput support, but no text controller config PlayBound can safely rewrite. Connect an Xbox-compatible pad before launch; DirectInput-only pads may need an XInput wrapper.",
   },
   "dc-universe-online": { kind: "native", note: "Native gamepad layout for powers, combos, and flight." },
   pixreveal: { kind: "native", note: "Companion smartphone / touchscreen controller support." },
@@ -1237,6 +1238,30 @@ const NO_CONFIG_NEEDED = {
   "mega-man-unlimited": {
     kind: "unwritable",
     note: "GameMaker fan game with no text config to edit.",
+  },
+  /*
+   * Both Zelda fan games use the Solarus 2.x engine, which handles controller
+   * mapping natively via SDL2's GameController API. The engine ships with the
+   * D-pad wired as a dead zone (not directional commands) and a Lua `axis % 2`
+   * arithmetic crash when a gamepad is connected. PlayBound's Solarus repair
+   * (maybeRepairZeldaMudoraInstall) patches these at install and launch time.
+   * Book of Mudora was moved to the Solarus 2 quest format without migrating
+   * its command bindings. PlayBound's install repair also binds A/B/X/Y and
+   * Start to the quest's action, attack, item and pause commands.
+   */
+  "the-legend-of-zelda-book-of-mudora": {
+    kind: "native",
+    note:
+      "Solarus 2.x engine — SDL2 GameController binds the pad natively. " +
+      "PlayBound applies a runtime patch to fix the Lua axis crash and wire " +
+      "D-pad directions and restore the missing A/B/X/Y command bindings.",
+  },
+  "the-legend-of-zelda-xd2-mercuris-chess": {
+    kind: "native",
+    note:
+      "Solarus 2.x engine — SDL2 GameController binds the pad natively. " +
+      "PlayBound applies a runtime patch to fix the Lua axis crash and wire " +
+      "D-pad directions correctly; face buttons work after the patch.",
   },
 };
 

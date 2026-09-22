@@ -8,12 +8,14 @@ import { EpicProviderAdapter } from "./epic";
 import { SteamProviderAdapter } from "./steam";
 import { GogProviderAdapter } from "./gog";
 import { PrimeGamingProviderAdapter } from "./primeGaming";
+import { AlienwareArenaProviderAdapter } from "./alienwareArena";
 
 const adapters: Record<StoreSlug, StoreProviderAdapter> = {
   epic: new EpicProviderAdapter(),
   steam: new SteamProviderAdapter(),
   gog: new GogProviderAdapter(),
   prime_gaming: new PrimeGamingProviderAdapter(),
+  alienware_arena: new AlienwareArenaProviderAdapter(),
 };
 
 export function getProvider(store: StoreSlug): StoreProviderAdapter {

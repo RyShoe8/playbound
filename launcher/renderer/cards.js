@@ -304,6 +304,7 @@ function storeDisplayName(store) {
     steam: "Steam",
     gog: "GOG",
     prime_gaming: "Prime Gaming",
+    alienware_arena: "Alienware Arena",
   };
   return names[store] || store;
 }
@@ -313,6 +314,7 @@ function offerTypeBadgeLabel(type, store) {
   if (type === "free_weekend") return "FREE WEEKEND";
   if (type === "free_trial") return "FREE TRIAL";
   if (type === "free_with_subscription") return store === "prime_gaming" ? "PRIME" : "SUBSCRIPTION";
+  if (type === "free_to_keep" && store === "alienware_arena") return "FREE KEY";
   return "FREE";
 }
 

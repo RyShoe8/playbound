@@ -154,7 +154,7 @@ export default function PrivacyPage() {
         </h2>
         <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
           PlayBound indexes 100% free promotions from official storefronts (such as Epic Games Store, Steam,
-          GOG, and Prime Gaming). When you click an external offer or developer link:
+          GOG, Prime Gaming, and Alienware Arena). When you click an external offer or developer link:
         </p>
         <ul className="list-disc space-y-1.5 pl-5 text-sm text-muted-foreground sm:text-base">
           <li>You are navigated directly to the publisher’s canonical website or store page.</li>

@@ -250,6 +250,7 @@ for (const packaged of [true, false]) {
   check("allows https", Boolean(sec.assertOpenExternalUrl("https://example.com")));
   check("allows mailto", Boolean(sec.assertOpenExternalUrl("mailto:a@b.com")));
   check("allows steam", Boolean(sec.assertOpenExternalUrl("steam://install/1234")));
+  check("allows Steam uninstall handoff", Boolean(sec.assertOpenExternalUrl("steam://uninstall/1234")));
   check(
     "allows a GOG Galaxy product page",
     Boolean(sec.assertOpenExternalUrl("goggalaxy://openGameView/1205909172"))

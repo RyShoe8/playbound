@@ -6,7 +6,7 @@
  */
 
 // ── Store slugs ──────────────────────────────────────────────────────────
-export const STORE_SLUGS = ["epic", "steam", "gog", "prime_gaming"] as const;
+export const STORE_SLUGS = ["epic", "steam", "gog", "prime_gaming", "alienware_arena"] as const;
 export type StoreSlug = (typeof STORE_SLUGS)[number];
 
 export function isStoreSlug(value: unknown): value is StoreSlug {

@@ -17,7 +17,7 @@ async function main() {
   console.log("Connecting to database...");
   await dbConnect();
 
-  console.log("Ingesting free offers from Epic, Steam, GOG, Prime Gaming...");
+  console.log("Ingesting free offers from Epic, Steam, GOG, Prime Gaming, Alienware Arena...");
   const results = await ingestFreeOffers();
 
   console.log("\n--- Ingestion Results ---");

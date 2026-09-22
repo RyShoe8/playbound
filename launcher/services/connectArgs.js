@@ -21,17 +21,48 @@
  * address in-game. Those are listed deliberately so callers can tell "we do not
  * support this" apart from "we have not got to it yet", and show the address.
  */
+/*
+ * Edition slug -> the mod id that edition's package actually ships.
+ *
+ * These are standalone OpenRA portables, and each one contains exactly one
+ * playable mod — not the stock ra/cnc/d2k set. The id is the folder name under
+ * mods/ in the upstream repo, so it is a property of the build, not a label we
+ * are free to choose:
+ *
+ *   combined-arms     Inq8/CAmod                      -> mods/ca
+ *   tiberian-dawn-hd  OpenRA/TiberianDawnHD           -> mods/cnc
+ *   ra2               MustaphaTR/Romanovs-Vengeance   -> mods/rv
+ *
+ * Getting this wrong is not a silent no-op. The engine starts, paints its
+ * title/loading screen, fails to resolve the named mod, and dies — which is
+ * indistinguishable from a crash to the player.
+ */
+const OPENRA_EDITION_MODS = {
+  official: "ra",
+  "combined-arms": "ca",
+  "tiberian-dawn-hd": "cnc",
+  // "ra2" is PlayBound's slug for Romanov's Vengeance. There is no mod called
+  // "ra2" in that package; naming one crashes it at the title screen.
+  ra2: "rv",
+};
+
 function openRaModName(editionSlug) {
   const raw = String(editionSlug || "").toLowerCase();
+  // An exact edition match is authoritative — the substring rules below are
+  // only a guess for slugs this table has not caught up with yet.
+  if (Object.prototype.hasOwnProperty.call(OPENRA_EDITION_MODS, raw)) {
+    return OPENRA_EDITION_MODS[raw];
+  }
   // OpenE2140 before dune/ra fallthrough — portable only has mod e2140.
   if (raw.includes("e2140") || raw.includes("opene2140") || raw.includes("earth-2140")) {
     return "e2140";
   }
   if (raw.includes("cnc") || raw.includes("tiberian") || raw === "td") return "cnc";
   if (raw.includes("d2k") || raw.includes("dune")) return "d2k";
-  if (raw.includes("combined") || raw.includes("ca")) return "ca";
+  // Bare "ca" must be the whole slug: as a substring it swallows unrelated
+  // names (arcade, cabal, scavengers) and sends them to the wrong mod.
+  if (raw.includes("combined") || raw === "ca" || raw.includes("camod")) return "ca";
   if (raw.includes("openhv") || raw === "hv") return "hv";
-  if (raw.includes("ra2")) return "ra2";
   return "ra";
 }
 

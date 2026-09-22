@@ -17,7 +17,7 @@ const FreeOfferSchema = new Schema(
 
     store: {
       type: String,
-      enum: ["epic", "steam", "gog", "prime_gaming"],
+      enum: ["epic", "steam", "gog", "prime_gaming", "alienware_arena"],
       required: true,
       index: true,
     },

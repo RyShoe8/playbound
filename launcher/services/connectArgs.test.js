@@ -144,6 +144,19 @@ test("openra join substitutes the target mod and address", () => {
   );
   assert.equal(openRaModName("opene2140"), "e2140");
   assert.equal(openRaModName("earth-2140-trilogy"), "e2140");
+
+  /*
+   * Every OpenRA edition PlayBound ships is a standalone portable carrying one
+   * mod. The id below is the mods/ folder in each upstream repo; if this drifts
+   * the engine reaches its title screen and then dies on an unknown mod.
+   */
+  assert.equal(openRaModName("official"), "ra");
+  assert.equal(openRaModName("combined-arms"), "ca");
+  assert.equal(openRaModName("tiberian-dawn-hd"), "cnc");
+  assert.equal(openRaModName("ra2"), "rv", "Romanovs Vengeance ships mods/rv, not ra2");
+
+  // A slug that merely contains "ca" is not Combined Arms.
+  assert.equal(openRaModName("arcade-skirmish"), "ra");
   assert.deepEqual(
     applyConnectTemplates(
       CLIENT_CONNECT_ARGS["earth-2140-trilogy"],
