@@ -179,6 +179,13 @@ export const CACHE_TTL = {
   modDetail: 90_000,
   editions: 60_000,
   freeOffers: 120_000,
+  /*
+   * Longer than freeOffers because the payload is bigger and changes less: a
+   * store giveaway can appear at any hour, but the discounted half only moves
+   * when the offer-prices cron runs. The endpoint itself is cached for 60s at
+   * the edge, so this is the second layer, not the only one.
+   */
+  deals: 180_000,
   liveStatsGame: 30_000,
   catalogLiveStats: 15 * 60_000,
   multiplayerActivity: 20_000,
@@ -238,6 +245,7 @@ export function bindViews() {
   views.servers = document.getElementById("view-servers");
   views.events = document.getElementById("view-events");
   views.friends = document.getElementById("view-friends");
+  views.deals = document.getElementById("view-deals");
   views.gear = document.getElementById("view-gear");
   views.library = document.getElementById("view-library");
   views.couch = document.getElementById("view-couch");

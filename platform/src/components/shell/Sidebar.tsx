@@ -5,11 +5,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
+  BadgePercent,
   CalendarDays,
   Gamepad2,
   Home,
   LibraryBig,
-  Mail,
   MessagesSquare,
   Mouse,
   Play,
@@ -36,8 +36,15 @@ const nav = [
   { href: "/events", label: "Events", icon: CalendarDays },
   { href: "/friends", label: "Friends", icon: Users },
   { href: "/library", label: "Library", icon: LibraryBig },
+  /*
+   * Game Deals took the nav slot Weekly had. The newsletter archive is still
+   * live at /weekly and still linked from the admin, it just no longer earns
+   * primary navigation now that curation is built around free-and-high-value
+   * games. Placed above Gear deliberately: Gear sells hardware, this is about
+   * the games themselves.
+   */
+  { href: "/deals", label: "Game Deals", icon: BadgePercent },
   { href: "/gear", label: "Gear", icon: Mouse },
-  { href: "/weekly", label: "Weekly", icon: Mail },
   { href: "/standards", label: "Our Standard", icon: ShieldCheck },
 ];
 

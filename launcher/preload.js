@@ -221,6 +221,7 @@ contextBridge.exposeInMainWorld("playbound", {
   tournamentAction: (id, action, data) =>
     ipcRenderer.invoke("tournament-action", id, action, data || {}),
   getFreeOffers: () => ipcRenderer.invoke("get-free-offers"),
+  getDeals: () => ipcRenderer.invoke("get-deals"),
   pingHosts: (hosts) => ipcRenderer.invoke("ping-hosts", hosts),
   getSettings: () => ipcRenderer.invoke("get-settings"),
   saveSettings: (patch) => ipcRenderer.invoke("save-settings", patch),

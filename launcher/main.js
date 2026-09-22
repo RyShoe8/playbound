@@ -13534,6 +13534,36 @@ ipcMain.handle("get-free-offers", async () => {
     return { offers: [], count: 0 };
   }
 });
+/*
+ * Both halves of the Game Deals view in one call.
+ *
+ * Deliberately not built out of get-free-offers plus a second request: the view
+ * decides its whole layout from whether each half is empty, and two round trips
+ * would make it render the free section and then reflow as discounts arrive.
+ *
+ * Empty arrays on failure rather than a thrown error, matching get-free-offers
+ * above — an unreachable API should leave the view showing its empty state, not
+ * an exception. The view distinguishes "nothing on sale" from "could not load"
+ * via `ok`.
+ */
+ipcMain.handle("get-deals", async () => {
+  try {
+    const res = await apiFetch(`${getApiBase()}/api/launcher/deals`, {
+      headers: launcherApiHeaders({ accept: "application/json" }),
+    });
+    if (!res.ok) return { ok: false, freeOffers: [], discounted: [], count: 0 };
+    const data = await res.json();
+    return {
+      ok: true,
+      freeOffers: Array.isArray(data.freeOffers) ? data.freeOffers : [],
+      discounted: Array.isArray(data.discounted) ? data.discounted : [],
+      count: Number(data.count) || 0,
+      at: data.at || null,
+    };
+  } catch {
+    return { ok: false, freeOffers: [], discounted: [], count: 0 };
+  }
+});
 ipcMain.handle("get-all-servers", async () => {
   let providers = [];
   try {

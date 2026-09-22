@@ -64,6 +64,13 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
     { url: SITE_URL, changeFrequency: "weekly", priority: 1.0 },
     { url: `${SITE_URL}/standards`, changeFrequency: "monthly", priority: 0.9 },
     { url: `${SITE_URL}/free-games`, changeFrequency: "daily", priority: 0.9 },
+    /*
+     * Ranked just below /free-games on purpose. /deals is the nav destination
+     * and the broader page, but /free-games is the canonical list for the
+     * giveaway queries and /deals only shows a condensed preview of them, so it
+     * should not outrank the page it defers to.
+     */
+    { url: `${SITE_URL}/deals`, changeFrequency: "daily", priority: 0.8 },
     { url: `${SITE_URL}/weekly`, changeFrequency: "weekly", priority: 0.9 },
     { url: `${SITE_URL}/discover`, changeFrequency: "weekly", priority: 0.9 },
     { url: `${SITE_URL}/collections`, changeFrequency: "weekly", priority: 0.9 },
