@@ -24,7 +24,14 @@ it is a deliberate overwrite, which is why bulk mode is refused.
 The global scripts that did this have been deleted rather than documented as
 dangerous: `seed-mods.ts`, `seed-editions.ts` (which also flipped parent games to
 published), `seed-launcher-install.ts` and `fix-game-media.ts` all looped every
-entry. Their replacements are scoped and insert-only —
+entry. `sync-single-game.ts` went the same way on 2026-09-22: it was scoped to
+one slug, which made it look safe, but it `$set` the whole document from seed
+and then ran `Edition.deleteMany` and `CatalogMod.deleteMany` for that game,
+recreating both from seed with mods forced back to testing/unpublished.
+Measured across ten games it would have rebuilt 16 editions, unpublished 6
+mods and reverted 32 curated fields. Nothing referenced it.
+
+Their replacements are scoped and insert-only —
 `seed:missing-games`, `seed:missing-editions` and `seed:missing-mods`, each of
 which refuses to run without explicit slugs. `seed-games.ts` remains, safe only
 because it counts documents first and exits if any exist.
@@ -39,10 +46,30 @@ Editing `games.ts` or `editorial.ts` is fine and does nothing on its own.
 number of rows for a build to create is zero, and a build that can write is a
 build that can surprise you.
 
+## The catalog wave is the only way to update a published game
+
 Allowlisted catalog inserts/patches/retires reach production via the
-**Apply catalog wave** GitHub Action (`insert:catalog-wave`), not via local
-env pulls. See `docs/database-seeding.md` → *How allowlisted catalog changes
-reach production*.
+**Apply catalog wave** GitHub Action (`insert:catalog-wave`), which also runs
+as `postdeploy:catalog` on every deploy. Not via local env pulls. See
+`docs/database-seeding.md` → *How allowlisted catalog changes reach
+production*.
+
+**Do not write another script that updates a published game.** Changing a
+field on a live game means two edits and nothing else:
+
+1. Put the value where the wave can find it — `games.ts` / `editorial.ts` for
+   a seeded game, or `catalogCorrections.ts` for one that exists only in the
+   CMS and therefore has no seed row.
+2. Name the slug and the exact fields in `PATCH_GAME_FIELDS`
+   (`insert-catalog-wave.allowlist.ts`).
+
+The wave then `$set`s only those fields, refuses a field with no source,
+refuses a slug that does not already exist, and never touches editions or
+mods. That last property is the whole point: every catalog script we have
+deleted was one that wrote more than it was asked to.
+
+The per-slug admin routes under `/api/admin/games/[slug]` remain fine — that
+is a human editing one game on purpose, through the CMS.
 
 `seed:deploy` still exists and still works — it is a manual tool now. Run it by
 hand when a named game genuinely needs its seed mods created:

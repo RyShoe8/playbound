@@ -85,6 +85,7 @@ async function main() {
   const { mods } = await import("../src/lib/data/mods");
   const { developersBySlug } = await import("../src/lib/data/developers");
   const { launcherInstallBySlug } = await import("../src/lib/data/launcherInstall");
+  const { correctionsFor } = await import("../src/lib/data/catalogCorrections");
   const { defaultArtFor } = await import("../src/lib/gamePayload");
   const { ensureDerivedModFields } = await import("../src/lib/enrich");
   const {
@@ -318,20 +319,46 @@ async function main() {
       };
     } else {
       const seed = games.find((g) => g.slug === slug);
-      if (!seed) {
+      const corrections = correctionsFor(slug);
+      /*
+       * A game curated entirely in the admin CMS has no seed row, so the wave
+       * skipped it and there was no safe way to fix one wrong field. A
+       * reviewed correction can now stand on its own; the "missing source"
+       * check below still refuses any allowlisted field it does not supply.
+       */
+      if (!seed && !corrections) {
         console.warn(`insert-catalog-wave — patch game ${slug} not in seed, skipping`);
         gamesPatchSkipped++;
         continue;
       }
-      const install = seed.launcherInstall ?? launcherInstallBySlug[slug] ?? null;
       const ed = editorial[slug];
-      // Always merge editorial.ts — do not rely solely on withEditorial on the
-      // games export. Patch allowlists often name longDescription / faq / etc.
-      source = {
-        ...(seed as unknown as Record<string, unknown>),
-        ...((ed ?? {}) as unknown as Record<string, unknown>),
-        launcherInstall: install,
-      };
+      if (seed) {
+        const install = seed.launcherInstall ?? launcherInstallBySlug[slug] ?? null;
+        // Always merge editorial.ts — do not rely solely on withEditorial on the
+        // games export. Patch allowlists often name longDescription / faq / etc.
+        source = {
+          ...(seed as unknown as Record<string, unknown>),
+          ...((ed ?? {}) as unknown as Record<string, unknown>),
+          launcherInstall: install,
+        };
+      } else {
+        // No seed: editorial plus the correction overlay below is the whole
+        // source. launcherInstall is deliberately not synthesised here —
+        // patching a live install recipe from a file that never described one
+        // is how you break an install.
+        source = { ...((ed ?? {}) as unknown as Record<string, unknown>) };
+      }
+    }
+
+    /*
+     * Reviewed corrections win over every source above, including the
+     * hand-written per-slug blocks. teeworlds and space-station-14 both have
+     * their own source objects describing install and hardware only, so a
+     * releaseYear fix for them had nowhere to come from until this overlay.
+     */
+    const slugCorrections = correctionsFor(slug);
+    if (slugCorrections) {
+      source = { ...source, ...slugCorrections };
     }
 
     const payload = pickFields(source, fields);

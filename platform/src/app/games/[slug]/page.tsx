@@ -40,7 +40,6 @@ import { Avatar, Badge, EmptyHint } from "@/components/ui/bits";
 import { cn } from "@/lib/utils";
 import { modsForGame } from "@/lib/mods";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
-import { QualityBarPanel } from "@/components/QualityBarPanel";
 import { MasterCopyUnlocks } from "@/components/MasterCopyUnlocks";
 import { getStoreAffiliateMap } from "@/lib/commerce/affiliates";
 import { FreeOfferBanner } from "@/components/FreeOfferBanner";
@@ -530,12 +529,6 @@ async function OverviewTab({
           </section>
         )}
 
-        {/* Quality assessment leads the rest of the page — it is the reason to trust
-            everything below it, and the block most likely to be cited. */}
-        {game.qualityBar && (
-          <QualityBarPanel bar={game.qualityBar} gameTitle={game.title} />
-        )}
-
         {/* Editions sit high on the page: when a game has several, which one
             to install is the reader's first decision, ahead of the blurb.
             Renders nothing for games with only the generated Official one.
@@ -552,16 +545,19 @@ async function OverviewTab({
           </Suspense>
         )}
 
-        <section>
+        {/* Carded like "Why we picked it" and "Who it's for" below. This was
+            the one bare block in the column, so the longest prose on the page
+            was also the only part with no container to sit in. */}
+        <section className="rounded-xl border border-border bg-card p-5">
           <h2 className="text-lg font-bold">About {game.title}</h2>
           {game.longDescription ? (
-            <div className="mt-2 space-y-4 leading-relaxed text-muted-foreground">
+            <div className="mt-3 space-y-4 leading-relaxed text-muted-foreground">
               {game.longDescription.split("\n\n").map((para, i) => (
                 <p key={i}>{para}</p>
               ))}
             </div>
           ) : (
-            <p className="mt-2 leading-relaxed text-muted-foreground">{game.description}</p>
+            <p className="mt-3 leading-relaxed text-muted-foreground">{game.description}</p>
           )}
         </section>
 
