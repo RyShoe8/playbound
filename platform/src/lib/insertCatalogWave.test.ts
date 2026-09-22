@@ -113,7 +113,6 @@ describe("insert-catalog-wave allowlists", () => {
         "pokemmo/official",
         "populous-the-beginning/official",
         "populous-the-beginning/populous-reincarnated",
-        "s-t-a-l-k-e-r-call-of-pripyat/official",
         "s-t-a-l-k-e-r-clear-sky/official",
         "s-t-a-l-k-e-r-shadow-of-chernobyl/lost-alpha",
         "s-t-a-l-k-e-r-shadow-of-chernobyl/official",
@@ -132,9 +131,6 @@ describe("insert-catalog-wave allowlists", () => {
     expect([...RETIRE_EDITION_KEYS].sort()).toEqual(
       [
         "baseball-stars-2/official",
-        "s-t-a-l-k-e-r-call-of-pripyat/anomaly",
-        "s-t-a-l-k-e-r-call-of-pripyat/gamma",
-        "s-t-a-l-k-e-r-call-of-pripyat/gunslinger",
         "soccer-brawl/official",
         "super-sidekicks/official",
       ].sort()
@@ -155,7 +151,6 @@ describe("insert-catalog-wave allowlists", () => {
         "pokemmo",
         "pokemon-blaze-online",
         "relic-hunters-zero-remix",
-        "s-t-a-l-k-e-r-call-of-pripyat",
         "s-t-a-l-k-e-r-clear-sky",
         "s-t-a-l-k-e-r-shadow-of-chernobyl",
         "seven-kingdoms-ancient-adversaries",
@@ -243,7 +238,6 @@ describe("insert-catalog-wave allowlists", () => {
         "pokemon-blaze-online/official",
         "pokemon-blaze-online/windows-32",
         "pokemmo/official",
-        "s-t-a-l-k-e-r-call-of-pripyat/official",
         "s-t-a-l-k-e-r-clear-sky/official",
         "s-t-a-l-k-e-r-shadow-of-chernobyl/lost-alpha",
         "s-t-a-l-k-e-r-shadow-of-chernobyl/official",
