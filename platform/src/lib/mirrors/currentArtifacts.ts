@@ -1,4 +1,5 @@
 import CatalogGame from "@/lib/models/CatalogGame";
+import dbConnect from "@/lib/db";
 import { launcherInstallBySlug } from "@/lib/data/launcherInstall";
 import { games } from "@/lib/data/games";
 import {
@@ -34,6 +35,9 @@ export async function filterCurrentArtifacts<T extends MinimalArtifact>(
   options?: { launcherKeep?: "all" | "latest" }
 ): Promise<T[]> {
   if (!artifacts || !artifacts.length) return [];
+  // Unit callers use the static catalog without a database. Production always
+  // has MONGODB_URI and must connect before querying because buffering is off.
+  if (process.env.MONGODB_URI) await dbConnect();
   const launcherKeep = options?.launcherKeep ?? "latest";
 
   const catalogDocs = await CatalogGame.find({}).select("slug launcherInstall").lean().catch(() => []);

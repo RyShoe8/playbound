@@ -85,6 +85,32 @@ const CONTROL_GROUP_ORDER = [
 /**
  * Show a modal with Controls, How to Leave the Game, First Play Steps, and/or Multiplayer Steps.
  */
+/*
+ * Games whose first frames take long enough that the window goes
+ * "Not Responding" and players assume it has crashed.
+ *
+ * Combined Arms is the measured case: ~30-50s from launch to menu, peaking
+ * over 1GB, with Windows marking the window unresponsive for most of it. It
+ * was reported as a crash repeatedly, and every report turned out to be
+ * someone force-closing a game that was still loading. Nothing was broken
+ * except that we never said "this one takes a minute".
+ *
+ * Keyed by game slug, with the edition slug as an optional second key so a
+ * heavy edition can warn without slandering its parent game.
+ */
+const SLOW_START_SECONDS = {
+  openra: { "combined-arms": 60 },
+};
+
+/** Expected worst-case start time in seconds, or null if the game is normal. */
+export function slowStartSeconds(slug, editionSlug) {
+  const entry = SLOW_START_SECONDS[String(slug || "").toLowerCase()];
+  if (!entry) return null;
+  if (typeof entry === "number") return entry;
+  const ed = String(editionSlug || "").toLowerCase();
+  return ed && typeof entry[ed] === "number" ? entry[ed] : null;
+}
+
 export function showLaunchGuidanceModal(opts = {}) {
   const {
     title = "Game",
@@ -93,6 +119,8 @@ export function showLaunchGuidanceModal(opts = {}) {
     firstPlaySteps = null,
     multiplayerGamingSteps = null,
     address = null,
+    slug = null,
+    editionSlug = null,
   } = opts;
 
   const root = ensureGuidanceRoot();
@@ -112,6 +140,20 @@ export function showLaunchGuidanceModal(opts = {}) {
       <p class="guidance-leave-desc">${escapeHtml(leaveText)}</p>
     </div>
   `;
+
+  // 1b. Slow-start warning, for the handful of games that look hung while loading.
+  const slowSeconds = slowStartSeconds(slug, editionSlug);
+  const slowHtml = slowSeconds
+    ? `
+    <div class="guidance-slowstart-callout">
+      <div class="guidance-slowstart-header">
+        <span class="guidance-badge guidance-badge-slowstart">Slow to Start</span>
+        <span class="guidance-slowstart-title">This one takes a while to load</span>
+      </div>
+      <p class="guidance-slowstart-desc">${escapeHtml(title)} can take up to ${slowSeconds} seconds to reach its menu, and Windows may show it as &ldquo;Not Responding&rdquo; the whole time. That is normal &mdash; it is still loading. Please do not close it.</p>
+    </div>
+  `
+    : "";
 
   // 2. Controls Section (Keyboard & Controller)
   let controlsHtml = "";
@@ -318,6 +360,7 @@ export function showLaunchGuidanceModal(opts = {}) {
       </div>
 
       <div class="guidance-body">
+        ${slowHtml}
         ${leaveHtml}
         ${controlsHtml}
         ${multiplayerHtml}
@@ -386,6 +429,7 @@ export function showLaunchGuidanceModal(opts = {}) {
  */
 export async function maybeShowLaunchGuidance(res, context = {}) {
   const slug = res?.slug || context.slug || "";
+  const editionSlug = res?.editionSlug || context.editionSlug || "";
   const title = res?.title || context.title || context.slug || "Game";
   let controls = res?.controls || context.controls || null;
   const howToQuit = res?.howToQuit || context.howToQuit || null;
@@ -406,6 +450,7 @@ export async function maybeShowLaunchGuidance(res, context = {}) {
   showLaunchGuidanceModal({
     title,
     slug,
+    editionSlug,
     controls,
     howToQuit,
     firstPlaySteps,

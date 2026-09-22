@@ -384,6 +384,78 @@ function isSteamInstalled() {
 }
 
 /**
+ * Ensure Steam is running before handing it a `steam://` deep link.
+ *
+ * On Windows, shell.openExternal("steam://install/630") is silently ignored
+ * if Steam is not already running — the OS resolves the protocol handler and
+ * launches steam.exe, but then the launched Steam instance may not process
+ * the deep link argument before PlayBound's openExternal call returns. The
+ * result is the button appears to do nothing.
+ *
+ * Spawning steam.exe explicitly and waiting for it to open its IPC socket
+ * means by the time openExternal fires, Steam is ready to receive the link.
+ * Only runs on Windows, only when Steam is installed, and only when the
+ * process is not already running (checked by trying to open the Steam IPC pipe).
+ */
+async function ensureSteamRunning() {
+  if (process.platform !== "win32") return;
+  const base = steamBaseDir();
+  if (!base) return;
+  const steamExe = path.join(base, "steam.exe");
+  if (!fs.existsSync(steamExe)) return;
+
+  // Quick check: try to see if the Steam mutex/named pipe exists, which means
+  // Steam is already running. If so, nothing to do.
+  const ipcPipe = "\\\\.\\pipe\\SteamEngine";
+  const isRunning = await new Promise((resolve) => {
+    const net = require("net");
+    const client = net.createConnection(ipcPipe, () => {
+      client.destroy();
+      resolve(true);
+    });
+    client.on("error", () => resolve(false));
+    client.setTimeout(500, () => {
+      client.destroy();
+      resolve(false);
+    });
+  });
+  if (isRunning) return;
+
+  // Steam is not running — launch it and wait for it to be ready.
+  try {
+    spawn(steamExe, [], { detached: true, stdio: "ignore" }).unref();
+    console.log("[steam] Launched steam.exe to handle upcoming deep link");
+  } catch (err) {
+    console.warn("[steam] Could not launch steam.exe:", err?.message || err);
+    return;
+  }
+
+  // Poll for up to 8 seconds for Steam's IPC pipe to appear.
+  const started = Date.now();
+  while (Date.now() - started < 8000) {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    const ready = await new Promise((resolve) => {
+      const net = require("net");
+      const client = net.createConnection(ipcPipe, () => {
+        client.destroy();
+        resolve(true);
+      });
+      client.on("error", () => resolve(false));
+      client.setTimeout(400, () => {
+        client.destroy();
+        resolve(false);
+      });
+    });
+    if (ready) {
+      console.log("[steam] Steam IPC ready");
+      return;
+    }
+  }
+  // Even if we timed out, Steam is probably starting — give it a final moment.
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+}
+
+/**
  * Whether the Discord desktop app is installed.
  *
  * Same reasoning as isSteamInstalled: `discord://` is only worth handing to the
@@ -563,6 +635,25 @@ function steamDeepLinkFor(rawUrl) {
   } catch {
     return null;
   }
+}
+
+function steamAppIdForEntry(entry) {
+  const candidates = [entry?.url, entry?.website, entry?.storeUrl].filter(Boolean);
+  for (const raw of candidates) {
+    const text = String(raw);
+    const protocolMatch = text.match(/^steam:\/\/(?:install|store|run)\/(\d+)/i);
+    if (protocolMatch) return protocolMatch[1];
+    try {
+      const parsed = new URL(text);
+      if (/(^|\.)steampowered\.com$/i.test(parsed.hostname)) {
+        const storeMatch = parsed.pathname.match(/\/app\/(\d+)/i);
+        if (storeMatch) return storeMatch[1];
+      }
+    } catch {
+      /* not a URL we understand */
+    }
+  }
+  return null;
 }
 
 function normalizeFsPath(p) {
@@ -7110,6 +7201,27 @@ async function openInstallerPath(installerPath, gameSlug, opts = {}) {
   });
 }
 
+/**
+ * Hand an install off to a storefront or browser.
+ *
+ * Edition hand-offs used to call safeOpenExternal directly while the
+ * game-level branch normalized the URL and woke Steam first. That split meant
+ * a Steam edition (Alien Swarm: Reactive Drop) got a raw deep link fired at a
+ * Steam that might not be running yet, which Windows silently drops -- the
+ * button appeared to do nothing. Both paths go through here now.
+ */
+async function openExternalInstallHandoff(rawUrl, slug) {
+  const openUrl = steamDeepLinkFor(rawUrl) || rawUrl;
+  if (String(openUrl || "").startsWith("steam://")) {
+    await ensureSteamRunning();
+  }
+  await safeOpenExternal(openUrl, {
+    campaign: "launcher_install_external",
+    content: slug,
+  });
+  return openUrl;
+}
+
 async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   if (slug === "mrboom" && editionSlug === "retroarch") {
     return installSharedMrBoom(editionSlug);
@@ -7137,26 +7249,20 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
           editionMeta.links?.website ||
           editionMeta.installAction?.href;
         if (url) {
-          await safeOpenExternal(url, { campaign: "launcher_install_external", content: slug });
+          await openExternalInstallHandoff(url, slug);
           return { status: "external", editionSlug: editionMeta.editionSlug };
         }
       } else if (editionMeta.installMethod === "external_installer") {
         const url = editionMeta.installConfig?.external_installer?.url || editionMeta.installAction?.href;
         if (url) {
-          await safeOpenExternal(url, { campaign: "launcher_install_external", content: slug });
+          await openExternalInstallHandoff(url, slug);
           return { status: "external", editionSlug: editionMeta.editionSlug };
         }
       } else if (editionMeta.installAction?.kind === "link" && editionMeta.installAction.href) {
-        await safeOpenExternal(editionMeta.installAction.href, {
-          campaign: "launcher_install_external",
-          content: slug,
-        });
+        await openExternalInstallHandoff(editionMeta.installAction.href, slug);
         return { status: "external", editionSlug: editionMeta.editionSlug };
       } else if (editionMeta.installAction?.kind === "browser" && editionMeta.installAction.href) {
-        await safeOpenExternal(editionMeta.installAction.href, {
-          campaign: "launcher_install_external",
-          content: slug,
-        });
+        await openExternalInstallHandoff(editionMeta.installAction.href, slug);
         return { status: "external", editionSlug: editionMeta.editionSlug };
       } else {
         const bundled = bundledCatalog.find((e) => e.slug === slug);
@@ -7204,10 +7310,7 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   await ensureSteamPrerequisites(entry);
 
   if (entry.kind === "external") {
-    await safeOpenExternal(steamDeepLinkFor(entry.url) || entry.url, {
-      campaign: "launcher_install_external",
-      content: slug,
-    });
+    await openExternalInstallHandoff(entry.url, slug);
     /*
      * Watch for the game to appear, whatever the store does next.
      *
@@ -8258,7 +8361,7 @@ async function maybeApplyEditionPostInstall(entry, gameDir) {
     await maybeRepairWolfensteinEtInstall(entry.slug || "wolfenstein-enemy-territory", { dir: gameDir }, entry.editionSlug);
   }
 
-  if (entry?.slug === "the-legend-of-zelda-book-of-mudora") {
+  if (SOLARUS_REPAIR_SLUGS.has(entry?.slug)) {
     await maybeRepairZeldaMudoraInstall(entry.slug, { dir: gameDir });
   }
 
@@ -8342,13 +8445,21 @@ async function maybeRepairWolfensteinEtInstall(slug, info, edSlug) {
   }
 }
 
+/** Slugs that use the Solarus engine and need the D-pad + axis patch. */
+const SOLARUS_REPAIR_SLUGS = new Set([
+  "the-legend-of-zelda-book-of-mudora",
+  "the-legend-of-zelda-xd2-mercuris-chess",
+]);
+
 /**
- * The Legend of Zelda: Book of Mudora repair:
+ * Zelda / Solarus engine repair:
  * Fixes Solarus 2.0 gamepad crash bug in data.solarus where joypad axis strings
- * throw Lua errors in arithmetic ("axis % 2"), and maps D-pad buttons to direction controls.
+ * throw Lua errors in arithmetic ("axis % 2"), and maps D-pad buttons to direction
+ * controls so they work as movement inputs instead of a dead zone.
+ * Applies to any Solarus-based game in SOLARUS_REPAIR_SLUGS.
  */
 async function maybeRepairZeldaMudoraInstall(slug, info) {
-  if (slug !== "the-legend-of-zelda-book-of-mudora") return;
+  if (!SOLARUS_REPAIR_SLUGS.has(slug)) return;
   const gameDir = info?.dir || (info?.exe ? path.dirname(info.exe) : null);
   if (!gameDir || !fs.existsSync(gameDir)) return;
 
@@ -8367,9 +8478,10 @@ async function maybeRepairZeldaMudoraInstall(slug, info) {
     if (!fs.existsSync(solarusFile)) return;
 
     const content = await fsp.readFile(solarusFile);
-    if (!content.includes(Buffer.from("axis % 2"))) {
-      return;
-    }
+    const needsAxisPatch = content.includes(Buffer.from("axis % 2"));
+    const controllerMarker = "-- PlayBound Solarus 2 controller bindings";
+    const needsButtonPatch = !content.includes(Buffer.from(controllerMarker));
+    if (!needsAxisPatch && !needsButtonPatch) return;
 
     const bin = sevenZipBinary();
     if (!bin) return;
@@ -8378,9 +8490,13 @@ async function maybeRepairZeldaMudoraInstall(slug, info) {
     await fsp.mkdir(tempDir, { recursive: true });
 
     await new Promise((resolve) => {
-      const cp = spawn(bin, ["x", solarusFile, "-o" + tempDir, "scripts/menus/*", "-y"], {
+      const cp = spawn(
+        bin,
+        ["x", solarusFile, "-o" + tempDir, "scripts/menus/*", "scripts/game_manager.lua", "-y"],
+        {
         windowsHide: true,
-      });
+        }
+      );
       cp.on("close", () => resolve());
       cp.on("error", () => resolve());
     });
@@ -8408,9 +8524,30 @@ async function maybeRepairZeldaMudoraInstall(slug, info) {
       }
     }
 
+    // Book of Mudora was migrated to the Solarus 2 quest format without
+    // migrating its saved/default controller bindings. Solarus still sees the
+    // pad (movement and Start work), but A/B/X/Y are not attached to game
+    // commands. Set the standard Xbox/SDL layout each time a save is loaded.
+    // Existing keyboard bindings and save data are left untouched.
+    const gameManager = path.join(tempDir, "scripts", "game_manager.lua");
+    if (fs.existsSync(gameManager)) {
+      let code = await fsp.readFile(gameManager, "utf8");
+      if (!code.includes(controllerMarker)) {
+        const bindings = `${controllerMarker}\n` +
+          `game:set_command_joypad_binding("action", "a")\n` +
+          `game:set_command_joypad_binding("attack", "b")\n` +
+          `game:set_command_joypad_binding("item_1", "x")\n` +
+          `game:set_command_joypad_binding("item_2", "y")\n` +
+          `game:set_command_joypad_binding("pause", "start")\n\n`;
+        code = code.replace(/^(local game = \.\.\.\r?\n)/, `$1\n${bindings}`);
+        await fsp.writeFile(gameManager, code, "utf8");
+        anyPatched = true;
+      }
+    }
+
     if (anyPatched) {
       await new Promise((resolve) => {
-        const cp = spawn(bin, ["u", solarusFile, "scripts/menus/*"], {
+        const cp = spawn(bin, ["u", solarusFile, "scripts/menus/*", "scripts/game_manager.lua"], {
           cwd: tempDir,
           windowsHide: true,
         });
@@ -10027,6 +10164,10 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
   const isInsideSteam = /[\\/]steamapps[\\/]common[\\/]/i.test(launchPath || "");
 
   if (targetSteamAppId || isInsideSteam) {
+    // SteamAPI games such as Alien Swarm exit immediately when Steam is not
+    // running. Start the client before spawning the game executable so its
+    // SteamAPI initialization has a live client to attach to.
+    await ensureSteamRunning();
     if (targetSteamAppId) {
       launchEnv = {
         ...(launchEnv || process.env),
@@ -11088,6 +11229,8 @@ async function confirmAndUninstallGame(slug, editionSlug = null) {
     message: editionSlug ? `Uninstall ${title} — ${editionSlug}?` : `Uninstall ${title}?`,
     detail: editionSlug
       ? "Removes this edition folder and every PlayBound mod for this game. Other editions stay installed."
+      : entry?.kind === "external" && steamAppIdForEntry(entry)
+        ? "Steam will open its uninstall confirmation. PlayBound will also remove the game from this library."
       : "This removes all PlayBound edition folders for this game from this PC, including its mods.",
   });
   if (response !== 0) return { status: "cancelled" };
@@ -12092,6 +12235,15 @@ async function uninstallGame(slug, editionSlug = null) {
   }
 
   const warnings = [];
+
+  // Steam owns external game files, so deleting the PlayBound record alone
+  // leaves the full game installed. Hand the app id to Steam before clearing
+  // our state; Steam shows its own confirmation and removes the correct depot.
+  const steamAppId = entry?.kind === "external" ? steamAppIdForEntry(entry) : null;
+  if (steamAppId) {
+    await ensureSteamRunning();
+    await safeOpenExternal(`steam://uninstall/${steamAppId}`, { skipUtm: true });
+  }
 
   if (editionSlug) {
     if (!game.editions?.[editionSlug]) {

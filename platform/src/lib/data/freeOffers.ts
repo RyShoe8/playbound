@@ -36,6 +36,14 @@ export const seedStoreProviders: StoreProviderRecord[] = [
     color: "oklch(0.72 0.18 170)",
     active: true,
   },
+  {
+    slug: "alienware_arena",
+    name: "Alienware Arena",
+    logoUrl: null,
+    baseUrl: "https://na.alienwarearena.com",
+    color: "oklch(0.66 0.17 30)",
+    active: true,
+  },
 ];
 
 const nextThursday = new Date();

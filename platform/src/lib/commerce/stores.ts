@@ -18,6 +18,7 @@ export const COMMERCE_STORE_SLUGS = [
   "gamersgate",
   "ebay",
   "prime_gaming",
+  "alienware_arena",
 ] as const;
 
 export type CommerceStoreSlug = (typeof COMMERCE_STORE_SLUGS)[number];
@@ -115,6 +116,15 @@ export const STORE_CAPABILITIES: Record<CommerceStoreSlug, StoreCapabilities> = 
   },
   prime_gaming: {
     discovery: "manual",
+    livePrice: false,
+    titleSearch: false,
+    feedIngest: false,
+    freeOfferIngest: true,
+    retailer: null,
+  },
+  // Key giveaways only -- never a place to buy, so no retailer name.
+  alienware_arena: {
+    discovery: "api",
     livePrice: false,
     titleSearch: false,
     feedIngest: false,
@@ -257,6 +267,17 @@ export const SEED_COMMERCE_STORES: Array<{
     affiliateDefault: false,
     freeOffersEnabled: true,
     discovery: "manual",
+  },
+  {
+    slug: "alienware_arena",
+    name: "Alienware Arena",
+    baseUrl: "https://na.alienwarearena.com",
+    color: "oklch(0.66 0.17 30)",
+    matchingEnabled: false,
+    priceRefreshEnabled: false,
+    affiliateDefault: false,
+    freeOffersEnabled: true,
+    discovery: "api",
   },
 ];
 

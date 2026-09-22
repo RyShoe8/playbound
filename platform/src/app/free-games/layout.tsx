@@ -14,7 +14,7 @@ import { pageMetadata } from "@/lib/seo";
 export const metadata: Metadata = pageMetadata({
   title: "Free Games This Week",
   description:
-    "Track all active and upcoming free game promotions from Epic Games Store, Steam, GOG, and Amazon Prime Gaming. Claim them before they expire.",
+    "Track all active and upcoming free game promotions from Epic Games Store, Steam, GOG, Amazon Prime Gaming, and Alienware Arena. Claim them before they expire.",
   path: "/free-games",
 });
 

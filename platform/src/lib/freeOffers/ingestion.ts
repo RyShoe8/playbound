@@ -277,7 +277,9 @@ export async function ingestFreeOffers(opts?: {
   await dbConnect();
   await ensureCommerceStores();
 
-  const stores = opts?.stores ?? (["epic", "steam", "gog", "prime_gaming"] as StoreSlug[]);
+  const stores =
+    opts?.stores ??
+    (["epic", "steam", "gog", "prime_gaming", "alienware_arena"] as StoreSlug[]);
   const results: IngestionResult[] = [];
 
   // Process providers sequentially to avoid overwhelming store APIs.

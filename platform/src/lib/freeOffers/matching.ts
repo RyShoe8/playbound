@@ -60,6 +60,21 @@ function levenshtein(a: string, b: string): number {
 }
 
 /**
+ * Which storefront namespace an offer's external id / store URL lives in.
+ *
+ * The catalog only records ids for the three storefronts it can buy from, so
+ * key-reseller and subscription providers borrow the namespace of the store
+ * their keys actually redeem on: Prime Gaming keys are overwhelmingly Epic,
+ * Alienware Arena keys overwhelmingly Steam. Without this an offer from
+ * either would be cast to a namespace that does not exist and never match.
+ */
+function externalIdNamespace(store: StoreSlug): "epic" | "steam" | "gog" {
+  if (store === "prime_gaming") return "epic";
+  if (store === "alienware_arena") return "steam";
+  return store as "epic" | "steam" | "gog";
+}
+
+/**
  * Attempt to match a discovered offer to an existing CatalogGame.
  *
  * The cascade tries the most specific matches first (IDs, URLs) and
@@ -71,7 +86,7 @@ export async function matchGame(
   // ── 1. External ID match ───────────────────────────────────────────
   if (offer.externalId) {
     const byId = await findGameByExternalId(
-      offer.store === "prime_gaming" ? "epic" : (offer.store as "epic" | "steam" | "gog"),
+      externalIdNamespace(offer.store),
       offer.externalId
     );
     if (byId) return { game: byId, confidence: "exact" };
@@ -79,7 +94,7 @@ export async function matchGame(
 
   // ── 2. Store URL match ─────────────────────────────────────────────
   if (offer.storeUrl) {
-    const store = offer.store === "prime_gaming" ? "epic" : (offer.store as "epic" | "steam" | "gog");
+    const store = externalIdNamespace(offer.store);
     const byUrl = await findGameByStoreUrl(store, offer.storeUrl);
     if (byUrl) return { game: byUrl, confidence: "exact" };
   }

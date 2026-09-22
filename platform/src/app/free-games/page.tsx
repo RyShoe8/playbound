@@ -12,7 +12,7 @@ import { absoluteUrl } from "@/lib/site";
 export const metadata: Metadata = pageMetadata({
   title: "Free Games This Week — Active Giveaways & Store Promotions",
   description:
-    "Claim time-limited free games from Epic Games Store, Steam, GOG, and Prime Gaming before they expire. Live promotion tracker updated continuously.",
+    "Claim time-limited free games and key giveaways from Epic Games Store, Steam, GOG, Prime Gaming, and Alienware Arena before they expire. Live promotion tracker updated continuously.",
   path: "/free-games",
 });
 
@@ -29,7 +29,7 @@ export default async function FreeGamesPage() {
     "@type": "ItemList",
     name: "Free Games This Week",
     description:
-      "Active free game promotions and giveaways from Epic Games Store, Steam, GOG, and Prime Gaming.",
+      "Active free game promotions and giveaways from Epic Games Store, Steam, GOG, Prime Gaming, and Alienware Arena.",
     url: absoluteUrl("/free-games"),
     numberOfItems: activeOffers.length,
     itemListElement: activeOffers.map((offer, i) => {
@@ -85,7 +85,7 @@ export default async function FreeGamesPage() {
           Free Games This Week
         </h1>
         <p className="text-base text-muted-foreground sm:text-lg">
-          Discover and claim time-limited free games from Epic Games Store, Steam, GOG, and Prime Gaming before they expire.
+          Discover and claim time-limited free games from Epic Games Store, Steam, GOG, Prime Gaming, and Alienware Arena before they expire.
         </p>
       </header>
 

@@ -153,6 +153,13 @@ export default async function AdminPage() {
   // Never prerendered — see the layout. Each segment prerenders
   // independently, so the layout's opt-out does not cover this page.
   await connection();
+  // Establish the DB connection before Promise.all. Both loadDashboardKpis()
+  // and listAllGames() call dbConnect() internally, but when their results are
+  // cached they return immediately without connecting. CatalogMod.countDocuments()
+  // runs in the same Promise.all with bufferCommands = false, so it throws if
+  // no connection exists yet. Awaiting dbConnect() here guarantees a connection
+  // is live before any of the three queries start.
+  await dbConnect();
   const [kpis, games, brokenModCount] = await Promise.all([
     loadDashboardKpis(),
     listAllGames(),
