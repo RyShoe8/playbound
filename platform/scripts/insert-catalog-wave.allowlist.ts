@@ -33,7 +33,6 @@ export const NEW_GAME_SLUGS: readonly string[] = [
 
 /** `gameSlug/editionSlug` pairs to create only when absent. */
 export const NEW_EDITION_KEYS: readonly string[] = [
-  "s-t-a-l-k-e-r-call-of-pripyat/official",
   "stalker-anomaly/official",
   "stalker-anomaly/gamma",
   "s-t-a-l-k-e-r-clear-sky/official",
@@ -133,18 +132,6 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "website",
   ],
   "seven-kingdoms-ancient-adversaries": ["launcherInstall"],
-  "s-t-a-l-k-e-r-call-of-pripyat": [
-    "description",
-    "aliases",
-    "longDescription",
-    "whyWePickedIt",
-    "installSteps",
-    "faq",
-    "systemRequirements",
-    "hardwareRequirements",
-    "launcherInstall",
-    "firstPlaySteps",
-  ],
   "s-t-a-l-k-e-r-shadow-of-chernobyl": [
     "description",
     "aliases",
@@ -443,11 +430,6 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
 
 /** Existing editions: $set ONLY these fields. */
 export const PATCH_EDITION_FIELDS: Readonly<Record<string, readonly string[]>> = {
-  "s-t-a-l-k-e-r-call-of-pripyat/official": [
-    "name",
-    "description",
-    "shortDescription",
-  ],
   "stalker-anomaly/official": [
     "name",
     "description",
@@ -521,9 +503,6 @@ export const RETIRE_EDITION_KEYS: readonly string[] = [
   "super-sidekicks/official",
   "baseball-stars-2/official",
   "soccer-brawl/official",
-  "s-t-a-l-k-e-r-call-of-pripyat/gamma",
-  "s-t-a-l-k-e-r-call-of-pripyat/gunslinger",
-  "s-t-a-l-k-e-r-call-of-pripyat/anomaly",
 ];
 
 /**
