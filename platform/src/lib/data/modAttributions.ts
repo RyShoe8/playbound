@@ -213,6 +213,29 @@ export const MOD_ATTRIBUTIONS: Readonly<Record<string, string>> = {
   "zerok-speed-metal-remastered": "zero-k-team",
   "zerok-tactical-nukes-mutator": "zero-k-team",
   "zerok-tangerine-oasis": "zero-k-team",
+
+  /*
+   * Second pass, 2026-09-22: the hosts that needed a real browser.
+   * mod.io renders its CREATORS block client-side, ModDB refuses scripted
+   * clients, and SourceForge answered through its project REST API. Each
+   * profile URL below was opened and confirmed to be that author's page.
+   */
+  "0ad-10ad": "andy5995",
+  "0ad-bigger-minimap": "diagonalo",
+  "0ad-community-mod": "wildfire-games",
+  "0ad-delenda-est": "justus-avramenko",
+  "0ad-feldmap": "feldfeld",
+  "0ad-localratings": "mentula0ad",
+  "0ad-mainland-twilight": "leopard0ad",
+  "0ad-moderngui": "atrik",
+  "0ad-theban-greeks": "justus-avramenko",
+  "0ad-tower-defense": "cwrtl",
+  "flightgear-addon-red-griffin-atc": "redgriffin",
+  "freedoom-brutal": "sergeant-mark-iv",
+  "openra-charred-earth": "calvinist-dev-team",
+  "openra-d2k-community": "mustaphatr",
+  "openra-tiberian-aurora": "tiberian-aurora-team",
+  "openra-tiberian-origins": "kanecvr",
 };
 
 /** The corrected author slug for a mod, or undefined to leave it alone. */

@@ -11,6 +11,9 @@ export const HOST_LABELS: Record<ModAuthor["host"], string> = {
   codeberg: "Codeberg",
   gitlab: "GitLab",
   bananas: "OpenTTD BaNaNaS",
+  modio: "mod.io",
+  moddb: "ModDB",
+  sourceforge: "SourceForge",
 };
 
 export function getModAuthor(slug: string): ModAuthor | undefined {

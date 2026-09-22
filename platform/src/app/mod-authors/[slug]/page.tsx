@@ -62,7 +62,9 @@ export default async function ModAuthorPage({ params }: { params: Promise<{ slug
   if (!author) notFound();
 
   const mods = await modsByAuthor(slug);
-  const profileHref = withOutboundUtm(author.profileUrl, { campaign: "mod_author_profile" });
+  const profileHref = author.profileUrl
+    ? withOutboundUtm(author.profileUrl, { campaign: "mod_author_profile" })
+    : null;
   const siteHref = author.website
     ? withOutboundUtm(author.website, { campaign: "mod_author_site" })
     : null;
@@ -98,14 +100,21 @@ export default async function ModAuthorPage({ params }: { params: Promise<{ slug
         )}
 
         <div className="mt-4 flex flex-wrap items-center gap-4 text-sm">
-          <a
-            href={profileHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 font-semibold text-primary hover:underline"
-          >
-            <Package className="size-4" /> {HOST_LABELS[author.host]} profile
-          </a>
+          {profileHref ? (
+            <a
+              href={profileHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 font-semibold text-primary hover:underline"
+            >
+              <Package className="size-4" /> {HOST_LABELS[author.host]} profile
+            </a>
+          ) : (
+            // A team credited by name on ModDB with no account behind it.
+            <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+              <Package className="size-4" /> Credited on {HOST_LABELS[author.host]}
+            </span>
+          )}
           {siteHref && (
             <a
               href={siteHref}

@@ -350,10 +350,18 @@ describe("insert-catalog-wave allowlists", () => {
     }
   });
 
-  it("leaves the unverifiable mods alone", () => {
-    // mod.io, ModDB and SourceForge could not be checked, so those mods keep
-    // indie-web rather than a guess.
-    for (const slug of ["0ad-delenda-est", "openra-anthras-horizon"]) {
+  it("leaves the genuinely unverifiable mods alone", () => {
+    /*
+     * mod.io, ModDB and SourceForge were resolved in a second pass, so only
+     * three remain: two whose ModDB pages publish no author field at all, and
+     * one whose ModDB page no longer exists. They keep indie-web rather than
+     * a guess.
+     */
+    for (const slug of [
+      "openra-anthras-horizon",
+      "openra-ymca",
+      "openra-apocalyptic-doom",
+    ]) {
       expect(MOD_ATTRIBUTIONS[slug]).toBeUndefined();
     }
   });
