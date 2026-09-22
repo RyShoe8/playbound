@@ -23,9 +23,13 @@ export interface ModAuthor {
   /** Account handle on the host below. */
   handle: string;
   /** Where the attribution was verified. */
-  host: "github" | "luanti" | "codeberg" | "gitlab" | "bananas";
-  /** Profile page on that host. */
-  profileUrl: string;
+  host: "github" | "luanti" | "codeberg" | "gitlab" | "bananas" | "modio" | "moddb" | "sourceforge";
+  /**
+   * Profile page on that host. Optional because two credits are a team name
+   * from a ModDB "Developer" field rather than an account, and inventing a
+   * profile URL for them would be worse than having none.
+   */
+  profileUrl?: string;
   /** Personal site, when the author lists one and it is not just the profile. */
   website?: string;
   /** The author's own words. Never written by us. */
@@ -922,6 +926,95 @@ export const modAuthors: ModAuthor[] = [
     handle: "ziproot",
     host: "github",
     profileUrl: "https://github.com/ziproot",
+  },
+  {
+    slug: "justus-avramenko",
+    name: "Justus_Avramenko",
+    handle: "Justus_Avramenko",
+    host: "modio",
+    profileUrl: "https://mod.io/g/0ad/u/justus-avramenko",
+  },
+  {
+    slug: "atrik",
+    name: "Atrik",
+    handle: "Atrik",
+    host: "modio",
+    profileUrl: "https://mod.io/g/0ad/u/atrik",
+  },
+  {
+    slug: "feldfeld",
+    name: "Feldfeld",
+    handle: "Feldfeld",
+    host: "modio",
+    profileUrl: "https://mod.io/g/0ad/u/feldfeld",
+  },
+  {
+    slug: "andy5995",
+    name: "andy5995",
+    handle: "andy5995",
+    host: "modio",
+    profileUrl: "https://mod.io/g/0ad/u/andy5995",
+  },
+  {
+    slug: "mentula0ad",
+    name: "mentula0ad",
+    handle: "mentula0ad",
+    host: "modio",
+    profileUrl: "https://mod.io/g/0ad/u/mentula0ad",
+  },
+  {
+    slug: "cwrtl",
+    name: "cwrtl",
+    handle: "cwrtl",
+    host: "modio",
+    profileUrl: "https://mod.io/g/0ad/u/cwrtl",
+  },
+  {
+    slug: "leopard0ad",
+    name: "leopard0ad",
+    handle: "leopard0ad",
+    host: "modio",
+    profileUrl: "https://mod.io/g/0ad/u/leopard0ad",
+  },
+  {
+    slug: "diagonalo",
+    name: "diagonalo",
+    handle: "diagonalo",
+    host: "modio",
+    profileUrl: "https://mod.io/g/0ad/u/diagonalo",
+  },
+  {
+    slug: "redgriffin",
+    name: "redgriffin",
+    handle: "redgriffin",
+    host: "sourceforge",
+    profileUrl: "https://sourceforge.net/u/redgriffin/",
+  },
+  {
+    slug: "sergeant-mark-iv",
+    name: "Sergeant_Mark_IV",
+    handle: "Sergeant_Mark_IV",
+    host: "moddb",
+    profileUrl: "https://www.moddb.com/members/sergeant-mark-iv",
+  },
+  {
+    slug: "kanecvr",
+    name: "kanecvr",
+    handle: "kanecvr",
+    host: "moddb",
+    profileUrl: "https://www.moddb.com/members/kanecvr",
+  },
+  {
+    slug: "calvinist-dev-team",
+    name: "Calvinist dev team",
+    handle: "Calvinist dev team",
+    host: "moddb",
+  },
+  {
+    slug: "tiberian-aurora-team",
+    name: "Tiberian Aurora Team",
+    handle: "Tiberian Aurora Team",
+    host: "moddb",
   },
 ];
 

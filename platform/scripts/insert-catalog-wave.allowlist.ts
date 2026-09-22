@@ -739,4 +739,28 @@ export const PATCH_MOD_FIELDS: Readonly<Record<string, readonly string[]>> = {
   "zerok-speed-metal-remastered": ["developerSlug", "developerName"],
   "zerok-tactical-nukes-mutator": ["developerSlug", "developerName"],
   "zerok-tangerine-oasis": ["developerSlug", "developerName"],
+
+  /*
+   * Second attribution pass: the hosts that needed a browser (mod.io renders
+   * its CREATORS block client-side, ModDB refuses scripted clients) or their
+   * own API (SourceForge). Three mods stay unlisted —
+   * openra-anthras-horizon and openra-ymca publish no author field at all,
+   * and openra-apocalyptic-doom's ModDB page no longer exists.
+   */
+  "0ad-10ad": ["developerSlug", "developerName"],
+  "0ad-bigger-minimap": ["developerSlug", "developerName"],
+  "0ad-community-mod": ["developerSlug", "developerName"],
+  "0ad-delenda-est": ["developerSlug", "developerName"],
+  "0ad-feldmap": ["developerSlug", "developerName"],
+  "0ad-localratings": ["developerSlug", "developerName"],
+  "0ad-mainland-twilight": ["developerSlug", "developerName"],
+  "0ad-moderngui": ["developerSlug", "developerName"],
+  "0ad-theban-greeks": ["developerSlug", "developerName"],
+  "0ad-tower-defense": ["developerSlug", "developerName"],
+  "flightgear-addon-red-griffin-atc": ["developerSlug", "developerName"],
+  "freedoom-brutal": ["developerSlug", "developerName"],
+  "openra-charred-earth": ["developerSlug", "developerName"],
+  "openra-d2k-community": ["developerSlug", "developerName"],
+  "openra-tiberian-aurora": ["developerSlug", "developerName"],
+  "openra-tiberian-origins": ["developerSlug", "developerName"],
 };
