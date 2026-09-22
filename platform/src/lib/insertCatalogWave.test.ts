@@ -13,6 +13,9 @@ import {
 import { editions } from "@/lib/data/editions";
 import { gamesBySlug } from "@/lib/data/games";
 import { correctionsFor } from "@/lib/data/catalogCorrections";
+import { developersBySlug } from "@/lib/data/developers";
+import { modAuthorsBySlug } from "@/lib/data/modAuthors";
+import { attributionFor, MOD_ATTRIBUTIONS } from "@/lib/data/modAttributions";
 import { editorial } from "@/lib/data/editorial";
 import { FREETRAIN_SLUG, freetrainLauncherInstall } from "@/lib/data/freetrainCatalog";
 import {
@@ -300,10 +303,59 @@ describe("insert-catalog-wave allowlists", () => {
     expect(PATCH_EDITION_FIELDS["dune-legacy/playbound-edition"]).toEqual(["installConfig"]);
   });
 
-  it("patches holocure-rich-presence to draft only", () => {
-    expect(Object.keys(PATCH_MOD_FIELDS)).toEqual(["holocure-rich-presence"]);
+  it("still patches holocure-rich-presence to draft", () => {
     expect(HOLOCURE_RICH_PRESENCE_SLUG).toBe("holocure-rich-presence");
     expect(holocureRichPresencePatchSource).toEqual({ status: "draft", published: false });
+    expect(PATCH_MOD_FIELDS["holocure-rich-presence"]).toContain("status");
+    expect(PATCH_MOD_FIELDS["holocure-rich-presence"]).toContain("published");
+  });
+
+  it("has a resolvable source for every allowlisted mod field", () => {
+    /*
+     * The mod patch path had no default source, so this used to be trivially
+     * true — only holocure was listed. With 194 attribution fixes the wave
+     * throws on the first field it cannot fill, and that throw would land
+     * mid-deploy, so the check belongs here instead.
+     */
+    for (const slug of Object.keys(PATCH_MOD_FIELDS)) {
+      const seedMod = mods.find((m) => m.slug === slug);
+      let source: Record<string, unknown> =
+        slug === HOLOCURE_RICH_PRESENCE_SLUG
+          ? { ...holocureRichPresencePatchSource }
+          : { ...((seedMod ?? {}) as unknown as Record<string, unknown>) };
+      const attributed = attributionFor(slug);
+      if (attributed) {
+        source = {
+          ...source,
+          developerSlug: attributed,
+          developerName:
+            developersBySlug.get(attributed)?.name ??
+            modAuthorsBySlug.get(attributed)?.name ??
+            null,
+        };
+      }
+      for (const field of PATCH_MOD_FIELDS[slug]!) {
+        expect(source[field], `${slug}.${field} has no source`).toBeDefined();
+      }
+    }
+  });
+
+  it("never attributes a mod to a name nobody can resolve", () => {
+    // A slug that resolves to neither a studio nor a mod author would write
+    // developerName: null, which is what the three "community" mods did.
+    for (const [modSlug, devSlug] of Object.entries(MOD_ATTRIBUTIONS)) {
+      const known =
+        developersBySlug.has(devSlug) || modAuthorsBySlug.has(devSlug);
+      expect(known, `${modSlug} -> "${devSlug}" is in neither registry`).toBe(true);
+    }
+  });
+
+  it("leaves the unverifiable mods alone", () => {
+    // mod.io, ModDB and SourceForge could not be checked, so those mods keep
+    // indie-web rather than a guess.
+    for (const slug of ["0ad-delenda-est", "openra-anthras-horizon"]) {
+      expect(MOD_ATTRIBUTIONS[slug]).toBeUndefined();
+    }
   });
 
   it("has patch sources for Sky, Slapshot, Teeworlds, Dark Mod, UH, Spike, Alien Swarm, SS14", () => {

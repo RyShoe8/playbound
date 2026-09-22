@@ -9,6 +9,8 @@ import Review from "@/lib/models/Review";
 import GuidePost from "@/lib/models/GuidePost";
 import DiscussionTopic from "@/lib/models/DiscussionTopic";
 import { getMod } from "@/lib/mods";
+import { getModAuthor } from "@/lib/modAuthors";
+import { developersBySlug } from "@/lib/data/developers";
 import { getModClassificationsWithAncestry } from "@/lib/modClassifications";
 import { getGame } from "@/lib/catalog";
 import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
@@ -214,6 +216,25 @@ export default async function ModPage({
           </div>
           <h1 className="text-4xl font-extrabold tracking-tight">{mod.title}</h1>
           <p className="text-lg text-muted-foreground">{mod.tagline}</p>
+          {/* Credit. Mod pages showed the base game but never who made the
+              mod, which is also what left the author pages unreachable. A
+              studio links to /developers, a modder to /mod-authors. */}
+          {(() => {
+            const studio = developersBySlug.get(mod.developerSlug);
+            const author = studio ? null : getModAuthor(mod.developerSlug);
+            if (!studio && !author) return null;
+            const href = studio
+              ? `/developers/${studio.slug}`
+              : `/mod-authors/${author!.slug}`;
+            return (
+              <p className="text-sm text-muted-foreground">
+                By{" "}
+                <Link href={href} className="font-semibold text-primary hover:underline">
+                  {studio ? studio.name : author!.name}
+                </Link>
+              </p>
+            );
+          })()}
           <PlayingNowBadge count={liveStats.playingNow} />
           {baseGame && (
             <p className="text-sm text-muted-foreground">

@@ -86,6 +86,8 @@ async function main() {
   const { developersBySlug } = await import("../src/lib/data/developers");
   const { launcherInstallBySlug } = await import("../src/lib/data/launcherInstall");
   const { correctionsFor } = await import("../src/lib/data/catalogCorrections");
+  const { attributionFor } = await import("../src/lib/data/modAttributions");
+  const { modAuthorsBySlug } = await import("../src/lib/data/modAuthors");
   const { defaultArtFor } = await import("../src/lib/gamePayload");
   const { ensureDerivedModFields } = await import("../src/lib/enrich");
   const {
@@ -501,9 +503,44 @@ async function main() {
     if (slug === HOLOCURE_RICH_PRESENCE_SLUG) {
       source = { ...holocureRichPresencePatchSource };
     } else {
-      console.warn(`insert-catalog-wave — no patch source for mod ${slug}, skipping`);
-      modsPatchSkipped++;
-      continue;
+      /*
+       * Default mod patch source: the seed row, with corrected attribution
+       * layered on top.
+       *
+       * There was no default path here at all, so every mod except HoloCure
+       * was skipped with "no patch source" — which meant the wave could
+       * create and retire mods but never fix one. developerName is resolved
+       * the same way the game path does it, looking through game studios
+       * first and then mod authors, so a mod credited to a person and a mod
+       * credited to a studio both end up with a real name rather than null.
+       */
+      const seedMod = mods.find((m) => m.slug === slug);
+      if (!seedMod && !attributionFor(slug)) {
+        console.warn(`insert-catalog-wave — no patch source for mod ${slug}, skipping`);
+        modsPatchSkipped++;
+        continue;
+      }
+      source = { ...((seedMod ?? {}) as unknown as Record<string, unknown>) };
+    }
+
+    /*
+     * Corrected attribution overlays every source, including the hand-written
+     * per-mod blocks — holocure-rich-presence has one and also needs its
+     * credit fixed, and without this the allowlist could name a field that
+     * branch never supplies. developerName is resolved through game studios
+     * first and then mod authors, so both kinds of credit end up with a real
+     * name instead of null.
+     */
+    const attributed = attributionFor(slug);
+    if (attributed) {
+      source = {
+        ...source,
+        developerSlug: attributed,
+        developerName:
+          developersBySlug.get(attributed)?.name ??
+          modAuthorsBySlug.get(attributed)?.name ??
+          null,
+      };
     }
 
     const payload = pickFields(source, fields);
