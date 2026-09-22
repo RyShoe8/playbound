@@ -79,6 +79,14 @@ const CLIENT_CONNECT_ARGS = {
   // OpenE2140 portable — Game.Mod must be e2140, never ra.
   "earth-2140-trilogy": ["Game.Mod=e2140", "Launch.Connect={host}:{port}"],
   // The client takes console commands as argv, quoted as one token.
+  /*
+   * Verified against src/cmd_line_params.h in the Hypersomnia source: the parser
+   * has a single `--connect` case that consumes the next argument, so this is
+   * two argv entries and not one quoted string. Teeworlds below is the opposite
+   * shape — a quoted console command — which is exactly the kind of difference
+   * this file exists to record.
+   */
+  hypersomnia: ["--connect", "{host}:{port}"],
   teeworlds: ['"connect {host}:{port}"'],
   ddnet: ['"connect {host}:{port}"'],
   /*
@@ -299,6 +307,7 @@ const DEFAULT_GAME_PORTS = {
   openttd: 3979,
   openra: 1234,
   openhv: 1255,
+  hypersomnia: 8412,
   teeworlds: 8303,
   bombsquad: 43210,
   assaultcube: 28763,
@@ -351,6 +360,7 @@ const DEFAULT_GAME_PROTOCOLS = {
   openarena: "udp",
   xonotic: "udp",
   "wolfenstein-enemy-territory": "udp",
+  hypersomnia: "udp",
   teeworlds: "udp",
   assaultcube: "udp",
 };

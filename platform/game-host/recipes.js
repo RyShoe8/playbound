@@ -27,6 +27,7 @@ const ET_HOME_ROOT = process.env.GAME_HOST_ET_HOME || "/var/lib/playbound-host/e
 const WZ_CONFIG_DIR = path.join(HOST_HOME, "warzone");
 const WZ_AUTOHOST_DIR = path.join(WZ_CONFIG_DIR, "autohost");
 const TEEWORLDS_CONFIG_DIR = path.join(HOST_HOME, "teeworlds");
+const HYPERSOMNIA_APPDATA_ROOT = path.join(HOST_HOME, "hypersomnia");
 const TES3MP_CONFIG_DIR = path.join(HOST_HOME, "tes3mp");
 
 function teeworldsConfigPath(ctx) {
@@ -39,6 +40,33 @@ function teeworldsServerName(name) {
     // Console config is one command per line. Keep party names from becoming
     // command separators or control characters in that file.
     .replace(/[\x00-\x1f\x7f\";\\]+/g, " ")
+    .trim()
+    .slice(0, 40);
+}
+
+/**
+ * One appdata directory per party, so concurrent rooms cannot share config.
+ *
+ * Hypersomnia keeps `user/conf.d/`, `user/runtime_prefs.json`, `cache` and
+ * `logs` under a single appdata root, and it *writes* runtime_prefs.json while
+ * running — the current arena and anything changed through RCON land there, and
+ * that file overrides conf.d on the next start. Two rooms sharing one root
+ * would therefore edit each other's state, so each gets its own via
+ * `--appdata-dir`.
+ */
+function hypersomniaAppdataDir(ctx) {
+  const party = String(ctx.partyId || "default")
+    .replace(/[^a-zA-Z0-9_-]/g, "")
+    .slice(-24);
+  return path.join(HYPERSOMNIA_APPDATA_ROOT, `pb-${party || "default"}`);
+}
+
+function hypersomniaServerName(name) {
+  return String(name || "PlayBound Party")
+    // JSON tolerates more than this, but the name is also shown on the
+    // project's public server list and in Discord webhooks; strip control
+    // characters rather than trusting every consumer to escape them.
+    .replace(/[\x00-\x1f\x7f]+/g, " ")
     .trim()
     .slice(0, 40);
 }
@@ -472,6 +500,66 @@ export const recipes = {
    * the engine always also binds port+1 for info — hence portStride: 2.
    * -mlocalhost keeps private party rooms off the public master.
    */
+  /*
+   * Hypersomnia's headless dedicated server.
+   *
+   * `--appimage-extract-and-run` is not optional guesswork: the project's own
+   * guide uses it because the host may not have FUSE, and without it the
+   * AppImage refuses to mount. The extraction goes to /tmp and the binary is
+   * under 30 MB, so the cost is negligible.
+   *
+   * No `--daily-autoupdate`: that flag makes the server restart itself at 3 AM
+   * to patch, which is right for a community server and wrong for a party room
+   * PlayBound started for one session. The agent owns this process lifecycle.
+   *
+   * Port is passed on the command line rather than in the config, because
+   * `--server-port` is the flag the CLI parser exposes and the room's port is
+   * assigned per spawn.
+   */
+  hypersomnia: {
+    portStart: 8412,
+    portEnd: 8432,
+    protocol: "udp",
+    binaries: gameBin("hypersomnia", [
+      "Hypersomnia-Headless.AppImage",
+      "Hypersomnia.AppImage",
+    ]),
+    args: (port, ctx) => [
+      "--appimage-extract-and-run",
+      "--dedicated-server",
+      "--server-port",
+      String(port),
+      "--appdata-dir",
+      hypersomniaAppdataDir(ctx),
+    ],
+    prepareSpawn: async (port, ctx) => {
+      const confDir = path.join(hypersomniaAppdataDir(ctx), "user", "conf.d");
+      fs.mkdirSync(confDir, { recursive: true });
+      fs.writeFileSync(
+        // Lexicographic order decides which config wins, and the server may add
+        // its own files here later. A leading digit keeps ours last.
+        path.join(confDir, "50-playbound.json"),
+        `${JSON.stringify(
+          {
+            server_start: { port, slots: 16 },
+            server: {
+              server_name: hypersomniaServerName(ctx.name),
+              // A private party room has no business on the public list.
+              daily_autoupdate: false,
+              sync_all_external_arenas_on_startup: true,
+              arena: "de_cyberaqua",
+            },
+            // Ranked logistics freeze a match when someone drops and force
+            // overtime, which is tournament behaviour, not party behaviour.
+            num_ranked_servers: 0,
+            num_casual_servers: 1,
+          },
+          null,
+          2
+        )}\n`
+      );
+    },
+  },
   assaultcube: {
     portStart: 28763,
     portEnd: 28782,

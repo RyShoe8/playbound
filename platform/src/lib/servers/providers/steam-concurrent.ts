@@ -299,3 +299,17 @@ export function fetchPathOfExilePlayers(): Promise<GameServer[]> {
 export function fetchStarTrekOnlinePlayers(): Promise<GameServer[]> {
   return fetchSteamConcurrentPlayers(9900, { label: "Star Trek Online" });
 }
+
+/**
+ * Quake II — Steam app 2320, which is the 2023 Enhanced remaster.
+ *
+ * PlayBound's recipe installs the GOG build, so this is Steam clients only and
+ * not the whole population — the Enhanced build's own crossplay backend covers
+ * GOG, Xbox, PlayStation and Switch players too and exposes no public total.
+ * Per docs/player-counts.md that makes this a "Playing on Steam" figure, which
+ * is the narrowest truthful label available, rather than a count of everyone
+ * currently in a Quake II match.
+ */
+export function fetchQuakeIIPlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(2320, { label: "Quake II" });
+}

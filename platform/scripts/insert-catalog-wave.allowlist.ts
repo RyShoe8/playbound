@@ -29,6 +29,15 @@ export const NEW_GAME_SLUGS: readonly string[] = [
   "pokemmo",
   "castlevania-revamped",
   "hawken-hawkening",
+  /*
+   * 2026-09-22 wave. Quake II is a paid GOG listing, like the other commercial
+   * masters in the catalog; the rest are free. All four land as drafts and need
+   * hands-on testing before anyone ticks Tested by PlayBound.
+   */
+  "quake-ii",
+  "outrun",
+  "hypersomnia",
+  "final-fantasy-xi",
 ];
 
 /** `gameSlug/editionSlug` pairs to create only when absent. */
@@ -48,6 +57,13 @@ export const NEW_EDITION_KEYS: readonly string[] = [
   "pokemmo/official",
   "castlevania-revamped/official",
   "hawken-hawkening/official",
+  /*
+   * No `final-fantasy-xi/official` row: the parent carries installSteps, so
+   * `listedEditionsFromStored` synthesizes the base edition on its own, and
+   * writing one by hand is the duplicate-edition mistake. Horizon is a
+   * genuinely different client, which is why it gets a row.
+   */
+  "final-fantasy-xi/horizon",
 ];
 
 /**

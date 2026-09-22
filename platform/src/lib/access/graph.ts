@@ -19,12 +19,26 @@ import { canonicalCatalogGameSlug } from "@/lib/catalogGameAliases";
  * eliminate.
  */
 
+/**
+ * What an edition cannot be used without.
+ *
+ * Exported so the rule is testable without a database — the interesting part is
+ * a single boolean, and `loadAccessGraph` needs Mongo to reach it.
+ *
+ * Anything other than an explicit `true` keeps the parent edge. A missing or
+ * malformed flag must mean "inherits", not "free": defaulting the other way
+ * would make every legacy edition row that predates the field resolve FREE.
+ */
+export function editionDependencies(gameSlug: string, isStandalone: unknown): string[] {
+  return isStandalone === true ? [] : [accessId.game(gameSlug)];
+}
+
 export async function loadAccessGraph(): Promise<AccessGraph> {
   await dbConnect();
 
   const [games, editions, mods, events] = await Promise.all([
     CatalogGame.find({}).select("slug title access").lean(),
-    Edition.find({}).select("gameSlug slug name").lean(),
+    Edition.find({}).select("gameSlug slug name isStandalone").lean(),
     CatalogMod.find({}).select("slug title baseGameSlug").lean(),
     PlatformEvent.find({}).select("_id title gameSlug editionSlug").lean(),
   ]);
@@ -43,7 +57,25 @@ export async function loadAccessGraph(): Promise<AccessGraph> {
     });
   }
 
-  // An edition is a way of playing its parent game, so it inherits from it.
+  /*
+   * An edition is a way of playing its parent game, so it inherits from it —
+   * unless it is standalone.
+   *
+   * `isStandalone` is the catalog's existing answer to "does this edition need
+   * the base game's files or licence?" (see `masterCopy.ts`, which reads the
+   * same flag). When it is true, the edition ships everything it needs, so the
+   * parent's price is not a cost the player has to pay to use it, and keeping
+   * the edge made a free edition of a paid game resolve to VALUE.
+   *
+   * HorizonXI is the case that forced this: its launcher downloads a complete
+   * Final Fantasy XI client, so playing it costs nothing, while the parent game
+   * is correctly PAID because Square Enix's retail service still is. Before
+   * this, the only ways to model that were to lie about the parent or to hide a
+   * genuinely free edition from Free mode.
+   *
+   * A non-standalone edition keeps the edge, so the default stays the safe
+   * direction described in `types.ts`.
+   */
   for (const e of editions as Array<Record<string, unknown>>) {
     const gameSlug = canonicalCatalogGameSlug(String(e.gameSlug || ""));
     const slug = String(e.slug || "");
@@ -52,7 +84,7 @@ export async function loadAccessGraph(): Promise<AccessGraph> {
       id: accessId.edition(gameSlug, slug),
       kind: "edition",
       label: String(e.name || slug),
-      dependsOn: [accessId.game(gameSlug)],
+      dependsOn: editionDependencies(gameSlug, e.isStandalone),
     });
   }
 

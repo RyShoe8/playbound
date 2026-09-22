@@ -123,6 +123,20 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     portEnd: 8323,
     protocol: "udp",
   },
+  /*
+   * UDP, and only UDP: the native client speaks UDP on this port and the
+   * project's own server guide recommends 8412. 9000 is its *web* client's
+   * WebRTC port, which a PlayBound room does not need — every player reaching a
+   * hosted room comes through the launcher with a native client — so the
+   * firewall stays narrow rather than opening a range nothing uses.
+   */
+  hypersomnia: {
+    slug: "hypersomnia",
+    title: "Hypersomnia",
+    defaultPort: 8412,
+    portEnd: 8432,
+    protocol: "udp",
+  },
   supertuxkart: {
     slug: "supertuxkart",
     title: "SuperTuxKart",

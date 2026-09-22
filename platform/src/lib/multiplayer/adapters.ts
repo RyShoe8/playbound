@@ -644,6 +644,42 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
    * The VPS needs `teeworlds-server` installed before a room will actually
    * spawn; install.sh now asks for it, so the box needs that script re-run.
    */
+  /*
+   * Hypersomnia ships a separate headless binary — `Hypersomnia-Headless.AppImage`,
+   * under 30 MB — which is why PlayBound can host it rather than leaning on a
+   * player's router. The desktop client is not that binary: the same executable
+   * serves both roles only via `--dedicated-server`, and the headless AppImage is
+   * Linux-only, which suits the VPS and rules out a Windows host process.
+   *
+   * `selfHost.verified` stays false. The client has no Host button — hosting
+   * means running the server binary with `--dedicated-server --server-port`, and
+   * nobody has done that from a player machine and had someone else join. Per
+   * the comment on SelfHostConfig, that flag is set after a real host-and-join,
+   * not inferred from the CLI having a flag for it.
+   */
+  hypersomnia: {
+    gameSlug: "hypersomnia",
+    title: "Hypersomnia",
+    tier: "tier2_automated_server",
+    adapterType: "managed-server",
+    protocol: "udp",
+    host: {
+      port: 8412,
+      protocol: "udp",
+      binaryHint: "Hypersomnia-Headless.AppImage",
+      argsTemplate: ["--dedicated-server", "--server-port", "{port}"],
+      configFile: "conf.d/playbound.json",
+      configKeys: ["server.server_name", "server_start.slots", "server.arena"],
+    },
+    client: {
+      // Verified against src/cmd_line_params.h: `--connect` takes one
+      // host:port argument.
+      launchArguments: ["--connect", "{host}:{port}"],
+    },
+    notes:
+      "Headless AppImage dedicated server on the VPS, 16 slots by default. Clients join with --connect host:port. Custom arenas download automatically over HTTPS on connect, so a party can play a map nobody has installed.",
+  },
+
   teeworlds: {
     gameSlug: "teeworlds",
     title: "Teeworlds",
@@ -1666,6 +1702,39 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     adapterType: "official",
     protocol: "official",
     notes: "Official cloud servers only. PlayBound provides party & presence.",
+  },
+
+  /*
+   * FFXI is one persistent world per server, so there is no lobby and nothing
+   * for PlayBound to host or template — a party gets voice, presence and a
+   * synchronised launch, and the players group up in-game with /invite.
+   *
+   * Quake II is here rather than as a managed-server for the same reason the
+   * Enhanced build is the default: its multiplayer runs through Nightdive's own
+   * crossplay backend and server browser, which PlayBound cannot spawn a
+   * process for. The bundled 1997 Original executable is classic q2 protocol on
+   * UDP 27910 and could be hosted, but the two builds cannot see each other's
+   * games, so offering a room that only the Original build can join would be a
+   * trap rather than a feature.
+   */
+  "final-fantasy-xi": {
+    gameSlug: "final-fantasy-xi",
+    title: "Final Fantasy XI (HorizonXI)",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes:
+      "One persistent world on HorizonXI — no lobby to host. PlayBound provides party launch and presence; players group in-game. Horizon is single-box (one account per IP), so a party of housemates needs an IP exception from its Discord.",
+  },
+
+  "quake-ii": {
+    gameSlug: "quake-ii",
+    title: "Quake II",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes:
+      "The Enhanced build's crossplay backend and server browser handle matchmaking, up to 16 players online and 4 in co-op. PlayBound provides party launch and presence so everyone starts the same build — Enhanced and Original cannot see each other's games.",
   },
 
   "next-gen-chess": {

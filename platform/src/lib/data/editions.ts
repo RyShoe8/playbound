@@ -5301,6 +5301,178 @@ export const editions: EditionSeed[] = [
     verificationNote:
       "Verified against the official Expanding Fronts ModDB distribution and community installation standard.",
   },
+  /*
+   * HorizonXI — the only Final Fantasy XI route PlayBound installs.
+   *
+   * `isStandalone: true` is load-bearing and not decoration: the launcher
+   * downloads a complete FFXI client, so this edition needs nothing from the
+   * retail product, and `loadAccessGraph` reads that flag to stop the edition
+   * inheriting the parent game's price. Set it false and a free server
+   * resolves to VALUE and disappears from Free mode.
+   *
+   * There is deliberately no `official` edition row for retail FFXI. The parent
+   * game carries `installSteps`, which is enough for `listedEditionsFromStored`
+   * to synthesize the base edition itself — writing one by hand is the
+   * duplicate-edition mistake the Alien Swarm cleanup was about.
+   *
+   * Install paths come from the Squirrel package: the release ships
+   * `HorizonXI_Launcher-2.0.3-full.nupkg` containing `lib/net45/HorizonXI-Launcher.exe`,
+   * so Squirrel lays down a stable stub at
+   * %LOCALAPPDATA%\HorizonXI_Launcher\HorizonXI-Launcher.exe with the versioned
+   * copy under app-<version>\.
+   */
+  {
+    gameSlug: "final-fantasy-xi",
+    slug: "horizon",
+    name: "HorizonXI",
+    shortDescription:
+      "Free level-75-era private server. The launcher downloads the whole client — no retail copy, no subscription.",
+    description:
+      "HorizonXI is a volunteer-run Final Fantasy XI server that has been live since 17 December 2022, built on the AirSkyBoat codebase. Its premise is that Square Enix never raised the level cap above 75: it launched at Chains of Promathia content, has patched through Treasures of Aht Urhgan, and rebalances post-75 expansions downward into level-75 content instead of replacing it.\n\nEra-accurate where it matters — movement speed 40, 1.0 experience and crafting rates, equipment scaling disabled, Square Enix's own Treasure Hunter and drop-rate charts, a player-stocked auction house, no Trusts and no home-point warps. Jobs get light adjustments under a stated rule that every change must push a job toward its own identity, so all fifteen Chains of Promathia jobs are viable.\n\nCompletely free. The launcher installs the game client itself, so nothing needs buying. Single-box: one account per IP address and three characters, with IP exceptions available from the Discord for shared households.\n\nHorizonXI is an unaffiliated community project. All Final Fantasy XI content and images remain Square Enix's.",
+    type: "private",
+    status: "active",
+    visibility: "public",
+    isDefault: true,
+    isStandalone: true,
+    sortOrder: 10,
+    serverName: "HorizonXI",
+    version: "Treasures of Aht Urhgan (level cap 75)",
+    languages: ["English"],
+    platforms: ["Windows"],
+    features: ["Multiplayer", "Team Play", "Controller Support", "Community Content", "Story Campaign"],
+    tags: ["Classic", "Fantasy", "Open World", "Free To Play", "Retro"],
+    hasControllerSupport: true,
+    aliases: ["Horizon", "Horizon XI", "HorizonFFXI", "Horizon 75"],
+    links: {
+      website: "https://horizonxi.com/",
+      discord: "https://discord.gg/horizonxi",
+      wiki: "https://horizonffxi.wiki/",
+      github: "https://github.com/HorizonFFXI/HorizonXI-Launcher-Binaries",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "github-installer",
+        repo: "HorizonFFXI/HorizonXI-Launcher-Binaries",
+        assetPattern: "^HorizonXI-Launcher-.*\\.Setup\\.exe$",
+        exeHint: "HorizonXI-Launcher",
+        knownExePaths: [
+          "%LOCALAPPDATA%\\HorizonXI_Launcher\\HorizonXI-Launcher.exe",
+          "%LOCALAPPDATA%\\HorizonXI_Launcher\\HorizonXI-Launcher_ExecutionStub.exe",
+        ],
+        registryTitles: ["HorizonXI Launcher", "HorizonXI_Launcher"],
+        versionLabel: "Launcher 2.0.3",
+        note:
+          "Installs the official HorizonXI launcher (176 MB). The launcher then downloads the Final Fantasy XI client itself — keep 25 GB free while it runs; the finished client is about 16 GB. Register a free account on horizonxi.com first.",
+        steps: [
+          {
+            platform: "all",
+            text: "Register a free account at https://horizonxi.com and verify your email. There is nothing to buy — no retail copy, no Square Enix account, no subscription.",
+          },
+          {
+            platform: "windows",
+            text: "Click Install with PlayBound. It downloads and runs the official HorizonXI launcher installer from the project's GitHub releases.",
+          },
+          {
+            platform: "windows",
+            text: "Open the launcher, choose an install location, and let it download the client. Keep 25 GB free during installation.",
+          },
+          {
+            platform: "all",
+            text: "Create your character on the HorizonXI website — race, nation and appearance are chosen there, not in-game.",
+          },
+          {
+            platform: "windows",
+            text: "Start the game from the launcher and sign in with your HorizonXI account. Set resolution and enable approved add-ons from the launcher's own settings.",
+          },
+        ],
+      },
+    },
+    requirements: {
+      min: "Windows 7 64-bit · Dual-core 2 GHz CPU · 2 GB RAM · DirectX 9 GPU · 25 GB free during install",
+      recommended: "Windows 10/11 · Quad-core CPU · 8 GB RAM · dedicated GPU · SSD",
+      notes:
+        "25 GB free is needed while the launcher downloads; the finished client settles at about 16 GB. Broadband required. One account per IP address — request an exception in the HorizonXI Discord if two people share a connection.",
+    },
+    hardwareRequirements: {
+      min: {
+        os: ["windows"],
+        ramMB: 2048,
+        storageMB: 25600,
+        apis: ["dx9"],
+        cpuText: "Dual-core 2 GHz CPU",
+        gpuText: "DirectX 9 capable",
+        cpuTier: "entry",
+        gpuTier: "entry",
+        notes: "Peak requirement is during install, not play",
+      },
+      recommended: {
+        os: ["windows"],
+        ramMB: 8192,
+        storageMB: 17408,
+        apis: ["dx9"],
+        cpuText: "Quad-core CPU",
+        gpuText: "Any dedicated GPU",
+        cpuTier: "mid",
+        gpuTier: "entry",
+        notes: "An SSD matters far more than a GPU on a 2002 DX9 engine",
+      },
+      provenance: {
+        source: "developer",
+        sourceUrl: "https://horizonxi.com/play-now",
+        verifiedAt: "2026-09-22",
+      },
+    },
+    firstPlaySteps: [
+      {
+        platform: "all",
+        text: "Pick a starting nation on the website — San d'Oria, Bastok or Windurst. It decides your early quests and your first city, not your ceiling.",
+      },
+      {
+        platform: "windows",
+        text: "Plug in a controller if you have one. The interface was designed for a PlayStation 2 pad and is noticeably better with one.",
+      },
+      {
+        platform: "all",
+        text: "Join a linkshell in your first session. Horizon is balanced around group play and levelling past the early twenties expects a party.",
+      },
+    ],
+    multiplayerGamingSteps: [
+      {
+        platform: "all",
+        text: "Horizon is one shared world, so there is no lobby to join — use a PlayBound Party for voice and presence alongside it.",
+      },
+      {
+        platform: "all",
+        text: "Form parties in-game with /invite, and use the website's Seeking list to find people looking for a group at your level.",
+      },
+      {
+        platform: "all",
+        text: "Two players behind one IP address need an exception from the HorizonXI Discord first. File it well ahead of a planned session.",
+      },
+    ],
+    faq: [
+      {
+        q: "Do I need to own Final Fantasy XI?",
+        a: "No. The HorizonXI launcher downloads a complete game client itself. No retail purchase, no Square Enix account and no monthly subscription.",
+      },
+      {
+        q: "What content is available?",
+        a: "Everything up to and including Treasures of Aht Urhgan, at a permanent level 75 cap, matching a retail patch date of 17 April 2006. Later expansions are planned but will be rebalanced into level-75 content rather than raising the cap.",
+      },
+      {
+        q: "Can I dual-box or play alongside someone in my house?",
+        a: "Not by default — one account per IP address and three characters. Shared households and LAN parties request an IP exception in the HorizonXI Discord, which needs filing in advance.",
+      },
+      {
+        q: "Which add-ons are allowed?",
+        a: "HorizonXI publishes explicit approved and prohibited lists on its add-ons page, and anything not on the allowed list is not permitted. The launcher can enable approved ones for you. Submit a Discord ticket to have a new one reviewed.",
+      },
+    ],
+    verificationLevel: "community_verified",
+    verificationNote:
+      "Recipe and install flow verified against the project's own Play Now page and its GitHub release assets on 2026-09-22. Not yet installed end to end by PlayBound.",
+  },
 ];
 
 /** Clean display name for an edition pill/chip (e.g. removes trailing parenthesized subtitles). */

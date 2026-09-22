@@ -1563,6 +1563,39 @@ export const developers: Developer[] = [
     website: "https://www.gog.com/en/game/star_wars_galactic_battlegrounds_saga",
     artHue: 30,
   },
+  {
+    slug: "square-enix",
+    name: "Square Enix",
+    tagline: "The house that Final Fantasy built, and never stopped building.",
+    about:
+      "Formed by the 2003 merger of Square and Enix, the two studios that between them produced Final Fantasy and Dragon Quest. Square Enix has run Final Fantasy XI continuously since 2002, making it one of the longest-lived MMORPGs ever shipped.",
+    founded: 2003,
+    location: "Shinjuku, Tokyo, Japan",
+    website: "https://www.square-enix.com/",
+    artHue: 215,
+  },
+  {
+    slug: "team-hypersomnia",
+    name: "Team Hypersomnia",
+    tagline: "A top-down shooter built in the open, netcode first.",
+    about:
+      "The open-source collective around Patryk Czachurski's Hypersomnia, an AGPL-3.0 twitch shooter with deterministic rollback netcode, a browser client, and a headless dedicated server. Development happens entirely in public on GitHub.",
+    founded: 2015,
+    location: "Poland",
+    website: "https://hypersomnia.io/",
+    artHue: 340,
+  },
+  {
+    slug: "zgzinfinity",
+    name: "Rubén Rodríguez (ZgzInfinity)",
+    tagline: "Rebuilding arcade classics from scratch in C++.",
+    about:
+      "A Zaragoza-based developer who rebuilt SEGA's Out Run as an original SFML/C++ engine rather than an emulator, adding difficulty tuning, a traffic system, and new game modes across five public releases. The binary still signs itself ZGZ INFINITGAMES.",
+    founded: 2020,
+    location: "Zaragoza, Spain",
+    website: "https://zgzinfinity.es",
+    artHue: 195,
+  },
 ];
 
 export const developersBySlug = new Map(developers.map((d) => [d.slug, d]));
