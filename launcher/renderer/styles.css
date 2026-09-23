@@ -2269,6 +2269,14 @@ body {
   margin-top: 1em;
 }
 
+/* Matches the website's About module (rounded-xl border border-border bg-card p-5). */
+.detail-about-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-elevated, var(--card, rgba(255, 255, 255, 0.03)));
+  padding: 20px;
+}
+
 .detail-one-thing-card {
   position: relative;
   display: flex;
