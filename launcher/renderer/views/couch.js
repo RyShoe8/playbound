@@ -97,7 +97,7 @@ function ensureWired() {
   pb().onCouchState?.((state) => {
     lastState = state;
     if (state?.active) startSignalPoll();
-    else stopSignalPoll();
+    else cleanupPeerState();
     if (couchViewVisible()) paint(state);
   });
 
@@ -491,10 +491,17 @@ async function answerOffer(controllerId, remoteSdp, session) {
    * working track is there from the start instead of depending on the
    * broken retry path.
    */
+  let capturedBeforeAnswer = false;
   for (let attempt = 0; attempt < 12; attempt++) {
-    if (await attachDisplayTracks(pc)) break;
+    capturedBeforeAnswer = await attachDisplayTracks(pc);
+    if (capturedBeforeAnswer) break;
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
+  console.log(
+    capturedBeforeAnswer
+      ? "[couch] display captured before first answer"
+      : "[couch] display NOT captured before first answer — will retry after"
+  );
 
   const answer = await pc.createAnswer();
   await pc.setLocalDescription(answer);
@@ -508,13 +515,20 @@ async function answerOffer(controllerId, remoteSdp, session) {
     }),
   });
 
-  // Guest may have offered before capture was ready — push again shortly.
-  window.setTimeout(() => {
-    void pushHostDisplayToPeers();
-  }, 800);
-  window.setTimeout(() => {
-    void pushHostDisplayToPeers();
-  }, 3000);
+  /*
+   * Only fall back to the renegotiated push path when the first answer
+   * genuinely went out without a track — that path is known-fragile (see
+   * pushHostDisplayToPeers' iceRestart comment), so it must not run on
+   * every connection "just in case" once capture already succeeded above.
+   */
+  if (!capturedBeforeAnswer) {
+    window.setTimeout(() => {
+      void pushHostDisplayToPeers();
+    }, 800);
+    window.setTimeout(() => {
+      void pushHostDisplayToPeers();
+    }, 3000);
+  }
 }
 
 function paint(state) {
@@ -656,7 +670,18 @@ async function startSession() {
   setStatus("Phone controllers live — scan the QR, or open playbound.club/c and enter the code");
 }
 
-async function stopSession() {
+/**
+ * Tear down everything a session leaves behind client-side: the display
+ * capture, live peer connections, data channels. Split out from
+ * stopSession() (below) so it can also run when a session ends WITHOUT this
+ * renderer's own Stop button — e.g. PlayBound Remote Play ending its session
+ * from the main process on game exit. Without this, the next session would
+ * silently reuse a stale display stream from the one that just ended (see
+ * ensureHostDisplayStream's "reusing existing display stream" log) — a
+ * screen-capture MediaStream stays "live" long after the game it was
+ * capturing has closed.
+ */
+function cleanupPeerState() {
   stopSignalPoll();
   stopHostDisplayStream();
   for (const pc of peers.values()) {
@@ -669,6 +694,10 @@ async function stopSession() {
   peers.clear();
   channels.clear();
   signalSince = 0;
+}
+
+async function stopSession() {
+  cleanupPeerState();
   await pb().couchStop();
   await refresh();
   setStatus("Online session ended");
