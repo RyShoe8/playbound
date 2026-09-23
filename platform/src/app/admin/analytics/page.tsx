@@ -54,27 +54,75 @@ async function loadAnalytics(filters: {
   }
   if (Object.keys(createdAt).length) recentFilter.createdAt = createdAt;
 
+  /*
+   * The latest rows for the pinned operational events, alongside the plain
+   * latest-40.
+   *
+   * The latest-40 is dominated by whatever fires most, so an event that fires
+   * once per installation is never in it by chance — launcher_install could be
+   * arriving steadily and still never appear. This is a second, narrow read so
+   * those events are visible without anyone having to filter for them by name.
+   *
+   * Skipped entirely when the viewer is already filtering by event: the main
+   * table is then showing exactly what was asked for, and a companion table
+   * repeating it would be noise. Uses the {event, createdAt} index.
+   */
+  const pinnedFilter: Record<string, unknown> = {
+    ...botCondition,
+    event: { $in: [...PINNED_ANALYTICS_EVENTS] },
+  };
+  if (recentFilter.createdAt) pinnedFilter.createdAt = recentFilter.createdAt;
+
+  const SELECT = "event userId sessionId url country browser os device isBot createdAt properties";
+
   // Recent events remain live; only the expensive aggregate cards are shared.
-  const [summary, recent] = await Promise.all([
+  const [summary, recent, pinnedRecentRaw] = await Promise.all([
     loadAnalyticsSummary(Boolean(filters.includeBots)),
     TelemetryEvent.find(recentFilter)
       .sort({ createdAt: -1 })
       .limit(40)
-      .select("event userId sessionId url country browser os device isBot createdAt properties")
+      .select(SELECT)
       .lean<TelemetryDoc[]>(),
+    filters.event
+      ? Promise.resolve([] as TelemetryDoc[])
+      : TelemetryEvent.find(pinnedFilter)
+          .sort({ createdAt: -1 })
+          .limit(25)
+          .select(SELECT)
+          .lean<TelemetryDoc[]>(),
   ]);
 
-  const uniqueUserIds = Array.from(new Set(recent.map((doc) => doc.userId)))
-    .filter((id): id is string => typeof id === "string" && Types.ObjectId.isValid(id));
+  // A pinned event busy enough to be in the latest 40 is already on screen;
+  // listing it twice in one view reads as duplicated data.
+  const shownIds = new Set(recent.map((doc) => String(doc._id)));
+  const pinnedRecent = pinnedRecentRaw.filter((doc) => !shownIds.has(String(doc._id)));
+
+  const uniqueUserIds = Array.from(
+    new Set([...recent, ...pinnedRecent].map((doc) => doc.userId))
+  ).filter((id): id is string => typeof id === "string" && Types.ObjectId.isValid(id));
   const users = await User.find({ _id: { $in: uniqueUserIds } }).select("username").lean<Array<{ _id: unknown; username: string }>>();
   const usernameMap = new Map(users.map((u) => [String(u._id), u.username]));
 
-  const recentWithUsernames = recent.map((doc) => ({
+  const withUsername = (doc: TelemetryDoc) => ({
     ...doc,
-    username: doc.userId ? usernameMap.get(doc.userId) || null : null
-  }));
+    username: doc.userId ? usernameMap.get(doc.userId) || null : null,
+  });
 
-  return { ...summary, recent: recentWithUsernames };
+  /*
+   * One list, newest first. The pinned rows are merged in rather than shown
+   * apart so they are simply *in* Recent events — which is the whole point;
+   * a separate table would be one more place to look.
+   *
+   * They can sort in anywhere, including the bottom with an old timestamp. That
+   * is honest: it says the event exists and when it last happened.
+   */
+  const merged = [...recent, ...pinnedRecent].sort((a, b) => {
+    const at = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const bt = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return bt - at;
+  });
+
+  return { ...summary, recent: merged.map(withUsername) };
 }
 
 function pathFromEvent(doc: {
@@ -119,16 +167,6 @@ export default async function AdminAnalyticsPage({
   }
 
   const maxDaily = Math.max(1, ...(data?.dailyVolume.map((d) => d.count) || [1]));
-
-  /*
-   * Pinned events that the top-15 ranking did not already surface.
-   *
-   * Filtered rather than always appended so a busy event never appears twice —
-   * `error` can genuinely rank on a bad day, and seeing it in both halves of one
-   * table would read as double counting.
-   */
-  const ranked = new Set((data?.topEvents ?? []).map((row) => row._id));
-  const pinnedRows = (data?.pinnedEvents ?? []).filter((row) => !ranked.has(row.event));
 
   return (
     <div className="space-y-8 px-4 py-6 sm:px-6 lg:px-8">
@@ -209,24 +247,20 @@ export default async function AdminAnalyticsPage({
           </section>
 
           <section>
-            <SectionHeader
-              title="Top events"
-              subtitle="Last 7 days · pinned operational events always shown"
-            />
+            <SectionHeader title="Top events" subtitle="Last 7 days" />
             <div className="overflow-x-auto rounded-xl border border-border">
-              <table className="w-full min-w-[420px] text-left text-sm">
+              <table className="w-full min-w-[320px] text-left text-sm">
                 <thead className="bg-secondary/40 text-xs uppercase text-muted-foreground">
                   <tr>
                     <th className="px-4 py-3 font-semibold">Event</th>
-                    <th className="px-4 py-3 font-semibold">7d</th>
-                    <th className="px-4 py-3 font-semibold">All time</th>
+                    <th className="px-4 py-3 font-semibold">Count</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.topEvents.length === 0 && pinnedRows.length === 0 ? (
+                  {data.topEvents.length === 0 ? (
                     <tr className="bg-card">
                       <td
-                        colSpan={3}
+                        colSpan={2}
                         className="px-4 py-6 text-muted-foreground"
                       >
                         No events in the last 7 days.
@@ -247,50 +281,9 @@ export default async function AdminAnalyticsPage({
                           </Link>
                         </td>
                         <td className="px-4 py-2.5 font-mono">{row.count}</td>
-                        <td className="px-4 py-2.5 font-mono text-muted-foreground">—</td>
                       </tr>
                     ))
                   )}
-
-                  {/*
-                    Pinned rows sit below the ranking, not inside it — they are
-                    not "top" anything. They are here because a rare event is
-                    exactly the one whose count you cannot see, and because a 7d
-                    zero beside an all-time total is the only way to tell a quiet
-                    week from an event that has never arrived at all.
-                  */}
-                  {pinnedRows.length > 0 && (
-                    <tr className="border-t border-border bg-secondary/30">
-                      <td
-                        colSpan={3}
-                        className="px-4 py-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground"
-                      >
-                        Pinned · shown regardless of rank
-                      </td>
-                    </tr>
-                  )}
-                  {pinnedRows.map((row) => (
-                    <tr key={`pinned-${row.event}`} className="border-t border-border bg-card">
-                      <td className="px-4 py-2.5">
-                        <Link
-                          href={`/admin/analytics?event=${encodeURIComponent(row.event)}`}
-                          className="font-semibold text-primary hover:underline"
-                        >
-                          {row.event}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-2.5 font-mono">{row.count}</td>
-                      <td
-                        className={
-                          row.allTime === 0
-                            ? "px-4 py-2.5 font-mono font-bold text-amber-400"
-                            : "px-4 py-2.5 font-mono text-muted-foreground"
-                        }
-                      >
-                        {row.allTime === 0 ? "never" : row.allTime}
-                      </td>
-                    </tr>
-                  ))}
                 </tbody>
               </table>
             </div>
@@ -299,12 +292,17 @@ export default async function AdminAnalyticsPage({
           <section>
             <SectionHeader
               title="Recent events"
+              /*
+                The count is no longer a flat 40: the newest install and error
+                events are merged in, so the number of rows depends on how many
+                of those were not already in the latest 40.
+              */
               subtitle={
                 sp.event
                   ? `Filtered to ${sp.event}`
                   : sp.includeBots
-                    ? "Latest 40 events (including bots)"
-                    : "Latest 40 events (excluding bots)"
+                    ? "Latest events, plus the newest install & error events (including bots)"
+                    : "Latest events, plus the newest install & error events"
               }
             />
             {/*
@@ -467,6 +465,7 @@ export default async function AdminAnalyticsPage({
               </table>
             </div>
           </section>
+
         </>
       )}
     </div>
