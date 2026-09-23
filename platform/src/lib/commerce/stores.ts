@@ -37,6 +37,13 @@ export type StoreCapabilities = {
   titleSearch: boolean;
   feedIngest: boolean;
   freeOfferIngest: boolean;
+  /**
+   * Whether storeDiscounts/ingestion.ts scans this store for deep-discount
+   * listings, independent of PlayBound's own catalog. See docs on
+   * StoreDiscount — this is deliberately a small subset of the stores below:
+   * only the ones with a real, verified discount-percent data source today.
+   */
+  discountScan: boolean;
   /** Display name on purchase sources, or null when the store is promotions-only. */
   retailer: string | null;
 };
@@ -48,6 +55,7 @@ export const STORE_CAPABILITIES: Record<CommerceStoreSlug, StoreCapabilities> = 
     titleSearch: true,
     feedIngest: false,
     freeOfferIngest: true,
+    discountScan: true, // CheapShark aggregator; direct steamAppID URL, no redirect.
     retailer: "Steam",
   },
   gog: {
@@ -56,6 +64,7 @@ export const STORE_CAPABILITIES: Record<CommerceStoreSlug, StoreCapabilities> = 
     titleSearch: true,
     feedIngest: false,
     freeOfferIngest: true,
+    discountScan: true, // GOG's own catalog.gog.com API — first-party, no aggregator.
     retailer: "GOG",
   },
   epic: {
@@ -64,6 +73,7 @@ export const STORE_CAPABILITIES: Record<CommerceStoreSlug, StoreCapabilities> = 
     titleSearch: true,
     feedIngest: false,
     freeOfferIngest: true,
+    discountScan: true, // CheapShark aggregator.
     retailer: "Epic Games Store",
   },
   fanatical: {
@@ -73,6 +83,11 @@ export const STORE_CAPABILITIES: Record<CommerceStoreSlug, StoreCapabilities> = 
     feedIngest: true,
     retailer: "Fanatical",
     freeOfferIngest: false,
+    // CheapShark does cover this store too, but it's deliberately deferred —
+    // feedIngest+feedUrl above is the intended long-term source once a real
+    // affiliate-network feed is configured, so this isn't stood up on the
+    // aggregator only to be replaced.
+    discountScan: false,
   },
   humble: {
     discovery: "feed",
@@ -80,6 +95,7 @@ export const STORE_CAPABILITIES: Record<CommerceStoreSlug, StoreCapabilities> = 
     titleSearch: false,
     feedIngest: true,
     freeOfferIngest: false,
+    discountScan: false, // deferred — see fanatical's note.
     retailer: "Humble Bundle",
   },
   itch: {
@@ -88,6 +104,7 @@ export const STORE_CAPABILITIES: Record<CommerceStoreSlug, StoreCapabilities> = 
     titleSearch: false,
     feedIngest: true,
     freeOfferIngest: false,
+    discountScan: false, // pay-what-you-want storefront; "% off" doesn't apply.
     retailer: "itch.io",
   },
   gmg: {
@@ -96,6 +113,7 @@ export const STORE_CAPABILITIES: Record<CommerceStoreSlug, StoreCapabilities> = 
     titleSearch: false,
     feedIngest: true,
     freeOfferIngest: false,
+    discountScan: false, // deferred — see fanatical's note.
     retailer: "Green Man Gaming",
   },
   gamersgate: {
@@ -104,6 +122,7 @@ export const STORE_CAPABILITIES: Record<CommerceStoreSlug, StoreCapabilities> = 
     titleSearch: false,
     feedIngest: true,
     freeOfferIngest: false,
+    discountScan: true, // CheapShark aggregator.
     retailer: "GamersGate",
   },
   ebay: {
@@ -112,6 +131,7 @@ export const STORE_CAPABILITIES: Record<CommerceStoreSlug, StoreCapabilities> = 
     titleSearch: false,
     feedIngest: true,
     freeOfferIngest: false,
+    discountScan: false, // marketplace, not a discount catalog; CheapShark doesn't cover it either.
     retailer: "eBay",
   },
   prime_gaming: {
@@ -120,6 +140,7 @@ export const STORE_CAPABILITIES: Record<CommerceStoreSlug, StoreCapabilities> = 
     titleSearch: false,
     feedIngest: false,
     freeOfferIngest: true,
+    discountScan: false, // giveaway-key platform — nothing to discount, only claim.
     retailer: null,
   },
   // Key giveaways only -- never a place to buy, so no retailer name.
@@ -129,6 +150,7 @@ export const STORE_CAPABILITIES: Record<CommerceStoreSlug, StoreCapabilities> = 
     titleSearch: false,
     feedIngest: false,
     freeOfferIngest: true,
+    discountScan: false, // giveaway-key platform, same as prime_gaming.
     retailer: null,
   },
 };
@@ -140,6 +162,12 @@ export const AFFILIATE_PARAM_DEFAULTS: Partial<Record<CommerceStoreSlug, string>
   itch: "ac",
   gmg: "tap_a",
   ebay: "campid",
+  // GamersGate's affiliate program is a bare query-param stamp on the domain
+  // (confirmed against the account's own example: gamersgate.com/?aff=<id>),
+  // not a value= pair — same convention as every store above. Set as a
+  // default so a blank admin field self-heals instead of silently shipping
+  // an unstamped link once an affiliateId is entered without a param.
+  gamersgate: "aff",
 };
 
 export const SEED_COMMERCE_STORES: Array<{
@@ -154,6 +182,7 @@ export const SEED_COMMERCE_STORES: Array<{
   affiliateParam?: string | null;
   affiliateUrlTemplate?: string | null;
   freeOffersEnabled: boolean;
+  discountScanEnabled: boolean;
   discovery: StoreDiscovery;
 }> = [
   {
@@ -165,6 +194,7 @@ export const SEED_COMMERCE_STORES: Array<{
     priceRefreshEnabled: true,
     affiliateDefault: true,
     freeOffersEnabled: true,
+    discountScanEnabled: true,
     discovery: "api",
   },
   {
@@ -178,6 +208,7 @@ export const SEED_COMMERCE_STORES: Array<{
     affiliateId: "2103608854",
     affiliateUrlTemplate: "https://track.adtraction.com/t/t?a=1578845460&as=2103608854&t=2&tk=1&url={url}",
     freeOffersEnabled: true,
+    discountScanEnabled: true,
     discovery: "api",
   },
   {
@@ -189,6 +220,7 @@ export const SEED_COMMERCE_STORES: Array<{
     priceRefreshEnabled: true,
     affiliateDefault: true,
     freeOffersEnabled: true,
+    discountScanEnabled: true,
     discovery: "api",
   },
   {
@@ -200,6 +232,7 @@ export const SEED_COMMERCE_STORES: Array<{
     priceRefreshEnabled: true,
     affiliateDefault: true,
     freeOffersEnabled: false,
+    discountScanEnabled: false, // deferred, see STORE_CAPABILITIES.fanatical
     discovery: "api",
   },
   {
@@ -211,6 +244,7 @@ export const SEED_COMMERCE_STORES: Array<{
     priceRefreshEnabled: false,
     affiliateDefault: true,
     freeOffersEnabled: false,
+    discountScanEnabled: false, // deferred
     discovery: "feed",
   },
   {
@@ -222,6 +256,7 @@ export const SEED_COMMERCE_STORES: Array<{
     priceRefreshEnabled: false,
     affiliateDefault: true,
     freeOffersEnabled: false,
+    discountScanEnabled: false,
     discovery: "manual",
   },
   {
@@ -233,6 +268,7 @@ export const SEED_COMMERCE_STORES: Array<{
     priceRefreshEnabled: false,
     affiliateDefault: true,
     freeOffersEnabled: false,
+    discountScanEnabled: false, // deferred
     discovery: "feed",
   },
   {
@@ -244,6 +280,7 @@ export const SEED_COMMERCE_STORES: Array<{
     priceRefreshEnabled: false,
     affiliateDefault: true,
     freeOffersEnabled: false,
+    discountScanEnabled: true,
     discovery: "feed",
   },
   {
@@ -255,6 +292,7 @@ export const SEED_COMMERCE_STORES: Array<{
     priceRefreshEnabled: false,
     affiliateDefault: true,
     freeOffersEnabled: false,
+    discountScanEnabled: false,
     discovery: "manual",
   },
   {
@@ -266,6 +304,7 @@ export const SEED_COMMERCE_STORES: Array<{
     priceRefreshEnabled: false,
     affiliateDefault: false,
     freeOffersEnabled: true,
+    discountScanEnabled: false,
     discovery: "manual",
   },
   {
@@ -277,6 +316,7 @@ export const SEED_COMMERCE_STORES: Array<{
     priceRefreshEnabled: false,
     affiliateDefault: false,
     freeOffersEnabled: true,
+    discountScanEnabled: false,
     discovery: "api",
   },
 ];

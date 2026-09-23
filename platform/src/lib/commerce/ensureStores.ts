@@ -24,6 +24,7 @@ export async function ensureCommerceStores(force = false) {
       priceRefreshEnabled?: boolean;
       affiliateDefault?: boolean;
       freeOffersEnabled?: boolean;
+      discountScanEnabled?: boolean;
       discovery?: string;
       affiliateId?: string | null;
       affiliateParam?: string | null;
@@ -41,6 +42,10 @@ export async function ensureCommerceStores(force = false) {
     if (typeof existing.freeOffersEnabled !== "boolean") {
       const canIngest = STORE_CAPABILITIES[seed.slug].freeOfferIngest;
       $set.freeOffersEnabled = canIngest && existing.active !== false;
+    }
+    if (typeof existing.discountScanEnabled !== "boolean") {
+      const canScan = STORE_CAPABILITIES[seed.slug].discountScan;
+      $set.discountScanEnabled = canScan && existing.active !== false;
     }
     if (seed.affiliateUrlTemplate && !existing.affiliateUrlTemplate) {
       $set.affiliateUrlTemplate = seed.affiliateUrlTemplate;

@@ -24,6 +24,7 @@ const StoreProviderSchema = new Schema(
     matchingEnabled: { type: Boolean, default: false },
     priceRefreshEnabled: { type: Boolean, default: false },
     freeOffersEnabled: { type: Boolean, default: false },
+    discountScanEnabled: { type: Boolean, default: false },
     affiliateDefault: { type: Boolean, default: true },
     affiliateId: { type: String, default: null },
     affiliateParam: { type: String, default: null },

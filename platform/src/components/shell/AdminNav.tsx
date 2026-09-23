@@ -32,6 +32,7 @@ import {
   MonitorPlay,
   Bot,
   Loader2,
+  BadgePercent,
   type LucideIcon,
 } from "lucide-react";
 
@@ -72,7 +73,7 @@ export const links: NavItem[] = [
     href: "/admin/ecommerce",
     label: "eCommerce",
     icon: ShoppingBag,
-    family: ["/admin/ecommerce", "/admin/free-offers"],
+    family: ["/admin/ecommerce", "/admin/free-offers", "/admin/store-discounts"],
   },
   { href: "/admin/submissions", label: "Submissions", icon: Inbox },
   {
@@ -206,6 +207,12 @@ const ECOMMERCE_CHILDREN: NavChild[] = [
     icon: Gift,
     href: "/admin/free-offers",
     match: (p) => p.startsWith("/admin/free-offers") || p.startsWith("/admin/ecommerce/free-offers"),
+  },
+  {
+    label: "Store Discounts",
+    icon: BadgePercent,
+    href: "/admin/store-discounts",
+    match: (p) => p.startsWith("/admin/store-discounts"),
   },
 ];
 
