@@ -18,7 +18,10 @@ export async function ensureHostDisplayStream(forceNew = false) {
   }
   if (hostDisplayStream && hostDisplayStream.active) {
     const live = hostDisplayStream.getVideoTracks().some((t) => t.readyState === "live");
-    if (live) return hostDisplayStream;
+    if (live) {
+      console.log("[couch] reusing existing display stream");
+      return hostDisplayStream;
+    }
     stopHostDisplayStream();
   }
   if (!navigator.mediaDevices?.getDisplayMedia) {
@@ -26,6 +29,7 @@ export async function ensureHostDisplayStream(forceNew = false) {
     return null;
   }
   try {
+    console.log("[couch] requesting fresh display capture");
     hostDisplayStream = await navigator.mediaDevices.getDisplayMedia({
       video: {
         frameRate: { ideal: 60, max: 60 },
