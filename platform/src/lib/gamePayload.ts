@@ -57,6 +57,7 @@ export const GENRES = [
    * that prompted it.
    */
   "Party Game",
+  "Fantasy",
 ] as const;
 
 export const LAUNCH_METHODS = ["browser", "install", "server"] as const;
@@ -342,6 +343,7 @@ const ART_BY_GENRE: Record<string, { from: string; to: string; icon: string }> =
   Pirate: { from: "#0c4a6e", to: "#f59e0b", icon: "Flag" },
   Stealth: { from: "#020617", to: "#475569", icon: "Eye" },
   "Immersive Sim": { from: "#172554", to: "#0f766e", icon: "Blocks" },
+  Fantasy: { from: "#3b0764", to: "#c084fc", icon: "Sparkles" },
 };
 
 export function defaultArtFor(genres: string[] = [], slug = ""): { from: string; to: string; icon: string } {

@@ -88,6 +88,7 @@ describe("inferGameGenres", () => {
     expect(inferGameGenres("Celeste")).toEqual(["Platformer", "Action"]);
     expect(inferGameGenres("Cyber Platformer 2000")).toEqual(["Platformer", "Action"]);
     expect(inferGameGenres("Horror of the Deep")).toEqual(["Action", "Horror"]);
+    expect(inferGameGenres("High Fantasy Kingdom")).toEqual(["Fantasy", "RPG"]);
   });
 
   it("always returns 1 to 3 valid genres even for unknown titles", () => {

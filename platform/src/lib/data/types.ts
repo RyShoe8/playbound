@@ -38,7 +38,8 @@ export type Genre =
   | "Stealth"
   | "Immersive Sim"
   | "MOBA"
-  | "Party Game";
+  | "Party Game"
+  | "Fantasy";
 
 export interface GameArt {
   /** CSS color stops for the generated cover gradient (fallback) */
