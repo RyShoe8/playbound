@@ -1880,7 +1880,6 @@ async function renderGameDetailView(slug, opts = {}) {
     actions.innerHTML = `
       <button class="btn-success" id="act-play">Play Now</button>
       <button class="btn-secondary" id="act-play-remote" title="Stream this game from another PC on your network">📡 Play Remotely</button>
-      ${window.playbound.platform.supportsDesktopShortcuts() ? `<button class="btn-secondary" id="act-shortcut">Create Shortcut</button>` : ""}
       <button class="btn-secondary" id="act-folder">${window.playbound.platform.getOS() === "macos" ? "Open in Finder" : "Open Folder"}</button>
       <button class="btn-danger" id="act-uninstall">Uninstall</button>
       ${state.accountState.connected ? `<button class="btn-secondary" id="act-create-party">Create Party</button>` : ""}
@@ -1910,17 +1909,6 @@ async function renderGameDetailView(slug, opts = {}) {
     document.getElementById("act-play-remote")?.addEventListener("click", () => {
       handlePlayRemotely(slug, detail, state.detailSelectedEdition || null);
     });
-    const btnShortcut = document.getElementById("act-shortcut");
-    if (btnShortcut) {
-      btnShortcut.addEventListener("click", async () => {
-        try {
-          const res = await window.playbound.createShortcut(slug);
-          setStatus(`Desktop shortcut created for ${res.title}`);
-        } catch (err) {
-          setStatus(err.message || String(err), true);
-        }
-      });
-    }
     document.getElementById("act-folder").addEventListener("click", () => {
       if (detail.installedPath) window.playbound.openFolder(detail.installedPath);
     });

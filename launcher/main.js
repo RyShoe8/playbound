@@ -2225,6 +2225,42 @@ function installedEditionsPayload(slug, state = loadState()) {
     });
 }
 
+function resolvePlayableRemoteEdition(slug, requestedEditionSlug = null, state = loadState()) {
+  const raw = state?.[slug];
+  if (!raw || typeof raw !== "object") return null;
+  const game = ensureGameInstallRecord(raw);
+  syncGameInstallSummary(game);
+  const editionsInstalled = installedEditionsPayload(slug, state);
+
+  if (requestedEditionSlug) {
+    const ed = game.editions?.[requestedEditionSlug];
+    if (ed && playableExePath(ed)) {
+      return { ok: true, editionSlug: requestedEditionSlug };
+    }
+    const foundEd = editionsInstalled.find((e) => e.editionSlug === requestedEditionSlug && e.exe);
+    if (foundEd) {
+      return { ok: true, editionSlug: requestedEditionSlug };
+    }
+  }
+
+  if (playableExePath(game)) {
+    return { ok: true, editionSlug: game.editionSlug || requestedEditionSlug || null };
+  }
+
+  const anyReady = editionsInstalled.find((e) => e.exe);
+  if (anyReady) {
+    return { ok: true, editionSlug: anyReady.editionSlug };
+  }
+
+  for (const [key, ed] of Object.entries(game.editions || {})) {
+    if (playableExePath(ed)) {
+      return { ok: true, editionSlug: key };
+    }
+  }
+
+  return null;
+}
+
 /* loadSettings / saveSettings / gamesRoot / getApiBase now live in
  * services/settings.js and are bound near the top of this file. */
 
@@ -14228,8 +14264,9 @@ function initRemotePlay() {
         return { ok: false, reason: "not-trusted" };
       }
       const state = loadState();
-      const game = state[gameSlug];
-      if (!game || !game.installed) {
+      const resolvedRemote = resolvePlayableRemoteEdition(gameSlug, editionSlug, state);
+      const targetEdition = resolvedRemote?.editionSlug || null;
+      if (!resolvedRemote) {
         return { ok: false, reason: "game-not-installed" };
       }
       if (playingGameSlug()) {
@@ -14255,13 +14292,13 @@ function initRemotePlay() {
         sessionId,
         clientDeviceId,
         gameSlug,
-        editionSlug,
+        editionSlug: targetEdition,
         startedAt: Date.now(),
       };
 
       setTimeout(async () => {
         try {
-          await playGame(gameSlug, null, editionSlug, { remoteClientDeviceId: clientDeviceId });
+          await playGame(gameSlug, null, targetEdition, { remoteClientDeviceId: clientDeviceId });
         } catch (err) {
           console.warn("[remote-play] host game launch failed:", err?.message || err);
           if (activeRemotePlayHostSession?.sessionId === sessionId) {

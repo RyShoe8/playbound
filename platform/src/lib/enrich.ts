@@ -73,7 +73,7 @@ export function deriveInstallSteps(game: InstallStepSource): InstallStep[] {
   if (isLauncherInstallable(launcherProbe)) {
     steps.push({
       platform: "all",
-      text: `Install the PlayBound Launcher, then find ${game.title} and press Install. The launcher downloads the official release, unpacks it and creates a shortcut. This is the fastest route and it never uses third-party mirrors.`,
+      text: `Install the PlayBound Launcher, then find ${game.title} and press Install. The launcher downloads the official release and unpacks it. This is the fastest route and it never uses third-party mirrors.`,
     });
   }
 
