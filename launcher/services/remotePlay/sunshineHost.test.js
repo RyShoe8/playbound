@@ -67,4 +67,54 @@ const { generateSunshineConfig, createSunshineHost } = require("./sunshineHost")
   fs.rmSync(tmpDir, { recursive: true, force: true });
 }
 
-console.log("sunshine host wrapper ok");
+/* ── createSunshineHost: autoApprovePairing polls and approves ─────────────── */
+
+(async () => {
+  const apiCalls = [];
+  const fakeChild = { killed: false, on: () => {}, kill() { this.killed = true; } };
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "pb-sunshine-pair-test-"));
+
+  let callCount = 0;
+  const host = createSunshineHost({
+    resolveDir: () => tmpDir,
+    spawnFn: () => fakeChild,
+    callApiFn: async ({ method, path: reqPath, body }) => {
+      apiCalls.push({ method, reqPath, body });
+      callCount++;
+      if (method === "GET") {
+        if (callCount === 1) {
+          // First poll: empty
+          return { statusCode: 200, data: { pairings: [] } };
+        }
+        // Second poll: pairing arrives
+        return {
+          statusCode: 200,
+          data: {
+            pairings: [{ id: "test-pairing-id", name: "Test Laptop", address: "192.168.1.50" }],
+          },
+        };
+      }
+      if (method === "POST") {
+        assert.equal(body.pairing_id, "test-pairing-id");
+        assert.equal(body.pin, "1234");
+        return { statusCode: 200, data: { status: true } };
+      }
+      return { statusCode: 400 };
+    },
+  });
+
+  host.start({ port: 47989, pin: "1234", deviceName: "PC1", configDir: tmpDir });
+  const result = await host.autoApprovePairing({
+    pin: "1234",
+    clientName: "Test Laptop",
+    timeoutMs: 5000,
+  }).promise;
+
+  assert.equal(result.ok, true);
+  assert.equal(result.pairingId, "test-pairing-id");
+  assert.ok(apiCalls.some((c) => c.method === "POST" && c.body?.pairing_id === "test-pairing-id"));
+
+  host.stop();
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+  console.log("sunshine host wrapper ok");
+})();
