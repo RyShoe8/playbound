@@ -57,7 +57,20 @@ export async function ensureHostDisplayStream(forceNew = false) {
       hostDisplayStream = null;
     });
     try {
+      /*
+       * The width/height requested in the initial getDisplayMedia() call
+       * above are routinely ignored for desktop-capture sources — Chromium
+       * hands back the source's native resolution regardless. Re-applying
+       * them here, post-capture, is the actual way to get Chromium to
+       * downscale a desktop-capture track. Without this, a 4K host streams
+       * at native ~3840x2160: real-time software-encoding that is heavy
+       * enough that the encoder can end up never producing a deliverable
+       * first frame, which reads as the stream hanging forever rather than
+       * as a quality problem.
+       */
       await track.applyConstraints({
+        width: { ideal: 1920, max: 1920 },
+        height: { ideal: 1080, max: 1080 },
         frameRate: { ideal: 60, max: 60 },
       });
     } catch {
