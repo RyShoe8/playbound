@@ -3032,6 +3032,7 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
           title: edition.gameTitle || edition.editionName,
           slug: gameSlug,
           gameSlug,
+          editionSlug,
           editionName: edition.editionName,
           features: pickList(edition.features, gameDetail?.features),
           tags: pickList(edition.tags, gameDetail?.tags),

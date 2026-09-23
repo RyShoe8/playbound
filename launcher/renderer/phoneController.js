@@ -120,6 +120,7 @@ function hideOverlay() {
  */
 export function promptPlayControllerChoice(opts = {}) {
   const title = opts.title || "this game";
+  const enhancedOnly = opts.playBoundControlsOnly === true;
   return new Promise((resolve) => {
     const root = ensureOverlayRoot();
     root.classList.remove("hidden");
@@ -132,7 +133,7 @@ export function promptPlayControllerChoice(opts = {}) {
           </div>
           <h2 id="phone-controller-title">How do you want to play?</h2>
           <p class="phone-controller-lead">
-            <strong>${escapeHtml(title)}</strong> supports controllers. Choose your control setup:
+            <strong>${escapeHtml(title)}</strong> ${enhancedOnly ? "has a PlayBound Controls profile. Choose your control setup:" : "supports controllers. Choose your control setup:"}
           </p>
         </div>
 
@@ -156,14 +157,14 @@ export function promptPlayControllerChoice(opts = {}) {
             </div>
             <div class="phone-controller-choice-text">
               <div class="phone-controller-choice-header">
-                <span class="phone-controller-choice-title">Controller (Gamepad)</span>
-                <span class="phone-controller-choice-tag">Direct</span>
+                <span class="phone-controller-choice-title">${enhancedOnly ? "PlayBound Controls" : "Controller (Gamepad)"}</span>
+                <span class="phone-controller-choice-tag">${enhancedOnly ? "Enhanced" : "Direct"}</span>
               </div>
-              <span class="phone-controller-choice-sub">Play with an Xbox, PlayStation, Switch Pro, or USB controller</span>
+              <span class="phone-controller-choice-sub">${enhancedOnly ? "Map your controller to this game's keyboard controls" : "Play with an Xbox, PlayStation, Switch Pro, or USB controller"}</span>
             </div>
           </button>
 
-          <button type="button" class="phone-controller-choice-card is-featured" data-choice="phone">
+          ${enhancedOnly ? "" : `<button type="button" class="phone-controller-choice-card is-featured" data-choice="phone">
             <div class="phone-controller-choice-icon-wrap icon-phone">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
             </div>
@@ -174,7 +175,7 @@ export function promptPlayControllerChoice(opts = {}) {
               </div>
               <span class="phone-controller-choice-sub">Scan a QR code — no app or account required on your phone</span>
             </div>
-          </button>
+          </button>`}
         </div>
 
         <div class="phone-controller-footer">
@@ -336,7 +337,14 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
     couchAlreadyActive = false;
   }
 
-  const isSupported = await gameSupportsController(detail, slug || detail?.slug);
+  const gameSlug = detail?.gameSlug || slug || detail?.slug;
+  let enhancedAvailable = false;
+  try {
+    enhancedAvailable = Boolean((await pb()?.getPlayBoundControlsAvailability?.(gameSlug, detail?.editionSlug || null))?.available);
+  } catch {
+    // A failed profile lookup must not block an ordinary game launch.
+  }
+  const isSupported = enhancedAvailable || await gameSupportsController(detail, gameSlug);
   if (!isSupported) {
     await playFn({ inputMode: "keyboard" });
     return true;
@@ -346,6 +354,7 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
   // inputMode "phone" and hide keyboard/controller, which felt broken on both PCs.
   const choice = await promptPlayControllerChoice({
     title: detail?.title || detail?.editionName || "This game",
+    playBoundControlsOnly: enhancedAvailable,
   });
   if (choice === "cancel") {
     setStatus("Launch cancelled");
@@ -393,14 +402,20 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
     }
   } else if (choice === "controller") {
     finalMode = "controller";
-    // Hard rule: never bridge while a couch session is running.
-    if (couchAlreadyActive) {
+    if (enhancedAvailable) {
+      // Keyboard/mouse synthesis consumes the physical pad directly. A virtual
+      // Xbox pad would add a second input device without helping this game.
       await disableGamepadBridge();
-    } else if (isBridgeableGamepadConnected()) {
-      setStatus("Enabling Universal Gamepad Bridge for controller…");
-      const bridged = await enableGamepadBridge();
-      if (!bridged) {
-        setStatus("Could not enable controller bridge — launching anyway", true);
+    } else {
+      // Hard rule: never bridge while a couch session is running.
+      if (couchAlreadyActive) {
+        await disableGamepadBridge();
+      } else if (isBridgeableGamepadConnected()) {
+        setStatus("Enabling Universal Gamepad Bridge for controller…");
+        const bridged = await enableGamepadBridge();
+        if (!bridged) {
+          setStatus("Could not enable controller bridge — launching anyway", true);
+        }
       }
     }
   } else {

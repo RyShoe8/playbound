@@ -29,4 +29,14 @@ assert.deepStrictEqual(engine.tick(frame({ lx: 1, lt: 1, buttons: BUTTON.LB }), 
   { cmd: "key", vk: VK.RightCtrl, action: "down" },
 ]);
 assert.ok(engine.releaseAll().every((command) => command.action === "up"));
+const menus = createInputEngine(profile);
+assert.deepStrictEqual(menus.tick(frame({ buttons: BUTTON.START | BUTTON.DPAD_DOWN }), 1 / 60), [
+  { cmd: "key", vk: VK.Enter, action: "down" },
+  { cmd: "key", vk: VK.ArrowDown, action: "down" },
+]);
+assert.deepStrictEqual(menus.tick(frame({ buttons: BUTTON.A | BUTTON.B | BUTTON.DPAD_UP }), 1 / 60), [
+  { cmd: "key", vk: VK.Escape, action: "down" },
+  { cmd: "key", vk: VK.ArrowUp, action: "down" },
+  { cmd: "key", vk: VK.ArrowDown, action: "up" },
+]);
 console.log("OutRun pilot profile ok");

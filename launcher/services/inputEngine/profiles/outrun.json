@@ -15,7 +15,11 @@
     { "id": "accelerate", "label": "Accelerate", "output": { "type": "key", "vk": "LeftCtrl" } },
     { "id": "brake", "label": "Brake", "output": { "type": "key", "vk": "LeftAlt" } },
     { "id": "upGear", "label": "Shift up", "output": { "type": "key", "vk": "Z" } },
-    { "id": "downGear", "label": "Shift down", "output": { "type": "key", "vk": "RightCtrl" } }
+    { "id": "downGear", "label": "Shift down", "output": { "type": "key", "vk": "RightCtrl" } },
+    { "id": "confirm", "label": "Start / confirm", "output": { "type": "key", "vk": "Enter" } },
+    { "id": "back", "label": "Back / pause", "output": { "type": "key", "vk": "Escape" } },
+    { "id": "menuUp", "label": "Menu up", "output": { "type": "key", "vk": "ArrowUp" } },
+    { "id": "menuDown", "label": "Menu down", "output": { "type": "key", "vk": "ArrowDown" } }
   ],
   "bindings": [
     { "actionId": "steerLeft", "physicalInput": "LEFT_LEFT" },
@@ -25,7 +29,12 @@
     { "actionId": "accelerate", "physicalInput": "RT" },
     { "actionId": "brake", "physicalInput": "LT" },
     { "actionId": "upGear", "physicalInput": "RB" },
-    { "actionId": "downGear", "physicalInput": "LB" }
+    { "actionId": "downGear", "physicalInput": "LB" },
+    { "actionId": "confirm", "physicalInput": "START" },
+    { "actionId": "confirm", "physicalInput": "A" },
+    { "actionId": "back", "physicalInput": "B" },
+    { "actionId": "menuUp", "physicalInput": "DPAD_UP" },
+    { "actionId": "menuDown", "physicalInput": "DPAD_DOWN" }
   ],
   "contexts": [],
   "stickMouseSettings": { "enabled": false }
