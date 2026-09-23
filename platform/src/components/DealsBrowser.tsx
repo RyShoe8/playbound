@@ -178,7 +178,7 @@ export function DealsBrowser({
               active={genre === ALL_GENRES}
               onClick={() => setGenre(ALL_GENRES)}
             />
-            {genreOptions.slice(0, 10).map((g) => (
+            {genreOptions.map((g) => (
               <Chip
                 key={g}
                 label={g}

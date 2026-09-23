@@ -84,6 +84,9 @@ describe("inferGameGenres", () => {
   it("identifies keywords and simulator/tycoon patterns", () => {
     expect(inferGameGenres("Theme Park Tycoon")).toEqual(["Simulation", "Management"]);
     expect(inferGameGenres("Super Space Racing")).toEqual(["Racing"]);
+    expect(inferGameGenres("Need for Speed Heat")).toEqual(["Racing"]);
+    expect(inferGameGenres("Celeste")).toEqual(["Platformer", "Action"]);
+    expect(inferGameGenres("Cyber Platformer 2000")).toEqual(["Platformer", "Action"]);
     expect(inferGameGenres("Horror of the Deep")).toEqual(["Action", "Horror"]);
   });
 
