@@ -1702,7 +1702,7 @@ async function renderGameDetailView(slug, opts = {}) {
     });
   });
 
-  function showRemotePlayNoticeModal({ title, message }) {
+  function showRemotePlayNoticeModal({ title, message, onManualHost }) {
     const overlay = document.createElement("div");
     overlay.className = "modal-backdrop";
     overlay.style.cssText = `
@@ -1713,6 +1713,11 @@ async function renderGameDetailView(slug, opts = {}) {
       <div style="background: #181424; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 24px; max-width: 440px; box-shadow: 0 16px 40px rgba(0,0,0,0.8);">
         <h3 style="margin: 0 0 12px 0; font-size: 16px; color: #fff;">${escapeHtml(title)}</h3>
         <div style="font-size: 13px; color: var(--text-muted, #ccc); line-height: 1.5; margin-bottom: 20px;">${message}</div>
+        ${onManualHost ? `<label for="modal-remote-host-address" style="display:block;font-size:12px;margin-bottom:6px;">Host PC address</label>
+          <div style="display:flex;gap:8px;"><input id="modal-remote-host-address" type="text" inputmode="decimal" placeholder="192.168.1.30" style="flex:1;min-width:0;" />
+          <button class="btn-primary btn-sm" id="modal-remote-host-connect">Connect</button></div>
+          <div id="modal-remote-host-error" style="font-size:12px;color:#ef4444;margin-top:6px;min-height:18px;"></div>
+          <p style="font-size:12px;color:var(--text-muted,#ccc);margin:4px 0 16px;">Find this address in Remote Play settings on the host PC. Both PCs must be on the same home network.</p>` : ""}
         <div style="display: flex; justify-content: flex-end;">
           <button class="btn-primary btn-sm" id="modal-notice-close">Got it</button>
         </div>
@@ -1720,6 +1725,18 @@ async function renderGameDetailView(slug, opts = {}) {
     `;
     document.body.appendChild(overlay);
     overlay.querySelector("#modal-notice-close")?.addEventListener("click", () => overlay.remove());
+    overlay.querySelector("#modal-remote-host-connect")?.addEventListener("click", () => {
+      const address = overlay.querySelector("#modal-remote-host-address")?.value.trim() || "";
+      const error = overlay.querySelector("#modal-remote-host-error");
+      const parts = address.split(".").map(Number);
+      if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(address) || parts.some((part) => part > 255) ||
+          !(parts[0] === 10 || (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) || (parts[0] === 192 && parts[1] === 168))) {
+        if (error) error.textContent = "Enter the host PC’s private IPv4 address from its Remote Play settings.";
+        return;
+      }
+      overlay.remove();
+      onManualHost?.(address);
+    });
   }
 
   function showRemoteHostPickerModal(hosts, onSelect) {
@@ -1843,7 +1860,8 @@ async function renderGameDetailView(slug, opts = {}) {
     if (!hosts.length) {
       showRemotePlayNoticeModal({
         title: "No Remote Play Hosts Found",
-        message: `No other PlayBound PCs offering Remote Play were found on your home network.<br><br>Make sure PlayBound is running on your gaming PC and <strong>Remote Play</strong> is enabled in its Settings. If the PC says Ready but still does not appear, check that Windows marks your home network Private and allows PlayBound through its firewall.`,
+        message: `No other PlayBound PCs offering Remote Play were found on your home network.<br><br>Make sure PlayBound is running on your gaming PC and <strong>Remote Play</strong> is enabled in its Settings. If discovery is blocked, enter the host PC address below.`,
+        onManualHost: (address) => startRemoteStreamWithHost({ deviceName: "Host PC", addresses: [address], port: 47998 }, gameSlug, gameDetail, editionSlug),
       });
       return;
     }

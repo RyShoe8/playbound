@@ -14363,6 +14363,7 @@ ipcMain.handle("remote-play-get-state", async () => {
     deviceName: getRemoteDeviceName(),
     isHostListening: Boolean(remoteHostApi?.isListening()),
     hostPort: remoteHostApi?.getPort() || null,
+    hostAddresses: ownLanAddresses(os.networkInterfaces()),
     activeHostSession: activeRemotePlayHostSession,
     activeClientSession: remoteClientCoordinator?.getActiveSession() || null,
     discoveredHosts,
@@ -14417,6 +14418,9 @@ ipcMain.handle("remote-play-respond-pairing", async (_event, requestId, allow) =
 ipcMain.handle("remote-play-start-stream", async (_event, opts) => {
   if (!remoteClientCoordinator) return { ok: false, error: "Remote Play client not initialized." };
   const { hostAddress, hostPort, gameSlug, editionSlug, resolution, fps } = opts || {};
+  if (!chooseLanAddress([hostAddress], os.networkInterfaces())) {
+    return { ok: false, error: "Enter a host PC address on this home network." };
+  }
   return await remoteClientCoordinator.startSession({
     hostAddress,
     hostPort,
