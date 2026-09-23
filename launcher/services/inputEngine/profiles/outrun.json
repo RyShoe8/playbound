@@ -31,7 +31,6 @@
     { "actionId": "upGear", "physicalInput": "RB" },
     { "actionId": "downGear", "physicalInput": "LB" },
     { "actionId": "confirm", "physicalInput": "START" },
-    { "actionId": "confirm", "physicalInput": "A" },
     { "actionId": "back", "physicalInput": "B" },
     { "actionId": "menuUp", "physicalInput": "DPAD_UP" },
     { "actionId": "menuDown", "physicalInput": "DPAD_DOWN" }

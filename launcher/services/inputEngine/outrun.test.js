@@ -37,6 +37,7 @@ assert.deepStrictEqual(menus.tick(frame({ buttons: BUTTON.START | BUTTON.DPAD_DO
 assert.deepStrictEqual(menus.tick(frame({ buttons: BUTTON.A | BUTTON.B | BUTTON.DPAD_UP }), 1 / 60), [
   { cmd: "key", vk: VK.Escape, action: "down" },
   { cmd: "key", vk: VK.ArrowUp, action: "down" },
+  { cmd: "key", vk: VK.Enter, action: "up" },
   { cmd: "key", vk: VK.ArrowDown, action: "up" },
 ]);
 console.log("OutRun pilot profile ok");
