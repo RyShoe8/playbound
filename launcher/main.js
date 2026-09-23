@@ -6227,9 +6227,21 @@ async function fetchControlProfile(slug, editionSlug, preview = false) {
   }
 }
 
+/**
+ * A real multiplayer couch party disqualifies PlayBound Controls outright —
+ * one PC has one keyboard/mouse, so it can never sensibly serve more than
+ * one player. A `solo` session (minted purely to plumb one phone's
+ * transport for single-player, never by the real couch-party UI — see
+ * `startCouchSessionQuiet`'s one solo caller) does not.
+ */
+function couchDisqualifiesPlayBoundControls() {
+  const state = couchHost?.getState?.();
+  return Boolean(state?.active) && state?.session?.solo !== true;
+}
+
 async function availablePlayBoundControlsProfile(slug, editionSlug, allowPreview = false) {
   const { hasControlsHost } = require("./services/couch/windowsVigem");
-  if (process.platform !== "win32" || couchHost?.getState?.()?.active || !hasControlsHost()) return null;
+  if (process.platform !== "win32" || couchDisqualifiesPlayBoundControls() || !hasControlsHost()) return null;
   const outRunPilot = !app.isPackaged && slug === "outrun" && process.env.PLAYBOUND_CONTROLS_PILOT_OUTRUN === "1";
   const profile = outRunPilot
     ? require("./services/inputEngine/profiles/outrun.json")
@@ -6259,7 +6271,7 @@ async function applyControllerConfig(slug, installDir, opts = {}) {
    */
   gamepadBridge.deactivatePlayBoundControls();
   notifyPlayBoundControlsState(false);
-  if (process.platform === "win32" && !couchHost?.getState?.()?.active && inputMode !== "keyboard" && inputMode !== "phone") {
+  if (process.platform === "win32" && !couchDisqualifiesPlayBoundControls() && inputMode !== "keyboard") {
     // The shared availability resolver also allows the explicit local OutRun
     // pilot; packaged launchers still require a verified catalog profile.
     const profile = await availablePlayBoundControlsProfile(slug, opts?.editionSlug || null, opts?.controlsPreview === true);
@@ -13962,6 +13974,17 @@ const couchHost = createHostService({
   getApiBase: () => getApiBase(),
   broadcast: (channel, payload) => {
     if (win && !win.isDestroyed()) win.webContents.send(channel, payload);
+  },
+  /*
+   * PlayBound Controls needs frames from a phone/relayed controller the same
+   * way it already gets them from a local pad. Slot 0 only: PlayBound
+   * Controls drives one PC's keyboard/mouse, so it can never sensibly serve
+   * more than one couch player — a real multiplayer party never sets
+   * `solo` on its session (see applyControllerConfig's gate below), so this
+   * firing for slot 0 is harmless there too; nothing is listening for it.
+   */
+  onSlotFrame: (slot, state) => {
+    if (slot === 0) gamepadBridge.applyInputFrame(state);
   },
 });
 gamepadBridge.setCouchActiveChecker(() => Boolean(couchHost?.getState?.()?.active));

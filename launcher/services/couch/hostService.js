@@ -20,10 +20,17 @@ const { authenticateCouchClient, bindInputToSlot } = require("./inputAuth");
  * @param {object} deps
  * @param {() => string} deps.getApiBase
  * @param {(channel: string, payload: object) => void} [deps.broadcast]
+ * @param {(slot: number, state: object) => void} [deps.onSlotFrame] Fired
+ *   with every successfully-bound input frame, for every slot, before it is
+ *   applied to that slot's ViGEm handle. This module stays agnostic about
+ *   what a caller does with it — main.js uses it to also feed PlayBound
+ *   Controls' Input Engine for slot 0 during a solo phone session, but
+ *   hostService.js has no opinion about that.
  */
 function createHostService(deps) {
   const getApiBase = deps.getApiBase;
   const broadcast = deps.broadcast || (() => {});
+  const onSlotFrame = typeof deps.onSlotFrame === "function" ? deps.onSlotFrame : null;
 
   let provider = null;
   /** @type {Map<number, object>} slot -> handle */
@@ -148,6 +155,13 @@ function createHostService(deps) {
     if (boundSlot == null) return false;
     const bound = bindInputToSlot(parsed, boundSlot);
     if (!bound) return false;
+    if (onSlotFrame) {
+      try {
+        onSlotFrame(bound.p, bound);
+      } catch (err) {
+        // A hook failure must not break the actual couch input path.
+      }
+    }
     const existing = handles.get(bound.p);
     if (existing) {
       existing.applyState(bound);
@@ -373,6 +387,13 @@ function createHostService(deps) {
       joinPath: data.joinPath,
       snapshot: data.snapshot,
       reserveHostSlot,
+      // Set only by a caller that minted this session purely to plumb one
+      // phone's controller for single-player (see startCouchSessionQuiet's
+      // one solo call site) — never by the real couch-party UI flow. Lets
+      // main.js tell "one phone, no party" apart from "a real party" so
+      // PlayBound Controls can activate for the former without ever
+      // running during actual multiplayer couch co-op.
+      solo: Boolean(opts.solo),
       streamingMetricsEnabled: Boolean(data.streamingMetricsEnabled),
       driverOk: probe.ok,
       driverReason: probe.ok
