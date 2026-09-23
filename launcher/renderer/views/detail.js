@@ -35,6 +35,57 @@ const detailServersSort = { sort: "players", sortDir: "desc" };
 /** Prevents a second Install click (or a re-render) from starting another download of the same edition. */
 const installingKeys = new Set();
 
+/**
+ * "Play Remotely" host picker — same modal-overlay/modal-card shape used
+ * elsewhere on this page (see #modal-edition-pick), built on demand since
+ * the device list is only known after the button is clicked.
+ */
+function showRemoteDevicePickerModal(devices, onSelect) {
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+  overlay.innerHTML = `
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 class="modal-title">Play Remotely</h2>
+        <button type="button" class="modal-close" id="btn-close-remote-pick">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="view-sub" style="margin:0 0 14px">Select a PlayBound PC on your account to stream this game from:</p>
+        <div class="edition-choice-list">
+          ${devices
+            .map(
+              (d) => `
+            <div class="edition-choice" data-device="${escapeHtml(d.deviceId)}">
+              <div class="edition-choice-main">
+                <div class="edition-choice-head">
+                  <span class="edition-choice-title">${escapeHtml(d.name)}</span>
+                </div>
+              </div>
+              <div class="edition-choice-actions">
+                <button type="button" class="btn-primary btn-sm" data-device-select="${escapeHtml(d.deviceId)}">Stream</button>
+              </div>
+            </div>`
+            )
+            .join("")}
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) close();
+  });
+  overlay.querySelector("#btn-close-remote-pick")?.addEventListener("click", close);
+  overlay.querySelectorAll("[data-device-select]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const device = devices.find((d) => d.deviceId === btn.dataset.deviceSelect);
+      close();
+      if (device) void onSelect(device);
+    });
+  });
+}
+
 const HW_VERDICT_LABEL = {
   excellent: "Runs Great",
   good: "Runs Well",
@@ -1710,6 +1761,7 @@ async function renderGameDetailView(slug, opts = {}) {
       <button class="btn-secondary" id="act-folder">${window.playbound.platform.getOS() === "macos" ? "Open in Finder" : "Open Folder"}</button>
       <button class="btn-danger" id="act-uninstall">Uninstall</button>
       ${state.accountState.connected ? `<button class="btn-secondary" id="act-create-party">Create Party</button>` : ""}
+      ${state.accountState.connected ? `<button class="btn-secondary" id="act-play-remote" title="Stream this game from another PlayBound PC on your account">📡 Play Remotely</button>` : ""}
       ${gamePlayHintHtml(slug)}
     `;
     document.getElementById("act-play").addEventListener("click", async () => {
@@ -1769,6 +1821,7 @@ async function renderGameDetailView(slug, opts = {}) {
       <button class="btn-secondary" id="act-dismiss-pending">Dismiss</button>
       <button class="btn-secondary" id="act-install">Re-run installer</button>
       ${state.accountState.connected ? `<button class="btn-secondary" id="act-create-party">Create Party</button>` : ""}
+      ${state.accountState.connected ? `<button class="btn-secondary" id="act-play-remote" title="Stream this game from another PlayBound PC on your account">📡 Play Remotely</button>` : ""}
     `;
     setStatus(
       detail.scanning
@@ -1876,11 +1929,13 @@ async function renderGameDetailView(slug, opts = {}) {
       ${noStoreNoteHtml}
       <button class="btn-secondary" id="act-locate" title="Find or select an existing installation on your computer">Already installed? Add to Library</button>
       ${state.accountState.connected ? `<button class="btn-secondary" id="act-create-party">Create Party</button>` : ""}
+      ${state.accountState.connected ? `<button class="btn-secondary" id="act-play-remote" title="Stream this game from another PlayBound PC on your account">📡 Play Remotely</button>` : ""}
     `
       : `
       <button class="${installBtnClass}" id="act-install" title="${inQueue ? "Click to view queue" : ""}">${installBtnLabel}</button>
       <button class="btn-secondary" id="act-locate" title="Find or select an existing installation on your computer">Already installed? Add to Library</button>
       ${state.accountState.connected ? `<button class="btn-secondary" id="act-create-party">Create Party</button>` : ""}
+      ${state.accountState.connected ? `<button class="btn-secondary" id="act-play-remote" title="Stream this game from another PlayBound PC on your account">📡 Play Remotely</button>` : ""}
     `;
     document.getElementById("act-get-game")?.addEventListener("click", () => openStoreUrl(buy?.url));
     document.getElementById("act-install")?.addEventListener("click", async () => {
@@ -1935,6 +1990,45 @@ async function renderGameDetailView(slug, opts = {}) {
     } finally {
       btn.disabled = false;
       btn.textContent = "Create Party";
+    }
+  });
+
+  document.getElementById("act-play-remote")?.addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    const originalLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Checking devices…";
+    try {
+      const res = await window.playbound.remotePlayListDevices();
+      if (!res?.ok) throw new Error(res?.error || "Could not load your devices.");
+      const devices = res.devices || [];
+      if (devices.length === 0) {
+        setStatus("No other PlayBound devices found on your account. Open PlayBound on another PC signed into this account first.", true);
+        return;
+      }
+      const startOn = async (device) => {
+        setStatus(`Asking ${device.name} to start ${detail.title || slug}…`);
+        const started = await window.playbound.remotePlayRequest({
+          hostDeviceId: device.deviceId,
+          gameSlug: slug,
+          editionSlug: null,
+        });
+        if (!started?.ok) {
+          setStatus(started?.error || "Remote Play failed to start.", true);
+          return;
+        }
+        setStatus(`Streaming ${detail.title || slug} from ${device.name}.`);
+      };
+      if (devices.length === 1) {
+        await startOn(devices[0]);
+        return;
+      }
+      showRemoteDevicePickerModal(devices, startOn);
+    } catch (err) {
+      setStatus(err.message || String(err), true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalLabel;
     }
   });
 

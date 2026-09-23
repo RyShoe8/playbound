@@ -1,31 +1,18 @@
 import { Schema, model, models } from "mongoose";
 
 /**
- * A registered PlayBound PC, for PlayBound Remote — "Ryan's Gaming PC" as a
- * real, trusted entity distinct from "the laptop", both belonging to one
+ * A registered PlayBound PC, for PlayBound Remote Play — "Ryan's Gaming PC"
+ * as a real entity distinct from "the laptop", both belonging to one
  * account. `deviceId` is the same locally-persisted id the launcher already
  * generates for itself (`launcher/main.js`'s `getRemoteDeviceId()`),
  * promoted here from a value the launcher merely holds to one the account
  * actually recognizes.
  *
- * Pairing mirrors `CouchSession.controllers[].status` exactly — see
- * `platform/src/lib/models/CouchSession.ts` — request → host approves →
- * trusted from then on, enforced the same way
- * `launcher/services/couch/inputAuth.js` enforces couch's approved
- * controllers. `trustedDevices` lives on the *host* device's own document:
- * each entry is one other device this one has approved as a Remote Play
- * client.
+ * Authorization is the account boundary itself (every query is scoped to
+ * `userId`) — Remote Play only streams between devices on the same
+ * PlayBound account, so there is no separate per-device trust/pairing step
+ * here.
  */
-
-const TrustedDeviceSchema = new Schema(
-  {
-    deviceId: { type: String, required: true },
-    name: { type: String, required: true },
-    trustedAt: { type: Date, required: true, default: Date.now },
-    lastUsedAt: { type: Date, default: null },
-  },
-  { _id: false }
-);
 
 const DeviceCapabilitiesSchema = new Schema(
   {
@@ -49,7 +36,6 @@ const DeviceSchema = new Schema(
     /** Current private LAN addresses, visible only to other devices on this account. */
     lanAddresses: { type: [String], default: [] },
     hostPort: { type: Number, default: null },
-    trustedDevices: { type: [TrustedDeviceSchema], default: [] },
   },
   { timestamps: true }
 );

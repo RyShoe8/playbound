@@ -1550,6 +1550,7 @@ async function connectWithToken(token) {
   void pullCompatibilityPreference();
   void syncHardwareProfile({ quiet: true });
   startLauncherPresenceLoop();
+  startRemotePlayLoop();
   return {
     connected: true,
     synced,
@@ -1590,6 +1591,7 @@ async function syncLibraryNow({ quiet = false, force = false } = {}) {
 
   setLinkedCanUseAdminChannel(Boolean(check.canUseAdminChannel));
   startLauncherPresenceLoop();
+  startRemotePlayLoop();
 
   if (!quiet) {
     notifyAccount({
@@ -10716,6 +10718,16 @@ function sendGameExited(slug) {
   // holding regardless of how the game actually stopped.
   gamepadBridge.deactivatePlayBoundControls();
   notifyPlayBoundControlsState(false);
+  // Remote Play's client PC needs to learn the stream ended so it can close
+  // its game-view window — but this must NOT change behavior for a real
+  // couch party or the solo phone-controller session, both of which stay
+  // open after exit exactly as they do today. Gated on the remotePlay
+  // marker set only by handleRemotePlayRequest below.
+  if (couchHost?.getState?.()?.session?.remotePlay) {
+    void endRemotePlaySession("player_exit").catch((err) => {
+      console.warn("[remote-play] session end on exit failed:", err?.message || err);
+    });
+  }
   if (win && !win.isDestroyed()) {
     win.webContents.send("game-exited", { slug });
   }
@@ -13137,7 +13149,14 @@ ipcMain.handle("open-external", async (_event, url, opts) => {
 
 /** Dedicated in-app window for Couch game view (HTTPS). */
 let couchGameViewWin = null;
-ipcMain.handle("open-couch-game-view", async (_event, rawUrl) => {
+/**
+ * Shared by the "open-couch-game-view" IPC handler (a local player joining
+ * their own couch party's stream) and PlayBound Remote Play's client-side
+ * orchestration (this device auto-opening its own remote-play stream) —
+ * same window, same trust level, same reason mixed content/autoplay are
+ * relaxed only here.
+ */
+async function openCouchGameViewWindow(rawUrl) {
   try {
     let url = assertOpenExternalUrl(String(rawUrl || ""));
     if (!/^https:\/\//i.test(url)) {
@@ -13208,7 +13227,219 @@ ipcMain.handle("open-couch-game-view", async (_event, rawUrl) => {
     console.warn("open-couch-game-view failed:", err?.message || err);
     return { ok: false, error: err?.message || String(err) };
   }
+}
+ipcMain.handle("open-couch-game-view", async (_event, rawUrl) => openCouchGameViewWindow(rawUrl));
+
+/* ── PlayBound Remote Play (stream a game to another PC on this account) ──
+ *
+ * Built entirely on top of the Connect/couch WebRTC pipeline above — a
+ * Remote Play session IS a CouchSession (via couchHost.createSession,
+ * marked opts.remotePlay: true so sendGameExited's cleanup above only ever
+ * touches sessions this feature created), and the client PC's stream window
+ * IS openCouchGameViewWindow, the exact function a local player already
+ * uses to join their own couch party's stream over the internet. The only
+ * genuinely new piece is the handoff: how a client device asks a host
+ * device (same PlayBound account only) to launch a game and hand back a
+ * join URL. See platform's /api/remote-play/requests.
+ */
+
+let remotePlayPollTimer = null;
+let remotePlayRegisterTimer = null;
+const remotePlayInFlight = new Set();
+
+async function registerRemotePlayDevice() {
+  const settings = loadSettings();
+  if (!settings.launcherToken) return;
+  try {
+    await apiFetch(`${getApiBase()}/api/devices`, {
+      method: "POST",
+      headers: launcherApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({
+        deviceId: getRemoteDeviceId(),
+        name: getRemoteDeviceName(),
+        capabilities: { remotePlayHost: true, remotePlayClient: true },
+      }),
+    });
+  } catch (err) {
+    console.warn("[remote-play] device registration failed:", err?.message || err);
+  }
+}
+
+/** Ends this device's own active Remote-Play-marked couch session, if any. Never touches a party or solo-phone session — see sendGameExited's gate. */
+async function endRemotePlaySession(terminationReason) {
+  const requestId = activeRemotePlayHostRequestId;
+  activeRemotePlayHostRequestId = null;
+  try {
+    await couchHost.stopSession();
+  } catch (err) {
+    console.warn("[remote-play] stopSession failed:", err?.message || err);
+  }
+  if (!requestId) return;
+  const settings = loadSettings();
+  if (!settings.launcherToken) return;
+  try {
+    await apiFetch(`${getApiBase()}/api/remote-play/requests/${encodeURIComponent(requestId)}`, {
+      method: "PATCH",
+      headers: launcherApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({ status: "ended", terminationReason }),
+    });
+  } catch (err) {
+    console.warn("[remote-play] could not mark request ended:", err?.message || err);
+  }
+}
+
+let activeRemotePlayHostRequestId = null;
+
+async function handleRemotePlayHostRequest(reqRow) {
+  if (remotePlayInFlight.has(reqRow.id)) return;
+  remotePlayInFlight.add(reqRow.id);
+  const settings = loadSettings();
+  const patch = async (body) => {
+    try {
+      await apiFetch(`${getApiBase()}/api/remote-play/requests/${encodeURIComponent(reqRow.id)}`, {
+        method: "PATCH",
+        headers: launcherApiHeaders({ "content-type": "application/json" }),
+        body: JSON.stringify(body),
+      });
+    } catch (err) {
+      console.warn("[remote-play] PATCH failed:", err?.message || err);
+    }
+  };
+  try {
+    // One remote-play stream at a time from this PC — decline rather than
+    // interrupt whatever this device is already doing (its own couch party
+    // included; never end someone else's session to make room).
+    if (couchHost.getState().active || playingGameSlug()) {
+      await patch({ status: "declined" });
+      return;
+    }
+    try {
+      await playGameInner(reqRow.gameSlug, null, reqRow.editionSlug || null, {});
+    } catch (err) {
+      console.warn("[remote-play] launch failed:", err?.message || err);
+      await patch({ status: "declined" });
+      return;
+    }
+    const state = await couchHost.createSession({
+      hostLabel: "Remote Play",
+      autoApprove: true,
+      remotePlay: true,
+    });
+    const joinUrl = state?.session?.joinUrl;
+    if (!joinUrl) {
+      await patch({ status: "declined" });
+      return;
+    }
+    activeRemotePlayHostRequestId = reqRow.id;
+    await patch({ status: "ready", joinUrl });
+    if (settings.launcherToken) {
+      void telemetry.track("remote_play_host_started", { gameSlug: reqRow.gameSlug });
+    }
+  } finally {
+    remotePlayInFlight.delete(reqRow.id);
+  }
+}
+
+async function pollRemotePlayRequests() {
+  const settings = loadSettings();
+  if (!settings.launcherToken) return;
+  try {
+    const res = await apiFetch(
+      `${getApiBase()}/api/remote-play/requests?forDevice=${encodeURIComponent(getRemoteDeviceId())}`,
+      { headers: launcherApiHeaders() }
+    );
+    if (!res.ok) return;
+    const data = await res.json().catch(() => null);
+    for (const reqRow of data?.requests || []) {
+      void handleRemotePlayHostRequest(reqRow);
+    }
+  } catch (err) {
+    console.warn("[remote-play] poll failed:", err?.message || err);
+  }
+}
+
+function startRemotePlayLoop() {
+  if (!remotePlayPollTimer) {
+    remotePlayPollTimer = setInterval(() => void pollRemotePlayRequests(), 4000);
+  }
+  if (!remotePlayRegisterTimer) {
+    remotePlayRegisterTimer = setInterval(() => void registerRemotePlayDevice(), 60_000);
+  }
+  void registerRemotePlayDevice();
+}
+
+function stopRemotePlayLoop() {
+  if (remotePlayPollTimer) {
+    clearInterval(remotePlayPollTimer);
+    remotePlayPollTimer = null;
+  }
+  if (remotePlayRegisterTimer) {
+    clearInterval(remotePlayRegisterTimer);
+    remotePlayRegisterTimer = null;
+  }
+}
+
+/** Client side: ask hostDeviceId (same account) to stream gameSlug, then open the stream window once ready. */
+ipcMain.handle("remote-play-request", async (event, { hostDeviceId, gameSlug, editionSlug }) => {
+  requireTrustedIpc(event);
+  const settings = loadSettings();
+  if (!settings.launcherToken) {
+    return { ok: false, error: "Sign in to use Remote Play." };
+  }
+  try {
+    const createRes = await apiFetch(`${getApiBase()}/api/remote-play/requests`, {
+      method: "POST",
+      headers: launcherApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({
+        hostDeviceId,
+        clientDeviceId: getRemoteDeviceId(),
+        gameSlug,
+        editionSlug: editionSlug || null,
+      }),
+    });
+    const created = await createRes.json().catch(() => null);
+    if (!createRes.ok || !created?.id) {
+      return { ok: false, error: created?.error || "Could not reach that PC." };
+    }
+    const deadline = Date.now() + 45_000;
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 1500));
+      const pollRes = await apiFetch(
+        `${getApiBase()}/api/remote-play/requests/${encodeURIComponent(created.id)}`,
+        { headers: launcherApiHeaders() }
+      );
+      const row = await pollRes.json().catch(() => null);
+      if (!pollRes.ok || !row) continue;
+      if (row.status === "declined") {
+        return { ok: false, error: "That PC could not start the game (not installed, or already busy)." };
+      }
+      if (row.status === "ready" && row.joinUrl) {
+        const sep = row.joinUrl.includes("?") ? "&" : "?";
+        const opened = await openCouchGameViewWindow(`${row.joinUrl}${sep}view=game`);
+        if (!opened?.ok) return { ok: false, error: opened?.error || "Could not open the stream window." };
+        return { ok: true };
+      }
+    }
+    return { ok: false, error: "No response from that PC. Make sure PlayBound is running there." };
+  } catch (err) {
+    return { ok: false, error: err?.message || String(err) };
+  }
 });
+
+ipcMain.handle("remote-play-list-devices", async () => {
+  const settings = loadSettings();
+  if (!settings.launcherToken) return { ok: false, error: "Not signed in", devices: [] };
+  try {
+    const res = await apiFetch(`${getApiBase()}/api/devices`, { headers: launcherApiHeaders() });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) return { ok: false, error: data?.error || "Could not load devices", devices: [] };
+    const selfId = getRemoteDeviceId();
+    return { ok: true, devices: (data?.devices || []).filter((d) => d.deviceId !== selfId) };
+  } catch (err) {
+    return { ok: false, error: err?.message || String(err), devices: [] };
+  }
+});
+
 ipcMain.handle("open-deep-link", (_event, url) => {
   const raw = String(url || "");
   if (!/^playbound:\/\//i.test(raw)) {
@@ -13254,6 +13485,7 @@ ipcMain.handle("get-account", async () => {
   }
   setLinkedCanUseAdminChannel(Boolean(check.canUseAdminChannel));
   startLauncherPresenceLoop();
+  startRemotePlayLoop();
   return {
     connected: true,
     apiBase: getApiBase(),
@@ -13283,6 +13515,7 @@ ipcMain.handle("clear-launcher-token", async () => {
   delete settings.launcherToken;
   saveSettings(settings);
   stopLauncherPresenceLoop();
+  stopRemotePlayLoop();
   setLinkedCanUseAdminChannel(false);
   notifyAccount({ connected: false, canUseAdminChannel: false });
   return { connected: false, canUseAdminChannel: false };
@@ -17433,6 +17666,7 @@ if (gotLock) {
     void telemetry.launcherInstalled();
     if (loadSettings().launcherToken) {
       startLauncherPresenceLoop();
+      startRemotePlayLoop();
     }
 
     /*
@@ -17485,6 +17719,7 @@ if (gotLock) {
       return;
     }
     stopLauncherPresenceLoop();
+    stopRemotePlayLoop();
     if (process.platform !== "darwin") app.quit();
   });
 
@@ -17501,6 +17736,7 @@ if (gotLock) {
     gamepadBridge.deactivatePlayBoundControls();
     isAppQuitting = true;
     stopLauncherPresenceLoop();
+    stopRemotePlayLoop();
     // Close any play session still open. Fire-and-forget: quitting must not
     // wait on the network, and an unreported session is better than a hang.
     void telemetry.flushOpenSessions();
