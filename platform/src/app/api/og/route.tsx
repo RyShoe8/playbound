@@ -1,8 +1,6 @@
 import { ImageResponse } from "next/og";
 import { SITE_NAME, SITE_PUBLIC_HOST, SITE_TAGLINE, SITE_DESCRIPTION } from "@/lib/site";
 
-export const runtime = "edge";
-
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
