@@ -1,6 +1,12 @@
 import { listGames } from "@/lib/catalog";
 import type { Game } from "@/lib/data/types";
-import type { Cents } from "@/lib/access/types";
+import {
+  DEEP_DISCOUNT_MIN_PERCENT,
+  dealStoreKey,
+  isDiscounted,
+  percentOff,
+  type DiscountedGame,
+} from "@/lib/dealsShared";
 
 /**
  * Discounted catalog games, for /deals.
@@ -19,70 +25,21 @@ import type { Cents } from "@/lib/access/types";
  * belongs in the catalog at all, and it deliberately ignores sales so a title
  * does not enter and leave over a weekend promotion. It is the wrong field here,
  * because this page is *about* the weekend promotion.
+ *
+ * **This module is server-only** — `listGames` reaches the database and the
+ * cache APIs. The type, the constant and the pure helpers live in
+ * `lib/dealsShared.ts` so client components can use them, and are re-exported
+ * here so server callers still have one import site.
  */
 
-/**
- * How deep a discount has to be before PlayBound calls it a deal.
- *
- * PlayBound curates around free and *high value* — "big discounts", not any
- * discount. A game at 10% off is a price change; listing it beside a giveaway
- * would teach readers that the section is noise and cost us the credibility of
- * the ones that are genuinely remarkable.
- *
- * 75% is deliberately demanding. The paid catalog sits at $5.99–$14.99, so this
- * bar means roughly $1.49–$3.74 — the level GOG and Steam actually reach on
- * seasonal sales for older titles, and rare enough the rest of the time that an
- * empty section is the honest normal state rather than a bug.
- *
- * A constant, not a literal, because it is a curation judgement someone will
- * want to revisit — and because the copy on /deals reads it, so the page cannot
- * advertise one number while filtering by another.
- */
-export const DEEP_DISCOUNT_MIN_PERCENT = 75;
-
-export type DiscountedGame = {
-  slug: string;
-  title: string;
-  tagline: string | null;
-  coverImage: string | null;
-  art: Game["art"];
-  genres: string[];
-  regularPriceCents: Cents;
-  currentPriceCents: Cents;
-  currency: string;
-  /** Whole percent off, rounded down so we never overstate a discount. */
-  percentOff: number;
-  /** Cheapest active retail offer, when the game lists one. */
-  storeName: string | null;
-  storeUrl: string | null;
-};
-
-/**
- * Is this game cheaper than usual right now?
- *
- * Exported for the test, because every one of these guards is a way to
- * advertise a discount that does not exist:
- *   - a null on either side is unknown, not free
- *   - equal prices are the normal state, not a 0% sale
- *   - current > regular means the curated regular price is stale; showing it as
- *     a negative discount would be worse than showing nothing
- *   - a non-positive regular price cannot produce a meaningful percentage
- */
-export function isDiscounted(access: Game["access"] | undefined): boolean {
-  if (!access) return false;
-  if (access.priceType !== "PAID") return false;
-  const regular = access.regularPriceCents;
-  const current = access.currentPriceCents;
-  if (typeof regular !== "number" || typeof current !== "number") return false;
-  if (regular <= 0 || current < 0) return false;
-  return current < regular;
-}
-
-/** Whole percent off, floored. 999 → 599 is 40%, not 40.04%. */
-export function percentOff(regularCents: number, currentCents: number): number {
-  if (regularCents <= 0) return 0;
-  return Math.floor(((regularCents - currentCents) / regularCents) * 100);
-}
+export {
+  DEEP_DISCOUNT_MIN_PERCENT,
+  dealStoreKey,
+  isDiscounted,
+  percentOff,
+  formatCents,
+} from "@/lib/dealsShared";
+export type { DiscountedGame } from "@/lib/dealsShared";
 
 /** The cheapest active offer, so the link goes where the price actually is. */
 function cheapestOffer(access: NonNullable<Game["access"]>) {
@@ -111,6 +68,7 @@ function toDiscountedGame(game: Game): DiscountedGame | null {
     percentOff: percentOff(regular, current),
     storeName: offer?.retailer ?? null,
     storeUrl: offer?.url ?? game.gogStoreUrl ?? null,
+    storeKey: dealStoreKey(offer?.retailer),
   };
 }
 
@@ -138,10 +96,4 @@ export async function listDiscountedGames(opts?: {
     .map(toDiscountedGame)
     .filter((g): g is DiscountedGame => g !== null && g.percentOff >= floor)
     .sort((a, b) => b.percentOff - a.percentOff || a.currentPriceCents - b.currentPriceCents);
-}
-
-/** `599` → `"$5.99"`. USD only today, matching the access model's `Currency`. */
-export function formatCents(cents: number, currency = "USD"): string {
-  const symbol = currency === "USD" ? "$" : "";
-  return `${symbol}${(cents / 100).toFixed(2)}`;
 }

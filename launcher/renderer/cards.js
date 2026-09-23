@@ -298,7 +298,10 @@ function formatOfferExpiration(endDate) {
   return `${Math.floor(diffDays)}d left`;
 }
 
-function storeDisplayName(store) {
+// Exported so the Game Deals view labels its store filter from the same map
+// rather than keeping a second copy that can drift out of step with the badges
+// on the cards right beside it.
+export function storeDisplayName(store) {
   const names = {
     epic: "Epic Games",
     steam: "Steam",

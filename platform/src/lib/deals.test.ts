@@ -3,8 +3,9 @@ import {
   isDiscounted,
   percentOff,
   formatCents,
+  dealStoreKey,
   DEEP_DISCOUNT_MIN_PERCENT,
-} from "@/lib/deals";
+} from "@/lib/dealsShared";
 import type { Game } from "@/lib/data/types";
 
 /**
@@ -110,6 +111,43 @@ describe("the deep-discount bar", () => {
     // 599 → 150 is 74%, and flooring keeps it there rather than rounding it in.
     expect(percentOff(599, 150)).toBe(74);
     expect(percentOff(599, 150)).toBeLessThan(DEEP_DISCOUNT_MIN_PERCENT);
+  });
+});
+
+describe("dealStoreKey", () => {
+  /*
+   * The store filter on /deals spans both halves of the page, and the two
+   * halves name their store differently: a free offer carries a StoreSlug
+   * ("gog"), a discount carries a retailer display name ("GOG"). If these do
+   * not converge, a GOG giveaway and a GOG discount fall into separate buckets
+   * and the filter silently shows half of what it should.
+   */
+  it("normalises retailer names onto the free-offer store slugs", () => {
+    expect(dealStoreKey("GOG")).toBe("gog");
+    expect(dealStoreKey("Steam")).toBe("steam");
+    expect(dealStoreKey("Epic Games Store")).toBe("epic");
+  });
+
+  it("is case and whitespace insensitive", () => {
+    expect(dealStoreKey("  gog  ")).toBe("gog");
+    expect(dealStoreKey("sTeAm")).toBe("steam");
+  });
+
+  it("slugifies retailers that only ever carry discounts", () => {
+    // Fanatical and Humble never run the giveaways we track, but they do run
+    // sales — dropping them would hide real deals from the filter.
+    expect(dealStoreKey("Fanatical")).toBe("fanatical");
+    expect(dealStoreKey("Humble Bundle")).toBe("humble-bundle");
+    expect(dealStoreKey("Green Man Gaming")).toBe("green-man-gaming");
+  });
+
+  it("returns null rather than an empty key for unusable input", () => {
+    // An empty-string key would collide with everything else in the filter map.
+    expect(dealStoreKey(null)).toBeNull();
+    expect(dealStoreKey(undefined)).toBeNull();
+    expect(dealStoreKey("")).toBeNull();
+    expect(dealStoreKey("   ")).toBeNull();
+    expect(dealStoreKey("!!!")).toBeNull();
   });
 });
 

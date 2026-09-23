@@ -1,43 +1,39 @@
 import Link from "next/link";
-import { ArrowRight, BadgePercent, Gift, Tag } from "lucide-react";
+import { BadgePercent } from "lucide-react";
 import { listActiveOffers } from "@/lib/freeOffers/service";
 import { listDiscountedGames, DEEP_DISCOUNT_MIN_PERCENT } from "@/lib/deals";
-import { ActiveOffersGrid } from "@/components/ActiveOffersGrid";
-import { DiscountedGameCard } from "@/components/DiscountedGameCard";
+import { DealsBrowser } from "@/components/DealsBrowser";
 import { Badge } from "@/components/ui/bits";
 import { JsonLd, graph, breadcrumbSchema } from "@/components/JsonLd";
 import { absoluteUrl } from "@/lib/site";
 
 /**
- * /deals — the hub for every current way to pay less.
+ * /deals — every current way to pay less, in one filterable place.
  *
  * Two halves, two different things. Free offers are store giveaways PlayBound
  * tracks; discounts are catalog games we curate that happen to be cheap today.
+ * Both are listed in full, and `DealsBrowser` lets a reader narrow to one kind
+ * or one store without leaving the page.
  *
- * The free half is deliberately **condensed** and links out to /free-games. That
- * page is the canonical list — it ranks for the giveaway queries, sits at
- * sitemap priority 0.9 with a daily change frequency, and names every store in
- * its metadata. Rendering the whole list twice would put two PlayBound pages in
- * competition for the same search intent to no one's benefit.
+ * Either section hides when its filtered result is empty rather than rendering
+ * an empty shell under a heading. For discounts that is the common case, not an
+ * edge case: the catalog carries roughly eighteen paid games and only counts a
+ * discount at DEEP_DISCOUNT_MIN_PERCENT or deeper, so most days genuinely have
+ * nothing to show and that should look deliberate rather than broken.
  *
- * The discount half hides when empty rather than rendering an empty shell. That
- * is the common case today, not an edge case: the catalog carries roughly
- * eighteen paid games and only counts a discount at DEEP_DISCOUNT_MIN_PERCENT
- * or deeper, so most days genuinely have nothing to show and that should look
- * deliberate rather than broken.
+ * On the overlap with /free-games: that page is still the canonical list for the
+ * giveaway search intent and keeps the higher sitemap priority. This page lists
+ * the same offers because it is the navigation destination and a deals hub that
+ * truncated its own contents would be the wrong trade — but the structured data
+ * below deliberately stays with the discounts only, so the two pages do not
+ * compete for the same rich results.
  */
-
-/** How many free offers the condensed section shows before deferring to /free-games. */
-const FREE_PREVIEW_COUNT = 8;
 
 export default async function DealsPage() {
   const [activeOffers, discounted] = await Promise.all([
     listActiveOffers(),
     listDiscountedGames(),
   ]);
-
-  const freePreview = activeOffers.slice(0, FREE_PREVIEW_COUNT);
-  const hiddenFreeCount = Math.max(0, activeOffers.length - freePreview.length);
 
   /*
    * Only the discounted games get ItemList markup. The free offers already have
@@ -100,60 +96,11 @@ export default async function DealsPage() {
         </p>
       </header>
 
-      {/* ── Discounted catalog games ─────────────────────────────── */}
-      {discounted.length > 0 && (
-        <section className="space-y-6">
-          <div>
-            <div className="flex items-center gap-2">
-              <Tag className="size-5 text-muted-foreground" />
-              <h2 className="text-2xl font-bold tracking-tight">On sale now</h2>
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {discounted.length === 1
-                ? "One catalog game is currently"
-                : `${discounted.length} catalog games are currently`}{" "}
-              {DEEP_DISCOUNT_MIN_PERCENT}% off or more. Every one has already cleared the
-              PlayBound Bar — the discount is why it is on this page, not why we
-              recommend it.
-            </p>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {discounted.map((game) => (
-              <DiscountedGameCard key={game.slug} game={game} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ── Free giveaways (condensed; /free-games is canonical) ── */}
-      <section
-        className={
-          discounted.length > 0 ? "space-y-6 border-t border-border pt-10" : "space-y-6"
-        }
-      >
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <Gift className="size-5 text-muted-foreground" />
-              <h2 className="text-2xl font-bold tracking-tight">Free right now</h2>
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Time-limited giveaways from Epic, Steam, GOG, Prime Gaming and Alienware
-              Arena. Claim them before they expire.
-            </p>
-          </div>
-          <Link
-            href="/free-games"
-            className="inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:underline"
-          >
-            {hiddenFreeCount > 0 ? `All ${activeOffers.length} free games` : "All free games"}
-            <ArrowRight className="size-4" />
-          </Link>
-        </div>
-
-        <ActiveOffersGrid offers={freePreview} />
-      </section>
+      <DealsBrowser
+        offers={activeOffers}
+        discounted={discounted}
+        minPercentOff={DEEP_DISCOUNT_MIN_PERCENT}
+      />
 
       {/* ── Standing explanation of what belongs here ───────────── */}
       <section className="rounded-2xl border border-border bg-card p-6">
