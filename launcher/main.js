@@ -6194,8 +6194,8 @@ const controlProfileCache = new Map(); // `${slug}::${editionSlug || ""}` -> { a
 const CONTROL_PROFILE_TTL_MS = 60 * 1000;
 
 /**
- * Fetch the one `verified` PlayBound Controls profile for a game/edition, or
- * null if none exists yet. Never throws — a slow/failed fetch must not block
+ * Fetch a verified profile, or a testing profile only when preview was
+ * explicitly requested. Never throws — a slow/failed fetch must not block
  * a game launch, so this degrades to "no PlayBound Controls this session"
  * exactly like a missing native controller config already does below.
  *
@@ -6203,14 +6203,15 @@ const CONTROL_PROFILE_TTL_MS = 60 * 1000;
  * profile" result — a captive portal or a brief API blip now should not mean
  * PlayBound Controls stays off for the rest of the session once it clears.
  */
-async function fetchVerifiedControlProfile(slug, editionSlug) {
-  const key = `${slug}::${editionSlug || ""}`;
+async function fetchControlProfile(slug, editionSlug, preview = false) {
+  const key = `${slug}::${editionSlug || ""}::${preview ? "preview" : "verified"}`;
   const cached = controlProfileCache.get(key);
   if (cached && Date.now() - cached.at < CONTROL_PROFILE_TTL_MS) return cached.profile;
 
   try {
     const url = new URL(`${getApiBase()}/api/launcher/control-profile/${encodeURIComponent(slug)}`);
     if (editionSlug) url.searchParams.set("edition", editionSlug);
+    if (preview) url.searchParams.set("preview", "1");
     const res = await apiFetch(url.toString(), {
       headers: launcherApiHeaders({ accept: "application/json" }),
     });
@@ -6226,15 +6227,16 @@ async function fetchVerifiedControlProfile(slug, editionSlug) {
   }
 }
 
-async function availablePlayBoundControlsProfile(slug, editionSlug) {
+async function availablePlayBoundControlsProfile(slug, editionSlug, allowPreview = false) {
   const { hasControlsHost } = require("./services/couch/windowsVigem");
   if (process.platform !== "win32" || couchHost?.getState?.()?.active || !hasControlsHost()) return null;
   const outRunPilot = !app.isPackaged && slug === "outrun" && process.env.PLAYBOUND_CONTROLS_PILOT_OUTRUN === "1";
   const profile = outRunPilot
     ? require("./services/inputEngine/profiles/outrun.json")
-    : await fetchVerifiedControlProfile(slug, editionSlug);
+    : await fetchControlProfile(slug, editionSlug, allowPreview);
   const approved = profile?.status === "verified" && profile?.antiCheatCompatibility === "verified";
-  return (approved || outRunPilot) && profile?.inputStrategy === "keyboard_mouse" ? profile : null;
+  const testing = allowPreview && profile?.status === "testing";
+  return (approved || testing || outRunPilot) && profile?.inputStrategy === "keyboard_mouse" ? profile : null;
 }
 
 /** Tell the renderer whether its Gamepad API polling loop needs to run for PlayBound Controls. */
@@ -6252,15 +6254,15 @@ async function applyControllerConfig(slug, installDir, opts = {}) {
    * controller support — exactly the games `supportsControllerConfig` below
    * returns false for, since there is no per-game config file to write.
    * Always deactivate first so a previous game's profile can never leak into
-   * this one; only ever activates a "verified" profile, and never when the
-   * player explicitly chose keyboard/mouse for themselves.
+   * this one; testing profiles require an explicit Preview choice and never
+   * activate during an ordinary controller launch.
    */
   gamepadBridge.deactivatePlayBoundControls();
   notifyPlayBoundControlsState(false);
   if (process.platform === "win32" && !couchHost?.getState?.()?.active && inputMode !== "keyboard" && inputMode !== "phone") {
     // The shared availability resolver also allows the explicit local OutRun
     // pilot; packaged launchers still require a verified catalog profile.
-    const profile = await availablePlayBoundControlsProfile(slug, opts?.editionSlug || null);
+    const profile = await availablePlayBoundControlsProfile(slug, opts?.editionSlug || null, opts?.controlsPreview === true);
     if (profile && gamepadBridge.activatePlayBoundControls(profile)) {
       const key = `${profile.gameSlug}::${profile.editionSlug || ""}`;
       gamepadBridge.updateControlsSettings(loadSettings().controlOverrides?.[key] || {});
@@ -16326,8 +16328,9 @@ ipcMain.handle("update-playbound-controls-settings", (_event, partial) => {
 });
 ipcMain.handle("get-playbound-controls-availability", async (_event, slug, editionSlug) => {
   if (typeof slug !== "string" || !slug || slug.length > 120) return { available: false };
-  const profile = await availablePlayBoundControlsProfile(slug, editionSlug || null);
-  return { available: Boolean(profile), name: profile?.name || null };
+  const profile = await availablePlayBoundControlsProfile(slug, editionSlug || null, true);
+  const outRunPilot = !app.isPackaged && slug === "outrun" && process.env.PLAYBOUND_CONTROLS_PILOT_OUTRUN === "1";
+  return { available: Boolean(profile), preview: Boolean(profile?.status === "testing" && !outRunPilot), name: profile?.name || null };
 });
 ipcMain.handle("get-overlay-shortcut", () => ({
   accelerator: overlayShortcut(),

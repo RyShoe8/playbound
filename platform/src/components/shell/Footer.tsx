@@ -10,6 +10,7 @@ const links = [
   { href: "/mods", label: "Mods" },
   { href: "/multiplayer", label: "Multiplayer" },
   { href: "/connect", label: "Connect" },
+  { href: "/controls", label: "Controls" },
   { href: "/play-with-friends", label: "Play Together" },
   { href: "/guides", label: "Guides" },
   { href: "/events", label: "Events" },

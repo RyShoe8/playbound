@@ -121,6 +121,7 @@ function hideOverlay() {
 export function promptPlayControllerChoice(opts = {}) {
   const title = opts.title || "this game";
   const enhancedOnly = opts.playBoundControlsOnly === true;
+  const preview = opts.playBoundControlsPreview === true;
   return new Promise((resolve) => {
     const root = ensureOverlayRoot();
     root.classList.remove("hidden");
@@ -133,7 +134,7 @@ export function promptPlayControllerChoice(opts = {}) {
           </div>
           <h2 id="phone-controller-title">How do you want to play?</h2>
           <p class="phone-controller-lead">
-            <strong>${escapeHtml(title)}</strong> ${enhancedOnly ? "has a PlayBound Controls profile. Choose your control setup:" : "supports controllers. Choose your control setup:"}
+            <strong>${escapeHtml(title)}</strong> ${preview ? "has a PlayBound Controls preview layout that is still being tested. Choose your control setup:" : enhancedOnly ? "has a PlayBound Controls profile. Choose your control setup:" : "supports controllers. Choose your control setup:"}
           </p>
         </div>
 
@@ -157,10 +158,10 @@ export function promptPlayControllerChoice(opts = {}) {
             </div>
             <div class="phone-controller-choice-text">
               <div class="phone-controller-choice-header">
-                <span class="phone-controller-choice-title">${enhancedOnly ? "PlayBound Controls" : "Controller (Gamepad)"}</span>
-                <span class="phone-controller-choice-tag">${enhancedOnly ? "Enhanced" : "Direct"}</span>
+                <span class="phone-controller-choice-title">${preview ? "PlayBound Controls Preview" : enhancedOnly ? "PlayBound Controls" : "Controller (Gamepad)"}</span>
+                <span class="phone-controller-choice-tag">${preview ? "Testing" : enhancedOnly ? "Enhanced" : "Direct"}</span>
               </div>
-              <span class="phone-controller-choice-sub">${enhancedOnly ? "Map your controller to this game's keyboard controls" : "Play with an Xbox, PlayStation, Switch Pro, or USB controller"}</span>
+              <span class="phone-controller-choice-sub">${preview ? "Try this unverified layout and help us tune it" : enhancedOnly ? "Map your controller to this game's keyboard controls" : "Play with an Xbox, PlayStation, Switch Pro, or USB controller"}</span>
             </div>
           </button>
 
@@ -339,8 +340,11 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
 
   const gameSlug = detail?.gameSlug || slug || detail?.slug;
   let enhancedAvailable = false;
+  let enhancedPreview = false;
   try {
-    enhancedAvailable = Boolean((await pb()?.getPlayBoundControlsAvailability?.(gameSlug, detail?.editionSlug || null))?.available);
+    const availability = await pb()?.getPlayBoundControlsAvailability?.(gameSlug, detail?.editionSlug || null);
+    enhancedAvailable = Boolean(availability?.available);
+    enhancedPreview = enhancedAvailable && Boolean(availability?.preview);
   } catch {
     // A failed profile lookup must not block an ordinary game launch.
   }
@@ -355,6 +359,7 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
   const choice = await promptPlayControllerChoice({
     title: detail?.title || detail?.editionName || "This game",
     playBoundControlsOnly: enhancedAvailable,
+    playBoundControlsPreview: enhancedPreview,
   });
   if (choice === "cancel") {
     setStatus("Launch cancelled");
@@ -424,7 +429,7 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
     await disableGamepadBridge();
   }
 
-  await playFn({ inputMode: finalMode });
+  await playFn({ inputMode: finalMode, ...(finalMode === "controller" && enhancedPreview ? { controlsPreview: true } : {}) });
   return true;
 }
 

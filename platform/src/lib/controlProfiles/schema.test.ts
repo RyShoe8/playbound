@@ -27,7 +27,8 @@ describe("controlProfileSchema", () => {
     const result = controlProfileSchema.parse(pilot);
     expect(result.status).toBe("testing");
     expect(result.stickMouseSettings?.enabled).toBe(false);
-    expect(result.bindings).toHaveLength(8);
+    expect(result.bindings).toHaveLength(12);
+    expect(result.bindings.some((binding) => binding.physicalInput === "A")).toBe(false);
   });
   it("accepts a minimal valid profile", () => {
     const result = controlProfileSchema.safeParse(baseProfile());
