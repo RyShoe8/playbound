@@ -98,6 +98,24 @@ async function main() {
       /* ignore */
     }
 
+    // If archive extracted into a nested "Sunshine" subfolder, move its contents up
+    const nestedDir = path.join(outDir, "Sunshine");
+    if (fs.existsSync(nestedDir) && fs.statSync(nestedDir).isDirectory()) {
+      for (const item of fs.readdirSync(nestedDir)) {
+        const src = path.join(nestedDir, item);
+        const dest = path.join(outDir, item);
+        if (fs.existsSync(dest)) {
+          fs.rmSync(dest, { recursive: true, force: true });
+        }
+        fs.renameSync(src, dest);
+      }
+      try {
+        fs.rmdirSync(nestedDir);
+      } catch {
+        /* ignore */
+      }
+    }
+
     fs.writeFileSync(versionPath, `${SUNSHINE_VERSION}\n`);
     console.log(`${TAG} Vendored Sunshine to ${outDir}`);
   }

@@ -42,6 +42,7 @@ function resolveSunshineDir() {
   }
   for (const dir of candidates) {
     if (dir && fs.existsSync(path.join(dir, HOST_EXE))) return dir;
+    if (dir && fs.existsSync(path.join(dir, "Sunshine", HOST_EXE))) return path.join(dir, "Sunshine");
   }
   return null;
 }
