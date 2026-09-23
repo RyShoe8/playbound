@@ -16,7 +16,7 @@ export const theDarkModFeatures = [
   // Not native controller support — The Dark Mod reads keyboard/mouse only,
   // same as Thief Gold and Thief II on the same engine. PlayBound Controls
   // now covers it instead; see scripts/control-profiles/wave-2.ts.
-  "PlayBound Controls",
+  "PlayBound Controller Support",
   "Story Campaign",
 ] as const;
 

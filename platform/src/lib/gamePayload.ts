@@ -112,11 +112,14 @@ export const FEATURES = [
    * Distinct from "Controller Support" on purpose: that tag means the game
    * natively reads a controller. This one means PlayBound translates
    * controller input into the game's own keyboard/mouse controls — see
-   * src/lib/controlProfiles/. Tagging a PlayBound Controls game as
-   * "Controller Support" would be a factually wrong claim and would tell the
-   * launcher's native per-game config writer to run where none exists.
+   * src/lib/controlProfiles/. Named to read clearly as controller support at
+   * a glance (it does contain "controller", so it also satisfies the
+   * generic supportsController() pattern match — deliberately, since a
+   * player asking "can I use a controller?" should get yes either way; the
+   * native-vs-PlayBound-enhanced distinction still lives on the per-game
+   * /controls page's status badge, which is the place that actually needs it).
    */
-  "PlayBound Controls",
+  "PlayBound Controller Support",
   "Family Friendly",
   "Mod Support",
   "Map Editor",
