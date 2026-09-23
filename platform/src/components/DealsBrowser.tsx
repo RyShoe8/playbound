@@ -5,6 +5,7 @@ import { Gift, Tag } from "lucide-react";
 import type { FreeOfferRecord } from "@/lib/freeOffers/types";
 import { storeShortName, storeColor } from "@/lib/freeOffers/labels";
 import type { DiscountedGame } from "@/lib/dealsShared";
+import { inferGameGenres, cleanDealTitle } from "@/lib/dealsShared";
 import { ActiveOffersGrid } from "@/components/ActiveOffersGrid";
 import { DiscountedGameCard } from "@/components/DiscountedGameCard";
 import { EmptyHint } from "@/components/ui/bits";
@@ -18,12 +19,10 @@ import { cn } from "@/lib/utils";
  * worse. The server component above it keeps the fetching, the JSON-LD and the
  * standing editorial copy.
  *
- * Two independent filters, deliberately:
- *   - **Kind** narrows to free giveaways or discounts. It hides the other
- *     section outright rather than emptying it, because an empty section under
- *     a heading reads as "nothing here" when the truth is "you filtered it out".
- *   - **Store** narrows both at once, on the shared `storeKey` vocabulary that
- *     lib/deals.ts normalises retailer names onto.
+ * Three independent filters:
+ *   - **Kind** narrows to free giveaways or discounts.
+ *   - **Store** narrows both at once on the shared store key vocabulary.
+ *   - **Genre** narrows deals and giveaways by inferred or catalog genre.
  *
  * Note this does not replace the device-compatibility filter. That still lives
  * in ActiveOffersGrid and composes underneath: this decides which offers are
@@ -32,6 +31,7 @@ import { cn } from "@/lib/utils";
 
 type Kind = "all" | "free" | "discounted";
 const ALL_STORES = "all" as const;
+const ALL_GENRES = "all" as const;
 
 type StoreOption = { key: string; label: string; color?: string };
 
@@ -46,6 +46,7 @@ export function DealsBrowser({
 }) {
   const [kind, setKind] = useState<Kind>("all");
   const [store, setStore] = useState<string>(ALL_STORES);
+  const [genre, setGenre] = useState<string>(ALL_GENRES);
 
   /*
    * Options come from what is actually on the page, not from the full store
@@ -71,14 +72,61 @@ export function DealsBrowser({
     return [...seen.values()].sort((a, b) => a.label.localeCompare(b.label));
   }, [offers, discounted]);
 
-  const visibleOffers = useMemo(
-    () => (store === ALL_STORES ? offers : offers.filter((o) => o.store === store)),
-    [offers, store]
-  );
-  const visibleDiscounted = useMemo(
-    () => (store === ALL_STORES ? discounted : discounted.filter((g) => g.storeKey === store)),
-    [discounted, store]
-  );
+  const genreOptions = useMemo<string[]>(() => {
+    const counts = new Map<string, number>();
+    for (const g of discounted) {
+      const gList = g.genres?.length ? g.genres : inferGameGenres(g.title);
+      for (const item of gList) {
+        counts.set(item, (counts.get(item) || 0) + 1);
+      }
+    }
+    for (const o of offers) {
+      const title = cleanDealTitle(
+        o.unmatchedTitle || (o.metadata?.title as string) || o.gameSlug || ""
+      );
+      const oList = o.genres?.length ? o.genres : inferGameGenres(title);
+      for (const item of oList) {
+        counts.set(item, (counts.get(item) || 0) + 1);
+      }
+    }
+    return Array.from(counts.keys()).sort((a, b) => {
+      const diff = (counts.get(b) || 0) - (counts.get(a) || 0);
+      return diff !== 0 ? diff : a.localeCompare(b);
+    });
+  }, [offers, discounted]);
+
+  const visibleOffers = useMemo(() => {
+    let list = offers;
+    if (store !== ALL_STORES) {
+      list = list.filter((o) => o.store === store);
+    }
+    if (genre !== ALL_GENRES) {
+      const target = genre.toLowerCase();
+      list = list.filter((o) => {
+        const title = cleanDealTitle(
+          o.unmatchedTitle || (o.metadata?.title as string) || o.gameSlug || ""
+        );
+        const oList = o.genres?.length ? o.genres : inferGameGenres(title);
+        return oList.some((g) => g.toLowerCase() === target);
+      });
+    }
+    return list;
+  }, [offers, store, genre]);
+
+  const visibleDiscounted = useMemo(() => {
+    let list = discounted;
+    if (store !== ALL_STORES) {
+      list = list.filter((g) => g.storeKey === store);
+    }
+    if (genre !== ALL_GENRES) {
+      const target = genre.toLowerCase();
+      list = list.filter((g) => {
+        const gList = g.genres?.length ? g.genres : inferGameGenres(g.title);
+        return gList.some((item) => item.toLowerCase() === target);
+      });
+    }
+    return list;
+  }, [discounted, store, genre]);
 
   const showFree = kind !== "discounted";
   const showDiscounted = kind !== "free";
@@ -118,6 +166,26 @@ export function DealsBrowser({
                 active={store === opt.key}
                 color={opt.color}
                 onClick={() => setStore(opt.key)}
+              />
+            ))}
+          </FilterRow>
+        )}
+
+        {genreOptions.length > 1 && (
+          <FilterRow label="Genre">
+            <Chip
+              label="All genres"
+              active={genre === ALL_GENRES}
+              onClick={() => setGenre(ALL_GENRES)}
+            />
+            {genreOptions.slice(0, 10).map((g) => (
+              <Chip
+                key={g}
+                label={g}
+                active={genre.toLowerCase() === g.toLowerCase()}
+                onClick={() =>
+                  setGenre(genre.toLowerCase() === g.toLowerCase() ? ALL_GENRES : g)
+                }
               />
             ))}
           </FilterRow>

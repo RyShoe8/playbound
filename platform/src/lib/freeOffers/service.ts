@@ -12,6 +12,7 @@ import dbConnect from "@/lib/db";
 import FreeOffer from "@/lib/models/FreeOffer";
 import StoreProviderModel from "@/lib/models/StoreProvider";
 import { seedFreeOffers, seedStoreProviders } from "@/lib/data/freeOffers";
+import { inferGameGenres } from "@/lib/dealsShared";
 import { STORE_SLUGS, type FreeOfferRecord, type StoreProviderRecord, type StoreSlug } from "./types";
 
 // ── Mappers ──────────────────────────────────────────────────────────────
@@ -44,6 +45,13 @@ function toRecord(doc: LeanDoc): FreeOfferRecord {
     developer: (doc.developer as string) || null,
     publisher: (doc.publisher as string) || null,
     platforms: (doc.platforms as string[]) ?? [],
+    genres: inferGameGenres(
+      (doc.unmatchedTitle as string) ||
+        ((doc.metadata as Record<string, unknown> | undefined)?.title as string) ||
+        (doc.gameSlug as string) ||
+        "",
+      (doc.genres as string[]) ?? []
+    ),
     isBaseGame: doc.isBaseGame !== false,
     videos: (doc.videos as string[]) ?? [],
     redemptionPlatform: (doc.redemptionPlatform as string) || null,

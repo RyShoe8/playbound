@@ -4,7 +4,12 @@ import { useState } from "react";
 import Image from "next/image";
 import { Gift, ExternalLink, Clock } from "lucide-react";
 import type { FreeOfferRecord } from "@/lib/freeOffers/types";
-import { cleanDealTitle, upgradeCoverImage } from "@/lib/dealsShared";
+import {
+  cleanDealTitle,
+  upgradeCoverImage,
+  formatDetailedTimeLeft,
+  inferGameGenres,
+} from "@/lib/dealsShared";
 import {
   offerTypeLabel,
   claimCtaLabel,
@@ -67,7 +72,8 @@ export function FreeGameCard({
       : "Free Game Deal");
   const displayTitle = cleanDealTitle(rawTitle);
   const coverImage = upgradeCoverImage(offer.coverImage);
-  const expiry = expirationLabel(offer.endDate);
+  const expiry = formatDetailedTimeLeft(offer.endDate) || expirationLabel(offer.endDate);
+  const genres = offer.genres?.length ? offer.genres : inferGameGenres(displayTitle);
   const typeLabel = offerTypeLabel(offer.offerType, offer.store);
   const ctaLabel = claimCtaLabel(offer.store);
   const incompLabel = useIncompatibilityLabel(offerToGameLike(offer));
@@ -133,8 +139,13 @@ export function FreeGameCard({
           <p className="line-clamp-1 text-sm font-bold text-foreground">
             {displayTitle}
           </p>
+          {genres.length > 0 && (
+            <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+              {genres.slice(0, 3).join(" · ")}
+            </p>
+          )}
 
-          <div className="mt-1 flex items-center justify-between gap-2 text-xs">
+          <div className="mt-1.5 flex items-center justify-between gap-2 text-xs">
             {offer.retailPrice ? (
               <p>
                 <span className="text-muted-foreground line-through">

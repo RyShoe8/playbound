@@ -19,7 +19,12 @@ import { getStoreAffiliateMap } from "@/lib/commerce/affiliates";
 import { storeSlugToRetailer } from "@/lib/commerce/stores";
 import { withStoreAffiliate } from "@/lib/access/storeUrls";
 import { withOutboundUtm } from "@/lib/utm";
-import { cleanDealTitle, upgradeCoverImage, type DiscountedGame } from "@/lib/dealsShared";
+import {
+  cleanDealTitle,
+  upgradeCoverImage,
+  inferGameGenres,
+  type DiscountedGame,
+} from "@/lib/dealsShared";
 import { DISCOUNT_STORE_SLUGS, type DiscountStoreSlug } from "./types";
 
 type LeanDoc = Record<string, unknown>;
@@ -63,14 +68,16 @@ async function toRecord(
   const directUrlAvailable = (doc.metadata as Record<string, unknown> | undefined)?.directUrlAvailable !== false;
   const rawCover = (doc.coverImage as string) || null;
   const steamAppId = (doc.metadata as Record<string, unknown> | undefined)?.steamAppID as string | undefined;
+  const cleanTitle = cleanDealTitle(String(doc.title));
+  const rawEndDate = doc.endDate || (doc.metadata as Record<string, unknown> | undefined)?.endDate;
 
   return {
     slug: (doc.matchedGameSlug as string) || null,
-    title: cleanDealTitle(String(doc.title)),
+    title: cleanTitle,
     tagline: null,
     coverImage: upgradeCoverImage(rawCover, steamAppId),
     art: null,
-    genres: (doc.genres as string[]) ?? [],
+    genres: inferGameGenres(cleanTitle, doc.genres as string[]),
     regularPriceCents: Number(doc.regularPriceCents),
     currentPriceCents: Number(doc.currentPriceCents),
     currency: (doc.currency as string) || "USD",
@@ -78,6 +85,7 @@ async function toRecord(
     storeName: storeSlugToRetailer(store),
     storeUrl: buildStoreUrl(String(doc.storeUrl), store, directUrlAvailable, affiliates),
     storeKey: store,
+    endDate: rawEndDate ? new Date(rawEndDate as string).toISOString() : null,
   };
 }
 
