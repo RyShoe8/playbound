@@ -85,7 +85,7 @@ export async function GET(
           affiliateLinks: activeLinks,
         },
         recommendedGames,
-        reviews: reviewDocs.map((r: any) => ({
+        reviews: reviewDocs.map((r) => ({
           id: String(r._id),
           authorName: r.authorName || "Anonymous",
           rating: r.rating,
@@ -95,7 +95,7 @@ export async function GET(
         })),
         avgRating: avg,
         reviewCount,
-        discussions: discussionDocs.map((d: any) => ({
+        discussions: discussionDocs.map((d) => ({
           id: String(d._id),
           title: d.title,
           category: d.category,

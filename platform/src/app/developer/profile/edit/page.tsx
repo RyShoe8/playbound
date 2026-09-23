@@ -41,7 +41,7 @@ export default async function EditStudioProfilePage() {
     );
   }
 
-  const primaryStudio = developers[0] as Record<string, any>;
+  const primaryStudio = developers[0];
   const serializableStudio = {
     slug: String(primaryStudio.slug),
     name: String(primaryStudio.name),

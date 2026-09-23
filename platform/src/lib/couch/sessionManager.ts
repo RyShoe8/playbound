@@ -57,7 +57,7 @@ function randomToken(bytes = 24): string {
   return crypto.randomBytes(bytes).toString("hex");
 }
 
-async function useMongo(): Promise<boolean> {
+async function withMongo(): Promise<boolean> {
   if (storeMode === "memory") return false;
   if (storeMode === "mongo") return true;
   try {
@@ -81,7 +81,7 @@ function trimMessages(session: CouchSession) {
 async function saveSession(session: CouchSession): Promise<void> {
   trimMessages(session);
   session.expiresAt = new Date(session.createdAt + SESSION_TTL_MS);
-  if (await useMongo()) {
+  if (await withMongo()) {
     const Model = await getModel();
     const payload = { ...session } as Record<string, unknown>;
     delete payload._id;
@@ -112,7 +112,7 @@ async function dropIfStale(session: CouchSession | null): Promise<CouchSession |
 
 async function loadById(sessionId: string): Promise<CouchSession | null> {
   let session: CouchSession | null = null;
-  if (await useMongo()) {
+  if (await withMongo()) {
     const Model = await getModel();
     const doc = await Model.findOne({ sessionId, status: "open" }).lean();
     session = doc ? (doc as unknown as CouchSession) : null;
@@ -125,7 +125,7 @@ async function loadById(sessionId: string): Promise<CouchSession | null> {
 async function loadByCode(code: string): Promise<CouchSession | null> {
   const normalized = String(code || "").toUpperCase();
   let session: CouchSession | null = null;
-  if (await useMongo()) {
+  if (await withMongo()) {
     const Model = await getModel();
     const doc = await Model.findOne({ joinCode: normalized, status: "open" }).lean();
     session = doc ? (doc as unknown as CouchSession) : null;
@@ -139,7 +139,7 @@ async function loadByCode(code: string): Promise<CouchSession | null> {
 /** Remove open Couch rows whose host stopped heartbeating (launcher quit without DELETE). */
 export async function purgeStaleCouchSessions(): Promise<number> {
   const cutoff = Date.now() - COUCH_SESSION_STALE_MS;
-  if (await useMongo()) {
+  if (await withMongo()) {
     const Model = await getModel();
     const res = await Model.deleteMany({
       status: "open",
@@ -165,7 +165,7 @@ export async function createCouchSession(params: {
   reserveHostSlot?: boolean;
 }): Promise<CouchSession> {
   const existing = new Set<string>();
-  if (await useMongo()) {
+  if (await withMongo()) {
     const Model = await getModel();
     const rows = await Model.find({ status: "open" }).select("joinCode").lean();
     for (const r of rows) existing.add(String((r as { joinCode: string }).joinCode));
@@ -395,7 +395,7 @@ export async function touchCouchSessionActivity(
 
 export async function endCouchSession(session: CouchSession): Promise<void> {
   session.status = "ended";
-  if (await useMongo()) {
+  if (await withMongo()) {
     const Model = await getModel();
     await Model.deleteOne({ sessionId: session.sessionId });
   } else {

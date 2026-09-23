@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useLauncherOs } from "@/hooks/useLauncherOs";
+
+import { useState } from "react";
 import { Download, Loader2, MonitorPlay } from "lucide-react";
 import { launcherInstallUrl, launcherInstallModUrl } from "@/lib/launcher";
 import {
   launcherDownloadUrlForOs,
   launcherOsLabel,
-  type LauncherOs,
 } from "@/lib/launcherDownload";
 import {
-  detectLauncherOs,
   openPlayboundDeepLink,
 } from "@/lib/openPlayboundDeepLink";
 import { shouldOfferLauncher } from "@/lib/mobilePlay";
@@ -33,13 +33,10 @@ export function LauncherInstallButton({
 }: Props) {
   const device = useDevice();
   const [status, setStatus] = useState<"idle" | "trying" | "downloaded">("idle");
-  const [os, setOs] = useState<LauncherOs>("windows");
+  const os = useLauncherOs();
   const { track } = useTelemetry();
   const deepLink = kind === "install-mod" ? launcherInstallModUrl(slug) : launcherInstallUrl(slug);
 
-  useEffect(() => {
-    setOs(detectLauncherOs());
-  }, []);
 
   if (!shouldOfferLauncher(device.type)) {
     return null;

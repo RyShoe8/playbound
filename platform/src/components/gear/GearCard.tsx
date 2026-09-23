@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
 import { PlayboundCertifiedBadge } from "./PlayboundCertifiedBadge";
-import type { GearDraft } from "../admin/GearEditorForm"; // Reusing type for convenience, or we can define it properly
+import type { GearItem } from "@/lib/gear";
 
-export function GearCard({ gear, rank, notes }: { gear: any; rank?: string | null; notes?: string }) {
+export function GearCard({ gear, rank, notes }: { gear: GearItem; rank?: string | null; notes?: string }) {
   // We can sort affiliate links by some criteria or just show them
-  const activeLinks = (gear.affiliateLinks || []).filter((l: any) => l.isActive);
+  const activeLinks = (gear.affiliateLinks || []).filter((link) => link.isActive);
 
   return (
     <div className="flex flex-col gap-4 overflow-hidden rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/40 sm:flex-row sm:items-start">
@@ -36,7 +36,7 @@ export function GearCard({ gear, rank, notes }: { gear: any; rank?: string | nul
         </div>
         
         {notes && (
-          <p className="mt-2 text-sm font-medium italic text-muted-foreground">"{notes}"</p>
+          <p className="mt-2 text-sm font-medium italic text-muted-foreground">&ldquo;{notes}&rdquo;</p>
         )}
 
         <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
@@ -44,7 +44,7 @@ export function GearCard({ gear, rank, notes }: { gear: any; rank?: string | nul
         </p>
 
         <div className="mt-auto pt-4 flex flex-wrap items-center gap-2">
-          {activeLinks.map((link: any, i: number) => (
+          {activeLinks.map((link, i: number) => (
             <a
               key={i}
               href={link.url}

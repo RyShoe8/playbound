@@ -186,7 +186,7 @@ export function PartyView({
     mode,
     device.type,
     party.requiredPlatforms,
-    party.members?.length,
+    party.members.length,
     party.couchOnlyGames,
     couchCoopFilter,
   ]);

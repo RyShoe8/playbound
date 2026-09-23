@@ -20,7 +20,7 @@ export async function GET(
   try {
     await dbConnect();
     const { id } = await params;
-    let artifact = await Artifact.findOne({ artifactId: id });
+    const artifact = await Artifact.findOne({ artifactId: id });
     if (!artifact) return NextResponse.json({ error: "Artifact not found" }, { status: 404 });
 
     /*

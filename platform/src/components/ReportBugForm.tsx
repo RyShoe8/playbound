@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { Bug } from "lucide-react";
@@ -12,15 +12,15 @@ export function ReportBugForm() {
   const [description, setDescription] = useState("");
   const [contactEmail, setContactEmail] = useState(session?.user?.email ?? "");
   const [submitterName, setSubmitterName] = useState(session?.user?.username ?? "");
-  const [pageUrl, setPageUrl] = useState("");
+  const [pageUrlOverride, setPageUrlOverride] = useState<string | null>(null);
+  const currentUrl = useSyncExternalStore(
+    () => () => {},
+    () => window.location.href,
+    () => ""
+  );
+  const pageUrl = pageUrlOverride ?? currentUrl;
   const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
   const [message, setMessage] = useState("");
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setPageUrl(window.location.href);
-    }
-  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -103,7 +103,7 @@ export function ReportBugForm() {
       </div>
       <div>
         <label className="text-xs font-semibold text-muted-foreground">Page URL (optional)</label>
-        <input className={input} value={pageUrl} onChange={(e) => setPageUrl(e.target.value)} />
+        <input className={input} value={pageUrl} onChange={(e) => setPageUrlOverride(e.target.value)} />
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div>

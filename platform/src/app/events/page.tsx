@@ -33,6 +33,32 @@ function takeExclusive(
   return items;
 }
 
+function Section({
+  title,
+  items,
+  titles,
+}: {
+  title: string;
+  items: ListedEvent[];
+  titles: Map<string, string>;
+}) {
+  if (!items.length) return null;
+  return (
+    <section className="space-y-3">
+      <h2 className="text-lg font-bold">{title}</h2>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {items.map((e) => (
+          <EventCard
+            key={e.id}
+            event={e}
+            gameTitle={e.gameSlug ? titles.get(e.gameSlug) : null}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default async function EventsPage() {
   // Per-request by nature: live data, the signed-in viewer, or both.
   // Reads the database before it reads anything request-scoped, which
@@ -51,6 +77,8 @@ export default async function EventsPage() {
   ]);
   const isAdmin = session?.user?.role === "admin";
 
+  // Event grouping is intentionally based on the current request time.
+  // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
   const activeIds = new Set(events.map((e) => e.id));
   const pastOnly = past
@@ -100,29 +128,6 @@ export default async function EventsPage() {
     })
   );
 
-  function Section({
-    title,
-    items,
-  }: {
-    title: string;
-    items: ListedEvent[];
-  }) {
-    if (!items.length) return null;
-    return (
-      <section className="space-y-3">
-        <h2 className="text-lg font-bold">{title}</h2>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {items.map((e) => (
-            <EventCard
-              key={e.id}
-              event={e}
-              gameTitle={e.gameSlug ? titles.get(e.gameSlug) : null}
-            />
-          ))}
-        </div>
-      </section>
-    );
-  }
 
   const hasActive = events.length > 0;
 
@@ -150,17 +155,17 @@ export default async function EventsPage() {
 
       {hasActive ? (
         <>
-          <Section title="Happening soon" items={soon} />
-          <Section title="Featured" items={featured} />
-          <Section title="Game Nights" items={gameNights} />
-          <Section title="Tournaments" items={tournaments} />
-          <Section title="Parties" items={scheduledParties} />
-          <Section title="Upcoming" items={upcoming} />
+          <Section title="Happening soon" items={soon} titles={titles} />
+          <Section title="Featured" items={featured} titles={titles} />
+          <Section title="Game Nights" items={gameNights} titles={titles} />
+          <Section title="Tournaments" items={tournaments} titles={titles} />
+          <Section title="Parties" items={scheduledParties} titles={titles} />
+          <Section title="Upcoming" items={upcoming} titles={titles} />
         </>
       ) : null}
 
       {/* Past stays visible even when nothing is live or upcoming. */}
-      <Section title="Past events" items={pastOnly.slice(0, 6)} />
+      <Section title="Past events" items={pastOnly.slice(0, 6)} titles={titles} />
     </div>
   );
 }

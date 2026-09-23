@@ -202,7 +202,7 @@ export async function uploadStreamToR2(
       },
     });
 
-    const nodeStream = stream instanceof Readable ? stream : Readable.fromWeb(stream as any);
+    const nodeStream = stream instanceof Readable ? stream : Readable.fromWeb(stream as unknown as import("node:stream/web").ReadableStream);
     const bodyStream = nodeStream.pipe(progressStream);
 
     const command = new PutObjectCommand({

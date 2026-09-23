@@ -14,7 +14,7 @@ export async function CompatibleGearList({ gameSlug, gameTitle }: { gameSlug: st
   }
 
   // Fetch the actual gear items
-  const gearSlugs = recommendations.map((r: any) => r.gearSlug);
+  const gearSlugs = recommendations.map((r) => r.gearSlug);
   const gearItems = await Gear.find({ slug: { $in: gearSlugs }, status: "published" }).lean();
 
   if (gearItems.length === 0) {
@@ -22,8 +22,8 @@ export async function CompatibleGearList({ gameSlug, gameTitle }: { gameSlug: st
   }
 
   // Map them together
-  const list = gearItems.map((gear: any) => {
-    const rec = recommendations.find((r: any) => r.gearSlug === gear.slug);
+  const list = gearItems.map((gear) => {
+    const rec = recommendations.find((r) => r.gearSlug === gear.slug);
     return {
       gear,
       rank: rec?.rank,
@@ -35,7 +35,7 @@ export async function CompatibleGearList({ gameSlug, gameTitle }: { gameSlug: st
     <div className="space-y-4">
       <h2 className="text-lg font-bold">Recommended Gear for {gameTitle}</h2>
       <div className="grid gap-4">
-        {list.map((item: any) => (
+        {list.map((item) => (
           <GearCard key={item.gear.slug} gear={item.gear} rank={item.rank} notes={item.notes} />
         ))}
       </div>

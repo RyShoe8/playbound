@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import dbConnect from "@/lib/db";
 import Gear from "@/lib/models/Gear";
+import type { GearDraft } from "@/components/admin/GearEditorForm";
 import { GearEditorForm } from "@/components/admin/GearEditorForm";
 
 export const metadata: Metadata = { title: "Admin · Edit Gear" };
@@ -40,7 +41,7 @@ export default async function EditGearPage({ params }: { params: Promise<{ slug:
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
       <h1 className="text-3xl font-extrabold tracking-tight">Edit Gear</h1>
-      <GearEditorForm mode="edit" initial={initial as any} />
+      <GearEditorForm mode="edit" initial={initial as GearDraft} />
     </div>
   );
 }

@@ -138,7 +138,9 @@ export function ControllerClient({
   const lastSentRef = useRef(0);
   const lastPadKeyRef = useRef("");
   const joinRef = useRef(join);
-  joinRef.current = join;
+  useEffect(() => {
+    joinRef.current = join;
+  }, [join]);
   const framesRef = useRef(0);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -196,8 +198,9 @@ export function ControllerClient({
     if (!gameLayout) return;
     const onMove = () => resetHudTimer();
     window.addEventListener("mousemove", onMove);
-    resetHudTimer();
+    const initialTimer = setTimeout(resetHudTimer, 0);
     return () => {
+      clearTimeout(initialTimer);
       window.removeEventListener("mousemove", onMove);
       if (hudTimerRef.current) clearTimeout(hudTimerRef.current);
     };
@@ -969,8 +972,8 @@ export function ControllerClient({
     const usePad =
       mode === "standard-gamepad" || (gameLayout && controlChoice === "controller");
     if (!usePad) {
-      setPhysicalLabel(null);
-      return;
+      const clearLabelTimer = setTimeout(() => setPhysicalLabel(null), 0);
+      return () => clearTimeout(clearLabelTimer);
     }
     let raf = 0;
     const tick = () => {

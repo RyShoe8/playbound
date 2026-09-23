@@ -42,7 +42,7 @@ export default async function GearDirectoryPage() {
                 </Link>
               </div>
               <div className="grid gap-6 lg:grid-cols-2">
-                {grouped[category].slice(0, 4).map((gear: any) => (
+                {grouped[category].slice(0, 4).map((gear) => (
                   <GearCard key={gear.slug} gear={gear} />
                 ))}
               </div>

@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useLauncherOs } from "@/hooks/useLauncherOs";
+
+import { useState } from "react";
 import Link from "next/link";
 import { Download, ExternalLink, Play, Terminal } from "lucide-react";
 import { telemetry } from "@/lib/telemetry";
 import type { InstallAction } from "@/lib/editionInstall";
 import {
   launcherDownloadUrlForOs,
-  type LauncherOs,
 } from "@/lib/launcherDownload";
 import {
-  detectLauncherOs,
   openPlayboundDeepLink,
 } from "@/lib/openPlayboundDeepLink";
 import { shouldOfferLauncher } from "@/lib/mobilePlay";
@@ -37,12 +37,9 @@ export function EditionInstallButton({
   variant?: "primary" | "secondary";
 }) {
   const device = useDevice();
-  const [os, setOs] = useState<LauncherOs>("windows");
+  const os = useLauncherOs();
   const [status, setStatus] = useState<"idle" | "trying" | "downloaded">("idle");
 
-  useEffect(() => {
-    setOs(detectLauncherOs());
-  }, []);
 
   const sizes = {
     sm: "h-9 px-4 text-sm",

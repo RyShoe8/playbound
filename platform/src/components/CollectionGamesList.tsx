@@ -17,7 +17,8 @@ import {
 function CollectionGameRow({ game, index }: { game: Game; index: number }) {
   const badge = useIncompatibilityLabel(game);
   const isBaseGameReq = isBaseGameRequirement(game.access);
-  const price = isBaseGameReq ? "FREE" : accessPriceLabel(useGameTier(game.slug).fromPriceCents);
+  const tier = useGameTier(game.slug);
+  const price = isBaseGameReq ? "FREE" : accessPriceLabel(tier.fromPriceCents);
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40">
       <span className="w-6 text-center text-lg font-extrabold text-muted-foreground">
