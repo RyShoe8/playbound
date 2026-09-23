@@ -1,6 +1,6 @@
 /**
- * Windows ViGEm provider via bundled PowerShell host + Nefarius.ViGEm.Client.dll.
- * No node-gyp / no .NET SDK required to package or run.
+ * Windows ViGEm provider via bundled .NET host, with a PowerShell fallback
+ * for virtual pads. PlayBound Controls' SendInput commands require the exe.
  */
 
 "use strict";
@@ -80,6 +80,11 @@ function resolveVigemDir() {
   return null;
 }
 
+function hasControlsHost() {
+  const dir = resolveVigemDir();
+  return process.platform === "win32" && Boolean(dir && fs.existsSync(path.join(dir, HOST_EXE)));
+}
+
 function createWindowsVigemProvider() {
   let child = null;
   let buf = "";
@@ -100,6 +105,7 @@ function createWindowsVigemProvider() {
   const lastReport = new Map();
   /** @type {Array<(msg: object) => void>} */
   let waiters = [];
+  let exitHandler = null;
 
   function ensureProcess() {
     if (child && !child.killed) return;
@@ -152,7 +158,9 @@ function createWindowsVigemProvider() {
       }
     });
     child.stderr.on("data", () => {});
+    const launchedChild = child;
     child.on("exit", () => {
+      if (child !== launchedChild) return;
       child = null;
       slots.clear();
       // A restarted host starts with no pads, so nothing may be deduped
@@ -162,6 +170,7 @@ function createWindowsVigemProvider() {
       for (const w of pending) {
         w({ ok: false, error: "Controller host exited." });
       }
+      exitHandler?.();
     });
   }
 
@@ -207,6 +216,9 @@ function createWindowsVigemProvider() {
 
   return {
     id: "windows-vigem",
+    setExitHandler(handler) {
+      exitHandler = typeof handler === "function" ? handler : null;
+    },
     probe,
     async createController(slot) {
       const res = await send({ cmd: "create", slot }, true);
@@ -268,6 +280,24 @@ function createWindowsVigemProvider() {
       }
       child = null;
     },
+    /**
+     * PlayBound Controls keyboard/mouse synthesis — same sidecar process,
+     * same fire-and-forget send as `update`. See Program.cs's `key` /
+     * `mouseMove` / `mouseButton` commands.
+     * @param {number} vk Windows virtual-key code (see inputEngine/vkCodes.js)
+     * @param {"down"|"up"} action
+     */
+    sendKey(vk, action) {
+      void send({ cmd: "key", vk, action }, false);
+    },
+    /** @param {number} dx @param {number} dy relative pixel deltas */
+    sendMouseMove(dx, dy) {
+      void send({ cmd: "mouseMove", dx, dy }, false);
+    },
+    /** @param {"left"|"right"|"middle"} button @param {"down"|"up"} action */
+    sendMouseButton(button, action) {
+      void send({ cmd: "mouseButton", button, action }, false);
+    },
   };
 }
 
@@ -279,4 +309,5 @@ module.exports = {
   toShort,
   toByte,
   reportKey,
+  hasControlsHost,
 };

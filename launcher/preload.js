@@ -89,6 +89,9 @@ contextBridge.exposeInMainWorld("playbound", {
   startGamepadBridge: (profile) => ipcRenderer.invoke("gamepad-bridge-start", profile || {}),
   stopGamepadBridge: () => ipcRenderer.invoke("gamepad-bridge-stop"),
   gamepadBridgeSendFrame: (frame) => ipcRenderer.send("gamepad-bridge-frame", frame),
+  /** PlayBound Controls: main tells the renderer when to run the frame-polling loop for keyboard/mouse synthesis (never creates a virtual pad). */
+  onPlayBoundControlsActivate: (cb) => ipcRenderer.on("playbound-controls-activate", () => cb()),
+  onPlayBoundControlsDeactivate: (cb) => ipcRenderer.on("playbound-controls-deactivate", () => cb()),
   getAccount: () => ipcRenderer.invoke("get-account"),
   setLauncherToken: (token) => ipcRenderer.invoke("set-launcher-token", token),
   clearLauncherToken: () => ipcRenderer.invoke("clear-launcher-token"),
@@ -199,6 +202,8 @@ contextBridge.exposeInMainWorld("playbound", {
   setOverlayShortcut: (accelerator) => ipcRenderer.invoke("set-overlay-shortcut", accelerator),
   onOverlayOpened: (cb) => ipcRenderer.on("overlay-opened", () => cb()),
   getServerSettings: (partyId) => ipcRenderer.invoke("get-server-settings", partyId),
+  updatePlayBoundControlsSettings: (partial) =>
+    ipcRenderer.invoke("update-playbound-controls-settings", partial || {}),
   applyServerSettings: (partyId, settings) =>
     ipcRenderer.invoke("apply-server-settings", partyId, settings),
   getTes3mpClaimAdmin: (partyId) => ipcRenderer.invoke("get-tes3mp-claim-admin", partyId),

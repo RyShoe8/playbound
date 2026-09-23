@@ -1,9 +1,16 @@
 import { CONTROL_SCHEME_BLURBS, CONTROL_SCHEME_LABELS, documentedSchemes, groupBindings } from "@/lib/controls/types";
 import type { Game } from "@/lib/data/types";
+import { classifyControlSupport } from "@/lib/controlProfiles/service";
+import { ControlSupportBadge } from "@/components/ControlSupportBadge";
 
-export function GameControlsContent({ game }: { game: Game }) {
+export async function GameControlsContent({ game }: { game: Game }) {
+  const hasNativeSupport = documentedSchemes(game.controls).some(
+    (s) => s.scheme === "controller" && s.supported
+  );
+  const supportLevel = await classifyControlSupport(game.slug, null, hasNativeSupport);
+
   return <div className="mx-auto w-full max-w-4xl space-y-8">
-    <header className="space-y-3"><h1 className="text-3xl font-black tracking-tight">{game.title} controls</h1><p className="max-w-2xl text-muted-foreground">Default bindings for every input method {game.title} supports. These are the game&apos;s own defaults — anything you have remapped will differ.</p>{game.controls?.notes ? <p className="max-w-2xl rounded-lg border border-border bg-muted/40 p-3 text-sm">{game.controls.notes}</p> : null}</header>
+    <header className="space-y-3"><h1 className="text-3xl font-black tracking-tight">{game.title} controls</h1><ControlSupportBadge level={supportLevel} /><p className="max-w-2xl text-muted-foreground">Default bindings for every input method {game.title} supports. These are the game&apos;s own defaults — anything you have remapped will differ.</p>{game.controls?.notes ? <p className="max-w-2xl rounded-lg border border-border bg-muted/40 p-3 text-sm">{game.controls.notes}</p> : null}</header>
     {documentedSchemes(game.controls).map((block) => <section key={block.scheme} className="space-y-4">
       <div className="space-y-1"><h2 className="text-xl font-bold">{CONTROL_SCHEME_LABELS[block.scheme]}</h2><p className="text-sm text-muted-foreground">{block.supported ? CONTROL_SCHEME_BLURBS[block.scheme] : `${game.title} does not support this input method.`}</p></div>
       {block.notes ? <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm">{block.notes}</p> : null}

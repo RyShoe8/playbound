@@ -133,16 +133,11 @@ ConvertTo-Json -InputObject @($certs | Select-Object -Property Thumbprint, Subje
   // 2. Vendor Nefarius.ViGEm.Client.dll for the PowerShell host (if missing).
   run("Vendoring ViGEm client DLL", path.join(__dirname, "vendor-vigem-client.js"), [], env);
 
-  // 3. Optionally build .NET host when SDK is present (not required for shipping).
+  // 3. Controls requires the .NET host's SendInput commands. The PowerShell
+  // fallback only supports virtual pads, so shipping without the exe would
+  // advertise controller profiles that cannot run.
   if (process.platform === "win32") {
-    const optional = spawnSync(process.execPath, [path.join(__dirname, "build-vigem-host.js")], {
-      cwd: launcherDir,
-      stdio: "inherit",
-      env,
-    });
-    if (optional.status !== 0) {
-      console.log(`${TAG} .NET ViGEm host build skipped/failed — using PowerShell host.`);
-    }
+    run("Building controller input host", path.join(__dirname, "build-vigem-host.js"), [], env);
   }
 
   // 4. Refresh the bundled offline catalog. This mirrors the `predist` hook,

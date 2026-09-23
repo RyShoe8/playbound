@@ -25,6 +25,14 @@ const BUTTON = {
 };
 
 let bridgeLoopActive = false;
+/**
+ * PlayBound Controls' own reason to poll — independent of `bridgeLoopActive`
+ * (which also creates a virtual XInput pad for couch bridging). A game with
+ * no native controller support needs frames flowing for keyboard/mouse
+ * synthesis without ever creating a virtual pad, so this is a second,
+ * separate gate on the same loop rather than reusing that flag.
+ */
+let controlsLoopActive = false;
 let loopTimer = null;
 let lastSentMask = 0;
 let lastSentLx = 0;
@@ -33,14 +41,19 @@ let lastSentRx = 0;
 let lastSentRy = 0;
 let lastSentLt = 0;
 let lastSentRt = 0;
+let hadPad = false;
 
 function deadzone(val, threshold = 0.15) {
   if (Math.abs(val) < threshold) return 0;
   return val;
 }
 
+function anyLoopActive() {
+  return bridgeLoopActive || controlsLoopActive;
+}
+
 function pollAndSendGamepadFrame() {
-  if (!bridgeLoopActive) return;
+  if (!anyLoopActive()) return;
 
   try {
     const pads = navigator.getGamepads ? Array.from(navigator.getGamepads()) : [];
@@ -94,7 +107,8 @@ function pollAndSendGamepadFrame() {
         Math.abs(lt - lastSentLt) > 0.02 ||
         Math.abs(rt - lastSentRt) > 0.02;
 
-      if (stateChanged) {
+      if (stateChanged || controlsLoopActive) {
+        hadPad = true;
         lastSentMask = mask;
         lastSentLx = lx;
         lastSentLy = ly;
@@ -113,12 +127,18 @@ function pollAndSendGamepadFrame() {
           rt,
         });
       }
+    } else if (hadPad) {
+      // Release held synthetic keys when the controller is unplugged.
+      hadPad = false;
+      lastSentMask = 0;
+      lastSentLx = lastSentLy = lastSentRx = lastSentRy = lastSentLt = lastSentRt = 0;
+      window.playbound?.gamepadBridgeSendFrame?.({ buttons: 0, lx: 0, ly: 0, rx: 0, ry: 0, lt: 0, rt: 0 });
     }
   } catch {
     /* ignore polling error */
   }
 
-  if (bridgeLoopActive) {
+  if (anyLoopActive()) {
     loopTimer = setTimeout(pollAndSendGamepadFrame, 8); // ~120Hz polling
   }
 }
@@ -169,7 +189,7 @@ export async function enableGamepadBridge() {
   const res = await window.playbound?.startGamepadBridge?.(profile);
   if (res?.ok) {
     bridgeLoopActive = true;
-    pollAndSendGamepadFrame();
+    if (!controlsLoopActive) pollAndSendGamepadFrame();
     return true;
   }
   return false;
@@ -180,9 +200,37 @@ export async function enableGamepadBridge() {
  */
 export async function disableGamepadBridge() {
   bridgeLoopActive = false;
+  stopLoopTimerIfIdle();
+  await window.playbound?.stopGamepadBridge?.();
+}
+
+function stopLoopTimerIfIdle() {
+  // Only tear down the shared timer once neither reason to poll remains —
+  // PlayBound Controls may still need frames after couch bridging stops, or
+  // vice versa.
+  if (anyLoopActive()) return;
   if (loopTimer) {
     clearTimeout(loopTimer);
     loopTimer = null;
   }
-  await window.playbound?.stopGamepadBridge?.();
+}
+
+/**
+ * Start polling purely so PlayBound Controls can receive frames — never
+ * creates a virtual XInput pad, so unlike `enableGamepadBridge` this has no
+ * couch-active guard to check and no `startGamepadBridge` IPC call to make.
+ * The main process activates/deactivates the actual keyboard/mouse Input
+ * Engine on its own (see `applyControllerConfig` in main.js); this only
+ * needs to make sure frames are actually flowing while a game might be
+ * using one.
+ */
+export function enablePlayBoundControlsBridge() {
+  if (controlsLoopActive) return;
+  controlsLoopActive = true;
+  if (!bridgeLoopActive) pollAndSendGamepadFrame();
+}
+
+export function disablePlayBoundControlsBridge() {
+  controlsLoopActive = false;
+  stopLoopTimerIfIdle();
 }

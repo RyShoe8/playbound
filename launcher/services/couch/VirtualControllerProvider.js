@@ -1,6 +1,6 @@
 /**
  * VirtualControllerProvider — stable game-facing abstraction.
- * Windows uses ViGEm via a bundled host (PowerShell + client DLL);
+ * Windows uses ViGEm via a bundled .NET host (PowerShell fallback for virtual pads);
  * other platforms return unsupported.
  */
 

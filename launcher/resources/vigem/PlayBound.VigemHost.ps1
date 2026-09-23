@@ -143,7 +143,12 @@ while ($true) {
         break
       }
       default {
-        Reply $false "error" $null "unknown cmd"
+        # Input synthesis needs the .NET host. Never reply to these
+        # fire-and-forget commands: an unsolicited response could satisfy
+        # the next virtual-pad probe/create waiter with the wrong message.
+        if ($msg.cmd -notin @("key", "mouseMove", "mouseButton")) {
+          Reply $false "error" $null "unknown cmd"
+        }
       }
     }
   } catch {

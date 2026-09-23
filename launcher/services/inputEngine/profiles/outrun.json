@@ -1,0 +1,32 @@
+{
+  "gameSlug": "outrun",
+  "editionSlug": null,
+  "name": "PlayBound Recommended — OutRun",
+  "version": "0.1.0",
+  "platform": "windows",
+  "inputStrategy": "keyboard_mouse",
+  "status": "testing",
+  "antiCheatCompatibility": "unknown",
+  "testedControllers": [],
+  "notes": "Pilot recipe for the locally installed OutRun 4.0 Windows build. Keys were read from Resources/Settings/Settings.txt. Test steering, pedals, gears, and menu navigation in-game before promoting to verified.",
+  "actions": [
+    { "id": "steerLeft", "label": "Steer left", "output": { "type": "key", "vk": "ArrowLeft" } },
+    { "id": "steerRight", "label": "Steer right", "output": { "type": "key", "vk": "ArrowRight" } },
+    { "id": "accelerate", "label": "Accelerate", "output": { "type": "key", "vk": "LeftCtrl" } },
+    { "id": "brake", "label": "Brake", "output": { "type": "key", "vk": "LeftAlt" } },
+    { "id": "upGear", "label": "Shift up", "output": { "type": "key", "vk": "Z" } },
+    { "id": "downGear", "label": "Shift down", "output": { "type": "key", "vk": "RightCtrl" } }
+  ],
+  "bindings": [
+    { "actionId": "steerLeft", "physicalInput": "LEFT_LEFT" },
+    { "actionId": "steerRight", "physicalInput": "LEFT_RIGHT" },
+    { "actionId": "steerLeft", "physicalInput": "DPAD_LEFT" },
+    { "actionId": "steerRight", "physicalInput": "DPAD_RIGHT" },
+    { "actionId": "accelerate", "physicalInput": "RT" },
+    { "actionId": "brake", "physicalInput": "LT" },
+    { "actionId": "upGear", "physicalInput": "RB" },
+    { "actionId": "downGear", "physicalInput": "LB" }
+  ],
+  "contexts": [],
+  "stickMouseSettings": { "enabled": false }
+}
