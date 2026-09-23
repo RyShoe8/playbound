@@ -5,6 +5,7 @@ import TelemetryEvent from "@/lib/models/TelemetryEvent";
 import User from "@/lib/models/User";
 import { Types } from "mongoose";
 import { loadAnalyticsSummary } from "@/lib/admin/analyticsSummary";
+import { PINNED_ANALYTICS_EVENTS } from "@/lib/admin/opsEvents";
 import { SectionHeader, StatTile } from "@/components/ui/bits";
 import { LocalTime } from "@/components/LocalTime";
 
@@ -119,6 +120,16 @@ export default async function AdminAnalyticsPage({
 
   const maxDaily = Math.max(1, ...(data?.dailyVolume.map((d) => d.count) || [1]));
 
+  /*
+   * Pinned events that the top-15 ranking did not already surface.
+   *
+   * Filtered rather than always appended so a busy event never appears twice —
+   * `error` can genuinely rank on a bad day, and seeing it in both halves of one
+   * table would read as double counting.
+   */
+  const ranked = new Set((data?.topEvents ?? []).map((row) => row._id));
+  const pinnedRows = (data?.pinnedEvents ?? []).filter((row) => !ranked.has(row.event));
+
   return (
     <div className="space-y-8 px-4 py-6 sm:px-6 lg:px-8">
       <div>
@@ -198,20 +209,24 @@ export default async function AdminAnalyticsPage({
           </section>
 
           <section>
-            <SectionHeader title="Top events" subtitle="Last 7 days" />
+            <SectionHeader
+              title="Top events"
+              subtitle="Last 7 days · pinned operational events always shown"
+            />
             <div className="overflow-x-auto rounded-xl border border-border">
-              <table className="w-full min-w-[320px] text-left text-sm">
+              <table className="w-full min-w-[420px] text-left text-sm">
                 <thead className="bg-secondary/40 text-xs uppercase text-muted-foreground">
                   <tr>
                     <th className="px-4 py-3 font-semibold">Event</th>
-                    <th className="px-4 py-3 font-semibold">Count</th>
+                    <th className="px-4 py-3 font-semibold">7d</th>
+                    <th className="px-4 py-3 font-semibold">All time</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.topEvents.length === 0 ? (
+                  {data.topEvents.length === 0 && pinnedRows.length === 0 ? (
                     <tr className="bg-card">
                       <td
-                        colSpan={2}
+                        colSpan={3}
                         className="px-4 py-6 text-muted-foreground"
                       >
                         No events in the last 7 days.
@@ -232,9 +247,50 @@ export default async function AdminAnalyticsPage({
                           </Link>
                         </td>
                         <td className="px-4 py-2.5 font-mono">{row.count}</td>
+                        <td className="px-4 py-2.5 font-mono text-muted-foreground">—</td>
                       </tr>
                     ))
                   )}
+
+                  {/*
+                    Pinned rows sit below the ranking, not inside it — they are
+                    not "top" anything. They are here because a rare event is
+                    exactly the one whose count you cannot see, and because a 7d
+                    zero beside an all-time total is the only way to tell a quiet
+                    week from an event that has never arrived at all.
+                  */}
+                  {pinnedRows.length > 0 && (
+                    <tr className="border-t border-border bg-secondary/30">
+                      <td
+                        colSpan={3}
+                        className="px-4 py-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground"
+                      >
+                        Pinned · shown regardless of rank
+                      </td>
+                    </tr>
+                  )}
+                  {pinnedRows.map((row) => (
+                    <tr key={`pinned-${row.event}`} className="border-t border-border bg-card">
+                      <td className="px-4 py-2.5">
+                        <Link
+                          href={`/admin/analytics?event=${encodeURIComponent(row.event)}`}
+                          className="font-semibold text-primary hover:underline"
+                        >
+                          {row.event}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-2.5 font-mono">{row.count}</td>
+                      <td
+                        className={
+                          row.allTime === 0
+                            ? "px-4 py-2.5 font-mono font-bold text-amber-400"
+                            : "px-4 py-2.5 font-mono text-muted-foreground"
+                        }
+                      >
+                        {row.allTime === 0 ? "never" : row.allTime}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -251,6 +307,42 @@ export default async function AdminAnalyticsPage({
                     : "Latest 40 events (excluding bots)"
               }
             />
+            {/*
+              One click to the events you cannot otherwise reach.
+              The latest-40 table is dominated by whatever fires most, so a
+              once-per-install event is never in it by chance — and typing the
+              exact name into the box below means knowing it is `launcher_install`
+              rather than `launcher_installed`.
+            */}
+            <div className="mb-4 flex flex-wrap items-center gap-1.5">
+              <span className="mr-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                Jump to
+              </span>
+              <Link
+                href="/admin/analytics"
+                className={
+                  sp.event
+                    ? "rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground"
+                    : "rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground"
+                }
+              >
+                All events
+              </Link>
+              {PINNED_ANALYTICS_EVENTS.map((name) => (
+                <Link
+                  key={name}
+                  href={`/admin/analytics?event=${encodeURIComponent(name)}`}
+                  className={
+                    sp.event === name
+                      ? "rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground"
+                      : "rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground"
+                  }
+                >
+                  {name}
+                </Link>
+              ))}
+            </div>
+
             <form
               action="/admin/analytics"
               method="get"
