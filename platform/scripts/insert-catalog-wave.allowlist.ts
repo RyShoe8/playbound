@@ -389,7 +389,6 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "githubRepo",
     "art",
     "coverImage",
-    "screenshots",
     "systemRequirements",
     "hardwareRequirements",
     "launcherInstall",
