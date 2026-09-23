@@ -1,7 +1,19 @@
 import { describe, it, expect } from "vitest";
 import { registerDeviceSchema, trustDeviceSchema } from "./schema";
+import Device from "@/lib/models/Device";
 
 describe("registerDeviceSchema", () => {
+  it("stores LAN endpoints on the device rather than on a trusted client", () => {
+    expect(Device.schema.path("lanAddresses")).toBeDefined();
+    expect(Device.schema.path("hostPort")).toBeDefined();
+    expect(Device.schema.path("trustedDevices").schema.path("lanAddresses")).toBeUndefined();
+  });
+  it("accepts private LAN addresses and rejects public or malformed endpoints", () => {
+    const base = { deviceId: "a".repeat(36), name: "Gaming PC", hostPort: 47998 };
+    expect(registerDeviceSchema.safeParse({ ...base, lanAddresses: ["192.168.1.30", "10.0.0.4"] }).success).toBe(true);
+    expect(registerDeviceSchema.safeParse({ ...base, lanAddresses: ["8.8.8.8"] }).success).toBe(false);
+    expect(registerDeviceSchema.safeParse({ ...base, lanAddresses: ["192.168.1.999"] }).success).toBe(false);
+  });
   it("accepts a minimal valid device", () => {
     const result = registerDeviceSchema.safeParse({ deviceId: "a".repeat(36), name: "Ryan's Gaming PC" });
     expect(result.success).toBe(true);

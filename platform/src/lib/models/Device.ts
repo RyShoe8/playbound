@@ -46,6 +46,9 @@ const DeviceSchema = new Schema(
     platform: { type: String, enum: ["windows"], default: "windows" },
     lastSeenAt: { type: Date, required: true, default: Date.now },
     capabilities: { type: DeviceCapabilitiesSchema, default: () => ({}) },
+    /** Current private LAN addresses, visible only to other devices on this account. */
+    lanAddresses: { type: [String], default: [] },
+    hostPort: { type: Number, default: null },
     trustedDevices: { type: [TrustedDeviceSchema], default: [] },
   },
   { timestamps: true }

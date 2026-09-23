@@ -1843,7 +1843,7 @@ async function renderGameDetailView(slug, opts = {}) {
     if (!hosts.length) {
       showRemotePlayNoticeModal({
         title: "No Remote Play Hosts Found",
-        message: `No other PlayBound PCs advertising Remote Play were found on your home network.<br><br>Make sure PlayBound is running on your gaming PC and <strong>Remote Play</strong> is enabled in its Settings.`,
+        message: `No other PlayBound PCs offering Remote Play were found on your home network.<br><br>Make sure PlayBound is running on your gaming PC and <strong>Remote Play</strong> is enabled in its Settings. If the PC says Ready but still does not appear, check that Windows marks your home network Private and allows PlayBound through its firewall.`,
       });
       return;
     }

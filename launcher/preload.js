@@ -281,6 +281,7 @@ contextBridge.exposeInMainWorld("playbound", {
   // PlayBound Remote (LAN game streaming)
   remotePlayGetState: () => ipcRenderer.invoke("remote-play-get-state"),
   remotePlaySetEnabled: (enabled) => ipcRenderer.invoke("remote-play-set-enabled", enabled),
+  remotePlayAllowLocalNetwork: () => ipcRenderer.invoke("remote-play-allow-local-network"),
   remotePlaySetDeviceName: (name) => ipcRenderer.invoke("remote-play-set-device-name", name),
   remotePlayRespondPairing: (requestId, allow) =>
     ipcRenderer.invoke("remote-play-respond-pairing", requestId, allow),
