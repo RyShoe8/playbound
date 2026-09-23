@@ -42,15 +42,31 @@ function resolveMoonlightDir() {
 }
 
 /**
- * @param {{ host: string, appName: string, resolution?: string, fps?: number }} opts
+ * @param {{ host: string, appName: string, resolution?: string, fps?: number, displayMode?: string }} opts
  * @returns {string[]} argv for spawning moonlight.exe directly into a stream,
  *   bypassing its own app-picker/settings UI.
  */
-function buildStreamArgs({ host, appName, resolution = "1920x1080", fps = 60 }) {
-  // TODO(verify): confirm this exact subcommand/flag surface against the
-  // pinned moonlight-qt release's own `moonlight --help` before relying on
-  // it — CLI syntax has changed between moonlight-qt releases before.
-  return ["stream", host, appName, "--resolution", resolution, "--fps", String(fps), "--windowed"];
+function buildStreamArgs({
+  host,
+  appName,
+  resolution = "1920x1080",
+  fps = 60,
+  displayMode = "windowed",
+}) {
+  const validModes = new Set(["windowed", "fullscreen", "borderless"]);
+  const mode = validModes.has(displayMode) ? displayMode : "windowed";
+  return [
+    "--resolution",
+    resolution,
+    "--fps",
+    String(fps),
+    "--display-mode",
+    mode,
+    "--quit-after",
+    "stream",
+    host,
+    appName,
+  ];
 }
 
 /**

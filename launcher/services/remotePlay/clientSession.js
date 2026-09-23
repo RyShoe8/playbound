@@ -126,6 +126,7 @@ function createClientSessionCoordinator(deps) {
     editionSlug = null,
     resolution = "1920x1080",
     fps = 60,
+    displayMode = "windowed",
     timeoutMs = DEFAULT_CONNECT_TIMEOUT_MS,
   }) {
     if (activeSession) {
@@ -243,6 +244,7 @@ function createClientSessionCoordinator(deps) {
             appName,
             resolution,
             fps,
+            displayMode,
             onExit: () => {
               if (activeSession) {
                 stopSession();
