@@ -217,8 +217,14 @@ export function ControllerClient({
   // Electron game-view window, which relaxes the gesture requirement); a
   // real phone browser will reject that, so fall back to muted playback and
   // unmute on the player's first tap/click, same pattern every video site
-  // uses for audio-on-load.
+  // uses for audio-on-load. Only the full-window "Join online" popup
+  // (layout="game") offered an audio track in the first place — a phone
+  // used as a local controller never has one, and stays muted like before.
   function playWithAudio(el: HTMLVideoElement) {
+    if (!gameLayout) {
+      void el.play().catch(() => {});
+      return;
+    }
     el.muted = false;
     el.play().catch(() => {
       el.muted = true;
@@ -619,12 +625,18 @@ export function ControllerClient({
 
     async function startWebRtc() {
       pc = new RTCPeerConnection({ iceServers: session.iceServers });
-      // Receive host game view when the host shares their display. The host
-      // (answerer) can't add a new audio m-line on its own — this offer must
-      // include it upfront so answerOffer's addTransceiver reuse has an
-      // audio slot to fill in.
+      // Receive host game view when the host shares their display.
       pc.addTransceiver("video", { direction: "recvonly" });
-      pc.addTransceiver("audio", { direction: "recvonly" });
+      // Audio only for the full-window "Join online" popup (layout="game")
+      // — the actual remote player watching/hearing the host's game with no
+      // other audio source. A phone used as a local controller sits in the
+      // same room as the host's speakers, so an audio m-line there would
+      // just play the game a second time out of the phone's tiny speaker.
+      // The host (answerer) can't add a new audio m-line on its own, so this
+      // must be offered upfront when wanted.
+      if (gameLayout) {
+        pc.addTransceiver("audio", { direction: "recvonly" });
+      }
 
       pc.onconnectionstatechange = () => {
         const state = pc?.connectionState;
