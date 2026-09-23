@@ -123,7 +123,7 @@ const facts: Game[] = [
     description:
       "The Battle for Wesnoth is a turn-based tactics classic set in a rich high-fantasy world. Recruit veterans who grow across a campaign, weigh terrain and time of day in every fight, and lose yourself in seventeen official campaigns plus hundreds of community-made ones. Twenty years of development, still going strong.",
     developerSlug: "wesnoth-project",
-    genres: ["Strategy", "RPG"],
+    genres: ["Fantasy", "Strategy", "RPG"],
     tags: ["Turn-Based", "Fantasy", "Hotseat"],
     license: "Open Source (GPL-2.0)",
     releaseYear: 2005,
@@ -1241,7 +1241,7 @@ const facts: Game[] = [
     description:
       "Daggerfall is Bethesda's vast 1996 open-world RPG set in the Iliac Bay. PlayBound lists the franchise here and points you at legal retail data plus community remasters such as Daggerfall Unity. We never redistribute proprietary game files.",
     developerSlug: "bethesda",
-    genres: ["RPG", "Sandbox"],
+    genres: ["Fantasy", "RPG", "Sandbox"],
     tags: ["Open World", "Classic", "Fantasy", "Mods"],
     aliases: ["TES II", "TES 2", "Elder Scrolls 2", "Elder Scrolls Daggerfall", "Daggerfall Unity", "DFU"],
     license: "Freeware (original data free from Bethesda) · Open Source (Daggerfall Unity)",
@@ -1320,7 +1320,7 @@ const facts: Game[] = [
     description:
       "Arena is the first Elder Scrolls game, later released as freeware by Bethesda. PlayBound lists it for legal freeware / DOSBox play — we never redistribute cracked ISOs. This is unrelated to OpenArena, the Quake III–style FPS.",
     developerSlug: "bethesda",
-    genres: ["RPG"],
+    genres: ["Fantasy", "RPG"],
     tags: ["Classic", "Fantasy", "Open World"],
     aliases: ["TES Arena", "Elder Scrolls Arena", "Arena"],
     license: "Freeware (original)",
@@ -1607,7 +1607,7 @@ const facts: Game[] = [
     description:
       "EverQuest is the foundational fantasy MMO. PlayBound lists the official franchise plus community eras such as Project Quarm and Project 1999 as editions. Install clients only from official or community-endorsed sources.",
     developerSlug: "daybreak",
-    genres: ["RPG"],
+    genres: ["Fantasy", "RPG"],
     tags: ["MMORPG", "Classic", "Fantasy", "PvE"],
     aliases: ["EQ", "Ever Quest"],
     license: "Free to Play / Subscription options",
@@ -1863,7 +1863,7 @@ const facts: Game[] = [
     description:
       "Asheron's Call is the groundbreaking 1999 3D fantasy MMORPG set on the seamless continent of Dereth. Renowned for its classless skill progression, unique allegiance vassal system, fast-paced spellcasting, and monthly world-changing narrative events.",
     developerSlug: "turbine",
-    genres: ["RPG", "MMO"],
+    genres: ["Fantasy", "RPG", "MMO"],
     tags: ["MMORPG", "Classic", "Fantasy", "Open World", "Community Servers"],
     aliases: ["AC", "Asherons Call", "ACEmulator", "ACE Server", "Dereth"],
     license: "Freeware / Community Emulator (ACEmulator GPL-3.0)",
@@ -2025,7 +2025,7 @@ const facts: Game[] = [
     description:
       "New World Computing's complete 1999 turn-based strategy landmark, including Armageddon's Blade and The Shadow of Death. Build impossible armies, break impossible sieges, and settle the map over hotseat or LAN without an account or a storefront client running in the background.",
     developerSlug: "new-world-computing",
-    genres: ["Strategy"],
+    genres: ["Fantasy", "Strategy"],
     tags: ["Turn-Based", "Fantasy", "Classic", "Hotseat", "LAN", "Mod Support"],
     aliases: ["Heroes 3", "HoMM3", "HOMM III", "Heroes III Complete", "Heroes of Might & Magic III"],
     license: "Commercial · DRM-free purchase",
@@ -2516,7 +2516,7 @@ const facts: Game[] = [
     description:
       "Gather, craft, trade, and fight in a persistent fantasy world where equipment defines your role and nearly every useful item begins in another player's hands.",
     developerSlug: "sandbox-interactive",
-    genres: ["MMO", "RPG", "Sandbox"],
+    genres: ["Fantasy", "MMO", "RPG", "Sandbox"],
     tags: ["Crafting", "Cross-Platform"],
     aliases: ["Albion"],
     license: "Free to Play",
@@ -2623,7 +2623,7 @@ const facts: Game[] = [
     description:
       "Walk from the Shire toward Mordor in a story-heavy online world whose best trick is making Tolkien's geography feel like a place instead of a checklist.",
     developerSlug: "standing-stone-games",
-    genres: ["MMO", "RPG", "Adventure"],
+    genres: ["Fantasy", "MMO", "RPG", "Adventure"],
     tags: ["Story", "Exploration"],
     aliases: ["LOTRO", "Lord of the Rings Online"],
     license: "Free to Play",
@@ -2945,7 +2945,7 @@ const facts: Game[] = [
     description:
       "Genshin Impact is HoYoverse's vast free-to-play open-world action RPG. Step into Teyvat, a vast fantasy world vibrant with elemental life and ruled by seven Archon gods. As the Traveler, you journey across expansive nations—Mondstadt, Liyue, Inazuma, Sumeru, Fontaine, and Natlan—to search for your lost sibling and unravel the deep mysteries of the divine Celestia.\n\nMaster an action-packed elemental reaction combat system (Vaporize, Melt, Swirl, Frozen, Bloom, and Hyperbloom) by seamlessly switching between a four-character party. Explore sprawling ruins, glide across mountain peaks, solve intricate environmental puzzles, and team up in 4-player cross-platform co-op.",
     developerSlug: "hoyoverse",
-    genres: ["RPG", "Action", "Adventure", "Sandbox"],
+    genres: ["Fantasy", "RPG", "Action", "Adventure", "Sandbox"],
     tags: ["Open World", "Anime", "Story Rich", "Co-op", "Exploration"],
     aliases: ["Genshin", "GI", "Genshin Impact PC", "HoYoverse Genshin", "Original God"],
     license: "Free to Play",
@@ -4099,7 +4099,7 @@ const facts: Game[] = [
     description:
       "Dungeon Keeper is Bullfrog Productions' genre-defining 1997 strategy and dungeon management masterpiece. Build intricate underground lairs, dig tunnels for gold and gems, recruit iconic monsters—Bile Demons, Mistresses, and Horned Reapers—slap them into obedience, and conquer virtuous invading heroes from top-down strategic and first-person possession views.",
     developerSlug: "bullfrog-productions",
-    genres: ["Strategy", "Simulation"],
+    genres: ["Fantasy", "Strategy", "Simulation"],
     tags: ["Classic", "Strategy", "Fantasy", "Retro"],
     aliases: ["Dungeon Keeper", "DK", "DK Gold", "Dungeon Keeper Gold", "Dungeon Keeper 1", "KeeperFX"],
     license: "Commercial (Proprietary / Electronic Arts)",
@@ -4191,7 +4191,7 @@ const facts: Game[] = [
     description:
       "The Elder Scrolls III: Morrowind is Bethesda Game Studios' landmark open-world fantasy action RPG. Step off the prison ship into the ash-swept province of Vvardenfell, fulfill the ancient Nerevarine prophecy, explore Dunmer ruins, join Great Houses and Guilds, craft custom spells and enchantments, and forge your legend with unmatched freedom.\n\nPlay with OpenMW for a modern, crash-free 64-bit engine with native widescreen and controller support, or jump into TES3MP for full online multiplayer with friends.",
     developerSlug: "bethesda-game-studios",
-    genres: ["RPG", "Adventure"],
+    genres: ["Fantasy", "RPG", "Adventure"],
     tags: ["Open World", "Fantasy", "Singleplayer", "Multiplayer", "Mod Support", "Classic", "Exploration"],
     aliases: ["Morrowind", "TES3", "The Elder Scrolls 3", "TES III", "Morrowind GOTY", "OpenMW", "TES3MP"],
     license: "Commercial (Proprietary / Bethesda Softworks)",
@@ -4467,7 +4467,7 @@ const facts: Game[] = [
     description:
       "Old School RuneScape (OSRS) is the timeless 2007-era retro MMORPG. Explore the vast world of Gielinor, master 23 diverse skills, complete iconic story quests, slay challenging raid bosses, and trade across the Grand Exchange — with every new feature voted on by the player community.",
     developerSlug: "jagex",
-    genres: ["RPG", "Adventure", "Strategy"],
+    genres: ["Fantasy", "RPG", "Adventure", "Strategy"],
     tags: ["MMORPG", "Retro", "Fantasy", "Open World", "Crafting", "PvP", "PvE", "Classic"],
     aliases: ["OSRS", "Old School RuneScape", "OldSchool RuneScape", "RuneScape 2007", "RuneScape 07", "2007scape"],
     license: "Free to Play / Membership",
@@ -8343,7 +8343,7 @@ const facts: Game[] = [
     description:
       "Square Enix's 2002 MMORPG, running continuously for over two decades. PlayBound catalogues it for HorizonXI, a free level-75-era private server whose launcher installs the whole client — no retail purchase, no subscription. Square Enix's own live service is a separate, paid route that PlayBound neither sells nor hosts.",
     developerSlug: "square-enix",
-    genres: ["MMO", "RPG", "Adventure", "Action"],
+    genres: ["Fantasy", "MMO", "RPG", "Adventure", "Action"],
     tags: ["Classic", "Fantasy", "Open World", "Competitive", "Free To Play", "Retro"],
     aliases: ["FFXI", "FF11", "Final Fantasy 11", "Vana'diel", "HorizonXI", "Horizon XI"],
     license: "Commercial · free on community servers",

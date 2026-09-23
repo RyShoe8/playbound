@@ -96,8 +96,8 @@ const KEYWORD_RULES: Array<{ pattern: RegExp; genres: string[] }> = [
   { pattern: /\b(fighting|fighter|brawler)\b/i, genres: ["Fighting", "Action"] },
   { pattern: /\b(horror|zombie|dead|undead)\b/i, genres: ["Action", "Horror"] },
   { pattern: /\b(surviv(al|or))\b/i, genres: ["Survival", "Action"] },
-  { pattern: /\b(deckbuilder|card\s*game)\b/i, genres: ["Strategy", "Card Game"] },
-  { pattern: /\b(quest|chronicles|legend|fantasy)\b/i, genres: ["RPG", "Adventure"] },
+  { pattern: /\b(fantasy|high\s*fantasy|dark\s*fantasy|swords?\s*(&|and)\s*magic)\b/i, genres: ["Fantasy", "RPG"] },
+  { pattern: /\b(quest|chronicles|legend)\b/i, genres: ["RPG", "Adventure"] },
   { pattern: /\b(war|battle|combat|strike|force)\b/i, genres: ["Action", "Strategy"] },
 ];
 

@@ -53,6 +53,7 @@ export const GENRES = [
   "Horror",
   "MOBA",
   "Party Game",
+  "Fantasy",
 ];
 
 export const PLATFORMS = ["Windows", "macOS", "Linux", "Android", "iOS", "Web"];

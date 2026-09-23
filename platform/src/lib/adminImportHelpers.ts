@@ -66,6 +66,9 @@ const GENRE_ALIASES: Record<string, (typeof GENRES)[number]> = {
   survival: "Survival",
   open: "Sandbox",
   "open world": "Sandbox",
+  fantasy: "Fantasy",
+  "high fantasy": "Fantasy",
+  "dark fantasy": "Fantasy",
 };
 
 /** Steam category descriptions → closed FEATURES. */
