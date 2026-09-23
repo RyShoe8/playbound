@@ -1,5 +1,6 @@
 import { renderHomeView } from "./home.js";
 import { setSystemIdle } from "./pollGate.js";
+import { enablePlayBoundControlsBridge, disablePlayBoundControlsBridge } from "./gamepadBridge.js";
 import {
   api,
   applyAccountToSidebar,
@@ -522,6 +523,16 @@ function wireMainEvents() {
       return;
     }
     void navigateTo(data.view, data);
+  });
+
+  // Main activates/deactivates the actual PlayBound Controls Input Engine
+  // (see applyControllerConfig in main.js); this side just needs the
+  // renderer's Gamepad API polling loop running so physical frames reach it.
+  window.playbound.onPlayBoundControlsActivate?.(() => {
+    enablePlayBoundControlsBridge();
+  });
+  window.playbound.onPlayBoundControlsDeactivate?.(() => {
+    disablePlayBoundControlsBridge();
   });
 
   window.playbound.onUpdateStatus?.((data) => {

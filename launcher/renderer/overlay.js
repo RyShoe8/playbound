@@ -1,14 +1,22 @@
 /**
- * The in-game overlay's server panel.
+ * The in-game overlay — one window, two tabs.
  *
- * Renders from the game's declared settings, exactly like the party window on
- * the site — no game is named anywhere in this file. The definitions, the apply
- * modes and the reasons a control is absent all come from
- * /api/parties/:id/server-settings; see docs/server-control.md.
+ * Server: renders from the game's declared settings, exactly like the party
+ * window on the site — no game is named anywhere in this file. The
+ * definitions, the apply modes and the reasons a control is absent all come
+ * from /api/parties/:id/server-settings; see docs/server-control.md.
+ *
+ * Controls: live tuning for an active PlayBound Controls session — sensitivity
+ * and invert-Y, applied to the running Input Engine instantly via
+ * gamepadBridge's `updateControlsSettings` (see services/gamepadBridge.js),
+ * no alt-tab and no restart. Independent of party state on purpose: most
+ * PlayBound Controls V1 games are single-player, so it must work exactly the
+ * same whether or not a party is open, unlike the Server tab.
  */
 
 const root = document.getElementById("root");
 const subject = document.getElementById("subject");
+const tabsEl = document.getElementById("tabs");
 
 let state = {
   data: null,
@@ -22,6 +30,9 @@ let state = {
   tes3mpBusy: false,
   tes3mpHour: 12,
   tes3mpHourBusy: false,
+  activeTab: "server",
+  tabInitialized: false,
+  controls: null,
 };
 
 function escapeHtml(value) {
@@ -93,7 +104,7 @@ function controlHtml(def, value) {
   </label>`;
 }
 
-function render() {
+function renderServerTab() {
   const { data } = state;
 
   if (!data) {
@@ -273,6 +284,86 @@ function render() {
   if (setHourBtn) setHourBtn.addEventListener("click", () => void setTes3mpHour());
 }
 
+/** One decimal is plenty for a slider readout; more just looks noisy. */
+function fmt1(n) {
+  return Number(n).toFixed(1);
+}
+
+function sliderRow({ id, label, value, min, max, step }) {
+  return `<label class="row slider-row" for="${id}">
+    <span>${escapeHtml(label)}<span class="slider-value" id="${id}-value">${fmt1(value)}</span></span>
+    <input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${value}" />
+  </label>`;
+}
+
+function renderControlsTab() {
+  const info = state.controls;
+
+  if (!info) {
+    root.innerHTML = `<p class="note">PlayBound Controls isn't active for this game right now.</p>`;
+    return;
+  }
+
+  const s = info.settings;
+  root.innerHTML = `
+    <p class="note"><strong>${escapeHtml(info.profileName)}</strong>${
+      info.gameTitle ? ` — ${escapeHtml(info.gameTitle)}` : ""
+    }</p>
+    ${sliderRow({ id: "cs-sensitivity", label: "Look sensitivity", value: s.sensitivity, min: 0.1, max: 5, step: 0.05 })}
+    <label class="row toggle" for="cs-invert-y"><span>Invert Y</span>
+      <input type="checkbox" id="cs-invert-y" ${s.invertY ? "checked" : ""} />
+    </label>
+    <details class="note"><summary>View controls</summary>
+      ${(info.bindings || []).map((binding) => `<p><strong>${escapeHtml(binding.input.replace(/_/g, " "))}</strong> — ${escapeHtml(binding.action)}</p>`).join("") || "No button bindings are listed."}
+    </details>
+    <p class="hint">Changes apply instantly — no need to alt-tab. Esc to close</p>
+  `;
+
+  const sensitivity = document.getElementById("cs-sensitivity");
+  const sensitivityValue = document.getElementById("cs-sensitivity-value");
+  sensitivity?.addEventListener("input", () => {
+    const value = Number(sensitivity.value);
+    if (sensitivityValue) sensitivityValue.textContent = fmt1(value);
+    void updateControlsSettings({ sensitivity: value });
+  });
+
+  const invertY = document.getElementById("cs-invert-y");
+  invertY?.addEventListener("change", () => {
+    void updateControlsSettings({ invertY: invertY.checked });
+  });
+}
+
+/**
+ * Push a live setting change to the running Input Engine. Updates local
+ * state from the (possibly clamped) settings the main process actually
+ * applied, rather than assuming the raw slider value stuck — the session may
+ * have ended between the slider event and this call resolving.
+ */
+async function updateControlsSettings(partial) {
+  if (!window.playbound?.updatePlayBoundControlsSettings) return;
+  const settings = await window.playbound.updatePlayBoundControlsSettings(partial);
+  if (settings && state.controls) state.controls = { ...state.controls, settings };
+}
+
+function renderTabs() {
+  tabsEl.innerHTML = `
+    <button class="tab ${state.activeTab === "server" ? "active" : ""}" data-tab="server">Server</button>
+    <button class="tab ${state.activeTab === "controls" ? "active" : ""}" data-tab="controls">Controls</button>
+  `;
+  tabsEl.querySelectorAll("[data-tab]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.activeTab = btn.dataset.tab;
+      render();
+    });
+  });
+}
+
+function render() {
+  renderTabs();
+  if (state.activeTab === "controls") renderControlsTab();
+  else renderServerTab();
+}
+
 async function loadTes3mpClaim() {
   if (!state.partyId || !window.playbound?.getTes3mpClaimAdmin) {
     state.tes3mp = null;
@@ -343,7 +434,18 @@ async function load() {
   const context = await window.playbound.getOverlayContext();
   const party = context?.party || null;
   state.partyId = party?.id || null;
-  subject.textContent = party?.gameTitle || party?.gameSlug || "";
+  state.controls = context?.controls || null;
+  subject.textContent = party?.gameTitle || party?.gameSlug || state.controls?.gameTitle || "";
+
+  // Pick a sensible default tab once, the first time context is known —
+  // never on a later reload, so switching tabs mid-session sticks. If a
+  // party is open, Server is still the more likely reason someone opened
+  // the overlay; otherwise land on whichever tab actually has something.
+  if (!state.tabInitialized) {
+    state.tabInitialized = true;
+    state.activeTab = !state.partyId && state.controls ? "controls" : "server";
+  }
+  if (!state.partyId && state.controls) state.activeTab = "controls";
 
   if (!state.partyId) {
     state.data = {

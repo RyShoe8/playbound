@@ -77,9 +77,43 @@
         line-height: 1;
         padding: 2px 4px;
       }
+      .tabs {
+        -webkit-app-region: no-drag;
+        display: flex;
+        gap: 4px;
+        padding: 8px 10px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .tab {
+        flex: 1;
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        font: inherit;
+        font-weight: 600;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        cursor: pointer;
+        padding: 8px 4px;
+        border-bottom: 2px solid transparent;
+      }
+      .tab.active {
+        color: var(--text);
+        border-bottom-color: var(--accent);
+      }
       .body {
         padding: 12px 14px 14px;
         overflow-y: auto;
+      }
+      .slider-row input[type="range"] {
+        width: 100%;
+        accent-color: var(--accent);
+      }
+      .slider-value {
+        float: right;
+        color: var(--muted);
+        font-weight: 400;
       }
       .row {
         display: block;
@@ -159,6 +193,7 @@
         <span class="subject" id="subject"></span>
         <button class="close" id="close" title="Close">✕</button>
       </header>
+      <nav class="tabs" id="tabs"></nav>
       <main class="body" id="root">
         <p class="note">Loading…</p>
       </main>

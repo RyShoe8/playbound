@@ -63,7 +63,7 @@ export const links: NavItem[] = [
     href: "/admin/games",
     label: "Games",
     icon: Gamepad2,
-    family: ["/admin/games", "/admin/mods", "/admin/collections", "/admin/developers"],
+    family: ["/admin/games", "/admin/mods", "/admin/collections", "/admin/developers", "/admin/control-profiles"],
   },
   { href: "/admin/gear", label: "Gear", icon: Mouse },
   { href: "/admin/hardware", label: "Hardware", icon: Cpu },
@@ -113,6 +113,12 @@ export function gameSlugFromPath(pathname: string): string | null {
 
 /** Section-wide entries — the same wherever you are inside Games. */
 const GLOBAL_GAME_CHILDREN: NavChild[] = [
+  {
+    label: "Control Profiles",
+    icon: Gamepad2,
+    href: "/admin/control-profiles",
+    match: (p) => p.startsWith("/admin/control-profiles"),
+  },
   {
     label: "Developers",
     icon: Building2,
@@ -394,7 +400,7 @@ export function AdminNav() {
               active={child.match(pathname)}
               pending={pendingHref === child.href && !child.match(pathname)}
               onClick={() => {
-                if (pathname !== child.href) setPendingHref(child.href);
+                  if (pathname !== child.href) setPendingHref(child.href);
               }}
               sub
             />

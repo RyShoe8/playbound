@@ -6190,7 +6190,79 @@ async function shouldConfigureController(slug, profile, opts = {}) {
   return allow;
 }
 
+const controlProfileCache = new Map(); // `${slug}::${editionSlug || ""}` -> { at, profile }
+const CONTROL_PROFILE_TTL_MS = 60 * 1000;
+
+/**
+ * Fetch the one `verified` PlayBound Controls profile for a game/edition, or
+ * null if none exists yet. Never throws — a slow/failed fetch must not block
+ * a game launch, so this degrades to "no PlayBound Controls this session"
+ * exactly like a missing native controller config already does below.
+ *
+ * A failed fetch is deliberately NOT cached, unlike a successful "no
+ * profile" result — a captive portal or a brief API blip now should not mean
+ * PlayBound Controls stays off for the rest of the session once it clears.
+ */
+async function fetchVerifiedControlProfile(slug, editionSlug) {
+  const key = `${slug}::${editionSlug || ""}`;
+  const cached = controlProfileCache.get(key);
+  if (cached && Date.now() - cached.at < CONTROL_PROFILE_TTL_MS) return cached.profile;
+
+  try {
+    const url = new URL(`${getApiBase()}/api/launcher/control-profile/${encodeURIComponent(slug)}`);
+    if (editionSlug) url.searchParams.set("edition", editionSlug);
+    const res = await apiFetch(url.toString(), {
+      headers: launcherApiHeaders({ accept: "application/json" }),
+    });
+    if (!res.ok) {
+      return null;
+    }
+    const data = await res.json();
+    const profile = data && data.profile ? data.profile : null;
+    controlProfileCache.set(key, { at: Date.now(), profile });
+    return profile;
+  } catch (err) {
+    return null;
+  }
+}
+
+/** Tell the renderer whether its Gamepad API polling loop needs to run for PlayBound Controls. */
+function notifyPlayBoundControlsState(active) {
+  if (win && !win.isDestroyed()) {
+    win.webContents.send(active ? "playbound-controls-activate" : "playbound-controls-deactivate");
+  }
+}
+
 async function applyControllerConfig(slug, installDir, opts = {}) {
+  const inputMode = opts?.inputMode || (couchHost?.getState?.()?.active ? "phone" : null);
+
+  /*
+   * PlayBound Controls: keyboard/mouse synthesis for games with no native
+   * controller support — exactly the games `supportsControllerConfig` below
+   * returns false for, since there is no per-game config file to write.
+   * Always deactivate first so a previous game's profile can never leak into
+   * this one; only ever activates a "verified" profile, and never when the
+   * player explicitly chose keyboard/mouse for themselves.
+   */
+  gamepadBridge.deactivatePlayBoundControls();
+  notifyPlayBoundControlsState(false);
+  if (process.platform === "win32" && !couchHost?.getState?.()?.active && inputMode !== "keyboard" && inputMode !== "phone") {
+    // Local pilot only: the packaged launcher never activates an unverified
+    // recipe. This lets us drive the installed OutRun build before publishing
+    // the profile to the catalog.
+    const outRunPilot = !app.isPackaged && slug === "outrun" && process.env.PLAYBOUND_CONTROLS_PILOT_OUTRUN === "1";
+    const profile = outRunPilot
+      ? require("./services/inputEngine/profiles/outrun.json")
+      : await fetchVerifiedControlProfile(slug, opts?.editionSlug || null);
+    const approved = profile?.status === "verified" && profile?.antiCheatCompatibility === "verified";
+    if ((approved || outRunPilot) && profile?.inputStrategy === "keyboard_mouse" && gamepadBridge.activatePlayBoundControls(profile)) {
+      const key = `${profile.gameSlug}::${profile.editionSlug || ""}`;
+      gamepadBridge.updateControlsSettings(loadSettings().controlOverrides?.[key] || {});
+      notifyPlayBoundControlsState(true);
+      console.log(`[playbound-controls] activated "${profile.name}" for ${slug}`);
+    }
+  }
+
   if (!gameControllerConfig.supportsControllerConfig(slug)) return false;
   const configPath = gameControllerConfig.configPathFor(slug, installDir);
   if (!configPath) return false;
@@ -6198,8 +6270,6 @@ async function applyControllerConfig(slug, installDir, opts = {}) {
   const entry = gameControllerConfig.GAMES[slug];
   const binary = Boolean(entry?.binary);
   const userDataPath = app.getPath("userData");
-
-  const inputMode = opts?.inputMode || (couchHost?.getState?.()?.active ? "phone" : null);
 
   // 1. If player chose Mouse & Keyboard, never apply controller configurations
   if (inputMode === "keyboard") {
@@ -9155,6 +9225,8 @@ async function playGame(slug, join = null, editionSlug = null, opts = null) {
   try {
     return await playGameInner(slug, join, editionSlug, opts);
   } catch (err) {
+    gamepadBridge.deactivatePlayBoundControls();
+    notifyPlayBoundControlsState(false);
     if (!err || !err.__launchFailedReported) {
       try {
         void telemetry.launchFailed({
@@ -9354,7 +9426,7 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
    * game that refuses to start is a bug.
    */
   try {
-    await applyControllerConfig(slug, info.dir || path.dirname(info.exe || ""), opts);
+    await applyControllerConfig(slug, info.dir || path.dirname(info.exe || ""), { ...opts, editionSlug: edSlug });
   } catch (err) {
     console.warn("[controller] auto-config skipped:", err?.message || err);
   }
@@ -10582,6 +10654,12 @@ function sendGameExited(slug) {
   } catch (err) {
     console.warn("[device-controller] onGameExited error:", err?.message || err);
   }
+  // Crash-safety: this runs on both a clean exit and a killed/crashed
+  // process (see both onSpawnedProcessGone branches that call this), so it
+  // must release every synthetic key/button PlayBound Controls could be
+  // holding regardless of how the game actually stopped.
+  gamepadBridge.deactivatePlayBoundControls();
+  notifyPlayBoundControlsState(false);
   if (win && !win.isDestroyed()) {
     win.webContents.send("game-exited", { slug });
   }
@@ -16184,16 +16262,29 @@ function registerOverlayShortcut() {
  * there is exactly one. Guessing between several while nothing is running
  * would put the wrong server's controls under a Restart button.
  */
+/**
+ * PlayBound Controls half of the overlay context — independent of party
+ * state, since most V1 games are single-player and the Server tab's
+ * "no party open" case must not also hide Controls tuning.
+ */
+function overlayControlsContext() {
+  const info = gamepadBridge.getActiveControlsInfo();
+  if (!info) return null;
+  const title = catalogEntry(info.gameSlug)?.title || info.gameSlug;
+  return { profileName: info.name, gameSlug: info.gameSlug, gameTitle: title, settings: info.settings, bindings: info.bindings };
+}
+
 async function overlayContext() {
+  const controls = overlayControlsContext();
   const sync = await launcherJson("/api/party-sync?discoverable=0").catch(() => ({}));
   const parties = Array.isArray(sync?.myParties) ? sync.myParties : [];
   const live = parties.filter((p) => p && p.status !== "ended");
-  if (!live.length) return { party: null };
+  if (!live.length) return { party: null, controls };
 
   const running = [...activeLaunches.keys()];
   const forRunning = live.find((p) => running.includes(String(p.gameSlug)));
   const party = forRunning || (live.length === 1 ? live[0] : null);
-  if (!party) return { party: null, reason: "several parties are open" };
+  if (!party) return { party: null, reason: "several parties are open", controls };
   return {
     party: {
       id: String(party.id),
@@ -16201,6 +16292,7 @@ async function overlayContext() {
       gameTitle: party.gameTitle || null,
       memberCount: Array.isArray(party.members) ? party.members.length : null,
     },
+    controls,
   };
 }
 
@@ -16210,8 +16302,21 @@ ipcMain.handle("overlay-context", async () => {
   try {
     return await overlayContext();
   } catch (err) {
-    return { party: null, error: err.message };
+    return { party: null, error: err.message, controls: overlayControlsContext() };
   }
+});
+ipcMain.handle("update-playbound-controls-settings", (_event, partial) => {
+  const info = gamepadBridge.getActiveControlsInfo();
+  if (!info) return null;
+  const updated = gamepadBridge.updateControlsSettings(partial || {});
+  const key = `${info.gameSlug}::${info.editionSlug || ""}`;
+  const settings = loadSettings();
+  settings.controlOverrides = { ...(settings.controlOverrides || {}), [key]: {
+    sensitivity: updated.sensitivity,
+    invertY: updated.invertY,
+  } };
+  saveSettings(settings);
+  return updated;
 });
 ipcMain.handle("get-overlay-shortcut", () => ({
   accelerator: overlayShortcut(),
@@ -17281,6 +17386,7 @@ if (gotLock) {
   });
 
   app.on("before-quit", () => {
+    gamepadBridge.deactivatePlayBoundControls();
     isAppQuitting = true;
     stopLauncherPresenceLoop();
     // Close any play session still open. Fire-and-forget: quitting must not

@@ -5,6 +5,7 @@ import AutomatedEventLog from "@/lib/models/AutomatedEventLog";
 import BugReport from "@/lib/models/BugReport";
 import CatalogCollection from "@/lib/models/CatalogCollection";
 import CatalogMod from "@/lib/models/CatalogMod";
+import ControlProfile from "@/lib/models/ControlProfile";
 import DiscussionPost from "@/lib/models/DiscussionPost";
 import DiscussionReply from "@/lib/models/DiscussionReply";
 import DiscussionTopic from "@/lib/models/DiscussionTopic";
@@ -50,6 +51,14 @@ const REFERENCES: SlugReference[] = [
   // would orphan every edition: the game page would fall back to its virtual
   // Official edition and the real ones would be unreachable.
   { label: "editions", model: Edition, field: "gameSlug" },
+  /*
+   * PlayBound Controls profiles are keyed by gameSlug the same way editions
+   * are (see the ControlProfile model doc). Left out, a rename would orphan
+   * every profile: the launcher's verified-profile lookup would find
+   * nothing for the renamed game, silently reverting it to no controller
+   * support.
+   */
+  { label: "controlProfiles", model: ControlProfile, field: "gameSlug" },
   /*
    * Hardware advice is per game and keyed by slug. A rename left it pointing
    * at a slug nothing answers to, so the admin hardware section reported
