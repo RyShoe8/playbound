@@ -32,7 +32,11 @@ export async function ensureHostDisplayStream(forceNew = false) {
         width: { ideal: 1920, max: 1920 },
         height: { ideal: 1080, max: 1080 },
       },
-      audio: false,
+      // Electron's setDisplayMediaRequestHandler (main.js) answers this with
+      // `audio: "loopback"` — WASAPI system-audio capture on Windows. `true`
+      // here just opts into whatever the main-process handler decides; the
+      // actual capture behavior lives there, not in this constraint object.
+      audio: true,
     });
     const track = hostDisplayStream.getVideoTracks()[0];
     if (!track || track.readyState !== "live") {
@@ -55,6 +59,15 @@ export async function ensureHostDisplayStream(forceNew = false) {
     } catch {
       /* constraints best-effort */
     }
+    // Best-effort only: some Windows configurations (no default output
+    // device, audio capture policy) hand back a video-only stream even when
+    // "loopback" was requested. Silent stream still beats no stream, so this
+    // never fails ensureHostDisplayStream — see couch.js's attachDisplayTracks,
+    // which simply adds nothing to the audio transceiver when no track exists.
+    const audioTrack = hostDisplayStream.getAudioTracks()[0];
+    if (!audioTrack) {
+      console.warn("[couch] display capture returned no audio track — streaming video only");
+    }
     const settings = typeof track.getSettings === "function" ? track.getSettings() : {};
     console.log(
       "[couch] display track live",
@@ -62,7 +75,8 @@ export async function ensureHostDisplayStream(forceNew = false) {
       "x",
       settings.height || "?",
       "@",
-      settings.frameRate || "?"
+      settings.frameRate || "?",
+      audioTrack ? "+audio" : "(no audio)"
     );
     return hostDisplayStream;
   } catch (err) {

@@ -213,12 +213,31 @@ export function ControllerClient({
     }
   }
 
+  // Try unmuted autoplay first (works unprompted inside PlayBound's own
+  // Electron game-view window, which relaxes the gesture requirement); a
+  // real phone browser will reject that, so fall back to muted playback and
+  // unmute on the player's first tap/click, same pattern every video site
+  // uses for audio-on-load.
+  function playWithAudio(el: HTMLVideoElement) {
+    el.muted = false;
+    el.play().catch(() => {
+      el.muted = true;
+      void el.play().catch(() => {});
+      const unmuteOnGesture = () => {
+        el.muted = false;
+        void el.play().catch(() => {});
+      };
+      el.addEventListener("pointerdown", unmuteOnGesture, { once: true });
+      el.addEventListener("touchstart", unmuteOnGesture, { once: true, passive: true });
+    });
+  }
+
   function attachRemoteStream(stream: MediaStream) {
     remoteStreamRef.current = stream;
     const el = videoRef.current;
     if (el && el.srcObject !== stream) {
       el.srcObject = stream;
-      void el.play().catch(() => {});
+      playWithAudio(el);
     }
     clearVideoFrameWatch();
     setVideoWaiting(true);
@@ -273,7 +292,7 @@ export function ControllerClient({
     const stream = remoteStreamRef.current;
     if (el && stream && el.srcObject !== stream) {
       el.srcObject = stream;
-      void el.play().catch(() => {});
+      playWithAudio(el);
     }
   }
 
@@ -600,8 +619,12 @@ export function ControllerClient({
 
     async function startWebRtc() {
       pc = new RTCPeerConnection({ iceServers: session.iceServers });
-      // Receive host game view when the host shares their display.
+      // Receive host game view when the host shares their display. The host
+      // (answerer) can't add a new audio m-line on its own — this offer must
+      // include it upfront so answerOffer's addTransceiver reuse has an
+      // audio slot to fill in.
       pc.addTransceiver("video", { direction: "recvonly" });
+      pc.addTransceiver("audio", { direction: "recvonly" });
 
       pc.onconnectionstatechange = () => {
         const state = pc?.connectionState;
