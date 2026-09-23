@@ -350,7 +350,18 @@ export async function pushHostDisplayToPeers() {
     try {
       const attached = await attachDisplayTracks(pc);
       if (!attached) continue;
-      const offer = await pc.createOffer();
+      /*
+       * iceRestart: true works around a real Chromium/libwebrtc bug — an
+       * answerer that later calls createOffer() to renegotiate (us, here)
+       * can hit "Failed to set SSL role for the transport" without it,
+       * because the DTLS role Chromium picked while answering doesn't
+       * carry over to a plain re-offer. Forcing an ICE restart makes
+       * Chromium regenerate the transport's role cleanly instead of trying
+       * to reuse the old one. The client already handles a mid-session
+       * offer generically (ControllerClient.tsx's payload.kind === "offer"
+       * branch), ICE-restarted or not, so this needs no client-side change.
+       */
+      const offer = await pc.createOffer({ iceRestart: true });
       await pc.setLocalDescription(offer);
       await pb().couchSignalPost({
         recipientRole: "controller",
@@ -465,8 +476,25 @@ async function answerOffer(controllerId, remoteSdp, session) {
   /*
    * Online multiplayer for local-co-op games: push host application window to the peer so
    * remotes see the game while sending pads. Capture is best-effort.
+   *
+   * Retry BEFORE the first answer rather than answering immediately and
+   * relying solely on the later renegotiated push (pushHostDisplayToPeers'
+   * 800ms/3s retries) to fix it up — that renegotiation hits a real
+   * Chromium bug ("Failed to set SSL role for the transport") when an
+   * answerer tries to re-offer, so a failed first capture used to mean no
+   * video, ever. A real couch party's game is already running before
+   * anyone joins, so attachDisplayTracks already succeeds on the very first
+   * try here and this loop exits immediately — zero behavior change for
+   * that case. Remote Play launches the game and the session in the same
+   * breath, so the window often isn't up yet when the offer arrives; this
+   * gives it up to ~6s to appear before the first answer goes out, so the
+   * working track is there from the start instead of depending on the
+   * broken retry path.
    */
-  await attachDisplayTracks(pc);
+  for (let attempt = 0; attempt < 12; attempt++) {
+    if (await attachDisplayTracks(pc)) break;
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
 
   const answer = await pc.createAnswer();
   await pc.setLocalDescription(answer);
