@@ -133,6 +133,10 @@ ConvertTo-Json -InputObject @($certs | Select-Object -Property Thumbprint, Subje
   // 2. Vendor Nefarius.ViGEm.Client.dll for the PowerShell host (if missing).
   run("Vendoring ViGEm client DLL", path.join(__dirname, "vendor-vigem-client.js"), [], env);
 
+  // 2b. Vendor Sunshine & Moonlight for PlayBound Remote (if missing).
+  run("Vendoring Sunshine host", path.join(__dirname, "vendor-sunshine.js"), [], env);
+  run("Vendoring Moonlight client", path.join(__dirname, "vendor-moonlight.js"), [], env);
+
   // 3. Controls requires the .NET host's SendInput commands. The PowerShell
   // fallback only supports virtual pads, so shipping without the exe would
   // advertise controller profiles that cannot run.
