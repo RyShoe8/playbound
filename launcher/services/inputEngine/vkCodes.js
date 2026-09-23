@@ -32,6 +32,8 @@ Object.assign(VK, {
   ArrowDown: 0x28,
   ArrowLeft: 0x25,
   ArrowRight: 0x27,
+  PageUp: 0x21,
+  PageDown: 0x22,
   F1: 0x70,
   F2: 0x71,
   F3: 0x72,

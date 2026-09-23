@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/bits";
+import Link from "next/link";
 import type { ControlSupportLevel } from "@/lib/controlProfiles/service";
 
 /**
@@ -20,7 +21,7 @@ const DESCRIPTIONS: Record<ControlSupportLevel, string> = {
   playbound_enhanced:
     "This game has no native controller support. PlayBound automatically maps controller input to keyboard and mouse when you press Play.",
   playbound_profile_available:
-    "A PlayBound controller profile exists for this game but hasn't been verified yet — it may not activate automatically.",
+    "A PlayBound controller profile is being tested for this game. You can choose the preview in the Windows launcher; its layout may still need tuning.",
   partial: "This game supports a controller, but not fully or reliably.",
   unsupported: "This game has no native or PlayBound-enhanced controller support yet.",
 };
@@ -33,6 +34,9 @@ export function ControlSupportBadge({ level }: { level: ControlSupportLevel }) {
         {text}
       </Badge>
       <p className="max-w-2xl text-xs text-muted-foreground">{DESCRIPTIONS[level]}</p>
+      {(level === "playbound_enhanced" || level === "playbound_profile_available") && (
+        <Link href="/controls" className="w-fit text-xs font-semibold text-primary hover:underline">How PlayBound Controls works</Link>
+      )}
     </div>
   );
 }

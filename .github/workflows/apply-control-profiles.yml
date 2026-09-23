@@ -1,0 +1,49 @@
+name: Apply PlayBound Controls profiles
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "platform/scripts/apply-control-profile-wave.ts"
+      - "platform/scripts/control-profiles/wave-1.ts"
+      - "launcher/services/inputEngine/profiles/outrun.json"
+      - ".github/workflows/apply-control-profiles.yml"
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: platform/package-lock.json
+      - name: Check Mongo URI
+        id: mongo
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: |
+          if [[ "$MONGODB_URI" =~ ^mongodb(\+srv)?:// ]]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "MONGODB_URI secret is missing; profile rollout skipped."
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Install dependencies
+        if: steps.mongo.outputs.available == 'true'
+        run: npm ci
+      - name: Validate and preview exact inserts
+        if: steps.mongo.outputs.available == 'true'
+        run: npm run insert:control-profile-wave
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      - name: Insert missing profiles only
+        if: steps.mongo.outputs.available == 'true'
+        run: npm run insert:control-profile-wave -- --apply
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
