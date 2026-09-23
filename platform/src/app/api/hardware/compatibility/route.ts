@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
-import UserHardwareProfile from "@/lib/models/UserHardwareProfile";
+import UserHardwareProfile, { PRIMARY_DEVICE_ID } from "@/lib/models/UserHardwareProfile";
 import HardwareGpu from "@/lib/models/HardwareGpu";
 import { getFriendsUserId } from "@/lib/friendsAuth";
 import { getGame } from "@/lib/catalog";
@@ -24,6 +24,8 @@ export async function GET(req: Request) {
   }
 
   const editionSlug = url.searchParams.get("editionSlug")?.trim() || null;
+  /** Which PC to evaluate against — for PlayBound Remote's per-device comparison. Defaults to the pre-Remote single-profile row. */
+  const deviceId = url.searchParams.get("deviceId")?.trim() || PRIMARY_DEVICE_ID;
   const modSlugs = (url.searchParams.get("modSlugs") || "")
     .split(",")
     .map((s) => s.trim())
@@ -105,7 +107,7 @@ export async function GET(req: Request) {
   let userCompat: UserHardwareForCompat | null = null;
   let hasProfile = false;
   if (userId) {
-    const profile = await UserHardwareProfile.findOne({ userId }).lean();
+    const profile = await UserHardwareProfile.findOne({ userId, deviceId }).lean();
     if (profile) {
       hasProfile = true;
       const idx = profile.primaryGpuIndex;
@@ -141,6 +143,7 @@ export async function GET(req: Request) {
         gameSlug,
         verdict: result.verdict,
         hasProfile,
+        deviceId,
       },
       userId,
     });

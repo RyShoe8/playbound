@@ -22,6 +22,7 @@ import Review from "@/lib/models/Review";
 import StoreMatchSuggestion from "@/lib/models/StoreMatchSuggestion";
 import WeeklyIssue from "@/lib/models/WeeklyIssue";
 import MultiplayerSession from "@/lib/models/MultiplayerSession";
+import RemotePlaySession from "@/lib/models/RemotePlaySession";
 import DeveloperClaim from "@/lib/models/DeveloperClaim";
 
 /**
@@ -97,6 +98,12 @@ const REFERENCES: SlugReference[] = [
   { label: "reviews", model: Review, field: "gameSlug" },
   { label: "weeklyIssues", model: WeeklyIssue, field: "gameSlug" },
   { label: "multiplayerSessions", model: MultiplayerSession, field: "gameSlug" },
+  /*
+   * Short-lived (TTL-expiring), same as multiplayerSessions above — but an
+   * active PlayBound Remote stream mid-rename would otherwise orphan its
+   * gameSlug for the rest of that session, same failure mode.
+   */
+  { label: "remotePlaySessions", model: RemotePlaySession, field: "gameSlug" },
   { label: "developerClaims", model: DeveloperClaim, field: "gameSlug" },
 ];
 

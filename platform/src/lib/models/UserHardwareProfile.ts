@@ -15,9 +15,32 @@ const GpuEntrySchema = new Schema(
   { _id: false }
 );
 
+/**
+ * Sentinel `deviceId` for a profile uploaded before PlayBound Remote existed
+ * (or by a launcher build that doesn't send one yet) — keeps every existing
+ * single-PC caller working unchanged rather than requiring every read/write
+ * site to special-case "no deviceId".
+ */
+export const PRIMARY_DEVICE_ID = "primary";
+
 const UserHardwareProfileSchema = new Schema(
   {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true, unique: true },
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    /**
+     * One profile per physical PC, not per account — PlayBound Remote needs
+     * to compare a game against "this laptop" vs "Ryan's gaming PC"
+     * separately. `PRIMARY_DEVICE_ID` covers the pre-Remote single-PC case.
+     *
+     * NOTE: the unique index below is `{userId, deviceId}`, replacing the
+     * old `userId`-alone unique index. That old index still physically
+     * exists on production Mongo until
+     * `scripts/migrate-hardware-profile-device-index.ts --apply` is run by
+     * hand — see that script's docstring. Until then, a second device's
+     * profile for the same user will still collide with the old index.
+     */
+    deviceId: { type: String, default: PRIMARY_DEVICE_ID },
+    /** User-editable label — "Ryan's Gaming PC". Null for PRIMARY_DEVICE_ID until renamed. */
+    deviceName: { type: String, default: null },
     schemaVersion: { type: Number, default: 1 },
     collectedAt: { type: Date, required: true },
     os: {
@@ -60,6 +83,8 @@ const UserHardwareProfileSchema = new Schema(
   },
   { timestamps: true }
 );
+
+UserHardwareProfileSchema.index({ userId: 1, deviceId: 1 }, { unique: true });
 
 const UserHardwareProfile =
   models.UserHardwareProfile || model("UserHardwareProfile", UserHardwareProfileSchema);

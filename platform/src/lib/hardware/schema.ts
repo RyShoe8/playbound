@@ -92,6 +92,14 @@ export const detectedGpuSchema = z.object({
 export const hardwareProfilePayloadSchema = z.object({
   schemaVersion: z.literal(1),
   collectedAt: z.string().max(40),
+  /**
+   * Which physical PC this snapshot describes — added for PlayBound Remote.
+   * Optional so an older launcher build that has never heard of devices
+   * still validates and lands on the same `PRIMARY_DEVICE_ID` row it always
+   * has (see UserHardwareProfile.ts).
+   */
+  deviceId: z.string().trim().min(1).max(80).optional(),
+  deviceName: z.string().trim().min(1).max(120).nullable().optional(),
   os: z.object({
     family: z.enum(["windows", "macos", "linux", "unknown"]),
     name: z.string().max(120).nullable().optional(),
