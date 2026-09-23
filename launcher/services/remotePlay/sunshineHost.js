@@ -94,7 +94,7 @@ function createSunshineHost(deps = {}) {
     const confPath = path.join(configDir, "sunshine.conf");
     fs.writeFileSync(confPath, generateSunshineConfig({ port, pin, deviceName }), "utf8");
 
-    child = spawnFn(path.join(dir, HOST_EXE), ["--config", confPath], {
+    child = spawnFn(path.join(dir, HOST_EXE), [confPath], {
       cwd: dir,
       stdio: ["ignore", "pipe", "pipe"],
       windowsHide: true,
@@ -103,6 +103,34 @@ function createSunshineHost(deps = {}) {
       child = null;
     });
     return { ok: true };
+  }
+
+  function waitForReady(port, host = "127.0.0.1", timeoutMs = 25000) {
+    const net = require("net");
+    const start = Date.now();
+    return new Promise((resolve) => {
+      function check() {
+        if (!isRunning() || Date.now() - start >= timeoutMs) {
+          return resolve(false);
+        }
+        const sock = new net.Socket();
+        sock.setTimeout(1000);
+        sock.once("connect", () => {
+          sock.destroy();
+          resolve(true);
+        });
+        sock.once("timeout", () => {
+          sock.destroy();
+          setTimeout(check, 500);
+        });
+        sock.once("error", () => {
+          sock.destroy();
+          setTimeout(check, 500);
+        });
+        sock.connect(port, host);
+      }
+      check();
+    });
   }
 
   function stop() {
@@ -115,7 +143,7 @@ function createSunshineHost(deps = {}) {
     child = null;
   }
 
-  return { start, stop, isRunning, resolveSunshineDir: resolveDir };
+  return { start, stop, isRunning, waitForReady, resolveSunshineDir: resolveDir };
 }
 
 module.exports = { HOST_EXE, resolveSunshineDir, generateSunshineConfig, createSunshineHost };
