@@ -174,7 +174,7 @@ async function renderSettingsView() {
 
     <div class="settings-group" id="set-remote-play-group">
       <label class="settings-label">Remote Play</label>
-      <p class="settings-hint">Stream games between PlayBound PCs on your home network. Play demanding games installed on your gaming PC from a laptop or handheld with zero configuration.</p>
+      <p class="settings-hint">Stream games between PlayBound PCs on your home network. Both PCs must be on the same LAN, and Windows must allow PlayBound through its firewall.</p>
       
       <div style="margin-top: 10px;">
         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
@@ -195,6 +195,8 @@ async function renderSettingsView() {
       <div id="set-remote-play-status-card" style="margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.04); font-size: 13px; line-height: 1.5;">
         <div id="set-remote-status-indicator">Loading Remote Play status…</div>
       </div>
+      <button class="btn-secondary btn-sm" id="set-btn-remote-allow-lan" style="margin-top: 8px;">Allow Remote Play on this home network</button>
+      <p class="settings-hint" style="margin-top: 4px;">Windows will ask for permission. PlayBound adds local-network-only firewall rules for this PC and its stream component.</p>
 
       <div id="set-remote-trusted-container" style="margin-top: 14px;">
         <label class="settings-hint" style="margin: 0 0 6px 0; font-weight: 600; display: block;">Paired Devices</label>
@@ -361,6 +363,7 @@ async function renderSettingsView() {
   const remoteStatusIndicator = document.getElementById("set-remote-status-indicator");
   const remoteTrustedList = document.getElementById("set-remote-trusted-list");
   const remoteDiagnostics = document.getElementById("set-remote-diagnostics");
+  const remoteAllowLanBtn = document.getElementById("set-btn-remote-allow-lan");
 
   async function fillRemotePlaySettings() {
     if (!window.playbound.remotePlayGetState) return;
@@ -378,7 +381,7 @@ async function renderSettingsView() {
         } else if (rpState.activeHostSession) {
           remoteStatusIndicator.innerHTML = `<span class="dot online"></span> <strong>Streaming Active</strong>: Serving ${escapeHtml(rpState.activeHostSession.gameSlug)} to LAN client`;
         } else if (rpState.isHostListening) {
-          remoteStatusIndicator.innerHTML = `<span class="dot online"></span> <strong>Ready</strong> · Listening for LAN stream connections on port ${rpState.hostPort || 47998}`;
+          remoteStatusIndicator.innerHTML = `<span class="dot online"></span> <strong>Ready</strong> · Listening for LAN stream connections on port ${rpState.hostPort || 47998}${rpState.networkCategory === "Public" ? `<br><span style="color:#fbbf24;">Windows marks this network Public. Use the button below to allow PlayBound on your home LAN, or set the network to Private in Windows settings.</span>` : ""}`;
         } else {
           remoteStatusIndicator.innerHTML = `<span class="dot" style="background:#eab308;"></span> Initializing Remote Play host…`;
         }
@@ -390,6 +393,8 @@ Device ID: ${escapeHtml(rpState.deviceId || "none")}
 Host Port: ${rpState.hostPort || "inactive"}
 Sunshine: ${rpState.isHostListening ? "Ready (headless)" : "Idle"}
 LAN Devices Discovered: ${(rpState.discoveredHosts || []).length}
+Network Category: ${escapeHtml(rpState.networkCategory || "unknown")}
+Discovery: ${escapeHtml(rpState.discoverySource || "mDNS")}
 Active Host Session: ${rpState.activeHostSession ? JSON.stringify(rpState.activeHostSession) : "none"}
 Active Client Stream: ${rpState.activeClientSession ? JSON.stringify(rpState.activeClientSession) : "none"}
         `.trim().replace(/\n/g, "<br>");
@@ -445,6 +450,21 @@ Active Client Stream: ${rpState.activeClientSession ? JSON.stringify(rpState.act
     } finally {
       remoteEnableCheckbox.disabled = false;
       await fillRemotePlaySettings();
+    }
+  });
+
+  remoteAllowLanBtn?.addEventListener("click", async () => {
+    remoteAllowLanBtn.disabled = true;
+    setStatus("Waiting for Windows permission to allow Remote Play on this home network…");
+    try {
+      const result = await window.playbound.remotePlayAllowLocalNetwork();
+      if (!result?.ok) throw new Error(result?.error || "Windows did not add the firewall rules.");
+      setStatus("PlayBound is allowed through Windows Firewall for this home network.");
+      await fillRemotePlaySettings();
+    } catch (err) {
+      setStatus(err?.message || "Could not allow Remote Play on this network.", true);
+    } finally {
+      remoteAllowLanBtn.disabled = false;
     }
   });
 

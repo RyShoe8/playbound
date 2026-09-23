@@ -30,7 +30,7 @@ function translateError(reason) {
     case "host-component-missing":
       return "The host PC is missing the Remote Play host component.";
     case "connection-failed":
-      return "Could not connect to the host PC on your local network.";
+      return "Could not connect to the host PC on your local network. On a trusted home network, set Windows to Private and allow PlayBound through the host PC's firewall.";
     case "timeout":
       return "Connection to the host PC timed out.";
     default:

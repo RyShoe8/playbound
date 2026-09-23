@@ -126,6 +126,9 @@ const { createHostApiServer } = require("./services/remotePlay/hostApi");
 const { createSunshineHost } = require("./services/remotePlay/sunshineHost");
 const { createMoonlightClient } = require("./services/remotePlay/moonlightClient");
 const { createClientSessionCoordinator } = require("./services/remotePlay/clientSession");
+const { ownLanAddresses, chooseLanAddress } = require("./services/remotePlay/lanAddresses");
+const { accountHosts, mergeHosts } = require("./services/remotePlay/accountDiscovery");
+const { allowRemotePlayOnLan } = require("./services/remotePlay/firewallSetup");
 
 function loadHardwareModule() {
   try {
@@ -14109,15 +14112,7 @@ let remoteHostApi = null;
 let remoteClientCoordinator = null;
 
 function getLocalLanIp() {
-  const ifaces = os.networkInterfaces();
-  for (const name of Object.keys(ifaces)) {
-    for (const net of ifaces[name] || []) {
-      if (net.family === "IPv4" && !net.internal && !net.address.startsWith("127.")) {
-        return net.address;
-      }
-    }
-  }
-  return "127.0.0.1";
+  return ownLanAddresses(os.networkInterfaces())[0] || "127.0.0.1";
 }
 
 async function registerRemoteDevice() {
@@ -14147,11 +14142,13 @@ async function registerRemoteDevice() {
         name: getRemoteDeviceName(),
         platform: "windows",
         capabilities: {
-          remotePlayHost: process.platform === "win32",
+          remotePlayHost: Boolean(settings.remotePlayHostEnabled && remoteHostApi?.isListening()),
           remotePlayClient: true,
           hardwareEncode: hasEncoder,
           hardwareDecode: true,
         },
+        lanAddresses: settings.remotePlayHostEnabled && remoteHostApi?.isListening() ? ownLanAddresses(os.networkInterfaces()) : [],
+        hostPort: settings.remotePlayHostEnabled && remoteHostApi?.isListening() ? remoteHostApi.getPort() : null,
       }),
     });
   } catch (err) {
@@ -14311,15 +14308,55 @@ function initRemotePlay() {
 
   const settings = loadSettings();
   if (settings.remotePlayHostEnabled) {
-    void startRemotePlayHost();
+    void startRemotePlayHost().then(registerRemoteDevice).catch((err) => console.warn("[remote-play] host startup failed:", err?.message || err));
+  } else {
+    void registerRemoteDevice();
   }
+  // Device presence is short-lived. Refresh it while offering Remote Play so
+  // same-account LAN fallback cannot surface a host that has gone away.
+  setInterval(() => {
+    if (loadSettings().remotePlayHostEnabled && remoteHostApi?.isListening()) void registerRemoteDevice();
+  }, 60_000).unref?.();
+}
 
-  void registerRemoteDevice();
+async function discoverAccountLanHosts() {
+  if (!loadSettings().launcherToken) return [];
+  try {
+    const res = await apiFetch(`${getApiBase()}/api/devices`, { headers: launcherApiHeaders({ accept: "application/json" }), signal: AbortSignal.timeout(3000) });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return accountHosts(data.devices, getRemoteDeviceId(), os.networkInterfaces());
+  } catch (err) {
+    console.warn("[remote-play] account LAN discovery unavailable:", err?.message || err);
+    return [];
+  }
+}
+
+let networkCategoryCache = { at: 0, value: null };
+function getWindowsNetworkCategory() {
+  if (process.platform !== "win32") return null;
+  if (Date.now() - networkCategoryCache.at < 60_000) return networkCategoryCache.value;
+  try {
+    const output = execFileSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", "(Get-NetConnectionProfile | Where-Object { $_.IPv4Connectivity -ne 'Disconnected' }).NetworkCategory"], { encoding: "utf8", timeout: 5000, windowsHide: true });
+    const value = output.trim().split(/\s+/).find((part) => part === "Private" || part === "Public") || null;
+    networkCategoryCache = { at: Date.now(), value };
+    return value;
+  } catch {
+    networkCategoryCache = { at: Date.now(), value: null };
+    return null;
+  }
 }
 
 ipcMain.handle("remote-play-get-state", async () => {
   const settings = loadSettings();
   await remotePairingService?.refreshTrusted().catch(() => {});
+  const accountLan = await discoverAccountLanHosts();
+  const localInterfaces = os.networkInterfaces();
+  const mdnsHosts = (discoveryService?.listSeenDevices() || []).flatMap((host) => {
+    const address = chooseLanAddress(host.addresses, localInterfaces);
+    return address ? [{ ...host, addresses: [address, ...host.addresses.filter((candidate) => candidate !== address)] }] : [];
+  });
+  const discoveredHosts = mergeHosts(mdnsHosts, accountLan, getRemoteDeviceId());
   return {
     enabled: Boolean(settings.remotePlayHostEnabled),
     deviceId: getRemoteDeviceId(),
@@ -14328,7 +14365,9 @@ ipcMain.handle("remote-play-get-state", async () => {
     hostPort: remoteHostApi?.getPort() || null,
     activeHostSession: activeRemotePlayHostSession,
     activeClientSession: remoteClientCoordinator?.getActiveSession() || null,
-    discoveredHosts: discoveryService?.listSeenDevices() || [],
+    discoveredHosts,
+    networkCategory: getWindowsNetworkCategory(),
+    discoverySource: accountLan.length ? "account-lan-and-mdns" : "mdns",
   };
 });
 
@@ -14341,7 +14380,14 @@ ipcMain.handle("remote-play-set-enabled", async (_event, enabled) => {
   } else {
     stopRemotePlayHost();
   }
+  void registerRemoteDevice();
   return { ok: true, enabled: settings.remotePlayHostEnabled };
+});
+
+ipcMain.handle("remote-play-allow-local-network", async () => {
+  if (process.platform !== "win32") return { ok: false, error: "Windows only." };
+  const sunshineDir = sunshineHost.resolveSunshineDir();
+  return allowRemotePlayOnLan(app.getPath("exe"), sunshineDir ? path.join(sunshineDir, "sunshine.exe") : null, execFile);
 });
 
 ipcMain.handle("remote-play-set-device-name", async (_event, name) => {

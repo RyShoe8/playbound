@@ -17,7 +17,7 @@ export async function GET(req: Request) {
   }
   await dbConnect();
   const docs = await Device.find({ userId })
-    .select("deviceId name platform lastSeenAt capabilities")
+    .select("deviceId name platform lastSeenAt capabilities lanAddresses hostPort")
     .lean();
   return NextResponse.json({
     devices: docs.map((d) => ({
@@ -26,6 +26,8 @@ export async function GET(req: Request) {
       platform: d.platform,
       lastSeenAt: d.lastSeenAt?.toISOString?.() ?? null,
       capabilities: d.capabilities || {},
+      lanAddresses: d.lanAddresses || [],
+      hostPort: d.hostPort || null,
     })),
   });
 }
@@ -53,6 +55,8 @@ export async function POST(req: Request) {
           name: body.name,
           lastSeenAt: new Date(),
           ...(body.capabilities ? { capabilities: body.capabilities } : {}),
+          ...(body.lanAddresses ? { lanAddresses: body.lanAddresses } : {}),
+          ...(body.hostPort !== undefined ? { hostPort: body.hostPort } : {}),
         },
       },
       { upsert: true, returnDocument: "after" }
