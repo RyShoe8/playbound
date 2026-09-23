@@ -13,6 +13,7 @@ export const metadata = pageMetadata({
   description:
     "Every mod, total conversion and add-on pack for games in the PlayBound catalog — searchable by game, all free, one-click installable.",
   path: "/mods",
+  images: ["/mods/opengraph-image"],
 });
 
 export default async function ModsIndexPage() {

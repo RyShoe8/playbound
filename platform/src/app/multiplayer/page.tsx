@@ -18,6 +18,7 @@ export const metadata: Metadata = pageMetadata({
   description:
     "Join open parties, discover live community game servers, and find players across every free and affordable multiplayer title on PlayBound.",
   path: "/multiplayer",
+  images: ["/multiplayer/opengraph-image"],
 });
 
 export default async function MultiplayerPage() {
