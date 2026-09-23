@@ -14287,14 +14287,6 @@ function initRemotePlay() {
         return { ok: false, reason: "host-component-missing" };
       }
 
-      if (sunshineHost.waitForReady) {
-        const ready = await sunshineHost.waitForReady(sunshinePort);
-        if (!ready) {
-          sunshineHost.stop();
-          return { ok: false, reason: "host-component-missing" };
-        }
-      }
-
       const sessionId = crypto.randomUUID();
       activeRemotePlayHostSession = {
         sessionId,
@@ -14315,7 +14307,15 @@ function initRemotePlay() {
             activeRemotePlayHostSession = null;
           }
         }
-      }, 100);
+      }, 0);
+
+      if (sunshineHost.waitForReady) {
+        const ready = await sunshineHost.waitForReady(sunshinePort);
+        if (!ready) {
+          sunshineHost.stop();
+          return { ok: false, reason: "host-component-missing" };
+        }
+      };
 
       const localIp = getLocalLanIp();
       return {

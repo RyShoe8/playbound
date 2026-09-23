@@ -105,29 +105,32 @@ function createSunshineHost(deps = {}) {
     return { ok: true };
   }
 
-  function waitForReady(port, host = "127.0.0.1", timeoutMs = 25000) {
+  function waitForReady(port, host = "127.0.0.1", timeoutMs = 45000) {
     const net = require("net");
     const start = Date.now();
     return new Promise((resolve) => {
+      let timer = null;
       function check() {
         if (!isRunning() || Date.now() - start >= timeoutMs) {
+          clearTimeout(timer);
           return resolve(false);
         }
-        const sock = new net.Socket();
-        sock.setTimeout(1000);
-        sock.once("connect", () => {
+        const sock = net.createConnection(port, host);
+        let finished = false;
+        const done = (ok) => {
+          if (finished) return;
+          finished = true;
           sock.destroy();
-          resolve(true);
-        });
-        sock.once("timeout", () => {
-          sock.destroy();
-          setTimeout(check, 500);
-        });
-        sock.once("error", () => {
-          sock.destroy();
-          setTimeout(check, 500);
-        });
-        sock.connect(port, host);
+          if (ok) {
+            clearTimeout(timer);
+            resolve(true);
+          } else {
+            timer = setTimeout(check, 1000);
+          }
+        };
+        sock.once("connect", () => done(true));
+        sock.once("error", () => done(false));
+        sock.setTimeout(1000, () => done(false));
       }
       check();
     });
