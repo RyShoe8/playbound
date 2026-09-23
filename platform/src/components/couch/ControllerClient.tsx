@@ -640,6 +640,7 @@ export function ControllerClient({
 
       pc.onconnectionstatechange = () => {
         const state = pc?.connectionState;
+        console.log("[couch] connectionState:", state);
         if (state === "connected") {
           usingWebrtc = true;
           setTransport("webrtc");
@@ -666,10 +667,21 @@ export function ControllerClient({
 
       pc.oniceconnectionstatechange = () => {
         const ice = pc?.iceConnectionState;
+        // TEMPORARY diagnostic logging for the Remote Play "stuck forever"
+        // report — pins down whether ICE is gathering/checking/failing vs.
+        // never even reaching those states. Remove once resolved.
+        console.log("[couch] iceConnectionState:", ice);
         if (ice === "connected" || ice === "completed") {
           usingWebrtc = true;
           setTransport("webrtc");
         }
+      };
+      pc.onicegatheringstatechange = () => {
+        console.log("[couch] iceGatheringState:", pc?.iceGatheringState);
+      };
+      pc.onicecandidateerror = (ev) => {
+        const e = ev as RTCPeerConnectionIceErrorEvent;
+        console.warn("[couch] ICE candidate error:", e.errorCode, e.errorText, e.url);
       };
 
       pc.ontrack = (ev) => {
@@ -699,6 +711,10 @@ export function ControllerClient({
       };
 
       pc.onicecandidate = (ev) => {
+        console.log(
+          "[couch] local ICE candidate:",
+          ev.candidate ? ev.candidate.candidate : "(end of candidates)"
+        );
         void postSignal(
           ev.candidate
             ? { kind: "ice", candidate: ev.candidate, from: session.controllerId }
