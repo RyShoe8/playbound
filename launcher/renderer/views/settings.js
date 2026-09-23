@@ -105,6 +105,15 @@ async function renderSettingsView() {
     </div>
 
     <div class="settings-group">
+      <label class="settings-label">Remote Play</label>
+      <p class="settings-hint">This PC's name, shown when picking a device to stream from on the "Play Remotely" button. Works between any of your own PlayBound devices, over LAN or the internet — no separate pairing needed.</p>
+      <input type="text" class="input-text" id="set-remote-device-name" value="${escapeHtml(settings.remoteDeviceName || "")}" placeholder="This PC" />
+      <div style="margin-top: 10px;">
+        <button class="btn-secondary btn-sm" id="set-btn-remote-device-name">Save name</button>
+      </div>
+    </div>
+
+    <div class="settings-group">
       <label class="settings-label">Updates</label>
       <p class="settings-hint">Current version: <strong>${escapeHtml(version)}</strong>. <span id="set-update-hint">${escapeHtml(updateHint)}</span> First install still uses Setup from the site; later updates install in-app. Unsigned builds may show SmartScreen.</p>
       ${
@@ -209,6 +218,13 @@ async function renderSettingsView() {
       await window.playbound.saveSettings({ gamesDir: picked });
       api.renderSettingsView();
     }
+  });
+  document.getElementById("set-btn-remote-device-name")?.addEventListener("click", async () => {
+    const input = document.getElementById("set-remote-device-name");
+    const name = input.value.trim();
+    if (!name) return;
+    await window.playbound.saveSettings({ remoteDeviceName: name });
+    setStatus("Device name saved.");
   });
   document.getElementById("set-btn-overlay-shortcut")?.addEventListener("click", async () => {
     const input = document.getElementById("set-overlay-shortcut");

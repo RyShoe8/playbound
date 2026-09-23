@@ -78,6 +78,8 @@ contextBridge.exposeInMainWorld("playbound", {
   clearContext: () => ipcRenderer.invoke("clear-context"),
   openExternal: (url, opts) => ipcRenderer.invoke("open-external", url, opts || null),
   openCouchGameView: (url) => ipcRenderer.invoke("open-couch-game-view", url),
+  remotePlayRequest: (opts) => ipcRenderer.invoke("remote-play-request", opts),
+  remotePlayListDevices: () => ipcRenderer.invoke("remote-play-list-devices"),
   openDeepLink: (url) => ipcRenderer.invoke("open-deep-link", url),
   closeWindow: () => ipcRenderer.invoke("close-window"),
   openFriendsPopout: () => ipcRenderer.invoke("open-friends-popout"),

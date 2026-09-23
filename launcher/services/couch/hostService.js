@@ -394,6 +394,13 @@ function createHostService(deps) {
       // PlayBound Controls can activate for the former without ever
       // running during actual multiplayer couch co-op.
       solo: Boolean(opts.solo),
+      // Set only by PlayBound Remote Play (main.js's remote-play-request
+      // handling) — never by the real couch-party UI flow or the solo
+      // phone-controller path above. Lets main.js end this specific
+      // session on game exit without changing exit behavior for a real
+      // party or a solo phone-controller session, both of which stay open
+      // after exit exactly as they do today.
+      remotePlay: Boolean(opts.remotePlay),
       streamingMetricsEnabled: Boolean(data.streamingMetricsEnabled),
       driverOk: probe.ok,
       driverReason: probe.ok

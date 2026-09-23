@@ -1,12 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { registerDeviceSchema, trustDeviceSchema } from "./schema";
+import { registerDeviceSchema } from "./schema";
 import Device from "@/lib/models/Device";
 
 describe("registerDeviceSchema", () => {
-  it("stores LAN endpoints on the device rather than on a trusted client", () => {
+  it("stores LAN endpoints on the device", () => {
     expect(Device.schema.path("lanAddresses")).toBeDefined();
     expect(Device.schema.path("hostPort")).toBeDefined();
-    expect(Device.schema.path("trustedDevices").schema.path("lanAddresses")).toBeUndefined();
   });
   it("accepts private LAN addresses and rejects public or malformed endpoints", () => {
     const base = { deviceId: "a".repeat(36), name: "Gaming PC", hostPort: 47998 };
@@ -38,17 +37,5 @@ describe("registerDeviceSchema", () => {
       capabilities: { remotePlayHost: true },
     });
     expect(result.success).toBe(true);
-  });
-});
-
-describe("trustDeviceSchema", () => {
-  it("accepts a minimal valid trust request", () => {
-    const result = trustDeviceSchema.safeParse({ deviceId: "b".repeat(36), name: "Living Room Laptop" });
-    expect(result.success).toBe(true);
-  });
-
-  it("rejects a missing name", () => {
-    const result = trustDeviceSchema.safeParse({ deviceId: "b".repeat(36) });
-    expect(result.success).toBe(false);
   });
 });

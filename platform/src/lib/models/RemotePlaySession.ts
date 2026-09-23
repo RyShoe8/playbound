@@ -1,12 +1,18 @@
 import { Schema, model, models } from "mongoose";
 
 /**
- * One PlayBound Remote streaming session — modeled directly on
+ * The Remote Play request/handoff record — modeled on
  * `MultiplayerSession`'s ephemeral, TTL+heartbeat shape (short-lived
  * coordination record, not permanent history). A player's actual "played
  * remotely, 1h 42m" history is a `TelemetryEvent`, the same as any other
- * session-length stat already tracked — this model exists only while the
- * stream is live or was very recently live, not as an archive.
+ * session-length stat already tracked — this model exists only while a
+ * request is being handed off or a stream is live, not as an archive.
+ *
+ * This does NOT duplicate `CouchSession` — that still owns the actual WebRTC
+ * signaling (offer/answer/ICE). This is just how the client device asks a
+ * host device (both on the same account) to launch a game and hand back a
+ * CouchSession join URL; see docs on `insert-catalog-wave` for the "don't
+ * build a second system that does the same thing" lesson this mirrors.
  */
 
 const RemotePlaySessionSchema = new Schema(
@@ -19,10 +25,17 @@ const RemotePlaySessionSchema = new Schema(
 
     status: {
       type: String,
-      enum: ["starting", "streaming", "ended"],
-      default: "starting",
+      // requested: client asked, waiting for host to notice.
+      // ready: host launched the game and created a CouchSession — joinUrl is set.
+      // streaming: client has opened the game-view window (best-effort ack).
+      // ended: game exited on the host, or the client disconnected.
+      // declined: host was busy / user cancelled before "ready".
+      enum: ["requested", "ready", "streaming", "ended", "declined"],
+      default: "requested",
       index: true,
     },
+    /** Set once the host creates the CouchSession — what the client opens via openCouchGameView. */
+    joinUrl: { type: String, default: null },
     resolution: { type: String, default: "1920x1080" },
     fps: { type: Number, default: 60 },
     codec: { type: String, default: "h264" },
