@@ -13,6 +13,7 @@
 "use strict";
 
 const DEFAULT_CONNECT_TIMEOUT_MS = 15000;
+const WebSocket = require("ws");
 
 /**
  * Translates hostApi / Moonlight failure codes into clear, human-friendly messages.
@@ -47,10 +48,7 @@ function createClientSessionCoordinator(deps) {
   const moonlightClient = deps.moonlightClient;
   const createWebSocket =
     deps.createWebSocket ||
-    ((url) => {
-      const WS = typeof WebSocket !== "undefined" ? WebSocket : globalThis.WebSocket;
-      return new WS(url);
-    });
+    ((url) => new WebSocket(url));
 
   let ws = null;
   let activeSession = null;
