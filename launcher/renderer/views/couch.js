@@ -76,6 +76,10 @@ export async function startCouchSessionQuiet(opts = {}) {
     hostLabel: opts.hostLabel || "PlayBound",
     maxPlayers: opts.maxPlayers,
     reserveHostSlot: Boolean(reserveHostSlot),
+    // Passed through to hostService's session record so PlayBound Controls
+    // can tell "one phone, no party" apart from a real couch party — see
+    // the one caller of this function that actually sets it.
+    solo: Boolean(opts.solo),
   });
   if (!res?.ok) {
     setStatus(res?.error || "Failed to start phone controller", true);

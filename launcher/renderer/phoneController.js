@@ -378,7 +378,11 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
       setStatus("Online controllers already active — launching…");
     } else {
       setStatus("Setting up phone controller…");
-      const state = await startCouchSessionQuiet();
+      // Solo: this mints a session purely to plumb one phone's transport for
+      // single-player, not a real couch party — lets PlayBound Controls
+      // activate off it (see the couchHost solo check in applyControllerConfig)
+      // without ever doing so during actual multiplayer couch co-op.
+      const state = await startCouchSessionQuiet({ solo: true });
       if (!state?.active || !state.session) {
         setStatus("Could not enable phone controller — launching with PC controls", true);
         finalMode = "controller";
