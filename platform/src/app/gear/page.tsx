@@ -10,6 +10,7 @@ export const metadata: Metadata = pageMetadata({
   description:
     "Curated gaming hardware, tested and matched to the games in your PlayBound library. Headsets, controllers, keyboards and more, with what each one is actually good for.",
   path: "/gear",
+  images: ["/gear/opengraph-image"],
 });
 
 export default async function GearDirectoryPage() {

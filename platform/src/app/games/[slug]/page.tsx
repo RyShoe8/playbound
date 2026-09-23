@@ -137,7 +137,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title: gameTitle(game),
     description: gameDescription(game),
     path: `/games/${game.slug}`,
-    images: game.coverImage ? [game.coverImage] : undefined,
+    images: [`/games/${game.slug}/opengraph-image`],
   });
 }
 

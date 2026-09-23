@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { gameTitle, gameDescription, editionTitle, editionDescription } from "./seo";
+import {
+  gameTitle,
+  gameDescription,
+  editionTitle,
+  editionDescription,
+  buildOgImageUrl,
+  pageMetadata,
+} from "./seo";
 import type { Game } from "./data/types";
 import type { Edition } from "./editionTypes";
 
@@ -169,3 +176,49 @@ describe("Edition SEO", () => {
     expect(desc).toContain("Install in one click with the PlayBound launcher.");
   });
 });
+
+describe("OpenGraph Image & Metadata Generation", () => {
+  it("buildOgImageUrl generates safe query parameters for any page", () => {
+    const url = buildOgImageUrl({
+      title: "Custom Page Title",
+      description: "A detailed description of the page.",
+      path: "/custom-route",
+      badge: "Community Guide",
+      tags: ["Guide", "PC"],
+    });
+
+    expect(url).toContain("/api/og?");
+    expect(url).toContain("title=Custom+Page+Title");
+    expect(url).toContain("badge=Community+Guide");
+    expect(url).toContain("tags=Guide%2CPC");
+    expect(url).toContain("path=%2Fcustom-route");
+  });
+
+  it("pageMetadata generates absolute custom OpenGraph preview image for pages without explicit images", () => {
+    const meta = pageMetadata({
+      title: "PlayBound Standards",
+      description: "Our quality bar and standards for games.",
+      path: "/standards",
+    });
+
+    const ogImages = meta.openGraph?.images as string[];
+    expect(ogImages).toBeDefined();
+    expect(ogImages.length).toBe(1);
+    expect(ogImages[0]).toMatch(/^https:\/\/playbound\.club\/api\/og\?/);
+    expect(ogImages[0]).toContain("title=PlayBound+Standards");
+  });
+
+  it("pageMetadata turns relative custom images into absolute URLs", () => {
+    const meta = pageMetadata({
+      title: "Deals",
+      description: "PC game deals and giveaways.",
+      path: "/deals",
+      images: ["/deals/opengraph-image"],
+    });
+
+    const ogImages = meta.openGraph?.images as string[];
+    expect(ogImages).toBeDefined();
+    expect(ogImages[0]).toBe("https://playbound.club/deals/opengraph-image");
+  });
+});
+

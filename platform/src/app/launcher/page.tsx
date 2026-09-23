@@ -35,6 +35,7 @@ export const metadata: Metadata = pageMetadata({
   description:
     "A free desktop app for PlayBound's curated free and affordable games. Get one-click installs, cloud saves, mod management, and parties that land everyone in the same game.",
   path: "/launcher",
+  images: ["/launcher/opengraph-image"],
 });
 
 /**
