@@ -381,7 +381,7 @@ async function renderSettingsView() {
         } else if (rpState.activeHostSession) {
           remoteStatusIndicator.innerHTML = `<span class="dot online"></span> <strong>Streaming Active</strong>: Serving ${escapeHtml(rpState.activeHostSession.gameSlug)} to LAN client`;
         } else if (rpState.isHostListening) {
-          remoteStatusIndicator.innerHTML = `<span class="dot online"></span> <strong>Ready</strong> · Listening for LAN stream connections on port ${rpState.hostPort || 47998}${rpState.networkCategory === "Public" ? `<br><span style="color:#fbbf24;">Windows marks this network Public. Use the button below to allow PlayBound on your home LAN, or set the network to Private in Windows settings.</span>` : ""}`;
+          remoteStatusIndicator.innerHTML = `<span class="dot online"></span> <strong>Ready</strong> · Listening for LAN stream connections on port ${rpState.hostPort || 47998}${rpState.hostAddresses?.length ? `<br>PC address: <strong>${escapeHtml(rpState.hostAddresses[0])}</strong> · Enter this on another PC if it cannot discover this host.` : ""}${rpState.networkCategory === "Public" ? `<br><span style="color:#fbbf24;">Windows marks this network Public. Use the button below to allow PlayBound on your home LAN, or set the network to Private in Windows settings.</span>` : ""}`;
         } else {
           remoteStatusIndicator.innerHTML = `<span class="dot" style="background:#eab308;"></span> Initializing Remote Play host…`;
         }
@@ -391,6 +391,7 @@ async function renderSettingsView() {
         remoteDiagnostics.innerHTML = `
 Device ID: ${escapeHtml(rpState.deviceId || "none")}
 Host Port: ${rpState.hostPort || "inactive"}
+LAN Address: ${escapeHtml((rpState.hostAddresses || []).join(", ") || "none")}
 Sunshine: ${rpState.isHostListening ? "Ready (headless)" : "Idle"}
 LAN Devices Discovered: ${(rpState.discoveredHosts || []).length}
 Network Category: ${escapeHtml(rpState.networkCategory || "unknown")}
