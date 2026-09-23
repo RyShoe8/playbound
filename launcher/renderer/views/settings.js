@@ -172,6 +172,43 @@ async function renderSettingsView() {
       }</div>
     </div>
 
+    <div class="settings-group" id="set-remote-play-group">
+      <label class="settings-label">Remote Play</label>
+      <p class="settings-hint">Stream games between PlayBound PCs on your home network. Play demanding games installed on your gaming PC from a laptop or handheld with zero configuration.</p>
+      
+      <div style="margin-top: 10px;">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+          <input type="checkbox" id="set-remote-play-enable" />
+          <span style="font-size: 13px; font-weight: 600; color: var(--text);">Enable Remote Play host</span>
+        </label>
+        <p class="settings-hint" style="margin-left: 24px; margin-top: 4px;">Allows other PlayBound PCs on your local network to stream games installed on this PC.</p>
+      </div>
+
+      <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 6px;">
+        <label for="set-remote-device-name" class="settings-hint" style="margin: 0; font-weight: 600;">This PC's Network Name</label>
+        <div style="display: flex; gap: 8px; max-width: 400px;">
+          <input type="text" class="input-text" id="set-remote-device-name" placeholder="Ryan's Gaming PC" />
+          <button class="btn-secondary btn-sm" id="set-btn-remote-name-save">Save</button>
+        </div>
+      </div>
+
+      <div id="set-remote-play-status-card" style="margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.04); font-size: 13px; line-height: 1.5;">
+        <div id="set-remote-status-indicator">Loading Remote Play status…</div>
+      </div>
+
+      <div id="set-remote-trusted-container" style="margin-top: 14px;">
+        <label class="settings-hint" style="margin: 0 0 6px 0; font-weight: 600; display: block;">Paired Devices</label>
+        <div id="set-remote-trusted-list" style="font-size: 12px; color: var(--text-muted);">Loading paired devices…</div>
+      </div>
+
+      <details style="margin-top: 12px; font-size: 12px; color: var(--text-muted);">
+        <summary style="cursor: pointer; opacity: 0.8;">Diagnostics & Network Info</summary>
+        <div id="set-remote-diagnostics" style="margin-top: 6px; padding: 8px; background: rgba(0,0,0,0.25); border-radius: 6px; font-family: monospace; font-size: 11px;">
+          Checking diagnostics…
+        </div>
+      </details>
+    </div>
+
     <div class="settings-group">
       <label class="settings-label">Report a bug</label>
       <p class="settings-hint">Send a problem report to the PlayBound team. If you are signed in, it is linked to your account.</p>
@@ -181,6 +218,18 @@ async function renderSettingsView() {
       <div style="margin-top: 10px;">
         <button class="btn-secondary btn-sm" id="set-btn-bug">Send report</button>
       </div>
+    </div>
+
+    <div class="settings-group">
+      <label class="settings-label">Open Source Components</label>
+      <p class="settings-hint">PlayBound embeds and automates open source technologies to deliver native performance and seamless play.</p>
+      <ul style="margin: 8px 0 0 16px; padding: 0; font-size: 12px; color: var(--text-muted); line-height: 1.6;">
+        <li><strong>Sunshine</strong> — Low-latency host video capture and encoding (GPL-3.0)</li>
+        <li><strong>Moonlight</strong> — Open source client decoding and input streaming (GPL-3.0)</li>
+        <li><strong>ViGEmBus / Nefarius</strong> — Virtual gamepad emulation driver (MIT)</li>
+        <li><strong>NetBird</strong> — WireGuard mesh networking for online multiplayer (BSD-3-Clause)</li>
+        <li><strong>DOSBox Staging</strong> — DOS compatibility environment (GPL-2.0)</li>
+      </ul>
     </div>
   `;
 
@@ -305,6 +354,114 @@ async function renderSettingsView() {
       }
     };
   }
+
+  const remoteEnableCheckbox = document.getElementById("set-remote-play-enable");
+  const remoteNameInput = document.getElementById("set-remote-device-name");
+  const remoteNameSaveBtn = document.getElementById("set-btn-remote-name-save");
+  const remoteStatusIndicator = document.getElementById("set-remote-status-indicator");
+  const remoteTrustedList = document.getElementById("set-remote-trusted-list");
+  const remoteDiagnostics = document.getElementById("set-remote-diagnostics");
+
+  async function fillRemotePlaySettings() {
+    if (!window.playbound.remotePlayGetState) return;
+    try {
+      const rpState = await window.playbound.remotePlayGetState();
+      if (remoteEnableCheckbox) {
+        remoteEnableCheckbox.checked = Boolean(rpState.enabled);
+      }
+      if (remoteNameInput && !remoteNameInput.value) {
+        remoteNameInput.value = rpState.deviceName || "";
+      }
+      if (remoteStatusIndicator) {
+        if (!rpState.enabled) {
+          remoteStatusIndicator.innerHTML = `<span class="dot"></span> <span style="opacity:0.8;">Remote Play host is disabled. Other PCs cannot stream games from this PC.</span>`;
+        } else if (rpState.activeHostSession) {
+          remoteStatusIndicator.innerHTML = `<span class="dot online"></span> <strong>Streaming Active</strong>: Serving ${escapeHtml(rpState.activeHostSession.gameSlug)} to LAN client`;
+        } else if (rpState.isHostListening) {
+          remoteStatusIndicator.innerHTML = `<span class="dot online"></span> <strong>Ready</strong> · Listening for LAN stream connections on port ${rpState.hostPort || 47998}`;
+        } else {
+          remoteStatusIndicator.innerHTML = `<span class="dot" style="background:#eab308;"></span> Initializing Remote Play host…`;
+        }
+      }
+
+      if (remoteDiagnostics) {
+        remoteDiagnostics.innerHTML = `
+Device ID: ${escapeHtml(rpState.deviceId || "none")}
+Host Port: ${rpState.hostPort || "inactive"}
+Sunshine: ${rpState.isHostListening ? "Ready (headless)" : "Idle"}
+LAN Devices Discovered: ${(rpState.discoveredHosts || []).length}
+Active Host Session: ${rpState.activeHostSession ? JSON.stringify(rpState.activeHostSession) : "none"}
+Active Client Stream: ${rpState.activeClientSession ? JSON.stringify(rpState.activeClientSession) : "none"}
+        `.trim().replace(/\n/g, "<br>");
+      }
+
+      if (remoteTrustedList && window.playbound.remotePlayListTrusted) {
+        const trustedRes = await window.playbound.remotePlayListTrusted().catch(() => ({}));
+        const list = Array.isArray(trustedRes?.trustedDevices) ? trustedRes.trustedDevices : [];
+        if (!list.length) {
+          remoteTrustedList.textContent = "No paired devices yet. Devices asking to stream will prompt for your approval.";
+        } else {
+          remoteTrustedList.innerHTML = list
+            .map(
+              (dev) => `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.06);">
+              <div>
+                <strong>${escapeHtml(dev.name || "PlayBound PC")}</strong>
+                <span style="opacity:0.6; margin-left:8px; font-size:11px;">${dev.trustedAt ? new Date(dev.trustedAt).toLocaleDateString() : ""}</span>
+              </div>
+              <button class="btn-danger btn-sm" data-revoke-device="${escapeHtml(dev.deviceId)}" style="padding:2px 8px; font-size:11px;">Revoke</button>
+            </div>
+          `
+            )
+            .join("");
+
+          remoteTrustedList.querySelectorAll("[data-revoke-device]").forEach((btn) => {
+            btn.addEventListener("click", async () => {
+              const devId = btn.getAttribute("data-revoke-device");
+              btn.disabled = true;
+              btn.textContent = "Revoking…";
+              await window.playbound.remotePlayRevokeTrusted(devId);
+              setStatus("Device pairing revoked.");
+              await fillRemotePlaySettings();
+            });
+          });
+        }
+      }
+    } catch {
+      if (remoteStatusIndicator) remoteStatusIndicator.textContent = "Could not query Remote Play status.";
+    }
+  }
+
+  void fillRemotePlaySettings();
+
+  remoteEnableCheckbox?.addEventListener("change", async () => {
+    remoteEnableCheckbox.disabled = true;
+    setStatus(remoteEnableCheckbox.checked ? "Enabling Remote Play host…" : "Disabling Remote Play host…");
+    try {
+      await window.playbound.remotePlaySetEnabled(remoteEnableCheckbox.checked);
+      setStatus(remoteEnableCheckbox.checked ? "Remote Play host enabled." : "Remote Play host disabled.");
+    } catch (err) {
+      setStatus(err?.message || "Failed to toggle Remote Play", true);
+    } finally {
+      remoteEnableCheckbox.disabled = false;
+      await fillRemotePlaySettings();
+    }
+  });
+
+  remoteNameSaveBtn?.addEventListener("click", async () => {
+    const val = remoteNameInput?.value?.trim();
+    if (!val) return;
+    remoteNameSaveBtn.disabled = true;
+    try {
+      await window.playbound.remotePlaySetDeviceName(val);
+      setStatus(`Network name updated to "${val}"`);
+    } catch (err) {
+      setStatus(err?.message || "Failed to update network name", true);
+    } finally {
+      remoteNameSaveBtn.disabled = false;
+      await fillRemotePlaySettings();
+    }
+  });
 
   const javaStatus = document.getElementById("set-java-status");
   const javaBtn = document.getElementById("set-btn-java-install");
