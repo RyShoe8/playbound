@@ -1009,6 +1009,17 @@ async function boot() {
     void import("./views/mods.js");
     void import("./views/detail.js");
     void import("./views/servers.js");
+    /*
+     * Couch's WebRTC answerer is meant to run "any launcher view" (see its
+     * own docstring) — but it only ever gets wired by an incidental caller
+     * (opening the Couch view, phone-controller flow, a friends party).
+     * PlayBound Remote Play creates a session straight from the main
+     * process with no renderer interaction at all, so nothing wired it —
+     * the host's video/audio offer sat unanswered forever. Preload it here
+     * so the listener is always registered; with no active session this is
+     * a harmless no-op (ensureCouchBackground just confirms nothing to poll).
+     */
+    void import("./views/couch.js").then((m) => m.ensureCouchBackground());
     void window.playbound.getModsCatalog?.()
       .then((res) => {
         if (res) cachePut("mods", res);
