@@ -90,10 +90,10 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
    * pokemon-blaze-online already had patch entries and are merged below.
    * next-gen-chess, opents and strikers-club are genuinely 2026.
    */
-  "thief-gold": ["releaseYear"],
+  "thief-gold": ["releaseYear", "features"],
   mrboom: ["releaseYear"],
-  "rollercoaster-tycoon": ["releaseYear"],
-  "thief-2-the-metal-age": ["releaseYear"],
+  "rollercoaster-tycoon": ["releaseYear", "features"],
+  "thief-2-the-metal-age": ["releaseYear", "features"],
   "stronghold-crusader-hd": ["releaseYear"],
   triplea: ["releaseYear"],
   "star-wars-knights-of-the-old-republic": ["releaseYear"],
@@ -288,7 +288,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "multiplayerGamingSteps",
   ],
   morrowind: ["launcherInstall"],
-  "dune-legacy": ["launcherInstall"],
+  "dune-legacy": ["launcherInstall", "features"],
   "pokemon-blaze-online": [
     "title",
     "tagline",
@@ -442,6 +442,24 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "faq",
     "complete",
   ],
+
+  /*
+   * PlayBound Controls wave-1, 2026-09-23. Tags each game whose keyboard
+   * controls PlayBound now translates for a controller — see
+   * platform/scripts/control-profiles/wave-1.ts and
+   * launcher/services/inputEngine/profiles/outrun.json for the actual
+   * profiles. Also corrects "Controller Support" on shattered-pixel-dungeon
+   * and dungeon-keeper-gold, which had no native controller support despite
+   * carrying that tag — their own "controller" scheme in games.ts already
+   * says `supported: false`, so the tag was simply wrong, not a judgment
+   * call this wave is overriding.
+   */
+  "openttd": ["features"],
+  "shattered-pixel-dungeon": ["features"],
+  "lincity-ng": ["features"],
+  "heroes-of-might-and-magic-3-complete": ["features"],
+  "dungeon-keeper-gold": ["features"],
+  outrun: ["features"],
 };
 
 /** Existing editions: $set ONLY these fields. */

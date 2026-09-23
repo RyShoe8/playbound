@@ -184,6 +184,13 @@ describe("insert-catalog-wave allowlists", () => {
         "renegade-x",
         "c-dogs-sdl",
         "next-gen-chess",
+        // PlayBound Controls wave-1, 2026-09-23 — see the allowlist's own comment.
+        "openttd",
+        "shattered-pixel-dungeon",
+        "lincity-ng",
+        "heroes-of-might-and-magic-3-complete",
+        "dungeon-keeper-gold",
+        "outrun",
       ].sort()
     );
     expect(PATCH_GAME_FIELDS["super-nova-strike"]).toContain("androidStoreUrl");
@@ -209,7 +216,7 @@ describe("insert-catalog-wave allowlists", () => {
       "multiplayerGamingSteps",
     ]);
     expect(PATCH_GAME_FIELDS.morrowind).toEqual(["launcherInstall"]);
-    expect(PATCH_GAME_FIELDS["dune-legacy"]).toEqual(["launcherInstall"]);
+    expect(PATCH_GAME_FIELDS["dune-legacy"]).toEqual(["launcherInstall", "features"]);
     expect(PATCH_GAME_FIELDS["the-spike-cross"]).toContain("androidStoreUrl");
     expect(PATCH_GAME_FIELDS["slapshot-rebound"]).toContain("hardwareRequirements");
     expect(PATCH_GAME_FIELDS["space-station-14"]).toEqual([

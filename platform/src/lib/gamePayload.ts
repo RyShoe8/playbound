@@ -108,6 +108,15 @@ export const FEATURES = [
   "Cross-play",
   "Controller Support",
   "Flightstick Support",
+  /*
+   * Distinct from "Controller Support" on purpose: that tag means the game
+   * natively reads a controller. This one means PlayBound translates
+   * controller input into the game's own keyboard/mouse controls — see
+   * src/lib/controlProfiles/. Tagging a PlayBound Controls game as
+   * "Controller Support" would be a factually wrong claim and would tell the
+   * launcher's native per-game config writer to run where none exists.
+   */
+  "PlayBound Controls",
   "Family Friendly",
   "Mod Support",
   "Map Editor",

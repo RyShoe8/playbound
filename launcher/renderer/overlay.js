@@ -445,7 +445,6 @@ async function load() {
     state.tabInitialized = true;
     state.activeTab = !state.partyId && state.controls ? "controls" : "server";
   }
-  if (!state.partyId && state.controls) state.activeTab = "controls";
 
   if (!state.partyId) {
     state.data = {
