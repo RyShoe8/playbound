@@ -21,9 +21,10 @@ import { absoluteMediaUrl } from "@/lib/launcherInstall";
  * reads it, and changing its shape would break older installed builds.
  *
  * `discounted` applies the same DEEP_DISCOUNT_MIN_PERCENT bar as the website,
- * because it calls the same helper. That is the point of the threshold living in
- * lib/deals rather than in either surface: the launcher and the site cannot
- * disagree about what counts as a deal.
+ * because it calls the same helper, which now scans the stores directly rather
+ * than PlayBound's own catalog — see lib/deals.ts. `includeTesting` no longer
+ * applies to that half: a store discount was never a draft/testing catalog row
+ * to begin with, so it stays only on the free-offers query below.
  */
 export async function GET(req: Request) {
   try {
@@ -33,7 +34,7 @@ export async function GET(req: Request) {
 
     const [freeOffers, discounted] = await Promise.all([
       listActiveOffers(),
-      listDiscountedGames({ includeTesting }),
+      listDiscountedGames(),
     ]);
 
     return NextResponse.json(

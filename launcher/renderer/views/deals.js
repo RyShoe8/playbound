@@ -10,18 +10,20 @@ import {
 } from "../shared.js";
 
 /**
- * Game Deals — free store giveaways and discounted catalog games.
+ * Game Deals — free store giveaways and deep store discounts.
  *
  * Mirrors the website's /deals page, and reuses `createFreeOfferCard` for the
  * free half so a card only ever looks one way across the app. The discounted
  * half gets its own small builder rather than `createGameCard`: a game card is
- * built around install state and a Play button, and none of that applies to a
- * store link for something you do not own yet. The two say different things — a
- * giveaway is a countdown, a discount is a comparison.
+ * built around install state and a Play button, which assumes PlayBound has
+ * the game — most discounts here do not (`game.slug` is a rare bonus, not the
+ * norm; see `storeDiscounts/service.ts` on the platform side). The two say
+ * different things either way — a giveaway is a countdown, a discount is a
+ * comparison.
  *
- * Both sections hide when empty rather than rendering an empty grid. For the
- * discounted half that is the common case, not an edge case: the catalog carries
- * roughly eighteen paid games, so a day with nothing on sale is normal.
+ * Both sections hide when empty rather than rendering an empty grid. Even
+ * scanning the stores directly, a real 75%+ discount is not guaranteed on any
+ * given day — that should still look deliberate, not broken.
  */
 
 const DEALS_WEB_URL = "https://playbound.club/deals";
@@ -106,13 +108,19 @@ function createDiscountCard(game) {
   card.appendChild(footer);
 
   /*
-   * Whole-card click, like every other card in the launcher. It goes to the
-   * game's own detail view rather than the store: this is a catalog game, so
-   * PlayBound has editorial, install and multiplayer information for it, and the
-   * detail view already carries the store link.
+   * Whole-card click opens the store, not a PlayBound detail view — unlike
+   * createGameCard's cards, most of these have no PlayBound page to open
+   * (game.slug is null for a store-wide find; see the module doc). Prefer the
+   * store link, same as createFreeOfferCard's claimUrl-first handling; only
+   * fall back to the detail view on the rare row where a catalog match exists
+   * and, somehow, no store link came through.
    */
   card.addEventListener("click", () => {
-    api.openGameDetail?.(game.slug, state.currentView);
+    if (game.storeUrl) {
+      window.playbound.openExternal?.(game.storeUrl, { skipUtm: true });
+    } else if (game.slug) {
+      api.openGameDetail?.(game.slug, state.currentView);
+    }
   });
 
   return card;

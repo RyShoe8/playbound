@@ -3,22 +3,32 @@ import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import type { DiscountedGame } from "@/lib/dealsShared";
 import { formatCents } from "@/lib/dealsShared";
-import { withOutboundUtm } from "@/lib/utm";
 import { Badge } from "@/components/ui/bits";
 import { cn } from "@/lib/utils";
 
 /**
- * One catalog game currently on sale, for /deals.
+ * One store-wide discount, for /deals.
  *
- * Separate from FreeGameCard because the two say different things. A free offer
- * is a countdown — claim it before it expires. A discount is a comparison — this
- * is what it costs and what it normally costs. Reusing one card for both would
- * mean a price row that is blank half the time and an expiry row that is blank
- * the other half.
+ * Separate from FreeGameCard because the two say different things. A free
+ * offer is a countdown — claim it before it expires. A discount is a
+ * comparison — this is what it costs and what it normally costs.
  *
- * A server component: nothing here needs state, and unlike FreeGameCard there is
- * no compatibility hook to call, because these are catalog games whose own pages
- * already carry that information.
+ * Most of these have no PlayBound catalog page: `slug` is the exception, not
+ * the rule (see `matchedGameSlug` on the `StoreDiscount` model), so the
+ * primary action is always the store link, never `/games/{slug}`. A slug, when
+ * one happens to exist, only adds a secondary link — it never replaces the
+ * store CTA.
+ *
+ * `game.storeUrl` arrives already final — UTM-tagged and, where PlayBound has
+ * a live affiliate program for that store, affiliate-stamped — by
+ * `storeDiscounts/service.ts`'s `buildStoreUrl()`. This component must not
+ * wrap it again: re-running UTM tagging on an already-wrapped affiliate
+ * template URL would tag the tracking redirect instead of the real
+ * destination, not the game.
+ *
+ * A server component: nothing here needs state, and unlike FreeGameCard there
+ * is no compatibility hook to call — these are live store prices, not
+ * PlayBound-curated availability data.
  */
 export function DiscountedGameCard({
   game,
@@ -27,9 +37,6 @@ export function DiscountedGameCard({
   game: DiscountedGame;
   className?: string;
 }) {
-  const storeHref = game.storeUrl
-    ? withOutboundUtm(game.storeUrl, { campaign: "deals_discount" })
-    : null;
   const [from, to] = game.art ? [game.art.from, game.art.to] : ["#1e1b4b", "#312e81"];
 
   return (
@@ -39,7 +46,7 @@ export function DiscountedGameCard({
         className
       )}
     >
-      <Link href={`/games/${game.slug}`} className="relative block aspect-[16/9] overflow-hidden">
+      <div className="relative block aspect-[16/9] overflow-hidden">
         {game.coverImage ? (
           <Image
             src={game.coverImage}
@@ -66,15 +73,13 @@ export function DiscountedGameCard({
         <div className="absolute left-2 top-2">
           <Badge tone="play">-{game.percentOff}%</Badge>
         </div>
-      </Link>
+      </div>
 
       <div className="flex flex-1 flex-col gap-2 p-3">
-        <Link href={`/games/${game.slug}`} className="font-bold leading-tight hover:underline">
-          {game.title}
-        </Link>
-        {game.tagline && (
-          <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-            {game.tagline}
+        <p className="font-bold leading-tight">{game.title}</p>
+        {game.genres.length > 0 && (
+          <p className="line-clamp-1 text-xs leading-relaxed text-muted-foreground">
+            {game.genres.slice(0, 3).join(" · ")}
           </p>
         )}
 
@@ -87,9 +92,9 @@ export function DiscountedGameCard({
           </span>
         </div>
 
-        {storeHref ? (
+        {game.storeUrl && (
           <a
-            href={storeHref}
+            href={game.storeUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90"
@@ -97,12 +102,15 @@ export function DiscountedGameCard({
             {game.storeName ? `Buy on ${game.storeName}` : "View deal"}
             <ExternalLink className="size-3.5" />
           </a>
-        ) : (
+        )}
+
+        {/* Rare: only present when a best-effort catalog match happens to exist. */}
+        {game.slug && (
           <Link
             href={`/games/${game.slug}`}
-            className="inline-flex items-center justify-center rounded-lg border border-border px-3 py-2 text-xs font-bold transition-colors hover:border-primary/60"
+            className="text-center text-[11px] font-semibold text-muted-foreground hover:text-primary hover:underline"
           >
-            View game
+            Also on PlayBound
           </Link>
         )}
       </div>

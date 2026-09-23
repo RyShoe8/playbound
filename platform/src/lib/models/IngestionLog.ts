@@ -8,7 +8,7 @@ const IngestionLogSchema = new Schema(
     provider: { type: String, required: true, index: true },
     jobKind: {
       type: String,
-      enum: ["free_offers", "catalog_match", "price_refresh", "feed_ingest"],
+      enum: ["free_offers", "catalog_match", "price_refresh", "feed_ingest", "store_discounts"],
       default: "free_offers",
       index: true,
     },

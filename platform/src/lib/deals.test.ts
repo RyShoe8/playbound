@@ -1,69 +1,16 @@
 import { describe, expect, it } from "vitest";
-import {
-  isDiscounted,
-  percentOff,
-  formatCents,
-  dealStoreKey,
-  DEEP_DISCOUNT_MIN_PERCENT,
-} from "@/lib/dealsShared";
-import type { Game } from "@/lib/data/types";
+import { percentOff, formatCents, DEEP_DISCOUNT_MIN_PERCENT } from "@/lib/dealsShared";
 
 /**
- * /deals must never invent a discount.
- *
- * A deals page that lists a game at "0% off", or at a negative discount because
- * a curated regular price went stale, is worse than a deals page with an empty
- * section — it costs the reader trust in every other number on the page. These
- * tests pin each way that can happen.
+ * Pure formatting/threshold helpers only. `isDiscounted` and `dealStoreKey`
+ * are gone — the store-wide scanner they existed for (checking a PlayBound
+ * catalog game's `access.*Cents`, and normalising a free-text retailer string
+ * onto a StoreSlug) no longer applies now that discounts come from a typed
+ * store-discount provider that already carries `store` as a real
+ * `DiscountStoreSlug` and validated cents fields. See
+ * `storeDiscounts/providers/*.test.ts` for the tests that replaced them —
+ * "never invent a discount" is now enforced in the providers, at the source.
  */
-
-const access = (over: Partial<NonNullable<Game["access"]>> = {}) =>
-  ({
-    priceType: "PAID",
-    regularPriceCents: 999,
-    currentPriceCents: 599,
-    qualifyingPriceCents: 999,
-    currency: "USD",
-    purchaseRequired: true,
-    ...over,
-  }) as NonNullable<Game["access"]>;
-
-describe("isDiscounted", () => {
-  it("accepts a genuine discount", () => {
-    expect(isDiscounted(access())).toBe(true);
-  });
-
-  it("rejects a game at its normal price", () => {
-    expect(isDiscounted(access({ currentPriceCents: 999 }))).toBe(false);
-  });
-
-  it("rejects a stale regular price that is below the current one", () => {
-    // Would otherwise render as "-67% off".
-    expect(isDiscounted(access({ regularPriceCents: 599, currentPriceCents: 999 }))).toBe(false);
-  });
-
-  it("treats a missing price as unknown, not as free", () => {
-    expect(isDiscounted(access({ currentPriceCents: null }))).toBe(false);
-    expect(isDiscounted(access({ regularPriceCents: null }))).toBe(false);
-  });
-
-  it("rejects a zero or negative regular price", () => {
-    // No meaningful percentage exists, and it usually means the block is unset.
-    expect(isDiscounted(access({ regularPriceCents: 0, currentPriceCents: 0 }))).toBe(false);
-    expect(isDiscounted(access({ regularPriceCents: -100 }))).toBe(false);
-  });
-
-  it("ignores games that are not PAID", () => {
-    // A FREE game has no discount to advertise even if prices linger on the doc,
-    // and PAID_BASE_GAME_REQUIRED prices the base game, not this one.
-    expect(isDiscounted(access({ priceType: "FREE" }))).toBe(false);
-    expect(isDiscounted(access({ priceType: "PAID_BASE_GAME_REQUIRED" }))).toBe(false);
-  });
-
-  it("handles a missing access block", () => {
-    expect(isDiscounted(undefined)).toBe(false);
-  });
-});
 
 describe("percentOff", () => {
   it("floors rather than rounds, so a discount is never overstated", () => {
@@ -84,27 +31,8 @@ describe("percentOff", () => {
 });
 
 describe("the deep-discount bar", () => {
-  /*
-   * `isDiscounted` and the bar are separate filters and must stay that way:
-   * one rejects data that cannot describe a reduction, the other rejects real
-   * reductions that are not worth listing. These tests pin that separation, so
-   * a future change to the bar cannot quietly start admitting bad data.
-   */
   it("is a deliberate, demanding number", () => {
     expect(DEEP_DISCOUNT_MIN_PERCENT).toBe(75);
-  });
-
-  it("still treats a shallow discount as a real discount", () => {
-    // 10% off is genuine — it just does not belong on the page.
-    expect(isDiscounted(access({ regularPriceCents: 1000, currentPriceCents: 900 }))).toBe(true);
-    expect(percentOff(1000, 900)).toBeLessThan(DEEP_DISCOUNT_MIN_PERCENT);
-  });
-
-  it("admits the prices the paid catalog actually reaches on deep sales", () => {
-    // The catalog sits at $5.99–$14.99, so these are the real boundary cases.
-    expect(percentOff(599, 149)).toBeGreaterThanOrEqual(DEEP_DISCOUNT_MIN_PERCENT); // 75%
-    expect(percentOff(999, 249)).toBeGreaterThanOrEqual(DEEP_DISCOUNT_MIN_PERCENT); // 75%
-    expect(percentOff(1499, 374)).toBeGreaterThanOrEqual(DEEP_DISCOUNT_MIN_PERCENT); // 75%
   });
 
   it("excludes a discount one cent short of the bar", () => {
@@ -112,42 +40,9 @@ describe("the deep-discount bar", () => {
     expect(percentOff(599, 150)).toBe(74);
     expect(percentOff(599, 150)).toBeLessThan(DEEP_DISCOUNT_MIN_PERCENT);
   });
-});
 
-describe("dealStoreKey", () => {
-  /*
-   * The store filter on /deals spans both halves of the page, and the two
-   * halves name their store differently: a free offer carries a StoreSlug
-   * ("gog"), a discount carries a retailer display name ("GOG"). If these do
-   * not converge, a GOG giveaway and a GOG discount fall into separate buckets
-   * and the filter silently shows half of what it should.
-   */
-  it("normalises retailer names onto the free-offer store slugs", () => {
-    expect(dealStoreKey("GOG")).toBe("gog");
-    expect(dealStoreKey("Steam")).toBe("steam");
-    expect(dealStoreKey("Epic Games Store")).toBe("epic");
-  });
-
-  it("is case and whitespace insensitive", () => {
-    expect(dealStoreKey("  gog  ")).toBe("gog");
-    expect(dealStoreKey("sTeAm")).toBe("steam");
-  });
-
-  it("slugifies retailers that only ever carry discounts", () => {
-    // Fanatical and Humble never run the giveaways we track, but they do run
-    // sales — dropping them would hide real deals from the filter.
-    expect(dealStoreKey("Fanatical")).toBe("fanatical");
-    expect(dealStoreKey("Humble Bundle")).toBe("humble-bundle");
-    expect(dealStoreKey("Green Man Gaming")).toBe("green-man-gaming");
-  });
-
-  it("returns null rather than an empty key for unusable input", () => {
-    // An empty-string key would collide with everything else in the filter map.
-    expect(dealStoreKey(null)).toBeNull();
-    expect(dealStoreKey(undefined)).toBeNull();
-    expect(dealStoreKey("")).toBeNull();
-    expect(dealStoreKey("   ")).toBeNull();
-    expect(dealStoreKey("!!!")).toBeNull();
+  it("includes the boundary itself", () => {
+    expect(percentOff(599, 149)).toBeGreaterThanOrEqual(DEEP_DISCOUNT_MIN_PERCENT);
   });
 });
 

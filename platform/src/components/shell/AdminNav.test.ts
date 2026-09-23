@@ -99,13 +99,14 @@ describe("admin nav structure", () => {
     });
   });
 
-  it("puts stores and free offers under eCommerce", () => {
+  it("puts stores, free offers and store discounts under eCommerce", () => {
     expect(subRow("/admin/ecommerce")).toMatchObject({
       section: "eCommerce",
       children: [
         { label: "Overview", href: "/admin/ecommerce" },
         { label: "Stores", href: "/admin/ecommerce/stores" },
         { label: "Free Offers", href: "/admin/free-offers" },
+        { label: "Store Discounts", href: "/admin/store-discounts" },
       ],
     });
   });

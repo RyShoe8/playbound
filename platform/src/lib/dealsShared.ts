@@ -24,90 +24,49 @@ import type { Cents } from "@/lib/access/types";
  * would teach readers that the section is noise and cost us the credibility of
  * the ones that are genuinely remarkable.
  *
- * 75% is deliberately demanding. The paid catalog sits at $5.99–$14.99, so this
- * bar means roughly $1.49–$3.74 — the level GOG and Steam actually reach on
- * seasonal sales for older titles, and rare enough the rest of the time that an
- * empty section is the honest normal state rather than a bug.
+ * 75% is deliberately demanding — verified live against real store prices
+ * during design, seasonal GOG/Steam sales reach it comfortably on a real
+ * slice of a store's catalog, so this is a bar a store-wide scan can actually
+ * clear on a normal day, not just during a single mega-sale.
  *
  * A constant, not a literal, because it is a curation judgement someone will
- * want to revisit — and because the copy on /deals reads it, so the page cannot
- * advertise one number while filtering by another.
+ * want to revisit, and because it is shared by three call sites that must
+ * agree: the page copy, `storeDiscounts/ingestion.ts` (what a provider even
+ * bothers fetching), and `listDiscountedGames()`'s own read-time filter.
  */
 export const DEEP_DISCOUNT_MIN_PERCENT = 75;
 
 export type DiscountedGame = {
-  slug: string;
+  /**
+   * Null for the overwhelming majority of rows. These are store-wide finds,
+   * independent of PlayBound's own catalog — see `matchedGameSlug` on the
+   * `StoreDiscount` model. A slug here means an optional, best-effort
+   * enrichment happened to find a match; nothing requires or expects one.
+   */
+  slug: string | null;
   title: string;
   tagline: string | null;
   coverImage: string | null;
-  art: Game["art"];
+  /** Null for an unmatched store find — no curated hue exists for it. Card/list fall back to one shared gradient. */
+  art: Game["art"] | null;
   genres: string[];
   regularPriceCents: Cents;
   currentPriceCents: Cents;
   currency: string;
   /** Whole percent off, rounded down so we never overstate a discount. */
   percentOff: number;
-  /** Cheapest active retail offer, when the game lists one. */
   storeName: string | null;
   storeUrl: string | null;
   /**
    * Stable key for the store filter, shared with free offers.
    *
-   * Free offers identify their store with a `StoreSlug`; discounts carry a
-   * retailer *display name* from the offer row ("GOG", "Epic Games Store").
-   * Filtering /deals by store needs one vocabulary across both, so retailer
-   * names normalise onto the StoreSlug values where they overlap — otherwise a
-   * GOG giveaway and a GOG discount would land in two different buckets and the
-   * store filter would look broken.
+   * Both halves of /deals now key on the same `StoreSlug`/`DiscountStoreSlug`
+   * values directly ("gog", "steam", "epic", …) — there is no retailer
+   * display-name string to normalise any more, since discounts come from a
+   * typed provider rather than a free-text `access.offers[].retailer` field.
    */
   storeKey: string | null;
 };
-
-/**
- * Retailer display name → the key the store filter groups on.
- *
- * Aligned with `StoreSlug` for the three storefronts that appear on both sides
- * of the page. Anything else is slugified rather than dropped: Fanatical and
- * Humble can carry a discount even though they never run the giveaways we
- * track, and silently hiding those from the filter would hide real deals.
- */
-export function dealStoreKey(retailer: string | null | undefined): string | null {
-  const name = (retailer ?? "").trim();
-  if (!name) return null;
-  const known: Record<string, string> = {
-    gog: "gog",
-    steam: "steam",
-    "epic games store": "epic",
-    epic: "epic",
-  };
-  const lower = name.toLowerCase();
-  if (known[lower]) return known[lower];
-  const slug = lower.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-  // A retailer name of pure punctuation slugifies to "" — that is no key at all,
-  // not a key named empty string, or it would swallow every other store.
-  return slug || null;
-}
-
-/**
- * Is this game cheaper than usual right now?
- *
- * Exported for the test, because every one of these guards is a way to
- * advertise a discount that does not exist:
- *   - a null on either side is unknown, not free
- *   - equal prices are the normal state, not a 0% sale
- *   - current > regular means the curated regular price is stale; showing it as
- *     a negative discount would be worse than showing nothing
- *   - a non-positive regular price cannot produce a meaningful percentage
- */
-export function isDiscounted(access: Game["access"] | undefined): boolean {
-  if (!access) return false;
-  if (access.priceType !== "PAID") return false;
-  const regular = access.regularPriceCents;
-  const current = access.currentPriceCents;
-  if (typeof regular !== "number" || typeof current !== "number") return false;
-  if (regular <= 0 || current < 0) return false;
-  return current < regular;
-}
 
 /** Whole percent off, floored. 999 → 599 is 40%, not 40.04%. */
 export function percentOff(regularCents: number, currentCents: number): number {
