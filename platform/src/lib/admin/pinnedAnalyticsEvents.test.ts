@@ -11,10 +11,10 @@ import {
  * The admin analytics page must pin event names the launcher actually emits.
  *
  * This exists because of a real confusion: the launcher's install event is
- * `launcher_install`, and looking for `launcher_installed` finds nothing. A
- * pinned row spelled the wrong way is worse than no pinned row at all — it
- * renders "never" forever and reads as proof that telemetry is broken, when the
- * events were arriving under a different name the whole time.
+ * `launcher_install`, and looking for `launcher_installed` finds nothing. A name
+ * spelled the wrong way here is worse than no entry at all — Recent events would
+ * stay exactly as empty of installs as before, while looking like the problem
+ * had been addressed.
  *
  * Reads the real launcher source rather than a copy, following
  * controlsParity.test.ts. The two cannot share a module: one is an Electron
@@ -55,7 +55,8 @@ describe("pinned analytics events", () => {
   });
 
   it("stays short enough to read at a glance", () => {
-    // Each entry costs two indexed counts per page load and a table row.
+    // These rows share the Recent events table; a long list would bury the
+    // ordinary traffic it exists alongside.
     expect(PINNED_ANALYTICS_EVENTS.length).toBeLessThanOrEqual(8);
   });
 

@@ -21,22 +21,25 @@ export const LAUNCHER_OPS_EVENTS = [
 ] as const;
 
 /**
- * Events the analytics page always shows, however rare they are.
+ * Events merged into Recent events on /admin/analytics, however rare they are.
  *
- * Top events is a top-15 ranking over seven days, so anything that fires once
- * per install or only on failure can never appear there — it is outranked by
- * page_view and session_started forever. That is exactly backwards for
- * operational events, where a count of zero is the interesting reading.
+ * Recent events is the latest forty rows, which whatever fires most completely
+ * dominates. An event that fires once per installation is therefore never in it
+ * by chance, and could be arriving steadily while looking absent.
  *
  * `launcher_install` is the case that prompted this. It fires once per launcher
- * installation and never again — settings.json survives upgrades, so even
- * reinstalling a new build does not re-fire it — which made it invisible in both
- * Top events and the latest-40 Recent events, with no way to tell "rare" from
- * "never arriving". The /admin Launcher Installs tile does not settle it either:
- * that counts distinct anonymousIds over all launcher traffic, not this event.
+ * installation and never again — telemetry.js keys the receipt to
+ * settings.analyticsId, and settings.json survives upgrades, so installing a
+ * newer build does not re-fire it. The /admin Launcher Installs tile does not
+ * settle the question either: it counts distinct anonymousIds over all traffic
+ * tagged browser "Launcher", not this event, so it reads the same whether or not
+ * the event has ever arrived.
  *
- * Keep this list short. Every entry costs two indexed counts per page load and
- * takes a row in a table people read at a glance.
+ * Deliberately only affects Recent events. Top events stays a straight ranking —
+ * if one of these places in the top fifteen it earned the spot on its own.
+ *
+ * Keep this list short: it is one extra indexed query whose rows share a table
+ * people read at a glance.
  */
 export const PINNED_ANALYTICS_EVENTS = [
   "launcher_install",
