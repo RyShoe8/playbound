@@ -7472,10 +7472,7 @@ const facts: Game[] = [
     hiddenGem: true,
     complete: true,
     art: { from: "#7f1d1d", to: "#f59e0b", icon: "Swords" },
-    // No icon.png at this path anymore — repo root has no such file (confirmed
-    // 2026-09-24). Falls back to the `art` gradient/icon placeholder instead
-    // of a broken image.
-    coverImage: "",
+    coverImage: "https://raw.githubusercontent.com/LSDonkeyKong/Castlevania-ReVamped-Open-Source-Edition/main/icon.png",
     screenshots: [],
     systemRequirements: {
       min: "Windows 7/10 64-bit or Linux x86_64 · 1.5 GHz Dual-Core CPU · 2 GB RAM · DirectX 9.0c / OpenGL 2.0 GPU · 600 MB storage",
