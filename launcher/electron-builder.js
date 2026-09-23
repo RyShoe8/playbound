@@ -123,24 +123,6 @@ module.exports = {
       to: "dgvoodoo-ms-x86",
       filter: ["**/*"],
     },
-    ...(fs.existsSync(path.join(__dirname, "resources", "sunshine"))
-      ? [
-          {
-            from: "resources/sunshine",
-            to: "sunshine",
-            filter: ["**/*"],
-          },
-        ]
-      : []),
-    ...(fs.existsSync(path.join(__dirname, "resources", "moonlight"))
-      ? [
-          {
-            from: "resources/moonlight",
-            to: "moonlight",
-            filter: ["**/*"],
-          },
-        ]
-      : []),
   ],
   // systeminformation shells out to helpers; unpack so Windows detection works reliably.
   // assets is unpacked so Linux D-Bus/AppIndicator can read tray icons from real disk files.

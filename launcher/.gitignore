@@ -10,7 +10,3 @@ tools/vigem-host/obj/
 # on every dist run, 60+ MB, and rebuilt from source that is tracked — so it is
 # an artifact, not a vendored binary like ViGEmBus_Setup.exe beside it.
 resources/vigem/PlayBound.VigemHost.exe
-
-# Vendored Sunshine and Moonlight binaries for PlayBound Remote (downloaded by vendor scripts on build)
-resources/sunshine/
-resources/moonlight/

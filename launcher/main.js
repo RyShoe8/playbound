@@ -120,15 +120,6 @@ const { ensureVigem, probeProvider } = require("./services/couch/ensureVigem");
 const openMwConfig = require("./services/openMwConfig");
 const gamepadBridge = require("./services/gamepadBridge");
 const { resolveControlsForGame, resolveQuitHint } = require("./services/gameControls");
-const { createDiscoveryService } = require("./services/remotePlay/discovery");
-const { createPairingService } = require("./services/remotePlay/pairing");
-const { createHostApiServer } = require("./services/remotePlay/hostApi");
-const { createSunshineHost } = require("./services/remotePlay/sunshineHost");
-const { createMoonlightClient } = require("./services/remotePlay/moonlightClient");
-const { createClientSessionCoordinator } = require("./services/remotePlay/clientSession");
-const { ownLanAddresses, chooseLanAddress } = require("./services/remotePlay/lanAddresses");
-const { accountHosts, mergeHosts } = require("./services/remotePlay/accountDiscovery");
-const { allowRemotePlayOnLan } = require("./services/remotePlay/firewallSetup");
 
 function loadHardwareModule() {
   try {
@@ -10719,20 +10710,6 @@ function sendGameExited(slug) {
   } catch (err) {
     console.warn("[device-controller] onGameExited error:", err?.message || err);
   }
-  // Remote Play host exit hook: notify streaming client that game has exited
-  if (activeRemotePlayHostSession && activeRemotePlayHostSession.gameSlug === slug) {
-    try {
-      remoteHostApi?.notifySessionEnded(activeRemotePlayHostSession.clientDeviceId, "player_exit");
-    } catch {
-      /* ignore */
-    }
-    try {
-      sunshineHost?.stop();
-    } catch {
-      /* ignore */
-    }
-    activeRemotePlayHostSession = null;
-  }
   // Crash-safety: this runs on both a clean exit and a killed/crashed
   // process (see both onSpawnedProcessGone branches that call this), so it
   // must release every synthetic key/button PlayBound Controls could be
@@ -14136,386 +14113,6 @@ ipcMain.handle("couch-signal-poll", async (_event, since) => {
   return res.json();
 });
 
-/* ── PlayBound Remote (LAN game streaming) ────────────────────────── */
-let activeRemotePlayHostSession = null;
-
-const sunshineHost = createSunshineHost();
-const moonlightClient = createMoonlightClient();
-const discoveryService = createDiscoveryService();
-
-let remotePairingService = null;
-let remoteHostApi = null;
-let remoteClientCoordinator = null;
-
-function getLocalLanIp() {
-  return ownLanAddresses(os.networkInterfaces())[0] || "127.0.0.1";
-}
-
-async function registerRemoteDevice() {
-  const settings = loadSettings();
-  if (!settings.launcherToken) return;
-  const hw = await cachedHardwareProfile().catch(() => null);
-  const hasEncoder = Boolean(
-    hw?.gpus?.some((g) => {
-      const n = (g.rawName || g.displayName || "").toLowerCase();
-      return (
-        n.includes("nvidia") ||
-        n.includes("geforce") ||
-        n.includes("rtx") ||
-        n.includes("gtx") ||
-        n.includes("amd") ||
-        n.includes("radeon") ||
-        n.includes("intel")
-      );
-    })
-  );
-  try {
-    await apiFetch(`${getApiBase()}/api/devices`, {
-      method: "POST",
-      headers: launcherApiHeaders({ "content-type": "application/json" }),
-      body: JSON.stringify({
-        deviceId: getRemoteDeviceId(),
-        name: getRemoteDeviceName(),
-        platform: "windows",
-        capabilities: {
-          remotePlayHost: Boolean(settings.remotePlayHostEnabled && remoteHostApi?.isListening()),
-          remotePlayClient: true,
-          hardwareEncode: hasEncoder,
-          hardwareDecode: true,
-        },
-        lanAddresses: settings.remotePlayHostEnabled && remoteHostApi?.isListening() ? ownLanAddresses(os.networkInterfaces()) : [],
-        hostPort: settings.remotePlayHostEnabled && remoteHostApi?.isListening() ? remoteHostApi.getPort() : null,
-      }),
-    });
-  } catch (err) {
-    console.warn("[remote-play] device registration skipped:", err?.message || err);
-  }
-}
-
-async function startRemotePlayHost() {
-  if (remoteHostApi?.isListening()) return remoteHostApi.getPort();
-  const HOST_API_PORT = 47998;
-  const actualPort = await remoteHostApi.start(HOST_API_PORT);
-  const hw = await cachedHardwareProfile().catch(() => null);
-  const hasEncoder = Boolean(
-    hw?.gpus?.some((g) => {
-      const n = (g.rawName || g.displayName || "").toLowerCase();
-      return (
-        n.includes("nvidia") ||
-        n.includes("geforce") ||
-        n.includes("rtx") ||
-        n.includes("gtx") ||
-        n.includes("amd") ||
-        n.includes("radeon") ||
-        n.includes("intel")
-      );
-    })
-  );
-  discoveryService.startAdvertising({
-    deviceId: getRemoteDeviceId(),
-    deviceName: getRemoteDeviceName(),
-    port: actualPort,
-    capabilities: {
-      remotePlayHost: true,
-      hardwareEncode: hasEncoder,
-    },
-  });
-  return actualPort;
-}
-
-function stopRemotePlayHost() {
-  discoveryService.stopAdvertising();
-  if (activeRemotePlayHostSession) {
-    try {
-      remoteHostApi?.notifySessionEnded(activeRemotePlayHostSession.clientDeviceId, "host_stopped");
-    } catch {
-      /* ignore */
-    }
-    try {
-      sunshineHost?.stop();
-    } catch {
-      /* ignore */
-    }
-    activeRemotePlayHostSession = null;
-  }
-  remoteHostApi?.stop();
-}
-
-function initRemotePlay() {
-  remotePairingService = createPairingService({
-    hostDeviceId: getRemoteDeviceId(),
-    getApiBase: () => getApiBase(),
-    authedFetch: (url, init) =>
-      apiFetch(url, {
-        ...init,
-        headers: launcherApiHeaders(init?.headers),
-      }),
-    onPairingRequest: (req) => {
-      if (win && !win.isDestroyed()) {
-        win.webContents.send("remote-play-pairing-request", req);
-      }
-    },
-  });
-
-  remoteHostApi = createHostApiServer({
-    pairingService: remotePairingService,
-    onSessionRequest: async ({ clientDeviceId, gameSlug, editionSlug }) => {
-      if (!remotePairingService.isTrusted(clientDeviceId)) {
-        return { ok: false, reason: "not-trusted" };
-      }
-      const state = loadState();
-      const resolvedRemote = resolvePlayableRemoteEdition(gameSlug, editionSlug, state);
-      const targetEdition = resolvedRemote?.editionSlug || null;
-      if (!resolvedRemote) {
-        return { ok: false, reason: "game-not-installed" };
-      }
-      if (playingGameSlug()) {
-        return { ok: false, reason: "host-busy" };
-      }
-
-      const sunshinePin = String(Math.floor(1000 + Math.random() * 9000));
-      const configDir = path.join(app.getPath("userData"), "remotePlay", "sunshine");
-      fs.mkdirSync(configDir, { recursive: true });
-      const sunshinePort = 47989;
-      const sunResult = sunshineHost.start({
-        port: sunshinePort,
-        pin: sunshinePin,
-        deviceName: getRemoteDeviceName(),
-        configDir,
-      });
-      if (!sunResult.ok) {
-        return { ok: false, reason: "host-component-missing" };
-      }
-
-      if (sunshineHost.autoApprovePairing) {
-        void sunshineHost.autoApprovePairing({
-          pin: sunshinePin,
-          clientName: "PlayBound Client",
-        }).promise.catch((err) => {
-          console.warn("[remote-play] autoApprovePairing warning:", err?.message || err);
-        });
-      }
-
-      const sessionId = crypto.randomUUID();
-      activeRemotePlayHostSession = {
-        sessionId,
-        clientDeviceId,
-        gameSlug,
-        editionSlug: targetEdition,
-        startedAt: Date.now(),
-      };
-
-      setTimeout(async () => {
-        try {
-          await playGame(gameSlug, null, targetEdition, { remoteClientDeviceId: clientDeviceId });
-        } catch (err) {
-          console.warn("[remote-play] host game launch failed:", err?.message || err);
-          if (activeRemotePlayHostSession?.sessionId === sessionId) {
-            remoteHostApi.notifySessionEnded(clientDeviceId, "launch_failed");
-            sunshineHost.stop();
-            activeRemotePlayHostSession = null;
-          }
-        }
-      }, 0);
-
-      if (sunshineHost.waitForReady) {
-        const ready = await sunshineHost.waitForReady(sunshinePort);
-        if (!ready) {
-          sunshineHost.stop();
-          return { ok: false, reason: "host-component-missing" };
-        }
-      };
-
-      const localIp = getLocalLanIp();
-      return {
-        ok: true,
-        sessionId,
-        host: localIp,
-        port: sunshinePort,
-        appName: "Desktop",
-        pin: sunshinePin,
-      };
-    },
-  });
-
-  remoteClientCoordinator = createClientSessionCoordinator({
-    moonlightClient,
-  });
-
-  remoteClientCoordinator.onStatusChange((status, details) => {
-    if (win && !win.isDestroyed()) {
-      win.webContents.send("remote-play-session-status", { status, details });
-    }
-  });
-
-  discoveryService.startBrowsing(
-    () => {
-      if (win && !win.isDestroyed()) {
-        win.webContents.send("remote-play-hosts-updated", discoveryService.listSeenDevices());
-      }
-    },
-    () => {
-      if (win && !win.isDestroyed()) {
-        win.webContents.send("remote-play-hosts-updated", discoveryService.listSeenDevices());
-      }
-    }
-  );
-
-  const settings = loadSettings();
-  if (settings.remotePlayHostEnabled) {
-    void startRemotePlayHost().then(registerRemoteDevice).catch((err) => console.warn("[remote-play] host startup failed:", err?.message || err));
-  } else {
-    void registerRemoteDevice();
-  }
-  // Device presence is short-lived. Refresh it while offering Remote Play so
-  // same-account LAN fallback cannot surface a host that has gone away.
-  setInterval(() => {
-    if (loadSettings().remotePlayHostEnabled && remoteHostApi?.isListening()) void registerRemoteDevice();
-  }, 60_000).unref?.();
-}
-
-async function discoverAccountLanHosts() {
-  if (!loadSettings().launcherToken) return [];
-  try {
-    const res = await apiFetch(`${getApiBase()}/api/devices`, { headers: launcherApiHeaders({ accept: "application/json" }), signal: AbortSignal.timeout(3000) });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return accountHosts(data.devices, getRemoteDeviceId(), os.networkInterfaces());
-  } catch (err) {
-    console.warn("[remote-play] account LAN discovery unavailable:", err?.message || err);
-    return [];
-  }
-}
-
-let networkCategoryCache = { at: 0, value: null };
-function getWindowsNetworkCategory() {
-  if (process.platform !== "win32") return null;
-  if (Date.now() - networkCategoryCache.at < 60_000) return networkCategoryCache.value;
-  try {
-    const output = execFileSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", "(Get-NetConnectionProfile | Where-Object { $_.IPv4Connectivity -ne 'Disconnected' }).NetworkCategory"], { encoding: "utf8", timeout: 5000, windowsHide: true });
-    const value = output.trim().split(/\s+/).find((part) => part === "Private" || part === "Public") || null;
-    networkCategoryCache = { at: Date.now(), value };
-    return value;
-  } catch {
-    networkCategoryCache = { at: Date.now(), value: null };
-    return null;
-  }
-}
-
-ipcMain.handle("remote-play-get-state", async () => {
-  const settings = loadSettings();
-  await remotePairingService?.refreshTrusted().catch(() => {});
-  const accountLan = await discoverAccountLanHosts();
-  const localInterfaces = os.networkInterfaces();
-  const mdnsHosts = (discoveryService?.listSeenDevices() || []).flatMap((host) => {
-    const address = chooseLanAddress(host.addresses, localInterfaces);
-    return address ? [{ ...host, addresses: [address, ...host.addresses.filter((candidate) => candidate !== address)] }] : [];
-  });
-  const discoveredHosts = mergeHosts(mdnsHosts, accountLan, getRemoteDeviceId());
-  return {
-    enabled: Boolean(settings.remotePlayHostEnabled),
-    deviceId: getRemoteDeviceId(),
-    deviceName: getRemoteDeviceName(),
-    isHostListening: Boolean(remoteHostApi?.isListening()),
-    hostPort: remoteHostApi?.getPort() || null,
-    hostAddresses: ownLanAddresses(os.networkInterfaces()),
-    activeHostSession: activeRemotePlayHostSession,
-    activeClientSession: remoteClientCoordinator?.getActiveSession() || null,
-    discoveredHosts,
-    networkCategory: getWindowsNetworkCategory(),
-    discoverySource: accountLan.length ? "account-lan-and-mdns" : "mdns",
-  };
-});
-
-ipcMain.handle("remote-play-set-enabled", async (_event, enabled) => {
-  const settings = loadSettings();
-  settings.remotePlayHostEnabled = Boolean(enabled);
-  saveSettings(settings);
-  if (settings.remotePlayHostEnabled) {
-    await startRemotePlayHost();
-  } else {
-    stopRemotePlayHost();
-  }
-  void registerRemoteDevice();
-  return { ok: true, enabled: settings.remotePlayHostEnabled };
-});
-
-ipcMain.handle("remote-play-allow-local-network", async () => {
-  if (process.platform !== "win32") return { ok: false, error: "Windows only." };
-  const sunshineDir = sunshineHost.resolveSunshineDir();
-  return allowRemotePlayOnLan(app.getPath("exe"), sunshineDir ? path.join(sunshineDir, "sunshine.exe") : null, execFile);
-});
-
-ipcMain.handle("remote-play-set-device-name", async (_event, name) => {
-  const clean = String(name || "").trim().slice(0, 100);
-  if (!clean) return { ok: false, error: "Name cannot be empty" };
-  const settings = loadSettings();
-  settings.remoteDeviceName = clean;
-  saveSettings(settings);
-  if (settings.remotePlayHostEnabled && remoteHostApi?.isListening()) {
-    discoveryService.stopAdvertising();
-    discoveryService.startAdvertising({
-      deviceId: getRemoteDeviceId(),
-      deviceName: clean,
-      port: remoteHostApi.getPort(),
-      capabilities: { remotePlayHost: true },
-    });
-  }
-  void registerRemoteDevice();
-  return { ok: true, name: clean };
-});
-
-ipcMain.handle("remote-play-respond-pairing", async (_event, requestId, allow) => {
-  if (!remotePairingService) return { ok: false };
-  return { ok: await remotePairingService.respondToPairing(requestId, Boolean(allow)) };
-});
-
-ipcMain.handle("remote-play-start-stream", async (_event, opts) => {
-  if (!remoteClientCoordinator) return { ok: false, error: "Remote Play client not initialized." };
-  const { hostAddress, hostPort, gameSlug, editionSlug, resolution, fps, displayMode } = opts || {};
-  if (!chooseLanAddress([hostAddress], os.networkInterfaces())) {
-    return { ok: false, error: "Enter a host PC address on this home network." };
-  }
-  return await remoteClientCoordinator.startSession({
-    hostAddress,
-    hostPort,
-    clientDeviceId: getRemoteDeviceId(),
-    clientDeviceName: getRemoteDeviceName(),
-    gameSlug,
-    editionSlug,
-    resolution,
-    fps,
-    displayMode,
-  });
-});
-
-ipcMain.handle("remote-play-stop-stream", () => {
-  remoteClientCoordinator?.stopSession();
-  return { ok: true };
-});
-
-ipcMain.handle("remote-play-list-trusted", async () => {
-  const res = await apiFetch(`${getApiBase()}/api/devices/${encodeURIComponent(getRemoteDeviceId())}/trust`, {
-    headers: launcherApiHeaders(),
-  });
-  if (!res.ok) return { trustedDevices: [] };
-  const data = await res.json().catch(() => ({}));
-  return { trustedDevices: data?.trustedDevices || [] };
-});
-
-ipcMain.handle("remote-play-revoke-trusted", async (_event, clientDeviceId) => {
-  const qs = new URLSearchParams({ clientDeviceId: String(clientDeviceId || "") });
-  const res = await apiFetch(
-    `${getApiBase()}/api/devices/${encodeURIComponent(getRemoteDeviceId())}/trust?${qs}`,
-    {
-      method: "DELETE",
-      headers: launcherApiHeaders(),
-    }
-  );
-  await remotePairingService?.refreshTrusted().catch(() => {});
-  return { ok: res.ok };
-});
-
 ipcMain.handle("check-for-updates", async () => {
   if (!app.isPackaged) {
     return { ok: false, reason: "dev", message: "Updates only run in packaged builds." };
@@ -16772,32 +16369,17 @@ function overlayControlsContext() {
   return { profileName: info.name, gameSlug: info.gameSlug, gameTitle: title, settings: info.settings, bindings: info.bindings };
 }
 
-function overlayStreamContext() {
-  const active = remoteClientCoordinator?.getActiveSession();
-  if (!active) return null;
-  const title = catalogEntry(active.gameSlug)?.title || active.gameSlug;
-  return {
-    hostAddress: active.hostAddress,
-    hostPort: active.hostPort,
-    gameSlug: active.gameSlug,
-    gameTitle: title,
-    sessionId: active.sessionId,
-    startedAt: active.startedAt,
-  };
-}
-
 async function overlayContext() {
   const controls = overlayControlsContext();
-  const stream = overlayStreamContext();
   const sync = await launcherJson("/api/party-sync?discoverable=0").catch(() => ({}));
   const parties = Array.isArray(sync?.myParties) ? sync.myParties : [];
   const live = parties.filter((p) => p && p.status !== "ended");
-  if (!live.length) return { party: null, controls, stream };
+  if (!live.length) return { party: null, controls };
 
   const running = [...activeLaunches.keys()];
   const forRunning = live.find((p) => running.includes(String(p.gameSlug)));
   const party = forRunning || (live.length === 1 ? live[0] : null);
-  if (!party) return { party: null, reason: "several parties are open", controls, stream };
+  if (!party) return { party: null, reason: "several parties are open", controls };
   return {
     party: {
       id: String(party.id),
@@ -16806,7 +16388,6 @@ async function overlayContext() {
       memberCount: Array.isArray(party.members) ? party.members.length : null,
     },
     controls,
-    stream,
   };
 }
 
@@ -16816,7 +16397,7 @@ ipcMain.handle("overlay-context", async () => {
   try {
     return await overlayContext();
   } catch (err) {
-    return { party: null, error: err.message, controls: overlayControlsContext(), stream: overlayStreamContext() };
+    return { party: null, error: err.message, controls: overlayControlsContext() };
   }
 });
 ipcMain.handle("update-playbound-controls-settings", (_event, partial) => {
@@ -17875,7 +17456,6 @@ if (gotLock) {
 
     setupAutoUpdater();
     scheduleLibrarySync();
-    initRemotePlay();
     if (parsedLaunch) {
       handleDeepLink(parsedLaunch);
     }
@@ -17907,12 +17487,6 @@ if (gotLock) {
   });
 
   app.on("before-quit", () => {
-    try {
-      stopRemotePlayHost();
-      discoveryService?.dispose();
-    } catch {
-      /* ignore */
-    }
     gamepadBridge.deactivatePlayBoundControls();
     isAppQuitting = true;
     stopLauncherPresenceLoop();
