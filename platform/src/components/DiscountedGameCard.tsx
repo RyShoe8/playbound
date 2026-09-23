@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
-import type { DiscountedGame } from "@/lib/deals";
-import { formatCents } from "@/lib/deals";
+import type { DiscountedGame } from "@/lib/dealsShared";
+import { formatCents } from "@/lib/dealsShared";
 import { withOutboundUtm } from "@/lib/utm";
 import { Badge } from "@/components/ui/bits";
 import { cn } from "@/lib/utils";
