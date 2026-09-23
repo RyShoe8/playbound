@@ -1702,10 +1702,166 @@ async function renderGameDetailView(slug, opts = {}) {
     });
   });
 
+  function showRemotePlayNoticeModal({ title, message }) {
+    const overlay = document.createElement("div");
+    overlay.className = "modal-backdrop";
+    overlay.style.cssText = `
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center; z-index: 9999;
+    `;
+    overlay.innerHTML = `
+      <div style="background: #181424; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 24px; max-width: 440px; box-shadow: 0 16px 40px rgba(0,0,0,0.8);">
+        <h3 style="margin: 0 0 12px 0; font-size: 16px; color: #fff;">${escapeHtml(title)}</h3>
+        <div style="font-size: 13px; color: var(--text-muted, #ccc); line-height: 1.5; margin-bottom: 20px;">${message}</div>
+        <div style="display: flex; justify-content: flex-end;">
+          <button class="btn-primary btn-sm" id="modal-notice-close">Got it</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector("#modal-notice-close")?.addEventListener("click", () => overlay.remove());
+  }
+
+  function showRemoteHostPickerModal(hosts, onSelect) {
+    const overlay = document.createElement("div");
+    overlay.className = "modal-backdrop";
+    overlay.style.cssText = `
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center; z-index: 9999;
+    `;
+    overlay.innerHTML = `
+      <div style="background: #181424; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 24px; max-width: 460px; width: 100%; box-shadow: 0 16px 40px rgba(0,0,0,0.8);">
+        <h3 style="margin: 0 0 8px 0; font-size: 16px; color: #fff;">Play Remotely</h3>
+        <p style="font-size: 13px; color: var(--text-muted, #ccc); margin: 0 0 16px 0;">Select a PlayBound PC on your local network to stream this game from:</p>
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">
+          ${hosts
+            .map(
+              (h, i) => `
+            <button class="btn-secondary" data-host-idx="${i}" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; text-align: left;">
+              <div>
+                <div style="font-weight: 600; color: #fff;">${escapeHtml(h.deviceName || "PlayBound Host")}</div>
+                <div style="font-size: 11px; opacity: 0.7;">${escapeHtml((h.addresses && h.addresses[0]) || h.host || "")}</div>
+              </div>
+              <span style="font-size: 11px; color: #10b981; font-weight: 600;">Ready 📡</span>
+            </button>
+          `
+            )
+            .join("")}
+        </div>
+        <div style="display: flex; justify-content: flex-end;">
+          <button class="btn-secondary btn-sm" id="modal-picker-cancel">Cancel</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector("#modal-picker-cancel")?.addEventListener("click", () => overlay.remove());
+    overlay.querySelectorAll("[data-host-idx]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const idx = Number(btn.getAttribute("data-host-idx"));
+        overlay.remove();
+        onSelect(hosts[idx]);
+      });
+    });
+  }
+
+  function startRemoteStreamWithHost(host, gameSlug, gameDetail, editionSlug) {
+    const overlay = document.createElement("div");
+    overlay.className = "modal-backdrop";
+    overlay.style.cssText = `
+      position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center; z-index: 9999;
+    `;
+    overlay.innerHTML = `
+      <div style="background: #181424; border: 1px solid var(--accent, #8b5cf6); border-radius: 12px; padding: 28px; max-width: 440px; text-align: center; box-shadow: 0 16px 40px rgba(0,0,0,0.9);">
+        <div style="font-size: 32px; margin-bottom: 12px;">📡</div>
+        <h3 style="margin: 0 0 6px 0; font-size: 16px; color: #fff;">Connecting to ${escapeHtml(host.deviceName || "Host PC")}…</h3>
+        <p id="remote-stream-status-msg" style="font-size: 13px; color: var(--text-muted, #ccc); margin: 0 0 20px 0;">Requesting game session for ${escapeHtml(gameDetail?.title || gameSlug)}…</p>
+        <button class="btn-secondary btn-sm" id="modal-stream-cancel">Cancel</button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const statusMsg = overlay.querySelector("#remote-stream-status-msg");
+    let unhookStatus = null;
+
+    const closeOverlay = () => {
+      if (unhookStatus) unhookStatus();
+      overlay.remove();
+    };
+
+    overlay.querySelector("#modal-stream-cancel")?.addEventListener("click", () => {
+      window.playbound.remotePlayStopStream?.();
+      closeOverlay();
+      setStatus("Remote Play cancelled.");
+    });
+
+    if (window.playbound.onRemotePlaySessionStatus) {
+      unhookStatus = window.playbound.onRemotePlaySessionStatus(({ status, details }) => {
+        if (!statusMsg) return;
+        if (status === "authenticating") {
+          statusMsg.textContent = "Verifying pairing with host PC…";
+        } else if (status === "starting-game") {
+          statusMsg.textContent = `Launching ${gameDetail?.title || gameSlug} on ${host.deviceName}…`;
+        } else if (status === "streaming") {
+          statusMsg.textContent = "Stream ready! Starting Moonlight…";
+          setTimeout(closeOverlay, 1500);
+        } else if (status === "ended") {
+          closeOverlay();
+        } else if (status === "error") {
+          statusMsg.innerHTML = `<span style="color:#ef4444;">Error: ${escapeHtml(details?.error || "Connection failed")}</span>`;
+          const cancelBtn = overlay.querySelector("#modal-stream-cancel");
+          if (cancelBtn) cancelBtn.textContent = "Close";
+        }
+      });
+    }
+
+    const hostAddress = (host.addresses && host.addresses[0]) || host.host;
+    window.playbound.remotePlayStartStream({
+      hostAddress,
+      hostPort: host.port,
+      gameSlug,
+      editionSlug: editionSlug || null,
+    }).then((res) => {
+      if (!res.ok) {
+        if (statusMsg) {
+          statusMsg.innerHTML = `<span style="color:#ef4444;">${escapeHtml(res.error || "Failed to start stream")}</span>`;
+        }
+        const cancelBtn = overlay.querySelector("#modal-stream-cancel");
+        if (cancelBtn) cancelBtn.textContent = "Close";
+      }
+    }).catch((err) => {
+      if (statusMsg) {
+        statusMsg.innerHTML = `<span style="color:#ef4444;">${escapeHtml(err.message || String(err))}</span>`;
+      }
+    });
+  }
+
+  async function handlePlayRemotely(gameSlug, gameDetail, editionSlug) {
+    const rpState = await window.playbound.remotePlayGetState?.().catch(() => null);
+    const hosts = (rpState?.discoveredHosts || []).filter((h) => h.remotePlayHost);
+
+    if (!hosts.length) {
+      showRemotePlayNoticeModal({
+        title: "No Remote Play Hosts Found",
+        message: `No other PlayBound PCs advertising Remote Play were found on your home network.<br><br>Make sure PlayBound is running on your gaming PC and <strong>Remote Play</strong> is enabled in its Settings.`,
+      });
+      return;
+    }
+
+    if (hosts.length === 1) {
+      startRemoteStreamWithHost(hosts[0], gameSlug, gameDetail, editionSlug);
+    } else {
+      showRemoteHostPickerModal(hosts, (selectedHost) => {
+        startRemoteStreamWithHost(selectedHost, gameSlug, gameDetail, editionSlug);
+      });
+    }
+  }
+
   const actions = document.getElementById("detail-actions");
   if (detail.installed) {
     actions.innerHTML = `
       <button class="btn-success" id="act-play">Play Now</button>
+      <button class="btn-secondary" id="act-play-remote" title="Stream this game from another PC on your network">📡 Play Remotely</button>
       ${window.playbound.platform.supportsDesktopShortcuts() ? `<button class="btn-secondary" id="act-shortcut">Create Shortcut</button>` : ""}
       <button class="btn-secondary" id="act-folder">${window.playbound.platform.getOS() === "macos" ? "Open in Finder" : "Open Folder"}</button>
       <button class="btn-danger" id="act-uninstall">Uninstall</button>
@@ -1732,6 +1888,9 @@ async function renderGameDetailView(slug, opts = {}) {
       } catch (err) {
         setStatus(err.message || String(err), true);
       }
+    });
+    document.getElementById("act-play-remote")?.addEventListener("click", () => {
+      handlePlayRemotely(slug, detail, state.detailSelectedEdition || null);
     });
     const btnShortcut = document.getElementById("act-shortcut");
     if (btnShortcut) {
@@ -1874,14 +2033,19 @@ async function renderGameDetailView(slug, opts = {}) {
       ? `
       ${getGameBtn}
       ${noStoreNoteHtml}
+      <button class="btn-secondary" id="act-play-remote" title="Stream this game from another PC on your network">📡 Play Remotely</button>
       <button class="btn-secondary" id="act-locate" title="Find or select an existing installation on your computer">Already installed? Add to Library</button>
       ${state.accountState.connected ? `<button class="btn-secondary" id="act-create-party">Create Party</button>` : ""}
     `
       : `
       <button class="${installBtnClass}" id="act-install" title="${inQueue ? "Click to view queue" : ""}">${installBtnLabel}</button>
+      <button class="btn-secondary" id="act-play-remote" title="Stream this game from another PC on your network">📡 Play Remotely</button>
       <button class="btn-secondary" id="act-locate" title="Find or select an existing installation on your computer">Already installed? Add to Library</button>
       ${state.accountState.connected ? `<button class="btn-secondary" id="act-create-party">Create Party</button>` : ""}
     `;
+    document.getElementById("act-play-remote")?.addEventListener("click", () => {
+      handlePlayRemotely(slug, detail, state.detailSelectedEdition || null);
+    });
     document.getElementById("act-get-game")?.addEventListener("click", () => openStoreUrl(buy?.url));
     document.getElementById("act-install")?.addEventListener("click", async () => {
       if (inQueue) {

@@ -93,21 +93,32 @@ function createHostApiServer({ pairingService, onSessionRequest }) {
   const connectionsByDevice = new Map();
   const handleMessage = createMessageHandler({ pairingService, onSessionRequest, connectionsByDevice });
   let wsServer = null;
+  let boundPort = null;
 
-  function start(port = 0) {
-    if (wsServer) return Promise.resolve();
+  async function start(port = 0) {
+    if (wsServer) return boundPort;
     wsServer = createPlainWebSocketServer((socket, text) => {
       const ctx = socket.remoteCtx || (socket.remoteCtx = { deviceId: null });
       handleMessage(socket, ctx, text);
     });
-    return wsServer.listen(port);
+    boundPort = await wsServer.listen(port);
+    return boundPort;
   }
 
   async function stop() {
     if (!wsServer) return;
     await wsServer.close();
     wsServer = null;
+    boundPort = null;
     connectionsByDevice.clear();
+  }
+
+  function getPort() {
+    return boundPort;
+  }
+
+  function isListening() {
+    return Boolean(wsServer && boundPort);
   }
 
   /** Called from the host's existing game-exit hook (sendGameExited) — tells the streaming client the session ended, so it closes Moonlight without the player touching anything. */
@@ -118,7 +129,7 @@ function createHostApiServer({ pairingService, onSessionRequest }) {
     return true;
   }
 
-  return { start, stop, notifySessionEnded };
+  return { start, stop, getPort, isListening, notifySessionEnded };
 }
 
 module.exports = { createHostApiServer, createMessageHandler };

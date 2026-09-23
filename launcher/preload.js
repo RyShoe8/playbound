@@ -278,6 +278,33 @@ contextBridge.exposeInMainWorld("playbound", {
   getPlayBoundControlsAvailability: (slug, editionSlug) =>
     ipcRenderer.invoke("get-playbound-controls-availability", slug, editionSlug || null),
 
+  // PlayBound Remote (LAN game streaming)
+  remotePlayGetState: () => ipcRenderer.invoke("remote-play-get-state"),
+  remotePlaySetEnabled: (enabled) => ipcRenderer.invoke("remote-play-set-enabled", enabled),
+  remotePlaySetDeviceName: (name) => ipcRenderer.invoke("remote-play-set-device-name", name),
+  remotePlayRespondPairing: (requestId, allow) =>
+    ipcRenderer.invoke("remote-play-respond-pairing", requestId, allow),
+  remotePlayStartStream: (opts) => ipcRenderer.invoke("remote-play-start-stream", opts),
+  remotePlayStopStream: () => ipcRenderer.invoke("remote-play-stop-stream"),
+  remotePlayListTrusted: () => ipcRenderer.invoke("remote-play-list-trusted"),
+  remotePlayRevokeTrusted: (clientDeviceId) =>
+    ipcRenderer.invoke("remote-play-revoke-trusted", clientDeviceId),
+  onRemotePlayPairingRequest: (cb) => {
+    const l = (_event, data) => cb(data);
+    ipcRenderer.on("remote-play-pairing-request", l);
+    return () => ipcRenderer.removeListener("remote-play-pairing-request", l);
+  },
+  onRemotePlaySessionStatus: (cb) => {
+    const l = (_event, data) => cb(data);
+    ipcRenderer.on("remote-play-session-status", l);
+    return () => ipcRenderer.removeListener("remote-play-session-status", l);
+  },
+  onRemotePlayHostsUpdated: (cb) => {
+    const l = (_event, data) => cb(data);
+    ipcRenderer.on("remote-play-hosts-updated", l);
+    return () => ipcRenderer.removeListener("remote-play-hosts-updated", l);
+  },
+
   getInstallQueue: () => ipcRenderer.invoke("get-install-queue"),
   cancelInstallQueueItem: (slug, editionSlug) =>
     ipcRenderer.invoke("cancel-install-queue-item", slug, editionSlug || null),

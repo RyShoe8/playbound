@@ -33,6 +33,7 @@ let state = {
   activeTab: "server",
   tabInitialized: false,
   controls: null,
+  stream: null,
 };
 
 function escapeHtml(value) {
@@ -345,11 +346,50 @@ async function updateControlsSettings(partial) {
   if (settings && state.controls) state.controls = { ...state.controls, settings };
 }
 
-function renderTabs() {
-  tabsEl.innerHTML = `
-    <button class="tab ${state.activeTab === "server" ? "active" : ""}" data-tab="server">Server</button>
-    <button class="tab ${state.activeTab === "controls" ? "active" : ""}" data-tab="controls">Controls</button>
+function renderStreamTab() {
+  const stream = state.stream;
+  if (!stream) {
+    root.innerHTML = `<p class="note">No active remote stream.</p>`;
+    return;
+  }
+  const elapsedMinutes = stream.startedAt ? Math.floor((Date.now() - stream.startedAt) / 60000) : 0;
+  root.innerHTML = `
+    <div style="margin-bottom: 12px; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.04);">
+      <div style="font-weight: 700; font-size: 13px; color: #fff; margin-bottom: 4px;">Streaming from ${escapeHtml(stream.hostAddress)}</div>
+      <div style="font-size: 11px; color: var(--muted);">${escapeHtml(stream.gameTitle || stream.gameSlug)} · ${elapsedMinutes}m elapsed</div>
+    </div>
+    <div class="note">
+      <div style="margin-bottom: 4px;"><strong>Status:</strong> Active Stream (Moonlight)</div>
+      <div style="margin-bottom: 4px;"><strong>Host:</strong> ${escapeHtml(stream.hostAddress)}:${stream.hostPort || 47998}</div>
+      <div><strong>Controls:</strong> Gamepad & keyboard forwarded to host</div>
+    </div>
+    <div style="margin-top: 16px;">
+      <button class="apply" id="btn-stream-disconnect" style="background: var(--danger); color: #fff;">Disconnect Stream</button>
+    </div>
+    <p class="hint">Press Esc to close overlay and continue playing</p>
   `;
+
+  document.getElementById("btn-stream-disconnect")?.addEventListener("click", async () => {
+    const btn = document.getElementById("btn-stream-disconnect");
+    if (btn) btn.disabled = true;
+    if (window.playbound?.remotePlayStopStream) {
+      await window.playbound.remotePlayStopStream();
+    }
+    if (window.playbound?.hideOverlay) {
+      await window.playbound.hideOverlay();
+    }
+  });
+}
+
+function renderTabs() {
+  const tabs = [
+    `<button class="tab ${state.activeTab === "server" ? "active" : ""}" data-tab="server">Server</button>`,
+    `<button class="tab ${state.activeTab === "controls" ? "active" : ""}" data-tab="controls">Controls</button>`,
+  ];
+  if (state.stream) {
+    tabs.push(`<button class="tab ${state.activeTab === "stream" ? "active" : ""}" data-tab="stream">Stream</button>`);
+  }
+  tabsEl.innerHTML = tabs.join("");
   tabsEl.querySelectorAll("[data-tab]").forEach((btn) => {
     btn.addEventListener("click", () => {
       state.activeTab = btn.dataset.tab;
@@ -361,6 +401,7 @@ function renderTabs() {
 function render() {
   renderTabs();
   if (state.activeTab === "controls") renderControlsTab();
+  else if (state.activeTab === "stream") renderStreamTab();
   else renderServerTab();
 }
 
@@ -435,15 +476,16 @@ async function load() {
   const party = context?.party || null;
   state.partyId = party?.id || null;
   state.controls = context?.controls || null;
-  subject.textContent = party?.gameTitle || party?.gameSlug || state.controls?.gameTitle || "";
+  state.stream = context?.stream || null;
+  subject.textContent = party?.gameTitle || party?.gameSlug || state.controls?.gameTitle || state.stream?.gameTitle || "";
 
   // Pick a sensible default tab once, the first time context is known —
   // never on a later reload, so switching tabs mid-session sticks. If a
-  // party is open, Server is still the more likely reason someone opened
-  // the overlay; otherwise land on whichever tab actually has something.
+  // stream is active, show the Stream tab; if a party is open, Server is the
+  // more likely reason; otherwise land on Controls if available.
   if (!state.tabInitialized) {
     state.tabInitialized = true;
-    state.activeTab = !state.partyId && state.controls ? "controls" : "server";
+    state.activeTab = state.stream ? "stream" : !state.partyId && state.controls ? "controls" : "server";
   }
 
   if (!state.partyId) {

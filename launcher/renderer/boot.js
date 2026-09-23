@@ -493,6 +493,53 @@ function wireMainEvents() {
     endGameSession();
   });
 
+  window.playbound.onRemotePlayPairingRequest?.((req) => {
+    if (!req || !req.requestId) return;
+    const existing = document.getElementById(`remote-pair-${req.requestId}`);
+    if (existing) return;
+    const banner = document.createElement("div");
+    banner.id = `remote-pair-${req.requestId}`;
+    banner.style.cssText = `
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #181424;
+      border: 1px solid #8b5cf6;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+      border-radius: 12px;
+      padding: 16px 20px;
+      z-index: 99999;
+      max-width: 380px;
+    `;
+    const cleanName = String(req.name || "A device").replace(/[<>&"]/g, "");
+    banner.innerHTML = `
+      <div style="font-weight: 700; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+        <span>📡</span> Remote Play Pairing Request
+      </div>
+      <p style="font-size: 13px; color: var(--text-muted, #ccc); margin: 0 0 14px 0; line-height: 1.4;">
+        <strong>${cleanName}</strong> on your network wants to stream games from this PC. Allow this device?
+      </p>
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="btn-secondary btn-sm" id="btn-deny-${req.requestId}">Deny</button>
+        <button class="btn-primary btn-sm" id="btn-allow-${req.requestId}">Allow & Trust</button>
+      </div>
+    `;
+    document.body.appendChild(banner);
+
+    const cleanup = () => banner.remove();
+    banner.querySelector(`#btn-allow-${req.requestId}`)?.addEventListener("click", async () => {
+      cleanup();
+      await window.playbound.remotePlayRespondPairing(req.requestId, true);
+      setStatus(`Allowed "${cleanName}" for Remote Play`);
+    });
+    banner.querySelector(`#btn-deny-${req.requestId}`)?.addEventListener("click", async () => {
+      cleanup();
+      await window.playbound.remotePlayRespondPairing(req.requestId, false);
+      setStatus(`Denied "${cleanName}"`);
+    });
+    setTimeout(cleanup, 120000);
+  });
+
   window.playbound.onAccount((data) => {
     if (data?.message) setStatus(data.message, data.connected === false);
     void refreshAccountStatus().then(() => onNotificationsAccountChanged());
