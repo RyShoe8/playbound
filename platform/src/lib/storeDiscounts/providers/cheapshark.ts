@@ -1,4 +1,5 @@
 import type { DiscountProviderAdapter, DiscoveredDiscount, DiscountStoreSlug } from "../types";
+import { cleanDealTitle, upgradeCoverImage } from "@/lib/dealsShared";
 
 /**
  * CheapShark deal-aggregator adapter — covers Steam, Epic and GamersGate.
@@ -200,10 +201,10 @@ export class CheapSharkDiscountAdapter implements DiscountProviderAdapter {
 
       out.push({
         externalId: base.dealId,
-        title: base.title,
+        title: cleanDealTitle(base.title),
         store: base.store,
         storeUrl,
-        coverImage: deal.thumb || null,
+        coverImage: upgradeCoverImage(deal.thumb, deal.steamAppID),
         // CheapShark's deal listing carries no genre/developer/platform data —
         // this feed trades that off for covering three stores in one call.
         genres: [],

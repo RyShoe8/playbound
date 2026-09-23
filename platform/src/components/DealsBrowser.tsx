@@ -149,8 +149,11 @@ export function DealsBrowser({
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {visibleDiscounted.map((game) => (
-              <DiscountedGameCard key={game.slug} game={game} />
+            {visibleDiscounted.map((game, i) => (
+              <DiscountedGameCard
+                key={game.slug || `${game.storeKey || "deal"}-${game.title}-${game.currentPriceCents}-${i}`}
+                game={game}
+              />
             ))}
           </div>
         </section>

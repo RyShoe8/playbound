@@ -8,10 +8,11 @@ import { pageMetadata } from "@/lib/seo";
  * `%s · PlayBound` template rather than repeating it.
  */
 export const metadata: Metadata = pageMetadata({
-  title: "Game Deals",
+  title: "PC Game Deals & Free Giveaways",
   description:
-    "Every current way to pay less for a good game: live free giveaways from Epic, Steam, GOG, Prime Gaming and Alienware Arena, plus PlayBound catalog games at 75% off or deeper.",
+    "Find the deepest PC game deals and live free giveaways. Games at 75% to 95% off and 100% free titles tracked live across Steam, Epic Games, GOG, and GamersGate.",
   path: "/deals",
+  images: ["/deals/opengraph-image"],
 });
 
 export default function DealsLayout({ children }: { children: React.ReactNode }) {

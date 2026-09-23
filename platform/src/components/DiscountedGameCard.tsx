@@ -1,8 +1,11 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Tag } from "lucide-react";
 import type { DiscountedGame } from "@/lib/dealsShared";
-import { formatCents } from "@/lib/dealsShared";
+import { formatCents, cleanDealTitle } from "@/lib/dealsShared";
 import { Badge } from "@/components/ui/bits";
 import { cn } from "@/lib/utils";
 
@@ -25,10 +28,6 @@ import { cn } from "@/lib/utils";
  * wrap it again: re-running UTM tagging on an already-wrapped affiliate
  * template URL would tag the tracking redirect instead of the real
  * destination, not the game.
- *
- * A server component: nothing here needs state, and unlike FreeGameCard there
- * is no compatibility hook to call — these are live store prices, not
- * PlayBound-curated availability data.
  */
 export function DiscountedGameCard({
   game,
@@ -37,7 +36,9 @@ export function DiscountedGameCard({
   game: DiscountedGame;
   className?: string;
 }) {
+  const [imgFailed, setImgFailed] = useState(false);
   const [from, to] = game.art ? [game.art.from, game.art.to] : ["#1e1b4b", "#312e81"];
+  const title = cleanDealTitle(game.title);
 
   return (
     <div
@@ -46,29 +47,24 @@ export function DiscountedGameCard({
         className
       )}
     >
-      <div className="relative block aspect-[16/9] overflow-hidden">
-        {game.coverImage ? (
+      <div className="relative block aspect-[16/9] overflow-hidden bg-secondary">
+        {game.coverImage && !imgFailed ? (
           <Image
             src={game.coverImage}
-            alt=""
+            alt={title}
             fill
             sizes="(min-width: 1024px) 300px, (min-width: 640px) 45vw, 90vw"
             className="object-cover transition-transform duration-300 group-hover:scale-105"
-            /*
-             * Same rule as FreeGameCard: a URL with no image extension is
-             * something the optimizer cannot be trusted to fetch, so it is
-             * handed through untouched. Everything else goes through
-             * next/image and therefore needs its host in
-             * next.config.ts remotePatterns — see providerImageHosts.test.ts
-             * for why that is worth a test.
-             */
-            unoptimized={!/\.(jpg|jpeg|png|webp|avif)(\?|$)/i.test(game.coverImage)}
+            onError={() => setImgFailed(true)}
+            unoptimized
           />
         ) : (
           <div
-            className="size-full"
+            className="flex size-full items-center justify-center"
             style={{ background: `linear-gradient(135deg, ${from}, ${to})` }}
-          />
+          >
+            <Tag className="size-8 text-white/30" />
+          </div>
         )}
         <div className="absolute left-2 top-2">
           <Badge tone="play">-{game.percentOff}%</Badge>
@@ -76,7 +72,7 @@ export function DiscountedGameCard({
       </div>
 
       <div className="flex flex-1 flex-col gap-2 p-3">
-        <p className="font-bold leading-tight">{game.title}</p>
+        <p className="font-bold leading-tight">{title}</p>
         {game.genres.length > 0 && (
           <p className="line-clamp-1 text-xs leading-relaxed text-muted-foreground">
             {game.genres.slice(0, 3).join(" · ")}
