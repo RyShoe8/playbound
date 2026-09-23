@@ -12,7 +12,7 @@
 
 "use strict";
 
-const DEFAULT_CONNECT_TIMEOUT_MS = 15000;
+const DEFAULT_CONNECT_TIMEOUT_MS = 60000;
 const WebSocket = require("ws");
 
 /**
