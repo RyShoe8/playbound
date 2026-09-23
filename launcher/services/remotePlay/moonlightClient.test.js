@@ -99,4 +99,45 @@ const { buildStreamArgs, createMoonlightClient } = require("./moonlightClient");
   assert.strictEqual(exitFired, true, "onExit must fire so the caller can return the player to PlayBound's UI");
 }
 
-console.log("moonlight client wrapper ok");
+/* ── createMoonlightClient: isHostPaired and pairHost ───────────────────── */
+
+(async () => {
+  const spawnCalls = [];
+  const client = createMoonlightClient({
+    resolveDir: () => "/vendored/moonlight",
+    spawnFn: (exe, args) => {
+      spawnCalls.push({ exe, args });
+      const action = args[0];
+      const handlers = {};
+      const fake = {
+        stdout: { on: () => {} },
+        stderr: { on: () => {} },
+        on(event, cb) {
+          handlers[event] = cb;
+          if (event === "exit") {
+            // If action is "list", simulate paired (0)
+            if (action === "list") {
+              setTimeout(() => cb(0), 10);
+            }
+            // If action is "pair", simulate exit 0
+            if (action === "pair") {
+              setTimeout(() => cb(0), 10);
+            }
+          }
+        },
+        kill() {},
+      };
+      return fake;
+    },
+  });
+
+  const isPaired = await client.isHostPaired({ host: "192.168.1.50" });
+  assert.equal(isPaired, true);
+  assert.ok(spawnCalls.some((c) => c.args[0] === "list" && c.args[1] === "192.168.1.50"));
+
+  const pairResult = await client.pairHost({ host: "192.168.1.50", pin: "4321" });
+  assert.equal(pairResult.ok, true);
+  assert.ok(spawnCalls.some((c) => c.args[0] === "pair" && c.args[1] === "192.168.1.50" && c.args[3] === "4321"));
+
+  console.log("moonlight client wrapper ok");
+})();

@@ -110,6 +110,135 @@ function createMoonlightClient(deps = {}) {
     return { ok: true };
   }
 
+  /**
+   * Checks if Moonlight has already completed pairing with the given host.
+   * `moonlight.exe list <host>` connects to the host headless and exits 0 if paired,
+   * or non-zero (or error) if not paired.
+   *
+   * @param {{ host: string, timeoutMs?: number }} opts
+   * @returns {Promise<boolean>}
+   */
+  function isHostPaired({ host, timeoutMs = 4000 }) {
+    const dir = resolveDir();
+    if (!dir) return Promise.resolve(false);
+
+    return new Promise((resolve) => {
+      let settled = false;
+      let p = null;
+
+      const done = (val) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(val);
+      };
+
+      const timer = setTimeout(() => {
+        try {
+          p?.kill();
+        } catch {}
+        done(false);
+      }, timeoutMs);
+
+      try {
+        p = spawnFn(path.join(dir, CLIENT_EXE), ["list", host], {
+          cwd: dir,
+          stdio: ["ignore", "pipe", "pipe"],
+          windowsHide: true,
+        });
+
+        p.on("exit", (code) => {
+          done(code === 0);
+        });
+        p.on("error", () => {
+          done(false);
+        });
+      } catch {
+        done(false);
+      }
+    });
+  }
+
+  /**
+   * Pairs Moonlight with the target host using the given PIN.
+   * Spawns `moonlight.exe pair <host> --pin <pin>`.
+   * While running, monitors `isHostPaired` and process output.
+   * Once pairing is verified or process exits, terminates the pair window and resolves.
+   *
+   * @param {{ host: string, pin: string, timeoutMs?: number }} opts
+   * @returns {Promise<{ ok: boolean, reason?: string, repair?: boolean }>}
+   */
+  function pairHost({ host, pin, timeoutMs = 30000 }) {
+    const dir = resolveDir();
+    if (!dir) {
+      return Promise.resolve({
+        ok: false,
+        reason: "Remote Play needs to be repaired.",
+        repair: true,
+      });
+    }
+
+    return new Promise((resolve) => {
+      let settled = false;
+      let checkTimer = null;
+      let pairChild = null;
+
+      const finish = (result) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutTimer);
+        if (checkTimer) clearInterval(checkTimer);
+        try {
+          pairChild?.kill();
+        } catch {}
+        resolve(result);
+      };
+
+      const timeoutTimer = setTimeout(() => {
+        finish({ ok: false, reason: "Pairing with host PC timed out." });
+      }, timeoutMs);
+
+      try {
+        pairChild = spawnFn(path.join(dir, CLIENT_EXE), ["pair", host, "--pin", pin], {
+          cwd: dir,
+          stdio: ["ignore", "pipe", "pipe"],
+          windowsHide: true,
+        });
+      } catch (err) {
+        return finish({ ok: false, reason: err?.message || "Failed to launch pairing process." });
+      }
+
+      let output = "";
+      pairChild.stdout?.on("data", (d) => (output += d.toString()));
+      pairChild.stderr?.on("data", (d) => (output += d.toString()));
+
+      pairChild.on("exit", (code) => {
+        if (code === 0 || output.includes("already paired")) {
+          finish({ ok: true });
+        } else {
+          finish({ ok: false, reason: output.trim() || "Pairing failed." });
+        }
+      });
+
+      pairChild.on("error", (err) => {
+        finish({ ok: false, reason: err?.message || "Failed to run pairing process." });
+      });
+
+      // Poll isHostPaired every 600ms while pair is running.
+      // As soon as pairing completes in the background, Moonlight saves the host.
+      // Checking isHostPaired will return true, allowing us to terminate the pairChild dialog and finish!
+      checkTimer = setInterval(async () => {
+        if (settled) return;
+        try {
+          const paired = await isHostPaired({ host, timeoutMs: 1500 });
+          if (paired) {
+            finish({ ok: true });
+          }
+        } catch {}
+      }, 600);
+    });
+  }
+
   function stopStream() {
     if (!child) return;
     try {
@@ -120,7 +249,7 @@ function createMoonlightClient(deps = {}) {
     child = null;
   }
 
-  return { startStream, stopStream, isStreaming, resolveMoonlightDir: resolveDir };
+  return { startStream, stopStream, isStreaming, isHostPaired, pairHost, resolveMoonlightDir: resolveDir };
 }
 
 module.exports = { CLIENT_EXE, resolveMoonlightDir, buildStreamArgs, createMoonlightClient };

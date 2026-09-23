@@ -204,7 +204,7 @@ function createClientSessionCoordinator(deps) {
         }
       };
 
-      socket.onmessage = (event) => {
+      socket.onmessage = async (event) => {
         let msg;
         try {
           msg = typeof event.data === "string" ? JSON.parse(event.data) : JSON.parse(event.data.toString("utf8"));
@@ -231,6 +231,25 @@ function createClientSessionCoordinator(deps) {
         if (msg.type === "session-ready") {
           const streamHost = msg.host || hostAddress;
           const appName = msg.appName || gameSlug;
+
+          if (msg.pin && moonlightClient && moonlightClient.pairHost) {
+            notifyStatus("pairing", { host: streamHost });
+            let isPaired = false;
+            if (moonlightClient.isHostPaired) {
+              try {
+                isPaired = await moonlightClient.isHostPaired({ host: streamHost });
+              } catch {
+                isPaired = false;
+              }
+            }
+            if (!isPaired) {
+              const pairResult = await moonlightClient.pairHost({ host: streamHost, pin: msg.pin });
+              if (!pairResult.ok) {
+                finish({ ok: false, error: pairResult.reason || "Failed to pair with host PC." });
+                return;
+              }
+            }
+          }
 
           notifyStatus("streaming", {
             sessionId: msg.sessionId,

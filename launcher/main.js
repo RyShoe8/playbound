@@ -14287,6 +14287,15 @@ function initRemotePlay() {
         return { ok: false, reason: "host-component-missing" };
       }
 
+      if (sunshineHost.autoApprovePairing) {
+        void sunshineHost.autoApprovePairing({
+          pin: sunshinePin,
+          clientName: "PlayBound Client",
+        }).promise.catch((err) => {
+          console.warn("[remote-play] autoApprovePairing warning:", err?.message || err);
+        });
+      }
+
       const sessionId = crypto.randomUUID();
       activeRemotePlayHostSession = {
         sessionId,
@@ -14324,6 +14333,7 @@ function initRemotePlay() {
         host: localIp,
         port: sunshinePort,
         appName: "Desktop",
+        pin: sunshinePin,
       };
     },
   });

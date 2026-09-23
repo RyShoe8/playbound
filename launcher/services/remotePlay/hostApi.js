@@ -77,6 +77,7 @@ function createMessageHandler({ pairingService, onSessionRequest, connectionsByD
               host: result.host,
               port: result.port,
               appName: result.appName,
+              pin: result.pin,
             })
           );
         } else {

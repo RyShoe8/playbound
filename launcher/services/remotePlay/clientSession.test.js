@@ -289,3 +289,46 @@ test("default client connects to the real host protocol without a global WebSock
     globalThis.WebSocket = originalWebSocket;
   }
 });
+
+test("clientSession invokes moonlightClient.pairHost when session-ready includes pin and host is not yet paired", async () => {
+  let pairCalledWith = null;
+  const mockMoonlight = {
+    ...createMockMoonlightClient(),
+    isHostPaired: async () => false,
+    pairHost: async (opts) => {
+      pairCalledWith = opts;
+      return { ok: true };
+    },
+  };
+
+  const socket = createMockSocket();
+  const coordinator = createClientSessionCoordinator({
+    moonlightClient: mockMoonlight,
+    createWebSocket: () => socket,
+  });
+
+  const sessionPromise = coordinator.startSession({
+    hostAddress: "192.168.1.30",
+    hostPort: 47998,
+    clientDeviceId: "client-id",
+    clientDeviceName: "Client Laptop",
+    gameSlug: "openra",
+  });
+
+  socket.onopen();
+  socket.simulateServerMessage({ type: "pair-result", allowed: true });
+  socket.simulateServerMessage({
+    type: "session-ready",
+    sessionId: "sess-1",
+    host: "192.168.1.30",
+    port: 47989,
+    appName: "Desktop",
+    pin: "9988",
+  });
+
+  const res = await sessionPromise;
+  assert.equal(res.ok, true);
+  assert.deepEqual(pairCalledWith, { host: "192.168.1.30", pin: "9988" });
+  assert.equal(mockMoonlight.isStreaming(), true);
+  coordinator.stopSession();
+});
