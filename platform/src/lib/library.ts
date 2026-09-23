@@ -1,8 +1,9 @@
 import crypto from "crypto";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
+import LauncherCredential from "@/lib/models/LauncherCredential";
 
-/** Durable launcher bearer validity window (rotated on every handoff exchange). */
+/** Durable launcher bearer validity window, independent for each sign-in. */
 export const LAUNCHER_TOKEN_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 
 /** One-time deep-link handoff code lifetime. */
@@ -20,15 +21,51 @@ export function mintLauncherHandoffCode(): string {
   return crypto.randomBytes(24).toString("base64url");
 }
 
-/** Mint a new launcher token for a user (invalidates any previous token). */
+/** Mint an independent launcher token without signing out the user's other PCs. */
 export async function issueLauncherTokenForUser(userId: string): Promise<string> {
   await dbConnect();
   const token = mintLauncherToken();
-  await User.findByIdAndUpdate(userId, {
-    launcherTokenHash: hashLauncherToken(token),
-    launcherTokenCreatedAt: new Date(),
-  });
+  await LauncherCredential.create({ userId, tokenHash: hashLauncherToken(token) });
   return token;
+}
+
+/** Includes old single-token accounts so rollout does not invalidate their launcher. */
+export async function hasLauncherConnection(userId: string, legacyTokenHash?: string | null): Promise<boolean> {
+  if (legacyTokenHash) return true;
+  await dbConnect();
+  return Boolean(await LauncherCredential.exists({ userId }));
+}
+
+/** Revoke exactly one launcher, including an older single-token bearer. */
+export async function revokeLauncherToken(token: string): Promise<boolean> {
+  await dbConnect();
+  const tokenHash = hashLauncherToken(token);
+  const credential = await LauncherCredential.findOne({ tokenHash, revokedAt: null }).select("userId");
+  if (credential) {
+    await LauncherCredential.updateOne(
+      { userId: credential.userId, tokenHash, revokedAt: null },
+      { $set: { revokedAt: new Date() } }
+    );
+    return true;
+  }
+  const legacy = await User.updateOne(
+    { launcherTokenHash: tokenHash },
+    { $unset: { launcherTokenHash: 1, launcherTokenCreatedAt: 1 } }
+  );
+  return legacy.matchedCount > 0;
+}
+
+/** Explicit website disconnect: revoke every launcher under this account. */
+export async function revokeAllLauncherTokensForUser(userId: string): Promise<void> {
+  await dbConnect();
+  await LauncherCredential.updateMany(
+    { userId, revokedAt: null },
+    { $set: { revokedAt: new Date() } }
+  );
+  await User.updateOne(
+    { _id: userId },
+    { $unset: { launcherTokenHash: 1, launcherTokenCreatedAt: 1 } }
+  );
 }
 
 /** Issue a short-lived one-time handoff code (does not touch the durable bearer). */
@@ -70,7 +107,7 @@ export async function exchangeLauncherHandoffCode(
 
   if (!expiresAt || Date.now() > expiresAt) return null;
 
-  const firstConnect = !user.launcherTokenHash;
+  const firstConnect = !(await hasLauncherConnection(user._id.toString(), user.launcherTokenHash));
   const token = await issueLauncherTokenForUser(user._id.toString());
   return { userId: user._id.toString(), token, firstConnect };
 }
@@ -93,13 +130,23 @@ export async function userFromLauncherBearer(req: Request) {
   if (!match?.[1]) return null;
 
   await dbConnect();
-  const user = await User.findOne({
-    launcherTokenHash: hashLauncherToken(match[1].trim()),
-  }).select("+launcherTokenHash +launcherTokenCreatedAt _id disabled email username role tester");
+  const tokenHash = hashLauncherToken(match[1].trim());
+  const credential = await LauncherCredential.findOne({
+    tokenHash,
+    revokedAt: null,
+  }).select("userId createdAt");
+  if (credential) {
+    if (launcherTokenExpired(credential.createdAt as Date | undefined)) return null;
+    const user = await User.findById(credential.userId).select("_id disabled email username role tester");
+    return user && !user.disabled ? user : null;
+  }
 
-  if (!user || user.disabled) return null;
-  if (launcherTokenExpired(user.launcherTokenCreatedAt as Date | undefined)) return null;
-  return user;
+  // Legacy single-token bearer remains usable until it expires or is revoked.
+  const legacyUser = await User.findOne({ launcherTokenHash: tokenHash })
+    .select("+launcherTokenHash +launcherTokenCreatedAt _id disabled email username role tester");
+  if (!legacyUser || legacyUser.disabled) return null;
+  if (launcherTokenExpired(legacyUser.launcherTokenCreatedAt as Date | undefined)) return null;
+  return legacyUser;
 }
 
 export type LibraryEntryDTO = {
