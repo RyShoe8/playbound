@@ -6226,6 +6226,17 @@ async function fetchVerifiedControlProfile(slug, editionSlug) {
   }
 }
 
+async function availablePlayBoundControlsProfile(slug, editionSlug) {
+  const { hasControlsHost } = require("./services/couch/windowsVigem");
+  if (process.platform !== "win32" || couchHost?.getState?.()?.active || !hasControlsHost()) return null;
+  const outRunPilot = !app.isPackaged && slug === "outrun" && process.env.PLAYBOUND_CONTROLS_PILOT_OUTRUN === "1";
+  const profile = outRunPilot
+    ? require("./services/inputEngine/profiles/outrun.json")
+    : await fetchVerifiedControlProfile(slug, editionSlug);
+  const approved = profile?.status === "verified" && profile?.antiCheatCompatibility === "verified";
+  return (approved || outRunPilot) && profile?.inputStrategy === "keyboard_mouse" ? profile : null;
+}
+
 /** Tell the renderer whether its Gamepad API polling loop needs to run for PlayBound Controls. */
 function notifyPlayBoundControlsState(active) {
   if (win && !win.isDestroyed()) {
@@ -6247,15 +6258,10 @@ async function applyControllerConfig(slug, installDir, opts = {}) {
   gamepadBridge.deactivatePlayBoundControls();
   notifyPlayBoundControlsState(false);
   if (process.platform === "win32" && !couchHost?.getState?.()?.active && inputMode !== "keyboard" && inputMode !== "phone") {
-    // Local pilot only: the packaged launcher never activates an unverified
-    // recipe. This lets us drive the installed OutRun build before publishing
-    // the profile to the catalog.
-    const outRunPilot = !app.isPackaged && slug === "outrun" && process.env.PLAYBOUND_CONTROLS_PILOT_OUTRUN === "1";
-    const profile = outRunPilot
-      ? require("./services/inputEngine/profiles/outrun.json")
-      : await fetchVerifiedControlProfile(slug, opts?.editionSlug || null);
-    const approved = profile?.status === "verified" && profile?.antiCheatCompatibility === "verified";
-    if ((approved || outRunPilot) && profile?.inputStrategy === "keyboard_mouse" && gamepadBridge.activatePlayBoundControls(profile)) {
+    // The shared availability resolver also allows the explicit local OutRun
+    // pilot; packaged launchers still require a verified catalog profile.
+    const profile = await availablePlayBoundControlsProfile(slug, opts?.editionSlug || null);
+    if (profile && gamepadBridge.activatePlayBoundControls(profile)) {
       const key = `${profile.gameSlug}::${profile.editionSlug || ""}`;
       gamepadBridge.updateControlsSettings(loadSettings().controlOverrides?.[key] || {});
       notifyPlayBoundControlsState(true);
@@ -16317,6 +16323,11 @@ ipcMain.handle("update-playbound-controls-settings", (_event, partial) => {
   } };
   saveSettings(settings);
   return updated;
+});
+ipcMain.handle("get-playbound-controls-availability", async (_event, slug, editionSlug) => {
+  if (typeof slug !== "string" || !slug || slug.length > 120) return { available: false };
+  const profile = await availablePlayBoundControlsProfile(slug, editionSlug || null);
+  return { available: Boolean(profile), name: profile?.name || null };
 });
 ipcMain.handle("get-overlay-shortcut", () => ({
   accelerator: overlayShortcut(),

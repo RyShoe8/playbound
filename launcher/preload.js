@@ -275,6 +275,8 @@ contextBridge.exposeInMainWorld("playbound", {
   onCouchPeerSend: (cb) =>
     ipcRenderer.on("couch-peer-send", (_event, data) => cb(data || {})),
   getControllerSupport: (slug) => ipcRenderer.invoke("get-controller-support", slug),
+  getPlayBoundControlsAvailability: (slug, editionSlug) =>
+    ipcRenderer.invoke("get-playbound-controls-availability", slug, editionSlug || null),
 
   getInstallQueue: () => ipcRenderer.invoke("get-install-queue"),
   cancelInstallQueueItem: (slug, editionSlug) =>
