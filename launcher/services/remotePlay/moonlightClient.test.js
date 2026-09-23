@@ -13,21 +13,32 @@ const { buildStreamArgs, createMoonlightClient } = require("./moonlightClient");
 {
   const args = buildStreamArgs({ host: "192.168.1.50", appName: "Dune Legacy" });
   assert.deepStrictEqual(args, [
-    "stream",
-    "192.168.1.50",
-    "Dune Legacy",
     "--resolution",
     "1920x1080",
     "--fps",
     "60",
-    "--windowed",
+    "--display-mode",
+    "windowed",
+    "--quit-after",
+    "stream",
+    "192.168.1.50",
+    "Dune Legacy",
   ]);
 }
 
 {
-  const args = buildStreamArgs({ host: "192.168.1.50", appName: "Game", resolution: "1280x720", fps: 30 });
+  const args = buildStreamArgs({
+    host: "192.168.1.50",
+    appName: "Game",
+    resolution: "1280x720",
+    fps: 30,
+    displayMode: "fullscreen",
+  });
   assert.ok(args.includes("1280x720"));
   assert.ok(args.includes("30"));
+  assert.ok(args.includes("fullscreen"));
+  assert.ok(args.includes("--display-mode"));
+  assert.ok(args.includes("--quit-after"));
 }
 
 /* ── createMoonlightClient: missing binary reports "needs repair" ───────── */

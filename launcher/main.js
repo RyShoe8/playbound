@@ -14454,7 +14454,7 @@ ipcMain.handle("remote-play-respond-pairing", async (_event, requestId, allow) =
 
 ipcMain.handle("remote-play-start-stream", async (_event, opts) => {
   if (!remoteClientCoordinator) return { ok: false, error: "Remote Play client not initialized." };
-  const { hostAddress, hostPort, gameSlug, editionSlug, resolution, fps } = opts || {};
+  const { hostAddress, hostPort, gameSlug, editionSlug, resolution, fps, displayMode } = opts || {};
   if (!chooseLanAddress([hostAddress], os.networkInterfaces())) {
     return { ok: false, error: "Enter a host PC address on this home network." };
   }
@@ -14467,6 +14467,7 @@ ipcMain.handle("remote-play-start-stream", async (_event, opts) => {
     editionSlug,
     resolution,
     fps,
+    displayMode,
   });
 });
 
