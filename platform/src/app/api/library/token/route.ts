@@ -3,9 +3,13 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
+import LauncherCredential from "@/lib/models/LauncherCredential";
 import {
-  hashLauncherToken,
+  hasLauncherConnection,
   issueLauncherTokenForUser,
+  LAUNCHER_TOKEN_TTL_MS,
+  revokeAllLauncherTokensForUser,
+  revokeLauncherToken,
   userFromLauncherBearer,
 } from "@/lib/library";
 import { saveEvent } from "@/lib/telemetry/server/saveEvent";
@@ -20,7 +24,7 @@ export async function POST() {
   try {
     await dbConnect();
     const existing = await User.findById(session.user.id).select("+launcherTokenHash");
-    const firstConnect = !existing?.launcherTokenHash;
+    const firstConnect = !(await hasLauncherConnection(session.user.id, existing?.launcherTokenHash));
 
     const token = await issueLauncherTokenForUser(session.user.id);
 
@@ -43,37 +47,21 @@ export async function POST() {
   }
 }
 
-/**
- * Deliberately does not go through userFromLauncherBearer: revoking a token
- * must keep working even for a disabled account, so a ban never leaves a live
- * credential behind on the user's machine.
- */
-async function userIdFromBearer(req: Request): Promise<string | null> {
-  const header = req.headers.get("authorization") || "";
-  const match = /^Bearer\s+(.+)$/i.exec(header);
-  if (!match?.[1]) return null;
-  await dbConnect();
-  const user = await User.findOne({
-    launcherTokenHash: hashLauncherToken(match[1].trim()),
-  }).select("+launcherTokenHash _id");
-  return user?._id?.toString() ?? null;
-}
-
 export async function DELETE(req: Request) {
   const session = await getServerSession(authOptions);
-  let userId = session?.user?.id ?? null;
-  if (!userId) {
-    userId = await userIdFromBearer(req);
-  }
-  if (!userId) {
+  const bearer = /^Bearer\s+(.+)$/i.exec(req.headers.get("authorization") || "")?.[1]?.trim();
+  if (!bearer && !session?.user?.id) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   }
 
   try {
-    await dbConnect();
-    await User.findByIdAndUpdate(userId, {
-      $unset: { launcherTokenHash: 1, launcherTokenCreatedAt: 1 },
-    });
+    if (bearer) {
+      if (!(await revokeLauncherToken(bearer))) {
+        return NextResponse.json({ error: "Invalid launcher token" }, { status: 401 });
+      }
+    } else if (session?.user?.id) {
+      await revokeAllLauncherTokensForUser(session.user.id);
+    }
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Launcher token revoke error:", error);
@@ -122,11 +110,15 @@ export async function GET(req: Request) {
   try {
     await dbConnect();
     const user = await User.findById(session.user.id).select("+launcherTokenHash +launcherTokenCreatedAt");
+    const credential = await LauncherCredential.findOne({
+      userId: session.user.id,
+      revokedAt: null,
+      createdAt: { $gt: new Date(Date.now() - LAUNCHER_TOKEN_TTL_MS) },
+    }).sort({ createdAt: -1 }).select("createdAt");
+    const createdAt = credential?.createdAt || user?.launcherTokenCreatedAt || null;
     return NextResponse.json({
-      connected: Boolean(user?.launcherTokenHash),
-      createdAt: user?.launcherTokenCreatedAt
-        ? new Date(user.launcherTokenCreatedAt).toISOString()
-        : null,
+      connected: Boolean(credential || user?.launcherTokenHash),
+      createdAt: createdAt ? new Date(createdAt).toISOString() : null,
     });
   } catch (error) {
     console.error("Launcher token status error:", error);
