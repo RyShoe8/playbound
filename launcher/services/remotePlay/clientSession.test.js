@@ -7,6 +7,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { createClientSessionCoordinator, translateError } = require("./clientSession");
+const { createHostApiServer } = require("./hostApi");
 
 function createMockSocket() {
   const sent = [];
@@ -263,3 +264,28 @@ test("moonlight process unexpected exit triggers session cleanup", async () => {
   assert.equal(statuses[statuses.length - 1], "ended");
 });
 
+test("default client connects to the real host protocol without a global WebSocket", async () => {
+  const originalWebSocket = globalThis.WebSocket;
+  globalThis.WebSocket = undefined; // Electron's Node 20 main process has no global WebSocket.
+  const server = createHostApiServer({
+    pairingService: {
+      requestPairing: async () => true,
+      isTrusted: () => true,
+    },
+    onSessionRequest: async () => ({ ok: true, sessionId: "local-test", host: "127.0.0.1", port: 47989, appName: "openra" }),
+  });
+  const coordinator = createClientSessionCoordinator({ moonlightClient: createMockMoonlightClient() });
+  try {
+    const port = await server.start(0);
+    const result = await coordinator.startSession({
+      hostAddress: "127.0.0.1", hostPort: port, clientDeviceId: "client-test",
+      clientDeviceName: "Test laptop", gameSlug: "openra", timeoutMs: 3000,
+    });
+    assert.equal(result.ok, true, result.error);
+    assert.equal(result.sessionId, "local-test");
+  } finally {
+    coordinator.stopSession();
+    await server.stop();
+    globalThis.WebSocket = originalWebSocket;
+  }
+});
