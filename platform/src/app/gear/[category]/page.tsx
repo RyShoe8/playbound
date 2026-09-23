@@ -80,7 +80,7 @@ export default async function GearCategoryPage({ params }: { params: Promise<{ c
       </div>
 
       <div className="grid gap-6">
-        {items.map((gear: any) => (
+        {items.map((gear) => (
           <GearCard key={gear.slug} gear={gear} />
         ))}
       </div>

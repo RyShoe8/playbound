@@ -53,10 +53,7 @@ export function PremiumSelect({
   }, []);
 
   useEffect(() => {
-    if (!open) {
-      setSearchQuery("");
-      return;
-    }
+    if (!open) return;
     measure();
     /*
      * Fixed positioning does not follow the button, so re-measure on anything
@@ -164,7 +161,10 @@ export function PremiumSelect({
         disabled={disabled}
         aria-haspopup="listbox"
         aria-expanded={open}
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          if (!open) setSearchQuery("");
+          setOpen(!open);
+        }}
         className="flex h-10 w-full items-center justify-between rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground shadow-sm backdrop-blur transition-all duration-200 hover:bg-secondary/70 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50"
       >
         <span className="truncate">{displayLabel}</span>

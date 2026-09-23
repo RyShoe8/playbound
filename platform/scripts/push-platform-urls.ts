@@ -164,9 +164,9 @@ async function main() {
 
     console.log(`\n[CatalogGame] ${item.slug} ("${item.title}")`);
     console.log(`  Existing launcherInstall:`, {
-      url: (existingGame as any).launcherInstall?.url,
-      urlMac: (existingGame as any).launcherInstall?.urlMac,
-      urlLinux: (existingGame as any).launcherInstall?.urlLinux,
+      url: existingGame.launcherInstall?.url,
+      urlMac: existingGame.launcherInstall?.urlMac,
+      urlLinux: existingGame.launcherInstall?.urlLinux,
     });
     console.log(`  $set operation:`, setFields);
 

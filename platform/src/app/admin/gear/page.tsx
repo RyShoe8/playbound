@@ -52,7 +52,7 @@ export default async function AdminGearPage() {
                 </td>
               </tr>
             ) : (
-              gearItems.map((item: any) => (
+              gearItems.map((item) => (
                 <tr key={item.slug} className="border-b border-border last:border-0">
                   <td className="px-4 py-2.5">
                     <Link

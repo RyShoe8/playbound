@@ -1,23 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useLauncherOs } from "@/hooks/useLauncherOs";
+
+import { useState } from "react";
 import { Download } from "lucide-react";
 import {
   launcherDownloadUrlForOs,
   launcherOsLabel,
-  type LauncherOs,
 } from "@/lib/launcherDownload";
-import { detectLauncherOs } from "@/lib/openPlayboundDeepLink";
 import { shouldOfferLauncher } from "@/lib/mobilePlay";
 import { useDevice } from "@/hooks/useDevice";
 
 export function LauncherHeroDownload() {
   const device = useDevice();
-  const [os, setOs] = useState<LauncherOs>("windows");
+  const os = useLauncherOs();
 
-  useEffect(() => {
-    setOs(detectLauncherOs());
-  }, []);
 
   if (!shouldOfferLauncher(device.type)) {
     return (

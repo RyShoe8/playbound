@@ -1,5 +1,7 @@
 "use client";
 
+import { useLauncherOs } from "@/hooks/useLauncherOs";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -17,7 +19,6 @@ import {
 import {
   launcherDownloadUrlForOs,
   launcherOsLabel,
-  type LauncherOs,
 } from "@/lib/launcherDownload";
 import {
   detectLauncherOs,
@@ -50,7 +51,7 @@ export function LaunchGatewayClient({
   action = "join",
 }: Props) {
   const [status, setStatus] = useState<"launching" | "launched" | "downloading" | "idle">("launching");
-  const [os, setOs] = useState<LauncherOs>("windows");
+  const os = useLauncherOs();
 
   // Construct target deep link
   const deepLink = (() => {
@@ -74,9 +75,7 @@ export function LaunchGatewayClient({
   const webEventUrl = eventId ? `/events/${eventId}` : webGameUrl;
 
   useEffect(() => {
-    const detected = detectLauncherOs();
-    setOs(detected);
-    const downloadUrl = launcherDownloadUrlForOs(detected);
+    const downloadUrl = launcherDownloadUrlForOs(detectLauncherOs());
 
     // Automatically trigger deep link handoff on mount
     setStatus("launching");

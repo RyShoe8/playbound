@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { SectionHeader } from "@/components/ui/bits";
 import { useDiscordStore } from "@/stores/discordStore";
 
@@ -86,12 +87,12 @@ export function ConnectedAccounts({
                 </button>
               </div>
             ) : discordConfigured ? (
-              <a
+              <Link
                 href="/api/auth/discord/start"
                 className="inline-flex rounded-full bg-[#5865F2] px-4 py-2 text-xs font-bold text-white hover:brightness-110"
               >
                 Connect Discord
-              </a>
+              </Link>
             ) : null}
           </div>
         </div>

@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useLauncherOs } from "@/hooks/useLauncherOs";
+
+import { useState } from "react";
 import { FolderSearch, Loader2, Download } from "lucide-react";
 import { launcherLocateUrl } from "@/lib/launcher";
 import {
   launcherDownloadUrlForOs,
   launcherOsLabel,
-  type LauncherOs,
 } from "@/lib/launcherDownload";
 import {
-  detectLauncherOs,
   openPlayboundDeepLink,
 } from "@/lib/openPlayboundDeepLink";
 import { shouldOfferLauncher } from "@/lib/mobilePlay";
@@ -38,12 +38,9 @@ export function LocateGameButton({
 }: Props) {
   const device = useDevice();
   const [status, setStatus] = useState<"idle" | "trying" | "downloaded">("idle");
-  const [os, setOs] = useState<LauncherOs>("windows");
+  const os = useLauncherOs();
   const { track } = useTelemetry();
 
-  useEffect(() => {
-    setOs(detectLauncherOs());
-  }, []);
 
   // Only offer launcher locate to desktop devices
   if (!shouldOfferLauncher(device.type)) {

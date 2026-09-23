@@ -65,7 +65,7 @@ export default async function AdminNewGamePage({
     slug: d.slug,
     name: d.name,
   }));
-  const catalogGames = catalogGamesDocs.map((g: any) => ({
+  const catalogGames = catalogGamesDocs.map((g) => ({
     slug: String(g.slug),
     title: String(g.title),
     priceType: g.access?.priceType,
@@ -80,7 +80,7 @@ export default async function AdminNewGamePage({
         </p>
       </div>
       <GameEditorForm
-        key={fromSubmission ? `submission-${fromSubmission}` : `new-${Date.now()}`}
+        key={fromSubmission ? `submission-${fromSubmission}` : `new`}
         mode="create"
         initial={initial}
         developers={developers}

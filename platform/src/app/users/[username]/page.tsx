@@ -80,7 +80,7 @@ export default async function PublicUserProfilePage({ params }: Props) {
 
   const appearOffline = Boolean(user.preferences?.appearOffline);
   // Own profile shows real status; others see masked.
-  const presence = isSelf ? rawPresence : maskPresenceForOthers(rawPresence as any, appearOffline);
+  const presence = isSelf ? rawPresence : maskPresenceForOthers(rawPresence, appearOffline);
 
   let friendshipStatus: "none" | "outgoing_request" | "incoming_request" | "friends" | "blocked" =
     "none";

@@ -52,7 +52,7 @@ export default async function DeveloperGameEditPage({
   }
 
   // Prepare serializable game data for the form
-  const rawGame = doc as Record<string, any>;
+  const rawGame = doc;
   const serializableGame = {
     slug: String(rawGame.slug),
     title: String(rawGame.title),

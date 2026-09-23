@@ -28,6 +28,28 @@ const HEALTH_RANK: Record<GameHealthStatus, number> = { green: 0, yellow: 1, red
 /**
  * The admin games table, with search, status filtering, and inline status editing.
  */
+function SortableHeader({ label, sortCol, sortDir, handleSort }: { label: string; sortCol: string; sortDir: "asc" | "desc"; handleSort: (label: string) => void }) {
+return (
+  <th
+    className="px-4 py-3 font-semibold cursor-pointer select-none hover:bg-secondary/80 transition-colors"
+    onClick={() => handleSort(label)}
+  >
+    <div className="flex items-center gap-1">
+      {label}
+      {sortCol === label ? (
+        sortDir === "asc" ? (
+          <ArrowUp className="size-3 text-primary" />
+        ) : (
+          <ArrowDown className="size-3 text-primary" />
+        )
+      ) : (
+        <ArrowDown className="size-3 opacity-0" />
+      )}
+    </div>
+  </th>
+);
+}
+
 export function AdminGamesTable({
   games,
   editionCounts,
@@ -194,8 +216,8 @@ export function AdminGamesTable({
     }
 
     return result.slice().sort((a, b) => {
-      let aVal: any = 0;
-      let bVal: any = 0;
+      let aVal: string | number = 0;
+      let bVal: string | number = 0;
 
       switch (sortCol) {
         case "Game":
@@ -267,25 +289,6 @@ export function AdminGamesTable({
     return filtered.slice(start, start + pageSize);
   }, [filtered, page, pageSize]);
 
-  const SortableHeader = ({ label }: { label: string }) => (
-    <th
-      className="px-4 py-3 font-semibold cursor-pointer select-none hover:bg-secondary/80 transition-colors"
-      onClick={() => handleSort(label)}
-    >
-      <div className="flex items-center gap-1">
-        {label}
-        {sortCol === label ? (
-          sortDir === "asc" ? (
-            <ArrowUp className="size-3 text-primary" />
-          ) : (
-            <ArrowDown className="size-3 text-primary" />
-          )
-        ) : (
-          <ArrowDown className="size-3 opacity-0" />
-        )}
-      </div>
-    </th>
-  );
 
   return (
     <div className="space-y-3">
@@ -345,19 +348,19 @@ export function AdminGamesTable({
         <table className="w-full min-w-[640px] text-sm">
           <thead>
             <tr className="border-b border-border bg-secondary/40 text-left text-xs tracking-wide text-muted-foreground uppercase">
-              <SortableHeader label="Game" />
-              <SortableHeader label="Slug" />
-              <SortableHeader label="Mods" />
-              <SortableHeader label="Installs" />
-              <SortableHeader label="MP" />
-              <SortableHeader label="Controller" />
-              <SortableHeader label="Install" />
-              <SortableHeader label="Join" />
-              <SortableHeader label="Party" />
-              <SortableHeader label="Status" />
-              <SortableHeader label="Complete" />
-              <SortableHeader label="Published" />
-              <SortableHeader label="Updated" />
+              <SortableHeader label="Game" sortCol={sortCol} sortDir={sortDir} handleSort={handleSort} />
+              <SortableHeader label="Slug" sortCol={sortCol} sortDir={sortDir} handleSort={handleSort} />
+              <SortableHeader label="Mods" sortCol={sortCol} sortDir={sortDir} handleSort={handleSort} />
+              <SortableHeader label="Installs" sortCol={sortCol} sortDir={sortDir} handleSort={handleSort} />
+              <SortableHeader label="MP" sortCol={sortCol} sortDir={sortDir} handleSort={handleSort} />
+              <SortableHeader label="Controller" sortCol={sortCol} sortDir={sortDir} handleSort={handleSort} />
+              <SortableHeader label="Install" sortCol={sortCol} sortDir={sortDir} handleSort={handleSort} />
+              <SortableHeader label="Join" sortCol={sortCol} sortDir={sortDir} handleSort={handleSort} />
+              <SortableHeader label="Party" sortCol={sortCol} sortDir={sortDir} handleSort={handleSort} />
+              <SortableHeader label="Status" sortCol={sortCol} sortDir={sortDir} handleSort={handleSort} />
+              <SortableHeader label="Complete" sortCol={sortCol} sortDir={sortDir} handleSort={handleSort} />
+              <SortableHeader label="Published" sortCol={sortCol} sortDir={sortDir} handleSort={handleSort} />
+              <SortableHeader label="Updated" sortCol={sortCol} sortDir={sortDir} handleSort={handleSort} />
               <th className="px-4 py-3 font-semibold" />
             </tr>
           </thead>

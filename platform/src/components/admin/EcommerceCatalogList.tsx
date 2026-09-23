@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { EcommerceMatchButton } from "@/components/admin/EcommerceMatchButton";
 import { EcommerceSuggestionActions } from "@/components/admin/EcommerceSuggestionActions";
@@ -35,11 +35,13 @@ function formatPrice(cents: number): string {
 export function EcommerceCatalogList({ games }: { games: EcommerceGameRow[] }) {
   const [query, setQuery] = useState("");
   const [rows, setRows] = useState(games);
+  const [previousGames, setPreviousGames] = useState(games);
   const [busyUrl, setBusyUrl] = useState<string | null>(null);
 
-  useEffect(() => {
+  if (games !== previousGames) {
+    setPreviousGames(games);
     setRows(games);
-  }, [games]);
+  }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useLauncherOs } from "@/hooks/useLauncherOs";
+
+import { useState } from "react";
 import Link from "next/link";
 import { Download, Loader2, MonitorPlay, Play } from "lucide-react";
 import type { Game } from "@/lib/data/types";
@@ -9,10 +11,8 @@ import { launcherInstallUrl, launcherPlayUrl } from "@/lib/launcher";
 import {
   launcherDownloadUrlForOs,
   launcherOsLabel,
-  type LauncherOs,
 } from "@/lib/launcherDownload";
 import {
-  detectLauncherOs,
   openPlayboundDeepLink,
 } from "@/lib/openPlayboundDeepLink";
 import { useTelemetry } from "@/lib/telemetry";
@@ -60,14 +60,11 @@ export function PlayCta({
   const { device } = useCompatibilityFilter();
   const { track } = useTelemetry();
   const [status, setStatus] = useState<"idle" | "trying" | "downloaded">("idle");
-  const [os, setOs] = useState<LauncherOs>("windows");
+  const os = useLauncherOs();
   const isInstalled = Boolean(installed || (game as { installed?: boolean }).installed);
   const paid = directPurchaseRequired(game.access);
   const installLabel = isInstalled ? "Play" : paid ? "Install" : "Get It Free";
 
-  useEffect(() => {
-    setOs(detectLauncherOs());
-  }, []);
 
   const className = cn(
     "inline-flex items-center gap-2 rounded-full font-bold transition-all hover:brightness-110 active:translate-y-px cursor-pointer select-none",
@@ -258,7 +255,8 @@ export function GameCard({
 }) {
   const count = playingNow ?? 0;
   const isBaseGameReq = isBaseGameRequirement(game.access);
-  const price = isBaseGameReq ? "FREE" : accessPriceLabel(useGameTier(game.slug).fromPriceCents);
+  const tier = useGameTier(game.slug);
+  const price = isBaseGameReq ? "FREE" : accessPriceLabel(tier.fromPriceCents);
   const displayEditions = getDisplayEditionsForGame(game.slug);
 
   return (

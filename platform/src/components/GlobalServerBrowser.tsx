@@ -276,10 +276,7 @@ export function GlobalServerBrowser({
     return list;
   }, [games, installedOnly, installedGames, mode, device.type]);
 
-  const effectiveGameSlug = useMemo(
-    () => (visibleGames.some((g) => g.slug === gameSlug) ? gameSlug : ""),
-    [visibleGames, gameSlug]
-  );
+  const effectiveGameSlug = visibleGames.some((g) => g.slug === gameSlug) ? gameSlug : "";
 
   // Load editions when game changes.
   useEffect(() => {

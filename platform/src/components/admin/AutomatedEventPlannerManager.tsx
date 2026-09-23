@@ -103,10 +103,10 @@ export function AutomatedEventPlannerManager() {
   const [logs, setLogs] = useState<MatchLog[]>([]);
   const [hostConfigured, setHostConfigured] = useState(false);
   const [botConfigured, setBotConfigured] = useState(false);
+  const [nowMs, setNowMs] = useState(() => Date.now());
 
   const loadData = useCallback(async (isSilent = false) => {
     try {
-      if (!isSilent) setLoading(true);
       const res = await fetch("/api/admin/connect/automated-events");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
@@ -147,6 +147,7 @@ export function AutomatedEventPlannerManager() {
   // Silent periodic refresh for countdown timers (without unmounting the UI)
   useEffect(() => {
     const timer = setInterval(() => {
+      setNowMs(Date.now());
       if (
         config?.activeSession?.status === "live" ||
         config?.activeSession?.status === "scheduled"
@@ -367,12 +368,12 @@ export function AutomatedEventPlannerManager() {
     ? new Date(config.activeSession.startsAt)
     : null;
 
-  const remainingMs = sessionEndsAt ? sessionEndsAt.getTime() - Date.now() : 0;
+  const remainingMs = sessionEndsAt ? sessionEndsAt.getTime() - nowMs : 0;
   const remainingMins = Math.max(0, Math.ceil(remainingMs / (60 * 1000)));
   const remainingHours = Math.floor(remainingMins / 60);
   const remainingMinsRemainder = remainingMins % 60;
 
-  const startsInMs = sessionStartsAt ? sessionStartsAt.getTime() - Date.now() : 0;
+  const startsInMs = sessionStartsAt ? sessionStartsAt.getTime() - nowMs : 0;
   const startsInMins = Math.max(0, Math.ceil(startsInMs / (60 * 1000)));
   const startsInHours = Math.floor(startsInMins / 60);
   const startsInMinsRemainder = startsInMins % 60;
@@ -442,7 +443,10 @@ export function AutomatedEventPlannerManager() {
 
         <div className="flex flex-wrap items-center gap-3">
           <button
-            onClick={() => loadData(false)}
+            onClick={() => {
+              setLoading(true);
+              void loadData(false);
+            }}
             disabled={loading}
             className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3.5 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
           >
