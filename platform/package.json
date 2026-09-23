@@ -28,6 +28,8 @@
     "migrate:review-index:apply": "tsx scripts/migrate-review-index.ts --apply --soft-fail",
     "migrate:library-platform": "tsx scripts/migrate-library-platform.ts",
     "migrate:library-platform:apply": "tsx scripts/migrate-library-platform.ts --apply --soft-fail",
+    "migrate:hardware-profile-device-index": "tsx scripts/migrate-hardware-profile-device-index.ts",
+    "migrate:hardware-profile-device-index:apply": "tsx scripts/migrate-hardware-profile-device-index.ts --apply --soft-fail",
     "migrate:add-singleplayer-feature": "tsx scripts/migrate-add-singleplayer-feature.ts",
     "migrate:add-singleplayer-feature:apply": "tsx scripts/migrate-add-singleplayer-feature.ts --apply --soft-fail",
     "migrate:cop-anomaly-to-stalker-anomaly": "tsx scripts/migrate-cop-anomaly-to-stalker-anomaly.ts",

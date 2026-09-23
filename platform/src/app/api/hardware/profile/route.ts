@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
-import UserHardwareProfile from "@/lib/models/UserHardwareProfile";
+import UserHardwareProfile, { PRIMARY_DEVICE_ID } from "@/lib/models/UserHardwareProfile";
 import HardwareGpu from "@/lib/models/HardwareGpu";
 import { getFriendsUserId } from "@/lib/friendsAuth";
 import { hardwareProfilePayloadSchema } from "@/lib/hardware/schema";
@@ -10,6 +10,8 @@ import { inferGpuTierFromName } from "@/lib/hardware/tiers";
 import { saveEvent } from "@/lib/telemetry/server/saveEvent";
 
 async function publicProfile(doc: {
+  deviceId?: string;
+  deviceName?: string | null;
   collectedAt: Date;
   os: Record<string, unknown>;
   cpu: Record<string, unknown>;
@@ -36,6 +38,8 @@ async function publicProfile(doc: {
   }
 
   return {
+    deviceId: doc.deviceId || PRIMARY_DEVICE_ID,
+    deviceName: doc.deviceName ?? null,
     collectedAt: doc.collectedAt?.toISOString?.() ?? doc.collectedAt,
     updatedAt: doc.updatedAt?.toISOString?.() ?? null,
     os: doc.os,
@@ -69,13 +73,19 @@ async function publicProfile(doc: {
   };
 }
 
+/** All three verbs default to PRIMARY_DEVICE_ID when the caller (older launcher, or the website) doesn't yet know about devices — same row every such caller has always used. */
+function deviceIdFrom(url: URL): string {
+  return url.searchParams.get("deviceId")?.trim() || PRIMARY_DEVICE_ID;
+}
+
 export async function GET(req: Request) {
   const userId = await getFriendsUserId(req);
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   await dbConnect();
-  const doc = await UserHardwareProfile.findOne({ userId }).lean();
+  const deviceId = deviceIdFrom(new URL(req.url));
+  const doc = await UserHardwareProfile.findOne({ userId, deviceId }).lean();
   if (!doc) {
     return NextResponse.json({ profile: null });
   }
@@ -111,13 +121,16 @@ export async function PUT(req: Request) {
       };
     });
 
-    const existing = await UserHardwareProfile.findOne({ userId });
+    const deviceId = payload.deviceId || PRIMARY_DEVICE_ID;
+    const existing = await UserHardwareProfile.findOne({ userId, deviceId });
     const isCreate = !existing;
 
     const doc = await UserHardwareProfile.findOneAndUpdate(
-      { userId },
+      { userId, deviceId },
       {
         $set: {
+          deviceId,
+          ...(payload.deviceName !== undefined ? { deviceName: payload.deviceName } : {}),
           schemaVersion: 1,
           collectedAt: new Date(payload.collectedAt),
           os: payload.os,
@@ -174,10 +187,11 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   await dbConnect();
-  await UserHardwareProfile.deleteOne({ userId });
+  const deviceId = deviceIdFrom(new URL(req.url));
+  await UserHardwareProfile.deleteOne({ userId, deviceId });
   void saveEvent({
     event: "hardware_profile_deleted",
-    properties: {},
+    properties: { deviceId },
     userId,
   });
   return NextResponse.json({ success: true });

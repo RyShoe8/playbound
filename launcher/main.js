@@ -15185,6 +15185,29 @@ function shouldSyncHardwareProfile(settings, force = false) {
   return lastDate !== today; // 2. First time user loads the launcher for the day
 }
 
+/**
+ * A stable per-install id for PlayBound Remote device identity — deliberately
+ * separate from telemetry.js's `analyticsId`, which is explicitly anonymous
+ * and not tied to an account. This one *is* tied to the account (it's how
+ * "Ryan's Gaming PC" gets recognized as the same trusted device across
+ * sessions), so the two must never be the same value or a privacy-scoped id
+ * would leak into an account-scoped one.
+ */
+function getRemoteDeviceId() {
+  const settings = loadSettings();
+  const existing = String(settings.remoteDeviceId || "");
+  if (existing.length >= 10) return existing;
+  const id = crypto.randomUUID();
+  saveSettings({ ...settings, remoteDeviceId: id });
+  return id;
+}
+
+/** User-editable in Settings → Remote Play once that UI exists; falls back to the OS hostname. */
+function getRemoteDeviceName() {
+  const settings = loadSettings();
+  return settings.remoteDeviceName || os.hostname() || "This PC";
+}
+
 async function syncHardwareProfile({ quiet = false, force = false } = {}) {
   const settings = loadSettings();
   if (!settings.launcherToken) {
@@ -15202,7 +15225,11 @@ async function syncHardwareProfile({ quiet = false, force = false } = {}) {
     const res = await apiFetch(`${getApiBase()}/api/hardware/profile`, {
       method: "PUT",
       headers: launcherApiHeaders({ "content-type": "application/json" }),
-      body: JSON.stringify(profile),
+      body: JSON.stringify({
+        ...profile,
+        deviceId: getRemoteDeviceId(),
+        deviceName: getRemoteDeviceName(),
+      }),
     });
     const data = await res.json().catch(() => null);
     if (!res.ok) {
