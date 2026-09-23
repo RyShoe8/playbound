@@ -13180,6 +13180,11 @@ ipcMain.handle("open-couch-game-view", async (_event, rawUrl) => {
         // Only this window — not the main launcher UI.
         webSecurity: false,
         allowRunningInsecureContent: true,
+        // The stream's audio track must play unmuted without the player
+        // having to click into the page first — this is PlayBound's own
+        // trusted content in a dedicated window, not arbitrary web content,
+        // so relaxing Chromium's autoplay gesture requirement here is safe.
+        autoplayPolicy: "no-user-gesture-required",
       },
     });
     couchGameViewWin.on("closed", () => {
@@ -17346,7 +17351,13 @@ if (gotLock) {
           const windowSource = slug ? await findGameWindowSource(slug, 4, 400) : null;
           if (windowSource) {
             console.log("[couch] display capture → window", windowSource.name || windowSource.id);
-            callback({ video: windowSource });
+            // "loopback" is Electron's special-cased audio value for this
+            // handler — WASAPI system-audio capture on Windows. There is no
+            // way to scope it to one window's audio specifically; capturing
+            // everything the system is currently playing is the accepted
+            // trade-off game-streaming tools make here, and in practice the
+            // game is the only meaningful audio source while it's running.
+            callback({ video: windowSource, audio: "loopback" });
             return;
           }
           const sources = await desktopCapturer.getSources({
@@ -17361,7 +17372,7 @@ if (gotLock) {
               "display_id=",
               screenSource.display_id
             );
-            callback({ video: screenSource });
+            callback({ video: screenSource, audio: "loopback" });
             return;
           }
           callback({});

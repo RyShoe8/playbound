@@ -275,6 +275,40 @@ async function attachDisplayTracks(pc) {
       if (!already) pc.addTrack(track, display);
     }
     applyVideoEncodePrefs(pc);
+
+    // Best-effort: "loopback" capture on the host may come back video-only
+    // (see hostDisplayStream.js) — a client that doesn't offer an audio
+    // m-line simply gets nothing attached here, same as no track existing.
+    const audioTrack = display.getAudioTracks()[0];
+    if (audioTrack && audioTrack.readyState !== "ended") {
+      let audioTransceiver = transceivers.find(
+        (t) =>
+          t.receiver?.track?.kind === "audio" ||
+          t.sender?.track?.kind === "audio" ||
+          t.mid === "audio"
+      );
+      if (!audioTransceiver) {
+        audioTransceiver = transceivers.find(
+          (t) =>
+            t !== videoTransceiver &&
+            (t.direction === "recvonly" || t.direction === "inactive")
+        );
+      }
+      if (audioTransceiver) {
+        try {
+          audioTransceiver.direction = "sendonly";
+        } catch {
+          /* direction may already be sendrecv */
+        }
+        if (audioTransceiver.sender?.replaceTrack) {
+          await audioTransceiver.sender.replaceTrack(audioTrack);
+        }
+      } else {
+        const senders = pc.getSenders();
+        const already = senders.some((s) => s.track && s.track.id === audioTrack.id);
+        if (!already) pc.addTrack(audioTrack, display);
+      }
+    }
     return true;
   } catch (err) {
     console.warn("[couch] could not attach display track:", err?.message || err);
