@@ -959,16 +959,16 @@ async function renderGameDetailView(slug, opts = {}) {
                 : ""
             }
             ${
-              editions.length > 0
+              editions.length > 1
                 ? `<section class="detail-section" id="detail-editions-sec">
                      <h2 class="detail-section-title">Available Editions</h2>
-                     <p class="view-sub" style="margin-top:-6px;margin-bottom:12px">${editions.length === 1 ? "A community edition is" : `${editions.length} editions are`} available for ${escapeHtml(detail.title)}. Each installs separately.</p>
+                     <p class="view-sub" style="margin-top:-6px;margin-bottom:12px">${editions.length} editions are available for ${escapeHtml(detail.title)}. Each installs separately.</p>
                      <div class="detail-editions-grid" id="detail-editions-list"></div>
                    </section>`
                 : ""
             }
 
-            <section class="detail-section">
+            <section class="detail-section detail-about-card">
               <h2 class="detail-section-title">About ${escapeHtml(detail.title)}</h2>
               ${(() => {
                 const about =
