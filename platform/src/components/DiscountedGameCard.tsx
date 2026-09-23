@@ -3,9 +3,14 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ExternalLink, Tag } from "lucide-react";
+import { ExternalLink, Tag, Clock } from "lucide-react";
 import type { DiscountedGame } from "@/lib/dealsShared";
-import { formatCents, cleanDealTitle } from "@/lib/dealsShared";
+import {
+  formatCents,
+  cleanDealTitle,
+  inferGameGenres,
+  formatDetailedTimeLeft,
+} from "@/lib/dealsShared";
 import { Badge } from "@/components/ui/bits";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +44,8 @@ export function DiscountedGameCard({
   const [imgFailed, setImgFailed] = useState(false);
   const [from, to] = game.art ? [game.art.from, game.art.to] : ["#1e1b4b", "#312e81"];
   const title = cleanDealTitle(game.title);
+  const genres = game.genres?.length ? game.genres : inferGameGenres(title);
+  const expiry = formatDetailedTimeLeft(game.endDate);
 
   return (
     <div
@@ -73,19 +80,27 @@ export function DiscountedGameCard({
 
       <div className="flex flex-1 flex-col gap-2 p-3">
         <p className="font-bold leading-tight">{title}</p>
-        {game.genres.length > 0 && (
+        {genres.length > 0 && (
           <p className="line-clamp-1 text-xs leading-relaxed text-muted-foreground">
-            {game.genres.slice(0, 3).join(" · ")}
+            {genres.slice(0, 3).join(" · ")}
           </p>
         )}
 
-        <div className="mt-auto flex items-baseline gap-2 pt-1">
-          <span className="text-lg font-extrabold">
-            {formatCents(game.currentPriceCents, game.currency)}
-          </span>
-          <span className="text-xs text-muted-foreground line-through">
-            {formatCents(game.regularPriceCents, game.currency)}
-          </span>
+        <div className="mt-auto flex items-baseline justify-between gap-2 pt-1">
+          <div className="flex items-baseline gap-2">
+            <span className="text-lg font-extrabold">
+              {formatCents(game.currentPriceCents, game.currency)}
+            </span>
+            <span className="text-xs text-muted-foreground line-through">
+              {formatCents(game.regularPriceCents, game.currency)}
+            </span>
+          </div>
+          {expiry && (
+            <span className="flex items-center gap-1 text-[11px] font-medium text-amber-400">
+              <Clock className="size-3" />
+              {expiry}
+            </span>
+          )}
         </div>
 
         {game.storeUrl && (

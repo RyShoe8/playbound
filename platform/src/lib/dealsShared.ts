@@ -66,7 +66,40 @@ export type DiscountedGame = {
    * typed provider rather than a free-text `access.offers[].retailer` field.
    */
   storeKey: string | null;
+  /** ISO date string when the deal or offer expires, if known. */
+  endDate?: string | null;
 };
+
+export { inferGameGenres } from "./storeDiscounts/genreInference";
+
+/**
+ * Format remaining time until expiration in a clean "Days, hours minutes" string.
+ * Examples: "3d 14h 22m left", "6h 45m left", "30m left".
+ * Returns null if endDate is missing, invalid, or already expired.
+ */
+export function formatDetailedTimeLeft(
+  endDate: Date | string | null | undefined
+): string | null {
+  if (!endDate) return null;
+  const end = typeof endDate === "string" ? new Date(endDate) : endDate;
+  if (isNaN(end.getTime())) return null;
+  const now = new Date();
+  const diffMs = end.getTime() - now.getTime();
+  if (diffMs <= 0) return null;
+
+  const totalMinutes = Math.floor(diffMs / (1000 * 60));
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+
+  if (days > 0) {
+    return `${days}d ${hours}h ${minutes}m left`;
+  }
+  if (hours > 0) {
+    return `${hours}h ${minutes}m left`;
+  }
+  return `${Math.max(1, minutes)}m left`;
+}
 
 /** Whole percent off, floored. 999 → 599 is 40%, not 40.04%. */
 export function percentOff(regularCents: number, currentCents: number): number {

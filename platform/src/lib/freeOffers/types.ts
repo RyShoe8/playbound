@@ -56,6 +56,7 @@ export interface FreeOfferRecord {
   developer: string | null;
   publisher: string | null;
   platforms: string[];
+  genres?: string[];
   isBaseGame: boolean;
   videos: string[];
   redemptionPlatform: string | null;

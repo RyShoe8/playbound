@@ -16,6 +16,7 @@ export const metadata: Metadata = pageMetadata({
   description:
     "Track all active and upcoming free game promotions from Epic Games Store, Steam, GOG, Amazon Prime Gaming, and Alienware Arena. Claim them before they expire.",
   path: "/free-games",
+  images: ["/free-games/opengraph-image"],
 });
 
 export default function FreeGamesLayout({
