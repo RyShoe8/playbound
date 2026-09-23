@@ -7,6 +7,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { controlProfileSchema } from "../src/lib/controlProfiles/schema";
 import { testingControlProfiles } from "./control-profiles/wave-1";
+import { testingControlProfilesWave2 } from "./control-profiles/wave-2";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const platformDir = resolve(scriptDir, "..");
@@ -46,6 +47,7 @@ async function main() {
       notes: "Physically tested in OutRun 4.0 on Windows with a DualSense controller. Standalone open-source remake; no anti-cheat integration. D-pad and left stick both steer by choice; Start confirms.",
     }),
     ...testingControlProfiles.map((profile) => controlProfileSchema.parse(profile)),
+    ...testingControlProfilesWave2.map((profile) => controlProfileSchema.parse(profile)),
   ];
   const keys = profiles.map((p) => `${p.gameSlug}::${p.editionSlug || ""}`);
   if (new Set(keys).size !== keys.length) throw new Error("Duplicate profile target in the wave.");

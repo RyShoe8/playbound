@@ -191,6 +191,18 @@ describe("insert-catalog-wave allowlists", () => {
         "heroes-of-might-and-magic-3-complete",
         "dungeon-keeper-gold",
         "outrun",
+        // PlayBound Controls wave-2, 2026-09-23 — see the allowlist's own comment.
+        "old-school-runescape",
+        "wolfenstein-enemy-territory",
+        "openciv3",
+        "tes-arena",
+        "star-wars-galaxies",
+        "freeciv",
+        "warzone-2100",
+        "0ad",
+        "battle-for-wesnoth",
+        "openra",
+        "bzflag",
       ].sort()
     );
     expect(PATCH_GAME_FIELDS["super-nova-strike"]).toContain("androidStoreUrl");
@@ -393,7 +405,8 @@ describe("insert-catalog-wave allowlists", () => {
     expect(THE_DARK_MOD_SLUG).toBe("the-dark-mod");
     expect(theDarkModPatchSource.platforms).toEqual(["Windows", "macOS", "Linux"]);
     expect(theDarkModPatchSource.launcherInstall.urlLinux).toMatch(/linux64/);
-    expect(theDarkModPatchSource.features).toContain("Controller Support");
+    expect(theDarkModPatchSource.features).toContain("PlayBound Controls");
+    expect(theDarkModPatchSource.features).not.toContain("Controller Support");
     expect(
       (theDarkModPatchSource.launcherInstall as { urlMac?: string }).urlMac
     ).toBeUndefined();

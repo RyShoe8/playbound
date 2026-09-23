@@ -34,6 +34,7 @@ Object.assign(VK, {
   ArrowRight: 0x27,
   PageUp: 0x21,
   PageDown: 0x22,
+  Grave: 0xc0, // VK_OEM_3 — the `~` key, e.g. Star Wars Galaxies' interact bind.
   F1: 0x70,
   F2: 0x71,
   F3: 0x72,

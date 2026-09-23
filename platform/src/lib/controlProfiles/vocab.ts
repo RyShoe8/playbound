@@ -55,6 +55,7 @@ export const VK_NAMES = [
   "ArrowRight",
   "PageUp",
   "PageDown",
+  "Grave",
   "F1",
   "F2",
   "F3",
