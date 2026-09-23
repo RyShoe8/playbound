@@ -94,8 +94,8 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   mrboom: ["releaseYear"],
   "rollercoaster-tycoon": ["releaseYear", "features"],
   "thief-2-the-metal-age": ["releaseYear", "features"],
-  "stronghold-crusader-hd": ["releaseYear"],
-  triplea: ["releaseYear"],
+  "stronghold-crusader-hd": ["releaseYear", "features"],
+  triplea: ["releaseYear", "features"],
   "star-wars-knights-of-the-old-republic": ["releaseYear"],
   "star-wars-knights-of-the-old-republic-ii-the-sith-lords": ["releaseYear"],
   // Stored 2019 was the 2.0 "Elara" release, not the original.
@@ -460,6 +460,24 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   "heroes-of-might-and-magic-3-complete": ["features"],
   "dungeon-keeper-gold": ["features"],
   outrun: ["features"],
+
+  /*
+   * PlayBound Controls wave-2, 2026-09-23 — see
+   * platform/scripts/control-profiles/wave-2.ts. Also corrects
+   * "Controller Support" on wolfenstein-enemy-territory, same reasoning as
+   * the wave-1 correction above.
+   */
+  "old-school-runescape": ["features"],
+  "wolfenstein-enemy-territory": ["features"],
+  openciv3: ["features"],
+  "tes-arena": ["features"],
+  "star-wars-galaxies": ["features"],
+  freeciv: ["features"],
+  "warzone-2100": ["features"],
+  "0ad": ["features"],
+  "battle-for-wesnoth": ["features"],
+  openra: ["features"],
+  bzflag: ["features"],
 };
 
 /** Existing editions: $set ONLY these fields. */
