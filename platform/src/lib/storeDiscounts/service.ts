@@ -19,7 +19,7 @@ import { getStoreAffiliateMap } from "@/lib/commerce/affiliates";
 import { storeSlugToRetailer } from "@/lib/commerce/stores";
 import { withStoreAffiliate } from "@/lib/access/storeUrls";
 import { withOutboundUtm } from "@/lib/utm";
-import type { DiscountedGame } from "@/lib/dealsShared";
+import { cleanDealTitle, upgradeCoverImage, type DiscountedGame } from "@/lib/dealsShared";
 import { DISCOUNT_STORE_SLUGS, type DiscountStoreSlug } from "./types";
 
 type LeanDoc = Record<string, unknown>;
@@ -61,12 +61,14 @@ async function toRecord(
 ): Promise<DiscountedGame> {
   const store = doc.store as DiscountStoreSlug;
   const directUrlAvailable = (doc.metadata as Record<string, unknown> | undefined)?.directUrlAvailable !== false;
+  const rawCover = (doc.coverImage as string) || null;
+  const steamAppId = (doc.metadata as Record<string, unknown> | undefined)?.steamAppID as string | undefined;
 
   return {
     slug: (doc.matchedGameSlug as string) || null,
-    title: String(doc.title),
+    title: cleanDealTitle(String(doc.title)),
     tagline: null,
-    coverImage: (doc.coverImage as string) || null,
+    coverImage: upgradeCoverImage(rawCover, steamAppId),
     art: null,
     genres: (doc.genres as string[]) ?? [],
     regularPriceCents: Number(doc.regularPriceCents),

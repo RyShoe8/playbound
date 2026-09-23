@@ -1,4 +1,5 @@
 import type { DiscountProviderAdapter, DiscoveredDiscount } from "../types";
+import { cleanDealTitle } from "@/lib/dealsShared";
 
 /**
  * GOG deep-discount adapter.
@@ -100,7 +101,7 @@ function toDiscoveredDiscount(product: GogCatalogProduct): DiscoveredDiscount | 
 
   return {
     externalId: String(product.id),
-    title: product.title.trim(),
+    title: cleanDealTitle(product.title),
     store: "gog",
     storeUrl,
     coverImage: product.coverHorizontal || product.coverVertical || null,

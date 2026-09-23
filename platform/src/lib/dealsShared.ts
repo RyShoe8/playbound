@@ -79,3 +79,50 @@ export function formatCents(cents: number, currency = "USD"): string {
   const symbol = currency === "USD" ? "$" : "";
   return `${symbol}${(cents / 100).toFixed(2)}`;
 }
+
+/**
+ * Clean up raw titles from storefront feeds and aggregators.
+ *
+ * Fixes:
+ * - Underscore-separated words like "Watch_Dogs 2" → "Watch Dogs 2"
+ * - Redundant trademark / copyright glyphs: ®, ™, ©, &trade;, &reg;
+ * - HTML entities: &amp;, &#39;, &quot;, &apos;
+ * - Multiple consecutive spaces
+ */
+export function cleanDealTitle(raw: string | null | undefined): string {
+  if (!raw) return "";
+  return raw
+    .replace(/&amp;/g, "&")
+    .replace(/&trade;/gi, "")
+    .replace(/&reg;/gi, "")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/[\u00AE\u2122\u00A9]/g, "") // ® ™ ©
+    .replace(/_/g, " ") // e.g. "Watch_Dogs 2" → "Watch Dogs 2"
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Upgrades low-res store thumbnails (e.g. Steam capsule_231x87) to full-size header images.
+ * Also constructs a high-res Steam header image when a steamAppID is present.
+ */
+export function upgradeCoverImage(
+  coverImage: string | null | undefined,
+  steamAppId?: string | null
+): string | null {
+  if (steamAppId && /^\d+$/.test(String(steamAppId).trim())) {
+    return `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${String(steamAppId).trim()}/header.jpg`;
+  }
+  if (!coverImage) return null;
+  const trimmed = coverImage.trim();
+  if (!trimmed) return null;
+
+  // Upgrade low-res Steam capsule thumbnails to full header.jpg
+  if (/steamstatic\.com/i.test(trimmed)) {
+    const upgraded = trimmed.replace(/\/capsule_\d+x\d+[^.]*\.jpg/i, "/header.jpg");
+    if (upgraded !== trimmed) return upgraded;
+  }
+
+  return trimmed;
+}

@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { Gift, ExternalLink, Clock } from "lucide-react";
 import type { FreeOfferRecord } from "@/lib/freeOffers/types";
+import { cleanDealTitle, upgradeCoverImage } from "@/lib/dealsShared";
 import {
   offerTypeLabel,
   claimCtaLabel,
@@ -10,7 +12,6 @@ import {
   storeShortName,
   storeColor,
 } from "@/lib/freeOffers/labels";
-import { Badge } from "@/components/ui/bits";
 import { cn } from "@/lib/utils";
 import { useIncompatibilityLabel } from "@/components/compatibility/useFilteredGames";
 import { offerToGameLike } from "@/lib/freeOffers/compatibility";
@@ -49,8 +50,9 @@ export function FreeGameCard({
   offer: FreeOfferRecord;
   className?: string;
 }) {
+  const [imgFailed, setImgFailed] = useState(false);
   const metaTitle = offer.metadata?.title as string | undefined;
-  const displayTitle =
+  const rawTitle =
     (metaTitle && !/^[0-9a-f]{16,}$/i.test(metaTitle) ? metaTitle : null) ||
     (offer.unmatchedTitle && !/^[0-9a-f]{16,}$/i.test(offer.unmatchedTitle)
       ? offer.unmatchedTitle
@@ -63,6 +65,8 @@ export function FreeGameCard({
       : offer.store === "steam"
       ? "Steam Free Game"
       : "Free Game Deal");
+  const displayTitle = cleanDealTitle(rawTitle);
+  const coverImage = upgradeCoverImage(offer.coverImage);
   const expiry = expirationLabel(offer.endDate);
   const typeLabel = offerTypeLabel(offer.offerType, offer.store);
   const ctaLabel = claimCtaLabel(offer.store);
@@ -77,14 +81,15 @@ export function FreeGameCard({
     >
       {/* ── 3:4 Poster Art ─────────────────────────────────────────── */}
       <div className="relative aspect-[3/4] w-full shrink-0 overflow-hidden bg-secondary">
-        {offer.coverImage ? (
+        {coverImage && !imgFailed ? (
           <Image
-            src={offer.coverImage}
+            src={coverImage}
             alt={displayTitle}
             fill
             sizes="(max-width: 640px) 250px, 276px"
             className="object-cover transition-transform duration-300 group-hover:scale-105"
-            unoptimized={!/\.(jpg|jpeg|png|webp|avif)(\?|$)/i.test(offer.coverImage)}
+            onError={() => setImgFailed(true)}
+            unoptimized
           />
         ) : (
           <div className="flex h-full items-center justify-center">

@@ -164,6 +164,18 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "m.media-amazon.com" },
       // Alienware Arena: /media/<hash>.jpg?fit=crop&width=…&quality=…
       { protocol: "https", hostname: "media.alienwarearena.com" },
+      /*
+       * Store discount and aggregator deal imagery (Steam, GamersGate, CheapShark, GreenManGaming, Ubisoft).
+       */
+      { protocol: "https", hostname: "**.steamstatic.com" },
+      { protocol: "https", hostname: "shared.fastly.steamstatic.com" },
+      { protocol: "https", hostname: "sttc.gamersgate.com" },
+      { protocol: "https", hostname: "images.greenmangaming.com" },
+      { protocol: "https", hostname: "store.ubisoft.com" },
+      { protocol: "https", hostname: "**.ubisoft.com" },
+      { protocol: "https", hostname: "**.cheapshark.com" },
+      { protocol: "https", hostname: "images.2game.com" },
+      { protocol: "https", hostname: "**.gog-statics.com" },
     ],
   },
   async rewrites() {
