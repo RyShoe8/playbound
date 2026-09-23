@@ -405,7 +405,7 @@ describe("insert-catalog-wave allowlists", () => {
     expect(THE_DARK_MOD_SLUG).toBe("the-dark-mod");
     expect(theDarkModPatchSource.platforms).toEqual(["Windows", "macOS", "Linux"]);
     expect(theDarkModPatchSource.launcherInstall.urlLinux).toMatch(/linux64/);
-    expect(theDarkModPatchSource.features).toContain("PlayBound Controls");
+    expect(theDarkModPatchSource.features).toContain("PlayBound Controller Support");
     expect(theDarkModPatchSource.features).not.toContain("Controller Support");
     expect(
       (theDarkModPatchSource.launcherInstall as { urlMac?: string }).urlMac
