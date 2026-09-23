@@ -62,10 +62,12 @@ const FRANCHISE_GENRE_MAP: Array<{ pattern: RegExp; genres: string[] }> = [
   { pattern: /tycoon|hospital|planet\s*coaster|planet\s*zoo|jurassic\s*world/i, genres: ["Simulation", "Management"] },
   { pattern: /cities:\s*skylines|simcity/i, genres: ["Simulation", "City Builder"] },
 
+  // Platformer & Metroidvania
+  { pattern: /rayman|sonic|mario|celeste|hollow\s*knight|ori\s*and|guacamelee|spelunky|shovel\s*knight|dead\s*cells|castlevania|crash\s*bandicoot|spyro|mega\s*man|metroid/i, genres: ["Platformer", "Action"] },
+
   // Racing & Sports
-  { pattern: /the\s*crew|forza|need\s*for\s*speed|burnout/i, genres: ["Racing", "Action"] },
-  { pattern: /inertial\s*drift|assetto\s*corsa|f1|dirt|wrc/i, genres: ["Racing", "Simulation"] },
-  { pattern: /rims/i, genres: ["Racing", "Simulation"] },
+  { pattern: /the\s*crew|forza|need\s*for\s*speed|burnout|grid|dirt|wrc|f1|assetto|project\s*cars|hot\s*wheels|trackmania|wreckfest/i, genres: ["Racing"] },
+  { pattern: /inertial\s*drift|rims/i, genres: ["Racing", "Simulation"] },
   { pattern: /riders\s*republic|steep|skate/i, genres: ["Sports", "Racing"] },
 
   // Narrative, Puzzle & Adventure
@@ -80,16 +82,21 @@ const FRANCHISE_GENRE_MAP: Array<{ pattern: RegExp; genres: string[] }> = [
  * Keyword-based heuristics when title does not match a known franchise.
  */
 const KEYWORD_RULES: Array<{ pattern: RegExp; genres: string[] }> = [
+  { pattern: /\b(platformer|platforming|platform|metroidvania)\b/i, genres: ["Platformer", "Action"] },
+  { pattern: /\b(roguelike|roguelite|dungeon\s*crawler)\b/i, genres: ["Roguelike", "Action"] },
+  { pattern: /\b(racer|racing|rally|drift|speedway|motorsport|kart)\b/i, genres: ["Racing"] },
+  { pattern: /\b(sport|sports|football|soccer|basketball|hockey|baseball|golf|tennis|skate|snowboard)\b/i, genres: ["Sports"] },
   { pattern: /\b(tactics?|tactical)\b/i, genres: ["Strategy", "Tactics"] },
   { pattern: /\b(simulator|simulation|sim)\b/i, genres: ["Simulation"] },
-  { pattern: /\b(racer|racing|rally|drift|speed|motorsport)\b/i, genres: ["Racing"] },
   { pattern: /\b(tycoon|management|manager|builder)\b/i, genres: ["Simulation", "Strategy"] },
   { pattern: /\b(rpg|role-playing|roleplaying)\b/i, genres: ["RPG"] },
   { pattern: /\b(strategy|rts|4x)\b/i, genres: ["Strategy"] },
   { pattern: /\b(shooter|sniper|fps)\b/i, genres: ["Action", "Shooter"] },
   { pattern: /\b(puzzle|mystery|detective)\b/i, genres: ["Puzzle", "Adventure"] },
+  { pattern: /\b(fighting|fighter|brawler)\b/i, genres: ["Fighting", "Action"] },
   { pattern: /\b(horror|zombie|dead|undead)\b/i, genres: ["Action", "Horror"] },
   { pattern: /\b(surviv(al|or))\b/i, genres: ["Survival", "Action"] },
+  { pattern: /\b(deckbuilder|card\s*game)\b/i, genres: ["Strategy", "Card Game"] },
   { pattern: /\b(quest|chronicles|legend|fantasy)\b/i, genres: ["RPG", "Adventure"] },
   { pattern: /\b(war|battle|combat|strike|force)\b/i, genres: ["Action", "Strategy"] },
 ];
