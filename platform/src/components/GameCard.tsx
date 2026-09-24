@@ -6,6 +6,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Download, Loader2, MonitorPlay, Play } from "lucide-react";
 import type { Game } from "@/lib/data/types";
+import type { DiscoverListingGame } from "@/lib/discoverListing";
 import { isBrowserGame } from "@/lib/gameLaunch";
 import { launcherInstallUrl, launcherPlayUrl } from "@/lib/launcher";
 import {
@@ -196,7 +197,7 @@ export function PlayCta({
   );
 }
 
-export function LaunchBadge({ game }: { game: Game }) {
+export function LaunchBadge({ game }: { game: DiscoverListingGame }) {
   const { track } = useTelemetry();
 
   if (isBrowserGame(game)) {
@@ -234,7 +235,7 @@ export function LaunchBadge({ game }: { game: Game }) {
   );
 }
 
-function IncompatibleCorner({ game }: { game: Game }) {
+function IncompatibleCorner({ game }: { game: DiscoverListingGame }) {
   const label = useIncompatibilityLabel(game);
   if (!label) return null;
   return (
@@ -249,7 +250,7 @@ export function GameCard({
   className,
   playingNow,
 }: {
-  game: Game;
+  game: DiscoverListingGame;
   className?: string;
   playingNow?: number;
 }) {

@@ -63,7 +63,7 @@ export function GameArt({
   showTitle = true,
   iconSize = "lg",
 }: {
-  game: Game;
+  game: Pick<Game, "art" | "coverImage" | "title" | "status">;
   className?: string;
   showTitle?: boolean;
   iconSize?: "sm" | "md" | "lg";

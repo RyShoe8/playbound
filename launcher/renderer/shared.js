@@ -187,6 +187,7 @@ export const CACHE_TTL = {
    */
   deals: 180_000,
   liveStatsGame: 30_000,
+  liveStatsEdition: 30_000,
   catalogLiveStats: 15 * 60_000,
   multiplayerActivity: 20_000,
 };

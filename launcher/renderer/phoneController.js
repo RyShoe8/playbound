@@ -13,6 +13,33 @@ import {
   isBridgeableGamepadConnected,
   disableGamepadBridge,
 } from "./gamepadBridge.js";
+import { phoneHubDecision, phoneHubPairedAt } from "./phoneHubLease.js";
+
+const PHONE_HUB_LEASE_KEY = "playbound.phone-hub.lease";
+
+function readPhoneHubLease() {
+  try {
+    return JSON.parse(sessionStorage.getItem(PHONE_HUB_LEASE_KEY) || "null");
+  } catch {
+    return null;
+  }
+}
+
+function writePhoneHubLease(lease) {
+  try {
+    sessionStorage.setItem(PHONE_HUB_LEASE_KEY, JSON.stringify(lease));
+  } catch {
+    /* Session storage is optional; this run still works. */
+  }
+}
+
+function clearPhoneHubLease() {
+  try {
+    sessionStorage.removeItem(PHONE_HUB_LEASE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
 
 function pb() {
   return window.playbound;
@@ -260,17 +287,19 @@ export function promptPhoneControllerPairing({ session, title }) {
     `;
 
     let done = false;
+    let removeStateListener = null;
     const finish = (result) => {
       if (done) return;
       done = true;
+      removeStateListener?.();
       hideOverlay();
       resolve(result);
     };
 
     // Live update when controller connects
     if (window.playbound.onCouchState) {
-      window.playbound.onCouchState((st) => {
-        const controllers = st?.session?.controllers || [];
+      removeStateListener = window.playbound.onCouchState((st) => {
+        const controllers = st?.session?.snapshot?.controllers || [];
         const approved = controllers.some((c) => c.status === "approved");
         if (approved) {
           const pill = document.getElementById("phone-controller-pair-status");
@@ -331,9 +360,11 @@ function showPhoneJoinBanner(state) {
  * Returns false if the user cancelled.
  */
 export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
+  let activeCouchState = null;
   let couchAlreadyActive = false;
   try {
-    couchAlreadyActive = Boolean((await window.playbound?.couchState?.())?.active);
+    activeCouchState = await window.playbound?.couchState?.();
+    couchAlreadyActive = Boolean(activeCouchState?.active);
   } catch {
     couchAlreadyActive = false;
   }
@@ -367,22 +398,54 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
   }
 
   let finalMode = "keyboard";
+  let phoneHubSession = null;
 
   if (choice === "phone") {
     finalMode = "phone";
-    if (couchAlreadyActive) {
+    if (couchAlreadyActive && activeCouchState?.session?.solo) {
+      // The approved phone can move between games for two hours. Once that
+      // window has passed, keep its current game alive and only re-pair when
+      // the player chooses a different game.
+      try {
+        activeCouchState = await pb().couchRefresh?.() || activeCouchState;
+      } catch {
+        /* use the last known snapshot */
+      }
+      if (phoneHubDecision(activeCouchState.session, readPhoneHubLease(), gameSlug) === "rotate") {
+        const stopped = await pb().couchStop?.();
+        if (!stopped?.ok) {
+          setStatus("Could not reset the phone hub. Try again from Connect.", true);
+          return false;
+        }
+        clearPhoneHubLease();
+        couchAlreadyActive = false;
+        activeCouchState = null;
+      }
+    }
+
+    if (couchAlreadyActive && !activeCouchState?.session?.solo) {
       // Online multiplayer already owns the couch session — don't mint a second one
       // or enable Gamepad Bridge (that mirrored host pad into OpenBOR P1+P2).
       await disableGamepadBridge();
       ensureCouchBackground();
       setStatus("Online controllers already active — launching…");
+    } else if (
+      couchAlreadyActive &&
+      phoneHubDecision(activeCouchState?.session, readPhoneHubLease(), gameSlug) === "reuse"
+    ) {
+      await disableGamepadBridge();
+      ensureCouchBackground();
+      phoneHubSession = activeCouchState.session;
+      setStatus("Phone hub connected — launching…");
     } else {
       setStatus("Setting up phone controller…");
       // Solo: this mints a session purely to plumb one phone's transport for
       // single-player, not a real couch party — lets PlayBound Controls
       // activate off it (see the couchHost solo check in applyControllerConfig)
       // without ever doing so during actual multiplayer couch co-op.
-      const state = await startCouchSessionQuiet({ solo: true });
+      const state = couchAlreadyActive
+        ? activeCouchState
+        : await startCouchSessionQuiet({ solo: true });
       if (!state?.active || !state.session) {
         setStatus("Could not enable phone controller — launching with PC controls", true);
         finalMode = "controller";
@@ -404,6 +467,7 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
           setStatus("Launching with PC controller…");
           finalMode = "controller";
         } else {
+          phoneHubSession = state.session;
           showPhoneJoinBanner(state);
           setStatus("Phone controller paired — launching game…");
         }
@@ -434,6 +498,17 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
   }
 
   await playFn({ inputMode: finalMode, ...(finalMode === "controller" && enhancedPreview ? { controlsPreview: true } : {}) });
+  if (finalMode === "phone" && phoneHubSession) {
+    const previous = readPhoneHubLease();
+    writePhoneHubLease({
+      sessionId: phoneHubSession.sessionId,
+      gameSlug,
+      pairedAt: phoneHubPairedAt(
+        phoneHubSession,
+        previous?.sessionId === phoneHubSession.sessionId ? previous.pairedAt : Date.now()
+      ),
+    });
+  }
   return true;
 }
 

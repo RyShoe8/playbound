@@ -4,9 +4,8 @@ import { listGames } from "@/lib/catalog";
 import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { DiscoverFilters } from "@/components/DiscoverFilters";
 import DiscoverLoading from "./loading";
-import { getCatalogLiveStats, playingNowBySlug } from "@/lib/liveActivity";
-import type { CatalogLiveStats } from "@/lib/liveActivity";
 import { pageMetadata } from "@/lib/seo";
+import { toDiscoverListingGame } from "@/lib/discoverListing";
 import { JsonLd, graph, itemListSchema, breadcrumbSchema } from "@/components/JsonLd";
 
 export const metadata: Metadata = pageMetadata({
@@ -16,37 +15,9 @@ export const metadata: Metadata = pageMetadata({
   path: "/discover",
 });
 
-/**
- * On a warm cache (the vast majority of hits) the live stats resolve in under
- * 1ms.  On a cold miss the multiplayer fan-out can stall for 8.5s+, which
- * blocks the entire page render.  This races the stats against a 3-second
- * budget so the game grid always appears quickly — playing-now badges simply
- * fill in as empty when the stats are still loading.
- */
-const LIVE_STATS_BUDGET_MS = 3_000;
-
-function liveStatsWithBudget(): Promise<CatalogLiveStats | null> {
-  return new Promise((resolve) => {
-    const timer = setTimeout(() => resolve(null), LIVE_STATS_BUDGET_MS);
-    getCatalogLiveStats().then(
-      (stats) => {
-        clearTimeout(timer);
-        resolve(stats);
-      },
-      () => {
-        clearTimeout(timer);
-        resolve(null);
-      }
-    );
-  });
-}
-
 export default async function DiscoverPage() {
   const includeTesting = await viewerCanSeeTesting();
-  const [games, liveStats] = await Promise.all([
-    listGames({ includeTesting }),
-    liveStatsWithBudget(),
-  ]);
+  const games = await listGames({ includeTesting });
 
   return (
     <div className="space-y-4 px-4 py-6 sm:px-6 lg:px-8">
@@ -80,10 +51,7 @@ export default async function DiscoverPage() {
 
       {/* Client-side filters + grid */}
       <Suspense fallback={<DiscoverLoading />}>
-        <DiscoverFilters
-          games={games}
-          playingNowBySlug={liveStats ? playingNowBySlug(liveStats) : {}}
-        />
+        <DiscoverFilters games={games.map(toDiscoverListingGame)} />
       </Suspense>
 
       {/* SEO fallback: ensure crawlers see links to all games even without JS */}

@@ -6276,11 +6276,19 @@ async function fetchControlProfile(slug, editionSlug, preview = false) {
  * one PC has one keyboard/mouse, so it can never sensibly serve more than
  * one player. A `solo` session (minted purely to plumb one phone's
  * transport for single-player, never by the real couch-party UI — see
- * `startCouchSessionQuiet`'s one solo caller) does not.
+ * `startCouchSessionQuiet`'s one solo caller) does not, and neither does a
+ * `remotePlay` session (handleRemotePlayHostRequest) — exactly one remote
+ * client drives this PC, same single-input shape as solo. Before this
+ * exemption, every Remote Play session was silently treated as a real
+ * multiplayer party and PlayBound Controls could never activate, no matter
+ * what the client picked — the one thing standing between OutRun-class
+ * keyboard-only games and Remote Play, independent of the ViGEm slot-timing
+ * fix (which only helps native-gamepad games; OutRun has no native gamepad
+ * support at all and needs this synthesis path or nothing works).
  */
 function couchDisqualifiesPlayBoundControls() {
   const state = couchHost?.getState?.();
-  return Boolean(state?.active) && state?.session?.solo !== true;
+  return Boolean(state?.active) && state?.session?.solo !== true && state?.session?.remotePlay !== true;
 }
 
 async function availablePlayBoundControlsProfile(slug, editionSlug, allowPreview = false) {
@@ -13547,7 +13555,13 @@ async function handleRemotePlayHostRequest(reqRow) {
       return;
     }
     try {
-      await playGameInner(reqRow.gameSlug, null, reqRow.editionSlug || null, {});
+      // controlsPreview: true — Remote Play has no competing "just use the
+      // host's own keyboard" concern the way a local launch does (the local
+      // Input Setup modal only sets this when the player explicitly picks
+      // PlayBound Controls Preview); the client already made its own input
+      // choice on its end, so let a testing-status profile activate rather
+      // than silently doing nothing for keyboard_mouse-only games.
+      await playGameInner(reqRow.gameSlug, null, reqRow.editionSlug || null, { controlsPreview: true });
     } catch (err) {
       console.warn("[remote-play] launch failed:", err?.message || err);
       reportCouchOps("failed", { phase: "game_launch", code: "HOST_GAME_LAUNCH_FAILED", message: err?.message, gameSlug: reqRow.gameSlug, editionSlug: reqRow.editionSlug }, "remote_play");

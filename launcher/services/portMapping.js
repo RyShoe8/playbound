@@ -597,7 +597,6 @@ async function closePort({ port, protocol = "udp" }) {
   activeMappings.delete(key);
   let ok = true;
   for (const proto of entry.protocols) {
-    // eslint-disable-next-line no-await-in-loop
     const removed = await upnpDeleteMapping(entry.service, { externalPort: entry.port, protocol: proto });
     if (!removed) ok = false;
   }
@@ -609,7 +608,6 @@ async function closeAllPorts() {
   const keys = [...activeMappings.keys()];
   for (const key of keys) {
     const [portText, protocol] = key.split(":");
-    // eslint-disable-next-line no-await-in-loop
     await closePort({ port: Number(portText), protocol });
   }
 }

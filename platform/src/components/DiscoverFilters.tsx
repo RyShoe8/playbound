@@ -4,8 +4,8 @@ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, usePathname } from "next/navigation";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 import { Checkbox } from "@/components/ui/Checkbox";
-import type { Game, Genre } from "@/lib/data/types";
-import type { HardwareRequirementsBlock } from "@/lib/hardware/types";
+import type { Genre } from "@/lib/data/types";
+import type { DiscoverListingGame } from "@/lib/discoverListing";
 import { evaluateCompatibility } from "@/lib/hardware/compatibility";
 import { useTelemetry } from "@/lib/telemetry";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
@@ -44,51 +44,14 @@ const CANONICAL_FEATURES = new Set<string>(FEATURES);
 type SortOption = "name" | "players";
 type HwFilter = "" | "great" | "playable";
 
-export interface SerializedGame {
-  slug: string;
-  title: string;
-  tagline: string;
-  genres: Genre[];
-  tags: string[];
-  features: string[];
-  sizeMB: number;
-  launchMethods: string[];
-  art: { from: string; to: string; icon: string };
-  coverImage?: string;
-  browserPlayable: boolean;
-  steamDeck: boolean;
-  platforms: string[];
-  hardwareRequirements?: HardwareRequirementsBlock | null;
-}
-
 /* ── Main component ─────────────────────────────────────────── */
-
-export function toDiscoverCard(g: Game): SerializedGame {
-  return {
-    slug: g.slug,
-    title: g.title,
-    tagline: g.tagline,
-    genres: g.genres,
-    tags: g.tags,
-    features: g.features,
-    sizeMB: g.sizeMB,
-    launchMethods: g.launchMethods,
-    art: g.art,
-    coverImage: g.coverImage,
-    browserPlayable: g.browserPlayable,
-    steamDeck: g.steamDeck,
-    platforms: g.platforms,
-    hardwareRequirements: g.hardwareRequirements,
-  };
-}
 
 export function DiscoverFilters({
   games,
-  playingNowBySlug = {},
 }: {
-  games: Game[];
-  playingNowBySlug?: Record<string, number>;
+  games: DiscoverListingGame[];
 }) {
+  const [playingNowBySlug, setPlayingNowBySlug] = useState<Record<string, number>>({});
   const { track } = useTelemetry();
   const { mode, device } = useCompatibilityFilter();
   const { mode: discoveryMode } = useDiscoveryMode();
@@ -144,6 +107,24 @@ export function DiscoverFilters({
   } | null>(null);
   const skipFirstFilter = useRef(true);
 
+  // Player counts can require a cold master-server fan-out. Let the catalog
+  // paint first, then fill the badges and player filter from the shared snapshot.
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetch("/api/launcher/live-stats", { signal: controller.signal })
+      .then((response) => response.ok ? response.json() : null)
+      .then((stats) => {
+        if (!stats || controller.signal.aborted || !Array.isArray(stats.byGame)) return;
+        const counts: Record<string, number> = {};
+        for (const game of stats.byGame) {
+          if (typeof game.slug === "string") counts[game.slug] = Number(game.playingNow) || 0;
+        }
+        setPlayingNowBySlug(counts);
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
+
   useEffect(() => {
     void fetch("/api/hardware/profile")
       .then((r) => (r.ok ? r.json() : null))
@@ -167,11 +148,9 @@ export function DiscoverFilters({
 
   const gamesBySlug = useMemo(() => new Map(games.map((g) => [g.slug, g])), [games]);
 
-  const serialized = useMemo(() => games.map(toDiscoverCard), [games]);
-
   /* Filter games based on current filter states (before genre split) */
   const baseFiltered = useMemo(() => {
-    let list = serialized.slice();
+    let list = games.slice();
 
     /*
      * Every selected tag must match, not any. Tags describe what a game is
@@ -248,7 +227,7 @@ export function DiscoverFilters({
 
     return list;
   }, [
-    serialized,
+    games,
     selectedTags,
     selectedFeatures,
     multiplayerOnly,

@@ -55,6 +55,18 @@ $MONITOR_DEFAULTTONEAREST = 2
 $DWMWA_EXTENDED_FRAME_BOUNDS = 9
 
 $maxAttempts = 50
+# Measure-only mode is now called exactly once per launch (main.js gates
+# repeat calls to stop an infinite recapture loop), so this single run has
+# to land on the window's SETTLED rect, not its rect at first sighting.
+# Many engines (Open Tyrian included) briefly show a window at one size/
+# position before moving or resizing it during their own startup — grabbing
+# the rect the instant a window handle first exists can catch that
+# transient state and crop to it for the rest of the session. Require the
+# rect to read identically across a few consecutive checks before trusting
+# it; a window that's still moving just keeps resetting the counter.
+$stableRectKey = $null
+$stableCount = 0
+$requiredStableChecks = 3
 for ($i = 0; $i -lt $maxAttempts; $i++) {
     Start-Sleep -Milliseconds 250
     foreach ($target in $targets) {
@@ -92,6 +104,19 @@ for ($i = 0; $i -lt $maxAttempts; $i++) {
                     # DWM unavailable (rare) — fall back to the old, slightly
                     # wider rect rather than failing the crop outright.
                     [WindowHelper]::GetWindowRect($p.MainWindowHandle, [ref]$rect) | Out-Null
+                }
+
+                if ($measureOnly) {
+                    $rectKey = "$($rect.Left),$($rect.Top),$($rect.Right),$($rect.Bottom)"
+                    if ($rectKey -eq $stableRectKey) {
+                        $stableCount++
+                    } else {
+                        $stableRectKey = $rectKey
+                        $stableCount = 1
+                    }
+                    if ($stableCount -lt $requiredStableChecks -and $i -lt ($maxAttempts - 1)) {
+                        continue
+                    }
                 }
 
                 $monitor = [WindowHelper]::MonitorFromWindow($p.MainWindowHandle, $MONITOR_DEFAULTTONEAREST)

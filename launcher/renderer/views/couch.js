@@ -27,7 +27,7 @@ function reportOps(status, fields) {
   if (reportedOps.has(key)) return;
   reportedOps.add(key);
   if (reportedOps.size > 200) reportedOps.clear();
-  void pb().couchReportOps?.(status, fields).catch(() => {});
+  void pb().couchReportOps?.(status, fields)?.catch(() => {});
 }
 let lastState = null;
 let stateRevision = 0;

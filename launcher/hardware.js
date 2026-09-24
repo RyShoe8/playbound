@@ -67,7 +67,6 @@ function pickPrimaryGpu(gpus) {
 async function trySystemInformation() {
   try {
     // Optional dependency — degrade if missing/broken.
-    // eslint-disable-next-line global-require
     const si = require("systeminformation");
     const [cpu, graphics, mem, osInfo, disks, fsSize] = await Promise.all([
       si.cpu().catch(() => null),
