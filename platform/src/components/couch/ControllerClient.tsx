@@ -166,7 +166,19 @@ export function ControllerClient({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [cropTitleBar, setCropTitleBar] = useState(false);
   const [hudVisible, setHudVisible] = useState(true);
+  const [showControlsModal, setShowControlsModal] = useState(false);
   const hudTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!showControlsModal) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setShowControlsModal(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showControlsModal]);
 
   useEffect(() => {
     const onFsChange = () => {
@@ -1430,12 +1442,20 @@ export function ControllerClient({
           ) : null}
         </div>
         <header
-          className={["pbc-hud", !hudVisible && gameLayout ? "is-hidden" : ""].filter(Boolean).join(" ")}
+          className={["pbc-hud", !hudVisible && gameLayout && !showControlsModal ? "is-hidden" : ""].filter(Boolean).join(" ")}
         >
           <span className="pbc-hud-host">{join.hostLabel}</span>
           <span className="pbc-hud-player">{playerLabel}</span>
           {gameLayout ? (
-            <>
+            <div className="pbc-hud-actions">
+              <button
+                type="button"
+                className={`pbc-hud-fs ${showControlsModal ? "is-active" : ""}`}
+                onClick={() => setShowControlsModal((prev) => !prev)}
+                title="View button mapping for your selected controls"
+              >
+                Controls
+              </button>
               <button
                 type="button"
                 className={`pbc-hud-fs ${cropTitleBar ? "is-active" : ""}`}
@@ -1451,7 +1471,7 @@ export function ControllerClient({
               >
                 {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
               </button>
-            </>
+            </div>
           ) : null}
         </header>
         {gameLayout ? (
@@ -1479,12 +1499,96 @@ export function ControllerClient({
             </button>
           </div>
         ) : null}
-        {gameLayout && controlChoice === "keyboard" ? (
-          <ControlsLegend
-            compact={hasVideo}
-            hidden={hasVideo && !hudVisible}
-            onChange={() => setControlChoice("undecided")}
-          />
+        {gameLayout && showControlsModal ? (
+          <div
+            className="pbc-modal-backdrop"
+            onClick={() => setShowControlsModal(false)}
+          >
+            <div
+              className="pbc-modal-card"
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Controls Mapping"
+            >
+              <div className="pbc-modal-header">
+                <div>
+                  <p className="pbc-controls-legend-eyebrow">Control Scheme</p>
+                  <h2 className="pbc-modal-title">
+                    {controlChoice === "controller" || mode === "standard-gamepad"
+                      ? "Controller Mapping"
+                      : "Keyboard & Mouse Mapping"}
+                  </h2>
+                  <p className="pbc-modal-sub">
+                    {controlChoice === "controller" || mode === "standard-gamepad"
+                      ? physicalLabel || "Standard Xbox / DualSense / USB Gamepad"
+                      : "Keys and mouse buttons driving Player 1"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="pbc-modal-close"
+                  onClick={() => setShowControlsModal(false)}
+                  aria-label="Close controls"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="pbc-controls-grid" role="list">
+                {(controlChoice === "controller" || mode === "standard-gamepad"
+                  ? STANDARD_CONTROLLER_LEGEND
+                  : KEYBOARD_MOUSE_LEGEND
+                ).map((row) => (
+                  <div key={row.action} className="pbc-controls-row" role="listitem">
+                    <span className="pbc-controls-action">{row.action}</span>
+                    <span className="pbc-controls-keys">
+                      {"keys" in row
+                        ? row.keys.map((key) => (
+                            <kbd key={key} className="pbc-key">
+                              {key}
+                            </kbd>
+                          ))
+                        : row.buttons.map((btn) => (
+                            <kbd key={btn} className="pbc-key">
+                              {btn}
+                            </kbd>
+                          ))}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pbc-modal-footer">
+                <button
+                  type="button"
+                  className="pbc-choice-btn"
+                  style={{ padding: "8px 14px", fontSize: "12px", minHeight: "auto" }}
+                  onClick={() => {
+                    if (controlChoice === "controller" || mode === "standard-gamepad") {
+                      setMode("keyboard-mouse");
+                      setControlChoice("keyboard");
+                    } else {
+                      setMode("standard-gamepad");
+                      setControlChoice("controller");
+                    }
+                  }}
+                >
+                  {controlChoice === "controller" || mode === "standard-gamepad"
+                    ? "Switch to Mouse & Keyboard"
+                    : "Switch to Controller"}
+                </button>
+                <button
+                  type="button"
+                  className="pbc-hud-fs is-active"
+                  style={{ padding: "6px 16px", fontSize: "12px" }}
+                  onClick={() => setShowControlsModal(false)}
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
         ) : null}
         {!gameLayout ? (
           <div className="pbc-kbm-panel">
@@ -1673,6 +1777,22 @@ export function ControllerClient({
 }
 
 /* ── Chrome ──────────────────────────────────────────────────────────── */
+
+export const STANDARD_CONTROLLER_LEGEND: ReadonlyArray<{
+  action: string;
+  buttons: ReadonlyArray<string>;
+}> = [
+  { action: "Movement", buttons: ["Left Stick", "D-Pad"] },
+  { action: "Aim / Camera", buttons: ["Right Stick"] },
+  { action: "A / Action", buttons: ["A Button (Bottom)"] },
+  { action: "B / Back", buttons: ["B Button (Right)"] },
+  { action: "X / Action", buttons: ["X Button (Left)"] },
+  { action: "Y / Special", buttons: ["Y Button (Top)"] },
+  { action: "Bumpers", buttons: ["LB", "RB"] },
+  { action: "Triggers", buttons: ["LT", "RT"] },
+  { action: "Start / Menu", buttons: ["Start (▶)"] },
+  { action: "Back / Select", buttons: ["Back (◀)"] },
+];
 
 function ControlsLegend({
   compact = false,
@@ -2298,8 +2418,14 @@ function ControllerStyles() {
   z-index: 3;
 }
 
-.pbc-hud-fs {
+.pbc-hud-actions {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pbc-hud-fs {
   border: 1px solid rgba(255, 255, 255, 0.25);
   background: rgba(0, 0, 0, 0.45);
   color: #fff;
@@ -2320,6 +2446,94 @@ function ControllerStyles() {
   background: rgba(61, 214, 140, 0.2);
   border-color: rgba(61, 214, 140, 0.6);
   color: #3dd68c;
+}
+
+/* Controls Mapping Modal */
+.pbc-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(10px);
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  animation: pbcFadeIn 0.15s ease-out;
+}
+
+.pbc-modal-card {
+  width: min(92vw, 600px);
+  max-height: 88vh;
+  overflow-y: auto;
+  background: oklch(0.2 0.016 278 / 96%);
+  border: 1px solid var(--pbc-line);
+  border-radius: 16px;
+  padding: 24px 26px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pbc-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--pbc-line);
+  padding-bottom: 12px;
+}
+
+.pbc-modal-title {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--pbc-ink);
+}
+
+.pbc-modal-sub {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--pbc-muted);
+}
+
+.pbc-modal-close {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--pbc-line);
+  color: var(--pbc-ink);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.pbc-modal-close:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.pbc-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--pbc-line);
+  padding-top: 14px;
+  margin-top: 4px;
+}
+
+@keyframes pbcFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* Phone pad preview sizes (when NOT in popup or fullscreen) */
