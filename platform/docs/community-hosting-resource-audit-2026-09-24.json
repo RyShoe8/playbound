@@ -3547,5 +3547,328 @@
         }
       }
     }
+  },
+  "morrowind": {
+    "ok": true,
+    "durationMs": 1744,
+    "port": 25565,
+    "resources": {
+      "rssBytes": 10928128,
+      "cpuCores": 0.0404040404040404,
+      "sampleIntervalMs": 1500,
+      "scope": "process-group",
+      "processCount": 1
+    },
+    "gameSlug": "morrowind",
+    "lastSpawnTest": {
+      "0-ad": {
+        "ok": true,
+        "error": null,
+        "at": "2026-09-24T22:46:31.026Z",
+        "durationMs": 738,
+        "port": 20595,
+        "resources": {
+          "rssBytes": 102264832,
+          "cpuCores": 0.19290465631929046,
+          "sampleIntervalMs": 1500,
+          "scope": "process-group",
+          "processCount": 1
+        }
+      },
+      "assaultcube": {
+        "ok": true,
+        "error": null,
+        "at": "2026-09-24T22:46:34.785Z",
+        "durationMs": 1615,
+        "port": 28763,
+        "resources": {
+          "rssBytes": 7073792,
+          "cpuCores": 0.019933554817275746,
+          "sampleIntervalMs": 1500,
+          "scope": "process-group",
+          "processCount": 1
+        }
+      },
+      "battle-for-wesnoth": {
+        "ok": true,
+        "error": null,
+        "at": "2026-09-24T22:46:37.041Z",
+        "durationMs": 110,
+        "port": 15000,
+        "resources": {
+          "rssBytes": 13012992,
+          "cpuCores": 0,
+          "sampleIntervalMs": 1500,
+          "scope": "process-group",
+          "processCount": 1
+        }
+      },
+      "bzflag": {
+        "ok": true,
+        "error": null,
+        "at": "2026-09-24T22:46:39.309Z",
+        "durationMs": 112,
+        "port": 5155,
+        "resources": {
+          "rssBytes": 14049280,
+          "cpuCores": 0,
+          "sampleIntervalMs": 1500,
+          "scope": "process-group",
+          "processCount": 1
+        }
+      },
+      "flightgear": {
+        "ok": true,
+        "error": null,
+        "at": "2026-09-24T22:46:41.565Z",
+        "durationMs": 108,
+        "port": 5000,
+        "resources": {
+          "rssBytes": 4567040,
+          "cpuCores": 0,
+          "sampleIntervalMs": 1500,
+          "scope": "process-group",
+          "processCount": 1
+        }
+      },
+      "freeciv": {
+        "ok": true,
+        "error": null,
+        "at": "2026-09-24T22:46:43.830Z",
+        "durationMs": 108,
+        "port": 5556,
+        "resources": {
+          "rssBytes": 69242880,
+          "cpuCores": 0.6106194690265487,
+          "sampleIntervalMs": 1500,
+          "scope": "process-group",
+          "processCount": 1
+        }
+      },
+      "freedoom": {
+        "ok": true,
+        "error": null,
+        "at": "2026-09-24T22:46:48.013Z",
+        "durationMs": 2041,
+        "port": 10666,
+        "resources": {
+          "rssBytes": 38395904,
+          "cpuCores": 0.1330376940133038,
+          "sampleIntervalMs": 1500,
+          "scope": "process-group",
+          "processCount": 1
+        }
+      },
+      "hedgewars": {
+        "ok": true,
+        "error": null,
+        "at": "2026-09-24T22:46:50.273Z",
+        "durationMs": 110,
+        "port": 46631,
+        "resources": {
+          "rssBytes": 7520256,
+          "cpuCores": 0,
+          "sampleIntervalMs": 1500,
+          "scope": "process-group",
+          "processCount": 1
+        }
+      },
+      "hurry-curry": {
+        "ok": true,
+        "error": null,
+        "at": "2026-09-24T22:46:52.535Z",
+        "durationMs": 115,
+        "port": 27032,
+        "resources": {
+          "rssBytes": 29724672,
+          "cpuCores": 0.1138392857142857,
+          "sampleIntervalMs": 1500,
+          "scope": "process-group",
+          "processCount": 1
+        }
+      },
+      "luanti": {
+        "ok": true,
+        "error": null,
+        "at": "2026-09-24T22:46:55.853Z",
+        "durationMs": 1163,
+        "port": 30000,
+        "resources": {
+          "rssBytes": 31281152,
+          "cpuCores": 0.013318534961154274,
+          "sampleIntervalMs": 1500,
+          "scope": "process-group",
+          "processCount": 1
+        }
+      },
+      "medal-of-honor-allied-assault": {
+        "ok": true,
+        "error": null,
+        "at": "2026-09-24T22:47:00.721Z",
+        "durationMs": 2716,
+        "port": 12203,
+        "resources": {
+          "rssBytes": 93126656,
+          "cpuCores": 0.026607538802660754,
+          "sampleIntervalMs": 1500,
+          "scope": "process-group",
+          "processCount": 1
+        }
+      },
+      "openarena": {
+        "ok": true,
+        "error": null,
+        "at": "2026-09-24T22:47:03.012Z",
+        "durationMs": 111,
+        "port": 27963,
+        "resources": {
+          "rssBytes": 4349952,
+          "cpuCores": 0.09513023782559456,
+          "sampleIntervalMs": 1500,
+          "scope": "process-group",
+          "processCount": 1
+        }
+      },
+      "openra": {
+        "ok": true,
+        "error": null,
+        "at": "2026-09-24T22:47:09.156Z",
+        "durationMs": 3997,
+        "port": 1234,
+        "resources": {
+          "rssBytes": 143544320,
+          "cpuCores": 0.5736263736263736,
+          "sampleIntervalMs": 1500,
+          "scope": "process-group",
+          "processCount": 1
+        }
+      },
+      "openttd": {
+        "ok": true,
+        "error": null,
+        "at": "2026-09-24T22:47:13.207Z",
+        "durationMs": 1913,
+        "port": 3979,
+        "resources": {
+          "rssBytes": 60960768,
+          "cpuCores": 0.006644518272425249,
+          "sampleIntervalMs": 1500,
+          "scope": "process-group",
+          "processCount": 1
+        }
+      },
+      "re-volt-rvgl": {
+        "ok": true,
+        "error": null,
+        "at": "2026-09-24T22:47:16.800Z",
+        "durationMs": 1427,
+        "port": 2310,
+        "resources": {
+          "rssBytes": 364388352,
+          "cpuCores": 1.8789289871944121,
+          "sampleIntervalMs": 1500,
+          "scope": "process-group",
+          "processCount": 3
+        }
+      },
+      "space-station-14": {
+        "ok": true,
+        "error": null,
+        "at": "2026-09-24T22:47:20.570Z",
+        "durationMs": 1628,
+        "port": 1212,
+        "resources": {
+          "rssBytes": 167591936,
+          "cpuCores": 1.3790055248618784,
+          "sampleIntervalMs": 1500,
+          "scope": "process-group",
+          "processCount": 1
+        }
+      },
+      "supertuxkart": {
+        "ok": true,
+        "error": null,
+        "at": "2026-09-24T22:47:24.195Z",
+        "durationMs": 1445,
+        "port": 2759,
+        "resources": {
+          "rssBytes": 41873408,
+          "cpuCores": 0.05895196506550218,
+          "sampleIntervalMs": 1500,
+          "scope": "process-group",
+          "processCount": 1
+        }
+      },
+      "veloren": {
+        "ok": true,
+        "error": null,
+        "at": "2026-09-24T22:47:51.696Z",
+        "durationMs": 25366,
+        "port": 14004,
+        "resources": {
+          "rssBytes": 703836160,
+          "cpuCores": 0.8084632516703786,
+          "sampleIntervalMs": 1500,
+          "scope": "process-group",
+          "processCount": 1
+        }
+      },
+      "wolfenstein-enemy-territory": {
+        "ok": true,
+        "error": null,
+        "at": "2026-09-24T22:47:57.052Z",
+        "durationMs": 3218,
+        "port": 27950,
+        "resources": {
+          "rssBytes": 117166080,
+          "cpuCores": 0.01988950276243094,
+          "sampleIntervalMs": 1500,
+          "scope": "process-group",
+          "processCount": 1
+        }
+      },
+      "xonotic": {
+        "ok": true,
+        "error": null,
+        "at": "2026-09-24T22:47:59.700Z",
+        "durationMs": 512,
+        "port": 26000,
+        "resources": {
+          "rssBytes": 248512512,
+          "cpuCores": 0.9744160177975527,
+          "sampleIntervalMs": 1500,
+          "scope": "process-group",
+          "processCount": 1
+        }
+      },
+      "ysoccer": {
+        "ok": true,
+        "error": null,
+        "at": "2026-09-24T22:48:02.982Z",
+        "durationMs": 1128,
+        "port": 54555,
+        "resources": {
+          "rssBytes": 75292672,
+          "cpuCores": 0.006772009029345372,
+          "sampleIntervalMs": 1500,
+          "scope": "process-group",
+          "processCount": 1
+        }
+      },
+      "morrowind": {
+        "ok": true,
+        "error": null,
+        "at": "2026-09-24T23:02:57.428Z",
+        "durationMs": 1744,
+        "port": 25565,
+        "resources": {
+          "rssBytes": 10928128,
+          "cpuCores": 0.0404040404040404,
+          "sampleIntervalMs": 1500,
+          "scope": "process-group",
+          "processCount": 1
+        }
+      }
+    }
   }
 }
