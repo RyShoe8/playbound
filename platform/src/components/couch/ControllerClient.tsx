@@ -568,6 +568,8 @@ export function ControllerClient({
     let dc: RTCDataChannel | null = null;
     let ws: WebSocket | null = null;
     let signalSince = 0;
+    const seenSignalIds = new Set<string>();
+    const pendingRemoteIce: Array<{ candidate?: RTCIceCandidateInit | null; complete?: boolean }> = [];
     let pollTimer: number | null = null;
     let pingTimer: number | null = null;
     let hzTimer: number | null = null;
@@ -685,8 +687,9 @@ export function ControllerClient({
       };
 
       pc.ontrack = (ev) => {
-        usingWebrtc = true;
-        setTransport("webrtc");
+        // ontrack fires when the SDP describes a track, even if ICE has not
+        // connected and no video packet has arrived. Keep LAN WS fallback
+        // available until the peer connection actually works.
         const stream = ev.streams?.[0] || (ev.track ? new MediaStream([ev.track]) : null);
         if (stream) attachRemoteStream(stream);
       };
@@ -740,13 +743,16 @@ export function ControllerClient({
       const SIGNAL_IDLE_AFTER = CADENCE.couchSignalIdleAfterEmptyPolls;
       let emptySignalPolls = 0;
       let signalPollMs = SIGNAL_ACTIVE_MS;
+      let signalPollInFlight = false;
 
       const pollSignalsOnce = async () => {
-        if (closed || !pc) return;
+        if (closed || !pc || signalPollInFlight) return;
+        signalPollInFlight = true;
         try {
           const qs = new URLSearchParams({
             forRole: "controller",
-            since: String(signalSince),
+            // Concurrent posts can be stored out of timestamp order.
+            since: String(Math.max(0, signalSince - 10_000)),
             controllerId: session.controllerId,
             controllerToken: session.controllerToken,
             peerId: session.controllerId,
@@ -756,7 +762,9 @@ export function ControllerClient({
           );
           const data = await res.json();
           if (!res.ok) return;
-          const messages = data.messages || [];
+          const messages = (data.messages || []).filter(
+            (m: { id: string }) => !seenSignalIds.has(m.id)
+          );
           if (messages.length > 0) {
             emptySignalPolls = 0;
             if (signalPollMs !== SIGNAL_ACTIVE_MS) {
@@ -780,6 +788,11 @@ export function ControllerClient({
             }
           }
           for (const m of messages) {
+            seenSignalIds.add(m.id);
+            if (seenSignalIds.size > 2048) {
+              const oldest = seenSignalIds.values().next().value;
+              if (oldest) seenSignalIds.delete(oldest);
+            }
             signalSince = Math.max(signalSince, m.timestamp || 0);
             let payload: {
               kind?: string;
@@ -797,6 +810,9 @@ export function ControllerClient({
             if (payload.kind === "offer" && payload.sdp && pc) {
               try {
                 await pc.setRemoteDescription(payload.sdp);
+                for (const ice of pendingRemoteIce.splice(0)) {
+                  await addRemoteIceCandidate(pc, ice.candidate, ice.complete);
+                }
                 const answer = await pc.createAnswer();
                 await pc.setLocalDescription(answer);
                 await postSignal({
@@ -804,21 +820,28 @@ export function ControllerClient({
                   sdp: answer,
                   from: session.controllerId,
                 });
-                usingWebrtc = true;
-                setTransport("webrtc");
               } catch {
                 /* ignore renegotiation races */
               }
             }
             if (payload.kind === "answer" && payload.sdp && pc.signalingState !== "stable") {
               await pc.setRemoteDescription(payload.sdp);
+              for (const ice of pendingRemoteIce.splice(0)) {
+                await addRemoteIceCandidate(pc, ice.candidate, ice.complete);
+              }
             }
             if (payload.kind === "ice") {
-              await addRemoteIceCandidate(pc, payload.candidate, payload.complete);
+              if (pc.remoteDescription) {
+                await addRemoteIceCandidate(pc, payload.candidate, payload.complete);
+              } else {
+                pendingRemoteIce.push({ candidate: payload.candidate, complete: payload.complete });
+              }
             }
           }
         } catch {
           /* ignore */
+        } finally {
+          signalPollInFlight = false;
         }
       };
 

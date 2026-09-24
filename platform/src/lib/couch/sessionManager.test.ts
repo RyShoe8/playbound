@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BUTTON, parseInputPacketV1, emptyPadState } from "@/lib/couch/protocol";
+import CouchSessionModel from "@/lib/models/CouchSession";
 import {
   setCouchStoreMode,
   createCouchSession,
@@ -10,6 +11,8 @@ import {
   rejectOrKickController,
   setHostEndpoints,
   publicCouchSnapshot,
+  postCouchSignal,
+  pollCouchSignals,
 } from "@/lib/couch/sessionManager";
 
 describe("couch protocol", () => {
@@ -43,6 +46,54 @@ describe("couch protocol", () => {
 describe("couch sessions", () => {
   beforeEach(() => {
     setCouchStoreMode("memory");
+  });
+
+  it("retains distinct ICE messages created in the same millisecond", async () => {
+    const session = await createCouchSession({});
+    const clock = vi.spyOn(Date, "now").mockReturnValue(1_800_000_000_000);
+    try {
+      const first = await postCouchSignal(session, {
+        senderRole: "controller", recipientRole: "host", senderPeerId: "guest",
+        payload: JSON.stringify({ kind: "ice", candidate: "first" }),
+      });
+      const second = await postCouchSignal(session, {
+        senderRole: "controller", recipientRole: "host", senderPeerId: "guest",
+        payload: JSON.stringify({ kind: "ice", candidate: "second" }),
+      });
+      expect(first?.timestamp).toBe(second?.timestamp);
+      expect(first?.id).not.toBe(second?.id);
+      expect(pollCouchSignals(session, "host", first!.timestamp - 1).map((m) => m.id))
+        .toEqual([first!.id, second!.id]);
+    } finally {
+      clock.mockRestore();
+    }
+  });
+
+  it("atomically appends Mongo signals instead of replacing the session message array", async () => {
+    const session = await createCouchSession({});
+    const update = vi.spyOn(CouchSessionModel, "updateOne").mockResolvedValue({ matchedCount: 1 } as never);
+    const save = vi.spyOn(CouchSessionModel, "findOneAndUpdate").mockResolvedValue(null as never);
+    setCouchStoreMode("mongo");
+    try {
+      const signal = await postCouchSignal(session, {
+        senderRole: "controller", recipientRole: "host", senderPeerId: "guest",
+        payload: JSON.stringify({ kind: "ice", candidate: "candidate-a" }),
+      });
+      expect(signal).toBeTruthy();
+      expect(update).toHaveBeenCalledWith(
+        { sessionId: session.sessionId, status: "open" },
+        expect.objectContaining({
+          $push: { messages: { $each: [signal], $slice: -1024 } },
+        })
+      );
+      await setHostEndpoints(session, { wsUrls: [], wsToken: "token" });
+      const updatePayload = save.mock.calls.at(-1)?.[1] as { $set?: Record<string, unknown> };
+      expect(updatePayload.$set).not.toHaveProperty("messages");
+    } finally {
+      setCouchStoreMode("memory");
+      update.mockRestore();
+      save.mockRestore();
+    }
   });
 
   it("creates joinable sessions and auto-approves", async () => {

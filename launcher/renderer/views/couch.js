@@ -12,12 +12,17 @@ import { disableGamepadBridge } from "../gamepadBridge.js";
 
 let wired = false;
 let signalSince = 0;
+let signalPollInFlight = false;
+const seenSignalIds = new Set();
 let pollTimer = null;
 /** @type {Map<string, RTCPeerConnection>} */
 const peers = new Map();
 /** @type {Map<string, RTCDataChannel>} */
 const channels = new Map();
+/** @type {Map<string, Array<{ candidate: RTCIceCandidateInit | null, complete: boolean }>>} */
+const pendingRemoteIce = new Map();
 let lastState = null;
+let stateRevision = 0;
 
 function pb() {
   return window.playbound;
@@ -39,8 +44,10 @@ api.renderCouchView = renderCouchView;
 /** Keep WebRTC answering alive while a session is active (any launcher view). */
 export function ensureCouchBackground() {
   ensureWired();
+  const revisionBeforeRefresh = stateRevision;
   void (async () => {
     const state = await pb().couchState();
+    if (stateRevision !== revisionBeforeRefresh) return;
     lastState = state;
     if (state?.active) startSignalPoll();
     else stopSignalPoll();
@@ -95,6 +102,7 @@ function ensureWired() {
   wired = true;
 
   pb().onCouchState?.((state) => {
+    stateRevision += 1;
     lastState = state;
     if (state?.active) startSignalPoll();
     else cleanupPeerState();
@@ -157,6 +165,7 @@ function startSignalPoll() {
   // A session always starts with a handshake pending, so begin at full rate.
   emptySignalPolls = 0;
   scheduleSignalPoll(SIGNAL_ACTIVE_MS);
+  void pollSignals();
 }
 
 function stopSignalPoll() {
@@ -190,51 +199,70 @@ async function addRemoteIceCandidate(pc, candidate, complete) {
 }
 
 async function pollSignals() {
-  const state = await pb().couchState?.().catch(() => null);
-  if (state?.active) lastState = state;
-  const session = lastState?.session;
-  if (!session) return;
-  const res = await pb().couchSignalPoll(signalSince);
-  const messages = res?.messages || [];
+  if (signalPollInFlight) return;
+  signalPollInFlight = true;
+  try {
+    const state = await pb().couchState?.().catch(() => null);
+    if (state?.active) lastState = state;
+    const session = lastState?.session;
+    if (!session) return;
+    // Concurrent signal posts can reach Mongo out of timestamp order. Replay
+    // a short window and dedupe by ID instead of losing a late ICE candidate.
+    const res = await pb().couchSignalPoll(Math.max(0, signalSince - 10_000));
+    const messages = (res?.messages || []).filter((m) => !seenSignalIds.has(m.id));
 
-  if (messages.length > 0) {
-    // Something is happening — go back to full rate for the rest of it.
-    emptySignalPolls = 0;
-    if (signalPollMs !== SIGNAL_ACTIVE_MS) scheduleSignalPoll(SIGNAL_ACTIVE_MS);
-  } else {
-    emptySignalPolls += 1;
-    if (emptySignalPolls >= SIGNAL_IDLE_AFTER && signalPollMs !== SIGNAL_IDLE_MS) {
-      scheduleSignalPoll(SIGNAL_IDLE_MS);
+    if (messages.length > 0) {
+      // Something is happening — go back to full rate for the rest of it.
+      emptySignalPolls = 0;
+      if (signalPollMs !== SIGNAL_ACTIVE_MS) scheduleSignalPoll(SIGNAL_ACTIVE_MS);
+    } else {
+      emptySignalPolls += 1;
+      if (emptySignalPolls >= SIGNAL_IDLE_AFTER && signalPollMs !== SIGNAL_IDLE_MS) {
+        scheduleSignalPoll(SIGNAL_IDLE_MS);
+      }
     }
-  }
 
-  for (const m of messages) {
-    signalSince = Math.max(signalSince, m.timestamp || 0);
-    let payload;
-    try {
-      payload = JSON.parse(m.payload);
-    } catch {
-      continue;
-    }
-    if (payload.kind === "offer" && payload.from && payload.sdp) {
-      await answerOffer(payload.from, payload.sdp, session);
-    }
-    if (payload.kind === "answer" && payload.from && payload.sdp) {
-      const pc = peers.get(payload.from);
-      if (pc && pc.signalingState === "have-local-offer") {
-        try {
-          await pc.setRemoteDescription(payload.sdp);
-        } catch {
-          /* ignore */
+    for (const m of messages) {
+      seenSignalIds.add(m.id);
+      if (seenSignalIds.size > 2048) {
+        const oldest = seenSignalIds.values().next().value;
+        if (oldest) seenSignalIds.delete(oldest);
+      }
+      signalSince = Math.max(signalSince, m.timestamp || 0);
+      let payload;
+      try {
+        payload = JSON.parse(m.payload);
+      } catch {
+        continue;
+      }
+      if (payload.kind === "offer" && payload.from && payload.sdp) {
+        await answerOffer(payload.from, payload.sdp, session);
+      }
+      if (payload.kind === "answer" && payload.from && payload.sdp) {
+        const pc = peers.get(payload.from);
+        if (pc && pc.signalingState === "have-local-offer") {
+          try {
+            await pc.setRemoteDescription(payload.sdp);
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+      if (payload.kind === "ice" && payload.from) {
+        const pc = peers.get(payload.from);
+        if (pc?.remoteDescription) {
+          await addRemoteIceCandidate(pc, payload.candidate, payload.complete);
+        } else {
+          const pending = pendingRemoteIce.get(payload.from) || [];
+          pending.push({ candidate: payload.candidate, complete: Boolean(payload.complete) });
+          pendingRemoteIce.set(payload.from, pending);
         }
       }
     }
-    if (payload.kind === "ice" && payload.from) {
-      const pc = peers.get(payload.from);
-      if (pc) {
-        await addRemoteIceCandidate(pc, payload.candidate, payload.complete);
-      }
-    }
+  } catch (err) {
+    console.warn("[couch] signal poll failed:", err?.message || err);
+  } finally {
+    signalPollInFlight = false;
   }
 }
 
@@ -472,6 +500,10 @@ async function answerOffer(controllerId, remoteSdp, session) {
   };
 
   await pc.setRemoteDescription(remoteSdp);
+  for (const ice of pendingRemoteIce.get(controllerId) || []) {
+    await addRemoteIceCandidate(pc, ice.candidate, ice.complete);
+  }
+  pendingRemoteIce.delete(controllerId);
 
   /*
    * Online multiplayer for local-co-op games: push host application window to the peer so
@@ -693,7 +725,9 @@ function cleanupPeerState() {
   }
   peers.clear();
   channels.clear();
+  pendingRemoteIce.clear();
   signalSince = 0;
+  seenSignalIds.clear();
 }
 
 async function stopSession() {
