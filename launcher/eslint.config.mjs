@@ -67,6 +67,7 @@ const browserGlobals = {
   WebSocket: "readonly",
   RTCPeerConnection: "readonly",
   MediaStream: "readonly",
+  performance: "readonly",
   MutationObserver: "readonly",
   ResizeObserver: "readonly",
   IntersectionObserver: "readonly",
