@@ -13,6 +13,7 @@ const CommunityServerProfileSchema = new Schema({
   queryVerified: { type: Boolean, default: false },
   queryKind: { type: String, enum: ["openra-master", "none"], default: "none" },
   joinVerified: { type: Boolean, default: false },
+  updatedBy: { type: String, default: null },
   clientVersion: { type: String, default: null },
   serverVersion: { type: String, default: null },
   baselineVersion: { type: Number, default: 1, min: 1 },
