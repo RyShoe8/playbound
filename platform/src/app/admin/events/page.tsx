@@ -5,9 +5,13 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import PlatformEvent from "@/lib/models/PlatformEvent";
+import CapacityReservation from "@/lib/models/CapacityReservation";
+import CommunityServer from "@/lib/models/CommunityServer";
 import { getRsvpCountsForEvents } from "@/lib/events/rsvpCounts";
 import { serializeEvent } from "@/lib/events/serialize";
 import { AdminEventsTable } from "@/components/events/AdminEventsTable";
+import { NightlyPlannerPanel } from "@/components/events/NightlyPlannerPanel";
+import { AutomatedEventPlannerManager } from "@/components/admin/AutomatedEventPlannerManager";
 
 export default async function AdminEventsPage() {
   // Never prerendered — see the layout. Each segment prerenders
@@ -22,9 +26,27 @@ export default async function AdminEventsPage() {
     .limit(100)
     .lean();
   const counts = await getRsvpCountsForEvents(docs.map((d) => d._id));
+  const nightlyIds = docs.filter((d) => d.generatedBy === "game_night_planner").map((d) => d._id);
+  const reservations = nightlyIds.length
+    ? await CapacityReservation.find({ eventId: { $in: nightlyIds }, state: { $in: ["planned", "active", "missed"] } })
+      .select({ eventId: 1, state: 1, communityServerId: 1, decisionReason: 1 }).lean()
+    : [];
+  const serverIds = reservations.filter((r) => r.communityServerId).map((r) => r.communityServerId);
+  const hosted = serverIds.length
+    ? await CommunityServer.find({ _id: { $in: serverIds } }).select({ runtimeState: 1, health: 1, playerCountCheckedAt: 1, decisionReason: 1 }).lean()
+    : [];
+  const reservationsByEvent = new Map(reservations.map((r) => [String(r.eventId), r]));
+  const serversById = new Map(hosted.map((s) => [String(s._id), s]));
   const events = docs.map((d) => ({
     ...serializeEvent(d, counts.get(String(d._id))),
     rawStatus: d.status,
+    hostingStatus: d.generatedBy === "game_night_planner" ? (() => {
+      const reservation = reservationsByEvent.get(String(d._id));
+      if (!reservation) return "Event only · no verified hosting profile";
+      const server = reservation.communityServerId ? serversById.get(String(reservation.communityServerId)) : null;
+      if (server?.runtimeState === "running" && server.health === "healthy" && server.playerCountCheckedAt && Date.now() - new Date(server.playerCountCheckedAt).getTime() < 30 * 60_000) return "Hosted · ready";
+      return reservation.decisionReason || server?.decisionReason || (reservation.state === "active" ? "Hosted · starting" : "Hosted · reserved");
+    })() : null,
   }));
 
   return (
@@ -43,6 +65,12 @@ export default async function AdminEventsPage() {
           New event
         </Link>
       </div>
+      <NightlyPlannerPanel />
+      <details id="legacy-planner" className="rounded-xl border border-border bg-card p-5">
+        <summary className="cursor-pointer font-semibold">Legacy pop-up planner</summary>
+        <p className="mt-2 text-sm text-muted-foreground">Finish or disable existing pop-up sessions here before turning on the nightly schedule.</p>
+        <div className="mt-4"><AutomatedEventPlannerManager /></div>
+      </details>
       <AdminEventsTable events={events} />
     </div>
   );

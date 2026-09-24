@@ -9,7 +9,7 @@ import { EventLocalWhen } from "@/components/LocalTime";
 export function AdminEventsTable({
   events,
 }: {
-  events: (SerializedEvent & { rawStatus?: string })[];
+  events: (SerializedEvent & { rawStatus?: string; hostingStatus?: string | null })[];
 }) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -67,6 +67,7 @@ export function AdminEventsTable({
             <th className="px-3 py-2">Event</th>
             <th className="px-3 py-2">When</th>
             <th className="px-3 py-2">Status</th>
+            <th className="px-3 py-2">Hosting</th>
             <th className="px-3 py-2">Going</th>
             <th className="px-3 py-2">Actions</th>
           </tr>
@@ -87,6 +88,7 @@ export function AdminEventsTable({
                 <EventLocalWhen startsAt={e.startsAt} endsAt={e.endsAt} />
               </td>
               <td className="px-3 py-2 text-xs capitalize">{e.status}</td>
+              <td className="px-3 py-2 text-xs text-muted-foreground">{e.hostingStatus || "—"}</td>
               <td className="px-3 py-2">{e.counts?.going ?? 0}</td>
               <td className="px-3 py-2">
                 <div className="flex flex-wrap gap-1.5">

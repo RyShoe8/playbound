@@ -225,6 +225,7 @@ export async function maybeUpsertAutoBugFromTelemetry(opts: {
     "party_failed",
     "remote_play_failed",
     "couch_failed",
+    "community_server_failed",
   ]);
   if (!failureEvents.has(event)) return;
 

@@ -53,6 +53,11 @@ type ConnectAdminPartySummary = {
 };
 
 type OverviewData = {
+  monitoring?: {
+    cpuWarningPercent: number; cpuCriticalPercent: number;
+    ramWarningPercent: number; ramCriticalPercent: number;
+    diskWarningPercent: number; diskCriticalPercent: number;
+  };
   configured: boolean;
   host: string | null;
   health: {
@@ -613,7 +618,7 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
                 <div className="mt-3">
                   <ProgressBar
                     percent={cpuPct}
-                    tone={cpuPct > 85 ? "danger" : cpuPct > 70 ? "warn" : "default"}
+                    tone={cpuPct >= (data?.monitoring?.cpuCriticalPercent ?? 80) ? "danger" : cpuPct >= (data?.monitoring?.cpuWarningPercent ?? 65) ? "warn" : "default"}
                   />
                 </div>
               )}
@@ -627,7 +632,7 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
               <div className="mt-3">
                 <ProgressBar
                   percent={memPct}
-                  tone={memPct > 90 ? "danger" : memPct > 75 ? "warn" : "default"}
+                  tone={memPct >= (data?.monitoring?.ramCriticalPercent ?? 85) ? "danger" : memPct >= (data?.monitoring?.ramWarningPercent ?? 70) ? "warn" : "default"}
                 />
               </div>
             </MetricCard>
@@ -646,9 +651,9 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
                 <ProgressBar
                   percent={rootDisk?.usedPercent ?? 0}
                   tone={
-                    (rootDisk?.usedPercent ?? 0) > 90
+                    (rootDisk?.usedPercent ?? 0) >= (data?.monitoring?.diskCriticalPercent ?? 90)
                       ? "danger"
-                      : (rootDisk?.usedPercent ?? 0) > 75
+                      : (rootDisk?.usedPercent ?? 0) >= (data?.monitoring?.diskWarningPercent ?? 75)
                         ? "warn"
                         : "default"
                   }

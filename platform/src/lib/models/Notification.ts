@@ -6,6 +6,7 @@ export const NOTIFICATION_TYPES = [
   "event_rsvp_confirmed",
   "event_reminder",
   "event_starting",
+  "game_night_weekly_schedule",
   "tournament_match_reminder",
   "tournament_advanced",
   "play_invite",
@@ -32,6 +33,7 @@ const NotificationSchema = new Schema(
     title: { type: String, required: true, maxlength: 200 },
     body: { type: String, maxlength: 1000, default: null },
     href: { type: String, maxlength: 500, default: "/friends" },
+    dedupeKey: { type: String, default: null },
     readAt: { type: Date, default: null },
     meta: {
       type: Schema.Types.Mixed,
@@ -43,6 +45,7 @@ const NotificationSchema = new Schema(
 
 NotificationSchema.index({ userId: 1, createdAt: -1 });
 NotificationSchema.index({ userId: 1, readAt: 1 });
+NotificationSchema.index({ userId: 1, dedupeKey: 1 }, { unique: true, partialFilterExpression: { dedupeKey: { $type: "string" } } });
 
 const Notification = models.Notification || model("Notification", NotificationSchema);
 export default Notification;

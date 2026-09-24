@@ -26,6 +26,7 @@ export interface PartyServerSource {
   editionSlug?: string | null;
   openRaMod?: string | null;
   hostMode?: string | null;
+  publicServer?: { id?: string | null } | null;
   selfHostReady?: boolean | null;
   selfHostPort?: { port?: number | null } | null;
   selfHostControl?: {
@@ -78,7 +79,9 @@ export function serverControlAvailability(party: PartyServerSource): ServerContr
       available: false,
       reason:
         hostMode === "public"
-          ? "This party is on a community server, which PlayBound does not administer."
+          ? String(party.publicServer?.id || "").startsWith("playbound:")
+            ? "This PlayBound Community Server is managed centrally. Party members can join, but only admins can change its settings."
+            : "This party is on a community server, which PlayBound does not administer."
           : "This party is playing on one PC, so there is no server to control.",
     };
   }

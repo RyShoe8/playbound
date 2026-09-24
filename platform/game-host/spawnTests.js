@@ -39,7 +39,7 @@ export function getLastSpawnTests() {
 
 /**
  * @param {string} slug
- * @param {{ ok: boolean, error?: string|null, durationMs?: number, port?: number|null }} result
+ * @param {{ ok: boolean, error?: string|null, durationMs?: number, port?: number|null, resources?: object }} result
  */
 export function recordSpawnTest(slug, result) {
   const data = loadCache();
@@ -49,6 +49,7 @@ export function recordSpawnTest(slug, result) {
     at: new Date().toISOString(),
     durationMs: result.durationMs ?? null,
     port: result.port ?? null,
+    resources: result.resources ?? null,
   };
   saveCache();
   return data[slug];

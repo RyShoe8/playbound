@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -269,14 +269,6 @@ const CONNECT_CHILDREN: NavChild[] = [
     icon: MonitorPlay,
     href: "/admin/connect/streaming",
     match: (p) => p.startsWith("/admin/connect/streaming"),
-  },
-  {
-    label: "Event Planner",
-    icon: CalendarDays,
-    href: "/admin/connect/automated-events",
-    match: (p) =>
-      p.startsWith("/admin/connect/automated-events") ||
-      p.startsWith("/admin/connect/autonomous"),
   },
 ];
 

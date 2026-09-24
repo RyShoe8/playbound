@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ConnectManager } from "@/components/admin/ConnectManager";
+import { CommunityHostingPanel } from "@/components/admin/CommunityHostingPanel";
 
 export const metadata: Metadata = {
   title: "Game Servers — Connect Admin",
@@ -31,6 +32,7 @@ export default function ConnectGameServersPage() {
         </Link>
       </div>
       <ConnectManager view="game-servers" />
+      <CommunityHostingPanel />
     </div>
   );
 }

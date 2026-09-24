@@ -12,6 +12,7 @@ import { userFromLauncherBearer } from "@/lib/library";
 import { getGame } from "@/lib/catalog";
 import { getRsvpCounts } from "@/lib/events/rsvpCounts";
 import { serializeEvent } from "@/lib/events/serialize";
+import { joinableServerForEvent } from "@/lib/communityHosting/discovery";
 import { getEventPresenceAggregates } from "@/lib/events/presenceAgg";
 import { syncEventAttendance } from "@/lib/events/attendance";
 import { eventUpdateSchema, validateGameSlug } from "@/lib/events/service";
@@ -67,13 +68,14 @@ export async function GET(_req: Request, ctx: Ctx) {
       }
     }
 
-    const [counts, presence, game] = await Promise.all([
+    const [counts, presence, game, hostedServer] = await Promise.all([
       getRsvpCounts(event._id),
       getEventPresenceAggregates({
         eventId: event._id,
         gameSlug: event.gameSlug,
       }),
       event.gameSlug ? getGame(event.gameSlug) : Promise.resolve(null),
+      event.generatedBy === "game_night_planner" ? joinableServerForEvent(String(event._id)) : Promise.resolve(null),
     ]);
 
     let myRsvp: string | null = null;
@@ -153,6 +155,7 @@ export async function GET(_req: Request, ctx: Ctx) {
       game: game
         ? { slug: game.slug, title: game.title, coverImage: game.coverImage || null }
         : null,
+      hostedServer,
       myRsvp,
       presence,
       organizer,

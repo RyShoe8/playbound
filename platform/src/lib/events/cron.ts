@@ -1,5 +1,8 @@
 import dbConnect from "@/lib/db";
 import PlatformEvent from "@/lib/models/PlatformEvent";
+import AutomatedEventConfig from "@/lib/models/AutomatedEventConfig";
+import { fillNightlySchedule } from "@/lib/events/nightlySchedule";
+import { sendWeeklyScheduleNotification } from "@/lib/events/weeklyScheduleNotification";
 import EventRsvp from "@/lib/models/EventRsvp";
 import { deriveEventStatus } from "@/lib/events/types";
 import { defaultEndsAt } from "@/lib/events/time";
@@ -24,6 +27,9 @@ export async function runEventsCron(now = new Date()): Promise<{
   discordActions: number;
 }> {
   await dbConnect();
+  const planner = await AutomatedEventConfig.findOne({ key: "global" }).select({ "nightly.enabled": 1 }).lean();
+  if (planner?.nightly?.enabled) await fillNightlySchedule(now);
+  if (planner?.nightly?.enabled) await sendWeeklyScheduleNotification(now);
   const events = await PlatformEvent.find({
     status: {
       $in: [
@@ -121,17 +127,18 @@ export async function runEventsCron(now = new Date()): Promise<{
       reminders += going.length;
     }
 
-    if (!remindersSent.h24 && msToStart > 0 && msToStart <= 24 * 3600_000 + 60_000) {
+    if (event.generatedBy !== "game_night_planner" && !remindersSent.h24 && msToStart > 0 && msToStart <= 24 * 3600_000 + 60_000) {
       await notifyGoing("h24");
       event.set("remindersSent.h24", true);
       await event.save();
     }
-    if (!remindersSent.h1 && msToStart > 0 && msToStart <= 3600_000 + 60_000) {
+    if (event.generatedBy !== "game_night_planner" && !remindersSent.h1 && msToStart > 0 && msToStart <= 3600_000 + 60_000) {
       await notifyGoing("h1");
       event.set("remindersSent.h1", true);
       await event.save();
     }
     if (
+      event.generatedBy !== "game_night_planner" &&
       !remindersSent.start &&
       msToStart <= 60_000 &&
       now.getTime() <= endsAt.getTime()
@@ -150,7 +157,7 @@ export async function runEventsCron(now = new Date()): Promise<{
       "@/lib/events/automatedEventPlannerService"
     );
     await checkAndTeardownExpiredEvents();
-    await evaluateAndTriggerAutomatedEvent({ force: false });
+    if (!planner?.nightly?.enabled) await evaluateAndTriggerAutomatedEvent({ force: false });
   } catch (err) {
     console.warn("[events cron] automated event planner evaluation skipped:", err);
   }

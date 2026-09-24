@@ -10,6 +10,9 @@ export type ServerLocation = {
 
 export type GameServer = {
   id: string;
+  sourceType?: "playbound_hosted";
+  communityServerId?: string;
+  editionSlug?: string | null;
   name: string;
   host: string;
   port: number;

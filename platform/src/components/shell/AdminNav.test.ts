@@ -119,7 +119,6 @@ describe("admin nav structure", () => {
         { label: "Game Servers", href: "/admin/connect/game-servers" },
         { label: "Parties", href: "/admin/connect/parties" },
         { label: "Streaming", href: "/admin/connect/streaming" },
-        { label: "Event Planner", href: "/admin/connect/automated-events" },
       ],
     });
   });

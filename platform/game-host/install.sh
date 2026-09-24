@@ -210,6 +210,8 @@ cp -f "$AGENT_SRC/index.js" "$AGENT_SRC/recipes.js" "$AGENT_SRC/ensureGame.js" \
   "$AGENT_SRC/etLegacyInstall.js" "$AGENT_SRC/metrics.js" "$AGENT_SRC/spawnTests.js" \
   "$AGENT_SRC/gameVersions.js" "$AGENT_SRC/rcon.js" "$AGENT_SRC/roomRestart.js" \
   "$AGENT_SRC/startLock.js" "$AGENT_SRC/downloadStream.js" \
+  "$AGENT_SRC/managedRegistry.js" "$AGENT_SRC/processMetrics.js" \
+  "$AGENT_SRC/communityHostingTick.js" \
   "$AGENT_SRC/package.json" "$AGENT_DIR/"
 mkdir -p "$AGENT_DIR/assets"
 cp -f "$AGENT_SRC/assets/et-playbound.cfg" "$AGENT_DIR/assets/" 2>/dev/null || true
@@ -963,7 +965,10 @@ fi
 
 echo "==> systemd"
 cp -f "$AGENT_SRC/playbound-game-host.service" /etc/systemd/system/playbound-game-host.service
+cp -f "$AGENT_SRC/playbound-community-hosting.service" /etc/systemd/system/playbound-community-hosting.service
+cp -f "$AGENT_SRC/playbound-community-hosting.timer" /etc/systemd/system/playbound-community-hosting.timer
 systemctl daemon-reload
+systemctl enable --now playbound-community-hosting.timer
 
 # Free :3478 — a leftover turnserver from a prior config probe (or a failed
 # unit) will make systemd start fail with errno=98 (EADDRINUSE).

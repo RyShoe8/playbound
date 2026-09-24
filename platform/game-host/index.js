@@ -16,6 +16,7 @@ import dgram from "node:dgram";
 import { spawn } from "node:child_process";
 import crypto from "node:crypto";
 import path from "node:path";
+import fs from "node:fs";
 import { createRequire } from "node:module";
 import { createReadStream, createWriteStream } from "node:fs";
 import { copyFile, mkdir, rename, rm, stat } from "node:fs/promises";
@@ -38,6 +39,8 @@ import { getLastSpawnTests, recordSpawnTest } from "./spawnTests.js";
 import { getCachedGameVersions } from "./gameVersions.js";
 import { createStartCoordinator } from "./startLock.js";
 import { httpsGetStream } from "./downloadStream.js";
+import { createManagedRegistry, createPartyRegistry, isSameProcess, processIdentity, processGroupMembers, rehydrateManagedRoom } from "./managedRegistry.js";
+import { processMetrics } from "./processMetrics.js";
 
 const require = createRequire(import.meta.url);
 const { injectPlayboundAdmin, listTes3mpAccounts, claimTes3mpAdmin, requestTes3mpSetHour } = require(
@@ -47,11 +50,13 @@ const { injectPlayboundAdmin, listTes3mpAccounts, claimTes3mpAdmin, requestTes3m
 const SECRET = process.env.GAME_HOST_SECRET || "";
 const PUBLIC_IP = process.env.GAME_HOST_PUBLIC_IP || "";
 const PORT = Number(process.env.GAME_HOST_PORT || 8741);
+const BIND_ADDRESS = process.env.GAME_HOST_BIND_ADDRESS || "0.0.0.0";
 const MAX_ROOMS = Number(process.env.GAME_HOST_MAX_ROOMS || 8);
 const IDLE_MS = Number(process.env.GAME_HOST_IDLE_MS || 4 * 60 * 60 * 1000);
 const MIRROR_ARCHIVE_DIR = process.env.MIRROR_ARCHIVE_DIR || "/opt/playbound-host/archive";
 const MIRROR_ARCHIVE_MAX_BYTES = Number(process.env.MIRROR_ARCHIVE_MAX_BYTES || 20 * 1024 * 1024 * 1024);
 const GAMES_ROOT = process.env.GAME_HOST_GAMES_DIR || "/opt/playbound-host/games";
+const MANAGED_LOG_DIR = process.env.GAME_HOST_MANAGED_LOG_DIR || "/var/lib/playbound-host/managed-logs";
 
 if (!SECRET) {
   console.error("GAME_HOST_SECRET is required");
@@ -62,6 +67,12 @@ if (!SECRET) {
 const rooms = new Map();
 /** partyId → roomId */
 const byParty = new Map();
+/** communityServerId → roomId; independent of Party. */
+const byManaged = new Map();
+const managedJobs = new Map();
+let shuttingDown = false;
+const managedRegistry = createManagedRegistry();
+const partyRegistry = createPartyRegistry();
 /** `${slug}:${port}` */
 const usedPorts = new Set();
 const startCoordinator = createStartCoordinator({
@@ -660,10 +671,14 @@ function freePort(slug, port) {
 function stopRoom(room) {
   if (!room) return;
   const pid = room.child?.pid || room.pid;
-  if (pid) {
+  // A recovered room has no ChildProcess handle. Never signal a reused PID.
+  if (pid && room.processIdentity && isSameProcess(pid, room.processIdentity)) {
+    const members = processGroupMembers(pid);
     try {
-      // Send SIGTERM first to process group
-      process.kill(-pid, "SIGTERM");
+      // Only signal a group when this room owns it. Legacy party processes
+      // inherited the agent's group and must be stopped by PID alone.
+      if (members.some((member) => member.pid === pid)) process.kill(-pid, "SIGTERM");
+      else process.kill(pid, "SIGTERM");
     } catch {
       try {
         room.child?.kill("SIGTERM");
@@ -680,28 +695,81 @@ function stopRoom(room) {
 
     // Force SIGKILL after 500ms to guarantee no zombie/hung threads consume CPU
     setTimeout(() => {
-      try {
-        process.kill(-pid, "SIGKILL");
-      } catch {
-        try {
-          room.child?.kill("SIGKILL");
-        } catch {
-          /* already dead */
-        }
+      for (const member of members.length ? members : [{ pid, identity: room.processIdentity }]) {
+        if (!isSameProcess(member.pid, member.identity)) continue;
+        try { process.kill(member.pid, "SIGKILL"); } catch { /* already dead */ }
       }
     }, 500).unref();
   }
   freePort(room.gameSlug, room.port);
   rooms.delete(room.roomId);
-  if (byParty.get(room.partyId) === room.roomId) byParty.delete(room.partyId);
+  if (room.communityServerId) {
+    if (byManaged.get(room.communityServerId) === room.roomId) byManaged.delete(room.communityServerId);
+    managedJobs.set(room.communityServerId, { status: "stopped", at: Date.now() });
+    persistManagedRooms();
+  } else {
+    if (byParty.get(room.partyId) === room.roomId) byParty.delete(room.partyId);
+    persistPartyRooms();
+  }
+}
+
+async function waitForStoppedRoom(pid, identity) {
+  if (!pid || !identity) return true;
+  await new Promise((resolve) => setTimeout(resolve, 650));
+  return !isSameProcess(pid, identity);
+}
+
+function persistPartyRooms() {
+  partyRegistry.write([...rooms.values()].filter((r) => !r.communityServerId).map((r) => ({
+    roomId: r.roomId, partyId: r.partyId, pid: r.pid, identity: r.processIdentity,
+  })));
+}
+
+function stopOrphanedPartyRooms() {
+  for (const saved of partyRegistry.read()) {
+    if (!isSameProcess(saved.pid, saved.identity)) continue;
+    try { process.kill(saved.pid, "SIGTERM"); } catch { /* already exited */ }
+    setTimeout(() => {
+      if (isSameProcess(saved.pid, saved.identity)) {
+        try { process.kill(saved.pid, "SIGKILL"); } catch { /* already exited */ }
+      }
+    }, 1000).unref();
+  }
+  partyRegistry.write([]);
+}
+
+function persistManagedRooms() {
+  managedRegistry.write([...rooms.values()].filter((r) => r.communityServerId).map((r) => ({
+    roomId: r.roomId, communityServerId: r.communityServerId, gameSlug: r.gameSlug,
+    editionSlug: r.editionSlug || null, name: r.name, host: r.host, port: r.port,
+    pid: r.pid, identity: r.processIdentity, createdAt: r.createdAt,
+    processStartedAt: r.processStartedAt, settings: r.settings,
+    rcon: r.rcon, rconPassword: r.rconPassword,
+  })));
+}
+
+async function recoverManagedRooms() {
+  for (const saved of managedRegistry.read()) {
+    if (!isSameProcess(saved.pid, saved.identity)) continue;
+    if (await isOsPortFree(saved.port, recipes[saved.gameSlug]?.protocol)) continue;
+    const room = rehydrateManagedRoom(saved);
+    rooms.set(room.roomId, room);
+    byManaged.set(room.communityServerId, room.roomId);
+    usedPorts.add(`${room.gameSlug}:${room.port}`);
+  }
+  persistManagedRooms();
 }
 
 async function startRoom(opts) {
-  return startCoordinator.withPartyLock(String(opts.partyId || ""), () => startRoomUnlocked(opts));
+  const key = opts.communityServerId ? `managed:${opts.communityServerId}` : `party:${opts.partyId || ""}`;
+  return startCoordinator.withPartyLock(key, () => startRoomUnlocked(opts));
 }
 
-async function startRoomUnlocked({ gameSlug, partyId, name, editionSlug, mod, settings, leaderUsername }) {
-  const existingId = byParty.get(partyId);
+async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername }) {
+  if (shuttingDown) return { error: "Agent is shutting down" };
+  const lookup = communityServerId ? byManaged : byParty;
+  const ownerId = communityServerId || partyId;
+  const existingId = lookup.get(ownerId);
   if (existingId && rooms.has(existingId)) {
     return { room: rooms.get(existingId) };
   }
@@ -709,12 +777,13 @@ async function startRoomUnlocked({ gameSlug, partyId, name, editionSlug, mod, se
   if (!startCoordinator.reserveCapacity()) {
     return { error: `Host is at capacity (${MAX_ROOMS} rooms)` };
   }
-  byParty.set(partyId, existingId || "pending");
+  lookup.set(ownerId, existingId || "pending");
 
   try {
     return await startRoomReserved({
       gameSlug,
       partyId,
+      communityServerId,
       name,
       editionSlug,
       mod,
@@ -723,13 +792,15 @@ async function startRoomUnlocked({ gameSlug, partyId, name, editionSlug, mod, se
     });
   } finally {
     startCoordinator.releaseCapacity();
-    if (byParty.get(partyId) === "pending") byParty.delete(partyId);
+    if (lookup.get(ownerId) === "pending") lookup.delete(ownerId);
   }
 }
 
-async function startRoomReserved({ gameSlug, partyId, name, editionSlug, mod, settings, leaderUsername }) {
+async function startRoomReserved({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername }) {
 
-  const roomCtx = { editionSlug, mod, partyId, name, settings, leaderUsername };
+  // Recipes use partyId as a filesystem namespace; managed IDs serve that
+  // internal purpose without creating a Party or entering byParty.
+  const roomCtx = { editionSlug, mod, partyId: partyId || communityServerId, managed: Boolean(communityServerId), name, settings, leaderUsername };
   let resolved = resolveRecipe(gameSlug, roomCtx);
   if (!resolved) return { error: `Game ${gameSlug} is not hostable` };
 
@@ -782,7 +853,8 @@ async function startRoomReserved({ gameSlug, partyId, name, editionSlug, mod, se
   serverName = serverName.slice(0, 40);
 
   const ctx = {
-    partyId,
+    partyId: partyId || communityServerId,
+    managed: Boolean(communityServerId),
     name: serverName,
     editionSlug: editionSlug || "",
     // Explicit override for games where edition alone can't say which mod to
@@ -837,22 +909,36 @@ async function startRoomReserved({ gameSlug, partyId, name, editionSlug, mod, se
       typeof recipe.cwd === "function"
         ? recipe.cwd(port, ctx)
         : recipe.cwd || path.dirname(binary);
-    const child = spawn(binary, args, {
-      cwd,
-      env: spawnEnv,
-      stdio: ["pipe", "pipe", "pipe"],
-      detached: false,
-    });
+    if (shuttingDown) {
+      freePort(gameSlug, port);
+      return { error: "Agent is shutting down" };
+    }
+    const spawnGame = () => {
+      // Give every room its own process group so wrappers and their children
+      // stop together. Without this, an AppImage can orphan a live server.
+      if (!communityServerId) return spawn(binary, args, { cwd, env: spawnEnv, stdio: ["pipe", "pipe", "pipe"], detached: true });
+      fs.mkdirSync(MANAGED_LOG_DIR, { recursive: true, mode: 0o700 });
+      const fd = fs.openSync(path.join(MANAGED_LOG_DIR, `${communityServerId}.log`), "a", 0o600);
+      try {
+        return spawn(binary, args, { cwd, env: spawnEnv, stdio: ["ignore", fd, fd], detached: true });
+      } finally {
+        fs.closeSync(fd);
+      }
+    };
+    const child = spawnGame();
 
     const roomId = `room_${crypto.randomBytes(8).toString("hex")}`;
     const room = {
       roomId,
       partyId,
+      communityServerId: communityServerId || null,
+      editionSlug: editionSlug || null,
       gameSlug,
       name: ctx.name,
       host: PUBLIC_IP,
       port,
       pid: child.pid || null,
+      processIdentity: processIdentity(child.pid),
       child,
       cwd,
       createdAt: Date.now(),
@@ -923,10 +1009,13 @@ async function startRoomReserved({ gameSlug, partyId, name, editionSlug, mod, se
           `[${gameSlug}:${port}] restarting (${room.restarts}/${MAX_RESTARTS}) — ${decision.reason}`
         );
         try {
-          const next = spawn(binary, args, { cwd, env: spawnEnv, stdio: ["pipe", "pipe", "pipe"], detached: false });
+          const next = spawnGame();
           room.child = next;
           room.pid = next.pid || null;
+          room.processIdentity = processIdentity(next.pid);
           room.processStartedAt = Date.now();
+          if (communityServerId) persistManagedRooms();
+          else persistPartyRooms();
           next.stdout?.on("data", pushLog);
           next.stderr?.on("data", pushLog);
           attachExitHandler(next);
@@ -954,10 +1043,15 @@ async function startRoomReserved({ gameSlug, partyId, name, editionSlug, mod, se
     }
 
     rooms.set(roomId, room);
-    byParty.set(partyId, roomId);
+    if (communityServerId) byManaged.set(communityServerId, roomId);
+    else byParty.set(partyId, roomId);
 
     const readyTimeoutMs = Number(recipe.startupReadyTimeoutMs) || 10_000;
     const portReady = await waitForServerPort(port, recipe.protocol, child, readyTimeoutMs);
+    if (shuttingDown) {
+      stopRoom(room);
+      return { error: "Agent is shutting down" };
+    }
     if (!portReady) {
       stopRoom(room);
       const tail = startupLog.slice(-3).join(" | ");
@@ -973,6 +1067,10 @@ async function startRoomReserved({ gameSlug, partyId, name, editionSlug, mod, se
     const graceMs = Number(recipe.startupGraceMs) || 0;
     if (graceMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, graceMs));
+      if (shuttingDown) {
+        stopRoom(room);
+        return { error: "Agent is shutting down" };
+      }
       if (child.exitCode !== null || child.signalCode !== null) {
         stopRoom(room);
         const tail = startupLog.slice(-3).join(" | ");
@@ -982,6 +1080,8 @@ async function startRoomReserved({ gameSlug, partyId, name, editionSlug, mod, se
       }
     }
 
+    if (communityServerId) persistManagedRooms();
+    else persistPartyRooms();
     return { room };
   }
 
@@ -1026,27 +1126,25 @@ async function runTestSpawn(gameSlug) {
 
   const port = result.room?.port ?? null;
   const childPid = result.room?.child?.pid;
+  // Collect two samples while the server is idle; the first establishes the
+  // CPU delta baseline. This is an audit observation, not Join verification.
+  const first = childPid ? processMetrics(childPid) : { available: false };
+  await new Promise((resolve) => setTimeout(resolve, 1500));
+  const second = childPid ? processMetrics(childPid) : { available: false };
+  const resources = second.available ? {
+    rssBytes: second.rssBytes,
+    cpuCores: second.cpuCores,
+    sampleIntervalMs: 1500,
+    scope: "process-group",
+    processCount: second.processCount,
+  } : first;
   stopRoom(result.room);
 
   // Wait for the SIGKILL inside stopRoom to land (500ms timer + margin)
   await new Promise((resolve) => setTimeout(resolve, 600));
 
-  // Double-tap: force-kill process group and direct child in case anything survived
-  if (childPid) {
-    try { process.kill(-childPid, "SIGKILL"); } catch { /* already dead */ }
-    try { result.room.child.kill("SIGKILL"); } catch { /* already dead */ }
-  }
-
-  // Last resort: fuser -k to ensure the port is freed and no orphan holds it
-  if (port) {
-    const { execFile: execFileCb } = await import("node:child_process");
-    try {
-      execFileCb("fuser", ["-k", `${port}/tcp`, `${port}/udp`], () => {});
-    } catch { /* fuser not available or port already free */ }
-  }
-
-  recordSpawnTest(gameSlug, { ok: true, durationMs, port });
-  return { ok: true, durationMs, port };
+  recordSpawnTest(gameSlug, { ok: true, durationMs, port, resources });
+  return { ok: true, durationMs, port, resources };
 }
 
 async function runTestSpawnAll() {
@@ -1071,18 +1169,20 @@ function publicRoom(room) {
   return {
     roomId: room.roomId,
     partyId: room.partyId,
+    communityServerId: room.communityServerId || null,
     gameSlug: room.gameSlug,
     name: room.name,
     host: room.host || PUBLIC_IP,
     port: room.port,
     createdAt: room.createdAt,
     settings: room.settings || {},
+    pid: room.pid || null,
     // Whether this room can take live commands — not the password that does it.
     rcon: room.rcon || null,
   };
 }
 
-const AGENT_GET_ROUTES = new Set(["/metrics", "/rooms"]);
+const AGENT_GET_ROUTES = new Set(["/metrics", "/rooms", "/managed"]);
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://127.0.0.1:${PORT}`);
@@ -1127,7 +1227,80 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === "GET" && url.pathname === "/rooms") {
-      json(res, 200, { rooms: [...rooms.values()].map(publicRoom) });
+      json(res, 200, { rooms: [...rooms.values()].filter((r) => !r.communityServerId).map(publicRoom) });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/managed") {
+      json(res, 200, {
+        rooms: [...rooms.values()].filter((r) => r.communityServerId).map((r) => ({
+          ...publicRoom(r), resources: processMetrics(r.pid),
+        })),
+        jobs: Object.fromEntries(managedJobs),
+      });
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/managed") {
+      const body = await readBody(req);
+      const communityServerId = String(body.communityServerId || "").trim();
+      const gameSlug = String(body.gameSlug || "").trim();
+      if (!/^[a-zA-Z0-9_-]{6,80}$/.test(communityServerId) || !recipes[gameSlug]) {
+        json(res, 400, { error: "Valid communityServerId and hostable gameSlug required" });
+        return;
+      }
+      const activeId = byManaged.get(communityServerId);
+      if (activeId && rooms.has(activeId)) {
+        const room = rooms.get(activeId);
+        if (room.gameSlug !== gameSlug) {
+          json(res, 409, { error: "Managed identity is already bound to another game" });
+          return;
+        }
+        json(res, 200, { status: "running", room: publicRoom(room) });
+        return;
+      }
+      const current = managedJobs.get(communityServerId);
+      if (current?.status === "pending") {
+        json(res, 202, current);
+        return;
+      }
+      const job = { status: "pending", gameSlug, startedAt: Date.now() };
+      managedJobs.set(communityServerId, job);
+      void startRoom({
+        communityServerId, gameSlug, partyId: null,
+        name: String(body.name || `PlayBound ${gameSlug}`).slice(0, 40),
+        editionSlug: body.editionSlug, mod: body.mod, settings: body.settings,
+      }).then((result) => {
+        managedJobs.set(communityServerId, result.error
+          ? { status: "failed", error: result.error, at: Date.now() }
+          : { status: "running", room: publicRoom(result.room), at: Date.now() });
+      }).catch((error) => {
+        managedJobs.set(communityServerId, { status: "failed", error: String(error?.message || error), at: Date.now() });
+      });
+      json(res, 202, job);
+      return;
+    }
+
+    const managedMatch = url.pathname.match(/^\/managed\/([a-zA-Z0-9_-]{6,80})$/);
+    if (req.method === "DELETE" && managedMatch) {
+      const communityServerId = managedMatch[1];
+      if (managedJobs.get(communityServerId)?.status === "pending") {
+        json(res, 409, { error: "Provisioning is still in progress" });
+        return;
+      }
+      const roomId = byManaged.get(communityServerId);
+      const room = roomId ? rooms.get(roomId) : null;
+      if (room) {
+        const pid = room.pid;
+        const identity = room.processIdentity;
+        stopRoom(room);
+        if (!(await waitForStoppedRoom(pid, identity))) {
+          json(res, 500, { error: "Managed process did not stop; inspect the host before retrying" });
+          return;
+        }
+      }
+      managedJobs.delete(communityServerId);
+      json(res, 200, { ok: true });
       return;
     }
 
@@ -1414,6 +1587,7 @@ const server = http.createServer(async (req, res) => {
 setInterval(() => {
   const now = Date.now();
   for (const room of rooms.values()) {
+    if (room.communityServerId) continue; // fleet scheduler owns managed idle policy
     const lastActive = room.lastActivityAt || room.createdAt;
     if (now - lastActive > IDLE_MS) {
       console.log(`idle-stop ${room.roomId} ${room.gameSlug}:${room.port}`);
@@ -1422,7 +1596,25 @@ setInterval(() => {
   }
 }, 60_000).unref();
 
-server.listen(PORT, "0.0.0.0", () => {
-  console.log(`PlayBound game-host listening on :${PORT} ip=${PUBLIC_IP || "unset"}`);
-  console.log("installed:", listInstalled());
+function shutdown() {
+  shuttingDown = true;
+  for (const room of [...rooms.values()]) {
+    if (!room.communityServerId || managedJobs.get(room.communityServerId)?.status === "pending") stopRoom(room);
+  }
+  // Let stopRoom's delayed SIGKILL run before the agent exits. Managed rooms
+  // are untouched and remain available for reattachment on restart.
+  server.close();
+  setTimeout(() => process.exit(0), 750);
+}
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
+
+Promise.resolve().then(() => stopOrphanedPartyRooms()).then(() => recoverManagedRooms()).then(() => {
+  server.listen(PORT, BIND_ADDRESS, () => {
+    console.log(`PlayBound game-host listening on :${PORT} ip=${PUBLIC_IP || "unset"}`);
+    console.log("installed:", listInstalled());
+  });
+}).catch((error) => {
+  console.error("Cannot safely recover managed runtimes:", error);
+  process.exit(1);
 });

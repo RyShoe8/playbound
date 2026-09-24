@@ -1,0 +1,10 @@
+[Unit]
+Description=Reconcile PlayBound Community Hosting every 15 minutes
+
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+Unit=playbound-community-hosting.service
+
+[Install]
+WantedBy=timers.target

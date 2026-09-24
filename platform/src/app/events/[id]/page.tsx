@@ -21,6 +21,7 @@ import { JsonLd, graph, breadcrumbSchema, ORGANIZATION_ID } from "@/components/J
 import { EventRsvpActions } from "@/components/events/EventRsvpActions";
 import { EventFriendsAttending } from "@/components/events/EventFriendsAttending";
 import { EventActionBar } from "@/components/events/EventActionBar";
+import { joinableServerForEvent } from "@/lib/communityHosting/discovery";
 import { EventManageActions } from "@/components/events/EventManageActions";
 import { EventViewTracker } from "@/components/events/EventViewTracker";
 import { TournamentBracket } from "@/components/events/TournamentBracket";
@@ -80,7 +81,7 @@ export default async function EventDetailPage({ params }: Props) {
   const eventDoc = await PlatformEvent.findById(id).lean();
   if (!eventDoc) notFound();
 
-  const [counts, presence, game, session] = await Promise.all([
+  const [counts, presence, game, session, hostedServer] = await Promise.all([
     getRsvpCounts(eventDoc._id),
     getEventPresenceAggregates({
       eventId: eventDoc._id,
@@ -88,6 +89,7 @@ export default async function EventDetailPage({ params }: Props) {
     }),
     eventDoc.gameSlug ? getGame(eventDoc.gameSlug) : Promise.resolve(null),
     getServerSession(authOptions),
+    joinableServerForEvent(id),
   ]);
 
   const event = serializeEvent(eventDoc, counts, game?.coverImage || null);
@@ -325,6 +327,7 @@ export default async function EventDetailPage({ params }: Props) {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <EventActionBar
+          hostedServer={hostedServer}
           eventId={event.id}
           gameSlug={event.gameSlug}
           discordInviteUrl={event.discordInviteUrl}
