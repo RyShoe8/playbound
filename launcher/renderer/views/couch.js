@@ -7,7 +7,7 @@
 
 import { escapeHtml, setStatus, views, api } from "../shared.js";
 import { CADENCE } from "../cadence.js";
-import { ensureHostDisplayStream, stopHostDisplayStream, setCropRect } from "../hostDisplayStream.js";
+import { ensureHostDisplayStream, stopHostDisplayStream, setCropRect, markStreamStale } from "../hostDisplayStream.js";
 import { disableGamepadBridge } from "../gamepadBridge.js";
 
 let wired = false;
@@ -128,7 +128,23 @@ function ensureWired() {
   });
 
   pb().onCouchCropRect?.((rect) => {
+    // This push fires exactly once, right when main.js's maximize/Alt+Enter/
+    // measure sequence finishes for THIS game launch — the one moment a
+    // display-resolution switch (see markStreamStale's docstring) is known
+    // to have already had time to happen. A capture that started before
+    // this point may be stale; discard it so the next one starts fresh,
+    // after the mode switch, not racing it. Deliberately NOT done in
+    // applyCropRect's other call site (a newly-connecting peer fetching the
+    // already-known rect) — that's just re-syncing state, nothing changed.
+    markStreamStale();
     applyCropRect(rect);
+    // Usually a no-op: pre-answer capture attempts (couch.js's own retry
+    // loop) pick up the now-stale flag on their own before anyone has
+    // connected. This only matters for the rarer case where a peer's
+    // connection already succeeded (with a possibly-stale, pre-mode-switch
+    // capture) before this signal arrived — pushHostDisplayToPeers no-ops
+    // when there are no peers yet, per its own guard.
+    void pushHostDisplayToPeers();
   });
 }
 
