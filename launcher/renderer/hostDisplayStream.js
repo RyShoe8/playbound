@@ -33,7 +33,7 @@ let processedStream = null; // canvas video track + raw audio track(s)
 let sourceVideoEl = null; // hidden <video> decoding the raw stream, feeds the canvas
 let canvasEl = null;
 let canvasCtx = null;
-let drawRafId = null;
+let drawTimerId = null;
 let currentCropRect = null;
 
 /** Called from couch.js whenever main.js reports a new (or cleared) crop rect. */
@@ -57,6 +57,20 @@ function startCanvasPipeline(rawStream) {
   canvasEl.height = TARGET_HEIGHT;
   canvasCtx = canvasEl.getContext("2d", { alpha: false });
 
+  let drawnFrames = 0;
+  let fpsWindowStart = performance.now();
+
+  /*
+   * Deliberately setInterval, not requestAnimationFrame. rAF is tied to the
+   * compositor and gets throttled or paused outright the moment this window
+   * loses focus or is occluded — exactly what happens the instant a game
+   * window is focused, i.e. the entire time anyone is actually playing.
+   * canvas.captureStream() just samples whatever is currently in the canvas
+   * on its own schedule; if draw() stalls, viewers see a frozen frame
+   * repeated at "60fps" rather than an honestly-reported drop. main.js's
+   * BrowserWindow already sets backgroundThrottling: false, which protects
+   * setInterval/setTimeout (but not rAF) from exactly this.
+   */
   const draw = () => {
     if (!sourceVideoEl || !canvasCtx) return;
     const vw = sourceVideoEl.videoWidth;
@@ -74,13 +88,19 @@ function startCanvasPipeline(rawStream) {
       }
       try {
         canvasCtx.drawImage(sourceVideoEl, sx, sy, sw, sh, 0, 0, TARGET_WIDTH, TARGET_HEIGHT);
+        drawnFrames += 1;
       } catch {
         /* a frame not yet decoded is not an error — retry next tick */
       }
     }
-    drawRafId = requestAnimationFrame(draw);
+    const now = performance.now();
+    if (now - fpsWindowStart >= 4000) {
+      console.log(`[couch-stats] canvas draw rate: ${(drawnFrames / ((now - fpsWindowStart) / 1000)).toFixed(1)}fps`);
+      drawnFrames = 0;
+      fpsWindowStart = now;
+    }
   };
-  drawRafId = requestAnimationFrame(draw);
+  drawTimerId = window.setInterval(draw, 1000 / TARGET_FPS);
 
   const canvasStream = canvasEl.captureStream(TARGET_FPS);
   const canvasVideoTrack = canvasStream.getVideoTracks()[0];
@@ -97,8 +117,8 @@ function startCanvasPipeline(rawStream) {
 }
 
 function stopCanvasPipeline() {
-  if (drawRafId) cancelAnimationFrame(drawRafId);
-  drawRafId = null;
+  if (drawTimerId) window.clearInterval(drawTimerId);
+  drawTimerId = null;
   if (sourceVideoEl) {
     try {
       sourceVideoEl.srcObject = null;
