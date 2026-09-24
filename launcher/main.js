@@ -8667,9 +8667,24 @@ async function maybeRepairZeldaMudoraInstall(slug, info) {
           `game:set_command_joypad_binding("item_1", "x")\n` +
           `game:set_command_joypad_binding("item_2", "y")\n` +
           `game:set_command_joypad_binding("pause", "start")\n\n`;
-        code = code.replace(/^(local game = \.\.\.\r?\n)/, `$1\n${bindings}`);
-        await fsp.writeFile(gameManager, code, "utf8");
-        anyPatched = true;
+        const orig = code;
+        // `m` flag: match "local game = ..." at the start of ANY line, not
+        // just the start of the whole file. Without it, so much as a
+        // leading blank line or comment before that line means the anchor
+        // never matches, replace() silently no-ops, and the code below used
+        // to mark this "patched" and write the file back unchanged anyway —
+        // controllerMarker never actually landed, so every future launch
+        // silently retried and failed the same way forever. That's why the
+        // bindings looked like they should already be applied but weren't.
+        code = code.replace(/^(local game = \.\.\.\r?\n)/m, `$1\n${bindings}`);
+        if (code !== orig) {
+          await fsp.writeFile(gameManager, code, "utf8");
+          anyPatched = true;
+        } else {
+          console.warn(
+            "[zelda-mudora-repair] could not find 'local game = ...' in game_manager.lua — controller bindings not patched"
+          );
+        }
       }
     }
 
@@ -10884,23 +10899,6 @@ function normalizeProcessImageName(name) {
 }
 
 /**
- * Maximize a running game's window, generically, for any game being couch-
- * streamed (Remote Play or a real couch/online-multiplayer party). Capture
- * only ever grabs the whole screen (see setDisplayMediaRequestHandler —
- * per-window capture was removed to fix a real Chromium/DXGI cropping bug),
- * so a game left windowed by default shows the desktop around it to every
- * remote viewer. Mirrors the existing Pokemon-Online-specific block above,
- * generalized to any game via its own tracked process names instead of a
- * hardcoded title list. Fire-and-forget: never blocks capture on this
- * finishing, and calling it again on an already-maximized window is a
- * harmless no-op.
- *
- * Skips any game with its own windowSize override (e.g. castlevania-revamped
- * — see the resize-window.ps1 block above) — that's a deliberate per-game
- * compatibility fix, and maximizing would fight it every time the game is
- * streamed.
- */
-/**
  * Last computed crop rectangle (fractions 0-1 of the captured frame) for the
  * game actually filling — or not filling — the streamed monitor. Screen
  * capture always grabs the whole monitor (see setDisplayMediaRequestHandler);
@@ -10933,16 +10931,33 @@ function parseRectPair(text) {
   return { left, top, width, height };
 }
 
-function maximizeGameWindowForStreaming(slug) {
+/**
+ * Measure a running game's on-screen window rect, generically, for any game
+ * being couch-streamed (Remote Play or a real couch/online-multiplayer
+ * party) — never resizes or otherwise touches the game's own window.
+ *
+ * This used to also SW_MAXIMIZE the window and send it Alt+Enter (to try to
+ * fill the monitor, or break a game out of exclusive fullscreen). Outrun
+ * showed why that's a real regression risk, not just a "doesn't help"
+ * no-op: it rendered visibly broken — cropped to its original small size
+ * in the corner of the now-larger window — ON THE HOST'S OWN SCREEN,
+ * nothing to do with streaming at all. Some games/engines just don't
+ * re-render their framebuffer when their window is resized out from under
+ * them. Capture only ever grabs the whole screen (see
+ * setDisplayMediaRequestHandler — per-window capture was removed to fix a
+ * separate real Chromium/DXGI cropping bug), so a windowed game still needs
+ * ITS RECT measured and cropped to — this function does exactly that and
+ * nothing else now. Mirrors the existing Pokemon-Online-specific maximize
+ * block above (which is untouched — that one game is a known-good case),
+ * generalized to any OTHER game via its own tracked process names, but
+ * strictly measure-only. A game that genuinely needs exclusive-fullscreen
+ * broken out of (bstars2-style — see maximize-window.ps1's own Alt+Enter
+ * path) is a known, accepted limitation for now rather than something
+ * applied blindly to every game.
+ */
+function measureGameWindowForCrop(slug) {
   if (process.platform !== "win32" || !slug) return;
   try {
-    const entry = catalogEntry(slug);
-    // A game with its own deliberate window-size override (resize-window.ps1
-    // — castlevania-revamped or anything with entry.windowSize) must not be
-    // maximized or Alt+Enter'd, which would undo that intentional sizing —
-    // but it still needs its rect MEASURED, since it won't fill the monitor
-    // either and still needs cropping. --measure-only does exactly that.
-    const measureOnly = slug === "castlevania-revamped" || Boolean(entry?.windowSize);
     const imageNames = activeLaunches.get(slug)?.imageNames || [];
     const targets = imageNames.map((n) => String(n).replace(/\.exe$/i, "")).filter(Boolean);
     if (!targets.length) return;
@@ -10955,26 +10970,29 @@ function maximizeGameWindowForStreaming(slug) {
     const debugLog = (msg) => {
       if (win && !win.isDestroyed()) win.webContents.send("couch-status", { message: msg });
     };
-    const scriptArgs = measureOnly ? ["--measure-only", ...targets] : targets;
-    debugLog(`[maximize] trying targets: ${targets.join(", ")}${measureOnly ? " (measure-only)" : ""}`);
-    const bg = spawn("powershell.exe", ["-ExecutionPolicy", "Bypass", "-File", script, ...scriptArgs], {
-      windowsHide: true,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
+    debugLog(`[measure] checking window rect for: ${targets.join(", ")}`);
+    const bg = spawn(
+      "powershell.exe",
+      ["-ExecutionPolicy", "Bypass", "-File", script, "--measure-only", ...targets],
+      {
+        windowsHide: true,
+        stdio: ["ignore", "pipe", "pipe"],
+      }
+    );
     let out = "";
     bg.stdout?.on("data", (d) => {
       out += d.toString();
     });
     bg.on("close", (code) => {
-      debugLog(`[maximize] exit=${code} ${out.trim()}`);
+      debugLog(`[measure] exit=${code} ${out.trim()}`);
       lastCropRect = parseRectPair(out);
       if (win && !win.isDestroyed()) win.webContents.send("couch-crop-rect", lastCropRect);
-      debugLog(`[maximize] crop rect: ${lastCropRect ? JSON.stringify(lastCropRect) : "none (fills monitor)"}`);
+      debugLog(`[measure] crop rect: ${lastCropRect ? JSON.stringify(lastCropRect) : "none (fills monitor)"}`);
     });
     bg.unref();
   } catch (err) {
     if (win && !win.isDestroyed()) {
-      win.webContents.send("couch-status", { message: `[maximize] error: ${err?.message || err}` });
+      win.webContents.send("couch-status", { message: `[measure] error: ${err?.message || err}` });
     }
   }
 }
@@ -13249,6 +13267,30 @@ ipcMain.handle("open-external", async (_event, url, opts) => {
 /** Dedicated in-app window for Couch game view (HTTPS). */
 let couchGameViewWin = null;
 /**
+ * Set only by the "remote-play-request" handler, right before it opens this
+ * device's OWN stream window — never by a local player joining a couch
+ * party's stream (open-couch-game-view), so closing a party's game-view
+ * window keeps its current behavior exactly. Read by the "closed" handler
+ * below to tell the HOST to end the game when the player closes this
+ * window — the client has no other way to reach the host's game process.
+ */
+let activeRemotePlayClientRequestId = null;
+
+async function endRemotePlayClientRequest(requestId) {
+  const settings = loadSettings();
+  if (!settings.launcherToken) return;
+  try {
+    await apiFetch(`${getApiBase()}/api/remote-play/requests/${encodeURIComponent(requestId)}`, {
+      method: "PATCH",
+      headers: launcherApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({ status: "ended", terminationReason: "player_exit" }),
+    });
+  } catch (err) {
+    console.warn("[remote-play] could not mark request ended (client close):", err?.message || err);
+  }
+}
+
+/**
  * Shared by the "open-couch-game-view" IPC handler (a local player joining
  * their own couch party's stream) and PlayBound Remote Play's client-side
  * orchestration (this device auto-opening its own remote-play stream) —
@@ -13307,6 +13349,11 @@ async function openCouchGameViewWindow(rawUrl) {
     });
     couchGameViewWin.on("closed", () => {
       couchGameViewWin = null;
+      if (activeRemotePlayClientRequestId) {
+        const reqId = activeRemotePlayClientRequestId;
+        activeRemotePlayClientRequestId = null;
+        void endRemotePlayClientRequest(reqId);
+      }
     });
     couchGameViewWin.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
     couchGameViewWin.webContents.on("render-process-gone", (_e, details) => {
@@ -13327,7 +13374,14 @@ async function openCouchGameViewWindow(rawUrl) {
     return { ok: false, error: err?.message || String(err) };
   }
 }
-ipcMain.handle("open-couch-game-view", async (_event, rawUrl) => openCouchGameViewWindow(rawUrl));
+ipcMain.handle("open-couch-game-view", async (_event, rawUrl) => {
+  // A local player joining their own party's stream — not Remote Play. If
+  // this reuses a window last opened FOR a remote-play session (rare: both
+  // features used back to back), the stale id must not leak into whatever
+  // closes this window next.
+  activeRemotePlayClientRequestId = null;
+  return openCouchGameViewWindow(rawUrl);
+});
 
 /* ── PlayBound Remote Play (stream a game to another PC on this account) ──
  *
@@ -13368,6 +13422,7 @@ async function registerRemotePlayDevice() {
 async function endRemotePlaySession(terminationReason) {
   const requestId = activeRemotePlayHostRequestId;
   activeRemotePlayHostRequestId = null;
+  activeRemotePlayHostGameSlug = null;
   try {
     await couchHost.stopSession();
   } catch (err) {
@@ -13388,6 +13443,7 @@ async function endRemotePlaySession(terminationReason) {
 }
 
 let activeRemotePlayHostRequestId = null;
+let activeRemotePlayHostGameSlug = null;
 
 async function handleRemotePlayHostRequest(reqRow) {
   if (remotePlayInFlight.has(reqRow.id)) return;
@@ -13412,13 +13468,20 @@ async function handleRemotePlayHostRequest(reqRow) {
       await patch({ status: "declined" });
       return;
     }
-    try {
-      await playGameInner(reqRow.gameSlug, null, reqRow.editionSlug || null, {});
-    } catch (err) {
-      console.warn("[remote-play] launch failed:", err?.message || err);
-      await patch({ status: "declined" });
-      return;
-    }
+    /*
+     * Session BEFORE launch, not after — deliberately the opposite order
+     * from how this read before. playGameInner only prewarms the ViGEm
+     * controller slot pre-launch when couchHost.getState().active is
+     * already true (main.js's applyControllerConfig gate, "make sure the
+     * first remote ViGEm slot exists before the game process enumerates
+     * devices"). A real couch party already satisfies this — the player
+     * starts Couch Mode before picking a game. Remote Play used to launch
+     * the game first, so that gate was never satisfied and OpenBOR-based
+     * games (which enumerate controllers once at their own startup and
+     * never rescan) never saw the virtual pad at all — connected, but no
+     * button ever did anything. Creating the session first makes Remote
+     * Play match the couch-party ordering that already works.
+     */
     const state = await couchHost.createSession({
       hostLabel: "Remote Play",
       autoApprove: true,
@@ -13429,7 +13492,21 @@ async function handleRemotePlayHostRequest(reqRow) {
       await patch({ status: "declined" });
       return;
     }
+    try {
+      await playGameInner(reqRow.gameSlug, null, reqRow.editionSlug || null, {});
+    } catch (err) {
+      console.warn("[remote-play] launch failed:", err?.message || err);
+      // Don't leave an orphaned session behind a request that never got to play.
+      try {
+        await couchHost.stopSession();
+      } catch (stopErr) {
+        console.warn("[remote-play] session cleanup after failed launch failed:", stopErr?.message || stopErr);
+      }
+      await patch({ status: "declined" });
+      return;
+    }
     activeRemotePlayHostRequestId = reqRow.id;
+    activeRemotePlayHostGameSlug = reqRow.gameSlug;
     await patch({ status: "ready", joinUrl });
     if (settings.launcherToken) {
       void telemetry.track("remote_play_host_started", { gameSlug: reqRow.gameSlug });
@@ -13454,6 +13531,38 @@ async function pollRemotePlayRequests() {
     }
   } catch (err) {
     console.warn("[remote-play] poll failed:", err?.message || err);
+  }
+
+  /*
+   * Separate from the loop above — that one only ever sees brand-new
+   * "requested" rows. This checks whether the CLIENT ended the ONE session
+   * we're actively hosting (they closed the stream window) — see
+   * openCouchGameViewWindow's "closed" handler, which PATCHes the request
+   * to "ended" client-side. The client closing their view has no way to
+   * reach this PC's game process directly; this is what actually closes
+   * the game here in response.
+   */
+  if (activeRemotePlayHostRequestId) {
+    try {
+      const res = await apiFetch(
+        `${getApiBase()}/api/remote-play/requests/${encodeURIComponent(activeRemotePlayHostRequestId)}`,
+        { headers: launcherApiHeaders() }
+      );
+      if (res.ok) {
+        const row = await res.json().catch(() => null);
+        if (row?.status === "ended") {
+          const slug = activeRemotePlayHostGameSlug;
+          activeRemotePlayHostRequestId = null;
+          activeRemotePlayHostGameSlug = null;
+          if (slug) {
+            console.log(`[remote-play] client closed the stream — closing ${slug} on this PC`);
+            killGameImageNames(activeLaunches.get(slug)?.imageNames || []);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("[remote-play] active-session status check failed:", err?.message || err);
+    }
   }
 }
 
@@ -13513,9 +13622,17 @@ ipcMain.handle("remote-play-request", async (event, { hostDeviceId, gameSlug, ed
         return { ok: false, error: "That PC could not start the game (not installed, or already busy)." };
       }
       if (row.status === "ready" && row.joinUrl) {
+        // Read by openCouchGameViewWindow's "closed" handler below — the
+        // one link from "the player closed this window" back to "tell the
+        // host to close the game," since the client has no other way to
+        // reach the host's game process directly.
+        activeRemotePlayClientRequestId = created.id;
         const sep = row.joinUrl.includes("?") ? "&" : "?";
         const opened = await openCouchGameViewWindow(`${row.joinUrl}${sep}view=game`);
-        if (!opened?.ok) return { ok: false, error: opened?.error || "Could not open the stream window." };
+        if (!opened?.ok) {
+          activeRemotePlayClientRequestId = null;
+          return { ok: false, error: opened?.error || "Could not open the stream window." };
+        }
         return { ok: true };
       }
     }
@@ -17704,7 +17821,7 @@ if (gotLock) {
       session.defaultSession.setDisplayMediaRequestHandler(async (_request, callback) => {
         try {
           const slug = playingGameSlug();
-          if (slug) maximizeGameWindowForStreaming(slug);
+          if (slug) measureGameWindowForCrop(slug);
           const sources = await desktopCapturer.getSources({
             types: ["screen"],
             thumbnailSize: { width: 160, height: 90 },

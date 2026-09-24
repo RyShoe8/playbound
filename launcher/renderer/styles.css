@@ -9547,7 +9547,7 @@ textarea.input-text {
 
 .phone-controller-sheet h2 {
   margin: 0;
-  font-size: 1.3rem;
+  font-size: 1.45rem;
   font-weight: 700;
   color: var(--text-main, #f8fafc);
   letter-spacing: -0.01em;
@@ -9555,8 +9555,8 @@ textarea.input-text {
 
 .phone-controller-lead {
   margin: 0;
-  font-size: 0.88rem;
-  line-height: 1.45;
+  font-size: 1rem;
+  line-height: 1.5;
   color: var(--text-secondary, #cbd5e1);
 }
 
@@ -9644,13 +9644,13 @@ textarea.input-text {
 }
 
 .phone-controller-choice-title {
-  font-size: 0.95rem;
+  font-size: 1.08rem;
   font-weight: 700;
   color: #f8fafc;
 }
 
 .phone-controller-choice-tag {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   padding: 2px 7px;
   border-radius: 6px;
@@ -9665,8 +9665,8 @@ textarea.input-text {
 }
 
 .phone-controller-choice-sub {
-  font-size: 0.8rem;
-  line-height: 1.35;
+  font-size: 0.92rem;
+  line-height: 1.4;
   color: var(--text-muted, #94a3b8);
 }
 
