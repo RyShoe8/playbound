@@ -35,6 +35,24 @@ let canvasEl = null;
 let canvasCtx = null;
 let drawTimerId = null;
 let currentCropRect = null;
+let streamStale = false;
+
+/**
+ * Some games switch the actual SYSTEM display resolution when they launch
+ * (an old DirectDraw/legacy trick — Streets of Rage does this, dropping to
+ * 640x480). Capture starts almost immediately when a peer first asks for
+ * the stream, well before main.js's maximize/measure sequence has had time
+ * to see whether the game does this. DXGI desktop duplication does not
+ * reliably adapt an already-open capture session to a resolution change
+ * mid-session, so a capture that started before the switch can end up
+ * stuck on a stale/mismatched buffer. Called once main.js's measurement
+ * step (which waits long enough for a mode switch to have already
+ * happened) completes, so the NEXT capture is guaranteed to start after
+ * the game's display mode has settled, not racing it.
+ */
+export function markStreamStale() {
+  streamStale = true;
+}
 
 /** Called from couch.js whenever main.js reports a new (or cleared) crop rect. */
 export function setCropRect(rect) {
@@ -146,6 +164,12 @@ function stopCanvasPipeline() {
  * @returns {Promise<MediaStream|null>}
  */
 export async function ensureHostDisplayStream(forceNew = false) {
+  if (streamStale && hostDisplayStream) {
+    streamStale = false;
+    console.log("[couch] discarding possibly-stale display stream (post display-mode-switch check)");
+    stopHostDisplayStream();
+  }
+  streamStale = false;
   if (forceNew && hostDisplayStream) {
     stopHostDisplayStream();
   }
