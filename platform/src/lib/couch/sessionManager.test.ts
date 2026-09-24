@@ -13,6 +13,8 @@ import {
   publicCouchSnapshot,
   postCouchSignal,
   pollCouchSignals,
+  heartbeatHost,
+  touchCouchSessionActivity,
 } from "@/lib/couch/sessionManager";
 
 describe("couch protocol", () => {
@@ -69,10 +71,9 @@ describe("couch sessions", () => {
     }
   });
 
-  it("atomically appends Mongo signals instead of replacing the session message array", async () => {
+  it("atomically appends Mongo signals and sets host endpoints without replacing the session message or controller arrays", async () => {
     const session = await createCouchSession({});
     const update = vi.spyOn(CouchSessionModel, "updateOne").mockResolvedValue({ matchedCount: 1 } as never);
-    const save = vi.spyOn(CouchSessionModel, "findOneAndUpdate").mockResolvedValue(null as never);
     setCouchStoreMode("mongo");
     try {
       const signal = await postCouchSignal(session, {
@@ -87,12 +88,55 @@ describe("couch sessions", () => {
         })
       );
       await setHostEndpoints(session, { wsUrls: [], wsToken: "token" });
-      const updatePayload = save.mock.calls.at(-1)?.[1] as { $set?: Record<string, unknown> };
-      expect(updatePayload.$set).not.toHaveProperty("messages");
+      expect(update).toHaveBeenCalledWith(
+        { sessionId: session.sessionId, status: "open" },
+        expect.objectContaining({
+          $set: expect.objectContaining({
+            hostEndpoints: expect.objectContaining({ wsToken: "token" }),
+          }),
+        })
+      );
     } finally {
       setCouchStoreMode("memory");
       update.mockRestore();
-      save.mockRestore();
+    }
+  });
+
+  it("atomically updates host heartbeats and controller activity in Mongo without replacing controllers", async () => {
+    const session = await createCouchSession({});
+    const update = vi.spyOn(CouchSessionModel, "updateOne").mockResolvedValue({ matchedCount: 1 } as never);
+    setCouchStoreMode("mongo");
+    try {
+      await heartbeatHost(session);
+      expect(update).toHaveBeenCalledWith(
+        { sessionId: session.sessionId, status: "open" },
+        expect.objectContaining({
+          $max: expect.objectContaining({ lastHeartbeat: expect.any(Number) }),
+        })
+      );
+      await touchCouchSessionActivity(session, {
+        controllerId: "ctrl-1",
+        controllerToken: "tok",
+        sessionToken: null,
+        label: "Pad",
+        profile: "phone",
+        status: "approved",
+        playerSlot: 0,
+        createdAt: Date.now(),
+        lastSeen: Date.now(),
+      });
+      expect(update).toHaveBeenCalledWith(
+        { sessionId: session.sessionId, status: "open", "controllers.controllerId": "ctrl-1" },
+        expect.objectContaining({
+          $max: expect.objectContaining({
+            lastHeartbeat: expect.any(Number),
+            "controllers.$.lastSeen": expect.any(Number),
+          }),
+        })
+      );
+    } finally {
+      setCouchStoreMode("memory");
+      update.mockRestore();
     }
   });
 
