@@ -111,7 +111,9 @@ function ensureWired() {
 
   pb().onCouchStatus?.((payload) => {
     const msg = payload?.message;
-    if (msg && couchViewVisible()) setStatus(msg);
+    if (!msg) return;
+    console.log("[couch-status]", msg);
+    if (couchViewVisible()) setStatus(msg);
   });
 
   pb().onCouchPeerSend?.((msg) => {
