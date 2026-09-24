@@ -4519,6 +4519,12 @@ function repairUnixExtractedBinaries(destDir) {
  * Basenames are enough: findExecutable matches the hint against file names.
  */
 function exeHintFor(entry) {
+  // Older cached catalog rows used "ShatteredPD|Shattered", which also
+  // matches app/shatteredNews-*.jar in the official Windows ZIP. That JAR is a
+  // dependency without Main-Class; the bundled native launcher is at root.
+  if (process.platform === "win32" && entry?.slug === "shattered-pixel-dungeon") {
+    return "Shattered Pixel Dungeon.exe";
+  }
   if (entry?.slug === "the-dark-mod") {
     return "TheDarkModx64|TheDarkMod|DarkMod";
   }
@@ -9818,6 +9824,17 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
     },
     fs.existsSync
   );
+  if (process.platform === "win32" && slug === "shattered-pixel-dungeon" && edSlug === "official" && info.dir) {
+    const nativeLauncher = findExecutable(info.dir, "Shattered Pixel Dungeon.exe");
+    if (
+      nativeLauncher &&
+      path.basename(nativeLauncher).toLowerCase() === "shattered pixel dungeon.exe" &&
+      launchPath !== nativeLauncher
+    ) {
+      persistEditionExe(slug, edSlug, launchPath, nativeLauncher);
+      launchPath = nativeLauncher;
+    }
+  }
   const joiningHostedYs =
     slug === "ysoccer" &&
     (Boolean(join?.host && join?.port) || args.some((a) => /--connect/i.test(a)));

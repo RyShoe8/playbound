@@ -543,7 +543,8 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     kind: "github-zip",
     repo: "00-Evan/shattered-pixel-dungeon",
     assetPattern: "Windows\\.zip$",
-    exeHint: "ShatteredPD|Shattered",
+    exeHint: "Shattered Pixel Dungeon.exe",
+    knownExePaths: ["Shattered Pixel Dungeon.exe"],
   },
   supertux: {
     enabled: true,

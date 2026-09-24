@@ -266,12 +266,14 @@ describe("insert-catalog-wave allowlists", () => {
         "s-t-a-l-k-e-r-shadow-of-chernobyl/lost-alpha",
         "s-t-a-l-k-e-r-shadow-of-chernobyl/official",
         "s-t-a-l-k-e-r-shadow-of-chernobyl/true-stalker",
+        "shattered-pixel-dungeon/official",
         "stalker-anomaly/gamma",
         "stalker-anomaly/official",
       ].sort()
     );
     expect(PATCH_EDITION_FIELDS["morrowind/openmw"]).toEqual(["installConfig"]);
     expect(PATCH_EDITION_FIELDS["morrowind/tes3mp"]).toEqual(["installConfig"]);
+    expect(PATCH_EDITION_FIELDS["shattered-pixel-dungeon/official"]).toEqual(["installConfig"]);
     expect(PATCH_EDITION_FIELDS["pokemon-blaze-online/official"]).toEqual([
       "features",
       "tags",

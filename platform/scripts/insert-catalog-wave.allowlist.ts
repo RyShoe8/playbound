@@ -454,7 +454,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
    * call this wave is overriding.
    */
   "openttd": ["features"],
-  "shattered-pixel-dungeon": ["features"],
+  "shattered-pixel-dungeon": ["features", "launcherInstall"],
   "lincity-ng": ["features"],
   "heroes-of-might-and-magic-3-complete": ["features"],
   "dungeon-keeper-gold": ["features"],
@@ -481,6 +481,9 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
 
 /** Existing editions: $set ONLY these fields. */
 export const PATCH_EDITION_FIELDS: Readonly<Record<string, readonly string[]>> = {
+  // The Windows ZIP includes app/shatteredNews-*.jar (no Main-Class) beside
+  // its real root launcher; the old broad hint picked that dependency.
+  "shattered-pixel-dungeon/official": ["installConfig"],
   "stalker-anomaly/official": [
     "name",
     "description",
