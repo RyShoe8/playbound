@@ -254,6 +254,7 @@ contextBridge.exposeInMainWorld("playbound", {
   couchStart: (opts) => ipcRenderer.invoke("couch-start", opts || {}),
   couchStop: () => ipcRenderer.invoke("couch-stop"),
   couchState: () => ipcRenderer.invoke("couch-state"),
+  couchCropRect: () => ipcRenderer.invoke("couch-crop-rect"),
   couchRefresh: () => ipcRenderer.invoke("couch-refresh"),
   couchControllerAction: (action, controllerId, playerSlot) =>
     ipcRenderer.invoke("couch-controller-action", action, controllerId, playerSlot),
@@ -273,6 +274,7 @@ contextBridge.exposeInMainWorld("playbound", {
   couchSignalPost: (body) => ipcRenderer.invoke("couch-signal-post", body || {}),
   couchSignalPoll: (since) => ipcRenderer.invoke("couch-signal-poll", since || 0),
   onCouchState: (cb) => ipcRenderer.on("couch-state", (_event, data) => cb(data || {})),
+  onCouchCropRect: (cb) => ipcRenderer.on("couch-crop-rect", (_event, data) => cb(data || null)),
   onCouchStatus: (cb) => ipcRenderer.on("couch-status", (_event, data) => cb(data || {})),
   onCouchPeerSend: (cb) =>
     ipcRenderer.on("couch-peer-send", (_event, data) => cb(data || {})),
