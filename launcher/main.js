@@ -10721,6 +10721,7 @@ const GAME_RUNNING_POLL_MS = 10000;
 function sendGameExited(slug) {
   // Stale crop data from this game must not leak into the next one's stream.
   lastCropRect = null;
+  cropMeasuredForSlug = null;
   // Reported from here rather than the renderer so a session still closes when
   // the window is hidden to the tray or the game outlived the launcher UI.
   void telemetry.editionExited(editionInfoFor(slug));
@@ -10908,6 +10909,27 @@ function normalizeProcessImageName(name) {
  */
 let lastCropRect = null;
 
+/**
+ * Slug measureGameWindowForCrop() has already measured for the CURRENT
+ * launch. setDisplayMediaRequestHandler calls measureGameWindowForCrop on
+ * every single getDisplayMedia() request, and couch.js's onCouchCropRect
+ * handler deliberately forces one fresh getDisplayMedia() call in response
+ * to each crop-rect push it receives (to discard a possibly-stale
+ * pre-display-mode-switch capture — see markStreamStale's docstring).
+ * Without this guard those two behaviors feed each other forever: measure
+ * -> push rect -> forced recapture -> measure again -> push again..., an
+ * infinite loop that pegs the process spawning PowerShell nonstop, restarts
+ * the capture/canvas pipeline every few milliseconds so it never settles,
+ * and starves the couch-signal IPC channel (seen live on Open Tyrian as
+ * "couch-signal-post ... TimeoutError" spam and a phone controller that
+ * never finished connecting). One measurement per launch is enough — it
+ * still runs after the same settle delay, and the one guaranteed follow-up
+ * capture the crop-rect handler forces is exactly the "discard the
+ * possibly-stale capture" retry it was meant to trigger, not the start of
+ * another round.
+ */
+let cropMeasuredForSlug = null;
+
 function parseRectPair(text) {
   // e.g. "RECT=100,200,1620,1400 MONITOR=0,0,3840,2160" — coordinates can be
   // negative for a monitor positioned left of / above the primary.
@@ -10957,10 +10979,17 @@ function parseRectPair(text) {
  */
 function measureGameWindowForCrop(slug) {
   if (process.platform !== "win32" || !slug) return;
+  if (cropMeasuredForSlug === slug) return;
+  cropMeasuredForSlug = slug;
   try {
     const imageNames = activeLaunches.get(slug)?.imageNames || [];
     const targets = imageNames.map((n) => String(n).replace(/\.exe$/i, "")).filter(Boolean);
-    if (!targets.length) return;
+    if (!targets.length) {
+      // imageNames may not be populated yet this early — allow a retry on
+      // the next getDisplayMedia() call rather than giving up for the launch.
+      cropMeasuredForSlug = null;
+      return;
+    }
     const candidates = [
       path.join(process.resourcesPath || "", "scripts", "maximize-window.ps1"),
       path.join(__dirname, "resources", "scripts", "maximize-window.ps1"),
