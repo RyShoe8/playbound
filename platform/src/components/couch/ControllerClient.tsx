@@ -180,34 +180,9 @@ export function ControllerClient({
   const videoFrameWatchRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [cropTitleBar, setCropTitleBar] = useState(false);
-  const [cropRect, setCropRect] = useState<{ left: number; top: number; width: number; height: number } | null>(
-    null
-  );
   const [hudVisible, setHudVisible] = useState(true);
   const [showControlsModal, setShowControlsModal] = useState(false);
   const hudTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  /*
-   * Screen capture always grabs the whole monitor (Chromium's per-window
-   * capture has a real cropping bug on Windows) — when the host's game
-   * doesn't fill it, the host measures the game's actual on-screen
-   * rectangle and sends it here (see couch.js's cropRect data-channel
-   * message). Zoom + reposition the video with a CSS transform so the
-   * viewer sees just the game, same technique the existing fixed
-   * is-cropped title-bar trim already uses, just computed dynamically.
-   * Approximate: assumes the captured frame's aspect ratio matches the
-   * rendered box (object-fit: contain), so a letterboxed video will be
-   * slightly off — acceptable given the alternative is showing the whole
-   * desktop.
-   */
-  const cropVideoStyle = cropRect
-    ? {
-        transform: `scale(${1 / cropRect.width}, ${1 / cropRect.height}) translate(${
-          50 * (1 - cropRect.width) - 100 * cropRect.left
-        }%, ${50 * (1 - cropRect.height) - 100 * cropRect.top}%)`,
-        transformOrigin: "center center",
-      }
-    : undefined;
 
   useEffect(() => {
     if (!showControlsModal) return;
@@ -660,20 +635,13 @@ export function ControllerClient({
     };
     sendFnRef.current = send;
 
-    function handleControl(msg: {
-      type?: string;
-      t?: number;
-      rect?: { left: number; top: number; width: number; height: number } | null;
-    }) {
+    function handleControl(msg: { type?: string; t?: number }) {
       if (msg.type === "pong" && typeof msg.t === "number") {
         setPingMs(Math.max(0, performance.now() - msg.t));
       }
       if (msg.type === "kick") {
         setTransport("offline");
         setError("Disconnected by host");
-      }
-      if (msg.type === "cropRect") {
-        setCropRect(msg.rect || null);
       }
     }
 
@@ -708,6 +676,52 @@ export function ControllerClient({
       }
     }
 
+    /**
+     * Periodic real numbers on what's actually being decoded — resolution,
+     * framerate, bitrate, jitter buffer delay, packet loss. Paired with
+     * couch.js's outbound-side logging (host console) to tell "video
+     * lagging" apart from "controller input lagging" — the data channel's
+     * own ping/pong RTT already covers input separately. Stops itself once
+     * the connection is no longer live.
+     */
+    function startVideoStatsLogging(target: RTCPeerConnection) {
+      let lastBytesReceived: number | null = null;
+      let lastTs: number | null = null;
+      const timer = window.setInterval(async () => {
+        if (!target || ["closed", "failed", "disconnected"].includes(target.connectionState)) {
+          window.clearInterval(timer);
+          return;
+        }
+        try {
+          const stats = await target.getStats();
+          stats.forEach((report) => {
+            if (report.type !== "inbound-rtp" || report.kind !== "video") return;
+            let bitrateKbps: number | null = null;
+            if (lastBytesReceived != null && lastTs != null && report.bytesReceived != null) {
+              const dtSec = (report.timestamp - lastTs) / 1000;
+              if (dtSec > 0) bitrateKbps = Math.round(((report.bytesReceived - lastBytesReceived) * 8) / dtSec / 1000);
+            }
+            lastBytesReceived = report.bytesReceived;
+            lastTs = report.timestamp;
+            console.log(
+              `[couch-stats] video in: ${report.frameWidth || "?"}x${report.frameHeight || "?"}` +
+                ` @${report.framesPerSecond || "?"}fps` +
+                ` bitrate=${bitrateKbps != null ? bitrateKbps + "kbps" : "?"}` +
+                ` jitterBufferDelay=${
+                  report.jitterBufferDelay && report.jitterBufferEmittedCount
+                    ? `${Math.round((report.jitterBufferDelay / report.jitterBufferEmittedCount) * 1000)}ms`
+                    : "?"
+                }` +
+                ` packetsLost=${report.packetsLost ?? "?"}` +
+                ` freezeCount=${report.freezeCount ?? "?"}`
+            );
+          });
+        } catch {
+          /* best-effort diagnostic */
+        }
+      }, 4000);
+    }
+
     async function startWebRtc() {
       pc = new RTCPeerConnection({ iceServers: session.iceServers });
       // Receive host game view when the host shares their display.
@@ -729,6 +743,7 @@ export function ControllerClient({
         if (state === "connected") {
           usingWebrtc = true;
           setTransport("webrtc");
+          startVideoStatsLogging(pc as RTCPeerConnection);
         } else if (state === "failed") {
           console.warn("[couch] WebRTC connection failed, attempting ICE restart...");
           try {
@@ -1394,7 +1409,6 @@ export function ControllerClient({
           <video
             ref={bindVideoEl}
             className={["pbc-gameview-video", cropTitleBar ? "is-cropped" : ""].filter(Boolean).join(" ")}
-            style={cropVideoStyle}
             playsInline
             muted
             autoPlay
@@ -1802,7 +1816,6 @@ export function ControllerClient({
         <video
           ref={bindVideoEl}
           className={["pbc-gameview-video", cropTitleBar ? "is-cropped" : ""].filter(Boolean).join(" ")}
-          style={cropVideoStyle}
           playsInline
           muted
           autoPlay
