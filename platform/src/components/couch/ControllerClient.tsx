@@ -93,7 +93,19 @@ export function ControllerClient({
   /** Full-window game view for Join online (separate popup), not the small embedded phone frame. */
   layout?: "default" | "game";
 }) {
-  const gameLayout = layout === "game";
+  const [isDesktopClient, setIsDesktopClient] = useState(false);
+  useEffect(() => {
+    try {
+      const isMobile = window.matchMedia?.("(max-width: 640px) and (pointer: coarse)").matches;
+      if (!isMobile) {
+        setIsDesktopClient(true);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const gameLayout = layout === "game" || isDesktopClient;
   const [error, setError] = useState<string | null>(null);
   const [join, setJoin] = useState<JoinState | null>(null);
   const [joinEpoch, setJoinEpoch] = useState(0);
@@ -105,13 +117,16 @@ export function ControllerClient({
   }, [code]);
   /**
    * Game-view joiners pick the same three options as the launcher Input Setup:
-   * keyboard, controller, or phone. Phone pads still open the default layout (QR).
+   * keyboard, controller, or phone.
    */
   const [controlChoice, setControlChoice] = useState<CouchControlChoice>(() => {
-    // Default layout is already the phone/touch pad — no chooser needed.
-    if (!gameLayout) return "keyboard";
+    if (typeof window !== "undefined") {
+      const isMobile = window.matchMedia?.("(max-width: 640px) and (pointer: coarse)").matches;
+      if (layout !== "game" && isMobile) return "phone";
+    }
     return "undecided";
   });
+  const [showPhoneQr, setShowPhoneQr] = useState(true);
   // Phones scanning the QR want the touch pad, not keyboard+stream chrome.
   const [mode, setMode] = useState<InputMode>(() => {
     if (typeof window === "undefined") return "keyboard-mouse";
@@ -119,7 +134,7 @@ export function ControllerClient({
       const coarse =
         window.matchMedia?.("(pointer: coarse)").matches ||
         (navigator.maxTouchPoints ?? 0) > 0;
-      if (coarse && !gameLayout) return "touch-gamepad";
+      if (coarse && layout !== "game") return "touch-gamepad";
     } catch {
       /* ignore */
     }
@@ -1164,23 +1179,10 @@ export function ControllerClient({
         const lt = clamp(pad.buttons[6]?.value ?? 0, 0, 1);
         const rt = clamp(pad.buttons[7]?.value ?? 0, 0, 1);
 
-        // If user touches a physical gamepad in game view while undecided, auto-select controller
-        if (
-          gameLayout &&
-          controlChoice === "undecided" &&
-          (buttons !== 0 ||
-            Math.abs(lx) > 0.15 ||
-            Math.abs(ly) > 0.15 ||
-            Math.abs(rx) > 0.15 ||
-            Math.abs(ry) > 0.15 ||
-            lt > 0.1 ||
-            rt > 0.1)
-        ) {
-          setControlChoice("controller");
-          setMode("standard-gamepad");
+        // Only commit input state to padRef if controller mode is actively selected
+        if (mode === "standard-gamepad" || controlChoice === "controller") {
+          padRef.current = { buttons, lx, ly, rx, ry, lt, rt };
         }
-
-        padRef.current = { buttons, lx, ly, rx, ry, lt, rt };
       } else {
         setPhysicalLabel(null);
         // In game-view PC mode, keyboard owns the pad when no hardware pad is
@@ -1193,10 +1195,9 @@ export function ControllerClient({
     };
     raf = requestAnimationFrame(tick);
 
-    const onPadConnected = () => {
-      if (gameLayout && controlChoice === "undecided") {
-        setControlChoice("controller");
-        setMode("standard-gamepad");
+    const onPadConnected = (e: GamepadEvent) => {
+      if (e.gamepad?.id) {
+        setPhysicalLabel(e.gamepad.id.trim());
       }
     };
     window.addEventListener("gamepadconnected", onPadConnected);
@@ -1210,7 +1211,7 @@ export function ControllerClient({
   // Keyboard & mouse → virtual pad (default join mode)
   useEffect(() => {
     if (mode !== "keyboard-mouse") return;
-    if (controlChoice === "phone") return;
+    if (controlChoice === "phone" || controlChoice === "undecided") return;
     const heldMove = { up: false, down: false, left: false, right: false };
     padRef.current = emptyPadAxes();
 
@@ -1293,69 +1294,6 @@ export function ControllerClient({
     );
   }
 
-  if (gameLayout && controlChoice === "undecided") {
-    return (
-      <Shell tone="setup">
-        <Eyebrow>Input Setup</Eyebrow>
-        <h1 className="pbc-title">How do you want to play?</h1>
-        <p className="pbc-sub pbc-sub-wide">
-          Joining <strong>{join.hostLabel}</strong>&apos;s game view — same three options as the
-          PlayBound launcher.
-        </p>
-        <div className="pbc-choice-row pbc-choice-row-h">
-          <button
-            type="button"
-            className="pbc-choice-btn"
-            onClick={() => {
-              setMode("keyboard-mouse");
-              setControlChoice("keyboard");
-            }}
-          >
-            <span className="pbc-choice-icon" aria-hidden>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-                <rect x="2" y="6" width="20" height="12" rx="2" />
-                <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h.01M18 14h.01M9 14h6" />
-              </svg>
-            </span>
-            <strong>Mouse and Keyboard</strong>
-            <span>Keys and mouse on this computer</span>
-          </button>
-          <button
-            type="button"
-            className="pbc-choice-btn"
-            onClick={() => {
-              setMode("standard-gamepad");
-              setControlChoice("controller");
-            }}
-          >
-            <span className="pbc-choice-icon" aria-hidden>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-                <rect x="2" y="6" width="20" height="12" rx="2" />
-                <path d="M6 12h4M8 10v4M15 11h.01M18 13h.01" />
-              </svg>
-            </span>
-            <strong>Controller</strong>
-            <span>Xbox, DualSense, Switch, or USB pad</span>
-          </button>
-          <button
-            type="button"
-            className="pbc-choice-btn is-featured"
-            onClick={() => setControlChoice("phone")}
-          >
-            <span className="pbc-choice-icon" aria-hidden>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-                <rect x="7" y="2" width="10" height="20" rx="2" />
-                <path d="M11 18h2" />
-              </svg>
-            </span>
-            <strong>Phone as Controller</strong>
-            <span>Scan a QR — no app needed</span>
-          </button>
-        </div>
-      </Shell>
-    );
-  }
-
   if (mode === "standard-gamepad" && !gameLayout) {
     return (
       <Shell>
@@ -1383,7 +1321,9 @@ export function ControllerClient({
     return (
       <main
         className={[
-          hasVideo ? "pbc-pad is-kbm is-gameview" : "pbc-pad is-kbm",
+          "pbc-pad",
+          hasVideo ? "is-gameview" : "",
+          mode === "keyboard-mouse" ? "is-kbm" : "",
           gameLayout ? "is-popup-game" : "",
           isFullscreen ? "is-fullscreen" : "",
         ]
@@ -1483,45 +1423,220 @@ export function ControllerClient({
             {hz > 0 ? ` · ${hz}Hz` : ""}
           </div>
         ) : null}
-        {gameLayout && controlChoice === "phone" ? (
-          <div className="pbc-phone-qr">
-            <img src={qrSrc} alt="QR code to open the phone controller" width={220} height={220} />
-            <p className="pbc-sub">
-              Scan with your phone — this window stays the game view. Code{" "}
-              <strong>{code}</strong>
-            </p>
-            <button
-              type="button"
-              className="pbc-choice-btn"
-              onClick={() => setControlChoice("undecided")}
-            >
-              Choose controls again
-            </button>
+        {/* ── Defacto Input Setup Modal (identical to regular game launch) ── */}
+        {gameLayout && controlChoice === "undecided" ? (
+          <div
+            className="phone-controller-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="phone-controller-title"
+          >
+            <div className="phone-controller-sheet">
+              <div className="phone-controller-header">
+                <div className="phone-controller-badge">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                    <rect x="2" y="6" width="20" height="12" rx="2" />
+                    <line x1="6" y1="12" x2="10" y2="12" />
+                    <line x1="8" y1="10" x2="8" y2="14" />
+                    <circle cx="15" cy="11" r="1" />
+                    <circle cx="18" cy="13" r="1" />
+                  </svg>
+                  Input Setup
+                </div>
+                <h2 id="phone-controller-title">How do you want to play?</h2>
+                <p className="phone-controller-lead">
+                  Joining <strong>{join.hostLabel}</strong>&apos;s game view. Choose your control setup:
+                </p>
+              </div>
+
+              <div className="phone-controller-choices">
+                <button
+                  type="button"
+                  className="phone-controller-choice-card"
+                  onClick={() => {
+                    setMode("keyboard-mouse");
+                    setControlChoice("keyboard");
+                  }}
+                >
+                  <div className="phone-controller-choice-icon-wrap icon-keyboard">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="2" y="4" width="20" height="16" rx="2" />
+                      <line x1="6" y1="8" x2="6" y2="8.01" />
+                      <line x1="10" y1="8" x2="10" y2="8.01" />
+                      <line x1="14" y1="8" x2="14" y2="8.01" />
+                      <line x1="18" y1="8" x2="18" y2="8.01" />
+                      <line x1="6" y1="12" x2="6" y2="12.01" />
+                      <line x1="18" y1="12" x2="18" y2="12.01" />
+                      <line x1="8" y1="16" x2="16" y2="16" />
+                    </svg>
+                  </div>
+                  <div className="phone-controller-choice-text">
+                    <div className="phone-controller-choice-header">
+                      <span className="phone-controller-choice-title">Mouse and Keyboard</span>
+                      <span className="phone-controller-choice-tag">PC Controls</span>
+                    </div>
+                    <span className="phone-controller-choice-sub">Play using standard keyboard and mouse controls</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  className="phone-controller-choice-card"
+                  onClick={() => {
+                    setMode("standard-gamepad");
+                    setControlChoice("controller");
+                  }}
+                >
+                  <div className="phone-controller-choice-icon-wrap icon-controller">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="2" y="6" width="20" height="12" rx="2" />
+                      <line x1="6" y1="12" x2="10" y2="12" />
+                      <line x1="8" y1="10" x2="8" y2="14" />
+                      <circle cx="15" cy="11" r="1" />
+                      <circle cx="18" cy="13" r="1" />
+                    </svg>
+                  </div>
+                  <div className="phone-controller-choice-text">
+                    <div className="phone-controller-choice-header">
+                      <span className="phone-controller-choice-title">Controller (Gamepad)</span>
+                      <span className="phone-controller-choice-tag">{physicalLabel ? "Connected" : "Direct"}</span>
+                    </div>
+                    <span className="phone-controller-choice-sub">
+                      {physicalLabel ? `Connected: ${physicalLabel}` : "Play with an Xbox, PlayStation, Switch Pro, or USB controller"}
+                    </span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  className="phone-controller-choice-card is-featured"
+                  onClick={() => {
+                    setControlChoice("phone");
+                    setShowPhoneQr(true);
+                  }}
+                >
+                  <div className="phone-controller-choice-icon-wrap icon-phone">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                      <line x1="12" y1="18" x2="12.01" y2="18" />
+                    </svg>
+                  </div>
+                  <div className="phone-controller-choice-text">
+                    <div className="phone-controller-choice-header">
+                      <span className="phone-controller-choice-title">Phone as Controller</span>
+                      <span className="phone-controller-choice-tag is-brand">Touch / Mobile Pad</span>
+                    </div>
+                    <span className="phone-controller-choice-sub">Scan a QR code — no app or account required on your phone</span>
+                  </div>
+                </button>
+              </div>
+            </div>
           </div>
         ) : null}
+
+        {/* ── Defacto Phone Pairing Sheet ── */}
+        {gameLayout && controlChoice === "phone" && showPhoneQr ? (
+          <div
+            className="phone-controller-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="phone-controller-title"
+          >
+            <div className="phone-controller-sheet phone-controller-pairing-sheet">
+              <div className="phone-controller-header">
+                <div className="phone-controller-badge">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                    <line x1="12" y1="18" x2="12.01" y2="18" />
+                  </svg>
+                  Connect Phone
+                </div>
+                <h2 id="phone-controller-title">Scan to connect your controller</h2>
+                <p className="phone-controller-lead">
+                  Scan this QR code with your phone&apos;s camera. This window stays your game view.
+                </p>
+              </div>
+
+              <div className="phone-controller-qr-container">
+                <div className="phone-controller-qr-frame">
+                  <img className="phone-controller-qr-img" src={qrSrc} alt="Scan QR code" width={140} height={140} />
+                </div>
+                <div className="phone-controller-qr-info">
+                  <div className="phone-controller-code-box">
+                    <span className="phone-controller-code-label">Room Code</span>
+                    <span className="phone-controller-code-val">{code}</span>
+                  </div>
+                  <p className="phone-controller-qr-hint">
+                    or open <span className="phone-controller-url">playbound.club/c</span> and enter <strong>{code}</strong>
+                  </p>
+                </div>
+              </div>
+
+              <div
+                className="phone-controller-footer"
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+              >
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  onClick={() => setControlChoice("undecided")}
+                >
+                  ← Choose other controls
+                </button>
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  style={{ color: "#38bdf8", fontWeight: 600 }}
+                  onClick={() => setShowPhoneQr(false)}
+                >
+                  Done / Hide QR
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {/* ── Controls Mapping Modal ── */}
         {gameLayout && showControlsModal ? (
           <div
-            className="pbc-modal-backdrop"
+            className="phone-controller-overlay"
             onClick={() => setShowControlsModal(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Controls Mapping"
           >
             <div
-              className="pbc-modal-card"
+              className="phone-controller-sheet"
+              style={{ width: "min(600px, 94vw)" }}
               onClick={(e) => e.stopPropagation()}
-              role="dialog"
-              aria-modal="true"
-              aria-label="Controls Mapping"
             >
-              <div className="pbc-modal-header">
+              <div
+                className="phone-controller-header"
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}
+              >
                 <div>
-                  <p className="pbc-controls-legend-eyebrow">Control Scheme</p>
-                  <h2 className="pbc-modal-title">
+                  <div className="phone-controller-badge">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                      <rect x="2" y="6" width="20" height="12" rx="2" />
+                      <line x1="6" y1="12" x2="10" y2="12" />
+                      <line x1="8" y1="10" x2="8" y2="14" />
+                      <circle cx="15" cy="11" r="1" />
+                      <circle cx="18" cy="13" r="1" />
+                    </svg>
+                    Controls Mapping
+                  </div>
+                  <h2 id="phone-controller-title">
                     {controlChoice === "controller" || mode === "standard-gamepad"
-                      ? "Controller Mapping"
-                      : "Keyboard & Mouse Mapping"}
+                      ? "Controller (Gamepad)"
+                      : controlChoice === "phone"
+                      ? "Phone Controller"
+                      : "Mouse and Keyboard"}
                   </h2>
-                  <p className="pbc-modal-sub">
+                  <p className="phone-controller-lead">
                     {controlChoice === "controller" || mode === "standard-gamepad"
-                      ? physicalLabel || "Standard Xbox / DualSense / USB Gamepad"
+                      ? physicalLabel || "Standard Xbox, PlayStation, Switch Pro, or USB Gamepad"
+                      : controlChoice === "phone"
+                      ? `Phone paired to room ${code}`
                       : "Keys and mouse buttons driving Player 1"}
                   </p>
                 </div>
@@ -1559,29 +1674,31 @@ export function ControllerClient({
                 ))}
               </div>
 
-              <div className="pbc-modal-footer">
+              <div
+                className="phone-controller-footer"
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+                  paddingTop: "12px",
+                  marginTop: "6px",
+                }}
+              >
                 <button
                   type="button"
-                  className="pbc-choice-btn"
-                  style={{ padding: "8px 14px", fontSize: "12px", minHeight: "auto" }}
+                  className="btn-ghost"
                   onClick={() => {
-                    if (controlChoice === "controller" || mode === "standard-gamepad") {
-                      setMode("keyboard-mouse");
-                      setControlChoice("keyboard");
-                    } else {
-                      setMode("standard-gamepad");
-                      setControlChoice("controller");
-                    }
+                    setShowControlsModal(false);
+                    setControlChoice("undecided");
                   }}
                 >
-                  {controlChoice === "controller" || mode === "standard-gamepad"
-                    ? "Switch to Mouse & Keyboard"
-                    : "Switch to Controller"}
+                  Switch control scheme…
                 </button>
                 <button
                   type="button"
                   className="pbc-hud-fs is-active"
-                  style={{ padding: "6px 16px", fontSize: "12px" }}
+                  style={{ padding: "6px 18px", fontSize: "12px" }}
                   onClick={() => setShowControlsModal(false)}
                 >
                   Done
@@ -1590,6 +1707,7 @@ export function ControllerClient({
             </div>
           </div>
         ) : null}
+
         {!gameLayout ? (
           <div className="pbc-kbm-panel">
             <h1 className="pbc-title">Keyboard &amp; mouse</h1>
@@ -2363,6 +2481,8 @@ function ControllerStyles() {
 /* Fullscreen / popup-game fills 100% of viewport without restriction */
 .pbc-pad.is-popup-game .pbc-gameview,
 .pbc-pad.is-fullscreen .pbc-gameview,
+.pbc-pad.is-gameview .pbc-gameview,
+.pbc-pad.is-kbm .pbc-gameview,
 .pbc-pad:fullscreen .pbc-gameview,
 :fullscreen .pbc-gameview {
   position: fixed !important;
@@ -2448,54 +2568,293 @@ function ControllerStyles() {
   color: #3dd68c;
 }
 
-/* Controls Mapping Modal */
-.pbc-modal-backdrop {
+/* ── Unified Input Setup & Controls Modal (Matches Launcher Defacto UI) ── */
+.phone-controller-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(14px);
   z-index: 100;
   display: grid;
   place-items: center;
   padding: 20px;
-  animation: pbcFadeIn 0.15s ease-out;
+  animation: phoneModalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.pbc-modal-card {
-  width: min(92vw, 600px);
-  max-height: 88vh;
-  overflow-y: auto;
-  background: oklch(0.2 0.016 278 / 96%);
-  border: 1px solid var(--pbc-line);
-  border-radius: 16px;
-  padding: 24px 26px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+.phone-controller-sheet {
+  width: min(520px, 94vw);
+  background: #11141c;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  padding: 24px 24px 20px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
   gap: 16px;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
-.pbc-modal-header {
+@keyframes phoneModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.phone-controller-header {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  border-bottom: 1px solid var(--pbc-line);
-  padding-bottom: 12px;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.pbc-modal-title {
+.phone-controller-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: #a5b4fc;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.phone-controller-sheet h2 {
   margin: 0;
-  font-size: 19px;
+  font-size: 1.3rem;
   font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--pbc-ink);
+  color: #f8fafc;
+  letter-spacing: -0.01em;
 }
 
-.pbc-modal-sub {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: var(--pbc-muted);
+.phone-controller-lead {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: #cbd5e1;
+}
+
+.phone-controller-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.phone-controller-choice-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: inherit;
+  font: inherit;
+  width: 100%;
+}
+
+.phone-controller-choice-card:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(99, 102, 241, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.phone-controller-choice-card.is-featured {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(168, 85, 247, 0.04));
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+.phone-controller-choice-card.is-featured:hover {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.08));
+  border-color: rgba(99, 102, 241, 0.6);
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.2);
+}
+
+.phone-controller-choice-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.phone-controller-choice-icon-wrap.icon-keyboard {
+  background: rgba(59, 130, 246, 0.14);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.28);
+}
+
+.phone-controller-choice-icon-wrap.icon-controller {
+  background: rgba(34, 197, 94, 0.12);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.phone-controller-choice-icon-wrap.icon-phone {
+  background: rgba(99, 102, 241, 0.16);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.phone-controller-choice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.phone-controller-choice-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.phone-controller-choice-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.phone-controller-choice-tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.phone-controller-choice-tag.is-brand {
+  background: rgba(99, 102, 241, 0.25);
+  color: #c7d2fe;
+}
+
+.phone-controller-choice-sub {
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: #94a3b8;
+}
+
+.phone-controller-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.btn-ghost {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+}
+
+/* ── Pairing Screen ── */
+.phone-controller-pairing-sheet {
+  width: min(520px, 94vw);
+}
+
+.phone-controller-qr-container {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+}
+
+.phone-controller-qr-frame {
+  background: #fff;
+  padding: 8px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.phone-controller-qr-img {
+  display: block;
+  width: 140px;
+  height: 140px;
+}
+
+.phone-controller-qr-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.phone-controller-code-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.phone-controller-code-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.phone-controller-code-val {
+  font-family: ui-monospace, monospace;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+.phone-controller-qr-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  word-break: break-all;
+}
+
+.phone-controller-url {
+  font-family: ui-monospace, monospace;
+  color: #cbd5e1;
 }
 
 .pbc-modal-close {
@@ -2516,36 +2875,12 @@ function ControllerStyles() {
   background: rgba(255, 255, 255, 0.18);
 }
 
-.pbc-modal-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-top: 1px solid var(--pbc-line);
-  padding-top: 14px;
-  margin-top: 4px;
-}
-
-@keyframes pbcFadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/* Phone pad preview sizes (when NOT in popup or fullscreen) */
-.pbc-pad.is-gameview:not(.is-popup-game):not(.is-fullscreen) .pbc-gameview {
+/* Touch pad preview size only for mobile touch when not in game view */
+.pbc-pad:not(.is-popup-game):not(.is-fullscreen):not(.is-gameview):not(.is-kbm) .pbc-gameview {
   height: min(32vh, 240px);
 }
-.pbc-pad.is-gameview:not(.is-popup-game):not(.is-fullscreen) .pbc-hud {
+.pbc-pad:not(.is-popup-game):not(.is-fullscreen):not(.is-gameview):not(.is-kbm) .pbc-hud {
   top: calc(var(--pbc-safe-t) + 8px);
-}
-.pbc-pad.is-kbm:not(.is-popup-game):not(.is-fullscreen) .pbc-gameview {
-  top: calc(var(--pbc-safe-t) + 40px);
-  height: min(52vh, 420px);
 }
 
 .pbc-gameview.is-live {
