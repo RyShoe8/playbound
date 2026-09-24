@@ -103,15 +103,17 @@ export function EventLocalWhen({
       timeZoneName: "short",
     });
     const end = endsAt ? new Date(endsAt) : null;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (end && !Number.isNaN(end.getTime())) {
       const endTime = end.toLocaleTimeString(undefined, {
         hour: "numeric",
         minute: "2-digit",
         timeZoneName: "short",
       });
+      // The browser timezone is unavailable during the server render.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setText(`${dateLine} · ${start.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })} – ${endTime}`);
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setText(`${dateLine} · ${startTime}`);
     }
   }, [startsAt, endsAt]);

@@ -1641,13 +1641,11 @@ function RecipeJsonField({
 
   // Re-sync when the fields above change the recipe, but never mid-edit.
   const serialized = JSON.stringify(value, null, 2);
-  const lastExternal = useRef(serialized);
-  useEffect(() => {
-    if (serialized !== lastExternal.current) {
-      lastExternal.current = serialized;
-      if (!error) setDraft(serialized);
-    }
-  }, [serialized, error]);
+  const [lastExternal, setLastExternal] = useState(serialized);
+  if (serialized !== lastExternal) {
+    setLastExternal(serialized);
+    if (!error) setDraft(serialized);
+  }
 
   function apply(text: string) {
     setDraft(text);
@@ -1658,7 +1656,7 @@ function RecipeJsonField({
         return;
       }
       setError(null);
-      lastExternal.current = JSON.stringify(parsed, null, 2);
+      setLastExternal(JSON.stringify(parsed, null, 2));
       onChange(parsed as Record<string, unknown>);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invalid JSON");

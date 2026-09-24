@@ -24,15 +24,14 @@ let hasNavigatedThisSession = false;
 export function BackButton() {
   const router = useRouter();
   const pathname = usePathname();
-  const [visible, setVisible] = useState(hasNavigatedThisSession);
+  const [initialPath] = useState(pathname);
+  const [initialVisible] = useState(hasNavigatedThisSession);
 
   useEffect(() => {
-    if (hasNavigatedThisSession) {
-      setVisible(true);
-    } else {
-      hasNavigatedThisSession = true;
-    }
-  }, [pathname]);
+    hasNavigatedThisSession = true;
+  }, []);
+
+  const visible = initialVisible || pathname !== initialPath;
 
   if (!visible) return null;
 

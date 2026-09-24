@@ -25,7 +25,9 @@ export function UsernamePicker({
   const router = useRouter();
   const { update } = useSession();
   const [username, setUsername] = useState(suggestion);
-  const [status, setStatus] = useState<Status>({ kind: "idle" });
+  const [status, setStatus] = useState<Status>(
+    suggestion.trim().length < 3 ? { kind: "idle" } : { kind: "checking" }
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const latest = useRef(0);
@@ -33,13 +35,8 @@ export function UsernamePicker({
   // Live availability check, debounced. Advisory only — POST re-checks.
   useEffect(() => {
     const value = username.trim();
-    if (value.length < 3) {
-      setStatus({ kind: "idle" });
-      return;
-    }
-
-    setStatus({ kind: "checking" });
-    const seq = ++latest.current;
+    if (value.length < 3) return;
+    const seq = latest.current;
     const timer = window.setTimeout(async () => {
       try {
         const res = await fetch(
@@ -116,7 +113,11 @@ export function UsernamePicker({
             minLength={3}
             maxLength={20}
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={(e) => {
+              latest.current += 1;
+              setUsername(e.target.value);
+              setStatus(e.target.value.trim().length < 3 ? { kind: "idle" } : { kind: "checking" });
+            }}
             placeholder="e.g. ryan_s"
             className="mt-1 h-10 w-full rounded-lg border border-input bg-secondary/50 px-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/40"
           />

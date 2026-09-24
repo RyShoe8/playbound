@@ -136,6 +136,10 @@ function distribute<T>(items: T[], columns: number): T[][] {
   return out;
 }
 
+const subscribeMobileOs = () => () => {};
+const mobileOsSnapshot = () => parseMobileOs(navigator.userAgent);
+const serverMobileOs = () => "other" as const;
+
 export type LibraryEditionItem = {
   slug: string;
   name: string;
@@ -500,11 +504,7 @@ function MobileLibraryRow({
   const saved = Boolean(meta?.saved);
   const ownedElsewhere = Boolean(meta?.ownedElsewhere) && !installed;
   const canParty = gameSupportsParty(game, editions);
-  const [os, setOs] = useState<"android" | "ios" | "other">("other");
-
-  useEffect(() => {
-    setOs(parseMobileOs(navigator.userAgent));
-  }, []);
+  const os = useSyncExternalStore(subscribeMobileOs, mobileOsSnapshot, serverMobileOs);
 
   const outbound = resolveMobileOutbound(game, os);
 
@@ -616,10 +616,7 @@ function MobileOrphanRow({
 }
 
 function MobileOwnedElsewhereInstall({ game }: { game: Game }) {
-  const [os, setOs] = useState<"android" | "ios" | "other">("other");
-  useEffect(() => {
-    setOs(parseMobileOs(navigator.userAgent));
-  }, []);
+  const os = useSyncExternalStore(subscribeMobileOs, mobileOsSnapshot, serverMobileOs);
   const outbound = resolveMobileOutbound(game, os);
   return (
     <MobileOutboundCta

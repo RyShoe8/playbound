@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
@@ -136,6 +136,27 @@ function FeaturedGameHero({ hero, badge }: { hero: Game; badge: string }) {
   );
 }
 
+function subscribePromo(onChange: () => void): () => void {
+  window.addEventListener("storage", onChange);
+  window.addEventListener("playbound:promo", onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener("playbound:promo", onChange);
+  };
+}
+
+function promoVisible(admin: boolean): boolean {
+  try {
+    if (admin) return sessionStorage.getItem("playbound_promo_session_dismissed") !== "true";
+    if (localStorage.getItem("playbound_promo_dismissed") === "true") return false;
+    return !(parseInt(localStorage.getItem("playbound_visit_count") || "0", 10) > 2);
+  } catch {
+    return admin;
+  }
+}
+
+const serverPromoVisible = () => true;
+
 export function HomeHeroPromoSection({
   gamesNewestFirst,
   games,
@@ -154,52 +175,36 @@ export function HomeHeroPromoSection({
       }),
     [live, discoveryMode, tiers, mode, device.type]
   );
-  const [showPromo, setShowPromo] = useState<boolean>(true);
   const admin = session?.user?.role === "admin";
+  const [dismissedHere, setDismissedHere] = useState(false);
+  const storedPromoVisible = useSyncExternalStore(
+    subscribePromo,
+    () => promoVisible(admin),
+    serverPromoVisible
+  );
+  const showPromo = !dismissedHere && storedPromoVisible;
 
   useEffect(() => {
-    if (status === "loading") return;
+    if (status === "loading" || admin) return;
     try {
-      if (admin) {
-        setShowPromo(sessionStorage.getItem("playbound_promo_session_dismissed") !== "true");
-        return;
-      }
-
-      const dismissed = localStorage.getItem("playbound_promo_dismissed");
-      if (dismissed === "true") {
-        setShowPromo(false);
-        return;
-      }
-
-      // Track distinct session visits
-      const sessionCounted = sessionStorage.getItem("playbound_session_counted");
-      let visitCount = parseInt(localStorage.getItem("playbound_visit_count") || "0", 10);
-      if (!sessionCounted) {
-        visitCount += 1;
-        localStorage.setItem("playbound_visit_count", visitCount.toString());
-        sessionStorage.setItem("playbound_session_counted", "true");
-      }
-
-      if (visitCount > 2) {
-        setShowPromo(false);
-      } else {
-        setShowPromo(true);
-      }
+      if (sessionStorage.getItem("playbound_session_counted")) return;
+      const visitCount = parseInt(localStorage.getItem("playbound_visit_count") || "0", 10) + 1;
+      localStorage.setItem("playbound_visit_count", String(visitCount));
+      sessionStorage.setItem("playbound_session_counted", "true");
+      window.dispatchEvent(new Event("playbound:promo"));
     } catch {
-      setShowPromo(admin);
+      /* storage may be disabled */
     }
   }, [status, admin]);
 
   const handleDismiss = () => {
-    setShowPromo(false);
+    setDismissedHere(true);
     try {
-      if (admin) {
-        sessionStorage.setItem("playbound_promo_session_dismissed", "true");
-      } else {
-        localStorage.setItem("playbound_promo_dismissed", "true");
-      }
+      if (admin) sessionStorage.setItem("playbound_promo_session_dismissed", "true");
+      else localStorage.setItem("playbound_promo_dismissed", "true");
+      window.dispatchEvent(new Event("playbound:promo"));
     } catch {
-      // ignore
+      /* storage may be disabled */
     }
   };
 

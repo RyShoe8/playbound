@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { X } from "lucide-react";
 import type { ModClassificationFlat, ModClassificationNode } from "@/lib/modClassifications";
 
@@ -23,40 +23,18 @@ export function ModClassificationModal({
 }: Props) {
   const isEditing = Boolean(classificationToEdit);
 
-  const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [slugManual, setSlugManual] = useState(false);
-  const [parentId, setParentId] = useState<string>("");
-  const [description, setDescription] = useState("");
-  const [icon, setIcon] = useState("");
-  const [sortOrder, setSortOrder] = useState(0);
-  const [isActive, setIsActive] = useState(true);
+  const [name, setName] = useState(classificationToEdit?.name ?? "");
+  const [slug, setSlug] = useState(classificationToEdit?.slug ?? "");
+  const [slugManual, setSlugManual] = useState(Boolean(classificationToEdit));
+  const [parentId, setParentId] = useState<string>(classificationToEdit?.parentId ?? initialParentId ?? "");
+  const [description, setDescription] = useState(classificationToEdit?.description ?? "");
+  const [icon, setIcon] = useState(classificationToEdit?.icon ?? "");
+  const [sortOrder, setSortOrder] = useState(classificationToEdit?.sortOrder ?? 0);
+  const [isActive, setIsActive] = useState(classificationToEdit?.isActive !== false);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (classificationToEdit) {
-      setName(classificationToEdit.name);
-      setSlug(classificationToEdit.slug);
-      setSlugManual(true);
-      setParentId(classificationToEdit.parentId || "");
-      setDescription(classificationToEdit.description || "");
-      setIcon(classificationToEdit.icon || "");
-      setSortOrder(classificationToEdit.sortOrder ?? 0);
-      setIsActive(classificationToEdit.isActive !== false);
-    } else {
-      setName("");
-      setSlug("");
-      setSlugManual(false);
-      setParentId(initialParentId || "");
-      setDescription("");
-      setIcon("");
-      setSortOrder(0);
-      setIsActive(true);
-    }
-    setError(null);
-  }, [classificationToEdit, initialParentId, open]);
 
   function autoSlug(val: string) {
     return val

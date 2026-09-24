@@ -249,7 +249,8 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
   }, []);
 
   useEffect(() => {
-    void load();
+    const timer = setTimeout(() => void load(), 0);
+    return () => clearTimeout(timer);
   }, [load]);
 
   async function runEnsureMissing() {

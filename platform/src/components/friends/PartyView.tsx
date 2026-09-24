@@ -193,7 +193,6 @@ export function PartyView({
 
   useEffect(() => {
     if (party.gameSlug !== "openra") {
-      setOpenRaEditions(null);
       return;
     }
     let cancelled = false;
@@ -637,6 +636,7 @@ export function PartyView({
                 */}
                 {party.gameSlug && party.configSync?.referenceSource !== "party" ? (
                   <PartyHostInstallPicker
+                    key={`${party.id}:${party.gameSlug}:${party.editionSlug || ""}`}
                     partyId={party.id}
                     gameSlug={party.gameSlug}
                     editionSlug={party.editionSlug}

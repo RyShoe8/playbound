@@ -123,10 +123,11 @@ export function SearchFilters({
   const price = sp.get("price") ?? "any";
 
   const [searchInput, setSearchInput] = useState(q);
-
-  useEffect(() => {
+  const [previousQuery, setPreviousQuery] = useState(q);
+  if (q !== previousQuery) {
+    setPreviousQuery(q);
     setSearchInput(q);
-  }, [q]);
+  }
 
   const genreSet = useMemo(() => new Set(genres), [genres]);
   const tagSet = useMemo(() => new Set(tags), [tags]);

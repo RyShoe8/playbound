@@ -118,7 +118,6 @@ export function PartyHostInstallPicker({
         if (!cancelled) setEditions([]);
       }
     }
-    setEditions(null);
     void loadEditions();
     return () => {
       cancelled = true;
@@ -154,7 +153,6 @@ export function PartyHostInstallPicker({
         console.error("Failed to check host install for party picker", err);
       }
     }
-    setHostHasGame(null);
     void check();
     const timer = setInterval(() => void check(), 4000);
     return () => {

@@ -42,7 +42,7 @@ export function WeeklyNewsletterBuilder({
   publishedAt: string;
 }) {
   const [copyState, setCopyState] = useState<"idle" | "ok" | "err">("idle");
-  const [lastAutoPrefillSlug, setLastAutoPrefillSlug] = useState("");
+  const lastAutoPrefillSlug = useRef("");
 
   const gamesBySlug = useMemo(() => {
     const map = new Map<string, CatalogGamePrefill>();
@@ -67,16 +67,16 @@ export function WeeklyNewsletterBuilder({
 
     const featuredEmpty =
       !draft.featured.title.trim() && !draft.featured.description.trim() && !draft.featured.imageUrl.trim();
-    const gameChangedAfterPrefill = lastAutoPrefillSlug !== "" && lastAutoPrefillSlug !== featuredSlug;
+    const gameChangedAfterPrefill = lastAutoPrefillSlug.current !== "" && lastAutoPrefillSlug.current !== featuredSlug;
 
     if (featuredEmpty || gameChangedAfterPrefill) {
       onChange(prefillFeaturedFromGame(draft, game));
-      setLastAutoPrefillSlug(featuredSlug);
+      lastAutoPrefillSlug.current = featuredSlug;
       return;
     }
 
-    if (lastAutoPrefillSlug === "") {
-      setLastAutoPrefillSlug(featuredSlug);
+    if (lastAutoPrefillSlug.current === "") {
+      lastAutoPrefillSlug.current = featuredSlug;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: react to featuredSlug + catalog only
   }, [featuredSlug, gamesBySlug]);
@@ -111,7 +111,7 @@ export function WeeklyNewsletterBuilder({
     const game = gamesBySlug.get(featuredSlug);
     if (!game) return;
     onChange(prefillFeaturedFromGame(draft, game));
-    setLastAutoPrefillSlug(featuredSlug);
+    lastAutoPrefillSlug.current = featuredSlug;
   }
 
   async function copyHtml() {
