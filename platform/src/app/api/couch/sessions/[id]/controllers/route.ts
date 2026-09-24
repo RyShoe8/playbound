@@ -4,6 +4,7 @@ import {
   assertHost,
   approveController,
   getCouchSession,
+  hostCouchSnapshot,
   publicCouchSnapshot,
   reassignSlot,
   rejectOrKickController,
@@ -39,7 +40,7 @@ export async function POST(req: Request, context: RouteContext) {
       }
       return NextResponse.json({
         controller: result,
-        snapshot: publicCouchSnapshot(session),
+        snapshot: hostCouchSnapshot(session),
       });
     }
 
@@ -48,7 +49,7 @@ export async function POST(req: Request, context: RouteContext) {
       if (!ok) {
         return NextResponse.json({ error: "Controller not found." }, { status: 404 });
       }
-      return NextResponse.json({ ok: true, snapshot: publicCouchSnapshot(session) });
+      return NextResponse.json({ ok: true, snapshot: hostCouchSnapshot(session) });
     }
 
     if (action === "reassign") {
@@ -59,7 +60,7 @@ export async function POST(req: Request, context: RouteContext) {
       }
       return NextResponse.json({
         controller: result,
-        snapshot: publicCouchSnapshot(session),
+        snapshot: hostCouchSnapshot(session),
       });
     }
 

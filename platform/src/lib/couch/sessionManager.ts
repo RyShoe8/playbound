@@ -650,6 +650,25 @@ export function publicCouchSnapshot(session: CouchSession) {
   };
 }
 
+export function hostCouchSnapshot(session: CouchSession) {
+  const pub = publicCouchSnapshot(session);
+  return {
+    ...pub,
+    hostToken: session.hostToken,
+    controllers: session.controllers
+      .filter((c) => c.status !== "kicked")
+      .map((c) => ({
+        controllerId: c.controllerId,
+        label: c.label,
+        deviceLabel: c.deviceLabel,
+        profile: c.profile,
+        status: c.status,
+        playerSlot: c.playerSlot,
+        sessionToken: c.sessionToken,
+      })),
+  };
+}
+
 /** @deprecated Prefer sessionIceServers(sessionId); kept for callers without a session. */
 export function defaultIceServers(): { urls: string }[] {
   return sharedDefaultIceServers() as { urls: string }[];
