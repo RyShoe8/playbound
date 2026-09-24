@@ -61,14 +61,25 @@ function createHostService(deps) {
     return out;
   }
 
+  function getProvider() {
+    if (!provider) {
+      provider = createProvider();
+      provider.setExitHandler?.(() => {
+        // The sidecar lost its virtual pads. Recreate each slot on its next
+        // input packet instead of continuing to write through stale handles.
+        handles.clear();
+      });
+    }
+    return provider;
+  }
+
   async function ensureProvider() {
-    if (!provider) provider = createProvider();
-    return provider.probe();
+    return getProvider().probe();
   }
 
   async function ensureSlot(slot) {
     if (handles.has(slot)) return handles.get(slot);
-    if (!provider) provider = createProvider();
+    getProvider();
     try {
       const handle = await provider.createController(slot);
       handles.set(slot, handle);
@@ -352,8 +363,7 @@ function createHostService(deps) {
     }
 
     // Fresh provider after possible driver install.
-    provider = createProvider();
-    const probe = await provider.probe();
+    const probe = await getProvider().probe();
 
     // When the host physical pad owns OpenBOR P1, remotes start at ViGEm slot 1.
     const reserveHostSlot = Boolean(opts.reserveHostSlot);
@@ -641,7 +651,7 @@ function createHostService(deps) {
   async function warmControllerSlot(slot = 0) {
     const ensured = await ensureVigem(() => {});
     if (!ensured.ok) return ensured;
-    if (!provider) provider = createProvider();
+    getProvider();
     await ensureSlot(slot);
     return { ok: true };
   }

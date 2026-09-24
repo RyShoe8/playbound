@@ -37,4 +37,14 @@ function steamAppState(appId, libraryRoots, io = fs) {
   return { installed: false, progress: bestProgress };
 }
 
-module.exports = { acfValue, steamAppState };
+/** Catalog store metadata is not proof that the installed copy uses Steam. */
+function steamRuntimeForLaunch(kind, launchPath, appId) {
+  const inSteamLibrary = /[\\/]steamapps[\\/]common[\\/]/i.test(String(launchPath || ""));
+  const steamManaged = inSteamLibrary || kind === "steam" || (kind === "external" && Boolean(appId));
+  return {
+    needsSteam: steamManaged,
+    appId: steamManaged && /^\d+$/.test(String(appId || "")) ? String(appId) : null,
+  };
+}
+
+module.exports = { acfValue, steamAppState, steamRuntimeForLaunch };

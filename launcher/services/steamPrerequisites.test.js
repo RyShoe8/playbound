@@ -1,7 +1,7 @@
 "use strict";
 
 const assert = require("assert");
-const { steamAppState } = require("./steamPrerequisites");
+const { steamAppState, steamRuntimeForLaunch } = require("./steamPrerequisites");
 
 function fakeIo(files, dirs = []) {
   return {
@@ -47,6 +47,21 @@ const contentDir = `${root}\\steamapps\\common\\Source SDK Base 2007`;
 assert.deepStrictEqual(steamAppState("not-an-id", [root], fakeIo({})), {
   installed: false,
   progress: null,
+});
+
+// HoloCure's standalone ZIP has a Steam listing in catalog metadata, but
+// launching that copy must not start Steam or write steam_appid.txt beside it.
+assert.deepStrictEqual(
+  steamRuntimeForLaunch("direct-zip", "C:\\Users\\Player\\PlayBound\\Games\\holocure\\HoloCure.exe", "2420510"),
+  { needsSteam: false, appId: null }
+);
+assert.deepStrictEqual(
+  steamRuntimeForLaunch("direct-zip", "D:\\SteamLibrary\\steamapps\\common\\HoloCure\\HoloCure.exe", "2420510"),
+  { needsSteam: true, appId: "2420510" }
+);
+assert.deepStrictEqual(steamRuntimeForLaunch("steam", "D:\\Games\\AlienSwarm.exe", "630"), {
+  needsSteam: true,
+  appId: "630",
 });
 
 console.log("steamPrerequisites tests passed");
