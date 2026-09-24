@@ -60,10 +60,7 @@ export function TopicComposer({
         : `/games/${gameSlug}/discussion/${topicSlug}`;
 
   useEffect(() => {
-    if (title.trim().length < 8) {
-      setRelated([]);
-      return;
-    }
+    if (title.trim().length < 8) return;
     const handle = setTimeout(async () => {
       try {
         const params = new URLSearchParams({
@@ -167,7 +164,7 @@ export function TopicComposer({
         placeholder="Discussion title"
         className="h-9 w-full rounded-lg border border-input bg-secondary/50 px-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/40"
       />
-      {related.length > 0 && (
+      {title.trim().length >= 8 && related.length > 0 && (
         <div className="rounded-lg border border-border bg-secondary/30 p-3 text-sm">
           <p className="font-semibold">These discussions may already answer your question:</p>
           <ul className="mt-2 space-y-1">

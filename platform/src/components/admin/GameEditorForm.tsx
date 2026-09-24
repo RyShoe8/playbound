@@ -169,7 +169,7 @@ export function GameEditorForm({
   const shotFileRef = useRef<HTMLInputElement>(null);
   const videoFileRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState<GamePayload>(initial);
-  const [importUrl, setImportUrl] = useState(mode === "create" ? "" : initial.website || "");
+  const [importUrl, setImportUrl] = useState(initial.website || "");
   const [busy, setBusy] = useState(false);
   const [launcherSaving, setLauncherSaving] = useState(false);
   const [error, setError] = useState("");
@@ -217,22 +217,6 @@ export function GameEditorForm({
     }));
   }
 
-  useEffect(() => {
-    if (mode === "create") {
-      setForm(initial);
-      setImportUrl(initial.website || "");
-      setError("");
-      setWarning("");
-      setMediaNote("");
-      setVideoUrlDraft("");
-      setEvidence([]);
-      setSourceMaterial(null);
-      setSuggestions({ bestFor: [], notFor: [] });
-      setLauncherDiscoverNote("");
-      setIsCustomDev(Boolean(initial.developerSlug && !developers.some((d) => d.slug === initial.developerSlug)));
-      setCustomDevName(initial.developerName || "");
-    }
-  }, [initial, mode, developers]);
 
   // Mirrors the server-side publish gate so nothing is a surprise on save.
   // Must apply the same derivation first — the server fills install steps and

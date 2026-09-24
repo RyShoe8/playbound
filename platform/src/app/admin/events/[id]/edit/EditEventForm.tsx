@@ -1,6 +1,6 @@
 "use client";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, X, Image as ImageIcon } from "lucide-react";
 
@@ -49,14 +49,6 @@ export function EditEventForm({
   const [startsAt, setStartsAt] = useState(toLocalDatetimeInput(initialValues.startsAt));
   const [endsAt, setEndsAt] = useState(toLocalDatetimeInput(initialValues.endsAt));
 
-  useEffect(() => {
-    if (initialValues.startsAt) {
-      setStartsAt(toLocalDatetimeInput(initialValues.startsAt));
-    }
-    if (initialValues.endsAt) {
-      setEndsAt(toLocalDatetimeInput(initialValues.endsAt));
-    }
-  }, [initialValues.startsAt, initialValues.endsAt]);
   const [maxParticipants, setMaxParticipants] = useState(
     initialValues.maxParticipants != null ? String(initialValues.maxParticipants) : ""
   );

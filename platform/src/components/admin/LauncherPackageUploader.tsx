@@ -67,6 +67,8 @@ export function LauncherPackageUploader({
     if (!gameSlug) return;
     try {
       const stored = window.localStorage.getItem(pendingKey);
+      // Restore the pending transfer only after browser storage is available.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (stored) setPending(JSON.parse(stored) as Pending);
     } catch {
       /* ignore unreadable storage */

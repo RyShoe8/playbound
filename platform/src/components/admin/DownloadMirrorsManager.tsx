@@ -287,7 +287,8 @@ export function DownloadMirrorsManager() {
   }>>({});
 
   useEffect(() => {
-    void loadData();
+    const timer = setTimeout(() => void loadData(), 0);
+    return () => clearTimeout(timer);
   }, []);
 
   /*

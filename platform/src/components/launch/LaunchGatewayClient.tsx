@@ -78,7 +78,6 @@ export function LaunchGatewayClient({
     const downloadUrl = launcherDownloadUrlForOs(detectLauncherOs());
 
     // Automatically trigger deep link handoff on mount
-    setStatus("launching");
     openPlayboundDeepLink(deepLink, {
       downloadUrl,
       autoDownload: false, // Don't aggressively auto-download on initial click, give user clear download UI if not installed

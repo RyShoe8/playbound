@@ -60,7 +60,8 @@ export function EcommerceStoresManager() {
   }
 
   useEffect(() => {
-    void load();
+    const timer = setTimeout(() => void load(), 0);
+    return () => clearTimeout(timer);
   }, []);
 
   async function patch(slug: string, partial: Record<string, unknown>) {

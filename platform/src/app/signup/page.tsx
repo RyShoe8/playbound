@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Mail, UserPlus } from "lucide-react";
 import { AuthDivider, GoogleSignInButton } from "@/components/GoogleSignInButton";
@@ -13,17 +13,23 @@ import { Checkbox } from "@/components/ui/Checkbox";
 
 /** Where the launcher's account window listens for the link handoff. */
 const LAUNCHER_HANDOFF = "/launcher/auth?from=app";
+const subscribeSearch = () => () => {};
+const browserSearch = () => window.location.search;
+const serverSearch = () => "";
 
 export default function SignupPage() {
   const { track } = useTelemetry();
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
+  const search = useSyncExternalStore(subscribeSearch, browserSearch, serverSearch);
+  const params = new URLSearchParams(search);
+  const [emailOverride, setEmailOverride] = useState<string | null>(null);
+  const email = emailOverride ?? params.get("email") ?? "";
   const [password, setPassword] = useState("");
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
   const [message, setMessage] = useState("");
   const [captchaBlocked, setCaptchaBlocked] = useState(false);
-  const [fromInvite, setFromInvite] = useState(false);
+  const fromInvite = Boolean(params.get("invite"));
   /*
    * Which CTA sent them here, so the page can acknowledge it.
    *
@@ -31,7 +37,7 @@ export default function SignupPage() {
    * signed-out visitors; landing on a generic "Free forever" headline after
    * clicking "Create a party" loses the thread.
    */
-  const [fromCta, setFromCta] = useState("");
+  const fromCta = params.get("from") || "";
   /*
    * Signup opened inside the launcher's account window.
    *
@@ -39,19 +45,11 @@ export default function SignupPage() {
    * page has to end at /launcher/auth rather than the site's usual /profile —
    * otherwise the account gets created and the app never links to it.
    */
-  const [fromLauncher, setFromLauncher] = useState(false);
+  const fromLauncher = params.get("launcher") === "1";
 
   useEffect(() => {
-    const { email: inviteEmail } = storeInviteTokenFromSearch(window.location.search);
-    if (inviteEmail) {
-      setEmail(inviteEmail);
-      setFromInvite(true);
-    } else if (new URLSearchParams(window.location.search).get("invite")) {
-      setFromInvite(true);
-    }
-    setFromCta(new URLSearchParams(window.location.search).get("from") || "");
-    setFromLauncher(new URLSearchParams(window.location.search).get("launcher") === "1");
-  }, []);
+    storeInviteTokenFromSearch(search);
+  }, [search]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -150,7 +148,7 @@ export default function SignupPage() {
             type="email"
             required
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => setEmailOverride(e.target.value)}
             className="mt-1 h-10 w-full rounded-lg border border-input bg-secondary/50 px-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/40"
           />
         </div>

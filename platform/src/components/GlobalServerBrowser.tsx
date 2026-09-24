@@ -2,7 +2,7 @@
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 import { Checkbox } from "@/components/ui/Checkbox";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -32,6 +32,17 @@ function readWithPlayersPref(): boolean {
     return true;
   }
 }
+
+function subscribeWithPlayersPref(onChange: () => void): () => void {
+  window.addEventListener("storage", onChange);
+  window.addEventListener("playbound:players-pref", onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener("playbound:players-pref", onChange);
+  };
+}
+
+const serverWithPlayersPref = () => true;
 
 type IndexGame = {
   slug: string;
@@ -158,11 +169,9 @@ export function GlobalServerBrowser({
   const [internalInstalledOnly, setInternalInstalledOnly] = useState(false);
   const installedOnly = propInstalledOnly !== undefined ? propInstalledOnly : internalInstalledOnly;
   const setInstalledOnly = onInstalledOnlyChange || setInternalInstalledOnly;
-  const [withPlayersOnly, setWithPlayersOnly] = useState(true);
-
-  useEffect(() => {
-    setWithPlayersOnly(readWithPlayersPref());
-  }, []);
+  const withPlayersOnly = useSyncExternalStore(
+    subscribeWithPlayersPref, readWithPlayersPref, serverWithPlayersPref
+  );
   const [search, setSearch] = useState("");
   const [data, setData] = useState<ApiResponse | null>(null);
   const [viewer, setViewer] = useState<ViewerGeo | null>(null);
@@ -282,7 +291,6 @@ export function GlobalServerBrowser({
   useEffect(() => {
     let cancelled = false;
     if (!effectiveGameSlug) {
-      setEditions([]);
       return;
     }
     (async () => {
@@ -304,7 +312,10 @@ export function GlobalServerBrowser({
     };
   }, [effectiveGameSlug]);
 
-  const editionOptions = useMemo(() => choosablePublicEditions(editions), [editions]);
+  const editionOptions = useMemo(
+    () => choosablePublicEditions(effectiveGameSlug ? editions : []),
+    [effectiveGameSlug, editions]
+  );
   const editionMode = editionOptions.length >= 1;
 
   const editionNameBySlug = useMemo(() => {
@@ -709,9 +720,9 @@ export function GlobalServerBrowser({
           <Checkbox
             checked={withPlayersOnly}
             onCheckedChange={(next) => {
-              setWithPlayersOnly(next);
               try {
                 localStorage.setItem(WITH_PLAYERS_PREF, String(next));
+                window.dispatchEvent(new Event("playbound:players-pref"));
               } catch {
                 /* ignore */
               }

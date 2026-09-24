@@ -71,7 +71,9 @@ export function MultiplayerHome({
       : "overview"
   );
 
-  useEffect(() => {
+  const [previousQueryTab, setPreviousQueryTab] = useState(queryTab);
+  if (queryTab !== previousQueryTab) {
+    setPreviousQueryTab(queryTab);
     if (
       queryTab &&
       (queryTab === "overview" ||
@@ -82,7 +84,7 @@ export function MultiplayerHome({
     ) {
       setActiveTab(queryTab);
     }
-  }, [queryTab]);
+  }
 
   // Create party drawer
   const [createPartyOpen, setCreatePartyOpen] = useState(false);
@@ -118,11 +120,15 @@ export function MultiplayerHome({
   }, []);
 
   useEffect(() => {
+    let initialTimer: ReturnType<typeof setTimeout> | undefined;
     if (!initialActivity) {
-      loadActivity();
+      initialTimer = setTimeout(() => void loadActivity(), 0);
     }
     const interval = setInterval(loadActivity, 30_000);
-    return () => clearInterval(interval);
+    return () => {
+      if (initialTimer) clearTimeout(initialTimer);
+      clearInterval(interval);
+    };
   }, [loadActivity, initialActivity]);
 
   // Check viewer's own Looking to Party state

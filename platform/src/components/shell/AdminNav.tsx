@@ -355,11 +355,8 @@ function NavPill({
 
 export function AdminNav() {
   const pathname = usePathname();
-  const [pendingHref, setPendingHref] = useState<string | null>(null);
-
-  useEffect(() => {
-    setPendingHref(null);
-  }, [pathname]);
+  const [pending, setPending] = useState<{ href: string; from: string } | null>(null);
+  const pendingHref = pending?.from === pathname ? pending.href : null;
 
   const gameSlug = gameSlugFromPath(pathname);
   const section = activeSection(pathname, gameSlug);
@@ -378,7 +375,7 @@ export function AdminNav() {
             active={inSection(pathname, item)}
             pending={pendingHref === item.href && !inSection(pathname, item)}
             onClick={() => {
-              if (pathname !== item.href) setPendingHref(item.href);
+              if (pathname !== item.href) setPending({ href: item.href, from: pathname });
             }}
           />
         ))}
@@ -400,7 +397,7 @@ export function AdminNav() {
               active={child.match(pathname)}
               pending={pendingHref === child.href && !child.match(pathname)}
               onClick={() => {
-                  if (pathname !== child.href) setPendingHref(child.href);
+                  if (pathname !== child.href) setPending({ href: child.href, from: pathname });
               }}
               sub
             />

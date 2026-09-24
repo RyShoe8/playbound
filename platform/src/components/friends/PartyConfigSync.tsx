@@ -215,6 +215,7 @@ export function PartyConfigSync({
                    * which one is right.
                    */
                   <PartyHostInstallPicker
+                    key={`${partyId}:${gameSlug}:${editionSlug || ""}`}
                     partyId={partyId}
                     gameSlug={gameSlug}
                     editionSlug={editionSlug}

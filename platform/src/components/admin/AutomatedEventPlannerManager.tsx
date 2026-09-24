@@ -141,7 +141,8 @@ export function AutomatedEventPlannerManager() {
   }, []);
 
   useEffect(() => {
-    loadData();
+    const timer = setTimeout(() => void loadData(), 0);
+    return () => clearTimeout(timer);
   }, [loadData]);
 
   // Silent periodic refresh for countdown timers (without unmounting the UI)

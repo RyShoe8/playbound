@@ -266,14 +266,15 @@ export function ModClassificationsManager({ initialTree, initialFlat }: Props) {
         )}
       </div>
 
-      <ModClassificationModal
+      {modalOpen && <ModClassificationModal
+        key={editingClassification?.id ?? addingChildParentId ?? "new"}
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onSaved={refreshData}
         classificationToEdit={editingClassification}
         initialParentId={addingChildParentId}
         flatList={flat}
-      />
+      />}
     </div>
   );
 }

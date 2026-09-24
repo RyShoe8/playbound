@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export function SizeInput({
   value,
@@ -12,8 +12,9 @@ export function SizeInput({
   required?: boolean;
 }) {
   const [text, setText] = useState(value ? String(value) : "");
-
-  useEffect(() => {
+  const [previousValue, setPreviousValue] = useState(value);
+  if (value !== previousValue) {
+    setPreviousValue(value);
     if (value !== undefined && value !== 0) {
       if (parseFloat(text) !== value) {
         setText(String(value));
@@ -23,8 +24,7 @@ export function SizeInput({
         setText("");
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
+  }
 
   function handleBlur() {
     if (!text.trim()) {
