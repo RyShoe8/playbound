@@ -308,7 +308,10 @@ export function ControllerClient({
   }, [join?.playerSlot]);
 
   const sendInput = useCallback((opts?: { force?: boolean }) => {
-    const j = join;
+    // The approval/endpoints poll replaces `join` every few seconds. Reading
+    // the latest value through the ref keeps this callback stable, so that
+    // refresh does not tear down the WebRTC effect and restart the video stream.
+    const j = joinRef.current;
     if (!j || j.status !== "approved" || j.playerSlot == null || !j.sessionToken) return;
     const pad = padRef.current;
     const key = [
@@ -340,7 +343,7 @@ export function ControllerClient({
     sendFnRef.current(packet);
     framesRef.current += 1;
     lastSentRef.current = performance.now();
-  }, [join]);
+  }, []);
 
   const toggleTwinStick = () => {
     setTwinStick((prev) => {
