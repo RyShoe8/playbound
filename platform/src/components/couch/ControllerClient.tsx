@@ -164,7 +164,7 @@ export function ControllerClient({
   const [videoWaiting, setVideoWaiting] = useState(false);
   const videoFrameWatchRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [cropTitleBar, setCropTitleBar] = useState(true);
+  const [cropTitleBar, setCropTitleBar] = useState(false);
   const [hudVisible, setHudVisible] = useState(true);
   const hudTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 

@@ -13179,8 +13179,6 @@ async function openCouchGameViewWindow(rawUrl) {
       await couchGameViewWin.loadURL(url);
       if (couchGameViewWin.isMinimized()) couchGameViewWin.restore();
       couchGameViewWin.focus();
-      // TEMPORARY, see the creation branch below.
-      couchGameViewWin.webContents.openDevTools({ mode: "detach" });
       return { ok: true };
     }
     couchGameViewWin = new BrowserWindow({
@@ -13212,11 +13210,6 @@ async function openCouchGameViewWindow(rawUrl) {
     couchGameViewWin.on("closed", () => {
       couchGameViewWin = null;
     });
-    // TEMPORARY, for diagnosing the Remote Play "no video" report — this is
-    // a separate OS window from the main launcher, so Ctrl+Shift+I on the
-    // main window never reaches it. Auto-open so client-side console output
-    // is actually visible. Remove once that's resolved.
-    couchGameViewWin.webContents.openDevTools({ mode: "detach" });
     couchGameViewWin.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
     couchGameViewWin.webContents.on("render-process-gone", (_e, details) => {
       console.warn("couchGameViewWin render-process-gone:", details?.reason, details?.exitCode);
