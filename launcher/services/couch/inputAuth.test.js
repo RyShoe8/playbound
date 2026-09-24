@@ -1,6 +1,6 @@
 const { describe, it } = require("node:test");
 const assert = require("node:assert/strict");
-const { authenticateCouchClient, bindInputToSlot } = require("./inputAuth");
+const { authenticateCouchClient, authenticatedInputSlot, bindInputToSlot } = require("./inputAuth");
 
 const approved = [
   {
@@ -55,7 +55,7 @@ describe("authenticateCouchClient", () => {
     assert.equal(r.playerSlot, 2);
   });
 
-  it("approves when the controller row omits sessionToken (public snapshot)", () => {
+  it("rejects a row without a host-side session token", () => {
     const r = authenticateCouchClient(
       {
         type: "hello",
@@ -69,8 +69,7 @@ describe("authenticateCouchClient", () => {
         controllers: [{ controllerId: "c1", playerSlot: 0, status: "approved" }],
       }
     );
-    assert.equal(r.ok, true);
-    assert.equal(r.playerSlot, 0);
+    assert.equal(r.ok, false);
   });
 
   it("rejects when the controller row has a differing sessionToken", () => {
@@ -89,6 +88,33 @@ describe("authenticateCouchClient", () => {
     );
     assert.equal(r.ok, false);
     assert.equal(r.reason, "not-approved");
+  });
+
+  it("authenticates a stream-only viewer without granting a gamepad slot", () => {
+    const r = authenticateCouchClient(
+      { type: "hello", controllerId: "viewer", sessionToken: "view-token" },
+      { expectedWsToken: "", requireWsToken: false, controllers: [
+        { controllerId: "viewer", sessionToken: "view-token", status: "approved", spectator: true, playerSlot: null },
+      ] }
+    );
+    assert.equal(r.ok, true);
+    assert.equal(r.playerSlot, null);
+  });
+});
+
+describe("authenticatedInputSlot", () => {
+  it("keeps four identities on four separate slots and rejects impersonation", () => {
+    const rows = Array.from({ length: 4 }, (_, slot) => ({
+      controllerId: `pad-${slot}`, sessionToken: `token-${slot}`,
+      playerSlot: slot, status: "approved",
+    }));
+    for (let slot = 0; slot < 4; slot++) {
+      assert.equal(authenticatedInputSlot(`pad-${slot}`, `token-${slot}`, rows), slot);
+      assert.equal(authenticatedInputSlot(`pad-${slot}`, `token-${(slot + 1) % 4}`, rows), null);
+    }
+    assert.equal(authenticatedInputSlot("viewer", "view-token", [
+      { controllerId: "viewer", sessionToken: "view-token", spectator: true, playerSlot: null, status: "approved" },
+    ]), null);
   });
 });
 

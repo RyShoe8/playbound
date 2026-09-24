@@ -15,6 +15,7 @@ import {
   pollCouchSignals,
   heartbeatHost,
   touchCouchSessionActivity,
+  updateCouchController,
 } from "@/lib/couch/sessionManager";
 
 describe("couch protocol", () => {
@@ -209,6 +210,77 @@ describe("couch sessions", () => {
     expect("controller" in joined).toBe(true);
     if ("controller" in joined) {
       expect(joined.controller.playerSlot).toBe(1);
+    }
+  });
+
+  it("gives a Remote Play viewer video credentials without taking a player slot", async () => {
+    const session = await createCouchSession({ maxPlayers: 4 });
+    const viewer = await joinCouchSession(session, { label: "Remote viewer", spectator: true });
+    expect("controller" in viewer).toBe(true);
+    if (!("controller" in viewer)) return;
+    expect(viewer.controller.playerSlot).toBeNull();
+    expect(viewer.controller.sessionToken).toBeTruthy();
+
+    const pads = await Promise.all([0, 1, 2, 3].map((i) => joinCouchSession(session, { label: `Pad ${i}` })));
+    expect(pads.map((result) => "controller" in result ? result.controller.playerSlot : null)).toEqual([0, 1, 2, 3]);
+    expect((await joinCouchSession(session, { label: "Pad 5" }))).toMatchObject({ status: 409 });
+  });
+
+  it("keeps disconnected identities on unique slots and lets a viewer claim a free one", async () => {
+    const session = await createCouchSession({ maxPlayers: 4 });
+    const viewer = await joinCouchSession(session, { spectator: true });
+    const first = await joinCouchSession(session, { label: "Pad 1" });
+    if (!("controller" in viewer) || !("controller" in first)) return;
+    first.controller.lastSeen = Date.now() - 60_000;
+    const second = await joinCouchSession(session, { label: "Pad 2" });
+    expect("controller" in second && second.controller.playerSlot).toBe(1);
+    const claimed = await updateCouchController(session, {
+      controllerId: viewer.controller.controllerId,
+      controllerToken: viewer.controller.controllerToken,
+      spectator: false,
+    });
+    expect("controller" in claimed && claimed.controller.playerSlot).toBe(2);
+    expect(first.controller.playerSlot).toBe(0);
+  });
+
+  it("returns a previously active Remote Play viewer to video-only on reconnect", async () => {
+    const session = await createCouchSession({ maxPlayers: 2 });
+    const viewer = await joinCouchSession(session, { label: "viewer", spectator: true });
+    if (!("controller" in viewer)) return;
+    const active = await updateCouchController(session, {
+      controllerId: viewer.controller.controllerId,
+      controllerToken: viewer.controller.controllerToken,
+      spectator: false,
+    });
+    expect("controller" in active && active.controller.playerSlot).toBe(0);
+    const returned = await joinCouchSession(session, {
+      controllerId: viewer.controller.controllerId,
+      controllerToken: viewer.controller.controllerToken,
+      spectator: true,
+    });
+    expect("controller" in returned && returned.controller.spectator).toBe(true);
+    expect("controller" in returned && returned.controller.playerSlot).toBeNull();
+    const phone = await joinCouchSession(session, { label: "phone pad" });
+    expect("controller" in phone && phone.controller.playerSlot).toBe(0);
+  });
+
+  it("atomically refuses a Mongo join if another controller claimed the same slot", async () => {
+    const session = await createCouchSession({});
+    const update = vi.spyOn(CouchSessionModel, "updateOne").mockResolvedValue({ matchedCount: 1 } as never);
+    setCouchStoreMode("mongo");
+    try {
+      const result = await joinCouchSession(session, { label: "Pad" });
+      expect("controller" in result).toBe(true);
+      expect(update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sessionId: session.sessionId,
+          controllers: { $not: { $elemMatch: { status: "approved", playerSlot: 0 } } },
+        }),
+        expect.objectContaining({ $push: { controllers: expect.objectContaining({ playerSlot: 0 }) } })
+      );
+    } finally {
+      setCouchStoreMode("memory");
+      update.mockRestore();
     }
   });
 

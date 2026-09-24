@@ -35,13 +35,24 @@ function authenticateCouchClient(msg, opts) {
   if (!row || row.status !== "approved") {
     return { ok: false, reason: "not-approved" };
   }
-  if (row.sessionToken && row.sessionToken !== sessionToken) {
+  if (!row.sessionToken || row.sessionToken !== sessionToken) {
     return { ok: false, reason: "not-approved" };
   }
   if (row.playerSlot == null || !Number.isInteger(row.playerSlot) || row.playerSlot < 0) {
+    if (row.spectator === true && row.playerSlot == null) {
+      return { ok: true, controllerId, playerSlot: null, sessionToken };
+    }
     return { ok: false, reason: "no-slot" };
   }
   return { ok: true, controllerId, playerSlot: row.playerSlot, sessionToken };
+}
+
+/** Resolve every multiplexed frame against the host's approved identities. */
+function authenticatedInputSlot(controllerId, sessionToken, controllers) {
+  if (!controllerId || !sessionToken) return null;
+  const row = (controllers || []).find((c) => c.controllerId === controllerId);
+  if (!row || row.status !== "approved" || row.spectator || row.sessionToken !== sessionToken) return null;
+  return Number.isInteger(row.playerSlot) && row.playerSlot >= 0 ? row.playerSlot : null;
 }
 
 function bindInputToSlot(parsed, playerSlot) {
@@ -49,4 +60,4 @@ function bindInputToSlot(parsed, playerSlot) {
   return { ...parsed, p: playerSlot };
 }
 
-module.exports = { authenticateCouchClient, bindInputToSlot };
+module.exports = { authenticateCouchClient, authenticatedInputSlot, bindInputToSlot };

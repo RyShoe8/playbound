@@ -10,6 +10,8 @@ import {
 import { CADENCE } from "@/lib/realtime/cadence";
 import { getAnonymousId, getSessionId } from "@/lib/telemetry/context";
 import { couchControllerJoinLabel, type CouchControlChoice } from "@/lib/couch/joinLabel";
+import { mapPhoneHubPad, selectPhoneHubPads, type HubPadState } from "@/lib/couch/phoneHubPads";
+import { createPhoneHubExtras, type HubExtraRow } from "@/lib/couch/phoneHubExtras";
 import {
   addRemoteIceCandidate,
   iceServersIncludeTurn,
@@ -25,6 +27,8 @@ type JoinState = {
   controllerToken: string;
   sessionToken: string | null;
   playerSlot: number | null;
+  spectator: boolean;
+  maxPlayers: number;
   status: string;
   hostLabel: string;
   wsUrls: string[];
@@ -74,15 +78,7 @@ function clamp(n: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, n));
 }
 
-type PadState = {
-  buttons: number;
-  lx: number;
-  ly: number;
-  rx: number;
-  ry: number;
-  lt: number;
-  rt: number;
-};
+type PadState = HubPadState;
 
 const EMPTY: PadState = { buttons: 0, lx: 0, ly: 0, rx: 0, ry: 0, lt: 0, rt: 0 };
 
@@ -112,6 +108,14 @@ export function ControllerClient({
   const [error, setError] = useState<string | null>(null);
   const [join, setJoin] = useState<JoinState | null>(null);
   const [joinEpoch, setJoinEpoch] = useState(0);
+  const [hubPlayerLimit] = useState(() => {
+    if (typeof window === "undefined") return 1;
+    const params = new URLSearchParams(window.location.search);
+    const n = Number(params.get("hubPlayers"));
+    return Number.isInteger(n) ? Math.max(1, Math.min(4, n)) : 1;
+  });
+  const remotePlayStream = typeof window !== "undefined" &&
+    layout === "game" && new URLSearchParams(window.location.search).get("remotePlay") === "1";
 
   const handleUnauthorized = useCallback(() => {
     clearStored(code);
@@ -166,6 +170,8 @@ export function ControllerClient({
   });
 
   const padRef = useRef<PadState>({ ...EMPTY });
+  const primaryHubPadIndex = useRef<number | null>(null);
+  const [hubPadRows, setHubPadRows] = useState<HubExtraRow[]>([]);
   const seqRef = useRef(0);
   const sendFnRef = useRef<(obj: unknown) => void>(() => {});
   const lastSentRef = useRef(0);
@@ -399,9 +405,10 @@ export function ControllerClient({
   }
 
   const playerLabel = useMemo(() => {
+    if (join?.spectator) return "Viewing";
     if (join?.playerSlot == null) return "…";
     return `Player ${join.playerSlot + 1}`;
-  }, [join?.playerSlot]);
+  }, [join?.playerSlot, join?.spectator]);
 
   const sendInput = useCallback((opts?: { force?: boolean }) => {
     // The approval/endpoints poll replaces `join` every few seconds. Reading
@@ -428,6 +435,8 @@ export function ControllerClient({
       seq: seqRef.current,
       t: performance.now(),
       p: j.playerSlot,
+      controllerId: j.controllerId,
+      sessionToken: j.sessionToken,
       buttons: pad.buttons,
       lx: pad.lx,
       ly: pad.ly,
@@ -528,6 +537,7 @@ export function ControllerClient({
             profile: mode,
             controllerId: stored?.controllerId,
             controllerToken: stored?.controllerToken,
+            spectator: remotePlayStream,
           }),
         });
         const data = await res.json();
@@ -539,6 +549,8 @@ export function ControllerClient({
           controllerToken: data.controllerToken,
           sessionToken: data.sessionToken,
           playerSlot: data.playerSlot,
+          spectator: Boolean(data.spectator),
+          maxPlayers: Number(data.maxPlayers) || Number(data.snapshot?.maxPlayers) || 4,
           status: data.status,
           hostLabel: data.hostLabel || "PlayBound",
           wsUrls: data.wsUrls || [],
@@ -562,7 +574,35 @@ export function ControllerClient({
       cancelled = true;
     };
     // Join once per code — do not tear down when the player picks keyboard/controller/phone.
-  }, [code, gameLayout, joinEpoch, reportOps]);
+  }, [code, gameLayout, joinEpoch, reportOps, remotePlayStream]);
+
+  // The Remote Play window receives video without occupying P1 while the
+  // player chooses controls. If they choose PC input, claim a real slot;
+  // choosing a phone leaves P1 free for the first phone controller.
+  useEffect(() => {
+    if (!remotePlayStream || !join?.controllerId || controlChoice === "undecided") return;
+    const spectator = controlChoice === "phone";
+    if (join.spectator === spectator) return;
+    let cancelled = false;
+    void fetch(`/api/couch/sessions/${encodeURIComponent(code)}/controllers`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        controllerId: join.controllerId,
+        controllerToken: join.controllerToken,
+        spectator,
+      }),
+    }).then(async (response) => {
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not assign a player slot");
+      if (!cancelled) setJoin((prev) => prev?.controllerId === join.controllerId
+        ? { ...prev, spectator: Boolean(data.controller.spectator), playerSlot: data.controller.playerSlot }
+        : prev);
+    }).catch((err) => {
+      if (!cancelled) setConnectHint(err instanceof Error ? err.message : "Could not assign a player slot");
+    });
+    return () => { cancelled = true; };
+  }, [code, controlChoice, join?.controllerId, join?.controllerToken, join?.spectator, remotePlayStream]);
 
   // Refresh controller row label when PC/gamepad choice becomes known.
   useEffect(() => {
@@ -620,6 +660,7 @@ export function ControllerClient({
             ...prev,
             status: data.status,
             playerSlot: data.playerSlot,
+            spectator: Boolean(data.spectator),
             sessionToken: data.sessionToken,
             wsUrls,
             wsToken: data.wsToken ?? prev.wsToken,
@@ -680,7 +721,7 @@ export function ControllerClient({
 
   // Transport: prefer WebRTC, fall back to WebSocket
   useEffect(() => {
-    if (!join || join.status !== "approved" || join.playerSlot == null) return;
+    if (!join || join.status !== "approved" || (join.playerSlot == null && !join.spectator)) return;
     const session = join;
 
     let closed = false;
@@ -1265,11 +1306,17 @@ export function ControllerClient({
       return () => clearTimeout(clearLabelTimer);
     }
     let raf = 0;
+    const multiPad = !gameLayout && mode === "standard-gamepad" && hubPlayerLimit > 1;
     const tick = () => {
       const pads = Array.from(navigator.getGamepads?.() || []);
       // Prioritize any connected pad with active input (button pressed or stick deflected)
       let pad: Gamepad | null = null;
-      for (const p of pads) {
+      if (multiPad) {
+        const selection = selectPhoneHubPads(pads, primaryHubPadIndex.current, Math.min(hubPlayerLimit, joinRef.current?.maxPlayers || 4));
+        primaryHubPadIndex.current = selection.primaryIndex;
+        pad = selection.primary;
+      }
+      for (const p of multiPad ? [] : pads) {
         if (!p || !p.connected) continue;
         const hasBtn = p.buttons?.some((b) => b && (b.pressed || (b.value ?? 0) > 0.3));
         const hasAxis = p.axes?.some((a) => Math.abs(a ?? 0) > 0.2);
@@ -1278,7 +1325,7 @@ export function ControllerClient({
           break;
         }
       }
-      if (!pad) {
+      if (!pad && !multiPad) {
         pad =
           pads.find((p) => p && p.connected && (p.mapping === "standard" || (p.buttons?.length ?? 0) >= 10)) ||
           pads.find((p) => p && p.connected) ||
@@ -1286,44 +1333,7 @@ export function ControllerClient({
       }
       if (pad) {
         setPhysicalLabel(pad.id || "Gamepad");
-        let buttons = 0;
-        const map: [number, number][] = [
-          [0, BUTTON.A],
-          [1, BUTTON.B],
-          [2, BUTTON.X],
-          [3, BUTTON.Y],
-          [4, BUTTON.LB],
-          [5, BUTTON.RB],
-          [8, BUTTON.BACK],
-          [9, BUTTON.START],
-          [10, BUTTON.LS],
-          [11, BUTTON.RS],
-          [12, BUTTON.DPAD_UP],
-          [13, BUTTON.DPAD_DOWN],
-          [14, BUTTON.DPAD_LEFT],
-          [15, BUTTON.DPAD_RIGHT],
-        ];
-        for (const [idx, bit] of map) {
-          const b = pad.buttons[idx];
-          if (b && (b.pressed || (b.value ?? 0) > 0.5)) buttons |= bit;
-        }
-        if (pad.buttons[16] && (pad.buttons[16].pressed || (pad.buttons[16].value ?? 0) > 0.5)) {
-          buttons |= BUTTON.GUIDE;
-        }
-        if (pad.buttons[17] && (pad.buttons[17].pressed || (pad.buttons[17].value ?? 0) > 0.5)) {
-          buttons |= BUTTON.BACK;
-        }
-
-        const deadzone = (v: number, thresh = 0.08) => (Math.abs(v) < thresh ? 0 : v);
-        const lx = deadzone(clamp(pad.axes[0] ?? 0, -1, 1));
-        const ly = deadzone(clamp(pad.axes[1] ?? 0, -1, 1));
-        const rx = deadzone(clamp(pad.axes[2] ?? 0, -1, 1));
-        const ry = deadzone(clamp(pad.axes[3] ?? 0, -1, 1));
-
-        let lt = clamp(pad.buttons[6]?.value ?? (pad.buttons[6]?.pressed ? 1 : 0), 0, 1);
-        let rt = clamp(pad.buttons[7]?.value ?? (pad.buttons[7]?.pressed ? 1 : 0), 0, 1);
-        if (lt < 0.05) lt = 0;
-        if (rt < 0.05) rt = 0;
+        const { buttons, lx, ly, rx, ry, lt, rt } = mapPhoneHubPad(pad);
 
         // Auto-select controller mode if user starts playing on physical pad while choice is undecided
         if (controlChoice === "undecided" && (buttons !== 0 || Math.abs(lx) > 0.2 || Math.abs(ly) > 0.2)) {
@@ -1358,7 +1368,32 @@ export function ControllerClient({
       cancelAnimationFrame(raf);
       window.removeEventListener("gamepadconnected", onPadConnected);
     };
-  }, [mode, gameLayout, controlChoice]);
+  }, [mode, gameLayout, controlChoice, hubPlayerLimit]);
+
+  // A phone hub uses one transport, but every additional physical gamepad
+  // joins as its own approved couch identity. The host authenticates each
+  // multiplexed frame before writing to a separate ViGEm slot.
+  useEffect(() => {
+    if (gameLayout || mode !== "standard-gamepad" || hubPlayerLimit < 2 || !join?.sessionId || join.status !== "approved") return;
+    const pool = createPhoneHubExtras({
+      code, sessionId: join.sessionId,
+      send: (packet) => sendFnRef.current(packet),
+      onChange: setHubPadRows,
+    });
+    let raf = 0;
+    const tick = (now: number) => {
+      const pads = Array.from(navigator.getGamepads?.() || []);
+      const selection = selectPhoneHubPads(pads, primaryHubPadIndex.current, Math.min(hubPlayerLimit, join.maxPlayers || 4));
+      primaryHubPadIndex.current = selection.primaryIndex;
+      pool.observe(selection.extras, now);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(raf);
+      pool.dispose();
+    };
+  }, [code, gameLayout, mode, hubPlayerLimit, join?.sessionId, join?.status, join?.maxPlayers]);
 
   // Keyboard & mouse → virtual pad (default join mode)
   useEffect(() => {
@@ -1457,16 +1492,36 @@ export function ControllerClient({
         </p>
         <div className={physicalLabel ? "pbc-dot pbc-dot-live" : "pbc-dot"} aria-hidden />
         <StatusBar transport={transport} pingMs={pingMs} hz={hz} />
+        {hubPlayerLimit > 1 && (
+          <div className="pbc-hub-players">
+            <p>Player {join.playerSlot == null ? "…" : join.playerSlot + 1}: {physicalLabel || "waiting for controller"}</p>
+            {hubPadRows.map((row) => (
+              <p key={row.index}>
+                Player {row.playerSlot == null ? "…" : row.playerSlot + 1}: {row.label} · {row.connected ? row.status : "disconnected"}
+              </p>
+            ))}
+            <p>Pair up to {Math.min(hubPlayerLimit, join.maxPlayers)} controllers with this phone. Each gets its own player.</p>
+          </div>
+        )}
         <ModeToggle mode={mode} setMode={setMode} />
       </Shell>
     );
   }
 
   if (mode === "keyboard-mouse" || gameLayout) {
+    const phoneQuery = new URLSearchParams();
+    if (remotePlayStream) {
+      phoneQuery.set("remotePlay", "1");
+      const couchPlayers = Number(new URLSearchParams(window.location.search).get("couchPlayers"));
+      if (Number.isInteger(couchPlayers) && couchPlayers > 1 && couchPlayers <= 4) {
+        phoneQuery.set("hubPlayers", String(couchPlayers));
+      }
+    }
+    const phoneSuffix = phoneQuery.size ? `?${phoneQuery}` : "";
     const phoneJoinUrl =
       typeof window !== "undefined"
-        ? `${window.location.origin}/c/${encodeURIComponent(code)}`
-        : `https://playbound.club/c/${encodeURIComponent(code)}`;
+        ? `${window.location.origin}/c/${encodeURIComponent(code)}${phoneSuffix}`
+        : `https://playbound.club/c/${encodeURIComponent(code)}${phoneSuffix}`;
     const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
       phoneJoinUrl
     )}`;

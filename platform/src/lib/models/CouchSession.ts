@@ -17,6 +17,8 @@ export interface ICouchController {
   profile: string;
   status: "pending" | "approved" | "kicked";
   playerSlot: number | null;
+  /** Stream-only Remote Play viewer; does not own a virtual gamepad. */
+  spectator?: boolean;
   createdAt: number;
   lastSeen: number;
   deviceLabel?: string;

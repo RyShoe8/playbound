@@ -230,15 +230,14 @@ export function assertController(
 }
 
 function nextFreeSlot(session: CouchSession): number | null {
-  const now = Date.now();
-  const CONTROLLER_STALE_MS = 45_000;
+  // Approved identities keep their slot while disconnected so reconnecting a
+  // phone cannot collide with a newly joined player on the same virtual pad.
   const used = new Set(
     session.controllers
       .filter(
         (c) =>
           c.status === "approved" &&
-          c.playerSlot != null &&
-          now - c.lastSeen <= CONTROLLER_STALE_MS
+          c.playerSlot != null
       )
       .map((c) => c.playerSlot as number)
   );
@@ -258,6 +257,7 @@ export async function updateCouchController(
     label?: string;
     profile?: string;
     deviceLabel?: string;
+    spectator?: boolean;
   }
 ): Promise<{ ok: true; controller: CouchController } | { error: string; status: number }> {
   const existing = assertController(session, params.controllerId, params.controllerToken);
@@ -266,25 +266,45 @@ export async function updateCouchController(
   }
   const now = Date.now();
   existing.lastSeen = now;
+  const fields: Record<string, unknown> = { "controllers.$.lastSeen": now };
   if (params.label) existing.label = params.label.slice(0, 64);
+  if (params.label) fields["controllers.$.label"] = existing.label;
   if (params.deviceLabel) existing.deviceLabel = params.deviceLabel.slice(0, 80);
+  if (params.deviceLabel) fields["controllers.$.deviceLabel"] = existing.deviceLabel;
   if (params.profile) existing.profile = params.profile.slice(0, 40);
+  if (params.profile) fields["controllers.$.profile"] = existing.profile;
+  let claimedSlot: number | null = null;
+  if (params.spectator === true && !existing.spectator) {
+    existing.spectator = true;
+    existing.playerSlot = null;
+    fields["controllers.$.spectator"] = true;
+    fields["controllers.$.playerSlot"] = null;
+  } else if (params.spectator === false && existing.spectator) {
+    claimedSlot = nextFreeSlot(session);
+    if (claimedSlot == null) return { error: "No free player slots.", status: 409 };
+    existing.spectator = false;
+    existing.playerSlot = claimedSlot;
+    fields["controllers.$.spectator"] = false;
+    fields["controllers.$.playerSlot"] = claimedSlot;
+  }
   session.lastHeartbeat = now;
   if (await withMongo()) {
     const Model = await getModel();
-    await Model.updateOne(
+    const result = await Model.updateOne(
       {
         sessionId: session.sessionId,
         status: "open",
         "controllers.controllerId": existing.controllerId,
+        ...(claimedSlot == null ? {} : {
+          controllers: { $not: { $elemMatch: { status: "approved", playerSlot: claimedSlot } } },
+        }),
       },
       {
-        $set: {
-          "controllers.$": existing,
-        },
+        $set: fields,
         $max: { lastHeartbeat: now },
       }
     );
+    if (!result.matchedCount) return { error: "Player slot changed. Try again.", status: 409 };
   } else {
     await saveSession(session);
   }
@@ -299,7 +319,9 @@ export async function joinCouchSession(
     deviceLabel?: string;
     controllerId?: string;
     controllerToken?: string;
-  }
+    spectator?: boolean;
+  },
+  retry = 0
 ): Promise<{ controller: CouchController; reconnect: boolean } | { error: string; status: number }> {
   if (session.status !== "open") {
     return { error: "Session ended.", status: 410 };
@@ -314,30 +336,53 @@ export async function joinCouchSession(
       existing.label = (params.label || existing.label).slice(0, 64);
       if (params.deviceLabel) existing.deviceLabel = params.deviceLabel.slice(0, 80);
       if (params.profile) existing.profile = params.profile.slice(0, 40);
-      if (existing.status === "approved" && existing.playerSlot == null) {
-        existing.playerSlot = nextFreeSlot(session);
+      // A returning Remote Play viewer must remain video-only until it
+      // explicitly chooses PC controls, even if it controlled a prior game.
+      if (params.spectator === true && !existing.spectator) {
+        existing.spectator = true;
+        existing.playerSlot = null;
       }
-      if (existing.status === "approved" && !existing.sessionToken) {
+      let reclaimedSlot: number | null = null;
+      if (existing.status === "approved" && existing.playerSlot == null && !existing.spectator) {
+        reclaimedSlot = nextFreeSlot(session);
+        if (reclaimedSlot == null) return { error: "No free player slots.", status: 409 };
+        existing.playerSlot = reclaimedSlot;
+      }
+      const neededSessionToken = existing.status === "approved" && !existing.sessionToken;
+      if (neededSessionToken) {
         existing.sessionToken = randomToken(16);
       }
       session.lastHeartbeat = now;
       session.expiresAt = new Date(Date.now() + SESSION_TTL_MS);
       if (await withMongo()) {
         const Model = await getModel();
-        await Model.updateOne(
+        const result = await Model.updateOne(
           {
             sessionId: session.sessionId,
             status: "open",
             "controllers.controllerId": existing.controllerId,
+            ...(reclaimedSlot == null ? {} : {
+              controllers: { $not: { $elemMatch: { status: "approved", playerSlot: reclaimedSlot } } },
+            }),
           },
           {
             $set: {
-              "controllers.$": existing,
+              "controllers.$.lastSeen": now,
+              "controllers.$.label": existing.label,
+              ...(params.deviceLabel ? { "controllers.$.deviceLabel": existing.deviceLabel } : {}),
+              ...(params.profile ? { "controllers.$.profile": existing.profile } : {}),
+              ...(params.spectator === true ? {
+                "controllers.$.spectator": true,
+                "controllers.$.playerSlot": null,
+              } : {}),
+              ...(reclaimedSlot == null ? {} : { "controllers.$.playerSlot": reclaimedSlot }),
+              ...(neededSessionToken ? { "controllers.$.sessionToken": existing.sessionToken } : {}),
               expiresAt: session.expiresAt,
             },
             $max: { lastHeartbeat: now },
           }
         );
+        if (!result.matchedCount) return { error: "Player slot changed. Try again.", status: 409 };
       } else {
         await saveSession(session);
       }
@@ -345,14 +390,15 @@ export async function joinCouchSession(
     }
   }
 
-  const CONTROLLER_STALE_MS = 45_000;
   const approvedCount = session.controllers.filter(
-    (c) => c.status === "approved" && now - c.lastSeen <= CONTROLLER_STALE_MS
+    (c) => c.status === "approved" && !c.spectator
   ).length;
   const pendingCount = session.controllers.filter(
-    (c) => c.status === "pending" && now - c.lastSeen <= CONTROLLER_STALE_MS
+    (c) => c.status === "pending" && !c.spectator && now - c.lastSeen <= 45_000
   ).length;
-  if (approvedCount + pendingCount >= session.maxPlayers) {
+  const spectator = params.spectator === true;
+  const spectatorCount = session.controllers.filter((c) => c.spectator && c.status !== "kicked").length;
+  if (spectator ? spectatorCount >= 2 : approvedCount + pendingCount >= session.maxPlayers) {
     return { error: "Session is full.", status: 409 };
   }
 
@@ -364,14 +410,15 @@ export async function joinCouchSession(
     profile: (params.profile || "keyboard-mouse").slice(0, 40),
     status: "pending",
     playerSlot: null,
+    spectator,
     createdAt: now,
     lastSeen: now,
     deviceLabel: params.deviceLabel?.slice(0, 80),
   };
 
   if (session.autoApprove) {
-    const slot = nextFreeSlot(session);
-    if (slot == null) return { error: "Session is full.", status: 409 };
+    const slot = spectator ? null : nextFreeSlot(session);
+    if (!spectator && slot == null) return { error: "Session is full.", status: 409 };
     controller.status = "approved";
     controller.playerSlot = slot;
     controller.sessionToken = randomToken(16);
@@ -382,14 +429,26 @@ export async function joinCouchSession(
   session.expiresAt = new Date(Date.now() + SESSION_TTL_MS);
   if (await withMongo()) {
     const Model = await getModel();
-    await Model.updateOne(
-      { sessionId: session.sessionId, status: "open" },
+    const result = await Model.updateOne(
+      {
+        sessionId: session.sessionId,
+        status: "open",
+        ...(controller.playerSlot == null ? {} : {
+          controllers: { $not: { $elemMatch: { status: "approved", playerSlot: controller.playerSlot } } },
+        }),
+      },
       {
         $push: { controllers: controller },
         $set: { expiresAt: session.expiresAt },
         $max: { lastHeartbeat: now },
       }
     );
+    if (!result.matchedCount) {
+      if (retry >= COUCH_MAX_PLAYERS) return { error: "Could not reserve a player slot.", status: 409 };
+      const fresh = await getCouchSession(session.sessionId);
+      if (!fresh) return { error: "Session ended.", status: 410 };
+      return joinCouchSession(fresh, params, retry + 1);
+    }
   } else {
     await saveSession(session);
   }
@@ -404,8 +463,8 @@ export async function approveController(
   if (!c) return { error: "Controller not found.", status: 404 };
   if (c.status === "kicked") return { error: "Controller was kicked.", status: 403 };
   if (c.status === "approved") return c;
-  const slot = nextFreeSlot(session);
-  if (slot == null) return { error: "No free player slots.", status: 409 };
+  const slot = c.spectator ? null : nextFreeSlot(session);
+  if (!c.spectator && slot == null) return { error: "No free player slots.", status: 409 };
   c.status = "approved";
   c.playerSlot = slot;
   c.sessionToken = randomToken(16);
@@ -701,6 +760,7 @@ export function publicCouchSnapshot(session: CouchSession) {
         profile: c.profile,
         status: c.status,
         playerSlot: c.playerSlot,
+        spectator: Boolean(c.spectator),
       })),
   };
 }
@@ -719,6 +779,7 @@ export function hostCouchSnapshot(session: CouchSession) {
         profile: c.profile,
         status: c.status,
         playerSlot: c.playerSlot,
+        spectator: Boolean(c.spectator),
         sessionToken: c.sessionToken,
         createdAt: c.createdAt,
       })),
