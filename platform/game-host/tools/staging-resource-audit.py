@@ -1,6 +1,7 @@
 """Run serial spawn/resource checks against the isolated staging agent."""
 
 import json
+import sys
 import time
 import urllib.request
 from pathlib import Path
@@ -20,9 +21,11 @@ def token():
 
 def main():
     rows = json.loads(SOURCE.read_text())
+    only = sys.argv[2] if len(sys.argv) == 3 and sys.argv[1] == '--only' else None
     selected = [row['slug'] for row in rows if row['state'] == 'spawn-passed'
-                and row['slug'] != 'morrowind']
-    results = {}
+                and (row['slug'] != 'morrowind' or only == 'morrowind')
+                and (only is None or row['slug'] == only)]
+    results = json.loads(OUTPUT.read_text()) if OUTPUT.exists() else {}
     for slug in selected:
         body = json.dumps({'gameSlug': slug}).encode()
         request = urllib.request.Request(BASE + '/test-spawn', data=body, method='POST', headers={
