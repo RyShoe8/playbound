@@ -6,6 +6,7 @@ import { MessagesSquare } from "lucide-react";
 import { SITE_DISCORD_INVITE } from "@/lib/site";
 import { withOutboundUtm } from "@/lib/utm";
 import { PlayCta } from "@/components/GameCard";
+import { launcherJoinUrl } from "@/lib/launcher";
 import type { Game } from "@/lib/data/types";
 import {
   DISCORD_HANDOFF_MS,
@@ -22,6 +23,7 @@ export function EventActionBar({
   discordRoomReady,
   isLive,
   game,
+  hostedServer,
 }: {
   eventId: string;
   gameSlug?: string | null;
@@ -31,6 +33,7 @@ export function EventActionBar({
   discordRoomReady: boolean;
   isLive: boolean;
   game?: Game | null;
+  hostedServer?: { host: string; port: number; name: string; mod: string | null } | null;
 }) {
   const [voiceBusy, setVoiceBusy] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
@@ -143,9 +146,13 @@ export function EventActionBar({
         {voiceBusy ? "Opening…" : "Join Discord"}
       </button>
       <p suppressHydrationWarning className="text-xs text-muted-foreground">{roomNote}</p>
-      {game && isLive ? (
+      {hostedServer && gameSlug && <a
+        href={launcherJoinUrl(gameSlug, hostedServer.host, hostedServer.port, hostedServer.name, hostedServer.mod)}
+        className="inline-flex items-center rounded-full bg-play px-5 py-2.5 text-sm font-bold text-play-foreground hover:brightness-110"
+      >Join PlayBound Server{isLive ? "" : " Early"}</a>}
+      {!hostedServer && game && isLive ? (
         <PlayCta game={game} size="md" />
-      ) : gameSlug ? (
+      ) : !hostedServer && gameSlug ? (
         <Link
           href={`/games/${gameSlug}`}
           className="inline-flex items-center rounded-full bg-play px-5 py-2.5 text-sm font-bold text-play-foreground hover:brightness-110"

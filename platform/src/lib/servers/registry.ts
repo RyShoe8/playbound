@@ -1,4 +1,5 @@
 import { getServerLobbyAuth } from "@/lib/catalog";
+import { listJoinableCommunityServers } from "@/lib/communityHosting/discovery";
 import { fetchBeyondAllReasonServers } from "./providers/beyond-all-reason";
 import { fetchEverQuestServers } from "./providers/everquest";
 import { fetchFlightGearServers } from "./providers/flightgear";
@@ -520,12 +521,15 @@ export async function listServersForGame(slug: string): Promise<ServerListResult
    * timestamp either, so it reports the epoch instead of inventing a reading.
    */
   const provider = providers[slug];
-  if (!provider) {
-    return { supported: false, servers: [], updatedAt: new Date(0).toISOString() };
-  }
+  const hosted = await listJoinableCommunityServers(slug);
+  if (!provider) return hosted.length
+    ? { supported: true, servers: hosted, updatedAt: new Date().toISOString() }
+    : { supported: false, servers: [], updatedAt: new Date(0).toISOString() };
   try {
     const servers: GameServer[] = await provider.fetchServers();
-    return { supported: true, servers, updatedAt: new Date().toISOString() };
+    const ownedAddresses = new Set(hosted.map((s) => `${s.host}:${s.port}`));
+    // A registered PlayBound room may also appear on the game's public master.
+    return { supported: true, servers: [...hosted, ...servers.filter((s) => !ownedAddresses.has(`${s.host}:${s.port}`))], updatedAt: new Date().toISOString() };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to load servers";
     if (isUpstreamTimeout(err)) {
@@ -536,7 +540,7 @@ export async function listServersForGame(slug: string): Promise<ServerListResult
     } else {
       console.error(`[servers] ${slug}:`, err);
     }
-    return { supported: true, servers: [], updatedAt: new Date().toISOString(), error: message };
+    return { supported: true, servers: hosted, updatedAt: new Date().toISOString(), error: message };
   }
 }
 

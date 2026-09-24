@@ -10,10 +10,15 @@ import {
 } from "@/lib/gameHost/client";
 import { hostableGameVersionRows } from "@/lib/gameHost/versions";
 import { listActivePartiesForConnectAdmin } from "@/lib/playTogether/adminActiveParties";
+import dbConnect from "@/lib/db";
+import CommunityHostingConfig from "@/lib/models/CommunityHostingConfig";
 
 export async function GET() {
   const { error } = await requireAdminSession();
   if (error) return error;
+  await dbConnect();
+  const storedSettings = await CommunityHostingConfig.findOne({ key: "global" }).select({ monitoring: 1 }).lean();
+  const monitoring = storedSettings?.monitoring || new CommunityHostingConfig({ key: "global" }).monitoring;
 
   const configured = isGameHostConfigured();
   if (!configured) {
@@ -23,6 +28,7 @@ export async function GET() {
       host: null,
       health: null,
       metrics: null,
+      monitoring,
       rooms: [],
       games: [],
       activeParties: activeParties.parties,
@@ -65,7 +71,7 @@ export async function GET() {
       message: metricsResult.error,
     });
   } else if (metrics) {
-    if ((metrics.cpu?.usagePercent ?? 0) > 85) {
+    if ((metrics.cpu?.usagePercent ?? 0) >= monitoring.cpuCriticalPercent) {
       alerts.push({
         type: "warning",
         title: "High CPU",
@@ -73,7 +79,7 @@ export async function GET() {
       });
     }
     const rootDisk = metrics.storage?.find((s) => s.path === "/");
-    if (rootDisk && rootDisk.usedPercent > 90) {
+    if (rootDisk && rootDisk.usedPercent >= monitoring.diskCriticalPercent) {
       alerts.push({
         type: "warning",
         title: "Low disk space",
@@ -141,6 +147,7 @@ export async function GET() {
     host: getGameHostPublicIp() || health?.publicIp || null,
     health,
     metrics,
+    monitoring,
     lastSpawnTest: health?.lastSpawnTest ?? {},
     rooms: vpsRooms,
     roomsError: roomsResult.ok ? null : roomsResult.error,

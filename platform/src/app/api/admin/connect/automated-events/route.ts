@@ -3,7 +3,6 @@ import { requireAdminSession } from "@/lib/requireAdmin";
 import {
   getAutomatedEventConfig,
   saveAutomatedEventConfig,
-  checkAndTeardownExpiredEvents,
 } from "@/lib/events/automatedEventPlannerService";
 import AutomatedEventLog from "@/lib/models/AutomatedEventLog";
 import PlatformEvent from "@/lib/models/PlatformEvent";
@@ -17,9 +16,6 @@ import { HOSTABLE_SLUGS, isHostableGame } from "@/lib/gameHost/catalog";
 export async function GET() {
   const { error } = await requireAdminSession();
   if (error) return error;
-
-  // Run a quick expiration check
-  await checkAndTeardownExpiredEvents();
 
   const config = await getAutomatedEventConfig();
   const logs = await AutomatedEventLog.find()
@@ -44,26 +40,13 @@ export async function GET() {
 
   for (const pe of recentPopUpEvents) {
     if (!existingLogEventIds.has(String(pe._id))) {
-      try {
-        const createdLog = await AutomatedEventLog.create({
-          gameSlug: pe.gameSlug,
-          editionSlug: pe.editionSlug || null,
-          gameTitle: pe.title.replace(/^⚡\s*Pop-Up\s*Game\s*Night:\s*/i, ""),
-          eventId: pe._id,
-          startedAt: pe.startsAt || pe.createdAt,
-          endsAt: pe.endsAt || null,
-          status:
-            pe.status === "live"
-              ? "live"
-              : pe.status === "registration_open"
-              ? "scheduled"
-              : "completed",
-        });
-        logs.push(createdLog.toObject());
-        existingLogEventIds.add(String(pe._id));
-      } catch {
-        // ignore duplicate
-      }
+      logs.push({
+        _id: pe._id, gameSlug: pe.gameSlug, editionSlug: pe.editionSlug || null,
+        gameTitle: pe.title.replace(/^⚡\s*Pop-Up\s*Game\s*Night:\s*/i, ""),
+        eventId: pe._id, startedAt: pe.startsAt || pe.createdAt, endsAt: pe.endsAt || null,
+        status: pe.status === "live" ? "live" : pe.status === "registration_open" ? "scheduled" : "completed",
+      } as (typeof logs)[number]);
+      existingLogEventIds.add(String(pe._id));
     }
   }
 

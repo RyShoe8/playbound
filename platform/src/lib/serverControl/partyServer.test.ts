@@ -66,6 +66,12 @@ describe("whether a party has a server to control", () => {
   it("says which reason applies rather than showing an empty panel", () => {
     const pub = serverControlAvailability(party({ hostMode: "public" }));
     expect((pub as { reason: string }).reason).toMatch(/community server/);
+    const playboundPublic = serverControlAvailability(party({
+      hostMode: "public",
+      publicServer: { id: "playbound:managed-id" },
+    }));
+    expect(playboundPublic.available).toBe(false);
+    expect((playboundPublic as { reason: string }).reason).toMatch(/managed centrally/);
 
     /*
      * Hostable, but nothing has declared its settings yet — picked at runtime

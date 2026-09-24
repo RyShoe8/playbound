@@ -21,6 +21,8 @@ const PlatformEventSchema = new Schema(
       },
     },
     gameSlug: { type: String, default: null, index: true },
+    generatedBy: { type: String, enum: ["game_night_planner"], default: null },
+    scheduleKey: { type: String, default: null },
     coverImage: { type: String, default: null, maxlength: 1000 },
     editionSlug: { type: String, default: null },
     modSlugs: { type: [String], default: [] },
@@ -78,6 +80,10 @@ PlatformEventSchema.index({ status: 1, startsAt: 1 });
 PlatformEventSchema.index({ gameSlug: 1, startsAt: 1 });
 PlatformEventSchema.index({ featured: 1, startsAt: 1 });
 PlatformEventSchema.index({ eventType: 1, startsAt: 1 });
+PlatformEventSchema.index(
+  { scheduleKey: 1 },
+  { unique: true, partialFilterExpression: { scheduleKey: { $type: "string" } } }
+);
 
 export type PlatformEventDoc = InferSchemaType<typeof PlatformEventSchema> & {
   _id: Types.ObjectId;

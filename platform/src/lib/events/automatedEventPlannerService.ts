@@ -63,8 +63,12 @@ export async function saveAutomatedEventConfig(
   }>
 ): Promise<AutomatedEventConfigDoc> {
   await dbConnect();
+  if (update.enabled === true) {
+    const current = await AutomatedEventConfig.findOne({ key: "global" }).select({ "nightly.enabled": 1 }).lean();
+    if (current?.nightly?.enabled) throw new Error("Disable nightly scheduling before enabling legacy pop-ups");
+  }
   const doc = await AutomatedEventConfig.findOneAndUpdate(
-    { key: "global" },
+    { key: "global", ...(update.enabled === true ? { "nightly.enabled": { $ne: true } } : {}) },
     { $set: update },
     { upsert: true, new: true, setDefaultsOnInsert: true }
   );
@@ -429,6 +433,10 @@ export async function evaluateAndTriggerAutomatedEvent(
 
   // Reload config after teardown check
   const freshConfig = await getAutomatedEventConfig();
+
+  if (freshConfig.nightly?.enabled) {
+    return { ok: false, skipped: true, reason: "Nightly scheduling is active; legacy pop-ups are unavailable" };
+  }
 
   if (!freshConfig.enabled && !options.force) {
     return { ok: false, skipped: true, reason: "Automated Event Planner is disabled in admin" };

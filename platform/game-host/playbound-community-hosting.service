@@ -1,0 +1,12 @@
+[Unit]
+Description=PlayBound Community Hosting reconciliation
+After=network-online.target playbound-game-host.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=playbound
+Group=playbound
+WorkingDirectory=/opt/playbound-host/agent
+EnvironmentFile=/etc/playbound-game-host.env
+ExecStart=/usr/bin/node /opt/playbound-host/agent/communityHostingTick.js

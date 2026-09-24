@@ -12,6 +12,9 @@ const TEST_SPAWN_TIMEOUT_MS = 15 * 60 * 1000;
 export type GameHostRoom = {
   roomId: string;
   partyId: string;
+  communityServerId?: string | null;
+  pid?: number | null;
+  resources?: { available: boolean; rssBytes?: number; cpuCores?: number | null };
   host: string;
   port: number;
   gameSlug: string;
@@ -25,6 +28,57 @@ export type GameHostRoom = {
    */
   settings?: Record<string, string | number | boolean>;
 };
+
+export type ManagedHostStatus = {
+  status: "pending" | "running" | "failed" | "stopped";
+  error?: string;
+  room?: GameHostRoom;
+  at?: number;
+};
+
+export async function listManagedHostRooms(): Promise<
+  | { ok: true; rooms: GameHostRoom[]; jobs: Record<string, ManagedHostStatus> }
+  | { ok: false; error: string }
+> {
+  try {
+    const res = await hostFetch("/managed", { method: "GET" });
+    if (!res) return { ok: false, error: "Game host is not configured" };
+    const data = (await res.json()) as { rooms?: GameHostRoom[]; jobs?: Record<string, ManagedHostStatus>; error?: string };
+    if (!res.ok) return { ok: false, error: data.error || `Game host returned ${res.status}` };
+    return { ok: true, rooms: data.rooms || [], jobs: data.jobs || {} };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Game host unreachable" };
+  }
+}
+
+export async function requestManagedHostRoom(opts: {
+  communityServerId: string;
+  gameSlug: string;
+  editionSlug?: string | null;
+  mod?: string | null;
+  name: string;
+  settings?: Record<string, string | number | boolean>;
+}): Promise<ManagedHostStatus | { status: "failed"; error: string }> {
+  try {
+    const res = await hostFetch("/managed", { method: "POST", body: JSON.stringify(opts) });
+    if (!res) return { status: "failed", error: "Game host is not configured" };
+    const data = (await res.json()) as ManagedHostStatus;
+    return res.ok ? data : { status: "failed", error: data.error || `Game host returned ${res.status}` };
+  } catch (error) {
+    return { status: "failed", error: error instanceof Error ? error.message : "Game host unreachable" };
+  }
+}
+
+export async function stopManagedHostRoom(communityServerId: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await hostFetch(`/managed/${encodeURIComponent(communityServerId)}`, { method: "DELETE" });
+    if (!res) return { ok: false, error: "Game host is not configured" };
+    const data = (await res.json()) as { ok?: boolean; error?: string };
+    return res.ok ? { ok: true } : { ok: false, error: data.error || `Game host returned ${res.status}` };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Game host unreachable" };
+  }
+}
 
 export type GameHostHealth = {
   ok?: boolean;

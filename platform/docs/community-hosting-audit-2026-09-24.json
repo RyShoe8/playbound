@@ -1,0 +1,233 @@
+[
+  {
+    "slug": "0-ad",
+    "state": "spawn-passed",
+    "at": "2026-09-24T21:55:18.301Z",
+    "durationMs": 615,
+    "error": null
+  },
+  {
+    "slug": "assaultcube",
+    "state": "spawn-passed",
+    "at": "2026-09-24T21:53:17.873Z",
+    "durationMs": 1619,
+    "error": null
+  },
+  {
+    "slug": "battle-for-wesnoth",
+    "state": "spawn-passed",
+    "at": "2026-09-24T21:57:07.375Z",
+    "durationMs": 113,
+    "error": null
+  },
+  {
+    "slug": "bombsquad",
+    "state": "spawn-failed",
+    "at": "2026-09-24T21:55:26.859Z",
+    "durationMs": 8557,
+    "error": "bombsquad dedicated server did not bind port 43210 within 10000ms (code 1): def handle_input_error(cls, exc: Exception) -> Self | None: | ^^^^ | NameError: name 'Self' is not defined"
+  },
+  {
+    "slug": "bzflag",
+    "state": "spawn-passed",
+    "at": "2026-09-24T21:54:42.201Z",
+    "durationMs": 112,
+    "error": null
+  },
+  {
+    "slug": "counter-strike-2",
+    "state": "not-installed",
+    "at": null,
+    "durationMs": null,
+    "error": null
+  },
+  {
+    "slug": "earth-2140-trilogy",
+    "state": "not-installed",
+    "at": null,
+    "durationMs": null,
+    "error": null
+  },
+  {
+    "slug": "flightgear",
+    "state": "spawn-passed",
+    "at": "2026-09-24T21:57:34.375Z",
+    "durationMs": 112,
+    "error": null
+  },
+  {
+    "slug": "freeciv",
+    "state": "spawn-passed",
+    "at": "2026-09-24T21:54:41.473Z",
+    "durationMs": 108,
+    "error": null
+  },
+  {
+    "slug": "freedoom",
+    "state": "spawn-passed",
+    "at": "2026-09-24T21:57:31.613Z",
+    "durationMs": 1543,
+    "error": null
+  },
+  {
+    "slug": "hedgewars",
+    "state": "spawn-passed",
+    "at": "2026-09-24T21:53:50.562Z",
+    "durationMs": 110,
+    "error": null
+  },
+  {
+    "slug": "hurry-curry",
+    "state": "spawn-passed",
+    "at": "2026-09-24T21:53:31.575Z",
+    "durationMs": 132,
+    "error": null
+  },
+  {
+    "slug": "hypersomnia",
+    "state": "recipe-not-deployed",
+    "at": null,
+    "durationMs": null,
+    "error": "Local recipe exists but was absent from the live VPS agent during the audit"
+  },
+  {
+    "slug": "luanti",
+    "state": "spawn-passed",
+    "at": "2026-09-24T21:53:30.832Z",
+    "durationMs": 1254,
+    "error": null
+  },
+  {
+    "slug": "medal-of-honor-allied-assault",
+    "state": "spawn-passed",
+    "at": "2026-09-24T21:53:21.454Z",
+    "durationMs": 2972,
+    "error": null
+  },
+  {
+    "slug": "mindustry",
+    "state": "spawn-failed",
+    "at": "2026-09-24T21:53:48.107Z",
+    "durationMs": 16531,
+    "error": "mindustry dedicated server did not bind port 6567 within 10000ms (code 1): at arc.files.Fi.write(Fi.java:424) | ... 7 more | \u001b[0m"
+  },
+  {
+    "slug": "morrowind",
+    "state": "spawn-passed",
+    "at": "2026-09-24T21:53:15.633Z",
+    "durationMs": 2092,
+    "error": null
+  },
+  {
+    "slug": "openarena",
+    "state": "spawn-passed",
+    "at": "2026-09-24T21:54:45.922Z",
+    "durationMs": 127,
+    "error": null
+  },
+  {
+    "slug": "openhv",
+    "state": "spawn-failed",
+    "at": "2026-09-24T21:58:24.665Z",
+    "durationMs": 50288,
+    "error": "openhv dedicated server did not bind port 1255 within 10000ms: External mods: | hv-20250725 (20250725) | Loading mod: hv"
+  },
+  {
+    "slug": "openra",
+    "state": "spawn-passed",
+    "at": "2026-09-24T21:53:26.427Z",
+    "durationMs": 4362,
+    "error": null
+  },
+  {
+    "slug": "openttd",
+    "state": "spawn-passed",
+    "at": "2026-09-24T21:53:28.967Z",
+    "durationMs": 1930,
+    "error": null
+  },
+  {
+    "slug": "re-volt-rvgl",
+    "state": "spawn-passed",
+    "at": "2026-09-24T21:58:27.725Z",
+    "durationMs": 2426,
+    "error": null
+  },
+  {
+    "slug": "space-station-14",
+    "state": "spawn-passed",
+    "at": "2026-09-24T21:57:33.649Z",
+    "durationMs": 1423,
+    "error": null
+  },
+  {
+    "slug": "supertuxkart",
+    "state": "spawn-passed",
+    "at": "2026-09-24T21:54:43.948Z",
+    "durationMs": 1137,
+    "error": null
+  },
+  {
+    "slug": "team-fortress-2",
+    "state": "spawn-failed",
+    "at": "2026-09-24T21:56:21.124Z",
+    "durationMs": 50421,
+    "error": "team-fortress-2 dedicated server did not bind port 27016 within 10000ms: Segmentation fault (core dumped) | Add \"-debug\" to the /opt/playbound-host/games/team-fortress-2/srcds_run command line to generate a debug.log to help with solving this problem | Thu Sep 24 23:56:15 CEST 2026: Server restart in 10 seconds"
+  },
+  {
+    "slug": "teeworlds",
+    "state": "not-installed",
+    "at": null,
+    "durationMs": null,
+    "error": null
+  },
+  {
+    "slug": "triplea",
+    "state": "spawn-failed",
+    "at": "2026-09-24T21:55:17.077Z",
+    "durationMs": 31154,
+    "error": "triplea dedicated process exited during startup stabilization: at feign.DefaultClient.execute(DefaultClient.java:91) | at feign.SynchronousMethodHandler.executeAndDecode(SynchronousMethodHandler.java:119) | ... 12 common frames omitted"
+  },
+  {
+    "slug": "unvanquished",
+    "state": "spawn-failed",
+    "at": "2026-09-24T21:57:06.649Z",
+    "durationMs": 45524,
+    "error": "unvanquished dedicated server did not bind port 27965 within 45000ms (code 0): [FS] Pak search path: /var/lib/playbound-host/unvanquished/pb-nquished/pkg | Existing instance found | Forwarding commands to existing instance"
+  },
+  {
+    "slug": "veloren",
+    "state": "spawn-passed",
+    "at": "2026-09-24T21:57:29.461Z",
+    "durationMs": 21473,
+    "error": null
+  },
+  {
+    "slug": "warzone-2100",
+    "state": "spawn-failed",
+    "at": "2026-09-24T21:54:40.754Z",
+    "durationMs": 50191,
+    "error": "warzone-2100 dedicated server did not bind port 2100 within 10000ms: -------------------------------------------------------------------------------------- | info    |23:54:30: [wzAttemptInitializeBackend:3128] Attempting to initialize backend: (headless) | error   |23:54:31: [loadMapChallengeAndPlayerSettings:5213] Missing specified file: autohost/pb-est-warzone-2100"
+  },
+  {
+    "slug": "wolfenstein-enemy-territory",
+    "state": "spawn-passed",
+    "at": "2026-09-24T21:55:30.702Z",
+    "durationMs": 3232,
+    "error": null
+  },
+  {
+    "slug": "xonotic",
+    "state": "spawn-passed",
+    "at": "2026-09-24T21:54:45.181Z",
+    "durationMs": 613,
+    "error": null
+  },
+  {
+    "slug": "ysoccer",
+    "state": "spawn-passed",
+    "at": "2026-09-24T21:53:49.841Z",
+    "durationMs": 1124,
+    "error": null
+  }
+]

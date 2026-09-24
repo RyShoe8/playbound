@@ -568,7 +568,7 @@ async function renderEventDetailView(eventId) {
     return;
   }
 
-  const { event, counts = { going: 0, maybe: 0 }, presence = { online: 0, playing: 0 }, game, myRsvp, organizer, tournament } = data;
+  const { event, counts = { going: 0, maybe: 0 }, presence = { online: 0, playing: 0 }, game, myRsvp, organizer, tournament, hostedServer } = data;
   const isLive = event.status === "live";
   const whenStr = event.when?.dateLine
     ? `${event.when.dateLine} · ${event.when.timeLine || ""}`
@@ -603,7 +603,7 @@ async function renderEventDetailView(eventId) {
         <div class="pb-event-badges">
           ${isLive ? `<span class="pb-badge-live">● Live now</span>` : ""}
           <span class="pb-badge-type">${escapeHtml(eventTypeDisplay(event.eventType))}</span>
-          ${event.hostType === "playbound" ? `<span class="pb-badge-type">PlayBound Hosted</span>` : ""}
+          ${event.hostType === "playbound" ? `<span class="pb-badge-type">PlayBound Event</span>` : ""}
           ${event.featured ? `<span class="pb-badge-featured">Featured</span>` : ""}
           ${event.status === "cancelled" ? `<span class="pb-badge-live" style="color:#f87171">Cancelled</span>` : ""}
         </div>
@@ -659,6 +659,9 @@ async function renderEventDetailView(eventId) {
                 </button>`
               : ""
           }
+          ${hostedServer && event.gameSlug
+            ? `<button class="btn-primary btn-sm" id="btn-event-detail-join-hosted" type="button">Join PlayBound Server${isLive ? "" : " Early"}</button>`
+            : ""}
         </div>
 
         <!-- RSVP Buttons -->
@@ -751,6 +754,12 @@ async function renderEventDetailView(eventId) {
       api.openGameDetail(game.slug, "eventDetail");
     });
   }
+  container.querySelector("#btn-event-detail-join-hosted")?.addEventListener("click", () => {
+    const query = new URLSearchParams({ host: hostedServer.host, port: String(hostedServer.port) });
+    if (hostedServer.name) query.set("name", hostedServer.name.slice(0, 80));
+    if (hostedServer.mod) query.set("gameMod", hostedServer.mod);
+    void window.playbound.openDeepLink(`playbound://join/${encodeURIComponent(event.gameSlug)}?${query}`);
+  });
 
   // Wire Discord button
   container.querySelector("#btn-event-detail-discord")?.addEventListener("click", () => {

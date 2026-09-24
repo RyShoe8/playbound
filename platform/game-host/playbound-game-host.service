@@ -12,6 +12,7 @@ EnvironmentFile=/etc/playbound-game-host.env
 ExecStart=/usr/bin/node /opt/playbound-host/agent/index.js
 Restart=on-failure
 RestartSec=5
+KillMode=process
 LimitNOFILE=8192
 
 [Install]

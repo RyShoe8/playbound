@@ -1,0 +1,37 @@
+name: Apply Community Hosting audit
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: community-hosting-audit
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: platform/package-lock.json
+      - name: Require Mongo URI
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: |
+          if [[ ! "$MONGODB_URI" =~ ^mongodb(\+srv)?:// ]]; then
+            echo "MONGODB_URI secret is not configured" >&2
+            exit 1
+          fi
+      - run: npm ci
+      - name: Preview disabled profiles and baseline samples
+        run: npm run import:community-hosting-audit
+      - name: Insert missing operational records only
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: npm run import:community-hosting-audit -- --apply

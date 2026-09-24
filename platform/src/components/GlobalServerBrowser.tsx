@@ -826,6 +826,7 @@ export function GlobalServerBrowser({
                   <tr key={s.id || addr} className="border-b border-border last:border-0">
                     <td className="px-3 py-3">
                       <div className="font-semibold">{s.name}</div>
+                      {s.sourceType === "playbound_hosted" && <span className="mt-1 inline-flex rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-bold text-primary">PlayBound Hosted</span>}
                       {editionLabel && (
                         <div className="text-xs text-muted-foreground">{editionLabel}</div>
                       )}

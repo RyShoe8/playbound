@@ -2706,6 +2706,7 @@ function partyServerRowHtml(server, { canPick, selectedId, selectedHost, selecte
       <div class="party-server-name-wrap">
         ${server.protected ? `<span class="party-server-lock" title="Password Protected">${ICON.lock}</span>` : ""}
         <span class="party-server-name">${escapeHtml(label)}</span>
+        ${server.sourceType === "playbound_hosted" ? '<span class="party-server-chip chip-hosted">PlayBound Hosted</span>' : ""}
       </div>
       <div class="party-server-metrics">
         ${partyServerPingBadge(ping)}
