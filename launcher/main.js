@@ -17446,9 +17446,18 @@ if (gotLock) {
       }
     }
 
-    function findBestScreenSource(sources) {
+    function findBestScreenSource(sources, hasActiveGame = false) {
       const screens = (sources || []).filter((s) => s.id && s.id.startsWith("screen:"));
       if (!screens.length) return null;
+      const primaryId = String(screen.getPrimaryDisplay()?.id || "");
+      const primaryScreen = screens.find((s) => String(s.display_id) === primaryId) || screens[0];
+
+      // When a game is launching or playing, PC games default to the primary display.
+      // Do not let background video/browsers on secondary monitors hijack capture.
+      if (hasActiveGame && primaryScreen) {
+        return primaryScreen;
+      }
+
       let best = null;
       let bestVar = -1;
       for (const s of screens) {
@@ -17459,8 +17468,7 @@ if (gotLock) {
         }
       }
       if (best && bestVar > 20) return best;
-      const primaryId = String(screen.getPrimaryDisplay()?.id || "");
-      return screens.find((s) => String(s.display_id) === primaryId) || screens[0] || null;
+      return primaryScreen || null;
     }
 
     /**
@@ -17522,7 +17530,11 @@ if (gotLock) {
 
             let score = 0;
             const title = (entry?.title || "").toLowerCase();
-            if (title && name.includes(title)) score += 20;
+            if (title && (name.includes(title) || (name.length >= 4 && title.includes(name)))) score += 20;
+            const titleMain = title.split(/[:\-\u2013\u2014]/)[0].trim();
+            if (titleMain && (name === titleMain || name.includes(titleMain) || (name.length >= 4 && titleMain.includes(name)))) {
+              score += 20;
+            }
             // Window titled exactly like the engine (common for OpenBOR).
             for (const eng of engineNames) {
               if (name === eng || name.startsWith(eng + " ") || name.startsWith(eng + "-")) {
@@ -17589,7 +17601,8 @@ if (gotLock) {
       session.defaultSession.setDisplayMediaRequestHandler(async (_request, callback) => {
         try {
           const slug = playingGameSlug();
-          const windowSource = slug ? await findGameWindowSource(slug, 4, 400) : null;
+          // Give newly-launched games up to ~5s to finish creating their window before falling back to screen
+          const windowSource = slug ? await findGameWindowSource(slug, 10, 500) : null;
           if (windowSource) {
             console.log("[couch] display capture → window", windowSource.name || windowSource.id);
             // "loopback" is Electron's special-cased audio value for this
@@ -17605,7 +17618,7 @@ if (gotLock) {
             types: ["screen"],
             thumbnailSize: { width: 160, height: 90 },
           });
-          const screenSource = findBestScreenSource(sources);
+          const screenSource = findBestScreenSource(sources, Boolean(slug));
           if (screenSource) {
             console.log(
               "[couch] display capture → screen",
