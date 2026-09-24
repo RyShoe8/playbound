@@ -353,22 +353,7 @@ function applyVideoEncodePrefs(pc) {
       for (const enc of params.encodings) {
         enc.maxBitrate = 6_000_000;
         enc.maxFramerate = 60;
-      }
-      const settings = typeof sender.track.getSettings === "function" ? sender.track.getSettings() : {};
-      const trackHeight = settings.height || 0;
-      const trackWidth = settings.width || 0;
-      let scale = 1.0;
-      if (trackHeight > 1080) {
-        scale = trackHeight / 1080;
-      } else if (trackWidth > 1920) {
-        scale = trackWidth / 1920;
-      }
-      for (const enc of params.encodings) {
-        if (scale > 1.05) {
-          enc.scaleResolutionDownBy = Math.round(scale * 100) / 100;
-        } else {
-          delete enc.scaleResolutionDownBy;
-        }
+        delete enc.scaleResolutionDownBy;
       }
       params.degradationPreference = "maintain-framerate";
       void sender.setParameters(params).catch(() => {});
