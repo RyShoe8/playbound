@@ -140,6 +140,14 @@ describe("couch sessions", () => {
     }
   });
 
+  it("renews the database expiry instead of ending an active session at its creation age", async () => {
+    const session = await createCouchSession({});
+    session.createdAt = Date.now() - 5 * 60 * 60 * 1000;
+    await heartbeatHost(session);
+    expect(session.expiresAt.getTime()).toBeGreaterThan(Date.now() + 3 * 60 * 60 * 1000);
+    expect(await getCouchSession(session.sessionId)).toBeTruthy();
+  });
+
   it("creates joinable sessions and auto-approves", async () => {
     const session = await createCouchSession({ hostLabel: "Test Host" });
     expect(session.joinCode).toHaveLength(6);

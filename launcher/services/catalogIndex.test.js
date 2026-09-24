@@ -55,7 +55,6 @@ function loadIndex(initial) {
            }
          }
          try {
-           // eslint-disable-next-line no-new-func
            return new Function(`return (${MAIN.slice(brace, i + 1)})`)();
          } catch {
            return {};

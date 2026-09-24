@@ -2582,9 +2582,12 @@ async function renderModDetailView(slug) {
   markViewReady(container, slug);
 }
 
+let editionDetailRenderToken = 0;
+
 async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
   const container = views.editionDetail;
   if (!container) return;
+  const renderToken = ++editionDetailRenderToken;
   const force = Boolean(opts?.force);
   if (force) {
     cacheInvalidate(`game:${gameSlug}`);
@@ -2594,12 +2597,16 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
 
   state.editionDetailActiveTab = state.editionDetailActiveTab || "overview";
 
-  const [editionsRes, liveStats, gameDetail] = await Promise.all([
+  const liveKey = `live:${gameSlug}:${editionSlug}`;
+  const livePromise = cacheInvoke(liveKey, CACHE_TTL.liveStatsEdition, () =>
+    window.playbound.getLiveStats?.({ game: gameSlug, edition: editionSlug })
+  ).catch(() => null);
+  const [editionsRes, gameDetail] = await Promise.all([
     window.playbound.getEditions?.(gameSlug) || Promise.resolve({ editions: [] }),
-    window.playbound.getLiveStats?.({ game: gameSlug, edition: editionSlug }) ||
-      Promise.resolve(null),
     window.playbound.getGameDetail(gameSlug),
   ]);
+  if (renderToken !== editionDetailRenderToken) return;
+  const liveStats = cachePeek(liveKey, CACHE_TTL.liveStatsEdition)?.data || null;
   const allEditions = editionsRes?.editions || [];
   const edition = allEditions.find((e) => e.editionSlug === editionSlug);
   if (!edition) {
@@ -2742,8 +2749,8 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
             }
             ${
               liveStats
-                ? `<span class="playing-now-chip">${formatStatNumber(liveStats.playingNow)} playing now</span>`
-                : ""
+                ? `<span class="playing-now-chip" id="edition-playing-chip">${formatStatNumber(liveStats.playingNow)} playing now</span>`
+                : `<span class="playing-now-chip" id="edition-playing-chip" hidden></span>`
             }
           </div>
           <h1 class="detail-hero-title">${escapeHtml(edition.editionName)}</h1>
@@ -3336,6 +3343,17 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
       }
     }
   })();
+
+  void livePromise.then((stats) => {
+    if (!stats || renderToken !== editionDetailRenderToken) return;
+    const chip = container.querySelector("#edition-playing-chip");
+    if (chip) {
+      chip.textContent = `${formatStatNumber(Number(stats.playingNow) || 0)} playing now`;
+      chip.hidden = false;
+    }
+    const slot = container.querySelector("#edition-activity-slot");
+    if (slot) slot.innerHTML = buildActivityPanelHtml(stats, "Edition Activity");
+  });
 
   markViewReady(container, `${gameSlug}:${editionSlug}`);
 }

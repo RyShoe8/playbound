@@ -5,6 +5,16 @@ globalThis.window = { playbound: {} };
 const shared = await import("./shared.js");
 await import("./views/detail.js");
 shared.views.gameDetail = { innerHTML: "" };
+shared.views.editionDetail = { innerHTML: "" };
+
+test("edition lookup does not wait for a cold live-stats request", async () => {
+  shared.cacheInvalidate();
+  window.playbound.getEditions = async () => ({ editions: [] });
+  window.playbound.getGameDetail = async () => null;
+  window.playbound.getLiveStats = () => new Promise(() => {});
+  await shared.api.renderEditionDetailView("slow-stats", "official");
+  assert.match(shared.views.editionDetail.innerHTML, /Edition not found/);
+});
 
 test("editions start before a slow detail request finishes", async () => {
   shared.cacheInvalidate();

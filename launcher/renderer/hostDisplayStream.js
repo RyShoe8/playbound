@@ -36,6 +36,8 @@ let canvasCtx = null;
 let drawTimerId = null;
 let currentCropRect = null;
 let streamStale = false;
+let capturePromise = null;
+let captureGeneration = 0;
 
 /**
  * Some games switch the actual SYSTEM display resolution when they launch
@@ -164,6 +166,30 @@ function stopCanvasPipeline() {
  * @returns {Promise<MediaStream|null>}
  */
 export async function ensureHostDisplayStream(forceNew = false) {
+  if (capturePromise) {
+    // A replacement request arriving during capture must wait for that request
+    // to settle, then discard its result. Never open two desktop captures.
+    if (forceNew) streamStale = true;
+    const generation = captureGeneration;
+    await capturePromise;
+    if (captureGeneration !== generation && !processedStream && !streamStale && !capturePromise) {
+      return null;
+    }
+    return ensureHostDisplayStream();
+  }
+  const pending = captureHostDisplayStream(forceNew);
+  capturePromise = pending;
+  let stream;
+  try {
+    stream = await pending;
+  } finally {
+    if (capturePromise === pending) capturePromise = null;
+  }
+  if (streamStale) return ensureHostDisplayStream();
+  return stream;
+}
+
+async function captureHostDisplayStream(forceNew) {
   if (streamStale && hostDisplayStream) {
     streamStale = false;
     console.log("[couch] discarding possibly-stale display stream (post display-mode-switch check)");
@@ -187,7 +213,8 @@ export async function ensureHostDisplayStream(forceNew = false) {
   }
   try {
     console.log("[couch] requesting fresh display capture");
-    hostDisplayStream = await navigator.mediaDevices.getDisplayMedia({
+    const generation = captureGeneration;
+    const captured = await navigator.mediaDevices.getDisplayMedia({
       video: {
         frameRate: { ideal: 60, max: 60 },
       },
@@ -197,6 +224,11 @@ export async function ensureHostDisplayStream(forceNew = false) {
       // actual capture behavior lives there, not in this constraint object.
       audio: true,
     });
+    if (generation !== captureGeneration) {
+      for (const track of captured.getTracks()) track.stop();
+      return null;
+    }
+    hostDisplayStream = captured;
     const track = hostDisplayStream.getVideoTracks()[0];
     if (!track || track.readyState !== "live") {
       console.warn("[couch] display capture returned no live video track");
@@ -247,6 +279,8 @@ export async function ensureHostDisplayStream(forceNew = false) {
 }
 
 export function stopHostDisplayStream() {
+  captureGeneration++;
+  streamStale = false;
   stopCanvasPipeline();
   if (!hostDisplayStream) return;
   for (const t of hostDisplayStream.getTracks()) {

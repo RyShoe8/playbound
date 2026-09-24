@@ -729,27 +729,45 @@ export function listAllGames(): Promise<AdminGame[]> {
   })();
 }
 
+/** A detail page needs one game, not a JSON parse of the whole catalog. */
+const loadVisibleGame = cache((slug: string, includeTesting: boolean): Promise<Game | null> =>
+  unstable_cache(
+    async () => {
+      try {
+        await dbConnect();
+        const query = {
+          $and: [{ slug }, mongoVisibleFilter({ includeTesting })],
+        };
+        const doc = await CatalogGame.findOne(query).lean();
+        return doc ? toGame(doc as LeanGame) : null;
+      } catch (err) {
+        // Keep the same build/local fallback as the list endpoint. A failed
+        // production read must fail visibly instead of caching a false 404.
+        if (!process.env.MONGODB_URI || process.env.NEXT_PHASE === "phase-production-build") {
+          const seed = seedBySlug.get(slug);
+          return seed?.slug === slug ? seedGameWithInstall(seed) : null;
+        }
+        throw new Error(
+          `Catalog game read failed: ${err instanceof Error ? err.message : String(err)}`
+        );
+      }
+    },
+    ["catalog-game", includeTesting ? "published+testing" : "published", slug],
+    { revalidate: 300, tags: ["catalog"] }
+  )()
+);
+
 export async function getGame(
   slug: string,
   opts?: { includeUnpublished?: boolean; includeTesting?: boolean }
 ): Promise<Game | undefined> {
-  // Published lookups reuse the per-request catalog, so a page that already
-  // listed games does not pay for a second query to resolve one of them.
   if (!opts?.includeUnpublished) {
-    const catalog = opts?.includeTesting
-      ? await loadPublishedAndTestingGames()
-      : await loadPublishedGames();
-    const found = catalog.find((g) => g.slug === slug);
-    if (found) return found;
+    return (await loadVisibleGame(slug, Boolean(opts?.includeTesting))) ?? undefined;
   }
 
   try {
     await dbConnect();
-    const query: Record<string, unknown> = opts?.includeUnpublished
-      ? { slug }
-      : { $and: [{ slug }, mongoVisibleFilter({ includeTesting: Boolean(opts?.includeTesting) })] };
-
-    const doc = await CatalogGame.findOne(query).lean();
+    const doc = await CatalogGame.findOne({ slug }).lean();
     if (doc) return toGame(doc as LeanGame);
   } catch (err) {
     console.error("[catalog] getGame failed:", err);

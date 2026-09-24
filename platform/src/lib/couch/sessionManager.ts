@@ -26,6 +26,8 @@ let storeMode: StoreMode = "auto";
 const memoryById = new Map<string, CouchSession>();
 const memoryByCode = new Map<string, string>();
 
+// Rolling cleanup horizon, renewed by the host heartbeat. It is not a cap on
+// how long an active phone/controller session may keep playing one game.
 const SESSION_TTL_MS = 4 * 60 * 60 * 1000;
 const MESSAGE_TTL_MS = 2 * 60 * 1000;
 /** Admin streaming table: host heartbeat within this window counts as live. */
@@ -80,7 +82,7 @@ function trimMessages(session: CouchSession) {
 
 async function saveSession(session: CouchSession): Promise<void> {
   trimMessages(session);
-  session.expiresAt = new Date(session.createdAt + SESSION_TTL_MS);
+  session.expiresAt = new Date(Date.now() + SESSION_TTL_MS);
   if (await withMongo()) {
     const Model = await getModel();
     const payload = { ...session } as Record<string, unknown>;
@@ -319,7 +321,7 @@ export async function joinCouchSession(
         existing.sessionToken = randomToken(16);
       }
       session.lastHeartbeat = now;
-      session.expiresAt = new Date(session.createdAt + SESSION_TTL_MS);
+      session.expiresAt = new Date(Date.now() + SESSION_TTL_MS);
       if (await withMongo()) {
         const Model = await getModel();
         await Model.updateOne(
@@ -377,7 +379,7 @@ export async function joinCouchSession(
 
   session.controllers.push(controller);
   session.lastHeartbeat = now;
-  session.expiresAt = new Date(session.createdAt + SESSION_TTL_MS);
+  session.expiresAt = new Date(Date.now() + SESSION_TTL_MS);
   if (await withMongo()) {
     const Model = await getModel();
     await Model.updateOne(
@@ -409,7 +411,7 @@ export async function approveController(
   c.sessionToken = randomToken(16);
   c.lastSeen = Date.now();
   session.lastHeartbeat = c.lastSeen;
-  session.expiresAt = new Date(session.createdAt + SESSION_TTL_MS);
+  session.expiresAt = new Date(Date.now() + SESSION_TTL_MS);
   if (await withMongo()) {
     const Model = await getModel();
     await Model.updateOne(
@@ -443,7 +445,7 @@ export async function rejectOrKickController(
   c.sessionToken = null;
   c.lastSeen = Date.now();
   session.lastHeartbeat = c.lastSeen;
-  session.expiresAt = new Date(session.createdAt + SESSION_TTL_MS);
+  session.expiresAt = new Date(Date.now() + SESSION_TTL_MS);
   if (await withMongo()) {
     const Model = await getModel();
     await Model.updateOne(
@@ -485,7 +487,7 @@ export async function reassignSlot(
   c.playerSlot = playerSlot;
   c.lastSeen = Date.now();
   session.lastHeartbeat = c.lastSeen;
-  session.expiresAt = new Date(session.createdAt + SESSION_TTL_MS);
+  session.expiresAt = new Date(Date.now() + SESSION_TTL_MS);
   if (await withMongo()) {
     const Model = await getModel();
     await Model.updateOne(
@@ -516,7 +518,7 @@ export async function setHostEndpoints(
   };
   const now = Date.now();
   session.lastHeartbeat = now;
-  session.expiresAt = new Date(session.createdAt + SESSION_TTL_MS);
+  session.expiresAt = new Date(Date.now() + SESSION_TTL_MS);
   if (await withMongo()) {
     const Model = await getModel();
     await Model.updateOne(
@@ -537,7 +539,7 @@ export async function setHostEndpoints(
 export async function heartbeatHost(session: CouchSession): Promise<void> {
   const now = Date.now();
   session.lastHeartbeat = now;
-  session.expiresAt = new Date(session.createdAt + SESSION_TTL_MS);
+  session.expiresAt = new Date(Date.now() + SESSION_TTL_MS);
   if (await withMongo()) {
     const Model = await getModel();
     await Model.updateOne(
@@ -559,7 +561,7 @@ export async function touchCouchSessionActivity(
 ): Promise<void> {
   const now = Date.now();
   session.lastHeartbeat = now;
-  session.expiresAt = new Date(session.createdAt + SESSION_TTL_MS);
+  session.expiresAt = new Date(Date.now() + SESSION_TTL_MS);
   if (controller) controller.lastSeen = now;
   if (await withMongo()) {
     const Model = await getModel();
@@ -656,7 +658,7 @@ export async function setRuntimeMetrics(
   session.runtimeMetrics = metrics;
   const now = Date.now();
   session.lastHeartbeat = now;
-  session.expiresAt = new Date(session.createdAt + SESSION_TTL_MS);
+  session.expiresAt = new Date(Date.now() + SESSION_TTL_MS);
   if (await withMongo()) {
     const Model = await getModel();
     await Model.updateOne(
@@ -718,6 +720,7 @@ export function hostCouchSnapshot(session: CouchSession) {
         status: c.status,
         playerSlot: c.playerSlot,
         sessionToken: c.sessionToken,
+        createdAt: c.createdAt,
       })),
   };
 }

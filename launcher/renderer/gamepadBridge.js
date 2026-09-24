@@ -60,6 +60,7 @@ function pollAndSendGamepadFrame() {
     const pad = pads.find((p) => p && p.connected);
 
     if (pad) {
+      hadPad = true;
       const btns = pad.buttons || [];
       const axes = pad.axes || [];
 
@@ -108,7 +109,6 @@ function pollAndSendGamepadFrame() {
         Math.abs(rt - lastSentRt) > 0.02;
 
       if (stateChanged || controlsLoopActive) {
-        hadPad = true;
         lastSentMask = mask;
         lastSentLx = lx;
         lastSentLy = ly;
@@ -139,7 +139,9 @@ function pollAndSendGamepadFrame() {
   }
 
   if (anyLoopActive()) {
-    loopTimer = setTimeout(pollAndSendGamepadFrame, 8); // ~120Hz polling
+    // An unplugged controller needs only a reconnection check. Avoid a 120Hz
+    // renderer wakeup for the whole game session when no pad is attached.
+    loopTimer = setTimeout(pollAndSendGamepadFrame, hadPad ? 8 : 100);
   }
 }
 
@@ -189,6 +191,9 @@ export async function enableGamepadBridge() {
   const res = await window.playbound?.startGamepadBridge?.(profile);
   if (res?.ok) {
     bridgeLoopActive = true;
+    // A newly created virtual pad needs its first frame even if the physical
+    // controller is still held exactly as it was in the previous session.
+    lastSentMask = -1;
     if (!controlsLoopActive) pollAndSendGamepadFrame();
     return true;
   }

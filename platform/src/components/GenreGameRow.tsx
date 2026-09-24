@@ -2,13 +2,13 @@
 
 import { useRef, useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import type { Game } from "@/lib/data/types";
+import type { DiscoverListingGame } from "@/lib/discoverListing";
 import { GameCard } from "@/components/GameCard";
 import { cn } from "@/lib/utils";
 
 interface GenreGameRowProps {
   genre: string;
-  games: Game[];
+  games: DiscoverListingGame[];
   playingNowBySlug?: Record<string, number>;
   className?: string;
 }
