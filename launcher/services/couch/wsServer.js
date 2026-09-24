@@ -83,6 +83,9 @@ function createPlainWebSocketServer(onMessage, opts = {}) {
   });
 
   server.on("upgrade", (req, socket) => {
+    // A peer can disconnect during the HTTP upgrade. Writes below then emit
+    // EPIPE asynchronously, so catching socket.write() is not sufficient.
+    socket.on("error", () => {});
     const key = req.headers["sec-websocket-key"];
     if (!key) {
       socket.destroy();
@@ -126,7 +129,6 @@ function createPlainWebSocketServer(onMessage, opts = {}) {
       buf = result.rest;
       if (result.closed) api.close();
     });
-    socket.on("error", () => {});
   });
 
   return {

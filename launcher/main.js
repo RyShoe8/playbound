@@ -47,7 +47,7 @@ const { createManagedDotNet, requiredDotNetMajor } = require("./services/Managed
 const { createDirectDrawWrapper } = require("./services/directDrawWrapper");
 const { createManagedRetroArch } = require("./services/ManagedRetroArch");
 const { createSteamCmdInstaller } = require("./services/steamCmd");
-const { steamAppState } = require("./services/steamPrerequisites");
+const { steamAppState, steamRuntimeForLaunch } = require("./services/steamPrerequisites");
 const { createSaveData } = require("./services/SaveData");
 const saveLocations = require("./services/saveLocations");
 const controllerProfiles = require("./services/controllerProfiles");
@@ -10287,13 +10287,14 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
 
   let spawnOpts = { env: launchEnv };
 
-  const targetSteamAppId =
-    steamAppIdFor(entry) ||
-    steamAppIdFor(info) ||
-    (slug === "holocure" ? "2420510" : null);
-  const isInsideSteam = /[\\/]steamapps[\\/]common[\\/]/i.test(launchPath || "");
+  const steamRuntime = steamRuntimeForLaunch(
+    entry?.kind,
+    launchPath,
+    steamAppIdFor(info) || steamAppIdFor(entry)
+  );
+  const targetSteamAppId = steamRuntime.appId;
 
-  if (targetSteamAppId || isInsideSteam) {
+  if (steamRuntime.needsSteam) {
     // SteamAPI games such as Alien Swarm exit immediately when Steam is not
     // running. Start the client before spawning the game executable so its
     // SteamAPI initialization has a live client to attach to.
@@ -10404,7 +10405,7 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
       editionSlug: info.editionSlug || edSlug,
       gameSlug: slug,
       steamAppId: targetSteamAppId || undefined,
-      isSteam: isInsideSteam,
+      isSteam: steamRuntime.needsSteam,
     });
     if (classified.code !== "UNKNOWN") {
       code = classified.code;
@@ -10445,7 +10446,7 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
       /spawn\s+unknown/i.test(rawMessage)
     ) {
       code = "SPAWN_UNKNOWN";
-      message = `Couldn't start ${exeName} (wrong CPU architecture or blocked executable). Try reinstalling or use Locate to pick the correct .exe.`;
+      message = `Windows could not start ${exeName}. Open Folder and try the game directly to see Windows' specific error. If Windows blocks it, check Windows Security; if the file is damaged, reinstall this edition.`;
     } else if (err?.code === "ENOENT" || /ENOENT|not runnable|file missing/i.test(rawMessage)) {
       code = "SPAWN_ENOENT";
     }

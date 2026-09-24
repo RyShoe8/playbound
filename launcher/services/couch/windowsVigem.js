@@ -85,7 +85,7 @@ function hasControlsHost() {
   return process.platform === "win32" && Boolean(dir && fs.existsSync(path.join(dir, HOST_EXE)));
 }
 
-function createWindowsVigemProvider() {
+function createWindowsVigemProvider({ spawnHost = spawn, resolveDir = resolveVigemDir } = {}) {
   let child = null;
   let buf = "";
   /** @type {Map<number, true>} */
@@ -106,10 +106,12 @@ function createWindowsVigemProvider() {
   /** @type {Array<(msg: object) => void>} */
   let waiters = [];
   let exitHandler = null;
+  let failHost = null;
 
   function ensureProcess() {
-    if (child && !child.killed) return;
-    const dir = resolveVigemDir();
+    if (child && !child.killed && child.exitCode == null && !child.stdin?.destroyed) return;
+    if (child) failHost?.(new Error("Controller host is no longer writable."));
+    const dir = resolveDir();
     if (!dir) {
       throw new Error(
         "Controller host missing from this PlayBound build. Reinstall PlayBound."
@@ -118,14 +120,14 @@ function createWindowsVigemProvider() {
     // Prefer the self-contained .NET host (no PowerShell ~1.7ms/update tax).
     const exe = path.join(dir, HOST_EXE);
     if (fs.existsSync(exe)) {
-      child = spawn(exe, [], {
+      child = spawnHost(exe, [], {
         cwd: dir,
         stdio: ["pipe", "pipe", "pipe"],
         windowsHide: true,
       });
     } else {
       const script = path.join(dir, HOST_PS1);
-      child = spawn(
+      child = spawnHost(
         "powershell.exe",
         ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script],
         {
@@ -159,41 +161,58 @@ function createWindowsVigemProvider() {
     });
     child.stderr.on("data", () => {});
     const launchedChild = child;
-    child.on("exit", () => {
+    const onHostGone = (err) => {
       if (child !== launchedChild) return;
       child = null;
+      failHost = null;
       slots.clear();
       // A restarted host starts with no pads, so nothing may be deduped
       // against what the previous one was holding.
       lastReport.clear();
       const pending = waiters.splice(0);
       for (const w of pending) {
-        w({ ok: false, error: "Controller host exited." });
+        w({ ok: false, error: err?.message || "Controller host exited." });
       }
       exitHandler?.();
-    });
+    };
+    failHost = onHostGone;
+    // A helper can close stdin before its exit event arrives. Node emits EPIPE
+    // on the writable stream asynchronously; a try/catch around write misses it.
+    child.stdin.on("error", onHostGone);
+    child.on("error", onHostGone);
+    child.on("exit", () => onHostGone());
   }
 
   function send(obj, expectReply) {
-    ensureProcess();
+    try {
+      ensureProcess();
+    } catch (err) {
+      return Promise.resolve({ ok: false, error: err?.message || String(err) });
+    }
     const line = JSON.stringify(obj) + "\n";
     if (!expectReply) {
-      child.stdin.write(line);
-      return Promise.resolve({ ok: true });
+      try {
+        child.stdin.write(line);
+        return Promise.resolve({ ok: true });
+      } catch (err) {
+        failHost?.(err);
+        return Promise.resolve({ ok: false, error: err?.message || String(err) });
+      }
     }
     return new Promise((resolve) => {
-      const timer = setTimeout(() => {
-        resolve({ ok: false, error: "Controller host timed out." });
-      }, 10000);
-      waiters.push((msg) => {
+      const waiter = (msg) => {
         clearTimeout(timer);
         resolve(msg);
-      });
+      };
+      const timer = setTimeout(() => {
+        waiters = waiters.filter((pending) => pending !== waiter);
+        resolve({ ok: false, error: "Controller host timed out." });
+      }, 10000);
+      waiters.push(waiter);
       try {
         child.stdin.write(line);
       } catch (err) {
-        clearTimeout(timer);
-        resolve({ ok: false, error: err.message || String(err) });
+        failHost?.(err);
       }
     });
   }
