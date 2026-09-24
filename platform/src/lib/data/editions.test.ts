@@ -165,6 +165,9 @@ describe("Shattered Pixel Dungeon editions", () => {
     expect(official!.installConfig?.playbound_installer?.repo).toBe(
       "00-Evan/shattered-pixel-dungeon"
     );
+    expect(official!.installConfig?.playbound_installer?.exeHint).toBe(
+      "Shattered Pixel Dungeon.exe"
+    );
   });
 
   it("defaults to vanilla, not a fork", () => {

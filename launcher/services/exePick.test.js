@@ -104,6 +104,24 @@ test("multiple knownExePaths all become alternatives", () => {
   assert.equal(hint, "Game.exe|Game64.exe");
 });
 
+test("Shattered Pixel Dungeon picks its root Windows launcher over dependency JARs", () => {
+  // The official v4.0.0 Windows ZIP places the native launcher at root and
+  // dependencies under app/. The old broad hint matched shatteredNews.jar;
+  // JARs outrank EXEs in the fallback picker, so this must use the exact hint.
+  const dir = makeInstall({
+    "Shattered Pixel Dungeon.exe": 439_296,
+    "app/shatteredNews-4.0.0.jar": 5_441,
+    "app/desktop-4.0.0.jar": 54_234_664,
+  });
+  try {
+    const staleCatalog = { slug: "shattered-pixel-dungeon", exeHint: "ShatteredPD|Shattered" };
+    assert.equal(exeHintFor(staleCatalog), "Shattered Pixel Dungeon.exe");
+    assert.equal(path.basename(findExecutable(dir, exeHintFor(staleCatalog))), "Shattered Pixel Dungeon.exe");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("Streets of Rage Remake launches the game, not the level editor", () => {
   /*
    * The real sizes, read off an install: both stubs are exactly 14,336 bytes,
@@ -260,4 +278,3 @@ test("stalker-anomaly resolves AnomalyDX11 or AnomalyLauncher from bin or root",
     fs.rmSync(anomalyDir, { recursive: true, force: true });
   }
 });
-
