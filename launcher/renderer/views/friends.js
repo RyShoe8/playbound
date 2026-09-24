@@ -3911,6 +3911,7 @@ async function maybeStartPartyCouch(partyId, party) {
      */
     const state = await startCouchSessionQuiet({
       hostLabel: "PlayBound Party",
+      reserveHostSlot: false,
     });
     const session = state?.session;
     if (!state?.active || !session?.joinCode) {
