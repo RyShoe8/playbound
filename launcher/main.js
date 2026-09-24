@@ -17594,19 +17594,6 @@ if (gotLock) {
       session.defaultSession.setDisplayMediaRequestHandler(async (_request, callback) => {
         try {
           const slug = playingGameSlug();
-          // Give newly-launched games up to ~5s to finish creating their window before falling back to screen
-          const windowSource = slug ? await findGameWindowSource(slug, 10, 500) : null;
-          if (windowSource) {
-            console.log("[couch] display capture → window", windowSource.name || windowSource.id);
-            // "loopback" is Electron's special-cased audio value for this
-            // handler — WASAPI system-audio capture on Windows. There is no
-            // way to scope it to one window's audio specifically; capturing
-            // everything the system is currently playing is the accepted
-            // trade-off game-streaming tools make here, and in practice the
-            // game is the only meaningful audio source while it's running.
-            callback({ video: windowSource, audio: "loopback" });
-            return;
-          }
           const sources = await desktopCapturer.getSources({
             types: ["screen"],
             thumbnailSize: { width: 160, height: 90 },

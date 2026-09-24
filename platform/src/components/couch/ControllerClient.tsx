@@ -1459,7 +1459,7 @@ export function ControllerClient({
                   }}
                 >
                   <div className="phone-controller-choice-icon-wrap icon-keyboard">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <rect x="2" y="4" width="20" height="16" rx="2" />
                       <line x1="6" y1="8" x2="6" y2="8.01" />
                       <line x1="10" y1="8" x2="10" y2="8.01" />
@@ -1488,7 +1488,7 @@ export function ControllerClient({
                   }}
                 >
                   <div className="phone-controller-choice-icon-wrap icon-controller">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <rect x="2" y="6" width="20" height="12" rx="2" />
                       <line x1="6" y1="12" x2="10" y2="12" />
                       <line x1="8" y1="10" x2="8" y2="14" />
@@ -1516,7 +1516,7 @@ export function ControllerClient({
                   }}
                 >
                   <div className="phone-controller-choice-icon-wrap icon-phone">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
                       <line x1="12" y1="18" x2="12.01" y2="18" />
                     </svg>
@@ -2582,15 +2582,15 @@ function ControllerStyles() {
 }
 
 .phone-controller-sheet {
-  width: min(520px, 94vw);
+  width: min(680px, 94vw);
   background: #11141c;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 18px;
-  padding: 24px 24px 20px;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 22px;
+  padding: 34px 34px 28px;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
   max-height: 90vh;
   overflow-y: auto;
 }
@@ -2609,55 +2609,56 @@ function ControllerStyles() {
 .phone-controller-header {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .phone-controller-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   align-self: flex-start;
-  padding: 3px 9px;
+  padding: 5px 13px;
   border-radius: 999px;
-  background: rgba(99, 102, 241, 0.15);
-  border: 1px solid rgba(99, 102, 241, 0.3);
-  color: #a5b4fc;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  background: rgba(99, 102, 241, 0.18);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  color: #c7d2fe;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   margin-bottom: 2px;
 }
 
 .phone-controller-sheet h2 {
   margin: 0;
-  font-size: 1.3rem;
-  font-weight: 700;
+  font-size: 1.85rem;
+  font-weight: 800;
   color: #f8fafc;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
 }
 
 .phone-controller-lead {
   margin: 0;
-  font-size: 0.88rem;
-  line-height: 1.45;
+  font-size: 1.05rem;
+  line-height: 1.5;
   color: #cbd5e1;
 }
 
 .phone-controller-choices {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
 }
 
 .phone-controller-choice-card {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
+  gap: 18px;
+  padding: 18px 22px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 16px;
   text-align: left;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -2667,55 +2668,55 @@ function ControllerStyles() {
 }
 
 .phone-controller-choice-card:hover {
-  background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(99, 102, 241, 0.5);
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
 }
 
 .phone-controller-choice-card.is-featured {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(168, 85, 247, 0.04));
-  border-color: rgba(99, 102, 241, 0.35);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.05));
+  border-color: rgba(99, 102, 241, 0.38);
 }
 
 .phone-controller-choice-card.is-featured:hover {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.08));
-  border-color: rgba(99, 102, 241, 0.6);
-  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.2);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(168, 85, 247, 0.1));
+  border-color: rgba(99, 102, 241, 0.65);
+  box-shadow: 0 6px 24px rgba(99, 102, 241, 0.25);
 }
 
 .phone-controller-choice-icon-wrap {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
   flex-shrink: 0;
 }
 
 .phone-controller-choice-icon-wrap.icon-keyboard {
-  background: rgba(59, 130, 246, 0.14);
+  background: rgba(59, 130, 246, 0.15);
   color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.28);
+  border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
 .phone-controller-choice-icon-wrap.icon-controller {
-  background: rgba(34, 197, 94, 0.12);
+  background: rgba(34, 197, 94, 0.14);
   color: #4ade80;
-  border: 1px solid rgba(34, 197, 94, 0.25);
+  border: 1px solid rgba(34, 197, 94, 0.28);
 }
 
 .phone-controller-choice-icon-wrap.icon-phone {
-  background: rgba(99, 102, 241, 0.16);
+  background: rgba(99, 102, 241, 0.18);
   color: #a5b4fc;
-  border: 1px solid rgba(99, 102, 241, 0.3);
+  border: 1px solid rgba(99, 102, 241, 0.35);
 }
 
 .phone-controller-choice-text {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   flex: 1;
   min-width: 0;
 }
@@ -2724,20 +2725,21 @@ function ControllerStyles() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
 }
 
 .phone-controller-choice-title {
-  font-size: 0.95rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: #f8fafc;
+  letter-spacing: -0.01em;
 }
 
 .phone-controller-choice-tag {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
-  padding: 2px 7px;
-  border-radius: 6px;
+  padding: 3px 9px;
+  border-radius: 7px;
   background: rgba(255, 255, 255, 0.08);
   color: #94a3b8;
   white-space: nowrap;
@@ -2749,8 +2751,8 @@ function ControllerStyles() {
 }
 
 .phone-controller-choice-sub {
-  font-size: 0.8rem;
-  line-height: 1.35;
+  font-size: 0.98rem;
+  line-height: 1.45;
   color: #94a3b8;
 }
 
@@ -2758,7 +2760,7 @@ function ControllerStyles() {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 .btn-ghost {
@@ -2766,10 +2768,10 @@ function ControllerStyles() {
   border: none;
   color: #94a3b8;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: 1rem;
   font-weight: 500;
-  padding: 6px 12px;
-  border-radius: 8px;
+  padding: 8px 16px;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -2781,40 +2783,40 @@ function ControllerStyles() {
 
 /* ── Pairing Screen ── */
 .phone-controller-pairing-sheet {
-  width: min(520px, 94vw);
+  width: min(680px, 94vw);
 }
 
 .phone-controller-qr-container {
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 16px;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 14px;
+  gap: 24px;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
 }
 
 .phone-controller-qr-frame {
   background: #fff;
-  padding: 8px;
-  border-radius: 12px;
+  padding: 10px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
 }
 
 .phone-controller-qr-img {
   display: block;
-  width: 140px;
-  height: 140px;
+  width: 160px;
+  height: 160px;
 }
 
 .phone-controller-qr-info {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   flex: 1;
   min-width: 0;
 }
@@ -2822,32 +2824,33 @@ function ControllerStyles() {
 .phone-controller-code-box {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .phone-controller-code-label {
-  font-size: 11px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #94a3b8;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .phone-controller-code-val {
   font-family: ui-monospace, monospace;
-  font-size: 1.1rem;
+  font-size: 1.35rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   color: #38bdf8;
-  background: rgba(56, 189, 248, 0.12);
-  padding: 2px 8px;
-  border-radius: 6px;
-  border: 1px solid rgba(56, 189, 248, 0.25);
+  background: rgba(56, 189, 248, 0.14);
+  padding: 4px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(56, 189, 248, 0.3);
 }
 
 .phone-controller-qr-hint {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.95rem;
+  line-height: 1.4;
   color: #cbd5e1;
   word-break: break-all;
 }
@@ -3021,13 +3024,13 @@ function ControllerStyles() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  min-height: 32px;
+  gap: 14px;
+  min-height: 38px;
 }
 .pbc-controls-action {
   flex: 0 0 auto;
-  min-width: 5.5rem;
-  font-size: 13px;
+  min-width: 6.5rem;
+  font-size: 15px;
   font-weight: 600;
   color: var(--pbc-ink);
   letter-spacing: -0.01em;
@@ -3036,24 +3039,24 @@ function ControllerStyles() {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 6px;
+  gap: 8px;
 }
 .pbc-key {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 1.75rem;
-  padding: 4px 8px;
-  border-radius: 6px;
-  border: 1px solid oklch(1 0 0 / 14%);
+  min-width: 2rem;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid oklch(1 0 0 / 16%);
   background: oklch(0.27 0.02 278);
   color: var(--pbc-ink);
   font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.02em;
-  line-height: 1.2;
-  box-shadow: inset 0 -1px 0 oklch(0 0 0 / 35%);
+  line-height: 1.25;
+  box-shadow: inset 0 -1px 0 oklch(0 0 0 / 40%), 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 .pbc-controls-legend.is-compact .pbc-key {
   padding: 3px 6px;
