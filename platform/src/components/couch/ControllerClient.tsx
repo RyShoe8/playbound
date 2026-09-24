@@ -1113,14 +1113,15 @@ export function ControllerClient({
   // Physical gamepad polling
   useEffect(() => {
     const usePad =
-      mode === "standard-gamepad" || (gameLayout && controlChoice === "controller");
+      mode === "standard-gamepad" ||
+      (gameLayout && (controlChoice === "controller" || controlChoice === "undecided"));
     if (!usePad) {
       const clearLabelTimer = setTimeout(() => setPhysicalLabel(null), 0);
       return () => clearTimeout(clearLabelTimer);
     }
     let raf = 0;
     const tick = () => {
-      const pads = navigator.getGamepads?.() || [];
+      const pads = Array.from(navigator.getGamepads?.() || []);
       const pad = pads.find((p) => p && p.connected) || null;
       if (pad) {
         setPhysicalLabel(pad.id || "Gamepad");
@@ -1144,15 +1145,30 @@ export function ControllerClient({
         for (const [idx, bit] of map) {
           if (pad.buttons[idx]?.pressed) buttons |= bit;
         }
-        padRef.current = {
-          buttons,
-          lx: clamp(pad.axes[0] ?? 0, -1, 1),
-          ly: clamp(pad.axes[1] ?? 0, -1, 1),
-          rx: clamp(pad.axes[2] ?? 0, -1, 1),
-          ry: clamp(pad.axes[3] ?? 0, -1, 1),
-          lt: clamp(pad.buttons[6]?.value ?? 0, 0, 1),
-          rt: clamp(pad.buttons[7]?.value ?? 0, 0, 1),
-        };
+        const lx = clamp(pad.axes[0] ?? 0, -1, 1);
+        const ly = clamp(pad.axes[1] ?? 0, -1, 1);
+        const rx = clamp(pad.axes[2] ?? 0, -1, 1);
+        const ry = clamp(pad.axes[3] ?? 0, -1, 1);
+        const lt = clamp(pad.buttons[6]?.value ?? 0, 0, 1);
+        const rt = clamp(pad.buttons[7]?.value ?? 0, 0, 1);
+
+        // If user touches a physical gamepad in game view while undecided, auto-select controller
+        if (
+          gameLayout &&
+          controlChoice === "undecided" &&
+          (buttons !== 0 ||
+            Math.abs(lx) > 0.15 ||
+            Math.abs(ly) > 0.15 ||
+            Math.abs(rx) > 0.15 ||
+            Math.abs(ry) > 0.15 ||
+            lt > 0.1 ||
+            rt > 0.1)
+        ) {
+          setControlChoice("controller");
+          setMode("standard-gamepad");
+        }
+
+        padRef.current = { buttons, lx, ly, rx, ry, lt, rt };
       } else {
         setPhysicalLabel(null);
         // In game-view PC mode, keyboard owns the pad when no hardware pad is
@@ -1164,7 +1180,19 @@ export function ControllerClient({
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+
+    const onPadConnected = () => {
+      if (gameLayout && controlChoice === "undecided") {
+        setControlChoice("controller");
+        setMode("standard-gamepad");
+      }
+    };
+    window.addEventListener("gamepadconnected", onPadConnected);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("gamepadconnected", onPadConnected);
+    };
   }, [mode, gameLayout, controlChoice]);
 
   // Keyboard & mouse → virtual pad (default join mode)

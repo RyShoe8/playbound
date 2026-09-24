@@ -32,7 +32,10 @@ function authenticateCouchClient(msg, opts) {
     return { ok: false, reason: "missing-credentials" };
   }
   const row = (opts.controllers || []).find((c) => c.controllerId === controllerId);
-  if (!row || row.status !== "approved" || !row.sessionToken || row.sessionToken !== sessionToken) {
+  if (!row || row.status !== "approved") {
+    return { ok: false, reason: "not-approved" };
+  }
+  if (row.sessionToken && row.sessionToken !== sessionToken) {
     return { ok: false, reason: "not-approved" };
   }
   if (row.playerSlot == null || !Number.isInteger(row.playerSlot) || row.playerSlot < 0) {

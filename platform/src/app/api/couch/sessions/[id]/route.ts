@@ -6,6 +6,7 @@ import {
   endCouchSession,
   getCouchSession,
   heartbeatHost,
+  hostCouchSnapshot,
   publicCouchSnapshot,
   setHostEndpoints,
 } from "@/lib/couch/sessionManager";
@@ -15,10 +16,14 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-async function withMetricsFlag(session: NonNullable<Awaited<ReturnType<typeof getCouchSession>>>) {
+async function withMetricsFlag(
+  session: NonNullable<Awaited<ReturnType<typeof getCouchSession>>>,
+  isHost = false
+) {
   const settings = await getConnectSettings();
+  const snap = isHost ? hostCouchSnapshot(session) : publicCouchSnapshot(session);
   return {
-    ...publicCouchSnapshot(session),
+    ...snap,
     streamingMetricsEnabled: settings.streamingMetricsEnabled,
   };
 }
@@ -33,10 +38,11 @@ export async function GET(req: Request, context: RouteContext) {
     }
     const url = new URL(req.url);
     const hostToken = url.searchParams.get("hostToken") || "";
-    if (hostToken && assertHost(session, hostToken)) {
+    const isHost = Boolean(hostToken && assertHost(session, hostToken));
+    if (isHost) {
       await heartbeatHost(session);
     }
-    return NextResponse.json(await withMetricsFlag(session));
+    return NextResponse.json(await withMetricsFlag(session, isHost));
   } catch (err) {
     unstable_rethrow(err);
     console.error("GET /api/couch/sessions/[id] failed:", err);
@@ -65,7 +71,7 @@ export async function PATCH(req: Request, context: RouteContext) {
         wsToken: String(body.hostEndpoints.wsToken || ""),
       });
     }
-    return NextResponse.json(await withMetricsFlag(session));
+    return NextResponse.json(await withMetricsFlag(session, true));
   } catch (err) {
     console.error("PATCH /api/couch/sessions/[id] failed:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

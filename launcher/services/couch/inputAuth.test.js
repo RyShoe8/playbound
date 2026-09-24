@@ -54,6 +54,42 @@ describe("authenticateCouchClient", () => {
     assert.equal(r.ok, true);
     assert.equal(r.playerSlot, 2);
   });
+
+  it("approves when the controller row omits sessionToken (public snapshot)", () => {
+    const r = authenticateCouchClient(
+      {
+        type: "hello",
+        controllerId: "c1",
+        sessionToken: "sess",
+        playerSlot: 0,
+      },
+      {
+        expectedWsToken: "tok",
+        requireWsToken: false,
+        controllers: [{ controllerId: "c1", playerSlot: 0, status: "approved" }],
+      }
+    );
+    assert.equal(r.ok, true);
+    assert.equal(r.playerSlot, 0);
+  });
+
+  it("rejects when the controller row has a differing sessionToken", () => {
+    const r = authenticateCouchClient(
+      {
+        type: "hello",
+        controllerId: "c1",
+        sessionToken: "sess",
+        playerSlot: 0,
+      },
+      {
+        expectedWsToken: "tok",
+        requireWsToken: false,
+        controllers: [{ controllerId: "c1", playerSlot: 0, status: "approved", sessionToken: "other" }],
+      }
+    );
+    assert.equal(r.ok, false);
+    assert.equal(r.reason, "not-approved");
+  });
 });
 
 describe("bindInputToSlot", () => {

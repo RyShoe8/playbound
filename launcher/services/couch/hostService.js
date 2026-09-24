@@ -77,26 +77,36 @@ function createHostService(deps) {
     return getProvider().probe();
   }
 
+  const pendingSlots = new Map();
+
   async function ensureSlot(slot) {
     if (handles.has(slot)) return handles.get(slot);
-    getProvider();
-    try {
-      const handle = await provider.createController(slot);
-      handles.set(slot, handle);
-      return handle;
-    } catch (err) {
-      console.warn("[couch] virtual controller create failed:", err?.message || err);
-      // Soft handle so transport/debug still work without ViGEm.
-      const soft = {
-        slot,
-        remove() {
-          handles.delete(slot);
-        },
-        applyState() {},
-      };
-      handles.set(slot, soft);
-      return soft;
-    }
+    if (pendingSlots.has(slot)) return pendingSlots.get(slot);
+    const p = (async () => {
+      getProvider();
+      try {
+        const handle = await provider.createController(slot);
+        handles.set(slot, handle);
+        console.log(`[couch] ViGEm virtual controller created for slot ${slot}`);
+        return handle;
+      } catch (err) {
+        console.warn("[couch] virtual controller create failed:", err?.message || err);
+        // Soft handle so transport/debug still work without ViGEm.
+        const soft = {
+          slot,
+          remove() {
+            handles.delete(slot);
+          },
+          applyState() {},
+        };
+        handles.set(slot, soft);
+        return soft;
+      } finally {
+        pendingSlots.delete(slot);
+      }
+    })();
+    pendingSlots.set(slot, p);
+    return p;
   }
 
   function releaseSlot(slot) {
@@ -202,7 +212,19 @@ function createHostService(deps) {
   /** Renderer → main input path (ipcMain.on). No promise / no reply. */
   function applyInputFast(payload) {
     if (!payload || payload.type !== "input" || !payload.packet) return;
-    const client = clients.get(payload.controllerId);
+    let client = clients.get(payload.controllerId);
+    if (!client) {
+      const row = approvedControllers().find((c) => c.controllerId === payload.controllerId);
+      if (row && row.status === "approved" && Number.isInteger(row.playerSlot)) {
+        client = {
+          playerSlot: row.playerSlot,
+          sessionToken: payload.packet.sessionToken || "",
+          transport: "webrtc",
+        };
+        clients.set(payload.controllerId, client);
+        void ensureSlot(row.playerSlot);
+      }
+    }
     if (!client) return;
     applyInput(payload.packet, {
       controllerId: payload.controllerId,
@@ -232,9 +254,18 @@ function createHostService(deps) {
         result = attempt();
       }
       if (!result.ok) {
+        console.warn("[couch] controller auth failed:", msg.controllerId, result.reason);
         ctx.close?.();
         return;
       }
+      console.log(
+        "[couch] controller authenticated:",
+        result.controllerId,
+        "slot:",
+        result.playerSlot,
+        "transport:",
+        ctx.transport || "websocket"
+      );
       if (ctx.auth?.controllerId && ctx.auth.controllerId !== result.controllerId) {
         forgetSocket(ctx.auth.controllerId, ctx);
       }
