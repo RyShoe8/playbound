@@ -14,7 +14,7 @@ const { createProvider } = require("./VirtualControllerProvider");
 const { createMetrics } = require("./metrics");
 const { createPlainWebSocketServer } = require("./wsServer");
 const { ensureVigem } = require("./ensureVigem");
-const { authenticateCouchClient, bindInputToSlot } = require("./inputAuth");
+const { authenticateCouchClient, authenticatedInputSlot, bindInputToSlot } = require("./inputAuth");
 
 /**
  * @param {object} deps
@@ -51,6 +51,7 @@ function createHostService(deps) {
   const clients = new Map();
   /** controllerId -> Set of socket/context objects that can be closed on kick */
   const socketsByController = new Map();
+  const lastInputBySlot = new Map();
 
   function lanAddresses() {
     const nets = os.networkInterfaces();
@@ -114,6 +115,7 @@ function createHostService(deps) {
   }
 
   function releaseSlot(slot) {
+    lastInputBySlot.delete(slot);
     const h = handles.get(slot);
     if (h) {
       try {
@@ -127,6 +129,16 @@ function createHostService(deps) {
         /* ignore */
       }
       handles.delete(slot);
+    }
+  }
+
+  function neutralizeIdleSlots(now = Date.now()) {
+    for (const [slot, lastInput] of lastInputBySlot) {
+      if (now - lastInput < 1500) continue;
+      const neutral = emptyPadState(slot);
+      try { handles.get(slot)?.applyState(neutral); } catch { /* best effort */ }
+      try { onSlotFrame?.(slot, neutral); } catch { /* best effort */ }
+      lastInputBySlot.delete(slot);
     }
   }
 
@@ -180,6 +192,7 @@ function createHostService(deps) {
     if (boundSlot == null) return false;
     const bound = bindInputToSlot(parsed, boundSlot);
     if (!bound) return false;
+    lastInputBySlot.set(bound.p, Date.now());
     if (onSlotFrame) {
       try {
         onSlotFrame(bound.p, bound);
@@ -216,45 +229,33 @@ function createHostService(deps) {
   /** Renderer → main input path (ipcMain.on). No promise / no reply. */
   function applyInputFast(payload) {
     if (!payload || payload.type !== "input" || !payload.packet) return;
-    let client = clients.get(payload.controllerId);
-    if (!client) {
-      const row = approvedControllers().find((c) => c.controllerId === payload.controllerId);
-      if (row && row.status === "approved" && Number.isInteger(row.playerSlot)) {
-        client = {
-          playerSlot: row.playerSlot,
-          sessionToken: payload.packet.sessionToken || "",
-          transport: "webrtc",
-        };
-        clients.set(payload.controllerId, client);
-        void ensureSlot(row.playerSlot);
-      }
-    }
-    if (!client) {
+    const controllerId = payload.controllerId;
+    const row = approvedControllers().find((c) => c.controllerId === controllerId);
+    if (!row) {
       if (!refreshSnapshotPending) {
         refreshSnapshotPending = true;
         void refreshSnapshot()
-          .then((snap) => {
-            const list = snap?.controllers || approvedControllers();
-            const r = list.find((c) => c.controllerId === payload.controllerId);
-            if (r && r.status === "approved" && Number.isInteger(r.playerSlot)) {
-              const cl = {
-                playerSlot: r.playerSlot,
-                sessionToken: payload.packet.sessionToken || "",
-                transport: "webrtc",
-              };
-              clients.set(payload.controllerId, cl);
-              void ensureSlot(r.playerSlot);
-            }
-          })
           .finally(() => {
             refreshSnapshotPending = false;
           });
       }
       return;
     }
+    // Older single-pad clients authenticate with hello and omit a token on
+    // each frame. A secondary pad must always carry its own identity/token.
+    const token = payload.packet.sessionToken || (
+      payload.peerId === controllerId ? clients.get(controllerId)?.sessionToken : null
+    );
+    const slot = authenticatedInputSlot(controllerId, token, approvedControllers());
+    if (slot == null) return;
+    const client = clients.get(controllerId);
+    if (!client || client.playerSlot !== slot) {
+      clients.set(controllerId, { playerSlot: slot, sessionToken: token, transport: "webrtc" });
+      void ensureSlot(slot);
+    }
     applyInput(payload.packet, {
-      controllerId: payload.controllerId,
-      playerSlot: client.playerSlot,
+      controllerId,
+      playerSlot: slot,
       transport: "webrtc",
       rttMs: payload.rttMs,
     });
@@ -358,9 +359,13 @@ function createHostService(deps) {
             ctx.close();
             return;
           }
+          const inputId = msg.controllerId || ctx.auth.controllerId;
+          const inputToken = msg.sessionToken || (inputId === ctx.auth.controllerId ? ctx.auth.sessionToken : null);
+          const slot = authenticatedInputSlot(inputId, inputToken, approvedControllers());
+          if (slot == null) return;
           void applyInput(msg, {
-            controllerId: ctx.auth.controllerId,
-            playerSlot: ctx.auth.playerSlot,
+            controllerId: inputId,
+            playerSlot: slot,
             transport: "websocket",
           });
         }
@@ -498,6 +503,9 @@ function createHostService(deps) {
     }, 20_000);
 
     pollTimer = setInterval(() => {
+      // A dead phone must not leave its last held direction/button pressed.
+      // Keep the virtual pad itself so games that enumerate once still see it.
+      neutralizeIdleSlots();
       void refreshSnapshot();
     }, 2000);
 
@@ -609,6 +617,7 @@ function createHostService(deps) {
     session = null;
     pendingRemotePlay = false;
     clients.clear();
+    lastInputBySlot.clear();
     for (const set of socketsByController.values()) {
       for (const ctx of set) {
         try {

@@ -33,6 +33,7 @@ export async function POST(req: Request, context: RouteContext) {
       controllerId: typeof body.controllerId === "string" ? body.controllerId : undefined,
       controllerToken:
         typeof body.controllerToken === "string" ? body.controllerToken : undefined,
+      spectator: body.spectator === true,
     });
 
     if ("error" in result) {
@@ -50,8 +51,10 @@ export async function POST(req: Request, context: RouteContext) {
       controllerToken: controller.controllerToken,
       sessionToken: controller.sessionToken,
       playerSlot: controller.playerSlot,
+      spectator: Boolean(controller.spectator),
       status: controller.status,
       sessionId: session.sessionId,
+      maxPlayers: session.maxPlayers,
       joinCode: session.joinCode,
       hostLabel: session.hostLabel,
       snapshot: snap,
@@ -93,6 +96,8 @@ export async function GET(req: Request, context: RouteContext) {
     return NextResponse.json({
       status: c.status,
       playerSlot: c.playerSlot,
+      spectator: Boolean(c.spectator),
+      maxPlayers: session.maxPlayers,
       sessionToken: c.sessionToken,
       snapshot: snap,
       wsToken:

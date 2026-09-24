@@ -96,6 +96,7 @@ export async function PATCH(req: Request, context: RouteContext) {
       label: typeof body.label === "string" ? body.label : undefined,
       profile: typeof body.profile === "string" ? body.profile : undefined,
       deviceLabel: typeof body.deviceLabel === "string" ? body.deviceLabel : undefined,
+      spectator: typeof body.spectator === "boolean" ? body.spectator : undefined,
     });
 
     if ("error" in result) {

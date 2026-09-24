@@ -533,7 +533,8 @@ async function answerOffer(controllerId, remoteSdp, session) {
       if (msg && msg.v === 1) {
         void pb().couchRendererMessage({
           type: "input",
-          controllerId,
+          peerId: controllerId,
+          controllerId: msg.controllerId || controllerId,
           packet: msg,
         });
         return;

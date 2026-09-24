@@ -22,6 +22,7 @@ const path = require("path");
 const net = require("net");
 const os = require("os");
 const bundledCatalog = require("./catalog");
+const { localCoopPlayerCapacity } = require("./services/couch/localCoop");
 const { createTelemetry } = require("./telemetry");
 const Platform = require("./platform");
 const GameLauncher = require("./services/GameLauncher");
@@ -13543,11 +13544,25 @@ async function handleRemotePlayHostRequest(reqRow) {
      * button ever did anything. Creating the session first makes Remote
      * Play match the couch-party ordering that already works.
      */
+    const couchPlayers = localCoopPlayerCapacity(catalogEntry(reqRow.gameSlug));
     const state = await couchHost.createSession({
       hostLabel: "Remote Play",
       autoApprove: true,
       remotePlay: true,
+      maxPlayers: couchPlayers || 4,
     });
+    // Games such as OpenBOR enumerate pads only at startup. Present the local
+    // co-op slots before the process starts; neutral pads join only on input.
+    if (couchPlayers) {
+      for (let slot = 1; slot < couchPlayers; slot++) {
+        try {
+          const warmed = await couchHost.warmControllerSlot(slot);
+          if (!warmed?.ok) console.warn(`[remote-play] could not prewarm P${slot + 1}:`, warmed?.reason);
+        } catch (err) {
+          console.warn(`[remote-play] could not prewarm P${slot + 1}:`, err?.message || err);
+        }
+      }
+    }
     const joinUrl = state?.session?.joinUrl;
     if (!joinUrl) {
       reportCouchOps("failed", { phase: "session", code: "JOIN_URL_MISSING", message: "Couch session has no join URL", gameSlug: reqRow.gameSlug }, "remote_play");
@@ -13707,7 +13722,8 @@ ipcMain.handle("remote-play-request", async (event, { hostDeviceId, gameSlug, ed
         // reach the host's game process directly.
         activeRemotePlayClientRequestId = created.id;
         const sep = row.joinUrl.includes("?") ? "&" : "?";
-        const opened = await openCouchGameViewWindow(`${row.joinUrl}${sep}view=game&remotePlay=1&gameSlug=${encodeURIComponent(gameSlug)}&editionSlug=${encodeURIComponent(editionSlug || "official")}`);
+        const couchPlayers = localCoopPlayerCapacity(catalogEntry(gameSlug));
+        const opened = await openCouchGameViewWindow(`${row.joinUrl}${sep}view=game&remotePlay=1&gameSlug=${encodeURIComponent(gameSlug)}&editionSlug=${encodeURIComponent(editionSlug || "official")}${couchPlayers ? `&couchPlayers=${couchPlayers}` : ""}`);
         if (!opened?.ok) {
           reportCouchOps("failed", { phase: "stream_window", code: "WINDOW_OPEN_FAILED", message: opened?.error, gameSlug, editionSlug, role: "client" }, "remote_play");
           activeRemotePlayClientRequestId = null;
