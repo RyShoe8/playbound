@@ -86,6 +86,9 @@ async function saveSession(session: CouchSession): Promise<void> {
     const payload = { ...session } as Record<string, unknown>;
     delete payload._id;
     delete payload.__v;
+    // Signaling is appended atomically below. A snapshot saved by a concurrent
+    // heartbeat or controller approval must never replace newer ICE messages.
+    delete payload.messages;
     await Model.findOneAndUpdate(
       { sessionId: session.sessionId },
       { $set: payload },
@@ -422,9 +425,21 @@ export async function postCouchSignal(
     payload: String(msg.payload || "").slice(0, 64_000),
     timestamp: Date.now(),
   };
-  session.messages.push(message);
-  session.lastHeartbeat = message.timestamp;
-  await saveSession(session);
+  if (await withMongo()) {
+    const Model = await getModel();
+    const result = await Model.updateOne(
+      { sessionId: session.sessionId, status: "open" },
+      {
+        $push: { messages: { $each: [message], $slice: -1024 } },
+        $max: { lastHeartbeat: message.timestamp },
+      }
+    );
+    if (result.matchedCount === 0) return null;
+  } else {
+    session.messages.push(message);
+    session.lastHeartbeat = message.timestamp;
+    await saveSession(session);
+  }
   return message;
 }
 
