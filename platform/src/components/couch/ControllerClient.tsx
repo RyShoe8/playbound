@@ -180,9 +180,34 @@ export function ControllerClient({
   const videoFrameWatchRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [cropTitleBar, setCropTitleBar] = useState(false);
+  const [cropRect, setCropRect] = useState<{ left: number; top: number; width: number; height: number } | null>(
+    null
+  );
   const [hudVisible, setHudVisible] = useState(true);
   const [showControlsModal, setShowControlsModal] = useState(false);
   const hudTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /*
+   * Screen capture always grabs the whole monitor (Chromium's per-window
+   * capture has a real cropping bug on Windows) — when the host's game
+   * doesn't fill it, the host measures the game's actual on-screen
+   * rectangle and sends it here (see couch.js's cropRect data-channel
+   * message). Zoom + reposition the video with a CSS transform so the
+   * viewer sees just the game, same technique the existing fixed
+   * is-cropped title-bar trim already uses, just computed dynamically.
+   * Approximate: assumes the captured frame's aspect ratio matches the
+   * rendered box (object-fit: contain), so a letterboxed video will be
+   * slightly off — acceptable given the alternative is showing the whole
+   * desktop.
+   */
+  const cropVideoStyle = cropRect
+    ? {
+        transform: `scale(${1 / cropRect.width}, ${1 / cropRect.height}) translate(${
+          50 * (1 - cropRect.width) - 100 * cropRect.left
+        }%, ${50 * (1 - cropRect.height) - 100 * cropRect.top}%)`,
+        transformOrigin: "center center",
+      }
+    : undefined;
 
   useEffect(() => {
     if (!showControlsModal) return;
@@ -635,13 +660,20 @@ export function ControllerClient({
     };
     sendFnRef.current = send;
 
-    function handleControl(msg: { type?: string; t?: number }) {
+    function handleControl(msg: {
+      type?: string;
+      t?: number;
+      rect?: { left: number; top: number; width: number; height: number } | null;
+    }) {
       if (msg.type === "pong" && typeof msg.t === "number") {
         setPingMs(Math.max(0, performance.now() - msg.t));
       }
       if (msg.type === "kick") {
         setTransport("offline");
         setError("Disconnected by host");
+      }
+      if (msg.type === "cropRect") {
+        setCropRect(msg.rect || null);
       }
     }
 
@@ -1362,6 +1394,7 @@ export function ControllerClient({
           <video
             ref={bindVideoEl}
             className={["pbc-gameview-video", cropTitleBar ? "is-cropped" : ""].filter(Boolean).join(" ")}
+            style={cropVideoStyle}
             playsInline
             muted
             autoPlay
@@ -1769,6 +1802,7 @@ export function ControllerClient({
         <video
           ref={bindVideoEl}
           className={["pbc-gameview-video", cropTitleBar ? "is-cropped" : ""].filter(Boolean).join(" ")}
+          style={cropVideoStyle}
           playsInline
           muted
           autoPlay

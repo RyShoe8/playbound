@@ -126,6 +126,27 @@ function ensureWired() {
       }
     }
   });
+
+  pb().onCouchCropRect?.((rect) => {
+    for (const dc of channels.values()) sendCropRectTo(dc, rect);
+  });
+}
+
+/**
+ * Screen capture always grabs the whole monitor (Chromium's per-window
+ * capture has a real cropping bug — see setDisplayMediaRequestHandler in
+ * main.js), so when a game doesn't fill the monitor itself, main.js works
+ * out the game's actual on-screen rectangle and hands it here. `rect` is
+ * null when the game already fills the frame (nothing to crop) or hasn't
+ * been measured yet.
+ */
+function sendCropRectTo(dc, rect) {
+  if (!dc || dc.readyState !== "open") return;
+  try {
+    dc.send(JSON.stringify({ type: "cropRect", rect: rect || null }));
+  } catch {
+    /* best-effort */
+  }
 }
 
 async function refresh() {
@@ -455,6 +476,13 @@ async function answerOffer(controllerId, remoteSdp, session) {
         transport: "webrtc",
       });
       void pushHostDisplayToPeers();
+      // The rect may have been computed before this peer's channel existed
+      // (main.js only broadcasts once, when the maximize/crop check finishes) —
+      // fetch the current value directly rather than waiting for another push.
+      void pb()
+        .couchCropRect?.()
+        .then((rect) => sendCropRectTo(dc, rect))
+        .catch(() => {});
     };
     dc.onmessage = (e) => {
       if (typeof e.data !== "string") return;

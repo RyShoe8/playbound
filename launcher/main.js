@@ -10704,6 +10704,8 @@ const GAME_EXIT_DEBOUNCE_MS = 3000;
 const GAME_RUNNING_POLL_MS = 10000;
 
 function sendGameExited(slug) {
+  // Stale crop data from this game must not leak into the next one's stream.
+  lastCropRect = null;
   // Reported from here rather than the renderer so a session still closes when
   // the window is hidden to the tray or the game outlived the launcher UI.
   void telemetry.editionExited(editionInfoFor(slug));
@@ -10898,6 +10900,39 @@ function normalizeProcessImageName(name) {
  * compatibility fix, and maximizing would fight it every time the game is
  * streamed.
  */
+/**
+ * Last computed crop rectangle (fractions 0-1 of the captured frame) for the
+ * game actually filling — or not filling — the streamed monitor. Screen
+ * capture always grabs the whole monitor (see setDisplayMediaRequestHandler);
+ * this is how a viewer still only sees the game rather than the desktop
+ * around it, without needing the buggy per-window Chromium capture path.
+ * Single slot: only one game is ever being couch-streamed at a time.
+ */
+let lastCropRect = null;
+
+function parseRectPair(text) {
+  // e.g. "RECT=100,200,1620,1400 MONITOR=0,0,3840,2160" — coordinates can be
+  // negative for a monitor positioned left of / above the primary.
+  const rectMatch = /RECT=(-?\d+),(-?\d+),(-?\d+),(-?\d+)/.exec(text);
+  const monMatch = /MONITOR=(-?\d+),(-?\d+),(-?\d+),(-?\d+)/.exec(text);
+  if (!rectMatch || !monMatch) return null;
+  const [, wl, wt, wr, wb] = rectMatch.map(Number);
+  const [, ml, mt, mr, mb] = monMatch.map(Number);
+  const monW = mr - ml;
+  const monH = mb - mt;
+  if (!(monW > 0) || !(monH > 0)) return null;
+  const clamp01 = (n) => Math.max(0, Math.min(1, n));
+  const left = clamp01((wl - ml) / monW);
+  const top = clamp01((wt - mt) / monH);
+  const width = clamp01((wr - wl) / monW);
+  const height = clamp01((wb - wt) / monH);
+  if (width <= 0 || height <= 0) return null;
+  // Window already fills (or overfills, e.g. borderless-fullscreen slightly
+  // beyond the visible monitor rect) the monitor — no crop needed.
+  if (left <= 0.01 && top <= 0.01 && width >= 0.98 && height >= 0.98) return null;
+  return { left, top, width, height };
+}
+
 function maximizeGameWindowForStreaming(slug) {
   if (process.platform !== "win32" || !slug) return;
   try {
@@ -10926,6 +10961,9 @@ function maximizeGameWindowForStreaming(slug) {
     });
     bg.on("close", (code) => {
       debugLog(`[maximize] exit=${code} ${out.trim()}`);
+      lastCropRect = parseRectPair(out);
+      if (win && !win.isDestroyed()) win.webContents.send("couch-crop-rect", lastCropRect);
+      debugLog(`[maximize] crop rect: ${lastCropRect ? JSON.stringify(lastCropRect) : "none (fills monitor)"}`);
     });
     bg.unref();
   } catch (err) {
@@ -14342,6 +14380,7 @@ ipcMain.handle("couch-stop", async () => {
   }
 });
 ipcMain.handle("couch-state", () => couchHost.getState());
+ipcMain.handle("couch-crop-rect", () => lastCropRect);
 ipcMain.handle("couch-refresh", async () => {
   await couchHost.refreshSnapshot();
   return couchHost.getState();
