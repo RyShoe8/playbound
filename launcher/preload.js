@@ -272,6 +272,7 @@ contextBridge.exposeInMainWorld("playbound", {
     return ipcRenderer.invoke("couch-renderer-message", body);
   },
   couchSignalPost: (body) => ipcRenderer.invoke("couch-signal-post", body || {}),
+  couchReportOps: (status, fields) => ipcRenderer.invoke("couch-report-ops", status, fields || {}),
   couchSignalPoll: (since) => ipcRenderer.invoke("couch-signal-poll", since || 0),
   onCouchState: (cb) => ipcRenderer.on("couch-state", (_event, data) => cb(data || {})),
   onCouchCropRect: (cb) => ipcRenderer.on("couch-crop-rect", (_event, data) => cb(data || null)),

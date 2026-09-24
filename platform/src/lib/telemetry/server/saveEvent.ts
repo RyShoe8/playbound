@@ -78,7 +78,9 @@ export async function saveEvent(input: SaveTelemetryEventInput): Promise<void> {
     createdAt: Number.isNaN(createdAt.getTime()) ? new Date() : createdAt,
   });
 
-  void maybeUpsertAutoBugFromTelemetry({
+  // The telemetry route is serverless: an unawaited write can be killed after
+  // the response, making failures visible in Ops but absent from Bugs.
+  await maybeUpsertAutoBugFromTelemetry({
     event: input.event,
     properties: props,
     userId: input.userId ?? null,

@@ -31,6 +31,7 @@ function createHostService(deps) {
   const getApiBase = deps.getApiBase;
   const broadcast = deps.broadcast || (() => {});
   const onSlotFrame = typeof deps.onSlotFrame === "function" ? deps.onSlotFrame : null;
+  const onFailure = typeof deps.onFailure === "function" ? deps.onFailure : () => {};
 
   let provider = null;
   /** @type {Map<number, object>} slot -> handle */
@@ -38,6 +39,7 @@ function createHostService(deps) {
   const metrics = createMetrics();
 
   let session = null; // { sessionId, joinCode, hostToken, joinUrl, ... }
+  let pendingRemotePlay = false;
   let wsServer = null;
   let wsPort = 0;
   let wsToken = "";
@@ -92,6 +94,7 @@ function createHostService(deps) {
         return handle;
       } catch (err) {
         console.warn("[couch] virtual controller create failed:", err?.message || err);
+        onFailure({ phase: "controller", code: "VIRTUAL_CONTROLLER_FAILED", message: err?.message, remotePlay: session?.remotePlay || pendingRemotePlay });
         // Soft handle so transport/debug still work without ViGEm.
         const soft = {
           slot,
@@ -403,6 +406,7 @@ function createHostService(deps) {
 
   async function createSession(opts = {}) {
     await stopSession();
+    pendingRemotePlay = Boolean(opts.remotePlay);
 
     const notify = (message) => {
       broadcast("couch-status", { message: String(message || "") });
@@ -603,6 +607,7 @@ function createHostService(deps) {
       }
     }
     session = null;
+    pendingRemotePlay = false;
     clients.clear();
     for (const set of socketsByController.values()) {
       for (const ctx of set) {

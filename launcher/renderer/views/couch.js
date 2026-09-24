@@ -21,6 +21,14 @@ const peers = new Map();
 const channels = new Map();
 /** @type {Map<string, Array<{ candidate: RTCIceCandidateInit | null, complete: boolean }>>} */
 const pendingRemoteIce = new Map();
+const reportedOps = new Set();
+function reportOps(status, fields) {
+  const key = `${lastState?.session?.sessionId || "none"}:${status}:${fields.code || fields.phase}`;
+  if (reportedOps.has(key)) return;
+  reportedOps.add(key);
+  if (reportedOps.size > 200) reportedOps.clear();
+  void pb().couchReportOps?.(status, fields).catch(() => {});
+}
 let lastState = null;
 let stateRevision = 0;
 
@@ -105,7 +113,7 @@ function ensureWired() {
     stateRevision += 1;
     lastState = state;
     if (state?.active) startSignalPoll();
-    else cleanupPeerState();
+    else { cleanupPeerState(); reportedOps.clear(); }
     if (couchViewVisible()) paint(state);
   });
 
@@ -277,7 +285,12 @@ async function pollSignals() {
         continue;
       }
       if (payload.kind === "offer" && payload.from && payload.sdp) {
-        await answerOffer(payload.from, payload.sdp, session);
+        try {
+          await answerOffer(payload.from, payload.sdp, session);
+        } catch (err) {
+          reportOps("failed", { phase: "answer", code: "WEBRTC_ANSWER_FAILED", message: err?.message });
+          throw err;
+        }
       }
       if (payload.kind === "answer" && payload.from && payload.sdp) {
         const pc = peers.get(payload.from);
@@ -302,6 +315,7 @@ async function pollSignals() {
     }
   } catch (err) {
     console.warn("[couch] signal poll failed:", err?.message || err);
+    reportOps("failed", { phase: "signaling", code: "SIGNAL_POLL_FAILED", message: err?.message });
   } finally {
     signalPollInFlight = false;
   }
@@ -445,6 +459,7 @@ export async function pushHostDisplayToPeers() {
       sentAny = true;
     } catch (err) {
       console.warn("[couch] renegotiate display failed:", err?.message || err);
+      reportOps("failed", { phase: "renegotiation", code: "DISPLAY_RENEGOTIATION_FAILED", message: err?.message });
     }
   }
   return sentAny;
@@ -483,6 +498,10 @@ async function answerOffer(controllerId, remoteSdp, session) {
         ];
   pc = new RTCPeerConnection({ iceServers });
   peers.set(controllerId, pc);
+  pc.onconnectionstatechange = () => {
+    if (pc.connectionState === "connected") reportOps("connected", { phase: "webrtc", code: "PEER_CONNECTED", transport: "webrtc", connectionState: "connected" });
+    if (pc.connectionState === "failed") reportOps("failed", { phase: "webrtc", code: "PEER_CONNECTION_FAILED", message: "Host peer connection failed", transport: "webrtc", connectionState: "failed", iceState: pc.iceConnectionState });
+  };
 
   pc.ondatachannel = (ev) => {
     const dc = ev.channel;
@@ -584,6 +603,7 @@ async function answerOffer(controllerId, remoteSdp, session) {
       ? "[couch] display captured before first answer"
       : "[couch] display NOT captured before first answer — will retry after"
   );
+  if (!capturedBeforeAnswer) reportOps("failed", { phase: "capture", code: "DISPLAY_CAPTURE_MISSING", message: "No display track before first answer" });
 
   const answer = await pc.createAnswer();
   await pc.setLocalDescription(answer);

@@ -13404,6 +13404,7 @@ async function openCouchGameViewWindow(rawUrl) {
     couchGameViewWin.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
     couchGameViewWin.webContents.on("render-process-gone", (_e, details) => {
       console.warn("couchGameViewWin render-process-gone:", details?.reason, details?.exitCode);
+      reportCouchOps("failed", { phase: "stream_window", code: "RENDERER_CRASHED", message: String(details?.reason || "Renderer exited"), role: "client" }, activeRemotePlayClientRequestId ? "remote_play" : "couch");
       void telemetry.track("couch_stream_crashed", {
         reason: details?.reason,
         exitCode: details?.exitCode,
@@ -13411,6 +13412,7 @@ async function openCouchGameViewWindow(rawUrl) {
     });
     couchGameViewWin.webContents.on("unresponsive", () => {
       console.warn("couchGameViewWin became unresponsive");
+      reportCouchOps("failed", { phase: "stream_window", code: "RENDERER_UNRESPONSIVE", message: "Stream window stopped responding", role: "client" }, activeRemotePlayClientRequestId ? "remote_play" : "couch");
       void telemetry.track("couch_stream_unresponsive", {});
     });
     await couchGameViewWin.loadURL(url);
@@ -13450,7 +13452,7 @@ async function registerRemotePlayDevice() {
   const settings = loadSettings();
   if (!settings.launcherToken) return;
   try {
-    await apiFetch(`${getApiBase()}/api/devices`, {
+    const res = await apiFetch(`${getApiBase()}/api/devices`, {
       method: "POST",
       headers: launcherApiHeaders({ "content-type": "application/json" }),
       body: JSON.stringify({
@@ -13459,8 +13461,10 @@ async function registerRemotePlayDevice() {
         capabilities: { remotePlayHost: true, remotePlayClient: true },
       }),
     });
+    if (!res.ok) reportCouchOps("failed", { phase: "registration", code: "DEVICE_REGISTRATION_FAILED", message: `HTTP ${res.status}` }, "remote_play");
   } catch (err) {
     console.warn("[remote-play] device registration failed:", err?.message || err);
+    reportCouchOps("failed", { phase: "registration", code: "DEVICE_REGISTRATION_FAILED", message: err?.message }, "remote_play");
   }
 }
 
@@ -13497,13 +13501,15 @@ async function handleRemotePlayHostRequest(reqRow) {
   const settings = loadSettings();
   const patch = async (body) => {
     try {
-      await apiFetch(`${getApiBase()}/api/remote-play/requests/${encodeURIComponent(reqRow.id)}`, {
+      const res = await apiFetch(`${getApiBase()}/api/remote-play/requests/${encodeURIComponent(reqRow.id)}`, {
         method: "PATCH",
         headers: launcherApiHeaders({ "content-type": "application/json" }),
         body: JSON.stringify(body),
       });
+      if (!res.ok) reportCouchOps("failed", { phase: "handoff", code: "STATUS_UPDATE_FAILED", message: `HTTP ${res.status}`, gameSlug: reqRow.gameSlug }, "remote_play");
     } catch (err) {
       console.warn("[remote-play] PATCH failed:", err?.message || err);
+      reportCouchOps("failed", { phase: "handoff", code: "STATUS_UPDATE_FAILED", message: err?.message, gameSlug: reqRow.gameSlug }, "remote_play");
     }
   };
   try {
@@ -13511,6 +13517,7 @@ async function handleRemotePlayHostRequest(reqRow) {
     // interrupt whatever this device is already doing (its own couch party
     // included; never end someone else's session to make room).
     if (couchHost.getState().active || playingGameSlug()) {
+      reportCouchOps("failed", { phase: "host", code: "HOST_BUSY", message: "Host is already playing or streaming", gameSlug: reqRow.gameSlug }, "remote_play");
       await patch({ status: "declined" });
       return;
     }
@@ -13535,6 +13542,7 @@ async function handleRemotePlayHostRequest(reqRow) {
     });
     const joinUrl = state?.session?.joinUrl;
     if (!joinUrl) {
+      reportCouchOps("failed", { phase: "session", code: "JOIN_URL_MISSING", message: "Couch session has no join URL", gameSlug: reqRow.gameSlug }, "remote_play");
       await patch({ status: "declined" });
       return;
     }
@@ -13542,6 +13550,7 @@ async function handleRemotePlayHostRequest(reqRow) {
       await playGameInner(reqRow.gameSlug, null, reqRow.editionSlug || null, {});
     } catch (err) {
       console.warn("[remote-play] launch failed:", err?.message || err);
+      reportCouchOps("failed", { phase: "game_launch", code: "HOST_GAME_LAUNCH_FAILED", message: err?.message, gameSlug: reqRow.gameSlug, editionSlug: reqRow.editionSlug }, "remote_play");
       // Don't leave an orphaned session behind a request that never got to play.
       try {
         await couchHost.stopSession();
@@ -13553,10 +13562,14 @@ async function handleRemotePlayHostRequest(reqRow) {
     }
     activeRemotePlayHostRequestId = reqRow.id;
     activeRemotePlayHostGameSlug = reqRow.gameSlug;
+    reportCouchOps("started", { phase: "host_ready", code: "HOST_READY", gameSlug: reqRow.gameSlug, editionSlug: reqRow.editionSlug }, "remote_play");
     await patch({ status: "ready", joinUrl });
     if (settings.launcherToken) {
       void telemetry.track("remote_play_host_started", { gameSlug: reqRow.gameSlug });
     }
+  } catch (err) {
+    reportCouchOps("failed", { phase: "host_session", code: "HOST_SESSION_FAILED", message: err?.message, gameSlug: reqRow.gameSlug, editionSlug: reqRow.editionSlug }, "remote_play");
+    await patch({ status: "declined" });
   } finally {
     remotePlayInFlight.delete(reqRow.id);
   }
@@ -13570,13 +13583,17 @@ async function pollRemotePlayRequests() {
       `${getApiBase()}/api/remote-play/requests?forDevice=${encodeURIComponent(getRemoteDeviceId())}`,
       { headers: launcherApiHeaders() }
     );
-    if (!res.ok) return;
+    if (!res.ok) {
+      reportCouchOps("failed", { phase: "host_poll", code: "HOST_POLL_FAILED", message: `HTTP ${res.status}` }, "remote_play");
+      return;
+    }
     const data = await res.json().catch(() => null);
     for (const reqRow of data?.requests || []) {
       void handleRemotePlayHostRequest(reqRow);
     }
   } catch (err) {
     console.warn("[remote-play] poll failed:", err?.message || err);
+    reportCouchOps("failed", { phase: "host_poll", code: "HOST_POLL_FAILED", message: err?.message }, "remote_play");
   }
 
   /*
@@ -13653,6 +13670,7 @@ ipcMain.handle("remote-play-request", async (event, { hostDeviceId, gameSlug, ed
     });
     const created = await createRes.json().catch(() => null);
     if (!createRes.ok || !created?.id) {
+      reportCouchOps("failed", { phase: "request", code: "REQUEST_FAILED", message: created?.error || `HTTP ${createRes.status}`, gameSlug, editionSlug, role: "client" }, "remote_play");
       return { ok: false, error: created?.error || "Could not reach that PC." };
     }
     const deadline = Date.now() + 45_000;
@@ -13665,6 +13683,7 @@ ipcMain.handle("remote-play-request", async (event, { hostDeviceId, gameSlug, ed
       const row = await pollRes.json().catch(() => null);
       if (!pollRes.ok || !row) continue;
       if (row.status === "declined") {
+        reportCouchOps("failed", { phase: "host", code: "HOST_DECLINED", message: "Host declined or could not start game", gameSlug, editionSlug, role: "client" }, "remote_play");
         return { ok: false, error: "That PC could not start the game (not installed, or already busy)." };
       }
       if (row.status === "ready" && row.joinUrl) {
@@ -13674,16 +13693,19 @@ ipcMain.handle("remote-play-request", async (event, { hostDeviceId, gameSlug, ed
         // reach the host's game process directly.
         activeRemotePlayClientRequestId = created.id;
         const sep = row.joinUrl.includes("?") ? "&" : "?";
-        const opened = await openCouchGameViewWindow(`${row.joinUrl}${sep}view=game`);
+        const opened = await openCouchGameViewWindow(`${row.joinUrl}${sep}view=game&remotePlay=1&gameSlug=${encodeURIComponent(gameSlug)}&editionSlug=${encodeURIComponent(editionSlug || "official")}`);
         if (!opened?.ok) {
+          reportCouchOps("failed", { phase: "stream_window", code: "WINDOW_OPEN_FAILED", message: opened?.error, gameSlug, editionSlug, role: "client" }, "remote_play");
           activeRemotePlayClientRequestId = null;
           return { ok: false, error: opened?.error || "Could not open the stream window." };
         }
         return { ok: true };
       }
     }
+    reportCouchOps("failed", { phase: "request", code: "HOST_TIMEOUT", message: "Host did not answer within 45 seconds", gameSlug, editionSlug, role: "client" }, "remote_play");
     return { ok: false, error: "No response from that PC. Make sure PlayBound is running there." };
   } catch (err) {
+    reportCouchOps("failed", { phase: "request", code: "REQUEST_EXCEPTION", message: err?.message, gameSlug, editionSlug, role: "client" }, "remote_play");
     return { ok: false, error: err?.message || String(err) };
   }
 });
@@ -14508,6 +14530,7 @@ ipcMain.handle("get-compatibility-runners", async () => {
 /* ── Couch Mode (phone → virtual controller) ───────────────────────── */
 const couchHost = createHostService({
   getApiBase: () => getApiBase(),
+  onFailure: (fields) => reportCouchOps("failed", fields, fields.remotePlay ? "remote_play" : "couch"),
   broadcast: (channel, payload) => {
     if (win && !win.isDestroyed()) win.webContents.send(channel, payload);
   },
@@ -14525,6 +14548,47 @@ const couchHost = createHostService({
 });
 gamepadBridge.setCouchActiveChecker(() => Boolean(couchHost?.getState?.()?.active));
 
+/** One diagnostic vocabulary for Remote Play and couch co-op; never send tokens, URLs or SDP. */
+const periodicCouchOpsLast = new Map();
+function reportCouchOps(status, fields = {}, kind = null) {
+  const mode = kind || (couchHost.getState()?.session?.remotePlay ? "remote_play" : "couch");
+  if (status === "failed" && ["registration", "host_poll"].includes(fields.phase)) {
+    const key = `${mode}:${fields.phase}:${fields.code}`;
+    const now = Date.now();
+    if (now - (periodicCouchOpsLast.get(key) || 0) < 10 * 60_000) return;
+    periodicCouchOpsLast.set(key, now);
+  }
+  const sessionId = couchHost.getState()?.session?.sessionId;
+  const props = {
+    phase: String(fields.phase || "unknown").slice(0, 64),
+    code: String(fields.code || "UNKNOWN").slice(0, 80),
+    message: String(fields.message || "").replace(/(?:https?:\/\/|wss?:\/\/|token=)\S+/gi, "[redacted]").slice(0, 500),
+    couchSessionId: sessionId || undefined,
+    gameSlug: fields.gameSlug || (fields.role === "client" ? undefined : playingGameSlug()) || undefined,
+    editionSlug: fields.editionSlug || undefined,
+    transport: fields.transport || undefined,
+    connectionState: fields.connectionState || undefined,
+    iceState: fields.iceState || undefined,
+    role: fields.role || "host",
+  };
+  void telemetry.track(`${mode}_${status}`, props);
+}
+
+ipcMain.handle("couch-report-ops", (event, status, fields) => {
+  requireTrustedIpc(event);
+  if (!["connected", "first_frame", "failed"].includes(status)) return { ok: false };
+  const safe = fields && typeof fields === "object" ? fields : {};
+  reportCouchOps(status, {
+    phase: String(safe.phase || "renderer").slice(0, 64),
+    code: String(safe.code || "UNKNOWN").slice(0, 80),
+    message: String(safe.message || "").replace(/(?:https?:\/\/|wss?:\/\/|token=)\S+/gi, "[redacted]").slice(0, 500),
+    transport: safe.transport === "webrtc" ? "webrtc" : undefined,
+    connectionState: ["connected", "failed", "disconnected"].includes(safe.connectionState) ? safe.connectionState : undefined,
+    iceState: ["connected", "completed", "failed", "disconnected"].includes(safe.iceState) ? safe.iceState : undefined,
+  });
+  return { ok: true };
+});
+
 ipcMain.handle("couch-start", async (event, opts) => {
   requireTrustedIpc(event);
   try {
@@ -14535,8 +14599,11 @@ ipcMain.handle("couch-start", async (event, opts) => {
     } catch {
       /* ignore */
     }
-    return { ok: true, state: await couchHost.createSession(opts || {}) };
+    const state = await couchHost.createSession(opts || {});
+    reportCouchOps("started", { phase: "session", code: "SESSION_CREATED" }, "couch");
+    return { ok: true, state };
   } catch (err) {
+    reportCouchOps("failed", { phase: "session", code: "SESSION_CREATE_FAILED", message: err?.message }, "couch");
     return { ok: false, error: err?.message || String(err) };
   }
 });
