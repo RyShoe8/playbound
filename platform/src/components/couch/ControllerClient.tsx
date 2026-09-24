@@ -494,8 +494,8 @@ export function ControllerClient({
     const { controllerId, controllerToken } = join;
     async function syncLabel() {
       try {
-        const res = await fetch(`/api/couch/sessions/${encodeURIComponent(code)}/join`, {
-          method: "POST",
+        await fetch(`/api/couch/sessions/${encodeURIComponent(code)}/controllers`, {
+          method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             label: joinDisplayLabel,
@@ -505,23 +505,12 @@ export function ControllerClient({
             controllerToken,
           }),
         });
-        if (res.status === 401) {
-          handleUnauthorized();
-        }
       } catch {
         /* ignore */
       }
     }
     void syncLabel();
-  }, [
-    code,
-    join?.controllerId,
-    join?.controllerToken,
-    joinDisplayLabel,
-    physicalLabel,
-    mode,
-    handleUnauthorized,
-  ]);
+  }, [code, join?.controllerId, join?.controllerToken, joinDisplayLabel, physicalLabel, mode]);
 
   // Poll until approved + keep refreshing endpoints (host LAN IPs / ICE can land late).
   useEffect(() => {
@@ -1149,7 +1138,23 @@ export function ControllerClient({
     let raf = 0;
     const tick = () => {
       const pads = Array.from(navigator.getGamepads?.() || []);
-      const pad = pads.find((p) => p && p.connected) || null;
+      // Prioritize any connected pad with active input (button pressed or stick deflected)
+      let pad: Gamepad | null = null;
+      for (const p of pads) {
+        if (!p || !p.connected) continue;
+        const hasBtn = p.buttons?.some((b) => b && (b.pressed || (b.value ?? 0) > 0.3));
+        const hasAxis = p.axes?.some((a) => Math.abs(a ?? 0) > 0.2);
+        if (hasBtn || hasAxis) {
+          pad = p;
+          break;
+        }
+      }
+      if (!pad) {
+        pad =
+          pads.find((p) => p && p.connected && (p.mapping === "standard" || (p.buttons?.length ?? 0) >= 10)) ||
+          pads.find((p) => p && p.connected) ||
+          null;
+      }
       if (pad) {
         setPhysicalLabel(pad.id || "Gamepad");
         let buttons = 0;
@@ -1170,14 +1175,32 @@ export function ControllerClient({
           [15, BUTTON.DPAD_RIGHT],
         ];
         for (const [idx, bit] of map) {
-          if (pad.buttons[idx]?.pressed) buttons |= bit;
+          const b = pad.buttons[idx];
+          if (b && (b.pressed || (b.value ?? 0) > 0.5)) buttons |= bit;
         }
-        const lx = clamp(pad.axes[0] ?? 0, -1, 1);
-        const ly = clamp(pad.axes[1] ?? 0, -1, 1);
-        const rx = clamp(pad.axes[2] ?? 0, -1, 1);
-        const ry = clamp(pad.axes[3] ?? 0, -1, 1);
-        const lt = clamp(pad.buttons[6]?.value ?? 0, 0, 1);
-        const rt = clamp(pad.buttons[7]?.value ?? 0, 0, 1);
+        if (pad.buttons[16] && (pad.buttons[16].pressed || (pad.buttons[16].value ?? 0) > 0.5)) {
+          buttons |= BUTTON.GUIDE;
+        }
+        if (pad.buttons[17] && (pad.buttons[17].pressed || (pad.buttons[17].value ?? 0) > 0.5)) {
+          buttons |= BUTTON.BACK;
+        }
+
+        const deadzone = (v: number, thresh = 0.08) => (Math.abs(v) < thresh ? 0 : v);
+        const lx = deadzone(clamp(pad.axes[0] ?? 0, -1, 1));
+        const ly = deadzone(clamp(pad.axes[1] ?? 0, -1, 1));
+        const rx = deadzone(clamp(pad.axes[2] ?? 0, -1, 1));
+        const ry = deadzone(clamp(pad.axes[3] ?? 0, -1, 1));
+
+        let lt = clamp(pad.buttons[6]?.value ?? (pad.buttons[6]?.pressed ? 1 : 0), 0, 1);
+        let rt = clamp(pad.buttons[7]?.value ?? (pad.buttons[7]?.pressed ? 1 : 0), 0, 1);
+        if (lt < 0.05) lt = 0;
+        if (rt < 0.05) rt = 0;
+
+        // Auto-select controller mode if user starts playing on physical pad while choice is undecided
+        if (controlChoice === "undecided" && (buttons !== 0 || Math.abs(lx) > 0.2 || Math.abs(ly) > 0.2)) {
+          setMode("standard-gamepad");
+          setControlChoice("controller");
+        }
 
         // Only commit input state to padRef if controller mode is actively selected
         if (mode === "standard-gamepad" || controlChoice === "controller") {

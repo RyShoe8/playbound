@@ -78,6 +78,7 @@ function createHostService(deps) {
   }
 
   const pendingSlots = new Map();
+  let refreshSnapshotPending = false;
 
   async function ensureSlot(slot) {
     if (handles.has(slot)) return handles.get(slot);
@@ -225,7 +226,29 @@ function createHostService(deps) {
         void ensureSlot(row.playerSlot);
       }
     }
-    if (!client) return;
+    if (!client) {
+      if (!refreshSnapshotPending) {
+        refreshSnapshotPending = true;
+        void refreshSnapshot()
+          .then((snap) => {
+            const list = snap?.controllers || approvedControllers();
+            const r = list.find((c) => c.controllerId === payload.controllerId);
+            if (r && r.status === "approved" && Number.isInteger(r.playerSlot)) {
+              const cl = {
+                playerSlot: r.playerSlot,
+                sessionToken: payload.packet.sessionToken || "",
+                transport: "webrtc",
+              };
+              clients.set(payload.controllerId, cl);
+              void ensureSlot(r.playerSlot);
+            }
+          })
+          .finally(() => {
+            refreshSnapshotPending = false;
+          });
+      }
+      return;
+    }
     applyInput(payload.packet, {
       controllerId: payload.controllerId,
       playerSlot: client.playerSlot,

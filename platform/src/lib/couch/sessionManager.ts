@@ -228,9 +228,16 @@ export function assertController(
 }
 
 function nextFreeSlot(session: CouchSession): number | null {
+  const now = Date.now();
+  const CONTROLLER_STALE_MS = 45_000;
   const used = new Set(
     session.controllers
-      .filter((c) => c.status === "approved" && c.playerSlot != null)
+      .filter(
+        (c) =>
+          c.status === "approved" &&
+          c.playerSlot != null &&
+          now - c.lastSeen <= CONTROLLER_STALE_MS
+      )
       .map((c) => c.playerSlot as number)
   );
   // When the host physical pad owns OpenBOR P1 / joy0, remotes start at slot 1.
@@ -239,6 +246,47 @@ function nextFreeSlot(session: CouchSession): number | null {
     if (!used.has(i)) return i;
   }
   return null;
+}
+
+export async function updateCouchController(
+  session: CouchSession,
+  params: {
+    controllerId: string;
+    controllerToken: string;
+    label?: string;
+    profile?: string;
+    deviceLabel?: string;
+  }
+): Promise<{ ok: true; controller: CouchController } | { error: string; status: number }> {
+  const existing = assertController(session, params.controllerId, params.controllerToken);
+  if (!existing || existing.status === "kicked") {
+    return { error: "Unauthorized.", status: 401 };
+  }
+  const now = Date.now();
+  existing.lastSeen = now;
+  if (params.label) existing.label = params.label.slice(0, 64);
+  if (params.deviceLabel) existing.deviceLabel = params.deviceLabel.slice(0, 80);
+  if (params.profile) existing.profile = params.profile.slice(0, 40);
+  session.lastHeartbeat = now;
+  if (await withMongo()) {
+    const Model = await getModel();
+    await Model.updateOne(
+      {
+        sessionId: session.sessionId,
+        status: "open",
+        "controllers.controllerId": existing.controllerId,
+      },
+      {
+        $set: {
+          "controllers.$": existing,
+        },
+        $max: { lastHeartbeat: now },
+      }
+    );
+  } else {
+    await saveSession(session);
+  }
+  return { ok: true, controller: existing };
 }
 
 export async function joinCouchSession(
@@ -295,8 +343,13 @@ export async function joinCouchSession(
     }
   }
 
-  const approvedCount = session.controllers.filter((c) => c.status === "approved").length;
-  const pendingCount = session.controllers.filter((c) => c.status === "pending").length;
+  const CONTROLLER_STALE_MS = 45_000;
+  const approvedCount = session.controllers.filter(
+    (c) => c.status === "approved" && now - c.lastSeen <= CONTROLLER_STALE_MS
+  ).length;
+  const pendingCount = session.controllers.filter(
+    (c) => c.status === "pending" && now - c.lastSeen <= CONTROLLER_STALE_MS
+  ).length;
   if (approvedCount + pendingCount >= session.maxPlayers) {
     return { error: "Session is full.", status: 409 };
   }
