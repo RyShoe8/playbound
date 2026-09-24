@@ -260,22 +260,13 @@ export function ControllerClient({
       el.srcObject = stream;
       playWithAudio(el);
     }
-    clearVideoFrameWatch();
-    setVideoWaiting(true);
-    setHasVideo(false);
-    const track = stream.getVideoTracks()[0];
+    const videoTrack = stream.getVideoTracks()[0];
 
     const markLive = () => {
       const v = videoRef.current;
       if (!v) return false;
       // Some captures report dimensions only after play() + unmute.
-      if (v.readyState >= 2 && (v.videoWidth > 0 || v.videoHeight > 0)) {
-        setHasVideo(true);
-        setVideoWaiting(false);
-        clearVideoFrameWatch();
-        return true;
-      }
-      if (v.videoWidth > 0 && v.videoHeight > 0) {
+      if ((v.readyState >= 2 && (v.videoWidth > 0 || v.videoHeight > 0)) || (v.videoWidth > 0 && v.videoHeight > 0)) {
         setHasVideo(true);
         setVideoWaiting(false);
         clearVideoFrameWatch();
@@ -283,26 +274,32 @@ export function ControllerClient({
       }
       return false;
     };
-    if (track) {
+    if (videoTrack) {
       try {
-        track.enabled = true;
+        videoTrack.enabled = true;
       } catch {
         /* ignore */
       }
-      track.onunmute = () => {
-        void videoRef.current?.play().catch(() => {});
+      videoTrack.onunmute = () => {
+        const v = videoRef.current;
+        if (v) void v.play().catch(() => {});
         markLive();
       };
-      track.onended = () => {
+      videoTrack.onended = () => {
         setHasVideo(false);
         setVideoWaiting(true);
       };
     }
-    videoFrameWatchRef.current = setInterval(() => {
-      if (markLive()) return;
-      const v = videoRef.current;
-      if (v) void v.play().catch(() => {});
-    }, 400);
+    if (!markLive()) {
+      clearVideoFrameWatch();
+      setVideoWaiting(true);
+      setHasVideo(false);
+      videoFrameWatchRef.current = setInterval(() => {
+        if (markLive()) return;
+        const v = videoRef.current;
+        if (v) void v.play().catch(() => {});
+      }, 400);
+    }
     window.setTimeout(() => {
       markLive();
     }, 80);
@@ -314,6 +311,11 @@ export function ControllerClient({
     if (el && stream && el.srcObject !== stream) {
       el.srcObject = stream;
       playWithAudio(el);
+      if ((el.readyState >= 2 && el.videoWidth > 0) || (el.videoWidth > 0 && el.videoHeight > 0)) {
+        setHasVideo(true);
+        setVideoWaiting(false);
+        clearVideoFrameWatch();
+      }
     }
   }
 
@@ -720,11 +722,31 @@ export function ControllerClient({
       };
 
       pc.ontrack = (ev) => {
-        // ontrack fires when the SDP describes a track, even if ICE has not
-        // connected and no video packet has arrived. Keep LAN WS fallback
-        // available until the peer connection actually works.
-        const stream = ev.streams?.[0] || (ev.track ? new MediaStream([ev.track]) : null);
-        if (stream) attachRemoteStream(stream);
+        // Consolidate all incoming tracks (video AND audio) into a single MediaStream.
+        // In WebRTC with transceivers, ev.streams may be empty or separate per track.
+        // Overwriting srcObject with a single-track stream on each ontrack event
+        // strips the video track when the audio track arrives (or vice versa).
+        let stream = remoteStreamRef.current;
+        if (!stream) {
+          stream = new MediaStream();
+          remoteStreamRef.current = stream;
+        }
+
+        if (ev.track) {
+          const already = stream.getTracks().some((t) => t.id === ev.track.id);
+          if (!already) {
+            stream.addTrack(ev.track);
+          }
+        }
+        if (ev.streams?.[0]) {
+          for (const t of ev.streams[0].getTracks()) {
+            if (!stream.getTracks().some((existing) => existing.id === t.id)) {
+              stream.addTrack(t);
+            }
+          }
+        }
+
+        attachRemoteStream(stream);
       };
       dc = pc.createDataChannel("input", { ordered: false, maxRetransmits: 0 });
       dc.binaryType = "arraybuffer";
@@ -1065,6 +1087,16 @@ export function ControllerClient({
       }
       sendFnRef.current = () => {};
       clearVideoFrameWatch();
+      if (remoteStreamRef.current) {
+        for (const t of remoteStreamRef.current.getTracks()) {
+          try {
+            t.stop();
+          } catch {
+            /* ignore */
+          }
+        }
+        remoteStreamRef.current = null;
+      }
     };
     // Keep the peer connection across input-mode changes (keyboard ↔ controller).
     // Restart when LAN endpoints arrive so WS fallback can use them.
@@ -1330,6 +1362,30 @@ export function ControllerClient({
             playsInline
             muted
             autoPlay
+            onLoadedMetadata={() => {
+              const v = videoRef.current;
+              if (v && v.videoWidth > 0 && v.videoHeight > 0) {
+                setHasVideo(true);
+                setVideoWaiting(false);
+                clearVideoFrameWatch();
+              }
+            }}
+            onPlaying={() => {
+              const v = videoRef.current;
+              if (v && v.videoWidth > 0 && v.videoHeight > 0) {
+                setHasVideo(true);
+                setVideoWaiting(false);
+                clearVideoFrameWatch();
+              }
+            }}
+            onResize={() => {
+              const v = videoRef.current;
+              if (v && v.videoWidth > 0 && v.videoHeight > 0) {
+                setHasVideo(true);
+                setVideoWaiting(false);
+                clearVideoFrameWatch();
+              }
+            }}
           />
           {!hasVideo ? (
             <p className="pbc-gameview-wait">
@@ -1402,34 +1458,6 @@ export function ControllerClient({
             onChange={() => setControlChoice("undecided")}
           />
         ) : null}
-        {gameLayout && controlChoice === "controller" ? (
-          <div
-            className={[
-              hasVideo ? "pbc-controls-legend is-compact" : "pbc-controls-legend",
-              hasVideo && !hudVisible ? "is-hidden" : "",
-            ]
-              .filter(Boolean)
-              .join(" ")}
-          >
-            <div className="pbc-controls-legend-head">
-              <p className="pbc-controls-legend-eyebrow">Controller</p>
-              <h2 className="pbc-controls-legend-title">
-                {physicalLabel || "Connect a gamepad"}
-              </h2>
-              <p className="pbc-controls-legend-lead">
-                Use the pad plugged into this computer. Buttons map 1:1 to the host virtual
-                controller.
-              </p>
-            </div>
-            <button
-              type="button"
-              className="pbc-controls-legend-change"
-              onClick={() => setControlChoice("undecided")}
-            >
-              Change input
-            </button>
-          </div>
-        ) : null}
         {!gameLayout ? (
           <div className="pbc-kbm-panel">
             <h1 className="pbc-title">Keyboard &amp; mouse</h1>
@@ -1471,6 +1499,30 @@ export function ControllerClient({
           playsInline
           muted
           autoPlay
+          onLoadedMetadata={() => {
+            const v = videoRef.current;
+            if (v && v.videoWidth > 0 && v.videoHeight > 0) {
+              setHasVideo(true);
+              setVideoWaiting(false);
+              clearVideoFrameWatch();
+            }
+          }}
+          onPlaying={() => {
+            const v = videoRef.current;
+            if (v && v.videoWidth > 0 && v.videoHeight > 0) {
+              setHasVideo(true);
+              setVideoWaiting(false);
+              clearVideoFrameWatch();
+            }
+          }}
+          onResize={() => {
+            const v = videoRef.current;
+            if (v && v.videoWidth > 0 && v.videoHeight > 0) {
+              setHasVideo(true);
+              setVideoWaiting(false);
+              clearVideoFrameWatch();
+            }
+          }}
         />
         {!hasVideo ? (
           <p className="pbc-gameview-wait">
