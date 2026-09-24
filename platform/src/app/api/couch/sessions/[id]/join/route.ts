@@ -8,6 +8,7 @@ import {
   joinCouchSession,
   publicCouchSnapshot,
   sessionIceServers,
+  touchCouchSessionActivity,
 } from "@/lib/couch/sessionManager";
 
 interface RouteContext {
@@ -86,9 +87,7 @@ export async function GET(req: Request, context: RouteContext) {
     if (!c) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     }
-    c.lastSeen = Date.now();
-    const { heartbeatHost } = await import("@/lib/couch/sessionManager");
-    await heartbeatHost(session);
+    await touchCouchSessionActivity(session, c);
     session = (await getCouchSession(session.sessionId)) || session;
     const snap = publicCouchSnapshot(session);
     return NextResponse.json({

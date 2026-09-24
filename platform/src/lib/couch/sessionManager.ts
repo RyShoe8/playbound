@@ -271,7 +271,26 @@ export async function joinCouchSession(
         existing.sessionToken = randomToken(16);
       }
       session.lastHeartbeat = now;
-      await saveSession(session);
+      session.expiresAt = new Date(session.createdAt + SESSION_TTL_MS);
+      if (await withMongo()) {
+        const Model = await getModel();
+        await Model.updateOne(
+          {
+            sessionId: session.sessionId,
+            status: "open",
+            "controllers.controllerId": existing.controllerId,
+          },
+          {
+            $set: {
+              "controllers.$": existing,
+              expiresAt: session.expiresAt,
+            },
+            $max: { lastHeartbeat: now },
+          }
+        );
+      } else {
+        await saveSession(session);
+      }
       return { controller: existing, reconnect: true };
     }
   }
@@ -305,7 +324,20 @@ export async function joinCouchSession(
 
   session.controllers.push(controller);
   session.lastHeartbeat = now;
-  await saveSession(session);
+  session.expiresAt = new Date(session.createdAt + SESSION_TTL_MS);
+  if (await withMongo()) {
+    const Model = await getModel();
+    await Model.updateOne(
+      { sessionId: session.sessionId, status: "open" },
+      {
+        $push: { controllers: controller },
+        $set: { expiresAt: session.expiresAt },
+        $max: { lastHeartbeat: now },
+      }
+    );
+  } else {
+    await saveSession(session);
+  }
   return { controller, reconnect: false };
 }
 
@@ -324,7 +356,26 @@ export async function approveController(
   c.sessionToken = randomToken(16);
   c.lastSeen = Date.now();
   session.lastHeartbeat = c.lastSeen;
-  await saveSession(session);
+  session.expiresAt = new Date(session.createdAt + SESSION_TTL_MS);
+  if (await withMongo()) {
+    const Model = await getModel();
+    await Model.updateOne(
+      {
+        sessionId: session.sessionId,
+        status: "open",
+        "controllers.controllerId": c.controllerId,
+      },
+      {
+        $set: {
+          "controllers.$": c,
+          expiresAt: session.expiresAt,
+        },
+        $max: { lastHeartbeat: c.lastSeen },
+      }
+    );
+  } else {
+    await saveSession(session);
+  }
   return c;
 }
 
@@ -339,7 +390,26 @@ export async function rejectOrKickController(
   c.sessionToken = null;
   c.lastSeen = Date.now();
   session.lastHeartbeat = c.lastSeen;
-  await saveSession(session);
+  session.expiresAt = new Date(session.createdAt + SESSION_TTL_MS);
+  if (await withMongo()) {
+    const Model = await getModel();
+    await Model.updateOne(
+      {
+        sessionId: session.sessionId,
+        status: "open",
+        "controllers.controllerId": c.controllerId,
+      },
+      {
+        $set: {
+          "controllers.$": c,
+          expiresAt: session.expiresAt,
+        },
+        $max: { lastHeartbeat: c.lastSeen },
+      }
+    );
+  } else {
+    await saveSession(session);
+  }
   return true;
 }
 
@@ -362,7 +432,22 @@ export async function reassignSlot(
   c.playerSlot = playerSlot;
   c.lastSeen = Date.now();
   session.lastHeartbeat = c.lastSeen;
-  await saveSession(session);
+  session.expiresAt = new Date(session.createdAt + SESSION_TTL_MS);
+  if (await withMongo()) {
+    const Model = await getModel();
+    await Model.updateOne(
+      { sessionId: session.sessionId, status: "open" },
+      {
+        $set: {
+          controllers: session.controllers,
+          expiresAt: session.expiresAt,
+        },
+        $max: { lastHeartbeat: c.lastSeen },
+      }
+    );
+  } else {
+    await saveSession(session);
+  }
   return c;
 }
 
@@ -376,13 +461,42 @@ export async function setHostEndpoints(
     // Platform owns ICE (STUN + TURN). Ignore host-published iceServers so a
     // narrow launcher list cannot wipe coturn / expanded STUN on join.
   };
-  session.lastHeartbeat = Date.now();
-  await saveSession(session);
+  const now = Date.now();
+  session.lastHeartbeat = now;
+  session.expiresAt = new Date(session.createdAt + SESSION_TTL_MS);
+  if (await withMongo()) {
+    const Model = await getModel();
+    await Model.updateOne(
+      { sessionId: session.sessionId, status: "open" },
+      {
+        $set: {
+          hostEndpoints: session.hostEndpoints,
+          expiresAt: session.expiresAt,
+        },
+        $max: { lastHeartbeat: now },
+      }
+    );
+    return;
+  }
+  memoryById.set(session.sessionId, session);
 }
 
 export async function heartbeatHost(session: CouchSession): Promise<void> {
-  session.lastHeartbeat = Date.now();
-  await saveSession(session);
+  const now = Date.now();
+  session.lastHeartbeat = now;
+  session.expiresAt = new Date(session.createdAt + SESSION_TTL_MS);
+  if (await withMongo()) {
+    const Model = await getModel();
+    await Model.updateOne(
+      { sessionId: session.sessionId, status: "open" },
+      {
+        $max: { lastHeartbeat: now },
+        $set: { expiresAt: session.expiresAt },
+      }
+    );
+    return;
+  }
+  memoryById.set(session.sessionId, session);
 }
 
 /** Keep the session alive while a guest is polling/signaling (host may be mid-launch). */
@@ -392,8 +506,37 @@ export async function touchCouchSessionActivity(
 ): Promise<void> {
   const now = Date.now();
   session.lastHeartbeat = now;
+  session.expiresAt = new Date(session.createdAt + SESSION_TTL_MS);
   if (controller) controller.lastSeen = now;
-  await saveSession(session);
+  if (await withMongo()) {
+    const Model = await getModel();
+    if (controller) {
+      await Model.updateOne(
+        {
+          sessionId: session.sessionId,
+          status: "open",
+          "controllers.controllerId": controller.controllerId,
+        },
+        {
+          $max: {
+            lastHeartbeat: now,
+            "controllers.$.lastSeen": now,
+          },
+          $set: { expiresAt: session.expiresAt },
+        }
+      );
+    } else {
+      await Model.updateOne(
+        { sessionId: session.sessionId, status: "open" },
+        {
+          $max: { lastHeartbeat: now },
+          $set: { expiresAt: session.expiresAt },
+        }
+      );
+    }
+    return;
+  }
+  memoryById.set(session.sessionId, session);
 }
 
 export async function endCouchSession(session: CouchSession): Promise<void> {
@@ -458,8 +601,24 @@ export async function setRuntimeMetrics(
   metrics: Record<string, unknown>
 ): Promise<void> {
   session.runtimeMetrics = metrics;
-  session.lastHeartbeat = Date.now();
-  await saveSession(session);
+  const now = Date.now();
+  session.lastHeartbeat = now;
+  session.expiresAt = new Date(session.createdAt + SESSION_TTL_MS);
+  if (await withMongo()) {
+    const Model = await getModel();
+    await Model.updateOne(
+      { sessionId: session.sessionId, status: "open" },
+      {
+        $set: {
+          runtimeMetrics: session.runtimeMetrics,
+          expiresAt: session.expiresAt,
+        },
+        $max: { lastHeartbeat: now },
+      }
+    );
+    return;
+  }
+  memoryById.set(session.sessionId, session);
 }
 
 export function publicCouchSnapshot(session: CouchSession) {

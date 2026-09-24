@@ -61,6 +61,14 @@ function saveStored(code: string, state: JoinState) {
   }
 }
 
+function clearStored(code: string) {
+  try {
+    sessionStorage.removeItem(`${STORAGE_KEY}.${code}`);
+  } catch {
+    /* ignore */
+  }
+}
+
 function clamp(n: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, n));
 }
@@ -88,6 +96,13 @@ export function ControllerClient({
   const gameLayout = layout === "game";
   const [error, setError] = useState<string | null>(null);
   const [join, setJoin] = useState<JoinState | null>(null);
+  const [joinEpoch, setJoinEpoch] = useState(0);
+
+  const handleUnauthorized = useCallback(() => {
+    clearStored(code);
+    setJoin(null);
+    setJoinEpoch((v) => v + 1);
+  }, [code]);
   /**
    * Game-view joiners pick the same three options as the launcher Input Setup:
    * keyboard, controller, or phone. Phone pads still open the default layout (QR).
@@ -442,7 +457,7 @@ export function ControllerClient({
       cancelled = true;
     };
     // Join once per code — do not tear down when the player picks keyboard/controller/phone.
-  }, [code, gameLayout]);
+  }, [code, gameLayout, joinEpoch]);
 
   // Refresh controller row label when PC/gamepad choice becomes known.
   useEffect(() => {
@@ -450,7 +465,7 @@ export function ControllerClient({
     const { controllerId, controllerToken } = join;
     async function syncLabel() {
       try {
-        await fetch(`/api/couch/sessions/${encodeURIComponent(code)}/join`, {
+        const res = await fetch(`/api/couch/sessions/${encodeURIComponent(code)}/join`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -461,6 +476,9 @@ export function ControllerClient({
             controllerToken,
           }),
         });
+        if (res.status === 401) {
+          handleUnauthorized();
+        }
       } catch {
         /* ignore */
       }
@@ -473,6 +491,7 @@ export function ControllerClient({
     joinDisplayLabel,
     physicalLabel,
     mode,
+    handleUnauthorized,
   ]);
 
   // Poll until approved + keep refreshing endpoints (host LAN IPs / ICE can land late).
@@ -492,6 +511,10 @@ export function ControllerClient({
         const res = await fetch(
           `/api/couch/sessions/${encodeURIComponent(sessionId)}/join?${qs}`
         );
+        if (res.status === 401) {
+          handleUnauthorized();
+          return;
+        }
         const data = await res.json();
         if (!res.ok || cancelled) return;
         let hasEndpoints = false;
@@ -614,18 +637,25 @@ export function ControllerClient({
     }
 
     async function postSignal(payload: unknown) {
-      await fetch(`/api/couch/sessions/${encodeURIComponent(session.sessionId)}/signal`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          senderRole: "controller",
-          recipientRole: "host",
-          senderPeerId: session.controllerId,
-          controllerId: session.controllerId,
-          controllerToken: session.controllerToken,
-          payload: JSON.stringify(payload),
-        }),
-      });
+      try {
+        const res = await fetch(`/api/couch/sessions/${encodeURIComponent(session.sessionId)}/signal`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            senderRole: "controller",
+            recipientRole: "host",
+            senderPeerId: session.controllerId,
+            controllerId: session.controllerId,
+            controllerToken: session.controllerToken,
+            payload: JSON.stringify(payload),
+          }),
+        });
+        if (res.status === 401) {
+          handleUnauthorized();
+        }
+      } catch {
+        /* ignore */
+      }
     }
 
     async function startWebRtc() {
@@ -763,6 +793,10 @@ export function ControllerClient({
           const res = await fetch(
             `/api/couch/sessions/${encodeURIComponent(session.sessionId)}/signal?${qs}`
           );
+          if (res.status === 401) {
+            handleUnauthorized();
+            return;
+          }
           const data = await res.json();
           if (!res.ok) return;
           const messages = (data.messages || []).filter(
