@@ -316,7 +316,10 @@ function firstExisting(candidates) {
  * traceable to a party without being a full id.
  */
 function unvanquishedHome(ctx) {
-  return path.join(HOST_HOME, "unvanquished", `pb-${String(ctx.partyId || "room").slice(-8)}`);
+  // Full sanitized id: an 8-char suffix let spawn tests and rooms whose ids
+  // share a tail ("…nquished") collide and forward to each other's instance.
+  const id = String(ctx.partyId || "room").replace(/[^A-Za-z0-9_-]/g, "_").slice(-48);
+  return path.join(HOST_HOME, "unvanquished", `pb-${id}`);
 }
 
 /**
@@ -796,6 +799,15 @@ export const recipes = {
       if (jar && fs.existsSync("/usr/bin/java")) return "/usr/bin/java";
       return firstExisting(candidates);
     },
+    // Mindustry writes ./config relative to its cwd; the default (the binary's
+    // directory, or /usr/bin for bare java) is not writable by the agent.
+    cwd: (_port, ctx) => {
+      const id = String(ctx.partyId || "room").replace(/[^A-Za-z0-9_-]/g, "_").slice(-48);
+      const dir = path.join(HOST_HOME, "mindustry", `pb-${id}`);
+      fs.mkdirSync(dir, { recursive: true });
+      return dir;
+    },
+    startupReadyTimeoutMs: 30_000,
     stdin: (port, ctx) => `config name ${ctx.name}\nconfig port ${port}\nhost\n`,
   },
   ysoccer: {
@@ -1351,9 +1363,12 @@ export const recipes = {
       "Game.Mod=hv",
       `Server.Name=${ctx.name || "PlayBound.club Party"}`,
       `Server.ListenPort=${port}`,
-      "Server.AdvertiseOnline=False",
+      `Server.AdvertiseOnline=${ctx.managed ? "True" : "False"}`,
       "Server.OrderLatency=5",
     ],
+    // Still "Loading mod: hv" at 10s in the audit; HV's asset load is slower
+    // than base OpenRA's.
+    startupReadyTimeoutMs: 45_000,
   },
   "re-volt-rvgl": {
     portStart: 2310,
