@@ -10881,6 +10881,47 @@ function normalizeProcessImageName(name) {
   return base;
 }
 
+/**
+ * Maximize a running game's window, generically, for any game being couch-
+ * streamed (Remote Play or a real couch/online-multiplayer party). Capture
+ * only ever grabs the whole screen (see setDisplayMediaRequestHandler —
+ * per-window capture was removed to fix a real Chromium/DXGI cropping bug),
+ * so a game left windowed by default shows the desktop around it to every
+ * remote viewer. Mirrors the existing Pokemon-Online-specific block above,
+ * generalized to any game via its own tracked process names instead of a
+ * hardcoded title list. Fire-and-forget: never blocks capture on this
+ * finishing, and calling it again on an already-maximized window is a
+ * harmless no-op.
+ *
+ * Skips any game with its own windowSize override (e.g. castlevania-revamped
+ * — see the resize-window.ps1 block above) — that's a deliberate per-game
+ * compatibility fix, and maximizing would fight it every time the game is
+ * streamed.
+ */
+function maximizeGameWindowForStreaming(slug) {
+  if (process.platform !== "win32" || !slug) return;
+  try {
+    const entry = catalogEntry(slug);
+    if (slug === "castlevania-revamped" || entry?.windowSize) return;
+    const imageNames = activeLaunches.get(slug)?.imageNames || [];
+    const targets = imageNames.map((n) => String(n).replace(/\.exe$/i, "")).filter(Boolean);
+    if (!targets.length) return;
+    const candidates = [
+      path.join(process.resourcesPath || "", "scripts", "maximize-window.ps1"),
+      path.join(__dirname, "resources", "scripts", "maximize-window.ps1"),
+    ];
+    const script = candidates.find((p) => p && fs.existsSync(p));
+    if (!script) return;
+    const bg = spawn("powershell.exe", ["-ExecutionPolicy", "Bypass", "-File", script, ...targets], {
+      windowsHide: true,
+      stdio: "ignore",
+    });
+    bg.unref();
+  } catch {
+    /* best-effort */
+  }
+}
+
 /** Extract simple process names from catalog exeHint (skip regex fragments). */
 function hintProcessNames(exeHint) {
   if (!exeHint) return [];
@@ -17445,10 +17486,21 @@ if (gotLock) {
       const primaryId = String(screen.getPrimaryDisplay()?.id || "");
       const primaryScreen = screens.find((s) => String(s.display_id) === primaryId) || screens[0];
 
-      // When a game is launching or playing, PC games default to the primary display.
-      // Do not let background video/browsers on secondary monitors hijack capture.
+      /*
+       * PC games default to the primary display, so trust it first — but
+       * verify rather than assume. On a multi-monitor desktop the OS
+       * "primary" display is not necessarily where THIS game actually
+       * opened (per-game monitor memory, launched while a different
+       * monitor had focus, etc.); blindly trusting it captured a static
+       * desktop instead of the game at least once. A screen showing an
+       * actively rendering game has real thumbnail variance; a screen
+       * showing the idle desktop does not. Only fall through to scanning
+       * every monitor (below) when the primary genuinely doesn't look like
+       * it has anything running on it.
+       */
       if (hasActiveGame && primaryScreen) {
-        return primaryScreen;
+        const primaryVar = thumbnailVariance(primaryScreen.thumbnail);
+        if (primaryVar > 20) return primaryScreen;
       }
 
       let best = null;
@@ -17594,6 +17646,7 @@ if (gotLock) {
       session.defaultSession.setDisplayMediaRequestHandler(async (_request, callback) => {
         try {
           const slug = playingGameSlug();
+          if (slug) maximizeGameWindowForStreaming(slug);
           const sources = await desktopCapturer.getSources({
             types: ["screen"],
             thumbnailSize: { width: 160, height: 90 },
