@@ -7,7 +7,7 @@
 
 import { escapeHtml, setStatus, views, api } from "../shared.js";
 import { CADENCE } from "../cadence.js";
-import { ensureHostDisplayStream, stopHostDisplayStream } from "../hostDisplayStream.js";
+import { ensureHostDisplayStream, stopHostDisplayStream, setCropRect } from "../hostDisplayStream.js";
 import { disableGamepadBridge } from "../gamepadBridge.js";
 
 let wired = false;
@@ -128,7 +128,7 @@ function ensureWired() {
   });
 
   pb().onCouchCropRect?.((rect) => {
-    for (const dc of channels.values()) sendCropRectTo(dc, rect);
+    applyCropRect(rect);
   });
 }
 
@@ -139,14 +139,16 @@ function ensureWired() {
  * out the game's actual on-screen rectangle and hands it here. `rect` is
  * null when the game already fills the frame (nothing to crop) or hasn't
  * been measured yet.
+ *
+ * The crop is applied HOST-SIDE, baked into the canvas downscale pipeline
+ * (hostDisplayStream.js) before the frame is ever encoded — cheaper for
+ * every viewer (bitrate scales with the game's actual size, not the whole
+ * monitor) than sending the full frame and cropping it client-side per
+ * peer. Nothing is sent to peers here; they just receive an already-correct
+ * stream.
  */
-function sendCropRectTo(dc, rect) {
-  if (!dc || dc.readyState !== "open") return;
-  try {
-    dc.send(JSON.stringify({ type: "cropRect", rect: rect || null }));
-  } catch {
-    /* best-effort */
-  }
+function applyCropRect(rect) {
+  setCropRect(rect);
 }
 
 async function refresh() {
@@ -476,12 +478,13 @@ async function answerOffer(controllerId, remoteSdp, session) {
         transport: "webrtc",
       });
       void pushHostDisplayToPeers();
-      // The rect may have been computed before this peer's channel existed
-      // (main.js only broadcasts once, when the maximize/crop check finishes) —
-      // fetch the current value directly rather than waiting for another push.
+      // The rect may have been computed (and its one broadcast already sent)
+      // before this peer connected at all — fetch the current value directly
+      // rather than relying solely on that single push. Applied to the shared
+      // canvas pipeline, not per-peer — every viewer shares one capture.
       void pb()
         .couchCropRect?.()
-        .then((rect) => sendCropRectTo(dc, rect))
+        .then((rect) => applyCropRect(rect))
         .catch(() => {});
     };
     dc.onmessage = (e) => {
@@ -592,6 +595,52 @@ async function answerOffer(controllerId, remoteSdp, session) {
       void pushHostDisplayToPeers();
     }, 3000);
   }
+
+  startStatsLogging(pc, controllerId);
+}
+
+/**
+ * Periodic real numbers on what's actually being encoded — resolution,
+ * framerate, bitrate, and (most useful) WHY the encoder is limited, if it
+ * is. Answers "is this a video problem or an input problem" without
+ * guessing from a subjective "feels laggy" report. Stops itself once the
+ * connection is no longer live.
+ */
+function startStatsLogging(pc, controllerId) {
+  let lastBytesSent = null;
+  let lastTs = null;
+  const timer = window.setInterval(async () => {
+    if (!pc || ["closed", "failed", "disconnected"].includes(pc.connectionState)) {
+      window.clearInterval(timer);
+      return;
+    }
+    try {
+      const stats = await pc.getStats();
+      stats.forEach((report) => {
+        if (report.type !== "outbound-rtp" || report.kind !== "video") return;
+        let bitrateKbps = null;
+        if (lastBytesSent != null && lastTs != null && report.bytesSent != null) {
+          const dtSec = (report.timestamp - lastTs) / 1000;
+          if (dtSec > 0) bitrateKbps = Math.round(((report.bytesSent - lastBytesSent) * 8) / dtSec / 1000);
+        }
+        lastBytesSent = report.bytesSent;
+        lastTs = report.timestamp;
+        console.log(
+          `[couch-stats] ${controllerId} video out: ${report.frameWidth || "?"}x${report.frameHeight || "?"}` +
+            ` @${report.framesPerSecond || "?"}fps` +
+            ` bitrate=${bitrateKbps != null ? bitrateKbps + "kbps" : "?"}` +
+            ` qualityLimitation=${report.qualityLimitationReason || "none"}` +
+            ` encodeTimeAvg=${
+              report.totalEncodeTime && report.framesEncoded
+                ? `${Math.round((report.totalEncodeTime / report.framesEncoded) * 1000)}ms`
+                : "?"
+            }`
+        );
+      });
+    } catch {
+      /* best-effort diagnostic */
+    }
+  }, 4000);
 }
 
 function paint(state) {

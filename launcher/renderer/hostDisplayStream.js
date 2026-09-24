@@ -1,12 +1,125 @@
 /**
- * Shared host display capture for Connect online multiplayer (local-co-op games).
- * One stream is reused across all phone/controller peer connections.
+ * Shared host display capture for Connect online multiplayer (local-co-op
+ * games) and PlayBound Remote Play. One stream is reused across all
+ * phone/controller/remote-play peer connections.
  *
  * Capture source is chosen in main via setDisplayMediaRequestHandler
  * (confident game-window match, else most-active screen).
+ *
+ * The raw capture is native resolution (often 4K on modern monitors) — real-
+ * time encoding that is heavy enough to cause visible lag. Two browser-native
+ * downscale paths were already tried and reverted because both crop instead
+ * of scale on a desktop-capture-sourced track in this Chromium build:
+ * getDisplayMedia's own width/height constraints, and
+ * RTCRtpSender.scaleResolutionDownBy. Both go through the encoder's own
+ * scaler; this instead draws every frame through a plain 2D canvas — a
+ * completely different code path with no reported cropping bug — to produce
+ * an already-correctly-sized track before it ever reaches the encoder.
+ * canvas.captureStream()'s video track is combined with the raw capture's
+ * audio track into the processed stream this module hands out.
+ *
+ * The same canvas draw also applies the crop rect (see setCropRect) when the
+ * game doesn't fill the captured monitor — cropping and downscaling in one
+ * pass means a small windowed game costs bitrate proportional to its own
+ * size, not the whole monitor's.
  */
 
-let hostDisplayStream = null;
+const TARGET_WIDTH = 1920;
+const TARGET_HEIGHT = 1080;
+const TARGET_FPS = 60;
+
+let hostDisplayStream = null; // raw getDisplayMedia() stream
+let processedStream = null; // canvas video track + raw audio track(s)
+let sourceVideoEl = null; // hidden <video> decoding the raw stream, feeds the canvas
+let canvasEl = null;
+let canvasCtx = null;
+let drawRafId = null;
+let currentCropRect = null;
+
+/** Called from couch.js whenever main.js reports a new (or cleared) crop rect. */
+export function setCropRect(rect) {
+  currentCropRect =
+    rect && rect.width > 0 && rect.height > 0
+      ? { left: rect.left, top: rect.top, width: rect.width, height: rect.height }
+      : null;
+}
+
+function startCanvasPipeline(rawStream) {
+  stopCanvasPipeline();
+  sourceVideoEl = document.createElement("video");
+  sourceVideoEl.muted = true;
+  sourceVideoEl.playsInline = true;
+  sourceVideoEl.srcObject = rawStream;
+  void sourceVideoEl.play().catch(() => {});
+
+  canvasEl = document.createElement("canvas");
+  canvasEl.width = TARGET_WIDTH;
+  canvasEl.height = TARGET_HEIGHT;
+  canvasCtx = canvasEl.getContext("2d", { alpha: false });
+
+  const draw = () => {
+    if (!sourceVideoEl || !canvasCtx) return;
+    const vw = sourceVideoEl.videoWidth;
+    const vh = sourceVideoEl.videoHeight;
+    if (vw > 0 && vh > 0) {
+      let sx = 0;
+      let sy = 0;
+      let sw = vw;
+      let sh = vh;
+      if (currentCropRect) {
+        sx = currentCropRect.left * vw;
+        sy = currentCropRect.top * vh;
+        sw = currentCropRect.width * vw;
+        sh = currentCropRect.height * vh;
+      }
+      try {
+        canvasCtx.drawImage(sourceVideoEl, sx, sy, sw, sh, 0, 0, TARGET_WIDTH, TARGET_HEIGHT);
+      } catch {
+        /* a frame not yet decoded is not an error — retry next tick */
+      }
+    }
+    drawRafId = requestAnimationFrame(draw);
+  };
+  drawRafId = requestAnimationFrame(draw);
+
+  const canvasStream = canvasEl.captureStream(TARGET_FPS);
+  const canvasVideoTrack = canvasStream.getVideoTracks()[0];
+  if (canvasVideoTrack) {
+    try {
+      canvasVideoTrack.contentHint = "motion";
+    } catch {
+      /* best-effort */
+    }
+  }
+  processedStream = new MediaStream([...(canvasVideoTrack ? [canvasVideoTrack] : []), ...rawStream.getAudioTracks()]);
+  console.log(`[couch] downscaling to ${TARGET_WIDTH}x${TARGET_HEIGHT} @ ${TARGET_FPS} via canvas`);
+  return processedStream;
+}
+
+function stopCanvasPipeline() {
+  if (drawRafId) cancelAnimationFrame(drawRafId);
+  drawRafId = null;
+  if (sourceVideoEl) {
+    try {
+      sourceVideoEl.srcObject = null;
+    } catch {
+      /* ignore */
+    }
+    sourceVideoEl = null;
+  }
+  canvasEl = null;
+  canvasCtx = null;
+  if (processedStream) {
+    for (const t of processedStream.getVideoTracks()) {
+      try {
+        t.stop();
+      } catch {
+        /* ignore */
+      }
+    }
+    processedStream = null;
+  }
+}
 
 /**
  * @param {boolean} [forceNew=false]
@@ -16,11 +129,11 @@ export async function ensureHostDisplayStream(forceNew = false) {
   if (forceNew && hostDisplayStream) {
     stopHostDisplayStream();
   }
-  if (hostDisplayStream && hostDisplayStream.active) {
+  if (hostDisplayStream && hostDisplayStream.active && processedStream) {
     const live = hostDisplayStream.getVideoTracks().some((t) => t.readyState === "live");
     if (live) {
       console.log("[couch] reusing existing display stream");
-      return hostDisplayStream;
+      return processedStream;
     }
     stopHostDisplayStream();
   }
@@ -53,17 +166,11 @@ export async function ensureHostDisplayStream(forceNew = false) {
     }
     track.addEventListener("ended", () => {
       hostDisplayStream = null;
+      stopCanvasPipeline();
     });
     try {
-      /*
-       * Do not constrain width/height here with applyConstraints — in Chromium,
-       * applying width/height constraints to a desktop-capture track crops the
-       * image buffer instead of downscaling it (e.g. 1440p or 4K captures get
-       * their bottom and right sides cropped off to 1920x1080).
-       * Downscaling for high-res hosts is handled cleanly in couch.js via
-       * sender.setParameters({ scaleResolutionDownBy }), which scales the
-       * entire frame buffer without cropping away any part of the screen/game.
-       */
+      // Do not add width/height here — see the module docstring. Frame rate
+      // alone doesn't hit the crop bug; resolution is handled by the canvas.
       await track.applyConstraints({
         frameRate: { ideal: 60, max: 60 },
       });
@@ -72,9 +179,7 @@ export async function ensureHostDisplayStream(forceNew = false) {
     }
     // Best-effort only: some Windows configurations (no default output
     // device, audio capture policy) hand back a video-only stream even when
-    // "loopback" was requested. Silent stream still beats no stream, so this
-    // never fails ensureHostDisplayStream — see couch.js's attachDisplayTracks,
-    // which simply adds nothing to the audio transceiver when no track exists.
+    // "loopback" was requested. Silent stream still beats no stream.
     const audioTrack = hostDisplayStream.getAudioTracks()[0];
     if (!audioTrack) {
       console.warn("[couch] display capture returned no audio track — streaming video only");
@@ -89,7 +194,7 @@ export async function ensureHostDisplayStream(forceNew = false) {
       settings.frameRate || "?",
       audioTrack ? "+audio" : "(no audio)"
     );
-    return hostDisplayStream;
+    return startCanvasPipeline(hostDisplayStream);
   } catch (err) {
     console.warn("[couch] display capture failed:", err?.message || err);
     hostDisplayStream = null;
@@ -98,6 +203,7 @@ export async function ensureHostDisplayStream(forceNew = false) {
 }
 
 export function stopHostDisplayStream() {
+  stopCanvasPipeline();
   if (!hostDisplayStream) return;
   for (const t of hostDisplayStream.getTracks()) {
     try {
