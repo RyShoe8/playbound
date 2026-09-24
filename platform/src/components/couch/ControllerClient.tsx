@@ -423,6 +423,27 @@ export function ControllerClient({
     });
   };
 
+  const [btStatus, setBtStatus] = useState<string | null>(null);
+  const connectBluetoothController = useCallback(async () => {
+    setBtStatus(null);
+    const bt = (navigator as unknown as { bluetooth?: { requestDevice: (opts: unknown) => Promise<{ name?: string }> } }).bluetooth;
+    if (bt?.requestDevice) {
+      try {
+        const device = await bt.requestDevice({ acceptAllDevices: true });
+        setBtStatus(
+          device?.name
+            ? `Found "${device.name}" — finish pairing in your phone's Bluetooth settings, then it'll show up as a controller here.`
+            : "Turn the controller on in pairing mode, then finish pairing in your phone's Bluetooth settings."
+        );
+      } catch {
+        setBtStatus("Open Bluetooth in your phone's Settings app to pair your controller, then come back here.");
+      }
+    } else {
+      setBtStatus("Open Bluetooth in your phone's Settings app to pair your controller, then come back here.");
+    }
+    window.setTimeout(() => setBtStatus(null), 6000);
+  }, []);
+
   const joinDisplayLabel = useMemo(
     () =>
       couchControllerJoinLabel({
@@ -1958,8 +1979,19 @@ export function ControllerClient({
           <span className="pbc-twin-icon" aria-hidden>🕹️</span>
           <span className="pbc-twin-text">L stick</span>
         </button>
+        <button
+          type="button"
+          className="pbc-twin-btn"
+          onClick={connectBluetoothController}
+          title="Pair a wireless/Bluetooth controller with your phone"
+        >
+          <span className="pbc-twin-icon" aria-hidden>🔵</span>
+          <span className="pbc-twin-text">Pair BT</span>
+        </button>
         <HoldButton label="▶" bit={BUTTON.START} setBit={setBit} title="Start / Menu" />
       </div>
+
+      {btStatus ? <div className="pbc-bt-toast">{btStatus}</div> : null}
     </main>
   );
 }
@@ -3474,6 +3506,24 @@ function ControllerStyles() {
   align-items: center;
   gap: 8px;
   z-index: 10;
+}
+
+.pbc-bt-toast {
+  position: absolute;
+  bottom: calc(var(--pbc-safe-b) + 56px);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(320px, 86vw);
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(15, 17, 26, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #e2e8f0;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+  z-index: 20;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
 
 /* ── Shoulder Controls (Top Corners) ─────────────────────────────────── */

@@ -171,10 +171,10 @@ export function promptPlayControllerChoice(opts = {}) {
             </div>
             <div class="phone-controller-choice-text">
               <div class="phone-controller-choice-header">
-                <span class="phone-controller-choice-title">Phone as Controller</span>
-                <span class="phone-controller-choice-tag is-brand">Touch / Mobile Pad</span>
+                <span class="phone-controller-choice-title">Use Your Phone</span>
+                <span class="phone-controller-choice-tag is-brand">Touch Pad or Wireless Hub</span>
               </div>
-              <span class="phone-controller-choice-sub">Scan a QR code — no app or account required on your phone</span>
+              <span class="phone-controller-choice-sub">Scan a QR code — no app needed. Use your phone as a touchscreen gamepad itself, or as a hub to connect a wireless/Bluetooth controller to your PC.</span>
             </div>
           </button>`}
         </div>
