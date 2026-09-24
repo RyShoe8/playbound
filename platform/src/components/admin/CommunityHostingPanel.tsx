@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { HostingSettings } from "@/lib/communityHosting/settings";
+import type { ProfileSettings } from "@/lib/communityHosting/profileSettings";
 
-type Profile = { key: string; gameSlug: string; editionSlug?: string | null; verification: string; blockedReason?: string | null; sampleCount?: number; envelope?: { cpuCores?: number; ramBytes?: number; measuredThroughPlayers?: number }; enabled?: boolean };
+type Profile = ProfileSettings & { key: string; gameSlug: string; editionSlug?: string | null; sampleCount?: number; envelope?: { cpuCores?: number; ramBytes?: number; measuredThroughPlayers?: number }; lastSampleAt?: string | null };
 type Server = { _id: string; name: string; gameSlug: string; desiredState: string; runtimeState: string; playerCount?: number | null; decisionReason?: string | null };
 type Reservation = { sourceKey: string; profileKey: string; state: string; warmupAt: string };
 type Data = {
@@ -16,6 +17,50 @@ type Data = {
 };
 
 const GIB = 1024 ** 3;
+
+function ProfileEditor({ profile, onSaved }: { profile: Profile; onSaved: () => Promise<void> }) {
+  const [draft, setDraft] = useState<ProfileSettings>({
+    verification: profile.verification, blockedReason: profile.blockedReason || null,
+    queryKind: profile.queryKind, queryVerified: profile.queryVerified,
+    joinVerified: profile.joinVerified, enabled: profile.enabled,
+    rotationEligible: profile.rotationEligible, weight: profile.weight,
+    minimumOnlineMinutes: profile.minimumOnlineMinutes ?? null,
+    idleMinutes: profile.idleMinutes ?? null, cooldownMinutes: profile.cooldownMinutes ?? null,
+  });
+  const [status, setStatus] = useState("");
+  const [saving, setSaving] = useState(false);
+  function set<K extends keyof ProfileSettings>(key: K, value: ProfileSettings[K]) {
+    setDraft((old) => ({ ...old, [key]: value }));
+  }
+  async function save() {
+    setSaving(true); setStatus("");
+    try {
+      const response = await fetch(`/api/admin/connect/game-servers/community-hosting/profile/${encodeURIComponent(profile.key)}`, {
+        method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(draft),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Could not save profile");
+      setStatus("Saved");
+      await onSaved();
+    } catch (error) { setStatus(error instanceof Error ? error.message : "Could not save profile"); }
+    finally { setSaving(false); }
+  }
+  return <details className="border-b border-border py-2">
+    <summary className="cursor-pointer text-sm"><strong>{profile.gameSlug}{profile.editionSlug ? ` · ${profile.editionSlug}` : ""}</strong> · {profile.verification} · {profile.sampleCount || 0} samples · {profile.envelope?.cpuCores || 0} cores / {((profile.envelope?.ramBytes || 0) / GIB).toFixed(2)} GB{profile.blockedReason ? ` · ${profile.blockedReason}` : ""}</summary>
+    <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+      <label>Verification <select className="ml-2 rounded border bg-background p-1" value={draft.verification} onChange={(e) => set("verification", e.target.value as ProfileSettings["verification"])}><option value="testing">Testing</option><option value="blocked">Blocked</option><option value="verified">Verified</option></select></label>
+      <label>Player query <select className="ml-2 rounded border bg-background p-1" value={draft.queryKind} onChange={(e) => set("queryKind", e.target.value as ProfileSettings["queryKind"])}><option value="none">Not available</option><option value="openra-master">OpenRA master</option></select></label>
+      <label><input type="checkbox" checked={draft.queryVerified} onChange={(e) => set("queryVerified", e.target.checked)} /> Player query tested</label>
+      <label><input type="checkbox" checked={draft.joinVerified} onChange={(e) => set("joinVerified", e.target.checked)} /> Client Join tested</label>
+      <label><input type="checkbox" checked={draft.enabled} onChange={(e) => set("enabled", e.target.checked)} /> Enable profile</label>
+      <label><input type="checkbox" checked={draft.rotationEligible} onChange={(e) => set("rotationEligible", e.target.checked)} /> Allow rotation</label>
+      <label>Rotation weight <input className="ml-2 w-16 rounded border bg-background p-1" type="number" min="1" max="100" value={draft.weight} onChange={(e) => set("weight", Number(e.target.value))} /></label>
+      <label>Blocked reason <input className="ml-2 w-full rounded border bg-background p-1" value={draft.blockedReason || ""} onChange={(e) => set("blockedReason", e.target.value || null)} /></label>
+    </div>
+    <p className="mt-2 text-xs text-muted-foreground">Verified rotation requires a tested query, client Join, and idle plus occupied CPU/RAM samples. Highest observed player count: {profile.envelope?.measuredThroughPlayers || 0}. Last sample: {profile.lastSampleAt ? new Date(profile.lastSampleAt).toLocaleString() : "none"}.</p>
+    <div className="mt-2 flex items-center gap-3"><button type="button" disabled={saving} onClick={() => void save()} className="rounded-full border px-3 py-1 disabled:opacity-50">Save profile</button>{status && <span role="status">{status}</span>}</div>
+  </details>;
+}
 
 export function CommunityHostingPanel() {
   const [data, setData] = useState<Data | null>(null);
@@ -116,7 +161,7 @@ export function CommunityHostingPanel() {
     </>}
     {message && <p role="status" className="text-sm">{message}</p>}
     <div><h3 className="font-semibold">Dedicated-server audit</h3><p className="text-xs text-muted-foreground">Only verified profiles with a tested query and Join path can enter automatic rotation.</p>
-      <div className="mt-2 max-h-64 space-y-1 overflow-y-auto text-sm">{data?.profiles.length ? data.profiles.map((p) => <div key={p.key} className="flex flex-wrap justify-between gap-2 border-b border-border py-1"><span>{p.gameSlug}{p.editionSlug ? ` · ${p.editionSlug}` : ""}</span><span>{p.verification}{p.blockedReason ? ` · ${p.blockedReason}` : ""} · {p.sampleCount || 0} samples · {p.envelope?.cpuCores || 0} cores / {((p.envelope?.ramBytes || 0) / GIB).toFixed(2)} GB</span></div>) : <p className="text-muted-foreground">No profiles measured yet.</p>}</div>
+      <div className="mt-2 max-h-64 space-y-1 overflow-y-auto text-sm">{data?.profiles.length ? data.profiles.map((p) => <ProfileEditor key={p.key} profile={p} onSaved={load} />) : <p className="text-muted-foreground">No profiles measured yet.</p>}</div>
     </div>
     <div><h3 className="font-semibold">Running and queued servers</h3><div className="mt-2 space-y-1 text-sm">{data?.servers.length ? data.servers.map((s) => <div key={s._id} className="flex flex-wrap items-center justify-between gap-2 border-b border-border py-1"><span>{s.name} · {s.gameSlug}</span><span>{s.runtimeState} · {s.playerCount ?? "players unknown"} · {s.decisionReason || "—"}</span><span className="flex gap-2"><button type="button" className="underline" onClick={() => void serverAction(s, "start")}>Start</button><button type="button" className="underline" onClick={() => void serverAction(s, "restart")}>Restart</button><button type="button" className="underline" onClick={() => void serverAction(s, "stop")}>Stop</button></span></div>) : <p className="text-muted-foreground">No managed servers.</p>}</div></div>
     <div><h3 className="font-semibold">Upcoming capacity reservations</h3><div className="mt-2 space-y-1 text-sm">{data?.reservations.length ? data.reservations.map((r) => <p key={r.sourceKey}>{r.profileKey} · {r.state} · warmup {new Date(r.warmupAt).toLocaleString()}</p>) : <p className="text-muted-foreground">No reservations.</p>}</div></div>

@@ -1,8 +1,9 @@
 /** Import the measured VPS inventory into operational profiles only.
  *
  * Dry run by default. --apply inserts missing, disabled/unverified records;
- * never updates an existing profile, publishes a catalog game, or enables a
- * server. Join and query verification must happen separately.
+ * existing profiles are untouched except for measured baseline fields and
+ * the field-scoped OpenRA query verification recorded in the VPS audit.
+ * Never publishes a catalog game or enables a server.
  */
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
@@ -73,6 +74,17 @@ async function main() {
         });
       }
       console.log(`[community-audit] inserted ${samplesInserted} baseline samples; rotation remains disabled`);
+      // A live managed OpenRA room at 147.93.133.235:1234 appeared in the
+      // official master with players=0, mod=ra, version=release-20250330.
+      // This verifies the query adapter only; Join and player load are still
+      // untested. Leave all automation switches and rotation flags untouched.
+      const openRa = await CommunityServerProfile.updateOne(
+        { key: "openra:base", queryVerified: false },
+        { $set: { queryKind: "openra-master", queryVerified: true,
+          serverVersion: "release-20250330",
+          blockedReason: "Master query verified; client Join and player-load baseline not verified" } }
+      );
+      console.log(`[community-audit] OpenRA master-query verification updated ${openRa.modifiedCount} profile; Join remains unverified`);
     } finally {
       await mongoose.disconnect();
     }
