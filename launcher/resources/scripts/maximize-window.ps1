@@ -29,8 +29,22 @@ public class WindowHelper {
 "@
 Add-Type -TypeDefinition $source
 
-$targets = @($args)
+$rawArgs = @($args)
+# Games with their own deliberate window-size override (resize-window.ps1)
+# pass this first — main.js still needs THIS script's rect measurement for
+# cropping (that game won't fill the monitor either), it just must not
+# maximize or Alt+Enter it and undo that intentional sizing.
+$measureOnly = $false
+if ($rawArgs.Count -gt 0 -and $rawArgs[0] -eq "--measure-only") {
+    $measureOnly = $true
+    $rawArgs = $rawArgs[1..($rawArgs.Count - 1)]
+}
+$targets = $rawArgs
 if ($targets.Count -eq 0) { $targets = @("Pokemon Online", "PDoDLauncher") }
+
+if (-not $measureOnly) {
+    Add-Type -AssemblyName System.Windows.Forms
+}
 
 # MONITOR_DEFAULTTONEAREST
 $MONITOR_DEFAULTTONEAREST = 2
@@ -47,12 +61,30 @@ for ($i = 0; $i -lt $maxAttempts; $i++) {
         $procs = Get-Process -Name $target -ErrorAction SilentlyContinue
         foreach ($p in $procs) {
             if ($p.MainWindowHandle -ne 0) {
-                # SW_MAXIMIZE = 3
-                [WindowHelper]::ShowWindowAsync($p.MainWindowHandle, 3)
-                [WindowHelper]::SetForegroundWindow($p.MainWindowHandle)
-                # Give the engine a moment to actually respond to the resize (or not —
-                # this is exactly what tells us whether it did) before reading bounds.
-                Start-Sleep -Milliseconds 400
+                if (-not $measureOnly) {
+                    # SW_MAXIMIZE = 3
+                    [WindowHelper]::ShowWindowAsync($p.MainWindowHandle, 3)
+                    [WindowHelper]::SetForegroundWindow($p.MainWindowHandle)
+
+                    # True exclusive fullscreen (as opposed to borderless/"windowed
+                    # fullscreen") bypasses the desktop compositor entirely — screen
+                    # capture can only see whatever DWM last composited, which is a
+                    # frozen frame of the desktop from the instant before the game
+                    # grabbed the screen. Alt+Enter is the standard, if blunt,
+                    # capture-tool trick for knocking a game out of that mode into a
+                    # capturable one. Best-effort: some games use Alt+Enter for
+                    # something else, or ignore it outright, or are already in a
+                    # capturable mode and this is a harmless no-op toggle.
+                    Start-Sleep -Milliseconds 150
+                    [System.Windows.Forms.SendKeys]::SendWait("%{ENTER}")
+                    # Switching modes recreates the render surface — not instant.
+                    Start-Sleep -Milliseconds 600
+
+                    # Give the engine a moment to actually respond to the resize (or
+                    # not — this is exactly what tells us whether it did) before
+                    # reading bounds.
+                    Start-Sleep -Milliseconds 400
+                }
 
                 $rect = New-Object WindowHelper+RECT
                 $hr = [WindowHelper]::DwmGetWindowAttribute($p.MainWindowHandle, $DWMWA_EXTENDED_FRAME_BOUNDS, [ref]$rect, [System.Runtime.InteropServices.Marshal]::SizeOf($rect))

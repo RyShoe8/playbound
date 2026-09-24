@@ -10937,7 +10937,12 @@ function maximizeGameWindowForStreaming(slug) {
   if (process.platform !== "win32" || !slug) return;
   try {
     const entry = catalogEntry(slug);
-    if (slug === "castlevania-revamped" || entry?.windowSize) return;
+    // A game with its own deliberate window-size override (resize-window.ps1
+    // — castlevania-revamped or anything with entry.windowSize) must not be
+    // maximized or Alt+Enter'd, which would undo that intentional sizing —
+    // but it still needs its rect MEASURED, since it won't fill the monitor
+    // either and still needs cropping. --measure-only does exactly that.
+    const measureOnly = slug === "castlevania-revamped" || Boolean(entry?.windowSize);
     const imageNames = activeLaunches.get(slug)?.imageNames || [];
     const targets = imageNames.map((n) => String(n).replace(/\.exe$/i, "")).filter(Boolean);
     if (!targets.length) return;
@@ -10950,8 +10955,9 @@ function maximizeGameWindowForStreaming(slug) {
     const debugLog = (msg) => {
       if (win && !win.isDestroyed()) win.webContents.send("couch-status", { message: msg });
     };
-    debugLog(`[maximize] trying targets: ${targets.join(", ")}`);
-    const bg = spawn("powershell.exe", ["-ExecutionPolicy", "Bypass", "-File", script, ...targets], {
+    const scriptArgs = measureOnly ? ["--measure-only", ...targets] : targets;
+    debugLog(`[maximize] trying targets: ${targets.join(", ")}${measureOnly ? " (measure-only)" : ""}`);
+    const bg = spawn("powershell.exe", ["-ExecutionPolicy", "Bypass", "-File", script, ...scriptArgs], {
       windowsHide: true,
       stdio: ["ignore", "pipe", "pipe"],
     });
