@@ -33,8 +33,6 @@ export async function ensureHostDisplayStream(forceNew = false) {
     hostDisplayStream = await navigator.mediaDevices.getDisplayMedia({
       video: {
         frameRate: { ideal: 60, max: 60 },
-        width: { ideal: 1920, max: 1920 },
-        height: { ideal: 1080, max: 1080 },
       },
       // Electron's setDisplayMediaRequestHandler (main.js) answers this with
       // `audio: "loopback"` — WASAPI system-audio capture on Windows. `true`
