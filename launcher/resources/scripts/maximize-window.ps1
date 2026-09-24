@@ -25,8 +25,11 @@ for ($i = 0; $i -lt $maxAttempts; $i++) {
                 # SW_MAXIMIZE = 3
                 [WindowHelper]::ShowWindowAsync($p.MainWindowHandle, 3)
                 [WindowHelper]::SetForegroundWindow($p.MainWindowHandle)
+                Write-Output "MAXIMIZED target=$target pid=$($p.Id) attempt=$i"
                 exit 0
             }
         }
     }
 }
+Write-Output "NOT_FOUND targets=$($targets -join ',') attempts=$maxAttempts"
+exit 1

@@ -10912,13 +10912,26 @@ function maximizeGameWindowForStreaming(slug) {
     ];
     const script = candidates.find((p) => p && fs.existsSync(p));
     if (!script) return;
+    const debugLog = (msg) => {
+      if (win && !win.isDestroyed()) win.webContents.send("couch-status", { message: msg });
+    };
+    debugLog(`[maximize] trying targets: ${targets.join(", ")}`);
     const bg = spawn("powershell.exe", ["-ExecutionPolicy", "Bypass", "-File", script, ...targets], {
       windowsHide: true,
-      stdio: "ignore",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let out = "";
+    bg.stdout?.on("data", (d) => {
+      out += d.toString();
+    });
+    bg.on("close", (code) => {
+      debugLog(`[maximize] exit=${code} ${out.trim()}`);
     });
     bg.unref();
-  } catch {
-    /* best-effort */
+  } catch (err) {
+    if (win && !win.isDestroyed()) {
+      win.webContents.send("couch-status", { message: `[maximize] error: ${err?.message || err}` });
+    }
   }
 }
 
