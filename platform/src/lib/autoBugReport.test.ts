@@ -37,6 +37,26 @@ describe("client network failures are not catalog bugs", () => {
 });
 
 describe("auto bug description intelligence", () => {
+  it("groups stream failures by stage and code while retaining session diagnostics", () => {
+    const base = {
+      event: "remote_play_failed",
+      source: "website" as const,
+      code: "FIRST_FRAME_TIMEOUT",
+      phase: "video",
+      couchSessionId: "session-123",
+      transport: "webrtc",
+      connectionState: "connected",
+      iceState: "completed",
+    };
+    expect(autoBugFingerprint({ ...base, message: "first machine" })).toBe(
+      autoBugFingerprint({ ...base, message: "second machine" })
+    );
+    const description = buildAutoBugDescription(base, "No video frame arrived");
+    expect(description).toContain("Couch session: session-123");
+    expect(description).toContain("Transport: webrtc");
+    expect(description).toContain("Connection: connected");
+    expect(description).toContain("ICE: completed");
+  });
   it("includes structured install and OpenMW fields", () => {
     const description = buildAutoBugDescription(
       {

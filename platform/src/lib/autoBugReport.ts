@@ -31,6 +31,10 @@ export type AutoBugInput = {
   httpStatus?: number | null;
   morrowindDataFound?: boolean | null;
   openmwCfgWritten?: boolean | null;
+  couchSessionId?: string | null;
+  transport?: string | null;
+  connectionState?: string | null;
+  iceState?: string | null;
 };
 
 function hashMessage(message: string): string {
@@ -45,7 +49,9 @@ export function autoBugFingerprint(input: AutoBugInput): string {
     input.code || "UNKNOWN",
     input.gameSlug || "",
     input.editionSlug || "",
-    hashMessage(String(input.message || "")),
+    input.event === "remote_play_failed" || input.event === "couch_failed"
+      ? input.phase || "unknown"
+      : hashMessage(String(input.message || "")),
   ];
   return parts.join("|").slice(0, 240);
 }
@@ -76,6 +82,10 @@ export function buildAutoBugDescription(input: AutoBugInput, message: string): s
     input.editionSlug ? `Edition: ${input.editionSlug}` : null,
     input.osVersion ? `OS: ${input.osVersion}` : null,
     input.architecture ? `Arch: ${input.architecture}` : null,
+    input.couchSessionId ? `Couch session: ${input.couchSessionId}` : null,
+    input.transport ? `Transport: ${input.transport}` : null,
+    input.connectionState ? `Connection: ${input.connectionState}` : null,
+    input.iceState ? `ICE: ${input.iceState}` : null,
     input.exitCode != null ? `Exit code: ${input.exitCode}` : null,
     input.signal ? `Signal: ${input.signal}` : null,
     input.exeBasename ? `Exe: ${input.exeBasename}` : null,
@@ -134,7 +144,7 @@ export async function upsertAutoBugReport(input: AutoBugInput): Promise<void> {
       return;
     }
 
-    const slugLabel = input.gameSlug || "unknown";
+    const slugLabel = input.gameSlug || (input.event === "remote_play_failed" ? "Remote Play" : input.event === "couch_failed" ? "Couch co-op" : "unknown");
     const title = `[${input.event}] ${slugLabel} · ${code}`.slice(0, 160);
 
     await BugReport.create({
@@ -213,6 +223,8 @@ export async function maybeUpsertAutoBugFromTelemetry(opts: {
     "exe_locate_failed",
     "party_lan_failed",
     "party_failed",
+    "remote_play_failed",
+    "couch_failed",
   ]);
   if (!failureEvents.has(event)) return;
 
@@ -222,7 +234,9 @@ export async function maybeUpsertAutoBugFromTelemetry(opts: {
   if (event === "party_failed" && area !== "lan") return;
 
   const failureMessage = typeof props.message === "string" ? props.message : null;
-  if (isClientNetworkFailure(failureMessage)) return;
+  // A dead client network is not a broken game download, but it is exactly
+  // the kind of Remote Play/Couch connection failure this Bugs feed diagnoses.
+  if (isClientNetworkFailure(failureMessage) && event !== "remote_play_failed" && event !== "couch_failed") return;
 
   const sourceProp = typeof props.source === "string" ? props.source : "";
   const source: BugReportSource = sourceProp === "website" ? "website" : "launcher";
@@ -264,6 +278,10 @@ export async function maybeUpsertAutoBugFromTelemetry(opts: {
     httpStatus: propNumber(props, "httpStatus"),
     morrowindDataFound: propBool(props, "morrowindDataFound"),
     openmwCfgWritten: propBool(props, "openmwCfgWritten"),
+    couchSessionId: propString(props, "couchSessionId"),
+    transport: propString(props, "transport"),
+    connectionState: propString(props, "connectionState"),
+    iceState: propString(props, "iceState"),
     userAgent: opts.userAgent || null,
     userId: opts.userId || null,
   });

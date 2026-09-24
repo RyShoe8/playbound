@@ -8,6 +8,7 @@ import {
   KEYBOARD_MOUSE_LEGEND,
 } from "@/lib/couch/keyboardMouseMap";
 import { CADENCE } from "@/lib/realtime/cadence";
+import { getAnonymousId, getSessionId } from "@/lib/telemetry/context";
 import { couchControllerJoinLabel, type CouchControlChoice } from "@/lib/couch/joinLabel";
 import {
   addRemoteIceCandidate,
@@ -95,14 +96,16 @@ export function ControllerClient({
 }) {
   const [isDesktopClient, setIsDesktopClient] = useState(false);
   useEffect(() => {
+    let timer: number | undefined;
     try {
       const isMobile = window.matchMedia?.("(max-width: 640px) and (pointer: coarse)").matches;
       if (!isMobile) {
-        setIsDesktopClient(true);
+        timer = window.setTimeout(() => setIsDesktopClient(true), 0);
       }
     } catch {
       /* ignore */
     }
+    return () => { if (timer !== undefined) window.clearTimeout(timer); };
   }, []);
 
   const gameLayout = layout === "game" || isDesktopClient;
@@ -171,12 +174,61 @@ export function ControllerClient({
   useEffect(() => {
     joinRef.current = join;
   }, [join]);
+  const reportedOps = useRef(new Set<string>());
+  const reportOps = useCallback((status: "connected" | "first_frame" | "failed", fields: {
+    phase: string; code: string; message?: string; transport?: string;
+    connectionState?: string; iceState?: string;
+  }) => {
+    const current = joinRef.current;
+    const key = `${current?.sessionId || code}:${status}:${fields.code}`;
+    if (reportedOps.current.has(key)) return;
+    reportedOps.current.add(key);
+    const remotePlay = new URLSearchParams(window.location.search).get("remotePlay") === "1";
+    const params = new URLSearchParams(window.location.search);
+    const gameSlug = params.get("gameSlug")?.match(/^[a-z0-9-]{1,120}$/)?.[0];
+    const editionSlug = params.get("editionSlug")?.match(/^[a-z0-9-]{1,120}$/)?.[0];
+    // Use the telemetry ingest directly here: the general page context carries
+    // the join URL/code, which a stream diagnostic must never copy to Ops.
+    void fetch("/api/telemetry", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      keepalive: true,
+      body: JSON.stringify({
+        event: remotePlay ? `remote_play_${status}` : `couch_${status}`,
+        properties: {
+          ...fields,
+          source: "website",
+          role: "client",
+          gameSlug,
+          editionSlug,
+          couchSessionId: current?.sessionId,
+          message: fields.message?.slice(0, 300),
+        },
+        timestamp: new Date().toISOString(),
+        sessionId: getSessionId(),
+        anonymousId: getAnonymousId(),
+      }),
+    }).catch(() => {});
+  }, [code]);
   const framesRef = useRef(0);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const remoteStreamRef = useRef<MediaStream | null>(null);
   const [hasVideo, setHasVideo] = useState(false);
   const [videoWaiting, setVideoWaiting] = useState(false);
+  useEffect(() => {
+    if (!gameLayout || !join?.sessionId || !hasVideo) return;
+    reportOps("first_frame", { phase: "video", code: "FIRST_FRAME", transport });
+  }, [gameLayout, join?.sessionId, hasVideo, transport, reportOps]);
+  useEffect(() => {
+    if (!gameLayout || !join?.sessionId || hasVideo || transport === "offline" || transport === "connecting") return;
+    const timer = window.setTimeout(() => {
+      if (!videoRef.current?.videoWidth) {
+        reportOps("failed", { phase: "video", code: "FIRST_FRAME_TIMEOUT", message: "Connected without a video frame after 20 seconds", transport });
+      }
+    }, 20_000);
+    return () => window.clearTimeout(timer);
+  }, [gameLayout, join?.sessionId, hasVideo, transport, reportOps]);
   const videoFrameWatchRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [cropTitleBar, setCropTitleBar] = useState(false);
@@ -499,7 +551,10 @@ export function ControllerClient({
         setJoin(next);
         saveStored(code, next);
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Join failed");
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : "Join failed");
+          reportOps("failed", { phase: "join", code: "JOIN_FAILED", message: "Could not join couch session" });
+        }
       }
     }
     void run();
@@ -507,7 +562,7 @@ export function ControllerClient({
       cancelled = true;
     };
     // Join once per code — do not tear down when the player picks keyboard/controller/phone.
-  }, [code, gameLayout, joinEpoch]);
+  }, [code, gameLayout, joinEpoch, reportOps]);
 
   // Refresh controller row label when PC/gamepad choice becomes known.
   useEffect(() => {
@@ -764,6 +819,7 @@ export function ControllerClient({
         if (state === "connected") {
           usingWebrtc = true;
           setTransport("webrtc");
+          reportOps("connected", { phase: "webrtc", code: "PEER_CONNECTED", transport: "webrtc", connectionState: state });
           startVideoStatsLogging(pc as RTCPeerConnection);
         } else if (state === "failed") {
           console.warn("[couch] WebRTC connection failed, attempting ICE restart...");
@@ -1039,6 +1095,9 @@ export function ControllerClient({
       }, 20_000);
       window.setTimeout(() => {
         markOfflineIfFailed();
+        if (!closed && !usingWebrtc && ws?.readyState !== WebSocket.OPEN) {
+          reportOps("failed", { phase: "transport", code: "TRANSPORT_FAILED", message: "WebRTC and LAN fallback could not connect after 45 seconds", connectionState: pc?.connectionState, iceState: pc?.iceConnectionState });
+        }
       }, 45_000);
     }
 
@@ -1088,6 +1147,7 @@ export function ControllerClient({
         }
         ws.onopen = () => {
           if (!usingWebrtc) setTransport("websocket");
+          reportOps("connected", { phase: "websocket", code: "PEER_CONNECTED", transport: "websocket" });
           ws?.send(
             JSON.stringify({
               type: "auth",
@@ -1192,6 +1252,7 @@ export function ControllerClient({
     join?.sessionToken,
     join?.wsUrls?.length,
     sendInput,
+    reportOps,
   ]);
 
   // Physical gamepad polling
