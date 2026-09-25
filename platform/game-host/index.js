@@ -10,6 +10,7 @@
  *   GAME_HOST_IDLE_MS    auto-stop idle rooms (default 4h)
  */
 
+import { isAgentGetPath } from "./agentRoutes.js";
 import http from "node:http";
 import net from "node:net";
 import dgram from "node:dgram";
@@ -1200,8 +1201,6 @@ function publicRoom(room) {
   };
 }
 
-const AGENT_GET_ROUTES = new Set(["/metrics", "/rooms", "/managed"]);
-
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://127.0.0.1:${PORT}`);
 
@@ -1226,7 +1225,7 @@ const server = http.createServer(async (req, res) => {
   if (
     (req.method === "GET" || req.method === "HEAD") &&
     !url.pathname.startsWith("/mirror/") &&
-    !AGENT_GET_ROUTES.has(normalizedPath)
+    !isAgentGetPath(normalizedPath)
   ) {
     await serveArchivedFile(req, res, url.pathname.replace(/^\/+/, ""));
     return;
