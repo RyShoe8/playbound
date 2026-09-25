@@ -4,6 +4,14 @@ name: Test nightly planner (isolated DB)
 # production cluster, then drops it. Production data is only read.
 on:
   workflow_dispatch:
+  # Also runs when the test or the planner changes, so a fresh run on the
+  # current commit never depends on someone clicking Run workflow.
+  push:
+    branches: [main]
+    paths:
+      - platform/scripts/test-nightly-planner-isolated.ts
+      - platform/src/lib/events/nightlySchedule.ts
+      - .github/workflows/test-nightly-planner.yml
 
 concurrency:
   group: nightly-planner-it
