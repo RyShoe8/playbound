@@ -22,14 +22,20 @@ export const hostingSettingsSchema = z.object({
     idleMinutes: z.number().int().min(15).max(10080),
     cooldownMinutes: z.number().int().min(0).max(10080),
   }),
-}).refine((s) =>
-  s.monitoring.cpuWarningPercent < s.monitoring.cpuCriticalPercent &&
-  s.monitoring.cpuCriticalPercent <= s.safety.maxCpuPercent &&
-  s.monitoring.ramWarningPercent < s.monitoring.ramCriticalPercent &&
-  s.monitoring.ramCriticalPercent <= s.safety.maxRamPercent &&
-  s.monitoring.diskWarningPercent < s.monitoring.diskCriticalPercent,
-  { message: "Warning must be below critical; CPU/RAM critical must not exceed the safety limit" }
-).refine((s) => !s.enabled || (s.node.enabled && !s.node.draining && s.budget.cpuCores > 0 && s.budget.ramBytes > 0), {
+}).superRefine((s, ctx) => {
+  // One message per broken rule, naming the fields and values, so the admin
+  // form says exactly what to change instead of a combined sentence.
+  const m = s.monitoring;
+  const rules: Array<[boolean, string]> = [
+    [m.cpuWarningPercent < m.cpuCriticalPercent, `CPU warning (${m.cpuWarningPercent}%) must be below CPU critical (${m.cpuCriticalPercent}%)`],
+    [m.cpuCriticalPercent <= s.safety.maxCpuPercent, `CPU critical (${m.cpuCriticalPercent}%) must not exceed Maximum CPU (${s.safety.maxCpuPercent}%)`],
+    [m.ramWarningPercent < m.ramCriticalPercent, `RAM warning (${m.ramWarningPercent}%) must be below RAM critical (${m.ramCriticalPercent}%)`],
+    [m.ramCriticalPercent <= s.safety.maxRamPercent, `RAM critical (${m.ramCriticalPercent}%) must not exceed Maximum RAM (${s.safety.maxRamPercent}%)`],
+    [m.diskWarningPercent < m.diskCriticalPercent, `Disk warning (${m.diskWarningPercent}%) must be below disk critical (${m.diskCriticalPercent}%)`],
+  ];
+  const broken = rules.filter(([ok]) => !ok).map(([, msg]) => msg);
+  if (broken.length) ctx.addIssue({ code: "custom", message: broken.join("; ") });
+}).refine((s) => !s.enabled || (s.node.enabled && !s.node.draining && s.budget.cpuCores > 0 && s.budget.ramBytes > 0), {
   message: "Enable the node and set a positive hosting budget before enabling automation",
 });
 
