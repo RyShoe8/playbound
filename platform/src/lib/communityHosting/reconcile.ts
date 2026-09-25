@@ -34,6 +34,7 @@ const PLAYER_LIMIT_RECIPES = new Set([
   "assaultcube", "medal-of-honor-allied-assault", "warzone-2100", "bzflag", "mindustry", "hurry-curry",
   "supertuxkart", "xonotic", "openarena", "0-ad", "0ad", "bombsquad",
   "wolfenstein-enemy-territory", "team-fortress-2", "unvanquished",
+  "hedgewars", "freedoom", "veloren",
 ]);
 
 // Engines with a native bot fill mode (bots leave as people join, return as
@@ -394,6 +395,12 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         await CapacityReservation.updateOne({ _id: due._id }, { $set: { decisionReason: "SERVER_PROTECTED_FOR_ANOTHER_EVENT" } });
         return { action: "waiting", reason: "SERVER_PROTECTED_FOR_ANOTHER_EVENT" };
       }
+      // Limit to 1 community server per game.
+      const dueGameSlug = profileByKey.get(due.profileKey)?.gameSlug;
+      if (dueGameSlug && active.some((s) => s.gameSlug === dueGameSlug && alreadyRunning.has(String(s._id)))) {
+        await CapacityReservation.updateOne({ _id: due._id }, { $set: { decisionReason: "GAME_ALREADY_RUNNING" } });
+        return { action: "waiting", reason: "GAME_ALREADY_RUNNING" };
+      }
       const existingServer = active.find((s) => s.profileKey === due.profileKey && alreadyRunning.has(String(s._id)) &&
         (!s.linkedEventId || String(s.linkedEventId) === String(due.eventId) || !s.protectedUntil || new Date(s.protectedUntil) <= now));
       if (existingServer) {
@@ -465,8 +472,12 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
       return { action: "starting", reason: `game night warmup: ${dueProfile.key}` };
     }
 
+    // Limit to 1 community server per game: skip any profile whose gameSlug
+    // already has a running server, not just the same profile key.
+    const runningGameSlugs = new Set(active.filter((s) => s.desiredState === "running" || alreadyRunning.has(String(s._id))).map((s) => s.gameSlug));
     const candidateServers = rotationCandidates.filter((p) =>
       !active.some((s) => s.profileKey === p.key && (s.desiredState === "running" || alreadyRunning.has(String(s._id)))) &&
+      !runningGameSlugs.has(p.gameSlug) &&
       !previous.some((s) => s.profileKey === p.key && s.manualPause) &&
       !previous.some((s) => s.profileKey === p.key && s.cooldownUntil && new Date(s.cooldownUntil) > now)
     );

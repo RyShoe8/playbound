@@ -43,6 +43,7 @@ test("managed server recipes translate the cap into native command-line controls
     ["team-fortress-2", "+maxplayers", "12"],
     ["unvanquished", "sv_maxclients", "12"],
     ["hurry-curry", "--max-players", "12"],
+    ["freedoom", "+sv_maxplayers", "12"],
   ];
   for (const [slug, flag, value] of cases) {
     const args = recipes[slug].args(27030, managed(slug));
@@ -55,6 +56,11 @@ test("managed server recipes translate the cap into native command-line controls
   const openTtdArgs = recipes.openttd.args(3979, managed("openttd"));
   assert.ok(openTtdArgs.includes("-c"));
   assert.ok(!recipes.openttd.args(3979, { managed: false }).includes("-c"));
+  // These games store maxPlayers on the room for agent fallback display, or
+  // patch it into a config file — they have no command-line translation.
+  for (const slug of ["hedgewars", "veloren"]) {
+    assert.deepEqual(acceptedSettingsFor(slug, { maxPlayers: 12 }), { maxPlayers: 12 }, `${slug} accepts maxPlayers`);
+  }
 });
 
 test("the scheduler and agent agree on the bot-fill recipes, and each honours it", () => {
