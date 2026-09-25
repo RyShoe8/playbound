@@ -225,7 +225,7 @@ export async function refreshServersPickersAndList() {
   }
 
   gameSelect.innerHTML =
-    `<option value="" disabled ${!state.serversState.selectedSlug ? "selected" : ""}>Select a game...</option>` +
+    `<option value="" ${!state.serversState.selectedSlug ? "selected" : ""}>PlayBound Community Servers</option>` +
     supported
       .map(
         (g) =>
@@ -286,18 +286,17 @@ async function fetchAndShowServers(baseSlug, mod) {
   const wrap = document.getElementById("servers-table-wrap");
   if (!wrap) return;
 
-  if (!baseSlug) {
-    wrap.innerHTML = "";
-    return;
-  }
+  const isCommunity = !baseSlug || baseSlug === "community";
 
   wrap.innerHTML = `<p class="view-sub">Fetching servers…</p>`;
 
-  const data = await window.playbound.getServers(baseSlug);
-  let servers = Array.isArray(data.servers) ? data.servers : [];
-  let noteExtra = "";
+  const data = isCommunity
+    ? await (window.playbound.getCommunityServers?.() || window.playbound.getServers?.("community"))
+    : await window.playbound.getServers(baseSlug);
+  let servers = Array.isArray(data?.servers) ? data.servers : [];
+  let noteExtra = isCommunity ? "Showing PlayBound community servers." : "";
 
-  if (mod) {
+  if (mod && !isCommunity) {
     const filtered = filterServersForMod(servers, mod);
     if (filtered.matched) {
       servers = filtered.servers;
@@ -307,17 +306,17 @@ async function fetchAndShowServers(baseSlug, mod) {
     }
   }
 
-  if (!data.supported) {
+  if (!data?.supported && !isCommunity) {
     wrap.innerHTML = `<p class="view-sub">Server lists are not available for this title yet.</p>`;
     return;
   }
 
   _serversCache = {
-    slug: baseSlug,
+    slug: isCommunity ? "community" : baseSlug,
     servers,
-    title: mod?.title || baseSlug,
+    title: isCommunity ? "PlayBound Community Servers" : (mod?.title || baseSlug),
     note: noteExtra,
-    error: data.error || "",
+    error: data?.error || "",
   };
 
   const noteEl = document.getElementById("servers-note");
@@ -358,7 +357,7 @@ function filteredServerRows() {
    * too: a server that does not report its population is not evidence that
    * anyone is on it.
    */
-  if (state.serversState.withPlayersOnly) {
+  if (state.serversState.withPlayersOnly && _serversCache.slug !== "community") {
     rows = rows.filter((s) => Number(s.players) > 0);
   }
   if (q) {
@@ -476,20 +475,25 @@ function paintServersTable() {
     const ping = state.serversState.pingById[id];
     const pingLabel =
       ping === undefined ? "…" : ping == null ? "—" : `${ping} ms`;
-    const slug = _serversCache.slug;
+    const slug = s.gameSlug || _serversCache.slug;
     const isInstalled = Boolean(state._installedGameSlugs?.has(slug));
     const actionLabel = isInstalled ? "Join" : "Install";
     const actionClass = isInstalled ? "btn-primary" : "btn-secondary";
+    const gameBadge = s.gameTitle ? `<span style="display: inline-block; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; background: rgba(168, 85, 247, 0.15); color: var(--color-primary, #a855f7); padding: 2px 6px; border-radius: 4px; margin-right: 6px;">${escapeHtml(s.gameTitle)}</span>` : "";
+    const botsBadge = s.bots ? `<span class="server-gametype-tag">· ${s.bots} bot${s.bots === 1 ? "" : "s"}</span>` : "";
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>
-        <strong>${escapeHtml(s.name)}</strong>
+        <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+          ${gameBadge}<strong>${escapeHtml(s.name)}</strong>
+        </div>
         <div class="server-meta">
           <button type="button" class="server-ip-copy-btn" data-action="copy-server-ip" data-addr="${escapeHtml(id)}" title="Click to copy IP:port">
             <span class="server-ip-text">${escapeHtml(id)}</span>
             <span class="server-ip-copy-badge">Copy</span>
           </button>
-          ${s.gameType ? `<span class="server-gametype-tag">· ${escapeHtml(s.gameType)}</span>` : ""}
+          ${s.editionSlug ? `<span class="server-gametype-tag">· ${escapeHtml(s.editionSlug)}</span>` : (s.gameType ? `<span class="server-gametype-tag">· ${escapeHtml(s.gameType)}</span>` : "")}
+          ${botsBadge}
         </div>
       </td>
       <td>${s.players == null ? "—" : `${s.players}/${s.maxPlayers ?? "—"}`}</td>

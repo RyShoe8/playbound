@@ -34,7 +34,7 @@ const HOME_SHELL_HTML = `
 
     <div id="home-live-section" class="hidden">
       <div class="section-header">
-        <span>Jump into multiplayer</span>
+        <span>Community Servers</span>
         <button class="btn-secondary btn-sm" id="home-browse-servers">All Servers</button>
       </div>
       <div id="home-live-list" class="home-join-list"></div>
@@ -322,10 +322,7 @@ function paintLive(entries) {
     ...entries.map((e) =>
       buildJoinRow({
         game: e.game,
-        // Same reason as the hero: the badge beside this line already renders
-        // controller.label, and a server with nobody on it produces no
-        // occupancy reason, which let the pad reason reach the top here too.
-        reason: topNonControllerReason(e) || "",
+        reason: e.reason || topNonControllerReason(e) || "",
         buttonLabel: e.installed ? "Join" : "Install & join",
         title: e.server
           ? `${e.server.name || e.server.host} — ${formatStatNumber(e.server.players)} players`
@@ -601,7 +598,42 @@ async function loadPlayableRows() {
     { history, padConnected }
   ).map((e) => ({ ...e, server: bestServers.get(e.slug) || null }));
 
-  paintLive(liveRanked.slice(0, 5));
+  // Populate Community Servers row
+  let communityServers = [];
+  try {
+    const commRes = await (window.playbound.getCommunityServers?.() || window.playbound.getServers?.("community"));
+    if (commRes && Array.isArray(commRes.servers)) {
+      communityServers = commRes.servers;
+    }
+  } catch {
+    communityServers = [];
+  }
+
+  if (communityServers.length > 0) {
+    const commEntries = communityServers.map((server) => {
+      const g = bySlug.get(server.gameSlug) || {
+        slug: server.gameSlug,
+        title: server.gameTitle || server.gameSlug,
+        art: ["#2a2739", "#4a4658"],
+      };
+      const isInst = installed.has(server.gameSlug);
+      const playerCountText = server.players != null
+        ? `${formatStatNumber(server.players)}${server.maxPlayers ? `/${formatStatNumber(server.maxPlayers)}` : ""} players`
+        : "Online";
+      const botsText = server.bots ? ` (${server.bots} bots)` : "";
+      const editionText = server.editionSlug ? `${server.editionSlug} · ` : "";
+      return {
+        game: g,
+        installed: isInst,
+        server,
+        reason: `${editionText}${playerCountText}${botsText}`,
+        controller: null,
+      };
+    });
+    paintLive(commEntries.slice(0, 6));
+  } else {
+    paintLive(liveRanked.slice(0, 5));
+  }
 
   /* ---- row 01: resume ---- */
   const resumeSlug = recent.find((r) => bySlug.get(r.slug))?.slug;

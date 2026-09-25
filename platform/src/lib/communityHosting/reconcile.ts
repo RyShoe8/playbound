@@ -9,7 +9,7 @@ import PlatformEvent from "@/lib/models/PlatformEvent";
 import AutomatedEventConfig from "@/lib/models/AutomatedEventConfig";
 import { fetchGameHostMetrics, listManagedHostRooms, requestManagedHostRoom, stopManagedHostRoom } from "@/lib/gameHost/client";
 import { canScaleDownEmptyServer, placementDecision, runningReservationEnvelope, type ResourceEnvelope } from "./capacity";
-import { managedQueryKind, QUERY_BY_GAME, queryManagedPlayerCount } from "./playerQuery";
+import { managedQueryKind, QUERY_BY_GAME, queryManagedPlayerCount, queryManagedOccupancy } from "./playerQuery";
 import { recordResourceSample } from "./samples";
 import { recordPopulationReading } from "./population";
 import { rotationPriority } from "./rotation";
@@ -264,9 +264,12 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         continue;
       }
       const queryKind = managedQueryKind(server.gameSlug, profile);
-      const players = queryKind
-        ? await queryManagedPlayerCount({ queryKind, host: room.host, port: room.port, communityServerId: String(server._id), expectedMod: server.gameSlug === "earth-2140-trilogy" ? "e2140" : undefined })
+      const occupancy = queryKind
+        ? await queryManagedOccupancy({ queryKind, host: room.host, port: room.port, communityServerId: String(server._id), expectedMod: server.gameSlug === "earth-2140-trilogy" ? "e2140" : undefined })
         : null;
+      const players = occupancy?.players ?? null;
+      const bots = occupancy?.bots ?? null;
+      const maxPlayers = occupancy?.maxPlayers ?? null;
       if (players !== null && profile && !profile.queryVerified && queryKind) {
         await CommunityServerProfile.updateOne(
           { key: profile.key, queryVerified: false },
@@ -284,6 +287,8 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
       server.runtimeState = "running";
       server.health = players === null ? "unknown" : "healthy";
       server.playerCount = players;
+      server.bots = bots;
+      if (maxPlayers != null) server.maxPlayerCount = maxPlayers;
       server.playerCountCheckedAt = players === null ? null : now;
       if (players !== null && players > 0) server.lastOccupiedAt = now;
       if (!server.onlineSince) server.onlineSince = now;
