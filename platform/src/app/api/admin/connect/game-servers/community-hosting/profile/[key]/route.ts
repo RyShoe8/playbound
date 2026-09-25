@@ -37,22 +37,26 @@ export async function PUT(req: Request, context: { params: Promise<{ key: string
   });
   if (reason) return NextResponse.json({ error: reason }, { status: 400 });
 
+  /*
+   * The envelope is written in exactly one operator. Setting it in both $set
+   * and $setOnInsert is a MongoDB path conflict, which failed every save of a
+   * game/edition that had no profile yet with a 500 ("Could not save").
+   */
+  const needsEnvelope = !current?.envelope?.cpuCores || !current?.envelope?.ramBytes;
+  const envelope = current ? { cpuCores, ramBytes, measuredThroughPlayers } : base?.envelope || { cpuCores, ramBytes, measuredThroughPlayers };
   const updated = await CommunityServerProfile.findOneAndUpdate(
     { key: normalizedKey },
     {
       $set: {
         ...parsed.data,
         updatedBy: session!.user.id,
-        ...((!current?.envelope?.cpuCores || !current?.envelope?.ramBytes) ? {
-          envelope: { cpuCores, ramBytes, measuredThroughPlayers },
-        } : {}),
+        ...(needsEnvelope ? { envelope } : {}),
       },
       $setOnInsert: {
         key: normalizedKey,
         gameSlug,
         editionSlug,
         recipeSlug: base?.recipeSlug || gameSlug,
-        envelope: base?.envelope || { cpuCores, ramBytes, measuredThroughPlayers },
         sampleCount,
       },
     },
