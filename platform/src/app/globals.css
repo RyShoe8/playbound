@@ -117,6 +117,16 @@
 }
 
 @layer utilities {
+  /* Long card lists: the browser skips layout/paint for cards far offscreen. */
+  .cv-card {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 340px;
+  }
+  .cv-row {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 420px;
+  }
+
   .no-scrollbar {
     scrollbar-width: none;
   }

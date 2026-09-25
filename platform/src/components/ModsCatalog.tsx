@@ -7,6 +7,7 @@ import { isModCompatible } from "@/lib/compatibility/compatibility";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { ModCard } from "@/components/ModCard";
 import { CompatibleGamesFade } from "@/components/compatibility/useFilteredGames";
+import { useProgressiveList } from "@/hooks/useProgressiveList";
 
 export type ModBaseGameInfo = GameLike & {
   slug: string;
@@ -41,6 +42,9 @@ export function ModsCatalog({
 
   const visibleModCount = visible.reduce((n, s) => n + s.mods.length, 0);
   const animKey = `${mode}|${visible.map((s) => s.gameSlug).join(",")}`;
+  // Game sections appear in batches as the reader scrolls (no pagination);
+  // the count above and the filter still cover every mod.
+  const { visible: shownSections, sentinel } = useProgressiveList(visible, { initial: 4, step: 4, resetKey: animKey });
 
   return (
     <div className="mt-8 space-y-8">
@@ -56,7 +60,7 @@ export function ModsCatalog({
         </p>
       ) : (
         <CompatibleGamesFade animKey={animKey} className="space-y-10">
-          {visible.map((section) => {
+          {shownSections.map((section) => {
             const game = gamesBySlug[section.gameSlug];
             return (
               <section key={section.gameSlug}>
@@ -74,7 +78,7 @@ export function ModsCatalog({
                 </h2>
                 <ul className="mt-3 grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-5">
                   {section.mods.map((mod) => (
-                    <li key={mod.slug}>
+                    <li key={mod.slug} className="cv-card">
                       <ModCard
                         mod={mod}
                         baseGame={
@@ -100,6 +104,7 @@ export function ModsCatalog({
               </section>
             );
           })}
+          {sentinel}
         </CompatibleGamesFade>
       )}
     </div>
