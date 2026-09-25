@@ -678,15 +678,6 @@ export function FriendsView({
           </button>
           <button
             type="button"
-            disabled={appearBusy}
-            onClick={() => void toggleAppearOffline()}
-            className="rounded-lg border border-border bg-secondary px-3 py-1.5 text-sm font-semibold hover:bg-secondary/80 disabled:opacity-60"
-            title="Appear offline so friends don’t see you as online or playing"
-          >
-            {appearBusy ? "Saving…" : appearOffline ? "Go online" : "Appear offline"}
-          </button>
-          <button
-            type="button"
             onClick={() => {
               setAddOpen((v) => !v);
               if (!addOpen) setCreateOpen(false);
