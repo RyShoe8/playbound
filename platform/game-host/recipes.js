@@ -1240,10 +1240,16 @@ export const recipes = {
       "-homepath",
       unvanquishedHome(ctx),
       ...unvanquishedPakPathArgs(),
-      "+set",
+      /*
+       * `-set`, not `+set`: net_port is read when the network opens, before
+       * any "+" command runs. As `+set net_port` the server came up on the
+       * default 27960 while the agent waited on the allocated port, timed
+       * out, and every retry then hit "Existing instance found".
+       */
+      "-set",
       "net_port",
       String(port),
-      "+set",
+      "-set",
       "sv_hostname",
       ctx.name || "PlayBound.club Party",
       "+map",
