@@ -232,6 +232,9 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
   const [testingSlug, setTestingSlug] = useState<string | null>(null);
   const [testStatus, setTestStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Player counts for community servers, keyed by CommunityServer id. Read
+  // from Community Hosting, which queries each game's own server list.
+  const [occupancy, setOccupancy] = useState<Record<string, { players: number | null; maxPlayers: number | null }>>({});
 
   const isParties = view === "parties";
   const isServers = view === "game-servers";
@@ -241,17 +244,30 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
     else setRefreshing(true);
     setError(null);
     try {
-      const res = await fetch("/api/admin/connect/overview", { cache: "no-store" });
+      const [res, hosting] = await Promise.all([
+        fetch("/api/admin/connect/overview", { cache: "no-store" }),
+        isServers
+          ? fetch("/api/admin/connect/game-servers/community-hosting", { cache: "no-store" }).catch(() => null)
+          : Promise.resolve(null),
+      ]);
       const json = (await res.json()) as OverviewData;
       if (!res.ok) throw new Error("Failed to load Connect overview");
       setData(json);
+      if (hosting?.ok) {
+        const body = (await hosting.json().catch(() => null)) as {
+          servers?: Array<{ _id: string; playerCount?: number | null; maxPlayers?: number | null }>;
+        } | null;
+        setOccupancy(Object.fromEntries((body?.servers || []).map((srv) => [
+          String(srv._id), { players: srv.playerCount ?? null, maxPlayers: srv.maxPlayers ?? null },
+        ])));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load");
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [isServers]);
 
   useEffect(() => {
     const timer = setTimeout(() => void load(), 0);
@@ -550,6 +566,7 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
                   <th className="pb-2 pr-4 font-medium">Game</th>
                   <th className="pb-2 pr-4 font-medium">Address</th>
                   <th className="pb-2 pr-4 font-medium">Party</th>
+                  <th className="pb-2 pr-4 font-medium">Players</th>
                   <th className="pb-2 font-medium">Started</th>
                 </tr>
               </thead>
@@ -566,6 +583,13 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
                     </td>
                     <td className="py-2 pr-4 font-mono text-xs text-muted-foreground">
                       {room.communityServerId ? "Community" : room.partyId ? `Party ${room.partyId.slice(-8)}` : "—"}
+                    </td>
+                    <td className="py-2 pr-4 font-mono text-xs">
+                      {(() => {
+                        const occ = room.communityServerId ? occupancy[room.communityServerId] : undefined;
+                        if (!occ || occ.players == null) return <span className="text-muted-foreground">—</span>;
+                        return `${occ.players} / ${occ.maxPlayers ?? "?"}`;
+                      })()}
                     </td>
                     <td className="py-2 text-xs text-muted-foreground">
                       {room.createdAt ? (
