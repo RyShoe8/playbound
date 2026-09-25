@@ -99,11 +99,6 @@ export async function classifyControlSupport(
   return "unsupported";
 }
 
-export async function listProfilesForGame(gameSlug: string) {
-  await dbConnect();
-  return ControlProfile.find({ gameSlug }).sort({ createdAt: -1 }).lean();
-}
-
 export type PublicControlProfile = {
   gameSlug: string;
   title: string;

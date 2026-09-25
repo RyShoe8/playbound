@@ -28,7 +28,7 @@ const CANONICAL_HOST = "playbound.club";
  * Anything that is not a real public origin therefore falls back rather than
  * being shown.
  */
-export function publicHostFrom(siteUrl: string): string {
+function publicHostFrom(siteUrl: string): string {
   let host: string;
   try {
     host = new URL(siteUrl).host;

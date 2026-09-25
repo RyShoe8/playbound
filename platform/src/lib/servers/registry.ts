@@ -484,17 +484,13 @@ const providers: Record<string, ServerProvider> = {
  * can be listed in UNSUPPORTED_SERVER_SLUGS so the launcher index can show them
  * as "coming soon" without a false "supported" flag.
  */
-export const UNSUPPORTED_SERVER_SLUGS = [] as const;
+const UNSUPPORTED_SERVER_SLUGS = [] as const;
 
 export {
   hasServerBrowser,
   isSingleMasterGame,
   listServerBrowserSlugs,
 } from "./browserGames";
-
-export function listProviderSlugs(): string[] {
-  return Object.keys(providers);
-}
 
 export function hasServerProvider(slug: string): boolean {
   return Boolean(providers[slug]);

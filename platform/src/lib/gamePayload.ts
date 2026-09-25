@@ -303,7 +303,7 @@ export const TAGS = [
 const PLAY_MODE_TAG_NAMES = new Set(["Multiplayer", "Singleplayer"]);
 
 /** Tags retired from filters and admin pickers — stripped on read and save. */
-export const RETIRED_TAGS = new Set([
+const RETIRED_TAGS = new Set([
   "Deck Building",
   "C++",
   "Free to Play",
@@ -312,12 +312,12 @@ export const RETIRED_TAGS = new Set([
   "Freeware",
 ]);
 
-export function dropPlayModeTags(value: unknown): unknown {
+function dropPlayModeTags(value: unknown): unknown {
   if (!Array.isArray(value)) return value;
   return value.filter((v) => typeof v !== "string" || !PLAY_MODE_TAG_NAMES.has(v));
 }
 
-export function dropRetiredTags(value: unknown): unknown {
+function dropRetiredTags(value: unknown): unknown {
   if (!Array.isArray(value)) return value;
   return value.filter((v) => typeof v !== "string" || !RETIRED_TAGS.has(v));
 }
@@ -386,7 +386,7 @@ const qualityBarFieldsSchema = z.object({
   lastVerified: z.string().trim().max(40).default(""),
 });
 
-export const qualityBarSchema = qualityBarFieldsSchema.transform((bar) => ({
+const qualityBarSchema = qualityBarFieldsSchema.transform((bar) => ({
   genuinelyFree: bar.genuinelyFree,
   finished: bar.finished,
   activelyMaintained: bar.activelyMaintained,

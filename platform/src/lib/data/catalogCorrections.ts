@@ -16,7 +16,7 @@
  * with: `releaseYear` had been defaulted to the year each game was added to
  * PlayBound, which is why sixteen titles claimed to have shipped in 2026.
  */
-export const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
+const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
   // Released 27 May 2007 ("Birdie Beta") — Wikipedia infobox, Teeworlds.
   // The GitHub repo only dates to 2010 and is not the release date.
   teeworlds: { releaseYear: 2007 },

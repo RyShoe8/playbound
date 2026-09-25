@@ -44,7 +44,7 @@ function steamApiKey(): string | null {
 }
 
 /** Parse `host:port` / `[ipv6]:port` Steam addr strings. */
-export function parseSteamAddr(addr: string | undefined): { host: string; port: number } | null {
+function parseSteamAddr(addr: string | undefined): { host: string; port: number } | null {
   if (!addr || typeof addr !== "string") return null;
   const trimmed = addr.trim();
   if (!trimmed) return null;

@@ -98,7 +98,7 @@ export const links: NavItem[] = [
   { href: "/admin/events", label: "Events", icon: CalendarDays },
 ];
 
-export function linkActive(pathname: string, href: string, exact?: boolean) {
+function linkActive(pathname: string, href: string, exact?: boolean) {
   return exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 }
 

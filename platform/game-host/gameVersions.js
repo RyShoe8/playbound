@@ -146,17 +146,6 @@ export function getCachedGameVersions() {
   return { versions: { ...cache }, cachedAt: cacheAt || null };
 }
 
-/** Force refresh after install/ensure (best-effort). */
-export function scheduleGameVersionRefresh() {
-  if (!refreshInFlight) {
-    refreshInFlight = refreshGameVersions()
-      .catch(() => cache)
-      .finally(() => {
-        refreshInFlight = null;
-      });
-  }
-}
-
 void refreshGameVersions().catch((err) => {
   console.warn("[gameVersions] initial refresh failed:", err?.message || err);
 });

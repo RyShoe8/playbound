@@ -46,7 +46,7 @@ function isMmoGame(game: { tags?: string[]; features?: string[]; genre?: string;
 
 const CACHE_SECONDS = 60;
 
-export async function computeMultiplayerActivitySnapshot(): Promise<MultiplayerActivityResponse> {
+async function computeMultiplayerActivitySnapshot(): Promise<MultiplayerActivityResponse> {
   let hasDb = false;
   try {
     if (process.env.MONGODB_URI && process.env.MONGODB_URI !== "[SENSITIVE]") {

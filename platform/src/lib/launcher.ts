@@ -6,7 +6,7 @@ import { isPcInstallCandidate, type LauncherInstall } from "@/lib/launcherInstal
 import { launcherInstallBySlug } from "@/lib/data/launcherInstall";
 import { isBrowserGame } from "@/lib/gameLaunch";
 
-export function resolveLauncherInstall(game: Pick<Game, "slug" | "launcherInstall" | "website">): LauncherInstall | null {
+function resolveLauncherInstall(game: Pick<Game, "slug" | "launcherInstall" | "website">): LauncherInstall | null {
   if (game.launcherInstall?.kind) return game.launcherInstall;
   return launcherInstallBySlug[game.slug] ?? null;
 }
@@ -53,11 +53,6 @@ export function launcherJoinUrl(
 /** One-click mod install into the base game folder. */
 export function launcherInstallModUrl(slug: string): string {
   return `playbound://install-mod/${slug}`;
-}
-
-/** Deep link that opens the browser connect page (remint). Prefer launcherSyncUrl for sync. */
-export function launcherAuthUrl(): string {
-  return "playbound://auth";
 }
 
 /** Deep link that syncs local installs with the saved launcher token (no remint). */

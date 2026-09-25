@@ -21,18 +21,6 @@ export async function viewerCanSeeTesting(): Promise<boolean> {
   }
 }
 
-/** @deprecated Prefer viewerCanSeeTesting for catalog; admin CMS stays requireAdminSession. */
-export async function viewerIsAdmin(): Promise<boolean> {
-  try {
-    const session = await getServerSession(authOptions);
-    return session?.user?.role === "admin";
-  } catch (err) {
-    // Let Next's own control-flow errors through — see unstable_rethrow.
-    unstable_rethrow(err);
-    return false;
-  }
-}
-
 /** True when the request is from an admin or tester (site session or launcher bearer). */
 export async function requestIncludesTesting(req?: Request): Promise<boolean> {
   if (await viewerCanSeeTesting()) return true;

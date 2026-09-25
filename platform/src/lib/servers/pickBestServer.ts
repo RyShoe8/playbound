@@ -47,7 +47,7 @@ export type ServerPick = {
  * and the whole promise of the button is that it does not send you somewhere
  * bad.
  */
-export function serverLatencyMs(server: GameServer, viewer: ViewerLocation): number | null {
+function serverLatencyMs(server: GameServer, viewer: ViewerLocation): number | null {
   if (!viewer) return null;
   const lat = server.location?.lat;
   const lon = server.location?.lon;

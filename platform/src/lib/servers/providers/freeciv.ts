@@ -29,7 +29,7 @@ function parseIntSafe(raw: string | undefined, fallback: number | null = null): 
 }
 
 /** Extract table rows; Freeciv meta uses Host | Port | … | Players | Message. */
-export function parseFreecivMetaserverHtml(html: string): GameServer[] {
+function parseFreecivMetaserverHtml(html: string): GameServer[] {
   const rows: GameServer[] = [];
   const seen = new Set<string>();
   const trRe = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;

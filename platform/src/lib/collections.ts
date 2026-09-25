@@ -88,8 +88,3 @@ export async function listAllCollections(): Promise<
   }
   return seedCollections.map((c, i) => ({ ...c, published: true, sortOrder: i }));
 }
-
-/** Collections featuring a given game, used on the game hub. */
-export async function collectionsFeaturingGame(gameSlug: string): Promise<Collection[]> {
-  return (await loadPublished()).filter((c) => c.gameSlugs.includes(gameSlug));
-}

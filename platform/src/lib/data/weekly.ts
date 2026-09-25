@@ -38,13 +38,3 @@ export function isoWeek(date: Date): { year: number; week: number } {
   const week = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
   return { year: d.getUTCFullYear(), week };
 }
-
-/** @deprecated Prefer lib/weekly — kept for gradual import migration. */
-export const weeklyIssues = weeklyIssuesSeed;
-export const issuesBySlug = new Map(weeklyIssuesSeed.map((i) => [issueSlug(i), i]));
-export function issuesNewestFirst(): WeeklyIssueSeed[] {
-  return [...weeklyIssuesSeed].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
-}
-export function issueForGame(gameSlug: string): WeeklyIssueSeed | undefined {
-  return issuesNewestFirst().find((i) => i.gameSlug === gameSlug);
-}

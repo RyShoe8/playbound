@@ -39,7 +39,7 @@ export function channelExpiresAt(input: ChannelLifecycleInput): Date {
   return new Date(endsAt.getTime() + EVENT_CHANNEL_GRACE_MS);
 }
 
-export function hasChannel(input: ChannelLifecycleInput): boolean {
+function hasChannel(input: ChannelLifecycleInput): boolean {
   return Boolean(input.discordVoiceChannelId || input.discordTextChannelId);
 }
 

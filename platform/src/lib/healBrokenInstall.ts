@@ -23,7 +23,7 @@ function ghHeaders(): HeadersInit {
 }
 
 /** Higher score = better Windows installer/archive candidate. */
-export function scoreGithubReleaseAsset(name: string): number {
+function scoreGithubReleaseAsset(name: string): number {
   const lower = name.toLowerCase();
   if (SKIP_EXT.test(lower)) return -1;
   if (!/\.(exe|msi|zip|jar)$/i.test(lower)) return -1;
@@ -210,7 +210,7 @@ async function healRetiredMrBoomHost(): Promise<ProbeResult | null> {
   };
 }
 
-export async function healBrokenGameInstall(opts: {
+async function healBrokenGameInstall(opts: {
   kind?: string | null;
   repo?: string | null;
   url?: string | null;
@@ -243,7 +243,7 @@ export async function healBrokenGameInstall(opts: {
   return null;
 }
 
-export async function healBrokenModInstall(opts: {
+async function healBrokenModInstall(opts: {
   slug?: string | null;
   downloadKind?: string | null;
   githubRepo?: string | null;

@@ -7,6 +7,7 @@ import { Link2, Plus, X } from "lucide-react";
 import { GENRES, GEAR_PLATFORMS, slugifyTitle } from "@/lib/gamePayload";
 import { GEAR_CATEGORIES } from "@/lib/amazonGear";
 import { uploadAdminMediaFile } from "@/lib/adminUploadHelper";
+import { ChipToggle } from "@/components/admin/ChipToggle";
 
 const label = "block text-xs font-semibold text-muted-foreground";
 const field =
@@ -58,28 +59,6 @@ type ImportPayload = {
   price: string | null;
   warnings?: string[];
 };
-
-function ChipToggle({
-  label: chipLabel,
-  on,
-  onClick,
-}: {
-  label: string;
-  on: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-full px-3 py-1 text-xs font-bold ${
-        on ? "bg-primary text-primary-foreground" : "border border-border bg-secondary"
-      }`}
-    >
-      {chipLabel}
-    </button>
-  );
-}
 
 function toggleInList(list: string[], value: string): string[] {
   return list.includes(value) ? list.filter((x) => x !== value) : [...list, value];

@@ -51,7 +51,7 @@ export interface TelemetryIngestPayload {
 }
 
 /** Traffic we never want in GA4 scripts or Mongo page views. */
-export const TELEMETRY_EXCLUDED_PREFIXES = ["/admin", "/launcher/auth"] as const;
+const TELEMETRY_EXCLUDED_PREFIXES = ["/admin", "/launcher/auth"] as const;
 
 export function isTelemetryExcludedPath(pathname: string): boolean {
   return TELEMETRY_EXCLUDED_PREFIXES.some(

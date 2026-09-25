@@ -19,10 +19,10 @@ import type { DiscountedGame } from "@/lib/dealsShared";
  */
 export {
   DEEP_DISCOUNT_MIN_PERCENT,
-  percentOff,
-  formatCents,
-  cleanDealTitle,
-  upgradeCoverImage,
+  
+  
+  
+  
 } from "@/lib/dealsShared";
 export type { DiscountedGame } from "@/lib/dealsShared";
 

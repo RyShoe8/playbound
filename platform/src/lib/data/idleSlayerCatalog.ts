@@ -6,7 +6,7 @@
  */
 export const IDLE_SLAYER_SLUG = "idle-slayer" as const;
 
-export const idleSlayerPlatforms = ["Android", "iOS"] as const;
+const idleSlayerPlatforms = ["Android", "iOS"] as const;
 
 export const idleSlayerAndroidStoreUrl =
   "https://play.google.com/store/apps/details?id=com.pabloleban.IdleSlayer";
@@ -14,7 +14,7 @@ export const idleSlayerAndroidStoreUrl =
 export const idleSlayerIosStoreUrl = "https://apps.apple.com/app/idle-slayer/id1526599527";
 
 /** No PlayBound Launcher / Steam install path — store CTAs only. */
-export const idleSlayerLauncherInstall = {
+const idleSlayerLauncherInstall = {
   enabled: false,
   kind: "external" as const,
   url: "https://idleslayer.com/",

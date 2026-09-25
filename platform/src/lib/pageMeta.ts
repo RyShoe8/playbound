@@ -56,7 +56,7 @@ export type PageMetaResult =
   | { ok: false; reason: "blocked" | "failed"; status?: number; message: string };
 
 /** Thrown when a site WAF/bot checkpoint blocks scraping after all fallbacks. */
-export class PageFetchBlockedError extends Error {
+class PageFetchBlockedError extends Error {
   readonly status?: number;
   constructor(message: string, status?: number) {
     super(message);
@@ -426,21 +426,6 @@ async function fetchViaJina(url: URL): Promise<PageMeta | null> {
   } catch {
     return null;
   }
-}
-
-/**
- * Fetch Open Graph / page meta for an admin-supplied URL.
- *
- * Tries a direct browser-like fetch first, then Jina reader. Callers that want
- * a soft draft on WAF blocks should use {@link tryFetchPageMeta} instead.
- */
-export async function fetchPageMeta(url: string): Promise<PageMeta> {
-  const result = await tryFetchPageMeta(url);
-  if (result.ok) return result.meta;
-  if (result.reason === "blocked") {
-    throw new PageFetchBlockedError(result.message, result.status);
-  }
-  throw new Error(result.message);
 }
 
 /** Same as {@link fetchPageMeta} but returns a result instead of throwing on scrape failure. */

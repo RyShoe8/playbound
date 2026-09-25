@@ -120,12 +120,6 @@ export async function listGearByCategory(segment: string): Promise<GearItem[]> {
   return all.filter((g) => g.category === category);
 }
 
-/** Categories that actually have something published in them. */
-export async function listGearCategories(): Promise<string[]> {
-  const all = await listPublishedGear();
-  return [...new Set(all.map((g) => g.category))].sort();
-}
-
 /** Published items grouped by category, for the directory page. */
 export async function groupGearByCategory(): Promise<Record<string, GearItem[]>> {
   const all = await listPublishedGear();

@@ -25,7 +25,7 @@ import {
   inferGameGenres,
   type DiscountedGame,
 } from "@/lib/dealsShared";
-import { DISCOUNT_STORE_SLUGS, type DiscountStoreSlug } from "./types";
+import { type DiscountStoreSlug } from "./types";
 
 type LeanDoc = Record<string, unknown>;
 
@@ -123,5 +123,5 @@ export const listActiveDiscounts = cache(
     })()
 );
 
-export { DISCOUNT_STORE_SLUGS };
+;
 export type { DiscountStoreSlug };

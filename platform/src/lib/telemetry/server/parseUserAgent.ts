@@ -34,7 +34,7 @@ export function launcherOsLabel(platform: unknown): string | null {
   return LAUNCHER_OS[token] || token;
 }
 
-export function parseLauncherUserAgent(raw: string): ParsedUserAgent | null {
+function parseLauncherUserAgent(raw: string): ParsedUserAgent | null {
   const match = raw.match(/^playbound-launcher\/\S+\s*\(([^;)]+)/i);
   if (!match) return null;
   const token = match[1].trim().toLowerCase();

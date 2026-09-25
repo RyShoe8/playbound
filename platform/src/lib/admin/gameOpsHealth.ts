@@ -52,12 +52,6 @@ export type AreaHealth = {
 
 export type GameHealth = Record<GameHealthArea, AreaHealth>;
 
-const HEALTHY: AreaHealth = { status: "green", failed: 0, attempts: 0 };
-
-export function emptyGameHealth(): GameHealth {
-  return { install: HEALTHY, party: HEALTHY, partyOps: HEALTHY };
-}
-
 /**
  * Colour for one area.
  *

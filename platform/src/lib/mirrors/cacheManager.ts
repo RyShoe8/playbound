@@ -18,19 +18,12 @@ import {
   archiveArtifactOnHost,
   deleteArchivedArtifactOnHost,
 } from "@/lib/gameHost/client";
-import {
-  checkR2ObjectExists,
-  deleteObjectFromR2,
-  getR2PresignedDownloadUrl,
-  uploadObjectToR2,
-  uploadStreamToR2,
-} from "./r2Client";
+import { checkR2ObjectExists, deleteObjectFromR2, getR2PresignedDownloadUrl, uploadStreamToR2 } from "./r2Client";
 import { calculateArtifactCacheScore, evaluateSourceHealth } from "./scoring";
-import { formatDataVolume, formatR2TransferMessage, formatVpsTransferMessage } from "./vpsProgress";
-
+import { formatR2TransferMessage, formatVpsTransferMessage } from "./vpsProgress";
 
 /** Resolves an itch.io game page to its direct pre-signed CDN download URL. */
-export async function resolveItchDownloadUrl(pageUrl: string, uploadIdHint?: string | null): Promise<string | null> {
+async function resolveItchDownloadUrl(pageUrl: string, uploadIdHint?: string | null): Promise<string | null> {
   try {
     const res = await fetch(pageUrl, {
       headers: {
@@ -72,7 +65,7 @@ export async function resolveItchDownloadUrl(pageUrl: string, uploadIdHint?: str
  * Bypasses Cloudflare bot challenges by requesting with use_mirror=autoselect
  * and following to the final dl.sourceforge.net CDN mirror.
  */
-export async function resolveSourceForgeDownloadUrl(pageOrDownloadUrl: string): Promise<string | null> {
+async function resolveSourceForgeDownloadUrl(pageOrDownloadUrl: string): Promise<string | null> {
   try {
     let direct = pageOrDownloadUrl.trim();
     const match = direct.match(/sourceforge\.net\/projects\/([^/]+)\/files\/(.+?)(?:\/download)?(?:\?.*)?$/i);
@@ -232,7 +225,7 @@ export async function updateMirrorSettings(
 /**
  * Re-evaluates scores for all artifacts based on latest telemetry and public mirror health.
  */
-export async function rescoreAllArtifacts(): Promise<void> {
+async function rescoreAllArtifacts(): Promise<void> {
   await dbConnect();
   const artifacts = await Artifact.find({});
 
@@ -271,7 +264,7 @@ export async function rescoreAllArtifacts(): Promise<void> {
  * Core cache management rebalancing algorithm.
  * Promotes high-score candidates and evicts low-value items to stay within budget.
  */
-export async function rebalanceR2Cache(): Promise<{
+async function rebalanceR2Cache(): Promise<{
   promotedCount: number;
   evictedCount: number;
   currentR2Bytes: number;
@@ -428,7 +421,7 @@ export type PromotionProgressCallback = (progress: {
 /**
  * Ensures an artifact's physical bytes are uploaded from the VPS archive, catalog mirror, or staging to Cloudflare R2.
  */
-export async function syncArtifactToR2(
+async function syncArtifactToR2(
   artifact: IArtifact,
   onProgress?: (bytesUploaded: number, totalBytes: number, percent: number) => void
 ): Promise<{ success: boolean; message: string }> {
@@ -735,7 +728,6 @@ export async function manualPromoteArtifact(
     message: `Promoted ${artifact.filename} to R2 hot cache. ${syncResult.message}${supersededNote}`,
   };
 }
-
 
 /**
  * Manually evicts an artifact from R2. VPS authoritative archive is always preserved.

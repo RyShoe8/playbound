@@ -1,38 +1,9 @@
 /**
- * Couch Mode protocol types and constants (JSON v1).
+ * Couch Mode protocol constants (JSON v1).
  * Keep in sync with docs/couch-input-protocol.md and launcher/services/couch/protocol.js.
  */
 
-export const COUCH_PROTOCOL_VERSION = 1;
 export const COUCH_MAX_PLAYERS = 4;
-
-/** @typedef {'legacy-virtual-pad' | 'native-structured-input'} CouchInputMode */
-/** @typedef {'host' | 'controller' | 'display'} CouchSessionRole */
-
-export const COUCH_INPUT_MODES = /** @type {const} */ ([
-  "legacy-virtual-pad",
-  "native-structured-input",
-]);
-
-export const COUCH_ROLES = /** @type {const} */ (["host", "controller", "display"]);
-
-export const INPUT_PROFILE_IDS = /** @type {const} */ ([
-  "keyboard-mouse",
-  "standard-gamepad",
-  "touch-gamepad",
-  "racing-wheel",
-  "golf-swing",
-  "tilt-steering",
-  "party-buttons",
-  "twin-stick",
-  "pointer",
-]);
-
-export const SHIPPED_INPUT_PROFILES = /** @type {const} */ ([
-  "keyboard-mouse",
-  "standard-gamepad",
-  "touch-gamepad",
-]);
 
 /** Xbox-layout button bitmasks for JSON v1 `buttons` field. */
 export const BUTTON = {

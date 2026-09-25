@@ -2,7 +2,7 @@ import { Schema } from "mongoose";
 import { PERFORMANCE_TIERS, REQUIREMENT_SOURCES, GRAPHICS_APIS } from "@/lib/hardware/types";
 
 /** Reusable subdocument for additive structured hardware requirements. */
-export const RequirementSpecSchema = new Schema(
+const RequirementSpecSchema = new Schema(
   {
     os: { type: [String], default: undefined },
     arch: { type: [String], default: undefined },
@@ -19,7 +19,7 @@ export const RequirementSpecSchema = new Schema(
   { _id: false }
 );
 
-export const RequirementProvenanceSchema = new Schema(
+const RequirementProvenanceSchema = new Schema(
   {
     source: { type: String, enum: REQUIREMENT_SOURCES, default: "unverified" },
     sourceUrl: { type: String, default: null },

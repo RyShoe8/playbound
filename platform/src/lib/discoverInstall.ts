@@ -163,7 +163,7 @@ export async function findDirectInstaller(website: string): Promise<LauncherInst
   };
 }
 
-export function steamInstallRecipe(steamAppId: string): LauncherInstall {
+function steamInstallRecipe(steamAppId: string): LauncherInstall {
   return {
     enabled: true,
     kind: "external",

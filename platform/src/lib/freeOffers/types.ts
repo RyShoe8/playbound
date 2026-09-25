@@ -9,10 +9,6 @@
 export const STORE_SLUGS = ["epic", "steam", "gog", "prime_gaming", "alienware_arena"] as const;
 export type StoreSlug = (typeof STORE_SLUGS)[number];
 
-export function isStoreSlug(value: unknown): value is StoreSlug {
-  return typeof value === "string" && (STORE_SLUGS as readonly string[]).includes(value);
-}
-
 // ── Offer types ──────────────────────────────────────────────────────────
 export const OFFER_TYPES = [
   "free_to_keep",
@@ -21,10 +17,6 @@ export const OFFER_TYPES = [
   "free_with_subscription",
 ] as const;
 export type OfferType = (typeof OFFER_TYPES)[number];
-
-export function isOfferType(value: unknown): value is OfferType {
-  return typeof value === "string" && (OFFER_TYPES as readonly string[]).includes(value);
-}
 
 // ── Match confidence ─────────────────────────────────────────────────────
 export const MATCH_CONFIDENCE = ["exact", "high", "low", "unmatched"] as const;

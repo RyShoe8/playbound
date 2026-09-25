@@ -49,7 +49,7 @@ export type { PartyHostMode };
  * the only way those games work at all, so their client hosting is not a
  * claim, it is the existing behaviour.
  */
-export const CLIENT_HOSTING_VERIFIED: ReadonlySet<string> = new Set<string>([
+const CLIENT_HOSTING_VERIFIED: ReadonlySet<string> = new Set<string>([
   /*
    * Each entry records what established that this game's client can host.
    * Anything without evidence stays out — listUnverifiedClientHosting() is
@@ -457,25 +457,4 @@ export function findHostModeConfigProblems(): HostModeConfigProblem[] {
   }
 
   return problems;
-}
-
-/**
- * Managed-server games still waiting on a host-and-join test before their
- * client-hosting option appears. Peer-hosted games are excluded — they never
- * needed verifying.
- */
-export function listUnverifiedClientHosting(): Array<{
-  gameSlug: string;
-  title: string;
-  port: number;
-  protocol: "udp" | "tcp" | "both";
-}> {
-  return Object.values(HOSTABLE_GAMES)
-    .filter((game) => !CLIENT_HOSTING_VERIFIED.has(game.slug) && !isPeerHostedGame(game.slug))
-    .map((game) => ({
-      gameSlug: game.slug,
-      title: game.title,
-      port: game.defaultPort,
-      protocol: game.protocol,
-    }));
 }

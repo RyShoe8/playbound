@@ -1,9 +1,9 @@
 "use client";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, UserPlus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { upload } from "@vercel/blob/client";
 import {
   FEATURES,
@@ -57,6 +57,7 @@ import type { GameTierMap } from "@/lib/access/tierMap";
 import type { PriceType } from "@/lib/access/types";
 import { SizeInput } from "@/components/admin/SizeInput";
 import { LauncherPackageUploader } from "@/components/admin/LauncherPackageUploader";
+import { ChipToggle } from "@/components/admin/ChipToggle";
 
 /** Games with a live PlayBound server list provider (keep in sync with registry). */
 const WIRED_SERVER_PROVIDERS = new Set([
@@ -79,28 +80,6 @@ const WIRED_SERVER_PROVIDERS = new Set([
 ]);
 
 type DevOption = { slug: string; name: string };
-
-function ChipToggle({
-  label,
-  on,
-  onClick,
-}: {
-  label: string;
-  on: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-full px-3 py-1 text-xs font-bold ${
-        on ? "bg-primary text-primary-foreground" : "border border-border bg-secondary"
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
 
 function toggleInList<T extends string>(list: T[], value: T): T[] {
   return list.includes(value) ? list.filter((x) => x !== value) : [...list, value];
@@ -216,7 +195,6 @@ export function GameEditorForm({
       developerSlug: slug || prev.developerSlug || "indie-web",
     }));
   }
-
 
   // Mirrors the server-side publish gate so nothing is a surprise on save.
   // Must apply the same derivation first — the server fills install steps and

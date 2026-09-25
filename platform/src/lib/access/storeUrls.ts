@@ -1,6 +1,6 @@
 /** Parse storefront product URLs. No fetches — safe for the admin client. */
 
-export const LIVE_PRICE_RETAILERS = [
+const LIVE_PRICE_RETAILERS = [
   "Steam",
   "GOG",
   "Epic Games Store",

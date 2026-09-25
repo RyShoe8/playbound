@@ -2114,7 +2114,7 @@ export function ControllerClient({
 
 /* ── Chrome ──────────────────────────────────────────────────────────── */
 
-export const STANDARD_CONTROLLER_LEGEND: ReadonlyArray<{
+const STANDARD_CONTROLLER_LEGEND: ReadonlyArray<{
   action: string;
   buttons: ReadonlyArray<string>;
 }> = [

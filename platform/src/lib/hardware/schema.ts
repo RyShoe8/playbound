@@ -1,9 +1,9 @@
 import { z } from "zod";
 import { GRAPHICS_APIS, PERFORMANCE_TIERS, REQUIREMENT_SOURCES } from "./types";
 
-export const performanceTierSchema = z.enum(PERFORMANCE_TIERS);
-export const graphicsApiSchema = z.enum(GRAPHICS_APIS);
-export const requirementSourceSchema = z.enum(REQUIREMENT_SOURCES);
+const performanceTierSchema = z.enum(PERFORMANCE_TIERS);
+const graphicsApiSchema = z.enum(GRAPHICS_APIS);
+const requirementSourceSchema = z.enum(REQUIREMENT_SOURCES);
 
 /**
  * A hardware figure, or none.
@@ -29,7 +29,7 @@ function optionalHardwareAmount(max: number) {
   );
 }
 
-export const requirementSpecSchema = z
+const requirementSpecSchema = z
   .object({
     os: z.array(z.enum(["windows", "macos", "linux"])).optional(),
     arch: z.array(z.enum(["x64", "arm64", "x86", "unknown"])).optional(),
@@ -45,7 +45,7 @@ export const requirementSpecSchema = z
   })
   .strict();
 
-export const requirementProvenanceSchema = z
+const requirementProvenanceSchema = z
   .object({
     source: requirementSourceSchema,
     sourceUrl: z.string().url().max(500).nullable().optional(),
@@ -77,7 +77,7 @@ export const modHardwareRequirementsSchema = z
   })
   .strict();
 
-export const detectedGpuSchema = z.object({
+const detectedGpuSchema = z.object({
   rawName: z.string().max(300),
   manufacturer: z.string().max(80).nullable().optional(),
   model: z.string().max(200).nullable().optional(),

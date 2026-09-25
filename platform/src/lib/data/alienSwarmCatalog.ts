@@ -5,13 +5,13 @@
  */
 export const ALIEN_SWARM_SLUG = "alien-swarm" as const;
 
-export const alienSwarmSystemRequirements = {
+const alienSwarmSystemRequirements = {
   min: "Windows 7 / Vista / XP · Pentium 4 3.0 GHz · 1 GB RAM (XP) / 2 GB (Vista+) · DX9 GPU 128 MB SM 2.0 · 2.5 GB storage",
   recommended:
     "Windows 7+ · Core 2 Duo 2.4 GHz · 2 GB RAM · DX9 GPU SM 3.0 (GeForce 7600 / Radeon X1600 or better) · 2.5 GB storage",
 } as const;
 
-export const alienSwarmHardwareRequirements = {
+const alienSwarmHardwareRequirements = {
   min: {
     ramMB: 2048,
     storageMB: 2560,
@@ -37,7 +37,7 @@ export const alienSwarmHardwareRequirements = {
   },
 };
 
-export const alienSwarmEditorial = {
+const alienSwarmEditorial = {
   qualityBar: {
     genuinelyFree: true,
     finished: true,

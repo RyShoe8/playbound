@@ -235,18 +235,3 @@ export function parseFreeTextRequirementsBlock(
     },
   };
 }
-
-/** Attach parsed hardwareRequirements when missing and free-text is present. */
-export function attachParsedHardwareRequirements<
-  T extends {
-    systemRequirements?: { min?: string; recommended?: string } | null;
-    hardwareRequirements?: HardwareRequirementsBlock | null;
-  },
->(items: T[]): T[] {
-  return items.map((item) => {
-    if (item.hardwareRequirements) return item;
-    const parsed = parseFreeTextRequirementsBlock(item.systemRequirements ?? undefined);
-    if (!parsed) return item;
-    return { ...item, hardwareRequirements: parsed };
-  });
-}

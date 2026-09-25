@@ -4,9 +4,9 @@ import {
   type DiscussionCategory,
 } from "@/lib/discussion/categories";
 
-export { DISCUSSION_CATEGORIES, type DiscussionCategory };
+export {  type DiscussionCategory };
 
-export const TOPIC_STATUSES = ["open", "locked", "archived", "removed"] as const;
+const TOPIC_STATUSES = ["open", "locked", "archived", "removed"] as const;
 export type TopicStatus = (typeof TOPIC_STATUSES)[number];
 
 export interface DiscussionTopicDoc {

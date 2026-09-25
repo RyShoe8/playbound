@@ -18,7 +18,7 @@ export const PLAY_INVITE_STATUSES = [
 export type PlayInviteStatus = (typeof PLAY_INVITE_STATUSES)[number];
 
 /** How PlayBound can help the viewer join a friend's current activity. */
-export const JOIN_CAPABILITIES = [
+const JOIN_CAPABILITIES = [
   "supported",
   "unsupported",
   "requiresManualJoin",

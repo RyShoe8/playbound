@@ -94,7 +94,7 @@ const VIRTUAL_PREFIX = "virtual:";
  * and that must not become a 500 — an id we cannot decode is simply an id that
  * will not match anything.
  */
-export function decodeEditionId(id: string): string {
+function decodeEditionId(id: string): string {
   if (!id) return "";
   try {
     return decodeURIComponent(id);
@@ -734,12 +734,6 @@ export async function listPublicEditionsForGame(game: Game): Promise<Edition[]> 
   return publicOnly.length > 0 ? publicOnly : all.slice(0, 1);
 }
 
-/** The edition to treat as "the" way to play, for install buttons and the launcher. */
-export async function defaultEditionForGame(game: Game): Promise<Edition> {
-  const editions = await listEditionsForGame(game);
-  return editions.find((e) => e.isDefault) ?? editions[0];
-}
-
 /** One edition by its slug within a game. Hidden ones resolve by direct URL. */
 export async function getEditionBySlug(
   game: Game,
@@ -970,24 +964,5 @@ export async function searchEditions(query: string, limit = 20): Promise<Edition
   } catch (err) {
     console.error("[editions] search failed:", err);
     return [];
-  }
-}
-
-/**
- * Point every edition of a renamed game at its new slug.
- *
- * Editions denormalize gameSlug, so without this a game rename would orphan
- * all of them — the game page would fall back to a virtual Official edition
- * and the real ones would be unreachable. Called from the game rename cascade.
- */
-export async function cascadeEditionGameSlug(from: string, to: string): Promise<number> {
-  if (!from || !to || from === to) return 0;
-  try {
-    await dbConnect();
-    const res = await EditionModel.updateMany({ gameSlug: from }, { $set: { gameSlug: to } });
-    return res.modifiedCount ?? 0;
-  } catch (err) {
-    console.error("[editions] slug cascade failed:", err);
-    return 0;
   }
 }

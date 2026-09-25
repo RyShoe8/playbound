@@ -4,22 +4,22 @@
  */
 export const SPIKE_CROSS_SLUG = "the-spike-cross" as const;
 
-export const spikeCrossPlatforms = ["Windows", "Android", "iOS"] as const;
+const spikeCrossPlatforms = ["Windows", "Android", "iOS"] as const;
 
-export const spikeCrossAndroidStoreUrl =
+const spikeCrossAndroidStoreUrl =
   "https://play.google.com/store/apps/details?id=com.daerisoft.thespikerm";
 
-export const spikeCrossIosStoreUrl =
+const spikeCrossIosStoreUrl =
   "https://apps.apple.com/app/the-spike-volleyball-story/id1510097347";
 
-export const spikeCrossFeatures = [
+const spikeCrossFeatures = [
   "Multiplayer",
   "Co-Op",
   "Split-Screen Co-op",
   "Controller Support",
 ] as const;
 
-export const spikeCrossLauncherInstall = {
+const spikeCrossLauncherInstall = {
   enabled: true,
   kind: "external" as const,
   url: "steam://install/3983810",
@@ -28,12 +28,12 @@ export const spikeCrossLauncherInstall = {
   note: "Free on Steam only for PC — no DRM-free Windows build. Mobile installs use Google Play / App Store.",
 };
 
-export const spikeCrossSystemRequirements = {
+const spikeCrossSystemRequirements = {
   min: "Windows 10 · Dual-Core CPU · 4 GB RAM · DX11 GPU · 1 GB storage",
   recommended: "Windows 10 · Quad-Core · 8 GB RAM · Dedicated GPU · 1 GB storage",
 } as const;
 
-export const spikeCrossHardwareRequirements = {
+const spikeCrossHardwareRequirements = {
   min: {
     ramMB: 4096,
     storageMB: 1024,
@@ -59,7 +59,7 @@ export const spikeCrossHardwareRequirements = {
   },
 };
 
-export const spikeCrossInstallSteps = [
+const spikeCrossInstallSteps = [
   {
     platform: "windows" as const,
     text: "Choose Install in PlayBound. Steam opens the free The Spike Cross app (3983810) — sign in if needed and finish Steam's install.",

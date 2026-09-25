@@ -18,7 +18,7 @@ export const DEFAULT_NIGHTLY: NightlyScheduleConfig = {
   games: [],
 };
 
-export function validTimezone(zone: string): boolean {
+function validTimezone(zone: string): boolean {
   try {
     new Intl.DateTimeFormat("en-US", { timeZone: zone });
     return true;

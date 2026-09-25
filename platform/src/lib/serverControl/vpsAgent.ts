@@ -60,7 +60,7 @@ export interface VpsAgentClient {
   ): Promise<{ ok: true; response: string } | { ok: false; error: string }>;
 }
 
-export const liveVpsAgentClient: VpsAgentClient = {
+const liveVpsAgentClient: VpsAgentClient = {
   listRooms: listHostRooms,
   createRoom: createHostRoom,
   deleteRoom: deleteHostRoom,

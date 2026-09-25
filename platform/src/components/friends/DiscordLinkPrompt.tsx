@@ -1,6 +1,6 @@
 "use client";
 
-import { firePlayboundDeepLink, openDiscordInvite, parseDiscordInviteCode } from "@/lib/openPlayboundDeepLink";
+import { firePlayboundDeepLink, parseDiscordInviteCode } from "@/lib/openPlayboundDeepLink";
 
 export function DiscordLinkPrompt({
   open,
@@ -57,34 +57,4 @@ export function DiscordLinkPrompt({
       </div>
     </div>
   );
-}
-
-export function followPartyVoice(
-  result: {
-    needsDiscordLink?: boolean;
-    inviteUrl?: string | null;
-    inPartyVoice?: boolean;
-    moved?: boolean;
-    discord?: { inviteUrl?: string | null };
-  } | null,
-  targetWindow?: Window | null
-): { needsDiscordLink: boolean; inviteUrl: string | null } {
-  const inviteUrl = result?.inviteUrl || result?.discord?.inviteUrl || null;
-  /*
-   * Someone already in the party's channel needs nothing opened. The invite is
-   * permanent and therefore almost always present, so keying off its existence
-   * alone sent people an invite to a room they were sitting in.
-   */
-  const alreadyPlaced = Boolean(result?.inPartyVoice || result?.moved);
-  if (inviteUrl && !alreadyPlaced) {
-    if (targetWindow && !targetWindow.closed) {
-      targetWindow.close();
-    }
-    if (typeof window !== "undefined") {
-      openDiscordInvite(inviteUrl);
-    }
-  } else if (targetWindow && !targetWindow.closed) {
-    targetWindow.close();
-  }
-  return { needsDiscordLink: Boolean(result?.needsDiscordLink), inviteUrl };
 }

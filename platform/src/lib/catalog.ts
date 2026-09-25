@@ -14,7 +14,7 @@ import {
 } from "@/lib/data/dungeonKeeperGoldSpecs";
 import { launcherInstallBySlug } from "@/lib/data/launcherInstall";
 import { partyMaxPlayersBySlug } from "@/lib/data/partyMaxPlayers";
-import { collections, collectionsBySlug } from "@/lib/data";
+import { collections } from "@/lib/data";
 import { listCollections } from "@/lib/collections";
 import { listDevelopers } from "@/lib/developers";
 import { searchEditions } from "@/lib/editions";
@@ -31,7 +31,7 @@ import type { Collection, Developer } from "@/lib/data/types";
 // backed now, so reaching for the static list would silently serve only the
 // nineteen seed entries and miss anything added through the admin — import
 // from "@/lib/developers" instead.
-export { collections, collectionsBySlug };
+export { collections,  };
 
 type LeanGame = Record<string, unknown>;
 
@@ -881,15 +881,6 @@ function compareNewestFirst(a: Game, b: Game): number {
   return a.title.localeCompare(b.title);
 }
 
-/** @deprecated Prefer newestGame() — homepage no longer uses weekly issues. */
-export async function gameOfTheWeek(): Promise<Game | undefined> {
-  return newestGame();
-}
-
-export async function hiddenGems(): Promise<Game[]> {
-  return (await listGames()).filter((g) => g.hiddenGem);
-}
-
 /**
  * Published games ranked by all-time playtime (`game_finished.durationMs`).
  * Cached briefly so the homepage does not re-aggregate telemetry every request.
@@ -968,10 +959,6 @@ async function computeMostPopularGames(limit: number): Promise<Game[]> {
   return ordered.slice(0, limit);
 }
 
-export async function browserGames(): Promise<Game[]> {
-  return (await listGames()).filter((g) => g.browserPlayable);
-}
-
 export async function gamesByDeveloper(devSlug: string): Promise<Game[]> {
   return (await listGames()).filter((g) => g.developerSlug === devSlug);
 }
@@ -1044,7 +1031,7 @@ export async function searchAll(
  * mostPopularGames already ranks by. Cached on the same cadence as the rest of
  * the activity figures.
  */
-export function playCountsBySlug(): Promise<Record<string, number>> {
+function playCountsBySlug(): Promise<Record<string, number>> {
   return unstable_cache(computePlayCountsBySlug, ["catalog-play-counts"], {
     revalidate: 900,
     tags: ["catalog", "live-activity"],
@@ -1178,7 +1165,7 @@ export async function searchGames(
   return games;
 }
 
-export { seedGames };
+;
 
 /**
  * Find a catalog game by store-specific external ID.

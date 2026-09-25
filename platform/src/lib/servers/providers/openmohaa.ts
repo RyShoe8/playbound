@@ -168,7 +168,7 @@ async function fetchGamenameList(gamename: string): Promise<OpenMohaaListResult>
  * Prefer the OpenMoHAA-specific master name when it has servers; otherwise use
  * the shared `mohaa` list OpenMoHAA clients actually join.
  */
-export async function fetchOpenMohaaList(): Promise<OpenMohaaListResult> {
+async function fetchOpenMohaaList(): Promise<OpenMohaaListResult> {
   const preferred = await fetchGamenameList("openmohaa").catch(() => null);
   if (preferred && preferred.servers.length > 0) return preferred;
 

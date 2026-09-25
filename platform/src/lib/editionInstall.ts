@@ -208,8 +208,3 @@ export function resolveSecondaryActions(edition: Edition): InstallAction[] {
   }
   return out;
 }
-
-/** Which config key a method reads. Drives the admin form's conditional fields. */
-export function configKeyFor(method: InstallMethod): keyof Edition["installConfig"] {
-  return method;
-}

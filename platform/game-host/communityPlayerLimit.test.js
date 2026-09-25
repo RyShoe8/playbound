@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { acceptedSettingsFor, recipes } from "./recipes.js";
+import { acceptedSettingsFor, BOT_FILL_RECIPES, botFillCount, recipes } from "./recipes.js";
 import { readFileSync } from "node:fs";
 
 const managed = (slug, limit = 12) => ({
@@ -55,4 +55,19 @@ test("managed server recipes translate the cap into native command-line controls
   const openTtdArgs = recipes.openttd.args(3979, managed("openttd"));
   assert.ok(openTtdArgs.includes("-c"));
   assert.ok(!recipes.openttd.args(3979, { managed: false }).includes("-c"));
+});
+
+test("the scheduler and agent agree on the bot-fill recipes, and each honours it", () => {
+  const source = readFileSync(new URL("../src/lib/communityHosting/reconcile.ts", import.meta.url), "utf8");
+  const declared = source.match(/const BOT_FILL_RECIPES = new Set\(\[([\s\S]*?)\]\)/)?.[1];
+  assert.ok(declared, "scheduler bot list must be inspectable");
+  const slugs = [...declared.matchAll(/"([\w-]+)"/g)].map((m) => m[1]);
+  assert.deepEqual([...slugs].sort(), [...BOT_FILL_RECIPES].sort());
+  for (const slug of slugs) {
+    const ctx = { managed: true, partyId: "community-12345678", name: "Community", settings: { maxPlayers: 12, botFill: 6 } };
+    assert.equal(botFillCount(slug, ctx), 6, `${slug} accepts botFill`);
+    const args = recipes[slug].args(27030, ctx).join(" ");
+    assert.match(args, /bot_quota 6|tf_bot_quota 6|minplayers 6|bot_minplayers 6|g_bot_defaultFill 3/, `${slug} passes the fill`);
+    assert.doesNotMatch(recipes[slug].args(27030, { ...ctx, settings: { maxPlayers: 12 } }).join(" "), /bot_quota|minplayers|defaultFill/);
+  }
 });

@@ -5,7 +5,7 @@ import { normalizeCpuName, normalizeGpuName } from "./normalize";
 import { inferCpuTierFromName, inferGpuTierFromName } from "./tiers";
 import type { HardwareProfilePayload, PerformanceTierOrUnknown } from "./types";
 
-export async function upsertCpuKnowledge(rawName: string, extras?: {
+async function upsertCpuKnowledge(rawName: string, extras?: {
   cores?: number | null;
   threads?: number | null;
 }) {
@@ -39,7 +39,7 @@ export async function upsertCpuKnowledge(rawName: string, extras?: {
   });
 }
 
-export async function upsertGpuKnowledge(rawName: string, extras?: {
+async function upsertGpuKnowledge(rawName: string, extras?: {
   vramMB?: number | null;
 }) {
   await dbConnect();

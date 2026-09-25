@@ -1,10 +1,7 @@
 import { SITE_PUBLIC_HOST, SITE_URL } from "@/lib/site";
 
 /** Short Jackbox-style path: playbound.club/c/AB3D */
-export const COUCH_JOIN_PATH_PREFIX = "/c";
-
-/** Legacy path kept working for old QR stickers / bookmarks. */
-export const COUCH_JOIN_PATH_LEGACY_PREFIX = "/controller";
+const COUCH_JOIN_PATH_PREFIX = "/c";
 
 export function couchJoinPath(joinCode: string): string {
   const code = String(joinCode || "")

@@ -66,7 +66,7 @@ export async function getPlatformLimits() {
  * into, kept here so every caller already asks the right question and none of
  * them need changing when the answer starts varying.
  */
-export async function planSlotsForUser(_userId: string | null | undefined): Promise<number> {
+async function planSlotsForUser(_userId: string | null | undefined): Promise<number> {
   return 0;
 }
 

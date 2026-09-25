@@ -28,7 +28,7 @@ export type WeeklyIssue = WeeklyIssueSeed & {
   id: string;
 };
 
-export { issueSlug, isoWeek };
+;
 
 function toIssue(doc: Record<string, unknown>): WeeklyIssue {
   const year = Number(doc.year);

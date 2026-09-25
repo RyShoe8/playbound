@@ -103,9 +103,6 @@ export function applyKeyboardMouseEvent(
   return next;
 }
 
-export const KEYBOARD_MOUSE_HELP =
-  "WASD / arrows move · Z/J/Space attack · X/K/Shift · C/L · V/U · Q/E shoulders · Enter start · click = A / right-click = B";
-
 /** Structured legend for the game-view / join UI (readable keycaps). */
 export const KEYBOARD_MOUSE_LEGEND: ReadonlyArray<{
   action: string;

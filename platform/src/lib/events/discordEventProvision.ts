@@ -104,7 +104,7 @@ async function hydrateEventFromDb(event: EventLike): Promise<boolean> {
   return true;
 }
 
-export async function provisionEventDiscordVoice(
+async function provisionEventDiscordVoice(
   event: EventLike
 ): Promise<boolean> {
   const { url, secret } = botConfig();

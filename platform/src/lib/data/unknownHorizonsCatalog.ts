@@ -7,9 +7,9 @@
  */
 export const UNKNOWN_HORIZONS_SLUG = "unknown-horizons" as const;
 
-export const unknownHorizonsPlatforms = ["Windows", "macOS", "Linux"] as const;
+const unknownHorizonsPlatforms = ["Windows", "macOS", "Linux"] as const;
 
-export const unknownHorizonsLauncherInstall = {
+const unknownHorizonsLauncherInstall = {
   enabled: true,
   kind: "direct-installer" as const,
   url: "https://github.com/unknown-horizons/unknown-horizons/releases/download/2019.1/Unknown-Horizons-2019.1.214-Setup-VC15-x86.exe",
@@ -28,12 +28,12 @@ export const unknownHorizonsLauncherInstall = {
     "Official 2019.1 Windows setup (FIFE). PlayBound runs the installer silently; Play starts run_uh via the bundled Python (not a missing .exe).",
 };
 
-export const unknownHorizonsSystemRequirements = {
+const unknownHorizonsSystemRequirements = {
   min: "Windows 7 / Wine · dual-core CPU · 2 GB RAM · OpenGL 2.0 GPU · 500 MB storage",
   recommended: "Windows 10 / Wine · quad-core CPU · 4 GB RAM · dedicated GPU · 1 GB storage",
 } as const;
 
-export const unknownHorizonsHardwareRequirements = {
+const unknownHorizonsHardwareRequirements = {
   min: {
     ramMB: 2048,
     storageMB: 500,

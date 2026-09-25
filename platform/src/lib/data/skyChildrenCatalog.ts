@@ -6,7 +6,7 @@
  */
 export const SKY_CHILDREN_SLUG = "sky-children-of-the-light" as const;
 
-export const skyChildrenPlatforms = ["Android", "iOS"] as const;
+const skyChildrenPlatforms = ["Android", "iOS"] as const;
 
 export const skyChildrenAndroidStoreUrl =
   "https://play.google.com/store/apps/details?id=com.tgc.sky.android";
@@ -14,14 +14,14 @@ export const skyChildrenAndroidStoreUrl =
 export const skyChildrenIosStoreUrl =
   "https://apps.apple.com/app/sky-children-of-the-light/id1462117269";
 
-export const skyChildrenLauncherInstall = {
+const skyChildrenLauncherInstall = {
   enabled: false,
   kind: "external" as const,
   url: "https://www.thatgamecompany.com/sky/",
   note: "Sky on PlayBound is the free mobile edition (Google Play and App Store). PC/console builds are not offered here.",
 };
 
-export const skyChildrenInstallSteps = [
+const skyChildrenInstallSteps = [
   {
     platform: "android" as const,
     text: "Open the Google Play listing from the Sky game page and install the free Sky: Children of the Light build.",

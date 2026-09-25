@@ -83,7 +83,7 @@ export function activeOffers(access: GameAccess | undefined | null): RetailOffer
 }
 
 /** Displayed sources, cheapest first (affiliate wins a tie) — same order as Get Game. */
-export function displayedPurchases(access: GameAccess | undefined | null): RetailOffer[] {
+function displayedPurchases(access: GameAccess | undefined | null): RetailOffer[] {
   return [...activeOffers(access)].sort((a, b) => {
     if (a.priceCents !== b.priceCents) return a.priceCents - b.priceCents;
     if (a.affiliate !== b.affiliate) return a.affiliate ? -1 : 1;

@@ -1,8 +1,4 @@
-import {
-  PERFORMANCE_TIERS,
-  type PerformanceTier,
-  type PerformanceTierOrUnknown,
-} from "./types";
+import { type PerformanceTier, type PerformanceTierOrUnknown } from "./types";
 
 const RANK: Record<PerformanceTierOrUnknown, number> = {
   unknown: -1,
@@ -12,10 +8,6 @@ const RANK: Record<PerformanceTierOrUnknown, number> = {
   high: 3,
   enthusiast: 4,
 };
-
-export function isPerformanceTier(value: unknown): value is PerformanceTier {
-  return typeof value === "string" && (PERFORMANCE_TIERS as readonly string[]).includes(value);
-}
 
 export function tierRank(tier: PerformanceTierOrUnknown | null | undefined): number {
   if (!tier) return RANK.unknown;

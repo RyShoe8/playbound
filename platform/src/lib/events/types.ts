@@ -74,16 +74,12 @@ export const PUBLIC_LISTABLE_STATUSES: EventStatus[] = [
 ];
 
 /** Statuses that accept RSVP mutations. */
-export const RSVP_ALLOWED_STATUSES: EventStatus[] = [
+const RSVP_ALLOWED_STATUSES: EventStatus[] = [
   "published",
   "registration_open",
   "registration_closed",
   "live",
 ];
-
-export function isEventType(v: unknown): v is EventType {
-  return typeof v === "string" && v.length > 0 && v.length <= 40;
-}
 
 export function isEventStatus(v: unknown): v is EventStatus {
   return typeof v === "string" && (EVENT_STATUSES as readonly string[]).includes(v);
@@ -118,13 +114,4 @@ export function deriveEventStatus(opts: {
 
 export function canRsvp(status: EventStatus): boolean {
   return RSVP_ALLOWED_STATUSES.includes(status);
-}
-
-export function isLiveOrUpcoming(status: EventStatus): boolean {
-  return (
-    status === "published" ||
-    status === "registration_open" ||
-    status === "registration_closed" ||
-    status === "live"
-  );
 }

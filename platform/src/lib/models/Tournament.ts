@@ -140,4 +140,3 @@ export type TournamentMatchDoc = InferSchemaType<typeof TournamentMatchSchema> &
 export const TournamentMatch =
   models.TournamentMatch || model("TournamentMatch", TournamentMatchSchema);
 
-export default Tournament;

@@ -57,8 +57,3 @@ export function openRaEditionAllowsStockModPicker(
   const raw = String(editionSlug || "").toLowerCase().trim();
   return !raw || raw === "official";
 }
-
-/** True for games where the client has to be told which mod to join with. */
-export function needsModArgument(gameSlug: string): boolean {
-  return gameSlug === "openra" || gameSlug === "earth-2140-trilogy" || gameSlug === "openhv";
-}

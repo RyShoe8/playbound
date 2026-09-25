@@ -18,7 +18,6 @@ export interface AutomatedEventLogDoc extends Document {
   createdAt: Date;
 }
 
-export type AutonomousMatchLogDoc = AutomatedEventLogDoc;
 
 const AutomatedEventLogSchema = new Schema(
   {
@@ -46,5 +45,4 @@ const AutomatedEventLogSchema = new Schema(
 );
 
 export default models.AutomatedEventLog ||
-  models.AutonomousMatchLog ||
   model<AutomatedEventLogDoc>("AutomatedEventLog", AutomatedEventLogSchema);

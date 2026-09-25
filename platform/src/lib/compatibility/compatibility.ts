@@ -26,23 +26,13 @@ const DESKTOP_PLATFORMS = new Set(["windows", "web", "browser"]);
 const MOBILE_PLATFORMS = new Set(["android", "ios", "web", "browser"]);
 
 /** Platforms considered compatible for a device class (normalized lowercase). */
-export const PLATFORMS_FOR_DEVICE: Record<DeviceType, ReadonlySet<string>> = {
+const PLATFORMS_FOR_DEVICE: Record<DeviceType, ReadonlySet<string>> = {
   desktop: DESKTOP_PLATFORMS,
   macos: new Set(["macos", "web", "browser"]),
   linux: new Set(["linux", "web", "browser"]),
   tablet: MOBILE_PLATFORMS,
   mobile: MOBILE_PLATFORMS,
 };
-
-/** Display order + labels for card badges. */
-export const PLATFORM_BADGE_ORDER = [
-  { key: "web", match: /^(web|browser)$/i, label: "Browser" },
-  { key: "windows", match: /^windows$/i, label: "Windows" },
-  { key: "macos", match: /^mac\s?os$/i, label: "macOS" },
-  { key: "linux", match: /^linux$/i, label: "Linux" },
-  { key: "android", match: /^android$/i, label: "Android" },
-  { key: "ios", match: /^(ios|iphone|ipad)$/i, label: "iPhone" },
-] as const;
 
 export function normalizePlatform(value: string): string {
   const t = value.trim().toLowerCase();
@@ -58,7 +48,7 @@ export function isMobileDevice(device: DeviceType): boolean {
 }
 
 /** True when every listed platform is Android or iOS (mobile-store only). */
-export function isMobileOnlyPlatforms(platforms: string[] | undefined): boolean {
+function isMobileOnlyPlatforms(platforms: string[] | undefined): boolean {
   const normalized = (platforms ?? []).map(normalizePlatform).filter(Boolean);
   if (normalized.length === 0) return false;
   return normalized.every((p) => p === "android" || p === "ios");
@@ -186,33 +176,4 @@ export function prioritizeCompatible<T extends GameLike>(
     0,
     limit
   );
-}
-
-/** Unique badge rows for a game’s platforms (and Steam Deck when flagged). */
-export function platformBadgeLabels(game: GameLike): string[] {
-  const labels: string[] = [];
-  const seen = new Set<string>();
-  const platforms = game.platforms ?? [];
-
-  for (const def of PLATFORM_BADGE_ORDER) {
-    if (!platforms.some((p) => def.match.test(p.trim()))) continue;
-    if (seen.has(def.key)) continue;
-    seen.add(def.key);
-    labels.push(def.label);
-  }
-
-  // Any leftover platforms not in the known set
-  for (const p of platforms) {
-    const n = normalizePlatform(p);
-    if (PLATFORM_BADGE_ORDER.some((d) => d.key === n)) continue;
-    if (seen.has(n)) continue;
-    seen.add(n);
-    labels.push(p.trim());
-  }
-
-  if (game.steamDeck && !seen.has("steamdeck")) {
-    labels.push("Steam Deck");
-  }
-
-  return labels;
 }

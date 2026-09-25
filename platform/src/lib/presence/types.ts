@@ -55,11 +55,6 @@ export const CLIENT_REPORTABLE_STATUSES = [
 ] as const;
 export type ClientReportableStatus = (typeof CLIENT_REPORTABLE_STATUSES)[number];
 
-/** Counts as "currently visible to friends" for Stage 2. */
-export function isOnlineStatus(status: PresenceStatus): boolean {
-  return status !== "offline";
-}
-
 /**
  * Where PlayBound is running. `mobile` and `tv` are reserved for the native
  * apps; nothing reports them yet.

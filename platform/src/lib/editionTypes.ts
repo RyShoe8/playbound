@@ -86,12 +86,6 @@ export const VERIFICATION_DESCRIPTIONS: Record<VerificationLevel, string> = {
   deprecated: "No longer maintained or recommended.",
 };
 
-/** Higher is stronger. Used for sorting and for "is at least" checks. */
-export function verificationRank(level: VerificationLevel): number {
-  const index = VERIFICATION_LEVELS.indexOf(level);
-  return index === -1 ? 0 : index;
-}
-
 /**
  * How an edition is installed. Each method carries its own config object
  * (see EditionInstallConfig) so no method's assumptions leak into another.
@@ -415,11 +409,6 @@ export function editionTelemetryProps(
     editionName: edition.name,
     editionType: edition.type,
   };
-}
-
-/** Editions visible to the public, in display order. */
-export function isPubliclyVisible(edition: Edition): boolean {
-  return edition.visibility === "public";
 }
 
 /** Reachable by direct URL — public or unlisted, but not hidden. */

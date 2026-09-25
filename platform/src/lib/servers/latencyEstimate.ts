@@ -9,7 +9,7 @@ export function estimateLatencyMs(
   return Math.max(15, Math.round(15 + km * 0.04));
 }
 
-export function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const toRad = (d: number) => (d * Math.PI) / 180;
   const r = 6371;
   const dLat = toRad(lat2 - lat1);

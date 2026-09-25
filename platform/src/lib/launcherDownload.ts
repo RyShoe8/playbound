@@ -54,23 +54,20 @@ export function getAdminLauncherDownloadUrl(): string {
  * Client-safe constants. NEXT_PUBLIC_* must be literal property accesses so
  * Next can inline them at build time; then fall back to Blob aliases.
  */
-export const LAUNCHER_DOWNLOAD_URL =
+const LAUNCHER_DOWNLOAD_URL =
   (typeof process !== "undefined"
     ? process.env.NEXT_PUBLIC_LAUNCHER_DOWNLOAD_URL?.trim()
     : undefined) || DEFAULT_WINDOWS_LAUNCHER_DOWNLOAD_URL;
 
-export const MAC_LAUNCHER_DOWNLOAD_URL =
+const MAC_LAUNCHER_DOWNLOAD_URL =
   (typeof process !== "undefined"
     ? process.env.NEXT_PUBLIC_LAUNCHER_MAC_DOWNLOAD_URL?.trim()
     : undefined) || DEFAULT_MAC_LAUNCHER_DOWNLOAD_URL;
 
-export const LINUX_LAUNCHER_DOWNLOAD_URL =
+const LINUX_LAUNCHER_DOWNLOAD_URL =
   (typeof process !== "undefined"
     ? process.env.NEXT_PUBLIC_LAUNCHER_LINUX_DOWNLOAD_URL?.trim()
     : undefined) || DEFAULT_LINUX_LAUNCHER_DOWNLOAD_URL;
-
-export const ADMIN_LAUNCHER_DOWNLOAD_URL =
-  typeof process !== "undefined" ? getAdminLauncherDownloadUrl() : DEFAULT_ADMIN_LAUNCHER_DOWNLOAD_URL;
 
 export function launcherOsLabel(os: LauncherOs): string {
   if (os === "macos") return "macOS";
@@ -78,7 +75,7 @@ export function launcherOsLabel(os: LauncherOs): string {
   return "Windows";
 }
 
-export const LAUNCHER_ENDPOINT_DOWNLOAD_URL = "/api/launcher/download";
+const LAUNCHER_ENDPOINT_DOWNLOAD_URL = "/api/launcher/download";
 
 /**
  * Route Windows signed launcher through the resilient tiered endpoint (R2 primary -> VPS secondary -> Blob fallback).

@@ -240,20 +240,3 @@ export async function deletePartyNetwork(net: Partial<NetBirdParty>): Promise<vo
   if (net.setupKeyId) await nb(`/setup-keys/${net.setupKeyId}`, { method: "DELETE" });
   if (net.groupId) await deleteGroup(net.groupId);
 }
-
-/**
- * Overlay IPs of the machines currently on a party's segment.
- *
- * Peers carry the group inline, so this is one call and a filter rather than
- * a lookup per member.
- */
-export async function listPartyPeerIps(groupId: string): Promise<string[]> {
-  const res = await nb<
-    Array<{ ip?: string; connected?: boolean; groups?: Array<{ id?: string }> }>
-  >("/peers");
-  if (!res.ok || !Array.isArray(res.data)) return [];
-  return res.data
-    .filter((p) => (p.groups || []).some((g) => g.id === groupId))
-    .map((p) => p.ip || "")
-    .filter(Boolean);
-}
