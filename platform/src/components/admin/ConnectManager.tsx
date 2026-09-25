@@ -587,8 +587,8 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
                     <td className="py-2 pr-4 font-mono text-xs">
                       {(() => {
                         const occ = room.communityServerId ? occupancy[room.communityServerId] : undefined;
-                        if (!occ || occ.players == null) return <span className="text-muted-foreground">—</span>;
-                        return `${occ.players} / ${occ.maxPlayers ?? "?"}`;
+                        if (!occ || (occ.players == null && occ.maxPlayers == null)) return <span className="text-muted-foreground">—</span>;
+                        return `${occ.players ?? "?"} / ${occ.maxPlayers ?? "?"}`;
                       })()}
                     </td>
                     <td className="py-2 text-xs text-muted-foreground">

@@ -184,7 +184,7 @@ for (const slug of [
   "morrowind", "teeworlds", "openttd", "assaultcube", "medal-of-honor-allied-assault", "mindustry", "hurry-curry",
   "warzone-2100", "bzflag", "supertuxkart", "xonotic", "openarena",
   "0-ad", "0ad", "bombsquad", "wolfenstein-enemy-territory", "team-fortress-2",
-  "unvanquished",
+  "unvanquished", "hedgewars", "freedoom", "veloren",
 ]) {
   RECIPE_SETTING_TYPES[slug] = { ...RECIPE_SETTING_TYPES[slug], maxPlayers: "number" };
 }
@@ -286,6 +286,11 @@ function freedoomSettingArgs(settings) {
   if (mode) args.push(`+${mode}`, "1");
   if (typeof settings.difficulty === "number" && Number.isFinite(settings.difficulty)) {
     args.push("-skill", String(settings.difficulty));
+  }
+  const max = typeof settings.maxPlayers === "number" && Number.isFinite(settings.maxPlayers) && settings.maxPlayers > 0 ? settings.maxPlayers : null;
+  if (max !== null) {
+    if (typeof settings.sv_maxplayers !== "number") args.push("+sv_maxplayers", String(max));
+    if (typeof settings.sv_maxclients !== "number") args.push("+sv_maxclients", String(max));
   }
   for (const key of ["sv_maxplayers", "sv_maxclients", "fraglimit", "timelimit"]) {
     const value = settings[key];
@@ -1491,6 +1496,29 @@ export const recipes = {
       SDL_AUDIODRIVER: "dummy",
       VELOREN_ASSETS: path.join(GAMES_ROOT, "veloren", "assets"),
     }),
+    /*
+     * Patch max_players in settings.ron for managed community servers.
+     *
+     * Veloren reads max_players from its own settings.ron and has no
+     * command-line override, so community hosting must patch the file before
+     * spawn. The file is in RON format (Rusty Object Notation) and the
+     * max_players field is a plain integer inside the top-level parentheses.
+     */
+    prepareSpawn: async (_port, ctx) => {
+      if (!ctx.managed) return;
+      const limit = managedPlayerLimit(ctx, 16);
+      const settingsPath = path.join(GAMES_ROOT, "veloren", "userdata", "server", "server_config", "settings.ron");
+      try {
+        let content = fs.readFileSync(settingsPath, "utf8");
+        if (/max_players\s*:/.test(content)) {
+          content = content.replace(/max_players\s*:\s*\d+/, `max_players: ${limit}`);
+        } else {
+          // Insert just before the closing parenthesis if the field is absent.
+          content = content.replace(/\)\s*$/, `    max_players: ${limit},\n)`);
+        }
+        fs.writeFileSync(settingsPath, content, "utf8");
+      } catch { /* settings.ron missing or unwritable — server keeps its built-in default */ }
+    },
     /*
      * Veloren generates a world before it listens.
      *

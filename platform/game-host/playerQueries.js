@@ -495,8 +495,11 @@ export async function queryZandronum(port) {
   req.writeInt32LE(199, 1);
   req.writeInt32LE(SQF_MAXPLAYERS | SQF_NUMPLAYERS, 5);
   req.writeInt32LE(Date.now() & 0x7fffffff, 9);
-  const packet = await udpRequest(port, req);
-  const decoded = packet ? zandronumDecode(packet) : null;
+  let packet = await udpRequest(port, req, { timeoutMs: 1200 });
+  if (!packet) {
+    packet = await udpRequest(port, req.subarray(1), { timeoutMs: 1200 });
+  }
+  const decoded = packet ? (packet[0] === 0xff ? packet.subarray(1) : zandronumDecode(packet)) : null;
   return decoded ? parseZandronumReply(decoded) : null;
 }
 
@@ -546,13 +549,31 @@ export async function querySpaceStation14(port) {
  * playboundAdmin.lua writes playbound-online.json on its first tick and again
  * whenever the online set changes (it polls once a second), so while the
  * room's process is alive the file is the current player list.
+ *
+ * The max-player cap lives in the TES3MP server config, written to
+ * `$HOME/.config/openmw/tes3mp-server.cfg` by prepareSpawn where `$HOME` is
+ * `room.cwd`. Read the General → maximumPlayers value from that file so the
+ * admin panel can show a real cap instead of "?".
  */
+function tes3mpMaxPlayers(room) {
+  if (!room?.cwd) return null;
+  for (const base of [room.cwd, room.home || ""]) {
+    if (!base) continue;
+    try {
+      const cfg = fs.readFileSync(path.join(base, ".config", "openmw", "tes3mp-server.cfg"), "utf8");
+      const m = cfg.match(/maximumPlayers\s*=\s*(\d+)/);
+      if (m) return validMax(Number(m[1]));
+    } catch { /* try next */ }
+  }
+  return null;
+}
+
 export function queryTes3mp(room) {
   if (!room?.cwd) return null;
   for (const dir of [path.join(room.cwd, "server", "data"), path.join(room.home || "", "server", "data")]) {
     try {
       const doc = JSON.parse(fs.readFileSync(path.join(dir, "playbound-online.json"), "utf8"));
-      if (Array.isArray(doc?.players)) return { players: doc.players.length, maxPlayers: null };
+      if (Array.isArray(doc?.players)) return { players: doc.players.length, maxPlayers: tes3mpMaxPlayers(room) };
     } catch { /* try next */ }
   }
   return null;

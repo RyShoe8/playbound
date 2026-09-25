@@ -1271,7 +1271,11 @@ const server = http.createServer(async (req, res) => {
       if (!room) { json(res, 404, { error: "Managed room not found" }); return; }
       // Each game's own local query; null means unknown, never empty.
       const occupancy = await queryRoomOccupancy(room);
-      json(res, 200, occupancy || { players: null, maxPlayers: null });
+      // Fall back to the configured slot limit when the query protocol does
+      // not report a cap (e.g. TCP-counting games like Hedgewars, or TES3MP
+      // before the config-read was added).
+      const maxPlayers = occupancy?.maxPlayers ?? (Number.isInteger(room.settings?.maxPlayers) && room.settings.maxPlayers > 0 ? room.settings.maxPlayers : null);
+      json(res, 200, occupancy ? { players: occupancy.players, maxPlayers } : { players: null, maxPlayers });
       return;
     }
 
