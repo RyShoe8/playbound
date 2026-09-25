@@ -39,7 +39,7 @@ export function MobileOutboundCta({
   /** When true, do not upsert a library install (e.g. already installed locally). */
   skipLibraryClaim = false,
 }: {
-  game: Game;
+  game: Pick<Game, "slug" | "title">;
   outbound: MobileOutbound;
   /** Where on the site the click happened, for funnel analysis. */
   surface: string;

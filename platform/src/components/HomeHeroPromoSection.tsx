@@ -17,7 +17,7 @@ import {
   Headset,
   Globe,
 } from "lucide-react";
-import type { Game } from "@/lib/data/types";
+import type { HomeCardGame as Game } from "@/lib/discoverListing";
 import { GameArt } from "@/components/GameArt";
 import { PlayCta } from "@/components/GameCard";
 import { Badge } from "@/components/ui/bits";

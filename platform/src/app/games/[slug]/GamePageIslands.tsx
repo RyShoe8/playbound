@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { toHomeCardGame } from "@/lib/discoverListing";
 import { headers } from "next/headers";
 import { getServerSession } from "next-auth/next";
 import { Play } from "lucide-react";
@@ -275,7 +276,8 @@ export async function GameSimilarBlock({ game }: { game: Game }) {
        * page should query that game, not fan out to every provider merely to
        * decorate recommendation cards with transient player counts.
        */}
-      <CompatibleMoreLikeThis games={similar} />
+      {/* Card-sized projections: full records were ~160 KB of page payload. */}
+      <CompatibleMoreLikeThis games={similar.map(toHomeCardGame)} />
     </section>
   );
 }

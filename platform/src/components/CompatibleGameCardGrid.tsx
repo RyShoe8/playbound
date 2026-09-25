@@ -1,6 +1,9 @@
 "use client";
 
 import type { Game } from "@/lib/data/types";
+import type { HomeCardGame } from "@/lib/discoverListing";
+
+type CardGame = Game | HomeCardGame;
 import { GameCard } from "@/components/GameCard";
 import {
   CompatibleGamesFade,
@@ -14,7 +17,7 @@ export function CompatibleGameCardGrid({
   soft = false,
   playingNowBySlug = {},
 }: {
-  games: Game[];
+  games: CardGame[];
   className?: string;
   soft?: boolean;
   playingNowBySlug?: Record<string, number>;
@@ -60,7 +63,7 @@ export function CompatibleMoreLikeThis({
   games,
   playingNowBySlug = {},
 }: {
-  games: Game[];
+  games: CardGame[];
   playingNowBySlug?: Record<string, number>;
 }) {
   const ordered = useFilteredGames(games, { soft: true, limit: 6, ratio: 0.9 });
