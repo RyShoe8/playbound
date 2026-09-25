@@ -162,6 +162,7 @@ contextBridge.exposeInMainWorld("playbound", {
   setPartyVisibility: (partyId, visibility) =>
     ipcRenderer.invoke("update-party", partyId, { visibility }),
   setPartyReady: (partyId, ready) => ipcRenderer.invoke("set-party-ready", partyId, ready),
+  getPartyVersion: (partyId) => ipcRenderer.invoke("get-party-version", partyId),
   partyJoinGame: (partyId) => ipcRenderer.invoke("party-join-game", partyId),
   markSelfHostReady: (partyId) => ipcRenderer.invoke("mark-self-host-ready", partyId),
   probeLocalServer: (port) => ipcRenderer.invoke("probe-local-server", port),

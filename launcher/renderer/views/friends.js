@@ -85,6 +85,67 @@ let playPollWired = false;
 // Shared with the website — platform/src/lib/realtime/cadence.json.
 const FRIENDS_POLL_MS = CADENCE.friendsPollMs;
 const LIVE_PARTY_POLL_MS = CADENCE.livePartyPollMs;
+const PARTY_VERSION_POLL_MS = CADENCE.partyVersionPollMs;
+const LIVE_PARTY_POLL_WITH_VERSION_MS = CADENCE.livePartyPollWithVersionMs;
+
+/*
+ * Party change stamps. While a live party is open the launcher asks for the
+ * party's stamp every PARTY_VERSION_POLL_MS (one cache read on the server) and
+ * runs the full sync only when it moves — so another member readying up shows
+ * here in about a second instead of on the next 3s full poll. While stamps are
+ * arriving the full poll is just a safety net and slows down; if the server has
+ * no stamp (cache unavailable) we fall back to the normal live cadence.
+ */
+let partyVersionTimer = null;
+let partyVersionFor = null;
+let lastPartyVersion = null;
+let partyVersionsWorking = false;
+
+function syncPartyVersionPoll() {
+  const party = state._activeParty;
+  const live = Boolean(party?.id && party.status !== "ended" && !localPlaying && window.playbound.getPartyVersion);
+  if (!live) {
+    if (partyVersionTimer) clearInterval(partyVersionTimer);
+    partyVersionTimer = null;
+    partyVersionFor = null;
+    lastPartyVersion = null;
+    if (partyVersionsWorking) {
+      partyVersionsWorking = false;
+      syncFriendsPoll();
+    }
+    return;
+  }
+  if (partyVersionTimer && partyVersionFor === party.id) return;
+  if (partyVersionTimer) clearInterval(partyVersionTimer);
+  partyVersionFor = party.id;
+  lastPartyVersion = null;
+  partyVersionTimer = setInterval(() => void checkPartyVersion(), PARTY_VERSION_POLL_MS);
+}
+
+let partyVersionInFlight = false;
+async function checkPartyVersion() {
+  const partyId = partyVersionFor;
+  if (!partyId || partyVersionInFlight || !state.accountState?.connected) return;
+  if (pollSuspended({ liveParty: true, playing: localPlaying })) return;
+  partyVersionInFlight = true;
+  try {
+    const res = await window.playbound.getPartyVersion(partyId);
+    if (partyId !== partyVersionFor) return;
+    const v = typeof res?.v === "number" ? res.v : null;
+    const working = v !== null;
+    if (working !== partyVersionsWorking) {
+      partyVersionsWorking = working;
+      syncFriendsPoll();
+    }
+    if (v === null) return;
+    if (lastPartyVersion !== null && v !== lastPartyVersion) void pollFriendsData();
+    lastPartyVersion = v;
+  } catch {
+    /* The regular poll still runs. */
+  } finally {
+    partyVersionInFlight = false;
+  }
+}
 
 /*
  * Party constants, copied from platform/src/lib/playTogether/types.ts so the
@@ -547,7 +608,9 @@ async function renderFriendsView() {
 
 function syncFriendsPoll() {
   const live = Boolean(state._activeParty && state._activeParty.status !== "ended");
-  const next = live && !localPlaying ? LIVE_PARTY_POLL_MS : FRIENDS_POLL_MS;
+  const liveMs = partyVersionsWorking ? LIVE_PARTY_POLL_WITH_VERSION_MS : LIVE_PARTY_POLL_MS;
+  const next = live && !localPlaying ? liveMs : FRIENDS_POLL_MS;
+  syncPartyVersionPoll();
   if (friendsPollInterval && friendsPollMs === next) return;
   if (friendsPollInterval) {
     clearInterval(friendsPollInterval);

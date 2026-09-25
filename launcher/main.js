@@ -15380,6 +15380,15 @@ ipcMain.handle("end-party", async (_event, partyId) => {
   }
 });
 
+/** The party's change stamp: `{ v }`, a number, or null when unavailable. */
+ipcMain.handle("get-party-version", async (_event, partyId) => {
+  try {
+    return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/version`);
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
 ipcMain.handle("set-party-ready", async (_event, partyId, ready) => {
   try {
     return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/ready`, {

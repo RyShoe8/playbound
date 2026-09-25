@@ -1,4 +1,5 @@
 import { Schema, model, models, type Types } from "mongoose";
+import { bumpPartyVersion } from "@/lib/realtime/partyVersion";
 import {
   PARTY_STATUSES,
   PARTY_VISIBILITIES,
@@ -460,6 +461,18 @@ export type PartyDoc = {
   createdAt: Date;
   updatedAt: Date;
 };
+
+/*
+ * Every write stamps the party's change marker, so members' launchers refresh
+ * within a poll of ~1.5s instead of the full 3s party sync (realtime/partyVersion).
+ * updateMany is not hooked: its one caller only refreshes lastActivity.
+ */
+PartySchema.post("save", function (doc: { _id?: unknown }) {
+  bumpPartyVersion(doc?._id);
+});
+PartySchema.post(["updateOne", "findOneAndUpdate"], function (this: { getFilter(): Record<string, unknown> }) {
+  bumpPartyVersion(this.getFilter()?._id);
+});
 
 const Party = models.Party || model("Party", PartySchema);
 export default Party;
