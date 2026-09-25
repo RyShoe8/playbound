@@ -17,6 +17,7 @@ import {
   fetchEpicProduct,
   parseEpicProductSlug,
 } from "@/lib/epicStore";
+import { pickSteamAppEntry } from "@/lib/steamAppDetails";
 
 const importSchema = z.object({
   url: z.string().trim().url().max(500),
@@ -97,7 +98,7 @@ async function fromSteam(
     string,
     { success?: boolean; data?: Record<string, unknown> }
   >;
-  const entry = json[appId];
+  const entry = pickSteamAppEntry(json, appId);
   if (!entry?.success || !entry.data) throw new Error("Steam app not found or unavailable");
   const data = entry.data;
   const title = String(data.name ?? "Edition");
