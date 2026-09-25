@@ -26,7 +26,7 @@ export async function GET() {
 
   const gameMap = new Map<string, { slug: string; title: string }>();
   for (const g of seedGames) {
-    if (g.published !== false && g.playboundSupported !== false && supportsMultiplayer(g)) {
+    if (g.status !== "draft" && supportsMultiplayer(g)) {
       gameMap.set(g.slug, { slug: g.slug, title: g.title });
     }
   }
@@ -107,7 +107,7 @@ export async function PUT(req: Request) {
 
   const allowedGames = new Set<string>();
   for (const g of seedGames) {
-    if (g.published !== false && g.playboundSupported !== false && supportsMultiplayer(g)) {
+    if (g.status !== "draft" && supportsMultiplayer(g)) {
       allowedGames.add(g.slug);
     }
   }

@@ -366,3 +366,31 @@ export async function cleanupEventDiscordVoice(
     return false;
   }
 }
+
+/** Post a notification or announcement directly to the server's #events channel. */
+export async function postDiscordEventsChannel(payload: {
+  title: string;
+  description?: string;
+  url?: string;
+  imageUrl?: string | null;
+  content?: string;
+}): Promise<boolean> {
+  const { url, secret } = botConfig();
+  if (!url || !secret) return false;
+  try {
+    const res = await fetch(`${url}/events/announce`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${secret}`,
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(10_000),
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn("[discord] postDiscordEventsChannel failed:", err instanceof Error ? err.message : err);
+    return false;
+  }
+}
+

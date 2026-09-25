@@ -26,4 +26,10 @@ describe("community hosting placement", () => {
     expect(placementDecision({ ...base, draining: true })).toEqual({ allowed: false, reason: "NO_HEALTHY_NODE" });
     expect(placementDecision({ ...base, profileVerified: false })).toEqual({ allowed: false, reason: "PROFILE_NOT_VERIFIED" });
   });
+  it("places workloads with fallback baseline envelope when unmeasured", () => {
+    // 0.25 cores, 512MB RAM fallback baseline
+    const fallbackEnvelope = { cpuCores: 0.25, ramBytes: 512 * 1024 * 1024 };
+    expect(placementDecision({ ...base, requested: fallbackEnvelope })).toEqual({ allowed: true });
+  });
 });
+

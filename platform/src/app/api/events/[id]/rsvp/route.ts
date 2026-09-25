@@ -5,7 +5,6 @@ import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import { userFromLauncherBearer } from "@/lib/library";
 import { setEventRsvp } from "@/lib/events/rsvp";
-import { createEventRsvpNotification } from "@/lib/events/notifications";
 import dbConnect from "@/lib/db";
 import PlatformEvent from "@/lib/models/PlatformEvent";
 
@@ -40,14 +39,6 @@ export async function POST(req: Request, ctx: Ctx) {
 
     await dbConnect();
     const event = await PlatformEvent.findById(id).select({ title: 1, gameSlug: 1 }).lean();
-    if (event && (body.status === "going" || body.status === "maybe")) {
-      void createEventRsvpNotification({
-        userId,
-        eventId: id,
-        eventTitle: event.title,
-        status: body.status,
-      });
-    }
 
     return NextResponse.json({
       success: true,

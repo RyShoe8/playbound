@@ -23,8 +23,12 @@ export async function PUT(req: Request, context: { params: Promise<{ key: string
   }).lean();
 
   const sampleCount = current?.sampleCount ?? base?.sampleCount ?? 0;
-  const cpuCores = current?.envelope?.cpuCores ?? base?.envelope?.cpuCores ?? 0.25;
-  const ramBytes = current?.envelope?.ramBytes ?? base?.envelope?.ramBytes ?? 512 * 1024 * 1024;
+  const cpuCores = (current?.envelope?.cpuCores && current.envelope.cpuCores > 0)
+    ? current.envelope.cpuCores
+    : (base?.envelope?.cpuCores && base.envelope.cpuCores > 0 ? base.envelope.cpuCores : 0.25);
+  const ramBytes = (current?.envelope?.ramBytes && current.envelope.ramBytes > 0)
+    ? current.envelope.ramBytes
+    : (base?.envelope?.ramBytes && base.envelope.ramBytes > 0 ? base.envelope.ramBytes : 512 * 1024 * 1024);
   const measuredThroughPlayers = current?.envelope?.measuredThroughPlayers ?? base?.envelope?.measuredThroughPlayers ?? 0;
 
   const reason = validateProfileReadiness(parsed.data, {
@@ -41,6 +45,9 @@ export async function PUT(req: Request, context: { params: Promise<{ key: string
       $set: {
         ...parsed.data,
         updatedBy: session!.user.id,
+        ...((!current?.envelope?.cpuCores || !current?.envelope?.ramBytes) ? {
+          envelope: { cpuCores, ramBytes, measuredThroughPlayers },
+        } : {}),
       },
       $setOnInsert: {
         key: normalizedKey,

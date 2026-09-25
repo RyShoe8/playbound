@@ -64,15 +64,13 @@ export default async function EventsPage() {
   // Reads the database before it reads anything request-scoped, which
   // Cache Components will not allow during a prerender.
   await connection();
-  const [eventsRaw, session, pastRaw, openPartiesRaw] = await Promise.all([
+  const [eventsRaw, session, openPartiesRaw] = await Promise.all([
     listPublicEvents({ limit: 80 }),
     getServerSession(authOptions),
-    listPublicEvents({ includePast: true, limit: 40 }),
     listOpenPublicParties(100),
   ]);
-  const [events, past, openParties] = await Promise.all([
+  const [events, openParties] = await Promise.all([
     filterDiscoverableBySlug(eventsRaw, (e) => e.gameSlug),
-    filterDiscoverableBySlug(pastRaw, (e) => e.gameSlug),
     filterDiscoverableBySlug(openPartiesRaw, (p) => p.gameSlug),
   ]);
   const isAdmin = session?.user?.role === "admin";
@@ -80,20 +78,6 @@ export default async function EventsPage() {
   // Event grouping is intentionally based on the current request time.
   // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
-  const activeIds = new Set(events.map((e) => e.id));
-  const pastOnly = past
-    .filter(
-      (e) =>
-        !activeIds.has(e.id) &&
-        (e.status === "completed" ||
-          e.status === "cancelled" ||
-          (e.endsAt ? new Date(e.endsAt).getTime() < now : false))
-    )
-    .sort(
-      (a, b) =>
-        new Date(b.endsAt || b.startsAt).getTime() -
-        new Date(a.endsAt || a.startsAt).getTime()
-    );
 
   /*
    * One card, one section. Priority: imminent/live → featured → type → leftover.
@@ -118,7 +102,7 @@ export default async function EventsPage() {
   await Promise.all(
     [
       ...new Set(
-        [...events, ...pastOnly]
+        events
           .map((e) => e.gameSlug)
           .filter(Boolean) as string[]
       ),
@@ -127,7 +111,6 @@ export default async function EventsPage() {
       if (g) titles.set(slug, g.title);
     })
   );
-
 
   const hasActive = events.length > 0;
 
@@ -163,9 +146,6 @@ export default async function EventsPage() {
           <Section title="Upcoming" items={upcoming} titles={titles} />
         </>
       ) : null}
-
-      {/* Past stays visible even when nothing is live or upcoming. */}
-      <Section title="Past events" items={pastOnly.slice(0, 6)} titles={titles} />
     </div>
   );
 }
