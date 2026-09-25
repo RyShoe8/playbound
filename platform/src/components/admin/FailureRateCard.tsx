@@ -208,6 +208,7 @@ export function FailureRateCard({
     Installs: true,
     Launches: true,
     Party: true,
+    "Community Servers": true,
   });
 
   const toggleSection = (key: string) => {
@@ -223,6 +224,7 @@ export function FailureRateCard({
       Installs: nextState,
       Launches: nextState,
       Party: nextState,
+      "Community Servers": nextState,
     });
   };
 
@@ -239,7 +241,7 @@ export function FailureRateCard({
             </span>
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Share of finished installs, launches and party operations that failed, with per-platform breakdown.
+            Share of finished installs, launches, party operations, and community servers that failed, with per-platform breakdown.
           </p>
         </div>
 
@@ -306,6 +308,14 @@ export function FailureRateCard({
                 rates={rates}
                 expanded={expandedSections.Party}
                 onToggle={() => toggleSection("Party")}
+              />
+              <MetricSection
+                label="Community Servers"
+                pick={(w) => rates[w].servers}
+                pickPlatform={(w, p) => rates[w].byPlatform?.[p]?.servers}
+                rates={rates}
+                expanded={expandedSections["Community Servers"]}
+                onToggle={() => toggleSection("Community Servers")}
               />
             </tbody>
           </table>

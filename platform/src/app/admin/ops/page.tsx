@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { ArrowLeft, Activity } from "lucide-react";
 import { AdminOpsConsole } from "@/components/admin/AdminOpsConsole";
 import { FailureRateCard } from "@/components/admin/FailureRateCard";
+import { CommunityServersOpsCard } from "@/components/admin/CommunityServersOpsCard";
 import { familyForArea, type OpsFamily } from "@/lib/admin/opsEvents";
 import { getFailureRates } from "@/lib/admin/failureRates";
 
@@ -25,7 +26,7 @@ export default async function AdminOpsPage({
   await connection();
   const params = await searchParams;
   const family: OpsFamily =
-    params.family === "launcher" || params.family === "party" || params.family === "all"
+    params.family === "launcher" || params.family === "party" || params.family === "servers" || params.family === "all"
       ? params.family
       : familyForArea(params.area || null);
 
@@ -42,9 +43,12 @@ export default async function AdminOpsPage({
           <Activity className="size-7 text-primary" /> Ops
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Live launcher and party events. Failures also land on Bugs; health lights on Games are the triage signal.
+          Live launcher, party, and automated community server events. Failures also land on Bugs; health lights on Games are the triage signal.
         </p>
       </div>
+
+      <CommunityServersOpsCard />
+
       {/* Aggregates 30 days of telemetry, so it must not hold up the live feed.
           Keyed on the game so switching filters refetches rather than showing
           the previous game's numbers. */}

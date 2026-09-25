@@ -137,6 +137,33 @@ describe("failure rate windows", () => {
     expect(rates.d1.overall.rate).toBe(0);
   });
 
+  it("counts community server operations as their own row", () => {
+    const rates = buildFailureRates(
+      rows({
+        [FAILURE_RATE_EVENTS.serverFailed]: { d1: 2, d7: 4, d30: 6 },
+        [FAILURE_RATE_EVENTS.serverCompleted]: { d1: 8, d7: 36, d30: 94 },
+      })
+    );
+    expect(rates.d1.servers.failed).toBe(2);
+    expect(rates.d1.servers.completed).toBe(8);
+    expect(rates.d1.servers.rate).toBeCloseTo(20);
+    expect(rates.d7.servers.rate).toBeCloseTo(10);
+    expect(rates.d30.servers.rate).toBeCloseTo(6);
+  });
+
+  it("rolls community server failures into overall", () => {
+    const rates = buildFailureRates(
+      rows({
+        [FAILURE_RATE_EVENTS.launchCompleted]: { d1: 10, d7: 10, d30: 10 },
+        [FAILURE_RATE_EVENTS.serverFailed]: { d1: 10, d7: 10, d30: 10 },
+      })
+    );
+    expect(rates.d1.launches.rate).toBe(0);
+    expect(rates.d1.servers.rate).toBe(100);
+    expect(rates.d1.overall.failed).toBe(10);
+    expect(rates.d1.overall.rate).toBeCloseTo(50);
+  });
+
   it("starts empty", () => {
     const empty = emptyFailureRates();
     for (const w of ["d1", "d7", "d30"] as const) {

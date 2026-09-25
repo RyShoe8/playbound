@@ -5,7 +5,7 @@ import type { HostingSettings } from "@/lib/communityHosting/settings";
 import type { ProfileSettings } from "@/lib/communityHosting/profileSettings";
 
 type Profile = ProfileSettings & { key: string; gameSlug: string; editionSlug?: string | null; sampleCount?: number; envelope?: { cpuCores?: number; ramBytes?: number; measuredThroughPlayers?: number }; lastSampleAt?: string | null };
-type Server = { _id: string; name: string; gameSlug: string; desiredState: string; runtimeState: string; playerCount?: number | null; decisionReason?: string | null };
+type Server = { _id: string; name: string; gameSlug: string; editionSlug?: string | null; desiredState: string; runtimeState: string; playerCount?: number | null; decisionReason?: string | null };
 type Reservation = { sourceKey: string; profileKey: string; state: string; warmupAt: string };
 type Data = {
   config: HostingSettings;
@@ -52,9 +52,10 @@ function ProfileRow({ profile, label, onSaved }: { profile: Profile; label: stri
     catch (error) { setStatus(error instanceof Error ? error.message : "Could not save"); }
     finally { setBusy(false); }
   }
-  return <label className="flex items-center gap-2 py-0.5">
+  const isEdition = Boolean(profile.editionSlug);
+  return <label className={`flex items-center gap-2 py-0.5 ${isEdition ? "pl-4 text-xs" : ""}`}>
     <input type="checkbox" checked={profile.enabled} disabled={busy} onChange={(e) => void toggle(e.target.checked)} />
-    <span>{label}</span>
+    <span className={isEdition ? "text-muted-foreground hover:text-foreground" : "font-normal"}>{label}</span>
     <span className="ml-auto text-xs tabular-nums text-muted-foreground">{status || usageLabel(profile)}</span>
   </label>;
 }
@@ -67,7 +68,14 @@ function ProfileChecklist({ profiles, titles, editionNames, onSaved }: { profile
   return <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
     {games.map(([slug, rows]) => <div key={slug} className="rounded-lg border border-border px-2 py-1.5 text-sm">
       <p className="font-medium">{titles[slug] || slug}</p>
-      {[...rows].sort((a, b) => (a.editionSlug ? 1 : 0) - (b.editionSlug ? 1 : 0)).map((p) =>
+      {[...rows].sort((a, b) => {
+        const aEd = a.editionSlug ? 1 : 0;
+        const bEd = b.editionSlug ? 1 : 0;
+        if (aEd !== bEd) return aEd - bEd;
+        const aLabel = a.editionSlug ? editionNames[`${slug}:${a.editionSlug}`] || a.editionSlug : "Base game";
+        const bLabel = b.editionSlug ? editionNames[`${slug}:${b.editionSlug}`] || b.editionSlug : "Base game";
+        return aLabel.localeCompare(bLabel);
+      }).map((p) =>
         <ProfileRow key={p.key} profile={p} label={p.editionSlug ? editionNames[`${slug}:${p.editionSlug}`] || p.editionSlug : "Base game"} onSaved={onSaved} />)}
     </div>)}
   </div>;
@@ -198,7 +206,7 @@ export function CommunityHostingPanel() {
     <div><h3 className="font-semibold">Games for automatic hosting</h3><p className="text-xs text-muted-foreground">Tick the games and editions available for community hosting. Usage is measured CPU and RAM per server.</p>
       <div className="text-sm">{data?.profiles.length ? <ProfileChecklist profiles={data.profiles} titles={data.titles || {}} editionNames={data.editionNames || {}} onSaved={load} /> : <p className="text-muted-foreground">No games measured yet.</p>}</div>
     </div>
-    <div><h3 className="font-semibold">Running and queued servers</h3><div className="mt-2 space-y-1 text-sm">{data?.servers.length ? data.servers.map((s) => <div key={s._id} className="flex flex-wrap items-center justify-between gap-2 border-b border-border py-1"><span>{s.name} · {s.gameSlug}</span><span>{s.runtimeState} · {s.playerCount ?? "players unknown"} · {s.decisionReason || "—"}</span><span className="flex gap-2"><button type="button" className="underline" onClick={() => void serverAction(s, "start")}>Start</button><button type="button" className="underline" onClick={() => void serverAction(s, "restart")}>Restart</button><button type="button" className="underline" onClick={() => void serverAction(s, "stop")}>Stop</button></span></div>) : <p className="text-muted-foreground">No managed servers.</p>}</div></div>
+    <div><h3 className="font-semibold">Running and queued servers</h3><div className="mt-2 space-y-1 text-sm">{data?.servers.length ? data.servers.map((s) => <div key={s._id} className="flex flex-wrap items-center justify-between gap-2 border-b border-border py-1"><span>{s.name} · {s.gameSlug}{s.editionSlug ? ` (${data?.editionNames?.[`${s.gameSlug}:${s.editionSlug}`] || s.editionSlug})` : ""}</span><span>{s.runtimeState} · {s.playerCount ?? "players unknown"} · {s.decisionReason || "—"}</span><span className="flex gap-2"><button type="button" className="underline" onClick={() => void serverAction(s, "start")}>Start</button><button type="button" className="underline" onClick={() => void serverAction(s, "restart")}>Restart</button><button type="button" className="underline" onClick={() => void serverAction(s, "stop")}>Stop</button></span></div>) : <p className="text-muted-foreground">No managed servers.</p>}</div></div>
     <div><h3 className="font-semibold">Upcoming capacity reservations</h3><div className="mt-2 space-y-1 text-sm">{data?.reservations.length ? data.reservations.map((r) => <p key={r.sourceKey}>{r.profileKey} · {r.state} · warmup {new Date(r.warmupAt).toLocaleString()}</p>) : <p className="text-muted-foreground">No reservations.</p>}</div></div>
   </section>;
 }
