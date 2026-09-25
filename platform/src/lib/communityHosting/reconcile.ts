@@ -59,7 +59,7 @@ async function syncReservations(now: Date, regionKey: string) {
     generatedBy: "game_night_planner", startsAt: { $gte: now, $lt: new Date(now.getTime() + 8 * 86_400_000) },
     status: { $ne: "cancelled" },
   }).select({ _id: 1, gameSlug: 1, editionSlug: 1, startsAt: 1, endsAt: 1 }).lean();
-  const profiles = await CommunityServerProfile.find({ enabled: true, verification: "verified", queryVerified: true, joinVerified: true }).lean();
+  const profiles = await CommunityServerProfile.find({ enabled: true }).lean();
   const wanted = new Set<string>();
   for (const event of events) {
     const profile = profiles.find((p) => p.gameSlug === event.gameSlug && (p.editionSlug || null) === (event.editionSlug || null));
@@ -170,10 +170,12 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
     });
     const plannedReservations = reservations.filter((r) => !r.communityServerId || !alreadyRunning.has(String(r.communityServerId)));
 
-    const verified = profiles.filter((p) => p.verification === "verified" && p.queryVerified && p.joinVerified && p.queryKind !== "none" && p.envelope?.cpuCores > 0 && p.envelope?.ramBytes > 0);
+    // Selected in the admin checklist = hostable. Capacity still needs a measured envelope,
+    // and servers without a player query are never treated as empty (see above).
+    const verified = profiles.filter((p) => p.enabled && p.envelope?.cpuCores > 0 && p.envelope?.ramBytes > 0);
     const due = reservations.find((r) => r.warmupAt <= now && (!r.communityServerId || !alreadyRunning.has(String(r.communityServerId))));
     const previous = await CommunityServer.find({ regionKey: config.node.regionKey }).select({ profileKey: 1, cooldownUntil: 1, manualPause: 1, onlineSince: 1 }).lean();
-    const rotationCandidates = verified.filter((p) => p.rotationEligible)
+    const rotationCandidates = verified
       .sort((a, b) => rotationPriority(now, b, previous) - rotationPriority(now, a, previous) || a.key.localeCompare(b.key));
     const profile = due ? verified.find((p) => p.key === due.profileKey) : rotationCandidates.find((p) =>
       !active.some((s) => s.profileKey === p.key) &&
@@ -263,7 +265,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
     // retry indefinitely or bypass the same capacity gates as a new room.
     for (const server of lost) {
       const recoveryProfile = profileByKey.get(server.profileKey);
-      if (!recoveryProfile?.enabled || recoveryProfile.verification !== "verified" || !recoveryProfile.queryVerified || !recoveryProfile.joinVerified) continue;
+      if (!recoveryProfile?.enabled) continue;
       if (server.manualPause || server.recoveryAttempts >= 3 || (server.nextRecoveryAt && new Date(server.nextRecoveryAt) > now)) continue;
       const decision = placementDecision({
         now, nodeEnabled: config.node.enabled, draining: config.node.draining,
