@@ -11,6 +11,7 @@
 
 import { createHash, randomBytes } from "crypto";
 import { Types, type Document } from "mongoose";
+import { after } from "next/server";
 import { canUseSavedWorld, discardUnplayedPartyWorld, supportsSavedWorlds } from "@/lib/savedWorlds";
 import dbConnect from "@/lib/db";
 import Party from "@/lib/models/Party";
@@ -236,30 +237,59 @@ function partyConnectCanAutoProvision(doc: PartyDoc): boolean {
   return true;
 }
 
-async function maybeProvisionPartyConnect(doc: PartyDoc): Promise<void> {
-  if (!doc.gameSlug || !partyConnectCanAutoProvision(doc)) return;
+/** Which connections a party is due to have provisioned right now. */
+function pendingPartyConnect(doc: PartyDoc): { host: boolean; lan: boolean } {
+  const none = { host: false, lan: false };
+  if (!doc.gameSlug || !partyConnectCanAutoProvision(doc)) return none;
   const slug = String(doc.gameSlug);
   const hostMode = resolvedHostMode(slug, doc.hostMode, doc.hosted);
+  // Public servers need nothing. Couch parties have no room and no overlay —
+  // the session is started by the leader's launcher at Start Game.
+  if (hostMode === "public" || hostMode === "couch") return none;
+  const hs = (doc.hosted?.status || "none") as HostedStatus;
+  return {
+    host: hostMode === "dedicated" && isHostableGame(slug) && (hs === "none" || hs === "failed"),
+    // A LAN already "pending" is in flight and left alone until stale.
+    lan: (isVirtualLanGame(slug) || hostMode === "self") && partyLanNeedsProvision(doc.lan),
+  };
+}
 
-  if (hostMode === "public") return;
-  // Couch parties have no room and no overlay — the session is started by the
-  // leader's launcher when they hit Start Game, not provisioned from here.
-  if (hostMode === "couch") return;
+async function maybeProvisionPartyConnect(doc: PartyDoc): Promise<void> {
+  const due = pendingPartyConnect(doc);
+  if (due.host) await provisionPartyHost(doc);
+  if (due.lan) await provisionPartyLan(doc);
+}
 
-  if (hostMode === "dedicated" && isHostableGame(slug)) {
-    const hs = (doc.hosted?.status || "none") as HostedStatus;
-    if (hs === "none" || hs === "failed") {
-      await provisionPartyHost(doc);
-    }
+/**
+ * Provision a party's server/LAN after the response is sent.
+ *
+ * Starting a room can take minutes (the VPS may download the game first), and
+ * this used to run inside the Ready / host-mode / world click, so the button
+ * sat disabled until the server was up. The click now answers at once; the
+ * party reports "pending" and the next poll shows the room arriving.
+ *
+ * Returns the payload object with the due connections marked pending so the
+ * immediate response already shows "Starting server…" rather than nothing.
+ * Outside a request (scripts, tests) `after` is unavailable and the work
+ * simply runs detached.
+ */
+function provisionPartyConnectInBackground<T extends Record<string, unknown>>(doc: PartyDoc, payloadDoc: T): T {
+  const due = pendingPartyConnect(doc);
+  if (!due.host && !due.lan) return payloadDoc;
+  const partyId = String(doc._id);
+  const task = () =>
+    maybeProvisionPartyConnect(doc).catch((err) => {
+      console.warn(`[party] background provision failed for ${partyId}:`, err instanceof Error ? err.message : err);
+    });
+  try {
+    after(task);
+  } catch {
+    void task();
   }
-  if (isVirtualLanGame(slug) || hostMode === "self") {
-    const ls = doc.lan?.status || "none";
-    if (partyLanNeedsProvision(doc.lan)) {
-      await provisionPartyLan(doc);
-    } else if (ls === "pending") {
-      /* In-flight — leave alone until stale. */
-    }
-  }
+  const marked = { ...payloadDoc } as Record<string, unknown>;
+  if (due.host) marked.hosted = { ...((payloadDoc.hosted as object) || {}), status: "pending", error: null };
+  if (due.lan) marked.lan = { ...((payloadDoc.lan as object) || {}), status: "pending" };
+  return marked as T;
 }
 
 async function ensurePartyConnectReady(
@@ -1992,13 +2022,10 @@ export async function setPartyHostMode(
     resetPartyConnectState(doc);
     doc.lastActivity = new Date();
     await doc.save();
-    if (hostMode !== "public") {
-      await maybeProvisionPartyConnect(doc);
-    }
     trackPartyEvent("party_host_mode_set", { partyId: String(doc._id), gameSlug: slug, userId: leaderId, hostMode });
   }
 
-  return { party: await partyPayloadForDoc(doc.toObject()), status: 200 };
+  return { party: await partyPayloadForDoc(provisionPartyConnectInBackground(doc, doc.toObject())), status: 200 };
 }
 
 /**
@@ -2040,9 +2067,8 @@ export async function setPartySavedWorld(
     resetPartyConnectState(doc);
     doc.lastActivity = new Date();
     await doc.save();
-    await maybeProvisionPartyConnect(doc);
   }
-  return { party: await partyPayloadForDoc(doc.toObject()), status: 200 };
+  return { party: await partyPayloadForDoc(provisionPartyConnectInBackground(doc, doc.toObject())), status: 200 };
 }
 
 /**
@@ -2416,17 +2442,8 @@ export async function setReady(
     throw err;
   }
 
-  try {
-    await maybeProvisionPartyConnect(doc);
-  } catch (err) {
-    console.warn(
-      `[party] ready provision failed for ${partyId}:`,
-      err instanceof Error ? err.message : err
-    );
-  }
-
   return {
-    party: await partyPayloadForDoc(doc.toObject()),
+    party: await partyPayloadForDoc(provisionPartyConnectInBackground(doc, doc.toObject())),
     status: 200,
   };
 }
