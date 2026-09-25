@@ -40,21 +40,37 @@ function managedRoomSettings(recipeSlug: string, maxPlayersPerServer: number | u
   return PLAYER_LIMIT_RECIPES.has(recipeSlug) ? { maxPlayers: maxPlayersPerServer ?? 16 } : undefined;
 }
 
+/**
+ * The size a server is charged against the automatic-hosting budget.
+ *
+ * Recorded envelopes are already conservative: samples.ts pads CPU x1.5 (min
+ * 0.25 cores) and RAM x1.3, and keeps the maximum ever observed. This used to
+ * discard anything at or below 0.25 cores / 512 MB as a "dummy", which is
+ * exactly what most real measurements are, and several callers omitted the
+ * sample count, so every server was charged the 1 core / 1.5 GB fallback and
+ * five idle servers "filled" a 4-core budget on a 5%-busy VPS.
+ *
+ * Now a measured envelope is used as recorded, with small floors. Games whose
+ * load grows sharply with players keep half their heavy baseline as a CPU
+ * floor. Only the exact legacy placeholder (0.25 cores and 512 MB) or no data
+ * falls back to the defaults. The live CPU/RAM safety limits still apply.
+ */
 export function getEffectiveEnvelope(
   envelope?: { cpuCores?: number; ramBytes?: number } | null,
   gameSlug?: string,
-  sampleCount?: number
+  _sampleCount?: number
 ): ResourceEnvelope {
-  const fallback = (gameSlug && HEAVY_GAME_ENVELOPES[gameSlug]) || DEFAULT_COMMUNITY_SERVER_ENVELOPE;
+  const heavy = gameSlug ? HEAVY_GAME_ENVELOPES[gameSlug] : undefined;
+  const fallback = heavy || DEFAULT_COMMUNITY_SERVER_ENVELOPE;
   const cpu = Number(envelope?.cpuCores);
   const ram = Number(envelope?.ramBytes);
-  // Unmeasured profiles or legacy dummy (0.25 cores / 512 MB) must always use realistic baseline/heavy envelopes
-  if (!sampleCount || sampleCount <= 0 || !Number.isFinite(cpu) || cpu <= 0.25 || !Number.isFinite(ram) || ram <= 512 * 1024 * 1024) {
+  const legacyPlaceholder = cpu === 0.25 && ram === 512 * 1024 * 1024;
+  if (!Number.isFinite(cpu) || cpu <= 0 || !Number.isFinite(ram) || ram <= 0 || legacyPlaceholder) {
     return fallback;
   }
   return {
-    cpuCores: Math.max(0.75, cpu),
-    ramBytes: Math.max(1024 * 1024 * 1024, ram),
+    cpuCores: Math.max(cpu, heavy ? heavy.cpuCores / 2 : 0.25),
+    ramBytes: Math.max(ram, 256 * 1024 * 1024),
   };
 }
 
