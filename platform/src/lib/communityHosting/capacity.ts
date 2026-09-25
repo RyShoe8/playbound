@@ -28,7 +28,8 @@ export function placementDecision(input: PlacementInput): { allowed: true } | { 
   if (!input.nodeEnabled || input.draining || !input.metrics) return { allowed: false, reason: "NO_HEALTHY_NODE" };
   const metrics = input.metrics;
   const age = input.now.getTime() - Date.parse(metrics.collectedAt);
-  if (!Number.isFinite(age) || age < 0 || age > input.safety.maxMetricsAgeSeconds * 1000 || metrics.cpuUsagePercent === null) {
+  // Allow up to 60s of forward clock drift between distributed servers
+  if (!Number.isFinite(age) || age < -60_000 || age > input.safety.maxMetricsAgeSeconds * 1000 || metrics.cpuUsagePercent === null) {
     return { allowed: false, reason: "STALE_METRICS" };
   }
   const envelopes = [...input.runningManaged, ...input.plannedReservations, input.requested];
