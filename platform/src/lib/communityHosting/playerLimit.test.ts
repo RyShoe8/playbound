@@ -21,6 +21,7 @@ describe("community hosting bot fill", () => {
     expect(managedRoomSettings("counter-strike-2", { maxPlayersPerServer: 16, botFillPercent: 25 })).toEqual({ maxPlayers: 16, botFill: 4 });
     expect(managedRoomSettings("luanti", { maxPlayersPerServer: 16, botFillPercent: 25 })).toEqual({ maxPlayers: 16 });
     const config = new CommunityHostingConfig({ key: "global" }).toObject();
-    expect(hostingSettingsSchema.parse(config).botFillPercent).toBe(0);
+    expect(config.botFillPercent).toBe(50);
+    expect(hostingSettingsSchema.parse(config).botFillPercent).toBe(50);
   });
 });

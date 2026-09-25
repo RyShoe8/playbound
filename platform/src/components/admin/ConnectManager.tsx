@@ -234,7 +234,7 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
   const [error, setError] = useState<string | null>(null);
   // Player counts for community servers, keyed by CommunityServer id. Read
   // from Community Hosting, which queries each game's own server list.
-  const [occupancy, setOccupancy] = useState<Record<string, { players: number | null; maxPlayers: number | null }>>({});
+  const [occupancy, setOccupancy] = useState<Record<string, { players: number | null; maxPlayers: number | null; bots?: number | null }>>({});
 
   const isParties = view === "parties";
   const isServers = view === "game-servers";
@@ -255,10 +255,10 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
       setData(json);
       if (hosting?.ok) {
         const body = (await hosting.json().catch(() => null)) as {
-          servers?: Array<{ _id: string; playerCount?: number | null; maxPlayers?: number | null }>;
+          servers?: Array<{ _id: string; playerCount?: number | null; maxPlayers?: number | null; bots?: number | null }>;
         } | null;
         setOccupancy(Object.fromEntries((body?.servers || []).map((srv) => [
-          String(srv._id), { players: srv.playerCount ?? null, maxPlayers: srv.maxPlayers ?? null },
+          String(srv._id), { players: srv.playerCount ?? null, maxPlayers: srv.maxPlayers ?? null, bots: srv.bots ?? null },
         ])));
       }
     } catch (err) {
@@ -588,7 +588,8 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
                       {(() => {
                         const occ = room.communityServerId ? occupancy[room.communityServerId] : undefined;
                         if (!occ || (occ.players == null && occ.maxPlayers == null)) return <span className="text-muted-foreground">—</span>;
-                        return `${occ.players ?? "?"} / ${occ.maxPlayers ?? "?"}`;
+                        const botsLabel = occ.bots ? ` (${occ.bots} bot${occ.bots === 1 ? "" : "s"})` : "";
+                        return `${occ.players ?? "?"} / ${occ.maxPlayers ?? "?"}${botsLabel}`;
                       })()}
                     </td>
                     <td className="py-2 text-xs text-muted-foreground">

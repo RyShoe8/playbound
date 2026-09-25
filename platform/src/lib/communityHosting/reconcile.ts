@@ -53,8 +53,9 @@ export function managedRoomSettings(
 ): { maxPlayers: number; botFill?: number } | undefined {
   if (!PLAYER_LIMIT_RECIPES.has(recipeSlug)) return undefined;
   const maxPlayers = config.maxPlayersPerServer ?? 16;
+  const botPercent = config.botFillPercent !== undefined ? config.botFillPercent : 50;
   return BOT_FILL_RECIPES.has(recipeSlug)
-    ? { maxPlayers, botFill: botFillFor(maxPlayers, config.botFillPercent) }
+    ? { maxPlayers, botFill: botFillFor(maxPlayers, botPercent) }
     : { maxPlayers };
 }
 

@@ -4,9 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import type { HostingSettings } from "@/lib/communityHosting/settings";
 import type { ProfileSettings } from "@/lib/communityHosting/profileSettings";
 
-type Profile = ProfileSettings & { key: string; gameSlug: string; editionSlug?: string | null; sampleCount?: number; envelope?: { cpuCores?: number; ramBytes?: number; measuredThroughPlayers?: number }; lastSampleAt?: string | null };
-type Server = { _id: string; name: string; gameSlug: string; editionSlug?: string | null; desiredState: string; runtimeState: string; playerCount?: number | null; maxPlayers?: number | null; playerCountCheckedAt?: string | null; decisionReason?: string | null };
+type Profile = ProfileSettings & { key: string; gameSlug: string; editionSlug?: string | null; recipeSlug?: string | null; sampleCount?: number; envelope?: { cpuCores?: number; ramBytes?: number; measuredThroughPlayers?: number }; lastSampleAt?: string | null };
+type Server = { _id: string; name: string; gameSlug: string; editionSlug?: string | null; desiredState: string; runtimeState: string; playerCount?: number | null; maxPlayers?: number | null; bots?: number | null; playerCountCheckedAt?: string | null; decisionReason?: string | null };
 type Reservation = { sourceKey: string; profileKey: string; state: string; warmupAt: string };
+
+const BOT_FILL_GAMES = new Set(["xonotic", "openarena", "team-fortress-2", "counter-strike-2", "unvanquished"]);
 type Data = {
   asOf: string;
   config: HostingSettings;
@@ -55,9 +57,18 @@ function ProfileRow({ profile, label, onSaved }: { profile: Profile; label: stri
     finally { setBusy(false); }
   }
   const isEdition = Boolean(profile.editionSlug);
+  const supportsBots = BOT_FILL_GAMES.has(profile.recipeSlug || profile.gameSlug);
   return <label className={`flex items-center gap-2 py-0.5 ${isEdition ? "pl-4 text-xs" : ""}`}>
     <input type="checkbox" checked={profile.enabled} disabled={busy} onChange={(e) => void toggle(e.target.checked)} />
     <span className={isEdition ? "text-muted-foreground hover:text-foreground" : "font-normal"}>{label}</span>
+    {supportsBots && (
+      <span
+        className="inline-flex items-center gap-0.5 rounded bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-400"
+        title="Supports automated bot fill (bots fill empty slots and leave as players join)"
+      >
+        🤖 bots
+      </span>
+    )}
     <span className="ml-auto text-xs tabular-nums text-muted-foreground">{status || usageLabel(profile)}</span>
   </label>;
 }
@@ -68,18 +79,33 @@ function ProfileChecklist({ profiles, titles, editionNames, onSaved }: { profile
   for (const p of profiles) bySlug.set(p.gameSlug, [...(bySlug.get(p.gameSlug) || []), p]);
   const games = [...bySlug.entries()].sort(([a], [b]) => (titles[a] || a).localeCompare(titles[b] || b));
   return <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-    {games.map(([slug, rows]) => <div key={slug} className="rounded-lg border border-border px-2 py-1.5 text-sm">
-      <p className="font-medium">{titles[slug] || slug}</p>
-      {[...rows].sort((a, b) => {
-        const aEd = a.editionSlug ? 1 : 0;
-        const bEd = b.editionSlug ? 1 : 0;
-        if (aEd !== bEd) return aEd - bEd;
-        const aLabel = a.editionSlug ? editionNames[`${slug}:${a.editionSlug}`] || a.editionSlug : "Base game";
-        const bLabel = b.editionSlug ? editionNames[`${slug}:${b.editionSlug}`] || b.editionSlug : "Base game";
-        return aLabel.localeCompare(bLabel);
-      }).map((p) =>
-        <ProfileRow key={p.key} profile={p} label={p.editionSlug ? editionNames[`${slug}:${p.editionSlug}`] || p.editionSlug : "Base game"} onSaved={onSaved} />)}
-    </div>)}
+    {games.map(([slug, rows]) => {
+      const gameHasBots = BOT_FILL_GAMES.has(slug) || rows.some((p) => BOT_FILL_GAMES.has(p.recipeSlug || p.gameSlug));
+      return (
+        <div key={slug} className="rounded-lg border border-border px-2 py-1.5 text-sm">
+          <div className="flex items-center justify-between gap-1">
+            <p className="font-medium">{titles[slug] || slug}</p>
+            {gameHasBots && (
+              <span
+                className="inline-flex items-center gap-1 rounded bg-blue-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-blue-600 dark:text-blue-400"
+                title="This game supports automated bot fill"
+              >
+                🤖 Bots
+              </span>
+            )}
+          </div>
+          {[...rows].sort((a, b) => {
+            const aEd = a.editionSlug ? 1 : 0;
+            const bEd = b.editionSlug ? 1 : 0;
+            if (aEd !== bEd) return aEd - bEd;
+            const aLabel = a.editionSlug ? editionNames[`${slug}:${a.editionSlug}`] || a.editionSlug : "Base game";
+            const bLabel = b.editionSlug ? editionNames[`${slug}:${b.editionSlug}`] || b.editionSlug : "Base game";
+            return aLabel.localeCompare(bLabel);
+          }).map((p) =>
+            <ProfileRow key={p.key} profile={p} label={p.editionSlug ? editionNames[`${slug}:${p.editionSlug}`] || p.editionSlug : "Base game"} onSaved={onSaved} />)}
+        </div>
+      );
+    })}
   </div>;
 }
 
@@ -179,7 +205,13 @@ export function CommunityHostingPanel() {
         <div className="space-y-3"><h3 className="font-semibold">VPS safety limits</h3>
           <label className="flex items-center justify-between gap-2 text-sm">Region label <input className="w-36 rounded border bg-background px-2 py-1" value={config.node.regionLabel} onChange={(e) => field("node", "regionLabel", e.target.value)} /></label>
           <label className="flex items-center justify-between gap-2 text-sm">Maximum players per server <input className="w-24 rounded border bg-background px-2 py-1 text-right" type="number" min="2" max="64" step="1" value={config.maxPlayersPerServer ?? 16} onChange={(e) => section("maxPlayersPerServer", Number(e.target.value))} /></label>
-          <label className="flex items-center justify-between gap-2 text-sm">Bot fill <span className="flex items-center gap-1"><input className="w-20 rounded border bg-background px-2 py-1 text-right" type="number" min="0" max="100" step="5" value={config.botFillPercent ?? 0} onChange={(e) => section("botFillPercent", Number(e.target.value))} />%</span></label>
+          <label className="flex items-center justify-between gap-2 text-sm">Bot fill <span className="flex items-center gap-1"><input className="w-20 rounded border bg-background px-2 py-1 text-right" type="number" min="0" max="100" step="5" value={config.botFillPercent ?? 50} onChange={(e) => section("botFillPercent", Number(e.target.value))} />%</span></label>
+          {(config.botFillPercent ?? 0) === 0 ? (
+            <div className="flex items-center justify-between gap-2 text-xs text-amber-500">
+              <span>⚠️ Bot fill is set to 0% (bots disabled).</span>
+              <button type="button" onClick={() => section("botFillPercent", 50)} className="underline hover:text-amber-400 font-medium">Set to 50%</button>
+            </div>
+          ) : null}
           <p className="text-xs text-muted-foreground">Share of each server&apos;s slots kept filled with bots on games that support them (Counter-Strike 2, Team Fortress 2, Xonotic, OpenArena, Unvanquished). A bot leaves when a person joins and comes back when they leave; one slot always stays free. 0 turns bots off.</p>
           <p className="text-xs text-muted-foreground">Applied to managed games with a configurable slot limit. Empty rooms restart automatically to adopt a change; occupied rooms wait until they are empty. Games with a smaller built-in limit keep it, and games without a slot setting keep their own limit.</p>
           {numberField("Maximum CPU", "safety", "maxCpuPercent", { unit: "%", help: "Don't start an automatic server if the VPS would go above this. Also the red line on the monitoring display (yellow is 10 below)." })}
@@ -214,7 +246,10 @@ export function CommunityHostingPanel() {
     <div><h3 className="font-semibold">Games for automatic hosting</h3><p className="text-xs text-muted-foreground">Tick the games and editions available for community hosting. Usage is measured CPU and RAM per server.</p>
       <div className="text-sm">{data?.profiles.length ? <ProfileChecklist profiles={data.profiles} titles={data.titles || {}} editionNames={data.editionNames || {}} onSaved={load} /> : <p className="text-muted-foreground">No games measured yet.</p>}</div>
     </div>
-    <div><h3 className="font-semibold">Running and queued servers</h3><div className="mt-2 space-y-1 text-sm">{data?.servers.length ? data.servers.map((s) => <div key={s._id} className="flex flex-wrap items-center justify-between gap-2 border-b border-border py-1"><span>{s.name} · {s.gameSlug}{s.editionSlug ? ` (${data?.editionNames?.[`${s.gameSlug}:${s.editionSlug}`] || s.editionSlug})` : ""}</span><span>{s.runtimeState} · {s.playerCount == null || !s.playerCountCheckedAt || new Date(data.asOf).getTime() - new Date(s.playerCountCheckedAt).getTime() > 30 * 60_000 ? "players unknown" : `${s.playerCount} / ${s.maxPlayers ?? "?"} players`} · {s.decisionReason || "—"}</span><span className="flex gap-2"><button type="button" className="underline" onClick={() => void serverAction(s, "start")}>Start</button><button type="button" className="underline" onClick={() => void serverAction(s, "restart")}>Restart</button><button type="button" className="underline" onClick={() => void serverAction(s, "stop")}>Stop</button></span></div>) : <p className="text-muted-foreground">No managed servers.</p>}</div></div>
+    <div><h3 className="font-semibold">Running and queued servers</h3><div className="mt-2 space-y-1 text-sm">{data?.servers.length ? data.servers.map((s) => {
+      const botsLabel = s.bots ? ` (${s.bots} bot${s.bots === 1 ? "" : "s"})` : "";
+      return <div key={s._id} className="flex flex-wrap items-center justify-between gap-2 border-b border-border py-1"><span>{s.name} · {s.gameSlug}{s.editionSlug ? ` (${data?.editionNames?.[`${s.gameSlug}:${s.editionSlug}`] || s.editionSlug})` : ""}</span><span>{s.runtimeState} · {s.playerCount == null || !s.playerCountCheckedAt || new Date(data.asOf).getTime() - new Date(s.playerCountCheckedAt).getTime() > 30 * 60_000 ? "players unknown" : `${s.playerCount} / ${s.maxPlayers ?? "?"} players${botsLabel}`} · {s.decisionReason || "—"}</span><span className="flex gap-2"><button type="button" className="underline" onClick={() => void serverAction(s, "start")}>Start</button><button type="button" className="underline" onClick={() => void serverAction(s, "restart")}>Restart</button><button type="button" className="underline" onClick={() => void serverAction(s, "stop")}>Stop</button></span></div>;
+    }) : <p className="text-muted-foreground">No managed servers.</p>}</div></div>
     <div><h3 className="font-semibold">Upcoming capacity reservations</h3><div className="mt-2 space-y-1 text-sm">{data?.reservations.length ? data.reservations.map((r) => <p key={r.sourceKey}>{r.profileKey} · {r.state} · warmup {new Date(r.warmupAt).toLocaleString()}</p>) : <p className="text-muted-foreground">No reservations.</p>}</div></div>
   </section>;
 }
