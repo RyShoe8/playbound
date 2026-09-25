@@ -24,6 +24,12 @@ import cadence from "./cadence.json";
  * the one place seconds are visible (someone readies up and everyone should
  * see it), so a live party polls faster than an idle friends list.
  *
+ * `partyVersionPollMs` / `livePartyPollWithVersionMs` — a live party checks its
+ * change stamp (/api/parties/:id/version, one cache read) every 1.5s and does
+ * the full sync only when it moves, so a member readying up shows for everyone
+ * in about a second. While stamps are arriving the full sync is only a safety
+ * net and slows to 12s; with no stamp (cache down) it stays at livePartyPollMs.
+ *
  * `partyChatPollMs` — chat feels broken if it lags much past this.
  *
  * `discoverablePartiesMinMs` / `upcomingEventsTtlMs` — throttles for the two
@@ -46,6 +52,8 @@ export const CADENCE = {
 
   friendsPollMs: cadence.friendsPollMs,
   livePartyPollMs: cadence.livePartyPollMs,
+  partyVersionPollMs: cadence.partyVersionPollMs,
+  livePartyPollWithVersionMs: cadence.livePartyPollWithVersionMs,
   partyChatPollMs: cadence.partyChatPollMs,
   discoverablePartiesMinMs: cadence.discoverablePartiesMinMs,
   upcomingEventsTtlMs: cadence.upcomingEventsTtlMs,

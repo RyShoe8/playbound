@@ -6,6 +6,8 @@ export const CADENCE = {
   "notificationPollMs": 10000,
   "friendsPollMs": 5000,
   "livePartyPollMs": 3000,
+  "partyVersionPollMs": 1500,
+  "livePartyPollWithVersionMs": 12000,
   "partyChatPollMs": 2500,
   "discoverablePartiesMinMs": 8000,
   "upcomingEventsTtlMs": 60000,
