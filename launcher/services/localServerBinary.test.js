@@ -19,20 +19,8 @@ const os = require("node:os");
 const path = require("node:path");
 
 function loadResolver(platform) {
-  const src = require("./testing-mainSource").readMainSource();
-  const start = src.indexOf("function resolveLocalServerBinary(");
-  assert.notEqual(start, -1, "resolveLocalServerBinary not found in main.js");
-  let i = src.indexOf("{", start);
-  let depth = 0;
-  for (; i < src.length; i++) {
-    if (src[i] === "{") depth += 1;
-    else if (src[i] === "}" && --depth === 0) break;
-  }
-  const body = `
-    ${src.slice(start, i + 1)}
-    return resolveLocalServerBinary;
-  `;
-  return new Function("path", "fs", "process", body)(path, fs, { platform });
+  const { resolveLocalServerBinary } = require("./testing-electronStub").requireMainModule("localServers");
+  return (gameDir, hostLaunch) => resolveLocalServerBinary(gameDir, hostLaunch, platform);
 }
 
 function fixture(files) {

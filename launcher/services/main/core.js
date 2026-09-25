@@ -24,6 +24,7 @@ const { createDeepLinks } = require("../deepLinks");
 const { withOutboundUtm } = require("../../utm");
 const { preferRunnableExecutable } = require("../executableFormat");
 const { getGamePrefixDirectory } = require("../CompatibilityRunner");
+const { assertInstallableOnPlatform, downloadFileName, selectDownloadUrl } = require("../downloadSelection");
 const LAUNCHER_ROOT = path.join(__dirname, "..", "..");
 
 function loadHardwareModule() {
@@ -1030,78 +1031,12 @@ async function resolveDownload(entry) {
     entry.kind === "direct-installer" ||
     entry.kind === "direct-exe"
   ) {
-    let effectiveUrl = entry.url;
-    if (process.platform === "darwin" && entry.urlMac) {
-      /*
-       * Apple ship two architectures and several projects build for both, so
-       * one urlMac hands half of Mac users a slice they cannot run. 0 A.D. is
-       * the case: macos-aarch64.dmg and macos-x86_64.dmg, and an Intel Mac
-       * given the first gets nothing.
-       *
-       * urlMac stays the default — Apple Silicon, which is every Mac sold
-       * since 2020 — and urlMacX64 is the Intel override. A recipe with only
-       * urlMac keeps working exactly as before.
-       */
-      effectiveUrl =
-        process.arch !== "arm64" && entry.urlMacX64 ? entry.urlMacX64 : entry.urlMac;
-    } else if (process.platform === "linux" && entry.urlLinux) {
-      effectiveUrl = entry.urlLinux;
-    }
-
+    const effectiveUrl = selectDownloadUrl(entry);
     if (!effectiveUrl) {
       throw new Error(`No download URL configured for ${entry.title || entry.slug || "this game"}`);
     }
-
-    if (
-      process.platform === "darwin" &&
-      (entry.kind === "direct-installer" || entry.kind === "direct-exe") &&
-      !entry.urlMac &&
-      /\.(exe|msi)$/i.test(String(effectiveUrl || entry.fileName || ""))
-    ) {
-      throw new Error(
-        "This game only ships a Windows installer in the catalog. On Mac, use Locate to select the .app if you already installed it."
-      );
-    }
-    const overridden = effectiveUrl !== entry.url;
-    let name = entry.fileName;
-    try {
-      const urlFileName = path.basename(new URL(effectiveUrl).pathname);
-      if (overridden || !name || name === "download" || !name.includes(".")) {
-        if (urlFileName && urlFileName !== "download" && urlFileName.includes(".")) {
-          name = urlFileName;
-        }
-      }
-    } catch {}
-    /*
-     * `fileName` describes the Windows build, so a per-platform override must
-     * not be allowed to keep it — the extension decides how the download is
-     * installed, and 7KAA's Linux .tar.gz saved as 7kaa-install-win32.exe gets
-     * openPath'd as an installer instead of extracted.
-     *
-     * The basename alone is not enough to catch it: SourceForge serves
-     * .../7kaa-2.15.7-linux-x86-64.tar.gz/download, so the basename is
-     * "download" and the real name is the segment before it. Scan from the end
-     * so that trailing-segment shape resolves to the file rather than to some
-     * earlier archive-looking directory.
-     */
-    if (
-      (overridden && name === entry.fileName) ||
-      !name ||
-      name === "download" ||
-      !name.includes(".")
-    ) {
-      try {
-        const parts = new URL(effectiveUrl).pathname.split("/").filter(Boolean).reverse();
-        const fromPath = parts.find((p) =>
-          /\.(exe|zip|7z|rar|msi|dmg|pkg|jar|tar\.gz|tar\.xz|tgz|appimage|bin)$/i.test(
-            decodeURIComponent(p)
-          )
-        );
-        name = (fromPath && decodeURIComponent(fromPath)) || entry.fileName || `${entry.slug}.bin`;
-      } catch {
-        name = entry.fileName || `${entry.slug}.bin`;
-      }
-    }
+    assertInstallableOnPlatform(entry, effectiveUrl);
+    const name = downloadFileName(entry, effectiveUrl);
     return { url: effectiveUrl, name, version: entry.versionLabel || "fixed" };
   }
 

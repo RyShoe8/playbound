@@ -25,15 +25,15 @@ const { launcherJson, probeServerLatency } = require("./core");
  * worked before: launch the game, let the player host from its menus, probe
  * the port. Plenty of games ship no separate server.
  */
-function resolveLocalServerBinary(gameDir, hostLaunch) {
+function resolveLocalServerBinary(gameDir, hostLaunch, platform = process.platform) {
   const hint = String(hostLaunch?.binaryHint || "").trim();
   if (!gameDir || !hint) return null;
   const names = [hint];
-  if (process.platform === "win32" && !/\.(exe|bat|cmd|jar)$/i.test(hint)) {
+  if (platform === "win32" && !/\.(exe|bat|cmd|jar)$/i.test(hint)) {
     names.push(`${hint}.exe`);
   }
   if (/teeworlds|ddnet/i.test(hint) || /teeworlds|ddnet/i.test(gameDir)) {
-    if (process.platform === "win32") {
+    if (platform === "win32") {
       names.push("DDNet-Server.exe", "teeworlds_srv.exe");
     } else {
       names.push("DDNet-Server", "teeworlds_srv");

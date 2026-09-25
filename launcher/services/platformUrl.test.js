@@ -17,25 +17,10 @@ const test = require("node:test");
 const fs = require("node:fs");
 const path = require("node:path");
 
-/**
- * The platform branch, lifted from resolveDownload.
- *
- * Extracted by its own comment anchor rather than a line number, so this fails
- * loudly if the block is renamed instead of silently testing nothing.
- */
-function loadSelector() {
-  const src = require("./testing-mainSource").readMainSource();
-  const start = src.indexOf("    let effectiveUrl = entry.url;");
-  assert.notEqual(start, -1, "the effectiveUrl block has moved — update this test");
-  const end = src.indexOf("if (!effectiveUrl)", start);
-  assert.ok(end > start, "could not bound the platform branch");
-  const body = src.slice(start, end);
+const { selectDownloadUrl } = require("./downloadSelection");
 
-  return (entry, platform, arch = "x64") =>
-    new Function("entry", "process", `${body} return effectiveUrl;`)(entry, { platform, arch });
-}
-
-const pick = loadSelector();
+/** The platform branch resolveDownload uses. */
+const pick = (entry, platform, arch = "x64") => selectDownloadUrl(entry, platform, arch);
 
 const WIN = "https://cdn.example/meteorite-win.zip";
 const MAC = "https://cdn.example/meteorite-mac.zip";
