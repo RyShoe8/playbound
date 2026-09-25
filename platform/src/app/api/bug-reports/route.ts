@@ -36,7 +36,7 @@ export async function GET(req: Request) {
       ? {}
       : status && isBugReportStatus(status)
       ? { status }
-      : { status: { $ne: "resolved" } };
+      : { status: { $nin: ["resolved", "dismissed"] } };
 
   await dbConnect();
   const items = await BugReport.find(filter).sort({ createdAt: -1 }).limit(200).lean();
