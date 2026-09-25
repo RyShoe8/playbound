@@ -15,4 +15,12 @@ describe("managed player count", () => {
     expect(await queryManagedPlayerCount({ queryKind: "openra-master", host: "192.0.2.1", port: 1235 })).toBeNull();
     expect(await queryManagedPlayerCount({ queryKind: "none", host: "192.0.2.1", port: 1235 })).toBeNull();
   });
+  it("reads Hurry Curry's exact registered address and preserves zero", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => [
+      { address: ["ws://192.0.2.1:27033"], players_online: 8 },
+      { address: ["ws://192.0.2.1:27032"], players_online: 0 },
+    ] })));
+    expect(await queryManagedPlayerCount({ queryKind: "hurry-curry-registry", host: "192.0.2.1", port: 27032 })).toBe(0);
+    expect(await queryManagedPlayerCount({ queryKind: "hurry-curry-registry", host: "192.0.2.1", port: 27034 })).toBeNull();
+  });
 });

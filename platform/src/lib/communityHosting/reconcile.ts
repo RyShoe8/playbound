@@ -46,6 +46,14 @@ export function getEffectiveEnvelope(
 
 const LEASE_MS = 2 * 60_000;
 
+// These methods are selected by the actual hosted game, then recorded on the
+// profile only after a live response. A running process alone is not proof.
+const QUERY_BY_GAME: Record<string, "a2s-local" | "hurry-curry-registry" | "openra-master"> = {
+  "counter-strike-2": "a2s-local",
+  "hurry-curry": "hurry-curry-registry",
+  "earth-2140-trilogy": "openra-master",
+};
+
 async function recordHostingAction(event: string, server: { gameSlug: string; editionSlug?: string | null; profileKey: string; name?: string }, reason?: string | null) {
   try {
     await saveEvent({ event, properties: {
@@ -211,9 +219,16 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         }
         continue;
       }
-      const players = profile?.queryVerified
-        ? await queryManagedPlayerCount({ queryKind: profile.queryKind, host: room.host, port: room.port })
+      const queryKind = profile?.queryVerified ? profile.queryKind : QUERY_BY_GAME[server.gameSlug];
+      const players = queryKind
+        ? await queryManagedPlayerCount({ queryKind, host: room.host, port: room.port, communityServerId: String(server._id), expectedMod: server.gameSlug === "earth-2140-trilogy" ? "e2140" : undefined })
         : null;
+      if (players !== null && profile && !profile.queryVerified && queryKind) {
+        await CommunityServerProfile.updateOne(
+          { key: profile.key, queryVerified: false },
+          { $set: { queryKind, queryVerified: true, lastVerifiedAt: now } }
+        );
+      }
       server.runtimeId = room.roomId;
       server.host = room.host;
       server.port = room.port;
