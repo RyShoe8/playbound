@@ -152,7 +152,7 @@ export function EcommerceCatalogList({ games }: { games: EcommerceGameRow[] }) {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="min-w-0">
                     <Link
-                      href={`/admin/games/${game.slug}/edit`}
+                      prefetch={false} href={`/admin/games/${game.slug}/edit`}
                       className="font-bold hover:underline"
                     >
                       {game.title}
