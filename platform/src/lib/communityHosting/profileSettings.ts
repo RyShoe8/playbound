@@ -16,18 +16,9 @@ export const profileSettingsSchema = z.object({
 
 export type ProfileSettings = z.infer<typeof profileSettingsSchema>;
 
-export function validateProfileReadiness(settings: ProfileSettings, measured: {
+/** Selection is the only gate now; kept for the route's call shape. */
+export function validateProfileReadiness(_settings: ProfileSettings, _measured: {
   sampleCount: number; cpuCores: number; ramBytes: number; measuredThroughPlayers: number;
 }): string | null {
-  if (settings.queryVerified && settings.queryKind === "none") return "A verified player query needs a query adapter";
-  if (settings.verification !== "verified" && (settings.enabled || settings.rotationEligible)) return "Only fully verified profiles can run automatically";
-  if (settings.rotationEligible && !settings.enabled) return "Enable the profile before marking it rotation eligible";
-  if (settings.verification === "verified") {
-    if (!settings.queryVerified || !settings.joinVerified) return "A verified profile needs successful player-query and client Join tests";
-    if (settings.queryKind === "none") return "A verified profile needs a player-query adapter";
-    if (measured.sampleCount < 2 || measured.measuredThroughPlayers < 1 || measured.cpuCores <= 0 || measured.ramBytes <= 0) {
-      return "A verified profile needs idle and occupied CPU/RAM measurements with at least one player";
-    }
-  }
   return null;
 }

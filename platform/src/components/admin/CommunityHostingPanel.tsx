@@ -20,18 +20,6 @@ type Data = {
 
 const GIB = 1024 ** 3;
 
-/**
- * What a profile still needs before it can run automatically. Mirrors
- * validateProfileReadiness on the server, as short labels for the checklist.
- */
-function missingForHosting(p: Profile): string[] {
-  const missing: string[] = [];
-  if (p.queryKind === "none" || !p.queryVerified) missing.push("player count support");
-  if (!p.joinVerified) missing.push("Join test");
-  if ((p.sampleCount || 0) < 2 || (p.envelope?.measuredThroughPlayers || 0) < 1) missing.push("usage with players");
-  return missing;
-}
-
 function usageLabel(p: Profile): string {
   const cores = p.envelope?.cpuCores || 0;
   const gb = (p.envelope?.ramBytes || 0) / GIB;
@@ -47,11 +35,6 @@ async function saveProfile(p: Profile, change: Partial<ProfileSettings>) {
     minimumOnlineMinutes: p.minimumOnlineMinutes ?? null, idleMinutes: p.idleMinutes ?? null,
     cooldownMinutes: p.cooldownMinutes ?? null, ...change,
   };
-  // "Verified" follows from the tests and measurements instead of being chosen.
-  const ready = missingForHosting({ ...p, ...next }).length === 0;
-  if (next.verification !== "blocked") next.verification = ready ? "verified" : "testing";
-  if (!ready) { next.enabled = false; next.rotationEligible = false; }
-  next.blockedReason = ready ? null : `Needs ${missingForHosting({ ...p, ...next }).join(", ")}`;
   const response = await fetch(`/api/admin/connect/game-servers/community-hosting/profile/${encodeURIComponent(p.key)}`, {
     method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(next),
   });
@@ -59,35 +42,21 @@ async function saveProfile(p: Profile, change: Partial<ProfileSettings>) {
   if (!response.ok) throw new Error(body.error || "Could not save");
 }
 
-/** One row: checkbox to include in automatic hosting, usage, and the tests behind it. */
+/** One row: tick to make this game or edition available for community hosting. */
 function ProfileRow({ profile, label, onSaved }: { profile: Profile; label: string; onSaved: () => Promise<void> }) {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
-  const missing = missingForHosting(profile);
-  const included = profile.enabled && profile.rotationEligible;
-  async function run(change: Partial<ProfileSettings>) {
+  async function toggle(on: boolean) {
     setBusy(true); setStatus("");
-    try { await saveProfile(profile, change); await onSaved(); }
+    try { await saveProfile(profile, { enabled: on, rotationEligible: on }); await onSaved(); }
     catch (error) { setStatus(error instanceof Error ? error.message : "Could not save"); }
     finally { setBusy(false); }
   }
-  return <div className="py-0.5">
-    <label className={`flex items-center gap-2 ${missing.length ? "text-muted-foreground" : ""}`} title={missing.length ? `Needs ${missing.join(", ")}` : "Include in automatic hosting"}>
-      <input type="checkbox" checked={included} disabled={busy || missing.length > 0} onChange={(e) => void run({ enabled: e.target.checked, rotationEligible: e.target.checked })} />
-      <span>{label}</span>
-      <span className="ml-auto text-xs tabular-nums text-muted-foreground">{usageLabel(profile)}</span>
-    </label>
-    <details className="pl-6 text-xs text-muted-foreground">
-      <summary className="cursor-pointer">{missing.length ? `Needs ${missing.join(", ")}` : "Verified"}</summary>
-      <div className="mt-1 flex flex-wrap items-center gap-3">
-        {/* Player count support comes from code (a query adapter per game), not a setting. */}
-        <span>Player count: {profile.queryKind !== "none" && profile.queryVerified ? "supported" : "not supported yet"}</span>
-        <label><input type="checkbox" checked={profile.joinVerified} disabled={busy} onChange={(e) => void run({ joinVerified: e.target.checked })} /> Join tested</label>
-        <span>{profile.sampleCount || 0} samples · most players seen {profile.envelope?.measuredThroughPlayers || 0}</span>
-        {status && <span role="status" className="text-destructive">{status}</span>}
-      </div>
-    </details>
-  </div>;
+  return <label className="flex items-center gap-2 py-0.5">
+    <input type="checkbox" checked={profile.enabled} disabled={busy} onChange={(e) => void toggle(e.target.checked)} />
+    <span>{label}</span>
+    <span className="ml-auto text-xs tabular-nums text-muted-foreground">{status || usageLabel(profile)}</span>
+  </label>;
 }
 
 /** Games as cards with their editions underneath, like the nightly planner. */
@@ -226,7 +195,7 @@ export function CommunityHostingPanel() {
       <button type="button" disabled={saving} onClick={save} className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">Save hosting settings</button>
     </>}
     {message && <p role="status" className="text-sm">{message}</p>}
-    <div><h3 className="font-semibold">Games for automatic hosting</h3><p className="text-xs text-muted-foreground">Tick a game or edition to let PlayBound host it automatically. Usage is measured CPU and RAM per server. Greyed-out ones still need testing; open the line under them to record test results.</p>
+    <div><h3 className="font-semibold">Games for automatic hosting</h3><p className="text-xs text-muted-foreground">Tick the games and editions available for community hosting. Usage is measured CPU and RAM per server.</p>
       <div className="text-sm">{data?.profiles.length ? <ProfileChecklist profiles={data.profiles} titles={data.titles || {}} editionNames={data.editionNames || {}} onSaved={load} /> : <p className="text-muted-foreground">No games measured yet.</p>}</div>
     </div>
     <div><h3 className="font-semibold">Running and queued servers</h3><div className="mt-2 space-y-1 text-sm">{data?.servers.length ? data.servers.map((s) => <div key={s._id} className="flex flex-wrap items-center justify-between gap-2 border-b border-border py-1"><span>{s.name} · {s.gameSlug}</span><span>{s.runtimeState} · {s.playerCount ?? "players unknown"} · {s.decisionReason || "—"}</span><span className="flex gap-2"><button type="button" className="underline" onClick={() => void serverAction(s, "start")}>Start</button><button type="button" className="underline" onClick={() => void serverAction(s, "restart")}>Restart</button><button type="button" className="underline" onClick={() => void serverAction(s, "stop")}>Stop</button></span></div>) : <p className="text-muted-foreground">No managed servers.</p>}</div></div>
