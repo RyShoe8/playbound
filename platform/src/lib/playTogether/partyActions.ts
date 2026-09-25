@@ -169,7 +169,7 @@ export const PARTY_COPY = {
   serverControlWebTail: "use the controls below.",
   // Once the game is running the player is in it, not on this page.
   serverControlWebLiveTail:
-    "press Ctrl+P (⌘+P on Mac) in game to open the PlayBound server manager, or use the controls below.",
+    "press Ctrl+P (⌘+P on Mac) in game to open the PlayBound helper: game controls, server settings and more.",
   memberReady: "Ready",
   memberNotReady: "Not ready",
   playing: "Playing",

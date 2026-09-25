@@ -200,6 +200,7 @@ contextBridge.exposeInMainWorld("playbound", {
   toggleOverlay: () => ipcRenderer.invoke("toggle-overlay"),
   hideOverlay: () => ipcRenderer.invoke("hide-overlay"),
   getOverlayContext: () => ipcRenderer.invoke("overlay-context"),
+  setOverlayGuide: (guide) => ipcRenderer.invoke("set-overlay-guide", guide),
   getOverlayShortcut: () => ipcRenderer.invoke("get-overlay-shortcut"),
   setOverlayShortcut: (accelerator) => ipcRenderer.invoke("set-overlay-shortcut", accelerator),
   onOverlayOpened: (cb) => ipcRenderer.on("overlay-opened", () => cb()),

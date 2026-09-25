@@ -1,7 +1,10 @@
 /**
- * In-launcher guidance modal for all games:
- * Controls (Keyboard & Controller), How to Leave the Game, and Quick Tips.
- * Shown when launching any game so players always know the controls and how to exit.
+ * Launch guidance for all games: controls (keyboard & controller), how to
+ * leave the game, first-play tips and the party address.
+ *
+ * At launch this hands the guide to the Ctrl+P overlay (its Game tab) and
+ * shows a brief notice pointing there. showLaunchGuidanceModal is kept for
+ * surfaces that still want the full in-launcher view.
  */
 
 function escapeHtml(s) {
@@ -425,7 +428,54 @@ export function showLaunchGuidanceModal(opts = {}) {
 }
 
 /**
- * Convenience helper to inspect play() result and show help panel for any game.
+ * Friendly label for an Electron accelerator ("CommandOrControl+P" → "Ctrl+P",
+ * or "⌘+P" on a Mac), so the notice names the key the player actually presses.
+ */
+function acceleratorLabel(accelerator) {
+  const isMac = /Mac/i.test(navigator.platform || "");
+  return String(accelerator || "CommandOrControl+P")
+    .replace(/CommandOrControl|CmdOrCtrl/g, isMac ? "⌘" : "Ctrl")
+    .replace(/Command|Cmd/g, "⌘")
+    .replace(/Control/g, "Ctrl");
+}
+
+let noticeTimer = null;
+
+/**
+ * A short, non-blocking notice that the in-game helper exists.
+ *
+ * The full guide used to be a modal here, over a launcher the player had just
+ * left for the game. It now lives in the Ctrl+P overlay's Game tab, next to
+ * server settings and controller tuning, so there is one in-game helper.
+ */
+function showLaunchNotice({ title, shortcut, slowSeconds }) {
+  let el = document.getElementById("launch-helper-notice");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "launch-helper-notice";
+    el.setAttribute("role", "status");
+    el.style.cssText =
+      "position:fixed;right:20px;bottom:20px;z-index:10000;max-width:360px;padding:14px 16px;" +
+      "border-radius:12px;background:rgba(18,20,28,.96);color:#e8eaf0;border:1px solid rgba(255,255,255,.12);" +
+      "box-shadow:0 10px 30px rgba(0,0,0,.4);font-size:13px;line-height:1.45;cursor:pointer";
+    el.addEventListener("click", () => el.remove());
+    document.body.appendChild(el);
+  }
+  el.innerHTML = `
+    <strong>${escapeHtml(title)}</strong> is starting.<br />
+    Press ${renderSingleKeyCombo(shortcut)} in game for controls, how to leave, and server settings.
+    ${
+      slowSeconds
+        ? `<br /><span style="color:#f5c56b">It can take up to ${slowSeconds} seconds to load and may show “Not Responding” meanwhile. That is normal — please don't close it.</span>`
+        : ""
+    }`;
+  if (noticeTimer) clearTimeout(noticeTimer);
+  noticeTimer = setTimeout(() => el.remove(), slowSeconds ? 20000 : 10000);
+}
+
+/**
+ * Hand the launched game's guide to the Ctrl+P overlay and tell the player
+ * where to find it.
  */
 export async function maybeShowLaunchGuidance(res, context = {}) {
   const slug = res?.slug || context.slug || "";
@@ -437,7 +487,6 @@ export async function maybeShowLaunchGuidance(res, context = {}) {
   const multiplayerGamingSteps =
     res?.multiplayerGamingSteps || context.multiplayerGamingSteps || null;
   const address = context.address || res?.connect || null;
-  const launchCount = res?.launchCount || 1;
 
   if (!controls && slug && window.playbound?.getGameControls) {
     try {
@@ -447,15 +496,30 @@ export async function maybeShowLaunchGuidance(res, context = {}) {
     }
   }
 
-  showLaunchGuidanceModal({
-    title,
-    slug,
-    editionSlug,
-    controls,
-    howToQuit,
-    firstPlaySteps,
-    multiplayerGamingSteps,
-    launchCount,
-    address,
-  });
+  const slowSeconds = slowStartSeconds(slug, editionSlug);
+  try {
+    await window.playbound?.setOverlayGuide?.({
+      slug,
+      editionSlug,
+      title,
+      controls,
+      howToQuit,
+      firstPlaySteps,
+      multiplayerGamingSteps,
+      address,
+      slowSeconds,
+      schemeLabels: CONTROL_SCHEME_LABELS,
+      groupOrder: CONTROL_GROUP_ORDER,
+    });
+  } catch {
+    // The overlay simply shows no guide; the game still launches.
+  }
+
+  let shortcut = "CommandOrControl+P";
+  try {
+    shortcut = (await window.playbound?.getOverlayShortcut?.())?.accelerator || shortcut;
+  } catch {
+    // default
+  }
+  showLaunchNotice({ title, shortcut: acceleratorLabel(shortcut), slowSeconds });
 }

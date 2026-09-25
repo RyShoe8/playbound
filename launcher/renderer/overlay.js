@@ -1,5 +1,9 @@
 /**
- * The in-game overlay — one window, two tabs.
+ * The in-game overlay — the one in-game helper, opened with Ctrl+P.
+ *
+ * Game: the launched game's controls, how to leave, first-play tips and the
+ * party address — what used to be a modal over the launcher at launch. The
+ * renderer hands it over through set-overlay-guide; see guidanceModal.js.
  *
  * Server: renders from the game's declared settings, exactly like the party
  * window on the site — no game is named anywhere in this file. The
@@ -30,9 +34,11 @@ let state = {
   tes3mpBusy: false,
   tes3mpHour: 12,
   tes3mpHourBusy: false,
-  activeTab: "server",
+  activeTab: "game",
   tabInitialized: false,
   controls: null,
+  guide: null,
+  guideScheme: null,
 };
 
 function escapeHtml(value) {
@@ -345,10 +351,145 @@ async function updateControlsSettings(partial) {
   if (settings && state.controls) state.controls = { ...state.controls, settings };
 }
 
+function kbdHtml(input) {
+  return String(input || "")
+    .split(" / ")
+    .map((combo) =>
+      combo
+        .split(/\s*\+\s*/)
+        .map((k) => `<kbd>${escapeHtml(k)}</kbd>`)
+        .join("+")
+    )
+    .join(" or ");
+}
+
+function stepsHtml(steps) {
+  const items = (Array.isArray(steps) ? steps : [])
+    .map((s) => {
+      const text = typeof s === "string" ? s : s?.text || "";
+      const cmd = typeof s === "object" && s ? s.command : null;
+      return text || cmd
+        ? `<li>${escapeHtml(text)}${cmd ? ` <code>${escapeHtml(cmd)}</code>` : ""}</li>`
+        : "";
+    })
+    .join("");
+  return items ? `<ol class="guide-steps">${items}</ol>` : "";
+}
+
+function guideControlsHtml(g) {
+  const schemes = Array.isArray(g.controls?.schemes)
+    ? g.controls.schemes.filter((s) => s && (s.bindings?.length || s.notes || s.supported === false))
+    : [];
+  const current = schemes.find((s) => s.scheme === state.guideScheme) || schemes[0] || null;
+  if (!current) return "";
+
+  const labels = g.schemeLabels || {};
+  const order = Array.isArray(g.groupOrder) ? g.groupOrder : [];
+  const groups = new Map();
+  for (const b of current.bindings || []) {
+    const name = b.group || "Other";
+    if (!groups.has(name)) groups.set(name, []);
+    groups.get(name).push(b);
+  }
+  const names = [
+    ...order.filter((n) => groups.has(n)),
+    ...[...groups.keys()].filter((n) => !order.includes(n)),
+  ];
+  const body =
+    current.supported === false
+      ? `<p class="note">${escapeHtml(g.title)} does not support this input method.</p>`
+      : names
+          .map(
+            (n) =>
+              `<p class="guide-section">${escapeHtml(n)}</p>` +
+              groups
+                .get(n)
+                .map(
+                  (b) =>
+                    `<div class="binding"><span>${escapeHtml(b.action)}${
+                      b.note ? ` <span class="help">${escapeHtml(b.note)}</span>` : ""
+                    }</span><span>${kbdHtml(b.input)}</span></div>`
+                )
+                .join("")
+          )
+          .join("") || `<p class="note">Default controls.</p>`;
+  const tabs =
+    schemes.length > 1
+      ? `<div class="scheme-tabs">${schemes
+          .map(
+            (s) =>
+              `<button class="tab ${s === current ? "active" : ""}" data-scheme="${escapeHtml(
+                s.scheme
+              )}">${escapeHtml(labels[s.scheme] || s.scheme)}</button>`
+          )
+          .join("")}</div>`
+      : "";
+  return `<p class="guide-section">Controls</p>${tabs}${body}${
+    current.notes ? `<p class="note">${escapeHtml(current.notes)}</p>` : ""
+  }${g.controls?.notes ? `<p class="note">${escapeHtml(g.controls.notes)}</p>` : ""}`;
+}
+
+function renderGameTab() {
+  const g = state.guide;
+  if (!g) {
+    root.innerHTML = `<p class="note">Launch a game from PlayBound to see its controls and tips here.</p>
+      <p class="hint">Esc to close</p>`;
+    return;
+  }
+
+  const firstPlay = (Array.isArray(g.firstPlaySteps) ? g.firstPlaySteps : []).filter((s) => {
+    const text = String(typeof s === "string" ? s : s?.text || "").toLowerCase();
+    return (
+      !text.includes("escape on the host") &&
+      !text.includes("leave the game") &&
+      !text.includes("leave the match")
+    );
+  });
+  const connectSteps = Array.isArray(g.multiplayerGamingSteps) ? g.multiplayerGamingSteps : [];
+
+  root.innerHTML = `
+    ${
+      g.slowSeconds
+        ? `<p class="note warn">${escapeHtml(g.title)} can take up to ${escapeHtml(
+            g.slowSeconds
+          )} seconds to load and may show "Not Responding" meanwhile. That is normal.</p>`
+        : ""
+    }
+    <p class="guide-section">Leaving the game</p>
+    <p class="note">${escapeHtml(
+      g.howToQuit || "Press Escape to leave the game or exit to the menu (Alt+F4 also works)."
+    )}</p>
+    ${
+      g.address
+        ? `<p class="guide-section">Party server</p>
+           <div class="binding"><code>${escapeHtml(g.address)}</code><button class="tab" id="guide-copy">Copy</button></div>`
+        : ""
+    }
+    ${connectSteps.length ? `<p class="guide-section">Connecting in game</p>${stepsHtml(connectSteps)}` : ""}
+    ${guideControlsHtml(g)}
+    ${firstPlay.length ? `<p class="guide-section">Quick tips</p>${stepsHtml(firstPlay)}` : ""}
+    <p class="hint">Esc to close</p>
+  `;
+
+  root.querySelectorAll("[data-scheme]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.guideScheme = btn.dataset.scheme;
+      render();
+    });
+  });
+  const copy = document.getElementById("guide-copy");
+  copy?.addEventListener("click", async () => {
+    if (!window.playbound?.clipboardWrite) return;
+    await window.playbound.clipboardWrite(g.address);
+    copy.textContent = "Copied";
+  });
+}
+
 function renderTabs() {
   tabsEl.innerHTML = `
+    <button class="tab ${state.activeTab === "game" ? "active" : ""}" data-tab="game">Game</button>
     <button class="tab ${state.activeTab === "server" ? "active" : ""}" data-tab="server">Server</button>
-    <button class="tab ${state.activeTab === "controls" ? "active" : ""}" data-tab="controls">Controls</button>
+    <button class="tab ${state.activeTab === "controls" ? "active" : ""}" data-tab="controls">Controller</button>
   `;
   tabsEl.querySelectorAll("[data-tab]").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -361,6 +502,7 @@ function renderTabs() {
 function render() {
   renderTabs();
   if (state.activeTab === "controls") renderControlsTab();
+  else if (state.activeTab === "game") renderGameTab();
   else renderServerTab();
 }
 
@@ -435,15 +577,22 @@ async function load() {
   const party = context?.party || null;
   state.partyId = party?.id || null;
   state.controls = context?.controls || null;
-  subject.textContent = party?.gameTitle || party?.gameSlug || state.controls?.gameTitle || "";
+  state.guide = context?.guide || null;
+  subject.textContent =
+    party?.gameTitle || party?.gameSlug || state.controls?.gameTitle || state.guide?.title || "";
 
   // Pick a sensible default tab once, the first time context is known —
-  // never on a later reload, so switching tabs mid-session sticks. If a
-  // party is open, Server is still the more likely reason someone opened
-  // the overlay; otherwise land on whichever tab actually has something.
+  // never on a later reload, so switching tabs mid-session sticks. The Game
+  // guide is the general answer; otherwise land on whichever tab has something.
   if (!state.tabInitialized) {
     state.tabInitialized = true;
-    state.activeTab = !state.partyId && state.controls ? "controls" : "server";
+    state.activeTab = state.guide
+      ? "game"
+      : state.partyId
+        ? "server"
+        : state.controls
+          ? "controls"
+          : "game";
   }
 
   if (!state.partyId) {

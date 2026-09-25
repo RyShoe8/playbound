@@ -10913,6 +10913,7 @@ function clearLaunchTracking(slug, { beat = false } = {}) {
   if (launch.settleTimer) clearTimeout(launch.settleTimer);
   if (launch.pollTimer) clearInterval(launch.pollTimer);
   activeLaunches.delete(slug);
+  if (overlayGuide?.slug === slug) overlayGuide = null;
   if (beat) void beatLauncherPresence();
 }
 
@@ -16967,17 +16968,39 @@ function overlayControlsContext() {
   return { profileName: info.name, gameSlug: info.gameSlug, gameTitle: title, settings: info.settings, bindings: info.bindings };
 }
 
+/*
+ * The launched game's guide — key bindings, how to leave, first-play tips and
+ * the party address. This used to be a modal over the launcher at launch;
+ * it now lives in the overlay's Game tab so Ctrl+P is the one in-game helper.
+ * Set by the renderer on launch, cleared when that game exits.
+ */
+let overlayGuide = null;
+
+function sanitizeOverlayGuide(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  try {
+    const json = JSON.stringify(raw);
+    if (json.length > 200_000) return null;
+    const guide = JSON.parse(json);
+    if (typeof guide.slug !== "string" || !guide.slug) return null;
+    return guide;
+  } catch {
+    return null;
+  }
+}
+
 async function overlayContext() {
   const controls = overlayControlsContext();
+  const guide = overlayGuide;
   const sync = await launcherJson("/api/party-sync?discoverable=0").catch(() => ({}));
   const parties = Array.isArray(sync?.myParties) ? sync.myParties : [];
   const live = parties.filter((p) => p && p.status !== "ended");
-  if (!live.length) return { party: null, controls };
+  if (!live.length) return { party: null, controls, guide };
 
   const running = [...activeLaunches.keys()];
   const forRunning = live.find((p) => running.includes(String(p.gameSlug)));
   const party = forRunning || (live.length === 1 ? live[0] : null);
-  if (!party) return { party: null, reason: "several parties are open", controls };
+  if (!party) return { party: null, reason: "several parties are open", controls, guide };
   return {
     party: {
       id: String(party.id),
@@ -16986,16 +17009,21 @@ async function overlayContext() {
       memberCount: Array.isArray(party.members) ? party.members.length : null,
     },
     controls,
+    guide,
   };
 }
 
+ipcMain.handle("set-overlay-guide", (_event, raw) => {
+  overlayGuide = sanitizeOverlayGuide(raw);
+  return Boolean(overlayGuide);
+});
 ipcMain.handle("toggle-overlay", () => toggleOverlay());
 ipcMain.handle("hide-overlay", () => hideOverlay());
 ipcMain.handle("overlay-context", async () => {
   try {
     return await overlayContext();
   } catch (err) {
-    return { party: null, error: err.message, controls: overlayControlsContext() };
+    return { party: null, error: err.message, controls: overlayControlsContext(), guide: overlayGuide };
   }
 });
 ipcMain.handle("update-playbound-controls-settings", (_event, partial) => {
