@@ -43,3 +43,5 @@ signing.env
 /SEO-STRATEGY.md
 /SEO-STRATEGY-*.md
 .tmp/
+launcher/test-results/
+launcher/playwright-report/

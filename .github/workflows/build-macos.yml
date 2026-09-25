@@ -61,3 +61,9 @@ jobs:
         working-directory: platform
         env:
           BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN || vars.BLOB_READ_WRITE_TOKEN }}
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: macos-launcher-smoke-failure
+          path: launcher/test-results/

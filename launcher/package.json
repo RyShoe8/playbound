@@ -1,7 +1,7 @@
 {
   "name": "playbound-launcher",
   "version": "0.3.128",
-  "description": "PlayBound App — discover, install, update, and launch free PC games and servers.",
+  "description": "PlayBound App \u00e2\u20ac\u201d discover, install, update, and launch free PC games and servers.",
   "main": "bootstrap.js",
   "scripts": {
     "start": "electron .",
@@ -44,7 +44,8 @@
     "test:vigem": "node services/couch/windowsVigem.test.js",
     "test:elevate": "node services/GameLauncher.elevate.test.js",
     "test:game-controls": "node services/gameControls.test.js",
-    "test:game-player-name": "node services/gamePlayerName.test.js"
+    "test:game-player-name": "node services/gamePlayerName.test.js",
+    "test:smoke": "node scripts/run-smoke.js"
   },
   "author": "PlayBound",
   "license": "MIT",
@@ -55,6 +56,7 @@
     "ws": "^8.21.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "electron": "^33.0.0",
     "electron-builder": "^25.1.8",
     "eslint": "^10.10.0"

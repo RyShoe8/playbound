@@ -44,6 +44,12 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
+      - run: npm run test:smoke
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: launcher-smoke-failure
+          path: launcher/test-results/
 
   game-host:
     runs-on: ubuntu-latest

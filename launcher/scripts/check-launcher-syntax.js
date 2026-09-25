@@ -31,7 +31,8 @@
  * They are also parse-only for (3): bootstrap/main/preload reach for
  * contextBridge and process.versions.electron as they load, so requiring them
  * outside Electron fails for reasons that say nothing about the code. Loading
- * services/ is what covers them in practice, since that is what they require.
+ * services/main also needs Electron. It is parsed here and loaded by the
+ * mandatory real-Electron smoke test in each build pipeline.
  */
 
 const path = require("path");
@@ -116,7 +117,9 @@ for (const dir of LOAD_DIRS) {
 const loadable = loadFiles.filter((f) => !/\.test\.js$/.test(f) && /\.js$/.test(f));
 
 for (const fullPath of loadable) {
-  const result = spawnSync(process.execPath, ["-e", "require(process.argv[1])", fullPath], {
+  const electronModule = fullPath.startsWith(path.join(launcherDir, "services", "main") + path.sep);
+  const args = electronModule ? ["--check", fullPath] : ["-e", "require(process.argv[1])", fullPath];
+  const result = spawnSync(process.execPath, args, {
     cwd: launcherDir,
     encoding: "utf8",
   });
@@ -137,17 +140,14 @@ for (const fullPath of loadable) {
  * moment instead — while reporting a launch failure, and when a player clicked
  * a party invite.
  *
- * ESLint comes from platform/, which the launcher does not depend on, so a
- * checkout with only launcher deps installed skips this with a notice rather
- * than failing a build over a tool it was never given.
+ * Use the launcher's own ESLint dependency so a standalone checkout has the
+ * same checks as the monorepo.
  */
 // The JS entrypoint rather than the .bin shim: a .cmd needs shell:true on
 // Windows, and passing args through a shell is both a deprecation warning and
 // a quoting hazard for paths with spaces.
 const eslintBin = path.join(
   launcherDir,
-  "..",
-  "platform",
   "node_modules",
   "eslint",
   "bin",
@@ -167,7 +167,8 @@ if (fs.existsSync(eslintBin) && fs.existsSync(eslintConfig)) {
     console.error((result.stdout || result.stderr || "").trimEnd());
   }
 } else {
-  console.log("[check-launcher-syntax] no-undef check skipped (platform eslint not installed).");
+  console.error("[check-launcher-syntax] ESLint missing; run npm ci in launcher.");
+  failed += 1;
 }
 
 if (failed > 0) {
@@ -178,5 +179,5 @@ if (failed > 0) {
 }
 
 console.log(
-  `[check-launcher-syntax] OK: ${COMMONJS_FILES.join(", ")} + ${moduleFiles.length} module file(s) parsed, ${loadable.length} service module(s) loaded`
+  `[check-launcher-syntax] OK: ${COMMONJS_FILES.join(", ")} + ${moduleFiles.length} renderer modules checked; ${loadable.length} services checked (Electron services load in the smoke test)`
 );

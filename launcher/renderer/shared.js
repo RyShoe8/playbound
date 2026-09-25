@@ -1,3 +1,4 @@
+import { partyStore } from "./partyStore.js";
 /** Shared launcher UI state and helpers. Live bindings via the `state` object. */
 
 import {
@@ -37,6 +38,8 @@ export const GAMES_FAMILY_VIEWS = new Set([
 ]);
 
 export const state = {
+  // Compatibility read for other views; Friends owns writes through the store.
+  get _activeParty() { return partyStore.current; },
   currentView: "home",
   accountState: { connected: false },
   deepLinkCtx: null,
@@ -1022,6 +1025,7 @@ export function toggleQueuePopover() {
 
 export function applyAccountToSidebar(acc) {
   state.accountState = acc || { connected: false };
+  partyStore.setAccount(acc?.connected ? acc.userId || acc.username : null);
   const connectionDot = document.getElementById("connection-dot");
   const connectionLabel = document.getElementById("connection-label");
   if (!connectionDot || !connectionLabel) return;

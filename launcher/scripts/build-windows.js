@@ -153,6 +153,7 @@ ConvertTo-Json -InputObject @($certs | Select-Object -Property Thumbprint, Subje
   //    main.js otherwise produces a valid-looking installer that replaces the
   //    working app and then fails before the first window can open.
   run("Checking launcher syntax", path.join(__dirname, "check-launcher-syntax.js"), [], env);
+  run("Testing the running launcher", path.join(__dirname, "run-smoke.js"), [], env);
 
   // 6. Build. electron-builder.config.js reads the same env vars and decides
   //    whether to sign; forceCodeSigning makes a failed signing attempt fatal.
