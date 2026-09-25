@@ -19,7 +19,7 @@ const test = require("node:test");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const MAIN = fs.readFileSync(path.join(__dirname, "..", "main.js"), "utf8");
+const MAIN = require("./testing-mainSource").readMainSource();
 
 /** Pull a top-level function out of main.js by name, brace-matched. */
 function grab(name) {

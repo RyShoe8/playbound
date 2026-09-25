@@ -17,7 +17,7 @@ const path = require("node:path");
 
 /** The guard, lifted from resolveDownload rather than reimplemented. */
 function loadGuard() {
-  const src = fs.readFileSync(path.join(__dirname, "..", "main.js"), "utf8");
+  const src = require("./testing-mainSource").readMainSource();
   const anchor = "      process.platform === \"darwin\" &&";
   const at = src.indexOf(anchor);
   assert.notEqual(at, -1, "the macOS installer guard has moved — update this test");

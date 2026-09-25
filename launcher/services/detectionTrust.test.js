@@ -18,7 +18,7 @@ const test = require("node:test");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const src = fs.readFileSync(path.join(__dirname, "..", "main.js"), "utf8");
+const src = require("./testing-mainSource").readMainSource();
 
 function findKnownExecutableBody() {
   const start = src.indexOf("function findKnownExecutable(");

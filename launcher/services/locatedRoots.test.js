@@ -18,7 +18,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 function loadFromMain() {
-  const src = fs.readFileSync(path.join(__dirname, "..", "main.js"), "utf8");
+  const src = require("./testing-mainSource").readMainSource();
 
   function extract(name) {
     const start = src.indexOf(`function ${name}(`);

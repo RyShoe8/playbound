@@ -90,7 +90,7 @@ test("nothing running and nothing queued is an empty queue", () => {
 test("main.js builds its snapshot here rather than spreading the task", () => {
   // The bug was a `{ ...task }` in getInstallQueueSnapshot. Assert it is gone,
   // so the promise and the release function cannot creep back onto the wire.
-  const src = fs.readFileSync(path.join(__dirname, "..", "main.js"), "utf8");
+  const src = require("./testing-mainSource").readMainSource();
   const start = src.indexOf("function getInstallQueueSnapshot(");
   assert.notEqual(start, -1, "getInstallQueueSnapshot is gone from main.js");
   const body = src.slice(start, src.indexOf("\n}", start));

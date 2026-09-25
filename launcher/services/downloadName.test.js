@@ -21,7 +21,7 @@ const path = require("node:path");
 
 /** The naming block, lifted from resolveDownload rather than copied. */
 function loadNamer() {
-  const src = fs.readFileSync(path.join(__dirname, "..", "main.js"), "utf8");
+  const src = require("./testing-mainSource").readMainSource();
   const start = src.indexOf("    const overridden = effectiveUrl !== entry.url;");
   assert.notEqual(start, -1, "the naming block has moved — update this test");
   const end = src.indexOf("return { url: effectiveUrl, name,", start);

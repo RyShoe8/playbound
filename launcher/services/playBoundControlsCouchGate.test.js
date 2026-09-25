@@ -16,7 +16,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const src = fs.readFileSync(path.join(__dirname, "..", "main.js"), "utf8");
+const src = require("./testing-mainSource").readMainSource();
 
 function functionBody(signature) {
   const start = src.indexOf(signature);

@@ -20,7 +20,7 @@ const test = require("node:test");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const MAIN = fs.readFileSync(path.join(__dirname, "..", "main.js"), "utf8");
+const MAIN = require("./testing-mainSource").readMainSource();
 
 /** One IPC handler's own body, brace-matched so it cannot read into the next. */
 function handlerBody(channel) {
