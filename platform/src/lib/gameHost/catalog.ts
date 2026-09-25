@@ -307,7 +307,7 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
 /**
  * Catalog slugs that differ from the slug the VPS knows the game by.
  */
-const HOSTABLE_SLUG_ALIASES: Record<string, string> = {
+export const HOSTABLE_SLUG_ALIASES: Record<string, string> = {
   tes3mp: "morrowind",
   "0-ad": "0ad",
   openmohaa: "medal-of-honor-allied-assault",
@@ -322,9 +322,11 @@ const HOSTABLE_SLUG_ALIASES: Record<string, string> = {
   revolt: "re-volt-rvgl",
 };
 
-export const HOSTABLE_SLUGS = [
-  ...new Set([...Object.keys(HOSTABLE_GAMES), ...Object.keys(HOSTABLE_SLUG_ALIASES)]),
-];
+export const HOSTABLE_SLUGS = Object.keys(HOSTABLE_GAMES);
+
+export function canonicalHostableSlug(slug: string): string {
+  return HOSTABLE_SLUG_ALIASES[slug] || slug;
+}
 
 export function isHostableGame(slug: string | null | undefined): boolean {
   return Boolean(slug && getHostableGame(slug));

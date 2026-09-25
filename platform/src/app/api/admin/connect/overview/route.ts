@@ -109,7 +109,7 @@ export async function GET() {
       serverVersionSource: versions?.serverVersionSource ?? "expected",
       versionMismatch: versions?.versionMismatch ?? false,
     };
-  });
+  }).sort((a, b) => a.title.localeCompare(b.title));
 
   if (healthResult.configured) {
     for (const game of games) {
