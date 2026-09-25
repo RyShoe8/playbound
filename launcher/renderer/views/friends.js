@@ -813,6 +813,25 @@ function takePrefetchedBundle() {
   return p && Date.now() - p.at < PREFETCH_FRESH_MS ? p.promise : null;
 }
 
+/** Saved worlds per game slug, fetched once per view session. */
+const savedWorldsCache = new Map();
+const savedWorldsInFlight = new Set();
+
+function ensureSavedWorlds(gameSlug) {
+  if (!gameSlug || savedWorldsCache.has(gameSlug) || savedWorldsInFlight.has(gameSlug)) return;
+  if (!window.playbound.getSavedWorlds) return;
+  savedWorldsInFlight.add(gameSlug);
+  window.playbound
+    .getSavedWorlds(gameSlug)
+    .then((res) => {
+      savedWorldsCache.set(gameSlug, Array.isArray(res?.worlds) ? res.worlds : []);
+      // The party signature includes savedWorldsLoaded, so this repaints.
+      void api.refreshFriendsData();
+    })
+    .catch(() => {})
+    .finally(() => savedWorldsInFlight.delete(gameSlug));
+}
+
 let lastGoodFriends = [];
 const lastGoodRequests = { incoming: [], outgoing: [] };
 
@@ -1959,6 +1978,38 @@ function buildPartyViewHtml(party) {
        </div>`
     : "";
 
+  /*
+   * Saved world (Morrowind on a PlayBound server): which persistent world the
+   * room runs. Options come from savedWorldsCache, filled asynchronously; the
+   * party's own world is always selectable even before that list arrives.
+   */
+  const canPickWorld =
+    isLeader && !ended && party.offersSavedWorlds && party.status !== "playing" && party.status !== "launching";
+  if (canPickWorld) ensureSavedWorlds(party.gameSlug);
+  const worlds = savedWorldsCache.get(party.gameSlug) || [];
+  const currentWorld = party.savedWorldId || "";
+  const worldHtml = canPickWorld
+    ? `<div class="party-field-group">
+         <label class="party-field-label" for="party-world-select">World</label>
+         <select class="input-text party-world-select" id="party-world-select" aria-label="World">
+           <option value=""${currentWorld ? "" : " selected"}>New world</option>
+           ${
+             currentWorld && !worlds.some((w) => w.id === currentWorld)
+               ? `<option value="${escapeHtml(currentWorld)}" selected>This party's world</option>`
+               : ""
+           }
+           ${worlds
+             .map(
+               (w) =>
+                 `<option value="${escapeHtml(w.id)}"${w.id === currentWorld ? " selected" : ""}>${escapeHtml(
+                   w.name
+                 )}${w.lastPlayedAt ? ` — ${escapeHtml(new Date(w.lastPlayedAt).toLocaleDateString())}` : ""}</option>`
+             )
+             .join("")}
+         </select>
+       </div>`
+    : "";
+
   const visibilityHtml =
     isLeader && !ended
       ? `<div class="party-field-group">
@@ -2215,6 +2266,7 @@ function buildPartyViewHtml(party) {
             </div>
             <div class="party-header-controls">
               ${hostModeHtml}
+              ${worldHtml}
               ${visibilityHtml}
               ${multiplayerTypeHtml}
             </div>
@@ -2971,6 +3023,9 @@ function partyAreaSignature(active, discoverable) {
       // the picker has to appear or disappear with them.
       hostMode: active.hostMode || null,
       hostModes: (active.hostModes || []).map((m) => m.mode),
+      savedWorldId: active.savedWorldId || null,
+      offersSavedWorlds: Boolean(active.offersSavedWorlds),
+      savedWorldsLoaded: savedWorldsCache.has(active.gameSlug),
       publicServer: active.publicServer
         ? [active.publicServer.id, active.publicServer.host, active.publicServer.port]
         : null,
@@ -3221,6 +3276,25 @@ function wirePartyView(slot, party) {
       }
     });
     enhanceSelect(openRaEditionSelect);
+  }
+
+  const worldSelect = slot.querySelector("#party-world-select");
+  if (worldSelect) {
+    worldSelect.addEventListener("change", async () => {
+      partyMutationInFlight += 1;
+      setStatus("Switching world — the server restarts on it…");
+      try {
+        const res = await window.playbound.setPartySavedWorld(partyId, worldSelect.value || null);
+        partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
+        applyPartyResult(res, "Couldn't change the world.");
+        if (res && !res.error) setStatus("");
+      } catch (err) {
+        partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
+        setStatus(err.message || "Couldn't change the world.", true);
+        void api.refreshFriendsData();
+      }
+    });
+    enhanceSelect(worldSelect);
   }
 
   const hostModeSelect = slot.querySelector("#party-hostmode-select");

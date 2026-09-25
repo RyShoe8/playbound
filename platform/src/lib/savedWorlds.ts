@@ -63,3 +63,20 @@ export async function resolvePartyWorld(party: {
   });
   return String(created._id);
 }
+
+/**
+ * Delete a world a party created on its own first start, when the leader
+ * switches to a different one before anyone outside the party has used it.
+ * Keeps the World dropdown from filling with empty auto-created worlds.
+ */
+export async function discardUnplayedPartyWorld(
+  worldId: string,
+  party: { createdAt?: Date | null; members?: Array<{ userId: unknown }> }
+): Promise<void> {
+  if (!Types.ObjectId.isValid(worldId) || !party.createdAt) return;
+  const memberSet = new Set((party.members || []).map((m) => String(m.userId)));
+  const world = await SavedWorld.findById(worldId).select({ createdAt: 1, memberIds: 1 }).lean();
+  if (!world?.createdAt || new Date(world.createdAt) < new Date(party.createdAt)) return;
+  if (!(world.memberIds || []).every((id) => memberSet.has(String(id)))) return;
+  await SavedWorld.deleteOne({ _id: world._id });
+}

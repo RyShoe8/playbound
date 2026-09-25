@@ -5,6 +5,7 @@ import {
   setVisibility,
   setPartyGame,
   setPartyHostMode,
+  setPartySavedWorld,
   setPartyCouchSession,
   setPartyPublicServer,
   setPartyEdition,
@@ -69,6 +70,16 @@ export async function PATCH(req: Request, ctx: RouteContext) {
 
     if (typeof body.hostMode === "string") {
       const result = await setPartyHostMode(id, userId, body.hostMode);
+      if ("error" in result) {
+        return NextResponse.json({ error: result.error }, { status: result.status });
+      }
+      return NextResponse.json({ party: result.party });
+    }
+
+    // Which saved world the PlayBound server runs; null = "New world".
+    if (body.savedWorldId !== undefined) {
+      const worldId = typeof body.savedWorldId === "string" && body.savedWorldId ? body.savedWorldId : null;
+      const result = await setPartySavedWorld(id, userId, worldId);
       if ("error" in result) {
         return NextResponse.json({ error: result.error }, { status: result.status });
       }

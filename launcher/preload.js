@@ -146,6 +146,9 @@ contextBridge.exposeInMainWorld("playbound", {
   setPartyOpenRaMod: (partyId, openRaMod) =>
     ipcRenderer.invoke("update-party", partyId, { openRaMod: openRaMod || null }),
   setPartyHostMode: (partyId, hostMode) => ipcRenderer.invoke("update-party", partyId, { hostMode }),
+  setPartySavedWorld: (partyId, savedWorldId) =>
+    ipcRenderer.invoke("update-party", partyId, { savedWorldId: savedWorldId || null }),
+  getSavedWorlds: (gameSlug) => ipcRenderer.invoke("get-saved-worlds", gameSlug),
   // Publishes the leader's couch join code to the party; null clears it.
   setPartyCouchSession: (partyId, session) =>
     ipcRenderer.invoke("update-party", partyId, { couchSession: session ?? null }),

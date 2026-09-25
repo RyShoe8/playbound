@@ -11,7 +11,7 @@
 
 import { createHash, randomBytes } from "crypto";
 import { Types, type Document } from "mongoose";
-import { canUseSavedWorld } from "@/lib/savedWorlds";
+import { canUseSavedWorld, discardUnplayedPartyWorld, supportsSavedWorlds } from "@/lib/savedWorlds";
 import dbConnect from "@/lib/db";
 import Party from "@/lib/models/Party";
 import Friend from "@/lib/models/Friend";
@@ -124,6 +124,7 @@ type PartyDoc = Document & {
   status: PartyStatus;
   members: RuleMember[];
   hostMode?: PartyHostMode | null;
+  savedWorldId?: Types.ObjectId | null;
   selfHostReady?: boolean;
   selfHostReadyAt?: Date | null;
   hosted?: PartyHostFields;
@@ -774,6 +775,8 @@ function serializeParty(
      */
     hostMode,
     hostModes: doc.gameSlug ? hostModeOptions(String(doc.gameSlug)) : [],
+    savedWorldId: doc.savedWorldId ? String(doc.savedWorldId) : null,
+    offersSavedWorlds: supportsSavedWorlds(String(doc.gameSlug || "")) && hostMode === "dedicated",
     /*
      * Resolved with the host mode the party is actually on, not the raw field —
      * a null hostMode means the game's default, and the controls follow that
@@ -2013,6 +2016,50 @@ export async function setPartyHostMode(
     trackPartyEvent("party_host_mode_set", { partyId: String(doc._id), gameSlug: slug, userId: leaderId, hostMode });
   }
 
+  return { party: await partyPayloadForDoc(doc.toObject()), status: 200 };
+}
+
+/**
+ * Choose which saved world the party's PlayBound server runs.
+ *
+ * Picking "PlayBound server" provisions straight away, and that first start
+ * creates a new world. So switching here restarts the room on the chosen
+ * world, and drops the world the party created moments ago if nobody has
+ * played on it outside this party. `worldId` null means "New world".
+ */
+export async function setPartySavedWorld(
+  partyId: string,
+  leaderId: string,
+  worldId: string | null
+): Promise<{ party: PartyPayload; status: 200 } | { error: string; status: 400 | 403 | 404 }> {
+  await dbConnect();
+  const doc = await Party.findById(partyId);
+  if (!doc) return { error: "Party not found", status: 404 };
+  if (String(doc.leaderId) !== leaderId) {
+    return { error: "Only the leader can choose the world", status: 403 };
+  }
+  if (doc.status === "ended") return { error: "Party has ended", status: 400 };
+  const slug = String(doc.gameSlug || "");
+  if (!supportsSavedWorlds(slug) || resolvedHostMode(slug, doc.hostMode, doc.hosted) !== "dedicated") {
+    return { error: "Saved worlds are only for PlayBound servers of this game", status: 400 };
+  }
+  if (doc.status === "playing" || doc.status === "launching") {
+    return { error: "Can't change the world while the game is running", status: 400 };
+  }
+  if (worldId && !(await canUseSavedWorld(leaderId, worldId, slug))) {
+    return { error: "That saved world is not available", status: 400 };
+  }
+
+  const previous = doc.savedWorldId ? String(doc.savedWorldId) : null;
+  if (previous !== worldId) {
+    if (doc.hosted?.roomId) await releasePartyHost(doc);
+    if (previous) await discardUnplayedPartyWorld(previous, doc);
+    doc.savedWorldId = worldId ? new Types.ObjectId(worldId) : null;
+    resetPartyConnectState(doc);
+    doc.lastActivity = new Date();
+    await doc.save();
+    await maybeProvisionPartyConnect(doc);
+  }
   return { party: await partyPayloadForDoc(doc.toObject()), status: 200 };
 }
 

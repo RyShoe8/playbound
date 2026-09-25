@@ -1,5 +1,6 @@
 "use client";
 
+import { SavedWorldPicker } from "@/components/friends/SavedWorldPicker";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -90,11 +91,14 @@ export function PartyView({
     provisionDiscord,
     setGame,
     setHostMode,
+    setSavedWorld,
     setName,
     setOpenRaMod,
     setEdition,
   } = usePartyStore();
   const [voiceBusy, setVoiceBusy] = useState(false);
+  const [worldBusy, setWorldBusy] = useState(false);
+  const [worldError, setWorldError] = useState<string | null>(null);
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [discordPrompt, setDiscordPrompt] = useState<{ open: boolean; inviteUrl: string | null }>({
     open: false,
@@ -499,6 +503,30 @@ export function PartyView({
                       </option>
                     ))}
                   </PremiumSelect>
+                </div>
+              )}
+
+            {isLeader &&
+              party.offersSavedWorlds &&
+              party.status !== "ended" &&
+              party.status !== "playing" &&
+              party.status !== "launching" &&
+              party.gameSlug && (
+                <div className="w-56">
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wide">
+                    World
+                  </label>
+                  <SavedWorldPicker
+                    gameSlug={party.gameSlug}
+                    value={party.savedWorldId}
+                    disabled={worldBusy}
+                    onChange={async (worldId) => {
+                      setWorldBusy(true);
+                      setWorldError(await setSavedWorld(party.id, worldId));
+                      setWorldBusy(false);
+                    }}
+                  />
+                  {worldError ? <p className="mt-1 text-xs text-destructive">{worldError}</p> : null}
                 </div>
               )}
 

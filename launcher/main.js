@@ -15297,6 +15297,15 @@ ipcMain.handle("invite-to-party", async (_event, partyId, friendIds = []) => {
  * makes. Without these the launcher could only create/join/leave, which is why
  * its party panel could not show the same controls as the site.
  */
+ipcMain.handle("get-saved-worlds", async (_event, gameSlug) => {
+  if (typeof gameSlug !== "string" || !/^[a-z0-9-]{1,80}$/.test(gameSlug)) return { worlds: [] };
+  try {
+    return await launcherJson(`/api/saved-worlds?gameSlug=${encodeURIComponent(gameSlug)}`);
+  } catch (err) {
+    return { worlds: [], error: err.message };
+  }
+});
+
 ipcMain.handle("update-party", async (_event, partyId, patch = {}) => {
   /*
    * Game picks should feel instant — blocking on a full library sync here made
