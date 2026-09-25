@@ -1444,8 +1444,12 @@ function applyUpdaterChannel() {
 }
 
 function setLinkedCanUseAdminChannel(next) {
+  const was = linkedCanUseAdminChannel;
   linkedCanUseAdminChannel = Boolean(next);
   applyUpdaterChannel();
+  // The catalog is fetched anonymously unless this is true; refetch the
+  // tester view as soon as the account is confirmed.
+  if (!was && linkedCanUseAdminChannel) void refreshRemoteCatalog(true);
 }
 
 async function refreshAdminUpdateChannel() {
@@ -2527,6 +2531,20 @@ function resolveEventMedia(payload) {
   return normalized;
 }
 
+/**
+ * Headers for public catalog reads (/api/launcher/catalog, /api/launcher/games).
+ *
+ * Those responses differ only for admins and testers, who also see testing
+ * entries. Sending Authorization otherwise makes the CDN bypass its cache:
+ * measured 3–15 s for the catalog and ~1 s per game page, against ~0.3 s for
+ * the identical cached response.
+ */
+function catalogReadHeaders() {
+  return linkedCanUseAdminChannel
+    ? launcherApiHeaders()
+    : { "user-agent": "playbound-launcher", accept: "application/json" };
+}
+
 function launcherApiHeaders(extra = {}) {
   const settings = loadSettings();
   const headers = {
@@ -2684,8 +2702,14 @@ async function refreshRemoteCatalog(force = false) {
      * portal or a dead connection keeps the catalog stale for minutes; ten
      * seconds is far past a healthy response and well short of that.
      */
+    /*
+     * Signed only for admins and testers — the only accounts the catalog
+     * answers differently (testing entries). An Authorization header makes the
+     * CDN bypass its cache, which cost every signed-in player 3–15 s per
+     * refresh for a response identical to the anonymous, cached one (~0.35 s).
+     */
     const res = await fetch(`${getApiBase()}/api/launcher/catalog`, {
-      headers: launcherApiHeaders(),
+      headers: catalogReadHeaders(),
       signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -16226,7 +16250,7 @@ ipcMain.handle("get-game-detail", async (_event, slug) => {
   let rich = null;
   try {
     const res = await apiFetch(`${getApiBase()}/api/launcher/games/${encodeURIComponent(slug)}`, {
-      headers: launcherApiHeaders(),
+      headers: catalogReadHeaders(),
     });
     if (res.ok) rich = await res.json();
   } catch {

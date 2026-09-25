@@ -140,7 +140,7 @@ export async function GET(
         headers: {
           "Cache-Control": includeTesting
             ? "private, no-store"
-            : "public, s-maxage=60, stale-while-revalidate=300",
+            : "public, s-maxage=60, stale-while-revalidate=86400",
         },
       }
     );

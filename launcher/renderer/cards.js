@@ -8,6 +8,7 @@ import {
   prefetchModDetail,
   requiresGamePriceLine,
   state,
+  resizedImageUrl,
 } from "./shared.js";
 
 /** Mirrors CardCategoryTags: genres then tags, deduped, capped. */
@@ -87,13 +88,18 @@ function attachCardCover(art, coverUrl) {
   img.loading = "lazy";
   img.decoding = "async";
 
-  let retried = false;
+  // Resized through the site's optimizer; the original is the fallback if
+  // that fails, then one delayed retry of the original.
+  const resized = resizedImageUrl(coverUrl);
+  let attempt = resized === coverUrl ? 1 : 0;
   img.addEventListener("load", () => {
     img.classList.add("is-loaded");
   });
   img.addEventListener("error", () => {
-    if (!retried) {
-      retried = true;
+    attempt += 1;
+    if (attempt === 1) {
+      img.src = coverUrl;
+    } else if (attempt === 2) {
       setTimeout(() => {
         if (!img.isConnected) return;
         const separator = coverUrl.includes("?") ? "&" : "?";
@@ -104,7 +110,7 @@ function attachCardCover(art, coverUrl) {
     }
   });
 
-  img.src = coverUrl;
+  img.src = resized;
   if (img.complete && img.naturalWidth > 0) {
     img.classList.add("is-loaded");
   }

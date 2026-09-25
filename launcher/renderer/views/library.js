@@ -21,6 +21,7 @@ import {
   startGameSession,
   state,
   views,
+  resizedImageUrl,
 } from "../shared.js";
 import { maybeOfferPhoneControllerThenPlay } from "../phoneController.js";
 
@@ -590,7 +591,11 @@ function buildLibraryThumb(game) {
 
   if (game.coverImage) {
     const img = document.createElement("img");
-    img.src = game.coverImage;
+    img.src = resizedImageUrl(game.coverImage, 256);
+    // Fall back to the original once if the resized copy is unavailable.
+    img.addEventListener("error", () => {
+      if (img.src !== game.coverImage) img.src = game.coverImage;
+    }, { once: true });
     img.alt = "";
     img.loading = "lazy";
     img.addEventListener("load", () => {
