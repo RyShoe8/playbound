@@ -60,8 +60,7 @@ export async function runEventsCron(now = new Date()): Promise<{
     });
 
     // Admin-created events have an organizer/creator. Give their Discord room
-    // to attendees during the 15-minute gathering window; automated pop-ups
-    // retain their existing planner-driven lifecycle.
+    // to attendees during the 15-minute gathering window.
     const manuallyCreated = Boolean(event.organizerId || event.createdBy);
     if (
       manuallyCreated &&
@@ -150,17 +149,6 @@ export async function runEventsCron(now = new Date()): Promise<{
   }
 
   discordActions += await cleanupDueEventChannels(now);
-
-  // Evaluate and trigger automated pop-up events (Automated Event Planner)
-  try {
-    const { checkAndTeardownExpiredEvents, evaluateAndTriggerAutomatedEvent } = await import(
-      "@/lib/events/automatedEventPlannerService"
-    );
-    await checkAndTeardownExpiredEvents();
-    if (!planner?.nightly?.enabled) await evaluateAndTriggerAutomatedEvent({ force: false });
-  } catch (err) {
-    console.warn("[events cron] automated event planner evaluation skipped:", err);
-  }
 
   return { statusUpdates, reminders, attendanceSynced, discordActions };
 }

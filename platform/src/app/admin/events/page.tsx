@@ -11,7 +11,6 @@ import { getRsvpCountsForEvents } from "@/lib/events/rsvpCounts";
 import { serializeEvent } from "@/lib/events/serialize";
 import { AdminEventsTable } from "@/components/events/AdminEventsTable";
 import { NightlyPlannerPanel } from "@/components/events/NightlyPlannerPanel";
-import { AutomatedEventPlannerManager } from "@/components/admin/AutomatedEventPlannerManager";
 
 export default async function AdminEventsPage() {
   // Never prerendered — see the layout. Each segment prerenders
@@ -66,11 +65,6 @@ export default async function AdminEventsPage() {
         </Link>
       </div>
       <NightlyPlannerPanel />
-      <details id="legacy-planner" className="rounded-xl border border-border bg-card p-5">
-        <summary className="cursor-pointer font-semibold">Legacy pop-up planner</summary>
-        <p className="mt-2 text-sm text-muted-foreground">Finish or disable existing pop-up sessions here before turning on the nightly schedule.</p>
-        <div className="mt-4"><AutomatedEventPlannerManager /></div>
-      </details>
       <AdminEventsTable events={events} />
     </div>
   );
