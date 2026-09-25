@@ -364,6 +364,11 @@ function appImageServerArgs(binary) {
   }
 }
 
+/** One directory per room: its config, HOME, and its own save tree. */
+function tes3mpRoomDir(ctx) {
+  return path.join(TES3MP_CONFIG_DIR, `pb-${String(ctx.partyId || "room").slice(-16)}`);
+}
+
 function gameBin(slug, names) {
   const dir = path.join(GAMES_ROOT, slug);
   return [
@@ -426,8 +431,15 @@ export const recipes = {
      * defaults to ./resources relative to cwd and so has to be absolute here.
      */
     binaries: gameBin("morrowind", ["tes3mp-server.x86_64", "tes3mp-server"]),
-    spawnEnv: () => ({
+    /*
+     * HOME is the room directory. TES3MP always loads the install's
+     * tes3mp-server-default.cfg and ignores any config in cwd, so the only
+     * per-room override is the user config at $HOME/.config/openmw/. Without
+     * it every room shared port 25565 and one save tree in the install dir.
+     */
+    spawnEnv: (_port, ctx) => ({
       LD_LIBRARY_PATH: path.join(GAMES_ROOT, "morrowind", "lib"),
+      HOME: tes3mpRoomDir(ctx),
     }),
     prepareSpawn: async (port, ctx) => {
       fs.mkdirSync(TES3MP_CONFIG_DIR, { recursive: true });
@@ -453,12 +465,34 @@ export const recipes = {
         "rate = 10000",
         "",
       ].join("\n");
-      const room = path.join(TES3MP_CONFIG_DIR, `pb-${ctx.partyId.slice(-16)}`);
-      fs.mkdirSync(room, { recursive: true });
-      fs.writeFileSync(path.join(room, "tes3mp-server-default.cfg"), config, "utf8");
-      const sourceServer = path.join(GAMES_ROOT, "morrowind", "server");
+      const room = tes3mpRoomDir(ctx);
       const roomServer = path.join(room, "server");
-      fs.cpSync(sourceServer, roomServer, { recursive: true, force: true });
+      const userConfigDir = path.join(room, ".config", "openmw");
+      fs.mkdirSync(userConfigDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(userConfigDir, "tes3mp-server.cfg"),
+        config.replace("home = ./server", `home = ${roomServer}`),
+        "utf8"
+      );
+      const sourceServer = path.join(GAMES_ROOT, "morrowind", "server");
+      // Scripts track the install on every start. Saves belong to the room:
+      // never copied from the template (it holds other parties' players and
+      // world state) and never overwritten when this room restarts.
+      const saveDirs = new Set(["player", "cell", "map", "world"].map((d) => path.join(sourceServer, "data", d)));
+      fs.cpSync(sourceServer, roomServer, {
+        recursive: true,
+        force: true,
+        filter: (src) => {
+          for (const dir of saveDirs) {
+            if (src.startsWith(dir + path.sep)) return false;
+          }
+          if (src.startsWith(path.join(sourceServer, "data") + path.sep)) {
+            const dest = path.join(roomServer, path.relative(sourceServer, src));
+            if (fs.existsSync(dest) && fs.statSync(dest).isFile()) return false;
+          }
+          return true;
+        },
+      });
       const luaConfig = path.join(roomServer, "scripts", "config.lua");
       if (settings.gameMode && fs.existsSync(luaConfig)) {
         const safeMode = safe(settings.gameMode, "Default").replace(/["\\]/g, "");
@@ -482,7 +516,7 @@ export const recipes = {
       }
     },
     args: () => ["--resources", path.join(GAMES_ROOT, "morrowind", "resources")],
-    cwd: (_port, ctx) => path.join(TES3MP_CONFIG_DIR, `pb-${ctx.partyId.slice(-16)}`),
+    cwd: (_port, ctx) => tes3mpRoomDir(ctx),
   },
   teeworlds: {
     portStart: 8303,
