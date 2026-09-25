@@ -118,7 +118,7 @@ network.
 
 Key files:
 
-- [`platform/src/lib/playTogether/party.ts`](../platform/src/lib/playTogether/party.ts) — party mutations, `joinPartyGame`
+- [`platform/src/lib/playTogether/party.ts`](../platform/src/lib/playTogether/party.ts) — party public API; implementation in [`party/`](../platform/src/lib/playTogether/party/) (`session.ts` has `joinPartyGame`)
 - [`platform/src/lib/gameHost/provision.ts`](../platform/src/lib/gameHost/provision.ts) — attach/release VPS room
 - [`platform/src/lib/gameHost/catalog.ts`](../platform/src/lib/gameHost/catalog.ts) — `HOSTABLE_GAMES`
 - [`platform/game-host/recipes.js`](../platform/game-host/recipes.js) — spawn recipes on the VPS (**must stay in sync** with `HOSTABLE_GAMES`)
