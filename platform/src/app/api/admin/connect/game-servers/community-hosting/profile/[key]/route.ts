@@ -3,6 +3,7 @@ import dbConnect from "@/lib/db";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import CommunityServerProfile from "@/lib/models/CommunityServerProfile";
 import { profileSettingsSchema, validateProfileReadiness } from "@/lib/communityHosting/profileSettings";
+import { getEffectiveEnvelope } from "@/lib/communityHosting/reconcile";
 
 export async function PUT(req: Request, context: { params: Promise<{ key: string }> }) {
   const { session, error } = await requireAdminSession();
@@ -23,12 +24,9 @@ export async function PUT(req: Request, context: { params: Promise<{ key: string
   }).lean();
 
   const sampleCount = current?.sampleCount ?? base?.sampleCount ?? 0;
-  const cpuCores = (current?.envelope?.cpuCores && current.envelope.cpuCores > 0)
-    ? current.envelope.cpuCores
-    : (base?.envelope?.cpuCores && base.envelope.cpuCores > 0 ? base.envelope.cpuCores : 0.25);
-  const ramBytes = (current?.envelope?.ramBytes && current.envelope.ramBytes > 0)
-    ? current.envelope.ramBytes
-    : (base?.envelope?.ramBytes && base.envelope.ramBytes > 0 ? base.envelope.ramBytes : 512 * 1024 * 1024);
+  const effective = getEffectiveEnvelope(current?.envelope || base?.envelope, gameSlug, sampleCount);
+  const cpuCores = effective.cpuCores;
+  const ramBytes = effective.ramBytes;
   const measuredThroughPlayers = current?.envelope?.measuredThroughPlayers ?? base?.envelope?.measuredThroughPlayers ?? 0;
 
   const reason = validateProfileReadiness(parsed.data, {
