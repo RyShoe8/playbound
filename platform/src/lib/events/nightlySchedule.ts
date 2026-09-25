@@ -143,8 +143,6 @@ export async function fillNightlySchedule(now = new Date()): Promise<{ created: 
   const config = await AutomatedEventConfig.findOne({ key: "global" }).lean();
   const nightly = config?.nightly ? normalizeNightly(config.nightly) : DEFAULT_NIGHTLY;
   if (!nightly.enabled) return { created: 0, skipped: 0, reason: "disabled" };
-  // The legacy pop-up system must be cut over before nightly generation starts.
-  if (config?.enabled) return { created: 0, skipped: 0, reason: "legacy_popups_enabled" };
   const slugs = [...new Set(nightly.games.filter((g) => g.enabled).map((g) => g.slug))];
   const published = await CatalogGame.find({
     slug: { $in: slugs }, published: true, status: "published", playboundSupported: true,

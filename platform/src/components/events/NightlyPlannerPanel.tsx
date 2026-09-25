@@ -8,7 +8,6 @@ type Candidate = { slug: string; title: string; editions: { slug: string; name: 
 export function NightlyPlannerPanel() {
   const [config, setConfig] = useState<NightlyScheduleConfig | null>(null);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [legacyEnabled, setLegacyEnabled] = useState(false);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -18,7 +17,6 @@ export function NightlyPlannerPanel() {
       .then((data) => {
         setConfig(data.nightly);
         setCandidates(data.candidates);
-        setLegacyEnabled(data.legacyPopupEnabled);
       })
       .catch((error) => setMessage(error.message));
   }, []);
@@ -27,18 +25,30 @@ export function NightlyPlannerPanel() {
     setConfig((current) => current ? { ...current, ...p } : current);
   }
 
-  function toggle(slug: string, enabled: boolean) {
+  /*
+   * Each game and each of its editions is its own rotation entry, as in the
+   * old pop-up planner — OpenRA's Red Alert, Tiberian Dawn and Dune 2000 can
+   * all be eligible and alternate. Entries are keyed by slug + edition.
+   */
+  const sameEntry = (g: { slug: string; editionSlug?: string | null }, slug: string, editionSlug: string | null) =>
+    g.slug === slug && (g.editionSlug || null) === editionSlug;
+
+  function entryFor(slug: string, editionSlug: string | null) {
+    return config?.games.find((g) => sameEntry(g, slug, editionSlug));
+  }
+
+  function toggle(slug: string, editionSlug: string | null, enabled: boolean) {
     if (!config) return;
-    const existing = config.games.find((g) => g.slug === slug);
+    const existing = entryFor(slug, editionSlug);
     const games = existing
       ? config.games.map((g) => g === existing ? { ...g, enabled } : g)
-      : [...config.games, { slug, enabled, editionSlug: null, weight: 1, minimumDaysBetweenEvents: 5 }];
+      : [...config.games, { slug, enabled, editionSlug, weight: 1, minimumDaysBetweenEvents: 5 }];
     patch({ games });
   }
 
-  function updateGame(slug: string, change: { editionSlug?: string | null; weight?: number; minimumDaysBetweenEvents?: number }) {
+  function updateGame(slug: string, editionSlug: string | null, change: { weight?: number; minimumDaysBetweenEvents?: number }) {
     if (!config) return;
-    patch({ games: config.games.map((g) => g.slug === slug ? { ...g, ...change } : g) });
+    patch({ games: config.games.map((g) => sameEntry(g, slug, editionSlug) ? { ...g, ...change } : g) });
   }
 
   async function save() {
@@ -63,9 +73,8 @@ export function NightlyPlannerPanel() {
     <section className="rounded-2xl border border-border bg-card p-5" aria-label="Nightly Game Nights">
       <h2 className="text-lg font-bold">Nightly Game Nights</h2>
       <p className="mt-1 text-sm text-muted-foreground">Publish one Game Night each evening. Hosting eligibility is configured separately. Existing events stay in place when this schedule changes.</p>
-      {legacyEnabled && <p className="mt-3 text-sm text-amber-600">Disable the legacy pop-up planner before enabling this schedule.</p>}
       {config && <div className="mt-4 space-y-4">
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={config.enabled} disabled={legacyEnabled} onChange={(e) => patch({ enabled: e.target.checked })} />Enable nightly scheduling</label>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={config.enabled} onChange={(e) => patch({ enabled: e.target.checked })} />Enable nightly scheduling</label>
         <div className="flex flex-wrap gap-3">
           <label className="text-sm">Local time <input className="ml-2 rounded border bg-background px-2 py-1" type="time" value={config.localTime} onChange={(e) => patch({ localTime: e.target.value })} /></label>
           <label className="text-sm">IANA timezone <input className="ml-2 rounded border bg-background px-2 py-1" value={config.timezone} onChange={(e) => patch({ timezone: e.target.value })} /></label>
@@ -79,21 +88,25 @@ export function NightlyPlannerPanel() {
           <label>Time <input className="ml-1 rounded border bg-background px-2 py-1" type="time" value={config.weeklyNotification?.localTime ?? "10:00"} onChange={(e) => patch({ weeklyNotification: { ...(config.weeklyNotification || { enabled: false, weekday: 1 }), localTime: e.target.value } })} /></label>
         </div>
         <div>
-          <h3 className="text-sm font-semibold">Eligible multiplayer games</h3>
-          <div className="mt-2 grid max-h-60 grid-cols-1 gap-1 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3">
-            {candidates.map((game) => <label key={game.slug} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={Boolean(config.games.find((g) => g.slug === game.slug)?.enabled)} onChange={(e) => toggle(game.slug, e.target.checked)} />{game.title}</label>)}
+          <h3 className="text-sm font-semibold">Eligible multiplayer games &amp; editions</h3>
+          <p className="text-xs text-muted-foreground">Tick the base game and/or individual editions; each ticked one is its own entry in the rotation.</p>
+          <div className="mt-2 grid max-h-80 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3">
+            {candidates.map((game) => <div key={game.slug} className="rounded-lg border border-border px-2 py-1.5 text-sm">
+              <label className="flex items-center gap-2 font-medium"><input type="checkbox" checked={Boolean(entryFor(game.slug, null)?.enabled)} onChange={(e) => toggle(game.slug, null, e.target.checked)} />{game.title}</label>
+              {game.editions.length > 0 && <div className="mt-1 space-y-0.5 pl-5">
+                {game.editions.map((edition) => <label key={edition.slug} className="flex items-center gap-2 text-xs text-muted-foreground"><input type="checkbox" checked={Boolean(entryFor(game.slug, edition.slug)?.enabled)} onChange={(e) => toggle(game.slug, edition.slug, e.target.checked)} />{edition.name}</label>)}
+              </div>}
+            </div>)}
           </div>
           <div className="mt-3 space-y-2">
             {config.games.filter((g) => g.enabled).map((game) => {
               const candidate = candidates.find((c) => c.slug === game.slug);
-              return <div key={`${game.slug}:${game.editionSlug || "base"}`} className="flex flex-wrap items-center gap-3 rounded-lg border border-border px-3 py-2 text-sm">
-                <strong className="min-w-32">{candidate?.title || game.slug}</strong>
-                <label>Edition <select className="ml-1 rounded border bg-background px-2 py-1" value={game.editionSlug || ""} onChange={(e) => updateGame(game.slug, { editionSlug: e.target.value || null })}>
-                  <option value="">Base game</option>
-                  {candidate?.editions.map((edition) => <option key={edition.slug} value={edition.slug}>{edition.name}</option>)}
-                </select></label>
-                <label>Weight <input className="ml-1 w-16 rounded border bg-background px-2 py-1" type="number" min="1" max="100" value={game.weight} onChange={(e) => updateGame(game.slug, { weight: Number(e.target.value) })} /></label>
-                <label>Minimum days between <input className="ml-1 w-16 rounded border bg-background px-2 py-1" type="number" min="0" max="365" value={game.minimumDaysBetweenEvents} onChange={(e) => updateGame(game.slug, { minimumDaysBetweenEvents: Number(e.target.value) })} /></label>
+              const edition = game.editionSlug ? candidate?.editions.find((e) => e.slug === game.editionSlug) : null;
+              const editionSlug = game.editionSlug || null;
+              return <div key={`${game.slug}:${editionSlug || "base"}`} className="flex flex-wrap items-center gap-3 rounded-lg border border-border px-3 py-2 text-sm">
+                <strong className="min-w-40">{candidate?.title || game.slug}{editionSlug ? ` — ${edition?.name || editionSlug}` : ""}</strong>
+                <label>Weight <input className="ml-1 w-16 rounded border bg-background px-2 py-1" type="number" min="1" max="100" value={game.weight} onChange={(e) => updateGame(game.slug, editionSlug, { weight: Number(e.target.value) })} /></label>
+                <label>Minimum days between <input className="ml-1 w-16 rounded border bg-background px-2 py-1" type="number" min="0" max="365" value={game.minimumDaysBetweenEvents} onChange={(e) => updateGame(game.slug, editionSlug, { minimumDaysBetweenEvents: Number(e.target.value) })} /></label>
               </div>;
             })}
           </div>
