@@ -38,3 +38,4 @@
 *.zip   binary
 *.exe   binary
 *.dll   binary
+*.patch text eol=lf
