@@ -870,6 +870,9 @@ const lastGoodRequests = { incoming: [], outgoing: [] };
 async function refreshFriendsData() {
   const content = document.getElementById("friends-content-area");
   if (!content) return;
+  // A party write (or optimistic change) landing while this read is in flight
+  // makes its party snapshot stale; painting it would flip the click back.
+  const partySeqAtStart = partyWriteSeq;
 
   try {
     // Started together: the game list comes from the local catalog and has
@@ -893,7 +896,7 @@ async function refreshFriendsData() {
     if (Array.isArray(requestsData?.outgoing)) lastGoodRequests.outgoing = requestsData.outgoing;
     const friends = lastGoodFriends;
     state._createPartyFriends = friends;
-    paintPartyArea(partiesData);
+    if (partyWriteSeq === partySeqAtStart) paintPartyArea(partiesData);
     syncFriendsPoll();
     const activeParty = Array.isArray(partiesData?.myParties) ? partiesData.myParties[0] : null;
     if (activeParty?.id) void refreshPartyChat(activeParty);
@@ -3180,6 +3183,44 @@ function paintPartyArea(partiesData, { force = false } = {}) {
 }
 
 /** Applies a party mutation response: surface the error or repaint. */
+/*
+ * Bumped on every party write the UI has already painted (optimistic or from a
+ * mutation reply). refreshFriendsData skips painting a party snapshot it began
+ * reading before the latest bump.
+ */
+let partyWriteSeq = 0;
+
+/** Paint a party payload now, as the authoritative latest state. */
+function paintOwnParty(party) {
+  partyWriteSeq += 1;
+  state._activeParty = party;
+  lastMyParties = [party];
+  emptyMyPartiesStreak = 0;
+  const slot = document.getElementById("friends-party-area");
+  if (slot) slot.dataset.sig = "";
+  blurPartyFocus();
+  paintPartyArea({ myParties: [party], discoverable: [] }, { force: true });
+}
+
+/**
+ * Apply a party change to the screen before the server answers, then run it.
+ * On failure the previous party is repainted and the error shown.
+ */
+async function optimisticPartyAction(party, mutate, request, fallbackMessage) {
+  const before = party;
+  let optimistic = null;
+  try {
+    optimistic = mutate(JSON.parse(JSON.stringify(party)));
+  } catch {
+    optimistic = null;
+  }
+  if (optimistic) paintOwnParty(optimistic);
+  const res = await request();
+  const ok = applyPartyResult(res, fallbackMessage);
+  if (!ok && optimistic) paintOwnParty(before);
+  return ok;
+}
+
 function applyPartyResult(res, fallbackMessage) {
   if (!res || res.error) {
     setStatus(res?.error || fallbackMessage, true);
@@ -3191,19 +3232,16 @@ function applyPartyResult(res, fallbackMessage) {
    * wiped the game the host just selected.
    */
   if (res.party?.id) {
-    state._activeParty = res.party;
-    lastMyParties = [res.party];
-    emptyMyPartiesStreak = 0;
-    const slot = document.getElementById("friends-party-area");
-    if (slot) slot.dataset.sig = "";
-    blurPartyFocus();
-    paintPartyArea({ myParties: [res.party], discoverable: [] }, { force: true });
+    // The reply is the party as saved; the regular live poll picks up the
+    // rest. A full refresh here re-fetched friends, requests and events on
+    // every click.
+    paintOwnParty(res.party);
   } else {
     const slot = document.getElementById("friends-party-area");
     if (slot) slot.dataset.sig = "";
     blurPartyFocus();
+    void pollFriendsData();
   }
-  void api.refreshFriendsData();
   return true;
 }
 
@@ -3372,8 +3410,14 @@ function wirePartyView(slot, party) {
   slot.querySelectorAll(".btn-party-kick").forEach((btn) => {
     btn.addEventListener("click", async () => {
       btn.disabled = true;
-      applyPartyResult(
-        await window.playbound.removePartyMember(partyId, btn.dataset.user),
+      const target = String(btn.dataset.user);
+      await optimisticPartyAction(
+        party,
+        (p) => {
+          p.members = (p.members || []).filter((m) => String(m.userId) !== target);
+          return p;
+        },
+        () => window.playbound.removePartyMember(partyId, target),
         "Couldn't remove that member."
       );
     });
@@ -3386,12 +3430,20 @@ function wirePartyView(slot, party) {
     );
     readyBtn.addEventListener("click", async () => {
       readyBtn.disabled = true;
-      const ok = applyPartyResult(
-        await window.playbound.setPartyReady(partyId, !me?.ready),
+      const next = !me?.ready;
+      const myId = String(currentUserId(party));
+      const ok = await optimisticPartyAction(
+        party,
+        (p) => {
+          const m = (p.members || []).find((x) => String(x.userId) === myId);
+          if (!m) return null;
+          m.ready = next;
+          return p;
+        },
+        () => window.playbound.setPartyReady(partyId, next),
         "Couldn't update your ready state."
       );
       if (!ok) readyBtn.disabled = false;
-      else blurPartyFocus();
     });
   }
 
