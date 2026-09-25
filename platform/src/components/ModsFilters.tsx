@@ -1,4 +1,5 @@
 "use client";
+import { useProgressiveList } from "@/hooks/useProgressiveList";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useMemo, useState } from "react";
@@ -53,6 +54,9 @@ export function ModsFilters({
   }, [mods, gamesBySlug, mode, device.type, gameSlug]);
 
   const animKey = `${mode}|${gameSlug}|${filtered.map((m) => m.slug).join(",")}`;
+  // Cards appear in batches as the reader scrolls (no pagination); the count
+  // and the game filter still cover every mod.
+  const { visible, sentinel } = useProgressiveList(filtered, { resetKey: animKey });
 
   return (
     <>
@@ -91,10 +95,10 @@ export function ModsFilters({
       ) : (
         <CompatibleGamesFade animKey={animKey}>
           <ul className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(288px,1fr))] gap-5">
-            {filtered.map((mod) => {
+            {visible.map((mod) => {
               const game = gamesBySlug[mod.baseGameSlug];
               return (
-                <li key={mod.slug}>
+                <li key={mod.slug} className="cv-card">
                   <ModCard
                     mod={mod}
                     baseGame={
@@ -110,6 +114,7 @@ export function ModsFilters({
               );
             })}
           </ul>
+          {sentinel}
         </CompatibleGamesFade>
       )}
     </>
