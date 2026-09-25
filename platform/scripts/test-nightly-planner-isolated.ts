@@ -18,7 +18,10 @@ const TEST_DB = `${TEST_PREFIX}${Date.now()}_${randomBytes(3).toString("hex")}`;
 let failures = 0;
 function check(label: string, ok: boolean, detail = "") {
   if (!ok) failures++;
-  console.log(`${ok ? "PASS" : "FAIL"}  ${label}${detail ? ` — ${detail}` : ""}`);
+  const line = `${label}${detail ? ` — ${detail}` : ""}`;
+  console.log(`${ok ? "PASS" : "FAIL"}  ${line}`);
+  // Annotations are visible on the run page without signing in.
+  if (process.env.GITHUB_ACTIONS) console.log(`::${ok ? "notice" : "error"}::${ok ? "PASS" : "FAIL"} ${line}`);
 }
 
 async function main() {
@@ -147,6 +150,11 @@ async function main() {
 
 main().catch(async (error) => {
   console.error(error);
+  if (process.env.GITHUB_ACTIONS) {
+    const msg = String(error?.stack || error).split("
+").slice(0, 4).join(" | ").replace(/mongodb(\+srv)?:\/\/[^\s]+/g, "<uri>");
+    console.log(`::error::${msg}`);
+  }
   try {
     if (mongoose.connection.db?.databaseName === TEST_DB) await mongoose.connection.db.dropDatabase();
     await mongoose.disconnect();
