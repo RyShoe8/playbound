@@ -1278,7 +1278,7 @@ export const recipes = {
       "de_dust2",
       "-port",
       String(port),
-      "-maxplayers_override",
+      "-maxplayers",
       String(managedPlayerLimit(ctx)),
       "+hostname",
       ctx.name || "PlayBound.Club Community Server",
