@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useProgressiveList } from "@/hooks/useProgressiveList";
 import { Gift } from "lucide-react";
 import type { FreeOfferRecord } from "@/lib/freeOffers/types";
 import { FreeGameCard } from "@/components/FreeGameCard";
@@ -16,6 +17,10 @@ export function ActiveOffersGrid({ offers }: { offers: FreeOfferRecord[] }) {
     if (mode === "all") return offers;
     return offers.filter((offer) => isGameCompatible(offerToGameLike(offer), device.type));
   }, [offers, mode, device.type]);
+  // Giveaways appear in batches as the reader scrolls; no pagination.
+  const { visible: shownOffers, sentinel } = useProgressiveList(filteredOffers, {
+    resetKey: `${mode}|${filteredOffers.length}`,
+  });
 
   if (filteredOffers.length === 0) {
     return (
@@ -35,14 +40,15 @@ export function ActiveOffersGrid({ offers }: { offers: FreeOfferRecord[] }) {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {filteredOffers.map((offer) => (
-        <FreeGameCard
-          key={`${offer.store}-${offer.externalId}`}
-          offer={offer}
-          className="w-full sm:w-full"
-        />
-      ))}
-    </div>
+    <>
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {shownOffers.map((offer) => (
+          <div key={`${offer.store}-${offer.externalId}`} className="cv-card">
+            <FreeGameCard offer={offer} className="w-full sm:w-full" />
+          </div>
+        ))}
+      </div>
+      {sentinel}
+    </>
   );
 }

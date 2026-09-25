@@ -15,6 +15,7 @@ import { filterGamesByMode } from "@/lib/access/discoveryMode";
 import { filterGamesForPreference } from "@/lib/compatibility/compatibility";
 import { CompatibleGamesFade } from "@/components/compatibility/useFilteredGames";
 import { GenreGameRow } from "@/components/GenreGameRow";
+import { useProgressiveList } from "@/hooks/useProgressiveList";
 import { cn } from "@/lib/utils";
 import { supportsMultiplayer } from "@/lib/multiplayer/support";
 import { TAGS, FEATURES } from "@/lib/gamePayload";
@@ -466,6 +467,13 @@ export function DiscoverFilters({
   ]);
 
   const animKey = `${mode}|${hwFilter}|${selectedGenre}|${sort}|${baseFiltered.map((g) => g.slug).join(",")}`;
+  // Genre rows appear in batches as the reader scrolls; filters still cover
+  // the whole catalog because genreSections is computed from every game.
+  const { visible: visibleSections, sentinel: sectionSentinel } = useProgressiveList(genreSections, {
+    initial: 4,
+    step: 4,
+    resetKey: animKey,
+  });
 
   return (
     <div className="space-y-5">
@@ -681,15 +689,13 @@ export function DiscoverFilters({
       ) : (
         <CompatibleGamesFade animKey={animKey}>
           <div className="space-y-8">
-            {genreSections.map(({ genre, games: rowGames }) => (
-              <GenreGameRow
-                key={genre}
-                genre={genre}
-                games={rowGames}
-                playingNowBySlug={playingNowBySlug}
-              />
+            {visibleSections.map(({ genre, games: rowGames }) => (
+              <div key={genre} className="cv-row">
+                <GenreGameRow genre={genre} games={rowGames} playingNowBySlug={playingNowBySlug} />
+              </div>
             ))}
           </div>
+          {sectionSentinel}
         </CompatibleGamesFade>
       )}
     </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useProgressiveList } from "@/hooks/useProgressiveList";
 import { useMemo, useState } from "react";
 import { Gift, Tag } from "lucide-react";
 import type { FreeOfferRecord } from "@/lib/freeOffers/types";
@@ -128,6 +129,12 @@ export function DealsBrowser({
     return list;
   }, [discounted, store, genre]);
 
+  // Sale cards appear in batches as the reader scrolls (no pagination); the
+  // counts and filters above still cover every deal.
+  const { visible: shownDiscounted, sentinel: discountedSentinel } = useProgressiveList(visibleDiscounted, {
+    resetKey: `${store}|${genre}|${kind}`,
+  });
+
   const showFree = kind !== "discounted";
   const showDiscounted = kind !== "free";
   const nothingAtAll =
@@ -217,13 +224,13 @@ export function DealsBrowser({
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {visibleDiscounted.map((game, i) => (
-              <DiscountedGameCard
-                key={game.slug || `${game.storeKey || "deal"}-${game.title}-${game.currentPriceCents}-${i}`}
-                game={game}
-              />
+            {shownDiscounted.map((game, i) => (
+              <div key={game.slug || `${game.storeKey || "deal"}-${game.title}-${game.currentPriceCents}-${i}`} className="cv-card">
+                <DiscountedGameCard game={game} />
+              </div>
             ))}
           </div>
+          {discountedSentinel}
         </section>
       )}
 

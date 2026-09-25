@@ -10,6 +10,7 @@ import {
   useFilteredGames,
 } from "@/components/compatibility/useFilteredGames";
 import { cn } from "@/lib/utils";
+import { useProgressiveList } from "@/hooks/useProgressiveList";
 
 export function CompatibleGameCardGrid({
   games,
@@ -24,6 +25,7 @@ export function CompatibleGameCardGrid({
 }) {
   const filtered = useFilteredGames(games, soft ? { soft: true, limit: games.length } : undefined);
   const animKey = `${filtered.map((g) => g.slug).join(",")}|${filtered.length}`;
+  const { visible, sentinel } = useProgressiveList(filtered, { resetKey: animKey });
 
   if (filtered.length === 0) {
     return (
@@ -41,10 +43,10 @@ export function CompatibleGameCardGrid({
           className
         )}
       >
-        {filtered.map((g, i) => (
+        {visible.map((g, i) => (
           <div
             key={g.slug}
-            className="opacity-0 animate-[fadeIn_0.35s_ease_forwards]"
+            className="cv-card opacity-0 animate-[fadeIn_0.35s_ease_forwards]"
             style={{ animationDelay: `${Math.min(i, 12) * 35}ms` }}
           >
             <GameCard
@@ -55,6 +57,7 @@ export function CompatibleGameCardGrid({
           </div>
         ))}
       </div>
+      {sentinel}
     </CompatibleGamesFade>
   );
 }
