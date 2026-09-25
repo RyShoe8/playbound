@@ -28,14 +28,19 @@ const HEAVY_GAME_ENVELOPES: Record<string, ResourceEnvelope> = {
 
 export function getEffectiveEnvelope(
   envelope?: { cpuCores?: number; ramBytes?: number } | null,
-  gameSlug?: string
+  gameSlug?: string,
+  sampleCount?: number
 ): ResourceEnvelope {
+  const fallback = (gameSlug && HEAVY_GAME_ENVELOPES[gameSlug]) || DEFAULT_COMMUNITY_SERVER_ENVELOPE;
   const cpu = Number(envelope?.cpuCores);
   const ram = Number(envelope?.ramBytes);
-  const fallback = (gameSlug && HEAVY_GAME_ENVELOPES[gameSlug]) || DEFAULT_COMMUNITY_SERVER_ENVELOPE;
+  // Unmeasured profiles or legacy dummy (0.25 cores / 512 MB) must always use realistic baseline/heavy envelopes
+  if (!sampleCount || sampleCount <= 0 || !Number.isFinite(cpu) || cpu <= 0.25 || !Number.isFinite(ram) || ram <= 512 * 1024 * 1024) {
+    return fallback;
+  }
   return {
-    cpuCores: Number.isFinite(cpu) && cpu > 0 ? cpu : fallback.cpuCores,
-    ramBytes: Number.isFinite(ram) && ram > 0 ? ram : fallback.ramBytes,
+    cpuCores: Math.max(0.75, cpu),
+    ramBytes: Math.max(1024 * 1024 * 1024, ram),
   };
 }
 
@@ -171,7 +176,13 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
     const profiles = await CommunityServerProfile.find({ enabled: true }).lean();
     const profileByKey = new Map(profiles.map((p) => [p.key, p]));
     await syncReservations(now, config.node.regionKey);
-    const active = await CommunityServer.find({ regionKey: config.node.regionKey, desiredState: "running" });
+    const active = await CommunityServer.find({
+      regionKey: config.node.regionKey,
+      $or: [
+        { desiredState: "running" },
+        { runtimeState: { $in: ["running", "pending", "starting"] } },
+      ],
+    });
     const managedById = new Map(agent.rooms.filter((r) => r.communityServerId).map((r) => [r.communityServerId!, r]));
     const lost: typeof active = [];
     for (const server of active) {
@@ -206,6 +217,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
       server.runtimeId = room.roomId;
       server.host = room.host;
       server.port = room.port;
+      server.desiredState = "running";
       server.runtimeState = "running";
       server.health = players === null ? "unknown" : "healthy";
       server.playerCount = players;
@@ -232,16 +244,53 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
       warmupAt: { $lte: new Date(now.getTime() + 6 * 3_600_000) }, protectedUntil: { $gte: now },
     }).sort({ warmupAt: 1 });
     const alreadyRunning = new Set(active.filter((s) => managedById.has(String(s._id))).map((s) => String(s._id)));
-    const runningManaged: ResourceEnvelope[] = active.filter((s) => alreadyRunning.has(String(s._id))).map((s) => {
-      const envelope = getEffectiveEnvelope(profileByKey.get(s.profileKey)?.envelope, s.gameSlug);
+    const runningServers = active.filter((s) => alreadyRunning.has(String(s._id)));
+    const runningManaged: ResourceEnvelope[] = runningServers.map((s) => {
+      const p = profileByKey.get(s.profileKey);
+      const envelope = getEffectiveEnvelope(p?.envelope, s.gameSlug, p?.sampleCount);
       return { cpuCores: envelope.cpuCores, ramBytes: envelope.ramBytes };
     });
     const plannedReservations = reservations.filter((r) => !r.communityServerId || !alreadyRunning.has(String(r.communityServerId)));
 
-    // Selected in the admin checklist = hostable. Fallback baseline is used for unmeasured profiles.
+    // Budget downsizing guard: if running servers exceed the configured hosting budget,
+    // cleanly scale down the lowest-priority empty, unprotected servers until within budget.
+    let totalRunningCpu = runningManaged.reduce((sum, e) => sum + e.cpuCores, 0);
+    let totalRunningRam = runningManaged.reduce((sum, e) => sum + e.ramBytes, 0);
+    const previous = await CommunityServer.find({ regionKey: config.node.regionKey }).select({ profileKey: 1, cooldownUntil: 1, manualPause: 1, onlineSince: 1 }).lean();
+
+    if (totalRunningCpu > config.budget.cpuCores || totalRunningRam > config.budget.ramBytes) {
+      const candidatesToScaleDown = runningServers
+        .filter((s) => (!s.protectedUntil || new Date(s.protectedUntil) <= now) && (s.playerCount === null || s.playerCount === 0))
+        .sort((a, b) => {
+          const profA = profileByKey.get(a.profileKey);
+          const profB = profileByKey.get(b.profileKey);
+          return rotationPriority(now, profA, previous) - rotationPriority(now, profB, previous);
+        });
+
+      for (const server of candidatesToScaleDown) {
+        if (totalRunningCpu <= config.budget.cpuCores && totalRunningRam <= config.budget.ramBytes) break;
+        const stopped = await stopManagedHostRoom(String(server._id));
+        if (stopped.ok) {
+          server.desiredState = "stopped";
+          server.runtimeState = "stopped";
+          server.decisionReason = "BUDGET_EXCEEDED";
+          await server.save();
+          await recordHostingAction("community_server_scaled_down", server, "Budget downsized");
+          const p = profileByKey.get(server.profileKey);
+          const env = getEffectiveEnvelope(p?.envelope, server.gameSlug, p?.sampleCount);
+          totalRunningCpu -= env.cpuCores;
+          totalRunningRam -= env.ramBytes;
+          const idx = runningServers.findIndex((s) => String(s._id) === String(server._id));
+          if (idx !== -1) {
+            runningServers.splice(idx, 1);
+            runningManaged.splice(idx, 1);
+          }
+          alreadyRunning.delete(String(server._id));
+        }
+      }
+    }
     const verified = profiles.filter((p) => p.enabled);
     const due = reservations.find((r) => r.warmupAt <= now && (!r.communityServerId || !alreadyRunning.has(String(r.communityServerId))));
-    const previous = await CommunityServer.find({ regionKey: config.node.regionKey }).select({ profileKey: 1, cooldownUntil: 1, manualPause: 1, onlineSince: 1 }).lean();
     const rotationCandidates = verified
       .sort((a, b) => rotationPriority(now, b, previous) - rotationPriority(now, a, previous) || a.key.localeCompare(b.key));
     const bound = due?.communityServerId ? active.find((s) => String(s._id) === String(due.communityServerId)) : null;
@@ -338,7 +387,11 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
     let lastBlockedReason: string | undefined;
 
     for (const candidate of candidateServers) {
-      const envelope = getEffectiveEnvelope(candidate.envelope, candidate.gameSlug);
+      if (agent.rooms.length + startedCount >= 8) {
+        lastBlockedReason = "HOST_MAX_ROOMS_REACHED";
+        break;
+      }
+      const envelope = getEffectiveEnvelope(candidate.envelope, candidate.gameSlug, candidate.sampleCount);
       const decision = placementDecision({
         now, nodeEnabled: config.node.enabled, draining: config.node.draining,
         requestedRegion: config.node.regionKey, nodeRegion: config.node.regionKey,

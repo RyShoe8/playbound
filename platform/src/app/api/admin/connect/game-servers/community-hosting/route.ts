@@ -11,6 +11,7 @@ import CatalogGame from "@/lib/models/CatalogGame";
 import Edition from "@/lib/models/Edition";
 import { HOSTABLE_SLUGS, HOSTABLE_GAMES } from "@/lib/gameHost/catalog";
 import { editions as seedEditions } from "@/lib/data/editions";
+import { getEffectiveEnvelope } from "@/lib/communityHosting/reconcile";
 
 export async function GET() {
   const { error } = await requireAdminSession();
@@ -20,10 +21,8 @@ export async function GET() {
     CommunityHostingConfig.findOne({ key: "global" }).lean(),
     CommunityServerProfile.find({}).sort({ gameSlug: 1 }).lean(),
     CommunityServer.find({
-      $or: [
-        { desiredState: "running" },
-        { runtimeState: { $in: ["running", "pending"] } },
-      ],
+      desiredState: "running",
+      runtimeState: { $in: ["running", "pending", "starting"] },
     }).sort({ updatedAt: -1 }).limit(50).lean(),
     CapacityReservation.find({ state: { $in: ["planned", "active", "missed"] } }).sort({ warmupAt: 1 }).limit(100).lean(),
     fetchGameHostMetrics(), listManagedHostRooms(),
@@ -90,7 +89,7 @@ export async function GET() {
         minimumOnlineMinutes: null,
         idleMinutes: null,
         cooldownMinutes: null,
-        envelope: { cpuCores: 0.25, ramBytes: 512 * 1024 * 1024, measuredThroughPlayers: 0 },
+        envelope: { ...getEffectiveEnvelope(null, slug), measuredThroughPlayers: 0 },
         sampleCount: 0,
       } as unknown as (typeof profiles)[number];
     }
@@ -120,7 +119,7 @@ export async function GET() {
           minimumOnlineMinutes: baseProfile.minimumOnlineMinutes ?? null,
           idleMinutes: baseProfile.idleMinutes ?? null,
           cooldownMinutes: baseProfile.cooldownMinutes ?? null,
-          envelope: baseProfile.envelope ? { ...baseProfile.envelope } : { cpuCores: 0.25, ramBytes: 512 * 1024 * 1024, measuredThroughPlayers: 0 },
+          envelope: baseProfile.envelope ? { ...baseProfile.envelope } : { ...getEffectiveEnvelope(null, slug), measuredThroughPlayers: 0 },
           sampleCount: 0,
         });
       }
