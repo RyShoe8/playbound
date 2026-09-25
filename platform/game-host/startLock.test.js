@@ -5,7 +5,6 @@ import { createStartCoordinator } from "./startLock.js";
 describe("createStartCoordinator", () => {
   it("runs the same party starts one at a time", async () => {
     const coord = createStartCoordinator({
-      maxRooms: () => 8,
       occupiedCount: () => 0,
     });
     const order = [];
@@ -36,18 +35,13 @@ describe("createStartCoordinator", () => {
     assert.deepEqual(order, ["first-start", "first-end", "second"]);
   });
 
-  it("counts pending reservations against capacity", () => {
-    let rooms = 7;
+  it("always reserves capacity (no ceiling)", () => {
     const coord = createStartCoordinator({
-      maxRooms: () => 8,
-      occupiedCount: () => rooms,
+      occupiedCount: () => 100,
     });
     assert.equal(coord.reserveCapacity(), true);
-    assert.equal(coord.reserveCapacity(), false);
+    assert.equal(coord.reserveCapacity(), true);
     coord.releaseCapacity();
     assert.equal(coord.reserveCapacity(), true);
-    rooms = 8;
-    coord.releaseCapacity();
-    assert.equal(coord.reserveCapacity(), false);
   });
 });

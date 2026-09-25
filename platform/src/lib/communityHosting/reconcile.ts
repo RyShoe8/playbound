@@ -387,10 +387,6 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
     let lastBlockedReason: string | undefined;
 
     for (const candidate of candidateServers) {
-      if (agent.rooms.length + startedCount >= 8) {
-        lastBlockedReason = "HOST_MAX_ROOMS_REACHED";
-        break;
-      }
       const envelope = getEffectiveEnvelope(candidate.envelope, candidate.gameSlug, candidate.sampleCount);
       const decision = placementDecision({
         now, nodeEnabled: config.node.enabled, draining: config.node.draining,

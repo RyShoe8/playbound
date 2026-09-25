@@ -2,7 +2,7 @@
  * Serialize room starts per party and count in-flight reservations against
  * capacity so two concurrent POSTs cannot share a party or over-allocate.
  */
-export function createStartCoordinator({ maxRooms, occupiedCount }) {
+export function createStartCoordinator({ occupiedCount }) {
   const locks = new Map();
   let pendingReservations = 0;
 
@@ -25,9 +25,6 @@ export function createStartCoordinator({ maxRooms, occupiedCount }) {
   }
 
   function reserveCapacity() {
-    if (occupiedCount() + pendingReservations >= maxRooms()) {
-      return false;
-    }
     pendingReservations += 1;
     return true;
   }
