@@ -178,6 +178,17 @@ const RECIPE_SETTING_TYPES = {
   },
 };
 
+// A managed room uses one fleet-wide key, translated into each engine's own
+// slot setting below. Party-room settings remain independent.
+for (const slug of [
+  "morrowind", "teeworlds", "openttd", "assaultcube", "medal-of-honor-allied-assault", "mindustry", "hurry-curry",
+  "warzone-2100", "bzflag", "supertuxkart", "xonotic", "openarena",
+  "0-ad", "0ad", "bombsquad", "wolfenstein-enemy-territory", "team-fortress-2",
+  "unvanquished",
+]) {
+  RECIPE_SETTING_TYPES[slug] = { ...RECIPE_SETTING_TYPES[slug], maxPlayers: "number" };
+}
+
 function managedPlayerLimit(ctx, fallback = 16) {
   const requested = ctx?.managed ? ctx?.settings?.maxPlayers : null;
   return Number.isInteger(requested) ? Math.max(2, Math.min(64, requested)) : fallback;
@@ -295,7 +306,7 @@ function buildWarzoneAutohostConfig(ctx) {
     },
     challenge: {
       map: settings.map,
-      maxPlayers: settings.maxPlayers,
+      maxPlayers: ctx.managed ? Math.min(WARZONE_DEFAULT_SETTINGS.maxPlayers, managedPlayerLimit(ctx, 8)) : settings.maxPlayers,
       scavengers: settings.scavengers,
       alliances: settings.alliances,
       powerLevel: settings.powerLevel,
@@ -465,7 +476,7 @@ export const recipes = {
         "[General]",
         "localAddress = 0.0.0.0",
         `port = ${port}`,
-        `maximumPlayers = ${Number(settings.maximumPlayers) || Number(ctx.maxPlayers) || 8}`,
+        `maximumPlayers = ${ctx.managed ? managedPlayerLimit(ctx, 8) : Number(settings.maximumPlayers) || Number(ctx.maxPlayers) || 8}`,
         `hostname = ${safe(settings.hostname, ctx.name || "PlayBound.club Party")}`,
         "logLevel = 1",
         `password = ${safe(settings.password)}`,
@@ -546,7 +557,7 @@ export const recipes = {
       const s = effectiveSettings("teeworlds", ctx.settings);
       const safeMap = String(s.sv_map || "dm1").replace(/[^a-zA-Z0-9_-]/g, "") || "dm1";
       const safeMode = String(s.sv_gametype || "dm").replace(/[^a-zA-Z0-9_-]/g, "") || "dm";
-      const maxClients = Number.isFinite(Number(s.sv_max_clients)) ? Number(s.sv_max_clients) : 16;
+      const maxClients = ctx.managed ? managedPlayerLimit(ctx) : Number(s.sv_max_clients);
       const specSlots = Number.isFinite(Number(s.sv_spectator_slots)) ? Number(s.sv_spectator_slots) : 0;
       const scoreLimit = Number.isFinite(Number(s.sv_scorelimit)) ? Number(s.sv_scorelimit) : 20;
       const timeLimit = Number.isFinite(Number(s.sv_timelimit)) ? Number(s.sv_timelimit) : 10;
@@ -654,7 +665,7 @@ export const recipes = {
         .replace(/[\x00-\x1f\x7f"]+/g, " ")
         .trim()
         .slice(0, 40);
-      return [`-c16`, `-n${name}`, `-f${port}`, `-mlocalhost`];
+      return [`-c${managedPlayerLimit(ctx)}`, `-n${name}`, `-f${port}`, `-mlocalhost`];
     },
     startupGraceMs: 1500,
   },
@@ -675,7 +686,7 @@ export const recipes = {
         "+set", "net_port", String(port),
         "+set", "sv_hostname", String(ctx.name || "PlayBound OpenMOHAA").slice(0, 48),
         "+set", "sv_gamespy", "0",
-        "+set", "sv_maxclients", "16",
+        "+set", "sv_maxclients", String(managedPlayerLimit(ctx)),
         "+set", "g_gametype", "1",
         "+map", "dm/mohdm1",
       ];
@@ -756,7 +767,14 @@ export const recipes = {
     portEnd: 3999,
     protocol: "both",
     binaries: gameBin("openttd", ["openttd"]),
-    args: (port) => ["-D", `0.0.0.0:${port}`],
+    args: (port, ctx) => ["-D", `0.0.0.0:${port}`, ...(ctx.managed ? ["-c", path.join(HOST_HOME, "openttd", `pb-${ctx.partyId.slice(-16)}.cfg`)] : [])],
+    prepareSpawn: async (_port, ctx) => {
+      if (!ctx.managed) return;
+      const dir = path.join(HOST_HOME, "openttd");
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, `pb-${ctx.partyId.slice(-16)}.cfg`),
+        `[network]\nmax_clients = ${managedPlayerLimit(ctx)}\n`, "utf8");
+    },
     startupGraceMs: 1500,
     spawnEnv: () => ({
       HOME: HOST_HOME,
@@ -862,6 +880,7 @@ export const recipes = {
         `0.0.0.0:${port}`,
         "--server-name",
         String(ctx.name || "PlayBound Hurry Curry").slice(0, 40),
+        ...(ctx.managed ? ["--max-players", String(managedPlayerLimit(ctx))] : []),
         ...(ctx.managed ? ["--register", "--register-uri", `ws://${process.env.GAME_HOST_PUBLIC_IP}:${port}`] : []),
         "--data-dir",
         dataDir,
@@ -904,7 +923,7 @@ export const recipes = {
       return dir;
     },
     startupReadyTimeoutMs: 30_000,
-    stdin: (port, ctx) => `config name ${ctx.name}\nconfig port ${port}\nhost\n`,
+    stdin: (port, ctx) => `config name ${ctx.name}\nconfig port ${port}\n${ctx.managed ? `playerlimit ${managedPlayerLimit(ctx)}\n` : ""}host\n`,
   },
   ysoccer: {
     portStart: 54555,
@@ -985,7 +1004,7 @@ export const recipes = {
     binaries: gameBin("bzflag", ["bzfs"]),
     // With no -world/-c/-cr, BZFS generates a random FFA world. Keep this
     // ephemeral room private and enable the familiar jump/ricochet rules.
-    args: (port) => ["-p", String(port), "-offa", "-q", "-j", "+r", "+s", "10", "-mp", "8"],
+    args: (port, ctx) => ["-p", String(port), "-offa", "-q", "-j", "+r", "+s", "10", "-mp", String(ctx.managed ? managedPlayerLimit(ctx) : 8)],
   },
   supertuxkart: {
     portStart: 2759,
@@ -996,7 +1015,7 @@ export const recipes = {
       `--lan-server=${ctx.name}`,
       `--port=${port}`,
       "--no-graphics",
-      ...flagArgs(acceptedSettingsFor("supertuxkart", ctx.settings), {
+      ...flagArgs({ ...acceptedSettingsFor("supertuxkart", ctx.settings), ...(ctx.managed ? { "max-players": Math.min(8, managedPlayerLimit(ctx)) } : {}) }, {
         mode: (v) => [`--mode=${v}`],
         difficulty: (v) => [`--difficulty=${v}`],
         "max-players": (v) => [`--max-players=${v}`],
@@ -1018,6 +1037,7 @@ export const recipes = {
       ctx.name,
       "+sv_public",
       ctx.managed ? "1" : "0",
+      ...(ctx.managed ? ["+maxplayers", String(managedPlayerLimit(ctx))] : []),
     ],
   },
   openarena: {
@@ -1042,7 +1062,7 @@ export const recipes = {
       "sv_master1",
       '""',
       ...(ctx.rconPassword ? ["+set", "rconpassword", ctx.rconPassword] : []),
-      ...(openArenaStartupArgs(ctx.settings)),
+      ...(ctx.managed ? ["+set", "sv_maxclients", String(managedPlayerLimit(ctx))] : openArenaStartupArgs(ctx.settings)),
     ],
   },
   triplea: {
@@ -1074,7 +1094,7 @@ export const recipes = {
     args: (_port, ctx) => [
       "-autostart=random/mainland",
       "-autostart-host",
-      `-autostart-host-players=${Math.max(2, Math.min(Number(ctx.maxPlayers) || 8, 8))}`,
+      `-autostart-host-players=${Math.max(2, Math.min(ctx.managed ? managedPlayerLimit(ctx, 8) : Number(ctx.maxPlayers) || 8, 8))}`,
       "-autostart-playername=PlayBound Server",
       "-autostart-seed=-1",
       "-autostart-nonvisual",
@@ -1120,7 +1140,7 @@ export const recipes = {
     args: (port, ctx) => [
       String(port),
       ctx.name || "PlayBound Party",
-      String(Math.min(Number(ctx.maxPlayers) || 8, 8)),
+      String(Math.min(ctx.managed ? managedPlayerLimit(ctx, 8) : Number(ctx.maxPlayers) || 8, 8)),
       ctx.partyId,
     ],
   },
@@ -1172,8 +1192,8 @@ export const recipes = {
          * always did.
          */
         ...(ctx.rconPassword ? ["+set", "rconpassword", ctx.rconPassword] : []),
-        ...(etStartupSettings(ctx.settings).sv_maxclients !== undefined
-          ? ["+set", "sv_maxclients", String(etStartupSettings(ctx.settings).sv_maxclients)]
+        ...(ctx.managed || etStartupSettings(ctx.settings).sv_maxclients !== undefined
+          ? ["+set", "sv_maxclients", String(ctx.managed ? managedPlayerLimit(ctx) : etStartupSettings(ctx.settings).sv_maxclients)]
           : []),
         "+exec",
         "et-playbound.cfg",
@@ -1216,7 +1236,7 @@ export const recipes = {
       "+map",
       "ctf_2fort",
       "+maxplayers",
-      "24",
+      String(ctx.managed ? Math.min(32, managedPlayerLimit(ctx)) : 24),
       "+port",
       String(port),
       "+hostname",
@@ -1326,6 +1346,7 @@ export const recipes = {
       "-set",
       "sv_hostname",
       ctx.name || "PlayBound.club Party",
+      ...(ctx.managed ? ["-set", "sv_maxclients", String(managedPlayerLimit(ctx))] : []),
       "+map",
       "plat23",
     ],

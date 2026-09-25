@@ -220,6 +220,7 @@ cp -f "$AGENT_SRC/index.js" "$AGENT_SRC/agentRoutes.js" "$AGENT_SRC/recipes.js" 
   "$AGENT_SRC/package.json" "$AGENT_DIR/"
 mkdir -p "$AGENT_DIR/assets"
 cp -f "$AGENT_SRC/assets/et-playbound.cfg" "$AGENT_DIR/assets/" 2>/dev/null || true
+cp -f "$AGENT_SRC/assets/hurry-curry-player-limit.patch" "$AGENT_DIR/assets/" 2>/dev/null || true
 chown -R playbound:playbound "$AGENT_DIR"
 
 if [[ -z "$PUBLIC_IP" ]]; then
@@ -874,7 +875,7 @@ mkdir -p "$HC_DIR"
 
 HC_NEEDS_BUILD=1
 if [[ -x "$HC_DIR/hurrycurry-server" ]]; then
-  if "$HC_DIR/hurrycurry-server" --help >/dev/null 2>&1; then
+  if "$HC_DIR/hurrycurry-server" --help 2>/dev/null | grep -q -- '--max-players'; then
     HC_NEEDS_BUILD=0
   else
     echo "  existing hurrycurry-server binary is incompatible with host glibc"
@@ -884,23 +885,24 @@ fi
 if [[ "$HC_NEEDS_BUILD" -eq 1 ]]; then
   echo "Building Hurry Curry server for Ubuntu host..."
   if command -v docker >/dev/null 2>&1 && systemctl is-active --quiet docker; then
-    docker run --rm -v "$HC_DIR:/out" rust:1-bookworm sh -c "
+    docker run --rm -v "$HC_DIR:/out" -v "$SCRIPT_DIR/assets/hurry-curry-player-limit.patch:/playbound.patch:ro" rust:1-bookworm sh -c "
       git clone --depth 1 https://codeberg.org/hurrycurry/hurrycurry /build &&
       cd /build &&
+      git apply /playbound.patch &&
       cargo build --release --bin hurrycurry-server &&
       cp target/release/hurrycurry-server /out/hurrycurry-server &&
       chmod 755 /out/hurrycurry-server
     " || true
   fi
 
-  if [[ ! -x "$HC_DIR/hurrycurry-server" ]] || ! "$HC_DIR/hurrycurry-server" --help >/dev/null 2>&1; then
+  if [[ ! -x "$HC_DIR/hurrycurry-server" ]] || ! "$HC_DIR/hurrycurry-server" --help 2>/dev/null | grep -q -- '--max-players'; then
     if ! command -v cargo >/dev/null 2>&1; then
       apt-get install -y --no-install-recommends cargo rustc libssl-dev pkg-config || true
     fi
     TMP_BUILD="/tmp/hurrycurry-build-$$"
     rm -rf "$TMP_BUILD"
     if git clone --depth 1 https://codeberg.org/hurrycurry/hurrycurry "$TMP_BUILD"; then
-      (cd "$TMP_BUILD" && cargo build --release --bin hurrycurry-server) || true
+      (cd "$TMP_BUILD" && git apply "$SCRIPT_DIR/assets/hurry-curry-player-limit.patch" && cargo build --release --bin hurrycurry-server) || true
       if [[ -x "$TMP_BUILD/target/release/hurrycurry-server" ]]; then
         cp -f "$TMP_BUILD/target/release/hurrycurry-server" "$HC_DIR/hurrycurry-server"
         chmod 755 "$HC_DIR/hurrycurry-server"

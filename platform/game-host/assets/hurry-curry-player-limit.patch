@@ -1,0 +1,51 @@
+diff --git a/server/src/main.rs b/server/src/main.rs
+index 5ea0acd..92b8ae6 100644
+--- a/server/src/main.rs
++++ b/server/src/main.rs
+@@ -53,6 +53,9 @@ pub(crate) struct Args {
+     /// Map name to use as lobby
+     #[arg(long, default_value = "lobby")]
+     lobby: String,
++    /// Maximum simultaneous players (PlayBound managed servers)
++    #[arg(long, default_value_t = 65)]
++    max_players: usize,
+     /// Inactivity timeout in seconds
+     #[arg(long, default_value_t = 60.)]
+     inactivity_timeout: f32,
+@@ -157,6 +160,7 @@ async fn run(data_path: PathBuf, args: Args) -> anyhow::Result<()> {
+     let dt = 1. / args.tickrate;
+     let config = ServerConfig {
+         replay_dir: args.save_replays,
++        max_players: args.max_players.clamp(2, 65),
+         inactivity_timeout: args.inactivity_timeout,
+         lobby: args.lobby,
+         data_path,
+diff --git a/server/src/server.rs b/server/src/server.rs
+index b5d21f8..da5f411 100644
+--- a/server/src/server.rs
++++ b/server/src/server.rs
+@@ -64,6 +64,7 @@ pub enum AnnounceState {
+ }
+ 
+ pub struct ServerConfig {
++    pub max_players: usize,
+     pub inactivity_timeout: f32,
+     pub vote_initiate_cooldown: f32,
+     pub vote_timeout: f32,
+@@ -137,6 +138,7 @@ impl Default for ServerConfig {
+     fn default() -> Self {
+         Self {
+             data_path: "data".into(),
++            max_players: 65,
+             inactivity_timeout: 60.,
+             lobby: "lobby".to_string(),
+             name: "A Hurry Curry! Server".to_string(),
+@@ -262,7 +264,7 @@ impl Server {
+                 if name.len() < 1 {
+                     return Err(tre!("s.error.username_length_min", s = "1".to_string()));
+                 }
+-                if self.game.core().players.len() > 64 {
++                if self.game.core().players.len() >= self.config.max_players {
+                     return Err(tre!("s.error.too_many_players"));
+                 }
+ 
