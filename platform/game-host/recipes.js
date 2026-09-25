@@ -158,6 +158,9 @@ function typesOf(values) {
  * is why its list is one key long despite the game declaring five settings.
  */
 const RECIPE_SETTING_TYPES = {
+  "counter-strike-2": { maxPlayers: "number" },
+  hypersomnia: { maxPlayers: "number" },
+  luanti: { maxPlayers: "number" },
   morrowind: { gameMode: "string", hostname: "string", maximumPlayers: "number", password: "string" },
   "warzone-2100": typesOf(WARZONE_DEFAULT_SETTINGS),
   teeworlds: typesOf(TEEWORLDS_DEFAULT_SETTINGS),
@@ -174,6 +177,11 @@ const RECIPE_SETTING_TYPES = {
     timelimit: "number",
   },
 };
+
+function managedPlayerLimit(ctx, fallback = 16) {
+  const requested = ctx?.managed ? ctx?.settings?.maxPlayers : null;
+  return Number.isInteger(requested) ? Math.max(2, Math.min(64, requested)) : fallback;
+}
 
 /**
  * The settings a recipe will actually honour, filtered to the keys it declares.
@@ -608,7 +616,7 @@ export const recipes = {
         path.join(confDir, "50-playbound.json"),
         `${JSON.stringify(
           {
-            server_start: { port, slots: 16 },
+            server_start: { port, slots: managedPlayerLimit(ctx) },
             server: {
               server_name: hypersomniaServerName(ctx.name),
               // A private party room has no business on the public list.
@@ -794,7 +802,7 @@ export const recipes = {
         ] : []),
         `server_name = ${ctx.managed ? "PlayBound.Club Community Server" : "PlayBound Private Party"}`,
         "server_description = Hosted by PlayBound",
-        "max_users = 16",
+        `max_users = ${managedPlayerLimit(ctx)}`,
         "",
       ].join("\n"));
       /*
@@ -1270,8 +1278,8 @@ export const recipes = {
       "de_dust2",
       "-port",
       String(port),
-      "+maxplayers",
-      "16",
+      "-maxplayers_override",
+      String(managedPlayerLimit(ctx)),
       "+hostname",
       ctx.name || "PlayBound.Club Community Server",
     ],
