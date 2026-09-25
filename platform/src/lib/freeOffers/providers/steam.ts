@@ -13,6 +13,7 @@
 
 import type { StoreProviderAdapter, DiscoveredOffer } from "./types";
 import type { OfferType } from "../types";
+import { pickSteamAppEntry } from "@/lib/steamAppDetails";
 
 /** Steam search specials endpoint — finds games currently discounted to free. */
 const STEAM_SEARCH_SPECIALS_URL =
@@ -103,7 +104,7 @@ async function fetchAppDetails(appId: string): Promise<SteamAppDetails["data"] |
     });
     if (!res.ok) return null;
     const json = (await res.json()) as Record<string, SteamAppDetails>;
-    const entry = json[appId];
+    const entry = pickSteamAppEntry(json, appId);
     return entry?.success ? entry.data ?? null : null;
   } catch {
     return null;

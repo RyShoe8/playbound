@@ -10,6 +10,7 @@
 import { parseEpicProductSlug } from "@/lib/epicStore";
 import { detectRetailer, parseFanaticalSlug, parseGogSlug, parseSteamAppId } from "./storeUrls";
 import type { Cents } from "./types";
+import { pickSteamAppEntry } from "@/lib/steamAppDetails";
 
 ;
 
@@ -64,7 +65,7 @@ async function lookupSteam(url: string): Promise<StorePriceLookup> {
       };
     }
   >;
-  const entry = json[appId];
+  const entry = pickSteamAppEntry(json, appId);
   if (!entry?.success || !entry.data) {
     throw new StorePriceError("Steam has no listing at that URL.");
   }

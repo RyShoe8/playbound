@@ -10,6 +10,7 @@ import {
 } from "@/lib/mediaDedupe";
 import { collectVideosFromHtml, tryFetchPageMeta } from "@/lib/pageMeta";
 import { normalizeVideoUrl } from "@/lib/mediaEmbed";
+import { pickSteamAppEntry } from "@/lib/steamAppDetails";
 
 ;
 
@@ -157,7 +158,7 @@ export async function fetchSteamStoreMedia(appId: string): Promise<GameMediaBund
     string,
     { success?: boolean; data?: Record<string, unknown> }
   >;
-  const entry = json[appId];
+  const entry = pickSteamAppEntry(json, appId);
   if (!entry?.success || !entry.data) throw new Error("Steam app not found or unavailable");
   const bundle = parseSteamStoreMedia(entry.data);
   if (bundle.videos.length === 0) {
