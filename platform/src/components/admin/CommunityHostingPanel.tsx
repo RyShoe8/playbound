@@ -85,13 +85,35 @@ export function CommunityHostingPanel() {
   function field<K extends "safety" | "budget" | "monitoring" | "rotation" | "node">(group: K, key: keyof HostingSettings[K], value: number | string | boolean) {
     setConfig((current) => current ? { ...current, [group]: { ...current[group], [key]: value } } : current);
   }
-  function numberField(label: string, group: "safety" | "budget" | "monitoring" | "rotation", key: string, opts?: { unit?: string; gb?: boolean; step?: number }) {
+  function numberField(label: string, group: "safety" | "budget" | "monitoring" | "rotation", key: string, opts?: { unit?: string; gb?: boolean; step?: number; help?: string }) {
     if (!config) return null;
     const raw = (config[group] as unknown as Record<string, number>)[key];
-    return <label key={`${group}.${key}`} className="flex items-center justify-between gap-2 text-sm">
-      <span>{label}</span>
-      <span className="flex items-center gap-1"><input className="w-24 rounded border bg-background px-2 py-1 text-right" type="number" min="0" step={opts?.step ?? 1} value={opts?.gb ? Number((raw / GIB).toFixed(2)) : raw} onChange={(e) => field(group, key as never, opts?.gb ? Math.round(Number(e.target.value) * GIB) : Number(e.target.value))} />{opts?.unit || ""}</span>
+    return <label key={`${group}.${key}`} className="block text-sm">
+      <span className="flex items-center justify-between gap-2">
+        <span>{label}</span>
+        <span className="flex items-center gap-1"><input className="w-24 rounded border bg-background px-2 py-1 text-right" type="number" min="0" step={opts?.step ?? 1} value={opts?.gb ? Number((raw / GIB).toFixed(2)) : raw} onChange={(e) => field(group, key as never, opts?.gb ? Math.round(Number(e.target.value) * GIB) : Number(e.target.value))} />{opts?.unit || ""}</span>
+      </span>
+      {opts?.help ? <span className="mt-0.5 block text-xs text-muted-foreground">{opts.help}</span> : null}
     </label>;
+  }
+
+  /*
+   * CPU/RAM warning and critical colours follow the safety maximums rather
+   * than being separate decisions: critical = the maximum automatic hosting
+   * may reach, warning = 10 points below. Disk has no maximum here, so its
+   * two thresholds stay editable under Advanced.
+   */
+  function withDerivedMonitoring(c: HostingSettings): HostingSettings {
+    return {
+      ...c,
+      monitoring: {
+        ...c.monitoring,
+        cpuCriticalPercent: c.safety.maxCpuPercent,
+        cpuWarningPercent: Math.max(1, c.safety.maxCpuPercent - 10),
+        ramCriticalPercent: c.safety.maxRamPercent,
+        ramWarningPercent: Math.max(1, c.safety.maxRamPercent - 10),
+      },
+    };
   }
 
   async function save() {
@@ -99,7 +121,7 @@ export function CommunityHostingPanel() {
     setSaving(true); setMessage("");
     try {
       const response = await fetch("/api/admin/connect/game-servers/community-hosting", {
-        method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(config),
+        method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(withDerivedMonitoring(config)),
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "Could not save hosting settings");
@@ -131,31 +153,33 @@ export function CommunityHostingPanel() {
         <label className="flex items-center gap-2"><input type="checkbox" checked={config.node.enabled} onChange={(e) => field("node", "enabled", e.target.checked)} />Node enabled</label>
         <label className="flex items-center gap-2"><input type="checkbox" checked={config.node.draining} onChange={(e) => field("node", "draining", e.target.checked)} />Drain node</label>
       </div>
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-        <div className="space-y-2"><h3 className="font-semibold">Node and safety</h3>
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div className="space-y-3"><h3 className="font-semibold">VPS safety limits</h3>
           <label className="flex items-center justify-between gap-2 text-sm">Region label <input className="w-36 rounded border bg-background px-2 py-1" value={config.node.regionLabel} onChange={(e) => field("node", "regionLabel", e.target.value)} /></label>
-          {numberField("Maximum CPU", "safety", "maxCpuPercent", { unit: "%" })}
-          {numberField("Maximum RAM", "safety", "maxRamPercent", { unit: "%" })}
-          {numberField("Minimum free RAM", "safety", "minFreeRamBytes", { unit: "GB", gb: true, step: 0.25 })}
-          {numberField("Metrics freshness", "safety", "maxMetricsAgeSeconds", { unit: "sec" })}
+          {numberField("Maximum CPU", "safety", "maxCpuPercent", { unit: "%", help: "Don't start an automatic server if the VPS would go above this. Also the red line on the monitoring display (yellow is 10 below)." })}
+          {numberField("Maximum RAM", "safety", "maxRamPercent", { unit: "%", help: "Same rule for memory." })}
         </div>
-        <div className="space-y-2"><h3 className="font-semibold">Automatic-hosting budget</h3>
-          {numberField("CPU", "budget", "cpuCores", { unit: "cores", step: 0.25 })}
-          {numberField("RAM", "budget", "ramBytes", { unit: "GB", gb: true, step: 0.25 })}
-          <h3 className="pt-2 font-semibold">Rotation</h3>
-          {numberField("Minimum online", "rotation", "minimumOnlineMinutes", { unit: "min" })}
-          {numberField("Idle before rotation", "rotation", "idleMinutes", { unit: "min" })}
-          {numberField("Cooldown", "rotation", "cooldownMinutes", { unit: "min" })}
+        <div className="space-y-3"><h3 className="font-semibold">Automatic-hosting budget</h3>
+          {numberField("CPU", "budget", "cpuCores", { unit: "cores", step: 0.25, help: "Total CPU all automatic servers together may use." })}
+          {numberField("RAM", "budget", "ramBytes", { unit: "GB", gb: true, step: 0.25, help: "Total memory all automatic servers together may use." })}
         </div>
-        <div className="space-y-2"><h3 className="font-semibold">Monitoring thresholds</h3>
-          {numberField("CPU warning", "monitoring", "cpuWarningPercent", { unit: "%" })}
-          {numberField("CPU critical", "monitoring", "cpuCriticalPercent", { unit: "%" })}
-          {numberField("RAM warning", "monitoring", "ramWarningPercent", { unit: "%" })}
-          {numberField("RAM critical", "monitoring", "ramCriticalPercent", { unit: "%" })}
+        <div className="space-y-3 sm:col-span-2"><h3 className="font-semibold">Rotation</h3>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {numberField("Minimum online", "rotation", "minimumOnlineMinutes", { unit: "min", help: "A started server stays up at least this long." })}
+            {numberField("Idle before rotation", "rotation", "idleMinutes", { unit: "min", help: "Empty this long, it can be swapped for another game." })}
+            {numberField("Cooldown", "rotation", "cooldownMinutes", { unit: "min", help: "Wait before the same game rotates in again." })}
+          </div>
+        </div>
+      </div>
+      <details className="rounded-lg border border-border px-3 py-2 text-sm">
+        <summary className="cursor-pointer font-semibold">Advanced</summary>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          {numberField("Minimum free RAM", "safety", "minFreeRamBytes", { unit: "GB", gb: true, step: 0.25, help: "Always leave at least this much memory free." })}
+          {numberField("Metrics freshness", "safety", "maxMetricsAgeSeconds", { unit: "sec", help: "Refuse to start servers if the VPS reading is older than this. Keep at 900 to match the 15-minute check." })}
           {numberField("Disk warning", "monitoring", "diskWarningPercent", { unit: "%" })}
           {numberField("Disk critical", "monitoring", "diskCriticalPercent", { unit: "%" })}
         </div>
-      </div>
+      </details>
       <p className="text-xs text-muted-foreground">Current VPS: CPU {data?.metrics?.cpu?.usagePercent ?? "unknown"}% · free RAM {data?.metrics?.memory?.freeBytes ? (data.metrics.memory.freeBytes / GIB).toFixed(1) : "unknown"} GB · metrics {data?.metrics?.collectedAt || "unavailable"}. Agent: {data?.agent.ok ? "reachable" : data?.agent.error || "unavailable"}.</p>
       <button type="button" disabled={saving} onClick={save} className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">Save hosting settings</button>
     </>}
