@@ -131,7 +131,7 @@ export function nextLeader(
 /*  Ready check                                                             */
 /* ────────────────────────────────────────────────────────────────────────── */
 
-export function isEveryoneReady(members: RuleMember[]): boolean {
+function isEveryoneReady(members: RuleMember[]): boolean {
   if (members.length === 0) return false;
   return members.every((m) => m.ready);
 }
@@ -143,25 +143,6 @@ export function readySummary(members: RuleMember[]): {
 } {
   const ready = members.filter((m) => m.ready).length;
   return { ready, total: members.length, allReady: ready === members.length && members.length > 0 };
-}
-
-/* ────────────────────────────────────────────────────────────────────────── */
-/*  Status transitions                                                      */
-/* ────────────────────────────────────────────────────────────────────────── */
-
-const ALLOWED_TRANSITIONS: Record<PartyStatus, PartyStatus[]> = {
-  forming: ["ready", "launching", "playing", "ended"],
-  ready: ["forming", "launching", "playing", "ended"],
-  launching: ["playing", "ended"],
-  playing: ["ended"],
-  ended: [],
-};
-
-export function canTransitionTo(
-  current: PartyStatus,
-  target: PartyStatus
-): boolean {
-  return ALLOWED_TRANSITIONS[current]?.includes(target) ?? false;
 }
 
 /**
@@ -185,7 +166,7 @@ export function derivePartyStatus(
 /*  Leader controls                                                         */
 /* ────────────────────────────────────────────────────────────────────────── */
 
-export function isLeader(party: RuleParty, userId: string): boolean {
+function isLeader(party: RuleParty, userId: string): boolean {
   return party.leaderId === userId;
 }
 

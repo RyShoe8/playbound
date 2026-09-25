@@ -32,7 +32,7 @@ export type ModSeed = {
 };
 
 /** Publish-ready editorial (~90+ words) so seed mods clear admin gates. */
-export function modCopy(opts: {
+function modCopy(opts: {
   title: string;
   baseTitle: string;
   summary: string;

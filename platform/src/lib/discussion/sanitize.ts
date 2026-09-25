@@ -15,12 +15,12 @@ const PROFANITY =
 const HTML_TAG = /<\/?[a-z][\s\S]*?>/gi;
 const URL_RE = /https?:\/\/[^\s)>\]]+/i;
 
-export const TITLE_MAX = 150;
-export const BODY_MAX = 10000;
-export const BODY_MIN = 5;
-export const TITLE_MIN = 3;
-export const TAG_MAX = 8;
-export const TAG_LEN = 24;
+const TITLE_MAX = 150;
+const BODY_MAX = 10000;
+const BODY_MIN = 5;
+const TITLE_MIN = 3;
+const TAG_MAX = 8;
+const TAG_LEN = 24;
 
 export type SanitizeResult =
   | { ok: true; title?: string; body: string; tags: string[] }
@@ -38,7 +38,7 @@ function findBlockedDomain(text: string): string | null {
   return null;
 }
 
-export function containsUrl(text: string): boolean {
+function containsUrl(text: string): boolean {
   return URL_RE.test(text);
 }
 

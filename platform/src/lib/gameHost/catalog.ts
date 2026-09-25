@@ -324,10 +324,6 @@ export const HOSTABLE_SLUG_ALIASES: Record<string, string> = {
 
 export const HOSTABLE_SLUGS = Object.keys(HOSTABLE_GAMES);
 
-export function canonicalHostableSlug(slug: string): string {
-  return HOSTABLE_SLUG_ALIASES[slug] || slug;
-}
-
 export function isHostableGame(slug: string | null | undefined): boolean {
   return Boolean(slug && getHostableGame(slug));
 }

@@ -1,4 +1,4 @@
-import { modAuthors, modAuthorsBySlug, type ModAuthor } from "@/lib/data/modAuthors";
+import { modAuthorsBySlug, type ModAuthor } from "@/lib/data/modAuthors";
 import { listMods } from "@/lib/mods";
 import type { CatalogModPublic } from "@/lib/mods";
 
@@ -20,10 +20,6 @@ export function getModAuthor(slug: string): ModAuthor | undefined {
   return modAuthorsBySlug.get(slug);
 }
 
-export function listModAuthors(): ModAuthor[] {
-  return [...modAuthors].sort((a, b) => a.name.localeCompare(b.name));
-}
-
 /**
  * Mods credited to this author.
  *
@@ -35,11 +31,4 @@ export async function modsByAuthor(slug: string): Promise<CatalogModPublic[]> {
   return all
     .filter((m) => m.developerSlug === slug)
     .sort((a, b) => a.title.localeCompare(b.title));
-}
-
-/** Author slugs that actually have a published mod, for prerender + sitemap. */
-export async function authorsWithMods(): Promise<string[]> {
-  const all = await listMods();
-  const credited = new Set(all.map((m) => m.developerSlug));
-  return modAuthors.filter((a) => credited.has(a.slug)).map((a) => a.slug);
 }

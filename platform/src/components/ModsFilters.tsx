@@ -8,7 +8,13 @@ import { isModCompatible } from "@/lib/compatibility/compatibility";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { ModCard } from "@/components/ModCard";
 import { CompatibleGamesFade } from "@/components/compatibility/useFilteredGames";
-import type { ModBaseGameInfo } from "@/components/ModsCatalog";
+import type { GameLike } from "@/lib/compatibility/compatibility";
+
+export type ModBaseGameInfo = GameLike & {
+  slug: string;
+  title: string;
+  coverImage?: string;
+};
 
 /**
  * The mods index, laid out like the games index.

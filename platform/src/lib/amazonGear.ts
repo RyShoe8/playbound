@@ -332,7 +332,7 @@ function extractBreadcrumbs(html: string): string {
   return `${stripHtml(block)} ${stripHtml(bsr)}`;
 }
 
-export function inferGearCategory(...parts: (string | null | undefined)[]): GearCategory | null {
+function inferGearCategory(...parts: (string | null | undefined)[]): GearCategory | null {
   const hay = parts.filter(Boolean).join("\n");
   if (!hay.trim()) return null;
   for (const { re, category } of CATEGORY_KEYWORDS) {
@@ -342,7 +342,7 @@ export function inferGearCategory(...parts: (string | null | undefined)[]): Gear
 }
 
 /** Amazon CDN asset id used to dedupe size variants of the same photo. */
-export function amazonImageAssetKey(url: string): string | null {
+function amazonImageAssetKey(url: string): string | null {
   try {
     const u = decodeHtmlEntities(url);
     const m = u.match(/\/images\/[IP]\/([A-Za-z0-9%+\-_]+)/i);

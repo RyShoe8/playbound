@@ -50,7 +50,7 @@ function toInt(raw: string | null | undefined, fallback: number | null): number 
   return Number.isFinite(n) ? n : fallback;
 }
 
-export function parseDeathmaskOpenArenaXml(xml: string): GameServer[] {
+function parseDeathmaskOpenArenaXml(xml: string): GameServer[] {
   const servers: GameServer[] = [];
   const re = /<server\b([^>]*)>([\s\S]*?)<\/server>/gi;
   let m: RegExpExecArray | null;

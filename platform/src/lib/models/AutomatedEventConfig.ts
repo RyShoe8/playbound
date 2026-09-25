@@ -61,11 +61,6 @@ export interface AutomatedEventConfigDoc extends Document {
   updatedAt: Date;
 }
 
-// Backwards compatibility type aliases
-export type AutonomousGameConfig = AutomatedEventGameConfig;
-export type AutonomousActiveSession = AutomatedEventActiveSession;
-export type AutonomousMatchConfigDoc = AutomatedEventConfigDoc;
-
 const AutomatedEventGameConfigSchema = new Schema(
   {
     slug: { type: String, required: true },
@@ -142,5 +137,4 @@ const AutomatedEventConfigSchema = new Schema(
 );
 
 export default models.AutomatedEventConfig ||
-  models.AutonomousMatchConfig ||
   model<AutomatedEventConfigDoc>("AutomatedEventConfig", AutomatedEventConfigSchema);

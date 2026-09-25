@@ -23,7 +23,7 @@ async function isStillInstalled(kind: "game" | "mod", slug: string): Promise<boo
  * gone (user confirmed in the launcher) then call onGone. Times out if they
  * cancel the dialog.
  */
-export function watchUntilLibraryGone(opts: {
+function watchUntilLibraryGone(opts: {
   kind: "game" | "mod";
   slug: string;
   onGone: () => void;

@@ -5477,7 +5477,7 @@ export const editions: EditionSeed[] = [
 ];
 
 /** Clean display name for an edition pill/chip (e.g. removes trailing parenthesized subtitles). */
-export function formatEditionChipName(name: string): string {
+function formatEditionChipName(name: string): string {
   if (!name) return "";
   const cleaned = name.replace(/\s*\([^)]*\)/g, "").trim();
   return cleaned || name;

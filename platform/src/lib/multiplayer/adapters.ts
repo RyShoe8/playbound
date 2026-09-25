@@ -2505,7 +2505,7 @@ const ADAPTER_SLUG_ALIASES: Record<string, string> = {
  * game was renamed or removed and its adapter was left behind, where it looks
  * live and does nothing. findOrphanedAdapters reports those.
  */
-export const EXPECTED_NON_CATALOG_ADAPTERS: ReadonlySet<string> = new Set([
+const EXPECTED_NON_CATALOG_ADAPTERS: ReadonlySet<string> = new Set([
   // Alternative spellings.
   "0-ad",
   "opentyrian",
@@ -2616,8 +2616,6 @@ export function listVirtualLanGames(): GameMultiplayerAdapter[] {
  */
 export type PartyHostMode = "dedicated" | "self" | "public" | "couch";
 
-export const DEFAULT_HOST_MODE: PartyHostMode = "dedicated";
-
 /**
  * Self-hosting config for a game, but only once it has been verified.
  *
@@ -2627,42 +2625,6 @@ export const DEFAULT_HOST_MODE: PartyHostMode = "dedicated";
 export function getSelfHostConfig(gameSlug: string): SelfHostConfig | null {
   const selfHost = getMultiplayerAdapter(gameSlug).selfHost;
   return selfHost?.verified ? selfHost : null;
-}
-
-export function canSelfHost(gameSlug: string): boolean {
-  return getSelfHostConfig(gameSlug) !== null;
-}
-
-/**
- * The host modes a game genuinely offers, in the order they should be shown.
- *
- * `dedicated` availability is owned by HOSTABLE_GAMES rather than duplicated
- * here, so this takes it as an argument instead of importing it — adapters.ts
- * stays free of a dependency on the game-host catalog, which imports catalog
- * data of its own.
- *
- * Dedicated is listed first deliberately. It is Connect's promise — no port
- * forwarding, no NAT roulette — and should stay the obvious choice.
- */
-export function listHostModes(
-  gameSlug: string,
-  { dedicatedAvailable }: { dedicatedAvailable: boolean }
-): PartyHostMode[] {
-  const modes: PartyHostMode[] = [];
-  if (dedicatedAvailable) modes.push("dedicated");
-  if (canSelfHost(gameSlug)) modes.push("self");
-  return modes;
-}
-
-/** Every game with self-hosting wired up, verified or not — for admin/audit views. */
-export function listSelfHostCandidates(): Array<{
-  gameSlug: string;
-  title: string;
-  selfHost: SelfHostConfig;
-}> {
-  return Object.values(MULTIPLAYER_ADAPTERS)
-    .filter((a): a is GameMultiplayerAdapter & { selfHost: SelfHostConfig } => Boolean(a.selfHost))
-    .map((a) => ({ gameSlug: a.gameSlug, title: a.title, selfHost: a.selfHost }));
 }
 
 /*

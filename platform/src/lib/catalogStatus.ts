@@ -6,7 +6,7 @@
 export const CATALOG_STATUSES = ["draft", "watchlist", "testing", "published"] as const;
 export type CatalogStatus = (typeof CATALOG_STATUSES)[number];
 
-export function isCatalogStatus(value: unknown): value is CatalogStatus {
+function isCatalogStatus(value: unknown): value is CatalogStatus {
   return typeof value === "string" && (CATALOG_STATUSES as readonly string[]).includes(value);
 }
 

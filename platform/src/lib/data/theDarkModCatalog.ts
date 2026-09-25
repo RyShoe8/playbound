@@ -7,9 +7,9 @@
  */
 export const THE_DARK_MOD_SLUG = "the-dark-mod" as const;
 
-export const theDarkModPlatforms = ["Windows", "macOS", "Linux"] as const;
+const theDarkModPlatforms = ["Windows", "macOS", "Linux"] as const;
 
-export const theDarkModFeatures = [
+const theDarkModFeatures = [
   "Singleplayer",
   "Mod Support",
   "Open Source",
@@ -20,7 +20,7 @@ export const theDarkModFeatures = [
   "Story Campaign",
 ] as const;
 
-export const theDarkModLauncherInstall = {
+const theDarkModLauncherInstall = {
   enabled: true,
   kind: "direct-zip" as const,
   url: "https://update.thedarkmod.com/zipsync/tdm_installer.exe.zip",
@@ -51,13 +51,13 @@ export const theDarkModLauncherInstall = {
     "PlayBound runs the official tdm_installer unattended (multi‑GB download). Windows and Mac (via Wine) use the Windows zip; Linux uses the native linux64 installer.",
 };
 
-export const theDarkModSystemRequirements = {
+const theDarkModSystemRequirements = {
   min: "Windows 7 / modern Linux · dual-core CPU · 2 GB RAM · OpenGL 3.3 / DX9 GPU · 3 GB storage",
   recommended:
     "Windows 10 / modern Linux · quad-core CPU · 4 GB RAM · dedicated GPU · 4 GB storage",
 };
 
-export const theDarkModHardwareRequirements = {
+const theDarkModHardwareRequirements = {
   min: {
     ramMB: 2048,
     storageMB: 3072,

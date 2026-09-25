@@ -11,7 +11,7 @@
 
 export const WINDOWS_SETUP_FILENAME_RE = /^PlayBound-Setup-(\d+\.\d+\.\d+)\.exe$/i;
 
-export const LAUNCHER_DOWNLOAD_API_BASE = "https://playbound.club/api/launcher/download";
+const LAUNCHER_DOWNLOAD_API_BASE = "https://playbound.club/api/launcher/download";
 
 export function parseWindowsSetupFilename(fileName: string): { version: string } | null {
   const match = WINDOWS_SETUP_FILENAME_RE.exec(String(fileName || "").trim());
@@ -55,7 +55,7 @@ export function assertUpdateFileUrlEndsWithExe(url: string): void {
   }
 }
 
-export function launcherArtifactRelativePath(artifactId: string, fileName: string): string {
+function launcherArtifactRelativePath(artifactId: string, fileName: string): string {
   const { fileName: safe } = assertWindowsSetupFilename(fileName);
   const id = String(artifactId || "").trim();
   if (!id) throw new Error("artifactId is required");

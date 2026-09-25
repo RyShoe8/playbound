@@ -231,7 +231,7 @@ export async function probeDirectUrl(url: string, currentVersion?: string | null
   }
 }
 
-export async function probeOpenttdLatest(): Promise<ProbeResult> {
+async function probeOpenttdLatest(): Promise<ProbeResult> {
   try {
     const res = await fetch("https://cdn.openttd.org/openttd-releases/latest.yaml", {
       headers: { "user-agent": "playbound-catalog-probe" },
@@ -287,7 +287,7 @@ function compareVersionStrings(a: string, b: string): number {
  * ContentDB publishes each release's supported engine range, so the check is a
  * real comparison rather than a guess.
  */
-export async function probeContentDbOverlay(
+async function probeContentDbOverlay(
   overlayUrl: string,
   engineVersion: string | null
 ): Promise<ProbeResult> {

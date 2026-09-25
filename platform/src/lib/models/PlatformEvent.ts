@@ -1,10 +1,5 @@
 import { Schema, model, models, type InferSchemaType, type Types } from "mongoose";
-import {
-  EVENT_STATUSES,
-  EVENT_TYPES,
-  EVENT_VISIBILITIES,
-  HOST_TYPES,
-} from "@/lib/events/types";
+import { EVENT_STATUSES, EVENT_VISIBILITIES, HOST_TYPES } from "@/lib/events/types";
 
 const PlatformEventSchema = new Schema(
   {
@@ -94,4 +89,4 @@ const PlatformEvent =
 export default PlatformEvent;
 
 // Re-export for callers that imported EVENT_TYPES from the model path by mistake.
-export { EVENT_TYPES, EVENT_STATUSES };
+;

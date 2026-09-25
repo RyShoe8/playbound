@@ -10,12 +10,8 @@ import {
 } from "@/lib/mediaDedupe";
 import { collectVideosFromHtml, tryFetchPageMeta } from "@/lib/pageMeta";
 import { normalizeVideoUrl } from "@/lib/mediaEmbed";
-import { fetchEpicStoreMedia, parseEpicProductSlug } from "@/lib/epicStore";
 
-export {
-  coverLooksLikeSteamHeader,
-  screenshotsAreThin,
-} from "@/lib/mediaThin";
+;
 
 export const MAX_SCREENSHOTS = 20;
 export const MAX_VIDEOS = 10;
@@ -30,7 +26,7 @@ export function emptyGameMedia(): GameMediaBundle {
   return { coverImage: null, screenshots: [], videos: [] };
 }
 
-export function toHttpsUrl(url: string): string {
+function toHttpsUrl(url: string): string {
   if (url.startsWith("http://")) return `https://${url.slice("http://".length)}`;
   return url;
 }
@@ -49,17 +45,6 @@ export function mergeGameMedia(
     ),
     videos: mergeUniqueMediaUrls(existing.videos, incoming.videos, MAX_VIDEOS),
   };
-}
-
-export function mediaIsThin(media: GameMediaBundle): boolean {
-  return (media.screenshots?.length ?? 0) < 4 || (media.videos?.length ?? 0) === 0;
-}
-
-export function mediaChanged(before: GameMediaBundle, after: GameMediaBundle): boolean {
-  if ((before.coverImage || null) !== (after.coverImage || null)) return true;
-  if ((before.screenshots ?? []).join("\0") !== (after.screenshots ?? []).join("\0")) return true;
-  if ((before.videos ?? []).join("\0") !== (after.videos ?? []).join("\0")) return true;
-  return false;
 }
 
 /**
@@ -242,66 +227,6 @@ export async function fetchGithubReadmeMedia(repo: string): Promise<GameMediaBun
     }
   }
   return null;
-}
-
-/**
- * Prefer Steam when an app id is present, then Epic store-content, then fill gaps
- * from the website / GitHub README. Website failures do not throw when Steam/Epic succeeded.
- */
-export async function fetchCombinedGameMedia(opts: {
-  steamAppId?: string | null;
-  url?: string | null;
-  githubRepo?: string | null;
-}): Promise<GameMediaBundle> {
-  let bundle = emptyGameMedia();
-
-  const steamId = opts.steamAppId?.trim();
-  if (steamId) {
-    bundle = mergeGameMedia(bundle, await fetchSteamStoreMedia(steamId));
-  }
-
-  const url = opts.url?.trim();
-  const epicSlug = url ? parseEpicProductSlug(url) : null;
-  if (epicSlug && (!steamId || bundle.screenshots.length < 4 || bundle.videos.length === 0)) {
-    try {
-      bundle = mergeGameMedia(bundle, await fetchEpicStoreMedia(epicSlug));
-    } catch {
-      /* soft-fail Epic */
-    }
-  }
-
-  const shouldScrapeSite =
-    Boolean(url) &&
-    !epicSlug &&
-    (!steamId || bundle.screenshots.length < 4 || bundle.videos.length === 0);
-  if (shouldScrapeSite && url) {
-    try {
-      const site = await fetchWebsiteMedia(url);
-      if (site) bundle = mergeGameMedia(bundle, site);
-    } catch {
-      /* soft-fail website */
-    }
-  }
-
-  const repo = opts.githubRepo?.trim();
-  if (repo && bundle.screenshots.length < 4) {
-    try {
-      const gh = await fetchGithubReadmeMedia(repo);
-      if (gh) bundle = mergeGameMedia(bundle, gh);
-    } catch {
-      /* soft-fail readme */
-    }
-  }
-
-  if (!steamId && !url && !repo) {
-    throw new Error("Provide a Steam app id or website URL");
-  }
-
-  if (!bundle.coverImage && bundle.screenshots.length === 0 && bundle.videos.length === 0) {
-    if (!steamId && !epicSlug) throw new Error("Could not fetch media from website");
-  }
-
-  return bundle;
 }
 
 /** Download a remote image, WebP-compress, and upload to Vercel Blob. */

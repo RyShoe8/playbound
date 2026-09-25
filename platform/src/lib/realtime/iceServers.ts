@@ -21,7 +21,7 @@ export type TurnServerConfig = {
 };
 
 /** Public STUN plus optional VPS STUN when GAME_HOST_PUBLIC_IP is set. */
-export function defaultStunUrls(): string[] {
+function defaultStunUrls(): string[] {
   const vpsIp = process.env.GAME_HOST_PUBLIC_IP;
   const stunPort = process.env.STUN_PORT || "3478";
   return [

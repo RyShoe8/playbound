@@ -44,7 +44,7 @@ async function findLatestWindowsLauncherArtifact(): Promise<LauncherArtifact | n
  * Resolve where the signed Windows installer should redirect.
  * Prefer R2 → VPS → Blob. Always require a real .exe filename for launcher rows.
  */
-export async function resolveWindowsLauncherDownloadTarget(options?: {
+async function resolveWindowsLauncherDownloadTarget(options?: {
   /** When set (from /download/PlayBound-Setup-x.y.z.exe), prefer that version. */
   requestedFileName?: string | null;
 }): Promise<{

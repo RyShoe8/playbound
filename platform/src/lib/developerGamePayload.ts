@@ -1,12 +1,5 @@
 import { z } from "zod";
-import {
-  GENRES,
-  PLATFORMS,
-  LAUNCH_METHODS,
-  FEATURES,
-  launcherInstallSchema,
-  normalizeTags,
-} from "@/lib/gamePayload";
+import { GENRES, LAUNCH_METHODS, launcherInstallSchema, normalizeTags } from "@/lib/gamePayload";
 import { hardwareRequirementsBlockSchema } from "@/lib/hardware/schema";
 
 /**
@@ -121,12 +114,3 @@ export const developerGamePayloadSchema = z
   .strip();
 
 export type DeveloperGamePayload = z.infer<typeof developerGamePayloadSchema>;
-
-/**
- * Removes any editorial fields if passed in a raw object, ensuring they
- * cannot reach Mongoose update pipelines.
- */
-export function sanitizeDeveloperUpdate(raw: Record<string, unknown>): DeveloperGamePayload {
-  const parsed = developerGamePayloadSchema.parse(raw);
-  return parsed;
-}

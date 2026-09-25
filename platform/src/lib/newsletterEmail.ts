@@ -91,11 +91,11 @@ export function absoluteMediaUrl(url: string, siteUrl = SITE_URL): string {
   return `${origin}${trimmed.startsWith("/") ? trimmed : `/${trimmed}`}`;
 }
 
-export function gamePageUrl(slug: string, siteUrl = SITE_URL): string {
+function gamePageUrl(slug: string, siteUrl = SITE_URL): string {
   return `${siteOrigin(siteUrl)}/games/${encodeURIComponent(slug)}`;
 }
 
-export function logoUrl(siteUrl = SITE_URL): string {
+function logoUrl(siteUrl = SITE_URL): string {
   return `${siteOrigin(siteUrl)}/brand/playbound-logo-120.png`;
 }
 

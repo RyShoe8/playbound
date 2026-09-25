@@ -164,7 +164,7 @@ export async function runEventsCron(now = new Date()): Promise<{
  * Every tick re-evaluates, so a cleanup that fails because the bot is down is
  * simply retried on the next run instead of being lost.
  */
-export async function cleanupDueEventChannels(now = new Date()): Promise<number> {
+async function cleanupDueEventChannels(now = new Date()): Promise<number> {
   await dbConnect();
 
   const pending = await PlatformEvent.find({

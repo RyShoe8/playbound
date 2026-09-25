@@ -6,7 +6,7 @@
  */
 export const SUPER_NOVA_STRIKE_SLUG = "super-nova-strike" as const;
 
-export const superNovaStrikePlatforms = ["Android", "iOS"] as const;
+const superNovaStrikePlatforms = ["Android", "iOS"] as const;
 
 export const superNovaStrikeAndroidStoreUrl =
   "https://play.google.com/store/apps/details?id=com.BorgMobile.SuperNovaStrike";
@@ -14,21 +14,21 @@ export const superNovaStrikeAndroidStoreUrl =
 export const superNovaStrikeIosStoreUrl =
   "https://apps.apple.com/us/app/super-nova-strike/id6739474148";
 
-export const superNovaStrikeWebsite = "https://tsyborg.com/borgmobile/";
+const superNovaStrikeWebsite = "https://tsyborg.com/borgmobile/";
 
-export const superNovaStrikeLauncherInstall = {
+const superNovaStrikeLauncherInstall = {
   enabled: false,
   kind: "external" as const,
   url: superNovaStrikeWebsite,
   note: "Super Nova Strike is available on mobile devices via Google Play and the Apple App Store.",
 };
 
-export const superNovaStrikeSystemRequirements = {
+const superNovaStrikeSystemRequirements = {
   min: "Android 8.0+ / iOS 13.0+ · Touchscreen mobile device · 100 MB free storage",
   recommended: "Modern smartphone or tablet · Android 11+ / iOS 15+ · 150 MB free storage",
 } as const;
 
-export const superNovaStrikeHardwareRequirements = {
+const superNovaStrikeHardwareRequirements = {
   min: {
     ramMB: 2048,
     storageMB: 100,
@@ -51,7 +51,7 @@ export const superNovaStrikeHardwareRequirements = {
   },
 };
 
-export const superNovaStrikeEditorial = {
+const superNovaStrikeEditorial = {
   qualityBar: {
     genuinelyFree: true,
     finished: true,

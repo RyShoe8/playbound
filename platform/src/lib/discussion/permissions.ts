@@ -4,7 +4,7 @@ import ModeratorAuditLog from "@/lib/models/ModeratorAuditLog";
 import type { DiscussionTopicDoc } from "@/lib/models/DiscussionTopic";
 import type { DiscussionReplyDoc } from "@/lib/models/DiscussionReply";
 
-export function isAdmin(session: Session | null): boolean {
+function isAdmin(session: Session | null): boolean {
   return session?.user?.role === "admin";
 }
 
@@ -45,7 +45,7 @@ export async function loadPosterGate(userId: string): Promise<
   return { ok: true, user };
 }
 
-export function canModerate(session: Session | null): boolean {
+function canModerate(session: Session | null): boolean {
   return isAdmin(session);
 }
 

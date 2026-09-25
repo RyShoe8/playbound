@@ -4,14 +4,14 @@
  */
 export const SLAPSHOT_REBOUND_SLUG = "slapshot-rebound" as const;
 
-export const slapshotReboundFeatures = [
+const slapshotReboundFeatures = [
   "Singleplayer",
   "Multiplayer",
   "Co-op",
   "Controller Support",
 ] as const;
 
-export const slapshotReboundLauncherInstall = {
+const slapshotReboundLauncherInstall = {
   enabled: true,
   kind: "external" as const,
   url: "steam://run/1173370",
@@ -20,13 +20,13 @@ export const slapshotReboundLauncherInstall = {
   note: "Installs the free official Slapshot: Rebound release through Steam.",
 };
 
-export const slapshotReboundSystemRequirements = {
+const slapshotReboundSystemRequirements = {
   min: "Windows 10 · Intel Core i5 · 4 GB RAM · GTX 760 / equivalent · DirectX 11 · 2 GB storage",
   recommended:
     "Windows 10 · Intel Core i5 · 8 GB RAM · GTX 1060 / equivalent · DirectX 11 · 2 GB storage",
 };
 
-export const slapshotReboundHardwareRequirements = {
+const slapshotReboundHardwareRequirements = {
   min: {
     ramMB: 4096,
     storageMB: 2048,

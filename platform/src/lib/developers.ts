@@ -130,11 +130,6 @@ export async function getDeveloperAdmin(
   return seed ? { ...seed, published: true, ownerUserId: null } : undefined;
 }
 
-/** Slug → developer, for callers resolving several at once. */
-export async function developersBySlugMap(): Promise<Map<string, Developer>> {
-  return new Map((await loadPublished()).map((d) => [d.slug, d]));
-}
-
 /**
  * Ensures a developer exists in MongoDB. If not found by slug or name, creates one.
  */

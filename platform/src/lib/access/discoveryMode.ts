@@ -41,10 +41,6 @@ export function parseDiscoveryMode(raw: string | null | undefined): DiscoveryMod
 /** A year — this is a preference, not a session. */
 export const DISCOVERY_MODE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
-export function discoveryModeCookie(mode: DiscoveryMode): string {
-  return `${DISCOVERY_MODE_COOKIE}=${mode}; Path=/; Max-Age=${DISCOVERY_MODE_COOKIE_MAX_AGE}; SameSite=Lax`;
-}
-
 /**
  * Does this tier survive the mode?
  *
@@ -197,7 +193,7 @@ export function filterCollectionsByMode<T extends { gameSlugs: string[] }>(
     .filter((c) => c.gameSlugs.length > 0);
 }
 
-export const PRICE_FILTERS = ["any", "free", "under5", "under10", "under15"] as const;
+const PRICE_FILTERS = ["any", "free", "under5", "under10", "under15"] as const;
 export type PriceFilter = (typeof PRICE_FILTERS)[number];
 
 export function parsePriceFilter(raw: string | null | undefined): PriceFilter {
@@ -212,7 +208,7 @@ const PRICE_CAPS: Record<Exclude<PriceFilter, "any" | "free">, number> = {
 };
 
 /** FREE games (null / 0) pass every under-X filter. */
-export function priceVisibleIn(fromPriceCents: number | null, filter: PriceFilter): boolean {
+function priceVisibleIn(fromPriceCents: number | null, filter: PriceFilter): boolean {
   if (filter === "any") return true;
   const price = fromPriceCents ?? 0;
   if (filter === "free") return price === 0;

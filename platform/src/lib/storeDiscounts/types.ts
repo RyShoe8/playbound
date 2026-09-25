@@ -19,10 +19,6 @@
 export const DISCOUNT_STORE_SLUGS = ["gog", "steam", "epic", "gamersgate"] as const;
 export type DiscountStoreSlug = (typeof DISCOUNT_STORE_SLUGS)[number];
 
-export function isDiscountStoreSlug(value: unknown): value is DiscountStoreSlug {
-  return typeof value === "string" && (DISCOUNT_STORE_SLUGS as readonly string[]).includes(value);
-}
-
 /** What a provider adapter returns — pre-persistence, no catalog matching. */
 export interface DiscoveredDiscount {
   /** Store-specific ID: GOG product id, or CheapShark's dealID. */

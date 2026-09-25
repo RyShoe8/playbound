@@ -47,7 +47,7 @@ export type ControlFeature =
   | "password"
   | "restart";
 
-export const CONTROL_FEATURE_LABELS: Record<ControlFeature, string> = {
+const CONTROL_FEATURE_LABELS: Record<ControlFeature, string> = {
   map: "Map switching",
   gameMode: "Game mode",
   slots: "Player slots",

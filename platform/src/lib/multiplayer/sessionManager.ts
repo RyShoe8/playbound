@@ -310,4 +310,4 @@ export async function deleteMultiplayerSession(
   return true;
 }
 
-export { relayServers as multiplayerRelayServers };
+;

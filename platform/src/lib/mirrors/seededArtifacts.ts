@@ -14,7 +14,7 @@ import MirrorSource from "@/lib/models/MirrorSource";
  */
 
 /** Exactly the ids INITIAL_ARTIFACTS defined — nothing is pattern-matched. */
-export const SEEDED_ARTIFACT_IDS = [
+const SEEDED_ARTIFACT_IDS = [
   "holocure-0.7.1",
   "openra-2026.03",
   "warzone2100-4.5.1",

@@ -67,7 +67,7 @@ export const PARTY_OPS_EVENTS = [
   "party_chat_failed",
 ] as const;
 
-export const COMMUNITY_OPS_EVENTS = [
+const COMMUNITY_OPS_EVENTS = [
   "community_server_start",
   "community_server_failed",
   "community_server_recovery",

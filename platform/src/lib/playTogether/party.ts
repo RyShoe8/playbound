@@ -1540,32 +1540,6 @@ export async function leaveParty(
 }
 
 /**
- * Drop this user from every live party. Used when they actually go offline
- * (launcher quit, tab close, stale heartbeat) — not "appear offline".
- */
-export async function leavePartiesOnDisconnect(userId: string): Promise<number> {
-  await dbConnect();
-  const docs = await Party.find({
-    status: { $nin: ["ended"] },
-    "members.userId": userId,
-  });
-  let dropped = 0;
-  for (const doc of docs) {
-    const result = await leaveParty(String(doc._id), userId);
-    if ("status" in result && result.status === 200) {
-      dropped += 1;
-      trackPartyEvent("party_member_dropped_offline", {
-        partyId: String(doc._id),
-        gameSlug: String(doc.gameSlug || "") || null,
-        userId,
-        reason: "disconnect",
-      });
-    }
-  }
-  return dropped;
-}
-
-/**
  * Remove party members whose presence is offline or whose heartbeat has aged
  * out. Appear-offline users keep a live heartbeat and stay in the party.
  *
@@ -3010,7 +2984,7 @@ export async function countOpenPublicParties(): Promise<number> {
 /* ─── config sync (4H, 4I) ──────────────────────────────────────────────── */
 
 export type { ConfigSyncMember, ConfigSyncResult } from "@/lib/playTogether/types";
-export { BASE_EDITION_KEY, isBaseEditionSlug, libraryHasRequiredEdition } from "@/lib/playTogether/editionMatch";
+;
 
 type ConfigSyncOutcome =
   | { sync: ConfigSyncResult; status: 200 }
@@ -3537,7 +3511,7 @@ export async function handleUserPresenceEnded(userId: string): Promise<void> {
  * Deletes chat messages older than 24 hours for ended parties or orphaned records,
  * while strictly preserving all messages for active/in-progress parties.
  */
-export async function sweepOldPartyMessages(olderThanMs = 24 * 60 * 60 * 1000) {
+async function sweepOldPartyMessages(olderThanMs = 24 * 60 * 60 * 1000) {
   await dbConnect();
   const cutoff = new Date(Date.now() - olderThanMs);
 

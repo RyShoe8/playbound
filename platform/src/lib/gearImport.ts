@@ -67,7 +67,7 @@ const RETAILER_HOSTS: { match: RegExp; label: string }[] = [
   { match: /(^|\.)store\.playstation\./i, label: "PlayStation Store" },
 ];
 
-export function detectRetailer(url: string, siteName?: string | null): string {
+function detectRetailer(url: string, siteName?: string | null): string {
   try {
     const host = new URL(url).hostname.replace(/^www\./i, "");
     for (const row of RETAILER_HOSTS) {

@@ -1,16 +1,12 @@
 import { Types } from "mongoose";
 import EventRsvp from "@/lib/models/EventRsvp";
-import {
-  Tournament,
-  TournamentParticipant,
-  TournamentTeam,
-} from "@/lib/models/Tournament";
+import { TournamentParticipant, TournamentTeam } from "@/lib/models/Tournament";
 
 function oid(id: string) {
   return new Types.ObjectId(id);
 }
 
-export async function userTeam(
+async function userTeam(
   tournamentId: Types.ObjectId,
   userId: string
 ) {
@@ -153,10 +149,4 @@ export async function kickFromTournament(opts: {
     { $set: { status: "not_going" } }
   );
   return { kicked: 1 };
-}
-
-export async function removeUserFromTeams(tournamentId: Types.ObjectId, userId: string) {
-  const tournament = await Tournament.findById(tournamentId);
-  if (!tournament) return;
-  await leaveTeam({ tournamentId, userId }).catch(() => null);
 }

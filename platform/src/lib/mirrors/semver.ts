@@ -3,7 +3,7 @@
  * Kept tiny and dependency-free — shared by admin list filtering and public download.
  */
 
-export function parseSemVer(v: string | null | undefined): number[] {
+function parseSemVer(v: string | null | undefined): number[] {
   if (!v) return [0];
   const parts = String(v)
     .replace(/^[^\d]*/, "")

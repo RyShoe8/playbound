@@ -8,7 +8,7 @@ const EST_TOPIC: Limit = { max: 3, windowMs: 60 * 60 * 1000 };
 const EST_REPLY: Limit = { max: 20, windowMs: 10 * 60 * 1000 };
 const REPORT: Limit = { max: 10, windowMs: 60 * 60 * 1000 };
 
-export function isEstablishedAccount(createdAt: Date | string | undefined): boolean {
+function isEstablishedAccount(createdAt: Date | string | undefined): boolean {
   if (!createdAt) return false;
   const ageMs = Date.now() - new Date(createdAt).getTime();
   return ageMs >= 7 * 24 * 60 * 60 * 1000;

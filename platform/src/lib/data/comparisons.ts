@@ -201,11 +201,3 @@ export const comparisonsBySlug = new Map(comparisons.map((c) => [c.slug, c]));
 export function comparisonsFeaturing(slug: string): Comparison[] {
   return comparisons.filter((c) => c.aSlug === slug || c.bSlug === slug);
 }
-
-/** Alternatives pages that feature a given game. */
-export function alternativeSlugsFeaturing(
-  slug: string,
-  pages: { slug: string; picks: { slug: string }[] }[]
-): string[] {
-  return pages.filter((p) => p.picks.some((pick) => pick.slug === slug)).map((p) => p.slug);
-}

@@ -39,7 +39,7 @@ function botConfig() {
   return { url, secret };
 }
 
-export async function provisionPartyDiscordVoice(
+async function provisionPartyDiscordVoice(
   party: PartyLike
 ): Promise<boolean> {
   const { url, secret } = botConfig();
@@ -224,7 +224,7 @@ export type PartyVoiceFollowup = {
   inPartyVoice: boolean;
 };
 
-export async function moveDiscordUsersToPartyVoice(
+async function moveDiscordUsersToPartyVoice(
   party: PartyLike,
   discordUserIds: string[]
 ): Promise<{ moved: number; alreadyThere: number; notInVoice: number }> {

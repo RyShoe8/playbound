@@ -4,10 +4,7 @@
 
 import crypto from "crypto";
 import { COUCH_MAX_PLAYERS } from "./protocol";
-import {
-  defaultIceServers as sharedDefaultIceServers,
-  sessionIceServers,
-} from "@/lib/realtime/iceServers";
+import { sessionIceServers } from "@/lib/realtime/iceServers";
 import type {
   ICouchController,
   ICouchHostEndpoints,
@@ -33,9 +30,7 @@ const MESSAGE_TTL_MS = 2 * 60 * 1000;
 /** Admin streaming table: host heartbeat within this window counts as live. */
 export const COUCH_ADMIN_LIVE_MS = 90_000;
 /** Open session ends when the host stops heartbeating this long (launcher quit). */
-export const COUCH_SESSION_STALE_MS = 5 * 60 * 1000;
-/** @deprecated Use COUCH_SESSION_STALE_MS or COUCH_ADMIN_LIVE_MS */
-export const COUCH_HOST_STALE_MS = COUCH_SESSION_STALE_MS;
+const COUCH_SESSION_STALE_MS = 5 * 60 * 1000;
 const CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
 
 /** Force memory store (unit tests). */
@@ -102,7 +97,7 @@ async function saveSession(session: CouchSession): Promise<void> {
   memoryByCode.set(session.joinCode, session.sessionId);
 }
 
-export function isCouchHostLive(
+function isCouchHostLive(
   session: Pick<CouchSession, "status" | "lastHeartbeat">
 ): boolean {
   if (session.status !== "open") return false;
@@ -784,11 +779,6 @@ export function hostCouchSnapshot(session: CouchSession) {
         createdAt: c.createdAt,
       })),
   };
-}
-
-/** @deprecated Prefer sessionIceServers(sessionId); kept for callers without a session. */
-export function defaultIceServers(): { urls: string }[] {
-  return sharedDefaultIceServers() as { urls: string }[];
 }
 
 export { sessionIceServers };

@@ -5,9 +5,9 @@
  */
 export const TEEWORLDS_SLUG = "teeworlds" as const;
 
-export const teeworldsPlatforms = ["Windows", "macOS", "Linux"] as const;
+const teeworldsPlatforms = ["Windows", "macOS", "Linux"] as const;
 
-export const teeworldsFeatures = [
+const teeworldsFeatures = [
   "Multiplayer",
   "LAN Support",
   "Dedicated Servers",
@@ -15,7 +15,7 @@ export const teeworldsFeatures = [
   "Controller Support",
 ] as const;
 
-export const teeworldsLauncherInstall = {
+const teeworldsLauncherInstall = {
   enabled: true,
   kind: "github-installer" as const,
   repo: "teeworlds/teeworlds",
@@ -35,12 +35,12 @@ export const teeworldsLauncherInstall = {
   note: "Official Teeworlds release — Windows zip, macOS DMG, or Linux x86_64 tarball.",
 };
 
-export const teeworldsSystemRequirements = {
+const teeworldsSystemRequirements = {
   min: "Any modern OS · dual-core CPU · 512 MB RAM · OpenGL 2.0 · 50 MB storage",
   recommended: "Any modern OS · dual-core CPU · 1 GB RAM · OpenGL 2.0 · 100 MB storage",
 };
 
-export const teeworldsHardwareRequirements = {
+const teeworldsHardwareRequirements = {
   min: {
     ramMB: 512,
     storageMB: 50,

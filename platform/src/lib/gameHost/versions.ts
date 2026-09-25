@@ -12,7 +12,7 @@ import { HOSTABLE_GAMES } from "@/lib/gameHost/catalog";
 import type { LauncherInstall } from "@/lib/launcherInstall";
 
 /** Pinned server builds from install.sh — keep in sync when those change. */
-export const EXPECTED_SERVER_VERSIONS: Record<string, string> = {
+const EXPECTED_SERVER_VERSIONS: Record<string, string> = {
   openra: "Latest GitHub AppImage",
   openttd: "Ubuntu apt",
   luanti: "Ubuntu apt (luanti/minetest)",
@@ -93,7 +93,7 @@ function versionFromUrl(url: string): string | null {
 }
 
 /** Normalized label for party compatibility checks (strip build noise). */
-export function normalizeVersionLabel(label: string | null | undefined): string {
+function normalizeVersionLabel(label: string | null | undefined): string {
   return String(label || "")
     .toLowerCase()
     .replace(/^v(?=\d)/, "")

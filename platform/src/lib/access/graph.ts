@@ -29,7 +29,7 @@ import { canonicalCatalogGameSlug } from "@/lib/catalogGameAliases";
  * malformed flag must mean "inherits", not "free": defaulting the other way
  * would make every legacy edition row that predates the field resolve FREE.
  */
-export function editionDependencies(gameSlug: string, isStandalone: unknown): string[] {
+function editionDependencies(gameSlug: string, isStandalone: unknown): string[] {
   return isStandalone === true ? [] : [accessId.game(gameSlug)];
 }
 

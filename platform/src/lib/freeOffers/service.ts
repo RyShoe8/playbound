@@ -10,10 +10,9 @@ import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import dbConnect from "@/lib/db";
 import FreeOffer from "@/lib/models/FreeOffer";
-import StoreProviderModel from "@/lib/models/StoreProvider";
-import { seedFreeOffers, seedStoreProviders } from "@/lib/data/freeOffers";
+import { seedFreeOffers } from "@/lib/data/freeOffers";
 import { inferGameGenres } from "@/lib/dealsShared";
-import { STORE_SLUGS, type FreeOfferRecord, type StoreProviderRecord, type StoreSlug } from "./types";
+import { type FreeOfferRecord, type StoreSlug } from "./types";
 
 // ── Mappers ──────────────────────────────────────────────────────────────
 
@@ -66,17 +65,6 @@ function toRecord(doc: LeanDoc): FreeOfferRecord {
     updatedAt: doc.updatedAt
       ? new Date(doc.updatedAt as string).toISOString()
       : new Date().toISOString(),
-  };
-}
-
-function toProviderRecord(doc: LeanDoc): StoreProviderRecord {
-  return {
-    slug: doc.slug as StoreSlug,
-    name: String(doc.name),
-    logoUrl: (doc.logoUrl as string) || null,
-    baseUrl: String(doc.baseUrl),
-    color: (doc.color as string) || null,
-    active: doc.freeOffersEnabled === true || (doc.freeOffersEnabled == null && doc.active !== false),
   };
 }
 
@@ -134,40 +122,6 @@ async function queryOffersForGame(gameSlug: string): Promise<FreeOfferRecord[]> 
   return seedFreeOffers.filter((o) => o.gameSlug === gameSlug);
 }
 
-async function queryUnmatched(): Promise<FreeOfferRecord[]> {
-  try {
-    await dbConnect();
-    const docs = await FreeOffer.find({
-      $or: [
-        { matchConfidence: "unmatched" },
-        { matchConfidence: "low" },
-      ],
-      isActive: true,
-    })
-      .sort({ store: 1, unmatchedTitle: 1 })
-      .lean();
-    return docs.map((d) => toRecord(d as LeanDoc));
-  } catch (err) {
-    console.error("[freeOffers] queryUnmatched failed:", err);
-    return [];
-  }
-}
-
-async function queryProviders(): Promise<StoreProviderRecord[]> {
-  try {
-    await dbConnect();
-    const docs = await StoreProviderModel.find({ slug: { $in: [...STORE_SLUGS] } })
-      .sort({ slug: 1 })
-      .lean();
-    if (docs.length > 0) {
-      return docs.map((d) => toProviderRecord(d as LeanDoc));
-    }
-  } catch (err) {
-    console.error("[freeOffers] queryProviders failed, using seed fallback:", err);
-  }
-  return seedStoreProviders;
-}
-
 // ── Cached public queries ────────────────────────────────────────────────
 
 /**
@@ -206,39 +160,4 @@ export async function offersForGame(gameSlug: string): Promise<FreeOfferRecord[]
     ["free-offers", "game", gameSlug],
     { revalidate: 300, tags: ["free-offers"] }
   )();
-}
-
-/**
- * Only active offers for a game. Convenience filter over offersForGame.
- */
-export async function activeOffersForGame(gameSlug: string): Promise<FreeOfferRecord[]> {
-  const all = await offersForGame(gameSlug);
-  return all.filter((o) => o.isActive);
-}
-
-/**
- * Offers that couldn't be matched to the catalog — for admin review.
- */
-export async function listUnmatchedOffers(): Promise<FreeOfferRecord[]> {
-  return queryUnmatched();
-}
-
-/**
- * All configured store providers.
- */
-export const getStoreProviders = cache(
-  async (): Promise<StoreProviderRecord[]> =>
-    unstable_cache(
-      () => queryProviders(),
-      ["store-providers"],
-      { revalidate: 3600, tags: ["free-offers"] }
-    )()
-);
-
-/**
- * Count of currently active offers — for homepage conditional rendering.
- */
-export async function activeOfferCount(): Promise<number> {
-  const offers = await listActiveOffers();
-  return offers.length;
 }

@@ -11,7 +11,7 @@ import {
   type LauncherOs,
 } from "@/lib/launcherDownload";
 
-export const PLAYBOUND_HANDOFF_MS = 2000;
+const PLAYBOUND_HANDOFF_MS = 2000;
 
 export type PlayboundHandoffResult = "launched" | "download" | "miss";
 
@@ -91,7 +91,7 @@ export function openDiscordInvite(inviteUrl: string): () => void {
 }
 
 /** Trigger a file download (or open the download page) in a new gesture-safe way. */
-export function startLauncherDownload(downloadUrl: string): void {
+function startLauncherDownload(downloadUrl: string): void {
   const a = document.createElement("a");
   a.href = downloadUrl;
   a.rel = "noopener noreferrer";

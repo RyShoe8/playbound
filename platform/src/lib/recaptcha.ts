@@ -31,10 +31,6 @@ export type RecaptchaResult =
   | { ok: true; score: number | null; skipped: boolean }
   | { ok: false; reason: string; score: number | null };
 
-export function recaptchaEnabled(): boolean {
-  return Boolean(process.env.RECAPTCHA_SECRET_KEY);
-}
-
 function minScore(): number {
   const raw = Number(process.env.RECAPTCHA_MIN_SCORE);
   return Number.isFinite(raw) && raw >= 0 && raw <= 1 ? raw : DEFAULT_MIN_SCORE;

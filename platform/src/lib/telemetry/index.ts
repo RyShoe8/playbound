@@ -8,9 +8,4 @@ export type {
   TelemetryIngestPayload,
   IdentifyTraits,
 } from "./types";
-export {
-  GA_MEASUREMENT_ID,
-  AHREFS_KEY,
-  TELEMETRY_EXCLUDED_PREFIXES,
-  isTelemetryExcludedPath,
-} from "./types";
+;

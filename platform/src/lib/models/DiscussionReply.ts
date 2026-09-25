@@ -1,6 +1,6 @@
 import { Schema, model, models, type Types } from "mongoose";
 
-export const REPLY_STATUSES = ["published", "edited", "removed"] as const;
+const REPLY_STATUSES = ["published", "edited", "removed"] as const;
 export type ReplyStatus = (typeof REPLY_STATUSES)[number];
 
 export interface DiscussionReplyDoc {

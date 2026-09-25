@@ -9,7 +9,7 @@ import {
 } from "@/lib/discussion/reportConstants";
 
 export type { ReportReason, ReportStatus, ReportTargetType };
-export { REPORT_REASONS, REPORT_STATUSES, REPORT_TARGET_TYPES };
+;
 
 export interface ContentReportDoc {
   _id: Types.ObjectId;

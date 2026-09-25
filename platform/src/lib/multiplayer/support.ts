@@ -21,8 +21,6 @@
  * Types only, so this is safe to import from client components.
  */
 
-import type { Game } from "@/lib/data/types";
-
 /**
  * What counts as multiplayer, matched against features and tags.
  *
@@ -112,11 +110,6 @@ export function supportsLauncherParty(game: LauncherPartyInput | null | undefine
     return Boolean(install.url && install.url.startsWith("steam://"));
   }
   return !UNPARTYABLE_KINDS.has(String(install.kind));
-}
-
-/** Convenience for callers holding a full catalog Game. */
-export function gameSupportsMultiplayer(game: Game | null | undefined): boolean {
-  return supportsMultiplayer(game ?? undefined);
 }
 
 export type EditionMultiplayerInput = {

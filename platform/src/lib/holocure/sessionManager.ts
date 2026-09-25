@@ -1,21 +1,9 @@
-import {
-  createMultiplayerSession,
-  getMultiplayerSessionByCode,
-  getMultiplayerSessionById,
-  joinMultiplayerSession,
-  postSessionSignal,
-  pollSessionSignals,
-  updateSessionStatus,
-  deleteMultiplayerSession,
-  purgeStaleSessions,
-  type MultiplayerSession,
-  type SignalingMessage,
-} from "@/lib/multiplayer/sessionManager";
+import { createMultiplayerSession, getMultiplayerSessionByCode, getMultiplayerSessionById, joinMultiplayerSession, postSessionSignal, pollSessionSignals, updateSessionStatus, deleteMultiplayerSession, type MultiplayerSession, type SignalingMessage } from "@/lib/multiplayer/sessionManager";
 
 export type { SignalingMessage };
 export type HoloCureSession = MultiplayerSession;
 
-export { purgeStaleSessions };
+;
 
 export function createSession(params: {
   gameVersion: string;

@@ -123,7 +123,7 @@ export function buildAutoBugDescription(input: AutoBugInput, message: string): s
  * Create or bump an auto-generated Admin bug from telemetry.
  * Best-effort: never throws to the telemetry ingest path.
  */
-export async function upsertAutoBugReport(input: AutoBugInput): Promise<void> {
+async function upsertAutoBugReport(input: AutoBugInput): Promise<void> {
   try {
     const message = String(input.message || "").trim() || "No message";
     const code = String(input.code || "UNKNOWN").slice(0, 80);

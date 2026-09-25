@@ -288,8 +288,3 @@ export function stopPresence(opts: { notifyServer?: boolean; beacon?: boolean } 
   }
   void post("end", { sessionId }).catch(() => undefined);
 }
-
-/** Test/debug hook — not used by the app. */
-export function __presenceInternals() {
-  return state;
-}

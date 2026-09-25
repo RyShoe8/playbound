@@ -2,32 +2,6 @@ import dbConnect from "@/lib/db";
 import Notification from "@/lib/models/Notification";
 import EventRsvp from "@/lib/models/EventRsvp";
 
-export async function createEventRsvpNotification(opts: {
-  userId: string;
-  eventId: string;
-  eventTitle: string;
-  status: "going" | "maybe";
-}): Promise<void> {
-  try {
-    await dbConnect();
-    const going = opts.status === "going";
-    await Notification.create({
-      userId: opts.userId,
-      type: "event_rsvp_confirmed",
-      title: going
-        ? `You're going to ${opts.eventTitle}`
-        : `Maybe: ${opts.eventTitle}`,
-      body: going
-        ? "We'll remind you before it starts."
-        : "You can change your RSVP anytime.",
-      href: `/events/${opts.eventId}`,
-      meta: { eventId: opts.eventId, rsvpStatus: opts.status },
-    });
-  } catch (err) {
-    console.error("createEventRsvpNotification failed:", err);
-  }
-}
-
 export async function createEventReminderNotification(opts: {
   userId: string;
   eventId: string;

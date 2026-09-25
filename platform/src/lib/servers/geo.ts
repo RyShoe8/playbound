@@ -101,7 +101,7 @@ async function resolveLookupHost(host: string): Promise<string | null> {
 }
 
 /** Best-effort GeoIP. Resolves hostnames to IPv4 first. Uses ipwho.is (no key, rate-limited). */
-export async function lookupLocations(hosts: string[]): Promise<Map<string, ServerLocation | null>> {
+async function lookupLocations(hosts: string[]): Promise<Map<string, ServerLocation | null>> {
   const out = new Map<string, ServerLocation | null>();
   const unique = [...new Set(hosts.filter(Boolean))];
   const now = Date.now();

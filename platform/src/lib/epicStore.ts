@@ -59,7 +59,7 @@ export function parseEpicProductSlug(url: string): string | null {
   }
 }
 
-export function epicStoreProductUrl(slug: string): string {
+function epicStoreProductUrl(slug: string): string {
   return `https://store.epicgames.com/p/${encodeURIComponent(slug)}`;
 }
 
@@ -74,7 +74,7 @@ export async function fetchEpicProduct(slug: string): Promise<EpicProduct> {
 }
 
 /** Strip a trailing offer id like `-05ff58` if the full /p/ slug 404s. */
-export function slugWithoutOfferSuffix(slug: string): string | null {
+function slugWithoutOfferSuffix(slug: string): string | null {
   const m = slug.match(/^(.*)-[0-9a-f]{4,8}$/i);
   if (!m?.[1] || m[1] === slug) return null;
   return m[1];
@@ -263,7 +263,7 @@ function pickProductPage(product: EpicProduct): EpicProductPage | null {
 }
 
 /** Epic meta tags are SCREAMING_SNAKE — normalize for genre/feature maps. */
-export function humanizeEpicTag(tag: string): string {
+function humanizeEpicTag(tag: string): string {
   return tag
     .trim()
     .replace(/_/g, " ")

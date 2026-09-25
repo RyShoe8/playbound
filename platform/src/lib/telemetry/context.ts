@@ -53,10 +53,6 @@ export function setTelemetryUserId(userId: string | null): void {
   memoryUserId = userId;
 }
 
-export function getTelemetryUserId(): string | null {
-  return memoryUserId;
-}
-
 function deviceType(): TelemetryContext["deviceType"] {
   if (!isBrowser()) return "unknown";
   const w = window.innerWidth;

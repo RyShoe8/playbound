@@ -24,7 +24,7 @@ declare global {
 
 let loader: Promise<Grecaptcha | null> | null = null;
 
-export function recaptchaSiteKey(): string | undefined {
+function recaptchaSiteKey(): string | undefined {
   return process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
 }
 

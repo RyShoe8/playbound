@@ -7,7 +7,7 @@
  * config sync are evaluated so the audit and launcher agree.
  */
 
-export const CATALOG_GAME_SLUG_ALIASES: Record<string, string> = {
+const CATALOG_GAME_SLUG_ALIASES: Record<string, string> = {
   alephone: "marathon-2",
   /*
    * Pre-rename typo slug. Catalog/install/adapters use c-dogs-sdl; local

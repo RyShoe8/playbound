@@ -55,9 +55,6 @@ if (REST_URL && REST_TOKEN) {
   }
 }
 
-/** True when a shared cache is configured. Callers do not need to branch on it. */
-export const sharedCacheEnabled = client !== null;
-
 /*
  * A slow cache is worse than no cache on a request path — the whole point is
  * to be faster than the read it replaces, and config-sync is a party document

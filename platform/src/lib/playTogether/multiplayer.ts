@@ -6,4 +6,4 @@
  * is how the party picker came to offer games the join check then refused.
  * `lib/multiplayer/support.ts` is the single definition now.
  */
-export { supportsMultiplayer, supportsMultiplayer as isMultiplayerGame } from "@/lib/multiplayer/support";
+export {  supportsMultiplayer as isMultiplayerGame } from "@/lib/multiplayer/support";

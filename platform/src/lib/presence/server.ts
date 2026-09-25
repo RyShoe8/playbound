@@ -21,7 +21,7 @@ import {
  */
 
 /** Launcher requests identify themselves; everything else is a browser. */
-export function detectPlatform(userAgent: string | null | undefined): PresencePlatform {
+function detectPlatform(userAgent: string | null | undefined): PresencePlatform {
   const ua = userAgent || "";
   if (/playbound-launcher/i.test(ua)) return "launcher";
   return "web";
@@ -34,7 +34,7 @@ export function detectPlatform(userAgent: string | null | undefined): PresencePl
  * catalog's existing device vocabulary so presence and compatibility agree on
  * what "tablet" means.
  */
-export function detectDevice(
+function detectDevice(
   userAgent: string | null | undefined,
   platform: PresencePlatform
 ): PresenceDevice {

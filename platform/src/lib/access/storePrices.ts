@@ -11,7 +11,7 @@ import { parseEpicProductSlug } from "@/lib/epicStore";
 import { detectRetailer, parseFanaticalSlug, parseGogSlug, parseSteamAppId } from "./storeUrls";
 import type { Cents } from "./types";
 
-export { detectRetailer, parseFanaticalSlug, parseGogSlug, parseSteamAppId } from "./storeUrls";
+;
 
 export type StorePriceLookup = {
   retailer: string;

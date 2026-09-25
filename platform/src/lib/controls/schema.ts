@@ -17,7 +17,7 @@ const optionalText = (max: number) =>
     .optional()
     .transform((v) => (v ? v : undefined));
 
-export const controlBindingSchema = z.object({
+const controlBindingSchema = z.object({
   action: z.string().trim().min(1, "Every binding needs an action").max(80),
   input: z.string().trim().min(1, "Every binding needs an input").max(80),
   group: z
@@ -27,7 +27,7 @@ export const controlBindingSchema = z.object({
   note: optionalText(200),
 });
 
-export const controlSchemeBlockSchema = z
+const controlSchemeBlockSchema = z
   .object({
     scheme: z.enum(CONTROL_SCHEMES),
     supported: z.boolean().default(true),

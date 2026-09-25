@@ -1,4 +1,4 @@
-export function slugifyTitle(title: string): string {
+function slugifyTitle(title: string): string {
   const base = title
     .toLowerCase()
     .normalize("NFKD")

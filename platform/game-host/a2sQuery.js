@@ -60,6 +60,3 @@ export async function queryA2sOccupancy(port, { anyApp = false, host = "127.0.0.
   });
 }
 
-export async function queryA2sPlayers(port) {
-  return (await queryA2sOccupancy(port))?.players ?? null;
-}

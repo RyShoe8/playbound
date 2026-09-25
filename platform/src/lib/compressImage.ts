@@ -59,8 +59,8 @@ async function loadSharp(): Promise<typeof Sharp> {
   }
 }
 
-export const IMAGE_MAX_EDGE = 2560;
-export const WEBP_QUALITY = 82;
+const IMAGE_MAX_EDGE = 2560;
+const WEBP_QUALITY = 82;
 
 export type CompressedImage = {
   buffer: Buffer;

@@ -63,10 +63,6 @@ export async function queryManagedHostOccupancy(communityServerId: string): Prom
   } catch { return null; }
 }
 
-export async function queryManagedHostPlayers(communityServerId: string): Promise<number | null> {
-  return (await queryManagedHostOccupancy(communityServerId))?.players ?? null;
-}
-
 export async function requestManagedHostRoom(opts: {
   communityServerId: string;
   gameSlug: string;

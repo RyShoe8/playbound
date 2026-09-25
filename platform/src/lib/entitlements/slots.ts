@@ -58,7 +58,7 @@ export type SlotContext = {
  * allows. A subscriber is not subject to the free cap at all — the point of
  * paying — so only the structural ceiling binds them.
  */
-export function effectiveCap(ctx: Pick<SlotContext, "planSlots" | "freeHardCap" | "absoluteCap">): number {
+function effectiveCap(ctx: Pick<SlotContext, "planSlots" | "freeHardCap" | "absoluteCap">): number {
   const absolute = safe(ctx.absoluteCap);
   if (safe(ctx.planSlots) > 0) return absolute;
   return Math.min(safe(ctx.freeHardCap), absolute);

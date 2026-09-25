@@ -80,12 +80,12 @@ export function saveKey(opts: {
   return `${savePrefix(opts)}${safeSegment(opts.snapshotId)}.zip`;
 }
 
-export function savePrefix(opts: { userId: string; gameSlug: string; editionSlug: string }): string {
+function savePrefix(opts: { userId: string; gameSlug: string; editionSlug: string }): string {
   return `${userPrefix(opts.userId)}${safeSegment(opts.gameSlug)}/${safeSegment(opts.editionSlug)}/`;
 }
 
 /** Everything one account has stored, across every game. */
-export function userPrefix(userId: string): string {
+function userPrefix(userId: string): string {
   return `saves/${safeSegment(userId)}/`;
 }
 
