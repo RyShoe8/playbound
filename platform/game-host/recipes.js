@@ -364,8 +364,16 @@ function appImageServerArgs(binary) {
   }
 }
 
-/** One directory per room: its config, HOME, and its own save tree. */
+/**
+ * One directory per world: its config, HOME, and its own save tree.
+ *
+ * A saved world (ctx.saveKey — the platform's SavedWorld id) outlives the
+ * party that started it, so the same group reloads it week after week. Rooms
+ * without one fall back to a per-party directory, as before.
+ */
 function tes3mpRoomDir(ctx) {
+  const key = typeof ctx.saveKey === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(ctx.saveKey) ? ctx.saveKey : null;
+  if (key) return path.join(TES3MP_CONFIG_DIR, `world-${key}`);
   return path.join(TES3MP_CONFIG_DIR, `pb-${String(ctx.partyId || "room").slice(-16)}`);
 }
 

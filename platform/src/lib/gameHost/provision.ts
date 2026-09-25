@@ -16,6 +16,7 @@ import {
 import { defaultHostMode } from "@/lib/multiplayer/hostModes";
 import { openRaEditionAllowsStockModPicker } from "@/lib/multiplayer/openRaMod";
 import { coerceSettingValues } from "@/lib/serverControl/settings";
+import { resolvePartyWorld } from "@/lib/savedWorlds";
 import {
   partyEventProps,
   trackPartyEvent,
@@ -52,6 +53,8 @@ type PartyLike = Document & {
   openRaMod?: string | null;
   maxSize?: number;
   hosted?: PartyHostFields;
+  members?: Array<{ userId: unknown }>;
+  savedWorldId?: unknown;
   save: () => Promise<unknown>;
 };
 
@@ -145,6 +148,14 @@ export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
     slug === "openra" && openRaEditionAllowsStockModPicker(party.editionSlug || null)
       ? party.openRaMod || null
       : null;
+  // Persistent world for games that keep saves; created on first start.
+  let saveKey: string | null = null;
+  try {
+    saveKey = await resolvePartyWorld(party);
+    if (saveKey && String(party.savedWorldId || "") !== saveKey) party.savedWorldId = saveKey;
+  } catch (err) {
+    console.warn("[provision] saved world lookup failed:", err);
+  }
   const result = await createHostRoom({
     gameSlug: hostSlug,
     partyId: String(party._id),
@@ -153,6 +164,7 @@ export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
     mod: stockOpenRaMod,
     settings: Object.keys(planned.values).length ? planned.values : undefined,
     leaderUsername,
+    saveKey,
   });
 
   if ("error" in result) {

@@ -36,6 +36,8 @@ interface PartyState {
     wantVoice?: boolean;
     /** "self" | "dedicated" | "public"; the server validates it against the game. */
     hostMode?: string | null;
+    /** SavedWorld to load (games with persistent dedicated saves). */
+    savedWorldId?: string | null;
   }) => Promise<(PartyPayload & { needsDiscordLink?: boolean; inviteUrl?: string | null }) | null>;
   joinParty: (
     partyId: string,

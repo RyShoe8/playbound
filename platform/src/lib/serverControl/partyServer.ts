@@ -26,6 +26,8 @@ export interface PartyServerSource {
   editionSlug?: string | null;
   openRaMod?: string | null;
   hostMode?: string | null;
+  /** SavedWorld the dedicated server runs; keys its save folder. */
+  savedWorldId?: unknown;
   publicServer?: { id?: string | null } | null;
   selfHostReady?: boolean | null;
   selfHostPort?: { port?: number | null } | null;
@@ -194,6 +196,7 @@ export function createPartyServerAdapter(
       mod: party.openRaMod || null,
       settings: party.hosted?.settings || {},
       leaderUsername: party.hosted?.leaderUsername || null,
+      saveKey: party.savedWorldId ? String(party.savedWorldId) : null,
     },
     onRoomChanged: async (next) => {
       const hosted = party.hosted ?? (party.hosted = {});

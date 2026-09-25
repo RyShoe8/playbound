@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePartyStore } from "@/stores/partyStore";
 import { useFriendsStore } from "@/stores/friendsStore";
 import {
@@ -12,6 +12,7 @@ import { telemetry } from "@/lib/telemetry";
 import { isHostableGame } from "@/lib/gameHost/catalog";
 import { defaultHostMode, hostModeOptions, canUsePublicServer, type PartyHostMode } from "@/lib/multiplayer/hostModes";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
+import { supportsSavedWorlds, type SavedWorldSummary } from "@/lib/savedWorldGames";
 import { Checkbox } from "@/components/ui/Checkbox";
 
 const VISIBILITY_OPTIONS: { value: Exclude<PartyVisibility, "event">; hint: string }[] = [
@@ -53,6 +54,24 @@ export function CreatePartyPanel({
     gameSlug ? defaultHostMode(gameSlug) : null
   );
 
+  // Saved worlds: any member of a past party on a world can load it again.
+  const offersWorlds = Boolean(gameSlug && supportsSavedWorlds(gameSlug) && hostMode === "dedicated");
+  const [worlds, setWorlds] = useState<SavedWorldSummary[]>([]);
+  const [savedWorldId, setSavedWorldId] = useState("");
+  useEffect(() => {
+    if (!offersWorlds || !gameSlug) return;
+    let cancelled = false;
+    fetch(`/api/saved-worlds?gameSlug=${encodeURIComponent(gameSlug)}`)
+      .then((r) => (r.ok ? r.json() : { worlds: [] }))
+      .then((d: { worlds?: SavedWorldSummary[] }) => {
+        if (!cancelled) setWorlds(Array.isArray(d.worlds) ? d.worlds : []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [offersWorlds, gameSlug]);
+
   async function handleCreate() {
     if (creatingRef.current) return;
     if (visibility === "password" && password.trim().length < 4) {
@@ -81,6 +100,7 @@ export function CreatePartyPanel({
         password: visibility === "password" ? password.trim() : null,
         wantVoice,
         hostMode,
+        savedWorldId: offersWorlds && savedWorldId ? savedWorldId : null,
       });
 
       if (party?.id) {
@@ -178,6 +198,26 @@ export function CreatePartyPanel({
           </PremiumSelect>
           <p className="text-xs text-muted-foreground">
             {modeOptions.find((o) => o.mode === hostMode)?.hint}
+          </p>
+        </div>
+      ) : null}
+
+      {offersWorlds ? (
+        <div className="space-y-2">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            World
+          </label>
+          <PremiumSelect value={savedWorldId} onChange={(e) => setSavedWorldId(e.target.value)}>
+            <option value="">New world</option>
+            {worlds.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.name}
+                {w.lastPlayedAt ? ` — last played ${new Date(w.lastPlayedAt).toLocaleDateString()}` : ""}
+              </option>
+            ))}
+          </PremiumSelect>
+          <p className="text-xs text-muted-foreground">
+            Saved worlds you have played on. Anyone who was in the party can load it again.
           </p>
         </div>
       ) : null}

@@ -287,6 +287,12 @@ export async function createHostRoom(opts: {
    * name; the agent promotes it to staffRank 2 after authenticate.
    */
   leaderUsername?: string | null;
+  /**
+   * Stable identity for a game's persistent world across sessions — the
+   * party leader's user id. Parties end every session, so partyId cannot key
+   * a save a group reloads week after week. Recipes without saves ignore it.
+   */
+  saveKey?: string | null;
 }): Promise<GameHostRoom | { error: string }> {
   const cfg = hostConfig();
   if (!cfg) return { error: "Game host is not configured" };
@@ -304,6 +310,7 @@ export async function createHostRoom(opts: {
           mod: opts.mod || null,
           settings: opts.settings || undefined,
           leaderUsername: opts.leaderUsername || null,
+          saveKey: opts.saveKey || null,
         }),
       },
       CREATE_ROOM_TIMEOUT_MS

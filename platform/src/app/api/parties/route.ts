@@ -51,7 +51,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { name, gameSlug, editionSlug, modSlugs, visibility, maxSize, eventId, password, wantVoice, hostMode } =
+    const { name, gameSlug, editionSlug, modSlugs, visibility, maxSize, eventId, password, wantVoice, hostMode, savedWorldId } =
       body;
 
     if (gameSlug != null && typeof gameSlug !== "string") {
@@ -78,6 +78,7 @@ export async function POST(req: Request) {
       // createParty validates this against the game and falls back to its
       // default, so an unknown value here is safe rather than rejected.
       hostMode: typeof hostMode === "string" ? hostMode : null,
+      savedWorldId: typeof savedWorldId === "string" && savedWorldId ? savedWorldId : null,
       /*
        * This request is the only point in a party's life where a User-Agent
        * exists — every later provisioning step runs server-side on the party's

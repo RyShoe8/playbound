@@ -760,18 +760,32 @@ async function recoverManagedRooms() {
   persistManagedRooms();
 }
 
+function sanitizeSaveKey(value) {
+  return typeof value === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(value) ? value : null;
+}
+
 async function startRoom(opts) {
   const key = opts.communityServerId ? `managed:${opts.communityServerId}` : `party:${opts.partyId || ""}`;
   return startCoordinator.withPartyLock(key, () => startRoomUnlocked(opts));
 }
 
-async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername }) {
+async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername, saveKey }) {
   if (shuttingDown) return { error: "Agent is shutting down" };
   const lookup = communityServerId ? byManaged : byParty;
   const ownerId = communityServerId || partyId;
   const existingId = lookup.get(ownerId);
   if (existingId && rooms.has(existingId)) {
     return { room: rooms.get(existingId) };
+  }
+
+  // Two live rooms on one persistent world would overwrite each other's saves.
+  const cleanSaveKey = sanitizeSaveKey(saveKey);
+  if (cleanSaveKey) {
+    for (const other of rooms.values()) {
+      if (other.gameSlug === gameSlug && other.saveKey === cleanSaveKey) {
+        return { error: "This saved world is already running in another room" };
+      }
+    }
   }
 
   if (!startCoordinator.reserveCapacity()) {
@@ -789,6 +803,7 @@ async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, e
       mod,
       settings,
       leaderUsername,
+      saveKey: cleanSaveKey,
     });
   } finally {
     startCoordinator.releaseCapacity();
@@ -796,11 +811,11 @@ async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, e
   }
 }
 
-async function startRoomReserved({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername }) {
+async function startRoomReserved({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername, saveKey }) {
 
   // Recipes use partyId as a filesystem namespace; managed IDs serve that
   // internal purpose without creating a Party or entering byParty.
-  const roomCtx = { editionSlug, mod, partyId: partyId || communityServerId, managed: Boolean(communityServerId), name, settings, leaderUsername };
+  const roomCtx = { editionSlug, mod, partyId: partyId || communityServerId, managed: Boolean(communityServerId), name, settings, leaderUsername, saveKey };
   let resolved = resolveRecipe(gameSlug, roomCtx);
   if (!resolved) return { error: `Game ${gameSlug} is not hostable` };
 
@@ -866,6 +881,8 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
      * login name; prepareSpawn may promote that account to staffRank 2.
      */
     leaderUsername: typeof leaderUsername === "string" ? leaderUsername.trim() : "",
+    // Persistent-world identity (party leader id); null for one-off rooms.
+    saveKey: saveKey || null,
     /*
      * Generated here and kept here. The platform can ask this agent to run a
      * command on a room it owns, but never learns the password, so it cannot
@@ -934,6 +951,7 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
       communityServerId: communityServerId || null,
       editionSlug: editionSlug || null,
       gameSlug,
+      saveKey: ctx.saveKey || null,
       name: ctx.name,
       host: PUBLIC_IP,
       port,
@@ -1326,6 +1344,7 @@ const server = http.createServer(async (req, res) => {
          */
         settings: body.settings,
         leaderUsername: body.leaderUsername,
+        saveKey: body.saveKey,
       });
       if (result.error) {
         json(res, 409, { error: result.error });
