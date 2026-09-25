@@ -15,25 +15,14 @@ const test = require("node:test");
 const fs = require("node:fs");
 const path = require("node:path");
 
-/** The guard, lifted from resolveDownload rather than reimplemented. */
-function loadGuard() {
-  const src = require("./testing-mainSource").readMainSource();
-  const anchor = "      process.platform === \"darwin\" &&";
-  const at = src.indexOf(anchor);
-  assert.notEqual(at, -1, "the macOS installer guard has moved — update this test");
-  const start = src.lastIndexOf("    if (", at);
-  const end = src.indexOf("    }", src.indexOf("throw new Error", at)) + 5;
-  const body = src.slice(start, end);
+const { assertInstallableOnPlatform, selectDownloadUrl } = require("./downloadSelection");
 
+/** The guard resolveDownload applies, called with a chosen platform. */
+function loadGuard() {
   return (entry, platform) => {
-    const effectiveUrl =
-      platform === "darwin" && entry.urlMac
-        ? entry.urlMac
-        : platform === "linux" && entry.urlLinux
-          ? entry.urlLinux
-          : entry.url;
+    const effectiveUrl = selectDownloadUrl(entry, platform);
     try {
-      new Function("entry", "process", "effectiveUrl", body)(entry, { platform }, effectiveUrl);
+      assertInstallableOnPlatform(entry, effectiveUrl, platform);
       return { blocked: false, url: effectiveUrl };
     } catch (err) {
       return { blocked: true, message: err.message };

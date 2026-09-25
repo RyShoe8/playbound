@@ -19,23 +19,11 @@ const test = require("node:test");
 const fs = require("node:fs");
 const path = require("node:path");
 
-/** The naming block, lifted from resolveDownload rather than copied. */
-function loadNamer() {
-  const src = require("./testing-mainSource").readMainSource();
-  const start = src.indexOf("    const overridden = effectiveUrl !== entry.url;");
-  assert.notEqual(start, -1, "the naming block has moved — update this test");
-  const end = src.indexOf("return { url: effectiveUrl, name,", start);
-  assert.ok(end > start, "could not bound the naming block");
-  const body = src.slice(start, end);
+const { downloadFileName } = require("./downloadSelection");
 
-  return (entry, effectiveUrl) =>
-    new Function(
-      "entry",
-      "effectiveUrl",
-      "path",
-      "URL",
-      `${body} return name;`
-    )(entry, effectiveUrl, path, URL);
+/** The naming rule resolveDownload uses. */
+function loadNamer() {
+  return (entry, effectiveUrl) => downloadFileName(entry, effectiveUrl);
 }
 
 const nameFor = loadNamer();

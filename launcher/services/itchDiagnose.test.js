@@ -14,18 +14,9 @@ const test = require("node:test");
 const fs = require("node:fs");
 const path = require("node:path");
 
-// Lifted from main.js rather than reimplemented — the message is the behaviour.
+// The real function — the message is the behaviour.
 function load() {
-  const src = require("./testing-mainSource").readMainSource();
-  const start = src.indexOf("function itchNoDownloadsReason(");
-  assert.notEqual(start, -1, "itchNoDownloadsReason not found in main.js");
-  let i = src.indexOf("{", start);
-  let depth = 0;
-  for (; i < src.length; i++) {
-    if (src[i] === "{") depth += 1;
-    else if (src[i] === "}" && --depth === 0) break;
-  }
-  return new Function(`${src.slice(start, i + 1)} return itchNoDownloadsReason;`)();
+  return require("./testing-electronStub").requireMainModule("core").itchNoDownloadsReason;
 }
 
 const reason = load();
