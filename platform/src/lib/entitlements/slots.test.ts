@@ -61,6 +61,11 @@ describe("the worked example", () => {
 });
 
 describe("what a party costs the pool", () => {
+  it("requires a pool or plan seat for the leader who opens a party", () => {
+    expect(canSeatAnother(ctx({ memberCount: 0, planSlots: 0, poolAvailable: 0 })).ok).toBe(false);
+    expect(canSeatAnother(ctx({ memberCount: 0, planSlots: 0, poolAvailable: 1 })).ok).toBe(true);
+    expect(canSeatAnother(ctx({ memberCount: 0, planSlots: 1, poolAvailable: 0 })).ok).toBe(true);
+  });
   it("the plan covers the first members, host included", () => {
     // A 4-slot subscriber hosting four people costs the pool nothing.
     expect(poolSlotsUsed(4, 4)).toBe(0);

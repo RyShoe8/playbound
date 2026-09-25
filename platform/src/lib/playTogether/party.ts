@@ -1083,6 +1083,14 @@ export async function createParty(opts: {
     savedWorldId = opts.savedWorldId;
   }
 
+  // The leader occupies the first seat. Joins already consult the shared
+  // pool; creation must do the same or a zero/full pool can still create
+  // one-person parties and their dedicated VPS rooms.
+  const openingSeat = canSeatAnother(
+    await getPartySlotContext({ leaderId: opts.userId, memberCount: 0, fresh: true })
+  );
+  if (!openingSeat.ok) return { error: openingSeat.reason || "Party slots are full", status: 400 };
+
   const now = new Date();
   const partyObjectId = new Types.ObjectId();
   const reservation = await reserveActiveMembership(opts.userId, String(partyObjectId));
@@ -1299,7 +1307,7 @@ export async function joinParty(
    * refused because usage is recomputed from the parties themselves.
    */
   const seat = canSeatAnother(
-    await getPartySlotContext({ leaderId: rp.leaderId, memberCount: rp.members.length })
+    await getPartySlotContext({ leaderId: rp.leaderId, memberCount: rp.members.length, fresh: true })
   );
   if (!seat.ok) return { error: seat.reason || "Party is full", status: 403 };
 
