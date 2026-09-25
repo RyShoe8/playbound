@@ -1006,7 +1006,7 @@ export const recipes = {
     binaries: gameBin("bzflag", ["bzfs"]),
     // With no -world/-c/-cr, BZFS generates a random FFA world. Keep this
     // ephemeral room private and enable the familiar jump/ricochet rules.
-    args: (port, ctx) => ["-p", String(port), "-offa", "-q", "-j", "+r", "+s", "10", "-mp", String(ctx.managed ? managedPlayerLimit(ctx) : 8)],
+    args: (port, ctx) => ["-p", String(port), "-offa", "-q", "-j", "+r", "+s", "10", "-mp", String(ctx?.managed ? managedPlayerLimit(ctx) : 8)],
   },
   supertuxkart: {
     portStart: 2759,

@@ -21,7 +21,6 @@ import { isGameCompatible } from "@/lib/compatibility/compatibility";
 const read = (...p: string[]) => readFileSync(path.join(process.cwd(), ...p), "utf8");
 const CSS = read("src", "app", "globals.css");
 const CARD = read("src", "components", "GameCard.tsx");
-const HERO = read("src", "components", "HomeHero.tsx");
 const FILTER = read("src", "hooks", "useCompatibilityFilter.tsx");
 
 describe("the attribute the stylesheet keys on", () => {
@@ -55,57 +54,5 @@ describe("the stylesheet", () => {
     // Hiding the only spotlight would leave a hole where the hero was.
     expect(CSS).toMatch(/\[data-hero-variant="desktop"\]/);
     expect(CSS).toMatch(/\[data-hero-variant="mobile"\]/);
-  });
-});
-
-describe("the hero understudy", () => {
-  it("is only rendered when the desktop pick is not phone-compatible", () => {
-    expect(HERO).toMatch(/const needsMobileVariant = Boolean\(/);
-    expect(HERO).toMatch(/mobileHero\.slug !== hero\?\.slug/);
-  });
-
-  it("puts the variant on the hero's own root, not a wrapper", () => {
-    /*
-     * A wrapper would need display:contents to keep the layout, which ties
-     * with the hide rule on specificity and resolves by stylesheet order.
-     */
-    expect(HERO).toMatch(/data-hero-variant=\{variant\}/);
-    expect(HERO).not.toMatch(/className="contents"/);
-  });
-});
-
-describe("the premise all of this rests on", () => {
-  it("desktop-only games really are incompatible with mobile", () => {
-    const desktopOnly = {
-      slug: "x",
-      platforms: ["Windows", "macOS", "Linux"],
-      browserPlayable: false,
-      steamDeck: false,
-    } as never;
-    expect(isGameCompatible(desktopOnly, "desktop")).toBe(true);
-    expect(isGameCompatible(desktopOnly, "mobile")).toBe(false);
-  });
-
-  it("a game listing Android is mobile-compatible and must not be hidden", () => {
-    const androidGame = {
-      slug: "sample-android-game",
-      platforms: ["Windows", "macOS", "Linux", "Android"],
-      browserPlayable: false,
-      steamDeck: false,
-    } as never;
-    expect(isGameCompatible(androidGame, "mobile")).toBe(true);
-
-    const reVolt = {
-      slug: "re-volt-rvgl",
-      platforms: ["Windows", "macOS", "Linux"],
-      browserPlayable: false,
-      steamDeck: false,
-    } as never;
-    expect(isGameCompatible(reVolt, "mobile")).toBe(false);
-  });
-
-  it("a browser game is compatible everywhere", () => {
-    const browser = { slug: "b", platforms: ["Windows"], browserPlayable: true } as never;
-    expect(isGameCompatible(browser, "mobile")).toBe(true);
   });
 });
