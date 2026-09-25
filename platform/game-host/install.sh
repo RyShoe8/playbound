@@ -445,6 +445,15 @@ else
   echo "  WARN: TES3MP server missing — Morrowind parties cannot be hosted" >&2
 fi
 
+echo "==> Python 3.14 (private, for BombSquad)"
+PY314_DIR="/opt/playbound-host/python314"
+if [[ ! -x "$PY314_DIR/bin/python3" ]]; then
+  mkdir -p "$PY314_DIR"
+  curl -fsSL --retry 3 "https://github.com/astral-sh/python-build-standalone/releases/download/20260924/cpython-3.14.7%2B20260924-x86_64-unknown-linux-gnu-install_only.tar.gz" \
+    | tar -xz --strip-components=1 -C "$PY314_DIR" \
+    || echo "WARN: Python 3.14 download failed — BombSquad cannot start" >&2
+fi
+
 echo "==> BombSquad dedicated"
 BOMBSQUAD_DIR="$GAMES_DIR/bombsquad"
 mkdir -p "$BOMBSQUAD_DIR"
@@ -489,7 +498,10 @@ jq -n \
   '{party_name:$party_name,party_is_public:false,port:$port,max_party_size:($max_players+1),session_max_players_override:$max_players,session_type:"teams",show_tutorial:false}' \
   > "$CONFIG"
 cd "$BASE"
-exec /usr/bin/env python3 -OB ./bombsquad_server \
+# Ballistica 1.8 links libpython3.14 and uses 3.14 deferred annotations;
+# the distro python3 (3.12 on the VPS) fails with NameError: Self.
+export LD_LIBRARY_PATH=/opt/playbound-host/python314/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+exec /opt/playbound-host/python314/bin/python3 -OB ./bombsquad_server \
   --config "$CONFIG" --root "$STATE_DIR/root" --noninteractive --no-auto-restart
 EOF
   chmod +x "$BOMBSQUAD_DIR/run-server"
@@ -774,7 +786,7 @@ mkdir -p "\$MAPS"
 export BOT_COMMENT=automated_host
 export BOT_NAME="Bot_PB_\$PORT"
 export BOT_PORT="\$PORT"
-export BOT_LOBBY_URI=https://prod2-lobby.triplea-game.org
+export BOT_LOBBY_URI=https://prod.triplea-game.org
 export MAPS_FOLDER="\$MAPS"
 exec "${TRIPLEA_JAVA_DIR}/bin/java" -server -Xmx512M -Djava.awt.headless=true -jar "\$JAR" \\
   -Ptriplea.server=true \\

@@ -85,7 +85,11 @@ async function probeBinary(slug, binary) {
     let stderr = "";
     let settled = false;
 
-    const child = spawn(binary, probe.args, {
+    // coreutils timeout enforces the limit even if this agent dies mid-probe:
+    // the unit's KillMode=process leaves children alive on restart (so rooms
+    // survive), and xonotic/ioq3ded `+version` start a server that never exits.
+    const hardLimitSec = String(Math.ceil(TIMEOUT_MS / 1000) + 2);
+    const child = spawn("timeout", ["-s", "KILL", hardLimitSec, binary, ...probe.args], {
       detached: true,
       stdio: ["ignore", "pipe", "pipe"],
       env: { ...process.env, SDL_VIDEODRIVER: "dummy", SDL_AUDIODRIVER: "dummy" },

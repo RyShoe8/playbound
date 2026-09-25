@@ -343,6 +343,27 @@ function unvanquishedPakPathArgs() {
   return args;
 }
 
+/**
+ * OpenRA-family AppImages (OpenHV ships only this) run the game *client*
+ * unless told `--server`; the client then sits at "Loading mod" forever on a
+ * headless box. Detected by the AppImage magic ("AI" at byte 8).
+ */
+function appImageServerArgs(binary) {
+  if (!binary) return [];
+  try {
+    const fd = fs.openSync(binary, "r");
+    try {
+      const buf = Buffer.alloc(3);
+      fs.readSync(fd, buf, 0, 3, 8);
+      return buf[0] === 0x41 && buf[1] === 0x49 && buf[2] === 0x02 ? ["--server"] : [];
+    } finally {
+      fs.closeSync(fd);
+    }
+  } catch {
+    return [];
+  }
+}
+
 function gameBin(slug, names) {
   const dir = path.join(GAMES_ROOT, slug);
   return [
@@ -645,7 +666,8 @@ export const recipes = {
       }
       return firstExisting(candidates);
     },
-    args: (port, ctx) => [
+    args: (port, ctx, binary) => [
+      ...appImageServerArgs(binary),
       // ctx.mod is an explicit override for the "official" edition, which is
       // one client covering ra/cnc/d2k — editionSlug alone can't say which.
       // Fixed-mod editions (CA, HV, e2140, ra2) must not be overridden by a
@@ -862,7 +884,9 @@ export const recipes = {
     },
     args: (port, ctx) => [
       `--configdir=${WZ_CONFIG_DIR}`,
-      `--autohost=${warzoneAutohostId(ctx)}`,
+      // Warzone 4.7 resolves the name literally; without ".json" it reports
+      // "Missing specified file: autohost/<id>" and exits.
+      `--autohost=${warzoneAutohostId(ctx)}.json`,
       `--gameport=${port}`,
       "--startplayers=1",
       "--headless",
@@ -963,7 +987,7 @@ export const recipes = {
       BOT_COMMENT: "automated_host",
       BOT_NAME: `Bot_PB_${port}`,
       BOT_PORT: String(port),
-      BOT_LOBBY_URI: "https://prod2-lobby.triplea-game.org",
+      BOT_LOBBY_URI: "https://prod.triplea-game.org",
       MAPS_FOLDER: path.join(GAMES_ROOT, "triplea", "downloadedMaps"),
     }),
   },
@@ -1093,11 +1117,28 @@ export const recipes = {
     portStart: 27015,
     portEnd: 27025,
     protocol: "udp",
-    binaries: gameBin("team-fortress-2", ["srcds_run", "srcds_linux", "srcds"]),
+    // TF2's game libraries are 64-bit only now; the 32-bit srcds_run dies on
+    // "Could not load: replay_srv.so".
+    binaries: gameBin("team-fortress-2", ["srcds_run_64", "srcds_linux64"]),
+    // Without ~/.steam/sdk64/steamclient.so the server falls back to LAN-only
+    // mode, which internet clients cannot join. The install doesn't ship a
+    // 64-bit copy; copy steamcmd's linux64/steamclient.so into linux64/.
+    prepareSpawn: async () => {
+      const sdk = path.join(HOST_HOME, ".steam", "sdk64");
+      const target = path.join(GAMES_ROOT, "team-fortress-2", "linux64", "steamclient.so");
+      const link = path.join(sdk, "steamclient.so");
+      if (!fs.existsSync(target) || fs.existsSync(link)) return;
+      fs.mkdirSync(sdk, { recursive: true });
+      fs.symlinkSync(target, link);
+    },
+    spawnEnv: () => ({ HOME: HOST_HOME }),
+    startupReadyTimeoutMs: 60_000,
     args: (port, ctx) => [
       "-game",
       "tf",
       "-dedicated",
+      // srcds_run's own crash loop would hide failures from the agent.
+      "-norestart",
       "+map",
       "ctf_2fort",
       "+maxplayers",
@@ -1359,16 +1400,15 @@ export const recipes = {
     portEnd: 1270,
     protocol: "tcp",
     binaries: gameBin("openhv", ["OpenHV.Server", "openhv-server", "OpenRA.Server"]),
-    args: (port, ctx) => [
+    args: (port, ctx, binary) => [
+      ...appImageServerArgs(binary),
       "Game.Mod=hv",
       `Server.Name=${ctx.name || "PlayBound.club Party"}`,
       `Server.ListenPort=${port}`,
       `Server.AdvertiseOnline=${ctx.managed ? "True" : "False"}`,
       "Server.OrderLatency=5",
     ],
-    // Still "Loading mod: hv" at 10s in the audit; HV's asset load is slower
-    // than base OpenRA's.
-    startupReadyTimeoutMs: 45_000,
+    startupReadyTimeoutMs: 30_000,
   },
   "re-volt-rvgl": {
     portStart: 2310,
