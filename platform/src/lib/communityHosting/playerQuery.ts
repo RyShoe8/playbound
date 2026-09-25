@@ -11,6 +11,30 @@ export async function queryManagedPlayerCount(input: {
   if (input.queryKind === "a2s-local") {
     return input.communityServerId ? queryManagedHostPlayers(input.communityServerId) : null;
   }
+  if (input.queryKind === "luanti-master" || input.queryKind === "hypersomnia-master") {
+    try {
+      const luanti = input.queryKind === "luanti-master";
+      const response = await fetch(luanti ? "https://servers.luanti.org/list" : "https://hypersomnia.io/server_list_json", {
+        headers: { "user-agent": "PlayBound/1.0", accept: "application/json" },
+        cache: "no-store", signal: AbortSignal.timeout(8000),
+      });
+      if (!response.ok) return null;
+      const payload = await response.json() as unknown;
+      const rows = luanti && payload && typeof payload === "object" && "list" in payload ? payload.list : payload;
+      if (!Array.isArray(rows)) return null;
+      for (const row of rows) {
+        if (!row || typeof row !== "object") continue;
+        const entry = row as Record<string, unknown>;
+        const address = luanti ? entry.address : entry.ip;
+        const port = luanti ? Number(entry.port) : Number(String(address).split(":").at(-1));
+        const host = luanti ? address : String(address).slice(0, -(String(port).length + 1));
+        if (host !== input.host || port !== input.port) continue;
+        const count = luanti ? entry.clients : entry.num_online_humans;
+        return typeof count === "number" && Number.isInteger(count) && count >= 0 ? count : null;
+      }
+      return null;
+    } catch { return null; }
+  }
   if (input.queryKind === "hurry-curry-registry") {
     try {
       const response = await fetch("https://registry.hurrycurry.org/v1/list", {

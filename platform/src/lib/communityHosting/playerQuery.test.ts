@@ -23,4 +23,20 @@ describe("managed player count", () => {
     expect(await queryManagedPlayerCount({ queryKind: "hurry-curry-registry", host: "192.0.2.1", port: 27032 })).toBe(0);
     expect(await queryManagedPlayerCount({ queryKind: "hurry-curry-registry", host: "192.0.2.1", port: 27034 })).toBeNull();
   });
+  it("reads Luanti's public list by exact address and port", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({ list: [
+      { address: "192.0.2.1", port: 30001, clients: 9 },
+      { address: "192.0.2.1", port: 30000, clients: 0 },
+    ] }) })));
+    expect(await queryManagedPlayerCount({ queryKind: "luanti-master", host: "192.0.2.1", port: 30000 })).toBe(0);
+    expect(await queryManagedPlayerCount({ queryKind: "luanti-master", host: "192.0.2.1", port: 30002 })).toBeNull();
+  });
+  it("counts humans, not bots, on Hypersomnia", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => [
+      { ip: "192.0.2.1:8413", num_online_humans: 5, num_playing: 12 },
+      { ip: "192.0.2.1:8412", num_online_humans: 0, num_playing: 8 },
+    ] })));
+    expect(await queryManagedPlayerCount({ queryKind: "hypersomnia-master", host: "192.0.2.1", port: 8412 })).toBe(0);
+    expect(await queryManagedPlayerCount({ queryKind: "hypersomnia-master", host: "192.0.2.1", port: 8414 })).toBeNull();
+  });
 });

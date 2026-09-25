@@ -613,7 +613,9 @@ export const recipes = {
               server_name: hypersomniaServerName(ctx.name),
               // A private party room has no business on the public list.
               daily_autoupdate: false,
-              sync_all_external_arenas_on_startup: true,
+              // Downloading every community map can exceed the agent's bind timeout.
+              // The standard arena is bundled with the server.
+              sync_all_external_arenas_on_startup: false,
               arena: "de_cyberaqua",
             },
             // Ranked logistics freeze a match when someone drops and force
@@ -760,6 +762,7 @@ export const recipes = {
     binaries: gameBin("luanti", ["luantiserver", "minetestserver"]),
     args: (port, ctx) => {
       const world = path.join(HOST_HOME, "luanti-worlds", `pb-${ctx.partyId.slice(-8)}`);
+      const config = path.join(world, "playbound.conf");
       return [
         "--port",
         String(port),
@@ -767,15 +770,25 @@ export const recipes = {
         world,
         "--gameid",
         "minetest",
+        "--config",
+        config,
         "--logfile",
         path.join(HOST_HOME, "logs", "minetest.log"),
       ];
     },
     prepareSpawn: async (port, ctx) => {
       fs.mkdirSync(path.join(HOST_HOME, "logs"), { recursive: true });
-      fs.mkdirSync(path.join(HOST_HOME, "luanti-worlds", `pb-${ctx.partyId.slice(-8)}`), {
+      const world = path.join(HOST_HOME, "luanti-worlds", `pb-${ctx.partyId.slice(-8)}`);
+      fs.mkdirSync(world, {
         recursive: true,
       });
+      fs.writeFileSync(path.join(world, "playbound.conf"), [
+        `server_announce = ${ctx.managed ? "true" : "false"}`,
+        `server_name = ${ctx.managed ? "PlayBound.Club Community Server" : "PlayBound Private Party"}`,
+        "server_description = Hosted by PlayBound",
+        "max_users = 16",
+        "",
+      ].join("\n"));
       /*
        * Ubuntu's minetest-server / luanti-server packages enable a systemd unit
        * that owns UDP 30000 by default. Our in-memory port map cannot see that,
