@@ -189,6 +189,25 @@ for (const slug of [
   RECIPE_SETTING_TYPES[slug] = { ...RECIPE_SETTING_TYPES[slug], maxPlayers: "number" };
 }
 
+/*
+ * Bot fill: the number of players an engine keeps the server topped up to with
+ * bots. Every engine listed uses its own native fill mode, so a bot leaves when
+ * a person joins and comes back when they leave, with no agent involvement.
+ * Community hosting sets it from the fleet-wide bot percentage; a party host
+ * sets it from the overlay.
+ */
+export const BOT_FILL_RECIPES = ["xonotic", "openarena", "team-fortress-2", "counter-strike-2", "unvanquished"];
+for (const slug of BOT_FILL_RECIPES) {
+  RECIPE_SETTING_TYPES[slug] = { ...RECIPE_SETTING_TYPES[slug], botFill: "number" };
+}
+
+/** The bot-fill target for a room, or null when none was asked for. */
+export function botFillCount(slug, ctx) {
+  const value = acceptedSettingsFor(slug, ctx?.settings).botFill;
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return Math.max(0, Math.min(63, Math.round(value)));
+}
+
 function managedPlayerLimit(ctx, fallback = 16) {
   const requested = ctx?.managed ? ctx?.settings?.maxPlayers : null;
   return Number.isInteger(requested) ? Math.max(2, Math.min(64, requested)) : fallback;
@@ -1052,6 +1071,8 @@ export const recipes = {
       "+sv_public",
       ctx.managed ? "1" : "0",
       ...(ctx.managed ? ["+maxplayers", String(managedPlayerLimit(ctx))] : []),
+      // minplayers: bots join until this many are playing, and leave as people join.
+      ...(botFillCount("xonotic", ctx) !== null ? ["+set", "bot_join_empty", "1", "+set", "minplayers", String(botFillCount("xonotic", ctx))] : []),
     ],
   },
   openarena: {
@@ -1077,6 +1098,10 @@ export const recipes = {
       '""',
       ...(ctx.rconPassword ? ["+set", "rconpassword", ctx.rconPassword] : []),
       ...(ctx.managed ? ["+set", "sv_maxclients", String(managedPlayerLimit(ctx))] : openArenaStartupArgs(ctx.settings)),
+      // bot_minplayers tops the game up with bots and kicks one per person who joins.
+      ...(botFillCount("openarena", ctx) !== null
+        ? ["+set", "bot_enable", "1", "+set", "bot_minplayers", String(botFillCount("openarena", ctx))]
+        : []),
       // Without a map the engine opens its socket but never starts a game:
       // clients cannot join and it ignores status queries. Must come last.
       "+map",
@@ -1265,6 +1290,10 @@ export const recipes = {
       String(port),
       "+hostname",
       ctx.name || "PlayBound.club Party",
+      // "fill" mode: the quota counts humans, so each person who joins replaces a bot.
+      ...(botFillCount("team-fortress-2", ctx) !== null
+        ? ["+tf_bot_join_after_player", "0", "+tf_bot_quota_mode", "fill", "+tf_bot_quota", String(botFillCount("team-fortress-2", ctx))]
+        : []),
     ],
   },
   "counter-strike-2": {
@@ -1316,6 +1345,24 @@ export const recipes = {
       }
       return b ? path.dirname(b) : path.join(GAMES_ROOT, "counter-strike-2");
     },
+    /*
+     * gamemode_competitive.cfg runs on every map load and sets bot_quota 1 in
+     * "competitive" mode, overriding the command line. The engine then execs
+     * gamemode_competitive_server.cfg, the official override hook, so the bot
+     * fill goes there. The file is shared by every CS2 room on the box: the
+     * most recent room started with a bot fill sets it.
+     */
+    prepareSpawn: async (_port, ctx) => {
+      const bots = botFillCount("counter-strike-2", ctx);
+      if (bots === null) return;
+      const dir = path.join(recipes["counter-strike-2"].cwd(), "csgo", "cfg");
+      if (!fs.existsSync(dir)) return;
+      fs.writeFileSync(
+        path.join(dir, "gamemode_competitive_server.cfg"),
+        `// Written by PlayBound: bot fill (bots leave as people join).\nbot_join_after_player 0\nbot_quota_mode fill\nbot_quota ${bots}\n`,
+        "utf8"
+      );
+    },
     args: (port, ctx) => [
       "-dedicated",
       "+map",
@@ -1326,6 +1373,10 @@ export const recipes = {
       String(managedPlayerLimit(ctx)),
       "+hostname",
       ctx.name || "PlayBound.Club Community Server",
+      // "fill" mode: the quota counts humans, so each person who joins replaces a bot.
+      ...(botFillCount("counter-strike-2", ctx) !== null
+        ? ["+bot_join_after_player", "0", "+bot_quota_mode", "fill", "+bot_quota", String(botFillCount("counter-strike-2", ctx))]
+        : []),
     ],
   },
   unvanquished: {
@@ -1371,6 +1422,10 @@ export const recipes = {
       "sv_hostname",
       ctx.name || "PlayBound.club Party",
       ...(ctx.managed ? ["-set", "sv_maxclients", String(managedPlayerLimit(ctx))] : []),
+      // Per team, and the engine's own fill: bots step aside as people join.
+      ...(botFillCount("unvanquished", ctx) !== null
+        ? ["-set", "g_bot_defaultFill", String(Math.ceil(botFillCount("unvanquished", ctx) / 2))]
+        : []),
       "+map",
       "plat23",
     ],

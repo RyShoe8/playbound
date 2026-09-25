@@ -4,6 +4,7 @@ const percent = z.number().min(0).max(100);
 export const hostingSettingsSchema = z.object({
   enabled: z.boolean(),
   maxPlayersPerServer: z.number().int().min(2).max(64).default(16),
+  botFillPercent: z.number().int().min(0).max(100).default(0),
   node: z.object({
     key: z.string().min(1).max(50), regionKey: z.string().min(1).max(50),
     regionLabel: z.string().min(1).max(100), enabled: z.boolean(), draining: z.boolean(),
