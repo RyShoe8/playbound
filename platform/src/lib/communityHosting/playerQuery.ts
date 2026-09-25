@@ -50,7 +50,7 @@ export function managedQueryKind(gameSlug: string, profile?: { queryVerified?: b
   return QUERY_BY_GAME[gameSlug] || null;
 }
 
-export type ManagedOccupancy = { players: number | null; maxPlayers: number | null };
+export type ManagedOccupancy = { players: number | null; maxPlayers: number | null; bots?: number | null };
 
 function validPlayers(value: unknown): number | null {
   return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : null;

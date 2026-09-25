@@ -68,13 +68,15 @@ export function parseQuake3Status(packet) {
   const vars = {};
   for (let i = 1; i + 1 < parts.length; i += 2) vars[parts[i].toLowerCase()] = parts[i + 1];
   let players = 0;
+  let bots = 0;
   for (const line of lines.slice(2)) {
     const m = line.match(/^\s*-?\d+\s+(-?\d+)/);
     if (!m) continue;
     if (Number(m[1]) > 0) players++;
+    else bots++;
   }
   const max = Number(vars.sv_maxclients);
-  return { players, maxPlayers: validMax(max) };
+  return { players, maxPlayers: validMax(max), bots };
 }
 
 export async function queryQuake3(port, { mohaa = false } = {}) {

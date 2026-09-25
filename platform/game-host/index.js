@@ -1275,7 +1275,8 @@ const server = http.createServer(async (req, res) => {
       // not report a cap (e.g. TCP-counting games like Hedgewars, or TES3MP
       // before the config-read was added).
       const maxPlayers = occupancy?.maxPlayers ?? (Number.isInteger(room.settings?.maxPlayers) && room.settings.maxPlayers > 0 ? room.settings.maxPlayers : null);
-      json(res, 200, occupancy ? { players: occupancy.players, maxPlayers } : { players: null, maxPlayers });
+      const bots = occupancy?.bots ?? (Number.isInteger(room.settings?.botFill) && room.settings.botFill > 0 ? room.settings.botFill : null);
+      json(res, 200, occupancy ? { players: occupancy.players, maxPlayers, bots } : { players: null, maxPlayers, bots });
       return;
     }
 

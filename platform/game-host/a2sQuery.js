@@ -20,7 +20,7 @@ export function parseA2sOccupancy(packet, expectedAppId = 730) {
   const total = packet[offset + 2];
   const bots = packet[offset + 4];
   if (bots > total) return null;
-  return { players: total - bots, maxPlayers: packet[offset + 3] };
+  return { players: total - bots, maxPlayers: packet[offset + 3], bots };
 }
 
 export function parseA2sInfo(packet) {

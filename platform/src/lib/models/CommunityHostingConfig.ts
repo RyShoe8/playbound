@@ -5,7 +5,7 @@ const CommunityHostingConfigSchema = new Schema({
   key: { type: String, required: true, unique: true, default: "global" },
   enabled: { type: Boolean, default: false },
   maxPlayersPerServer: { type: Number, default: 16, min: 2, max: 64 },
-  botFillPercent: { type: Number, default: 0, min: 0, max: 100 },
+  botFillPercent: { type: Number, default: 50, min: 0, max: 100 },
   node: {
     key: { type: String, default: "vps-primary" },
     regionKey: { type: String, default: "us-central" },

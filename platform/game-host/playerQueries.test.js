@@ -7,12 +7,12 @@ const ff = Buffer.from([0xff, 0xff, 0xff, 0xff]);
 
 test("Quake 3 status counts players with a ping and ignores bots (ping 0)", () => {
   const body = 'statusResponse\n\\sv_hostname\\PB\\sv_maxclients\\16\n12 48 "Alice"\n3 0 "Bot"\n0 71 "Bob"\n';
-  assert.deepEqual(parseQuake3Status(Buffer.concat([ff, Buffer.from(body)])), { players: 2, maxPlayers: 16 });
+  assert.deepEqual(parseQuake3Status(Buffer.concat([ff, Buffer.from(body)])), { players: 2, maxPlayers: 16, bots: 1 });
 });
 
 test("MOHAA status replies carry a 0x01 direction byte", () => {
   const body = 'statusResponse\n\\sv_maxclients\\16\\g_gametype\\1\n';
-  assert.deepEqual(parseQuake3Status(Buffer.concat([ff, Buffer.from([0x01]), Buffer.from(body)])), { players: 0, maxPlayers: 16 });
+  assert.deepEqual(parseQuake3Status(Buffer.concat([ff, Buffer.from([0x01]), Buffer.from(body)])), { players: 0, maxPlayers: 16, bots: 0 });
 });
 
 test("non-status packets are unknown, not empty", () => {
@@ -42,7 +42,7 @@ test("A2S accepts any app when asked (TF2 reports 440, not CS2's 730)", () => {
     "hex"
   );
   assert.equal(parseA2sOccupancy(packet), null);
-  assert.deepEqual(parseA2sOccupancy(packet, null), { players: 0, maxPlayers: 24 });
+  assert.deepEqual(parseA2sOccupancy(packet, null), { players: 0, maxPlayers: 24, bots: 0 });
 });
 
 test("every queryable game is declared", () => {

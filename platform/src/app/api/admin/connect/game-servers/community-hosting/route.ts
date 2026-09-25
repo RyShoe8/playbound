@@ -58,6 +58,7 @@ export async function GET() {
       ...server,
       playerCount: players ?? null,
       maxPlayers: occupancy?.maxPlayers ?? null,
+      bots: occupancy?.bots ?? null,
       playerCountCheckedAt: players == null ? null : asOf,
     };
   });
