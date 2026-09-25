@@ -744,7 +744,7 @@ function persistManagedRooms() {
     editionSlug: r.editionSlug || null, name: r.name, host: r.host, port: r.port,
     pid: r.pid, identity: r.processIdentity, createdAt: r.createdAt,
     processStartedAt: r.processStartedAt, settings: r.settings,
-    rcon: r.rcon, rconPassword: r.rconPassword,
+    rcon: r.rcon, rconPassword: r.rconPassword, cwd: r.cwd || null,
   })));
 }
 
@@ -753,6 +753,14 @@ async function recoverManagedRooms() {
     if (!isSameProcess(saved.pid, saved.identity)) continue;
     if (await isOsPortFree(saved.port, recipes[saved.gameSlug]?.protocol)) continue;
     const room = rehydrateManagedRoom(saved);
+    // Rooms saved before cwd was persisted: recompute it the way the spawn
+    // did (managed rooms use the community server id as their party id).
+    // TES3MP's player count and admin tools read files under it.
+    if (!room.cwd && typeof recipes[room.gameSlug]?.cwd === "function") {
+      try {
+        room.cwd = recipes[room.gameSlug].cwd(room.port, { managed: true, partyId: room.communityServerId, settings: room.settings });
+      } catch { /* leave unset */ }
+    }
     rooms.set(room.roomId, room);
     byManaged.set(room.communityServerId, room.roomId);
     usedPorts.add(`${room.gameSlug}:${room.port}`);
