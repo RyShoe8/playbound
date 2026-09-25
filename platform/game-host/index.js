@@ -41,6 +41,7 @@ import { createStartCoordinator } from "./startLock.js";
 import { httpsGetStream } from "./downloadStream.js";
 import { createManagedRegistry, createPartyRegistry, isSameProcess, processIdentity, processGroupMembers, rehydrateManagedRoom } from "./managedRegistry.js";
 import { processMetrics } from "./processMetrics.js";
+import { queryA2sPlayers } from "./a2sQuery.js";
 
 const require = createRequire(import.meta.url);
 const { injectPlayboundAdmin, listTes3mpAccounts, claimTes3mpAdmin, requestTes3mpSetHour, requestTes3mpCommand } = require(
@@ -1252,6 +1253,16 @@ const server = http.createServer(async (req, res) => {
         })),
         jobs: Object.fromEntries(managedJobs),
       });
+      return;
+    }
+
+    const playerQueryMatch = url.pathname.match(/^\/managed\/([a-zA-Z0-9_-]{6,80})\/players$/);
+    if (req.method === "GET" && playerQueryMatch) {
+      const roomId = byManaged.get(playerQueryMatch[1]);
+      const room = roomId ? rooms.get(roomId) : null;
+      if (!room) { json(res, 404, { error: "Managed room not found" }); return; }
+      const players = room.gameSlug === "counter-strike-2" ? await queryA2sPlayers(room.port) : null;
+      json(res, 200, { players });
       return;
     }
 

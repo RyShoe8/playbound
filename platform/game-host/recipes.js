@@ -833,6 +833,7 @@ export const recipes = {
         `0.0.0.0:${port}`,
         "--server-name",
         String(ctx.name || "PlayBound Hurry Curry").slice(0, 40),
+        ...(ctx.managed ? ["--register", "--register-uri", `ws://${process.env.GAME_HOST_PUBLIC_IP}:${port}`] : []),
         "--data-dir",
         dataDir,
       ];

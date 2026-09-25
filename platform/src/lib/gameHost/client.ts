@@ -51,6 +51,16 @@ export async function listManagedHostRooms(): Promise<
   }
 }
 
+export async function queryManagedHostPlayers(communityServerId: string): Promise<number | null> {
+  if (!/^[a-zA-Z0-9_-]{6,80}$/.test(communityServerId)) return null;
+  try {
+    const response = await hostFetch(`/managed/${communityServerId}/players`, { method: "GET" });
+    if (!response?.ok) return null;
+    const data = await response.json() as { players?: unknown };
+    return typeof data.players === "number" && Number.isInteger(data.players) && data.players >= 0 ? data.players : null;
+  } catch { return null; }
+}
+
 export async function requestManagedHostRoom(opts: {
   communityServerId: string;
   gameSlug: string;
