@@ -16,7 +16,7 @@ const path = require("node:path");
 
 // Lifted from main.js rather than reimplemented — the message is the behaviour.
 function load() {
-  const src = fs.readFileSync(path.join(__dirname, "..", "main.js"), "utf8");
+  const src = require("./testing-mainSource").readMainSource();
   const start = src.indexOf("function itchNoDownloadsReason(");
   assert.notEqual(start, -1, "itchNoDownloadsReason not found in main.js");
   let i = src.indexOf("{", start);

@@ -19,7 +19,7 @@ const os = require("node:os");
 const path = require("node:path");
 
 function loadResolver(platform) {
-  const src = fs.readFileSync(path.join(__dirname, "..", "main.js"), "utf8");
+  const src = require("./testing-mainSource").readMainSource();
   const start = src.indexOf("function resolveLocalServerBinary(");
   assert.notEqual(start, -1, "resolveLocalServerBinary not found in main.js");
   let i = src.indexOf("{", start);

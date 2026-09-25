@@ -24,7 +24,7 @@ const path = require("node:path");
  * loudly if the block is renamed instead of silently testing nothing.
  */
 function loadSelector() {
-  const src = fs.readFileSync(path.join(__dirname, "..", "main.js"), "utf8");
+  const src = require("./testing-mainSource").readMainSource();
   const start = src.indexOf("    let effectiveUrl = entry.url;");
   assert.notEqual(start, -1, "the effectiveUrl block has moved — update this test");
   const end = src.indexOf("if (!effectiveUrl)", start);
