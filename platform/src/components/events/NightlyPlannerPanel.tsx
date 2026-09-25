@@ -42,13 +42,8 @@ export function NightlyPlannerPanel() {
     const existing = entryFor(slug, editionSlug);
     const games = existing
       ? config.games.map((g) => g === existing ? { ...g, enabled } : g)
-      : [...config.games, { slug, enabled, editionSlug, weight: 1, minimumDaysBetweenEvents: 5 }];
+      : [...config.games, { slug, enabled, editionSlug, weight: 1, minimumDaysBetweenEvents: 0 }];
     patch({ games });
-  }
-
-  function updateGame(slug: string, editionSlug: string | null, change: { weight?: number; minimumDaysBetweenEvents?: number }) {
-    if (!config) return;
-    patch({ games: config.games.map((g) => sameEntry(g, slug, editionSlug) ? { ...g, ...change } : g) });
   }
 
   async function save() {
@@ -57,7 +52,13 @@ export function NightlyPlannerPanel() {
     setMessage("");
     try {
       const response = await fetch("/api/admin/events/nightly", {
-        method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(config),
+        /*
+         * Weight and minimum-days are not offered: every entry is equal and
+         * the planner rotates by longest absence. Normalised here so older
+         * saved values cannot quietly skew or block the rotation.
+         */
+        method: "PUT", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ ...config, games: config.games.map((g) => ({ ...g, weight: 1, minimumDaysBetweenEvents: 0 })) }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Could not save schedule");
@@ -89,26 +90,14 @@ export function NightlyPlannerPanel() {
         </div>
         <div>
           <h3 className="text-sm font-semibold">Eligible multiplayer games &amp; editions</h3>
-          <p className="text-xs text-muted-foreground">Tick the base game and/or individual editions; each ticked one is its own entry in the rotation.</p>
-          <div className="mt-2 grid max-h-80 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3">
+          <p className="text-xs text-muted-foreground">Tick the base game and/or individual editions. Each ticked one is its own entry; the planner picks whichever has gone longest without a Game Night.</p>
+          <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {candidates.map((game) => <div key={game.slug} className="rounded-lg border border-border px-2 py-1.5 text-sm">
               <label className="flex items-center gap-2 font-medium"><input type="checkbox" checked={Boolean(entryFor(game.slug, null)?.enabled)} onChange={(e) => toggle(game.slug, null, e.target.checked)} />{game.title}</label>
               {game.editions.length > 0 && <div className="mt-1 space-y-0.5 pl-5">
                 {game.editions.map((edition) => <label key={edition.slug} className="flex items-center gap-2 text-xs text-muted-foreground"><input type="checkbox" checked={Boolean(entryFor(game.slug, edition.slug)?.enabled)} onChange={(e) => toggle(game.slug, edition.slug, e.target.checked)} />{edition.name}</label>)}
               </div>}
             </div>)}
-          </div>
-          <div className="mt-3 space-y-2">
-            {config.games.filter((g) => g.enabled).map((game) => {
-              const candidate = candidates.find((c) => c.slug === game.slug);
-              const edition = game.editionSlug ? candidate?.editions.find((e) => e.slug === game.editionSlug) : null;
-              const editionSlug = game.editionSlug || null;
-              return <div key={`${game.slug}:${editionSlug || "base"}`} className="flex flex-wrap items-center gap-3 rounded-lg border border-border px-3 py-2 text-sm">
-                <strong className="min-w-40">{candidate?.title || game.slug}{editionSlug ? ` — ${edition?.name || editionSlug}` : ""}</strong>
-                <label>Weight <input className="ml-1 w-16 rounded border bg-background px-2 py-1" type="number" min="1" max="100" value={game.weight} onChange={(e) => updateGame(game.slug, editionSlug, { weight: Number(e.target.value) })} /></label>
-                <label>Minimum days between <input className="ml-1 w-16 rounded border bg-background px-2 py-1" type="number" min="0" max="365" value={game.minimumDaysBetweenEvents} onChange={(e) => updateGame(game.slug, editionSlug, { minimumDaysBetweenEvents: Number(e.target.value) })} /></label>
-              </div>;
-            })}
           </div>
         </div>
         <button type="button" disabled={saving} onClick={save} className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">Save schedule</button>
