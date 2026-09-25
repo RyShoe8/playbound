@@ -33,11 +33,8 @@ describe("game host catalog", () => {
     expect(isHostableGame("space-station-14")).toBe(true);
     expect(isHostableGame("flightgear")).toBe(true);
     expect(isHostableGame("openhv")).toBe(true);
-    /*
-     * Zero-K and Re-Volt are played through their own lobbies/P2P, not a room
-     * PlayBound provisions. RVGL has no headless dedicated server support.
-     */
-    expect(isHostableGame("re-volt-rvgl")).toBe(false);
+    expect(isHostableGame("re-volt-rvgl")).toBe(true);
+    expect(isHostableGame("rvgl")).toBe(true);
     expect(isHostableGame("zero-k")).toBe(false);
     expect(isHostableGame("chris-sawyers-locomotion")).toBe(false);
     expect(isHostableGame("renegade-x")).toBe(false);
@@ -51,6 +48,7 @@ describe("game host catalog", () => {
     expect(isHostableGame("0-ad")).toBe(true);
     expect(isHostableGame("0ad")).toBe(true);
     expect(getHostableGame("openmohaa")?.slug).toBe("medal-of-honor-allied-assault");
+    expect(getHostableGame("medal-of-honor-allied-assault")?.slug).toBe("medal-of-honor-allied-assault");
   });
 
   it("does not host closed platforms or lobby-only titles", () => {

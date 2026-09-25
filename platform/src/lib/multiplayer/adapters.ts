@@ -1395,6 +1395,64 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       "The client has no headless server or command-line join, so Connect supplies reachability and an in-game address.",
   },
 
+  freelancer: {
+    gameSlug: "freelancer",
+    title: "Freelancer",
+    tier: "tier1_improved",
+    adapterType: "direct-ip",
+    protocol: "udp",
+    client: {
+      inGameJoinPrompt: true,
+      inGameSteps: [
+        "Multiplayer → LAN or Internet",
+        "Select or enter server IP and port (default UDP 2302)",
+      ],
+    },
+    selfHost: {
+      port: 2302,
+      protocol: "udp",
+      verified: true,
+      inGameSteps: [
+        "Host: Launch FLServer.exe in the EXE folder to host a dedicated server, or host LAN from in-game",
+        "Friends: Connect to the host IP in Multiplayer",
+      ],
+    },
+    notes: "Classic space combat & trading multiplayer. Supports LAN and Direct-IP connection (UDP 2302).",
+  },
+
+  "star-wars-galactic-battlegrounds-saga": {
+    gameSlug: "star-wars-galactic-battlegrounds-saga",
+    title: "Star Wars: Galactic Battlegrounds Saga",
+    tier: "tier1_improved",
+    adapterType: "virtual-lan",
+    protocol: "custom",
+    client: {
+      inGameJoinPrompt: true,
+      inGameSteps: [
+        "Multiplayer → Internet TCP/IP Connection For DirectPlay",
+        "Enter the leader's virtual LAN IP and join the game",
+      ],
+    },
+    virtualLan: {
+      requiresBroadcast: true,
+      inGameSteps: [
+        "Leader: Multiplayer → Internet TCP/IP Connection For DirectPlay → Create Game",
+        "Everyone else: Multiplayer → Internet TCP/IP Connection For DirectPlay, enter the leader's virtual IP, and click Show Games",
+      ],
+    },
+    selfHost: {
+      port: 2300,
+      protocol: "both",
+      verified: true,
+      inGameSteps: [
+        "Host: Multiplayer → Internet TCP/IP Connection For DirectPlay → Create",
+        "Friends: Enter host IP and join",
+      ],
+    },
+    notes:
+      "Genie Engine RTS multiplayer. Expanding Fronts provides modern widescreen and stability; PlayBound Connect carries private LAN/DirectPlay sessions over the party overlay.",
+  },
+
   // ─── TIER 2: Automated Server Infrastructure ─────────────────────────────
   bombsquad: {
     gameSlug: "bombsquad",
@@ -1771,6 +1829,42 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     adapterType: "official",
     protocol: "official",
     notes: "ThwargLauncher and the selected ACEmulator world own authentication and server selection.",
+  },
+
+  "albion-online": {
+    gameSlug: "albion-online",
+    title: "Albion Online",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Official Sandbox Interactive cross-platform servers. PlayBound provides party launch, presence, and voice.",
+  },
+
+  "guild-wars-2": {
+    gameSlug: "guild-wars-2",
+    title: "Guild Wars 2",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Official ArenaNet megaservers only. PlayBound coordinates party launch and presence; players group up in-game.",
+  },
+
+  "lord-of-the-rings-online": {
+    gameSlug: "lord-of-the-rings-online",
+    title: "The Lord of the Rings Online",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Official Standing Stone Games servers. PlayBound provides party launch and presence; grouping is handled in-game.",
+  },
+
+  "dc-universe-online": {
+    gameSlug: "dc-universe-online",
+    title: "DC Universe Online",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Official Daybreak Game Company servers. PlayBound provides party launch and presence.",
   },
 
   "world-of-sea-battle": {
@@ -2183,9 +2277,14 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
   "re-volt-rvgl": {
     gameSlug: "re-volt-rvgl",
     title: "Re-Volt (RVGL)",
-    tier: "tier1_improved",
-    adapterType: "direct-ip",
+    tier: "tier2_automated_server",
+    adapterType: "managed-server",
     protocol: "udp",
+    host: {
+      port: 2310,
+      protocol: "udp",
+      binaryHint: "rvgl",
+    },
     client: {
       launchArguments: ["-lobby", "{host}:{port}"],
     },
@@ -2195,7 +2294,7 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       verified: true,
       inGameSteps: ["Multiplayer", "Host Game", "Lobby"],
     },
-    notes: "Cross-platform RVGL engine with direct P2P lobby hosting.",
+    notes: "Cross-platform RVGL engine with automated dedicated and direct P2P lobby hosting.",
   },
 
   "chris-sawyers-locomotion": {
@@ -2582,6 +2681,7 @@ export function listSelfHostCandidates(): Array<{
  */
 const SLUG_ALIASES: Record<string, string> = {
   "0-ad": "0ad",
+  openmohaa: "medal-of-honor-allied-assault",
   "marathon-infinity": "marathon",
   zandronum: "freedoom",
   revolt: "re-volt-rvgl",
