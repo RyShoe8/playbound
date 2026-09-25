@@ -5,7 +5,7 @@ import type { HostingSettings } from "@/lib/communityHosting/settings";
 import type { ProfileSettings } from "@/lib/communityHosting/profileSettings";
 
 type Profile = ProfileSettings & { key: string; gameSlug: string; editionSlug?: string | null; sampleCount?: number; envelope?: { cpuCores?: number; ramBytes?: number; measuredThroughPlayers?: number }; lastSampleAt?: string | null };
-type Server = { _id: string; name: string; gameSlug: string; editionSlug?: string | null; desiredState: string; runtimeState: string; playerCount?: number | null; playerCountCheckedAt?: string | null; decisionReason?: string | null };
+type Server = { _id: string; name: string; gameSlug: string; editionSlug?: string | null; desiredState: string; runtimeState: string; playerCount?: number | null; maxPlayers?: number | null; playerCountCheckedAt?: string | null; decisionReason?: string | null };
 type Reservation = { sourceKey: string; profileKey: string; state: string; warmupAt: string };
 type Data = {
   asOf: string;
@@ -89,7 +89,7 @@ export function CommunityHostingPanel() {
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const load = useCallback(async () => {
-    const response = await fetch("/api/admin/connect/game-servers/community-hosting");
+    const response = await fetch("/api/admin/connect/game-servers/community-hosting", { cache: "no-store" });
     if (!response.ok) throw new Error("Could not load Community Hosting settings");
     const next = await response.json() as Data;
     setData(next);
@@ -97,7 +97,8 @@ export function CommunityHostingPanel() {
   }, []);
   useEffect(() => {
     const timer = setTimeout(() => void load().catch((error) => setMessage(error.message)), 0);
-    return () => clearTimeout(timer);
+    const refresh = setInterval(() => void load().catch((error) => setMessage(error.message)), 60_000);
+    return () => { clearTimeout(timer); clearInterval(refresh); };
   }, [load]);
 
   function section<K extends keyof HostingSettings>(key: K, value: HostingSettings[K]) {
@@ -209,7 +210,7 @@ export function CommunityHostingPanel() {
     <div><h3 className="font-semibold">Games for automatic hosting</h3><p className="text-xs text-muted-foreground">Tick the games and editions available for community hosting. Usage is measured CPU and RAM per server.</p>
       <div className="text-sm">{data?.profiles.length ? <ProfileChecklist profiles={data.profiles} titles={data.titles || {}} editionNames={data.editionNames || {}} onSaved={load} /> : <p className="text-muted-foreground">No games measured yet.</p>}</div>
     </div>
-    <div><h3 className="font-semibold">Running and queued servers</h3><div className="mt-2 space-y-1 text-sm">{data?.servers.length ? data.servers.map((s) => <div key={s._id} className="flex flex-wrap items-center justify-between gap-2 border-b border-border py-1"><span>{s.name} · {s.gameSlug}{s.editionSlug ? ` (${data?.editionNames?.[`${s.gameSlug}:${s.editionSlug}`] || s.editionSlug})` : ""}</span><span>{s.runtimeState} · {s.playerCount == null || !s.playerCountCheckedAt || new Date(data.asOf).getTime() - new Date(s.playerCountCheckedAt).getTime() > 30 * 60_000 ? "players unknown" : `${s.playerCount} ${s.playerCount === 1 ? "player" : "players"} online`} · {s.decisionReason || "—"}</span><span className="flex gap-2"><button type="button" className="underline" onClick={() => void serverAction(s, "start")}>Start</button><button type="button" className="underline" onClick={() => void serverAction(s, "restart")}>Restart</button><button type="button" className="underline" onClick={() => void serverAction(s, "stop")}>Stop</button></span></div>) : <p className="text-muted-foreground">No managed servers.</p>}</div></div>
+    <div><h3 className="font-semibold">Running and queued servers</h3><div className="mt-2 space-y-1 text-sm">{data?.servers.length ? data.servers.map((s) => <div key={s._id} className="flex flex-wrap items-center justify-between gap-2 border-b border-border py-1"><span>{s.name} · {s.gameSlug}{s.editionSlug ? ` (${data?.editionNames?.[`${s.gameSlug}:${s.editionSlug}`] || s.editionSlug})` : ""}</span><span>{s.runtimeState} · {s.playerCount == null || !s.playerCountCheckedAt || new Date(data.asOf).getTime() - new Date(s.playerCountCheckedAt).getTime() > 30 * 60_000 ? "players unknown" : `${s.playerCount} / ${s.maxPlayers ?? "?"} players`} · {s.decisionReason || "—"}</span><span className="flex gap-2"><button type="button" className="underline" onClick={() => void serverAction(s, "start")}>Start</button><button type="button" className="underline" onClick={() => void serverAction(s, "restart")}>Restart</button><button type="button" className="underline" onClick={() => void serverAction(s, "stop")}>Stop</button></span></div>) : <p className="text-muted-foreground">No managed servers.</p>}</div></div>
     <div><h3 className="font-semibold">Upcoming capacity reservations</h3><div className="mt-2 space-y-1 text-sm">{data?.reservations.length ? data.reservations.map((r) => <p key={r.sourceKey}>{r.profileKey} · {r.state} · warmup {new Date(r.warmupAt).toLocaleString()}</p>) : <p className="text-muted-foreground">No reservations.</p>}</div></div>
   </section>;
 }
