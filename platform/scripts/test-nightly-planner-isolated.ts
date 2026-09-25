@@ -151,8 +151,7 @@ async function main() {
 main().catch(async (error) => {
   console.error(error);
   if (process.env.GITHUB_ACTIONS) {
-    const msg = String(error?.stack || error).split("
-").slice(0, 4).join(" | ").replace(/mongodb(\+srv)?:\/\/[^\s]+/g, "<uri>");
+    const msg = String(error?.stack || error).split("\n").slice(0, 4).join(" | ").replace(/mongodb(\+srv)?:\/\/[^\s]+/g, "<uri>");
     console.log(`::error::${msg}`);
   }
   try {

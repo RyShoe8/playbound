@@ -11,6 +11,7 @@
 
 import { createHash, randomBytes } from "crypto";
 import { Types, type Document } from "mongoose";
+import { canUseSavedWorld } from "@/lib/savedWorlds";
 import dbConnect from "@/lib/db";
 import Party from "@/lib/models/Party";
 import Friend from "@/lib/models/Friend";
@@ -999,6 +1000,8 @@ export async function createParty(opts: {
   wantVoice?: boolean;
   /** Where the room runs. Falls back to the game's default when unset or invalid. */
   hostMode?: string | null;
+  /** SavedWorld to load; must be one the creator has played on. */
+  savedWorldId?: string | null;
   /**
    * The creator's OS, from the request that opened the party. Recorded so
    * server-side party telemetry can be attributed to a platform; see the
@@ -1069,6 +1072,14 @@ export async function createParty(opts: {
     passwordHash = hashPartyPassword(password, passwordSalt);
   }
 
+  let savedWorldId: string | null = null;
+  if (opts.savedWorldId) {
+    if (!gameSlug || !(await canUseSavedWorld(opts.userId, opts.savedWorldId, gameSlug))) {
+      return { error: "That saved world is not available", status: 400 };
+    }
+    savedWorldId = opts.savedWorldId;
+  }
+
   const now = new Date();
   const partyObjectId = new Types.ObjectId();
   const reservation = await reserveActiveMembership(opts.userId, String(partyObjectId));
@@ -1097,6 +1108,7 @@ export async function createParty(opts: {
         },
       ],
       gamesPlayed: gameSlug ? [gameSlug] : [],
+      savedWorldId,
       name: normalizePartyName(opts.name),
       leaderOs: opts.leaderOs || null,
       gameSlug,

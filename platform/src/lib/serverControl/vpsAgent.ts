@@ -51,6 +51,7 @@ export interface VpsAgentClient {
     mod?: string | null;
     settings?: ServerSettingValues;
     leaderUsername?: string | null;
+    saveKey?: string | null;
   }): Promise<GameHostRoom | { error: string }>;
   deleteRoom(roomId: string): Promise<boolean>;
   sendCommand(
@@ -85,6 +86,8 @@ export interface VpsRoomRef {
   settings: ServerSettingValues;
   /** Party leader PlayBound username (TES3MP staffRank allowlist). */
   leaderUsername?: string | null;
+  /** Persistent-world identity; see createHostRoom. */
+  saveKey?: string | null;
 }
 
 /**
@@ -199,6 +202,7 @@ export function createVpsAgentAdapter(opts: VpsAgentAdapterOptions): ServerContr
       mod: ref.mod,
       settings,
       leaderUsername: ref.leaderUsername || null,
+      saveKey: ref.saveKey || null,
     });
     if ("error" in created) {
       return {

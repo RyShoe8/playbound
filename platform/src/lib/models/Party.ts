@@ -300,6 +300,13 @@ const PartySchema = new Schema(
     hosted: { type: PartyHostedSchema, default: () => ({}) },
 
     /*
+     * Persistent world this party's dedicated server runs (SavedWorld). Set
+     * when a member picks a saved world at creation, or on first start for
+     * games that keep saves. Keys the VPS save folder instead of partyId.
+     */
+    savedWorldId: { type: Schema.Types.ObjectId, ref: "SavedWorld", default: null },
+
+    /*
      * Server control for a room hosted on the leader's own PC.
      *
      * Nothing can call into a home machine, so the platform writes desired
