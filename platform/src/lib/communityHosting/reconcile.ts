@@ -27,7 +27,14 @@ const HEAVY_GAME_ENVELOPES: Record<string, ResourceEnvelope> = {
   "team-fortress-2": { cpuCores: 1.5, ramBytes: 2048 * 1024 * 1024 },
 };
 
-const PLAYER_LIMIT_RECIPES = new Set(["counter-strike-2", "hypersomnia", "luanti"]);
+// Only recipes with a server-enforced admission limit belong here. Reporting a
+// cap for another engine without enforcing it would mislead hosts and players.
+const PLAYER_LIMIT_RECIPES = new Set([
+  "counter-strike-2", "hypersomnia", "luanti", "morrowind", "teeworlds", "openttd",
+  "assaultcube", "medal-of-honor-allied-assault", "warzone-2100", "bzflag", "mindustry", "hurry-curry",
+  "supertuxkart", "xonotic", "openarena", "0-ad", "0ad", "bombsquad",
+  "wolfenstein-enemy-territory", "team-fortress-2", "unvanquished",
+]);
 
 function managedRoomSettings(recipeSlug: string, maxPlayersPerServer: number | undefined) {
   return PLAYER_LIMIT_RECIPES.has(recipeSlug) ? { maxPlayers: maxPlayersPerServer ?? 16 } : undefined;
