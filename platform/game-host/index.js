@@ -44,7 +44,7 @@ import { createManagedRegistry, createPartyRegistry, isSameProcess, processIdent
 import { processMetrics } from "./processMetrics.js";
 
 const require = createRequire(import.meta.url);
-const { injectPlayboundAdmin, listTes3mpAccounts, claimTes3mpAdmin, requestTes3mpSetHour } = require(
+const { injectPlayboundAdmin, listTes3mpAccounts, claimTes3mpAdmin, requestTes3mpSetHour, requestTes3mpCommand } = require(
   "./tes3mp/injectPlayboundAdmin.cjs"
 );
 
@@ -1553,6 +1553,38 @@ const server = http.createServer(async (req, res) => {
         accounts: claimed.accounts,
         adminAccount: claimed.adminAccount,
       });
+      return;
+    }
+
+    // Overlay buttons: /invite <pid> ("Make Ally") and /runstartup.
+    const tes3mpCommandMatch = url.pathname.match(/^\/rooms\/([^/]+)\/tes3mp\/command$/);
+    if (req.method === "POST" && tes3mpCommandMatch) {
+      const room = rooms.get(decodeURIComponent(tes3mpCommandMatch[1]));
+      if (!room) {
+        json(res, 404, { error: "No such room" });
+        return;
+      }
+      if (room.gameSlug !== "morrowind" || !room.cwd) {
+        json(res, 409, { error: "Not a TES3MP room" });
+        return;
+      }
+      const body = await readBody(req);
+      const queued = requestTes3mpCommand(path.join(room.cwd, "server"), {
+        command: body.command,
+        targetPid: body.targetPid,
+      });
+      if (!queued.ok) {
+        const messages = {
+          "admin-offline": "Your admin account must be logged into TES3MP.",
+          "target-offline": "That player is no longer on the server.",
+          self: "You can't make yourself an ally.",
+          "unknown-command": "Unknown command.",
+        };
+        json(res, 400, { error: messages[queued.reason] || queued.reason || "Could not run command" });
+        return;
+      }
+      room.lastActivityAt = Date.now();
+      json(res, 200, { ok: true, command: queued.command, targetPid: queued.targetPid });
       return;
     }
 

@@ -67,6 +67,20 @@ local function addAllowlist(name)
   saveAdmins(list)
 end
 
+local lastSnapshot = nil
+
+local function listOf(value)
+  local out = {}
+  if type(value) == "table" then
+    for _, v in pairs(value) do
+      if type(v) == "string" then table.insert(out, v) end
+    end
+  end
+  return out
+end
+
+-- Online players with each one's allies and outstanding ally invites, for
+-- the PlayBound overlay's player list. Written only when something changed.
 local function writeOnlineSnapshot()
   local online = {}
   for pid, player in pairs(Players) do
@@ -75,10 +89,21 @@ local function writeOnlineSnapshot()
         accountName = player.accountName,
         pid = pid,
         staffRank = tonumber(player.data and player.data.settings and player.data.settings.staffRank) or 0,
+        allies = listOf(player.data and player.data.alliedPlayers),
+        invitesSent = listOf(player.allyInvitesSent),
       })
     end
   end
-  saveJson("playbound-online.json", { updatedAt = os.time(), players = online })
+  local startupRun = WorldInstance ~= nil and WorldInstance.coreVariables ~= nil
+    and WorldInstance.coreVariables.hasRunStartupScripts == true
+  local doc = { players = online, startupRun = startupRun }
+  local key = nil
+  local ok, encoded = pcall(function() return tableHelper.getPrintableTable(doc) end)
+  if ok then key = encoded end
+  if key ~= nil and key == lastSnapshot then return end
+  lastSnapshot = key
+  doc.updatedAt = os.time()
+  saveJson("playbound-online.json", doc)
 end
 
 local function promotePlayer(player)
@@ -209,10 +234,82 @@ local function processSetHour()
   })
 end
 
+local function findAdminByAccount(accountName)
+  local player = findPlayerByAccount(accountName)
+  if player == nil or not player.loggedIn then return nil, "admin-offline" end
+  local rank = tonumber(player.data and player.data.settings and player.data.settings.staffRank) or 0
+  if rank < ADMIN_RANK then return nil, "not-admin" end
+  for pid, p in pairs(Players) do
+    if p == player then return pid end
+  end
+  return nil, "admin-offline"
+end
+
+-- Overlay buttons: the agent appends {id, command, targetPid, actor} to
+-- playbound-commands.json; each runs once, as the admin account `actor`,
+-- through TES3MP's own chat-command implementation.
+local function processCommands()
+  local queue = loadJson("playbound-commands.json")
+  if type(queue) ~= "table" or type(queue.requests) ~= "table" then return end
+  local results = loadJson("playbound-command-results.json")
+  if type(results) ~= "table" or type(results.done) ~= "table" then results = { done = {} } end
+
+  local changed = false
+  local live = {}
+  for _, req in ipairs(queue.requests) do
+    if type(req) == "table" and type(req.id) == "string" then
+      live[req.id] = true
+      if results.done[req.id] == nil then
+        changed = true
+        local actorPid, reason = findAdminByAccount(req.actor)
+        local outcome = "ok"
+        if actorPid == nil then
+          outcome = reason
+        elseif req.command == "invite" then
+          local target = tonumber(req.targetPid)
+          if target == nil or Players[target] == nil or not Players[target].loggedIn then
+            outcome = "target-offline"
+          else
+            defaultCommands.inviteAlly(actorPid, { "invite", tostring(target) })
+          end
+        elseif req.command == "runstartup" then
+          defaultCommands.runStartup(actorPid, { "runstartup" })
+        else
+          outcome = "unknown-command"
+        end
+        results.done[req.id] = { outcome = outcome, at = os.time() }
+      end
+    end
+  end
+  -- Forget results for requests the agent has already trimmed from the queue.
+  for id in pairs(results.done) do
+    if not live[id] then results.done[id] = nil; changed = true end
+  end
+  if changed then saveJson("playbound-command-results.json", results) end
+end
+
 local function processPending()
   processClaim()
   processSetHour()
+  pcall(processCommands)
 end
+
+-- Poll once a second so overlay requests apply immediately instead of on
+-- the next login or cell change.
+local pollTimerId = nil
+function PlayboundPollTick()
+  pcall(processPending)
+  pcall(writeOnlineSnapshot)
+  if pollTimerId ~= nil then tes3mp.RestartTimer(pollTimerId, 1000) end
+end
+
+customEventHooks.registerHandler("OnServerPostInit", function(eventStatus)
+  local ok, id = pcall(function() return tes3mp.CreateTimerEx("PlayboundPollTick", 1000, "i", 0) end)
+  if ok and id ~= nil then
+    pollTimerId = id
+    tes3mp.StartTimer(pollTimerId)
+  end
+end)
 
 local function promoteIfAllowlisted(pid)
   local player = Players[pid]

@@ -495,12 +495,20 @@ export type Tes3mpAccountRow = {
   accountName: string;
   online: boolean;
   staffRank: number;
+  /** TES3MP player id while online; what /invite takes. */
+  pid?: number | null;
+  /** The account overlay commands run as. */
+  isAdmin?: boolean;
+  /** Allied with the admin account. */
+  ally?: boolean;
+  /** Admin has invited them; they have not /join-ed yet. */
+  invitePending?: boolean;
 };
 
 export async function listRoomTes3mpAccounts(
   roomId: string
 ): Promise<
-  | { ok: true; accounts: Tes3mpAccountRow[]; adminAccount: string | null }
+  | { ok: true; accounts: Tes3mpAccountRow[]; adminAccount: string | null; startupRun: boolean }
   | { ok: false; error: string }
 > {
   if (!roomId) return { ok: false, error: "No room" };
@@ -512,6 +520,7 @@ export async function listRoomTes3mpAccounts(
     const data = (await res.json().catch(() => ({}))) as {
       accounts?: Tes3mpAccountRow[];
       adminAccount?: string | null;
+      startupRun?: boolean;
       error?: string;
     };
     if (!res.ok) return { ok: false, error: data.error || `Game host returned ${res.status}` };
@@ -519,6 +528,7 @@ export async function listRoomTes3mpAccounts(
       ok: true,
       accounts: Array.isArray(data.accounts) ? data.accounts : [],
       adminAccount: data.adminAccount || null,
+      startupRun: Boolean(data.startupRun),
     };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Game host unreachable" };
@@ -564,6 +574,30 @@ export async function claimRoomTes3mpAdmin(
       accounts: Array.isArray(data.accounts) ? data.accounts : [],
       adminAccount: data.adminAccount || null,
     };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Game host unreachable" };
+  }
+}
+
+/**
+ * Overlay command buttons: /invite <pid> ("Make Ally") and /runstartup, run
+ * by the room's online TES3MP admin account.
+ */
+export async function runRoomTes3mpCommand(
+  roomId: string,
+  command: "invite" | "runstartup",
+  targetPid?: number | null
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!roomId) return { ok: false, error: "No room" };
+  try {
+    const res = await hostFetch(`/rooms/${encodeURIComponent(roomId)}/tes3mp/command`, {
+      method: "POST",
+      body: JSON.stringify({ command, targetPid: targetPid ?? null }),
+    });
+    if (!res) return { ok: false, error: "Game host is not configured" };
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    if (!res.ok) return { ok: false, error: data.error || `Game host returned ${res.status}` };
+    return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Game host unreachable" };
   }

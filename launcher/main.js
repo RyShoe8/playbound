@@ -17231,6 +17231,41 @@ ipcMain.handle("set-tes3mp-hour", async (_event, partyId, hour) => {
   }
 });
 
+ipcMain.handle("run-tes3mp-command", async (_event, partyId, command, targetPid) => {
+  if (!partyId) return { error: "No party" };
+  if (command !== "invite" && command !== "runstartup") return { error: "Unknown command" };
+
+  function runLocal() {
+    const { requestTes3mpCommand } = require("./services/tes3mp/injectPlayboundAdmin.cjs");
+    const serverDir = localTes3mpServerDir();
+    if (!serverDir || !fs.existsSync(serverDir)) {
+      return { error: "TES3MP server folder not found on this PC." };
+    }
+    const queued = requestTes3mpCommand(serverDir, { command, targetPid });
+    if (!queued.ok) {
+      const messages = {
+        "admin-offline": "Your admin account must be logged into TES3MP.",
+        "target-offline": "That player is no longer on the server.",
+        self: "You can't make yourself an ally.",
+      };
+      return { error: messages[queued.reason] || queued.reason || "Could not run command" };
+    }
+    return { ok: true, command };
+  }
+
+  try {
+    const remote = await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/tes3mp-command`, {
+      method: "POST",
+      body: { command, targetPid: targetPid ?? null },
+    });
+    if (remote?.ok) return remote;
+    if (/self-hosted|host launcher/i.test(String(remote?.error || ""))) return runLocal();
+    return remote;
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
 function openFriendsPopout() {
   if (friendsPopoutOpen()) {
     if (friendsWin.isMinimized()) friendsWin.restore();
