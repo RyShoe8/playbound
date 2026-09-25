@@ -49,10 +49,12 @@ const LEASE_MS = 2 * 60_000;
 
 // These methods are selected by the actual hosted game, then recorded on the
 // profile only after a live response. A running process alone is not proof.
-const QUERY_BY_GAME: Record<string, "a2s-local" | "hurry-curry-registry" | "openra-master"> = {
+const QUERY_BY_GAME: Record<string, "a2s-local" | "hurry-curry-registry" | "openra-master" | "luanti-master" | "hypersomnia-master"> = {
   "counter-strike-2": "a2s-local",
   "hurry-curry": "hurry-curry-registry",
   "earth-2140-trilogy": "openra-master",
+  "luanti": "luanti-master",
+  "hypersomnia": "hypersomnia-master",
 };
 
 async function recordHostingAction(event: string, server: { gameSlug: string; editionSlug?: string | null; profileKey: string; name?: string }, reason?: string | null) {
@@ -313,7 +315,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
     }
     const verified = profiles.filter((p) => p.enabled);
     const due = reservations.find((r) => r.warmupAt <= now && (!r.communityServerId || !alreadyRunning.has(String(r.communityServerId))));
-    const rotationCandidates = verified
+    const rotationCandidates = verified.filter((p) => (p.queryVerified && p.queryKind !== "none") || Boolean(QUERY_BY_GAME[p.gameSlug]))
       .sort((a, b) => rotationPriority(now, b, previous) - rotationPriority(now, a, previous) || a.key.localeCompare(b.key));
     const bound = due?.communityServerId ? active.find((s) => String(s._id) === String(due.communityServerId)) : null;
     if (due) {
