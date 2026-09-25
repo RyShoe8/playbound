@@ -551,7 +551,9 @@ export const recipes = {
     protocol: "udp",
     // install.sh installs the apt package, whose binary is /usr/games/teeworlds-server.
     binaries: gameBin("teeworlds", ["teeworlds_srv", "teeworlds-server"]),
-    args: (_port, ctx) => ["-f", teeworldsConfigPath(ctx)],
+    // sv_port in the -f config was ignored (the server bound the default
+    // 8303), so the port also goes on the command line as a console command.
+    args: (port, ctx) => ["-f", teeworldsConfigPath(ctx), `sv_port ${port}`],
     prepareSpawn: async (port, ctx) => {
       fs.mkdirSync(TEEWORLDS_CONFIG_DIR, { recursive: true });
       const s = effectiveSettings("teeworlds", ctx.settings);
@@ -1030,6 +1032,18 @@ export const recipes = {
       "xonotic-linux64-dedicated",
       "xonotic-dedicated",
     ]),
+    /*
+     * The dedicated binary quits at startup ("Dedicated server requires
+     * server.cfg in your config directory") without this file. Everything
+     * PlayBound sets is on the command line, so an empty one is enough.
+     */
+    prepareSpawn: async () => {
+      const dir = path.join(HOST_HOME, ".xonotic", "data");
+      fs.mkdirSync(dir, { recursive: true });
+      const cfg = path.join(dir, "server.cfg");
+      if (!fs.existsSync(cfg)) fs.writeFileSync(cfg, "// PlayBound: settings are passed on the command line.\n", "utf8");
+    },
+    spawnEnv: () => ({ HOME: HOST_HOME }),
     args: (port, ctx) => [
       "+port",
       String(port),
@@ -1063,6 +1077,10 @@ export const recipes = {
       '""',
       ...(ctx.rconPassword ? ["+set", "rconpassword", ctx.rconPassword] : []),
       ...(ctx.managed ? ["+set", "sv_maxclients", String(managedPlayerLimit(ctx))] : openArenaStartupArgs(ctx.settings)),
+      // Without a map the engine opens its socket but never starts a game:
+      // clients cannot join and it ignores status queries. Must come last.
+      "+map",
+      "oa_dm1",
     ],
   },
   triplea: {
@@ -1233,11 +1251,17 @@ export const recipes = {
       "-dedicated",
       // srcds_run's own crash loop would hide failures from the agent.
       "-norestart",
+      // Without this srcds binds the hostname's address (127.0.1.1 on the
+      // VPS): players cannot reach it and local queries go unanswered.
+      "+ip",
+      "0.0.0.0",
       "+map",
       "ctf_2fort",
       "+maxplayers",
       String(ctx.managed ? Math.min(32, managedPlayerLimit(ctx)) : 24),
-      "+port",
+      // A launch option, not a console command: "+port" was ignored
+      // ("Unknown command") and srcds fell back to its default port.
+      "-port",
       String(port),
       "+hostname",
       ctx.name || "PlayBound.club Party",
@@ -1520,6 +1544,13 @@ export const recipes = {
     args: (port, ctx) => [
       "--port",
       String(port),
+      /*
+       * The HTTP status/info endpoint defaults to *:1212 whatever the game
+       * port is, and the SS14 launcher connects through it. Bind it to the
+       * room's own port (TCP) so rooms off 1212 are reachable and queryable.
+       */
+      "--cvar",
+      `status.bind=*:${port}`,
       ...flagArgs(acceptedSettingsFor("space-station-14", ctx && ctx.settings), {
         "game.soft_max_players": (v) => ["--cvar", `game.soft_max_players=${v}`],
         "game.lobbyenabled": (v) => ["--cvar", `game.lobbyenabled=${v}`],

@@ -1,7 +1,44 @@
 import { queryManagedHostOccupancy } from "@/lib/gameHost/client";
 
+/*
+ * "agent-local": the VPS agent asks the server on its own port (Steam A2S,
+ * Quake 3 getstatus, Mindustry ping, AssaultCube info, SS14 /status, TES3MP
+ * online file, OpenTTD game info, BZFlag, Teeworlds 0.7, Veloren metrics,
+ * SuperTuxKart discovery, fgms, Zandronum, BombSquad, TCP client counts).
+ * See platform/game-host/playerQueries.js. RVGL and 0 A.D. have no usable
+ * query, so they are never rotated automatically.
+ */
 export const QUERY_BY_GAME: Record<string, string> = {
-  "counter-strike-2": "a2s-local",
+  "counter-strike-2": "agent-local",
+  "team-fortress-2": "agent-local",
+  xonotic: "agent-local",
+  openarena: "agent-local",
+  "wolfenstein-enemy-territory": "agent-local",
+  unvanquished: "agent-local",
+  "medal-of-honor-allied-assault": "agent-local",
+  mindustry: "agent-local",
+  assaultcube: "agent-local",
+  "space-station-14": "agent-local",
+  morrowind: "agent-local",
+  openttd: "agent-local",
+  bzflag: "agent-local",
+  teeworlds: "agent-local",
+  veloren: "agent-local",
+  supertuxkart: "agent-local",
+  flightgear: "agent-local",
+  freedoom: "agent-local",
+  bombsquad: "agent-local",
+  // TCP games without a query protocol: the agent counts established
+  // connections on the room's port (only while it is listening).
+  freeciv: "agent-local",
+  "battle-for-wesnoth": "agent-local",
+  triplea: "agent-local",
+  hedgewars: "agent-local",
+  "warzone-2100": "agent-local",
+  ysoccer: "agent-local",
+  // OpenRA-family community servers advertise on the OpenRA master list.
+  openra: "openra-master",
+  openhv: "openra-master",
   "hurry-curry": "hurry-curry-registry",
   "earth-2140-trilogy": "openra-master",
   "luanti": "luanti-master",
@@ -31,7 +68,7 @@ export async function queryManagedOccupancy(input: {
   communityServerId?: string;
   expectedMod?: string;
 }): Promise<ManagedOccupancy | null> {
-  if (input.queryKind === "a2s-local") {
+  if (input.queryKind === "agent-local" || input.queryKind === "a2s-local") {
     return input.communityServerId ? queryManagedHostOccupancy(input.communityServerId) : null;
   }
   if (input.queryKind === "luanti-master" || input.queryKind === "hypersomnia-master") {

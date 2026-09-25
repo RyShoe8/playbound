@@ -11,7 +11,7 @@ const CommunityServerProfileSchema = new Schema({
   blockedReason: { type: String, default: null },
   recipeSlug: { type: String, required: true },
   queryVerified: { type: Boolean, default: false },
-  queryKind: { type: String, enum: ["openra-master", "a2s-local", "hurry-curry-registry", "luanti-master", "hypersomnia-master", "none"], default: "none" },
+  queryKind: { type: String, enum: ["openra-master", "a2s-local", "agent-local", "hurry-curry-registry", "luanti-master", "hypersomnia-master", "none"], default: "none" },
   joinVerified: { type: Boolean, default: false },
   updatedBy: { type: String, default: null },
   clientVersion: { type: String, default: null },

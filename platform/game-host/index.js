@@ -41,7 +41,7 @@ import { createStartCoordinator } from "./startLock.js";
 import { httpsGetStream } from "./downloadStream.js";
 import { createManagedRegistry, createPartyRegistry, isSameProcess, processIdentity, processGroupMembers, rehydrateManagedRoom } from "./managedRegistry.js";
 import { processMetrics } from "./processMetrics.js";
-import { queryA2sOccupancy } from "./a2sQuery.js";
+import { queryRoomOccupancy } from "./playerQueries.js";
 
 const require = createRequire(import.meta.url);
 const { injectPlayboundAdmin, listTes3mpAccounts, claimTes3mpAdmin, requestTes3mpSetHour, requestTes3mpCommand } = require(
@@ -1261,7 +1261,8 @@ const server = http.createServer(async (req, res) => {
       const roomId = byManaged.get(playerQueryMatch[1]);
       const room = roomId ? rooms.get(roomId) : null;
       if (!room) { json(res, 404, { error: "Managed room not found" }); return; }
-      const occupancy = room.gameSlug === "counter-strike-2" ? await queryA2sOccupancy(room.port) : null;
+      // Each game's own local query; null means unknown, never empty.
+      const occupancy = await queryRoomOccupancy(room);
       json(res, 200, occupancy || { players: null, maxPlayers: null });
       return;
     }
