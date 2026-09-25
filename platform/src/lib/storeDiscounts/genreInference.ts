@@ -1,4 +1,4 @@
-import { games } from "@/lib/data/games";
+import { CATALOG_TITLE_GENRES } from "./catalogGenres";
 
 /**
  * Known franchise & popular title genre map.
@@ -135,16 +135,16 @@ export function inferGameGenres(
 
   // 1. Try matching with PlayBound's catalog
   const normalizedTitle = normalizeForMatch(cleanTitle);
-  const catalogMatch = games.find((g) => {
-    const catalogNorm = normalizeForMatch(g.title);
+  const catalogMatch = CATALOG_TITLE_GENRES.find(([title]) => {
+    const catalogNorm = normalizeForMatch(title);
     return (
       catalogNorm === normalizedTitle ||
       normalizedTitle.startsWith(catalogNorm) ||
       catalogNorm.startsWith(normalizedTitle)
     );
   });
-  if (catalogMatch && catalogMatch.genres && catalogMatch.genres.length > 0) {
-    return catalogMatch.genres.slice(0, 3);
+  if (catalogMatch && catalogMatch[1].length > 0) {
+    return [...catalogMatch[1]];
   }
 
   // 2. Try franchise map

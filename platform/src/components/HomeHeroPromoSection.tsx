@@ -29,7 +29,7 @@ import type { CatalogLiveStats } from "@/lib/liveActivity";
 import { directPurchaseRequired } from "@/lib/access/resolver";
 import { accessPriceLabel, scopeCatalogLiveStats } from "@/lib/access/discoveryMode";
 import { useAccessTiers } from "@/components/AccessTiersProvider";
-import { formatEditionChipName, getDisplayEditionsForGame } from "@/lib/data/editions";
+import { formatEditionChipName, getEditionChips as getDisplayEditionsForGame } from "@/lib/data/editionChips";
 
 interface HomeHeroPromoSectionProps {
   gamesNewestFirst: Game[];

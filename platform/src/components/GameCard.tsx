@@ -35,7 +35,7 @@ import {
 } from "@/lib/mobilePlay";
 import { isGameCompatible } from "@/lib/compatibility/compatibility";
 import { withOutboundUtm } from "@/lib/utm";
-import { formatEditionChipName, getDisplayEditionsForGame } from "@/lib/data/editions";
+import { formatEditionChipName, getEditionChips as getDisplayEditionsForGame } from "@/lib/data/editionChips";
 
 function sizeLabel(sizeMB: number) {
   return sizeMB >= 1000 ? `${(sizeMB / 1000).toFixed(1)} GB` : `${sizeMB} MB`;
