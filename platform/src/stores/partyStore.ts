@@ -59,6 +59,8 @@ interface PartyState {
   }>;
   setGame: (partyId: string, gameSlug: string) => Promise<void>;
   setHostMode: (partyId: string, hostMode: string) => Promise<void>;
+  /** Pick the saved world a PlayBound server runs; null = new world. Returns an error message. */
+  setSavedWorld: (partyId: string, worldId: string | null) => Promise<string | null>;
   setPublicServer: (
     partyId: string,
     server: {
@@ -604,6 +606,24 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       }
     } catch (err) {
       console.error("Failed to set party host mode", err);
+    }
+  },
+
+  setSavedWorld: async (partyId, worldId) => {
+    try {
+      const res = await fetch(`/api/parties/${partyId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ savedWorldId: worldId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return data.error || "Could not change the world";
+      set((s) => ({ activeParty: applyPartyUpdate(s.activeParty, data.party) }));
+      refreshFriendsAfterPartyMutation();
+      return null;
+    } catch (err) {
+      console.error("Failed to set saved world", err);
+      return "Could not change the world";
     }
   },
 

@@ -273,6 +273,13 @@ export type PartyPayload = {
   /** Modes this game supports, in display order. Fewer than two means no picker. */
   hostModes: HostModeOption[];
   /**
+   * SavedWorld the dedicated server runs, for games that keep saves. Null
+   * until the first start creates one, or when "New world" is chosen.
+   */
+  savedWorldId: string | null;
+  /** True when this party can offer the saved-world picker. */
+  offersSavedWorlds: boolean;
+  /**
    * Whether PlayBound can administer this party's server, and when.
    *
    * Resolved here rather than by each client for the same reason as hostMode:
