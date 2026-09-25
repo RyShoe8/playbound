@@ -14,6 +14,20 @@ import { recordResourceSample } from "./samples";
 import { rotationPriority } from "./rotation";
 import { saveEvent } from "@/lib/telemetry/server/saveEvent";
 
+export const DEFAULT_COMMUNITY_SERVER_ENVELOPE: ResourceEnvelope = {
+  cpuCores: 0.25,
+  ramBytes: 512 * 1024 * 1024,
+};
+
+export function getEffectiveEnvelope(envelope?: { cpuCores?: number; ramBytes?: number } | null): ResourceEnvelope {
+  const cpu = Number(envelope?.cpuCores);
+  const ram = Number(envelope?.ramBytes);
+  return {
+    cpuCores: Number.isFinite(cpu) && cpu > 0 ? cpu : DEFAULT_COMMUNITY_SERVER_ENVELOPE.cpuCores,
+    ramBytes: Number.isFinite(ram) && ram > 0 ? ram : DEFAULT_COMMUNITY_SERVER_ENVELOPE.ramBytes,
+  };
+}
+
 const LEASE_MS = 2 * 60_000;
 
 async function recordHostingAction(event: string, server: { gameSlug: string; editionSlug?: string | null; profileKey: string; name?: string }, reason?: string | null) {
@@ -64,7 +78,8 @@ async function syncReservations(now: Date, regionKey: string) {
   const wanted = new Set<string>();
   for (const event of events) {
     const profile = profiles.find((p) => p.gameSlug === event.gameSlug && (p.editionSlug || null) === (event.editionSlug || null));
-    if (!profile || !profile.envelope?.cpuCores || !profile.envelope?.ramBytes) continue;
+    if (!profile) continue;
+    const envelope = getEffectiveEnvelope(profile.envelope);
     const sourceKey = `event:${event._id}`;
     wanted.add(sourceKey);
     const existingReservation = await CapacityReservation.findOne({ sourceKey }).select({ profileKey: 1, communityServerId: 1, state: 1 }).lean();
@@ -79,8 +94,8 @@ async function syncReservations(now: Date, regionKey: string) {
     const endsAt = event.endsAt ? new Date(event.endsAt) : new Date(startsAt.getTime() + 2 * 3_600_000);
     await CapacityReservation.updateOne({ sourceKey }, {
       $set: {
-        profileKey: profile.key, regionKey, cpuCores: profile.envelope.cpuCores,
-        ramBytes: profile.envelope.ramBytes,
+        profileKey: profile.key, regionKey, cpuCores: envelope.cpuCores,
+        ramBytes: envelope.ramBytes,
         warmupAt: new Date(startsAt.getTime() - warmupHours * 3_600_000),
         protectedUntil: new Date(endsAt.getTime() + graceHours * 3_600_000),
         ...(profileChanged || existingReservation?.state === "released" ? { communityServerId: null, state: "planned", decisionReason: null } : {}),
@@ -182,23 +197,17 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
     }).sort({ warmupAt: 1 });
     const alreadyRunning = new Set(active.filter((s) => managedById.has(String(s._id))).map((s) => String(s._id)));
     const runningManaged: ResourceEnvelope[] = active.filter((s) => alreadyRunning.has(String(s._id))).map((s) => {
-      const envelope = profileByKey.get(s.profileKey)?.envelope;
-      return { cpuCores: envelope?.cpuCores || 0, ramBytes: envelope?.ramBytes || 0 };
+      const envelope = getEffectiveEnvelope(profileByKey.get(s.profileKey)?.envelope);
+      return { cpuCores: envelope.cpuCores, ramBytes: envelope.ramBytes };
     });
     const plannedReservations = reservations.filter((r) => !r.communityServerId || !alreadyRunning.has(String(r.communityServerId)));
 
-    // Selected in the admin checklist = hostable. Capacity still needs a measured envelope,
-    // and servers without a player query are never treated as empty (see above).
-    const verified = profiles.filter((p) => p.enabled && p.envelope?.cpuCores > 0 && p.envelope?.ramBytes > 0);
+    // Selected in the admin checklist = hostable. Fallback baseline is used for unmeasured profiles.
+    const verified = profiles.filter((p) => p.enabled);
     const due = reservations.find((r) => r.warmupAt <= now && (!r.communityServerId || !alreadyRunning.has(String(r.communityServerId))));
     const previous = await CommunityServer.find({ regionKey: config.node.regionKey }).select({ profileKey: 1, cooldownUntil: 1, manualPause: 1, onlineSince: 1 }).lean();
     const rotationCandidates = verified
       .sort((a, b) => rotationPriority(now, b, previous) - rotationPriority(now, a, previous) || a.key.localeCompare(b.key));
-    const profile = due ? verified.find((p) => p.key === due.profileKey) : rotationCandidates.find((p) =>
-      !active.some((s) => s.profileKey === p.key) &&
-      !previous.some((s) => s.profileKey === p.key && s.manualPause) &&
-      !previous.some((s) => s.profileKey === p.key && s.cooldownUntil && new Date(s.cooldownUntil) > now)
-    );
     const bound = due?.communityServerId ? active.find((s) => String(s._id) === String(due.communityServerId)) : null;
     if (due) {
       if (bound && !alreadyRunning.has(String(bound._id)) && (bound.recoveryAttempts >= 3 || (bound.nextRecoveryAt && new Date(bound.nextRecoveryAt) > now))) {
@@ -224,12 +233,12 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         await existingServer.save();
         return { action: "reserved_existing" };
       }
-      if (!profile) {
+      const dueProfile = verified.find((p) => p.key === due.profileKey);
+      if (!dueProfile) {
         await CapacityReservation.updateOne({ _id: due._id }, { $set: { decisionReason: "PROFILE_NOT_VERIFIED" } });
         return { action: "waiting", reason: "PROFILE_NOT_VERIFIED" };
       }
-    }
-    if (profile) {
+      const envelope = getEffectiveEnvelope(dueProfile.envelope);
       const decision = placementDecision({
         now, nodeEnabled: config.node.enabled, draining: config.node.draining,
         requestedRegion: config.node.regionKey, nodeRegion: config.node.regionKey,
@@ -238,38 +247,41 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
           ? { collectedAt: metrics.collectedAt || "", cpuCores: metrics.cpu.cores, cpuUsagePercent: metrics.cpu.usagePercent ?? null, freeRamBytes: metrics.memory.freeBytes, totalRamBytes: metrics.memory.totalBytes }
           : null,
         safety: config.safety, budget: config.budget,
-        runningManaged, plannedReservations: plannedReservations.filter((r) => !due || r.sourceKey !== due.sourceKey).map((r) => ({ cpuCores: r.cpuCores, ramBytes: r.ramBytes })),
-        requested: { cpuCores: profile.envelope.cpuCores, ramBytes: profile.envelope.ramBytes },
+        runningManaged, plannedReservations: plannedReservations.filter((r) => r.sourceKey !== due.sourceKey).map((r) => ({ cpuCores: r.cpuCores, ramBytes: r.ramBytes })),
+        requested: { cpuCores: envelope.cpuCores, ramBytes: envelope.ramBytes },
       });
-      if (!decision.allowed && due) {
+      if (!decision.allowed) {
         await CapacityReservation.updateOne({ _id: due._id }, { $set: { decisionReason: decision.reason } });
-        await recordHostingAction("community_server_capacity_blocked", { gameSlug: profile.gameSlug, editionSlug: profile.editionSlug, profileKey: profile.key }, decision.reason);
+        await recordHostingAction("community_server_capacity_blocked", { gameSlug: dueProfile.gameSlug, editionSlug: dueProfile.editionSlug, profileKey: dueProfile.key }, decision.reason);
         return { action: "waiting", reason: decision.reason };
       }
-      if (decision.allowed) {
-      const slug = `pb-${profile.key}-${config.node.regionKey}`;
+      const slug = `pb-${dueProfile.key}-${config.node.regionKey}`;
       const server = await CommunityServer.findOneAndUpdate({ slug }, {
         $setOnInsert: {
-          slug, gameSlug: profile.gameSlug,
-          editionSlug: profile.editionSlug || null, mod: profile.mod || null, regionKey: config.node.regionKey, profileKey: profile.key,
+          slug, gameSlug: dueProfile.gameSlug,
+          editionSlug: dueProfile.editionSlug || null, mod: dueProfile.mod || null, regionKey: config.node.regionKey, profileKey: dueProfile.key,
         },
-        $set: { name: "PlayBound.Club Community Server", desiredState: "running", runtimeState: "pending", decisionReason: due ? "GAME_NIGHT_WARMUP" : "ROTATION_START", lastReconciledAt: now },
+        $set: { name: "PlayBound.Club Community Server", desiredState: "running", runtimeState: "pending", decisionReason: "GAME_NIGHT_WARMUP", lastReconciledAt: now },
       }, { upsert: true, new: true });
       const id = String(server._id);
-      if (due) {
-        due.communityServerId = server._id;
-        due.state = "active";
-        await due.save();
-        server.linkedEventId = due.eventId;
-        server.protectedUntil = due.protectedUntil;
-        await server.save();
-      }
+      due.communityServerId = server._id;
+      due.state = "active";
+      await due.save();
+      server.linkedEventId = due.eventId;
+      server.protectedUntil = due.protectedUntil;
+      await server.save();
       if (bound && !alreadyRunning.has(String(bound._id))) {
         server.recoveryAttempts = (server.recoveryAttempts || 0) + 1;
         server.nextRecoveryAt = new Date(now.getTime() + Math.min(120, 15 * 2 ** (server.recoveryAttempts - 1)) * 60_000);
         await server.save();
       }
-      const started = await requestManagedHostRoom({ communityServerId: id, gameSlug: profile.recipeSlug, editionSlug: profile.editionSlug, mod: profile.mod, name: server.name });
+      const started = await requestManagedHostRoom({
+        communityServerId: id,
+        gameSlug: dueProfile.recipeSlug || dueProfile.gameSlug,
+        editionSlug: dueProfile.editionSlug,
+        mod: dueProfile.mod,
+        name: server.name,
+      });
       if (started.status === "failed") {
         server.runtimeState = "failed";
         server.decisionReason = started.error;
@@ -278,8 +290,68 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         return { action: "failed", reason: started.error };
       }
       await recordHostingAction("community_server_start", server);
-      return { action: "starting" };
+      return { action: "starting", reason: `game night warmup: ${dueProfile.key}` };
+    }
+
+    const candidateServers = rotationCandidates.filter((p) =>
+      !active.some((s) => s.profileKey === p.key && (s.desiredState === "running" || alreadyRunning.has(String(s._id)))) &&
+      !previous.some((s) => s.profileKey === p.key && s.manualPause) &&
+      !previous.some((s) => s.profileKey === p.key && s.cooldownUntil && new Date(s.cooldownUntil) > now)
+    );
+
+    let startedCount = 0;
+    const startedProfiles: string[] = [];
+    let lastBlockedReason: string | undefined;
+
+    for (const candidate of candidateServers) {
+      const envelope = getEffectiveEnvelope(candidate.envelope);
+      const decision = placementDecision({
+        now, nodeEnabled: config.node.enabled, draining: config.node.draining,
+        requestedRegion: config.node.regionKey, nodeRegion: config.node.regionKey,
+        profileVerified: true,
+        metrics: metrics.cpu?.cores && metrics.memory?.freeBytes != null && metrics.memory?.totalBytes
+          ? { collectedAt: metrics.collectedAt || "", cpuCores: metrics.cpu.cores, cpuUsagePercent: metrics.cpu.usagePercent ?? null, freeRamBytes: metrics.memory.freeBytes, totalRamBytes: metrics.memory.totalBytes }
+          : null,
+        safety: config.safety, budget: config.budget,
+        runningManaged,
+        plannedReservations: plannedReservations.map((r) => ({ cpuCores: r.cpuCores, ramBytes: r.ramBytes })),
+        requested: { cpuCores: envelope.cpuCores, ramBytes: envelope.ramBytes },
+      });
+      if (!decision.allowed) {
+        lastBlockedReason = decision.reason;
+        continue;
       }
+      const slug = `pb-${candidate.key}-${config.node.regionKey}`;
+      const server = await CommunityServer.findOneAndUpdate({ slug }, {
+        $setOnInsert: {
+          slug, gameSlug: candidate.gameSlug,
+          editionSlug: candidate.editionSlug || null, mod: candidate.mod || null, regionKey: config.node.regionKey, profileKey: candidate.key,
+        },
+        $set: { name: "PlayBound.Club Community Server", desiredState: "running", runtimeState: "pending", decisionReason: "ROTATION_START", lastReconciledAt: now },
+      }, { upsert: true, new: true });
+      const id = String(server._id);
+      const started = await requestManagedHostRoom({
+        communityServerId: id,
+        gameSlug: candidate.recipeSlug || candidate.gameSlug,
+        editionSlug: candidate.editionSlug,
+        mod: candidate.mod,
+        name: server.name,
+      });
+      if (started.status === "failed") {
+        server.runtimeState = "failed";
+        server.decisionReason = started.error;
+        await server.save();
+        await recordHostingAction("community_server_failed", server, started.error);
+      } else {
+        await recordHostingAction("community_server_start", server);
+        runningManaged.push({ cpuCores: envelope.cpuCores, ramBytes: envelope.ramBytes });
+        startedCount++;
+        startedProfiles.push(candidate.key);
+      }
+    }
+
+    if (startedCount > 0) {
+      return { action: "starting", reason: `started ${startedCount} servers (${startedProfiles.join(", ")})` };
     }
 
     // Recover a missing runtime under its stable CommunityServer ID. Never
@@ -292,6 +364,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         continue;
       }
       if (server.manualPause || (server.nextRecoveryAt && new Date(server.nextRecoveryAt) > now)) continue;
+      const recoveryEnvelope = getEffectiveEnvelope(recoveryProfile.envelope);
       const decision = placementDecision({
         now, nodeEnabled: config.node.enabled, draining: config.node.draining,
         requestedRegion: server.regionKey, nodeRegion: config.node.regionKey,
@@ -301,7 +374,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
           : null,
         safety: config.safety, budget: config.budget, runningManaged,
         plannedReservations: plannedReservations.filter((r) => String(r.communityServerId || "") !== String(server._id)).map((r) => ({ cpuCores: r.cpuCores, ramBytes: r.ramBytes })),
-        requested: { cpuCores: recoveryProfile.envelope.cpuCores, ramBytes: recoveryProfile.envelope.ramBytes },
+        requested: { cpuCores: recoveryEnvelope.cpuCores, ramBytes: recoveryEnvelope.ramBytes },
       });
       if (!decision.allowed) {
         server.decisionReason = decision.reason;
@@ -313,7 +386,13 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
       server.runtimeState = "pending";
       server.decisionReason = "RECOVERING_RUNTIME";
       await server.save();
-      const result = await requestManagedHostRoom({ communityServerId: String(server._id), gameSlug: recoveryProfile.recipeSlug, editionSlug: recoveryProfile.editionSlug, mod: recoveryProfile.mod, name: server.name });
+      const result = await requestManagedHostRoom({
+        communityServerId: String(server._id),
+        gameSlug: recoveryProfile.recipeSlug || recoveryProfile.gameSlug,
+        editionSlug: recoveryProfile.editionSlug,
+        mod: recoveryProfile.mod,
+        name: server.name,
+      });
       if (result.status === "failed") {
         server.runtimeState = "failed";
         server.decisionReason = result.error;
@@ -356,6 +435,9 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         await recordHostingAction("community_server_rotated", server);
         return { action: "rotated" };
       }
+    }
+    if (candidateServers.length > 0 && lastBlockedReason) {
+      return { action: "waiting", reason: lastBlockedReason };
     }
     return { action: "unchanged" };
   } finally {

@@ -5,6 +5,8 @@ import Notification from "@/lib/models/Notification";
 import User from "@/lib/models/User";
 import WeeklyScheduleDispatch from "@/lib/models/WeeklyScheduleDispatch";
 import { addCalendarDays, instantForLocal, localDate, normalizeNightly } from "./nightlySchedule";
+import { postDiscordEventsChannel } from "./discordEventProvision";
+import { SITE_URL } from "@/lib/site";
 
 /** One in-app notice per user after all seven evenings are actually published. */
 export async function sendWeeklyScheduleNotification(now = new Date()): Promise<{ sent: number; reason?: string }> {
@@ -20,7 +22,7 @@ export async function sendWeeklyScheduleNotification(now = new Date()): Promise<
   const nights = await PlatformEvent.find({
     eventType: "game_night", visibility: "public", status: { $nin: ["cancelled", "draft"] },
     startsAt: { $gte: new Date(`${addCalendarDays(day, -1)}T00:00:00Z`), $lt: new Date(`${addCalendarDays(day, 8)}T00:00:00Z`) },
-  }).select({ startsAt: 1 }).lean();
+  }).select({ title: 1, gameSlug: 1, startsAt: 1 }).sort({ startsAt: 1 }).lean();
   const publishedDays = new Set(nights.map((night) => localDate(new Date(night.startsAt), nightly.timezone)));
   if ([...expectedDays].some((date) => !publishedDays.has(date))) return { sent: 0, reason: "schedule_incomplete" };
   const dedupeKey = `game-night-week:${day}`;
@@ -61,5 +63,20 @@ export async function sendWeeklyScheduleNotification(now = new Date()): Promise<
   }
   if (batch.length) await drain();
   await WeeklyScheduleDispatch.updateOne({ key: dedupeKey }, { $set: { completedAt: new Date(), sent }, $unset: { leaseUntil: "" } });
+
+  // Post announcement to Discord #events channel
+  const scheduleLines = nights.map((night) => {
+    const dateStr = new Date(night.startsAt).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: nightly.timezone });
+    return `• **${dateStr}**: ${night.title}`;
+  }).join("\n");
+
+  await postDiscordEventsChannel({
+    title: "🗓️ This Week's Game Nights Schedule",
+    description: `The upcoming week of PlayBound Game Nights is scheduled!\n\n${scheduleLines}\n\n🎟️ **[View Event Calendar & RSVP](${SITE_URL}/events)**`,
+    url: `${SITE_URL}/events`,
+  }).catch((err) => {
+    console.warn("[weekly-schedule] discord announce failed:", err);
+  });
+
   return { sent };
 }
