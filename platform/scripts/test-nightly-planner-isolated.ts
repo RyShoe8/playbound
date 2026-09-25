@@ -1,7 +1,7 @@
 /** Run the real nightly Game Night planner against a throwaway database.
  *
  * Uses the production cluster (MONGODB_URI) but never its database: the
- * planner's models are bound to a freshly named `playbound_nightly_it_*`
+ * planner's models are bound to a freshly named `pb_nightly_it_*`
  * database, which is dropped at the end. Production is only *read*, to copy a
  * handful of published multiplayer games so eligibility filtering is real.
  *
@@ -12,8 +12,9 @@
 import mongoose from "mongoose";
 import { randomBytes } from "node:crypto";
 
-const TEST_PREFIX = "playbound_nightly_it_";
-const TEST_DB = `${TEST_PREFIX}${Date.now()}_${randomBytes(3).toString("hex")}`;
+// Atlas caps database names at 38 bytes; this is 26.
+const TEST_PREFIX = "pb_nightly_it_";
+const TEST_DB = `${TEST_PREFIX}${Date.now().toString(36)}${randomBytes(2).toString("hex")}`;
 
 let failures = 0;
 function check(label: string, ok: boolean, detail = "") {
