@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { placementDecision, type PlacementInput } from "./capacity";
+import { canScaleDownEmptyServer, placementDecision, runningReservationEnvelope, type PlacementInput } from "./capacity";
 
 const GIB = 1024 ** 3;
 const base: PlacementInput = {
@@ -12,6 +12,29 @@ const base: PlacementInput = {
 };
 
 describe("community hosting placement", () => {
+  it("reserves observed idle usage with headroom but keeps full budget for occupied or unknown servers", () => {
+    const baseline = { cpuCores: 2, ramBytes: 3 * GIB };
+    const observed = { available: true, cpuCores: 0.08, rssBytes: 800 * 1024 ** 2 };
+    expect(runningReservationEnvelope({ baseline, players: 0, observed })).toEqual({ cpuCores: 0.5, ramBytes: 1200 * 1024 ** 2 });
+    expect(runningReservationEnvelope({ baseline, players: null, observed })).toEqual(baseline);
+    expect(runningReservationEnvelope({ baseline, players: 2, observed })).toEqual(baseline);
+    expect(runningReservationEnvelope({ baseline, players: 0, observed: null })).toEqual(baseline);
+  });
+  it("never stops a server on an unknown or stale player count", () => {
+    const now = base.now;
+    expect(canScaleDownEmptyServer({ players: 0, checkedAt: now, protectedUntil: null }, now)).toBe(true);
+    expect(canScaleDownEmptyServer({ players: null, checkedAt: now, protectedUntil: null }, now)).toBe(false);
+    expect(canScaleDownEmptyServer({ players: 0, checkedAt: new Date(now.getTime() - 180_000), protectedUntil: null }, now)).toBe(false);
+    expect(canScaleDownEmptyServer({ players: 0, checkedAt: now, protectedUntil: new Date(now.getTime() + 60_000) }, now)).toBe(false);
+  });
+  it("can place another game when the current fleet is confirmed idle", () => {
+    const idle = [
+      { baseline: { cpuCores: 2, ramBytes: 2.5 * GIB }, players: 0, observed: { available: true, cpuCores: 0.08, rssBytes: 770 * 1024 ** 2 } },
+      { baseline: { cpuCores: 1, ramBytes: 1.5 * GIB }, players: 0, observed: { available: true, cpuCores: 0.04, rssBytes: 164 * 1024 ** 2 } },
+      { baseline: { cpuCores: 1, ramBytes: 1.5 * GIB }, players: 0, observed: { available: true, cpuCores: 0.01, rssBytes: 35 * 1024 ** 2 } },
+    ];
+    expect(placementDecision({ ...base, budget: { cpuCores: 4, ramBytes: 6 * GIB }, runningManaged: idle.map(runningReservationEnvelope), requested: { cpuCores: 1, ramBytes: 1.5 * GIB } })).toEqual({ allowed: true });
+  });
   it("allows measured capacity within the separate hosting budget", () => {
     expect(placementDecision(base)).toEqual({ allowed: true });
   });
@@ -32,4 +55,3 @@ describe("community hosting placement", () => {
     expect(placementDecision({ ...base, requested: fallbackEnvelope })).toEqual({ allowed: true });
   });
 });
-

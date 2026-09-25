@@ -12,6 +12,8 @@ import Edition from "@/lib/models/Edition";
 import { HOSTABLE_SLUGS, HOSTABLE_GAMES, HOSTABLE_SLUG_ALIASES } from "@/lib/gameHost/catalog";
 import { editions as seedEditions } from "@/lib/data/editions";
 import { getEffectiveEnvelope } from "@/lib/communityHosting/reconcile";
+import { populationPeriods } from "@/lib/communityHosting/population";
+import { runningReservationEnvelope } from "@/lib/communityHosting/capacity";
 
 export async function GET() {
   const { error } = await requireAdminSession();
@@ -30,6 +32,22 @@ export async function GET() {
     CapacityReservation.find({ state: { $in: ["planned", "active", "missed"] } }).sort({ warmupAt: 1 }).limit(100).lean(),
     fetchGameHostMetrics(), listManagedHostRooms(),
   ]);
+  const population = await populationPeriods(config?.node?.regionKey || "us-central");
+  const profileByKey = new Map(profiles.map((profile) => [profile.key, profile]));
+  const serverById = new Map(servers.map((server) => [String(server._id), server]));
+  const runningReservations = agent.ok ? agent.rooms.map((room) => {
+    const server = serverById.get(String(room.communityServerId || ""));
+    const profile = server ? profileByKey.get(server.profileKey) : null;
+    return runningReservationEnvelope({
+      baseline: getEffectiveEnvelope(profile?.envelope, room.gameSlug, profile?.sampleCount),
+      players: server?.playerCount ?? null,
+      observed: room.resources,
+    });
+  }) : [];
+  const budgetUsage = {
+    cpuCores: runningReservations.reduce((sum, envelope) => sum + envelope.cpuCores, 0),
+    ramBytes: runningReservations.reduce((sum, envelope) => sum + envelope.ramBytes, 0),
+  };
   const defaults = new CommunityHostingConfig({ key: "global" }).toObject();
   // Display names for the game/edition checklist; include only hostable canonical catalog games.
   const gameSlugs = [...new Set([...profiles.map((p) => p.gameSlug), ...HOSTABLE_SLUGS])].filter((s) => !HOSTABLE_SLUG_ALIASES[s]);
@@ -135,8 +153,9 @@ export async function GET() {
   }
 
   return NextResponse.json({
+    asOf: new Date().toISOString(),
     config: config || defaults, profiles: [...finalProfilesMap.values()], servers, reservations, titles, editionNames,
-    metrics: metrics.ok ? metrics.metrics : null,
+    metrics: metrics.ok ? metrics.metrics : null, population, budgetUsage,
     agent: agent.ok ? agent : { ok: false, error: agent.error },
   });
 }

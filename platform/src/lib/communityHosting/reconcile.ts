@@ -8,9 +8,10 @@ import CapacityReservation from "@/lib/models/CapacityReservation";
 import PlatformEvent from "@/lib/models/PlatformEvent";
 import AutomatedEventConfig from "@/lib/models/AutomatedEventConfig";
 import { fetchGameHostMetrics, listManagedHostRooms, requestManagedHostRoom, stopManagedHostRoom } from "@/lib/gameHost/client";
-import { placementDecision, type ResourceEnvelope } from "./capacity";
+import { canScaleDownEmptyServer, placementDecision, runningReservationEnvelope, type ResourceEnvelope } from "./capacity";
 import { queryManagedPlayerCount } from "./playerQuery";
 import { recordResourceSample } from "./samples";
+import { recordPopulationReading } from "./population";
 import { rotationPriority } from "./rotation";
 import { saveEvent } from "@/lib/telemetry/server/saveEvent";
 
@@ -229,6 +230,10 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
           { $set: { queryKind, queryVerified: true, lastVerifiedAt: now } }
         );
       }
+      if (server.runtimeId !== room.roomId) {
+        server.onlineSince = now;
+        server.lastOccupiedAt = null;
+      }
       server.runtimeId = room.roomId;
       server.host = room.host;
       server.port = room.port;
@@ -260,10 +265,13 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
     }).sort({ warmupAt: 1 });
     const alreadyRunning = new Set(active.filter((s) => managedById.has(String(s._id))).map((s) => String(s._id)));
     const runningServers = active.filter((s) => alreadyRunning.has(String(s._id)));
+    await recordPopulationReading(config.node.regionKey, runningServers, now).catch((error) => {
+      console.warn("[community-hosting] population sample unavailable:", error instanceof Error ? error.message : error);
+    });
     const runningManaged: ResourceEnvelope[] = runningServers.map((s) => {
       const p = profileByKey.get(s.profileKey);
       const envelope = getEffectiveEnvelope(p?.envelope, s.gameSlug, p?.sampleCount);
-      return { cpuCores: envelope.cpuCores, ramBytes: envelope.ramBytes };
+      return runningReservationEnvelope({ baseline: envelope, players: s.playerCount, observed: managedById.get(String(s._id))?.resources });
     });
     const plannedReservations = reservations.filter((r) => !r.communityServerId || !alreadyRunning.has(String(r.communityServerId)));
 
@@ -275,7 +283,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
 
     if (totalRunningCpu > config.budget.cpuCores || totalRunningRam > config.budget.ramBytes) {
       const candidatesToScaleDown = runningServers
-        .filter((s) => (!s.protectedUntil || new Date(s.protectedUntil) <= now) && (s.playerCount === null || s.playerCount === 0))
+        .filter((s) => canScaleDownEmptyServer({ players: s.playerCount, checkedAt: s.playerCountCheckedAt, protectedUntil: s.protectedUntil }, now))
         .sort((a, b) => {
           const profA = profileByKey.get(a.profileKey);
           const profB = profileByKey.get(b.profileKey);
@@ -291,11 +299,10 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
           server.decisionReason = "BUDGET_EXCEEDED";
           await server.save();
           await recordHostingAction("community_server_scaled_down", server, "Budget downsized");
-          const p = profileByKey.get(server.profileKey);
-          const env = getEffectiveEnvelope(p?.envelope, server.gameSlug, p?.sampleCount);
+          const idx = runningServers.findIndex((s) => String(s._id) === String(server._id));
+          const env = idx !== -1 ? runningManaged[idx] : getEffectiveEnvelope(profileByKey.get(server.profileKey)?.envelope, server.gameSlug);
           totalRunningCpu -= env.cpuCores;
           totalRunningRam -= env.ramBytes;
-          const idx = runningServers.findIndex((s) => String(s._id) === String(server._id));
           if (idx !== -1) {
             runningServers.splice(idx, 1);
             runningManaged.splice(idx, 1);
