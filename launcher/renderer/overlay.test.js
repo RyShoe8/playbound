@@ -14,7 +14,7 @@ async function renderOverlay(context, serverSettings) {
   const buttons = new Map();
   const tabs = {
     innerHTML: "",
-    querySelectorAll: () => ["server", "controls"].map((tab) => {
+    querySelectorAll: () => ["game", "server", "controls"].map((tab) => {
       const button = { dataset: { tab }, addEventListener: (_event, handler) => buttons.set(tab, handler) };
       return button;
     }),
@@ -60,4 +60,33 @@ test("Server controls remain available with a party", async () => {
   assert.match(overlay.root.innerHTML, /Server settings are unavailable/);
   overlay.clickTab("controls");
   assert.match(overlay.root.innerHTML, /Controls isn&#39;t active|Controls isn't active/);
+});
+
+test("Game tab is the default after a launch and shows the game's guide", async () => {
+  const overlay = await renderOverlay({
+    party: null,
+    controls: null,
+    guide: {
+      slug: "morrowind",
+      title: "Morrowind",
+      howToQuit: "Press Escape, then choose Exit.",
+      address: "147.93.133.235:25565",
+      firstPlaySteps: ["Finish character creation first."],
+      groupOrder: ["Movement"],
+      controls: { schemes: [{ scheme: "keyboard", bindings: [{ group: "Movement", action: "Jump", input: "E" }] }] },
+    },
+  });
+  assert.match(overlay.tabs.innerHTML, /tab active[^>]*data-tab="game"/);
+  assert.match(overlay.root.innerHTML, /Press Escape, then choose Exit\./);
+  assert.match(overlay.root.innerHTML, /147\.93\.133\.235:25565/);
+  assert.match(overlay.root.innerHTML, /Jump/);
+  assert.match(overlay.root.innerHTML, /<kbd>E<\/kbd>/);
+  assert.match(overlay.root.innerHTML, /Finish character creation first\./);
+  assert.equal(overlay.subject.textContent, "Morrowind");
+});
+
+test("Game tab explains itself when no game was launched", async () => {
+  const overlay = await renderOverlay({ party: null, controls: null, guide: null });
+  assert.match(overlay.tabs.innerHTML, /tab active[^>]*data-tab="game"/);
+  assert.match(overlay.root.innerHTML, /Launch a game from PlayBound/);
 });
