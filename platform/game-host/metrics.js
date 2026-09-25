@@ -77,26 +77,27 @@ async function readNetDev() {
   }
 }
 
-async function readCpuUsagePercent() {
+async function readCpuUsagePercent(load1, cores) {
+  const fallback = load1 != null && cores ? Math.min(100, Math.round((load1 / cores) * 100)) : 5;
   try {
     const raw = await readFile("/proc/stat", "utf8");
     const line = raw.split("\n").find((l) => l.startsWith("cpu "));
-    if (!line) return null;
+    if (!line) return fallback;
     const parts = line.split(/\s+/).slice(1).map(Number);
     const idle = parts[3] + (parts[4] || 0);
     const total = parts.reduce((a, b) => a + b, 0);
     const now = Date.now();
     if (!cpuBaseline) {
       cpuBaseline = { idle, total, at: now };
-      return null;
+      return fallback;
     }
     const idleDelta = idle - cpuBaseline.idle;
     const totalDelta = total - cpuBaseline.total;
     cpuBaseline = { idle, total, at: now };
-    if (totalDelta <= 0) return null;
+    if (totalDelta <= 0) return fallback;
     return Math.round((1 - idleDelta / totalDelta) * 100);
   } catch {
-    return null;
+    return fallback;
   }
 }
 
@@ -112,7 +113,7 @@ export async function collectMetrics(publicIp) {
   const usedMem = totalMem - freeMem;
   const [load1, load5, load15] = os.loadavg();
   const cores = os.cpus().length || 1;
-  const cpuUsagePercent = await readCpuUsagePercent();
+  const cpuUsagePercent = await readCpuUsagePercent(load1, cores);
   const net = await readNetDev();
 
   let bandwidth = {

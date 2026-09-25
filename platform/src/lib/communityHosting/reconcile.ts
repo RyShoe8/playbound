@@ -119,6 +119,24 @@ async function syncReservations(now: Date, regionKey: string) {
   }
 }
 
+function nodePlacementMetrics(metrics: {
+  collectedAt?: string;
+  cpu?: { cores?: number; load1?: number; usagePercent?: number | null };
+  memory?: { freeBytes?: number; totalBytes?: number };
+}) {
+  if (!metrics.cpu?.cores || metrics.memory?.freeBytes == null || !metrics.memory?.totalBytes) return null;
+  const cpuPercent = metrics.cpu.usagePercent != null
+    ? metrics.cpu.usagePercent
+    : (metrics.cpu.load1 != null ? Math.min(100, Math.round((metrics.cpu.load1 / metrics.cpu.cores) * 100)) : 5);
+  return {
+    collectedAt: metrics.collectedAt || "",
+    cpuCores: metrics.cpu.cores,
+    cpuUsagePercent: cpuPercent,
+    freeRamBytes: metrics.memory.freeBytes,
+    totalRamBytes: metrics.memory.totalBytes,
+  };
+}
+
 export async function reconcileCommunityHosting(now = new Date()): Promise<{ action: string; reason?: string }> {
   await dbConnect();
   const config = await CommunityHostingConfig.findOne({ key: "global" }).lean();
@@ -243,9 +261,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         now, nodeEnabled: config.node.enabled, draining: config.node.draining,
         requestedRegion: config.node.regionKey, nodeRegion: config.node.regionKey,
         profileVerified: true,
-        metrics: metrics.cpu?.cores && metrics.memory?.freeBytes != null && metrics.memory?.totalBytes
-          ? { collectedAt: metrics.collectedAt || "", cpuCores: metrics.cpu.cores, cpuUsagePercent: metrics.cpu.usagePercent ?? null, freeRamBytes: metrics.memory.freeBytes, totalRamBytes: metrics.memory.totalBytes }
-          : null,
+        metrics: nodePlacementMetrics(metrics),
         safety: config.safety, budget: config.budget,
         runningManaged, plannedReservations: plannedReservations.filter((r) => r.sourceKey !== due.sourceKey).map((r) => ({ cpuCores: r.cpuCores, ramBytes: r.ramBytes })),
         requested: { cpuCores: envelope.cpuCores, ramBytes: envelope.ramBytes },
@@ -309,9 +325,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         now, nodeEnabled: config.node.enabled, draining: config.node.draining,
         requestedRegion: config.node.regionKey, nodeRegion: config.node.regionKey,
         profileVerified: true,
-        metrics: metrics.cpu?.cores && metrics.memory?.freeBytes != null && metrics.memory?.totalBytes
-          ? { collectedAt: metrics.collectedAt || "", cpuCores: metrics.cpu.cores, cpuUsagePercent: metrics.cpu.usagePercent ?? null, freeRamBytes: metrics.memory.freeBytes, totalRamBytes: metrics.memory.totalBytes }
-          : null,
+        metrics: nodePlacementMetrics(metrics),
         safety: config.safety, budget: config.budget,
         runningManaged,
         plannedReservations: plannedReservations.map((r) => ({ cpuCores: r.cpuCores, ramBytes: r.ramBytes })),
@@ -369,9 +383,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         now, nodeEnabled: config.node.enabled, draining: config.node.draining,
         requestedRegion: server.regionKey, nodeRegion: config.node.regionKey,
         profileVerified: true,
-        metrics: metrics.cpu?.cores && metrics.memory?.freeBytes != null && metrics.memory?.totalBytes
-          ? { collectedAt: metrics.collectedAt || "", cpuCores: metrics.cpu.cores, cpuUsagePercent: metrics.cpu.usagePercent ?? null, freeRamBytes: metrics.memory.freeBytes, totalRamBytes: metrics.memory.totalBytes }
-          : null,
+        metrics: nodePlacementMetrics(metrics),
         safety: config.safety, budget: config.budget, runningManaged,
         plannedReservations: plannedReservations.filter((r) => String(r.communityServerId || "") !== String(server._id)).map((r) => ({ cpuCores: r.cpuCores, ramBytes: r.ramBytes })),
         requested: { cpuCores: recoveryEnvelope.cpuCores, ramBytes: recoveryEnvelope.ramBytes },
