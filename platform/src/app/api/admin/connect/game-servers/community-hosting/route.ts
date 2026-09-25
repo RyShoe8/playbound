@@ -7,6 +7,8 @@ import CommunityServer from "@/lib/models/CommunityServer";
 import CapacityReservation from "@/lib/models/CapacityReservation";
 import { hostingSettingsSchema } from "@/lib/communityHosting/settings";
 import { fetchGameHostMetrics, listManagedHostRooms } from "@/lib/gameHost/client";
+import CatalogGame from "@/lib/models/CatalogGame";
+import Edition from "@/lib/models/Edition";
 
 export async function GET() {
   const { error } = await requireAdminSession();
@@ -20,8 +22,16 @@ export async function GET() {
     fetchGameHostMetrics(), listManagedHostRooms(),
   ]);
   const defaults = new CommunityHostingConfig({ key: "global" }).toObject();
+  // Display names for the game/edition checklist; profiles store slugs only.
+  const gameSlugs = [...new Set(profiles.map((p) => p.gameSlug))];
+  const [titleRows, editionRows] = await Promise.all([
+    CatalogGame.find({ slug: { $in: gameSlugs } }).select({ slug: 1, title: 1 }).lean(),
+    Edition.find({ gameSlug: { $in: gameSlugs } }).select({ gameSlug: 1, slug: 1, name: 1 }).lean(),
+  ]);
+  const titles = Object.fromEntries(titleRows.map((g) => [g.slug, g.title]));
+  const editionNames = Object.fromEntries(editionRows.map((e) => [`${e.gameSlug}:${e.slug}`, e.name]));
   return NextResponse.json({
-    config: config || defaults, profiles, servers, reservations,
+    config: config || defaults, profiles, servers, reservations, titles, editionNames,
     metrics: metrics.ok ? metrics.metrics : null,
     agent: agent.ok ? agent : { ok: false, error: agent.error },
   });
