@@ -50,6 +50,11 @@ apt-get install -y --no-install-recommends \
   0ad \
   chocolate-doom
 
+# The Debian openarena-server package enables its own public server on 27960
+# as a system service. PlayBound only uses its binary for agent-managed rooms,
+# so that service ran unmanaged for weeks; keep it off.
+systemctl disable --now openarena-server 2>/dev/null || true
+
 # Optional on some mirrors — do not fail the whole install if missing.
 # (wesnoth-server is not one of these: noble has no such package at all, and
 # the server it does have is the wrong series. See the Wesnoth block below.)
