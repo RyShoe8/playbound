@@ -44,7 +44,7 @@ jobs:
         if: steps.check.outputs.should_build == 'true'
         run: |
           sudo apt-get update
-          sudo apt-get install -y fakeroot dpkg libopenjp2-tools libfuse2
+          sudo apt-get install -y fakeroot dpkg libopenjp2-tools libfuse2 xvfb libnss3 libgtk-3-0 libgbm1 libasound2t64
 
       - name: Install Platform Dependencies
         if: steps.check.outputs.should_build == 'true'
@@ -67,3 +67,9 @@ jobs:
         working-directory: platform
         env:
           BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN || vars.BLOB_READ_WRITE_TOKEN }}
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: linux-launcher-smoke-failure
+          path: launcher/test-results/

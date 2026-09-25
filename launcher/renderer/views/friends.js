@@ -1,3 +1,4 @@
+import { partyStore } from "../partyStore.js";
 import { createFreeOfferCard, createGameCard } from "../cards.js";
 import { CADENCE } from "../cadence.js";
 import { pollSuspended } from "../pollGate.js";
@@ -102,7 +103,7 @@ let lastPartyVersion = null;
 let partyVersionsWorking = false;
 
 function syncPartyVersionPoll() {
-  const party = state._activeParty;
+  const party = partyStore.current;
   const live = Boolean(party?.id && party.status !== "ended" && !localPlaying && window.playbound.getPartyVersion);
   if (!live) {
     if (partyVersionTimer) clearInterval(partyVersionTimer);
@@ -394,6 +395,8 @@ async function renderFriendsView() {
   const container = views.friends;
   
   if (!state.accountState.connected) {
+    partyStore.clear();
+    prefetchedBundle = null;
     // Never carry one account's friends into the next sign-in.
     lastGoodFriends = [];
     lastGoodRequests.incoming = [];
@@ -607,7 +610,7 @@ async function renderFriendsView() {
 }
 
 function syncFriendsPoll() {
-  const live = Boolean(state._activeParty && state._activeParty.status !== "ended");
+  const live = Boolean(partyStore.current && partyStore.current.status !== "ended");
   const liveMs = partyVersionsWorking ? LIVE_PARTY_POLL_WITH_VERSION_MS : LIVE_PARTY_POLL_MS;
   const next = live && !localPlaying ? liveMs : FRIENDS_POLL_MS;
   syncPartyVersionPoll();
@@ -618,7 +621,7 @@ function syncFriendsPoll() {
   }
   friendsPollMs = next;
   friendsPollInterval = setInterval(() => {
-    const inLiveParty = Boolean(state._activeParty && state._activeParty.status !== "ended");
+    const inLiveParty = Boolean(partyStore.current && partyStore.current.status !== "ended");
     if ((state.currentView === "friends" || inLiveParty) && state.accountState.connected) {
       /*
        * Kept running rather than torn down: the panel is still mounted and the
@@ -686,7 +689,7 @@ if (!playPollWired) {
 async function notifyPartyGameClosed(slug) {
   pendingJoin = null;
   setStatus("");
-  const party = state._activeParty;
+  const party = partyStore.current;
   if (!party?.id || party.gameSlug !== slug) return;
   if (slug === "hedgewars") void window.playbound.stopHedgewarsLocalServer?.();
   if (party.status !== "playing" && party.status !== "launching") return;
@@ -764,51 +767,6 @@ function withCachedDiscoverable(data) {
   return { ...data, discoverable: lastDiscoverable };
 }
 
-/*
- * Stick the last good myParties across a soft party-sync failure or a single
- * empty read. party-sync returns myParties: [] with errors:["parties"] when
- * that half fails — painting that blanked the live party until the next poll.
- * One empty success can also flicker (canonical pick / race); require a few
- * consecutive empties before we treat leave as real. While returning from a
- * party Install, never clear — the host is still in the party.
- */
-let lastMyParties = [];
-let emptyMyPartiesStreak = 0;
-
-function withCachedMyParties(data) {
-  if (!data || data.error) return data;
-  const errors = Array.isArray(data.errors) ? data.errors : [];
-  const mine = Array.isArray(data.myParties) ? data.myParties : [];
-
-  if (errors.includes("parties")) {
-    return { ...data, myParties: lastMyParties };
-  }
-
-  if (mine.length > 0) {
-    lastMyParties = mine;
-    emptyMyPartiesStreak = 0;
-    return data;
-  }
-
-  if (state.returnToFriendsParty && lastMyParties.length > 0) {
-    return { ...data, myParties: lastMyParties };
-  }
-
-  emptyMyPartiesStreak += 1;
-  // Five consecutive empties (~15s at live poll) before we believe leave is real.
-  // Intermittent party-sync races were blanking the Friends panel mid-lobby.
-  if (emptyMyPartiesStreak < 5 && lastMyParties.length > 0) {
-    return { ...data, myParties: lastMyParties };
-  }
-
-  lastMyParties = [];
-  return data;
-}
-
-function cachePartiesPayload(data) {
-  return withCachedMyParties(withCachedDiscoverable(data));
-}
-
 async function loadParties() {
   if (!window.playbound.getParties) return null;
   const includeDiscoverable = Date.now() - lastDiscoverableAt >= DISCOVERABLE_MIN_MS;
@@ -816,7 +774,7 @@ async function loadParties() {
   const data = await window.playbound.getParties(
     includeDiscoverable ? undefined : { includeDiscoverable: false }
   );
-  return cachePartiesPayload(data);
+  return withCachedDiscoverable(data);
 }
 
 /*
@@ -834,6 +792,7 @@ async function loadParties() {
  * than an empty panel.
  */
 async function loadFriendsBundle() {
+  const partyRead = partyStore.beginRead();
   const includeDiscoverable = Date.now() - lastDiscoverableAt >= DISCOVERABLE_MIN_MS;
 
   if (window.playbound.getPartySync) {
@@ -845,7 +804,8 @@ async function loadFriendsBundle() {
       return {
         friendsData: { friends: data.friends },
         requestsData: { incoming: data.incoming, outgoing: data.outgoing },
-        partiesRaw: cachePartiesPayload({
+        partyRead,
+        partiesRaw: withCachedDiscoverable({
           myParties: data.myParties,
           ...(Array.isArray(data.discoverable) ? { discoverable: data.discoverable } : {}),
           ...(Array.isArray(data.errors) ? { errors: data.errors } : {}),
@@ -861,7 +821,7 @@ async function loadFriendsBundle() {
     window.playbound.getFriendRequests(),
     loadParties(),
   ]);
-  return { friendsData, requestsData, partiesRaw };
+  return { friendsData, requestsData, partiesRaw, partyRead };
 }
 
 /*
@@ -933,9 +893,6 @@ const lastGoodRequests = { incoming: [], outgoing: [] };
 async function refreshFriendsData() {
   const content = document.getElementById("friends-content-area");
   if (!content) return;
-  // A party write (or optimistic change) landing while this read is in flight
-  // makes its party snapshot stale; painting it would flip the click back.
-  const partySeqAtStart = partyWriteSeq;
 
   try {
     // Started together: the game list comes from the local catalog and has
@@ -947,8 +904,11 @@ async function refreshFriendsData() {
       loadUpcomingEvents(),
     ]);
     const bundle = prefetchedResult || (await loadFriendsBundle());
-    const { friendsData, requestsData, partiesRaw } = bundle;
-    const partiesData = await reconcilePartiesPayload(partiesRaw);
+    const { friendsData, requestsData, partiesRaw, partyRead } = bundle;
+    const reconciled = await reconcilePartiesPayload(partiesRaw);
+    const partiesData = partyStore.acceptRead(reconciled, partyRead, {
+      keepDuringInstall: state.returnToFriendsParty,
+    });
     /*
      * A poll that came back without a list (timeout, `errors: ["friends"]`)
      * is not an empty friends list. Treating it as one blanked the page to
@@ -959,7 +919,7 @@ async function refreshFriendsData() {
     if (Array.isArray(requestsData?.outgoing)) lastGoodRequests.outgoing = requestsData.outgoing;
     const friends = lastGoodFriends;
     state._createPartyFriends = friends;
-    if (partyWriteSeq === partySeqAtStart) paintPartyArea(partiesData);
+    paintPartyArea(partiesData);
     syncFriendsPoll();
     const activeParty = Array.isArray(partiesData?.myParties) ? partiesData.myParties[0] : null;
     if (activeParty?.id) void refreshPartyChat(activeParty);
@@ -1721,8 +1681,6 @@ let partyGamesCacheKey = null;
 /** Party game picker: true = couch only; false = online multiplayer list. */
 let partyCouchCoopFilter = false;
 let partyCouchFilterExplicit = false;
-/** Blocks poll repaints from undoing an in-flight party game pick. */
-let partyMutationInFlight = 0;
 
 async function ensurePartyGames() {
   const cacheKey = `${state.compatibilityFilter || "compatible"}:${state.discoveryMode || "all"}`;
@@ -3066,8 +3024,8 @@ function wirePartyPublicServerPicker(el, slot) {
   el.querySelector(".party-public-server-ready")?.addEventListener("click", async (event) => {
     const btn = event.currentTarget;
     btn.disabled = true;
-    const ok = applyPartyResult(
-      await window.playbound.setPartyReady(partyId, true),
+    const ok = await runPartyAction(partyId,
+      () => window.playbound.setPartyReady(partyId, true),
       "Couldn't update your ready state."
     );
     if (!ok) btn.disabled = false;
@@ -3079,8 +3037,8 @@ function wirePartyPublicServerPicker(el, slot) {
     if (el.dataset.canPick !== "1" || !window.playbound.setPartyPublicServer) return;
     btn.disabled = true;
     try {
-      const ok = applyPartyResult(
-        await window.playbound.setPartyPublicServer(partyId, {
+      const ok = await runPartyAction(partyId,
+        () => window.playbound.setPartyPublicServer(partyId, {
           id: btn.dataset.id,
           name: btn.dataset.name,
           host: btn.dataset.host,
@@ -3190,9 +3148,7 @@ function clearPartyAreaOptimistic() {
     slot.innerHTML = "";
     slot.dataset.sig = "";
   }
-  state._activeParty = null;
-  lastMyParties = [];
-  emptyMyPartiesStreak = 5;
+  partyStore.clear();
   const startBtn = document.getElementById("btn-toggle-create-party");
   if (startBtn) startBtn.style.display = "";
   syncFriendsPoll();
@@ -3211,9 +3167,8 @@ function paintPartyArea(partiesData, { force = false } = {}) {
   const discoverable = Array.isArray(partiesData?.discoverable) ? partiesData.discoverable : [];
   const active = mine[0] || null;
 
-  if (!force && partyMutationInFlight > 0) return;
+  if (!force && partyStore.pending) return;
 
-  state._activeParty = active;
 
   // The site hides "Start Party" while you are already in one.
   const startBtn = document.getElementById("btn-toggle-create-party");
@@ -3236,7 +3191,7 @@ function paintPartyArea(partiesData, { force = false } = {}) {
    * stale in that case so the next tick picks the change up.
    */
   const sig = partyAreaSignature(active, discoverable);
-  if (slot.dataset.sig === sig) return;
+  if (!force && slot.dataset.sig === sig) return;
   if (!force && slot.contains(document.activeElement)) return;
   slot.dataset.sig = sig;
 
@@ -3245,67 +3200,43 @@ function paintPartyArea(partiesData, { force = false } = {}) {
   else wirePartyDiscovery(slot);
 }
 
-/** Applies a party mutation response: surface the error or repaint. */
-/*
- * Bumped on every party write the UI has already painted (optimistic or from a
- * mutation reply). refreshFriendsData skips painting a party snapshot it began
- * reading before the latest bump.
- */
-let partyWriteSeq = 0;
-
-/** Paint a party payload now, as the authoritative latest state. */
-function paintOwnParty(party) {
-  partyWriteSeq += 1;
-  state._activeParty = party;
-  lastMyParties = [party];
-  emptyMyPartiesStreak = 0;
-  const slot = document.getElementById("friends-party-area");
-  if (slot) slot.dataset.sig = "";
-  blurPartyFocus();
-  paintPartyArea({ myParties: [party], discoverable: [] }, { force: true });
-}
-
 /**
  * Apply a party change to the screen before the server answers, then run it.
  * On failure the previous party is repainted and the error shown.
  */
 async function optimisticPartyAction(party, mutate, request, fallbackMessage) {
-  const before = party;
+  if (partyStore.current?.id !== party?.id) return false;
+  const before = partyStore.current;
   let optimistic = null;
   try {
-    optimistic = mutate(JSON.parse(JSON.stringify(party)));
+    optimistic = mutate(before);
   } catch {
     optimistic = null;
   }
-  if (optimistic) paintOwnParty(optimistic);
-  const res = await request();
-  const ok = applyPartyResult(res, fallbackMessage);
-  if (!ok && optimistic) paintOwnParty(before);
+  const token = partyStore.beginAction(optimistic);
+  if (optimistic) paintPartyArea({ myParties: [partyStore.current] }, { force: true });
+  let res;
+  try { res = await request(); }
+  catch (error) { res = { error: error.message || fallbackMessage }; }
+  const ok = Boolean(res && !res.error);
+  const accepted = partyStore.finishAction(token, { party: res?.party, failed: !ok });
+  if (!ok) setStatus(res?.error || fallbackMessage, true);
+  if (accepted) {
+    blurPartyFocus();
+    paintPartyArea({ myParties: partyStore.current ? [partyStore.current] : [] }, { force: true });
+    if (ok && !res.party) void pollFriendsData();
+  } else if (!partyStore.pending) {
+    // Overlapping requests may settle in a different order on the server.
+    void pollFriendsData();
+  }
   return ok;
 }
 
-function applyPartyResult(res, fallbackMessage) {
-  if (!res || res.error) {
-    setStatus(res?.error || fallbackMessage, true);
-    return false;
-  }
-  /*
-   * Prefer the mutation payload over the next poll. Waiting on refresh alone
-   * left lastMyParties on the pre-pick party, so sticky empties (~15s) briefly
-   * wiped the game the host just selected.
-   */
-  if (res.party?.id) {
-    // The reply is the party as saved; the regular live poll picks up the
-    // rest. A full refresh here re-fetched friends, requests and events on
-    // every click.
-    paintOwnParty(res.party);
-  } else {
-    const slot = document.getElementById("friends-party-area");
-    if (slot) slot.dataset.sig = "";
-    blurPartyFocus();
-    void pollFriendsData();
-  }
-  return true;
+/** Use the same settlement rules for actions without an optimistic field change. */
+async function runPartyAction(partyId, request, fallbackMessage) {
+  const current = partyStore.current;
+  if (!current || current.id !== partyId) return false;
+  return optimisticPartyAction(current, p => p, request, fallbackMessage);
 }
 
 function wirePartyView(slot, party) {
@@ -3316,8 +3247,8 @@ function wirePartyView(slot, party) {
     nameInput.addEventListener("blur", async () => {
       const next = nameInput.value.trim();
       if (next === (party.name || "")) return;
-      applyPartyResult(
-        await window.playbound.setPartyName(partyId, next || null),
+      await runPartyAction(partyId,
+        () => window.playbound.setPartyName(partyId, next || null),
         "Couldn't rename the party."
       );
     });
@@ -3330,7 +3261,7 @@ function wirePartyView(slot, party) {
       partyCouchCoopFilter = multiplayerType.value === "couch";
       partyCouchFilterExplicit = true;
       slot.dataset.sig = "";
-      paintPartyArea({ myParties: [state._activeParty], discoverable: [] }, { force: true });
+      paintPartyArea({ myParties: [partyStore.current], discoverable: [] }, { force: true });
     });
   }
   if (gameSelect) {
@@ -3339,34 +3270,13 @@ function wirePartyView(slot, party) {
       if (!slug) return;
       const pickedTitle =
         partyGamesCache?.find((g) => g.slug === slug)?.title || slug;
-      partyMutationInFlight += 1;
-      if (state._activeParty?.id === partyId) {
-        state._activeParty = {
-          ...state._activeParty,
-          gameSlug: slug,
-          gameTitle: pickedTitle,
-          editionSlug: null,
-          modSlugs: [],
-          // Clear stale sync until the API returns a fresh check.
-          configSync: null,
-        };
-        lastMyParties = [state._activeParty];
-        emptyMyPartiesStreak = 0;
-        slot.dataset.sig = "";
-        paintPartyArea({ myParties: [state._activeParty], discoverable: [] }, { force: true });
-      }
       pendingJoin = null;
       setStatus("");
-      try {
-        const res = await window.playbound.setPartyGame(partyId, slug);
-        applyPartyResult(res, "Couldn't set the party game.");
-        void window.playbound.syncLibraryNow?.({ quiet: true });
-      } catch (err) {
-        setStatus(err.message || "Couldn't set the party game.", true);
-        void api.refreshFriendsData();
-      } finally {
-        partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
-      }
+      await optimisticPartyAction(party, current => ({
+        ...current, gameSlug: slug, gameTitle: pickedTitle,
+        editionSlug: null, modSlugs: [], configSync: null,
+      }), () => window.playbound.setPartyGame(partyId, slug), "Couldn't set the party game.");
+      void window.playbound.syncLibraryNow?.({ quiet: true });
     });
     enhanceSelect(gameSelect);
   }
@@ -3377,17 +3287,8 @@ function wirePartyView(slot, party) {
       pendingJoin = null;
       setStatus("");
       const val = openRaModSelect.value || null;
-      partyMutationInFlight += 1;
-      try {
-        const res = await window.playbound.setPartyOpenRaMod?.(partyId, val);
-        partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
-        applyPartyResult(res, "Couldn't change OpenRA game mode.");
-        void api.refreshFriendsData();
-      } catch (err) {
-        partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
-        setStatus(err.message || "Couldn't change OpenRA game mode.", true);
-        void api.refreshFriendsData();
-      }
+      await optimisticPartyAction(party, current => current,
+        () => window.playbound.setPartyOpenRaMod?.(partyId, val), "Couldn't change OpenRA game mode.");
     });
     enhanceSelect(openRaModSelect);
   }
@@ -3396,17 +3297,8 @@ function wirePartyView(slot, party) {
   if (openRaEditionSelect) {
     openRaEditionSelect.addEventListener("change", async () => {
       const val = openRaEditionSelect.value || "official";
-      partyMutationInFlight += 1;
-      try {
-        const res = await window.playbound.setPartyEdition?.(partyId, val);
-        partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
-        applyPartyResult(res, "Couldn't change OpenRA edition.");
-        void api.refreshFriendsData();
-      } catch (err) {
-        partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
-        setStatus(err.message || "Couldn't change OpenRA edition.", true);
-        void api.refreshFriendsData();
-      }
+      await optimisticPartyAction(party, current => current,
+        () => window.playbound.setPartyEdition?.(partyId, val), "Couldn't change OpenRA edition.");
     });
     enhanceSelect(openRaEditionSelect);
   }
@@ -3414,18 +3306,10 @@ function wirePartyView(slot, party) {
   const worldSelect = slot.querySelector("#party-world-select");
   if (worldSelect) {
     worldSelect.addEventListener("change", async () => {
-      partyMutationInFlight += 1;
       setStatus("Switching world — the server restarts on it…");
-      try {
-        const res = await window.playbound.setPartySavedWorld(partyId, worldSelect.value || null);
-        partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
-        applyPartyResult(res, "Couldn't change the world.");
-        if (res && !res.error) setStatus("");
-      } catch (err) {
-        partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
-        setStatus(err.message || "Couldn't change the world.", true);
-        void api.refreshFriendsData();
-      }
+      const ok = await optimisticPartyAction(party, current => current,
+        () => window.playbound.setPartySavedWorld(partyId, worldSelect.value || null), "Couldn't change the world.");
+      if (ok) setStatus("");
     });
     enhanceSelect(worldSelect);
   }
@@ -3435,16 +3319,8 @@ function wirePartyView(slot, party) {
     hostModeSelect.addEventListener("change", async () => {
       const mode = hostModeSelect.value;
       if (!mode) return;
-      partyMutationInFlight += 1;
-      try {
-        const res = await window.playbound.setPartyHostMode(partyId, mode);
-        partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
-        applyPartyResult(res, "Couldn't change where the game is hosted.");
-      } catch (err) {
-        partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
-        setStatus(err.message || "Couldn't change where the game is hosted.", true);
-        void api.refreshFriendsData();
-      }
+      await optimisticPartyAction(party, current => current,
+        () => window.playbound.setPartyHostMode(partyId, mode), "Couldn't change where the game is hosted.");
     });
     enhanceSelect(hostModeSelect);
   }
@@ -3452,8 +3328,8 @@ function wirePartyView(slot, party) {
   const visibilitySelect = slot.querySelector("#party-visibility-select");
   if (visibilitySelect) {
     visibilitySelect.addEventListener("change", async () => {
-      applyPartyResult(
-        await window.playbound.setPartyVisibility(partyId, visibilitySelect.value),
+      await runPartyAction(partyId,
+        () => window.playbound.setPartyVisibility(partyId, visibilitySelect.value),
         "Couldn't change who can join."
       );
     });
@@ -3463,8 +3339,8 @@ function wirePartyView(slot, party) {
   slot.querySelectorAll(".btn-party-promote").forEach((btn) => {
     btn.addEventListener("click", async () => {
       btn.disabled = true;
-      applyPartyResult(
-        await window.playbound.transferPartyLeadership(partyId, btn.dataset.user),
+      await runPartyAction(partyId,
+        () => window.playbound.transferPartyLeadership(partyId, btn.dataset.user),
         "Couldn't transfer leadership."
       );
     });
@@ -4668,7 +4544,7 @@ async function reportSelfHostWhenListening(party, port) {
   if (!window.playbound.probeLocalServer || !window.playbound.markSelfHostReady) return;
   const deadline = Date.now() + 30 * 60 * 1000;
   while (Date.now() < deadline) {
-    const active = state._activeParty;
+    const active = partyStore.current;
     if (!active || String(active.id) !== String(party.id) || active.status === "ended") return;
     try {
       const probe = await window.playbound.probeLocalServer(port);
@@ -4818,7 +4694,7 @@ async function fillCreatePartyPanel() {
     } catch (err) {
       for (let attempt = 0; attempt < 3; attempt += 1) {
         await api.refreshFriendsData();
-        if (state._activeParty?.id) {
+        if (partyStore.current?.id) {
           document.getElementById("create-party-panel").style.display = "none";
           if (nameInput) nameInput.value = "";
           return;

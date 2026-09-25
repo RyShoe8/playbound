@@ -30,6 +30,7 @@ function main() {
   run("Syncing game catalog", path.join(__dirname, "sync-catalog.js"));
   run("Syncing poll cadences", path.join(__dirname, "sync-cadence.js"));
   run("Checking launcher syntax", path.join(__dirname, "check-launcher-syntax.js"));
+  run("Testing the running launcher", path.join(__dirname, "run-smoke.js"));
   console.log(`${TAG} Prep complete.`);
 }
 
