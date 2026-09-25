@@ -15,16 +15,27 @@ import { rotationPriority } from "./rotation";
 import { saveEvent } from "@/lib/telemetry/server/saveEvent";
 
 export const DEFAULT_COMMUNITY_SERVER_ENVELOPE: ResourceEnvelope = {
-  cpuCores: 0.25,
-  ramBytes: 512 * 1024 * 1024,
+  cpuCores: 1.0,
+  ramBytes: 1536 * 1024 * 1024, // 1.5 GB default baseline
 };
 
-export function getEffectiveEnvelope(envelope?: { cpuCores?: number; ramBytes?: number } | null): ResourceEnvelope {
+const HEAVY_GAME_ENVELOPES: Record<string, ResourceEnvelope> = {
+  "counter-strike-2": { cpuCores: 2.0, ramBytes: 2560 * 1024 * 1024 },
+  "morrowind": { cpuCores: 1.5, ramBytes: 2048 * 1024 * 1024 },
+  "veloren": { cpuCores: 1.5, ramBytes: 2048 * 1024 * 1024 },
+  "team-fortress-2": { cpuCores: 1.5, ramBytes: 2048 * 1024 * 1024 },
+};
+
+export function getEffectiveEnvelope(
+  envelope?: { cpuCores?: number; ramBytes?: number } | null,
+  gameSlug?: string
+): ResourceEnvelope {
   const cpu = Number(envelope?.cpuCores);
   const ram = Number(envelope?.ramBytes);
+  const fallback = (gameSlug && HEAVY_GAME_ENVELOPES[gameSlug]) || DEFAULT_COMMUNITY_SERVER_ENVELOPE;
   return {
-    cpuCores: Number.isFinite(cpu) && cpu > 0 ? cpu : DEFAULT_COMMUNITY_SERVER_ENVELOPE.cpuCores,
-    ramBytes: Number.isFinite(ram) && ram > 0 ? ram : DEFAULT_COMMUNITY_SERVER_ENVELOPE.ramBytes,
+    cpuCores: Number.isFinite(cpu) && cpu > 0 ? cpu : fallback.cpuCores,
+    ramBytes: Number.isFinite(ram) && ram > 0 ? ram : fallback.ramBytes,
   };
 }
 
@@ -79,7 +90,7 @@ async function syncReservations(now: Date, regionKey: string) {
   for (const event of events) {
     const profile = profiles.find((p) => p.gameSlug === event.gameSlug && (p.editionSlug || null) === (event.editionSlug || null));
     if (!profile) continue;
-    const envelope = getEffectiveEnvelope(profile.envelope);
+    const envelope = getEffectiveEnvelope(profile.envelope, profile.gameSlug);
     const sourceKey = `event:${event._id}`;
     wanted.add(sourceKey);
     const existingReservation = await CapacityReservation.findOne({ sourceKey }).select({ profileKey: 1, communityServerId: 1, state: 1 }).lean();
@@ -169,13 +180,20 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
       if (!room) {
         const job = agent.jobs[String(server._id)];
         const prevRuntime = server.runtimeState;
-        server.runtimeState = job?.status === "pending" ? "pending" : job?.status === "failed" ? "failed" : "unknown";
-        server.health = "unknown";
-        server.playerCount = null;
-        server.decisionReason = job?.error || "Runtime not reported by agent";
-        await server.save();
-        if (job?.status !== "pending") {
-          lost.push(server);
+        if (job?.status === "pending") {
+          server.runtimeState = "pending";
+          server.health = "unknown";
+          server.playerCount = null;
+          server.decisionReason = "STARTING_PENDING";
+          await server.save();
+        } else {
+          // If the runtime is not on the host, mark it stopped so it does not stay stuck in pending
+          server.desiredState = "stopped";
+          server.runtimeState = "stopped";
+          server.health = "unknown";
+          server.playerCount = null;
+          server.decisionReason = job?.error || (job?.status === "failed" ? "Failed to start" : "Stopped");
+          await server.save();
           if (job?.status === "failed" || prevRuntime === "running") {
             await recordHostingAction("community_server_failed", server, job?.error || "Runtime exited unexpectedly");
           }
@@ -215,7 +233,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
     }).sort({ warmupAt: 1 });
     const alreadyRunning = new Set(active.filter((s) => managedById.has(String(s._id))).map((s) => String(s._id)));
     const runningManaged: ResourceEnvelope[] = active.filter((s) => alreadyRunning.has(String(s._id))).map((s) => {
-      const envelope = getEffectiveEnvelope(profileByKey.get(s.profileKey)?.envelope);
+      const envelope = getEffectiveEnvelope(profileByKey.get(s.profileKey)?.envelope, s.gameSlug);
       return { cpuCores: envelope.cpuCores, ramBytes: envelope.ramBytes };
     });
     const plannedReservations = reservations.filter((r) => !r.communityServerId || !alreadyRunning.has(String(r.communityServerId)));
@@ -256,7 +274,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         await CapacityReservation.updateOne({ _id: due._id }, { $set: { decisionReason: "PROFILE_NOT_VERIFIED" } });
         return { action: "waiting", reason: "PROFILE_NOT_VERIFIED" };
       }
-      const envelope = getEffectiveEnvelope(dueProfile.envelope);
+      const envelope = getEffectiveEnvelope(dueProfile.envelope, dueProfile.gameSlug);
       const decision = placementDecision({
         now, nodeEnabled: config.node.enabled, draining: config.node.draining,
         requestedRegion: config.node.regionKey, nodeRegion: config.node.regionKey,
@@ -320,7 +338,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
     let lastBlockedReason: string | undefined;
 
     for (const candidate of candidateServers) {
-      const envelope = getEffectiveEnvelope(candidate.envelope);
+      const envelope = getEffectiveEnvelope(candidate.envelope, candidate.gameSlug);
       const decision = placementDecision({
         now, nodeEnabled: config.node.enabled, draining: config.node.draining,
         requestedRegion: config.node.regionKey, nodeRegion: config.node.regionKey,
@@ -352,11 +370,23 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         name: server.name,
       });
       if (started.status === "failed") {
-        server.runtimeState = "failed";
+        server.desiredState = "stopped";
+        server.runtimeState = "stopped";
         server.decisionReason = started.error;
         await server.save();
         await recordHostingAction("community_server_failed", server, started.error);
+        if (started.error?.includes("capacity")) {
+          break;
+        }
       } else {
+        if (started.room) {
+          server.runtimeState = "running";
+          server.runtimeId = started.room.roomId;
+          server.host = started.room.host;
+          server.port = started.room.port;
+          server.decisionReason = "RUNNING";
+          await server.save();
+        }
         await recordHostingAction("community_server_start", server);
         runningManaged.push({ cpuCores: envelope.cpuCores, ramBytes: envelope.ramBytes });
         startedCount++;

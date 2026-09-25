@@ -19,7 +19,12 @@ export async function GET() {
   const [config, profiles, servers, reservations, metrics, agent] = await Promise.all([
     CommunityHostingConfig.findOne({ key: "global" }).lean(),
     CommunityServerProfile.find({}).sort({ gameSlug: 1 }).lean(),
-    CommunityServer.find({}).sort({ updatedAt: -1 }).limit(100).lean(),
+    CommunityServer.find({
+      $or: [
+        { desiredState: "running" },
+        { runtimeState: { $in: ["running", "pending"] } },
+      ],
+    }).sort({ updatedAt: -1 }).limit(50).lean(),
     CapacityReservation.find({ state: { $in: ["planned", "active", "missed"] } }).sort({ warmupAt: 1 }).limit(100).lean(),
     fetchGameHostMetrics(), listManagedHostRooms(),
   ]);
