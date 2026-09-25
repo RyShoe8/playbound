@@ -40,3 +40,14 @@ export async function POST(req: Request) {
   }
 }
 
+/** Vercel crons fire GET; the VPS systemd timer fires POST. */
+export async function GET(req: Request) {
+  if (!authorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    return NextResponse.json({ ok: true, ...(await reconcileCommunityHosting()) });
+  } catch (error) {
+    console.error("[community-hosting] reconcile failed", error);
+    return NextResponse.json({ error: "Reconciliation failed" }, { status: 500 });
+  }
+}
+
