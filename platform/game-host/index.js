@@ -5,7 +5,6 @@
  *   GAME_HOST_SECRET     shared with Vercel
  *   GAME_HOST_PUBLIC_IP  this box's public IPv4
  *   GAME_HOST_PORT       HTTP listen (default 8741)
- *   GAME_HOST_MAX_ROOMS  concurrent rooms (default 8)
  *   GAME_HOST_GAMES_DIR  dedicated binaries (default /opt/playbound-host/games)
  *   GAME_HOST_IDLE_MS    auto-stop idle rooms (default 4h)
  */
@@ -52,7 +51,7 @@ const SECRET = process.env.GAME_HOST_SECRET || "";
 const PUBLIC_IP = process.env.GAME_HOST_PUBLIC_IP || "";
 const PORT = Number(process.env.GAME_HOST_PORT || 8741);
 const BIND_ADDRESS = process.env.GAME_HOST_BIND_ADDRESS || "0.0.0.0";
-const MAX_ROOMS = Number(process.env.GAME_HOST_MAX_ROOMS || 8);
+
 const IDLE_MS = Number(process.env.GAME_HOST_IDLE_MS || 4 * 60 * 60 * 1000);
 const MIRROR_ARCHIVE_DIR = process.env.MIRROR_ARCHIVE_DIR || "/opt/playbound-host/archive";
 const MIRROR_ARCHIVE_MAX_BYTES = Number(process.env.MIRROR_ARCHIVE_MAX_BYTES || 20 * 1024 * 1024 * 1024);
@@ -77,7 +76,6 @@ const partyRegistry = createPartyRegistry();
 /** `${slug}:${port}` */
 const usedPorts = new Set();
 const startCoordinator = createStartCoordinator({
-  maxRooms: () => MAX_ROOMS,
   occupiedCount: () => rooms.size,
 });
 /** relative archive path → in-flight/completed transfer state for this agent lifetime. */
@@ -790,7 +788,7 @@ async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, e
   }
 
   if (!startCoordinator.reserveCapacity()) {
-    return { error: `Host is at capacity (${MAX_ROOMS} rooms)` };
+    return { error: `Host is at capacity` };
   }
   lookup.set(ownerId, existingId || "pending");
 
@@ -1210,7 +1208,6 @@ const server = http.createServer(async (req, res) => {
       ok: true,
       publicIp: PUBLIC_IP || null,
       rooms: rooms.size,
-      maxRooms: MAX_ROOMS,
       games: listInstalled(),
       gameStatus: listGameHostStatus(),
       lastSpawnTest: getLastSpawnTests(),

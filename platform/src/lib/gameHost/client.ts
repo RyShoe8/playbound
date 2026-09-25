@@ -84,7 +84,6 @@ export type GameHostHealth = {
   ok?: boolean;
   publicIp?: string | null;
   rooms?: number;
-  maxRooms?: number;
   games?: Record<string, boolean>;
   gameStatus?: Record<string, { installed: boolean; ready: boolean }>;
   gameVersions?: Record<string, string | null>;

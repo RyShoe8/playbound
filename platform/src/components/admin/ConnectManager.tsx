@@ -62,7 +62,6 @@ type OverviewData = {
   host: string | null;
   health: {
     rooms?: number;
-    maxRooms?: number;
     publicIp?: string | null;
   } | null;
   lastSpawnTest?: Record<string, LastSpawnTestEntry>;
@@ -531,11 +530,7 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
           </div>
           <div className="text-right">
             <p className="text-3xl font-bold tabular-nums">{data?.rooms?.length ?? 0}</p>
-            <p className="text-xs text-muted-foreground">
-              {data?.health?.maxRooms != null
-                ? `of ${data.health.maxRooms} slots`
-                : "rooms"}
-            </p>
+            <p className="text-xs text-muted-foreground">rooms</p>
           </div>
         </div>
         {data?.roomsError ? (
