@@ -12,54 +12,96 @@ type Data = {
   profiles: Profile[];
   servers: Server[];
   reservations: Reservation[];
+  titles?: Record<string, string>;
+  editionNames?: Record<string, string>;
   metrics: { cpu?: { usagePercent?: number | null }; memory?: { freeBytes?: number }; collectedAt?: string } | null;
   agent: { ok: boolean; error?: string };
 };
 
 const GIB = 1024 ** 3;
 
-function ProfileEditor({ profile, onSaved }: { profile: Profile; onSaved: () => Promise<void> }) {
-  const [draft, setDraft] = useState<ProfileSettings>({
-    verification: profile.verification, blockedReason: profile.blockedReason || null,
-    queryKind: profile.queryKind, queryVerified: profile.queryVerified,
-    joinVerified: profile.joinVerified, enabled: profile.enabled,
-    rotationEligible: profile.rotationEligible, weight: profile.weight,
-    minimumOnlineMinutes: profile.minimumOnlineMinutes ?? null,
-    idleMinutes: profile.idleMinutes ?? null, cooldownMinutes: profile.cooldownMinutes ?? null,
+/**
+ * What a profile still needs before it can run automatically. Mirrors
+ * validateProfileReadiness on the server, as short labels for the checklist.
+ */
+function missingForHosting(p: Profile): string[] {
+  const missing: string[] = [];
+  if (p.queryKind === "none" || !p.queryVerified) missing.push("player count support");
+  if (!p.joinVerified) missing.push("Join test");
+  if ((p.sampleCount || 0) < 2 || (p.envelope?.measuredThroughPlayers || 0) < 1) missing.push("usage with players");
+  return missing;
+}
+
+function usageLabel(p: Profile): string {
+  const cores = p.envelope?.cpuCores || 0;
+  const gb = (p.envelope?.ramBytes || 0) / GIB;
+  if (!cores && !gb) return "not measured";
+  return `${cores.toFixed(2)} cores · ${gb.toFixed(2)} GB`;
+}
+
+async function saveProfile(p: Profile, change: Partial<ProfileSettings>) {
+  const next: ProfileSettings = {
+    verification: p.verification, blockedReason: p.blockedReason || null,
+    queryKind: p.queryKind, queryVerified: p.queryVerified, joinVerified: p.joinVerified,
+    enabled: p.enabled, rotationEligible: p.rotationEligible, weight: 1,
+    minimumOnlineMinutes: p.minimumOnlineMinutes ?? null, idleMinutes: p.idleMinutes ?? null,
+    cooldownMinutes: p.cooldownMinutes ?? null, ...change,
+  };
+  // "Verified" follows from the tests and measurements instead of being chosen.
+  const ready = missingForHosting({ ...p, ...next }).length === 0;
+  if (next.verification !== "blocked") next.verification = ready ? "verified" : "testing";
+  if (!ready) { next.enabled = false; next.rotationEligible = false; }
+  next.blockedReason = ready ? null : `Needs ${missingForHosting({ ...p, ...next }).join(", ")}`;
+  const response = await fetch(`/api/admin/connect/game-servers/community-hosting/profile/${encodeURIComponent(p.key)}`, {
+    method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(next),
   });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.error || "Could not save");
+}
+
+/** One row: checkbox to include in automatic hosting, usage, and the tests behind it. */
+function ProfileRow({ profile, label, onSaved }: { profile: Profile; label: string; onSaved: () => Promise<void> }) {
+  const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
-  const [saving, setSaving] = useState(false);
-  function set<K extends keyof ProfileSettings>(key: K, value: ProfileSettings[K]) {
-    setDraft((old) => ({ ...old, [key]: value }));
+  const missing = missingForHosting(profile);
+  const included = profile.enabled && profile.rotationEligible;
+  async function run(change: Partial<ProfileSettings>) {
+    setBusy(true); setStatus("");
+    try { await saveProfile(profile, change); await onSaved(); }
+    catch (error) { setStatus(error instanceof Error ? error.message : "Could not save"); }
+    finally { setBusy(false); }
   }
-  async function save() {
-    setSaving(true); setStatus("");
-    try {
-      const response = await fetch(`/api/admin/connect/game-servers/community-hosting/profile/${encodeURIComponent(profile.key)}`, {
-        method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(draft),
-      });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || "Could not save profile");
-      setStatus("Saved");
-      await onSaved();
-    } catch (error) { setStatus(error instanceof Error ? error.message : "Could not save profile"); }
-    finally { setSaving(false); }
-  }
-  return <details className="border-b border-border py-2">
-    <summary className="cursor-pointer text-sm"><strong>{profile.gameSlug}{profile.editionSlug ? ` · ${profile.editionSlug}` : ""}</strong> · {profile.verification} · {profile.sampleCount || 0} samples · {profile.envelope?.cpuCores || 0} cores / {((profile.envelope?.ramBytes || 0) / GIB).toFixed(2)} GB{profile.blockedReason ? ` · ${profile.blockedReason}` : ""}</summary>
-    <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
-      <label>Verification <select className="ml-2 rounded border bg-background p-1" value={draft.verification} onChange={(e) => set("verification", e.target.value as ProfileSettings["verification"])}><option value="testing">Testing</option><option value="blocked">Blocked</option><option value="verified">Verified</option></select></label>
-      <label>Player query <select className="ml-2 rounded border bg-background p-1" value={draft.queryKind} onChange={(e) => set("queryKind", e.target.value as ProfileSettings["queryKind"])}><option value="none">Not available</option><option value="openra-master">OpenRA master</option></select></label>
-      <label><input type="checkbox" checked={draft.queryVerified} onChange={(e) => set("queryVerified", e.target.checked)} /> Player query tested</label>
-      <label><input type="checkbox" checked={draft.joinVerified} onChange={(e) => set("joinVerified", e.target.checked)} /> Client Join tested</label>
-      <label><input type="checkbox" checked={draft.enabled} onChange={(e) => set("enabled", e.target.checked)} /> Enable profile</label>
-      <label><input type="checkbox" checked={draft.rotationEligible} onChange={(e) => set("rotationEligible", e.target.checked)} /> Allow rotation</label>
-      <label>Rotation weight <input className="ml-2 w-16 rounded border bg-background p-1" type="number" min="1" max="100" value={draft.weight} onChange={(e) => set("weight", Number(e.target.value))} /></label>
-      <label>Blocked reason <input className="ml-2 w-full rounded border bg-background p-1" value={draft.blockedReason || ""} onChange={(e) => set("blockedReason", e.target.value || null)} /></label>
-    </div>
-    <p className="mt-2 text-xs text-muted-foreground">Verified rotation requires a tested query, client Join, and idle plus occupied CPU/RAM samples. Highest observed player count: {profile.envelope?.measuredThroughPlayers || 0}. Last sample: {profile.lastSampleAt ? new Date(profile.lastSampleAt).toLocaleString() : "none"}.</p>
-    <div className="mt-2 flex items-center gap-3"><button type="button" disabled={saving} onClick={() => void save()} className="rounded-full border px-3 py-1 disabled:opacity-50">Save profile</button>{status && <span role="status">{status}</span>}</div>
-  </details>;
+  return <div className="py-0.5">
+    <label className={`flex items-center gap-2 ${missing.length ? "text-muted-foreground" : ""}`} title={missing.length ? `Needs ${missing.join(", ")}` : "Include in automatic hosting"}>
+      <input type="checkbox" checked={included} disabled={busy || missing.length > 0} onChange={(e) => void run({ enabled: e.target.checked, rotationEligible: e.target.checked })} />
+      <span>{label}</span>
+      <span className="ml-auto text-xs tabular-nums text-muted-foreground">{usageLabel(profile)}</span>
+    </label>
+    <details className="pl-6 text-xs text-muted-foreground">
+      <summary className="cursor-pointer">{missing.length ? `Needs ${missing.join(", ")}` : "Verified"}</summary>
+      <div className="mt-1 flex flex-wrap items-center gap-3">
+        {/* Player count support comes from code (a query adapter per game), not a setting. */}
+        <span>Player count: {profile.queryKind !== "none" && profile.queryVerified ? "supported" : "not supported yet"}</span>
+        <label><input type="checkbox" checked={profile.joinVerified} disabled={busy} onChange={(e) => void run({ joinVerified: e.target.checked })} /> Join tested</label>
+        <span>{profile.sampleCount || 0} samples · most players seen {profile.envelope?.measuredThroughPlayers || 0}</span>
+        {status && <span role="status" className="text-destructive">{status}</span>}
+      </div>
+    </details>
+  </div>;
+}
+
+/** Games as cards with their editions underneath, like the nightly planner. */
+function ProfileChecklist({ profiles, titles, editionNames, onSaved }: { profiles: Profile[]; titles: Record<string, string>; editionNames: Record<string, string>; onSaved: () => Promise<void> }) {
+  const bySlug = new Map<string, Profile[]>();
+  for (const p of profiles) bySlug.set(p.gameSlug, [...(bySlug.get(p.gameSlug) || []), p]);
+  const games = [...bySlug.entries()].sort(([a], [b]) => (titles[a] || a).localeCompare(titles[b] || b));
+  return <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+    {games.map(([slug, rows]) => <div key={slug} className="rounded-lg border border-border px-2 py-1.5 text-sm">
+      <p className="font-medium">{titles[slug] || slug}</p>
+      {[...rows].sort((a, b) => (a.editionSlug ? 1 : 0) - (b.editionSlug ? 1 : 0)).map((p) =>
+        <ProfileRow key={p.key} profile={p} label={p.editionSlug ? editionNames[`${slug}:${p.editionSlug}`] || p.editionSlug : "Base game"} onSaved={onSaved} />)}
+    </div>)}
+  </div>;
 }
 
 export function CommunityHostingPanel() {
@@ -184,8 +226,8 @@ export function CommunityHostingPanel() {
       <button type="button" disabled={saving} onClick={save} className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">Save hosting settings</button>
     </>}
     {message && <p role="status" className="text-sm">{message}</p>}
-    <div><h3 className="font-semibold">Dedicated-server audit</h3><p className="text-xs text-muted-foreground">Only verified profiles with a tested query and Join path can enter automatic rotation.</p>
-      <div className="mt-2 max-h-64 space-y-1 overflow-y-auto text-sm">{data?.profiles.length ? data.profiles.map((p) => <ProfileEditor key={p.key} profile={p} onSaved={load} />) : <p className="text-muted-foreground">No profiles measured yet.</p>}</div>
+    <div><h3 className="font-semibold">Games for automatic hosting</h3><p className="text-xs text-muted-foreground">Tick a game or edition to let PlayBound host it automatically. Usage is measured CPU and RAM per server. Greyed-out ones still need testing; open the line under them to record test results.</p>
+      <div className="text-sm">{data?.profiles.length ? <ProfileChecklist profiles={data.profiles} titles={data.titles || {}} editionNames={data.editionNames || {}} onSaved={load} /> : <p className="text-muted-foreground">No games measured yet.</p>}</div>
     </div>
     <div><h3 className="font-semibold">Running and queued servers</h3><div className="mt-2 space-y-1 text-sm">{data?.servers.length ? data.servers.map((s) => <div key={s._id} className="flex flex-wrap items-center justify-between gap-2 border-b border-border py-1"><span>{s.name} · {s.gameSlug}</span><span>{s.runtimeState} · {s.playerCount ?? "players unknown"} · {s.decisionReason || "—"}</span><span className="flex gap-2"><button type="button" className="underline" onClick={() => void serverAction(s, "start")}>Start</button><button type="button" className="underline" onClick={() => void serverAction(s, "restart")}>Restart</button><button type="button" className="underline" onClick={() => void serverAction(s, "stop")}>Stop</button></span></div>) : <p className="text-muted-foreground">No managed servers.</p>}</div></div>
     <div><h3 className="font-semibold">Upcoming capacity reservations</h3><div className="mt-2 space-y-1 text-sm">{data?.reservations.length ? data.reservations.map((r) => <p key={r.sourceKey}>{r.profileKey} · {r.state} · warmup {new Date(r.warmupAt).toLocaleString()}</p>) : <p className="text-muted-foreground">No reservations.</p>}</div></div>
