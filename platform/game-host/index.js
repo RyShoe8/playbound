@@ -1285,7 +1285,7 @@ const server = http.createServer(async (req, res) => {
       managedJobs.set(communityServerId, job);
       void startRoom({
         communityServerId, gameSlug, partyId: null,
-        name: String(body.name || `PlayBound ${gameSlug}`).slice(0, 40),
+        name: String(body.name || "PlayBound.Club Community Server").slice(0, 40),
         editionSlug: body.editionSlug, mod: body.mod, settings: body.settings,
       }).then((result) => {
         managedJobs.set(communityServerId, result.error

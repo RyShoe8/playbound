@@ -67,16 +67,29 @@ export const PARTY_OPS_EVENTS = [
   "party_chat_failed",
 ] as const;
 
-export type OpsFamily = "all" | "launcher" | "party";
+export const COMMUNITY_OPS_EVENTS = [
+  "community_server_start",
+  "community_server_failed",
+  "community_server_recovery",
+  "community_server_recovery_exhausted",
+  "community_server_rotated",
+  "community_server_stop_failed",
+  "community_server_capacity_blocked",
+  "community_server_reconcile_failed",
+] as const;
+
+export type OpsFamily = "all" | "launcher" | "party" | "servers";
 
 export function eventsForFamily(family: OpsFamily): string[] | null {
   if (family === "launcher") return [...LAUNCHER_OPS_EVENTS];
   if (family === "party") return [...PARTY_OPS_EVENTS];
+  if (family === "servers") return [...COMMUNITY_OPS_EVENTS];
   return null;
 }
 
 export function familyForArea(area: string | null): OpsFamily {
   if (area === "install") return "launcher";
   if (area === "party") return "party";
+  if (area === "hosting" || area === "servers") return "servers";
   return "all";
 }

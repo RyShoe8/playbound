@@ -35,6 +35,8 @@ export type AutoBugInput = {
   transport?: string | null;
   connectionState?: string | null;
   iceState?: string | null;
+  profileKey?: string | null;
+  serverName?: string | null;
 };
 
 function hashMessage(message: string): string {
@@ -43,18 +45,23 @@ function hashMessage(message: string): string {
 
 /** Stable key so identical open failures bump one bug instead of flooding Admin. */
 export function autoBugFingerprint(input: AutoBugInput): string {
+  const isServerOrStream =
+    input.event === "remote_play_failed" ||
+    input.event === "couch_failed" ||
+    input.event.startsWith("community_server_");
   const parts = [
     input.event,
     input.source,
     input.code || "UNKNOWN",
     input.gameSlug || "",
     input.editionSlug || "",
-    input.event === "remote_play_failed" || input.event === "couch_failed"
+    isServerOrStream
       ? input.phase || "unknown"
       : hashMessage(String(input.message || "")),
   ];
   return parts.join("|").slice(0, 240);
 }
+
 
 /** Append a distinct message sample (newest last), capped. */
 export function pushMessageSample(
@@ -78,6 +85,8 @@ export function buildAutoBugDescription(input: AutoBugInput, message: string): s
     `Auto-reported from telemetry \`${input.event}\`.`,
     `Code: ${code}`,
     input.phase ? `Phase: ${input.phase}` : null,
+    input.serverName ? `Server: ${input.serverName}` : null,
+    input.profileKey ? `Profile key: ${input.profileKey}` : null,
     input.gameSlug ? `Game: ${input.gameTitle || input.gameSlug}` : null,
     input.editionSlug ? `Edition: ${input.editionSlug}` : null,
     input.osVersion ? `OS: ${input.osVersion}` : null,
@@ -226,6 +235,9 @@ export async function maybeUpsertAutoBugFromTelemetry(opts: {
     "remote_play_failed",
     "couch_failed",
     "community_server_failed",
+    "community_server_stop_failed",
+    "community_server_reconcile_failed",
+    "community_server_recovery_exhausted",
   ]);
   if (!failureEvents.has(event)) return;
 
@@ -283,7 +295,10 @@ export async function maybeUpsertAutoBugFromTelemetry(opts: {
     transport: propString(props, "transport"),
     connectionState: propString(props, "connectionState"),
     iceState: propString(props, "iceState"),
+    profileKey: propString(props, "profileKey"),
+    serverName: propString(props, "serverName"),
     userAgent: opts.userAgent || null,
     userId: opts.userId || null,
   });
 }
+

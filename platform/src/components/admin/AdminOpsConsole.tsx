@@ -89,7 +89,7 @@ export function AdminOpsConsole({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        {(["all", "launcher", "party"] as const).map((f) => (
+        {(["all", "launcher", "party", "servers"] as const).map((f) => (
           <button
             key={f}
             type="button"
@@ -98,7 +98,7 @@ export function AdminOpsConsole({
               family === f ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
             }`}
           >
-            {f}
+            {f === "servers" ? "Community Servers" : f}
           </button>
         ))}
         {(["1h", "24h", "7d"] as const).map((r) => (
@@ -134,7 +134,7 @@ export function AdminOpsConsole({
               <th className="px-3 py-2">Game</th>
               <th className="px-3 py-2">User</th>
               <th className="px-3 py-2">Detail</th>
-              <th className="px-3 py-2">Party</th>
+              <th className="px-3 py-2">Scope</th>
             </tr>
           </thead>
           <tbody>
@@ -154,17 +154,26 @@ export function AdminOpsConsole({
                   (typeof props.code === "string" && props.code) ||
                   (typeof props.host === "string" && `${props.host}:${props.port || ""}`) ||
                   "";
+                const isFailure = item.event.includes("failed") || item.event === "error" || item.event.includes("blocked");
+                const isRecovery = item.event.includes("recovery") || item.event.includes("rotated");
+                const edition = typeof props.editionSlug === "string" ? props.editionSlug : "";
+                const profileKey = typeof props.profileKey === "string" ? props.profileKey : "";
                 return (
-                  <tr key={String(item._id)} className="border-b border-border last:border-0">
+                  <tr key={String(item._id)} className="border-b border-border last:border-0 hover:bg-muted/10 transition-colors">
                     <td className="px-3 py-2 text-muted-foreground">
                       <LocalTime value={item.createdAt} />
                     </td>
-                    <td className="px-3 py-2 font-semibold">{item.event}</td>
+                    <td className={`px-3 py-2 font-semibold ${isFailure ? "text-red-500 font-bold" : isRecovery ? "text-amber-500 font-medium" : ""}`}>
+                      {item.event}
+                    </td>
                     <td className="px-3 py-2">
                       {slug ? (
-                        <Link prefetch={false} href={`/admin/games/${slug}/edit`} className="text-primary hover:underline">
-                          {slug}
-                        </Link>
+                        <div className="flex flex-col">
+                          <Link prefetch={false} href={`/admin/games/${slug}/edit`} className="text-primary hover:underline font-medium">
+                            {slug}
+                          </Link>
+                          {edition && <span className="text-[11px] text-muted-foreground">{edition}</span>}
+                        </div>
                       ) : (
                         "—"
                       )}
@@ -187,7 +196,7 @@ export function AdminOpsConsole({
                       {detail || "—"}
                     </td>
                     <td className="px-3 py-2 font-mono text-xs text-muted-foreground">
-                      {partyId ? partyId.slice(-8) : "—"}
+                      {partyId ? `party:${partyId.slice(-8)}` : profileKey ? profileKey : "—"}
                     </td>
                   </tr>
                 );

@@ -50,6 +50,11 @@ export const FAILURE_RATE_EVENTS = {
    */
   partyCompleted: "party_ok",
   partyFailed: "party_failed",
+  /*
+   * Community server operations — automated server starts, recoveries, rotations.
+   */
+  serverCompleted: "community_server_start",
+  serverFailed: "community_server_failed",
 } as const;
 
 export type FailureWindow = "d1" | "d7" | "d30";
@@ -71,6 +76,7 @@ export type PlatformTallies = {
   installs: Tally;
   launches: Tally;
   party: Tally;
+  servers: Tally;
   overall: Tally;
 };
 
@@ -80,6 +86,7 @@ export type FailureRates = Record<
     installs: Tally;
     launches: Tally;
     party: Tally;
+    servers: Tally;
     overall: Tally;
     byPlatform: Record<string, PlatformTallies>;
   }
@@ -96,9 +103,9 @@ const EMPTY_TALLY: Tally = { failed: 0, completed: 0, rate: null };
 
 export function emptyFailureRates(): FailureRates {
   return {
-    d1: { installs: EMPTY_TALLY, launches: EMPTY_TALLY, party: EMPTY_TALLY, overall: EMPTY_TALLY, byPlatform: {} },
-    d7: { installs: EMPTY_TALLY, launches: EMPTY_TALLY, party: EMPTY_TALLY, overall: EMPTY_TALLY, byPlatform: {} },
-    d30: { installs: EMPTY_TALLY, launches: EMPTY_TALLY, party: EMPTY_TALLY, overall: EMPTY_TALLY, byPlatform: {} },
+    d1: { installs: EMPTY_TALLY, launches: EMPTY_TALLY, party: EMPTY_TALLY, servers: EMPTY_TALLY, overall: EMPTY_TALLY, byPlatform: {} },
+    d7: { installs: EMPTY_TALLY, launches: EMPTY_TALLY, party: EMPTY_TALLY, servers: EMPTY_TALLY, overall: EMPTY_TALLY, byPlatform: {} },
+    d30: { installs: EMPTY_TALLY, launches: EMPTY_TALLY, party: EMPTY_TALLY, servers: EMPTY_TALLY, overall: EMPTY_TALLY, byPlatform: {} },
     platforms: [],
   };
 }
@@ -215,9 +222,13 @@ export function buildFailureRates(rows: EventCounts[]): FailureRates {
       count(FAILURE_RATE_EVENTS.partyFailed, w),
       count(FAILURE_RATE_EVENTS.partyCompleted, w)
     );
+    const servers = tally(
+      count(FAILURE_RATE_EVENTS.serverFailed, w),
+      count(FAILURE_RATE_EVENTS.serverCompleted, w)
+    );
     const overall = tally(
-      installs.failed + launches.failed + party.failed,
-      installs.completed + launches.completed + party.completed
+      installs.failed + launches.failed + party.failed + servers.failed,
+      installs.completed + launches.completed + party.completed + servers.completed
     );
 
     const byPlatform: Record<string, PlatformTallies> = {};
@@ -234,14 +245,19 @@ export function buildFailureRates(rows: EventCounts[]): FailureRates {
         pCount(p, FAILURE_RATE_EVENTS.partyFailed, w),
         pCount(p, FAILURE_RATE_EVENTS.partyCompleted, w)
       );
+      const pServers = tally(
+        pCount(p, FAILURE_RATE_EVENTS.serverFailed, w),
+        pCount(p, FAILURE_RATE_EVENTS.serverCompleted, w)
+      );
       const pOverall = tally(
-        pInstalls.failed + pLaunches.failed + pParty.failed,
-        pInstalls.completed + pLaunches.completed + pParty.completed
+        pInstalls.failed + pLaunches.failed + pParty.failed + pServers.failed,
+        pInstalls.completed + pLaunches.completed + pParty.completed + pServers.completed
       );
       byPlatform[p] = {
         installs: pInstalls,
         launches: pLaunches,
         party: pParty,
+        servers: pServers,
         overall: pOverall,
       };
     }
@@ -250,6 +266,7 @@ export function buildFailureRates(rows: EventCounts[]): FailureRates {
       installs,
       launches,
       party,
+      servers,
       overall,
       byPlatform,
     };

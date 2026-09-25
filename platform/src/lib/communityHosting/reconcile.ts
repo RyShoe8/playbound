@@ -16,11 +16,12 @@ import { saveEvent } from "@/lib/telemetry/server/saveEvent";
 
 const LEASE_MS = 2 * 60_000;
 
-async function recordHostingAction(event: string, server: { gameSlug: string; editionSlug?: string | null; profileKey: string }, reason?: string | null) {
+async function recordHostingAction(event: string, server: { gameSlug: string; editionSlug?: string | null; profileKey: string; name?: string }, reason?: string | null) {
   try {
     await saveEvent({ event, properties: {
       source: "website", area: "hosting", gameSlug: server.gameSlug,
       editionSlug: server.editionSlug || null, profileKey: server.profileKey,
+      serverName: server.name || null,
       ...(reason ? { code: reason.slice(0, 80), message: reason.slice(0, 500), phase: "reconcile" } : {}),
     } });
   } catch (error) {
@@ -111,7 +112,17 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
   if (!owner) return { action: "busy" };
   try {
     const [metricResult, agent] = await Promise.all([fetchGameHostMetrics(), listManagedHostRooms()]);
-    if (!metricResult.ok || !agent.ok) return { action: "waiting", reason: "NO_HEALTHY_NODE" };
+    if (!metricResult.ok || !agent.ok) {
+      const reason = !metricResult.ok ? metricResult.error : (agent.ok ? "NO_HEALTHY_NODE" : agent.error);
+      await saveEvent({
+        event: "community_server_reconcile_failed",
+        properties: {
+          source: "website", area: "hosting", origin: "server",
+          code: "NO_HEALTHY_NODE", message: reason || "Node metrics or agent unreachable", phase: "reconcile",
+        },
+      }).catch(() => undefined);
+      return { action: "waiting", reason: "NO_HEALTHY_NODE" };
+    }
     const metrics = metricResult.metrics;
     const profiles = await CommunityServerProfile.find({ enabled: true }).lean();
     const profileByKey = new Map(profiles.map((p) => [p.key, p]));
@@ -124,12 +135,18 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
       const profile = profileByKey.get(server.profileKey);
       if (!room) {
         const job = agent.jobs[String(server._id)];
+        const prevRuntime = server.runtimeState;
         server.runtimeState = job?.status === "pending" ? "pending" : job?.status === "failed" ? "failed" : "unknown";
         server.health = "unknown";
         server.playerCount = null;
         server.decisionReason = job?.error || "Runtime not reported by agent";
         await server.save();
-        if (job?.status !== "pending") lost.push(server);
+        if (job?.status !== "pending") {
+          lost.push(server);
+          if (job?.status === "failed" || prevRuntime === "running") {
+            await recordHostingAction("community_server_failed", server, job?.error || "Runtime exited unexpectedly");
+          }
+        }
         continue;
       }
       const players = profile?.queryVerified
@@ -186,6 +203,9 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
     if (due) {
       if (bound && !alreadyRunning.has(String(bound._id)) && (bound.recoveryAttempts >= 3 || (bound.nextRecoveryAt && new Date(bound.nextRecoveryAt) > now))) {
         await CapacityReservation.updateOne({ _id: due._id }, { $set: { decisionReason: "RUNTIME_RECOVERY_BACKOFF" } });
+        if (bound.recoveryAttempts >= 3) {
+          await recordHostingAction("community_server_recovery_exhausted", bound, `Recovery attempts exhausted (${bound.recoveryAttempts})`);
+        }
         return { action: "waiting", reason: "RUNTIME_RECOVERY_BACKOFF" };
       }
       if (active.some((s) => s.profileKey === due.profileKey && s.linkedEventId && String(s.linkedEventId) !== String(due.eventId) && s.protectedUntil && new Date(s.protectedUntil) > now)) {
@@ -223,16 +243,17 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
       });
       if (!decision.allowed && due) {
         await CapacityReservation.updateOne({ _id: due._id }, { $set: { decisionReason: decision.reason } });
+        await recordHostingAction("community_server_capacity_blocked", { gameSlug: profile.gameSlug, editionSlug: profile.editionSlug, profileKey: profile.key }, decision.reason);
         return { action: "waiting", reason: decision.reason };
       }
       if (decision.allowed) {
       const slug = `pb-${profile.key}-${config.node.regionKey}`;
       const server = await CommunityServer.findOneAndUpdate({ slug }, {
         $setOnInsert: {
-          slug, name: `PlayBound ${profile.gameSlug}`, gameSlug: profile.gameSlug,
+          slug, gameSlug: profile.gameSlug,
           editionSlug: profile.editionSlug || null, mod: profile.mod || null, regionKey: config.node.regionKey, profileKey: profile.key,
         },
-        $set: { desiredState: "running", runtimeState: "pending", decisionReason: due ? "GAME_NIGHT_WARMUP" : "ROTATION_START", lastReconciledAt: now },
+        $set: { name: "PlayBound.Club Community Server", desiredState: "running", runtimeState: "pending", decisionReason: due ? "GAME_NIGHT_WARMUP" : "ROTATION_START", lastReconciledAt: now },
       }, { upsert: true, new: true });
       const id = String(server._id);
       if (due) {
@@ -266,7 +287,11 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
     for (const server of lost) {
       const recoveryProfile = profileByKey.get(server.profileKey);
       if (!recoveryProfile?.enabled) continue;
-      if (server.manualPause || server.recoveryAttempts >= 3 || (server.nextRecoveryAt && new Date(server.nextRecoveryAt) > now)) continue;
+      if (server.recoveryAttempts >= 3) {
+        await recordHostingAction("community_server_recovery_exhausted", server, `Recovery attempts exhausted (${server.recoveryAttempts})`);
+        continue;
+      }
+      if (server.manualPause || (server.nextRecoveryAt && new Date(server.nextRecoveryAt) > now)) continue;
       const decision = placementDecision({
         now, nodeEnabled: config.node.enabled, draining: config.node.draining,
         requestedRegion: server.regionKey, nodeRegion: config.node.regionKey,
@@ -317,7 +342,10 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         if (!server.onlineSince || now.getTime() - new Date(server.onlineSince).getTime() < minOnline || !lastActivity || now.getTime() - new Date(lastActivity).getTime() < idle) continue;
         if (server.protectedUntil && new Date(server.protectedUntil) > now) continue;
         const stopped = await stopManagedHostRoom(String(server._id));
-        if (!stopped.ok) return { action: "failed", reason: stopped.error };
+        if (!stopped.ok) {
+          await recordHostingAction("community_server_stop_failed", server, stopped.error);
+          return { action: "failed", reason: stopped.error };
+        }
         server.desiredState = "stopped";
         server.runtimeState = "stopped";
         server.health = "unknown";

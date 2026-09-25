@@ -9,7 +9,7 @@ import { eventsForFamily, type OpsFamily } from "@/lib/admin/opsEvents";
 
 const querySchema = z.object({
   event: z.string().min(1).max(128).optional(),
-  family: z.enum(["all", "launcher", "party"]).optional(),
+  family: z.enum(["all", "launcher", "party", "servers"]).optional(),
   gameSlug: z.string().min(1).max(120).optional(),
   partyId: z.string().min(1).max(64).optional(),
   userId: z.string().min(1).max(64).optional(),
