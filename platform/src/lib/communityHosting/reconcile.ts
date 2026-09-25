@@ -27,6 +27,12 @@ const HEAVY_GAME_ENVELOPES: Record<string, ResourceEnvelope> = {
   "team-fortress-2": { cpuCores: 1.5, ramBytes: 2048 * 1024 * 1024 },
 };
 
+const PLAYER_LIMIT_RECIPES = new Set(["counter-strike-2", "hypersomnia", "luanti"]);
+
+function managedRoomSettings(recipeSlug: string, maxPlayersPerServer: number | undefined) {
+  return PLAYER_LIMIT_RECIPES.has(recipeSlug) ? { maxPlayers: maxPlayersPerServer ?? 16 } : undefined;
+}
+
 export function getEffectiveEnvelope(
   envelope?: { cpuCores?: number; ramBytes?: number } | null,
   gameSlug?: string,
@@ -252,6 +258,29 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
           phase: players === null || players === 0 ? "idle" : "occupied", source: "live",
         });
       }
+      const recipeSlug = profile?.recipeSlug || server.gameSlug;
+      const desiredSettings = managedRoomSettings(recipeSlug, config.maxPlayersPerServer);
+      if (desiredSettings && room.settings?.maxPlayers !== desiredSettings.maxPlayers &&
+          canScaleDownEmptyServer({ players, checkedAt: now, protectedUntil: server.protectedUntil }, now)) {
+        const stopped = await stopManagedHostRoom(String(server._id));
+        if (!stopped.ok) {
+          await recordHostingAction("community_server_failed", server, `Could not apply player limit: ${stopped.error}`);
+          continue;
+        }
+        const restarted = await requestManagedHostRoom({
+          communityServerId: String(server._id), gameSlug: recipeSlug,
+          editionSlug: profile?.editionSlug || server.editionSlug, mod: profile?.mod || server.mod,
+          name: server.name, settings: desiredSettings,
+        });
+        server.playerCount = null;
+        server.playerCountCheckedAt = null;
+        server.runtimeState = restarted.status === "failed" ? "failed" : "pending";
+        server.decisionReason = restarted.status === "failed" ? restarted.error : "APPLYING_PLAYER_LIMIT";
+        if (restarted.status === "failed") server.desiredState = "stopped";
+        await server.save();
+        await recordHostingAction(restarted.status === "failed" ? "community_server_failed" : "community_server_start", server, server.decisionReason);
+        return { action: restarted.status === "failed" ? "failed" : "starting", reason: server.decisionReason || undefined };
+      }
     }
 
     const reservations = await CapacityReservation.find({
@@ -381,6 +410,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         editionSlug: dueProfile.editionSlug,
         mod: dueProfile.mod,
         name: server.name,
+        settings: managedRoomSettings(dueProfile.recipeSlug || dueProfile.gameSlug, config.maxPlayersPerServer),
       });
       if (started.status === "failed") {
         server.runtimeState = "failed";
@@ -434,6 +464,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         editionSlug: candidate.editionSlug,
         mod: candidate.mod,
         name: server.name,
+        settings: managedRoomSettings(candidate.recipeSlug || candidate.gameSlug, config.maxPlayersPerServer),
       });
       if (started.status === "failed") {
         server.desiredState = "stopped";
@@ -500,6 +531,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         editionSlug: recoveryProfile.editionSlug,
         mod: recoveryProfile.mod,
         name: server.name,
+        settings: managedRoomSettings(recoveryProfile.recipeSlug || recoveryProfile.gameSlug, config.maxPlayersPerServer),
       });
       if (result.status === "failed") {
         server.runtimeState = "failed";

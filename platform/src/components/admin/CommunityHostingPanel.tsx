@@ -178,6 +178,8 @@ export function CommunityHostingPanel() {
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="space-y-3"><h3 className="font-semibold">VPS safety limits</h3>
           <label className="flex items-center justify-between gap-2 text-sm">Region label <input className="w-36 rounded border bg-background px-2 py-1" value={config.node.regionLabel} onChange={(e) => field("node", "regionLabel", e.target.value)} /></label>
+          <label className="flex items-center justify-between gap-2 text-sm">Maximum players per server <input className="w-24 rounded border bg-background px-2 py-1 text-right" type="number" min="2" max="64" step="1" value={config.maxPlayersPerServer ?? 16} onChange={(e) => section("maxPlayersPerServer", Number(e.target.value))} /></label>
+          <p className="text-xs text-muted-foreground">Applied to managed games with a configurable slot limit. Empty rooms restart automatically to adopt a change; occupied rooms wait until they are empty. Games with a smaller built-in limit keep it, and games without a slot setting keep their own limit.</p>
           {numberField("Maximum CPU", "safety", "maxCpuPercent", { unit: "%", help: "Don't start an automatic server if the VPS would go above this. Also the red line on the monitoring display (yellow is 10 below)." })}
           {numberField("Maximum RAM", "safety", "maxRamPercent", { unit: "%", help: "Same rule for memory." })}
         </div>
