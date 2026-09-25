@@ -313,7 +313,7 @@ export default async function AdminPage() {
               {games.slice(0, 12).map((g) => (
                 <tr key={g.slug} className="border-b border-border bg-card last:border-0">
                   <td className="px-4 py-2.5">
-                    <Link href={`/admin/games/${g.slug}/edit`} className="flex items-center gap-2.5 hover:underline">
+                    <Link prefetch={false} href={`/admin/games/${g.slug}/edit`} className="flex items-center gap-2.5 hover:underline">
                       <GameArt game={g} showTitle={false} iconSize="sm" className="size-8 rounded-md" />
                       <span className="font-semibold">{g.title}</span>
                     </Link>

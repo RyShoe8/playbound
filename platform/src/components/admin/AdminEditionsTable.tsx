@@ -106,7 +106,7 @@ export function AdminEditionsTable({ editions, gameTitlesBySlug }: Props) {
                   <tr key={`${e.gameSlug}-${e.slug}`} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
                     <td className="px-4 py-3 font-semibold">
                       <div>
-                        <Link href={`/admin/games/${e.gameSlug}/editions/${e.slug}/edit`} className="font-bold hover:underline text-foreground">
+                        <Link prefetch={false} href={`/admin/games/${e.gameSlug}/editions/${e.slug}/edit`} className="font-bold hover:underline text-foreground">
                           {e.name}
                         </Link>
                         <p className="font-mono text-xs text-muted-foreground">{e.slug}</p>
@@ -142,7 +142,7 @@ export function AdminEditionsTable({ editions, gameTitlesBySlug }: Props) {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link
-                        href={`/admin/games/${e.gameSlug}/editions/${e.slug}/edit`}
+                        prefetch={false} href={`/admin/games/${e.gameSlug}/editions/${e.slug}/edit`}
                         className="rounded-full bg-secondary px-3 py-1.5 text-xs font-bold hover:bg-primary hover:text-primary-foreground transition-colors"
                       >
                         Edit

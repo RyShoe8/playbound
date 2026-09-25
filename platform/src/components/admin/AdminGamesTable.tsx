@@ -559,7 +559,7 @@ export function AdminGamesTable({
                         )}
                       </Link>
                       <Link
-                        href={`/admin/games/${g.slug}/edit`}
+                        prefetch={false} href={`/admin/games/${g.slug}/edit`}
                         className="font-semibold text-primary hover:underline"
                       >
                         Edit

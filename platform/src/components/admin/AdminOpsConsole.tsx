@@ -162,7 +162,7 @@ export function AdminOpsConsole({
                     <td className="px-3 py-2 font-semibold">{item.event}</td>
                     <td className="px-3 py-2">
                       {slug ? (
-                        <Link href={`/admin/games/${slug}/edit`} className="text-primary hover:underline">
+                        <Link prefetch={false} href={`/admin/games/${slug}/edit`} className="text-primary hover:underline">
                           {slug}
                         </Link>
                       ) : (
