@@ -1,6 +1,6 @@
 "use client";
 
-import type { Game } from "@/lib/data/types";
+import type { HomeCardGame as Game } from "@/lib/discoverListing";
 import { CardRow, GameCard } from "@/components/GameCard";
 import {
   CompatibleGamesFade,

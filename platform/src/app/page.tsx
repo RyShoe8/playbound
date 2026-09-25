@@ -6,6 +6,7 @@ import { getGame, listGames, listGamesNewestFirst, mostPopularGames } from "@/li
 import { listCollections } from "@/lib/collections";
 import { listMods } from "@/lib/mods";
 import { listServersForGame } from "@/lib/servers/registry";
+import { toHomeCardGame } from "@/lib/discoverListing";
 import { FeaturedModsRow } from "@/components/access/FeaturedModsRow";
 import { FeaturedCollectionsRow } from "@/components/access/FeaturedCollectionsRow";
 import { NewsletterForm } from "@/components/NewsletterForm";
@@ -141,6 +142,8 @@ export default async function HomePage() {
    * whenever a paid entry landed in the top few.
    */
   const gameBySlug = new Map(games.map((g) => [g.slug, g]));
+  // Card-sized projections: client components get only what cards render.
+  const latestCards = gamesNewestFirst.map(toHomeCardGame);
   const modCandidates = mods.slice(0, FEATURED_MODS_LIMIT * 3).map((m) => {
     const base = gameBySlug.get(m.baseGameSlug);
     return {
@@ -162,7 +165,7 @@ export default async function HomePage() {
     <div className="space-y-12 px-4 py-6 sm:px-6 lg:px-8">
       {/* ── PlayBound Promotion & Top Hero / Stats Row ── */}
       <HomeHeroPromoSection
-        gamesNewestFirst={gamesNewestFirst}
+        gamesNewestFirst={latestCards}
         games={games.map((g) => ({ slug: g.slug }))}
         live={liveStats}
       />
@@ -191,8 +194,8 @@ export default async function HomePage() {
 
       {/* ── Latest + Most popular (client-filtered for compatibility) */}
       <HomeGamesSections
-        latest={gamesNewestFirst}
-        popular={popular}
+        latest={latestCards}
+        popular={popular.map(toHomeCardGame)}
         playingNowBySlug={playingNowBySlug(liveStats)}
       />
 

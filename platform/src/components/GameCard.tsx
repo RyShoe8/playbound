@@ -47,13 +47,18 @@ const ctaSizes = {
   lg: "h-12 px-7 text-base",
 };
 
+/** The fields PlayCta reads, so card-sized projections can use it too. */
+export type PlayCtaGame = Pick<Game,
+  "slug" | "title" | "access" | "website" | "browserPlayable" | "launchMethods" | "androidStoreUrl" | "iosStoreUrl"
+> & { launcherInstall?: { kind?: string; url?: string } | Game["launcherInstall"] };
+
 export function PlayCta({
   game,
   size = "md",
   emphasis = "primary",
   installed,
 }: {
-  game: Game;
+  game: PlayCtaGame;
   size?: "sm" | "md" | "lg";
   emphasis?: "primary" | "secondary";
   installed?: boolean;
