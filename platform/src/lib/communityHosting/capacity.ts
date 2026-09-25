@@ -10,9 +10,16 @@ export function runningReservationEnvelope(input: {
   if (players !== 0 || !observed?.available || observed.cpuCores == null ||
       !Number.isFinite(observed.cpuCores) || !Number.isFinite(observed.rssBytes) ||
       observed.cpuCores < 0 || (observed.rssBytes ?? 0) <= 0) return baseline;
+  /*
+   * A confirmed-empty server is charged twice what it actually uses, never
+   * more than its normal envelope. The old floors (0.5 cores / 768 MB each)
+   * meant eight idle servers "filled" a 4-core budget on a VPS at 7% CPU.
+   * Occupied or unknown servers still pay the full baseline above, and the
+   * live CPU/RAM safety limits gate every start regardless.
+   */
   return {
-    cpuCores: Math.max(0.5, observed.cpuCores * 2),
-    ramBytes: Math.max(768 * 1024 ** 2, observed.rssBytes! * 1.5),
+    cpuCores: Math.min(baseline.cpuCores, Math.max(0.1, observed.cpuCores * 2)),
+    ramBytes: Math.min(baseline.ramBytes, Math.max(128 * 1024 ** 2, observed.rssBytes! * 1.5)),
   };
 }
 

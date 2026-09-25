@@ -15,7 +15,7 @@ describe("community hosting placement", () => {
   it("reserves observed idle usage with headroom but keeps full budget for occupied or unknown servers", () => {
     const baseline = { cpuCores: 2, ramBytes: 3 * GIB };
     const observed = { available: true, cpuCores: 0.08, rssBytes: 800 * 1024 ** 2 };
-    expect(runningReservationEnvelope({ baseline, players: 0, observed })).toEqual({ cpuCores: 0.5, ramBytes: 1200 * 1024 ** 2 });
+    expect(runningReservationEnvelope({ baseline, players: 0, observed })).toEqual({ cpuCores: 0.16, ramBytes: 1200 * 1024 ** 2 });
     expect(runningReservationEnvelope({ baseline, players: null, observed })).toEqual(baseline);
     expect(runningReservationEnvelope({ baseline, players: 2, observed })).toEqual(baseline);
     expect(runningReservationEnvelope({ baseline, players: 0, observed: null })).toEqual(baseline);
