@@ -9,7 +9,7 @@ import { hostingSettingsSchema } from "@/lib/communityHosting/settings";
 import { fetchGameHostMetrics, listManagedHostRooms } from "@/lib/gameHost/client";
 import CatalogGame from "@/lib/models/CatalogGame";
 import Edition from "@/lib/models/Edition";
-import { HOSTABLE_SLUGS, HOSTABLE_GAMES } from "@/lib/gameHost/catalog";
+import { HOSTABLE_SLUGS, HOSTABLE_GAMES, HOSTABLE_SLUG_ALIASES } from "@/lib/gameHost/catalog";
 import { editions as seedEditions } from "@/lib/data/editions";
 import { getEffectiveEnvelope } from "@/lib/communityHosting/reconcile";
 
@@ -17,9 +17,28 @@ export async function GET() {
   const { error } = await requireAdminSession();
   if (error) return error;
   await dbConnect();
+
+  // Clean up any legacy alias profiles from earlier runs (e.g. cs2, tf2, doom, tes3mp, opene2140, 0-ad, wesnoth, rvgl)
+  const aliasSlugs = Object.keys(HOSTABLE_SLUG_ALIASES);
+  const aliasProfiles = await CommunityServerProfile.find({ gameSlug: { $in: aliasSlugs } }).lean();
+  if (aliasProfiles.length > 0) {
+    for (const ap of aliasProfiles) {
+      const canonical = HOSTABLE_SLUG_ALIASES[ap.gameSlug];
+      if (canonical && ap.enabled) {
+        await CommunityServerProfile.updateOne(
+          { key: `${canonical}:base` },
+          { $set: { enabled: true, rotationEligible: true } },
+          { upsert: true }
+        );
+      }
+    }
+    await CommunityServerProfile.deleteMany({ gameSlug: { $in: aliasSlugs } });
+    await CommunityServer.deleteMany({ gameSlug: { $in: aliasSlugs } });
+  }
+
   const [config, profiles, servers, reservations, metrics, agent] = await Promise.all([
     CommunityHostingConfig.findOne({ key: "global" }).lean(),
-    CommunityServerProfile.find({}).sort({ gameSlug: 1 }).lean(),
+    CommunityServerProfile.find({ gameSlug: { $nin: aliasSlugs } }).sort({ gameSlug: 1 }).lean(),
     CommunityServer.find({
       desiredState: "running",
       runtimeState: { $in: ["running", "pending", "starting"] },
@@ -28,8 +47,8 @@ export async function GET() {
     fetchGameHostMetrics(), listManagedHostRooms(),
   ]);
   const defaults = new CommunityHostingConfig({ key: "global" }).toObject();
-  // Display names for the game/edition checklist; include all hostable catalog games.
-  const gameSlugs = [...new Set([...profiles.map((p) => p.gameSlug), ...HOSTABLE_SLUGS])];
+  // Display names for the game/edition checklist; include only hostable canonical catalog games.
+  const gameSlugs = [...new Set([...profiles.map((p) => p.gameSlug), ...HOSTABLE_SLUGS])].filter((s) => !HOSTABLE_SLUG_ALIASES[s]);
   const [titleRows, editionRows] = await Promise.all([
     CatalogGame.find({ slug: { $in: gameSlugs } }).select({ slug: 1, title: 1 }).lean(),
     Edition.find({

@@ -46,18 +46,28 @@ export const EXPECTED_SERVER_VERSIONS: Record<string, string> = {
    */
   morrowind: "0.8.1",
   assaultcube: "v1.3.0.2 Lockdown Edition (ensure)",
+  "medal-of-honor-allied-assault": "OpenMOHAA dedicated",
+  hypersomnia: "Hypersomnia dedicated",
+  teeworlds: "Ubuntu apt (teeworlds-server)",
+  "hurry-curry": "v3.1.1 (native)",
+  "earth-2140-trilogy": "OpenE2140 dedicated",
+  bombsquad: "BombSquad server",
+  "0ad": "Ubuntu apt",
 };
 
 /**
- * Games whose hosted client is an edition, not the base game's install.
- *
- * clientVersionForHostableGame reads the catalog game's own launcher recipe,
- * which for Morrowind is plain OpenMW 0.48 — a build that cannot join a TES3MP
- * server at all. The Connect card was reporting it opposite a TES3MP server and
- * calling the pair fine, because neither label was comparable to the other.
+ * Games whose hosted client is an edition or specialized platform installer.
  */
 const HOSTED_CLIENT_VERSIONS: Record<string, string> = {
   morrowind: "0.8.1",
+  "counter-strike-2": "Steam latest",
+  "team-fortress-2": "Steam latest",
+  "medal-of-honor-allied-assault": "OpenMOHAA latest",
+  "earth-2140-trilogy": "OpenE2140 latest",
+  hypersomnia: "Latest release",
+  bombsquad: "v1.7.x",
+  teeworlds: "0.7.5",
+  "hurry-curry": "v3.1.1",
 };
 
 function installFor(slug: string): LauncherInstall | undefined {
