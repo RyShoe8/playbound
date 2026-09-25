@@ -454,6 +454,18 @@ if [[ ! -x "$PY314_DIR/bin/python3" ]]; then
     || echo "WARN: Python 3.14 download failed — BombSquad cannot start" >&2
 fi
 
+echo "==> Hypersomnia dedicated (headless AppImage)"
+# hypersomnia.io is the project's site; the old hypersomnia.xyz domain now
+# redirects to spam and must not be used.
+HYPERSOMNIA_DIR="$GAMES_DIR/hypersomnia"
+mkdir -p "$HYPERSOMNIA_DIR"
+if [[ ! -x "$HYPERSOMNIA_DIR/Hypersomnia-Headless.AppImage" ]]; then
+  curl -fsSL --retry 3 -o "$HYPERSOMNIA_DIR/Hypersomnia-Headless.AppImage" \
+    https://hypersomnia.io/builds/latest/Hypersomnia-Headless.AppImage \
+    && chmod 755 "$HYPERSOMNIA_DIR/Hypersomnia-Headless.AppImage" \
+    || echo "WARN: Hypersomnia download failed" >&2
+fi
+
 echo "==> BombSquad dedicated"
 BOMBSQUAD_DIR="$GAMES_DIR/bombsquad"
 mkdir -p "$BOMBSQUAD_DIR"

@@ -125,23 +125,39 @@ function currentUserId(party) {
   return match ? String(match.userId) : null;
 }
 
-function wireFriendsAppearOfflineButton() {
-  const btn = document.getElementById("btn-appear-offline");
-  if (!btn || !window.playbound.getAppearOffline) {
-    if (btn) btn.style.display = "none";
+/*
+ * Activity privacy — the site's four switches, in the same order and words.
+ * Replaces a separate "Appear offline" header button that duplicated the
+ * first of them.
+ */
+const PRIVACY_TOGGLES = [
+  { key: "appearOffline", label: "Appear offline", description: "Friends see you as offline", fallback: false },
+  { key: "hideActivityFromFriends", label: "Hide what I'm playing", description: "Stay online without sharing game activity", fallback: false },
+  { key: "allowPlayInvites", label: "Allow play invites", description: "Friends can invite you to play", fallback: true },
+  { key: "notifyFriendActivity", label: "Friend activity notifications", description: "Get notified when friends start playing or LFG", fallback: true },
+];
+
+function wireActivityPrivacy() {
+  const inputs = [...document.querySelectorAll("#friends-privacy [data-privacy-key]")];
+  if (!inputs.length || !window.playbound.getAppearOffline || !window.playbound.setPresenceVisibility) {
+    document.getElementById("friends-privacy")?.remove();
     return;
   }
   window.playbound.getAppearOffline().then((res) => {
-    let on = Boolean(res?.appearOffline);
-    btn.textContent = on ? "Go online" : "Appear offline";
-    btn.title = "Appear offline so friends don’t see you as online or playing";
-    btn.onclick = async () => {
-      btn.disabled = true;
-      const result = await window.playbound.setAppearOffline(!on);
-      if (!result?.error) on = !on;
-      btn.textContent = on ? "Go online" : "Appear offline";
-      btn.disabled = false;
-    };
+    if (!res || res.error) return;
+    for (const input of inputs) {
+      const t = PRIVACY_TOGGLES.find((x) => x.key === input.dataset.privacyKey);
+      const value = res[input.dataset.privacyKey];
+      input.checked = typeof value === "boolean" ? value : t.fallback;
+      input.disabled = false;
+      input.onchange = async () => {
+        const next = input.checked;
+        inputs.forEach((i) => (i.disabled = true));
+        const result = await window.playbound.setPresenceVisibility({ [input.dataset.privacyKey]: next });
+        if (result?.error) input.checked = !next;
+        inputs.forEach((i) => (i.disabled = false));
+      };
+    }
   });
 }
 let lfgActive = false;
@@ -371,13 +387,29 @@ async function renderFriendsView() {
           <!-- Full-size buttons, not btn-sm: these are the page's primary actions. -->
           <button class="btn-primary friends-action-btn" id="btn-toggle-create-party">Start Party</button>
           <button class="btn-secondary friends-action-btn" id="btn-lfg">Look for party</button>
-          <button class="btn-secondary friends-action-btn" id="btn-appear-offline">Loading…</button>
           <button class="btn-secondary friends-action-btn" id="btn-toggle-add-friend">Add Friend</button>
           <button class="btn-secondary friends-action-btn" id="btn-friends-popout" title="Open friends list in a separate window">Pop out</button>
         </div>
       </div>
 
       <p class="view-sub" id="lfg-summary" style="display: none; margin: 8px 0 0; font-size: 13px;"></p>
+
+      <!-- Same four switches and wording as the site's Friends page. -->
+      <details id="friends-privacy" style="margin-top: 12px; border: 1px solid var(--border); border-radius: 12px; padding: 8px 12px;">
+        <summary style="cursor: pointer; font-size: 14px; font-weight: 600;">Activity privacy</summary>
+        <div id="friends-privacy-body" style="display: grid; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);">
+          ${PRIVACY_TOGGLES.map(
+            (t) => `
+            <label style="display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer;">
+              <span>
+                <span style="display: block; font-size: 13px; font-weight: 600;">${t.label}</span>
+                <span class="view-sub" style="display: block; font-size: 12px; margin: 0;">${t.description}</span>
+              </span>
+              <input type="checkbox" data-privacy-key="${t.key}" disabled />
+            </label>`
+          ).join("")}
+        </div>
+      </details>
 
       <div id="lfg-panel" class="party-panel" style="display: none; margin-top: 16px;">
         <div class="party-panel-body">
@@ -496,7 +528,7 @@ async function renderFriendsView() {
 
     document.getElementById("btn-toggle-add-friend").onclick = () => api.toggleAddFriendsPanel();
     document.getElementById("btn-toggle-create-party").onclick = () => toggleCreatePartyPanel();
-    wireFriendsAppearOfflineButton();
+    wireActivityPrivacy();
     wireLfgButton();
     document.getElementById("btn-friends-popout")?.addEventListener("click", () => {
       void window.playbound.openFriendsPopout?.();
