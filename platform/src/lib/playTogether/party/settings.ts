@@ -20,6 +20,7 @@ import { preferredPartyEditionSlug } from "@/lib/playTogether/partyEdition";
 import { checkConfigSync } from "./configSync";
 import { parsePublicServer, provisionPartyConnectInBackground, resetPartyConnectState } from "./connect";
 import { resolvePartyPeople } from "./people";
+import { loadPartyAsLeader, partyReply } from "./guards";
 import { attachConfigSync, hashPartyPassword, partyMemberIds, partyPayloadForDoc } from "./serialize";
 
 /* ─── game (picked after create) ─────────────────────────────────────────── */
@@ -29,20 +30,13 @@ export async function setPartyGame(
   leaderId: string,
   gameSlug: string
 ): Promise<{ party: PartyPayload; status: 200 } | { error: string; status: 400 | 403 | 404 }> {
-  await dbConnect();
-
   const slug = gameSlug.trim();
   const game = slug ? await getGame(slug, { includeTesting: true }) : null;
   if (!game) return { error: "Game not found", status: 404 };
 
-  const doc = await Party.findById(partyId);
-  if (!doc) return { error: "Party not found", status: 404 };
-  if (String(doc.leaderId) !== leaderId) {
-    return { error: "Only the leader can change the game", status: 403 };
-  }
-  if (doc.status === "ended") {
-    return { error: "Party has ended", status: 400 };
-  }
+  const loaded = await loadPartyAsLeader(partyId, leaderId, "Only the leader can change the game");
+  if ("error" in loaded) return loaded;
+  const doc = loaded.doc;
 
   /*
    * Switching games mid-session is the normal way a party moves on: play one
@@ -176,14 +170,9 @@ export async function setPartyHostMode(
   leaderId: string,
   hostMode: string
 ): Promise<{ party: PartyPayload; status: 200 } | { error: string; status: 400 | 403 | 404 }> {
-  await dbConnect();
-
-  const doc = await Party.findById(partyId);
-  if (!doc) return { error: "Party not found", status: 404 };
-  if (String(doc.leaderId) !== leaderId) {
-    return { error: "Only the leader can change where the game is hosted", status: 403 };
-  }
-  if (doc.status === "ended") return { error: "Party has ended", status: 400 };
+  const loaded = await loadPartyAsLeader(partyId, leaderId, "Only the leader can change where the game is hosted");
+  if ("error" in loaded) return loaded;
+  const doc = loaded.doc;
 
   const slug = String(doc.gameSlug || "");
   if (!slug) return { error: "Pick a game first", status: 400 };
@@ -224,13 +213,9 @@ export async function setPartySavedWorld(
   leaderId: string,
   worldId: string | null
 ): Promise<{ party: PartyPayload; status: 200 } | { error: string; status: 400 | 403 | 404 }> {
-  await dbConnect();
-  const doc = await Party.findById(partyId);
-  if (!doc) return { error: "Party not found", status: 404 };
-  if (String(doc.leaderId) !== leaderId) {
-    return { error: "Only the leader can choose the world", status: 403 };
-  }
-  if (doc.status === "ended") return { error: "Party has ended", status: 400 };
+  const loaded = await loadPartyAsLeader(partyId, leaderId, "Only the leader can choose the world");
+  if ("error" in loaded) return loaded;
+  const doc = loaded.doc;
   const slug = String(doc.gameSlug || "");
   if (!supportsSavedWorlds(slug) || resolvedHostMode(slug, doc.hostMode, doc.hosted) !== "dedicated") {
     return { error: "Saved worlds are only for PlayBound servers of this game", status: 400 };
@@ -275,14 +260,9 @@ export async function setPartyCouchSession(
   leaderId: string,
   raw: unknown
 ): Promise<{ party: PartyPayload; status: 200 } | { error: string; status: 400 | 403 | 404 }> {
-  await dbConnect();
-
-  const doc = await Party.findById(partyId);
-  if (!doc) return { error: "Party not found", status: 404 };
-  if (String(doc.leaderId) !== leaderId) {
-    return { error: "Only the leader runs the game in couch mode", status: 403 };
-  }
-  if (doc.status === "ended") return { error: "Party has ended", status: 400 };
+  const loaded = await loadPartyAsLeader(partyId, leaderId, "Only the leader runs the game in couch mode");
+  if ("error" in loaded) return loaded;
+  const doc = loaded.doc;
 
   const slug = String(doc.gameSlug || "");
   if (!slug) return { error: "Pick a game first", status: 400 };
@@ -325,7 +305,7 @@ export async function setPartyCouchSession(
 
   doc.lastActivity = new Date();
   await doc.save();
-  return { party: await partyPayloadForDoc(doc.toObject()), status: 200 };
+  return partyReply(doc);
 }
 
 export async function setPartyPublicServer(
@@ -333,14 +313,9 @@ export async function setPartyPublicServer(
   leaderId: string,
   raw: unknown
 ): Promise<{ party: PartyPayload; status: 200 } | { error: string; status: 400 | 403 | 404 }> {
-  await dbConnect();
-
-  const doc = await Party.findById(partyId);
-  if (!doc) return { error: "Party not found", status: 404 };
-  if (String(doc.leaderId) !== leaderId) {
-    return { error: "Only the leader can pick the public server", status: 403 };
-  }
-  if (doc.status === "ended") return { error: "Party has ended", status: 400 };
+  const loaded = await loadPartyAsLeader(partyId, leaderId, "Only the leader can pick the public server");
+  if ("error" in loaded) return loaded;
+  const doc = loaded.doc;
   if (doc.status === "playing" || doc.status === "launching") {
     return { error: "Can't change servers while the party is in a game", status: 400 };
   }
@@ -388,7 +363,7 @@ export async function setPartyPublicServer(
     port: server.port,
   });
 
-  return { party: await partyPayloadForDoc(doc.toObject()), status: 200 };
+  return partyReply(doc);
 }
 
 export async function setPartyEdition(
@@ -396,16 +371,9 @@ export async function setPartyEdition(
   leaderId: string,
   editionSlug: string | null
 ): Promise<{ party: PartyPayload; status: 200 } | { error: string; status: 400 | 403 | 404 }> {
-  await dbConnect();
-
-  const doc = await Party.findById(partyId);
-  if (!doc) return { error: "Party not found", status: 404 };
-  if (String(doc.leaderId) !== leaderId) {
-    return { error: "Only the leader can change the edition", status: 403 };
-  }
-  if (doc.status === "ended") {
-    return { error: "Party has ended", status: 400 };
-  }
+  const loaded = await loadPartyAsLeader(partyId, leaderId, "Only the leader can change the edition");
+  if ("error" in loaded) return loaded;
+  const doc = loaded.doc;
   if (!doc.gameSlug) {
     return { error: "Pick a game first", status: 400 };
   }
@@ -474,16 +442,9 @@ export async function setPartyOpenRaMod(
   leaderId: string,
   mod: string | null
 ): Promise<{ party: PartyPayload; status: 200 } | { error: string; status: 400 | 403 | 404 }> {
-  await dbConnect();
-
-  const doc = await Party.findById(partyId);
-  if (!doc) return { error: "Party not found", status: 404 };
-  if (String(doc.leaderId) !== leaderId) {
-    return { error: "Only the leader can change this", status: 403 };
-  }
-  if (doc.status === "ended") {
-    return { error: "Party has ended", status: 400 };
-  }
+  const loaded = await loadPartyAsLeader(partyId, leaderId, "Only the leader can change this");
+  if ("error" in loaded) return loaded;
+  const doc = loaded.doc;
   if (doc.gameSlug !== "openra") {
     return { error: "Not an OpenRA party", status: 400 };
   }
@@ -520,16 +481,9 @@ export async function setPartyName(
   leaderId: string,
   name: string | null
 ): Promise<{ party: PartyPayload; status: 200 } | { error: string; status: 400 | 403 | 404 }> {
-  await dbConnect();
-
-  const doc = await Party.findById(partyId);
-  if (!doc) return { error: "Party not found", status: 404 };
-  if (String(doc.leaderId) !== leaderId) {
-    return { error: "Only the leader can rename the party", status: 403 };
-  }
-  if (doc.status === "ended") {
-    return { error: "Party has ended", status: 400 };
-  }
+  const loaded = await loadPartyAsLeader(partyId, leaderId, "Only the leader can rename the party");
+  if ("error" in loaded) return loaded;
+  const doc = loaded.doc;
 
   doc.name = normalizePartyName(name);
   doc.lastActivity = new Date();
@@ -538,10 +492,7 @@ export async function setPartyName(
     await renamePartyDiscordVoice(doc, doc.name);
   }
 
-  return {
-    party: await partyPayloadForDoc(doc.toObject()),
-    status: 200,
-  };
+  return partyReply(doc);
 }
 
 /* ─── visibility (4F) ────────────────────────────────────────────────────── */
@@ -552,17 +503,9 @@ export async function setVisibility(
   visibility: PartyVisibility,
   password?: string
 ): Promise<{ party: PartyPayload; status: 200 } | { error: string; status: 400 | 403 | 404 }> {
-  await dbConnect();
-
-  const doc = await Party.findById(partyId);
-  if (!doc) return { error: "Party not found", status: 404 };
-
-  if (String(doc.leaderId) !== leaderId) {
-    return { error: "Only the leader can change visibility", status: 403 };
-  }
-  if (doc.status === "ended") {
-    return { error: "Party has ended", status: 400 };
-  }
+  const loaded = await loadPartyAsLeader(partyId, leaderId, "Only the leader can change visibility");
+  if ("error" in loaded) return loaded;
+  const doc = loaded.doc;
   if (doc.eventId && visibility !== "event") {
     return { error: "Event parties must stay on event visibility", status: 400 };
   }
@@ -581,10 +524,7 @@ export async function setVisibility(
   doc.lastActivity = new Date();
   await doc.save();
 
-  return {
-    party: await partyPayloadForDoc(doc.toObject()),
-    status: 200,
-  };
+  return partyReply(doc);
 }
 
 /* ─── ready toggle (4G) ──────────────────────────────────────────────────── */
