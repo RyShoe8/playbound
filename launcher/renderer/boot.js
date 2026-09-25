@@ -1000,7 +1000,8 @@ async function boot() {
    * Kick the poll once the account is actually resolved, same as the
    * onAccount path already does.
    */
-  void refreshAccountStatus().then(() => onNotificationsAccountChanged());
+  const accountReady = refreshAccountStatus();
+  void accountReady.then(() => onNotificationsAccountChanged());
 
   const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 400));
   idle(() => {
@@ -1020,6 +1021,11 @@ async function boot() {
      * a harmless no-op (ensureCouchBackground just confirms nothing to poll).
      */
     void import("./views/couch.js").then((m) => m.ensureCouchBackground());
+    // Friends' first open waited on /api/party-sync; warm it while idle.
+    void accountReady
+      .then(() => import("./views/friends.js"))
+      .then((m) => m.prefetchFriendsBundle?.())
+      .catch(() => {});
     void window.playbound.getModsCatalog?.()
       .then((res) => {
         if (res) cachePut("mods", res);

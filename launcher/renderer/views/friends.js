@@ -317,6 +317,10 @@ async function renderFriendsView() {
   const container = views.friends;
   
   if (!state.accountState.connected) {
+    // Never carry one account's friends into the next sign-in.
+    lastGoodFriends = [];
+    lastGoodRequests.incoming = [];
+    lastGoodRequests.outgoing = [];
     container.innerHTML = `
       <div class="section-header" style="margin-top: 0">
         <div>
@@ -789,27 +793,62 @@ async function loadUpcomingEvents() {
   return upcomingEventsCache.data;
 }
 
+/*
+ * A bundle requested before the view opened (boot idle time), so the first
+ * open paints from it instead of waiting on /api/party-sync. Used once, and
+ * only while fresh.
+ */
+let prefetchedBundle = null;
+const PREFETCH_FRESH_MS = 20_000;
+
+export function prefetchFriendsBundle() {
+  if (!state.accountState?.connected || prefetchedBundle) return;
+  const promise = loadFriendsBundle().catch(() => null);
+  prefetchedBundle = { at: Date.now(), promise };
+}
+
+function takePrefetchedBundle() {
+  const p = prefetchedBundle;
+  prefetchedBundle = null;
+  return p && Date.now() - p.at < PREFETCH_FRESH_MS ? p.promise : null;
+}
+
+let lastGoodFriends = [];
+const lastGoodRequests = { incoming: [], outgoing: [] };
+
 async function refreshFriendsData() {
   const content = document.getElementById("friends-content-area");
   if (!content) return;
 
   try {
-    await ensurePartyGames();
-    const [bundle, upcomingEventsData] = await Promise.all([
-      loadFriendsBundle(),
+    // Started together: the game list comes from the local catalog and has
+    // no reason to hold up the network request behind it.
+    const prefetched = takePrefetchedBundle();
+    const [, prefetchedResult, upcomingEventsData] = await Promise.all([
+      ensurePartyGames(),
+      prefetched || Promise.resolve(null),
       loadUpcomingEvents(),
     ]);
+    const bundle = prefetchedResult || (await loadFriendsBundle());
     const { friendsData, requestsData, partiesRaw } = bundle;
     const partiesData = await reconcilePartiesPayload(partiesRaw);
-    const friends = Array.isArray(friendsData?.friends) ? friendsData.friends : [];
+    /*
+     * A poll that came back without a list (timeout, `errors: ["friends"]`)
+     * is not an empty friends list. Treating it as one blanked the page to
+     * "No friends yet" for a pass whenever a single request failed.
+     */
+    if (Array.isArray(friendsData?.friends)) lastGoodFriends = friendsData.friends;
+    if (Array.isArray(requestsData?.incoming)) lastGoodRequests.incoming = requestsData.incoming;
+    if (Array.isArray(requestsData?.outgoing)) lastGoodRequests.outgoing = requestsData.outgoing;
+    const friends = lastGoodFriends;
     state._createPartyFriends = friends;
     paintPartyArea(partiesData);
     syncFriendsPoll();
     const activeParty = Array.isArray(partiesData?.myParties) ? partiesData.myParties[0] : null;
     if (activeParty?.id) void refreshPartyChat(activeParty);
 
-    const incomingRequests = Array.isArray(requestsData?.incoming) ? requestsData.incoming : [];
-    const outgoingRequests = Array.isArray(requestsData?.outgoing) ? requestsData.outgoing : [];
+    const incomingRequests = lastGoodRequests.incoming;
+    const outgoingRequests = lastGoodRequests.outgoing;
 
     /*
      * The site collapses every non-offline state into one "Online" section

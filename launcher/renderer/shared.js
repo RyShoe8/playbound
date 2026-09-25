@@ -532,24 +532,26 @@ export async function setCompatibilityFilter(mode) {
   if (mode !== "compatible" && mode !== "all") return;
   state.compatibilityFilter = mode;
   syncCompatRadios();
+  // Repaint first: the filter is local state, and the click should answer
+  // immediately rather than after a settings round trip to the main process.
+  repaintFilteredViews({ includeLibrary: true });
   try {
     await window.playbound.saveSettings({ compatibilityFilter: mode });
   } catch {
     /* ignore */
   }
-  repaintFilteredViews({ includeLibrary: true });
 }
 
 export async function setDiscoveryMode(mode) {
   const next = parseDiscoveryMode(mode);
   state.discoveryMode = next;
   syncDiscoveryControls();
+  repaintFilteredViews();
   try {
     await window.playbound.saveSettings({ discoveryMode: next });
   } catch {
     /* ignore */
   }
-  repaintFilteredViews();
 }
 
 export function formatStatNumber(n) {
@@ -1315,4 +1317,31 @@ export function wireEnhanceSelect() {
   });
   selectObserver.observe(document.body, { childList: true, subtree: true });
   document.querySelectorAll("select").forEach(enhanceSelect);
+}
+
+/*
+ * Hosts the site's image optimizer accepts (platform/next.config remotePatterns).
+ * Anything else is loaded as-is: the optimizer refuses unlisted hosts with 400.
+ */
+const RESIZABLE_IMAGE_HOSTS =
+  /(^|\.)(public\.blob\.vercel-storage\.com|cdn\.cloudflare\.steamstatic\.com|shared\.akamai\.steamstatic\.com|steamcdn-a\.akamaihd\.net)$/;
+
+/**
+ * A card-sized, CDN-cached WebP of a cover instead of the original upload.
+ *
+ * The games grid was downloading ~22 MB of full-size covers (one 3 MB PNG for
+ * a 200px card); through the site's optimizer a 1 MB cover arrives as ~26 KB.
+ * Returns the original URL for hosts the optimizer does not accept.
+ */
+export function resizedImageUrl(url, width = 640) {
+  if (typeof url !== "string" || !/^https:\/\//i.test(url)) return url;
+  let host;
+  try {
+    host = new URL(url).hostname;
+  } catch {
+    return url;
+  }
+  if (!RESIZABLE_IMAGE_HOSTS.test(host)) return url;
+  const base = String(state.accountState?.apiBase || "https://playbound.club").replace(/\/$/, "");
+  return `${base}/_next/image?url=${encodeURIComponent(url)}&w=${width}&q=75`;
 }
