@@ -1,4 +1,31 @@
 export type ResourceEnvelope = { cpuCores: number; ramBytes: number };
+
+/** Reserve measured idle use with startup/spike headroom, not a full occupied-game baseline. */
+export function runningReservationEnvelope(input: {
+  baseline: ResourceEnvelope;
+  players: number | null;
+  observed?: { available: boolean; cpuCores?: number | null; rssBytes?: number } | null;
+}): ResourceEnvelope {
+  const { baseline, players, observed } = input;
+  if (players !== 0 || !observed?.available || observed.cpuCores == null ||
+      !Number.isFinite(observed.cpuCores) || !Number.isFinite(observed.rssBytes) ||
+      observed.cpuCores < 0 || (observed.rssBytes ?? 0) <= 0) return baseline;
+  return {
+    cpuCores: Math.max(0.5, observed.cpuCores * 2),
+    ramBytes: Math.max(768 * 1024 ** 2, observed.rssBytes! * 1.5),
+  };
+}
+
+export function canScaleDownEmptyServer(input: {
+  players: number | null;
+  checkedAt: Date | null;
+  protectedUntil: Date | null;
+}, now: Date): boolean {
+  return input.players === 0 && !!input.checkedAt &&
+    now.getTime() - new Date(input.checkedAt).getTime() >= -60_000 &&
+    now.getTime() - new Date(input.checkedAt).getTime() <= 2 * 60_000 &&
+    (!input.protectedUntil || new Date(input.protectedUntil) <= now);
+}
 export type CapacityReason = "NO_HEALTHY_NODE" | "STALE_METRICS" | "INSUFFICIENT_CAPACITY" | "REGION_UNAVAILABLE" | "PROFILE_NOT_VERIFIED";
 
 export type PlacementInput = {
