@@ -488,7 +488,8 @@ export const recipes = {
     portStart: 8303,
     portEnd: 8323,
     protocol: "udp",
-    binaries: gameBin("teeworlds", ["teeworlds_srv"]),
+    // install.sh installs the apt package, whose binary is /usr/games/teeworlds-server.
+    binaries: gameBin("teeworlds", ["teeworlds_srv", "teeworlds-server"]),
     args: (_port, ctx) => ["-f", teeworldsConfigPath(ctx)],
     prepareSpawn: async (port, ctx) => {
       fs.mkdirSync(TEEWORLDS_CONFIG_DIR, { recursive: true });
@@ -688,7 +689,8 @@ export const recipes = {
       ...gameBin("earth-2140-trilogy", ["OpenRA.Server", "OpenE2140", "openra-server"]),
       ...gameBin("opene2140", ["OpenRA.Server", "OpenE2140", "openra-server"]),
     ],
-    args: (port, ctx) => [
+    args: (port, ctx, binary) => [
+      ...appImageServerArgs(binary),
       "Game.Mod=e2140",
       `Server.Name=${ctx.name}`,
       `Server.ListenPort=${port}`,
