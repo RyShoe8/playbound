@@ -3,7 +3,7 @@ import { z } from "zod";
 export const profileSettingsSchema = z.object({
   verification: z.enum(["testing", "verified", "blocked"]),
   blockedReason: z.string().max(500).nullable(),
-  queryKind: z.enum(["none", "openra-master", "a2s-local", "hurry-curry-registry", "luanti-master", "hypersomnia-master"]),
+  queryKind: z.enum(["none", "openra-master", "a2s-local", "agent-local", "hurry-curry-registry", "luanti-master", "hypersomnia-master"]),
   queryVerified: z.boolean(),
   joinVerified: z.boolean(),
   enabled: z.boolean(),

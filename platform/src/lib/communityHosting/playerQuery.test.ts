@@ -6,7 +6,7 @@ afterEach(() => vi.unstubAllGlobals());
 describe("managed player count", () => {
   it("falls back to the game's live query when a stored profile has no usable method", () => {
     expect(managedQueryKind("luanti", { queryVerified: true, queryKind: "none" })).toBe("luanti-master");
-    expect(managedQueryKind("counter-strike-2", { queryVerified: false, queryKind: "none" })).toBe("a2s-local");
+    expect(managedQueryKind("counter-strike-2", { queryVerified: false, queryKind: "none" })).toBe("agent-local");
     expect(managedQueryKind("unknown-game", null)).toBeNull();
   });
   it("finds the exact VPS address and preserves a true zero", async () => {
