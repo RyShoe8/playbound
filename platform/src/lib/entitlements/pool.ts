@@ -87,9 +87,9 @@ export async function planSlotsForUser(_userId: string | null | undefined): Prom
 const POOL_TTL_MS = 2_000;
 let poolCache: { at: number; value: PoolStatus } | null = null;
 
-export async function getPoolStatus(): Promise<PoolStatus> {
+export async function getPoolStatus(options: { fresh?: boolean } = {}): Promise<PoolStatus> {
   const cached = poolCache;
-  if (cached && Date.now() - cached.at < POOL_TTL_MS) return cached.value;
+  if (!options.fresh && cached && Date.now() - cached.at < POOL_TTL_MS) return cached.value;
   const value = await computePoolStatus();
   poolCache = { at: Date.now(), value };
   return value;
@@ -135,9 +135,11 @@ async function computePoolStatus(): Promise<PoolStatus> {
 export async function getPartySlotContext(opts: {
   leaderId: string | null | undefined;
   memberCount: number;
+  /** Admission checks must see current usage, not the short-lived display cache. */
+  fresh?: boolean;
 }) {
   const [status, planSlots] = await Promise.all([
-    getPoolStatus(),
+    getPoolStatus({ fresh: opts.fresh }),
     planSlotsForUser(opts.leaderId),
   ]);
   return {

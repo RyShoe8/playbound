@@ -55,7 +55,8 @@ export default async function ConnectPartiesPage() {
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             Free party seats are a shared pool: every member a subscriber&apos;s own plan does not
             cover draws on it, so how many are free depends on who is playing right now.
-            Subscription slots stack on top of whatever is available.
+            Subscription slots stack on top of whatever is available. A dedicated party room
+            follows these roster limits; the pool counts people, not VPS processes.
           </p>
         </div>
         <PlatformLimitsEditor
