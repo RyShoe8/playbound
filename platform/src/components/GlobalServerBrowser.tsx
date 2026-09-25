@@ -188,12 +188,14 @@ export function GlobalServerBrowser({
 
   async function handleJoinWithParty(server: GameServer) {
     const srvKey = server.id || `${server.host}:${server.port}`;
+    const targetSlug = server.gameSlug || effectiveGameSlug;
+    if (!targetSlug) return;
     setPartyTargeting(srvKey);
     try {
       let partyId = activeParty?.id;
       if (!partyId) {
         const newParty = await createParty({
-          gameSlug: effectiveGameSlug,
+          gameSlug: targetSlug,
           hostMode: "public",
           name: `${server.name} Party`,
           visibility: "public",
@@ -389,10 +391,7 @@ export function GlobalServerBrowser({
 
   const loadServers = useCallback(
     async (slug: string, mod: CatalogMod | null, edition = "", editionLabel = "") => {
-      if (!slug) {
-        setData(null);
-        return;
-      }
+      const isCommunity = !slug || slug === "community";
       const seq = ++requestSeq.current;
       const isStale = () => seq !== requestSeq.current;
 
@@ -403,6 +402,10 @@ export function GlobalServerBrowser({
       const applyFilters = (raw: GameServer[]) => {
         let servers = raw;
         setFilterNote("");
+        if (isCommunity) {
+          setFilterNote("Showing PlayBound community servers.");
+          return servers;
+        }
         if (mod) {
           const filtered = filterServersForMod(servers, mod);
           setFilterNote(
@@ -415,19 +418,6 @@ export function GlobalServerBrowser({
           const needle = edition.toLowerCase();
           const matched = servers.filter((s) => (s.gameType || "").toLowerCase() === needle);
           const label = editionLabel || edition;
-          /*
-           * Only some providers encode the edition in gameType — EverQuest
-           * reports "project-quarm" and "project-99", which is what this filter
-           * was written for. Most use the field for what it says: a game mode
-           * or gamedir, "csgo" for Counter-Strike, "Free" and "Members" for
-           * RuneScape. Against those, an exact match found nothing and the
-           * browser went blank for every edition except All.
-           *
-           * Whether any server carries the tag tells us which case we are in.
-           * When none do, the list is shown unfiltered and the note says the
-           * game does not tag its servers — the same shape as the mod filter
-           * above. Falling back is only dishonest if it is silent.
-           */
           const taggedByEdition = servers.some((s) =>
             (s.gameType || "").toLowerCase() === needle
           );
@@ -446,7 +436,7 @@ export function GlobalServerBrowser({
         return servers;
       };
 
-      const cacheKey = slug;
+      const cacheKey = isCommunity ? "community" : slug;
       const cached = listCache.current.get(cacheKey);
       if (cached) {
         const servers = applyFilters(Array.isArray(cached.servers) ? cached.servers : []);
@@ -460,8 +450,7 @@ export function GlobalServerBrowser({
       try {
         const needGeo = !viewerGeoFetched.current;
         const [serversRes, geoRes] = await Promise.all([
-          // Shares the route's 30s cache; provider queries behind it are the expensive part.
-          fetch(`/api/games/${encodeURIComponent(slug)}/servers`, {
+          fetch(isCommunity ? "/api/community-servers" : `/api/games/${encodeURIComponent(slug)}/servers`, {
             credentials: "same-origin",
             signal: ac.signal,
           }),
@@ -511,11 +500,6 @@ export function GlobalServerBrowser({
   );
 
   useEffect(() => {
-    if (!effectiveGameSlug) {
-      abortRef.current?.abort();
-      return;
-    }
-
     const mod = effectiveModSlug
       ? mods.find((m) => m.slug === effectiveModSlug) || null
       : null;
@@ -554,7 +538,7 @@ export function GlobalServerBrowser({
      * counts are dropped too: a server that does not report its population is
      * not evidence of anyone being on it.
      */
-    if (withPlayersOnly) {
+    if (withPlayersOnly && effectiveGameSlug) {
       list = list.filter((s) => Number(s.players) > 0);
     }
     if (q) {
@@ -638,7 +622,7 @@ export function GlobalServerBrowser({
             disabled={!catalogLoaded || visibleGames.length === 0}
             className="h-10 rounded-xl border border-border bg-secondary px-3 text-sm font-bold text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/40 disabled:opacity-50"
           >
-            <option value="">Select a game…</option>
+            <option value="">PlayBound Community Servers</option>
             {visibleGames.map((g) => (
               <option key={g.slug} value={g.slug}>
                 {g.title}
@@ -763,10 +747,11 @@ export function GlobalServerBrowser({
           Couldn&apos;t refresh live list: {data.error}
         </p>
       )}
-      {effectiveGameSlug && data?.supported ? (
+      {data?.supported ? (
         <p className="text-sm font-semibold text-muted-foreground">
           {totalPlayers} server player{totalPlayers === 1 ? "" : "s"} · {rows.length} tracked server
           {rows.length === 1 ? "" : "s"}
+          {!effectiveGameSlug && " · PlayBound Community Servers"}
         </p>
       ) : null}
       {effectiveGameSlug === "openra" ? (
@@ -785,19 +770,15 @@ export function GlobalServerBrowser({
             ? "No installed games have live server browsers. Install a multiplayer title or turn off Installed only."
             : "No live servers for games compatible with this device. Switch to All Games to browse every title."}
         </EmptyHint>
-      ) : !effectiveGameSlug ? (
-        <EmptyHint icon={Server}>
-          Pick a game above to see who&apos;s playing right now.
-        </EmptyHint>
       ) : loading && !data ? (
         <p className="text-sm text-muted-foreground">Loading servers…</p>
       ) : data && !data.supported ? (
-        <EmptyHint icon={Server}>Live listings for {selectedTitle} aren&apos;t wired yet.</EmptyHint>
+        <EmptyHint icon={Server}>Live listings for {selectedTitle || "community servers"} aren&apos;t wired yet.</EmptyHint>
       ) : rows.length === 0 ? (
         <EmptyHint icon={Server}>
           {data?.error
             ? "No servers returned (see error above)."
-            : withPlayersOnly
+            : withPlayersOnly && effectiveGameSlug
               ? "Every listed server is empty right now. Turn off Servers With Players to see them all."
               : effectiveEditionSlug
                 ? `No servers for ${editionNameBySlug.get(effectiveEditionSlug) || effectiveEditionSlug}.`
@@ -819,28 +800,47 @@ export function GlobalServerBrowser({
             <tbody>
               {rows.map((s) => {
                 const addr = `${s.host}:${s.port}`;
+                const targetGameSlug = s.gameSlug || effectiveGameSlug;
                 const editionLabel = s.gameType
                   ? editionNameBySlug.get(s.gameType) || s.gameType
                   : null;
+                const isInstalled = targetGameSlug ? installedGames.has(targetGameSlug) : false;
                 return (
                   <tr key={s.id || addr} className="border-b border-border last:border-0">
                     <td className="px-3 py-3">
-                      <div className="font-semibold">{s.name}</div>
-                      {s.sourceType === "playbound_hosted" && <span className="mt-1 inline-flex rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-bold text-primary">PlayBound Hosted</span>}
-                      {editionLabel && (
-                        <div className="text-xs text-muted-foreground">{editionLabel}</div>
-                      )}
-                      {s.protected && (
-                        <span className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-                          <Lock className="size-3" /> Password
-                        </span>
-                      )}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {s.gameTitle && (
+                          <span className="font-extrabold text-foreground">{s.gameTitle}</span>
+                        )}
+                        <span className="font-semibold text-foreground/90">{s.name}</span>
+                      </div>
+                      <div className="mt-1 flex items-center gap-2 flex-wrap">
+                        {(s.sourceType === "playbound_hosted" || !effectiveGameSlug) && (
+                          <span className="inline-flex rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-bold text-primary">
+                            PlayBound Hosted
+                          </span>
+                        )}
+                        {s.editionSlug && (
+                          <span className="text-xs text-muted-foreground">Edition: {s.editionSlug}</span>
+                        )}
+                        {editionLabel && (
+                          <span className="text-xs text-muted-foreground">{editionLabel}</span>
+                        )}
+                        {s.protected && (
+                          <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                            <Lock className="size-3" /> Password
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-3 py-3">
                       <span className="inline-flex items-center gap-1">
                         <Users className="size-3.5 text-muted-foreground" />
                         {s.players == null ? "—" : `${s.players}/${s.maxPlayers ?? "—"}`}
                       </span>
+                      {s.bots ? (
+                        <span className="ml-1 text-xs text-muted-foreground">({s.bots} bots)</span>
+                      ) : null}
                     </td>
                     <td className="px-3 py-3 text-muted-foreground">{s.map || "—"}</td>
                     <td className="px-3 py-3 text-muted-foreground">{formatLocation(s)}</td>
@@ -848,13 +848,13 @@ export function GlobalServerBrowser({
                     <td className="px-3 py-3">
                       <div className="flex flex-wrap items-center gap-1.5">
                         {s.gameType === "steam-concurrent" ? (
-                          installedGames.has(effectiveGameSlug) ? (
+                          isInstalled ? (
                             <a
-                              href={launcherPlayUrl(effectiveGameSlug)}
+                              href={launcherPlayUrl(targetGameSlug)}
                               onClick={() => {
                                 void telemetry.track("server_join_clicked", {
                                   serverId: `${s.host}:${s.port}`,
-                                  gameSlug: effectiveGameSlug,
+                                  gameSlug: targetGameSlug,
                                   phase: "play",
                                 });
                               }}
@@ -864,18 +864,18 @@ export function GlobalServerBrowser({
                             </a>
                           ) : (
                             <LauncherInstallButton
-                              slug={effectiveGameSlug}
+                              slug={targetGameSlug}
                               label="Install"
                               className="px-3 py-1 text-xs"
                             />
                           )
                         ) : (
                           <>
-                            {installedGames.has(effectiveGameSlug) &&
-                            isOneClickSlug(effectiveGameSlug) ? (
+                            {isInstalled &&
+                            isOneClickSlug(targetGameSlug) ? (
                               <a
                                 href={launcherJoinUrl(
-                                  effectiveGameSlug,
+                                  targetGameSlug,
                                   s.host,
                                   s.port,
                                   s.name,
@@ -884,7 +884,7 @@ export function GlobalServerBrowser({
                                 onClick={() => {
                                   void telemetry.track("server_join_clicked", {
                                     serverId: `${s.host}:${s.port}`,
-                                    gameSlug: effectiveGameSlug,
+                                    gameSlug: targetGameSlug,
                                   });
                                 }}
                                 className="rounded-full bg-play px-3 py-1 text-xs font-bold text-play-foreground hover:brightness-110"
@@ -893,7 +893,7 @@ export function GlobalServerBrowser({
                               </a>
                             ) : (
                               <LauncherInstallButton
-                                slug={effectiveGameSlug}
+                                slug={targetGameSlug}
                                 label="Install"
                                 className="px-3 py-1 text-xs"
                               />

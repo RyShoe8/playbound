@@ -17,6 +17,8 @@ const CommunityServerSchema = new Schema({
   host: { type: String, default: null },
   port: { type: Number, default: null },
   playerCount: { type: Number, default: null, min: 0 },
+  maxPlayerCount: { type: Number, default: null, min: 0 },
+  bots: { type: Number, default: null, min: 0 },
   playerCountCheckedAt: { type: Date, default: null },
   lastOccupiedAt: { type: Date, default: null },
   onlineSince: { type: Date, default: null },

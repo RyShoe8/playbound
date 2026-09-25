@@ -12,12 +12,15 @@ export type GameServer = {
   id: string;
   sourceType?: "playbound_hosted";
   communityServerId?: string;
+  gameSlug?: string;
+  gameTitle?: string;
   editionSlug?: string | null;
   name: string;
   host: string;
   port: number;
   players: number | null;
   maxPlayers: number | null;
+  bots?: number | null;
   map: string | null;
   gameType: string | null;
   /**

@@ -16,80 +16,58 @@ import { HomeGamesSections } from "@/components/HomeGamesSections";
 import { HomeHeroPromoSection } from "@/components/HomeHeroPromoSection";
 import { PlayWithFriends } from "@/components/friends/PlayWithFriends";
 import {
-  HomeServerPreviews,
-  type HomeServerPreview,
-} from "@/components/HomeServerPreviews";
+  HomeCommunityServers,
+  type HomeCommunityServer,
+} from "@/components/HomeCommunityServers";
 import { Badge, SectionHeader } from "@/components/ui/bits";
 import { getCatalogLiveStats, playingNowBySlug } from "@/lib/liveActivity";
+import { listAllJoinableCommunityServers } from "@/lib/communityHosting/discovery";
 
-const HOME_SERVER_SLUGS = ["openra", "openttd", "luanti"] as const;
 const FEATURED_MODS_LIMIT = 8;
 
-async function loadServerPreviews(): Promise<HomeServerPreview[]> {
-  /*
-   * No discovery filter here. All three of HOME_SERVER_SLUGS are free, so the
-   * filter never removed anything — it only read a cookie, and that read was
-   * enough to stop the homepage being prerendered at all.
-   */
-  const slugs = [...HOME_SERVER_SLUGS];
-  const settled = await Promise.allSettled(
-    slugs.map(async (slug): Promise<HomeServerPreview | null> => {
-      const [game, result] = await Promise.all([getGame(slug), listServersForGame(slug)]);
-      if (!game || !result.supported) return null;
-      const servers = result.servers ?? [];
-      const playerCount = servers.reduce((sum, s) => sum + (Number(s.players) || 0), 0);
-      return {
-        slug,
-        title: game.title,
-        serverCount: servers.length,
-        playerCount,
-        platforms: game.platforms,
-        browserPlayable: game.browserPlayable,
-        steamDeck: game.steamDeck,
-      };
-    })
-  );
-
-  const rows: HomeServerPreview[] = [];
-  for (const result of settled) {
-    if (result.status === "fulfilled" && result.value) rows.push(result.value);
-  }
-  return rows;
+async function loadCommunityServers(): Promise<HomeCommunityServer[]> {
+  const hosted = await listAllJoinableCommunityServers();
+  const games = await listGames();
+  const gameMap = new Map(games.map((g) => [g.slug, g]));
+  return hosted.map((s) => {
+    const game = gameMap.get(s.gameSlug || "");
+    return {
+      id: s.id,
+      gameSlug: s.gameSlug || "",
+      gameTitle: s.gameTitle || game?.title || s.gameSlug || "Server",
+      editionSlug: s.editionSlug,
+      serverName: s.name,
+      host: s.host,
+      port: s.port,
+      players: s.players,
+      maxPlayers: s.maxPlayers,
+      bots: s.bots,
+      region: s.location?.region || "US",
+      platforms: game?.platforms ?? [],
+      browserPlayable: Boolean(game?.browserPlayable),
+      steamDeck: Boolean(game?.steamDeck),
+    };
+  });
 }
 
-async function HomeLiveServersSection() {
-  /*
-   * Request-time by declaration, inside the Suspense boundary below.
-   *
-   * This is live data — who is on which server right now — so prerendering it
-   * would bake a snapshot into the static shell and serve it until the next
-   * revalidation. connection() stops the prerender here, which is exactly the
-   * split Partial Prerendering is for: the rest of the homepage is static HTML
-   * and this one section streams in per request.
-   *
-   * It also ends a game of whack-a-mole. The server stack reads the clock in
-   * several places for its own reasons — a fetch timestamp in the registry, a
-   * TTL check in the geo lookup, and more below that — and Cache Components
-   * rejects every one of them during a prerender. Declaring the boundary is
-   * one fix; chasing the clock reads is one fix per provider.
-   */
+async function HomeCommunityServersSection() {
   await connection();
-  const serverPreviews = await loadServerPreviews();
-  return <HomeServerPreviews rows={serverPreviews} />;
+  const servers = await loadCommunityServers();
+  return <HomeCommunityServers servers={servers} />;
 }
 
-function HomeLiveServersFallback() {
+function HomeCommunityServersFallback() {
   return (
     <section>
       <SectionHeader
-        title="Live Multiplayer & Servers"
-        subtitle="Public multiplayer right now — open the full browser for every title"
+        title="Community Servers"
+        subtitle="Dedicated servers hosted by PlayBound — join and play right now"
         href="/multiplayer"
       />
       <div className="grid gap-3 sm:grid-cols-3">
-        {HOME_SERVER_SLUGS.map((slug) => (
+        {[1, 2, 3].map((i) => (
           <div
-            key={slug}
+            key={i}
             className="animate-pulse rounded-xl border border-border bg-card p-4"
           >
             <p className="flex items-center gap-1.5 font-bold text-muted-foreground">
@@ -203,9 +181,9 @@ export default async function HomePage() {
         <PlayWithFriends surface="homepage" compact />
       </section>
 
-      {/* ── Live servers (streamed — do not block Home chrome) ─── */}
-      <Suspense fallback={<HomeLiveServersFallback />}>
-        <HomeLiveServersSection />
+      {/* ── Community servers (streamed — do not block Home chrome) ─── */}
+      <Suspense fallback={<HomeCommunityServersFallback />}>
+        <HomeCommunityServersSection />
       </Suspense>
 
       {/* ── Mods ───────────────────────────────────────────────── */}

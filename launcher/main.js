@@ -10036,7 +10036,22 @@ ipcMain.handle("ping-servers", async (_event, servers) => {
 
 ipcMain.handle("get-servers", async (_event, slug) => {
   try {
-    const res = await apiFetch(`${getApiBase()}/api/games/${encodeURIComponent(slug)}/servers`, {
+    const isCommunity = !slug || slug === "community";
+    const url = isCommunity
+      ? `${getApiBase()}/api/community-servers`
+      : `${getApiBase()}/api/games/${encodeURIComponent(slug)}/servers`;
+    const res = await apiFetch(url, {
+      headers: launcherApiHeaders({ accept: "application/json" }),
+    });
+    if (!res.ok) return { supported: false, servers: [] };
+    return await res.json();
+  } catch {
+    return { supported: false, servers: [] };
+  }
+});
+ipcMain.handle("get-community-servers", async () => {
+  try {
+    const res = await apiFetch(`${getApiBase()}/api/community-servers`, {
       headers: launcherApiHeaders({ accept: "application/json" }),
     });
     if (!res.ok) return { supported: false, servers: [] };

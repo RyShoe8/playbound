@@ -193,6 +193,7 @@ contextBridge.exposeInMainWorld("playbound", {
   getCatalog: (opts) => ipcRenderer.invoke("get-catalog", opts || {}),
   refreshCatalog: () => ipcRenderer.invoke("get-catalog", { refresh: true }),
   getServers: (slug) => ipcRenderer.invoke("get-servers", slug),
+  getCommunityServers: () => ipcRenderer.invoke("get-community-servers"),
   getServerIndex: () => ipcRenderer.invoke("get-server-index"),
   getMultiplayerActivity: (opts) => ipcRenderer.invoke("get-multiplayer-activity", opts || {}),
   getPartySync: (opts) => ipcRenderer.invoke("get-party-sync", opts || {}),
