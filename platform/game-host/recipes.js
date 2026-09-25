@@ -786,7 +786,12 @@ export const recipes = {
         `server_announce = ${ctx.managed ? "true" : "false"}`,
         // The distro wrapper injects /etc/minetest/minetest.conf, whose
         // protocol-less legacy URL otherwise survives into this room.
-        ...(ctx.managed ? ["serverlist_url = https://servers.luanti.org"] : []),
+        ...(ctx.managed ? [
+          "serverlist_url = https://servers.luanti.org",
+          // The VPS announces over IPv6, but this process listens on IPv4.
+          // Point the list's reachability probe at the actual room address.
+          `server_address = ${process.env.GAME_HOST_PUBLIC_IP}`,
+        ] : []),
         `server_name = ${ctx.managed ? "PlayBound.Club Community Server" : "PlayBound Private Party"}`,
         "server_description = Hosted by PlayBound",
         "max_users = 16",
