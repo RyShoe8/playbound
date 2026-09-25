@@ -37,6 +37,7 @@ let state = {
   activeTab: "game",
   tabInitialized: false,
   controls: null,
+  tes3mpCommandBusy: null,
   guide: null,
   guideScheme: null,
 };
@@ -109,6 +110,82 @@ function controlHtml(def, value) {
     <input type="text" data-key="${escapeHtml(def.key)}" value="${escapeHtml(value)}" />
   </label>`;
 }
+
+/**
+ * Online players with Make Ally (TES3MP `/invite <pid>`), and Run Startup
+ * (`/runstartup`). Both run as the admin account. An invite becomes an
+ * alliance only once the other player types `/join <pid>`, so "Invite sent"
+ * is its own state.
+ */
+function tes3mpPlayersHtml(tes3mp) {
+  const online = (Array.isArray(tes3mp.accounts) ? tes3mp.accounts : []).filter(
+    (a) => a.online && Number.isInteger(a.pid)
+  );
+  const rows = online
+    .map((a) => {
+      let action;
+      if (a.isAdmin) action = `<span class="help">You</span>`;
+      else if (a.ally) action = `<span class="help">Ally ✓</span>`;
+      else if (a.invitePending) action = `<span class="help">Invite sent — they type /join</span>`;
+      else {
+        const busy = state.tes3mpCommandBusy === `invite:${a.pid}`;
+        action = `<button class="tab" data-make-ally="${a.pid}" ${state.tes3mpCommandBusy ? "disabled" : ""}>${
+          busy ? "Inviting…" : "Make Ally"
+        }</button>`;
+      }
+      return `<div class="binding"><span>${escapeHtml(a.accountName)} <span class="help">#${a.pid}</span></span>${action}</div>`;
+    })
+    .join("");
+  const startupBusy = state.tes3mpCommandBusy === "runstartup";
+  return `
+    <p class="guide-section">Players</p>
+    ${rows || `<p class="note">Nobody else is online.</p>`}
+    <p class="guide-section">World</p>
+    <p class="note">${
+      tes3mp.startupRun
+        ? "Startup scripts have run on this world."
+        : "Run Startup sets the world in motion so NPCs start their pathing scripts."
+    }</p>
+    <button class="apply" id="tes3mp-runstartup" ${state.tes3mpCommandBusy ? "disabled" : ""}>${
+      startupBusy ? "Running…" : "Run Startup"
+    }</button>`;
+}
+
+async function runTes3mpCommand(command, targetPid = null) {
+  if (!state.partyId || state.tes3mpCommandBusy || !window.playbound?.runTes3mpCommand) return;
+  state.tes3mpCommandBusy = command === "invite" ? `invite:${targetPid}` : command;
+  state.error = null;
+  state.notice = null;
+  render();
+  const result = await window.playbound.runTes3mpCommand(state.partyId, command, targetPid);
+  state.tes3mpCommandBusy = null;
+  if (!result || result.error) {
+    state.error = result?.error || "Could not run the command";
+    render();
+    return;
+  }
+  state.notice =
+    command === "invite"
+      ? "Ally invite sent. It becomes an alliance when they type /join in chat."
+      : "Startup scripts are running.";
+  render();
+  // The server applies requests within a second; re-read so the list updates.
+  setTimeout(() => void refreshTes3mp(), 1500);
+}
+
+async function refreshTes3mp() {
+  await loadTes3mpClaim();
+  if (state.activeTab === "server") render();
+}
+
+// While the Server tab is open on a live Morrowind room, keep the player list
+// current so accepted invites show as allies without reopening the overlay.
+setInterval(() => {
+  if (document.visibilityState !== "visible" || state.activeTab !== "server") return;
+  if (state.data?.gameSlug !== "morrowind" || state.data?.phase === "pre-launch") return;
+  if (state.tes3mpCommandBusy || state.tes3mpBusy) return;
+  void refreshTes3mp();
+}, 4000);
 
 function renderServerTab() {
   const { data } = state;
@@ -196,7 +273,7 @@ function renderServerTab() {
     } else if (tes3mp.adminAccount) {
       adminBlock = `<p class="note">TES3MP admin: <strong>${escapeHtml(
         tes3mp.adminAccount
-      )}</strong></p>`;
+      )}</strong></p>${tes3mpPlayersHtml(tes3mp)}`;
     } else {
       const accounts = Array.isArray(tes3mp.accounts) ? tes3mp.accounts : [];
       const options = accounts
@@ -277,6 +354,11 @@ function renderServerTab() {
     });
     if (!state.tes3mpAccount && accountSelect.value) state.tes3mpAccount = accountSelect.value;
   }
+  root.querySelectorAll("[data-make-ally]").forEach((btn) => {
+    btn.addEventListener("click", () => void runTes3mpCommand("invite", Number(btn.dataset.makeAlly)));
+  });
+  document.getElementById("tes3mp-runstartup")?.addEventListener("click", () => void runTes3mpCommand("runstartup"));
+
   const claimBtn = document.getElementById("tes3mp-claim");
   if (claimBtn) claimBtn.addEventListener("click", () => void claimTes3mp());
 

@@ -50,6 +50,7 @@ export async function GET(req: Request, ctx: RouteContext) {
       hostMode: "dedicated",
       accounts: listed.accounts,
       adminAccount: listed.adminAccount,
+      startupRun: listed.startupRun,
       canClaim: String(party.leaderId) === userId,
     });
   } catch (err) {

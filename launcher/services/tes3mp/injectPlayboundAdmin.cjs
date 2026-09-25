@@ -97,22 +97,31 @@ function listTes3mpAccounts(serverDir) {
   const dataDir = path.join(serverDir, "data");
   const byKey = new Map();
 
-  const upsert = (accountName, { online = false, staffRank = 0 } = {}) => {
+  const upsert = (accountName, { online = false, staffRank = 0, pid = null, allies = null, invitesSent = null } = {}) => {
     const name = sanitizeAdminName(accountName);
     if (!name) return;
     const key = name.toLowerCase();
-    const prev = byKey.get(key) || { accountName: name, online: false, staffRank: 0 };
+    const prev = byKey.get(key) || { accountName: name, online: false, staffRank: 0, pid: null, allies: [], invitesSent: [] };
     byKey.set(key, {
       accountName: prev.accountName || name,
       online: prev.online || online,
       staffRank: Math.max(prev.staffRank, Number(staffRank) || 0),
+      pid: Number.isInteger(pid) ? pid : prev.pid,
+      allies: Array.isArray(allies) ? allies.map(String) : prev.allies,
+      invitesSent: Array.isArray(invitesSent) ? invitesSent.map(String) : prev.invitesSent,
     });
   };
 
   const onlineDoc = readJsonSafe(path.join(dataDir, "playbound-online.json"));
   if (Array.isArray(onlineDoc?.players)) {
     for (const row of onlineDoc.players) {
-      upsert(row?.accountName, { online: true, staffRank: row?.staffRank });
+      upsert(row?.accountName, {
+        online: true,
+        staffRank: row?.staffRank,
+        pid: Number(row?.pid),
+        allies: row?.allies,
+        invitesSent: row?.invitesSent,
+      });
     }
   }
 
@@ -130,8 +139,27 @@ function listTes3mpAccounts(serverDir) {
   const accounts = [...byKey.values()].sort((a, b) =>
     a.accountName.localeCompare(b.accountName, undefined, { sensitivity: "base" })
   );
-  const admin = accounts.find((a) => a.staffRank >= 2);
-  return { accounts, adminAccount: admin?.accountName || null };
+  // Prefer an admin who is online: that is the account overlay commands run as.
+  const admin = accounts.find((a) => a.staffRank >= 2 && a.online) || accounts.find((a) => a.staffRank >= 2);
+  /*
+   * Ally state relative to the admin account, which is who "Make Ally"
+   * invites from. TES3MP alliances are pairwise, and an invite only becomes
+   * an alliance once the other player accepts with /join.
+   */
+  const lower = (list) => new Set((list || []).map((n) => String(n).toLowerCase()));
+  const adminAllies = lower(admin?.allies);
+  const adminInvites = lower(admin?.invitesSent);
+  for (const a of accounts) {
+    const key = a.accountName.toLowerCase();
+    a.isAdmin = Boolean(admin) && key === admin.accountName.toLowerCase();
+    a.ally = adminAllies.has(key);
+    a.invitePending = !a.ally && adminInvites.has(key);
+  }
+  return {
+    accounts,
+    adminAccount: admin?.accountName || null,
+    startupRun: Boolean(onlineDoc?.startupRun),
+  };
 }
 
 /**
@@ -226,7 +254,44 @@ function requestTes3mpSetHour(serverDir, hour) {
   return { ok: true, hour: h };
 }
 
+const TES3MP_COMMANDS = new Set(["invite", "runstartup"]);
+
+/**
+ * Queue an overlay button's command for the running server.
+ *
+ * Appended to playbound-commands.json; playboundAdmin.lua runs each id once,
+ * as the online admin account, through TES3MP's own /invite and /runstartup.
+ * The queue keeps the last 20 so it cannot grow without bound.
+ */
+function requestTes3mpCommand(serverDir, { command, targetPid } = {}) {
+  const ensured = ensureHook(serverDir);
+  if (!ensured.ok) return ensured;
+  if (!TES3MP_COMMANDS.has(command)) return { ok: false, reason: "unknown-command" };
+
+  const listed = listTes3mpAccounts(serverDir);
+  const admin = listed.accounts.find((a) => a.isAdmin && a.online);
+  if (!admin) return { ok: false, reason: "admin-offline" };
+
+  let pid = null;
+  if (command === "invite") {
+    pid = Number(targetPid);
+    const target = listed.accounts.find((a) => a.online && a.pid === pid);
+    if (!Number.isInteger(pid) || !target) return { ok: false, reason: "target-offline" };
+    if (target.isAdmin) return { ok: false, reason: "self" };
+  }
+
+  const queuePath = path.join(ensured.dataDir, "playbound-commands.json");
+  const queue = readJsonSafe(queuePath);
+  const requests = Array.isArray(queue?.requests) ? queue.requests : [];
+  const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  requests.push({ id, command, targetPid: pid, actor: admin.accountName, requestedAt: Date.now() });
+  fs.writeFileSync(queuePath, `${JSON.stringify({ requests: requests.slice(-20) }, null, 2)}
+`, "utf8");
+  return { ok: true, id, command, targetPid: pid, actor: admin.accountName };
+}
+
 module.exports = {
+  requestTes3mpCommand,
   injectPlayboundAdmin,
   sanitizeAdminName,
   listTes3mpAccounts,
