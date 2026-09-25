@@ -24,6 +24,7 @@ import WeeklyIssue from "@/lib/models/WeeklyIssue";
 import MultiplayerSession from "@/lib/models/MultiplayerSession";
 import RemotePlaySession from "@/lib/models/RemotePlaySession";
 import DeveloperClaim from "@/lib/models/DeveloperClaim";
+import SavedWorld from "@/lib/models/SavedWorld";
 
 /**
  * Every collection that stores a game slug as a foreign key.
@@ -105,6 +106,7 @@ const REFERENCES: SlugReference[] = [
    */
   { label: "remotePlaySessions", model: RemotePlaySession, field: "gameSlug" },
   { label: "developerClaims", model: DeveloperClaim, field: "gameSlug" },
+  { label: "savedWorlds", model: SavedWorld, field: "gameSlug" },
 ];
 
 export type SlugRenameReport = Record<string, number>;
