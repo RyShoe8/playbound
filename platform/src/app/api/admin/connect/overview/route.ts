@@ -7,6 +7,7 @@ import {
   getGameHostPublicIp,
   isGameHostConfigured,
   listHostRooms,
+  listManagedHostRooms,
 } from "@/lib/gameHost/client";
 import { hostableGameVersionRows } from "@/lib/gameHost/versions";
 import { listActivePartiesForConnectAdmin } from "@/lib/playTogether/adminActiveParties";
@@ -43,10 +44,11 @@ export async function GET() {
     });
   }
 
-  const [healthResult, metricsResult, roomsResult] = await Promise.all([
+  const [healthResult, metricsResult, roomsResult, managedResult] = await Promise.all([
     fetchGameHostHealth(),
     fetchGameHostMetrics(),
     listHostRooms(),
+    listManagedHostRooms(),
   ]);
 
   const alerts: Array<{ type: "warning" | "error" | "info"; title: string; message: string }> = [];
@@ -135,6 +137,8 @@ export async function GET() {
   }
 
   const vpsRooms = roomsResult.ok ? roomsResult.rooms : [];
+  const managedRooms = managedResult.ok ? managedResult.rooms : [];
+  const allRooms = [...new Map([...vpsRooms, ...managedRooms].map((room) => [room.roomId, room])).values()];
   const activeParties = await listActivePartiesForConnectAdmin(
     vpsRooms.map((room) => ({
       partyId: room.partyId,
@@ -149,8 +153,8 @@ export async function GET() {
     metrics,
     monitoring,
     lastSpawnTest: health?.lastSpawnTest ?? {},
-    rooms: vpsRooms,
-    roomsError: roomsResult.ok ? null : roomsResult.error,
+    rooms: allRooms,
+    roomsError: [!roomsResult.ok ? `Party rooms: ${roomsResult.error}` : null, !managedResult.ok ? `Community rooms: ${managedResult.error}` : null].filter(Boolean).join("; ") || null,
     activeParties: activeParties.parties,
     partySummary: activeParties.summary,
     games,

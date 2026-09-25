@@ -18,23 +18,7 @@ export async function GET() {
   if (error) return error;
   await dbConnect();
 
-  // Clean up any legacy alias profiles from earlier runs (e.g. cs2, tf2, doom, tes3mp, opene2140, 0-ad, wesnoth, rvgl)
   const aliasSlugs = Object.keys(HOSTABLE_SLUG_ALIASES);
-  const aliasProfiles = await CommunityServerProfile.find({ gameSlug: { $in: aliasSlugs } }).lean();
-  if (aliasProfiles.length > 0) {
-    for (const ap of aliasProfiles) {
-      const canonical = HOSTABLE_SLUG_ALIASES[ap.gameSlug];
-      if (canonical && ap.enabled) {
-        await CommunityServerProfile.updateOne(
-          { key: `${canonical}:base` },
-          { $set: { enabled: true, rotationEligible: true } },
-          { upsert: true }
-        );
-      }
-    }
-    await CommunityServerProfile.deleteMany({ gameSlug: { $in: aliasSlugs } });
-    await CommunityServer.deleteMany({ gameSlug: { $in: aliasSlugs } });
-  }
 
   const [config, profiles, servers, reservations, metrics, agent] = await Promise.all([
     CommunityHostingConfig.findOne({ key: "global" }).lean(),

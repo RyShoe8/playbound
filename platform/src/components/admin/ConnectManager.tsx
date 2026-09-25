@@ -81,7 +81,8 @@ type OverviewData = {
   } | null;
   rooms: Array<{
     roomId: string;
-    partyId: string;
+    partyId: string | null;
+    communityServerId?: string | null;
     gameSlug: string;
     name?: string;
     host: string;
@@ -474,7 +475,7 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
             <table className="w-full min-w-[960px] text-left text-sm">
               <thead>
                 <tr className="border-b border-border text-muted-foreground">
-                  <th className="pb-2 pr-4 font-medium">Party</th>
+                  <th className="pb-2 pr-4 font-medium">Type</th>
                   <th className="pb-2 pr-4 font-medium">Game</th>
                   <th className="pb-2 pr-4 font-medium">Status</th>
                   <th className="pb-2 pr-4 font-medium">Members</th>
@@ -564,7 +565,7 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
                       {room.host}:{room.port}
                     </td>
                     <td className="py-2 pr-4 font-mono text-xs text-muted-foreground">
-                      {room.partyId ? room.partyId.slice(-8) : "—"}
+                      {room.communityServerId ? "Community" : room.partyId ? `Party ${room.partyId.slice(-8)}` : "—"}
                     </td>
                     <td className="py-2 text-xs text-muted-foreground">
                       {room.createdAt ? (
