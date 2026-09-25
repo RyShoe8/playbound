@@ -784,6 +784,9 @@ export const recipes = {
       });
       fs.writeFileSync(path.join(world, "playbound.conf"), [
         `server_announce = ${ctx.managed ? "true" : "false"}`,
+        // The distro wrapper injects /etc/minetest/minetest.conf, whose
+        // protocol-less legacy URL otherwise survives into this room.
+        ...(ctx.managed ? ["serverlist_url = https://servers.luanti.org"] : []),
         `server_name = ${ctx.managed ? "PlayBound.Club Community Server" : "PlayBound Private Party"}`,
         "server_description = Hosted by PlayBound",
         "max_users = 16",
