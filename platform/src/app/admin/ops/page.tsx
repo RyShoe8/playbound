@@ -5,7 +5,6 @@ import type { Metadata } from "next";
 import { ArrowLeft, Activity } from "lucide-react";
 import { AdminOpsConsole } from "@/components/admin/AdminOpsConsole";
 import { FailureRateCard } from "@/components/admin/FailureRateCard";
-import { CommunityServersOpsCard } from "@/components/admin/CommunityServersOpsCard";
 import { familyForArea, type OpsFamily } from "@/lib/admin/opsEvents";
 import { getFailureRates } from "@/lib/admin/failureRates";
 
@@ -47,7 +46,6 @@ export default async function AdminOpsPage({
         </p>
       </div>
 
-      <CommunityServersOpsCard />
 
       {/* Aggregates 30 days of telemetry, so it must not hold up the live feed.
           Keyed on the game so switching filters refetches rather than showing
