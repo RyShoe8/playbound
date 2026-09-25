@@ -167,6 +167,9 @@ export const PARTY_COPY = {
   serverControlLauncherTail: "press {key} now, or in game once you are playing.",
   serverControlLauncherLiveTail: "press {key} in game to open the PlayBound overlay.",
   serverControlWebTail: "use the controls below.",
+  // Once the game is running the player is in it, not on this page.
+  serverControlWebLiveTail:
+    "press Ctrl+P (⌘+P on Mac) in game to open the PlayBound server manager, or use the controls below.",
   memberReady: "Ready",
   memberNotReady: "Not ready",
   playing: "Playing",
@@ -376,7 +379,10 @@ export function computePartyActions(input: PartyActionsInput): PartyActions {
               input.serverControl.phase === "pre-launch"
                 ? PARTY_COPY.serverControlLauncherTail
                 : PARTY_COPY.serverControlLauncherLiveTail,
-            webTail: PARTY_COPY.serverControlWebTail,
+            webTail:
+              input.serverControl.phase === "pre-launch"
+                ? PARTY_COPY.serverControlWebTail
+                : PARTY_COPY.serverControlWebLiveTail,
           }
         : null,
   };
