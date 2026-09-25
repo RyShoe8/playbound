@@ -51,14 +51,20 @@ export async function listManagedHostRooms(): Promise<
   }
 }
 
-export async function queryManagedHostPlayers(communityServerId: string): Promise<number | null> {
+export async function queryManagedHostOccupancy(communityServerId: string): Promise<{ players: number; maxPlayers: number | null } | null> {
   if (!/^[a-zA-Z0-9_-]{6,80}$/.test(communityServerId)) return null;
   try {
     const response = await hostFetch(`/managed/${communityServerId}/players`, { method: "GET" });
     if (!response?.ok) return null;
-    const data = await response.json() as { players?: unknown };
-    return typeof data.players === "number" && Number.isInteger(data.players) && data.players >= 0 ? data.players : null;
+    const data = await response.json() as { players?: unknown; maxPlayers?: unknown };
+    if (typeof data.players !== "number" || !Number.isInteger(data.players) || data.players < 0) return null;
+    const maxPlayers = typeof data.maxPlayers === "number" && Number.isInteger(data.maxPlayers) && data.maxPlayers > 0 ? data.maxPlayers : null;
+    return { players: data.players, maxPlayers };
   } catch { return null; }
+}
+
+export async function queryManagedHostPlayers(communityServerId: string): Promise<number | null> {
+  return (await queryManagedHostOccupancy(communityServerId))?.players ?? null;
 }
 
 export async function requestManagedHostRoom(opts: {

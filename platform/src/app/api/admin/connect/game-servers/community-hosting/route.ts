@@ -12,8 +12,9 @@ import Edition from "@/lib/models/Edition";
 import { HOSTABLE_SLUGS, HOSTABLE_GAMES, HOSTABLE_SLUG_ALIASES } from "@/lib/gameHost/catalog";
 import { editions as seedEditions } from "@/lib/data/editions";
 import { getEffectiveEnvelope } from "@/lib/communityHosting/reconcile";
-import { populationPeriods } from "@/lib/communityHosting/population";
+import { populationPeriods, populationReading } from "@/lib/communityHosting/population";
 import { runningReservationEnvelope } from "@/lib/communityHosting/capacity";
+import { managedQueryKind, queryManagedOccupancy, type ManagedOccupancy } from "@/lib/communityHosting/playerQuery";
 
 export async function GET() {
   const { error } = await requireAdminSession();
@@ -32,15 +33,42 @@ export async function GET() {
     CapacityReservation.find({ state: { $in: ["planned", "active", "missed"] } }).sort({ warmupAt: 1 }).limit(100).lean(),
     fetchGameHostMetrics(), listManagedHostRooms(),
   ]);
-  const population = await populationPeriods(config?.node?.regionKey || "us-central");
+  const asOf = new Date();
+  const population = await populationPeriods(config?.node?.regionKey || "us-central", asOf);
   const profileByKey = new Map(profiles.map((profile) => [profile.key, profile]));
   const serverById = new Map(servers.map((server) => [String(server._id), server]));
+  const liveCounts = new Map<string, ManagedOccupancy | null>();
+  if (agent.ok) {
+    await Promise.all(agent.rooms.map(async (room) => {
+      const id = String(room.communityServerId || "");
+      const server = serverById.get(id);
+      const profile = server ? profileByKey.get(server.profileKey) : null;
+      const queryKind = managedQueryKind(server?.gameSlug || room.gameSlug, profile);
+      const occupancy = queryKind ? await queryManagedOccupancy({
+        queryKind, host: room.host, port: room.port, communityServerId: id,
+        expectedMod: server?.gameSlug === "earth-2140-trilogy" ? "e2140" : undefined,
+      }) : null;
+      liveCounts.set(id, occupancy);
+    }));
+  }
+  const visibleServers = servers.map((server) => {
+    const occupancy = liveCounts.get(String(server._id));
+    const players = occupancy?.players;
+    return {
+      ...server,
+      playerCount: players ?? null,
+      maxPlayers: occupancy?.maxPlayers ?? null,
+      playerCountCheckedAt: players == null ? null : asOf,
+    };
+  });
+  population.current = agent.ok && agent.rooms.every((room) => serverById.has(String(room.communityServerId || "")))
+    ? populationReading(visibleServers, asOf) : null;
   const runningReservations = agent.ok ? agent.rooms.map((room) => {
     const server = serverById.get(String(room.communityServerId || ""));
     const profile = server ? profileByKey.get(server.profileKey) : null;
     return runningReservationEnvelope({
       baseline: getEffectiveEnvelope(profile?.envelope, room.gameSlug, profile?.sampleCount),
-      players: server?.playerCount ?? null,
+      players: liveCounts.get(String(room.communityServerId || ""))?.players ?? null,
       observed: room.resources,
     });
   }) : [];
@@ -153,8 +181,8 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    asOf: new Date().toISOString(),
-    config: config || defaults, profiles: [...finalProfilesMap.values()], servers, reservations, titles, editionNames,
+    asOf: asOf.toISOString(),
+    config: config || defaults, profiles: [...finalProfilesMap.values()], servers: visibleServers, reservations, titles, editionNames,
     metrics: metrics.ok ? metrics.metrics : null, population, budgetUsage,
     agent: agent.ok ? agent : { ok: false, error: agent.error },
   });

@@ -9,7 +9,7 @@ import PlatformEvent from "@/lib/models/PlatformEvent";
 import AutomatedEventConfig from "@/lib/models/AutomatedEventConfig";
 import { fetchGameHostMetrics, listManagedHostRooms, requestManagedHostRoom, stopManagedHostRoom } from "@/lib/gameHost/client";
 import { canScaleDownEmptyServer, placementDecision, runningReservationEnvelope, type ResourceEnvelope } from "./capacity";
-import { queryManagedPlayerCount } from "./playerQuery";
+import { managedQueryKind, QUERY_BY_GAME, queryManagedPlayerCount } from "./playerQuery";
 import { recordResourceSample } from "./samples";
 import { recordPopulationReading } from "./population";
 import { rotationPriority } from "./rotation";
@@ -49,13 +49,6 @@ const LEASE_MS = 2 * 60_000;
 
 // These methods are selected by the actual hosted game, then recorded on the
 // profile only after a live response. A running process alone is not proof.
-const QUERY_BY_GAME: Record<string, "a2s-local" | "hurry-curry-registry" | "openra-master" | "luanti-master" | "hypersomnia-master"> = {
-  "counter-strike-2": "a2s-local",
-  "hurry-curry": "hurry-curry-registry",
-  "earth-2140-trilogy": "openra-master",
-  "luanti": "luanti-master",
-  "hypersomnia": "hypersomnia-master",
-};
 
 async function recordHostingAction(event: string, server: { gameSlug: string; editionSlug?: string | null; profileKey: string; name?: string }, reason?: string | null) {
   try {
@@ -222,7 +215,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         }
         continue;
       }
-      const queryKind = profile?.queryVerified ? profile.queryKind : QUERY_BY_GAME[server.gameSlug];
+      const queryKind = managedQueryKind(server.gameSlug, profile);
       const players = queryKind
         ? await queryManagedPlayerCount({ queryKind, host: room.host, port: room.port, communityServerId: String(server._id), expectedMod: server.gameSlug === "earth-2140-trilogy" ? "e2140" : undefined })
         : null;

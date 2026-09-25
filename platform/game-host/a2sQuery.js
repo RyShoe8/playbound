@@ -2,7 +2,7 @@ import dgram from "node:dgram";
 
 const INFO_REQUEST = Buffer.concat([Buffer.from([255, 255, 255, 255, 84]), Buffer.from("Source Engine Query\0")]);
 
-export function parseA2sInfo(packet) {
+export function parseA2sOccupancy(packet) {
   if (!Buffer.isBuffer(packet) || packet.length < 18 || packet.readInt32LE(0) !== -1 || packet[4] !== 0x49) return null;
   let offset = 6; // response type and protocol version
   for (let i = 0; i < 4; i++) {
@@ -16,10 +16,14 @@ export function parseA2sInfo(packet) {
   const total = packet[offset + 2];
   const bots = packet[offset + 4];
   if (bots > total) return null;
-  return total - bots;
+  return { players: total - bots, maxPlayers: packet[offset + 3] };
 }
 
-export async function queryA2sPlayers(port) {
+export function parseA2sInfo(packet) {
+  return parseA2sOccupancy(packet)?.players ?? null;
+}
+
+export async function queryA2sOccupancy(port) {
   if (!Number.isInteger(port) || port < 1 || port > 65535) return null;
   return new Promise((resolve) => {
     const socket = dgram.createSocket("udp4");
@@ -40,10 +44,14 @@ export async function queryA2sPlayers(port) {
         });
         return;
       }
-      finish(parseA2sInfo(packet));
+      finish(parseA2sOccupancy(packet));
     });
     socket.send(INFO_REQUEST, port, "127.0.0.1", (error) => {
       if (error) finish(null);
     });
   });
+}
+
+export async function queryA2sPlayers(port) {
+  return (await queryA2sOccupancy(port))?.players ?? null;
 }

@@ -12,11 +12,15 @@ export function CommunityPlayersCard() {
   const [population, setPopulation] = useState<Population | null>(null);
   useEffect(() => {
     const controller = new AbortController();
-    fetch("/api/admin/connect/game-servers/community-hosting", { signal: controller.signal })
-      .then((response) => response.ok ? response.json() : Promise.reject(new Error("Unavailable")))
-      .then((body: { population?: Population }) => setPopulation(body.population || null))
-      .catch(() => undefined);
-    return () => controller.abort();
+    const refresh = () => {
+      fetch("/api/admin/connect/game-servers/community-hosting", { signal: controller.signal, cache: "no-store" })
+        .then((response) => response.ok ? response.json() : Promise.reject(new Error("Unavailable")))
+        .then((body: { population?: Population }) => setPopulation(body.population || null))
+        .catch(() => undefined);
+    };
+    refresh();
+    const timer = setInterval(refresh, 60_000);
+    return () => { controller.abort(); clearInterval(timer); };
   }, []);
   return <div className="max-w-md"><PeriodStatTile
     label="Players Online"

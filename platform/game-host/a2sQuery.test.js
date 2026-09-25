@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseA2sInfo } from "./a2sQuery.js";
+import { parseA2sInfo, parseA2sOccupancy } from "./a2sQuery.js";
 
 test("A2S info reads player count after the four variable-length names", () => {
   const packet = Buffer.concat([
@@ -9,6 +9,7 @@ test("A2S info reads player count after the four variable-length names", () => {
     Buffer.from([0xda, 0x02, 3, 16, 1]),
   ]);
   assert.equal(parseA2sInfo(packet), 2);
+  assert.deepEqual(parseA2sOccupancy(packet), { players: 2, maxPlayers: 16 });
   packet[packet.length - 3] = 1;
   packet[packet.length - 1] = 1;
   assert.equal(parseA2sInfo(packet), 0);
