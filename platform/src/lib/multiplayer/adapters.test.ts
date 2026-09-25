@@ -57,6 +57,11 @@ describe("PlayBound Multiplayer Adapter Framework", () => {
     expect(wesnoth.adapterType).toBe("direct-ip");
     expect(wesnoth.client?.launchArguments).toContain("--host");
 
+    const freelancer = getMultiplayerAdapter("freelancer");
+    expect(freelancer.adapterType).toBe("direct-ip");
+    expect(freelancer.tier).toBe("tier1_improved");
+    expect(freelancer.selfHost?.port).toBe(2302);
+
     for (const slug of [
       "heroes-of-might-and-magic-3-complete",
       "ground-control-anthology",
@@ -64,6 +69,7 @@ describe("PlayBound Multiplayer Adapter Framework", () => {
       "stronghold-crusader-hd",
       "s-t-a-l-k-e-r-shadow-of-chernobyl",
       "s-t-a-l-k-e-r-call-of-pripyat",
+      "star-wars-galactic-battlegrounds-saga",
     ]) {
       expect(getMultiplayerAdapter(slug).adapterType).toBe("virtual-lan");
       expect(getVirtualLanConfig(slug)?.requiresBroadcast).toBe(true);
@@ -79,6 +85,11 @@ describe("PlayBound Multiplayer Adapter Framework", () => {
     expect(cs2.tier).toBe("tier2_automated_server");
     expect(cs2.adapterType).toBe("managed-server");
     expect(isPlayBoundManagedMultiplayer("counter-strike-2")).toBe(true);
+
+    const rvgl = getMultiplayerAdapter("re-volt-rvgl");
+    expect(rvgl.tier).toBe("tier2_automated_server");
+    expect(rvgl.adapterType).toBe("managed-server");
+    expect(rvgl.host?.port).toBe(2310);
   });
 
   it("correctly treats Tier 3 official proprietary games as untouched networking", () => {
@@ -94,6 +105,17 @@ describe("PlayBound Multiplayer Adapter Framework", () => {
     const brawlhalla = getMultiplayerAdapter("brawlhalla");
     expect(brawlhalla.tier).toBe("tier3_official");
     expect(isPlayBoundManagedMultiplayer("brawlhalla")).toBe(false);
+
+    for (const mmo of [
+      "albion-online",
+      "guild-wars-2",
+      "lord-of-the-rings-online",
+      "dc-universe-online",
+    ]) {
+      expect(getMultiplayerAdapter(mmo).tier).toBe("tier3_official");
+      expect(getMultiplayerAdapter(mmo).adapterType).toBe("official");
+      expect(isPlayBoundManagedMultiplayer(mmo)).toBe(false);
+    }
 
     const unknownGame = getMultiplayerAdapter("some-random-game");
     expect(unknownGame.tier).toBe("tier3_official");

@@ -165,8 +165,8 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     portEnd: 3323,
     protocol: "tcp",
   },
-  "0-ad": {
-    slug: "0-ad",
+  "0ad": {
+    slug: "0ad",
     title: "0 A.D.",
     defaultPort: 20595,
     portEnd: 20595,
@@ -295,23 +295,21 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     portEnd: 1290,
     protocol: "tcp",
   },
-  /*
-   * Re-Volt (RVGL) is a peer-hosted lobby game. RVGL has no headless dedicated
-   * server support with admin delegation: -dedicated is ignored, and running
-   * headless under xvfb leaves the VPS as the host player (Player 1) with no
-   * human controlling it to choose tracks or click "Start Race". RVGL is played
-   * via client-hosted lobbies ("Host on my computer").
-   */
+  "re-volt-rvgl": {
+    slug: "re-volt-rvgl",
+    title: "Re-Volt (RVGL)",
+    defaultPort: 2310,
+    portEnd: 2330,
+    protocol: "udp",
+  },
 };
-
-export const HOSTABLE_SLUGS = Object.keys(HOSTABLE_GAMES);
 
 /**
  * Catalog slugs that differ from the slug the VPS knows the game by.
  */
 const HOSTABLE_SLUG_ALIASES: Record<string, string> = {
   tes3mp: "morrowind",
-  "0ad": "0-ad",
+  "0-ad": "0ad",
   openmohaa: "medal-of-honor-allied-assault",
   etlegacy: "wolfenstein-enemy-territory",
   tf2: "team-fortress-2",
@@ -320,7 +318,13 @@ const HOSTABLE_SLUG_ALIASES: Record<string, string> = {
   doom: "freedoom",
   ss14: "space-station-14",
   opene2140: "earth-2140-trilogy",
+  rvgl: "re-volt-rvgl",
+  revolt: "re-volt-rvgl",
 };
+
+export const HOSTABLE_SLUGS = [
+  ...new Set([...Object.keys(HOSTABLE_GAMES), ...Object.keys(HOSTABLE_SLUG_ALIASES)]),
+];
 
 export function isHostableGame(slug: string | null | undefined): boolean {
   return Boolean(slug && getHostableGame(slug));

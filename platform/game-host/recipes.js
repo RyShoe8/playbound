@@ -1197,7 +1197,51 @@ export const recipes = {
     portStart: 27030,
     portEnd: 27040,
     protocol: "udp",
-    binaries: gameBin("counter-strike-2", ["cs2.sh", "cs2", "srcds_run", "srcds_linux"]),
+    binaries: [
+      path.join(GAMES_ROOT, "counter-strike-2", "game", "cs2.sh"),
+      path.join(GAMES_ROOT, "counter-strike-2", "game", "bin", "linuxsteamrt64", "cs2"),
+      path.join(GAMES_ROOT, "counter-strike-2", "cs2.sh"),
+      path.join(GAMES_ROOT, "counter-strike-2", "cs2"),
+      path.join(GAMES_ROOT, "counter-strike-2", "run-server"),
+      path.join(GAMES_ROOT, "cs2", "game", "cs2.sh"),
+      path.join(GAMES_ROOT, "cs2", "game", "bin", "linuxsteamrt64", "cs2"),
+      path.join(GAMES_ROOT, "cs2", "cs2.sh"),
+      path.join(GAMES_ROOT, "cs2", "cs2"),
+      path.join(GAMES_ROOT, "cs2", "run-server"),
+      path.join(GAMES_ROOT, "counterstrike2", "game", "cs2.sh"),
+      path.join(GAMES_ROOT, "counterstrike2", "game", "bin", "linuxsteamrt64", "cs2"),
+      path.join(GAMES_ROOT, "counterstrike2", "cs2.sh"),
+      path.join(GAMES_ROOT, "counterstrike2", "cs2"),
+      path.join(GAMES_ROOT, "csgo", "game", "cs2.sh"),
+      path.join(GAMES_ROOT, "csgo", "game", "bin", "linuxsteamrt64", "cs2"),
+      path.join(GAMES_ROOT, "csgo", "cs2.sh"),
+      path.join(GAMES_ROOT, "csgo", "cs2"),
+      path.join(GAMES_ROOT, "csgo", "srcds_run"),
+      path.join(GAMES_ROOT, "csgo", "srcds_linux"),
+      path.join(HOST_HOME, "cs2", "game", "cs2.sh"),
+      path.join(HOST_HOME, "cs2", "game", "bin", "linuxsteamrt64", "cs2"),
+      path.join(HOST_HOME, "counter-strike-2", "game", "cs2.sh"),
+      path.join(HOST_HOME, "counter-strike-2", "game", "bin", "linuxsteamrt64", "cs2"),
+      path.join(HOST_HOME, ".steam", "steam", "steamapps", "common", "Counter-Strike Global Offensive", "game", "cs2.sh"),
+      path.join(HOST_HOME, ".steam", "steamapps", "common", "Counter-Strike Global Offensive", "game", "cs2.sh"),
+      path.join(HOST_HOME, "Steam", "steamapps", "common", "Counter-Strike Global Offensive", "game", "cs2.sh"),
+      "/home/steam/cs2/game/cs2.sh",
+      "/home/steam/counter-strike-2/game/cs2.sh",
+      "/home/steam/.steam/steam/steamapps/common/Counter-Strike Global Offensive/game/cs2.sh",
+      "/home/steam/Steam/steamapps/common/Counter-Strike Global Offensive/game/cs2.sh",
+      ...gameBin("counter-strike-2", ["game/cs2.sh", "game/bin/linuxsteamrt64/cs2", "cs2.sh", "cs2", "srcds_run", "srcds_linux"]),
+      ...gameBin("cs2", ["game/cs2.sh", "game/bin/linuxsteamrt64/cs2", "cs2.sh", "cs2", "srcds_run", "srcds_linux"]),
+      ...gameBin("counterstrike2", ["game/cs2.sh", "game/bin/linuxsteamrt64/cs2", "cs2.sh", "cs2", "srcds_run", "srcds_linux"]),
+      ...gameBin("csgo", ["game/cs2.sh", "game/bin/linuxsteamrt64/cs2", "cs2.sh", "cs2", "srcds_run", "srcds_linux"]),
+    ],
+    cwd: () => {
+      const b = resolveRecipe("counter-strike-2")?.binary || "";
+      if (b.includes("/game/") || b.includes("\\game\\")) {
+        const idx = b.search(/[/\\]game[/\\]/);
+        if (idx !== -1) return b.slice(0, idx + 5);
+      }
+      return b ? path.dirname(b) : path.join(GAMES_ROOT, "counter-strike-2");
+    },
     args: (port, ctx) => [
       "-dedicated",
       "+map",
@@ -1207,7 +1251,7 @@ export const recipes = {
       "+maxplayers",
       "16",
       "+hostname",
-      ctx.name || "PlayBound.club Party",
+      ctx.name || "PlayBound.Club Community Server",
     ],
   },
   unvanquished: {
@@ -1492,6 +1536,12 @@ export const recipes = {
   },
 };
 
+recipes["0ad"] = recipes["0-ad"];
+recipes["openmohaa"] = recipes["medal-of-honor-allied-assault"];
+recipes["cs2"] = recipes["counter-strike-2"];
+recipes["counterstrike2"] = recipes["counter-strike-2"];
+recipes["csgo"] = recipes["counter-strike-2"];
+
 export function resolveRecipe(slug, ctx) {
   const recipe = recipes[slug];
   if (!recipe) return null;
@@ -1503,6 +1553,12 @@ export function resolveRecipe(slug, ctx) {
 
 const HOST_TITLES = {
   "0-ad": "0 A.D.",
+  "0ad": "0 A.D.",
+  openmohaa: "OpenMOHAA",
+  "medal-of-honor-allied-assault": "Medal of Honor: Allied Assault / OpenMOHAA",
+  "re-volt-rvgl": "Re-Volt (RVGL)",
+  "counter-strike-2": "Counter-Strike 2",
+  cs2: "Counter-Strike 2",
   bombsquad: "BombSquad",
   freedoom: "Freedoom",
   "hurry-curry": "Hurry Curry!",
@@ -1574,7 +1630,7 @@ export function listGameHostStatus() {
         ready = false;
       }
     }
-    if (slug === "medal-of-honor-allied-assault" && hasBinary) {
+    if ((slug === "medal-of-honor-allied-assault" || slug === "openmohaa") && hasBinary) {
       ready = fs.existsSync(path.join(GAMES_ROOT, "openmohaa", "main", "Pak0.pk3"));
     }
     out[slug] = { installed: hasBinary, ready };
