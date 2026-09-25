@@ -36,8 +36,25 @@ const PLAYER_LIMIT_RECIPES = new Set([
   "wolfenstein-enemy-territory", "team-fortress-2", "unvanquished",
 ]);
 
-function managedRoomSettings(recipeSlug: string, maxPlayersPerServer: number | undefined) {
-  return PLAYER_LIMIT_RECIPES.has(recipeSlug) ? { maxPlayers: maxPlayersPerServer ?? 16 } : undefined;
+// Engines with a native bot fill mode (bots leave as people join, return as
+// they leave). Must match BOT_FILL_RECIPES in game-host/recipes.js.
+const BOT_FILL_RECIPES = new Set(["xonotic", "openarena", "team-fortress-2", "counter-strike-2", "unvanquished"]);
+
+/** Bots to fill a server to: a share of its slots, always leaving one free for a person. */
+export function botFillFor(maxPlayers: number, percent: number | undefined) {
+  const pct = Math.max(0, Math.min(100, percent ?? 0));
+  return Math.min(maxPlayers - 1, Math.round((pct / 100) * maxPlayers));
+}
+
+export function managedRoomSettings(
+  recipeSlug: string,
+  config: { maxPlayersPerServer?: number; botFillPercent?: number }
+): { maxPlayers: number; botFill?: number } | undefined {
+  if (!PLAYER_LIMIT_RECIPES.has(recipeSlug)) return undefined;
+  const maxPlayers = config.maxPlayersPerServer ?? 16;
+  return BOT_FILL_RECIPES.has(recipeSlug)
+    ? { maxPlayers, botFill: botFillFor(maxPlayers, config.botFillPercent) }
+    : { maxPlayers };
 }
 
 /**
@@ -282,8 +299,10 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         });
       }
       const recipeSlug = profile?.recipeSlug || server.gameSlug;
-      const desiredSettings = managedRoomSettings(recipeSlug, config.maxPlayersPerServer);
-      if (desiredSettings && room.settings?.maxPlayers !== desiredSettings.maxPlayers &&
+      const desiredSettings = managedRoomSettings(recipeSlug, config);
+      const settingsDrift = desiredSettings && (room.settings?.maxPlayers !== desiredSettings.maxPlayers ||
+        (desiredSettings.botFill !== undefined && (room.settings?.botFill ?? 0) !== desiredSettings.botFill));
+      if (settingsDrift &&
           canScaleDownEmptyServer({ players, checkedAt: now, protectedUntil: server.protectedUntil }, now)) {
         const stopped = await stopManagedHostRoom(String(server._id));
         if (!stopped.ok) {
@@ -433,7 +452,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         editionSlug: dueProfile.editionSlug,
         mod: dueProfile.mod,
         name: server.name,
-        settings: managedRoomSettings(dueProfile.recipeSlug || dueProfile.gameSlug, config.maxPlayersPerServer),
+        settings: managedRoomSettings(dueProfile.recipeSlug || dueProfile.gameSlug, config),
       });
       if (started.status === "failed") {
         server.runtimeState = "failed";
@@ -487,7 +506,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         editionSlug: candidate.editionSlug,
         mod: candidate.mod,
         name: server.name,
-        settings: managedRoomSettings(candidate.recipeSlug || candidate.gameSlug, config.maxPlayersPerServer),
+        settings: managedRoomSettings(candidate.recipeSlug || candidate.gameSlug, config),
       });
       if (started.status === "failed") {
         server.desiredState = "stopped";
@@ -554,7 +573,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         editionSlug: recoveryProfile.editionSlug,
         mod: recoveryProfile.mod,
         name: server.name,
-        settings: managedRoomSettings(recoveryProfile.recipeSlug || recoveryProfile.gameSlug, config.maxPlayersPerServer),
+        settings: managedRoomSettings(recoveryProfile.recipeSlug || recoveryProfile.gameSlug, config),
       });
       if (result.status === "failed") {
         server.runtimeState = "failed";
