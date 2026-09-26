@@ -64,16 +64,13 @@ function HomeCommunityServersFallback() {
         subtitle="Dedicated servers hosted by PlayBound — join and play right now"
         href="/multiplayer"
       />
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="divide-y divide-border rounded-xl border border-border bg-card">
         {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="animate-pulse rounded-xl border border-border bg-card p-4"
-          >
+          <div key={i} className="animate-pulse px-4 py-3">
             <p className="flex items-center gap-1.5 font-bold text-muted-foreground">
               <Server className="size-3.5" /> Loading…
             </p>
-            <div className="mt-3 h-4 w-2/3 rounded bg-muted" />
+            <div className="mt-2 h-3 w-1/3 rounded bg-muted" />
           </div>
         ))}
       </div>

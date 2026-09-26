@@ -50,48 +50,43 @@ export function HomeCommunityServers({ servers }: { servers: HomeCommunityServer
           </Link>
         </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="divide-y divide-border rounded-xl border border-border bg-card">
           {visible.map((server) => {
             const addr = `${server.host}:${server.port}`;
             return (
               <Link
                 key={server.id || addr}
                 href={`/multiplayer?game=${encodeURIComponent(server.gameSlug)}`}
-                className="group flex flex-col justify-between rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/40 hover:bg-card/90"
+                className="group flex flex-wrap items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-secondary/40"
               >
-                <div>
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="flex items-center gap-1.5 font-bold text-foreground">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="flex items-center gap-1.5 font-extrabold text-foreground">
                       <Server className="size-3.5 text-primary" /> {server.gameTitle}
-                    </p>
+                    </span>
+                    <span className="font-semibold text-foreground/90">{server.serverName}</span>
                     <span className="inline-flex rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-primary">
                       PlayBound Hosted
                     </span>
                   </div>
-                  {server.editionSlug && (
-                    <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
-                      Edition: {server.editionSlug}
-                    </p>
-                  )}
-                  <p className="mt-2 text-xs font-mono text-muted-foreground/80 truncate">
-                    {addr}
-                  </p>
+                  <div className="mt-1 flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
+                    {server.editionSlug && <span>Edition: {server.editionSlug}</span>}
+                    <span className="font-mono text-muted-foreground/80">{addr}</span>
+                  </div>
                 </div>
 
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border/40 pt-3 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-3">
-                    <span className="inline-flex items-center gap-1 font-semibold text-foreground">
-                      <Users className="size-3 text-primary" />
-                      {server.players == null ? "—" : `${server.players}/${server.maxPlayers ?? "—"}`}
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1 font-semibold text-foreground">
+                    <Users className="size-3.5 text-primary" />
+                    {server.players == null ? "—" : `${server.players}/${server.maxPlayers ?? "—"}`}
+                  </span>
+                  {server.bots ? (
+                    <span className="inline-flex items-center gap-1 rounded bg-secondary/80 px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                      <Bot className="size-3 text-cyan-400" />
+                      {server.bots} bot{server.bots === 1 ? "" : "s"}
                     </span>
-                    {server.bots ? (
-                      <span className="inline-flex items-center gap-1 rounded bg-secondary/80 px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-                        <Bot className="size-3 text-cyan-400" />
-                        {server.bots} bot{server.bots === 1 ? "" : "s"}
-                      </span>
-                    ) : null}
-                  </div>
-                  <span className="text-[11px] uppercase tracking-wider text-muted-foreground/70">
+                  ) : null}
+                  <span className="uppercase tracking-wider text-muted-foreground/70">
                     {server.region}
                   </span>
                 </div>
