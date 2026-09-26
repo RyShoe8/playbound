@@ -306,6 +306,7 @@ async function main() {
       source = {
         launcherInstall: install,
         installSteps: ed.installSteps,
+        faq: ed.faq,
       };
     } else if (slug === ASSAULTCUBE_SLUG) {
       const install = launcherInstallBySlug[ASSAULTCUBE_SLUG];
