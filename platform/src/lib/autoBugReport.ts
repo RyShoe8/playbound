@@ -251,6 +251,15 @@ export async function maybeUpsertAutoBugFromTelemetry(opts: {
   // the kind of Remote Play/Couch connection failure this Bugs feed diagnoses.
   if (isClientNetworkFailure(failureMessage) && event !== "remote_play_failed" && event !== "couch_failed") return;
 
+  // Background device heartbeats/polling timing out are routine network jitter, not actionable bugs.
+  const phase = propString(props, "phase");
+  if (
+    (phase === "host_poll" || phase === "registration") &&
+    /aborted|timeout/i.test(failureMessage || "")
+  ) {
+    return;
+  }
+
   const sourceProp = typeof props.source === "string" ? props.source : "";
   const source: BugReportSource = sourceProp === "website" ? "website" : "launcher";
 

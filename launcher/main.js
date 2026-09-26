@@ -9573,7 +9573,10 @@ async function registerRemotePlayDevice() {
     if (!res.ok) reportCouchOps("failed", { phase: "registration", code: "DEVICE_REGISTRATION_FAILED", message: `HTTP ${res.status}` }, "remote_play");
   } catch (err) {
     console.warn("[remote-play] device registration failed:", err?.message || err);
-    reportCouchOps("failed", { phase: "registration", code: "DEVICE_REGISTRATION_FAILED", message: err?.message }, "remote_play");
+    const isTimeout = /aborted|timeout/i.test(err?.message || "");
+    if (!isTimeout) {
+      reportCouchOps("failed", { phase: "registration", code: "DEVICE_REGISTRATION_FAILED", message: err?.message }, "remote_play");
+    }
   }
 }
 
@@ -9722,7 +9725,10 @@ async function pollRemotePlayRequests() {
     }
   } catch (err) {
     console.warn("[remote-play] poll failed:", err?.message || err);
-    reportCouchOps("failed", { phase: "host_poll", code: "HOST_POLL_FAILED", message: err?.message }, "remote_play");
+    const isTimeout = /aborted|timeout/i.test(err?.message || "");
+    if (!isTimeout) {
+      reportCouchOps("failed", { phase: "host_poll", code: "HOST_POLL_FAILED", message: err?.message }, "remote_play");
+    }
   }
 
   /*
@@ -10673,12 +10679,17 @@ function reportCouchOps(status, fields = {}, kind = null) {
     periodicCouchOpsLast.set(key, now);
   }
   const sessionId = couchHost.getState()?.session?.sessionId;
+  const isDevicePhase = fields.phase === "registration" || fields.phase === "host_poll";
+  const activeStreamGameSlug = mode === "remote_play"
+    ? activeRemotePlayHostGameSlug
+    : (couchHost.getState()?.active ? playingGameSlug() : null);
+  const fallbackGameSlug = isDevicePhase ? undefined : (activeStreamGameSlug || undefined);
   const props = {
     phase: String(fields.phase || "unknown").slice(0, 64),
     code: String(fields.code || "UNKNOWN").slice(0, 80),
     message: String(fields.message || "").replace(/(?:https?:\/\/|wss?:\/\/|token=)\S+/gi, "[redacted]").slice(0, 500),
     couchSessionId: sessionId || undefined,
-    gameSlug: fields.gameSlug || (fields.role === "client" ? undefined : playingGameSlug()) || undefined,
+    gameSlug: fields.gameSlug || (fields.role === "client" ? undefined : fallbackGameSlug) || undefined,
     editionSlug: fields.editionSlug || undefined,
     transport: fields.transport || undefined,
     connectionState: fields.connectionState || undefined,
