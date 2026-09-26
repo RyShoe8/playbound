@@ -64,13 +64,33 @@ export const NEW_EDITION_KEYS: readonly string[] = [
    * genuinely different client, which is why it gets a row.
    */
   "final-fantasy-xi/horizon",
+  /*
+   * Total overhauls and standalone community editions:
+   * Rebirth for Morrowind, HotA and WoG for Heroes III, Discovery, Crossfire,
+   * and Shattered Worlds for Freelancer, and Bright Nights for CDDA.
+   */
+  "morrowind/rebirth",
+  "heroes-of-might-and-magic-3-complete/hota",
+  "heroes-of-might-and-magic-3-complete/wog",
+  "freelancer/discovery",
+  "freelancer/crossfire",
+  "freelancer/shattered-worlds",
+  "cataclysm-dda/bright-nights",
 ];
 
 /**
- * Mod slugs to create only when absent. Empty this wave — OpenE2140 ships as
- * an edition of earth-2140-trilogy, not a free OpenRA mod row.
+ * Mod slugs to create only when absent.
+ * High-quality community total conversions, expansions, and engine modernizations.
  */
-export const NEW_MOD_SLUGS: readonly string[] = [];
+export const NEW_MOD_SLUGS: readonly string[] = [
+  "morrowind-tamriel-rebuilt",
+  "homm3-hd-mod",
+  "thief-gold-tfix",
+  "srb2-persona",
+  "cataclysm-dda-magiclysm",
+  "re-volt-io-pack",
+  "osrs-117hd",
+];
 
 /**
  * Existing catalog games: $set ONLY these fields.
@@ -799,11 +819,85 @@ export const RETIRE_EDITION_KEYS: readonly string[] = [
 ];
 
 /**
+ * Mod slugs permanently retired from the catalog (non-mod guides, Discord bots,
+ * RPC status bridges, Aim Lab drills, generic engine/emulator runners, and text configs).
+ */
+export const RETIRE_MOD_SLUGS: readonly string[] = [
+  // VALORANT (20 entries)
+  "valorant-clove-meddle-decay",
+  "valorant-discord-rich-presence",
+  "valorant-valoplant-strategy",
+  "valorant-valocrosshair-database",
+  "valorant-recon-bolt-companion",
+  "valorant-lineup-trainer-sova",
+  "valorant-viper-poison-lineups",
+  "valorant-brimstone-orbital-molly",
+  "valorant-killjoy-lockdown-setups",
+  "valorant-fade-haunt-trajectories",
+  "valorant-cypher-camera-one-ways",
+  "valorant-gekko-dizzy-mosh-pit",
+  "valorant-omen-dark-cover-one-ways",
+  "valorant-astra-astral-form-guide",
+  "valorant-kayo-zero-point-suppression",
+  "valorant-deadlock-gravnet-sonic-sensor",
+  "valorant-vyse-arc-rose-shear-setups",
+  "valorant-jett-updraft-blade-storm",
+  "valorant-raze-blast-pack-satchel-drills",
+  "valorant-iso-kill-contract-aim-lab",
+
+  // HoloCure (1 entry)
+  "holocure-rich-presence",
+
+  // Genshin Impact (2 entries)
+  "genshin-optimizer",
+  "genshin-combat-sim",
+
+  // League of Legends (2 entries)
+  "lol-performance-config",
+  "lol-skillshot-trainer",
+
+  // Quake Champions (3 entries)
+  "qc-competitive-config",
+  "qc-crosshair-hud-pack",
+  "qc-aim-training-routines",
+
+  // Strikers Club (3 entries)
+  "strikers-pro-camera-preset",
+  "strikers-training-drills",
+  "strikers-controller-curve-config",
+
+  // Gradius Remake (3 entries)
+  "gradius-arcade-scanlines",
+  "gradius-arcade-stick-config",
+  "gradius-arranged-soundtrack",
+
+  // Mr. Boom (1 entry)
+  "mrboom-8player-controller-preset",
+
+  // TES: Arena (1 entry)
+  "tes-arena-dosbox",
+
+  // Microsoft Allegiance (3 entries)
+  "allegiance-high-res-textures",
+  "allegiance-hud-customizer",
+  "allegiance-acss-server-suite",
+
+  // Brawlhalla (2 entries)
+  "brawlhalla-tournament-stages",
+  "brawlhalla-clear-hud",
+
+  // Naev (4 entries)
+  "naev-sea-of-mayonnaise",
+  "naev-no-pirates",
+  "naev-yes-pirates",
+  "naev-trans-logo",
+];
+
+/**
  * Existing catalog mods: $set ONLY these fields. No upsert.
  * holocure-rich-presence stays draft so seed cannot resurrect a public page.
  */
 export const PATCH_MOD_FIELDS: Readonly<Record<string, readonly string[]>> = {
-  "holocure-rich-presence": ["status", "published", "developerSlug", "developerName"],
 
   /*
    * Mod attribution audit, 2026-09-22.
@@ -887,9 +981,7 @@ export const PATCH_MOD_FIELDS: Readonly<Record<string, readonly string[]>> = {
   "freedoom-launcher": ["developerSlug", "developerName"],
   "freedoom-obaddon": ["developerSlug", "developerName"],
   "freedoom-project-brutality": ["developerSlug", "developerName"],
-  "genshin-combat-sim": ["developerSlug", "developerName"],
   "genshin-gimi-framework": ["developerSlug", "developerName"],
-  "genshin-optimizer": ["developerSlug", "developerName"],
   "hearthstone-firestone": ["developerSlug", "developerName"],
   "holocure-character-pack": ["developerSlug", "developerName"],
   "holocure-multiplayer": ["developerSlug", "developerName"],
@@ -955,16 +1047,12 @@ export const PATCH_MOD_FIELDS: Readonly<Record<string, readonly string[]>> = {
   "naev-fractal-carriers": ["developerSlug", "developerName"],
   "naev-legion-smol": ["developerSlug", "developerName"],
   "naev-multiplayer": ["developerSlug", "developerName"],
-  "naev-no-pirates": ["developerSlug", "developerName"],
   "naev-nomad": ["developerSlug", "developerName"],
   "naev-playground": ["developerSlug", "developerName"],
-  "naev-sea-of-mayonnaise": ["developerSlug", "developerName"],
   "naev-simple-shaders": ["developerSlug", "developerName"],
-  "naev-trans-logo": ["developerSlug", "developerName"],
   "naev-variants": ["developerSlug", "developerName"],
   "naev-void-saints-nova": ["developerSlug", "developerName"],
   "naev-yaev-classic": ["developerSlug", "developerName"],
-  "naev-yes-pirates": ["developerSlug", "developerName"],
   "openra-cameo": ["developerSlug", "developerName"],
   "openra-combined-arms": ["developerSlug", "developerName"],
   "openra-fractured-realms": ["developerSlug", "developerName"],
@@ -1002,7 +1090,6 @@ export const PATCH_MOD_FIELDS: Readonly<Record<string, readonly string[]>> = {
   "openttd-timberwolf-trains": ["developerSlug", "developerName"],
   "starcraft-bw-api": ["developerSlug", "developerName"],
   "starcraft-openbw": ["developerSlug", "developerName"],
-  "tes-arena-dosbox": ["developerSlug", "developerName"],
   "wolfenstein-ecwolf-gh": ["developerSlug", "developerName"],
   "wolfenstein-sdl": ["developerSlug", "developerName"],
   "zerok-altair-crossing": ["developerSlug", "developerName"],

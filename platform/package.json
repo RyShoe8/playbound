@@ -60,6 +60,7 @@
     "seed:deploy": "npm run seed:missing-mods -- --games wolfenstein-enemy-territory",
     "seed:missing-games": "tsx scripts/seed-missing-games.ts",
     "seed:missing-editions": "tsx scripts/seed-missing-editions.ts",
+    "retire:targeted-mods": "tsx scripts/retire-targeted-mods.ts",
     "repair:slug-references": "tsx scripts/repair-slug-references.ts"
   },
   "dependencies": {

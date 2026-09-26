@@ -9,6 +9,7 @@ import {
   PATCH_GAME_FIELDS,
   PATCH_MOD_FIELDS,
   RETIRE_EDITION_KEYS,
+  RETIRE_MOD_SLUGS,
 } from "../../scripts/insert-catalog-wave.allowlist";
 import { editions } from "@/lib/data/editions";
 import { gamesBySlug } from "@/lib/data/games";
@@ -109,10 +110,17 @@ describe("insert-catalog-wave allowlists", () => {
     expect([...NEW_EDITION_KEYS].sort()).toEqual(
       [
         "castlevania-revamped/official",
+        "cataclysm-dda/bright-nights",
         "earth-2140-trilogy/official",
         "earth-2140-trilogy/opene2140",
         "final-fantasy-xi/horizon",
+        "freelancer/crossfire",
+        "freelancer/discovery",
+        "freelancer/shattered-worlds",
         "hawken-hawkening/official",
+        "heroes-of-might-and-magic-3-complete/hota",
+        "heroes-of-might-and-magic-3-complete/wog",
+        "morrowind/rebirth",
         "pokemon-blaze-online/official",
         "pokemon-blaze-online/windows-32",
         "pokemmo/official",
@@ -128,8 +136,18 @@ describe("insert-catalog-wave allowlists", () => {
     );
   });
 
-  it("creates no mods in this wave", () => {
-    expect(NEW_MOD_SLUGS).toEqual([]);
+  it("only names the batch mods we intend to create", () => {
+    expect([...NEW_MOD_SLUGS].sort()).toEqual(
+      [
+        "cataclysm-dda-magiclysm",
+        "homm3-hd-mod",
+        "morrowind-tamriel-rebuilt",
+        "osrs-117hd",
+        "re-volt-io-pack",
+        "srb2-persona",
+        "thief-gold-tfix",
+      ].sort()
+    );
   });
 
   it("retires redundant default editions and misplaced CoP editions", () => {
@@ -436,11 +454,10 @@ describe("insert-catalog-wave allowlists", () => {
     expect(PATCH_EDITION_FIELDS["dune-legacy/playbound-edition"]).toEqual(["installConfig"]);
   });
 
-  it("still patches holocure-rich-presence to draft", () => {
+  it("retires holocure-rich-presence from the catalog", () => {
     expect(HOLOCURE_RICH_PRESENCE_SLUG).toBe("holocure-rich-presence");
-    expect(holocureRichPresencePatchSource).toEqual({ status: "draft", published: false });
-    expect(PATCH_MOD_FIELDS["holocure-rich-presence"]).toContain("status");
-    expect(PATCH_MOD_FIELDS["holocure-rich-presence"]).toContain("published");
+    expect(RETIRE_MOD_SLUGS).toContain("holocure-rich-presence");
+    expect(PATCH_MOD_FIELDS["holocure-rich-presence"]).toBeUndefined();
   });
 
   it("has a resolvable source for every allowlisted mod field", () => {
@@ -613,9 +630,9 @@ describe("insert-catalog-wave allowlists", () => {
     expect(trueStalker?.shortDescription).toMatch(/no Shadow of Chornobyl GOG/i);
   });
 
-  it("keeps holocure-rich-presence unpublished in seed", () => {
+  it("keeps holocure-rich-presence out of active seed", () => {
     const mod = mods.find((m) => m.slug === "holocure-rich-presence");
-    expect(mod?.published).toBe(false);
+    expect(mod).toBeUndefined();
   });
 
   it("has default-path patch sources for every allowlisted game and edition field", () => {

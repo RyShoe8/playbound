@@ -616,4 +616,77 @@ export const retiredModSlugs: string[] = [
   "world-of-tanks-tanks",
   "world-of-tanks-tomato",
   "world-of-tanks-xvm",
+
+  /*
+   * 2026-09-26 cleanup: External Discord bots, RPC status bridges, web strategy guides,
+   * Aim Lab scenarios, generic engine/emulator runners, and text config profiles.
+   */
+  // VALORANT (20 entries)
+  "valorant-clove-meddle-decay",
+  "valorant-discord-rich-presence",
+  "valorant-valoplant-strategy",
+  "valorant-valocrosshair-database",
+  "valorant-recon-bolt-companion",
+  "valorant-lineup-trainer-sova",
+  "valorant-viper-poison-lineups",
+  "valorant-brimstone-orbital-molly",
+  "valorant-killjoy-lockdown-setups",
+  "valorant-fade-haunt-trajectories",
+  "valorant-cypher-camera-one-ways",
+  "valorant-gekko-dizzy-mosh-pit",
+  "valorant-omen-dark-cover-one-ways",
+  "valorant-astra-astral-form-guide",
+  "valorant-kayo-zero-point-suppression",
+  "valorant-deadlock-gravnet-sonic-sensor",
+  "valorant-vyse-arc-rose-shear-setups",
+  "valorant-jett-updraft-blade-storm",
+  "valorant-raze-blast-pack-satchel-drills",
+  "valorant-iso-kill-contract-aim-lab",
+
+  // HoloCure (1 entry)
+  "holocure-rich-presence",
+
+  // Genshin Impact (2 entries)
+  "genshin-optimizer",
+  "genshin-combat-sim",
+
+  // League of Legends (2 entries)
+  "lol-performance-config",
+  "lol-skillshot-trainer",
+
+  // Quake Champions (3 entries)
+  "qc-competitive-config",
+  "qc-crosshair-hud-pack",
+  "qc-aim-training-routines",
+
+  // Strikers Club (3 entries)
+  "strikers-pro-camera-preset",
+  "strikers-training-drills",
+  "strikers-controller-curve-config",
+
+  // Gradius Remake (3 entries)
+  "gradius-arcade-scanlines",
+  "gradius-arcade-stick-config",
+  "gradius-arranged-soundtrack",
+
+  // Mr. Boom (1 entry)
+  "mrboom-8player-controller-preset",
+
+  // TES: Arena (1 entry)
+  "tes-arena-dosbox",
+
+  // Microsoft Allegiance (3 entries)
+  "allegiance-high-res-textures",
+  "allegiance-hud-customizer",
+  "allegiance-acss-server-suite",
+
+  // Brawlhalla (2 entries)
+  "brawlhalla-tournament-stages",
+  "brawlhalla-clear-hud",
+
+  // Naev (4 entries)
+  "naev-sea-of-mayonnaise",
+  "naev-no-pirates",
+  "naev-yes-pirates",
+  "naev-trans-logo",
 ];

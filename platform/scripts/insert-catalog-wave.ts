@@ -21,6 +21,7 @@ import {
   PATCH_GAME_FIELDS,
   PATCH_MOD_FIELDS,
   RETIRE_EDITION_KEYS,
+  RETIRE_MOD_SLUGS,
 } from "./insert-catalog-wave.allowlist";
 
 loadEnvConfig(process.cwd());
@@ -62,6 +63,7 @@ async function main() {
   const patchEditionKeys = Object.keys(PATCH_EDITION_FIELDS);
   const patchModSlugs = Object.keys(PATCH_MOD_FIELDS);
   const retireEditionKeys = [...RETIRE_EDITION_KEYS];
+  const retireModSlugs = [...RETIRE_MOD_SLUGS];
 
   if (
     NEW_GAME_SLUGS.length === 0 &&
@@ -70,7 +72,8 @@ async function main() {
     patchGameSlugs.length === 0 &&
     patchEditionKeys.length === 0 &&
     patchModSlugs.length === 0 &&
-    retireEditionKeys.length === 0
+    retireEditionKeys.length === 0 &&
+    retireModSlugs.length === 0
   ) {
     console.log("insert-catalog-wave: allowlists empty — nothing to do.");
     process.exit(0);
@@ -164,6 +167,9 @@ async function main() {
       ...NEW_EDITION_KEYS.map((k) => k.split("/")[0]!).filter(Boolean),
       ...patchEditionKeys.map((k) => k.split("/")[0]!).filter(Boolean),
       ...patchGameSlugs,
+      ...NEW_MOD_SLUGS.map((slug) => mods.find((m) => m.slug === slug)?.baseGameSlug).filter(
+        (s): s is string => Boolean(s)
+      ),
     ]),
   ];
   const parents = await CatalogGame.find({ slug: { $in: parentSlugs } })
@@ -579,6 +585,16 @@ async function main() {
     }
   }
 
+  // 6. Retire / delete allowlisted non-mod slugs
+  let modsRetired = 0;
+  if (retireModSlugs.length > 0) {
+    const res = await CatalogMod.deleteMany({ slug: { $in: retireModSlugs } });
+    modsRetired = res.deletedCount ?? 0;
+    if (modsRetired > 0) {
+      console.log(`retired ${modsRetired} non-mod catalog mod(s)`);
+    }
+  }
+
   console.log(
     `insert-catalog-wave: games +${gamesCreated}/skip ${gamesSkipped}, ` +
       `editions +${editionsCreated}/skip ${editionsSkipped}, ` +
@@ -587,6 +603,7 @@ async function main() {
       `edition-patches ${editionsPatched}/skip ${editionsPatchSkipped}, ` +
       `editions-retired ${editionsRetired}/skip ${editionsRetireSkipped}, ` +
       `mod-patches ${modsPatched}/skip ${modsPatchSkipped}, ` +
+      `mods-retired ${modsRetired}, ` +
       `maxPlayers ${maxPlayersPatched}`
   );
   process.exit(0);
