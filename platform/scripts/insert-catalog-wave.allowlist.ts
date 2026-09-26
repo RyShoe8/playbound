@@ -468,12 +468,12 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
    */
   "old-school-runescape": ["features"],
   "wolfenstein-enemy-territory": ["features"],
-  openciv3: ["features"],
-  "tes-arena": ["features"],
+  openciv3: ["features", "thatOneThing"],
+  "tes-arena": ["features", "thatOneThing"],
   "star-wars-galaxies": ["features", "faq"],
-  freeciv: ["features"],
+  freeciv: ["features", "thatOneThing"],
   "warzone-2100": ["features", "installSteps", "thatOneThing"],
-  "0ad": ["features", "thatOneThing"],
+  "0ad": ["features", "thatOneThing", "installSteps"],
   "battle-for-wesnoth": ["features", "thatOneThing"],
   openra: ["features", "installSteps", "thatOneThing"],
   bzflag: ["features"],
@@ -531,7 +531,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
    * or, for teeworlds, its own dedicated source module.
    */
   "gamebuddies-io": ["developerSlug", "faq"],
-  "marathon-2": ["faq"],
+  "marathon-2": ["faq", "thatOneThing"],
   pixreveal: ["developerSlug", "faq"],
   deadeus: ["developerSlug", "faq", "installSteps"],
   assaultcube: ["faq"],
@@ -555,12 +555,12 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
    * game's real catalog data, not hand-written, so the wording is exactly
    * what a fresh import would produce today.
    */
-  freedoom: ["installSteps"],
-  supertux: ["installSteps"],
+  freedoom: ["installSteps", "thatOneThing"],
+  supertux: ["installSteps", "thatOneThing"],
   luanti: ["installSteps", "thatOneThing"],
   "endless-sky": ["installSteps", "thatOneThing"],
   supertuxkart: ["installSteps", "thatOneThing"],
-  unvanquished: ["installSteps"],
+  unvanquished: ["installSteps", "thatOneThing"],
   mindustry: ["installSteps", "thatOneThing"],
   xonotic: ["installSteps", "thatOneThing"],
 
@@ -569,8 +569,18 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
    * with quotable thatOneThing hooks and verified PlayBound voice.
    */
   holocure: ["whyWePickedIt", "thatOneThing"],
-  "beyond-all-reason": ["thatOneThing"],
-  veloren: ["thatOneThing"],
+  "beyond-all-reason": ["thatOneThing", "installSteps"],
+  veloren: ["thatOneThing", "installSteps"],
+  "zero-k": ["thatOneThing"],
+  naev: ["thatOneThing"],
+  hedgewars: ["thatOneThing"],
+  flightgear: ["thatOneThing"],
+  daggerfall: ["thatOneThing"],
+  starcraft: ["thatOneThing"],
+  "team-fortress-2": ["thatOneThing"],
+  alephone: ["thatOneThing"],
+  valorant: ["thatOneThing"],
+  "counter-strike-2": ["thatOneThing"],
 };
 
 /** Existing editions: $set ONLY these fields. */
