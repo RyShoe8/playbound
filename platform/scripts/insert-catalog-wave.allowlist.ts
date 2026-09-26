@@ -552,8 +552,28 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   yarntown: ["faq", "installSteps", "developerSlug", "sizeMB"],
   "panzer-marshal": ["developerSlug", "sizeMB"],
   "stalker-lost-alpha": ["developerSlug", "sizeMB"],
-  deponia: ["releaseYear", "sizeMB"],
-  "caravan-sandwitch": ["releaseYear", "sizeMB"],
+  deponia: [
+    "releaseYear",
+    "sizeMB",
+    "qualityBar",
+    "longDescription",
+    "whyWePickedIt",
+    "thatOneThing",
+    "bestFor",
+    "notFor",
+    "comparableTo",
+  ],
+  "caravan-sandwitch": [
+    "releaseYear",
+    "sizeMB",
+    "qualityBar",
+    "longDescription",
+    "whyWePickedIt",
+    "thatOneThing",
+    "bestFor",
+    "notFor",
+    "comparableTo",
+  ],
 
   /*
    * Same install-step defect (the shared enrich.ts template always claimed
