@@ -226,9 +226,9 @@ export default async function AdminPage() {
             periods={kpis.parties}
           />
           <PeriodStatTile
-            label="Feedback"
+            label="Bugs"
             hint={`${kpis.bugReports.month} reports + ${kpis.errorEvents.month} errors (30d) · ${kpis.openBugs} open`}
-            href="/admin/feedback"
+            href="/admin/bugs"
             periods={kpis.bugs}
           />
           <PeriodStatTile
@@ -285,11 +285,17 @@ export default async function AdminPage() {
               <SlidersHorizontal className="size-4" /> Parties & limits
             </Link>
             <Link
+              href="/admin/bugs"
+              className="flex items-center gap-2 rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold transition-colors hover:bg-secondary/70"
+            >
+              <Bug className="size-4" /> Bugs
+              {kpis.openBugs > 0 ? ` (${kpis.openBugs})` : ""}
+            </Link>
+            <Link
               href="/admin/feedback"
               className="flex items-center gap-2 rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold transition-colors hover:bg-secondary/70"
             >
               <Megaphone className="size-4" /> Feedback
-              {kpis.openBugs > 0 ? ` (${kpis.openBugs})` : ""}
             </Link>
             <Link
               href="/admin/events/new"

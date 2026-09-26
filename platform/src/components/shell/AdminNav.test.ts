@@ -126,10 +126,11 @@ describe("admin nav structure", () => {
     });
   });
 
-  it("puts versions, access audit and download mirrors under Ops", () => {
+  it("puts bugs, versions, access audit and download mirrors under Ops", () => {
     expect(subRow("/admin/ops")).toMatchObject({
       section: "Ops",
       children: [
+        { label: "Bugs", href: "/admin/bugs" },
         { label: "Versions", href: "/admin/version-issues" },
         { label: "Access Audit", href: "/admin/access-audit" },
         { label: "Download Mirrors", href: "/admin/download-mirrors" },
@@ -160,10 +161,10 @@ describe("admin nav active state", () => {
   });
 
   it("keeps the section open while on one of its children", () => {
-    for (const path of ["/admin/version-issues", "/admin/download-mirrors"]) {
+    for (const path of ["/admin/bugs", "/admin/version-issues", "/admin/download-mirrors"]) {
       expect(subRow(path)?.section, `for ${path}`).toBe("Ops");
     }
-    for (const path of ["/admin/feedback", "/admin/bugs"]) {
+    for (const path of ["/admin/feedback"]) {
       expect(subRow(path)?.section, `for ${path}`).toBe("Users");
     }
     for (const path of ["/admin/collections", "/admin/mods", "/admin/games/editions"]) {
@@ -177,8 +178,8 @@ describe("admin nav active state", () => {
       sub: (subRow(path)?.children ?? []).filter((c) => c.active).map((c) => c.label),
     });
 
+    expect(lit("/admin/bugs")).toEqual({ top: ["Ops"], sub: ["Bugs"] });
     expect(lit("/admin/feedback")).toEqual({ top: ["Users"], sub: ["Feedback"] });
-    expect(lit("/admin/bugs")).toEqual({ top: ["Users"], sub: ["Feedback"] });
     expect(lit("/admin/users")).toEqual({ top: ["Users"], sub: ["Users"] });
     expect(lit("/admin/download-mirrors")).toEqual({ top: ["Ops"], sub: ["Download Mirrors"] });
     expect(lit("/admin/collections")).toEqual({ top: ["Games"], sub: ["Collections"] });
