@@ -18,6 +18,9 @@ on:
       - "platform/src/lib/data/games.ts"
       - "platform/src/lib/data/editions.ts"
       - "platform/src/lib/data/editorial.ts"
+      - "platform/src/lib/data/catalogCorrections.ts"
+      - "platform/src/lib/data/developers.ts"
+      - "platform/src/lib/data/teeworldsCatalog.ts"
       - "platform/src/lib/data/mods.ts"
       - ".github/workflows/apply-catalog-wave.yml"
 
@@ -53,6 +56,12 @@ jobs:
       - name: Install Platform Dependencies
         if: steps.check_mongo.outputs.has_mongo == 'true'
         run: npm install
+
+      - name: Seed new developers (insert-only, preserves existing)
+        if: steps.check_mongo.outputs.has_mongo == 'true'
+        run: npm run seed:developers
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
 
       - name: Insert / field-patch allowlisted catalog rows
         if: steps.check_mongo.outputs.has_mongo == 'true'

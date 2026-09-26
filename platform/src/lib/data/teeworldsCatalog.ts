@@ -85,6 +85,7 @@ const teeworldsFaq = [
 ];
 
 export const teeworldsPatchSource = {
+  developerSlug: "teeworlds-team",
   platforms: [...teeworldsPlatforms],
   features: [...teeworldsFeatures],
   faq: teeworldsFaq,

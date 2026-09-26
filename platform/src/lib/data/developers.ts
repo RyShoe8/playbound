@@ -1,6 +1,123 @@
 import type { Developer } from "./types";
 
 export const developers: Developer[] = [
+  /*
+   * Published-catalog developer-attribution pass, 2026-09-25. Each of the
+   * following games was stuck on the admin import tool's generic
+   * "indie-web" fallback developer — the correct credit researched from
+   * each project's own site/repo/storefront, checked live 2026-09-25.
+   */
+  {
+    slug: "dez0wave",
+    name: "Dez0wave",
+    tagline: "The modding group behind S.T.A.L.K.E.R. Lost Alpha.",
+    about:
+      "A community modding team that spent years reconstructing S.T.A.L.K.E.R.'s cut pre-release content into the Lost Alpha Directors Cut.",
+    founded: 0,
+    location: "",
+    website: "https://www.moddb.com/mods/lost-alpha",
+    artHue: 30,
+  },
+  {
+    slug: "teeworlds-team",
+    name: "Teeworlds Team",
+    tagline: "Community maintainers of the retro multiplayer shooter Teeworlds.",
+    about:
+      "Teeworlds was created by Magnus Auvinen and is maintained today by an open-source community team on GitHub.",
+    founded: 0,
+    location: "",
+    website: "https://www.teeworlds.com/",
+    artHue: 190,
+  },
+  {
+    slug: "javanaise",
+    name: "Javanaise",
+    tagline: "Developer of Mr. Boom, the open-source Bomberman clone.",
+    about: "Maintains Mr. Boom's Libretro/RetroArch core and its standalone builds on GitHub.",
+    founded: 0,
+    location: "",
+    website: "https://github.com/Javanaise",
+    artHue: 45,
+  },
+  {
+    slug: "opentyrian-team",
+    name: "OpenTyrian Team",
+    tagline: "Open-source port of the 1995 shareware shooter Tyrian.",
+    about:
+      "A community project maintaining OpenTyrian, the reverse-engineered, cross-platform port of Eclipse Software's Tyrian.",
+    founded: 0,
+    location: "",
+    website: "https://github.com/opentyrian/opentyrian",
+    artHue: 260,
+  },
+  {
+    slug: "izma",
+    name: "-IZMA-",
+    tagline: "Solo indie developer, creator of Deadeus.",
+    about: "An independent developer publishing horror and narrative games on itch.io.",
+    founded: 0,
+    location: "",
+    website: "https://izma.itch.io/",
+    artHue: 0,
+  },
+  {
+    slug: "pixreveal-team",
+    name: "PixReveal",
+    tagline: "Free browser pixel-art guessing party game.",
+    about: "The team behind PixReveal, a browser-based Jackbox-style pixel-art guessing game.",
+    founded: 0,
+    location: "",
+    website: "https://www.pixreveal.com/",
+    artHue: 300,
+  },
+  {
+    slug: "gamebuddies",
+    name: "GameBuddies.io",
+    tagline: "Free browser party games for remote game nights.",
+    about: "The team behind GameBuddies.io, a no-download browser party-game hub built around shared rooms and phone controllers.",
+    founded: 0,
+    location: "",
+    website: "https://gamebuddies.io/",
+    artHue: 15,
+  },
+  /*
+   * ngchess.com (Next-Gen Chess's own site) has since repositioned around a
+   * paid chess-academy/coaching product; the free casual play mode
+   * PlayBound lists is still live on the same site as of 2026-09-25
+   * ("Play & learn free" — no account needed), just no longer its primary
+   * pitch. No individual or studio name is credited anywhere on the site.
+   */
+  {
+    slug: "next-gen-chess-dev",
+    name: "Next-Gen Chess",
+    tagline: "Free browser chess with move feedback and hints.",
+    about: "The team behind ngchess.com's free-play chess mode.",
+    founded: 0,
+    location: "",
+    website: "https://ngchess.com/",
+    artHue: 210,
+  },
+  {
+    slug: "openclonk-team",
+    name: "OpenClonk Team",
+    tagline: "Successor to the shareware Clonk series.",
+    about:
+      "A community project continuing the Clonk lineage as a free, open-source multiplayer mining-and-settling action game and 2D engine.",
+    founded: 0,
+    location: "",
+    website: "https://www.openclonk.org/",
+    artHue: 140,
+  },
+  {
+    slug: "nicu-pavel",
+    name: "Nicu Pavel",
+    tagline: "Independent developer of Panzer Marshal.",
+    about: "An independent developer building browser strategy games.",
+    founded: 0,
+    location: "",
+    website: "https://panzermarshal.com/",
+    artHue: 20,
+  },
   {
     slug: "borgmobile",
     name: "BorgMobile",

@@ -1486,7 +1486,7 @@ const facts: Game[] = [
     tagline: "The daily pixel puzzle game — reveal hidden artwork pixel by pixel.",
     description:
       "Pixreveal is a clever daily image and pixel puzzle guessing game playable instantly in any browser. Guess mystery retro pixel art, anime characters, iconic video game scenes, and historic photos with minimal tile reveals to maximize your streak score.",
-    developerSlug: "indie-web",
+    developerSlug: "pixreveal-team",
     genres: ["Puzzle", "Strategy"],
     tags: ["Browser", "Pixel Art", "Casual", "Indie", "Retro"],
     aliases: ["Pixreveal", "Pix Reveal", "Pixreveal.com", "Pixel Reveal"],
@@ -1546,7 +1546,7 @@ const facts: Game[] = [
     tagline: "Instant zero-install multiplayer party games directly in your browser.",
     description:
       "GameBuddies.io is a fast, fun collection of zero-download multiplayer party games playable in any modern browser. Create private game rooms with custom room codes, invite friends with a single URL, and enjoy games like Draw & Guess, Word Guess, Trivia, Party Bombs, and Connect Four across desktop and mobile devices.",
-    developerSlug: "indie-web",
+    developerSlug: "gamebuddies",
     genres: ["Arcade", "Puzzle"],
     tags: ["Browser", "Party", "Casual", "Cross-Platform", "Family Friendly", "Co-Op"],
     aliases: ["GameBuddies", "GameBuddies.io", "Game Buddies", "GameBuddies IO"],
