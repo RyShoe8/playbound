@@ -94,6 +94,7 @@ export const links: NavItem[] = [
     icon: Activity,
     family: [
       "/admin/ops",
+      "/admin/bugs",
       "/admin/version-issues",
       "/admin/download-mirrors",
       "/admin/access-audit",
@@ -103,7 +104,7 @@ export const links: NavItem[] = [
     href: "/admin/users",
     label: "Users",
     icon: Users,
-    family: ["/admin/users", "/admin/feedback", "/admin/bugs"],
+    family: ["/admin/users", "/admin/feedback"],
   },
   { href: "/admin/events", label: "Events", icon: CalendarDays },
 ];
@@ -234,6 +235,12 @@ const ECOMMERCE_CHILDREN: NavChild[] = [
 
 const OPS_CHILDREN: NavChild[] = [
   {
+    label: "Bugs",
+    icon: Bug,
+    href: "/admin/bugs",
+    match: (p) => p.startsWith("/admin/bugs"),
+  },
+  {
     label: "Versions",
     icon: AlertTriangle,
     href: "/admin/version-issues",
@@ -264,7 +271,7 @@ const USERS_CHILDREN: NavChild[] = [
     label: "Feedback",
     icon: Megaphone,
     href: "/admin/feedback",
-    match: (p) => p.startsWith("/admin/feedback") || p.startsWith("/admin/bugs"),
+    match: (p) => p.startsWith("/admin/feedback"),
   },
 ];
 
