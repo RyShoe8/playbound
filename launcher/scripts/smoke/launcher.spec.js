@@ -32,10 +32,15 @@ test('real launcher boots, navigates, and installs/removes a mock game', async (
       await expect(page.locator('#act-install')).toBeVisible();
       await page.locator('#act-install').click();
       await expect(page.locator('#act-play')).toBeVisible();
-      expect(fs.readFileSync(path.join(root, 'mock-installed.txt'), 'utf8')).toBe('smoke-fixture');
+      const gameDir = path.join(root, 'games', 'smoke-fixture');
+      const record = () => JSON.parse(fs.readFileSync(path.join(root, 'installed.json'), 'utf8'))['smoke-fixture'];
+      expect(fs.existsSync(path.join(gameDir, 'SmokeFixture.exe'))).toBe(true);
+      expect(record()).toBeTruthy();
+      // The real uninstall: the folder and the library record must both be gone.
       await page.locator('#act-uninstall').click();
       await expect(page.locator('#act-install')).toBeVisible();
-      expect(fs.existsSync(path.join(root, 'mock-installed.txt'))).toBe(false);
+      await expect.poll(() => fs.existsSync(gameDir), { timeout: 15000 }).toBe(false);
+      expect(record()).toBeUndefined();
       expect(errors).toEqual([]);
       expect(fs.existsSync(path.join(root, 'runtime-errors.log'))).toBe(false);
       expect(fs.existsSync(path.join(root, 'last-crash.json'))).toBe(false);

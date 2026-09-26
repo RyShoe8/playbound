@@ -1,6 +1,6 @@
 // Test-only entry: the real bootstrap, main process and preload run unchanged.
 // This directory is excluded from packaged applications.
-const { app, ipcMain, session, shell, globalShortcut } = require('electron');
+const { app, dialog, ipcMain, session, shell, globalShortcut } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 const root = process.env.PLAYBOUND_SMOKE_ROOT;
@@ -32,8 +32,19 @@ const fixture = {
   installType: 'zip', downloadUrl: 'http://localhost:1/fixture.zip',
 };
 const account = { connected: true, userId: 'smoke-user', username: 'Smoke User' };
-const marker = path.join(root, 'mock-installed.txt');
-const detail = () => ({ ...fixture, installed: fs.existsSync(marker), installedPath: root });
+// Install is simulated (no download), but it leaves a real game on disk and a
+// real record in installed.json, so Uninstall runs the launcher's own removal
+// code against it.
+const stateFile = path.join(root, 'installed.json');
+const gameDir = path.join(root, 'games', fixture.slug);
+const readState = () => { try { return JSON.parse(fs.readFileSync(stateFile, 'utf8')); } catch { return {}; } };
+const installed = () => Boolean(readState()[fixture.slug]);
+const detail = () => ({ ...fixture, installed: installed(), installedPath: installed() ? gameDir : null });
+// The real uninstall asks for confirmation; answer "Uninstall" for that dialog only.
+dialog.showMessageBox = async (...args) => {
+  const opts = args.find(a => a && typeof a === 'object' && 'buttons' in a) || {};
+  return { response: opts.title === 'Uninstall game' ? 0 : (opts.cancelId ?? 1) };
+};
 const handlers = {
   'get-server-index': () => ({ games: [] }),
   'get-lfg': () => ({ users: [] }),
@@ -49,17 +60,19 @@ const handlers = {
   'get-friend-requests': () => ({ incoming: [], outgoing: [] }),
   'get-parties': () => ({ myParties: [], discoverable: [] }),
   'get-party-sync': () => ({ friends: [], incoming: [], outgoing: [], myParties: [], discoverable: [] }),
-  'get-installed': () => fs.existsSync(marker) ? [detail()] : [],
+  'get-installed': () => installed() ? [detail()] : [],
   'install': (_event, slug) => {
     if (slug !== fixture.slug) throw new Error('Only fixture installation is allowed');
-    fs.writeFileSync(marker, slug);
-    return { status: 'installed' };
+    const exe = path.join(gameDir, 'SmokeFixture.exe');
+    fs.mkdirSync(path.join(gameDir, 'data'), { recursive: true });
+    fs.writeFileSync(exe, 'smoke-fixture');
+    fs.writeFileSync(path.join(gameDir, 'data', 'level.dat'), 'level');
+    fs.writeFileSync(stateFile, JSON.stringify({
+      [slug]: { editions: { official: { version: '1.0', exe, dir: gameDir, editionSlug: 'official', installedAt: new Date().toISOString() } } },
+    }));
+    return { status: 'installed', exe, dir: gameDir };
   },
-  'uninstall': (_event, slug) => {
-    if (slug !== fixture.slug) throw new Error('Only fixture removal is allowed');
-    fs.unlinkSync(marker);
-    return { status: 'uninstalled' };
-  },
+  // No 'uninstall' entry: the real handler in main.js runs.
 };
 const handle = ipcMain.handle.bind(ipcMain);
 ipcMain.handle = (name, listener) => handle(name, name === 'get-bootstrap-state'
