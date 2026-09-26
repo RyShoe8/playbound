@@ -205,6 +205,7 @@ const nextConfig: NextConfig = {
        */
       { source: "/download", destination: "/launcher", permanent: true },
       { source: "/downloads", destination: "/launcher", permanent: true },
+      { source: "/report-bug", destination: "/feedback", permanent: true },
     ];
   },
 };

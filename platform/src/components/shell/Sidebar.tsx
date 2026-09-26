@@ -10,6 +10,7 @@ import {
   Gamepad2,
   Home,
   LibraryBig,
+  Megaphone,
   MessagesSquare,
   Mouse,
   Play,
@@ -46,6 +47,7 @@ const nav = [
   { href: "/deals", label: "Game Deals", icon: BadgePercent },
   { href: "/gear", label: "Gear", icon: Mouse },
   { href: "/standards", label: "Our Standard", icon: ShieldCheck },
+  { href: "/feedback", label: "Provide Feedback", icon: Megaphone },
 ];
 
 export function Sidebar() {

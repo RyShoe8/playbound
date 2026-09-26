@@ -33,6 +33,7 @@ import {
   Bot,
   Loader2,
   BadgePercent,
+  Megaphone,
   type LucideIcon,
 } from "lucide-react";
 
@@ -50,8 +51,7 @@ export type NavItem = {
   exact?: boolean;
   /**
    * Route prefixes that belong to this item's section, when its children live
-   * outside its own path — Bugs and Versions are under Ops in the nav but not
-   * in the URL, and the section has to stay open while you are on them.
+   * outside its own path — Versions is under Ops, Feedback is under Users.
    */
   family?: string[];
 };
@@ -88,13 +88,17 @@ export const links: NavItem[] = [
     icon: Activity,
     family: [
       "/admin/ops",
-      "/admin/bugs",
       "/admin/version-issues",
       "/admin/download-mirrors",
       "/admin/access-audit",
     ],
   },
-  { href: "/admin/users", label: "Users", icon: Users },
+  {
+    href: "/admin/users",
+    label: "Users",
+    icon: Users,
+    family: ["/admin/users", "/admin/feedback", "/admin/bugs"],
+  },
   { href: "/admin/events", label: "Events", icon: CalendarDays },
 ];
 
@@ -224,12 +228,6 @@ const ECOMMERCE_CHILDREN: NavChild[] = [
 
 const OPS_CHILDREN: NavChild[] = [
   {
-    label: "Bugs",
-    icon: Bug,
-    href: "/admin/bugs",
-    match: (p) => p.startsWith("/admin/bugs"),
-  },
-  {
     label: "Versions",
     icon: AlertTriangle,
     href: "/admin/version-issues",
@@ -246,6 +244,21 @@ const OPS_CHILDREN: NavChild[] = [
     icon: DownloadCloud,
     href: "/admin/download-mirrors",
     match: (p) => p.startsWith("/admin/download-mirrors"),
+  },
+];
+
+const USERS_CHILDREN: NavChild[] = [
+  {
+    label: "Users",
+    icon: Users,
+    href: "/admin/users",
+    match: (p) => p === "/admin/users",
+  },
+  {
+    label: "Feedback",
+    icon: Megaphone,
+    href: "/admin/feedback",
+    match: (p) => p.startsWith("/admin/feedback") || p.startsWith("/admin/bugs"),
   },
 ];
 
@@ -277,6 +290,7 @@ export function childrenFor(item: NavItem, gameSlug: string | null): NavChild[] 
   if (item.href === "/admin/ecommerce") return ECOMMERCE_CHILDREN;
   if (item.href === "/admin/connect") return CONNECT_CHILDREN;
   if (item.href === "/admin/ops") return OPS_CHILDREN;
+  if (item.href === "/admin/users") return USERS_CHILDREN;
   return [];
 }
 

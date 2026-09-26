@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import type { Metadata } from "next";
-import { Bug, CalendarDays, Download, Gamepad2, Inbox, Plus, Shield, Users, SlidersHorizontal } from "lucide-react";
+import { Bug, CalendarDays, Download, Gamepad2, Inbox, Megaphone, Plus, Shield, Users, SlidersHorizontal } from "lucide-react";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
 import NewsletterSubscriber from "@/lib/models/NewsletterSubscriber";
@@ -226,9 +226,9 @@ export default async function AdminPage() {
             periods={kpis.parties}
           />
           <PeriodStatTile
-            label="Bugs"
+            label="Feedback"
             hint={`${kpis.bugReports.month} reports + ${kpis.errorEvents.month} errors (30d) · ${kpis.openBugs} open`}
-            href="/admin/bugs"
+            href="/admin/feedback"
             periods={kpis.bugs}
           />
           <PeriodStatTile
@@ -285,10 +285,10 @@ export default async function AdminPage() {
               <SlidersHorizontal className="size-4" /> Parties & limits
             </Link>
             <Link
-              href="/admin/bugs"
+              href="/admin/feedback"
               className="flex items-center gap-2 rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold transition-colors hover:bg-secondary/70"
             >
-              <Bug className="size-4" /> Bugs
+              <Megaphone className="size-4" /> Feedback
               {kpis.openBugs > 0 ? ` (${kpis.openBugs})` : ""}
             </Link>
             <Link

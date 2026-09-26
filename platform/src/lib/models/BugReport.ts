@@ -1,10 +1,21 @@
 import { Schema, model, models } from "mongoose";
-import { BUG_REPORT_SOURCES, BUG_REPORT_STATUSES } from "@/lib/bugReports";
+import { BUG_REPORT_KINDS, BUG_REPORT_SOURCES, BUG_REPORT_STATUSES } from "@/lib/bugReports";
 
 const BugReportSchema = new Schema(
   {
     title: { type: String, required: true, maxlength: 160 },
     description: { type: String, required: true, maxlength: 8000 },
+    /**
+     * Distinguishes an actual bug from a feature suggestion. Defaults to
+     * "bug" so every pre-existing and auto-generated report (which never
+     * sent this field) keeps classifying the way it always did.
+     */
+    kind: {
+      type: String,
+      enum: BUG_REPORT_KINDS,
+      default: "bug",
+      index: true,
+    },
     source: {
       type: String,
       enum: BUG_REPORT_SOURCES,

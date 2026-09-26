@@ -5,7 +5,7 @@ import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import BugReport from "@/lib/models/BugReport";
-import { BUG_REPORT_SOURCES, isBugReportStatus } from "@/lib/bugReports";
+import { BUG_REPORT_KINDS, BUG_REPORT_SOURCES, isBugReportStatus } from "@/lib/bugReports";
 import { isFounderAdminEmail } from "@/lib/admin";
 import { sendMail } from "@/lib/mailer";
 import { userFromLauncherBearer } from "@/lib/library";
@@ -16,6 +16,7 @@ import { escapeHtml } from "@/lib/newsletterEmail";
 const createSchema = z.object({
   title: z.string().trim().min(3).max(160),
   description: z.string().trim().min(10).max(8000),
+  kind: z.enum(BUG_REPORT_KINDS).optional(),
   source: z.enum(BUG_REPORT_SOURCES),
   pageUrl: z.string().trim().max(1000).optional().or(z.literal("")),
   contactEmail: z.string().trim().email().optional().or(z.literal("")),
@@ -66,6 +67,7 @@ export async function POST(req: Request) {
     const report = await BugReport.create({
       title: data.title,
       description: data.description,
+      kind: data.kind || "bug",
       source: data.source,
       pageUrl: data.pageUrl || null,
       contactEmail: data.contactEmail ? data.contactEmail.toLowerCase() : null,
@@ -82,16 +84,17 @@ export async function POST(req: Request) {
     });
 
     const founder = "ryanschumacher@themediashop.co";
+    const kindLabel = data.kind === "suggestion" ? "Suggestion" : "Bug report";
     if (isFounderAdminEmail(founder)) {
       try {
         await sendMail(
           founder,
-          `Bug report (${data.source}): ${data.title}`,
+          `${kindLabel} (${data.source}): ${data.title}`,
           `<p><strong>${escapeHtml(data.title)}</strong></p>
            <p>Source: ${escapeHtml(data.source)}</p>
            ${data.pageUrl ? `<p>Page: ${escapeHtml(data.pageUrl)}</p>` : ""}
            <p>${escapeHtml(data.description.slice(0, 800))}</p>
-           <p>Review in Admin → Bugs.</p>`
+           <p>Review in Admin → Feedback.</p>`
         );
       } catch (err) {
         console.error("Failed to notify founder of bug report:", err);
