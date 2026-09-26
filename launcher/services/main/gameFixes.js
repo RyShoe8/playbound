@@ -541,11 +541,360 @@ const SOLARUS_REPAIR_SLUGS = new Set([
   "the-legend-of-zelda-xd2-mercuris-chess",
 ]);
 
+const ZBOM_REPAIR_MARKER = "-- PlayBound Solarus 2 controller repair v2";
+
+function patchZeldaMudoraSavegames(code) {
+  if (code.includes(ZBOM_REPAIR_MARKER)) return code;
+
+  code = code.replace(/axis % 2/g, "(tonumber(axis) or 0) % 2");
+
+  code = code.replace(
+    /sol\.timer\.start\(self,\s*100,\s*function\(\)\s*self\.allow_cursor_move = true\s*end\)/,
+    "sol.timer.start(self, 180, function()\n      self.allow_cursor_move = true\n    end)"
+  );
+
+  const oldButtonAndAxis = /function savegame_menu:on_joypad_button_pressed\(button\)[\s\S]*?function savegame_menu:on_joypad_axis_moved\(axis, state\)[\s\S]*?end\s*\n\s*function savegame_menu:on_joypad_hat_moved/;
+
+  const newButtonAndAxis = `${ZBOM_REPAIR_MARKER}
+local function is_confirm_button(button)
+  local b = tostring(button):lower()
+  return b == "0" or b == "a" or b == "space" or b == "return" or b == "6" or b == "start"
+end
+
+local function is_cancel_button(button)
+  local b = tostring(button):lower()
+  return b == "1" or b == "b" or b == "escape" or b == "back"
+end
+
+local function is_action_button(button, name)
+  local b = tostring(button):lower()
+  if name == "x" then return b == "2" or b == "x" end
+  if name == "y" then return b == "3" or b == "y" end
+  return false
+end
+
+function savegame_menu:on_joypad_button_pressed(button)
+  local b = tostring(button):lower()
+  if b == "11" or b == "dpup" or b == "dpad_up" or b == "up" then
+    return self:direction_pressed(2)
+  elseif b == "12" or b == "dpdown" or b == "dpad_down" or b == "down" then
+    return self:direction_pressed(6)
+  elseif b == "13" or b == "dpleft" or b == "dpad_left" or b == "left" then
+    return self:direction_pressed(4)
+  elseif b == "14" or b == "dpright" or b == "dpad_right" or b == "right" then
+    return self:direction_pressed(0)
+  end
+
+  local handled = true
+  if not self.finished then
+    local method_name = "joypad_button_pressed_phase_" .. self.phase
+    if self[method_name] then
+      handled = self[method_name](self, button)
+    else
+      handled = false
+    end
+  else
+    handled = false
+  end
+
+  return handled
+end
+
+function savegame_menu:on_joypad_axis_moved(axis, state)
+  local abs_state = math.abs(state)
+  if abs_state < 0.3 or (abs_state >= 1 and abs_state < 12000) then
+    return
+  end
+
+  local is_horizontal = false
+  if type(axis) == "string" then
+    is_horizontal = axis:find("x") ~= nil
+  elseif type(axis) == "number" then
+    is_horizontal = ((tonumber(axis) or 0) % 2 == 0)
+  end
+
+  if is_horizontal then
+    if state > 0 then
+      self:direction_pressed(0)
+    elseif state < 0 then
+      self:direction_pressed(4)
+    end
+  else
+    if state < 0 then
+      self:direction_pressed(2)
+    elseif state > 0 then
+      self:direction_pressed(6)
+    end
+  end
+end
+
+function savegame_menu:on_joypad_hat_moved`;
+
+  code = code.replace(oldButtonAndAxis, newButtonAndAxis);
+
+  code = code.replace(
+    /function savegame_menu:joypad_button_pressed_phase_select_file\(button\)[\s\S]*?end/,
+    `function savegame_menu:joypad_button_pressed_phase_select_file(button)
+  if is_confirm_button(button) then
+    return self:key_pressed_phase_select_file("space")
+  elseif is_cancel_button(button) then
+    if self.cursor_position >= 4 then
+      sol.audio.play_sound("cursor")
+      self:set_cursor_position(1)
+      return true
+    end
+  elseif is_action_button(button, "x") then
+    self:set_cursor_position(4)
+    return self:key_pressed_phase_select_file("space")
+  elseif is_action_button(button, "y") then
+    self:set_cursor_position(5)
+    return self:key_pressed_phase_select_file("space")
+  end
+  return false
+end`
+  );
+
+  code = code.replace(
+    /function savegame_menu:joypad_button_pressed_phase_erase_file\(button\)[\s\S]*?end/,
+    `function savegame_menu:joypad_button_pressed_phase_erase_file(button)
+  if is_cancel_button(button) then
+    sol.audio.play_sound("ok")
+    self:init_phase_select_file()
+    return true
+  elseif is_confirm_button(button) then
+    return self:key_pressed_phase_erase_file("space")
+  end
+  return false
+end`
+  );
+
+  code = code.replace(
+    /function savegame_menu:joypad_button_pressed_phase_confirm_erase\(button\)[\s\S]*?end/,
+    `function savegame_menu:joypad_button_pressed_phase_confirm_erase(button)
+  if is_cancel_button(button) then
+    sol.audio.play_sound("ok")
+    self:init_phase_select_file()
+    return true
+  elseif is_confirm_button(button) then
+    return self:key_pressed_phase_confirm_erase("space")
+  end
+  return false
+end`
+  );
+
+  code = code.replace(
+    /function savegame_menu:joypad_button_pressed_phase_options\(button\)[\s\S]*?end/,
+    `function savegame_menu:joypad_button_pressed_phase_options(button)
+  if is_cancel_button(button) then
+    if self.modifying_option then
+      sol.audio.play_sound("danger")
+      local option = self.options[self.options_cursor_position]
+      if option then
+        option.label_text:set_color{255, 255, 0}
+        option.value_text:set_color{255, 255, 255}
+      end
+      self.left_arrow_sprite:set_frame(0)
+      self.right_arrow_sprite:set_frame(0)
+      self.title_text:set_text_key("selection_menu.phase.options")
+      self.modifying_option = false
+      return true
+    else
+      sol.audio.play_sound("ok")
+      self:init_phase_select_file()
+      return true
+    end
+  elseif is_confirm_button(button) then
+    return self:key_pressed_phase_options("space")
+  end
+  return false
+end`
+  );
+
+  code = code.replace(
+    /function savegame_menu:joypad_button_pressed_phase_choose_name\(button\)[\s\S]*?end/,
+    `function savegame_menu:joypad_button_pressed_phase_choose_name(button)
+  local b = tostring(button):lower()
+  if b == "6" or b == "start" then
+    local finished = self:validate_player_name()
+    if finished then self:init_phase_select_file() end
+    return true
+  elseif is_cancel_button(button) then
+    local size = self.player_name:len()
+    if size > 0 then
+      sol.audio.play_sound("danger")
+      self.player_name = self.player_name:sub(1, size - 1)
+      self.player_name_text:set_text(self.player_name)
+    else
+      sol.audio.play_sound("danger")
+      self:init_phase_select_file()
+    end
+    return true
+  elseif is_confirm_button(button) then
+    return self:key_pressed_phase_choose_name("space")
+  end
+  return false
+end`
+  );
+
+  return code;
+}
+
+function patchZeldaMudoraLanguage(code) {
+  if (code.includes(ZBOM_REPAIR_MARKER)) return code;
+
+  code = code.replace(/axis % 2/g, "(tonumber(axis) or 0) % 2");
+
+  const oldAxis = /function language_menu:on_joypad_axis_moved\(axis, state\)[\s\S]*?end\s*\n\s*function language_menu:on_joypad_hat_moved/;
+  const newAxis = `${ZBOM_REPAIR_MARKER}
+function language_menu:on_joypad_axis_moved(axis, state)
+  local abs_state = math.abs(state)
+  if abs_state < 0.3 or (abs_state >= 1 and abs_state < 12000) then
+    return
+  end
+
+  local is_horizontal = false
+  if type(axis) == "string" then
+    is_horizontal = axis:find("x") ~= nil
+  elseif type(axis) == "number" then
+    is_horizontal = ((tonumber(axis) or 0) % 2 == 0)
+  end
+
+  if not is_horizontal then
+    if state < 0 then
+      self:direction_pressed(2)
+    elseif state > 0 then
+      self:direction_pressed(6)
+    end
+  end
+end
+
+function language_menu:on_joypad_hat_moved`;
+
+  code = code.replace(oldAxis, newAxis);
+
+  code = code.replace(
+    /function language_menu:direction_pressed\(direction8\)[\s\S]*?return handled\s*\nend/,
+    `function language_menu:direction_pressed(direction8)
+  local handled = false
+  if self.allow_cursor_move == nil then self.allow_cursor_move = true end
+  if not self.finished and self.allow_cursor_move then
+    self.allow_cursor_move = false
+    sol.timer.start(self, 200, function() self.allow_cursor_move = true end)
+    local n = #self.languages
+    if direction8 == 2 then
+      sol.audio.play_sound("cursor")
+      self:set_cursor_position((self.cursor_position + n - 2) % n + 1)
+      handled = true
+    elseif direction8 == 6 then
+      sol.audio.play_sound("cursor")
+      self:set_cursor_position(self.cursor_position % n + 1)
+      handled = true
+    end
+  end
+  return handled
+end`
+  );
+
+  code = code.replace(
+    /function language_menu:on_joypad_button_pressed\(button\)[\s\S]*?return self:on_key_pressed\("space"\)\s*\nend/,
+    `function language_menu:on_joypad_button_pressed(button)
+  local b = tostring(button):lower()
+  if b == "11" or b == "dpup" or b == "dpad_up" or b == "up" then
+    return self:direction_pressed(2)
+  elseif b == "12" or b == "dpdown" or b == "dpad_down" or b == "down" then
+    return self:direction_pressed(6)
+  elseif b == "13" or b == "dpleft" or b == "dpad_left" or b == "left" then
+    return self:direction_pressed(4)
+  elseif b == "14" or b == "dpright" or b == "dpad_right" or b == "right" then
+    return self:direction_pressed(0)
+  end
+
+  if b == "0" or b == "a" or b == "space" or b == "return" or b == "6" or b == "start" then
+    return self:on_key_pressed("space")
+  end
+  return false
+end`
+  );
+
+  return code;
+}
+
+function patchZeldaMudoraGameManager(code) {
+  if (code.includes(ZBOM_REPAIR_MARKER)) return code;
+
+  code = code.replace(/-- PlayBound Solarus 2 controller bindings[\s\S]*?game:set_command_joypad_binding\("pause", "start"\)\r?\n\r?\n/, "");
+
+  const bindings = `${ZBOM_REPAIR_MARKER}
+game:set_command_joypad_binding("action", "a")
+game:set_command_joypad_binding("attack", "b")
+game:set_command_joypad_binding("item_1", "x")
+game:set_command_joypad_binding("item_2", "y")
+game:set_command_joypad_binding("pause", "start")
+game:set_command_joypad_binding("up", "left_y -")
+game:set_command_joypad_binding("down", "left_y +")
+game:set_command_joypad_binding("left", "left_x -")
+game:set_command_joypad_binding("right", "left_x +")
+
+local pb_dpad_buttons = {
+  ["11"] = "up", dpup = "up", dpad_up = "up",
+  ["12"] = "down", dpdown = "down", dpad_down = "down",
+  ["13"] = "left", dpleft = "left", dpad_left = "left",
+  ["14"] = "right", dpright = "right", dpad_right = "right",
+}
+function game:on_joypad_button_pressed(button)
+  local cmd = pb_dpad_buttons[tostring(button):lower()]
+  if cmd then
+    self:simulate_command_pressed(cmd)
+    return true
+  end
+  return false
+end
+function game:on_joypad_button_released(button)
+  local cmd = pb_dpad_buttons[tostring(button):lower()]
+  if cmd then
+    self:simulate_command_released(cmd)
+    return true
+  end
+  return false
+end
+
+local pb_hat_directions = {
+  [-1] = {},
+  [0] = { "right" },
+  [1] = { "up", "right" },
+  [2] = { "up" },
+  [3] = { "up", "left" },
+  [4] = { "left" },
+  [5] = { "down", "left" },
+  [6] = { "down" },
+  [7] = { "down", "right" },
+}
+local pb_active_hat_cmds = {}
+function game:on_joypad_hat_moved(hat, direction8)
+  local next_cmds = pb_hat_directions[direction8] or {}
+  local next_set = {}
+  for _, c in ipairs(next_cmds) do next_set[c] = true end
+  for _, c in ipairs({ "up", "down", "left", "right" }) do
+    if pb_active_hat_cmds[c] and not next_set[c] then
+      self:simulate_command_released(c)
+    elseif not pb_active_hat_cmds[c] and next_set[c] then
+      self:simulate_command_pressed(c)
+    end
+  end
+  pb_active_hat_cmds = next_set
+  return true
+end\n\n`;
+
+  return code.replace(/^(local game = \.\.\.\r?\n)/m, `$1\n${bindings}`);
+}
+
 /**
  * Zelda / Solarus engine repair:
  * Fixes Solarus 2.0 gamepad crash bug in data.solarus where joypad axis strings
- * throw Lua errors in arithmetic ("axis % 2"), and maps D-pad buttons to direction
- * controls so they work as movement inputs instead of a dead zone.
+ * throw Lua errors in arithmetic ("axis % 2"), fixes analog stick inverted Y
+ * axis and missing deadzones on menus, maps D-pad buttons to direction controls
+ * instead of firing confirmation/space, and wires up distinct A/B/X/Y controller
+ * actions across menus and gameplay.
  * Applies to any Solarus-based game in SOLARUS_REPAIR_SLUGS.
  */
 async function maybeRepairZeldaMudoraInstall(slug, info) {
@@ -568,10 +917,8 @@ async function maybeRepairZeldaMudoraInstall(slug, info) {
     if (!fs.existsSync(solarusFile)) return;
 
     const content = await fsp.readFile(solarusFile);
-    const needsAxisPatch = content.includes(Buffer.from("axis % 2"));
-    const controllerMarker = "-- PlayBound Solarus 2 controller bindings";
-    const needsButtonPatch = !content.includes(Buffer.from(controllerMarker));
-    if (!needsAxisPatch && !needsButtonPatch) return;
+    const needsRepair = !content.includes(Buffer.from(ZBOM_REPAIR_MARKER));
+    if (!needsRepair) return;
 
     const bin = sevenZipBinary();
     if (!bin) return;
@@ -584,29 +931,47 @@ async function maybeRepairZeldaMudoraInstall(slug, info) {
         bin,
         ["x", solarusFile, "-o" + tempDir, "scripts/menus/*", "scripts/game_manager.lua", "-y"],
         {
-        windowsHide: true,
+          windowsHide: true,
         }
       );
       cp.on("close", () => resolve());
       cp.on("error", () => resolve());
     });
 
-    const patchFiles = ["pause.lua", "warp.lua", "savegames.lua", "language.lua"];
     const menuDir = path.join(tempDir, "scripts", "menus");
     let anyPatched = false;
 
-    for (const pf of patchFiles) {
+    // 1. Patch savegames.lua
+    const sgPath = path.join(menuDir, "savegames.lua");
+    if (fs.existsSync(sgPath)) {
+      let code = await fsp.readFile(sgPath, "utf8");
+      const orig = code;
+      code = patchZeldaMudoraSavegames(code);
+      if (code !== orig) {
+        await fsp.writeFile(sgPath, code, "utf8");
+        anyPatched = true;
+      }
+    }
+
+    // 2. Patch language.lua
+    const langPath = path.join(menuDir, "language.lua");
+    if (fs.existsSync(langPath)) {
+      let code = await fsp.readFile(langPath, "utf8");
+      const orig = code;
+      code = patchZeldaMudoraLanguage(code);
+      if (code !== orig) {
+        await fsp.writeFile(langPath, code, "utf8");
+        anyPatched = true;
+      }
+    }
+
+    // 3. Patch pause.lua and warp.lua for axis % 2 if present
+    for (const pf of ["pause.lua", "warp.lua"]) {
       const p = path.join(menuDir, pf);
       if (fs.existsSync(p)) {
         let code = await fsp.readFile(p, "utf8");
         const orig = code;
         code = code.replace(/axis % 2/g, "(tonumber(axis) or 0) % 2");
-        if (pf === "savegames.lua") {
-          code = code.replace(
-            /elseif raw_button == "dpup" or raw_button == "dpdown" or raw_button == "dpleft" or raw_button == "dpright" then\s+handled = self:on_command_pressed\("space"\)/g,
-            `elseif raw_button == "dpup" then\n    handled = self:on_command_pressed("up")\n  elseif raw_button == "dpdown" then\n    handled = self:on_command_pressed("down")\n  elseif raw_button == "dpleft" then\n    handled = self:on_command_pressed("left")\n  elseif raw_button == "dpright" then\n    handled = self:on_command_pressed("right")`
-          );
-        }
         if (code !== orig) {
           await fsp.writeFile(p, code, "utf8");
           anyPatched = true;
@@ -614,39 +979,19 @@ async function maybeRepairZeldaMudoraInstall(slug, info) {
       }
     }
 
-    // Book of Mudora was migrated to the Solarus 2 quest format without
-    // migrating its saved/default controller bindings. Solarus still sees the
-    // pad (movement and Start work), but A/B/X/Y are not attached to game
-    // commands. Set the standard Xbox/SDL layout each time a save is loaded.
-    // Existing keyboard bindings and save data are left untouched.
+    // 4. Patch game_manager.lua
     const gameManager = path.join(tempDir, "scripts", "game_manager.lua");
     if (fs.existsSync(gameManager)) {
       let code = await fsp.readFile(gameManager, "utf8");
-      if (!code.includes(controllerMarker)) {
-        const bindings = `${controllerMarker}\n` +
-          `game:set_command_joypad_binding("action", "a")\n` +
-          `game:set_command_joypad_binding("attack", "b")\n` +
-          `game:set_command_joypad_binding("item_1", "x")\n` +
-          `game:set_command_joypad_binding("item_2", "y")\n` +
-          `game:set_command_joypad_binding("pause", "start")\n\n`;
-        const orig = code;
-        // `m` flag: match "local game = ..." at the start of ANY line, not
-        // just the start of the whole file. Without it, so much as a
-        // leading blank line or comment before that line means the anchor
-        // never matches, replace() silently no-ops, and the code below used
-        // to mark this "patched" and write the file back unchanged anyway —
-        // controllerMarker never actually landed, so every future launch
-        // silently retried and failed the same way forever. That's why the
-        // bindings looked like they should already be applied but weren't.
-        code = code.replace(/^(local game = \.\.\.\r?\n)/m, `$1\n${bindings}`);
-        if (code !== orig) {
-          await fsp.writeFile(gameManager, code, "utf8");
-          anyPatched = true;
-        } else {
-          console.warn(
-            "[zelda-mudora-repair] could not find 'local game = ...' in game_manager.lua — controller bindings not patched"
-          );
-        }
+      const orig = code;
+      code = patchZeldaMudoraGameManager(code);
+      if (code !== orig) {
+        await fsp.writeFile(gameManager, code, "utf8");
+        anyPatched = true;
+      } else {
+        console.warn(
+          "[zelda-mudora-repair] could not find 'local game = ...' in game_manager.lua — controller bindings not patched"
+        );
       }
     }
 
@@ -662,6 +1007,34 @@ async function maybeRepairZeldaMudoraInstall(slug, info) {
     }
 
     await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+
+    // Also repair any existing save files in ~/.solarus/zbom if buttons were inverted
+    const userHome = app.getPath("home");
+    const solarusZbomDir = path.join(userHome, ".solarus", "zbom");
+    if (fs.existsSync(solarusZbomDir)) {
+      const saveFiles = await fsp.readdir(solarusZbomDir).catch(() => []);
+      for (const sf of saveFiles) {
+        if (/^save\d+\.dat$/i.test(sf)) {
+          const sp = path.join(solarusZbomDir, sf);
+          let sContent = await fsp.readFile(sp, "utf8").catch(() => "");
+          if (sContent) {
+            let changed = false;
+            if (sContent.includes('_joypad_action = "b"') && sContent.includes('_joypad_attack = "a"')) {
+              sContent = sContent.replace('_joypad_action = "b"', '_joypad_action = "a"');
+              sContent = sContent.replace('_joypad_attack = "a"', '_joypad_attack = "b"');
+              changed = true;
+            }
+            if (!sContent.includes('_joypad_up =')) {
+              sContent += '\n_joypad_up = "left_y -"\n_joypad_down = "left_y +"\n_joypad_left = "left_x -"\n_joypad_right = "left_x +"\n';
+              changed = true;
+            }
+            if (changed) {
+              await fsp.writeFile(sp, sContent, "utf8").catch(() => {});
+            }
+          }
+        }
+      }
+    }
 
     const errTxt = path.join(path.dirname(solarusFile), "error.txt");
     if (fs.existsSync(errTxt)) {
