@@ -153,7 +153,16 @@ function gamePriceCents(game: Game): number {
 export function videoGameSchema(
   game: Game,
   developer?: Developer,
-  opts?: { aggregateRating?: { ratingValue: number; reviewCount: number } }
+  opts?: {
+    aggregateRating?: { ratingValue: number; reviewCount: number };
+    /**
+     * Real, live counts — never synthesised. schema.org's InteractionCounter
+     * is the standard vector for "X people are doing this right now," and it
+     * is one almost nothing in this space actually populates with genuine
+     * numbers instead of a static review count.
+     */
+    liveStats?: { playingNow: number; playersThisMonth: number; asOf: string };
+  }
 ): Json {
   const priceCents = gamePriceCents(game);
   const buy = priceCents > 0 ? bestPurchase(game.access) : null;
@@ -218,6 +227,26 @@ export function videoGameSchema(
             bestRating: 5,
             worstRating: 1,
           },
+        }
+      : {}),
+    // Only emitted when a real (possibly zero) live count exists — never a
+    // guessed or placeholder number.
+    ...(opts?.liveStats
+      ? {
+          interactionStatistic: [
+            {
+              "@type": "InteractionCounter",
+              interactionType: "https://schema.org/PlayAction",
+              userInteractionCount: opts.liveStats.playingNow,
+              description: `Players active on PlayBound right now, as of ${opts.liveStats.asOf}.`,
+            },
+            {
+              "@type": "InteractionCounter",
+              interactionType: "https://schema.org/PlayAction",
+              userInteractionCount: opts.liveStats.playersThisMonth,
+              description: "Distinct players active on PlayBound in the last 30 days.",
+            },
+          ],
         }
       : {}),
   };

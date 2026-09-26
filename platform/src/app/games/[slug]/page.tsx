@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound, permanentRedirect, unstable_rethrow } from "next/navigation";
 import { getServerSession } from "next-auth/next";
-import { ChevronDown, Film, Gamepad2, Image as ImageIcon, Newspaper, Play, Sparkles, Trophy, Wrench } from "lucide-react";
+import { ChevronDown, Film, Gamepad2, Image as ImageIcon, Newspaper, Play, Sparkles, Trophy, Users, Wrench } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Review from "@/lib/models/Review";
@@ -13,6 +13,7 @@ import { fetchGithubReleases } from "@/lib/github";
 import { getGame, canonicalSlugFor } from "@/lib/catalog";
 import { listUnlockedByMaster } from "@/lib/masterCopy";
 import { getDeveloper } from "@/lib/developers";
+import { getGameLiveStats, type EntityLiveStats } from "@/lib/liveActivity";
 import { listPublicEditionsForGame, hasChoosableEditions } from "@/lib/editions";
 import type { Edition } from "@/lib/editionTypes";
 import { isBrowserGame } from "@/lib/gameLaunch";
@@ -185,7 +186,7 @@ export async function GamePageFrame({
   const heroMedia = heroMediaItems(game.videos, game.screenshots);
 
   // Critical path only: developer + editions for hero chooser and static schema.
-  const [developer, editions, gameMods, gameOffers] = await Promise.all([
+  const [developer, editions, gameMods, gameOffers, liveStats] = await Promise.all([
     getDeveloper(game.developerSlug),
     listPublicEditionsForGame(game),
     // Awaited here so the Mods tab can be hidden when a game has none. The tab
@@ -195,6 +196,20 @@ export async function GamePageFrame({
     // so ModsTab re-reading this costs nothing.
     modsForGame(game.slug, { includeTesting }),
     offersForGame(game.slug),
+    // Real, verifiable numbers no wiki or store page carries — worth exposing
+    // as a standalone, dated fact block rather than only a UI badge. Caught
+    // separately: this is a nice-to-have stat block, not a reason to fail the
+    // whole page render if a live-count source is briefly unavailable.
+    getGameLiveStats(game.slug).catch(() => ({
+      playingNow: 0,
+      multiplayerPlayers: 0,
+      platformPlayers: 0,
+      playersThisMonth: 0,
+      serverCount: 0,
+      installsThisMonth: 0,
+      installsAllTime: null,
+      asOf: new Date().toISOString(),
+    })),
   ]);
   const choosable = hasChoosableEditions(editions);
   const signedIn = Boolean(session?.user);
@@ -210,7 +225,13 @@ export async function GamePageFrame({
       />
       <JsonLd
         data={graph(
-          videoGameSchema(game, developer),
+          videoGameSchema(game, developer, {
+            liveStats: {
+              playingNow: liveStats.playingNow,
+              playersThisMonth: liveStats.playersThisMonth,
+              asOf: liveStats.asOf,
+            },
+          }),
           qualityReviewSchema(game),
           faqSchema(game.faq ?? []),
           breadcrumbSchema([
@@ -405,6 +426,7 @@ export async function GamePageFrame({
             developer={developer}
             editions={editions}
             includeTesting={includeTesting}
+            liveStats={liveStats}
           />
         )}
         {tab === "install" && (
@@ -479,11 +501,13 @@ async function OverviewTab({
   developer,
   editions,
   includeTesting,
+  liveStats,
 }: {
   game: Game;
   developer: Developer | undefined;
   editions: Edition[];
   includeTesting: boolean;
+  liveStats: EntityLiveStats;
 }) {
   if (!game) return null;
   const [affiliates, unlocks] = await Promise.all([
@@ -552,6 +576,19 @@ async function OverviewTab({
                 </p>
               </div>
             </div>
+          </section>
+        )}
+
+        {(liveStats.playingNow > 0 || liveStats.playersThisMonth > 0) && (
+          <section className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl border border-border bg-card px-5 py-3.5 text-sm">
+            <span className="flex items-center gap-1.5 font-bold text-foreground">
+              <Users className="size-4 text-primary" />
+              {liveStats.playingNow} playing on PlayBound now
+            </span>
+            <span className="text-muted-foreground">
+              {liveStats.playersThisMonth} distinct player{liveStats.playersThisMonth === 1 ? "" : "s"} in the last 30 days
+            </span>
+            <span className="ml-auto text-xs text-muted-foreground/70">Updated every 15 minutes</span>
           </section>
         )}
 

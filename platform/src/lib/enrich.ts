@@ -188,9 +188,24 @@ export type FaqSource = {
   qualityBar?: QualityBar | null;
 };
 
+/**
+ * Deterministic 0..n-1 index from a string. Same slug always lands on the
+ * same variant (stable across re-derivations, and testable), but different
+ * games spread across the available phrasings instead of all landing on
+ * variant 0 — which is what "pick the first template every time" amounts to.
+ */
+function variantIndex(seed: string, count: number): number {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash * 31 + seed.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash) % count;
+}
+
 export function deriveFaq(game: FaqSource): GameFaq[] {
   const faq: GameFaq[] = [];
   const free = game.qualityBar?.genuinelyFree;
+  const v = (count: number) => variantIndex(game.title, count);
 
   /*
    * This always answered "Yes... costs nothing" regardless of `qualityBar`,
@@ -199,18 +214,32 @@ export function deriveFaq(game: FaqSource): GameFaq[] {
    * saying "Commercial · DRM-free purchase" right next to "costs nothing to
    * download or play." Only branch into the free-game phrasing when the
    * catalog actually says this title is free.
+   *
+   * Both branches also had identical wording for every game bar the title
+   * token — a real duplicate-content risk once 140+ games share the same
+   * license/platform/account profile. Each branch now picks one of several
+   * genuinely different phrasings, stable per game via variantIndex.
    */
-  faq.push(
-    free === false
-      ? {
-          q: `Is ${game.title} free?`,
-          a: `No. ${game.title} is a paid release (${game.license}).`,
-        }
-      : {
-          q: `Is ${game.title} free?`,
-          a: `Yes. ${game.title} is released under ${game.license} and costs nothing to download or play. It meets PlayBound's value criterion: no trial masquerading as a full game, no paywalled core content, and no paid competitive advantage. Optional cosmetics and premium extras are allowed.`,
-        }
-  );
+  const freeAnswers = [
+    (t: string, l: string) =>
+      `Yes. ${t} is released under ${l} and costs nothing to download or play. It meets PlayBound's value criterion: no trial masquerading as a full game, no paywalled core content, and no paid competitive advantage. Optional cosmetics and premium extras are allowed.`,
+    (t: string, l: string) =>
+      `Yes — ${t} is entirely free. It ships under ${l}, with no purchase, no paywalled content and no pay-to-win mechanics anywhere in the game.`,
+    (t: string, l: string) =>
+      `Free, in full. ${t} is licensed as ${l}: nothing is locked behind a purchase, there's no trial-disguised-as-the-full-game, and any cosmetics on offer never affect the actual game.`,
+  ];
+  const paidAnswers = [
+    (t: string, l: string) => `No. ${t} is a paid release (${l}).`,
+    (t: string, l: string) => `No — ${t} must be purchased. It's distributed as ${l}.`,
+    (t: string, l: string) => `${t} is a commercial title (${l}), not a free one.`,
+  ];
+  faq.push({
+    q: `Is ${game.title} free?`,
+    a:
+      free === false
+        ? paidAnswers[v(paidAnswers.length)]!(game.title, game.license)
+        : freeAnswers[v(freeAnswers.length)]!(game.title, game.license),
+  });
 
   /*
    * `sizeLabel` literally returns the word "small" when sizeMB is unset, and
@@ -224,26 +253,44 @@ export function deriveFaq(game: FaqSource): GameFaq[] {
   const hasRealSize = Boolean(game.sizeMB);
   const minReq = game.systemRequirements?.min?.trim();
   const hasRealMin = Boolean(minReq) && !/^see |^not yet verified$|^modern web browser$/i.test(minReq);
+  const sizeAndMinAnswers = [
+    (t: string, size: string, min: string) => `About ${size}. The minimum system requirements are ${min}.`,
+    (t: string, size: string, min: string) => `${t}'s download comes in at around ${size}, and needs at least ${min} to run.`,
+  ];
+  const sizeOnlyAnswers = [
+    (t: string, size: string) => `About ${size}.`,
+    (t: string, size: string) => `Roughly ${size} to download.`,
+  ];
   faq.push({
     q: `How big is the ${game.title} download?`,
     a:
       hasRealSize && hasRealMin
-        ? `About ${sizeLabel(game.sizeMB)}. The minimum system requirements are ${minReq}.`
+        ? sizeAndMinAnswers[v(sizeAndMinAnswers.length)]!(game.title, sizeLabel(game.sizeMB), minReq!)
         : hasRealSize
-          ? `About ${sizeLabel(game.sizeMB)}.`
+          ? sizeOnlyAnswers[v(sizeOnlyAnswers.length)]!(game.title, sizeLabel(game.sizeMB))
           : hasRealMin
             ? `The minimum system requirements are ${minReq}.`
             : `Check the official site for current download size and system requirements.`,
   });
 
+  const platformAnswers = [
+    (list: string) => `${list}.`,
+    (list: string) => `Runs on ${list}.`,
+    (list: string) => `Available for ${list}.`,
+  ];
   faq.push({
     q: `What platforms does ${game.title} run on?`,
-    a: `${game.platforms.join(", ")}.${game.steamDeck ? " It is also Steam Deck compatible." : ""}`,
+    a: `${platformAnswers[v(platformAnswers.length)]!(game.platforms.join(", "))}${game.steamDeck ? " It is also Steam Deck compatible." : ""}`,
   });
 
+  const accountAnswers = [
+    () => `No account is required to download or play.`,
+    () => `You can download and play without creating an account.`,
+    () => `There's no account requirement to play — download and go.`,
+  ];
   faq.push({
     q: `Do I need an account to play ${game.title}?`,
-    a: `No account is required to download or play.${
+    a: `${accountAnswers[v(accountAnswers.length)]!()}${
       game.launchMethods.includes("server")
         ? " Some public multiplayer servers ask for a nickname or in-game lobby registration, which is handled inside the game itself."
         : ""
