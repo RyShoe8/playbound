@@ -272,6 +272,11 @@ describe("insert-catalog-wave allowlists", () => {
         "re-volt-rvgl",
         "wipeout-rewrite",
         "openhv",
+        // "Previously Free" promo games with sizeMB stuck at 0 and
+        // releaseYear stuck at the year added to PlayBound — see
+        // catalogCorrections.ts.
+        "deponia",
+        "caravan-sandwitch",
       ].sort()
     );
     expect(PATCH_GAME_FIELDS["super-nova-strike"]).toContain("androidStoreUrl");
