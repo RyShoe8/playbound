@@ -541,7 +541,16 @@ const SOLARUS_REPAIR_SLUGS = new Set([
   "the-legend-of-zelda-xd2-mercuris-chess",
 ]);
 
-const ZBOM_REPAIR_MARKER = "-- PlayBound Solarus 2 controller repair v2";
+/*
+ * Bumped to v3 deliberately, not just for the new dpad/hat handlers: any
+ * install already carrying the v2 marker was patched through the old
+ * in-place `7z u` archive update, which is the operation implicated in the
+ * black-screen-on-map-load bug (see maybeRepairZeldaMudoraInstall). Bumping
+ * the marker means every existing v2 install gets repaired exactly once
+ * more, through the new full-rebuild path, without anyone needing to
+ * manually reinstall.
+ */
+const ZBOM_REPAIR_MARKER = "-- PlayBound Solarus 2 controller repair v3";
 
 function patchZeldaMudoraSavegames(code) {
   if (code.includes(ZBOM_REPAIR_MARKER)) return code;
@@ -916,24 +925,53 @@ async function maybeRepairZeldaMudoraInstall(slug, info) {
     }
     if (!fs.existsSync(solarusFile)) return;
 
-    const content = await fsp.readFile(solarusFile);
-    const needsRepair = !content.includes(Buffer.from(ZBOM_REPAIR_MARKER));
-    if (!needsRepair) return;
-
     const bin = sevenZipBinary();
     if (!bin) return;
+
+    /*
+     * The marker lives inside game_manager.lua, which is deflate-compressed
+     * inside the zip — scanning the archive's own raw bytes for that literal
+     * text (as this used to do) can never match, since compressed output
+     * does not preserve readable substrings of its input. That silently made
+     * needsRepair true on every single launch, not just the first, which
+     * matters a lot more now that a "needed" repair means a full archive
+     * rebuild rather than a small in-place patch. `7z e -so` decompresses
+     * just this one file to stdout so the check reads real content without
+     * writing anything to disk.
+     */
+    const gameManagerContent = await new Promise((resolve) => {
+      const cp = spawn(bin, ["e", "-so", solarusFile, "scripts/game_manager.lua"], {
+        windowsHide: true,
+      });
+      const chunks = [];
+      cp.stdout.on("data", (chunk) => chunks.push(chunk));
+      cp.on("close", () => resolve(Buffer.concat(chunks)));
+      cp.on("error", () => resolve(Buffer.alloc(0)));
+    });
+    const needsRepair = !gameManagerContent.includes(Buffer.from(ZBOM_REPAIR_MARKER));
+    if (!needsRepair) return;
 
     const tempDir = path.join(app.getPath("temp"), "zbom_patch_" + Date.now());
     await fsp.mkdir(tempDir, { recursive: true });
 
+    /*
+     * Full extract, not just the scripts being patched. This used to pull
+     * only scripts/menus/* and game_manager.lua, then patch the archive in
+     * place with `7z u`. That is an in-place update of an existing zip's
+     * central directory, and it produced a genuinely broken quest for at
+     * least one install: controls worked (small script files, so the patch
+     * itself was fine), player name and save data wrote correctly, but the
+     * game hung on a black screen the moment it needed to load the actual
+     * starting map — no Lua error was ever logged, which is consistent with
+     * `7z u` corrupting or misplacing an unrelated entry (map/tileset data)
+     * elsewhere in the archive rather than a scripting bug. Extracting
+     * everything and rebuilding the archive from scratch below avoids
+     * touching any entry's existing bytes or offsets.
+     */
     await new Promise((resolve) => {
-      const cp = spawn(
-        bin,
-        ["x", solarusFile, "-o" + tempDir, "scripts/menus/*", "scripts/game_manager.lua", "-y"],
-        {
-          windowsHide: true,
-        }
-      );
+      const cp = spawn(bin, ["x", solarusFile, "-o" + tempDir, "-y"], {
+        windowsHide: true,
+      });
       cp.on("close", () => resolve());
       cp.on("error", () => resolve());
     });
@@ -996,14 +1034,34 @@ async function maybeRepairZeldaMudoraInstall(slug, info) {
     }
 
     if (anyPatched) {
+      /*
+       * Rebuild into a fresh archive next to the original rather than
+       * updating it in place — see the comment above the extract step. Only
+       * replace the original once the new archive genuinely exists and is a
+       * plausible size, so a 7z failure leaves the working install alone
+       * instead of swapping in a partial or empty file.
+       */
+      const rebuiltFile = solarusFile + ".pbrebuild";
+      await fsp.rm(rebuiltFile, { force: true }).catch(() => {});
       await new Promise((resolve) => {
-        const cp = spawn(bin, ["u", solarusFile, "scripts/menus/*", "scripts/game_manager.lua"], {
+        const cp = spawn(bin, ["a", "-tzip", rebuiltFile, "."], {
           cwd: tempDir,
           windowsHide: true,
         });
         cp.on("close", () => resolve());
         cp.on("error", () => resolve());
       });
+
+      const originalStat = await fsp.stat(solarusFile).catch(() => null);
+      const rebuiltStat = await fsp.stat(rebuiltFile).catch(() => null);
+      if (rebuiltStat && originalStat && rebuiltStat.size > originalStat.size * 0.5) {
+        await fsp.rename(rebuiltFile, solarusFile);
+      } else {
+        console.warn(
+          "[zelda-mudora-repair] rebuilt archive missing or implausibly small — left the original install untouched"
+        );
+        await fsp.rm(rebuiltFile, { force: true }).catch(() => {});
+      }
     }
 
     await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
