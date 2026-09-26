@@ -10,4 +10,8 @@ describe("rotation priority", () => {
   it("uses weight when absence is otherwise equal", () => {
     expect(rotationPriority(now, { key: "a", weight: 3 }, [])).toBeGreaterThan(rotationPriority(now, { key: "b", weight: 1 }, []));
   });
+  it("safely handles undefined or null profiles without throwing", () => {
+    expect(rotationPriority(now, null, [])).toBe(0);
+    expect(rotationPriority(now, undefined, [])).toBe(0);
+  });
 });

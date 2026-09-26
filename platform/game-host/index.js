@@ -945,7 +945,8 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
       fs.mkdirSync(MANAGED_LOG_DIR, { recursive: true, mode: 0o700 });
       const fd = fs.openSync(path.join(MANAGED_LOG_DIR, `${communityServerId}.log`), "a", 0o600);
       try {
-        return spawn(binary, args, { cwd, env: spawnEnv, stdio: ["ignore", fd, fd], detached: true });
+        const stdinMode = recipe.stdin ? "pipe" : "ignore";
+        return spawn(binary, args, { cwd, env: spawnEnv, stdio: [stdinMode, fd, fd], detached: true });
       } finally {
         fs.closeSync(fd);
       }

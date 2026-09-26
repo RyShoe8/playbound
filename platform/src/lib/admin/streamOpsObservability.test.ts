@@ -35,4 +35,28 @@ describe("stream failures reach both Ops and Bugs", () => {
     });
     expect(bugs).toHaveLength(1);
   });
+
+  it("ignores routine background host_poll and registration timeouts", async () => {
+    bugs.length = 0;
+    const { maybeUpsertAutoBugFromTelemetry } = await import("@/lib/autoBugReport");
+    await maybeUpsertAutoBugFromTelemetry({
+      event: "remote_play_failed",
+      properties: {
+        source: "launcher",
+        phase: "host_poll",
+        code: "HOST_POLL_FAILED",
+        message: "The operation was aborted due to timeout",
+      },
+    });
+    await maybeUpsertAutoBugFromTelemetry({
+      event: "remote_play_failed",
+      properties: {
+        source: "launcher",
+        phase: "registration",
+        code: "DEVICE_REGISTRATION_FAILED",
+        message: "The operation was aborted due to timeout",
+      },
+    });
+    expect(bugs).toHaveLength(0);
+  });
 });

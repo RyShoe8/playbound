@@ -1,8 +1,9 @@
 export function rotationPriority(
   now: Date,
-  profile: { key: string; weight?: number },
+  profile: { key: string; weight?: number } | null | undefined,
   history: { profileKey: string; onlineSince?: Date | string | null }[]
 ): number {
+  if (!profile?.key) return 0;
   const last = history.filter((row) => row.profileKey === profile.key && row.onlineSince)
     .reduce((maximum, row) => Math.max(maximum, new Date(row.onlineSince!).getTime()), 0);
   // Unserved profiles go first; weight breaks ties and then influences how
