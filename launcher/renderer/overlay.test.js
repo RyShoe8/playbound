@@ -118,10 +118,12 @@ test("Game tab is the default after a launch and shows the game's guide", async 
   assert.match(overlay.tabs.innerHTML, /tab active[^>]*data-tab="game"/);
   assert.match(overlay.root.innerHTML, /Press Escape, then choose Exit\./);
   assert.match(overlay.root.innerHTML, /147\.93\.133\.235:25565/);
-  assert.match(overlay.root.innerHTML, /Jump/);
-  assert.match(overlay.root.innerHTML, /<kbd>E<\/kbd>/);
   assert.match(overlay.root.innerHTML, /Finish character creation first\./);
   assert.equal(overlay.subject.textContent, "Morrowind");
+  // Control bindings live only on the dedicated Controls tab now — the Game
+  // tab used to duplicate them, which is what this guards against.
+  assert.doesNotMatch(overlay.root.innerHTML, /Jump/);
+  assert.doesNotMatch(overlay.root.innerHTML, /<kbd>E<\/kbd>/);
 });
 
 test("Game tab explains itself when no game was launched", async () => {
