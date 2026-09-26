@@ -590,14 +590,6 @@ function PurchaseSources({
                   <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
-                      checked={offer.affiliate}
-                      onChange={(e) => patchOffer(index, { affiliate: e.target.checked })}
-                    />
-                    Affiliate
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
                       checked={offer.isActive}
                       onChange={(e) => patchOffer(index, { isActive: e.target.checked })}
                     />
