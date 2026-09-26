@@ -386,38 +386,65 @@ function sliderRow({ id, label, value, min, max, step }) {
 
 function renderControlsTab() {
   const info = state.controls;
+  const g = state.guide;
+  const guideSchemes = Array.isArray(g?.controls?.schemes)
+    ? g.controls.schemes.filter((s) => s && (s.bindings?.length || s.notes || s.supported === false))
+    : [];
 
-  if (!info) {
+  if (!info && !guideSchemes.length) {
     root.innerHTML = `<p class="note">PlayBound Controls isn't active for this game right now.</p>`;
     return;
   }
 
-  const s = info.settings;
-  root.innerHTML = `
-    <p class="note"><strong>${escapeHtml(info.profileName)}</strong>${
-      info.gameTitle ? ` — ${escapeHtml(info.gameTitle)}` : ""
-    }</p>
-    ${sliderRow({ id: "cs-sensitivity", label: "Look sensitivity", value: s.sensitivity, min: 0.1, max: 5, step: 0.05 })}
-    <label class="row toggle" for="cs-invert-y"><span>Invert Y</span>
-      <input type="checkbox" id="cs-invert-y" ${s.invertY ? "checked" : ""} />
-    </label>
-    <details class="note"><summary>View controls</summary>
-      ${(info.bindings || []).map((binding) => `<p><strong>${escapeHtml(binding.input.replace(/_/g, " "))}</strong> — ${escapeHtml(binding.action)}</p>`).join("") || "No button bindings are listed."}
-    </details>
-    <p class="hint">Changes apply instantly — no need to alt-tab. Esc to close</p>
-  `;
+  if (info) {
+    const s = info.settings;
+    const tuningHtml = `
+      <p class="note"><strong>${escapeHtml(info.profileName)}</strong>${
+        info.gameTitle ? ` — ${escapeHtml(info.gameTitle)}` : ""
+      }</p>
+      ${sliderRow({ id: "cs-sensitivity", label: "Look sensitivity", value: s.sensitivity, min: 0.1, max: 5, step: 0.05 })}
+      <label class="row toggle" for="cs-invert-y"><span>Invert Y</span>
+        <input type="checkbox" id="cs-invert-y" ${s.invertY ? "checked" : ""} />
+      </label>
+    `;
 
-  const sensitivity = document.getElementById("cs-sensitivity");
-  const sensitivityValue = document.getElementById("cs-sensitivity-value");
-  sensitivity?.addEventListener("input", () => {
-    const value = Number(sensitivity.value);
-    if (sensitivityValue) sensitivityValue.textContent = fmt1(value);
-    void updateControlsSettings({ sensitivity: value });
-  });
+    const controlsDisplay = guideSchemes.length
+      ? guideControlsHtml(g, { hideHeader: true })
+      : `<details class="note" open><summary>View controls</summary>
+          ${(info.bindings || []).map((binding) => `<p><strong>${escapeHtml(binding.input.replace(/_/g, " "))}</strong> — ${escapeHtml(binding.action)}</p>`).join("") || "No button bindings are listed."}
+        </details>`;
 
-  const invertY = document.getElementById("cs-invert-y");
-  invertY?.addEventListener("change", () => {
-    void updateControlsSettings({ invertY: invertY.checked });
+    root.innerHTML = `
+      ${tuningHtml}
+      ${controlsDisplay}
+      <p class="hint">Changes apply instantly — no need to alt-tab. Esc to close</p>
+    `;
+
+    const sensitivity = document.getElementById("cs-sensitivity");
+    const sensitivityValue = document.getElementById("cs-sensitivity-value");
+    sensitivity?.addEventListener("input", () => {
+      const value = Number(sensitivity.value);
+      if (sensitivityValue) sensitivityValue.textContent = fmt1(value);
+      void updateControlsSettings({ sensitivity: value });
+    });
+
+    const invertY = document.getElementById("cs-invert-y");
+    invertY?.addEventListener("change", () => {
+      void updateControlsSettings({ invertY: invertY.checked });
+    });
+  } else {
+    root.innerHTML = `
+      <p class="note"><strong>${escapeHtml(g?.title || "Active Game")}</strong> — Active Controls</p>
+      ${guideControlsHtml(g, { hideHeader: true })}
+      <p class="hint">Esc to close</p>
+    `;
+  }
+
+  root.querySelectorAll("[data-scheme]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.guideScheme = btn.dataset.scheme;
+      render();
+    });
   });
 }
 
@@ -458,15 +485,18 @@ function stepsHtml(steps) {
   return items ? `<ol class="guide-steps">${items}</ol>` : "";
 }
 
-function guideControlsHtml(g) {
-  const schemes = Array.isArray(g.controls?.schemes)
+function guideControlsHtml(g, { hideHeader = false } = {}) {
+  const schemes = Array.isArray(g?.controls?.schemes)
     ? g.controls.schemes.filter((s) => s && (s.bindings?.length || s.notes || s.supported === false))
     : [];
+  if (!state.guideScheme && schemes.some((s) => s.scheme === "controller")) {
+    state.guideScheme = "controller";
+  }
   const current = schemes.find((s) => s.scheme === state.guideScheme) || schemes[0] || null;
   if (!current) return "";
 
-  const labels = g.schemeLabels || {};
-  const order = Array.isArray(g.groupOrder) ? g.groupOrder : [];
+  const labels = g?.schemeLabels || {};
+  const order = Array.isArray(g?.groupOrder) ? g.groupOrder : [];
   const groups = new Map();
   for (const b of current.bindings || []) {
     const name = b.group || "Other";
@@ -479,7 +509,7 @@ function guideControlsHtml(g) {
   ];
   const body =
     current.supported === false
-      ? `<p class="note">${escapeHtml(g.title)} does not support this input method.</p>`
+      ? `<p class="note">${escapeHtml(g.title || "This game")} does not support this input method.</p>`
       : names
           .map(
             (n) =>
@@ -506,9 +536,10 @@ function guideControlsHtml(g) {
           )
           .join("")}</div>`
       : "";
-  return `<p class="guide-section">Controls</p>${tabs}${body}${
+  const header = hideHeader ? "" : `<p class="guide-section">Controls</p>`;
+  return `${header}${tabs}${body}${
     current.notes ? `<p class="note">${escapeHtml(current.notes)}</p>` : ""
-  }${g.controls?.notes ? `<p class="note">${escapeHtml(g.controls.notes)}</p>` : ""}`;
+  }${g?.controls?.notes ? `<p class="note">${escapeHtml(g.controls.notes)}</p>` : ""}`;
 }
 
 function renderGameTab() {
@@ -571,7 +602,7 @@ function renderTabs() {
   tabsEl.innerHTML = `
     <button class="tab ${state.activeTab === "game" ? "active" : ""}" data-tab="game">Game</button>
     <button class="tab ${state.activeTab === "server" ? "active" : ""}" data-tab="server">Server</button>
-    <button class="tab ${state.activeTab === "controls" ? "active" : ""}" data-tab="controls">Controller</button>
+    <button class="tab ${state.activeTab === "controls" ? "active" : ""}" data-tab="controls">Controls</button>
   `;
   tabsEl.querySelectorAll("[data-tab]").forEach((btn) => {
     btn.addEventListener("click", () => {

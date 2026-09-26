@@ -12720,7 +12720,30 @@ function sanitizeOverlayGuide(raw) {
 
 async function overlayContext() {
   const controls = overlayControlsContext();
-  const guide = overlayGuide;
+  let guide = overlayGuide;
+  if (!guide?.controls && activeLaunches.size > 0) {
+    const runningSlug = [...activeLaunches.keys()][0];
+    if (runningSlug) {
+      const entry = catalogEntry(runningSlug);
+      const title = entry?.title || runningSlug;
+      const gameControls = resolveControlsForGame(runningSlug, entry);
+      guide = {
+        slug: runningSlug,
+        title,
+        controls: gameControls,
+        howToQuit: resolveQuitHint(runningSlug, entry),
+        schemeLabels: {
+          controller: "Controller",
+          keyboard: "Keyboard & Mouse",
+          wheel: "Racing Wheel",
+          flight_stick: "Flight Stick",
+        },
+        groupOrder: ["Movement", "Combat", "Interaction", "Camera", "Vehicle", "Interface", "Other"],
+        ...(guide || {}),
+        controls: guide?.controls || gameControls,
+      };
+    }
+  }
   const sync = await launcherJson("/api/party-sync?discoverable=0").catch(() => ({}));
   const parties = Array.isArray(sync?.myParties) ? sync.myParties : [];
   const live = parties.filter((p) => p && p.status !== "ended");

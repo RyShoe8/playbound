@@ -63,6 +63,44 @@ test("Server controls remain available with a party", async () => {
   assert.match(overlay.root.innerHTML, /Controls isn&#39;t active|Controls isn't active/);
 });
 
+test("Controls tab shows active control mapping for selected method when specialized controls is inactive", async () => {
+  const overlay = await renderOverlay({
+    party: null,
+    controls: null,
+    guide: {
+      slug: "the-legend-of-zelda-book-of-mudora",
+      title: "The Legend of Zelda: Book of Mudora",
+      schemeLabels: { controller: "Controller", keyboard: "Keyboard & Mouse" },
+      groupOrder: ["Movement", "Combat"],
+      controls: {
+        schemes: [
+          {
+            scheme: "controller",
+            bindings: [
+              { group: "Movement", action: "Move", input: "D-pad / Left Stick" },
+              { group: "Combat", action: "Sword attack", input: "B / Circle" },
+            ],
+          },
+          {
+            scheme: "keyboard",
+            bindings: [
+              { group: "Movement", action: "Move", input: "Arrow keys" },
+              { group: "Combat", action: "Sword attack", input: "C" },
+            ],
+          },
+        ],
+      },
+    },
+  });
+  overlay.clickTab("controls");
+  assert.match(overlay.tabs.innerHTML, /tab active[^>]*data-tab="controls"/);
+  assert.match(overlay.root.innerHTML, /Active Controls/);
+  assert.match(overlay.root.innerHTML, /<kbd>D-pad<\/kbd> or <kbd>Left Stick<\/kbd>/);
+  assert.match(overlay.root.innerHTML, /Sword attack/);
+  assert.match(overlay.root.innerHTML, /data-scheme="controller"/);
+  assert.match(overlay.root.innerHTML, /data-scheme="keyboard"/);
+});
+
 test("Game tab is the default after a launch and shows the game's guide", async () => {
   const overlay = await renderOverlay({
     party: null,

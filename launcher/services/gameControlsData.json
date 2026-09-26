@@ -1159,38 +1159,6 @@
   "the-legend-of-zelda-book-of-mudora": {
     "schemes": [
       {
-        "scheme": "keyboard",
-        "supported": true,
-        "verified": true,
-        "bindings": [
-          {
-            "action": "Move",
-            "input": "Arrow keys",
-            "group": "Movement"
-          },
-          {
-            "action": "Action / confirm",
-            "input": "Space / C",
-            "group": "Interaction"
-          },
-          {
-            "action": "Use item",
-            "input": "X",
-            "group": "Combat"
-          },
-          {
-            "action": "Open inventory",
-            "input": "Enter",
-            "group": "Inventory"
-          },
-          {
-            "action": "Pause / back",
-            "input": "Esc",
-            "group": "Interface"
-          }
-        ]
-      },
-      {
         "scheme": "controller",
         "supported": true,
         "verified": true,
@@ -1201,23 +1169,75 @@
             "group": "Movement"
           },
           {
-            "action": "Action / confirm",
+            "action": "Action / Talk / Lift",
             "input": "A / Cross",
             "group": "Interaction"
           },
           {
-            "action": "Use item",
+            "action": "Sword attack",
+            "input": "B / Circle",
+            "group": "Combat"
+          },
+          {
+            "action": "Item 1",
             "input": "X / Square",
             "group": "Combat"
           },
           {
-            "action": "Inventory",
-            "input": "Menu / Start",
-            "group": "Inventory"
+            "action": "Item 2",
+            "input": "Y / Triangle",
+            "group": "Combat"
           },
           {
-            "action": "Back",
+            "action": "Inventory / Pause",
+            "input": "Start / Menu",
+            "group": "Interface"
+          },
+          {
+            "action": "Back / Cancel",
             "input": "B / Circle",
+            "group": "Interface"
+          }
+        ]
+      },
+      {
+        "scheme": "keyboard",
+        "supported": true,
+        "verified": true,
+        "bindings": [
+          {
+            "action": "Move",
+            "input": "Arrow keys",
+            "group": "Movement"
+          },
+          {
+            "action": "Action / Talk / Lift",
+            "input": "Space",
+            "group": "Interaction"
+          },
+          {
+            "action": "Sword attack",
+            "input": "C",
+            "group": "Combat"
+          },
+          {
+            "action": "Item 1",
+            "input": "X",
+            "group": "Combat"
+          },
+          {
+            "action": "Item 2",
+            "input": "V",
+            "group": "Combat"
+          },
+          {
+            "action": "Inventory / Pause",
+            "input": "Enter / D",
+            "group": "Interface"
+          },
+          {
+            "action": "Back / Cancel",
+            "input": "Esc",
             "group": "Interface"
           }
         ]
