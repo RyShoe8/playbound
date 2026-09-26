@@ -12747,7 +12747,10 @@ async function overlayContext() {
   const sync = await launcherJson("/api/party-sync?discoverable=0").catch(() => ({}));
   const parties = Array.isArray(sync?.myParties) ? sync.myParties : [];
   const live = parties.filter((p) => p && p.status !== "ended");
-  if (!live.length) return { party: null, controls, guide };
+  if (!live.length) {
+    const hosted = await overlayHostedServer();
+    return { party: hosted, controls, guide };
+  }
 
   const running = [...activeLaunches.keys()];
   const forRunning = live.find((p) => running.includes(String(p.gameSlug)));
@@ -12763,6 +12766,37 @@ async function overlayContext() {
     controls,
     guide,
   };
+}
+
+/**
+ * With no party open, the Server tab can still control a PlayBound Dedicated
+ * server the player runs (or has a role on) for the game that is running.
+ * Returned in the party's shape with a "hosted:" id; get/apply-server-settings
+ * route that id to the hosting API, so the overlay renders it with the same
+ * code as a party's server.
+ */
+async function overlayHostedServer() {
+  const running = [...activeLaunches.keys()];
+  if (!running.length) return null;
+  const me = await launcherJson("/api/hosting/me").catch(() => null);
+  const servers = [...(Array.isArray(me?.servers) ? me.servers : []), ...(Array.isArray(me?.shared) ? me.shared : [])];
+  const match = servers.find((s) => s && s.online && running.includes(String(s.gameSlug)));
+  if (!match) return null;
+  return {
+    id: `hosted:${match.id}`,
+    gameSlug: match.gameSlug,
+    gameTitle: `${match.name} · ${match.gameTitle || match.gameSlug}`,
+    memberCount: typeof match.players === "number" ? match.players : null,
+    hosted: true,
+  };
+}
+
+/** Where a Server-tab id lives: a party's server, or a hosted (Dedicated) server. */
+function serverSettingsPath(target) {
+  const id = String(target || "");
+  return id.startsWith("hosted:")
+    ? `/api/hosting/servers/${encodeURIComponent(id.slice(7))}/overlay`
+    : `/api/parties/${encodeURIComponent(id)}/server-settings`;
 }
 
 ipcMain.handle("set-overlay-guide", (_event, raw) => {
@@ -12813,7 +12847,7 @@ ipcMain.handle("set-overlay-shortcut", (_event, accelerator) => {
 ipcMain.handle("get-server-settings", async (_event, partyId) => {
   if (!partyId) return { error: "No party" };
   try {
-    return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/server-settings`);
+    return await launcherJson(serverSettingsPath(partyId));
   } catch (err) {
     return { error: err.message };
   }
@@ -12822,7 +12856,7 @@ ipcMain.handle("get-server-settings", async (_event, partyId) => {
 ipcMain.handle("apply-server-settings", async (_event, partyId, settings) => {
   if (!partyId) return { error: "No party" };
   try {
-    return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/server-settings`, {
+    return await launcherJson(serverSettingsPath(partyId), {
       method: "PATCH",
       body: { settings: settings || {} },
     });

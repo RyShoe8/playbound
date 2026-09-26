@@ -262,11 +262,11 @@ function renderServerTab() {
             ? "Save for launch"
             : "Apply changes"
       }</button>`
-    : `<p class="note">Only the party leader can change these.</p>`;
+    : `<p class="note">${isHostedTarget() ? "Your role on this server can't change these." : "Only the party leader can change these."}</p>`;
 
   const tes3mp = state.tes3mp;
   let tes3mpHtml = "";
-  if (data.gameSlug === "morrowind" && !preLaunch && data.canEdit) {
+  if (data.gameSlug === "morrowind" && !preLaunch && data.canEdit && !isHostedTarget()) {
     let adminBlock = "";
     if (!tes3mp) {
       adminBlock = `<p class="note">TES3MP admin: loading accounts…</p>`;
@@ -618,6 +618,9 @@ function render() {
   else renderServerTab();
 }
 
+/** A PlayBound Dedicated server rather than a party's: party-only tools (TES3MP) do not apply. */
+const isHostedTarget = () => String(state.partyId || "").startsWith("hosted:");
+
 async function loadTes3mpClaim() {
   if (!state.partyId || !window.playbound?.getTes3mpClaimAdmin) {
     state.tes3mp = null;
@@ -711,7 +714,7 @@ async function load() {
     state.data = {
       error: context?.reason
         ? `Open the overlay from a game — ${context.reason}.`
-        : "No party is open right now.",
+        : "No party is open, and none of your PlayBound servers is running this game.",
     };
     render();
     return;
@@ -722,7 +725,7 @@ async function load() {
   state.draft = data?.supported ? { ...data.values } : {};
   state.error = null;
   render();
-  if (data?.supported) {
+  if (data?.supported && !isHostedTarget()) {
     await loadTes3mpClaim();
     render();
   }
