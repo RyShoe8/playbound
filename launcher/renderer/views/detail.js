@@ -11,6 +11,7 @@ import {
   enhanceSelect,
   escapeHtml,
   executableNoun,
+  filterRealEditions,
   formatCents,
   formatStatNumber,
   gamePlayHintHtml,
@@ -802,7 +803,7 @@ async function renderGameDetailView(slug, opts = {}) {
     window.playbound.getLiveStats?.({ game: slug })
   ).catch(() => null);
 
-  const editions = Array.isArray(editionsRes?.editions) ? editionsRes.editions : [];
+  const editions = filterRealEditions(editionsRes?.editions);
   // Drives whether the Editions nav entry appears for this game.
   state.currentDetailEditionCount = editions.length;
   updateGamesFamilyNav();
@@ -2607,7 +2608,7 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
   ]);
   if (renderToken !== editionDetailRenderToken) return;
   const liveStats = cachePeek(liveKey, CACHE_TTL.liveStatsEdition)?.data || null;
-  const allEditions = editionsRes?.editions || [];
+  const allEditions = filterRealEditions(editionsRes?.editions);
   const edition = allEditions.find((e) => e.editionSlug === editionSlug);
   if (!edition) {
     container.innerHTML = `

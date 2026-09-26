@@ -16,6 +16,7 @@ import {
   filterByDiscovery,
   filterByCompatibility,
   filterCatalogGames,
+  filterRealEditions,
   formatAccelerator,
   gamePlayHintHtml,
   isGameDesktopCompatible,
@@ -2676,7 +2677,7 @@ async function fillPartyEditionPickers(slot, party) {
     if (!gameSlug) continue;
     try {
       const res = await window.playbound.getEditions(gameSlug);
-      const all = Array.isArray(res?.editions) ? res.editions : [];
+      const all = filterRealEditions(res?.editions);
       const partyPlay = all.filter(editionSupportsPartyPlay);
       const list = partyPlay.length > 0 ? partyPlay : all;
       if (!list.length) {

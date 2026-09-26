@@ -24,6 +24,7 @@ export {
 };
 
 export const DISCORD_INVITE = "https://discord.gg/yc7WdxATar";
+export const FEEDBACK_URL = "https://playbound.club/feedback";
 export const PODIUM_MEDALS = ["🥇", "🥈", "🥉"];
 export const OPENCIV3_DATA_HINT =
   "OpenCiv3 runs standalone with placeholder art. Optional: install Civilization III Complete (Steam/GOG) for original graphics — it auto-detects common installs.";
@@ -374,6 +375,21 @@ export function isEditionDesktopCompatible(edition, game) {
   if (platforms.length === 0) return true;
   const allowed = desktopPlatformAllowedSet();
   return platforms.some((p) => allowed.has(p));
+}
+
+/**
+ * Strips the synthesized "Official" row a master-copy game gets when it has
+ * no real edition data — id "virtual:<slug>" — so it never shows up as a
+ * second edition next to a real one (CorsixTH, etc.) in a picker or gates
+ * "pick an edition" flows for a game that only actually has one. The
+ * website never treats it as a peer edition; it only drives the separate
+ * purchase CTA. `getEditions()` callers should filter through this before
+ * using length/defaults/rendering a grid.
+ */
+export function filterRealEditions(editions) {
+  return (Array.isArray(editions) ? editions : []).filter(
+    (ed) => !String(ed?.id || "").startsWith("virtual:")
+  );
 }
 
 export function sortEditionsByCompatibility(editions, game) {

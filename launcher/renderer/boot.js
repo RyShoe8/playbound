@@ -10,6 +10,7 @@ import {
   cacheInvalidate,
   cachePut,
   DISCORD_INVITE,
+  FEEDBACK_URL,
   editionsContextSlug,
   endGameSession,
   fmtBytes,
@@ -361,6 +362,11 @@ function wireShell() {
   document.getElementById("sidebar-discord")?.addEventListener("click", (e) => {
     e.preventDefault();
     window.playbound.openExternal(DISCORD_INVITE, { campaign: "discord" });
+  });
+
+  document.getElementById("sidebar-feedback")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    window.playbound.openExternal(FEEDBACK_URL, { campaign: "launcher_sidebar" });
   });
 
   document.querySelectorAll('input[name="compat-filter"]').forEach((input) => {
