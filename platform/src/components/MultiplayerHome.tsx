@@ -226,13 +226,6 @@ export function MultiplayerHome({
     });
   }, [gamesList, allowedSlugs, installedOnly, installedSet, gameSearch, filterType]);
 
-  // Spotlight active games for Overview
-  const activeSpotlightGames = useMemo(() => {
-    const active = filteredGames.filter(
-      (g) => g.openPartyCount > 0 || g.usersLookingCount > 0 || g.serverPlayerCount > 0 || g.serversOnline > 0
-    );
-    return (active.length > 0 ? active : filteredGames).slice(0, 6);
-  }, [filteredGames]);
 
   // Available games for LTP picker, sorting installed games first
   const ltpAvailableGames = useMemo(() => {
@@ -706,56 +699,6 @@ export function MultiplayerHome({
             }}
           />
 
-          {/* Spotlight Shelf: Active Right Now */}
-          <div className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="text-base font-extrabold tracking-tight flex items-center gap-2">
-                  <Swords className="size-4 text-primary" />
-                  Active Right Now
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  Multiplayer games with live parties, players looking to play, or active servers.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleTabChange("games")}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-secondary/60 px-3 py-1.5 text-xs font-bold text-foreground hover:bg-secondary transition-colors"
-              >
-                Browse all {filteredGames.length} games
-                <ArrowRight className="size-3.5" />
-              </button>
-            </div>
-
-            {activityLoading ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="h-44 rounded-2xl border border-border/50 bg-secondary/20 animate-pulse" />
-                ))}
-              </div>
-            ) : activeSpotlightGames.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-border/70 bg-secondary/10 p-8 text-center">
-                <p className="text-sm font-semibold text-muted-foreground">
-                  {installedOnly
-                    ? "No installed multiplayer games found with active players. Try turning off 'Installed only'."
-                    : "No active multiplayer games right now. Start a party or check the server browser below!"}
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {activeSpotlightGames.map((game) => (
-                  <MultiplayerGameCard
-                    key={game.gameSlug}
-                    activity={game}
-                    onSelectGameForLtp={handleSelectForLtp}
-                    onBrowseServers={handleBrowseServers}
-                    onStartParty={handleStartPartyForGame}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
 
           {/* Live Servers Ecosystem */}
           <div ref={serverBrowserRef} className="space-y-4 pt-4 border-t border-border/50">

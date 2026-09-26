@@ -646,12 +646,6 @@ function paintTabContent() {
 }
 
 function paintOverviewTab(container) {
-  const allFiltered = getFilteredGames();
-  const activeSpotlight = allFiltered.filter(
-    (g) => (g.openPartyCount || 0) > 0 || (g.usersLookingCount || 0) > 0 || (g.serverPlayerCount || 0) > 0 || (g.serversOnline || 0) > 0
-  );
-  const spotlightGames = (activeSpotlight.length > 0 ? activeSpotlight : allFiltered).slice(0, 6);
-
   let openParties = _cachedParties.filter((p) => p.visibility === "public" && p.status !== "closed");
   if (state.multiplayerState.installedOnly && state._installedGameSlugs) {
     openParties = openParties.filter((p) => state._installedGameSlugs.has(p.gameSlug));
@@ -677,25 +671,6 @@ function paintOverviewTab(container) {
       }
     </div>
 
-    <!-- Active Right Now Spotlight Shelf -->
-    <div class="mp-section" style="margin-top: 32px;">
-      <div class="section-header">
-        <div>
-          <h2 class="view-title" style="font-size: 1.25rem; margin:0">Active Right Now</h2>
-          <p class="view-sub" style="margin: 2px 0 0">Multiplayer games with live parties, players looking to play, or active servers.</p>
-        </div>
-        <button type="button" class="btn-secondary btn-sm" id="mp-see-all-games-btn">Browse All Games (${allFiltered.length}) →</button>
-      </div>
-
-      ${
-        spotlightGames.length === 0
-          ? `<div class="mp-empty-card">
-              <p>${state.multiplayerState.installedOnly ? "No installed multiplayer games found with active players. Try turning off 'Installed only'." : "No active multiplayer games right now. Start a party or check the server browser below!"}</p>
-            </div>`
-          : `<div class="mp-games-grid">${spotlightGames.map(renderMultiplayerGameCard).join("")}</div>`
-      }
-    </div>
-
     <!-- Live Server Browser Teaser / Embed -->
     <div class="mp-section" style="margin-top: 32px;" id="mp-overview-servers-sec">
       ${buildServersBrowserHtml("Pick a game to see who&apos;s playing.")}
@@ -704,12 +679,6 @@ function paintOverviewTab(container) {
 
   bindGameCardActions(container);
   bindPartyCardActions(container);
-
-  document.getElementById("mp-see-all-games-btn")?.addEventListener("click", () => {
-    state.multiplayerState.activeTab = "games";
-    document.querySelectorAll(".mp-tab-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === "games"));
-    paintTabContent();
-  });
 
   document.getElementById("mp-start-party-sec-btn")?.addEventListener("click", () => {
     state.multiplayerState.createPartyOpen = true;
