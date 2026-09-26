@@ -59,6 +59,30 @@ export function managedRoomSettings(
     : { maxPlayers };
 }
 
+export function hasSettingsDrift(
+  desiredSettings: { maxPlayers: number; botFill?: number } | undefined,
+  roomSettings: Record<string, unknown> | undefined,
+  serverSettings: Record<string, unknown> | undefined,
+  serverMaxPlayerCount?: number | null,
+  serverBots?: number | null
+): boolean {
+  if (!desiredSettings) return false;
+  const currentMax = typeof roomSettings?.maxPlayers === "number"
+    ? roomSettings.maxPlayers
+    : (typeof serverSettings?.maxPlayers === "number"
+        ? serverSettings.maxPlayers
+        : (typeof serverMaxPlayerCount === "number" ? serverMaxPlayerCount : null));
+  const currentBotFill = typeof roomSettings?.botFill === "number"
+    ? roomSettings.botFill
+    : (typeof serverSettings?.botFill === "number"
+        ? serverSettings.botFill
+        : (typeof serverBots === "number" ? serverBots : null));
+
+  const maxPlayersDrift = currentMax !== null && currentMax !== desiredSettings.maxPlayers;
+  const botFillDrift = desiredSettings.botFill !== undefined && currentBotFill !== null && currentBotFill !== desiredSettings.botFill;
+  return maxPlayersDrift || botFillDrift;
+}
+
 /**
  * The size a server is charged against the automatic-hosting budget.
  *
@@ -292,6 +316,19 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
       server.playerCountCheckedAt = players === null ? null : now;
       if (players !== null && players > 0) server.lastOccupiedAt = now;
       if (!server.onlineSince) server.onlineSince = now;
+      const recipeSlug = profile?.recipeSlug || server.gameSlug;
+      const desiredSettings = managedRoomSettings(recipeSlug, config);
+      if (desiredSettings) {
+        if (!server.settings) server.settings = {};
+        const sSettings = server.settings as Record<string, unknown>;
+        if (typeof sSettings.maxPlayers !== "number") {
+          sSettings.maxPlayers = desiredSettings.maxPlayers;
+        }
+        if (server.maxPlayerCount == null) {
+          server.maxPlayerCount = desiredSettings.maxPlayers;
+        }
+      }
+
       server.lastReconciledAt = now;
       server.decisionReason = players === null ? "PLAYER_QUERY_UNKNOWN" : "RUNNING";
       server.recoveryAttempts = 0;
@@ -305,10 +342,14 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
           phase: players === null || players === 0 ? "idle" : "occupied", source: "live",
         });
       }
-      const recipeSlug = profile?.recipeSlug || server.gameSlug;
-      const desiredSettings = managedRoomSettings(recipeSlug, config);
-      const settingsDrift = desiredSettings && (room.settings?.maxPlayers !== desiredSettings.maxPlayers ||
-        (desiredSettings.botFill !== undefined && (room.settings?.botFill ?? 0) !== desiredSettings.botFill));
+
+      const settingsDrift = hasSettingsDrift(
+        desiredSettings,
+        room.settings as Record<string, unknown> | undefined,
+        server.settings as Record<string, unknown> | undefined,
+        server.maxPlayerCount,
+        server.bots
+      );
       if (settingsDrift &&
           canScaleDownEmptyServer({ players, checkedAt: now, protectedUntil: server.protectedUntil }, now)) {
         const stopped = await stopManagedHostRoom(String(server._id));
@@ -321,6 +362,8 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
           editionSlug: profile?.editionSlug || server.editionSlug, mod: profile?.mod || server.mod,
           name: server.name, settings: desiredSettings,
         });
+        server.settings = { ...((server.settings as Record<string, unknown>) || {}), ...desiredSettings };
+        if (desiredSettings?.maxPlayers != null) server.maxPlayerCount = desiredSettings.maxPlayers;
         server.playerCount = null;
         server.playerCountCheckedAt = null;
         server.runtimeState = restarted.status === "failed" ? "failed" : "pending";
@@ -439,13 +482,21 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         await recordHostingAction("community_server_capacity_blocked", { gameSlug: dueProfile.gameSlug, editionSlug: dueProfile.editionSlug, profileKey: dueProfile.key }, decision.reason);
         return { action: "waiting", reason: decision.reason };
       }
+      const warmupSettings = managedRoomSettings(dueProfile.recipeSlug || dueProfile.gameSlug, config);
       const slug = `pb-${dueProfile.key}-${config.node.regionKey}`;
       const server = await CommunityServer.findOneAndUpdate({ slug }, {
         $setOnInsert: {
           slug, gameSlug: dueProfile.gameSlug,
           editionSlug: dueProfile.editionSlug || null, mod: dueProfile.mod || null, regionKey: config.node.regionKey, profileKey: dueProfile.key,
         },
-        $set: { name: "PlayBound.Club Community Server", desiredState: "running", runtimeState: "pending", decisionReason: "GAME_NIGHT_WARMUP", lastReconciledAt: now },
+        $set: {
+          name: "PlayBound.Club Community Server",
+          desiredState: "running",
+          runtimeState: "pending",
+          decisionReason: "GAME_NIGHT_WARMUP",
+          lastReconciledAt: now,
+          ...(warmupSettings ? { settings: warmupSettings, maxPlayerCount: warmupSettings.maxPlayers } : {}),
+        },
       }, { upsert: true, new: true });
       const id = String(server._id);
       due.communityServerId = server._id;
@@ -508,13 +559,21 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         lastBlockedReason = decision.reason;
         continue;
       }
+      const candidateSettings = managedRoomSettings(candidate.recipeSlug || candidate.gameSlug, config);
       const slug = `pb-${candidate.key}-${config.node.regionKey}`;
       const server = await CommunityServer.findOneAndUpdate({ slug }, {
         $setOnInsert: {
           slug, gameSlug: candidate.gameSlug,
           editionSlug: candidate.editionSlug || null, mod: candidate.mod || null, regionKey: config.node.regionKey, profileKey: candidate.key,
         },
-        $set: { name: "PlayBound.Club Community Server", desiredState: "running", runtimeState: "pending", decisionReason: "ROTATION_START", lastReconciledAt: now },
+        $set: {
+          name: "PlayBound.Club Community Server",
+          desiredState: "running",
+          runtimeState: "pending",
+          decisionReason: "ROTATION_START",
+          lastReconciledAt: now,
+          ...(candidateSettings ? { settings: candidateSettings, maxPlayerCount: candidateSettings.maxPlayers } : {}),
+        },
       }, { upsert: true, new: true });
       const id = String(server._id);
       const started = await requestManagedHostRoom({
@@ -584,13 +643,18 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
       server.runtimeState = "pending";
       server.decisionReason = "RECOVERING_RUNTIME";
       await server.save();
+      const recoverySettings = managedRoomSettings(recoveryProfile.recipeSlug || recoveryProfile.gameSlug, config);
+      if (recoverySettings) {
+        server.settings = { ...((server.settings as Record<string, unknown>) || {}), ...recoverySettings };
+        if (server.maxPlayerCount == null) server.maxPlayerCount = recoverySettings.maxPlayers;
+      }
       const result = await requestManagedHostRoom({
         communityServerId: String(server._id),
         gameSlug: recoveryProfile.recipeSlug || recoveryProfile.gameSlug,
         editionSlug: recoveryProfile.editionSlug,
         mod: recoveryProfile.mod,
         name: server.name,
-        settings: managedRoomSettings(recoveryProfile.recipeSlug || recoveryProfile.gameSlug, config),
+        settings: recoverySettings,
       });
       if (result.status === "failed") {
         server.runtimeState = "failed";

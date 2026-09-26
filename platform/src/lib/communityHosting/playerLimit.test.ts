@@ -25,3 +25,26 @@ describe("community hosting bot fill", () => {
     expect(hostingSettingsSchema.parse(config).botFillPercent).toBe(50);
   });
 });
+
+describe("community hosting settings drift", () => {
+  it("detects drift when current maxPlayers differs from desired", async () => {
+    const { hasSettingsDrift } = await import("./reconcile");
+    // Room reports 32, desired is 16 -> drift
+    expect(hasSettingsDrift({ maxPlayers: 16 }, { maxPlayers: 32 }, {})).toBe(true);
+    // Room reports 16, desired is 16 -> no drift
+    expect(hasSettingsDrift({ maxPlayers: 16 }, { maxPlayers: 16 }, {})).toBe(false);
+  });
+
+  it("does not falsely trigger drift when agent room omits maxPlayers but server has it", async () => {
+    const { hasSettingsDrift } = await import("./reconcile");
+    // Freedoom / agent omits maxPlayers in room.settings, but server record has 16 -> no drift!
+    expect(hasSettingsDrift({ maxPlayers: 16 }, {}, { maxPlayers: 16 })).toBe(false);
+    expect(hasSettingsDrift({ maxPlayers: 16 }, {}, {}, 16)).toBe(false);
+  });
+
+  it("detects drift when admin updates desired settings and server has old limit", async () => {
+    const { hasSettingsDrift } = await import("./reconcile");
+    // Admin bumped desired from 16 to 24, server was 16 -> drift
+    expect(hasSettingsDrift({ maxPlayers: 24 }, {}, { maxPlayers: 16 })).toBe(true);
+  });
+});
