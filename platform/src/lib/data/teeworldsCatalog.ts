@@ -66,9 +66,28 @@ const teeworldsHardwareRequirements = {
   },
 };
 
+/*
+ * The admin "Prefill from URL" import tool's FAQ template assumed Teeworlds
+ * is browser-playable ("What platforms does Teeworlds run on? Web.", size
+ * answered "About small. The minimum system requirements are Modern web
+ * browser.") — it is a native Windows/macOS/Linux download, confirmed
+ * unsupported for browser play (browserPlayable: false) via the admin edit
+ * page 2026-09-25.
+ */
+const teeworldsFaq = [
+  {
+    q: "Is Teeworlds free?",
+    a: "Yes. Teeworlds is released under Free to play and costs nothing to download or play.",
+  },
+  { q: "How big is the Teeworlds download?", a: "About 20 MB." },
+  { q: "What platforms does Teeworlds run on?", a: "Windows, macOS, Linux." },
+  { q: "Do I need an account to play Teeworlds?", a: "No account is required to download or play." },
+];
+
 export const teeworldsPatchSource = {
   platforms: [...teeworldsPlatforms],
   features: [...teeworldsFeatures],
+  faq: teeworldsFaq,
   launcherInstall: teeworldsLauncherInstall,
   systemRequirements: teeworldsSystemRequirements,
   hardwareRequirements: teeworldsHardwareRequirements,
