@@ -128,19 +128,33 @@ export function deriveInstallSteps(game: InstallStepSource): InstallStep[] {
     }
   }
 
+  const isJar = /jar/i.test(game.launcherInstall?.kind ?? "");
+
   if (has(/mac/i)) {
     steps.push({
       platform: "macos",
-      text: "Open the downloaded .dmg and drag the app into Applications. On first launch macOS may refuse to open it as unidentified — right-click the app and choose Open to approve it once.",
+      // A .jar is the same cross-platform artifact on every OS — there is
+      // no separate .dmg to open, just Java and the same double-click.
+      text: isJar
+        ? "Make sure Java 17 or newer is installed, then double-click the same downloaded .jar to launch it — there is no separate Mac build."
+        : "Open the downloaded .dmg and drag the app into Applications. On first launch macOS may refuse to open it as unidentified — right-click the app and choose Open to approve it once.",
     });
   }
 
   if (has(/linux/i)) {
-    steps.push({
-      platform: "linux",
-      text: "Check your distribution's package manager first, which is usually the easiest route. Otherwise download the AppImage from the official site, mark it executable and run it.",
-      command: "chmod +x *.AppImage && ./*.AppImage",
-    });
+    steps.push(
+      isJar
+        ? {
+            platform: "linux",
+            text: "Make sure Java 17 or newer is installed, then run the same downloaded .jar directly — there is no separate Linux build.",
+            command: "java -jar *.jar",
+          }
+        : {
+            platform: "linux",
+            text: "Check your distribution's package manager first, which is usually the easiest route. Otherwise download the AppImage from the official site, mark it executable and run it.",
+            command: "chmod +x *.AppImage && ./*.AppImage",
+          }
+    );
   }
 
   steps.push({
