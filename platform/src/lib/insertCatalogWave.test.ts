@@ -203,6 +203,11 @@ describe("insert-catalog-wave allowlists", () => {
         "battle-for-wesnoth",
         "openra",
         "bzflag",
+        // Testing-catalog cleanup pass, 2026-09-25 — see the allowlist's own comment.
+        "quake-ii",
+        "hypersomnia",
+        "final-fantasy-xi",
+        "theme-hospital",
       ].sort()
     );
     expect(PATCH_GAME_FIELDS["super-nova-strike"]).toContain("androidStoreUrl");

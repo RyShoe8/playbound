@@ -43,6 +43,26 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
     thatOneThing:
       "You can resize the board — push it past 8×8 and every opening you have memorised quietly stops being worth anything.",
   },
+
+  // theme-hospital has no seed row (CMS-only). Its systemRequirements were
+  // entered as the placeholder "See the GOG store page" instead of real
+  // values, and comparableTo was never filled in. Requirements read from
+  // GOG's own listing (gog.com/en/game/theme_hospital, checked 2026-09-25);
+  // GOG's page also confirms macOS support alongside Windows, matching the
+  // game's own `platforms` field.
+  "theme-hospital": {
+    systemRequirements: {
+      min: "Windows 10/11 or macOS · 1.8 GHz CPU · 2 GB RAM · DirectX 9.0c-capable GPU · 2 GB storage (runs via DOSBox)",
+      recommended: "Windows 10/11 or macOS · 2+ GHz CPU · 4 GB RAM · any DirectX 9-capable GPU · 2 GB storage",
+    },
+    comparableTo: [
+      "Two Point Hospital",
+      "Project Hospital",
+      "Big Pharma",
+      "Prison Architect",
+      "RollerCoaster Tycoon",
+    ],
+  },
 };
 
 /** The correction block for a slug, or undefined when there is nothing to apply. */

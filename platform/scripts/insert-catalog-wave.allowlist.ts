@@ -458,7 +458,6 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   "lincity-ng": ["features"],
   "heroes-of-might-and-magic-3-complete": ["features"],
   "dungeon-keeper-gold": ["features"],
-  outrun: ["features"],
 
   /*
    * PlayBound Controls wave-2, 2026-09-23 — see
@@ -477,6 +476,47 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   "battle-for-wesnoth": ["features"],
   openra: ["features"],
   bzflag: ["features"],
+
+  /*
+   * Testing-catalog cleanup pass, 2026-09-25. quake-ii, outrun, hypersomnia
+   * and final-fantasy-xi were inserted by the 2026-09-22 wave (NEW_GAME_SLUGS
+   * above) with a full seed payload, but nothing has ever patched the live
+   * rows since — so admin's own "Prefill from URL" auto-import (used before
+   * hands-on editorial passed over these four) is still what's live. That
+   * importer's install-step/FAQ template assumed every game is browser-
+   * playable and defaults every size to a placeholder, so all four rows
+   * currently tell players "there is nothing to download or install, it
+   * runs in your browser" for games that are, in reality, downloadable
+   * native clients (final-fantasy-xi is a 16 GB MMO client; hypersomnia and
+   * outrun ship real Windows/Linux/macOS builds) — confirmed live via the
+   * admin edit pages on 2026-09-25. The FAQ answers carry the same defect
+   * ("About small. The minimum system requirements are See official site.")
+   * plus a scraped page-title leak ("Quake II | GOG.com", "HorizonXI —
+   * Final Fantasy XI Private Server") in place of the catalog's own title.
+   * releaseYear/sizeMB/description on all four also still carry the
+   * "defaulted to 2026 / left blank" pattern from the same audit documented
+   * above this wave — editorial.ts and games.ts already hold the correct,
+   * hand-verified replacement copy; this just gets it live.
+   *
+   * outrun's platforms also drops the macOS entry the importer added: the
+   * only Windows and Linux release assets exist on GitHub
+   * (github.com/ZgzInfinity/OutRun/releases, checked 2026-09-25), no macOS
+   * build was ever published, and neither editorial.ts's installSteps nor
+   * games.ts's platforms array ever claimed one.
+   */
+  "quake-ii": ["description", "releaseYear", "sizeMB", "installSteps", "faq"],
+  outrun: ["description", "sizeMB", "platforms", "features", "installSteps", "faq"],
+  hypersomnia: ["description", "releaseYear", "sizeMB", "installSteps", "faq"],
+  "final-fantasy-xi": ["description", "releaseYear", "sizeMB", "installSteps", "faq"],
+
+  /*
+   * theme-hospital exists only in the CMS (no seed row), so its correction
+   * comes from catalogCorrections.ts. Its systemRequirements were entered as
+   * a placeholder ("See the GOG store page") instead of real values, and
+   * comparableTo was never filled in at all — verified against GOG's own
+   * listed requirements on 2026-09-25.
+   */
+  "theme-hospital": ["systemRequirements", "comparableTo"],
 };
 
 /** Existing editions: $set ONLY these fields. */
