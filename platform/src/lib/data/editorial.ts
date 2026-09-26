@@ -7771,6 +7771,92 @@ export const editorial: Record<string, GameEditorial> = {
       },
     ],
   },
+
+  /*
+   * deponia and caravan-sandwitch both came in through the "Previously Free"
+   * limited-time promo import path (a Steam/Epic free week), which only
+   * pulls store-listing basics — they had no editorial content of any kind
+   * (0 of the 6 required-to-publish fields), confirmed on the live admin
+   * edit page 2026-09-26. Written fresh from each game's own store page and
+   * released materials.
+   */
+  deponia: {
+    qualityBar: {
+      genuinelyFree: false,
+      finished: true,
+      activelyMaintained: false,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "Deponia clears the PlayBound Bar because its hero is a selfish disaster and the game builds every puzzle around exploiting that, not despite it.",
+      lastVerified: "2026-09-26",
+    },
+    maintenanceCheck: {
+      kind: "manual",
+      url: "https://store.steampowered.com/app/214340/Deponia/",
+      checkedAt: "2026-09-26",
+      note: "Finished commercial adventure with no ongoing updates expected; verify the Steam listing and any free-week promotion status manually.",
+    },
+    longDescription:
+      "Deponia is a point-and-click adventure set on a planet that has become one continuous landfill, and its hero, Rufus, wants off it more than he wants to be a good person. That is the game's actual hook: most adventure-game protagonists solve puzzles to help people, while Rufus solves them to get what he wants, and the people around him usually end up worse off for it, which the game plays for laughs rather than guilt.\n\nThe puzzles are classic inventory logic — pick up an odd object, notice an odder use for it three screens later — but Deponia stacks them into longer contraption chains than most games in the genre attempt: a stolen wig becomes a fake beard becomes a distraction becomes an escape plan, each step depending on the last. Full voice acting carries the tone through some genuinely dumb slapstick and a surprisingly game-worthy love story that Rufus keeps sabotaging by being Rufus.\n\nIt is the first entry in a trilogy, followed by Chaos on Deponia and Goodbye Deponia, so the ending sets up more story rather than closing the loop — worth knowing going in if you want a complete arc in one sitting.",
+    whyWePickedIt:
+      "We picked Deponia because it commits fully to an unlikeable protagonist instead of softening him into an antihero with a heart of gold — his selfishness is the puzzle-design engine, not a character flaw the plot apologises for, and that is rarer in the genre than it should be.",
+    thatOneThing:
+      "Rufus's first big scheme to get off Deponia works exactly as planned — and ruins a stranger's wedding day in the process, which the game treats as a punchline instead of a moral crisis.",
+    bestFor: [
+      "Fans of classic Sierra/LucasArts-style point-and-click adventures with layered inventory puzzles",
+      "Players who enjoy a genuinely unlikeable, self-serving protagonist over a conventional hero",
+      "Anyone who wants a fully voice-acted, dialogue-heavy story with real comedic writing",
+    ],
+    notFor: [
+      "Players who want a sympathetic protagonist or a morally clean story",
+      "Anyone allergic to old-school adventure logic — some puzzle solutions are deliberately obscure",
+      "Players looking for a complete story in one game rather than the start of a trilogy",
+    ],
+    comparableTo: [
+      "Chaos on Deponia",
+      "Goodbye Deponia",
+      "Broken Sword: Shadow of the Templars",
+      "The Secret of Monkey Island",
+      "Grim Fandango",
+    ],
+  },
+
+  "caravan-sandwitch": {
+    qualityBar: {
+      genuinelyFree: false,
+      finished: true,
+      activelyMaintained: false,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "Caravan SandWitch clears the PlayBound Bar because it removes every failure state from exploration and lets the traversal upgrades themselves be the reward loop.",
+      lastVerified: "2026-09-26",
+    },
+    maintenanceCheck: {
+      kind: "manual",
+      url: "https://store.steampowered.com/app/1582650/Caravan_SandWitch/",
+      checkedAt: "2026-09-26",
+      note: "Finished narrative exploration game with no ongoing content updates expected; verify the Steam listing and any free-week promotion status manually.",
+    },
+    longDescription:
+      "Caravan SandWitch is an exploration game set on Rea, an abandoned mining planet its former inhabitants left behind years earlier, where you drive a battered, upgradeable hover-caravan across canyons and dunes reconnecting with the family and community you grew up with. There is no combat, no enemies and no fail state — the entire tension of the game comes from route choice: the direct path across open desert usually works, but the interesting stuff, a hidden cave, a rusted-out settlement with its own small story, a shortcut through a canyon, is always on the scenic route.\n\nTraversal is the actual mechanic here, not padding between story beats. The caravan starts slow and fragile and gradually gains a grapple hook, a glider mode and better suspension, each upgrade opening terrain that was previously just scenery. The world design leans hard on a sun-bleached, Provence-inspired look transplanted onto an alien landscape, and most of what you are doing is figuring out how a piece of terrain wants to be crossed rather than fighting anything that lives on it.\n\nIt is a short game by design — most people finish in eight to ten hours — built around a single uninterrupted mood rather than a long campaign.",
+    whyWePickedIt:
+      "We picked Caravan SandWitch because it is a rare exploration game willing to have zero combat and zero difficulty curve and still hold attention purely through movement — the traversal upgrades are the entire progression system, and the game trusts that driving somewhere interesting is enough of a reward on its own.",
+    thatOneThing:
+      "There is no combat and no fail state in Caravan SandWitch — the entire tension of the game comes down to whether you take the fast route or the scenic one, and the scenic route is always the right answer.",
+    bestFor: [
+      "Players who want low-stakes, no-combat exploration over action or difficulty",
+      "Fans of vehicle-traversal games like Sable or A Short Hike",
+      "Anyone who enjoys atmosphere-first, story-light open worlds",
+    ],
+    notFor: [
+      "Players who want combat, enemies or any real difficulty",
+      "Anyone expecting a long campaign — most runs finish in eight to ten hours",
+      "Players who need a strong central plot rather than a mood piece",
+    ],
+    comparableTo: ["Sable", "A Short Hike", "Journey", "The Pathless", "Sky: Children of the Light"],
+  },
 };
 
 /** Merge editorial content onto a factual catalog entry. */
