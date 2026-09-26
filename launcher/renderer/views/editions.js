@@ -7,6 +7,7 @@ import {
   escapeHtml,
   executableNoun,
   filterByCompatibility,
+  filterRealEditions,
   gamePlayHintHtml,
   isEditionDesktopCompatible,
   isMacOS,
@@ -75,7 +76,8 @@ async function renderEditionsView(gameSlugParam) {
   const grid = document.getElementById("editions-grid");
   try {
     const res = await window.playbound.getEditions?.(gameSlug);
-    let editions = res?.editions || [];
+    const realEditions = filterRealEditions(res?.editions);
+    let editions = realEditions;
     if (!grid) return;
     editions = sortEditionsByCompatibility(editions, catalogGame);
     if (state.compatibilityFilter === "compatible") {
@@ -83,7 +85,7 @@ async function renderEditionsView(gameSlugParam) {
     }
     if (!editions.length) {
       const hiddenByCompat =
-        state.compatibilityFilter === "compatible" && (res?.editions || []).length > 0;
+        state.compatibilityFilter === "compatible" && realEditions.length > 0;
       grid.innerHTML = hiddenByCompat
         ? `<p class="view-sub" style="grid-column:1/-1">No compatible editions for this device. Switch to All Games to see every edition.</p>`
         : `<p class="view-sub" style="grid-column:1/-1">No editions listed for this game — the default install recipe is used.</p>`;
