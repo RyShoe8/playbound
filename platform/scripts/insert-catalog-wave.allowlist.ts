@@ -99,14 +99,14 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   "star-wars-knights-of-the-old-republic": ["releaseYear"],
   "star-wars-knights-of-the-old-republic-ii-the-sith-lords": ["releaseYear"],
   // Stored 2019 was the 2.0 "Elara" release, not the original.
-  "red-eclipse": ["releaseYear", "installSteps"],
-  openclonk: ["developerSlug", "releaseYear", "faq"],
-  "renegade-x": ["releaseYear"],
+  "red-eclipse": ["releaseYear", "installSteps", "developerSlug", "sizeMB"],
+  openclonk: ["developerSlug", "releaseYear", "faq", "sizeMB"],
+  "renegade-x": ["releaseYear", "developerSlug", "sizeMB"],
 
   // Gaps found in the same audit: the only published game with no genres,
   // and the only one with no thatOneThing.
-  "c-dogs-sdl": ["genres", "systemRequirements", "faq", "installSteps"],
-  "next-gen-chess": ["developerSlug", "thatOneThing"],
+  "c-dogs-sdl": ["genres", "systemRequirements", "faq", "installSteps", "developerSlug", "sizeMB"],
+  "next-gen-chess": ["developerSlug", "thatOneThing", "sizeMB"],
 
   "alien-swarm": [
     "qualityBar",
@@ -147,7 +147,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "launcherInstall",
     "website",
   ],
-  "seven-kingdoms-ancient-adversaries": ["launcherInstall"],
+  "seven-kingdoms-ancient-adversaries": ["launcherInstall", "developerSlug", "sizeMB"],
   "s-t-a-l-k-e-r-shadow-of-chernobyl": [
     "description",
     "aliases",
@@ -527,7 +527,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
    * comparableTo was never filled in at all — verified against GOG's own
    * listed requirements on 2026-09-25.
    */
-  "theme-hospital": ["systemRequirements", "comparableTo"],
+  "theme-hospital": ["systemRequirements", "comparableTo", "developerSlug", "sizeMB"],
 
   /*
    * Published-catalog cleanup pass, 2026-09-25. Same admin "Prefill from
@@ -543,15 +543,15 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   "gamebuddies-io": ["developerSlug", "faq", "thatOneThing"],
   "marathon-2": ["faq", "thatOneThing"],
   pixreveal: ["developerSlug", "faq", "thatOneThing"],
-  deadeus: ["developerSlug", "faq", "installSteps"],
-  assaultcube: ["faq"],
-  "opentyrian-2000": ["developerSlug", "faq", "installSteps"],
-  widelands: ["faq"],
-  "the-legend-of-zelda-book-of-mudora": ["faq", "installSteps"],
-  "the-legend-of-zelda-xd2-mercuris-chess": ["faq", "installSteps"],
-  yarntown: ["faq", "installSteps"],
-  "panzer-marshal": ["developerSlug"],
-  "stalker-lost-alpha": ["developerSlug"],
+  deadeus: ["developerSlug", "faq", "installSteps", "sizeMB"],
+  assaultcube: ["faq", "developerSlug", "sizeMB"],
+  "opentyrian-2000": ["developerSlug", "faq", "installSteps", "sizeMB"],
+  widelands: ["faq", "developerSlug", "sizeMB"],
+  "the-legend-of-zelda-book-of-mudora": ["faq", "installSteps", "developerSlug", "sizeMB"],
+  "the-legend-of-zelda-xd2-mercuris-chess": ["faq", "installSteps", "developerSlug", "sizeMB"],
+  yarntown: ["faq", "installSteps", "developerSlug", "sizeMB"],
+  "panzer-marshal": ["developerSlug", "sizeMB"],
+  "stalker-lost-alpha": ["developerSlug", "sizeMB"],
 
   /*
    * Same install-step defect (the shared enrich.ts template always claimed

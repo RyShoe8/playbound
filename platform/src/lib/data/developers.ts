@@ -1713,6 +1713,105 @@ export const developers: Developer[] = [
     website: "https://zgzinfinity.es",
     artHue: 195,
   },
+  {
+    slug: "assaultcube-team",
+    name: "AssaultCube Team",
+    tagline: "Ultra-fast low-spec open-source tactical action.",
+    about:
+      "The volunteer team behind AssaultCube, a lightweight, fast-paced first-person shooter based on the Cube engine, maintained continuously by an international open-source community.",
+    founded: 2004,
+    location: "Worldwide",
+    website: "https://assault.cubers.net/",
+    artHue: 15,
+  },
+  {
+    slug: "widelands-team",
+    name: "Widelands Team",
+    tagline: "Economic settlement building inspired by The Settlers II.",
+    about:
+      "An open-source collective developing Widelands, a slow-paced real-time economic strategy simulation where supply lines, road networks, and logistics rule the realm.",
+    founded: 2001,
+    location: "Worldwide",
+    website: "https://www.widelands.org/",
+    artHue: 120,
+  },
+  {
+    slug: "solarus-team",
+    name: "Solarus Games",
+    tagline: "The open-source 2D ARPG engine and community.",
+    about:
+      "A collective of developers and artists creating open-source 2D action-RPGs in the classic Zelda style, powered by the custom C++ Solarus engine.",
+    founded: 2006,
+    location: "France / Worldwide",
+    website: "https://www.solarus-games.org/",
+    artHue: 140,
+  },
+  {
+    slug: "max-mraz",
+    name: "Max Mraz",
+    tagline: "Crafting atmospheric retro pixel-art action adventures.",
+    about:
+      "Indie game developer and creator of Yarntown (a pixelated reimagining of Bloodborne in the Solarus engine) and the acclaimed commercial adventure Ocean's Heart.",
+    founded: 2019,
+    location: "United States",
+    website: "https://maxmraz.itch.io/",
+    artHue: 260,
+  },
+  {
+    slug: "cong-pham",
+    name: "Cong Pham (cxong)",
+    tagline: "Maintaining and modernizing classic arcade shoot-em-ups.",
+    about:
+      "Lead developer and maintainer of C-Dogs SDL, modernizing Ronny Wester's legendary 90s top-down shooter with cross-platform support, local co-op, and modding.",
+    founded: 2013,
+    location: "Australia",
+    website: "https://cxong.github.io/cdogs-sdl/",
+    artHue: 30,
+  },
+  {
+    slug: "red-eclipse-team",
+    name: "Red Eclipse Team",
+    tagline: "Parkour-driven arena FPS combat on the Cube 2 engine.",
+    about:
+      "The core development team behind Red Eclipse, an open-source arena shooter featuring fluid parkour movement, impulse dashes, and an extensive map editor.",
+    founded: 2011,
+    location: "Worldwide",
+    website: "https://redeclipse.net/",
+    artHue: 350,
+  },
+  {
+    slug: "totem-arts",
+    name: "Totem Arts",
+    tagline: "Bringing Command & Conquer to life in full Unreal 3 combat.",
+    about:
+      "An international indie development group that created Renegade X, the tactical standalone tactical FPS/RTS recreation of Westwood Studios' C&C: Renegade.",
+    founded: 2007,
+    location: "Worldwide",
+    website: "https://totemarts.games/",
+    artHue: 200,
+  },
+  {
+    slug: "enlight-software",
+    name: "Enlight Software",
+    tagline: "Pioneers of complex economic strategy and tactical simulation.",
+    about:
+      "Founded by legendary designer Trevor Chan in Hong Kong, Enlight created classic strategy simulations including Capitalism, Seven Kingdoms, and Restaurant Empire.",
+    founded: 1993,
+    location: "Hong Kong",
+    website: "https://www.enlight.com/",
+    artHue: 40,
+  },
+  {
+    slug: "corsixth-team",
+    name: "CorsixTH Team",
+    tagline: "Reviving Bullfrog's hospital management classic for modern PCs.",
+    about:
+      "An open-source volunteer team maintaining CorsixTH, a modern, native reimplementation of Bullfrog's 1997 management simulation Theme Hospital with high-resolution and multi-platform support.",
+    founded: 2009,
+    location: "Worldwide",
+    website: "https://corsixth.com/",
+    artHue: 170,
+  },
 ];
 
 export const developersBySlug = new Map(developers.map((d) => [d.slug, d]));
