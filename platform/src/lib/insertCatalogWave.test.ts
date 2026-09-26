@@ -231,6 +231,9 @@ describe("insert-catalog-wave allowlists", () => {
         "unvanquished",
         "mindustry",
         "xonotic",
+        "holocure",
+        "beyond-all-reason",
+        "veloren",
       ].sort()
     );
     expect(PATCH_GAME_FIELDS["super-nova-strike"]).toContain("androidStoreUrl");
@@ -256,7 +259,7 @@ describe("insert-catalog-wave allowlists", () => {
       "multiplayerGamingSteps",
     ]);
     expect(PATCH_GAME_FIELDS.morrowind).toEqual(["launcherInstall"]);
-    expect(PATCH_GAME_FIELDS["dune-legacy"]).toEqual(["launcherInstall", "features"]);
+    expect(PATCH_GAME_FIELDS["dune-legacy"]).toEqual(["launcherInstall", "features", "thatOneThing"]);
     expect(PATCH_GAME_FIELDS["the-spike-cross"]).toContain("androidStoreUrl");
     expect(PATCH_GAME_FIELDS["slapshot-rebound"]).toContain("hardwareRequirements");
     expect(PATCH_GAME_FIELDS["space-station-14"]).toEqual([

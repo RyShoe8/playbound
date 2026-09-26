@@ -290,7 +290,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "multiplayerGamingSteps",
   ],
   morrowind: ["launcherInstall"],
-  "dune-legacy": ["launcherInstall", "features"],
+  "dune-legacy": ["launcherInstall", "features", "thatOneThing"],
   "pokemon-blaze-online": [
     "title",
     "tagline",
@@ -454,8 +454,8 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
    * says `supported: false`, so the tag was simply wrong, not a judgment
    * call this wave is overriding.
    */
-  "openttd": ["features", "installSteps"],
-  "shattered-pixel-dungeon": ["features", "launcherInstall", "installSteps"],
+  "openttd": ["features", "installSteps", "thatOneThing"],
+  "shattered-pixel-dungeon": ["features", "launcherInstall", "installSteps", "thatOneThing"],
   "lincity-ng": ["features"],
   "heroes-of-might-and-magic-3-complete": ["features"],
   "dungeon-keeper-gold": ["features"],
@@ -472,10 +472,10 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   "tes-arena": ["features"],
   "star-wars-galaxies": ["features", "faq"],
   freeciv: ["features"],
-  "warzone-2100": ["features", "installSteps"],
-  "0ad": ["features"],
-  "battle-for-wesnoth": ["features"],
-  openra: ["features", "installSteps"],
+  "warzone-2100": ["features", "installSteps", "thatOneThing"],
+  "0ad": ["features", "thatOneThing"],
+  "battle-for-wesnoth": ["features", "thatOneThing"],
+  openra: ["features", "installSteps", "thatOneThing"],
   bzflag: ["features"],
 
   /*
@@ -557,12 +557,20 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
    */
   freedoom: ["installSteps"],
   supertux: ["installSteps"],
-  luanti: ["installSteps"],
-  "endless-sky": ["installSteps"],
-  supertuxkart: ["installSteps"],
+  luanti: ["installSteps", "thatOneThing"],
+  "endless-sky": ["installSteps", "thatOneThing"],
+  supertuxkart: ["installSteps", "thatOneThing"],
   unvanquished: ["installSteps"],
-  mindustry: ["installSteps"],
-  xonotic: ["installSteps"],
+  mindustry: ["installSteps", "thatOneThing"],
+  xonotic: ["installSteps", "thatOneThing"],
+
+  /*
+   * Editorial depth pass, 2026-09-26. Premier catalog anchors calibrated
+   * with quotable thatOneThing hooks and verified PlayBound voice.
+   */
+  holocure: ["whyWePickedIt", "thatOneThing"],
+  "beyond-all-reason": ["thatOneThing"],
+  veloren: ["thatOneThing"],
 };
 
 /** Existing editions: $set ONLY these fields. */
