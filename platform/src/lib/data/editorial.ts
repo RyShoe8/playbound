@@ -7495,6 +7495,282 @@ export const editorial: Record<string, GameEditorial> = {
       },
     ],
   },
+
+  marathon: {
+    qualityBar: clearsAll(
+      "Marathon clears the PlayBound Bar: free with no monetisation, historically monumental as Bungie's narrative breakthrough, maintained on modern systems by the open-source Aleph One project, and high quality enough to earn a place in a deliberately small catalog."
+    ),
+    longDescription:
+      "Before Halo and Destiny, Bungie redefined what a first-person shooter could be with Marathon in 1994. While Doom was mastering visceral arcade speed and abstract mazes, Marathon introduced an intricate sci-fi story, deep psychological horror, and complex interactive narrative delivered through shipboard computer terminals.\n\nYou are a security officer aboard the colony starship UESC Marathon, orbiting the fourth planet of Tau Ceti. When a hostile alien fleet of cybernetic Pfhor slavers ambushes the vessel, you are thrust into a desperate fight for survival guided—and manipulated—by the ship's three artificial intelligences: Leela, Tycho, and the famously rampant Durandal.\n\nMechanically, Marathon pushed 90s shooters into new territory: true vertical aiming, swimming, atmospheric oxygen depletion, reloading dual-wielded shotguns, and mission objectives requiring real reconnaissance rather than merely hunting for colored keys. Aleph One, the open-source engine continuation, brings Bungie's classic to modern PCs with native 4K widescreen, uncapped framerates, full controller support, and seamless cross-platform multiplayer.\n\nThe game is an authentic 1994 design: non-linear level layouts can be disorienting, and progress demands reading terminals attentively. But for anyone who appreciates atmospheric storytelling and video game history, Marathon is an essential experience.",
+    whyWePickedIt:
+      "Marathon is the foundation of modern narrative first-person shooters. Its brilliant terminal-based lore, chilling AI rampancy, and claustrophobic sci-fi tension set the benchmark that Bungie carried into Halo. Packaged with Aleph One for effortless one-click play, it is a piece of gaming history that everyone should play.",
+    thatOneThing:
+      "Venturing through the dark deserted halls of the colony ship with a dual-wielded pair of shotguns, hearing the metallic screech of a Pfhor hunter before seeing it, and flipping an airlock switch right as they swarm you.",
+    bestFor: [
+      "Fans of classic 90s shooters who love deep atmospheric sci-fi lore",
+      "Players curious about the storytelling roots of Bungie and Halo",
+      "Low-spec PC and laptop gamers seeking an engrossing offline campaign",
+      "Shooter enthusiasts who prefer deliberate, resource-conscious combat",
+    ],
+    notFor: [
+      "Players who expect modern objective compass markers and hand-holding",
+      "Those who dislike backtracking through sprawling labyrinthine ship decks",
+      "Gamers who skip text terminals and narrative dialogue",
+    ],
+    comparableTo: ["Marathon 2: Durandal", "System Shock", "Doom", "Halo: Combat Evolved"],
+    faq: [
+      {
+        q: "Is Marathon really 100% free?",
+        a: "Yes. Bungie officially released the game data as freeware, and the Aleph One engine that runs it is open-source (GPL-3.0). The complete game is free to download and play.",
+      },
+      {
+        q: "What is Aleph One?",
+        a: "Aleph One is the open-source engine that allows the original Marathon trilogy to run natively on modern operating systems (Windows, macOS, and Linux) with high-definition resolutions, modern mouselook, and controller support.",
+      },
+      {
+        q: "Do I need to play Marathon before Marathon 2 or Marathon Infinity?",
+        a: "It's the ideal place to start the story of Durandal and the Pfhor invasion, but each game in the trilogy features self-contained scenarios and tutorials.",
+      },
+      {
+        q: "Does Marathon support modern gamepads?",
+        a: "Yes, Aleph One includes full customizable controller and gamepad support, though mouse and keyboard remains the fastest and most precise control scheme.",
+      },
+      {
+        q: "Can I play Marathon on Steam Deck?",
+        a: "Yes. It has minimal hardware requirements, sips battery, and runs exceptionally well in handheld mode.",
+      },
+    ],
+  },
+
+  morrowind: {
+    qualityBar: clearsAll(
+      "Morrowind clears the PlayBound Bar: an unparalleled open-world roleplaying masterpiece, fully revitalized on modern hardware by the open-source OpenMW engine, offering hundreds of hours of unguided fantasy exploration with unmatched atmosphere and depth."
+    ),
+    longDescription:
+      "The Elder Scrolls III: Morrowind remains the high-water mark for open-world roleplaying ambition. Arriving in 2002, it eschewed the generic European fantasy tropes of its predecessors to build Vvardenfell: a volcanic island of towering mushroom trees, ash storms, giant silt strider transports, and brooding Dunmer politics.\n\nYou arrive as an unnamed, penniless prisoner released by royal decree onto the docks of Seyda Neen. From that first step into the humid coastal air, the world is entirely yours. There are no compass arrows guiding you, no scaled enemies leveling up alongside you, and no unkillable plot-essential NPCs. If you want to walk into a sunken Daedric shrine at level one and get crushed, you can. If you want to brew custom potions that let you leap across mountain ranges, the game will let you break its systems wide open.\n\nPlayBound features Morrowind powered by OpenMW, the phenomenal modern open-source engine rewrite. OpenMW replaces Bethesda's aging 2002 executable with a clean, crash-proof 64-bit engine supporting 4K resolutions, native physics, modern gamepads, seamless view distances, and multiplayer via TES3MP.\n\nMorrowind asks for patience: combat resolution uses dice rolls behind the scenes, stamina management dictates everything from bartering to spellcasting, and directions are given in journal text ('turn north at the split boulder'). But for players willing to immerse themselves, Vvardenfell offers an atmospheric depth that modern RPGs rarely match.",
+    whyWePickedIt:
+      "Morrowind is Bethesda's crowning artistic achievement: a genuinely alien, uncompromising fantasy world where you feel like an authentic stranger unraveling an ancient culture. With OpenMW providing modern engine stability and widescreen brilliance, it is the ultimate single-player RPG sandbox.",
+    thatOneThing:
+      "Stepping off the boat in Seyda Neen, looting a ring from a hollow tree stump, and casting an overpowered Levitate spell to drift over the ash wastes of Red Mountain while Cliff Racers screech above you.",
+    bestFor: [
+      "RPG purists who cherish unguided exploration, deep worldbuilding, and player agency",
+      "Fans of dark, atmospheric, and alien fantasy settings",
+      "Players who enjoy reading detailed lore journals and piecing together ancient mysteries",
+      "Tinkerers who love crafting overpowered custom spells, potions, and enchantments",
+    ],
+    notFor: [
+      "Players who rely on glowing minimap quest markers and GPS compasses",
+      "Those who hate dice-roll combat mechanics where low-skill swings can miss",
+      "Gamers looking for fully voice-acted dialogue rather than extensive text reading",
+    ],
+    comparableTo: ["The Elder Scrolls II: Daggerfall", "The Elder Scrolls IV: Oblivion", "Gothic II", "Arx Fatalis"],
+    faq: [
+      {
+        q: "What is OpenMW?",
+        a: "OpenMW is a free, modern, open-source reimplementation of the Morrowind game engine. It fixes thousands of legacy bugs, adds native 64-bit multi-core performance, widescreen and 4K support, modern gamepad controls, and cross-platform compatibility.",
+      },
+      {
+        q: "Do I need the original Morrowind game data?",
+        a: "Yes. OpenMW is an open-source engine that requires the Morrowind data files (such as Morrowind.esm). PlayBound's launcher helps locate or install existing game files from GOG, Steam, or original discs.",
+      },
+      {
+        q: "Can I play Morrowind with a controller?",
+        a: "Yes, OpenMW features native modern gamepad and controller support with customizable button bindings and smooth stick navigation.",
+      },
+      {
+        q: "Does Morrowind have multiplayer?",
+        a: "Yes, through TES3MP, a community multiplayer branch of OpenMW that allows cooperative questing, PvP, and shared persistent servers across Vvardenfell.",
+      },
+      {
+        q: "How does Morrowind's combat work?",
+        a: "Combat uses behind-the-scenes dice rolls influenced by your character's weapon skill, agility, and current fatigue. Keeping your green stamina bar full is essential for landing hits successfully.",
+      },
+    ],
+  },
+
+  bombsquad: {
+    qualityBar: clearsAll(
+      "BombSquad clears the PlayBound Bar: free with no pay-to-win mechanics, delivering hilarious 8-player physics-driven couch and online party chaos with support for gamepads, keyboards, and mobile phone controllers."
+    ),
+    longDescription:
+      "BombSquad is an explosive local and online party brawler designed for pure social hilarity. Created by Eric Froemling, the game pits up to eight players against each other across a variety of action-packed mini-games where punches, throws, and cleverly timed explosives reign supreme.\n\nThe game's greatest strength is its claymation-style visual aesthetic combined with punchy ragdoll physics. Characters stumble, stagger, and careen across floating platforms, rope bridges, and ice rinks. A wide variety of bomb types—from sticky bombs and ice bombs to landmines and impact explosives—turns every arena into an unpredictable chain reaction of comedic disaster.\n\nGame modes span competitive and cooperative challenges: classic Deathmatch, Capture the Flag, King of the Hill, Keep Away, and even Bomber Hockey and Football. Up to eight players can connect simultaneously using USB gamepads, keyboards, or by downloading the free BombSquad Remote companion app on iOS and Android phones to use them as wireless controllers.\n\nBombSquad is approachable for non-gamers within thirty seconds, yet offers enough physics mastery and comedic timing to keep friend groups laughing for hours.",
+    whyWePickedIt:
+      "BombSquad is the ultimate game-night crowd-pleaser. With instant cross-platform controller support (even letting friends use their phones as gamepads), punchy ragdoll slapstick, and zero friction to jump into 8-player matches, it turns any living room into an explosion of laughter.",
+    thatOneThing:
+      "Grabbing an opponent by the collar on a narrow suspension bridge, spinning around to build momentum, and hurling them into a floating cluster of landmines while screaming in laughter.",
+    bestFor: [
+      "Groups of friends looking for immediate couch or online multiplayer party gaming",
+      "Parties where guests can use their smartphones as wireless gamepads",
+      "Fans of ragdoll slapstick brawlers like Gang Beasts and TowerFall",
+      "Casual gaming sessions with family and kids of all ages",
+    ],
+    notFor: [
+      "Players seeking a serious, highly technical competitive fighter",
+      "Solo gamers looking for a lengthy narrative campaign",
+      "Anyone easily frustrated by unpredictable physics knockouts and sudden deaths",
+    ],
+    comparableTo: ["Gang Beasts", "Stick Fight: The Game", "TowerFall", "Duck Game"],
+    faq: [
+      {
+        q: "Is BombSquad free?",
+        a: "Yes. BombSquad is free to download and play on Windows, macOS, Linux, and mobile devices without paywalls blocking gameplay modes.",
+      },
+      {
+        q: "How many players can play BombSquad?",
+        a: "Up to 8 players can play together locally on a single screen, over local Wi-Fi, or online across public and private internet servers.",
+      },
+      {
+        q: "Can players use phones as controllers?",
+        a: "Yes. By downloading the free BombSquad Remote app on iOS or Android, friends can connect their phones as wireless Wi-Fi controllers directly to the host PC.",
+      },
+      {
+        q: "What game modes are included?",
+        a: "BombSquad includes Free-for-All Deathmatch, Elimination, Capture the Flag, King of the Hill, Keep Away, Bomber Hockey, Football, and Co-op wave survival campaigns.",
+      },
+      {
+        q: "Does BombSquad require a high-end graphics card?",
+        a: "Not at all. BombSquad has minimal system requirements and runs at a smooth 60 FPS on almost any modern laptop or desktop PC.",
+      },
+    ],
+  },
+
+  "re-volt-rvgl": {
+    qualityBar: clearsAll(
+      "Re-Volt (RVGL) clears the PlayBound Bar: the definitive cross-platform preservation of Acclaim's classic 1999 radio-controlled racer, enhanced with 4K widescreen rendering, 60+ FPS physics, modern online multiplayer, and active community championship cups."
+    ),
+    longDescription:
+      "Released in 1999 by Acclaim Studios London, Re-Volt remains the gold standard of radio-controlled arcade racing. Instead of sterile asphalt super-speedways, you race miniature RC buggies, trucks, sports cars, and clockwork oddities through delightfully scaled everyday environments: toy stores with marble runs, suburban neighborhoods with parked cars, botanical gardens, and museum exhibits.\n\nThe secret to Re-Volt's timeless appeal is its simulated RC vehicle physics: springy suspension, top-heavy center of gravity, responsive drift handling, and authentic radio antennae swaying as you bank into corners. Weapons are equally creative: bottle rockets, battery speed boosts, oil slicks, shockwaves, and self-detonating bomb tags keep every race chaotic and competitive.\n\nRVGL is the miraculous community rewrite that keeps Re-Volt at the top of the podium. Ported to modern C and SDL, RVGL provides native 64-bit performance across Windows, macOS, and Linux with uncapped framerates, 4K widescreen support, modern XInput / DirectInput gamepad recognition, and low-latency online multiplayer with an active competitive racing league.\n\nHandling miniature toy cars requires finesse—hit a curb too hard and you will flip onto your roof, requiring a quick antenna reset. But mastering each track's clever shortcuts and banking around toy block chicanes offers some of the purest arcade driving satisfaction in PC gaming history.",
+    whyWePickedIt:
+      "Re-Volt is an absolute classic of arcade driving design, and RVGL represents the gold standard of community game preservation. With pitch-perfect RC car handling, modern 4K widescreen support, split-screen and online lobbies, and hundreds of community tracks, it is an essential arcade racer.",
+    thatOneThing:
+      "Power-sliding an RC monster truck under the wheels of a parked sedan in a suburban neighborhood, grabbing a fireworks power-up, and blasting the leader into a plastic trash can right at the finish line.",
+    bestFor: [
+      "Arcade racing fans who love Micro Machines, TrackMania, and Mario Kart",
+      "Players who appreciate tactile, springy physics and responsive drifting",
+      "Local split-screen and online multiplayer racing with friends",
+      "Community content lovers who want access to hundreds of custom tracks and cars",
+    ],
+    notFor: [
+      "Sim-racing enthusiasts seeking realistic telemetry and licensed GT sports cars",
+      "Players easily frustrated by RC car roll-overs and bouncy obstacle collisions",
+      "Those who dislike weapon power-ups in racing games",
+    ],
+    comparableTo: ["Micro Machines V4", "Mario Kart 8", "TrackMania", "Blur"],
+    faq: [
+      {
+        q: "What is RVGL?",
+        a: "RVGL is a modern cross-platform rewrite of the 1999 racing game Re-Volt. It runs natively on modern operating systems with 4K resolution, modern gamepad support, online multiplayer, and improved stability.",
+      },
+      {
+        q: "Does RVGL support split-screen multiplayer?",
+        a: "Yes, RVGL supports up to 4-player local split-screen racing on a single PC, as well as online multiplayer across community servers.",
+      },
+      {
+        q: "Can I use modern controllers?",
+        a: "Yes, RVGL natively supports modern Xbox, PlayStation, and generic USB controllers with full analog steering and throttle support.",
+      },
+      {
+        q: "Are community custom tracks and cars supported?",
+        a: "Yes. RVGL has full compatibility with thousands of community-created custom tracks, cars, and sound packs developed over the last two decades.",
+      },
+      {
+        q: "Does Re-Volt run on low-spec hardware?",
+        a: "Extremely well. Even on entry-level laptops and older integrated graphics, RVGL runs at high resolutions with solid 60+ FPS performance.",
+      },
+    ],
+  },
+
+  "wipeout-rewrite": {
+    qualityBar: clearsAll(
+      "wipEout Rewrite clears the PlayBound Bar: a stunning open-source C rewrite of Psygnosis's legendary 1995 futuristic anti-gravity racer, delivering blistering 144Hz+ speed, iconic electronic music, and Designers Republic styling right in your browser or desktop."
+    ),
+    longDescription:
+      "When wipEout launched alongside the original PlayStation in 1995, it transformed video games into cultural icons. Developed by Psygnosis with graphic design by The Designers Republic and a licensed electronic soundtrack featuring CoLD SToRAGE, it merged cyberpunk aesthetic, club culture, and hyper-velocity anti-gravity racing into an unforgettable experience.\n\nRunning at dizzying speeds through neon-drenched megacities and alpine courses, pilots command high-tech hovercraft for racing teams like Feisar, AG Systems, Auricom, and Qirex. Success requires surgical use of dual airbrakes to drift around perpendicular corners while dodging homing missiles, mines, and plasma charges deployed by rival craft.\n\nwipEout Rewrite is the celebrated engineering feat by developer Dominic Szablewski (PhobosLab), who decompiled the original source and rewrote the entire game into clean, modern C. It runs natively in modern web browsers via WebAssembly and WebGL, as well as on native desktop platforms at 144Hz+ uncapped framerates and ultra-widescreen resolutions with zero emulation lag.\n\nwipEout is uncompromisingly fast and notoriously challenging: scrap against a track wall and your craft will instantly lose all forward momentum. But when you lock into the rhythm of the airbrakes, dodging rockets and gliding across the finish line to the pulsing beat of 90s techno, there is nothing else quite like it.",
+    whyWePickedIt:
+      "wipEout Rewrite is a masterclass in game preservation and raw arcade thrills. By porting Psygnosis's foundational anti-gravity racer to pure modern C, it lets anyone experience the blistering speed, pristine Designers Republic aesthetics, and legendary soundtrack in seconds with zero setup.",
+    thatOneThing:
+      "Hugging the tight apex of an anti-gravity track at Mach 1, banking into a vertical loop while electronic breakbeats pulse in your headphones, and launching an airbrake drift that barely clears the barrier.",
+    bestFor: [
+      "Fans of extreme high-speed futuristic racers like F-Zero GX and BallisticNG",
+      "Enthusiasts of 90s cyberpunk aesthetics, electronic music, and club culture graphic design",
+      "Players with high-refresh monitors looking for blistering, butter-smooth 144Hz+ performance",
+      "Quick gaming sessions with zero install friction directly in any browser",
+    ],
+    notFor: [
+      "Casual racers who dislike unforgiving wall-collision physics and steep learning curves",
+      "Players looking for modern narrative campaigns with voice acting",
+      "Anyone prone to motion sickness from high-velocity banking and vertical loops",
+    ],
+    comparableTo: ["BallisticNG", "F-Zero GX", "Redout", "Fast RMX"],
+    faq: [
+      {
+        q: "What is wipEout Rewrite?",
+        a: "wipEout Rewrite is an open-source reimplementation of the 1995 racing classic created by Dominic Szablewski (PhobosLab). It recompiles the original code into clean C that runs natively on modern systems and in web browsers.",
+      },
+      {
+        q: "Can I play it directly in my web browser?",
+        a: "Yes. The WebAssembly build runs inside modern web browsers with full WebGL hardware acceleration and gamepad support with no download required.",
+      },
+      {
+        q: "Does it include the original music?",
+        a: "Yes, the port supports the full iconic electronic soundtrack composed by CoLD SToRAGE (Tim Wright).",
+      },
+      {
+        q: "Can I use a controller?",
+        a: "Yes. Both the desktop and web versions support standard USB and Bluetooth gamepads, including Xbox and PlayStation controllers.",
+      },
+      {
+        q: "How do the airbrakes work?",
+        a: "Airbrakes on the left and right triggers allow you to initiate sharp drifts around tight corners. Balancing throttle, steering, and airbrakes is key to maintaining top speed without hitting barriers.",
+      },
+    ],
+  },
+
+  openhv: {
+    qualityBar: clearsAll(
+      "OpenHV clears the PlayBound Bar: an original, completely free and open-source real-time strategy game built on the battle-tested OpenRA engine, delivering tight tactical base-building, crisp 90s pixel art, and balanced multiplayer combat."
+    ),
+    longDescription:
+      "OpenHV resurrects Hard Vacuum, an unreleased 1990s pixel-art sci-fi real-time strategy project originally conceived by game designer Daniel Cook. Rebuilt from the ground up on the robust OpenRA engine, OpenHV transforms those lost retro assets into a fast-paced, polished, standalone tactical RTS.\n\nSet in a harsh, corporate-dominated sci-fi universe, three asymmetric factions—the militaristic Hegemony, the agile robotics of Dystopia, and the heavy corporate defense forces—clash over vital alien resources. Players harvest mineral fields, erect sprawling power grids and production plants, and deploy combined-arms forces of mechanized infantry, stealth hovercraft, and heavy artillery walkers.\n\nBecause OpenHV is built on OpenRA, it inherits two decades of modern RTS infrastructure: crisp high-resolution UI, modern zoom controls, fluid pathfinding, customizable hotkeys, intelligent attack-move commands, and robust online netcode with dedicated public servers.\n\nWith both single-player skirmish modes against adjustable AI commanders, handcrafted map packages, and an integrated map editor, OpenHV delivers the pure, unadulterated joy of golden-era RTS warfare without legacy compatibility headaches.",
+    whyWePickedIt:
+      "OpenHV represents the best of open-source indie development: rescuing beautiful forgotten 90s pixel art and pairing it with the modern engine power of OpenRA. It provides an immediate, balanced, DRM-free strategy experience that runs flawlessly on any computer.",
+    thatOneThing:
+      "Snaking stealth hovertanks through a canyon while enemy radar sweeps overhead, and uncloaking six railguns right on the doorstep of their unguarded mining refinery.",
+    bestFor: [
+      "Classic RTS enthusiasts who love Command & Conquer, Dune II, and Total Annihilation",
+      "Fans of authentic 90s handcrafted pixel-art sprites and retro sound design",
+      "Competitive strategy players looking for tight balance, dedicated servers, and modern netcode",
+      "Low-spec PC and laptop players wanting an offline skirmish strategy game",
+    ],
+    notFor: [
+      "Players who dislike classic base-building, power plant management, and resource harvesting",
+      "Those looking for a heavily cinematic story campaign with live-action FMV cutscenes",
+      "Gamers seeking modern 3D graphics and zoomable orbital cameras",
+    ],
+    comparableTo: ["Command & Conquer: Tiberian Dawn", "Dune 2000", "OpenRA", "StarCraft"],
+    faq: [
+      {
+        q: "Is OpenHV free?",
+        a: "Yes, 100% free and open source (GPL-3.0). All code, artwork, audio, and maps are licensed for free distribution with no purchases or ads.",
+      },
+      {
+        q: "What is OpenHV's connection to Hard Vacuum?",
+        a: "Hard Vacuum was a 1990s real-time strategy game developed by Daniel Cook that went unreleased. Cook released the pixel art and assets to the public domain, allowing the OpenHV team to build a complete game around them using OpenRA.",
+      },
+      {
+        q: "Does OpenHV require Command & Conquer or OpenRA installed?",
+        a: "No. OpenHV is a completely standalone game. It uses the OpenRA engine under the hood, but packages everything you need into a single download.",
+      },
+      {
+        q: "Does OpenHV support online multiplayer?",
+        a: "Yes. OpenHV features an integrated in-game multiplayer server browser, allowing you to join public matches or host games with friends over the internet or LAN.",
+      },
+      {
+        q: "Does OpenHV have single-player modes?",
+        a: "Yes. You can play custom Skirmish matches against multiple AI difficulty levels across dozens of included maps, or create custom battlegrounds with the integrated map editor.",
+      },
+    ],
+  },
 };
 
 /** Merge editorial content onto a factual catalog entry. */
