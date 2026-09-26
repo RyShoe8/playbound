@@ -267,6 +267,11 @@ describe("insert-catalog-wave allowlists", () => {
         "beneath-a-steel-sky",
         "freelancer",
         "airforce",
+        "marathon",
+        "bombsquad",
+        "re-volt-rvgl",
+        "wipeout-rewrite",
+        "openhv",
       ].sort()
     );
     expect(PATCH_GAME_FIELDS["super-nova-strike"]).toContain("androidStoreUrl");
@@ -291,7 +296,9 @@ describe("insert-catalog-wave allowlists", () => {
       "firstPlaySteps",
       "multiplayerGamingSteps",
     ]);
-    expect(PATCH_GAME_FIELDS.morrowind).toEqual(["launcherInstall"]);
+    expect(PATCH_GAME_FIELDS.morrowind).toContain("launcherInstall");
+    expect(PATCH_GAME_FIELDS.morrowind).toContain("qualityBar");
+    expect(PATCH_GAME_FIELDS.morrowind).toContain("thatOneThing");
     expect(PATCH_GAME_FIELDS["dune-legacy"]).toEqual(["launcherInstall", "features", "thatOneThing"]);
     expect(PATCH_GAME_FIELDS["the-spike-cross"]).toContain("androidStoreUrl");
     expect(PATCH_GAME_FIELDS["slapshot-rebound"]).toContain("hardwareRequirements");
