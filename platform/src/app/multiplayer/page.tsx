@@ -12,6 +12,8 @@ import { listDiscoverableGames } from "@/lib/access/discover";
 import { getMultiplayerActivitySnapshot } from "@/lib/multiplayer/activity";
 import { listOpenPublicParties } from "@/lib/playTogether/party";
 import { listPublicEvents } from "@/lib/events/service";
+import { supportsMultiplayer } from "@/lib/multiplayer/support";
+import { JsonLd, graph, itemListSchema, eventSchema, breadcrumbSchema } from "@/components/JsonLd";
 
 export const metadata: Metadata = pageMetadata({
   title: "Multiplayer — Open Parties, Live Servers & Looking to Play · PlayBound",
@@ -49,23 +51,49 @@ export default async function MultiplayerPage() {
     }
   }
 
+  const multiplayerGames = discoverable.filter(supportsMultiplayer);
+
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-[400px] items-center justify-center p-8 text-sm text-muted-foreground">
-          Loading multiplayer hub…
-        </div>
-      }
-    >
-      <MultiplayerHome
-        installedGameSlugs={installedGameSlugs}
-        installedModSlugs={installedModSlugs}
-        signedIn={Boolean(session?.user)}
-        allowedSlugs={allowedSlugs}
-        initialActivity={initialActivity}
-        initialParties={initialParties}
-        initialEvents={initialEvents}
+    <>
+      <JsonLd
+        data={graph(
+          itemListSchema(
+            "PlayBound Multiplayer Games",
+            "Free and affordable games with live parties, community servers, or looking-to-play matchmaking on PlayBound.",
+            "/multiplayer",
+            multiplayerGames
+          ),
+          breadcrumbSchema([{ name: "Multiplayer", path: "/multiplayer" }]),
+          initialEvents.map((e) =>
+            eventSchema({
+              id: e.id,
+              title: e.title,
+              description: e.description,
+              startsAt: e.startsAt,
+              endsAt: e.endsAt,
+              coverImage: e.coverImage,
+              gameSlug: e.gameSlug,
+            })
+          )
+        )}
       />
-    </Suspense>
+      <Suspense
+        fallback={
+          <div className="flex min-h-[400px] items-center justify-center p-8 text-sm text-muted-foreground">
+            Loading multiplayer hub…
+          </div>
+        }
+      >
+        <MultiplayerHome
+          installedGameSlugs={installedGameSlugs}
+          installedModSlugs={installedModSlugs}
+          signedIn={Boolean(session?.user)}
+          allowedSlugs={allowedSlugs}
+          initialActivity={initialActivity}
+          initialParties={initialParties}
+          initialEvents={initialEvents}
+        />
+      </Suspense>
+    </>
   );
 }

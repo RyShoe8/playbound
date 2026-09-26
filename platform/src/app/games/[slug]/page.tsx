@@ -289,9 +289,9 @@ export async function GamePageFrame({
                   <GameHeroInLibraryBadge slug={game.slug} />
                 </Suspense>
                 {game.genres.map((g) => (
-                  <Badge key={g} tone="outline">
-                    {g}
-                  </Badge>
+                  <Link key={g} href={`/discover?genre=${encodeURIComponent(g)}`} className="pointer-events-auto">
+                    <Badge tone="outline">{g}</Badge>
+                  </Link>
                 ))}
               </div>
               <h1 className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">{game.title}</h1>
@@ -496,6 +496,32 @@ async function OverviewTab({
     p.picks.some((pick) => pick.slug === game.slug)
   );
 
+  /*
+   * comparableTo is a curated list of plain names (franchises, commercial
+   * games, sometimes other catalog games) — not slugs. Resolve each one to a
+   * real /compare or /alternatives page only when one already exists and
+   * genuinely features it, rather than guessing a link that might 404.
+   */
+  const comparableToLinks = await Promise.all(
+    (game.comparableTo ?? []).map(async (name) => {
+      const norm = name.trim().toLowerCase();
+      for (const c of relatedComparisons) {
+        const otherSlug = c.aSlug === game.slug ? c.bSlug : c.aSlug;
+        const otherTitle =
+          c.bExternal && otherSlug === c.bSlug ? c.bExternal.name : (await getGame(otherSlug))?.title;
+        if (otherTitle && otherTitle.toLowerCase() === norm) {
+          return { name, href: `/compare/${c.slug}` };
+        }
+      }
+      for (const p of relatedAlternatives) {
+        if (p.commercialGame.toLowerCase() === norm || p.aliases.some((a) => a.toLowerCase() === norm)) {
+          return { name, href: `/alternatives/${p.slug}` };
+        }
+      }
+      return { name, href: null as string | null };
+    })
+  );
+
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_320px]">
       <div className="min-w-0 space-y-10">
@@ -662,6 +688,32 @@ async function OverviewTab({
           </section>
         ) : null}
 
+        {comparableToLinks.length > 0 && (
+          <section>
+            <h2 className="text-lg font-bold">Similar to</h2>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {comparableToLinks.map(({ name, href }) =>
+                href ? (
+                  <Link
+                    key={name}
+                    href={href}
+                    className="rounded-full border border-border bg-card px-3 py-1.5 text-sm font-semibold transition-colors hover:border-primary/40"
+                  >
+                    {name} →
+                  </Link>
+                ) : (
+                  <span
+                    key={name}
+                    className="rounded-full border border-border bg-card px-3 py-1.5 text-sm font-semibold text-muted-foreground"
+                  >
+                    {name}
+                  </span>
+                )
+              )}
+            </div>
+          </section>
+        )}
+
         {(relatedComparisons.length > 0 || relatedAlternatives.length > 0) && (
           <section>
             <h2 className="text-lg font-bold">Compare and decide</h2>
@@ -775,9 +827,9 @@ async function OverviewTab({
           <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Tags</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {game.tags.map((t) => (
-              <Badge key={t} tone="neutral">
-                {t}
-              </Badge>
+              <Link key={t} href={`/discover?tag=${encodeURIComponent(t)}`}>
+                <Badge tone="neutral">{t}</Badge>
+              </Link>
             ))}
           </div>
         </div>

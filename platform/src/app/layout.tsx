@@ -11,7 +11,7 @@ import { Footer } from "@/components/shell/Footer";
 import { SessionProvider } from "@/components/SessionProvider";
 import { PresenceProvider } from "@/components/PresenceProvider";
 import { PartySyncProvider } from "@/components/PartySyncProvider";
-import { JsonLd, graph, organizationSchema, websiteSchema } from "@/components/JsonLd";
+import { JsonLd, graph, organizationSchema, websiteSchema, personSchema } from "@/components/JsonLd";
 import { TelemetryProvider } from "@/components/TelemetryProvider";
 import { CompatibilityShell } from "@/components/CompatibilityShell";
 import { PopoutDetector } from "@/components/PopoutDetector";
@@ -151,7 +151,7 @@ export default async function RootLayout({
       <body className="min-h-full">
         {/* Site-wide entity graph. Present on every page so Organization and
             WebSite can be referenced by @id from page-level schema. */}
-        <JsonLd data={graph(organizationSchema(), websiteSchema())} />
+        <JsonLd data={graph(organizationSchema(), websiteSchema(), personSchema())} />
         <SessionProvider>
           {/* Inside SessionProvider so identify() sees the auth session.
               gaEnabled is server-decided so preview never hits production GA4. */}

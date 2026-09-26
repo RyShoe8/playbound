@@ -40,6 +40,24 @@ export function gameId(slug: string): string {
 }
 
 export const ORGANIZATION_ID = `${SITE_URL}/#organization`;
+export const EDITOR_ID = `${SITE_URL}/#editor`;
+
+/**
+ * PlayBound's named editorial voice. Attaching a real Person to the quality
+ * verdicts and editorial articles — rather than only the Organization — is
+ * what E-E-A-T and AI-answer trust scoring actually look for: a stated,
+ * identifiable someone who did the testing, not just a brand name.
+ */
+export function personSchema(): Json {
+  return {
+    "@type": "Person",
+    "@id": EDITOR_ID,
+    name: "Ryan Schumacher",
+    jobTitle: "Founder & Editor",
+    url: SITE_URL,
+    worksFor: { "@id": ORGANIZATION_ID },
+  };
+}
 
 /** Site-wide Organization entity. This is the record everything else hangs off. */
 export function organizationSchema(): Json {
@@ -49,6 +67,7 @@ export function organizationSchema(): Json {
     name: SITE_NAME,
     url: SITE_URL,
     description: SITE_DESCRIPTION,
+    founder: { "@id": EDITOR_ID },
     logo: {
       "@type": "ImageObject",
       url: absoluteUrl("/icon"),
@@ -220,7 +239,8 @@ export function qualityReviewSchema(game: Game): Json | null {
       "@id": gameId(game.slug),
       name: game.title,
     },
-    author: { "@id": ORGANIZATION_ID },
+    author: { "@id": EDITOR_ID },
+    publisher: { "@id": ORGANIZATION_ID },
     ...(bar.lastVerified ? { datePublished: bar.lastVerified } : {}),
     reviewBody: bar.verdict,
     name: `${game.title} vs the PlayBound Bar`,
@@ -243,6 +263,49 @@ export function faqSchema(faq: { q: string; a: string }[]): Json | null {
       name: item.q,
       acceptedAnswer: { "@type": "Answer", text: item.a },
     })),
+  };
+}
+
+/**
+ * A community/tournament Event — RSVP-able, dated, and either online or tied
+ * to a game. Lets a real, upcoming PlayBound event surface in event-specific
+ * search and assistant surfaces instead of just living inside an app shell.
+ */
+export function eventSchema(opts: {
+  id: string;
+  title: string;
+  description: string;
+  startsAt: string;
+  endsAt: string;
+  coverImage?: string | null;
+  gameSlug?: string | null;
+  gameTitle?: string | null;
+}): Json {
+  return {
+    "@type": "Event",
+    "@id": absoluteUrl(`/events/${opts.id}`) + "#event",
+    name: opts.title,
+    description: opts.description,
+    url: absoluteUrl(`/events/${opts.id}`),
+    startDate: opts.startsAt,
+    endDate: opts.endsAt,
+    eventAttendanceMode: "https://schema.org/OnlineEventAttendanceMode",
+    eventStatus: "https://schema.org/EventScheduled",
+    location: {
+      "@type": "VirtualLocation",
+      url: absoluteUrl(`/events/${opts.id}`),
+    },
+    organizer: { "@id": ORGANIZATION_ID },
+    ...(opts.coverImage ? { image: absImage(opts.coverImage) } : {}),
+    ...(opts.gameSlug
+      ? {
+          about: {
+            "@type": "VideoGame",
+            "@id": gameId(opts.gameSlug),
+            name: opts.gameTitle ?? opts.gameSlug,
+          },
+        }
+      : {}),
   };
 }
 
@@ -342,7 +405,7 @@ export function articleSchema(opts: {
     url: absoluteUrl(opts.path),
     datePublished: opts.datePublished,
     dateModified: opts.datePublished,
-    author: { "@id": ORGANIZATION_ID },
+    author: { "@id": EDITOR_ID },
     publisher: { "@id": ORGANIZATION_ID },
     ...(opts.image ? { image: absImage(opts.image) } : {}),
     isAccessibleForFree: true,

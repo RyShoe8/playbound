@@ -308,6 +308,7 @@ async function main() {
         installSteps: ed.installSteps,
         faq: ed.faq,
         thatOneThing: ed.thatOneThing,
+        comparableTo: ed.comparableTo,
       };
     } else if (slug === ASSAULTCUBE_SLUG) {
       const install = launcherInstallBySlug[ASSAULTCUBE_SLUG];

@@ -90,14 +90,14 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
    * pokemon-blaze-online already had patch entries and are merged below.
    * next-gen-chess, opents and strikers-club are genuinely 2026.
    */
-  "thief-gold": ["releaseYear", "features"],
-  mrboom: ["title", "developerSlug", "releaseYear", "faq", "thatOneThing"],
-  "rollercoaster-tycoon": ["releaseYear", "features", "faq"],
-  "thief-2-the-metal-age": ["releaseYear", "features"],
-  "stronghold-crusader-hd": ["releaseYear", "features"],
-  triplea: ["releaseYear", "features", "faq", "thatOneThing"],
-  "star-wars-knights-of-the-old-republic": ["releaseYear"],
-  "star-wars-knights-of-the-old-republic-ii-the-sith-lords": ["releaseYear"],
+  "thief-gold": ["releaseYear", "features", "comparableTo"],
+  mrboom: ["title", "developerSlug", "releaseYear", "faq", "thatOneThing", "comparableTo"],
+  "rollercoaster-tycoon": ["releaseYear", "features", "faq", "comparableTo"],
+  "thief-2-the-metal-age": ["releaseYear", "features", "comparableTo"],
+  "stronghold-crusader-hd": ["releaseYear", "features", "comparableTo"],
+  triplea: ["releaseYear", "features", "faq", "thatOneThing", "comparableTo"],
+  "star-wars-knights-of-the-old-republic": ["releaseYear", "comparableTo"],
+  "star-wars-knights-of-the-old-republic-ii-the-sith-lords": ["releaseYear", "comparableTo"],
   // Stored 2019 was the 2.0 "Elara" release, not the original.
   "red-eclipse": ["releaseYear", "installSteps", "developerSlug", "sizeMB"],
   openclonk: ["developerSlug", "releaseYear", "faq", "sizeMB"],
@@ -156,8 +156,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "systemRequirements",
     "hardwareRequirements",
     "launcherInstall",
-    "firstPlaySteps",
-  ],
+    "firstPlaySteps", "comparableTo"],
   "stalker-anomaly": [
     "description",
     "aliases",
@@ -210,7 +209,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "hardwareRequirements",
     "launcherInstall",
   ],
-  "space-station-14": ["launcherInstall", "installSteps", "releaseYear", "faq", "thatOneThing"],
+  "space-station-14": ["launcherInstall", "installSteps", "releaseYear", "faq", "thatOneThing", "comparableTo"],
   teeworlds: [
     "developerSlug",
     "platforms",
@@ -279,7 +278,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "systemRequirements",
     "hardwareRequirements",
   ],
-  "x-men-arcade-remake": ["launcherInstall", "firstPlaySteps", "multiplayerGamingSteps"],
+  "x-men-arcade-remake": ["launcherInstall", "firstPlaySteps", "multiplayerGamingSteps", "comparableTo"],
   "tmnt-rescue-palooza": [
     "title",
     "aliases",
@@ -287,8 +286,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "maxPlayers",
     "launcherInstall",
     "firstPlaySteps",
-    "multiplayerGamingSteps",
-  ],
+    "multiplayerGamingSteps", "comparableTo"],
   morrowind: [
     "launcherInstall",
     "qualityBar",
@@ -300,7 +298,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "comparableTo",
     "faq",
   ],
-  "dune-legacy": ["launcherInstall", "features", "thatOneThing"],
+  "dune-legacy": ["launcherInstall", "features", "thatOneThing", "comparableTo"],
   "pokemon-blaze-online": [
     "title",
     "tagline",
@@ -342,8 +340,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "launcherInstall",
     "longDescription",
     "whyWePickedIt",
-    "installSteps",
-  ],
+    "installSteps", "comparableTo"],
   pokemmo: [
     "title",
     "tagline",
@@ -464,11 +461,11 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
    * says `supported: false`, so the tag was simply wrong, not a judgment
    * call this wave is overriding.
    */
-  "openttd": ["features", "installSteps", "thatOneThing"],
-  "shattered-pixel-dungeon": ["features", "launcherInstall", "installSteps", "thatOneThing"],
+  "openttd": ["features", "installSteps", "thatOneThing", "comparableTo"],
+  "shattered-pixel-dungeon": ["features", "launcherInstall", "installSteps", "thatOneThing", "comparableTo"],
   "lincity-ng": ["features"],
   "heroes-of-might-and-magic-3-complete": ["features"],
-  "dungeon-keeper-gold": ["features", "thatOneThing"],
+  "dungeon-keeper-gold": ["features", "thatOneThing", "comparableTo"],
 
   /*
    * PlayBound Controls wave-2, 2026-09-23 — see
@@ -476,17 +473,17 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
    * "Controller Support" on wolfenstein-enemy-territory, same reasoning as
    * the wave-1 correction above.
    */
-  "old-school-runescape": ["features", "thatOneThing"],
-  "wolfenstein-enemy-territory": ["features", "thatOneThing"],
-  openciv3: ["features", "thatOneThing"],
-  "tes-arena": ["features", "thatOneThing"],
-  "star-wars-galaxies": ["features", "faq", "thatOneThing"],
-  freeciv: ["features", "thatOneThing"],
-  "warzone-2100": ["features", "installSteps", "thatOneThing"],
-  "0ad": ["features", "thatOneThing", "installSteps"],
-  "battle-for-wesnoth": ["features", "thatOneThing", "installSteps"],
-  openra: ["features", "installSteps", "thatOneThing"],
-  bzflag: ["features", "thatOneThing"],
+  "old-school-runescape": ["features", "thatOneThing", "comparableTo"],
+  "wolfenstein-enemy-territory": ["features", "thatOneThing", "comparableTo"],
+  openciv3: ["features", "thatOneThing", "comparableTo"],
+  "tes-arena": ["features", "thatOneThing", "comparableTo"],
+  "star-wars-galaxies": ["features", "faq", "thatOneThing", "comparableTo"],
+  freeciv: ["features", "thatOneThing", "comparableTo"],
+  "warzone-2100": ["features", "installSteps", "thatOneThing", "comparableTo"],
+  "0ad": ["features", "thatOneThing", "installSteps", "comparableTo"],
+  "battle-for-wesnoth": ["features", "thatOneThing", "installSteps", "comparableTo"],
+  openra: ["features", "installSteps", "thatOneThing", "comparableTo"],
+  bzflag: ["features", "thatOneThing", "comparableTo"],
 
   /*
    * Testing-catalog cleanup pass, 2026-09-25. quake-ii, outrun, hypersomnia
@@ -515,10 +512,10 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
    * build was ever published, and neither editorial.ts's installSteps nor
    * games.ts's platforms array ever claimed one.
    */
-  "quake-ii": ["description", "releaseYear", "sizeMB", "installSteps", "faq"],
-  outrun: ["description", "sizeMB", "platforms", "features", "installSteps", "faq"],
-  hypersomnia: ["description", "releaseYear", "sizeMB", "installSteps", "faq"],
-  "final-fantasy-xi": ["description", "releaseYear", "sizeMB", "installSteps", "faq"],
+  "quake-ii": ["description", "releaseYear", "sizeMB", "installSteps", "faq", "comparableTo"],
+  outrun: ["description", "sizeMB", "platforms", "features", "installSteps", "faq", "comparableTo"],
+  hypersomnia: ["description", "releaseYear", "sizeMB", "installSteps", "faq", "comparableTo"],
+  "final-fantasy-xi": ["description", "releaseYear", "sizeMB", "installSteps", "faq", "comparableTo"],
 
   /*
    * theme-hospital exists only in the CMS (no seed row), so its correction
@@ -540,9 +537,9 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
    * games). The rest (no seed row) are sourced from catalogCorrections.ts
    * or, for teeworlds, its own dedicated source module.
    */
-  "gamebuddies-io": ["developerSlug", "faq", "thatOneThing"],
-  "marathon-2": ["faq", "thatOneThing"],
-  pixreveal: ["developerSlug", "faq", "thatOneThing"],
+  "gamebuddies-io": ["developerSlug", "faq", "thatOneThing", "comparableTo"],
+  "marathon-2": ["faq", "thatOneThing", "comparableTo"],
+  pixreveal: ["developerSlug", "faq", "thatOneThing", "comparableTo"],
   deadeus: ["developerSlug", "faq", "installSteps", "sizeMB"],
   assaultcube: ["faq", "developerSlug", "sizeMB"],
   "opentyrian-2000": ["developerSlug", "faq", "installSteps", "sizeMB"],
@@ -587,55 +584,55 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
    * game's real catalog data, not hand-written, so the wording is exactly
    * what a fresh import would produce today.
    */
-  freedoom: ["installSteps", "thatOneThing"],
-  supertux: ["installSteps", "thatOneThing"],
-  luanti: ["installSteps", "thatOneThing"],
-  "endless-sky": ["installSteps", "thatOneThing"],
-  supertuxkart: ["installSteps", "thatOneThing"],
-  unvanquished: ["installSteps", "thatOneThing"],
-  mindustry: ["installSteps", "thatOneThing"],
-  xonotic: ["installSteps", "thatOneThing"],
+  freedoom: ["installSteps", "thatOneThing", "comparableTo"],
+  supertux: ["installSteps", "thatOneThing", "comparableTo"],
+  luanti: ["installSteps", "thatOneThing", "comparableTo"],
+  "endless-sky": ["installSteps", "thatOneThing", "comparableTo"],
+  supertuxkart: ["installSteps", "thatOneThing", "comparableTo"],
+  unvanquished: ["installSteps", "thatOneThing", "comparableTo"],
+  mindustry: ["installSteps", "thatOneThing", "comparableTo"],
+  xonotic: ["installSteps", "thatOneThing", "comparableTo"],
 
   /*
    * Editorial depth pass, 2026-09-26. Premier catalog anchors calibrated
    * with quotable thatOneThing hooks and verified PlayBound voice.
    */
-  holocure: ["whyWePickedIt", "thatOneThing"],
-  "beyond-all-reason": ["thatOneThing", "installSteps"],
-  veloren: ["thatOneThing", "installSteps"],
-  "zero-k": ["thatOneThing"],
-  naev: ["thatOneThing"],
-  hedgewars: ["thatOneThing"],
-  flightgear: ["thatOneThing"],
-  daggerfall: ["thatOneThing"],
-  starcraft: ["thatOneThing"],
-  "team-fortress-2": ["thatOneThing"],
-  alephone: ["thatOneThing"],
-  valorant: ["thatOneThing"],
-  "counter-strike-2": ["thatOneThing"],
-  "asherons-call": ["thatOneThing"],
-  "asphalt-legends": ["thatOneThing"],
-  brawlhalla: ["thatOneThing"],
-  "cataclysm-dda": ["thatOneThing"],
-  everquest: ["thatOneThing"],
-  "gradius-remake": ["thatOneThing"],
-  jfsw: ["thatOneThing"],
-  "mega-man-unlimited": ["thatOneThing"],
-  "metal-slug-remake": ["thatOneThing"],
-  openmohaa: ["thatOneThing"],
-  srb2: ["thatOneThing"],
-  "star-wars-the-old-republic": ["thatOneThing"],
-  "stunt-rally": ["thatOneThing"],
-  "the-ur-quan-masters": ["thatOneThing"],
-  "tinywind-pixel-pirate-sailing-game": ["thatOneThing"],
-  torcs: ["thatOneThing"],
-  "war-thunder": ["thatOneThing"],
-  warframe: ["thatOneThing"],
-  "world-of-sea-battle": ["thatOneThing"],
-  yorg: ["thatOneThing"],
-  "beneath-a-steel-sky": ["thatOneThing"],
-  freelancer: ["thatOneThing"],
-  airforce: ["thatOneThing"],
+  holocure: ["whyWePickedIt", "thatOneThing", "comparableTo"],
+  "beyond-all-reason": ["thatOneThing", "installSteps", "comparableTo"],
+  veloren: ["thatOneThing", "installSteps", "comparableTo"],
+  "zero-k": ["thatOneThing", "comparableTo"],
+  naev: ["thatOneThing", "comparableTo"],
+  hedgewars: ["thatOneThing", "comparableTo"],
+  flightgear: ["thatOneThing", "comparableTo"],
+  daggerfall: ["thatOneThing", "comparableTo"],
+  starcraft: ["thatOneThing", "comparableTo"],
+  "team-fortress-2": ["thatOneThing", "comparableTo"],
+  alephone: ["thatOneThing", "comparableTo"],
+  valorant: ["thatOneThing", "comparableTo"],
+  "counter-strike-2": ["thatOneThing", "comparableTo"],
+  "asherons-call": ["thatOneThing", "comparableTo"],
+  "asphalt-legends": ["thatOneThing", "comparableTo"],
+  brawlhalla: ["thatOneThing", "comparableTo"],
+  "cataclysm-dda": ["thatOneThing", "comparableTo"],
+  everquest: ["thatOneThing", "comparableTo"],
+  "gradius-remake": ["thatOneThing", "comparableTo"],
+  jfsw: ["thatOneThing", "comparableTo"],
+  "mega-man-unlimited": ["thatOneThing", "comparableTo"],
+  "metal-slug-remake": ["thatOneThing", "comparableTo"],
+  openmohaa: ["thatOneThing", "comparableTo"],
+  srb2: ["thatOneThing", "comparableTo"],
+  "star-wars-the-old-republic": ["thatOneThing", "comparableTo"],
+  "stunt-rally": ["thatOneThing", "comparableTo"],
+  "the-ur-quan-masters": ["thatOneThing", "comparableTo"],
+  "tinywind-pixel-pirate-sailing-game": ["thatOneThing", "comparableTo"],
+  torcs: ["thatOneThing", "comparableTo"],
+  "war-thunder": ["thatOneThing", "comparableTo"],
+  warframe: ["thatOneThing", "comparableTo"],
+  "world-of-sea-battle": ["thatOneThing", "comparableTo"],
+  yorg: ["thatOneThing", "comparableTo"],
+  "beneath-a-steel-sky": ["thatOneThing", "comparableTo"],
+  freelancer: ["thatOneThing", "comparableTo"],
+  airforce: ["thatOneThing", "comparableTo"],
   marathon: [
     "qualityBar",
     "longDescription",
@@ -686,6 +683,39 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "comparableTo",
     "faq",
   ],
+
+  /*
+   * comparableTo rendering pass, 2026-09-26. These 25 games each already had a
+   * curated comparableTo list sitting in editorial.ts/catalogCorrections.ts
+   * that had never reached a live row — some (the NEW_GAME_SLUGS entries
+   * below) only needed this because they were already created and a fresh
+   * insert would not have overwritten them. A no-op if the row doesn't exist
+   * yet; harmless to list here either way.
+   */
+  "privateer-gemini-gold": ["comparableTo"],
+  openarena: ["comparableTo"],
+  "tomb-raider-123": ["comparableTo"],
+  "s-t-a-l-k-e-r-call-of-pripyat": ["comparableTo"],
+  "albion-online": ["comparableTo"],
+  "guild-wars-2": ["comparableTo"],
+  "lord-of-the-rings-online": ["comparableTo"],
+  "dc-universe-online": ["comparableTo"],
+  "genshin-impact": ["comparableTo"],
+  "dota-2": ["comparableTo"],
+  "league-of-legends": ["comparableTo"],
+  "quake-champions": ["comparableTo"],
+  "microsoft-allegiance": ["comparableTo"],
+  "strikers-club": ["comparableTo"],
+  "trigger-rally": ["comparableTo"],
+  ysoccer: ["comparableTo"],
+  "super-sidekicks": ["comparableTo"],
+  "baseball-stars-2": ["comparableTo"],
+  "soccer-brawl": ["comparableTo"],
+  srb2kart: ["comparableTo"],
+  "lovers-in-a-dangerous-spacetime": ["comparableTo"],
+  "flatout-2": ["comparableTo"],
+  opents: ["comparableTo"],
+  "star-wars-galactic-battlegrounds-saga": ["comparableTo"],
 };
 
 /** Existing editions: $set ONLY these fields. */
