@@ -579,7 +579,6 @@ function renderGameTab() {
         : ""
     }
     ${connectSteps.length ? `<p class="guide-section">Connecting in game</p>${stepsHtml(connectSteps)}` : ""}
-    ${guideControlsHtml(g)}
     ${firstPlay.length ? `<p class="guide-section">Quick tips</p>${stepsHtml(firstPlay)}` : ""}
     <p class="hint">Esc to close</p>
   `;
