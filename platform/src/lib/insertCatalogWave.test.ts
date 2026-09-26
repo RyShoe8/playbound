@@ -244,6 +244,29 @@ describe("insert-catalog-wave allowlists", () => {
         "alephone",
         "valorant",
         "counter-strike-2",
+        "asherons-call",
+        "asphalt-legends",
+        "brawlhalla",
+        "cataclysm-dda",
+        "everquest",
+        "gradius-remake",
+        "jfsw",
+        "mega-man-unlimited",
+        "metal-slug-remake",
+        "openmohaa",
+        "srb2",
+        "star-wars-the-old-republic",
+        "stunt-rally",
+        "the-ur-quan-masters",
+        "tinywind-pixel-pirate-sailing-game",
+        "torcs",
+        "war-thunder",
+        "warframe",
+        "world-of-sea-battle",
+        "yorg",
+        "beneath-a-steel-sky",
+        "freelancer",
+        "airforce",
       ].sort()
     );
     expect(PATCH_GAME_FIELDS["super-nova-strike"]).toContain("androidStoreUrl");
@@ -277,6 +300,7 @@ describe("insert-catalog-wave allowlists", () => {
       "installSteps",
       "releaseYear",
       "faq",
+      "thatOneThing",
     ]);
     expect(PATCH_GAME_FIELDS.teeworlds).toContain("launcherInstall");
     expect(PATCH_GAME_FIELDS["the-dark-mod"]).toContain("platforms");

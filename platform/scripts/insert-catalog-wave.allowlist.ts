@@ -91,11 +91,11 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
    * next-gen-chess, opents and strikers-club are genuinely 2026.
    */
   "thief-gold": ["releaseYear", "features"],
-  mrboom: ["title", "developerSlug", "releaseYear", "faq"],
+  mrboom: ["title", "developerSlug", "releaseYear", "faq", "thatOneThing"],
   "rollercoaster-tycoon": ["releaseYear", "features", "faq"],
   "thief-2-the-metal-age": ["releaseYear", "features"],
   "stronghold-crusader-hd": ["releaseYear", "features"],
-  triplea: ["releaseYear", "features", "faq"],
+  triplea: ["releaseYear", "features", "faq", "thatOneThing"],
   "star-wars-knights-of-the-old-republic": ["releaseYear"],
   "star-wars-knights-of-the-old-republic-ii-the-sith-lords": ["releaseYear"],
   // Stored 2019 was the 2.0 "Elara" release, not the original.
@@ -210,7 +210,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "hardwareRequirements",
     "launcherInstall",
   ],
-  "space-station-14": ["launcherInstall", "installSteps", "releaseYear", "faq"],
+  "space-station-14": ["launcherInstall", "installSteps", "releaseYear", "faq", "thatOneThing"],
   teeworlds: [
     "developerSlug",
     "platforms",
@@ -458,7 +458,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   "shattered-pixel-dungeon": ["features", "launcherInstall", "installSteps", "thatOneThing"],
   "lincity-ng": ["features"],
   "heroes-of-might-and-magic-3-complete": ["features"],
-  "dungeon-keeper-gold": ["features"],
+  "dungeon-keeper-gold": ["features", "thatOneThing"],
 
   /*
    * PlayBound Controls wave-2, 2026-09-23 — see
@@ -466,17 +466,17 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
    * "Controller Support" on wolfenstein-enemy-territory, same reasoning as
    * the wave-1 correction above.
    */
-  "old-school-runescape": ["features"],
-  "wolfenstein-enemy-territory": ["features"],
+  "old-school-runescape": ["features", "thatOneThing"],
+  "wolfenstein-enemy-territory": ["features", "thatOneThing"],
   openciv3: ["features", "thatOneThing"],
   "tes-arena": ["features", "thatOneThing"],
-  "star-wars-galaxies": ["features", "faq"],
+  "star-wars-galaxies": ["features", "faq", "thatOneThing"],
   freeciv: ["features", "thatOneThing"],
   "warzone-2100": ["features", "installSteps", "thatOneThing"],
   "0ad": ["features", "thatOneThing", "installSteps"],
-  "battle-for-wesnoth": ["features", "thatOneThing"],
+  "battle-for-wesnoth": ["features", "thatOneThing", "installSteps"],
   openra: ["features", "installSteps", "thatOneThing"],
-  bzflag: ["features"],
+  bzflag: ["features", "thatOneThing"],
 
   /*
    * Testing-catalog cleanup pass, 2026-09-25. quake-ii, outrun, hypersomnia
@@ -530,9 +530,9 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
    * games). The rest (no seed row) are sourced from catalogCorrections.ts
    * or, for teeworlds, its own dedicated source module.
    */
-  "gamebuddies-io": ["developerSlug", "faq"],
+  "gamebuddies-io": ["developerSlug", "faq", "thatOneThing"],
   "marathon-2": ["faq", "thatOneThing"],
-  pixreveal: ["developerSlug", "faq"],
+  pixreveal: ["developerSlug", "faq", "thatOneThing"],
   deadeus: ["developerSlug", "faq", "installSteps"],
   assaultcube: ["faq"],
   "opentyrian-2000": ["developerSlug", "faq", "installSteps"],
@@ -581,6 +581,29 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   alephone: ["thatOneThing"],
   valorant: ["thatOneThing"],
   "counter-strike-2": ["thatOneThing"],
+  "asherons-call": ["thatOneThing"],
+  "asphalt-legends": ["thatOneThing"],
+  brawlhalla: ["thatOneThing"],
+  "cataclysm-dda": ["thatOneThing"],
+  everquest: ["thatOneThing"],
+  "gradius-remake": ["thatOneThing"],
+  jfsw: ["thatOneThing"],
+  "mega-man-unlimited": ["thatOneThing"],
+  "metal-slug-remake": ["thatOneThing"],
+  openmohaa: ["thatOneThing"],
+  srb2: ["thatOneThing"],
+  "star-wars-the-old-republic": ["thatOneThing"],
+  "stunt-rally": ["thatOneThing"],
+  "the-ur-quan-masters": ["thatOneThing"],
+  "tinywind-pixel-pirate-sailing-game": ["thatOneThing"],
+  torcs: ["thatOneThing"],
+  "war-thunder": ["thatOneThing"],
+  warframe: ["thatOneThing"],
+  "world-of-sea-battle": ["thatOneThing"],
+  yorg: ["thatOneThing"],
+  "beneath-a-steel-sky": ["thatOneThing"],
+  freelancer: ["thatOneThing"],
+  airforce: ["thatOneThing"],
 };
 
 /** Existing editions: $set ONLY these fields. */
