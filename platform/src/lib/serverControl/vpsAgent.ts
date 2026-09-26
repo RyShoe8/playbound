@@ -38,7 +38,7 @@ import {
   strongestApplyMode,
   type ServerSettingValues,
 } from "./settings";
-import { buildRconCommands, parseQuake3Status } from "./rcon";
+import { buildRconCommands, parseStatus } from "./rcon";
 
 /** The slice of the game-host client this adapter needs. */
 export interface VpsAgentClient {
@@ -379,12 +379,7 @@ export function createVpsAgentAdapter(opts: VpsAgentAdapterOptions): ServerContr
       }
       const sent = await client.sendCommand(ref.roomId, "status");
       if (!sent.ok) throw new Error(sent.error);
-      return parseQuake3Status(sent.response).map((p) => ({
-        name: p.name,
-        id: p.id,
-        pingMs: p.pingMs,
-        score: p.score,
-      }));
+      return parseStatus(getServerSettingProfile(ref.gameSlug)?.controlChannel, sent.response).map((p) => ({ name: p.bot ? `${p.name} (bot)` : p.name, id: p.id, pingMs: p.pingMs, score: p.score }));
     },
 
     async sendCommand(raw: string): Promise<string> {

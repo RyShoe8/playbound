@@ -14,6 +14,7 @@ import { SITE_URL } from "@/lib/site";
 import { cacheLife, cacheTag } from "next/cache";
 import { lastMod, newestUpdate } from "@/lib/sitemapDates";
 import { hasControls } from "@/lib/controls/types";
+import { HOSTING_TIER_TAG, loadPublicTier, publicGames } from "@/lib/dedicatedHosting/publicTier";
 
 /**
  * Sourced from the live catalog so it stays correct as games are added weekly.
@@ -41,6 +42,8 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
   cacheTag("mods");
   cacheTag("gear");
   cacheTag("events");
+  cacheTag(HOSTING_TIER_TAG);
+  const hostingGames = publicGames((await loadPublicTier()).tier);
   const [games, mods, weekly, editions, gear, events, collections] = await Promise.all([
     listGames(),
     listMods({ view: "card" }),
@@ -85,6 +88,8 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/gear`, changeFrequency: "weekly", priority: 0.6 },
     { url: `${SITE_URL}/multiplayer`, changeFrequency: "hourly", priority: 0.8 },
     { url: `${SITE_URL}/connect`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE_URL}/hosting`, changeFrequency: "weekly", priority: 0.8 },
+    ...hostingGames.map((g) => ({ url: `${SITE_URL}/hosting/${g.gameSlug}`, changeFrequency: "monthly" as const, priority: 0.7 })),
     { url: `${SITE_URL}/play-with-friends`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${SITE_URL}/guides`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${SITE_URL}/guides/lan-over-internet`, changeFrequency: "monthly", priority: 0.8 },

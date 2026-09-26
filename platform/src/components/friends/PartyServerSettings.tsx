@@ -441,7 +441,7 @@ function Tes3mpSetHour({ partyId }: { partyId: string }) {
   );
 }
 
-function SettingControl({
+export function SettingControl({
   def,
   value,
   disabled,

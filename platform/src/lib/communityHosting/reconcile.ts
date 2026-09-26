@@ -14,6 +14,7 @@ import { recordResourceSample } from "./samples";
 import { recordPopulationReading } from "./population";
 import { rotationPriority } from "./rotation";
 import { saveEvent } from "@/lib/telemetry/server/saveEvent";
+import { paidReservedEnvelope } from "@/lib/dedicatedHosting/reconcile";
 
 export const DEFAULT_COMMUNITY_SERVER_ENVELOPE: ResourceEnvelope = {
   cpuCores: 1.0,
@@ -29,7 +30,7 @@ const HEAVY_GAME_ENVELOPES: Record<string, ResourceEnvelope> = {
 
 // Only recipes with a server-enforced admission limit belong here. Reporting a
 // cap for another engine without enforcing it would mislead hosts and players.
-const PLAYER_LIMIT_RECIPES = new Set([
+export const PLAYER_LIMIT_RECIPES = new Set([
   "counter-strike-2", "hypersomnia", "luanti", "morrowind", "teeworlds", "openttd",
   "assaultcube", "medal-of-honor-allied-assault", "warzone-2100", "bzflag", "mindustry", "hurry-curry",
   "supertuxkart", "xonotic", "openarena", "0-ad", "0ad", "bombsquad",
@@ -233,6 +234,13 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
   await dbConnect();
   const config = await CommunityHostingConfig.findOne({ key: "global" }).lean();
   if (!config?.enabled) return { action: "disabled" };
+  // PlayBound Dedicated capacity is owed to paying customers whether or not
+  // their servers are running; automatic Community Servers use what is left.
+  const paid = await paidReservedEnvelope(config.node.regionKey).catch(() => ({ cpuCores: 0, ramBytes: 0 }));
+  config.budget = {
+    cpuCores: Math.max(0, config.budget.cpuCores - paid.cpuCores),
+    ramBytes: Math.max(0, config.budget.ramBytes - paid.ramBytes),
+  };
   const owner = await acquireLease(now);
   if (!owner) return { action: "busy" };
   try {
@@ -254,6 +262,8 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
     await syncReservations(now, config.node.regionKey);
     const active = await CommunityServer.find({
       regionKey: config.node.regionKey,
+      // Customer servers are reconciled by dedicatedHosting/reconcile, never rotated here.
+      ownerType: { $ne: "user" },
       $or: [
         { desiredState: "running" },
         { runtimeState: { $in: ["running", "pending", "starting"] } },
@@ -395,7 +405,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
     // cleanly scale down the lowest-priority empty, unprotected servers until within budget.
     let totalRunningCpu = runningManaged.reduce((sum, e) => sum + e.cpuCores, 0);
     let totalRunningRam = runningManaged.reduce((sum, e) => sum + e.ramBytes, 0);
-    const previous = await CommunityServer.find({ regionKey: config.node.regionKey }).select({ profileKey: 1, cooldownUntil: 1, manualPause: 1, onlineSince: 1 }).lean();
+    const previous = await CommunityServer.find({ regionKey: config.node.regionKey, ownerType: { $ne: "user" } }).select({ profileKey: 1, cooldownUntil: 1, manualPause: 1, onlineSince: 1 }).lean();
 
     if (totalRunningCpu > config.budget.cpuCores || totalRunningRam > config.budget.ramBytes) {
       const candidatesToScaleDown = runningServers

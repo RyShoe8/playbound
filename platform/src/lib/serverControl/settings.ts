@@ -47,7 +47,7 @@ export type ControlFeature =
   | "password"
   | "restart";
 
-const CONTROL_FEATURE_LABELS: Record<ControlFeature, string> = {
+export const CONTROL_FEATURE_LABELS: Record<ControlFeature, string> = {
   map: "Map switching",
   gameMode: "Game mode",
   slots: "Player slots",
@@ -89,6 +89,13 @@ export type ServerSettingDefinition =
       options: readonly { value: string | number; label: string }[];
     });
 
+/**
+ * The live console protocol a game server speaks, as far as the platform is
+ * concerned: it decides command syntax and how replies are read. The agent
+ * holds the transport (and the password) for each.
+ */
+export type ControlChannel = "rcon-quake3" | "rcon-darkplaces" | "rcon-source";
+
 export type ServerSettingValue = string | number | boolean;
 export type ServerSettingValues = Record<string, ServerSettingValue>;
 
@@ -102,7 +109,19 @@ export interface ServerSettingProfile {
    * again. This is what decides whether `live` and `next-round` are even
    * possible, so it belongs to the game rather than to the adapter.
    */
-  controlChannel?: "rcon-quake3";
+  controlChannel?: ControlChannel;
+  /**
+   * Map control over the live channel: the maps this server has, the command
+   * that changes to one now, and how a rotation is kept (null: the engine has
+   * no rotation PlayBound can set over its console, so only "next map").
+   * Every map here was read from the installed game on the VPS.
+   */
+  maps?: {
+    options: readonly { value: string; label: string }[];
+    changeCommand: string;
+    nextCommand?: string;
+    rotation: "quake3-vstr" | "darkplaces-maplist" | null;
+  };
   settings: readonly ServerSettingDefinition[];
   /**
    * Concepts this game will never have, and why.
@@ -278,9 +297,20 @@ const WARZONE_2100: ServerSettingProfile = {
  * and `g_antilag` are already in assets/et-playbound.cfg, so those two are
  * known good on this deployment.
  */
+/** The objective maps that ship with ET: Legacy. */
+const ET_MAPS = [
+        { value: "oasis", label: "Oasis" },
+        { value: "battery", label: "Battery" },
+        { value: "goldrush", label: "Gold Rush" },
+        { value: "radar", label: "Radar" },
+        { value: "railgun", label: "Railgun" },
+        { value: "fueldump", label: "Fuel Dump" },
+      ];
+
 const WOLFENSTEIN_ENEMY_TERRITORY: ServerSettingProfile = {
   slug: "wolfenstein-enemy-territory",
   controlChannel: "rcon-quake3",
+  maps: { options: ET_MAPS, changeCommand: "map {value}", rotation: "quake3-vstr" },
   unavailable: {
     /*
      * ET ships no bots. Omni-bot is a separate mod, and this deployment
@@ -303,14 +333,7 @@ const WOLFENSTEIN_ENEMY_TERRITORY: ServerSettingProfile = {
        * is applied as a command (`map oasis`) rather than a cvar, and a
        * command must never carry anything a host typed.
        */
-      options: [
-        { value: "oasis", label: "Oasis" },
-        { value: "battery", label: "Battery" },
-        { value: "goldrush", label: "Gold Rush" },
-        { value: "radar", label: "Radar" },
-        { value: "railgun", label: "Railgun" },
-        { value: "fueldump", label: "Fuel Dump" },
-      ],
+      options: ET_MAPS,
       // Changing the map restarts the round, not the server: nobody is dropped.
       apply: "live",
       backend: "rcon",
@@ -633,6 +656,81 @@ const FREECIV: ServerSettingProfile = {
 const OPENARENA: ServerSettingProfile = {
   slug: "openarena",
   controlChannel: "rcon-quake3",
+  // Read from the pk3s installed on the VPS (baseoa), not guessed.
+  maps: { options: [
+      { value: "aggressor", label: "Aggressor" },
+      { value: "am_galmevish", label: "Galmevish" },
+      { value: "am_galmevish2", label: "Galmevish2" },
+      { value: "am_lavaarena", label: "Lavaarena" },
+      { value: "am_lavactf", label: "Lavactf" },
+      { value: "am_lavactfxl", label: "Lavactfxl" },
+      { value: "am_mckinleyish2", label: "Mckinleyish2" },
+      { value: "am_spacecont", label: "Spacecont" },
+      { value: "am_thornish", label: "Thornish" },
+      { value: "am_underworks", label: "Underworks" },
+      { value: "am_underworks2", label: "Underworks2" },
+      { value: "blitzkrieg3", label: "Blitzkrieg3" },
+      { value: "cbctf1", label: "Cbctf1" },
+      { value: "ce1m7", label: "Ce1m7" },
+      { value: "ctf_compromise", label: "Compromise" },
+      { value: "ctf_gate1", label: "Gate1" },
+      { value: "ctf_inyard", label: "Inyard" },
+      { value: "czest1dm", label: "Czest1dm" },
+      { value: "czest1tourney", label: "Czest1tourney" },
+      { value: "czest2ctf", label: "Czest2ctf" },
+      { value: "czest3ctf", label: "Czest3ctf" },
+      { value: "delta", label: "Delta" },
+      { value: "dm4ish", label: "Dm4ish" },
+      { value: "dm6ish", label: "Dm6ish" },
+      { value: "fan", label: "Fan" },
+      { value: "hydronex", label: "Hydronex" },
+      { value: "hydronex2", label: "Hydronex2" },
+      { value: "islandctf", label: "Islandctf" },
+      { value: "islanddm", label: "Islanddm" },
+      { value: "kaos", label: "Kaos" },
+      { value: "kaos2", label: "Kaos2" },
+      { value: "mlca1", label: "Mlca1" },
+      { value: "mlctf1beta", label: "Mlctf1beta" },
+      { value: "oa_bases3", label: "Bases3" },
+      { value: "oa_bases3cl", label: "Bases3cl" },
+      { value: "oa_bases3p3ta", label: "Bases3p3ta" },
+      { value: "oa_bases3plus3", label: "Bases3plus3" },
+      { value: "oa_bases5", label: "Bases5" },
+      { value: "oa_bases7", label: "Bases7" },
+      { value: "oa_ctf2", label: "Ctf2" },
+      { value: "oa_ctf2old", label: "Ctf2old" },
+      { value: "oa_ctf4ish", label: "Ctf4ish" },
+      { value: "oa_dm1", label: "Dm1" },
+      { value: "oa_dm2", label: "Dm2" },
+      { value: "oa_dm3", label: "Dm3" },
+      { value: "oa_dm4", label: "Dm4" },
+      { value: "oa_dm5", label: "Dm5" },
+      { value: "oa_dm6", label: "Dm6" },
+      { value: "oa_dm7", label: "Dm7" },
+      { value: "oa_koth1", label: "Koth1" },
+      { value: "oa_koth2", label: "Koth2" },
+      { value: "oa_minia", label: "Minia" },
+      { value: "oa_pvomit", label: "Pvomit" },
+      { value: "oa_reptctf11", label: "Reptctf11" },
+      { value: "oa_rpg3dm2", label: "Rpg3dm2" },
+      { value: "oa_shine", label: "Shine" },
+      { value: "oa_shouse", label: "Shouse" },
+      { value: "oa_spirit3", label: "Spirit3" },
+      { value: "oa_thor", label: "Thor" },
+      { value: "oasago1", label: "Oasago1" },
+      { value: "oasago2", label: "Oasago2" },
+      { value: "ps37ctf", label: "Ps37ctf" },
+      { value: "ps37ctf2", label: "Ps37ctf2" },
+      { value: "ps9ctf", label: "Ps9ctf" },
+      { value: "pul1ctf", label: "Pul1ctf" },
+      { value: "pul1duel-oa", label: "Pul1duel Oa" },
+      { value: "pxlfan", label: "Pxlfan" },
+      { value: "q3dm6ish", label: "Q3dm6ish" },
+      { value: "sleekgrinder", label: "Sleekgrinder" },
+      { value: "slimefac", label: "Slimefac" },
+      { value: "suspended", label: "Suspended" },
+      { value: "wrackdm17", label: "Wrackdm17" },
+    ], changeCommand: "map {value}", rotation: "quake3-vstr" },
   settings: [
     {
       key: "g_gametype",
@@ -725,6 +823,40 @@ const OPENARENA: ServerSettingProfile = {
  */
 const XONOTIC: ServerSettingProfile = {
   slug: "xonotic",
+  // Plain (rcon_secure 0) DarkPlaces rcon, password held by the agent.
+  controlChannel: "rcon-darkplaces",
+  // From xonotic-20230620-maps.pk3 on the VPS.
+  maps: { options: [
+      { value: "afterslime", label: "Afterslime" },
+      { value: "atelier", label: "Atelier" },
+      { value: "boil", label: "Boil" },
+      { value: "bromine", label: "Bromine" },
+      { value: "catharsis", label: "Catharsis" },
+      { value: "courtfun", label: "Courtfun" },
+      { value: "dance", label: "Dance" },
+      { value: "darkzone", label: "Darkzone" },
+      { value: "erbium", label: "Erbium" },
+      { value: "finalrage", label: "Finalrage" },
+      { value: "fuse", label: "Fuse" },
+      { value: "geoplanetary", label: "Geoplanetary" },
+      { value: "glowplant", label: "Glowplant" },
+      { value: "go", label: "Go" },
+      { value: "implosion", label: "Implosion" },
+      { value: "leave_em_behind", label: "Leave Em Behind" },
+      { value: "nexballarena", label: "Nexballarena" },
+      { value: "opium", label: "Opium" },
+      { value: "runningman", label: "Runningman" },
+      { value: "runningmanctf", label: "Runningmanctf" },
+      { value: "silentsiege", label: "Silentsiege" },
+      { value: "solarium", label: "Solarium" },
+      { value: "space-elevator", label: "Space Elevator" },
+      { value: "stormkeep", label: "Stormkeep" },
+      { value: "techassault", label: "Techassault" },
+      { value: "trident", label: "Trident" },
+      { value: "vorix", label: "Vorix" },
+      { value: "warfare", label: "Warfare" },
+      { value: "xoylent", label: "Xoylent" },
+    ], changeCommand: "gotomap {value}", rotation: "darkplaces-maplist" },
   settings: [
     {
       key: "gametype",
@@ -762,8 +894,9 @@ const XONOTIC: ServerSettingProfile = {
       default: -1,
       min: -1,
       help: "-1 leaves each map's own limit alone.",
-      apply: "restart",
-      backend: "startup",
+      // The _override cvars are read when a map starts.
+      apply: "next-round",
+      backend: "rcon",
     },
     {
       key: "timelimit_override",
@@ -773,8 +906,8 @@ const XONOTIC: ServerSettingProfile = {
       default: -1,
       min: -1,
       help: "Minutes. -1 leaves each map's own limit alone.",
-      apply: "restart",
-      backend: "startup",
+      apply: "next-round",
+      backend: "rcon",
     },
     {
       key: "botFill",
@@ -785,8 +918,9 @@ const XONOTIC: ServerSettingProfile = {
       min: 0,
       max: 32,
       help: "Bots keep the game topped up to this many players. Each person who joins replaces a bot, and it comes back when they leave. 0 for none.",
-      apply: "restart",
-      backend: "startup",
+      apply: "live",
+      backend: "rcon",
+      rcon: { cvar: "minplayers" },
     },
   ],
 };
@@ -799,10 +933,49 @@ const XONOTIC: ServerSettingProfile = {
  * custom content has more, which is a case for the map entity rather than for
  * a longer guess here.
  *
- * Source takes rcon and nothing wires it up, so these restart.
+ * Both speak Source RCON (TCP, password held by the agent): maps change live
+ * with changelevel, the time limit and TF2's bot quota apply without a
+ * restart. The spawn map stays a startup setting — it is where the server
+ * begins after any restart.
  */
+const TF2_MAPS = [
+  { value: "ctf_2fort", label: "2Fort" },
+  { value: "cp_dustbowl", label: "Dustbowl" },
+  { value: "cp_gravelpit", label: "Gravel Pit" },
+  { value: "cp_badlands", label: "Badlands" },
+  { value: "pl_goldrush", label: "Gold Rush" },
+  { value: "pl_upward", label: "Upward" },
+  { value: "koth_viaduct", label: "Viaduct" },
+] as const;
+
+const CS2_MAPS = [
+  { value: "de_dust2", label: "Dust II" },
+  { value: "de_mirage", label: "Mirage" },
+  { value: "de_inferno", label: "Inferno" },
+  { value: "de_nuke", label: "Nuke" },
+  { value: "de_overpass", label: "Overpass" },
+  { value: "de_ancient", label: "Ancient" },
+  { value: "de_anubis", label: "Anubis" },
+  { value: "de_vertigo", label: "Vertigo" },
+] as const;
+
+const SOURCE_TIME_LIMIT: ServerSettingDefinition = {
+  key: "mp_timelimit",
+  label: "Time limit",
+  feature: "timeLimit",
+  type: "number",
+  default: 0,
+  min: 0,
+  max: 600,
+  help: "Minutes per map. 0 for no limit.",
+  apply: "next-round",
+  backend: "rcon",
+};
+
 const TEAM_FORTRESS_2: ServerSettingProfile = {
   slug: "team-fortress-2",
+  controlChannel: "rcon-source",
+  maps: { options: TF2_MAPS, changeCommand: "changelevel {value}", nextCommand: "nextlevel {value}", rotation: null },
   settings: [
     {
       key: "map",
@@ -810,15 +983,7 @@ const TEAM_FORTRESS_2: ServerSettingProfile = {
       feature: "map",
       type: "enum",
       default: "ctf_2fort",
-      options: [
-        { value: "ctf_2fort", label: "2Fort" },
-        { value: "cp_dustbowl", label: "Dustbowl" },
-        { value: "cp_gravelpit", label: "Gravel Pit" },
-        { value: "cp_badlands", label: "Badlands" },
-        { value: "pl_goldrush", label: "Gold Rush" },
-        { value: "pl_upward", label: "Upward" },
-        { value: "koth_viaduct", label: "Viaduct" },
-      ],
+      options: TF2_MAPS,
       apply: "restart",
       backend: "startup",
     },
@@ -842,14 +1007,18 @@ const TEAM_FORTRESS_2: ServerSettingProfile = {
       min: 0,
       max: 31,
       help: "Bots keep the game topped up to this many players. Each person who joins replaces a bot, and it comes back when they leave. 0 for none.",
-      apply: "restart",
-      backend: "startup",
+      apply: "live",
+      backend: "rcon",
+      rcon: { cvar: "tf_bot_quota" },
     },
+    SOURCE_TIME_LIMIT,
   ],
 };
 
 const COUNTER_STRIKE_2: ServerSettingProfile = {
   slug: "counter-strike-2",
+  controlChannel: "rcon-source",
+  maps: { options: CS2_MAPS, changeCommand: "changelevel {value}", nextCommand: "nextlevel {value}", rotation: null },
   settings: [
     {
       key: "map",
@@ -857,16 +1026,7 @@ const COUNTER_STRIKE_2: ServerSettingProfile = {
       feature: "map",
       type: "enum",
       default: "de_dust2",
-      options: [
-        { value: "de_dust2", label: "Dust II" },
-        { value: "de_mirage", label: "Mirage" },
-        { value: "de_inferno", label: "Inferno" },
-        { value: "de_nuke", label: "Nuke" },
-        { value: "de_overpass", label: "Overpass" },
-        { value: "de_ancient", label: "Ancient" },
-        { value: "de_anubis", label: "Anubis" },
-        { value: "de_vertigo", label: "Vertigo" },
-      ],
+      options: CS2_MAPS,
       apply: "restart",
       backend: "startup",
     },
@@ -893,6 +1053,7 @@ const COUNTER_STRIKE_2: ServerSettingProfile = {
       apply: "restart",
       backend: "startup",
     },
+    SOURCE_TIME_LIMIT,
   ],
 };
 

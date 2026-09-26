@@ -196,6 +196,42 @@ for (const slug of [
  * Community hosting sets it from the fleet-wide bot percentage; a party host
  * sets it from the overlay.
  */
+/*
+ * Settings the recipes below turn into command-line arguments. Every startup
+ * setting a game's profile declares (platform/src/lib/serverControl/settings.ts)
+ * must appear here AND change the command line; the platform's
+ * recipeSettingsCoverage test fails if one is dropped.
+ */
+for (const [slug, types] of Object.entries({
+  xonotic: { gametype: "string", maxplayers: "number", fraglimit_override: "number", timelimit_override: "number" },
+  "team-fortress-2": { map: "string", maxplayers: "number" },
+  "counter-strike-2": { map: "string", maxplayers: "number" },
+  unvanquished: { map: "string", sv_maxclients: "number" },
+  "0-ad": { map: "string" },
+  "0ad": { map: "string" },
+  bzflag: { maxPlayers: "number", superFlags: "number" },
+  openra: { "Server.EnableSingleplayer": "boolean", "Server.LockBots": "boolean" },
+  openhv: { "Server.EnableSingleplayer": "boolean", "Server.LockBots": "boolean" },
+})) {
+  RECIPE_SETTING_TYPES[slug] = { ...RECIPE_SETTING_TYPES[slug], ...types };
+}
+
+/**
+ * A map/mode name from settings, or the fallback. The platform only sends
+ * declared enum options, but this is the command line, so the agent refuses
+ * anything that is not a plain map token regardless.
+ */
+function settingToken(slug, ctx, key, fallback) {
+  const value = acceptedSettingsFor(slug, ctx?.settings)[key];
+  return typeof value === "string" && /^[A-Za-z0-9_./-]{1,64}$/.test(value) ? value : fallback;
+}
+
+/** A numeric setting clamped to a range, or the fallback. */
+function settingNumber(slug, ctx, key, fallback, min, max) {
+  const value = acceptedSettingsFor(slug, ctx?.settings)[key];
+  return typeof value === "number" && Number.isFinite(value) ? Math.max(min, Math.min(max, Math.round(value))) : fallback;
+}
+
 export const BOT_FILL_RECIPES = ["xonotic", "openarena", "team-fortress-2", "counter-strike-2", "unvanquished"];
 for (const slug of BOT_FILL_RECIPES) {
   RECIPE_SETTING_TYPES[slug] = { ...RECIPE_SETTING_TYPES[slug], botFill: "number" };
@@ -766,7 +802,8 @@ export const recipes = {
       `Server.Name=${ctx.name}`,
       `Server.ListenPort=${port}`,
       `Server.AdvertiseOnline=${ctx.managed ? "True" : "False"}`,
-      "Server.EnableSingleplayer=False",
+      `Server.EnableSingleplayer=${acceptedSettingsFor("openra", ctx?.settings)["Server.EnableSingleplayer"] === true ? "True" : "False"}`,
+      `Server.LockBots=${acceptedSettingsFor("openra", ctx?.settings)["Server.LockBots"] === true ? "True" : "False"}`,
       "Server.OrderLatency=5",
     ],
   },
@@ -784,7 +821,8 @@ export const recipes = {
       `Server.Name=${ctx.name}`,
       `Server.ListenPort=${port}`,
       `Server.AdvertiseOnline=${ctx.managed ? "True" : "False"}`,
-      "Server.EnableSingleplayer=False",
+      `Server.EnableSingleplayer=${acceptedSettingsFor("openra", ctx?.settings)["Server.EnableSingleplayer"] === true ? "True" : "False"}`,
+      `Server.LockBots=${acceptedSettingsFor("openra", ctx?.settings)["Server.LockBots"] === true ? "True" : "False"}`,
       "Server.OrderLatency=5",
     ],
   },
@@ -1030,7 +1068,11 @@ export const recipes = {
     binaries: gameBin("bzflag", ["bzfs"]),
     // With no -world/-c/-cr, BZFS generates a random FFA world. Keep this
     // ephemeral room private and enable the familiar jump/ricochet rules.
-    args: (port, ctx) => ["-p", String(port), "-offa", "-q", "-j", "+r", "+s", "10", "-mp", String(ctx?.managed ? managedPlayerLimit(ctx) : 8)],
+    args: (port, ctx) => [
+      "-p", String(port), "-offa", "-q", "-j", "+r",
+      "+s", String(settingNumber("bzflag", ctx, "superFlags", 10, 0, 100)),
+      "-mp", String(ctx?.managed ? managedPlayerLimit(ctx) : settingNumber("bzflag", ctx, "maxPlayers", 8, 2, 64)),
+    ],
   },
   supertuxkart: {
     portStart: 2759,
@@ -1049,6 +1091,9 @@ export const recipes = {
     ],
   },
   xonotic: {
+    // DarkPlaces rcon in its plain (rcon_secure 0) form: the Quake 3 packet with
+    // an "n" reply header. Only the agent on this box knows the password.
+    rcon: "darkplaces",
     portStart: 26000,
     portEnd: 26020,
     protocol: "udp",
@@ -1075,7 +1120,18 @@ export const recipes = {
       ctx.name,
       "+sv_public",
       ctx.managed ? "1" : "0",
-      ...(ctx.managed ? ["+maxplayers", String(managedPlayerLimit(ctx))] : []),
+      ...(ctx.rconPassword ? ["+set", "rcon_secure", "0", "+set", "rcon_password", ctx.rconPassword] : []),
+      "+maxplayers",
+      String(ctx.managed ? managedPlayerLimit(ctx) : settingNumber("xonotic", ctx, "maxplayers", 8, 2, 64)),
+      // gametype takes effect on the first map load, which follows the command line.
+      "+gametype",
+      settingToken("xonotic", ctx, "gametype", "dm"),
+      ...(settingNumber("xonotic", ctx, "fraglimit_override", -1, -1, 100000) !== -1
+        ? ["+set", "fraglimit_override", String(settingNumber("xonotic", ctx, "fraglimit_override", -1, -1, 100000))]
+        : []),
+      ...(settingNumber("xonotic", ctx, "timelimit_override", -1, -1, 100000) !== -1
+        ? ["+set", "timelimit_override", String(settingNumber("xonotic", ctx, "timelimit_override", -1, -1, 100000))]
+        : []),
       // minplayers: bots join until this many are playing, and leave as people join.
       ...(botFillCount("xonotic", ctx) !== null ? ["+set", "bot_join_empty", "1", "+set", "minplayers", String(botFillCount("xonotic", ctx))] : []),
       "+map",
@@ -1142,9 +1198,9 @@ export const recipes = {
     protocol: "udp",
     binaries: gameBin("0-ad", ["pyrogenesis", "0ad"]),
     args: (_port, ctx) => [
-      "-autostart=random/mainland",
+      `-autostart=${settingToken("0-ad", ctx, "map", "random/mainland")}`,
       "-autostart-host",
-      `-autostart-host-players=${Math.max(2, Math.min(ctx.managed ? managedPlayerLimit(ctx, 8) : Number(ctx.maxPlayers) || 8, 8))}`,
+      `-autostart-host-players=${Math.max(2, Math.min(ctx.managed ? managedPlayerLimit(ctx, 8) : settingNumber("0-ad", ctx, "maxPlayers", 8, 2, 8), 8))}`,
       "-autostart-playername=PlayBound Server",
       "-autostart-seed=-1",
       "-autostart-nonvisual",
@@ -1258,6 +1314,8 @@ export const recipes = {
     },
   },
   "team-fortress-2": {
+    // Source RCON over TCP on the game port.
+    rcon: "source",
     portStart: 27015,
     portEnd: 27025,
     protocol: "udp",
@@ -1288,15 +1346,18 @@ export const recipes = {
       "+ip",
       "0.0.0.0",
       "+map",
-      "ctf_2fort",
+      settingToken("team-fortress-2", ctx, "map", "ctf_2fort"),
       "+maxplayers",
-      String(ctx.managed ? Math.min(32, managedPlayerLimit(ctx)) : 24),
+      String(ctx.managed ? Math.min(32, managedPlayerLimit(ctx)) : settingNumber("team-fortress-2", ctx, "maxplayers", 24, 2, 32)),
       // A launch option, not a console command: "+port" was ignored
       // ("Unknown command") and srcds fell back to its default port.
       "-port",
       String(port),
       "+hostname",
-      ctx.name || "PlayBound.club Party",
+      // srcds re-splits its command line on spaces, which cut every name to its
+      // first word ("PB probe" became "PB"). Quoted, it survives intact.
+      `"${String(ctx.name || "PlayBound.club Party").replace(/"/g, "'")}"`,
+      ...(ctx.rconPassword ? ["+rcon_password", ctx.rconPassword] : []),
       // "fill" mode: the quota counts humans, so each person who joins replaces a bot.
       ...(botFillCount("team-fortress-2", ctx) !== null
         ? ["+tf_bot_join_after_player", "0", "+tf_bot_quota_mode", "fill", "+tf_bot_quota", String(botFillCount("team-fortress-2", ctx))]
@@ -1304,6 +1365,8 @@ export const recipes = {
     ],
   },
   "counter-strike-2": {
+    // Source RCON over TCP on the game port; -usercon enables it on Linux.
+    rcon: "source",
     portStart: 27030,
     portEnd: 27040,
     protocol: "udp",
@@ -1372,12 +1435,14 @@ export const recipes = {
     },
     args: (port, ctx) => [
       "-dedicated",
+      // Without +ip the RCON listener never opens (the game socket does, on UDP).
+      ...(ctx.rconPassword ? ["-usercon", "+ip", "0.0.0.0", "+rcon_password", ctx.rconPassword] : []),
       "+map",
-      "de_dust2",
+      settingToken("counter-strike-2", ctx, "map", "de_dust2"),
       "-port",
       String(port),
       "-maxplayers",
-      String(managedPlayerLimit(ctx)),
+      String(ctx.managed ? managedPlayerLimit(ctx) : settingNumber("counter-strike-2", ctx, "maxplayers", 16, 2, 64)),
       "+hostname",
       ctx.name || "PlayBound.Club Community Server",
       // "fill" mode: the quota counts humans, so each person who joins replaces a bot.
@@ -1428,13 +1493,15 @@ export const recipes = {
       "-set",
       "sv_hostname",
       ctx.name || "PlayBound.club Party",
-      ...(ctx.managed ? ["-set", "sv_maxclients", String(managedPlayerLimit(ctx))] : []),
+      "-set",
+      "sv_maxclients",
+      String(ctx.managed ? managedPlayerLimit(ctx) : settingNumber("unvanquished", ctx, "sv_maxclients", 20, 2, 64)),
       // Per team, and the engine's own fill: bots step aside as people join.
       ...(botFillCount("unvanquished", ctx) !== null
         ? ["-set", "g_bot_defaultFill", String(Math.ceil(botFillCount("unvanquished", ctx) / 2))]
         : []),
       "+map",
-      "plat23",
+      settingToken("unvanquished", ctx, "map", "plat23"),
     ],
     /* Loading plat23 from cold paks is well past the ten-second default. */
     startupReadyTimeoutMs: 45_000,

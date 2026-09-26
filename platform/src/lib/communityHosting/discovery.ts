@@ -16,11 +16,36 @@ const discoveryConfig = unstable_cache(async () => {
   return CommunityHostingConfig.findOne({ key: "global" }).select({ enabled: 1, node: 1 }).lean();
 }, ["community-hosting-discovery-config-v1"], { revalidate: 60 });
 
+/**
+ * Which servers discovery lists. Customer (PlayBound Dedicated) servers are
+ * listed when public — unlisted and private ones are reachable by link or
+ * invite only — and regardless of whether automatic Community hosting is
+ * switched on; automatic servers only while it is.
+ */
+/**
+ * Ids of every server discovery may list, running or not. The agent-room merge
+ * below adds rooms the database query missed; without this it would re-add a
+ * private or unlisted customer server (the query filtered it out on purpose).
+ */
+async function listableServerIds(communityEnabled: boolean): Promise<Set<string>> {
+  const ids = await CommunityServer.find(listableFilter(communityEnabled)).distinct("_id");
+  return new Set(ids.map((id: unknown) => String(id)));
+}
+
+/** A customer server's public page; automatic Community Servers have none. */
+function serverPageUrl(s: { ownerType?: string | null; gameSlug?: string; slug?: string }): string | undefined {
+  return s.ownerType === "user" && s.gameSlug && s.slug ? `/servers/${s.gameSlug}/${s.slug}` : undefined;
+}
+
+function listableFilter(communityEnabled: boolean) {
+  const publicOnly = { visibility: { $nin: ["unlisted", "private"] } };
+  return communityEnabled ? publicOnly : { ...publicOnly, ownerType: "user" };
+}
+
 export async function listJoinableCommunityServers(slug: string): Promise<GameServer[]> {
   if (!hasDatabase()) return [];
   try {
     const config = await discoveryConfig();
-    if (!config?.enabled) return [];
     await dbConnect();
 
     const [dbServers, agentResult] = await Promise.all([
@@ -30,6 +55,7 @@ export async function listJoinableCommunityServers(slug: string): Promise<GameSe
         runtimeState: { $in: ["running", "pending", "starting"] },
         host: { $nin: [null, ""] },
         port: { $gt: 0 },
+        ...listableFilter(Boolean(config?.enabled)),
       }).lean(),
       listManagedHostRooms().catch(() => null),
     ]);
@@ -59,6 +85,10 @@ export async function listJoinableCommunityServers(slug: string): Promise<GameSe
         mod?: string | null;
         regionKey: string;
         settings?: { playerLimit?: number };
+        gameSlug?: string;
+        ownerType?: string | null;
+        slug?: string;
+        currentMap?: string | null;
       };
       const idStr = String(s._id);
       seenIds.add(idStr);
@@ -80,7 +110,8 @@ export async function listJoinableCommunityServers(slug: string): Promise<GameSe
         players: s.playerCount,
         maxPlayers: s.maxPlayerCount ?? configuredLimit,
         bots: s.bots ?? null,
-        map: null,
+        map: s.currentMap || null,
+        pageUrl: serverPageUrl(s),
         gameType: s.editionSlug || null,
         mod: s.mod || null,
         location: { countryCode: "US", region: config.node?.regionLabel || s.regionKey },
@@ -90,8 +121,11 @@ export async function listJoinableCommunityServers(slug: string): Promise<GameSe
 
     // Merge any live agent rooms for this gameSlug that might not be in the DB query
     if (agentResult && agentResult.ok) {
+      const allowed = await listableServerIds(Boolean(config?.enabled));
       for (const room of agentResult.rooms) {
         if (room.gameSlug !== slug) continue;
+        // Never re-add a server the query hid (private/unlisted, or automatic hosting off).
+        if (room.communityServerId ? !allowed.has(String(room.communityServerId)) : !config?.enabled) continue;
         const idStr = room.communityServerId ? String(room.communityServerId) : room.roomId;
         if (seenIds.has(idStr)) continue;
         if (!room.host || !room.port) continue;
@@ -129,7 +163,6 @@ export async function listAllJoinableCommunityServers(): Promise<GameServer[]> {
   if (!hasDatabase()) return [];
   try {
     const config = await discoveryConfig();
-    if (!config?.enabled) return [];
     await dbConnect();
 
     const [dbServers, agentResult, games] = await Promise.all([
@@ -138,6 +171,7 @@ export async function listAllJoinableCommunityServers(): Promise<GameServer[]> {
         runtimeState: { $in: ["running", "pending", "starting"] },
         host: { $nin: [null, ""] },
         port: { $gt: 0 },
+        ...listableFilter(Boolean(config?.enabled)),
       }).lean(),
       listManagedHostRooms().catch(() => null),
       listGames().catch(() => []),
@@ -170,6 +204,9 @@ export async function listAllJoinableCommunityServers(): Promise<GameServer[]> {
         mod?: string | null;
         regionKey: string;
         settings?: { playerLimit?: number };
+        ownerType?: string | null;
+        slug?: string;
+        currentMap?: string | null;
       };
       const idStr = String(s._id);
       seenIds.add(idStr);
@@ -193,7 +230,8 @@ export async function listAllJoinableCommunityServers(): Promise<GameServer[]> {
         players: s.playerCount,
         maxPlayers: s.maxPlayerCount ?? configuredLimit,
         bots: s.bots ?? null,
-        map: null,
+        map: s.currentMap || null,
+        pageUrl: serverPageUrl(s),
         gameType: s.editionSlug || null,
         mod: s.mod || null,
         location: { countryCode: "US", region: config.node?.regionLabel || s.regionKey },
@@ -203,7 +241,9 @@ export async function listAllJoinableCommunityServers(): Promise<GameServer[]> {
 
     // Merge any live agent rooms that might not be in the DB query
     if (agentResult && agentResult.ok) {
+      const allowed = await listableServerIds(Boolean(config?.enabled));
       for (const room of agentResult.rooms) {
+        if (room.communityServerId ? !allowed.has(String(room.communityServerId)) : !config?.enabled) continue;
         const idStr = room.communityServerId ? String(room.communityServerId) : room.roomId;
         if (seenIds.has(idStr)) continue;
         if (!room.host || !room.port) continue;
