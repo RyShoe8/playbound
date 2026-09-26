@@ -12,6 +12,7 @@ const { createProvider } = require("./couch/VirtualControllerProvider");
 const { BUTTON } = require("./couch/protocol");
 const { createInputEngine } = require("./inputEngine/index");
 const { hasControlsHost } = require("./couch/windowsVigem");
+const { ensureVigem } = require("./couch/ensureVigem");
 
 let provider = null;
 let activeHandle = null;
@@ -59,9 +60,20 @@ async function startBridge(profile = {}) {
 
   try {
     const prov = getProvider();
-    const probe = await prov.probe();
-    if (!probe.ok) {
-      return { ok: false, error: probe.reason || "ViGEmBus driver not ready" };
+    /*
+     * Couch Mode silently installs ViGEmBus (elevated, no prompts the player
+     * sees beyond one UAC dialog) via hostService.js before it ever bridges a
+     * pad. Solo controller bridging — this path, triggered by picking
+     * "Controller" in phoneController.js's launch dialog — used to skip that
+     * and only probe, so a player who had never opened Couch Mode got a
+     * silent "ViGEmBus driver not ready" failure and the game launched with
+     * the raw DirectInput pad an XInput-only engine can't see. Reuse the same
+     * ensure-then-probe path here so first-time solo bridging self-installs
+     * exactly like Couch Mode does.
+     */
+    const ensured = await ensureVigem();
+    if (!ensured.ok) {
+      return { ok: false, error: ensured.reason || "ViGEmBus driver not ready" };
     }
 
     activeHandle = await prov.createController(0);
