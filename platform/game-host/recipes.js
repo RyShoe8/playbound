@@ -1078,6 +1078,8 @@ export const recipes = {
       ...(ctx.managed ? ["+maxplayers", String(managedPlayerLimit(ctx))] : []),
       // minplayers: bots join until this many are playing, and leave as people join.
       ...(botFillCount("xonotic", ctx) !== null ? ["+set", "bot_join_empty", "1", "+set", "minplayers", String(botFillCount("xonotic", ctx))] : []),
+      "+map",
+      ctx?.settings?.map || "stormkeep",
     ],
   },
   openarena: {
@@ -1613,6 +1615,9 @@ export const recipes = {
         ...iwadArgs,
         "+map",
         startingMap,
+        ...(ctx.managed && typeof ctx?.settings?.maxPlayers !== "number"
+          ? ["+sv_maxplayers", String(managedPlayerLimit(ctx)), "+sv_maxclients", String(managedPlayerLimit(ctx))]
+          : []),
         ...freedoomSettingArgs(ctx.settings),
       ];
     },
