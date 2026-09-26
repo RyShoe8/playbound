@@ -208,6 +208,17 @@ describe("insert-catalog-wave allowlists", () => {
         "hypersomnia",
         "final-fantasy-xi",
         "theme-hospital",
+        // Published-catalog cleanup pass, 2026-09-25 — see the allowlist's own comment.
+        "gamebuddies-io",
+        "marathon-2",
+        "pixreveal",
+        "deadeus",
+        "assaultcube",
+        "opentyrian-2000",
+        "widelands",
+        "the-legend-of-zelda-book-of-mudora",
+        "the-legend-of-zelda-xd2-mercuris-chess",
+        "yarntown",
       ].sort()
     );
     expect(PATCH_GAME_FIELDS["super-nova-strike"]).toContain("androidStoreUrl");
@@ -240,6 +251,7 @@ describe("insert-catalog-wave allowlists", () => {
       "launcherInstall",
       "installSteps",
       "releaseYear",
+      "faq",
     ]);
     expect(PATCH_GAME_FIELDS.teeworlds).toContain("launcherInstall");
     expect(PATCH_GAME_FIELDS["the-dark-mod"]).toContain("platforms");

@@ -91,21 +91,21 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
    * next-gen-chess, opents and strikers-club are genuinely 2026.
    */
   "thief-gold": ["releaseYear", "features"],
-  mrboom: ["releaseYear"],
-  "rollercoaster-tycoon": ["releaseYear", "features"],
+  mrboom: ["releaseYear", "faq"],
+  "rollercoaster-tycoon": ["releaseYear", "features", "faq"],
   "thief-2-the-metal-age": ["releaseYear", "features"],
   "stronghold-crusader-hd": ["releaseYear", "features"],
-  triplea: ["releaseYear", "features"],
+  triplea: ["releaseYear", "features", "faq"],
   "star-wars-knights-of-the-old-republic": ["releaseYear"],
   "star-wars-knights-of-the-old-republic-ii-the-sith-lords": ["releaseYear"],
   // Stored 2019 was the 2.0 "Elara" release, not the original.
   "red-eclipse": ["releaseYear"],
-  openclonk: ["releaseYear"],
+  openclonk: ["releaseYear", "faq"],
   "renegade-x": ["releaseYear"],
 
   // Gaps found in the same audit: the only published game with no genres,
   // and the only one with no thatOneThing.
-  "c-dogs-sdl": ["genres"],
+  "c-dogs-sdl": ["genres", "systemRequirements", "faq"],
   "next-gen-chess": ["thatOneThing"],
 
   "alien-swarm": [
@@ -210,7 +210,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "hardwareRequirements",
     "launcherInstall",
   ],
-  "space-station-14": ["launcherInstall", "installSteps", "releaseYear"],
+  "space-station-14": ["launcherInstall", "installSteps", "releaseYear", "faq"],
   teeworlds: [
     "platforms",
     "features",
@@ -218,6 +218,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "systemRequirements",
     "hardwareRequirements",
     "releaseYear",
+    "faq",
   ],
   "super-nova-strike": [
     "title",
@@ -469,7 +470,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   "wolfenstein-enemy-territory": ["features"],
   openciv3: ["features"],
   "tes-arena": ["features"],
-  "star-wars-galaxies": ["features"],
+  "star-wars-galaxies": ["features", "faq"],
   freeciv: ["features"],
   "warzone-2100": ["features"],
   "0ad": ["features"],
@@ -517,6 +518,28 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
    * listed requirements on 2026-09-25.
    */
   "theme-hospital": ["systemRequirements", "comparableTo"],
+
+  /*
+   * Published-catalog cleanup pass, 2026-09-25. Same admin "Prefill from
+   * URL" import-tool FAQ defect found on the testing-catalog games above,
+   * now confirmed across 19 published rows via a full sweep of every
+   * published game's admin edit page. gamebuddies-io, marathon-2,
+   * pixreveal and star-wars-galaxies have clean, hand-written faq arrays
+   * already sitting in editorial.ts that simply never reached the live
+   * row (same "inserted once, never patched since" gap as the testing
+   * games). The rest (no seed row) are sourced from catalogCorrections.ts
+   * or, for teeworlds, its own dedicated source module.
+   */
+  "gamebuddies-io": ["faq"],
+  "marathon-2": ["faq"],
+  pixreveal: ["faq"],
+  deadeus: ["faq"],
+  assaultcube: ["faq"],
+  "opentyrian-2000": ["faq"],
+  widelands: ["faq"],
+  "the-legend-of-zelda-book-of-mudora": ["faq"],
+  "the-legend-of-zelda-xd2-mercuris-chess": ["faq"],
+  yarntown: ["faq"],
 };
 
 /** Existing editions: $set ONLY these fields. */
