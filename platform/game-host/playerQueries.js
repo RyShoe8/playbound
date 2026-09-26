@@ -75,7 +75,7 @@ export function parseQuake3Status(packet) {
     if (Number(m[1]) > 0) players++;
     else bots++;
   }
-  const max = Number(vars.sv_maxclients);
+  const max = Number(vars.sv_maxclients ?? vars.maxplayers);
   return { players, maxPlayers: validMax(max), bots };
 }
 

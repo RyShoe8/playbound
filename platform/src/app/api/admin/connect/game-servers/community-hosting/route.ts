@@ -11,7 +11,7 @@ import CatalogGame from "@/lib/models/CatalogGame";
 import Edition from "@/lib/models/Edition";
 import { HOSTABLE_SLUGS, HOSTABLE_GAMES, HOSTABLE_SLUG_ALIASES } from "@/lib/gameHost/catalog";
 import { editions as seedEditions } from "@/lib/data/editions";
-import { getEffectiveEnvelope } from "@/lib/communityHosting/reconcile";
+import { getEffectiveEnvelope, managedRoomSettings } from "@/lib/communityHosting/reconcile";
 import { populationPeriods, populationReading } from "@/lib/communityHosting/population";
 import { runningReservationEnvelope } from "@/lib/communityHosting/capacity";
 import { managedQueryKind, queryManagedOccupancy, type ManagedOccupancy } from "@/lib/communityHosting/playerQuery";
@@ -53,12 +53,20 @@ export async function GET() {
   }
   const visibleServers = servers.map((server) => {
     const occupancy = liveCounts.get(String(server._id));
+    const profile = profileByKey.get(server.profileKey);
     const players = occupancy?.players;
+    // When the live query succeeds, use its values; when it fails/times out
+    // (occupancy === null), derive the cap from the same settings the
+    // reconciler passed to the game-host when it started the server.
+    const roomSettings = profile ? managedRoomSettings(profile.recipeSlug || profile.gameSlug, config || {}) : undefined;
+    const storedMax = (server as unknown as { maxPlayerCount?: number }).maxPlayerCount;
+    const fallbackMax = storedMax ?? roomSettings?.maxPlayers ?? null;
+    const fallbackBots = roomSettings?.botFill ?? null;
     return {
       ...server,
       playerCount: players ?? null,
-      maxPlayers: occupancy?.maxPlayers ?? null,
-      bots: occupancy?.bots ?? null,
+      maxPlayers: occupancy?.maxPlayers ?? fallbackMax,
+      bots: occupancy?.bots ?? fallbackBots,
       playerCountCheckedAt: players == null ? null : asOf,
     };
   });

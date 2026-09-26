@@ -587,9 +587,13 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
                     <td className="py-2 pr-4 font-mono text-xs">
                       {(() => {
                         const occ = room.communityServerId ? occupancy[room.communityServerId] : undefined;
-                        if (!occ || (occ.players == null && occ.maxPlayers == null)) return <span className="text-muted-foreground">—</span>;
-                        const botsLabel = occ.bots ? ` (${occ.bots} bot${occ.bots === 1 ? "" : "s"})` : "";
-                        return `${occ.players ?? "?"} / ${occ.maxPlayers ?? "?"}${botsLabel}`;
+                        const settings = (room as Record<string, unknown>).settings as { maxPlayers?: number; botFill?: number } | undefined;
+                        const players = occ?.players ?? null;
+                        const maxPlayers = occ?.maxPlayers ?? (settings?.maxPlayers || null);
+                        const bots = occ?.bots ?? (settings?.botFill || null);
+                        if (players == null && maxPlayers == null) return <span className="text-muted-foreground">—</span>;
+                        const botsLabel = bots ? ` (${bots} bot${bots === 1 ? "" : "s"})` : "";
+                        return `${players ?? 0} / ${maxPlayers ?? "?"}${botsLabel}`;
                       })()}
                     </td>
                     <td className="py-2 text-xs text-muted-foreground">
