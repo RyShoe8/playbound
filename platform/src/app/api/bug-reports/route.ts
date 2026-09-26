@@ -94,7 +94,7 @@ export async function POST(req: Request) {
            <p>Source: ${escapeHtml(data.source)}</p>
            ${data.pageUrl ? `<p>Page: ${escapeHtml(data.pageUrl)}</p>` : ""}
            <p>${escapeHtml(data.description.slice(0, 800))}</p>
-           <p>Review in Admin → Feedback.</p>`
+           <p>Review in Admin → ${data.kind === "suggestion" ? "Feedback" : "Ops → Bugs"}.</p>`
         );
       } catch (err) {
         console.error("Failed to notify founder of bug report:", err);
