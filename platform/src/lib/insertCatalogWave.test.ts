@@ -219,6 +219,16 @@ describe("insert-catalog-wave allowlists", () => {
         "the-legend-of-zelda-book-of-mudora",
         "the-legend-of-zelda-xd2-mercuris-chess",
         "yarntown",
+        // Published-catalog installSteps fix, 2026-09-25 — same defect,
+        // no seed field for other reasons — see the allowlist's own comment.
+        "freedoom",
+        "supertux",
+        "luanti",
+        "endless-sky",
+        "supertuxkart",
+        "unvanquished",
+        "mindustry",
+        "xonotic",
       ].sort()
     );
     expect(PATCH_GAME_FIELDS["super-nova-strike"]).toContain("androidStoreUrl");
