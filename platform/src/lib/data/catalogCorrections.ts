@@ -265,6 +265,18 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
     developerSlug: "enlight-software",
     sizeMB: 80,
   },
+
+  /*
+   * Both are "Previously Free" limited-time promo games (a Steam/Epic free
+   * week), imported through a path that never filled in a real sizeMB or
+   * releaseYear — sizeMB stuck at the schema's bare 0 (confirmed live on
+   * their pages, "0 MB") and releaseYear at 2026, the year each was added to
+   * PlayBound, not the year it shipped. Sizes are each game's own Steam
+   * storage requirement; release years from Wikipedia / the developers' own
+   * release announcements.
+   */
+  deponia: { releaseYear: 2012, sizeMB: 5000 },
+  "caravan-sandwitch": { releaseYear: 2024, sizeMB: 5000 },
 };
 
 /** The correction block for a slug, or undefined when there is nothing to apply. */
