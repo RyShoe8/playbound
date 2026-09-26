@@ -100,10 +100,32 @@ export function deriveInstallSteps(game: InstallStepSource): InstallStep[] {
   const has = (needle: RegExp) => game.platforms.some((p) => needle.test(p));
 
   if (has(/windows/i)) {
-    steps.push({
-      platform: "windows",
-      text: "Run the downloaded installer and follow the prompts. If Windows SmartScreen warns about an unrecognised publisher, that is normal for open-source projects without a paid code-signing certificate — choose More info, then Run anyway.",
-    });
+    const kind = game.launcherInstall?.kind ?? "";
+    /*
+     * The fallback used to assume every Windows download is an installer
+     * .exe regardless of `kind` — wrong for every zip/7z/jar recipe (no
+     * installer exists at all, just a portable archive or a .jar run
+     * through Java), and it stayed wrong because this text gets baked into
+     * `installSteps` once at import time rather than re-derived once the
+     * real kind is known. Branch on the actual kind so a future import
+     * doesn't repeat the mistake.
+     */
+    if (/jar/i.test(kind)) {
+      steps.push({
+        platform: "windows",
+        text: "Make sure Java 17 or newer is installed, then double-click the downloaded .jar to launch it directly — there is no installer.",
+      });
+    } else if (/zip|7z/i.test(kind)) {
+      steps.push({
+        platform: "windows",
+        text: "Extract the downloaded archive anywhere you like — there is no installer, just a portable folder. If Windows SmartScreen warns about the .exe having an unrecognised publisher, that is normal for open-source projects without a paid code-signing certificate — choose More info, then Run anyway.",
+      });
+    } else {
+      steps.push({
+        platform: "windows",
+        text: "Run the downloaded installer and follow the prompts. If Windows SmartScreen warns about an unrecognised publisher, that is normal for open-source projects without a paid code-signing certificate — choose More info, then Run anyway.",
+      });
+    }
   }
 
   if (has(/mac/i)) {
@@ -156,18 +178,48 @@ export function deriveFaq(game: FaqSource): GameFaq[] {
   const faq: GameFaq[] = [];
   const free = game.qualityBar?.genuinelyFree;
 
-  faq.push({
-    q: `Is ${game.title} free?`,
-    a: `Yes. ${game.title} is released under ${game.license} and costs nothing to download or play.${
-      free
-        ? " It meets PlayBound's value criterion: no trial masquerading as a full game, no paywalled core content, and no paid competitive advantage. Optional cosmetics and premium extras are allowed."
-        : ""
-    }`,
-  });
+  /*
+   * This always answered "Yes... costs nothing" regardless of `qualityBar`,
+   * so a paid catalog entry (a GOG/Steam purchase, PlayBound's growing
+   * roster of "value" titles) got a self-contradicting FAQ: license text
+   * saying "Commercial · DRM-free purchase" right next to "costs nothing to
+   * download or play." Only branch into the free-game phrasing when the
+   * catalog actually says this title is free.
+   */
+  faq.push(
+    free === false
+      ? {
+          q: `Is ${game.title} free?`,
+          a: `No. ${game.title} is a paid release (${game.license}).`,
+        }
+      : {
+          q: `Is ${game.title} free?`,
+          a: `Yes. ${game.title} is released under ${game.license} and costs nothing to download or play. It meets PlayBound's value criterion: no trial masquerading as a full game, no paywalled core content, and no paid competitive advantage. Optional cosmetics and premium extras are allowed.`,
+        }
+  );
 
+  /*
+   * `sizeLabel` literally returns the word "small" when sizeMB is unset, and
+   * an admin form left blank saves systemRequirements.min as whatever
+   * placeholder text was shown ("See official site") rather than nothing —
+   * both bake into this FAQ answer as if they were real facts, permanently,
+   * because installSteps/faq are derived once at import time and never
+   * re-derived once a human fills the real data in. Skip each clause instead
+   * of asserting a fact the catalog doesn't actually have yet.
+   */
+  const hasRealSize = Boolean(game.sizeMB);
+  const minReq = game.systemRequirements?.min?.trim();
+  const hasRealMin = Boolean(minReq) && !/^see |^not yet verified$|^modern web browser$/i.test(minReq);
   faq.push({
     q: `How big is the ${game.title} download?`,
-    a: `About ${sizeLabel(game.sizeMB)}. The minimum system requirements are ${game.systemRequirements.min}.`,
+    a:
+      hasRealSize && hasRealMin
+        ? `About ${sizeLabel(game.sizeMB)}. The minimum system requirements are ${minReq}.`
+        : hasRealSize
+          ? `About ${sizeLabel(game.sizeMB)}.`
+          : hasRealMin
+            ? `The minimum system requirements are ${minReq}.`
+            : `Check the official site for current download size and system requirements.`,
   });
 
   faq.push({

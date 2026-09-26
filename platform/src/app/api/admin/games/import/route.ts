@@ -457,18 +457,30 @@ async function fromWebsite(
         coverImage: cover,
         screenshots: meta.images.slice(0, MAX_SCREENSHOTS),
         videos: meta.videos.slice(0, MAX_VIDEOS),
-        platforms: isGogStore ? ["Windows"] : ["Web"],
-        launchMethods: isGogStore ? ["install"] : ["browser"],
-        browserPlayable: !isGogStore,
+        /*
+         * This used to default every non-GOG website to a browser-playable
+         * "Web" draft ("Play {title} free in your browser") regardless of
+         * what the site actually is — wrong for a project site like
+         * hypersomnia.io or horizonxi.com that ships a real downloadable
+         * client, and the wrong assumption survived into testing/published
+         * status on exactly those three games because nothing re-checks it
+         * after a curator fills the real facts in. A generic website is far
+         * more often a download than a browser game, so default to that
+         * instead and require an explicit, deliberate flip to browser play
+         * rather than an explicit flip away from it.
+         */
+        platforms: isGogStore ? ["Windows"] : ["Windows", "macOS", "Linux"],
+        launchMethods: isGogStore ? ["install"] : ["install"],
+        browserPlayable: false,
         sizeMB: 0,
         license: isGogStore ? "Commercial · DRM-free purchase" : "Free to play",
-        genres: isGogStore ? [] : ["Arcade"],
-        tags: isGogStore ? [] : ["Browser", "Indie"],
+        genres: [],
+        tags: [],
         systemRequirements: {
-          min: isGogStore ? "See the GOG store page" : "Modern web browser",
-          recommended: isGogStore ? "See the GOG store page" : "Modern web browser",
+          min: isGogStore ? "See the GOG store page" : "Not yet verified",
+          recommended: isGogStore ? "See the GOG store page" : "Not yet verified",
         },
-        art: defaultArtFor(isGogStore ? [] : ["Arcade"], slug),
+        art: defaultArtFor([], slug),
         published: false,
         launcherInstall: null,
       },
@@ -489,26 +501,28 @@ async function fromWebsite(
       ...emptyGameDraft(),
       slug,
       title,
-      tagline: isGogStore ? `Get ${title} DRM-free` : `Play ${title}`,
+      tagline: isGogStore ? `Get ${title} DRM-free` : `Get ${title}`,
       description: isGogStore
         ? `Get ${title} as a DRM-free purchase from GOG.`
-        : `Play ${title} free in your browser.`,
+        : `${title} — details not yet filled in.`,
       website: url,
       developerSlug: "indie-web",
       coverImage: null,
       screenshots: [],
       videos: [],
-      platforms: isGogStore ? ["Windows"] : ["Web"],
-      launchMethods: isGogStore ? ["install"] : ["browser"],
-      browserPlayable: !isGogStore,
+      // Same reasoning as the scraped-metadata branch above: default to a
+      // Windows download rather than assuming browser play.
+      platforms: isGogStore ? ["Windows"] : ["Windows", "macOS", "Linux"],
+      launchMethods: ["install"],
+      browserPlayable: false,
       sizeMB: 0,
       license: isGogStore ? "Commercial · DRM-free purchase" : "Free to play",
-      tags: isGogStore ? [] : ["Browser", "Indie"],
+      tags: [],
       systemRequirements: {
-        min: isGogStore ? "See the GOG store page" : "Modern web browser",
-        recommended: isGogStore ? "See the GOG store page" : "Modern web browser",
+        min: isGogStore ? "See the GOG store page" : "Not yet verified",
+        recommended: isGogStore ? "See the GOG store page" : "Not yet verified",
       },
-      art: defaultArtFor(isGogStore ? [] : ["Arcade"], slug),
+      art: defaultArtFor([], slug),
       published: false,
       launcherInstall: null,
     },
