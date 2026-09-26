@@ -4,7 +4,7 @@ Run `npm run test:smoke` from `launcher/` after `npm ci`. It uses the installed 
 
 The test loads the real `bootstrap.js`, `main.js`, renderer modules and preload/IPC bridge. It opens Home, Friends and a game detail page, clicks Install and Uninstall, and checks both the rendered state and a temporary installation marker. Renderer exceptions, preload failures, main-process failures and crashes fail the test.
 
-Only catalog/account responses and mock installation work are substituted at registered IPC handlers. No real game download, extraction, executable launch, authentication or multiplayer connection is tested. Those still need their existing unit/integration tests and game-specific validation.
+Catalog/account responses and the install step are substituted at registered IPC handlers. Install writes a real game folder and `installed.json` record instead of downloading; **uninstall is not substituted**: the real `uninstall` handler runs (its confirmation dialog is answered automatically) and the test checks the folder and the library record are both gone. No real game download, extraction, executable launch, authentication or multiplayer connection is tested. Those still need their existing unit/integration tests and game-specific validation.
 
 Each run creates its own temporary Electron profile and games directory. Background fetches return offline fixtures, renderer HTTP requests are blocked, and protocol registration, login startup settings and global shortcut registration are disabled. No production token or database is used. The test entry is outside the packaging allowlist.
 
