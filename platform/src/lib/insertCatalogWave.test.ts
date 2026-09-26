@@ -234,6 +234,16 @@ describe("insert-catalog-wave allowlists", () => {
         "holocure",
         "beyond-all-reason",
         "veloren",
+        "zero-k",
+        "naev",
+        "hedgewars",
+        "flightgear",
+        "daggerfall",
+        "starcraft",
+        "team-fortress-2",
+        "alephone",
+        "valorant",
+        "counter-strike-2",
       ].sort()
     );
     expect(PATCH_GAME_FIELDS["super-nova-strike"]).toContain("androidStoreUrl");
