@@ -38,6 +38,7 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
   openclonk: {
     releaseYear: 2010,
     developerSlug: "openclonk-team",
+    sizeMB: 250,
     faq: [
       {
         q: "Is OpenClonk free?",
@@ -50,13 +51,19 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
   },
 
   // Standalone release 26 February 2014 — Wikipedia infobox, Renegade X.
-  "renegade-x": { releaseYear: 2014 },
+  "renegade-x": {
+    releaseYear: 2014,
+    developerSlug: "totem-arts",
+    sizeMB: 15000,
+  },
 
   // First release 2011; the stored 2019 was the 2.0 "Elara" release. Its
   // installSteps also carried the "Run the downloaded installer" defect —
   // Red Eclipse ships a portable zip (github-zip), no installer exists.
   "red-eclipse": {
     releaseYear: 2011,
+    developerSlug: "red-eclipse-team",
+    sizeMB: 2000,
     installSteps: [{"platform":"all","text":"Install the PlayBound Launcher, then find Red Eclipse and press Install. The launcher downloads the official release and unpacks it. This is the fastest route and it never uses third-party mirrors."},{"platform":"all","text":"Alternatively, download Red Eclipse directly from the official site at https://redeclipse.net/. Always download from the official source — third-party mirrors of free games are a common malware vector."},{"platform":"all","text":"Red Eclipse is also on Steam and is free there. Open the store page and press Play Game to add it to your library.","command":"steam://install/967460"},{"platform":"windows","text":"Extract the downloaded archive anywhere you like — there is no installer, just a portable folder. If Windows SmartScreen warns about the .exe having an unrecognised publisher, that is normal for open-source projects without a paid code-signing certificate — choose More info, then Run anyway."},{"platform":"linux","text":"Check your distribution's package manager first, which is usually the easiest route. Otherwise download the AppImage from the official site, mark it executable and run it.","command":"chmod +x *.AppImage && ./*.AppImage"},{"platform":"all","text":"Launch the game and look at the settings menu before your first session — resolution and control defaults are worth checking. Red Eclipse needs roughly 2.0 GB of free disk space."}],
   },
 
@@ -70,6 +77,8 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
    */
   "c-dogs-sdl": {
     genres: ["Action", "Shooter"],
+    developerSlug: "cong-pham",
+    sizeMB: 100,
     installSteps: [{"platform":"all","text":"Install the PlayBound Launcher, then find C-Dogs SDL and press Install. The launcher downloads the official release and unpacks it. This is the fastest route and it never uses third-party mirrors."},{"platform":"all","text":"Alternatively, download C-Dogs SDL directly from the official site at https://cxong.github.io/cdogs-sdl/. Always download from the official source — third-party mirrors of free games are a common malware vector."},{"platform":"all","text":"Official releases are published on GitHub at github.com/cxong/cdogs-sdl/releases. Pick the newest stable release matching your operating system."},{"platform":"windows","text":"Extract the downloaded archive anywhere you like — there is no installer, just a portable folder. If Windows SmartScreen warns about the .exe having an unrecognised publisher, that is normal for open-source projects without a paid code-signing certificate — choose More info, then Run anyway."},{"platform":"macos","text":"Open the downloaded .dmg and drag the app into Applications. On first launch macOS may refuse to open it as unidentified — right-click the app and choose Open to approve it once."},{"platform":"linux","text":"Check your distribution's package manager first, which is usually the easiest route. Otherwise download the AppImage from the official site, mark it executable and run it.","command":"chmod +x *.AppImage && ./*.AppImage"},{"platform":"all","text":"Launch the game and look at the settings menu before your first session — resolution and control defaults are worth checking. C-Dogs SDL needs roughly 100 MB of free disk space."}],
     systemRequirements: {
       min: "Windows, macOS or Linux · any x86-64 CPU from the last 15 years · integrated graphics (SDL2 2D renderer)",
@@ -99,6 +108,7 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
     thatOneThing:
       "You can resize the board — push it past 8×8 and every opening you have memorised quietly stops being worth anything.",
     developerSlug: "next-gen-chess-dev",
+    sizeMB: 50,
   },
 
   // theme-hospital has no seed row (CMS-only). Its systemRequirements were
@@ -108,6 +118,8 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
   // GOG's page also confirms macOS support alongside Windows, matching the
   // game's own `platforms` field.
   "theme-hospital": {
+    developerSlug: "corsixth-team",
+    sizeMB: 2000,
     systemRequirements: {
       min: "Windows 10/11 or macOS · 1.8 GHz CPU · 2 GB RAM · DirectX 9.0c-capable GPU · 2 GB storage (runs via DOSBox)",
       recommended: "Windows 10/11 or macOS · 2+ GHz CPU · 4 GB RAM · any DirectX 9-capable GPU · 2 GB storage",
@@ -135,6 +147,7 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
    */
   deadeus: {
     developerSlug: "izma",
+    sizeMB: 2,
     installSteps: [{"platform":"all","text":"Install the PlayBound Launcher, then find Deadeus and press Install. The launcher downloads the official release and unpacks it. This is the fastest route and it never uses third-party mirrors."},{"platform":"all","text":"Alternatively, download Deadeus directly from the official site at https://izma.itch.io/deadeus. Always download from the official source — third-party mirrors of free games are a common malware vector."},{"platform":"windows","text":"Extract the downloaded archive anywhere you like — there is no installer, just a portable folder. If Windows SmartScreen warns about the .exe having an unrecognised publisher, that is normal for open-source projects without a paid code-signing certificate — choose More info, then Run anyway."},{"platform":"all","text":"Launch the game and look at the settings menu before your first session — resolution and control defaults are worth checking. Deadeus needs roughly 2 MB of free disk space."}],
     faq: [
       { q: "Is Deadeus free?", a: "Yes. Deadeus is released under Free / Open Source and costs nothing to download or play." },
@@ -144,6 +157,8 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
     ],
   },
   assaultcube: {
+    developerSlug: "assaultcube-team",
+    sizeMB: 60,
     faq: [
       { q: "Is AssaultCube free?", a: "Yes. AssaultCube is released under Open Source and costs nothing to download or play." },
       { q: "How big is the AssaultCube download?", a: "About 60 MB." },
@@ -161,6 +176,7 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
   },
   "opentyrian-2000": {
     developerSlug: "opentyrian-team",
+    sizeMB: 25,
     installSteps: [{"platform":"all","text":"Install the PlayBound Launcher, then find OpenTyrian 2000 and press Install. The launcher downloads the official release and unpacks it. This is the fastest route and it never uses third-party mirrors."},{"platform":"all","text":"Alternatively, download OpenTyrian 2000 directly from the official site at https://github.com/opentyrian/opentyrian. Always download from the official source — third-party mirrors of free games are a common malware vector."},{"platform":"all","text":"Official releases are published on GitHub at github.com/opentyrian/opentyrian/releases. Pick the newest stable release matching your operating system."},{"platform":"windows","text":"Extract the downloaded archive anywhere you like — there is no installer, just a portable folder. If Windows SmartScreen warns about the .exe having an unrecognised publisher, that is normal for open-source projects without a paid code-signing certificate — choose More info, then Run anyway."},{"platform":"macos","text":"Open the downloaded .dmg and drag the app into Applications. On first launch macOS may refuse to open it as unidentified — right-click the app and choose Open to approve it once."},{"platform":"linux","text":"Check your distribution's package manager first, which is usually the easiest route. Otherwise download the AppImage from the official site, mark it executable and run it.","command":"chmod +x *.AppImage && ./*.AppImage"},{"platform":"all","text":"Launch the game and look at the settings menu before your first session — resolution and control defaults are worth checking. OpenTyrian 2000 needs roughly 25 MB of free disk space."}],
     faq: [
       { q: "Is OpenTyrian 2000 free?", a: "Yes. OpenTyrian 2000 is released under Free / Open Source and costs nothing to download or play." },
@@ -170,6 +186,8 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
     ],
   },
   widelands: {
+    developerSlug: "widelands-team",
+    sizeMB: 500,
     faq: [
       {
         q: "Is Widelands free?",
@@ -191,6 +209,8 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
   // These two only had the trailing "minimum system requirements are See
   // official site" clause broken — the size itself was already correct.
   "the-legend-of-zelda-book-of-mudora": {
+    developerSlug: "solarus-team",
+    sizeMB: 169,
     installSteps: [{"platform":"all","text":"Install the PlayBound Launcher, then find The Legend of Zelda: Book of Mudora and press Install. The launcher downloads the official release and unpacks it. This is the fastest route and it never uses third-party mirrors."},{"platform":"all","text":"Alternatively, download The Legend of Zelda: Book of Mudora directly from the official site at https://www.solarus-games.org/games/the-legend-of-zelda-book-of-mudora/. Always download from the official source — third-party mirrors of free games are a common malware vector."},{"platform":"windows","text":"Extract the downloaded archive anywhere you like — there is no installer, just a portable folder. If Windows SmartScreen warns about the .exe having an unrecognised publisher, that is normal for open-source projects without a paid code-signing certificate — choose More info, then Run anyway."},{"platform":"all","text":"Launch the game and look at the settings menu before your first session — resolution and control defaults are worth checking. The Legend of Zelda: Book of Mudora needs roughly 169 MB of free disk space."}],
     faq: [
       {
@@ -206,6 +226,8 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
     ],
   },
   "the-legend-of-zelda-xd2-mercuris-chess": {
+    developerSlug: "solarus-team",
+    sizeMB: 40,
     installSteps: [{"platform":"all","text":"Install the PlayBound Launcher, then find The Legend of Zelda XD2: Mercuris' Chess and press Install. The launcher downloads the official release and unpacks it. This is the fastest route and it never uses third-party mirrors."},{"platform":"all","text":"Alternatively, download The Legend of Zelda XD2: Mercuris' Chess directly from the official site at https://www.solarus-games.org/games/the-legend-of-zelda-xd2-mercuris-chess/. Always download from the official source — third-party mirrors of free games are a common malware vector."},{"platform":"windows","text":"Extract the downloaded archive anywhere you like — there is no installer, just a portable folder. If Windows SmartScreen warns about the .exe having an unrecognised publisher, that is normal for open-source projects without a paid code-signing certificate — choose More info, then Run anyway."},{"platform":"all","text":"Launch the game and look at the settings menu before your first session — resolution and control defaults are worth checking. The Legend of Zelda XD2: Mercuris' Chess needs roughly 40 MB of free disk space."}],
     faq: [
       {
@@ -221,6 +243,8 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
     ],
   },
   yarntown: {
+    developerSlug: "max-mraz",
+    sizeMB: 25,
     installSteps: [{"platform":"all","text":"Install the PlayBound Launcher, then find Yarntown and press Install. The launcher downloads the official release and unpacks it. This is the fastest route and it never uses third-party mirrors."},{"platform":"all","text":"Alternatively, download Yarntown directly from the official site at https://www.solarus-games.org/games/yarntown/. Always download from the official source — third-party mirrors of free games are a common malware vector."},{"platform":"windows","text":"Extract the downloaded archive anywhere you like — there is no installer, just a portable folder. If Windows SmartScreen warns about the .exe having an unrecognised publisher, that is normal for open-source projects without a paid code-signing certificate — choose More info, then Run anyway."},{"platform":"all","text":"Launch the game and look at the settings menu before your first session — resolution and control defaults are worth checking. Yarntown needs roughly 25 MB of free disk space."}],
     faq: [
       { q: "Is Yarntown free?", a: "Yes. Yarntown is released under Free · Fan Game (Non-Commercial) and costs nothing to download or play." },
@@ -231,9 +255,15 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
   },
   "panzer-marshal": {
     developerSlug: "nicu-pavel",
+    sizeMB: 300,
   },
   "stalker-lost-alpha": {
     developerSlug: "dez0wave",
+    sizeMB: 16000,
+  },
+  "seven-kingdoms-ancient-adversaries": {
+    developerSlug: "enlight-software",
+    sizeMB: 80,
   },
 };
 
