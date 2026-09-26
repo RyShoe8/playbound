@@ -6426,7 +6426,7 @@ export const editorial: Record<string, GameEditorial> = {
       "Enter the Gungeon",
       "Nuclear Throne",
       "HoloCure - Save the Fans!",
-      "Cuphead (couch tone, not genre)",
+      "Cuphead",
     ],
     installSteps: [
       {

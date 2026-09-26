@@ -277,6 +277,32 @@ describe("insert-catalog-wave allowlists", () => {
         // catalogCorrections.ts.
         "deponia",
         "caravan-sandwitch",
+        // comparableTo rendering pass, 2026-09-26 — new PATCH_GAME_FIELDS
+        // entries for games that only needed this one field patched.
+        "privateer-gemini-gold",
+        "openarena",
+        "tomb-raider-123",
+        "s-t-a-l-k-e-r-call-of-pripyat",
+        "albion-online",
+        "guild-wars-2",
+        "lord-of-the-rings-online",
+        "dc-universe-online",
+        "genshin-impact",
+        "dota-2",
+        "league-of-legends",
+        "quake-champions",
+        "microsoft-allegiance",
+        "strikers-club",
+        "trigger-rally",
+        "ysoccer",
+        "super-sidekicks",
+        "baseball-stars-2",
+        "soccer-brawl",
+        "srb2kart",
+        "lovers-in-a-dangerous-spacetime",
+        "flatout-2",
+        "opents",
+        "star-wars-galactic-battlegrounds-saga",
       ].sort()
     );
     expect(PATCH_GAME_FIELDS["super-nova-strike"]).toContain("androidStoreUrl");
@@ -291,6 +317,7 @@ describe("insert-catalog-wave allowlists", () => {
       "launcherInstall",
       "firstPlaySteps",
       "multiplayerGamingSteps",
+      "comparableTo",
     ]);
     expect(PATCH_GAME_FIELDS["tmnt-rescue-palooza"]).toEqual([
       "title",
@@ -300,11 +327,17 @@ describe("insert-catalog-wave allowlists", () => {
       "launcherInstall",
       "firstPlaySteps",
       "multiplayerGamingSteps",
+      "comparableTo",
     ]);
     expect(PATCH_GAME_FIELDS.morrowind).toContain("launcherInstall");
     expect(PATCH_GAME_FIELDS.morrowind).toContain("qualityBar");
     expect(PATCH_GAME_FIELDS.morrowind).toContain("thatOneThing");
-    expect(PATCH_GAME_FIELDS["dune-legacy"]).toEqual(["launcherInstall", "features", "thatOneThing"]);
+    expect(PATCH_GAME_FIELDS["dune-legacy"]).toEqual([
+      "launcherInstall",
+      "features",
+      "thatOneThing",
+      "comparableTo",
+    ]);
     expect(PATCH_GAME_FIELDS["the-spike-cross"]).toContain("androidStoreUrl");
     expect(PATCH_GAME_FIELDS["slapshot-rebound"]).toContain("hardwareRequirements");
     expect(PATCH_GAME_FIELDS["space-station-14"]).toEqual([
@@ -313,6 +346,7 @@ describe("insert-catalog-wave allowlists", () => {
       "releaseYear",
       "faq",
       "thatOneThing",
+      "comparableTo",
     ]);
     expect(PATCH_GAME_FIELDS.teeworlds).toContain("launcherInstall");
     expect(PATCH_GAME_FIELDS["the-dark-mod"]).toContain("platforms");
