@@ -219,6 +219,8 @@ describe("insert-catalog-wave allowlists", () => {
         "the-legend-of-zelda-book-of-mudora",
         "the-legend-of-zelda-xd2-mercuris-chess",
         "yarntown",
+        "panzer-marshal",
+        "stalker-lost-alpha",
         // Published-catalog installSteps fix, 2026-09-25 — same defect,
         // no seed field for other reasons — see the allowlist's own comment.
         "freedoom",
@@ -275,6 +277,7 @@ describe("insert-catalog-wave allowlists", () => {
     expect(PATCH_GAME_FIELDS.pokemmo).toContain("features");
     expect(PATCH_GAME_FIELDS.pokemmo).toContain("tags");
     expect(PATCH_GAME_FIELDS.pokemmo).toContain("sizeMB");
+    expect(PATCH_GAME_FIELDS["castlevania-revamped"]).not.toContain("coverImage");
   });
 
   it("patches CoP/SoC/Anomaly/Clear Sky editions + OpenMW/TES3MP/Lost Alpha recipes", () => {

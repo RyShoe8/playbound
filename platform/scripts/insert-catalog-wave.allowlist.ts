@@ -91,7 +91,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
    * next-gen-chess, opents and strikers-club are genuinely 2026.
    */
   "thief-gold": ["releaseYear", "features"],
-  mrboom: ["releaseYear", "faq"],
+  mrboom: ["title", "developerSlug", "releaseYear", "faq"],
   "rollercoaster-tycoon": ["releaseYear", "features", "faq"],
   "thief-2-the-metal-age": ["releaseYear", "features"],
   "stronghold-crusader-hd": ["releaseYear", "features"],
@@ -100,13 +100,13 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   "star-wars-knights-of-the-old-republic-ii-the-sith-lords": ["releaseYear"],
   // Stored 2019 was the 2.0 "Elara" release, not the original.
   "red-eclipse": ["releaseYear", "installSteps"],
-  openclonk: ["releaseYear", "faq"],
+  openclonk: ["developerSlug", "releaseYear", "faq"],
   "renegade-x": ["releaseYear"],
 
   // Gaps found in the same audit: the only published game with no genres,
   // and the only one with no thatOneThing.
   "c-dogs-sdl": ["genres", "systemRequirements", "faq", "installSteps"],
-  "next-gen-chess": ["thatOneThing"],
+  "next-gen-chess": ["developerSlug", "thatOneThing"],
 
   "alien-swarm": [
     "qualityBar",
@@ -212,6 +212,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   ],
   "space-station-14": ["launcherInstall", "installSteps", "releaseYear", "faq"],
   teeworlds: [
+    "developerSlug",
     "platforms",
     "features",
     "launcherInstall",
@@ -389,7 +390,6 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "website",
     "githubRepo",
     "art",
-    "coverImage",
     "systemRequirements",
     "hardwareRequirements",
     "launcherInstall",
@@ -530,16 +530,18 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
    * games). The rest (no seed row) are sourced from catalogCorrections.ts
    * or, for teeworlds, its own dedicated source module.
    */
-  "gamebuddies-io": ["faq"],
+  "gamebuddies-io": ["developerSlug", "faq"],
   "marathon-2": ["faq"],
-  pixreveal: ["faq"],
-  deadeus: ["faq", "installSteps"],
+  pixreveal: ["developerSlug", "faq"],
+  deadeus: ["developerSlug", "faq", "installSteps"],
   assaultcube: ["faq"],
-  "opentyrian-2000": ["faq", "installSteps"],
+  "opentyrian-2000": ["developerSlug", "faq", "installSteps"],
   widelands: ["faq"],
   "the-legend-of-zelda-book-of-mudora": ["faq", "installSteps"],
   "the-legend-of-zelda-xd2-mercuris-chess": ["faq", "installSteps"],
   yarntown: ["faq", "installSteps"],
+  "panzer-marshal": ["developerSlug"],
+  "stalker-lost-alpha": ["developerSlug"],
 
   /*
    * Same install-step defect (the shared enrich.ts template always claimed

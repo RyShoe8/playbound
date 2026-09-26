@@ -37,6 +37,7 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
    */
   openclonk: {
     releaseYear: 2010,
+    developerSlug: "openclonk-team",
     faq: [
       {
         q: "Is OpenClonk free?",
@@ -97,6 +98,7 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
   "next-gen-chess": {
     thatOneThing:
       "You can resize the board — push it past 8×8 and every opening you have memorised quietly stops being worth anything.",
+    developerSlug: "next-gen-chess-dev",
   },
 
   // theme-hospital has no seed row (CMS-only). Its systemRequirements were
@@ -132,6 +134,7 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
    * were already correct and are kept as-is.
    */
   deadeus: {
+    developerSlug: "izma",
     installSteps: [{"platform":"all","text":"Install the PlayBound Launcher, then find Deadeus and press Install. The launcher downloads the official release and unpacks it. This is the fastest route and it never uses third-party mirrors."},{"platform":"all","text":"Alternatively, download Deadeus directly from the official site at https://izma.itch.io/deadeus. Always download from the official source — third-party mirrors of free games are a common malware vector."},{"platform":"windows","text":"Extract the downloaded archive anywhere you like — there is no installer, just a portable folder. If Windows SmartScreen warns about the .exe having an unrecognised publisher, that is normal for open-source projects without a paid code-signing certificate — choose More info, then Run anyway."},{"platform":"all","text":"Launch the game and look at the settings menu before your first session — resolution and control defaults are worth checking. Deadeus needs roughly 2 MB of free disk space."}],
     faq: [
       { q: "Is Deadeus free?", a: "Yes. Deadeus is released under Free / Open Source and costs nothing to download or play." },
@@ -157,6 +160,7 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
     ],
   },
   "opentyrian-2000": {
+    developerSlug: "opentyrian-team",
     installSteps: [{"platform":"all","text":"Install the PlayBound Launcher, then find OpenTyrian 2000 and press Install. The launcher downloads the official release and unpacks it. This is the fastest route and it never uses third-party mirrors."},{"platform":"all","text":"Alternatively, download OpenTyrian 2000 directly from the official site at https://github.com/opentyrian/opentyrian. Always download from the official source — third-party mirrors of free games are a common malware vector."},{"platform":"all","text":"Official releases are published on GitHub at github.com/opentyrian/opentyrian/releases. Pick the newest stable release matching your operating system."},{"platform":"windows","text":"Extract the downloaded archive anywhere you like — there is no installer, just a portable folder. If Windows SmartScreen warns about the .exe having an unrecognised publisher, that is normal for open-source projects without a paid code-signing certificate — choose More info, then Run anyway."},{"platform":"macos","text":"Open the downloaded .dmg and drag the app into Applications. On first launch macOS may refuse to open it as unidentified — right-click the app and choose Open to approve it once."},{"platform":"linux","text":"Check your distribution's package manager first, which is usually the easiest route. Otherwise download the AppImage from the official site, mark it executable and run it.","command":"chmod +x *.AppImage && ./*.AppImage"},{"platform":"all","text":"Launch the game and look at the settings menu before your first session — resolution and control defaults are worth checking. OpenTyrian 2000 needs roughly 25 MB of free disk space."}],
     faq: [
       { q: "Is OpenTyrian 2000 free?", a: "Yes. OpenTyrian 2000 is released under Free / Open Source and costs nothing to download or play." },
@@ -224,6 +228,12 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
       { q: "What platforms does Yarntown run on?", a: "Windows." },
       { q: "Do I need an account to play Yarntown?", a: "No account is required to download or play." },
     ],
+  },
+  "panzer-marshal": {
+    developerSlug: "nicu-pavel",
+  },
+  "stalker-lost-alpha": {
+    developerSlug: "dez0wave",
   },
 };
 

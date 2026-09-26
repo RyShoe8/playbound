@@ -380,6 +380,10 @@ async function main() {
       }
     }
 
+    if (slug === "castlevania-revamped") {
+      delete payload.coverImage;
+    }
+
     const result = await CatalogGame.updateOne({ slug }, { $set: payload });
     if (result.matchedCount !== 1) {
       throw new Error(
