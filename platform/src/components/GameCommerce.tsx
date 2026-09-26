@@ -24,7 +24,7 @@ function purchaseHref(offer: RetailOffer, slug: string, affiliates: StoreAffilia
   const stamp = affiliates[offer.retailer];
   const withUtm = withOutboundUtm(offer.url, { campaign: "game_get", content: slug });
   return withStoreAffiliate(withUtm, {
-    affiliate: offer.affiliate,
+    affiliate: Boolean(stamp),
     id: stamp?.id,
     param: stamp?.param,
     template: stamp?.template,
@@ -46,13 +46,14 @@ export function GetGameCta({
 }) {
   const buy = offer ?? bestPurchase(game.access);
   if (!buy) return null;
+  const isAffiliate = Boolean(affiliates && affiliates[buy.retailer]);
   const href = purchaseHref(buy, game.slug, affiliates);
   const isBaseGame = isBaseGameRequirement(game.access);
   return (
     <TelemetryAnchor
       href={href}
       target="_blank"
-      rel={buy.affiliate ? "sponsored noopener noreferrer" : "noopener noreferrer"}
+      rel={isAffiliate ? "sponsored noopener noreferrer" : "noopener noreferrer"}
       className={cn(
         "inline-flex items-center gap-2 rounded-full font-bold transition-all active:translate-y-px",
         isBaseGame
@@ -65,7 +66,7 @@ export function GetGameCta({
       properties={{
         gameSlug: game.slug,
         retailer: buy.retailer,
-        affiliate: buy.affiliate,
+        affiliate: isAffiliate,
         priceCents: buy.priceCents,
         surface: "get_game_cta",
       }}
@@ -89,12 +90,13 @@ function StoreOfferButton({
   size?: "sm" | "md" | "lg";
   affiliates?: StoreAffiliateMap;
 }) {
+  const isAffiliate = Boolean(affiliates && affiliates[offer.retailer]);
   const href = purchaseHref(offer, game.slug, affiliates);
   return (
     <TelemetryAnchor
       href={href}
       target="_blank"
-      rel={offer.affiliate ? "sponsored noopener noreferrer" : "noopener noreferrer"}
+      rel={isAffiliate ? "sponsored noopener noreferrer" : "noopener noreferrer"}
       className={cn(
         "inline-flex items-center gap-2 rounded-full border border-border bg-background/80 font-bold text-foreground transition-all hover:border-play hover:text-play active:translate-y-px",
         ctaSizes[size]
@@ -103,7 +105,7 @@ function StoreOfferButton({
       properties={{
         gameSlug: game.slug,
         retailer: offer.retailer,
-        affiliate: offer.affiliate,
+        affiliate: isAffiliate,
         priceCents: offer.priceCents,
         surface: "get_game_store",
       }}
@@ -212,26 +214,27 @@ export function GameCommerce({
       {sources.length > 0 ? (
         <ul className="mt-4 divide-y divide-border border-t border-border">
           {sources.map((source) => {
+            const isAffiliate = Boolean(affiliates && affiliates[source.retailer]);
             const href = purchaseHref(source, game.slug, affiliates);
             return (
               <li key={`${source.retailer}-${source.url}`}>
                 <TelemetryAnchor
                   href={href}
                   target="_blank"
-                  rel={source.affiliate ? "sponsored noopener noreferrer" : "noopener noreferrer"}
+                  rel={isAffiliate ? "sponsored noopener noreferrer" : "noopener noreferrer"}
                   className="flex items-center justify-between gap-3 py-2.5 text-sm hover:text-primary"
                   event="purchase_clicked"
                   properties={{
                     gameSlug: game.slug,
                     retailer: source.retailer,
-                    affiliate: source.affiliate,
+                    affiliate: isAffiliate,
                     priceCents: source.priceCents,
                     surface: "game_commerce_list",
                   }}
                 >
                   <span className="font-semibold">
                     {source.retailer}
-                    {source.affiliate ? (
+                    {isAffiliate ? (
                       <span className="ml-2 text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
                         Partner
                       </span>

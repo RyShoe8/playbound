@@ -93,7 +93,7 @@ export function withStoreAffiliate(
     template?: string | null;
   }
 ): string {
-  if (!opts.affiliate) return url;
+  if (opts.affiliate === false) return url;
   const raw = String(url || "").trim();
   if (!raw) return raw;
 

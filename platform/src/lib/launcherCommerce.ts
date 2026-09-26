@@ -63,7 +63,7 @@ function purchaseHref(
     medium: "launcher",
   });
   return withStoreAffiliate(withUtm, {
-    affiliate: offer.affiliate,
+    affiliate: Boolean(stamp),
     id: stamp?.id,
     param: stamp?.param,
     template: stamp?.template,
@@ -79,7 +79,7 @@ function toOffer(
     retailer: offer.retailer,
     url: purchaseHref(offer, slug, affiliates),
     priceCents: offer.priceCents,
-    affiliate: Boolean(offer.affiliate),
+    affiliate: Boolean(affiliates[offer.retailer]),
   };
 }
 

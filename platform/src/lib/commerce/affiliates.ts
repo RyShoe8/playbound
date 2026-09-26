@@ -15,7 +15,7 @@ export type { StoreAffiliateStamp };
 async function readAffiliateMap(): Promise<Record<string, StoreAffiliateStamp>> {
   await dbConnect();
   const docs = await StoreProvider.find()
-    .select("slug affiliateId affiliateParam affiliateUrlTemplate")
+    .select("slug affiliateId affiliateParam affiliateUrlTemplate affiliateDefault")
     .lean();
   const out: Record<string, StoreAffiliateStamp> = {};
   for (const doc of docs) {
@@ -23,6 +23,7 @@ async function readAffiliateMap(): Promise<Record<string, StoreAffiliateStamp>> 
     if (!isCommerceStoreSlug(slug)) continue;
     const retailer = storeSlugToRetailer(slug);
     if (!retailer) continue;
+    if (doc.affiliateDefault === false) continue;
     const template = typeof doc.affiliateUrlTemplate === "string" ? doc.affiliateUrlTemplate.trim() : "";
     const id = typeof doc.affiliateId === "string" ? doc.affiliateId.trim() : "";
     const stored = typeof doc.affiliateParam === "string" ? doc.affiliateParam.trim() : "";
