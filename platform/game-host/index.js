@@ -22,7 +22,7 @@ import { createReadStream, createWriteStream } from "node:fs";
 import { copyFile, mkdir, rename, rm, stat } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
 import { Readable, Transform } from "node:stream";
-import { generateRconPassword, isRconAuthFailure, sendRcon } from "./rcon.js";
+import { generateRconPassword, isRconAuthFailure, sendRoomRcon } from "./rcon.js";
 import { shouldRestartRoom, MAX_RESTARTS } from "./roomRestart.js";
 import {
   resolveRecipe,
@@ -1469,11 +1469,7 @@ const server = http.createServer(async (req, res) => {
       }
       try {
         room.lastActivityAt = Date.now();
-        const response = await sendRcon({
-          port: room.port,
-          password: room.rconPassword,
-          command,
-        });
+        const response = await sendRoomRcon(room, command);
         if (isRconAuthFailure(response)) {
           // A wrong password answers with an ordinary print, so a caller
           // checking only for a thrown error would record this as success.

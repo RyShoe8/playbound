@@ -83,6 +83,12 @@ export const links: NavItem[] = [
     family: ["/admin/connect"],
   },
   {
+    href: "/admin/hosting",
+    label: "Hosting",
+    icon: Server,
+    family: ["/admin/hosting"],
+  },
+  {
     href: "/admin/ops",
     label: "Ops",
     icon: Activity,

@@ -812,7 +812,13 @@ export function GlobalServerBrowser({
                         {s.gameTitle && (
                           <span className="font-extrabold text-foreground">{s.gameTitle}</span>
                         )}
-                        <span className="font-semibold text-foreground/90">{s.name}</span>
+                        {s.pageUrl ? (
+                          <Link href={s.pageUrl} className="font-semibold text-foreground/90 hover:text-primary hover:underline">
+                            {s.name}
+                          </Link>
+                        ) : (
+                          <span className="font-semibold text-foreground/90">{s.name}</span>
+                        )}
                       </div>
                       <div className="mt-1 flex items-center gap-2 flex-wrap">
                         {(s.sourceType === "playbound_hosted" || !effectiveGameSlug) && (

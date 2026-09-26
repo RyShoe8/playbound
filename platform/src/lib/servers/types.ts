@@ -12,6 +12,8 @@ export type GameServer = {
   id: string;
   sourceType?: "playbound_hosted";
   communityServerId?: string;
+  /** PlayBound Dedicated customer servers: their public page (/servers/[game]/[slug]). */
+  pageUrl?: string;
   gameSlug?: string;
   gameTitle?: string;
   editionSlug?: string | null;

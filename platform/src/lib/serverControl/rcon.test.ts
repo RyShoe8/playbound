@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { buildRconCommands, parseQuake3Status, rconValue, UnsafeSettingValue } from "./rcon";
+import { buildRconCommands, parseStatus, rconValue, UnsafeSettingValue } from "./rcon";
+
+const parseQuake3Status = (text: string) => parseStatus("rcon-quake3", text);
 
 describe("building commands from declared settings", () => {
   it("sets a cvar named after the key", () => {
@@ -81,5 +83,115 @@ num score ping name            lastmsg address               qport rate
     expect(parseQuake3Status("map: oasis\nnum score ping name\n--- ----- ----")).toEqual([]);
     expect(parseQuake3Status("")).toEqual([]);
     expect(parseQuake3Status("Bad rconpassword.")).toEqual([]);
+  });
+});
+
+describe("consoleCommandProblem", () => {
+  it("lets ordinary admin commands through", async () => {
+    const { consoleCommandProblem } = await import("./rcon");
+    for (const ok of ["status", "map oa_dm1", "set g_gravity 400", "kick Player", "clientkick 3", "timelimit 20"]) {
+      expect(consoleCommandProblem(ok)).toBeNull();
+    }
+  });
+  it("refuses anything that escapes the product or the slot cap", async () => {
+    const { consoleCommandProblem } = await import("./rcon");
+    for (const bad of [
+      "quit", "/quit", "exec server.cfg", "set rconpassword x", "rconpassword x", "seta sv_maxclients 64",
+      "sv_maxclients 64", "set fs_game other", "status; quit", "status\nquit", "vstr evil", "set sv_hostname Foo", "",
+    ]) {
+      expect(consoleCommandProblem(bad)).not.toBeNull();
+    }
+  });
+});
+
+/* Replies captured from real servers on the PlayBound VPS (2026-09-26). */
+const OPENARENA_STATUS = `map: oa_dm1
+cl score ping name            address                                 rate 
+-- ----- ---- --------------- --------------------------------------- -----
+ 0     1    0 Liz             ^7bot                                     16384
+ 1     0   48 Ryan            ^7203.0.113.9:27960                       25000
+`;
+const XONOTIC_STATUS = `host:     PB probe
+map:      stormkeep
+players:  3 active (16 max)
+
+#1   [BOT]Toxic          0   0:00:32
+   botclient
+#2   Ryan                7   0:03:10
+   203.0.113.9:26000
+`;
+const TF2_STATUS = `hostname: PB
+map     : cp_dustbowl at: 0 x, 0 y, 0 z
+# userid name                uniqueid            connected ping loss state  adr
+#      2 "Mega Baboon"       BOT                                     active
+#      5 "Ryan"              [U:1:123456]        01:02       50    0 active 203.0.113.9:27005
+`;
+const CS2_STATUS = `loaded spawngroup(  1)  : SV:  [1: de_inferno | main lump | mapload]
+---------players--------
+  id     time ping loss      state   rate adr name
+   0      BOT    0    0     active      0 'Getaway'
+   2    00:10   45    0     active 786432 203.0.113.9:27005 'Ryan'
+#end
+`;
+
+describe("per-engine status parsing", () => {
+  it("reads OpenArena (no lastmsg column, ^7 addresses)", async () => {
+    const { parseStatus, parseCurrentMap } = await import("./rcon");
+    expect(parseStatus("rcon-quake3", OPENARENA_STATUS)).toEqual([
+      { id: "0", name: "Liz", score: 1, pingMs: 0, bot: true, address: null },
+      { id: "1", name: "Ryan", score: 0, pingMs: 48, bot: false, address: "203.0.113.9" },
+    ]);
+    expect(parseCurrentMap("rcon-quake3", OPENARENA_STATUS)).toBe("oa_dm1");
+  });
+  it("reads Xonotic, Team Fortress 2 and Counter-Strike 2", async () => {
+    const { parseStatus, parseCurrentMap } = await import("./rcon");
+    expect(parseStatus("rcon-darkplaces", XONOTIC_STATUS)).toEqual([
+      { id: "1", name: "[BOT]Toxic", score: 0, pingMs: null, bot: true, address: null },
+      { id: "2", name: "Ryan", score: 7, pingMs: null, bot: false, address: "203.0.113.9" },
+    ]);
+    expect(parseCurrentMap("rcon-darkplaces", XONOTIC_STATUS)).toBe("stormkeep");
+    const tf2 = parseStatus("rcon-source", TF2_STATUS);
+    expect(tf2.map((p) => [p.id, p.name, p.bot, p.address, p.pingMs])).toEqual([
+      ["2", "Mega Baboon", true, null, null],
+      ["5", "Ryan", false, "203.0.113.9", 50],
+    ]);
+    expect(parseCurrentMap("rcon-source", TF2_STATUS)).toBe("cp_dustbowl");
+    const cs2 = parseStatus("rcon-source", CS2_STATUS);
+    expect(cs2.map((p) => [p.id, p.name, p.bot, p.address])).toEqual([
+      ["0", "Getaway", true, null],
+      ["2", "Ryan", false, "203.0.113.9"],
+    ]);
+    expect(parseCurrentMap("rcon-source", CS2_STATUS)).toBe("de_inferno");
+  });
+});
+
+describe("per-engine commands", () => {
+  it("kicks, bans and unbans with each engine's own syntax", async () => {
+    const { kickCommand, banCommands, unbanCommands } = await import("./rcon");
+    expect(kickCommand("rcon-quake3", "3")).toBe("clientkick 3");
+    expect(kickCommand("rcon-darkplaces", "3")).toBe("kick # 3");
+    expect(kickCommand("rcon-source", "3")).toBe("kickid 3");
+    expect(() => kickCommand("rcon-source", "3; quit")).toThrow();
+    expect(banCommands("rcon-source", "203.0.113.9")).toEqual(["addip 0 203.0.113.9"]);
+    expect(banCommands("rcon-quake3", "203.0.113.9")).toEqual(["addip 203.0.113.9"]);
+    expect(() => banCommands("rcon-quake3", "1.2.3.4; quit")).toThrow();
+    expect(unbanCommands("rcon-darkplaces", "203.0.113.9")).toBeNull();
+  });
+  it("builds a rotation only from the game's own maps", async () => {
+    const { rotationCommands } = await import("./rcon");
+    const spec = { options: [{ value: "oa_dm1", label: "a" }, { value: "oa_dm2", label: "b" }], changeCommand: "map {value}", rotation: "quake3-vstr" as const };
+    expect(rotationCommands(spec, ["oa_dm1", "oa_dm2"])).toEqual([
+      'set pb_rot0 "map oa_dm1; set nextmap vstr pb_rot1"',
+      'set pb_rot1 "map oa_dm2; set nextmap vstr pb_rot0"',
+      'set nextmap "vstr pb_rot0"',
+    ]);
+    expect(() => rotationCommands(spec, ["oa_dm1", "evil; quit"])).toThrow();
+    expect(rotationCommands({ ...spec, rotation: "darkplaces-maplist" }, ["oa_dm2"])).toEqual(['set g_maplist "oa_dm2"', "set g_maplist_shuffle 0"]);
+  });
+  it("sets Source cvars without `set`", async () => {
+    const { buildRconCommands } = await import("./rcon");
+    // Any source-channel profile with an rcon setting; asserted after profiles gain one.
+    const cmds = buildRconCommands("team-fortress-2", { mp_timelimit: 25 });
+    expect(cmds).toEqual([{ key: "mp_timelimit", command: 'mp_timelimit "25"' }]);
   });
 });
