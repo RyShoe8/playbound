@@ -398,7 +398,6 @@ const lincityMods: ModSeed[] = [
 ];
 
 const tesArenaMods: ModSeed[] = [
-  m({ slug: 'tes-arena-dosbox', title: 'DOSBox Staging', tagline: 'Run classic Arena in DOSBox.', desc: 'Run classic Arena in DOSBox.', base: 'tes-arena', baseTitle: 'The Elder Scrolls: Arena', path: 'mods', website: 'https://github.com/dosbox-staging/dosbox-staging', repo: 'dosbox-staging/dosbox-staging', changes: 'DOS emulator.', summary: 'Run classic Arena in DOSBox.' }),
 ];
 
 /** Quake III–style FPS — not related to Elder Scrolls: Arena. */
