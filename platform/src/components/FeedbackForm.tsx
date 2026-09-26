@@ -3,11 +3,14 @@
 import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Bug } from "lucide-react";
+import { Bug, Lightbulb } from "lucide-react";
 import { getRecaptchaToken } from "@/lib/recaptchaClient";
+import { cn } from "@/lib/utils";
+import type { BugReportKind } from "@/lib/bugReports";
 
-export function ReportBugForm() {
+export function FeedbackForm() {
   const { data: session } = useSession();
+  const [kind, setKind] = useState<BugReportKind>("bug");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [contactEmail, setContactEmail] = useState(session?.user?.email ?? "");
@@ -34,6 +37,7 @@ export function ReportBugForm() {
         body: JSON.stringify({
           title,
           description,
+          kind,
           source: "website",
           pageUrl: pageUrl || (typeof window !== "undefined" ? window.location.href : ""),
           contactEmail,
@@ -58,10 +62,15 @@ export function ReportBugForm() {
   if (state === "done") {
     return (
       <div className="rounded-2xl border border-border bg-card p-6 text-center">
-        <Bug className="mx-auto size-8 text-primary" />
+        {kind === "suggestion" ? (
+          <Lightbulb className="mx-auto size-8 text-primary" />
+        ) : (
+          <Bug className="mx-auto size-8 text-primary" />
+        )}
         <h2 className="mt-3 text-xl font-extrabold">Thanks — we got it</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Your report is in the admin queue. We may follow up if you left an email.
+          Your {kind === "suggestion" ? "suggestion" : "report"} is in the admin queue. We may follow up
+          if you left an email.
         </p>
         <Link href="/" className="mt-4 inline-block text-sm font-semibold text-primary hover:underline">
           Back to home →
@@ -78,6 +87,35 @@ export function ReportBugForm() {
   return (
     <form onSubmit={submit} className="space-y-3 rounded-2xl border border-border bg-card p-5 sm:p-6">
       <div>
+        <label className="text-xs font-semibold text-muted-foreground">What is this?</label>
+        <div className="mt-1.5 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setKind("bug")}
+            className={cn(
+              "flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold transition-colors",
+              kind === "bug"
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-input bg-secondary/50 text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Bug className="size-4" /> Bug
+          </button>
+          <button
+            type="button"
+            onClick={() => setKind("suggestion")}
+            className={cn(
+              "flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold transition-colors",
+              kind === "suggestion"
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-input bg-secondary/50 text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Lightbulb className="size-4" /> Suggestion
+          </button>
+        </div>
+      </div>
+      <div>
         <label className="text-xs font-semibold text-muted-foreground">Short title</label>
         <input
           className={input}
@@ -86,11 +124,17 @@ export function ReportBugForm() {
           maxLength={160}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="e.g. Install button does nothing on Windows"
+          placeholder={
+            kind === "suggestion"
+              ? "e.g. Add a dark mode toggle to the launcher"
+              : "e.g. Install button does nothing on Windows"
+          }
         />
       </div>
       <div>
-        <label className="text-xs font-semibold text-muted-foreground">What went wrong?</label>
+        <label className="text-xs font-semibold text-muted-foreground">
+          {kind === "suggestion" ? "What's your idea?" : "What went wrong?"}
+        </label>
         <textarea
           className={area}
           required
@@ -98,7 +142,11 @@ export function ReportBugForm() {
           maxLength={8000}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Steps to reproduce, what you expected, and what happened."
+          placeholder={
+            kind === "suggestion"
+              ? "What would you like to see, and why?"
+              : "Steps to reproduce, what you expected, and what happened."
+          }
         />
       </div>
       <div>
@@ -126,8 +174,8 @@ export function ReportBugForm() {
         disabled={state === "busy"}
         className="mt-2 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-60"
       >
-        <Bug className="size-4" />
-        {state === "busy" ? "Sending…" : "Send report"}
+        {kind === "suggestion" ? <Lightbulb className="size-4" /> : <Bug className="size-4" />}
+        {state === "busy" ? "Sending…" : kind === "suggestion" ? "Send suggestion" : "Send report"}
       </button>
     </form>
   );

@@ -50,6 +50,7 @@ describe("admin nav structure", () => {
     const top = links.map((l) => l.label);
     expect(top).not.toContain("Collections");
     expect(top).not.toContain("Bugs");
+    expect(top).not.toContain("Feedback");
     expect(top).not.toContain("Versions");
     expect(top).not.toContain("Download Mirrors");
     expect(top).not.toContain("Mods");
@@ -60,6 +61,7 @@ describe("admin nav structure", () => {
     expect(top).toContain("Games");
     expect(top).toContain("Ops");
     expect(top).toContain("eCommerce");
+    expect(top).toContain("Users");
   });
 
   it("keeps the top row identical on every route", () => {
@@ -71,6 +73,7 @@ describe("admin nav structure", () => {
       "/admin/games/mods",
       "/admin/collections",
       "/admin/ops",
+      "/admin/feedback",
       "/admin/bugs",
       "/admin/download-mirrors",
       "/admin/games/openra/edit",
@@ -123,14 +126,23 @@ describe("admin nav structure", () => {
     });
   });
 
-  it("puts bugs, versions and download mirrors under Ops", () => {
+  it("puts versions, access audit and download mirrors under Ops", () => {
     expect(subRow("/admin/ops")).toMatchObject({
       section: "Ops",
       children: [
-        { label: "Bugs", href: "/admin/bugs" },
         { label: "Versions", href: "/admin/version-issues" },
         { label: "Access Audit", href: "/admin/access-audit" },
         { label: "Download Mirrors", href: "/admin/download-mirrors" },
+      ],
+    });
+  });
+
+  it("puts users and feedback under Users", () => {
+    expect(subRow("/admin/users")).toMatchObject({
+      section: "Users",
+      children: [
+        { label: "Users", href: "/admin/users" },
+        { label: "Feedback", href: "/admin/feedback" },
       ],
     });
   });
@@ -139,7 +151,6 @@ describe("admin nav structure", () => {
 describe("admin nav active state", () => {
   it("shows no second row outside a section that has one", () => {
     expect(subRow("/admin")).toBeNull();
-    expect(subRow("/admin/users")).toBeNull();
     expect(subRow("/admin/gear")).toBeNull();
   });
 
@@ -149,11 +160,11 @@ describe("admin nav active state", () => {
   });
 
   it("keeps the section open while on one of its children", () => {
-    // Bugs, Versions and Download Mirrors all live outside /admin/ops, which
-    // is why the section needs `family` — otherwise the row would vanish the
-    // moment you clicked into one.
-    for (const path of ["/admin/bugs", "/admin/version-issues", "/admin/download-mirrors"]) {
+    for (const path of ["/admin/version-issues", "/admin/download-mirrors"]) {
       expect(subRow(path)?.section, `for ${path}`).toBe("Ops");
+    }
+    for (const path of ["/admin/feedback", "/admin/bugs"]) {
+      expect(subRow(path)?.section, `for ${path}`).toBe("Users");
     }
     for (const path of ["/admin/collections", "/admin/mods", "/admin/games/editions"]) {
       expect(subRow(path)?.section, `for ${path}`).toBe("Games");
@@ -166,7 +177,9 @@ describe("admin nav active state", () => {
       sub: (subRow(path)?.children ?? []).filter((c) => c.active).map((c) => c.label),
     });
 
-    expect(lit("/admin/bugs")).toEqual({ top: ["Ops"], sub: ["Bugs"] });
+    expect(lit("/admin/feedback")).toEqual({ top: ["Users"], sub: ["Feedback"] });
+    expect(lit("/admin/bugs")).toEqual({ top: ["Users"], sub: ["Feedback"] });
+    expect(lit("/admin/users")).toEqual({ top: ["Users"], sub: ["Users"] });
     expect(lit("/admin/download-mirrors")).toEqual({ top: ["Ops"], sub: ["Download Mirrors"] });
     expect(lit("/admin/collections")).toEqual({ top: ["Games"], sub: ["Collections"] });
     // On the section root itself, nothing in the second row is current.
@@ -185,6 +198,7 @@ describe("admin nav active state", () => {
       "/admin/games/mods",
       "/admin/collections",
       "/admin/ops",
+      "/admin/feedback",
       "/admin/bugs",
       "/admin/version-issues",
       "/admin/download-mirrors",

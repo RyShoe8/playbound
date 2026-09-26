@@ -4,81 +4,126 @@ import { withOutboundUtm } from "@/lib/utm";
 const year = new Date().getFullYear();
 const mediaShopHref = withOutboundUtm("https://themediashop.co", { campaign: "footer" });
 
-const links = [
-  { href: "/discover", label: "Games" },
-  { href: "/gear", label: "Gear" },
-  { href: "/mods", label: "Mods" },
-  { href: "/multiplayer", label: "Multiplayer" },
-  { href: "/connect", label: "Connect" },
-  { href: "/controls", label: "Controls" },
-  { href: "/play-with-friends", label: "Play Together" },
-  { href: "/guides", label: "Guides" },
-  { href: "/events", label: "Events" },
-  // Replaced the /weekly link. That page is still live and still reachable
-  // directly and from the admin; it just left the navigation.
-  { href: "/deals", label: "Game Deals" },
-  { href: "/standards", label: "Our Standard" },
-  { href: "/open-platform", label: "Trust & Architecture" },
-  { href: "/compare", label: "Compare" },
-  { href: "/alternatives", label: "Alternatives" },
-  { href: "/developers", label: "Developers" },
-  { href: "/developer", label: "Developer Portal" },
-  { href: "/launcher", label: "Launcher" },
-  { href: "/submit-game", label: "Submit a game" },
-  { href: "/report-bug", label: "Report a bug" },
-  { href: "/about", label: "About" },
-  { href: "/privacy", label: "Privacy" },
-  { href: "/terms", label: "Terms" },
+interface FooterLink {
+  href: string;
+  label: string;
+  desktopOnly?: boolean;
+}
+
+interface FooterSection {
+  title: string;
+  links: FooterLink[];
+}
+
+const footerSections: FooterSection[] = [
+  {
+    title: "Play",
+    links: [
+      { href: "/discover", label: "Games" },
+      { href: "/mods", label: "Mods" },
+      { href: "/gear", label: "Gear" },
+      { href: "/deals", label: "Game Deals" },
+    ],
+  },
+  {
+    title: "Multiplayer",
+    links: [
+      { href: "/multiplayer", label: "Multiplayer" },
+      { href: "/connect", label: "Connect" },
+      { href: "/play-with-friends", label: "Play Together" },
+      { href: "/controls", label: "Controls" },
+      { href: "/events", label: "Events" },
+    ],
+  },
+  {
+    title: "Discover",
+    links: [
+      { href: "/guides", label: "Guides" },
+      { href: "/compare", label: "Compare" },
+      { href: "/alternatives", label: "Alternatives" },
+      { href: "/standards", label: "Our Standard" },
+    ],
+  },
+  {
+    title: "Developers",
+    links: [
+      { href: "/developers", label: "Developers" },
+      { href: "/developer", label: "Developer Portal" },
+      { href: "/submit-game", label: "Submit a Game" },
+      { href: "/launcher", label: "Launcher", desktopOnly: true },
+      { href: "/open-platform", label: "Trust & Architecture" },
+    ],
+  },
+  {
+    title: "Company",
+    links: [
+      { href: "/about", label: "About" },
+      { href: "/privacy", label: "Privacy" },
+      { href: "/terms", label: "Terms" },
+    ],
+  },
 ];
 
 export function Footer() {
   return (
-    <footer className="border-t border-border bg-background/80 px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto flex max-w-5xl flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-        <div className="max-w-sm">
-          <p className="text-sm font-extrabold tracking-tight">
-            Play<span className="text-primary">Bound</span>
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Discover. Play. Connect. Every title clears{" "}
-            <Link href="/standards" className="font-semibold text-foreground/80 hover:text-primary">
-              the PlayBound Bar
-            </Link>{" "}
-            and runs on our{" "}
-            <Link href="/open-platform" className="font-semibold text-foreground/80 hover:text-primary">
-              open architecture
-            </Link>
-            .
+    <footer className="border-t border-border bg-background/80 px-4 py-12 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-xs shrink-0">
+            <p className="text-base font-extrabold tracking-tight">
+              Play<span className="text-primary">Bound</span>
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Discover. Play. Connect. Every title clears{" "}
+              <Link href="/standards" className="font-semibold text-foreground/80 hover:text-primary">
+                the PlayBound Bar
+              </Link>{" "}
+              and runs on our{" "}
+              <Link href="/open-platform" className="font-semibold text-foreground/80 hover:text-primary">
+                open architecture
+              </Link>
+              .
+            </p>
+          </div>
+
+          <nav className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 lg:gap-8">
+            {footerSections.map((section) => (
+              <div key={section.title} className="flex flex-col gap-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-foreground/70">
+                  {section.title}
+                </h3>
+                <ul className="flex flex-col gap-2.5">
+                  {section.links.map(({ href, label, desktopOnly }) => (
+                    <li key={href} className={desktopOnly ? "hidden lg:block" : undefined}>
+                      <Link
+                        href={href}
+                        className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                      >
+                        {label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </nav>
+        </div>
+
+        <div className="mt-12 border-t border-border/60 pt-6">
+          <p className="text-xs text-muted-foreground">
+            © {year}{" "}
+            <a
+              href={mediaShopHref}
+              target="_blank"
+              rel="noreferrer"
+              className="font-semibold text-foreground/80 transition-colors hover:text-primary"
+            >
+              The Media Shop
+            </a>
+            . All rights reserved.
           </p>
         </div>
-        <nav className="flex flex-wrap gap-x-4 gap-y-2">
-          {links.map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              className={
-                href === "/launcher"
-                  ? "hidden text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground lg:inline"
-                  : "text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
-              }
-            >
-              {label}
-            </Link>
-          ))}
-        </nav>
       </div>
-      <p className="mx-auto mt-6 max-w-5xl text-xs text-muted-foreground">
-        © {year}{" "}
-        <a
-          href={mediaShopHref}
-          target="_blank"
-          rel="noreferrer"
-          className="font-semibold text-foreground/80 transition-colors hover:text-primary"
-        >
-          The Media Shop
-        </a>
-        . All rights reserved.
-      </p>
     </footer>
   );
 }
