@@ -14,6 +14,7 @@ export const HOST_LABELS: Record<ModAuthor["host"], string> = {
   modio: "mod.io",
   moddb: "ModDB",
   sourceforge: "SourceForge",
+  website: "Website",
 };
 
 export function getModAuthor(slug: string): ModAuthor | undefined {

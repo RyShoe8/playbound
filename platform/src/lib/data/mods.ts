@@ -40,6 +40,7 @@ import { flightgearMods } from "./flightgearMods";
 import { zerokMods } from "./zerokMods";
 import { keeperfxMods } from "./keeperfxMods";
 import { catalogWaveAug2026Mods } from "./catalogWaveAug2026Mods";
+import { deusExMods } from "./deusExMods";
 import { totalConversionsWave } from "./totalConversionsWave";
 
 export type { ModSeed } from "./modSeedHelpers";
@@ -85,6 +86,7 @@ export const mods: ModSeed[] = [
   ...brawlhallaMods,
   ...ysoccerMods,
   ...catalogWaveAug2026Mods,
+  ...deusExMods,
   ...totalConversionsWave,
 ].map((m) =>
   COVER_OVERRIDES[m.slug] ? { ...m, coverImage: COVER_OVERRIDES[m.slug] } : m

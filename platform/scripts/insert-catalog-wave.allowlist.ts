@@ -10,6 +10,7 @@
 
 /** Parent games to create only when absent. Draft until a human publishes. */
 export const NEW_GAME_SLUGS: readonly string[] = [
+  "deus-ex",
   "trackmania",
   "the-spike-cross",
   "populous-the-beginning",
@@ -42,6 +43,7 @@ export const NEW_GAME_SLUGS: readonly string[] = [
 
 /** `gameSlug/editionSlug` pairs to create only when absent. */
 export const NEW_EDITION_KEYS: readonly string[] = [
+  "deus-ex/playbound-hx-coop",
   "stalker-anomaly/official",
   "stalker-anomaly/gamma",
   "s-t-a-l-k-e-r-clear-sky/official",
@@ -83,6 +85,7 @@ export const NEW_EDITION_KEYS: readonly string[] = [
  * High-quality community total conversions, expansions, and engine modernizations.
  */
 export const NEW_MOD_SLUGS: readonly string[] = [
+  "deus-ex-hx",
   "morrowind-tamriel-rebuilt",
   "homm3-hd-mod",
   "thief-gold-tfix",
@@ -96,6 +99,7 @@ export const NEW_MOD_SLUGS: readonly string[] = [
  * Existing catalog games: $set ONLY these fields.
  */
 export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
+  "deus-ex": ["status", "features", "multiplayerGamingSteps"],
   /*
    * releaseYear audit, 2026-09-22.
    *

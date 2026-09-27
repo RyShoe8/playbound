@@ -23,7 +23,7 @@ export interface ModAuthor {
   /** Account handle on the host below. */
   handle: string;
   /** Where the attribution was verified. */
-  host: "github" | "luanti" | "codeberg" | "gitlab" | "bananas" | "modio" | "moddb" | "sourceforge";
+  host: "github" | "luanti" | "codeberg" | "gitlab" | "bananas" | "modio" | "moddb" | "sourceforge" | "website";
   /**
    * Profile page on that host. Optional because two credits are a team name
    * from a ModDB "Developer" field rather than an account, and inventing a
@@ -38,6 +38,13 @@ export interface ModAuthor {
 }
 
 export const modAuthors: ModAuthor[] = [
+  {
+    slug: "sebastian-kaufel",
+    name: "Sebastian Kaufel (Hanfling)",
+    handle: "hanfling",
+    host: "website",
+    profileUrl: "https://builds.hx.hanfling.de/",
+  },
   {
     slug: "0ad-matters",
     name: "0ad Matters",

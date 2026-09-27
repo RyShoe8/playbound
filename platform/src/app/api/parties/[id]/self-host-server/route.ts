@@ -3,7 +3,7 @@ import dbConnect from "@/lib/db";
 import Party from "@/lib/models/Party";
 import { getFriendsUserId } from "@/lib/friendsAuth";
 import { getServerSettingProfile, defaultSettingValues } from "@/lib/serverControl/settings";
-import { getSelfHostConfig } from "@/lib/multiplayer/adapters";
+import { getMultiplayerAdapter, getSelfHostConfig } from "@/lib/multiplayer/adapters";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -87,6 +87,7 @@ export async function POST(req: Request, ctx: RouteContext) {
     }
 
     const hostConfig = getSelfHostConfig(String(doc.gameSlug || ""));
+    const dedicatedHost = getMultiplayerAdapter(String(doc.gameSlug || "")).host;
     const hasPort = body.port !== undefined;
     const port = Number(body.port);
     if (
@@ -94,7 +95,8 @@ export async function POST(req: Request, ctx: RouteContext) {
       (!Number.isSafeInteger(port) ||
         port < 1 ||
         port > 65535 ||
-        (hostConfig?.port && port !== hostConfig.port))
+        ((hostConfig?.port || dedicatedHost?.port) &&
+          port !== (hostConfig?.port || dedicatedHost?.port)))
     ) {
       return NextResponse.json({ error: "Invalid self-host port" }, { status: 400 });
     }
@@ -124,7 +126,7 @@ export async function POST(req: Request, ctx: RouteContext) {
     if (hasPort) {
       $set.selfHostPort = {
         port,
-        protocol: hostConfig?.protocol || "tcp",
+        protocol: hostConfig?.protocol || dedicatedHost?.protocol || "tcp",
       };
     }
 
