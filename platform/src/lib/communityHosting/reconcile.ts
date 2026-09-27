@@ -542,12 +542,23 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
     // Limit to 1 community server per game: skip any profile whose gameSlug
     // already has a running server, not just the same profile key.
     const runningGameSlugs = new Set(active.filter((s) => s.desiredState === "running" || alreadyRunning.has(String(s._id))).map((s) => s.gameSlug));
-    const candidateServers = rotationCandidates.filter((p) =>
-      !active.some((s) => s.profileKey === p.key && (s.desiredState === "running" || alreadyRunning.has(String(s._id)))) &&
-      !runningGameSlugs.has(p.gameSlug) &&
-      !previous.some((s) => s.profileKey === p.key && s.manualPause) &&
-      !previous.some((s) => s.profileKey === p.key && s.cooldownUntil && new Date(s.cooldownUntil) > now)
-    );
+    /*
+     * Cooldown decides who goes first, not whether capacity may be used. It
+     * exists so rotation does not swap the same games in and out; that is
+     * enforced below, where only candidates *out* of cooldown can make a
+     * running server stop. Here, a game still cooling down may take capacity
+     * nobody else wants — it is tried after every other candidate. Excluding it
+     * outright left a 6-core VPS at 8% CPU running two servers for two days
+     * (cooldown 48h), because the only candidates not cooling were too big.
+     */
+    const coolingDown = (key: string) => previous.some((s) => s.profileKey === key && s.cooldownUntil && new Date(s.cooldownUntil) > now);
+    const candidateServers = rotationCandidates
+      .filter((p) =>
+        !active.some((s) => s.profileKey === p.key && (s.desiredState === "running" || alreadyRunning.has(String(s._id)))) &&
+        !runningGameSlugs.has(p.gameSlug) &&
+        !previous.some((s) => s.profileKey === p.key && s.manualPause)
+      )
+      .sort((a, b) => Number(coolingDown(a.key)) - Number(coolingDown(b.key)));
 
     let startedCount = 0;
     const startedProfiles: string[] = [];
