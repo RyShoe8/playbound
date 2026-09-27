@@ -7515,6 +7515,8 @@ function sendGameExited(slug) {
   // Stale crop data from this game must not leak into the next one's stream.
   lastCropRect = null;
   cropMeasuredForSlug = null;
+  cropMeasurePromise = null;
+  lastGameMonitor = null;
   // Reported from here rather than the renderer so a session still closes when
   // the window is hidden to the tray or the game outlived the launcher UI.
   void telemetry.editionExited(editionInfoFor(slug));
@@ -7650,6 +7652,22 @@ let lastCropRect = null;
  * another round.
  */
 let cropMeasuredForSlug = null;
+/** The in-flight or finished measurement for cropMeasuredForSlug, so the capture handler can wait for it. */
+let cropMeasurePromise = null;
+/**
+ * The monitor the game window is on, in physical pixels ({ x, y, width, height }),
+ * from the same measurement. The capture handler streams that screen — not
+ * whichever monitor looks busiest, which picked a browser playing video over
+ * TMNT on another monitor, then cropped the browser to the game's rect.
+ */
+let lastGameMonitor = null;
+
+function parseMonitorRect(text) {
+  const m = /MONITOR=(-?\d+),(-?\d+),(-?\d+),(-?\d+)/.exec(String(text || ""));
+  if (!m) return null;
+  const [l, t, r, b] = m.slice(1).map(Number);
+  return r > l && b > t ? { x: l, y: t, width: r - l, height: b - t } : null;
+}
 
 function parseRectPair(text) {
   // e.g. "RECT=100,200,1620,1400 MONITOR=0,0,3840,2160" — coordinates can be
@@ -7699,9 +7717,14 @@ function parseRectPair(text) {
  * applied blindly to every game.
  */
 function measureGameWindowForCrop(slug) {
-  if (process.platform !== "win32" || !slug) return;
-  if (cropMeasuredForSlug === slug) return;
+  if (process.platform !== "win32" || !slug) return Promise.resolve(null);
+  if (cropMeasuredForSlug === slug && cropMeasurePromise) return cropMeasurePromise;
   cropMeasuredForSlug = slug;
+  cropMeasurePromise = new Promise((resolve) => measureGameWindowNow(slug, resolve));
+  return cropMeasurePromise;
+}
+
+function measureGameWindowNow(slug, done) {
   try {
     const imageNames = activeLaunches.get(slug)?.imageNames || [];
     const targets = imageNames.map((n) => String(n).replace(/\.exe$/i, "")).filter(Boolean);
@@ -7709,6 +7732,8 @@ function measureGameWindowForCrop(slug) {
       // imageNames may not be populated yet this early — allow a retry on
       // the next getDisplayMedia() call rather than giving up for the launch.
       cropMeasuredForSlug = null;
+      cropMeasurePromise = null;
+      done(null);
       return;
     }
     const candidates = [
@@ -7716,7 +7741,10 @@ function measureGameWindowForCrop(slug) {
       path.join(__dirname, "resources", "scripts", "maximize-window.ps1"),
     ];
     const script = candidates.find((p) => p && fs.existsSync(p));
-    if (!script) return;
+    if (!script) {
+      done(null);
+      return;
+    }
     const debugLog = (msg) => {
       if (win && !win.isDestroyed()) win.webContents.send("couch-status", { message: msg });
     };
@@ -7736,14 +7764,18 @@ function measureGameWindowForCrop(slug) {
     bg.on("close", (code) => {
       debugLog(`[measure] exit=${code} ${out.trim()}`);
       lastCropRect = parseRectPair(out);
+      lastGameMonitor = parseMonitorRect(out);
       if (win && !win.isDestroyed()) win.webContents.send("couch-crop-rect", lastCropRect);
       debugLog(`[measure] crop rect: ${lastCropRect ? JSON.stringify(lastCropRect) : "none (fills monitor)"}`);
+      done(lastGameMonitor);
     });
+    bg.on("error", () => done(null));
     bg.unref();
   } catch (err) {
     if (win && !win.isDestroyed()) {
       win.webContents.send("couch-status", { message: `[measure] error: ${err?.message || err}` });
     }
+    done(null);
   }
 }
 
@@ -13587,6 +13619,25 @@ if (gotLock) {
       }
     }
 
+    /**
+     * The screen source for the monitor the game window is on. The measurement
+     * is in physical pixels; Electron's displays are in DIPs, so convert before
+     * matching (mixed-DPI setups put every monitor at a different scale).
+     */
+    function screenForGameMonitor(sources, monitor) {
+      if (!monitor) return null;
+      try {
+        const dip = typeof screen.screenToDipRect === "function" ? screen.screenToDipRect(null, monitor) : monitor;
+        const display = screen.getDisplayMatching(dip);
+        const match = (sources || []).find((src) => src.id?.startsWith("screen:") && String(src.display_id) === String(display.id));
+        if (match) console.log("[couch] display capture → game's monitor", match.name || match.id, "display_id=", match.display_id);
+        return match || null;
+      } catch (err) {
+        console.warn("[couch] could not map the game window to a display:", err?.message || err);
+        return null;
+      }
+    }
+
     function findBestScreenSource(sources, hasActiveGame = false) {
       const screens = (sources || []).filter((s) => s.id && s.id.startsWith("screen:"));
       if (!screens.length) return null;
@@ -13623,128 +13674,6 @@ if (gotLock) {
       return primaryScreen || null;
     }
 
-    /**
-     * Find the application window for the actively running game process.
-     * Requires a confident title/exe match — never grab a random window on
-     * another monitor (that shows a yellow share border on the wrong app).
-     */
-    async function findGameWindowSource(slug, retries = 5, delayMs = 500) {
-      if (!slug) return null;
-
-      const entry = catalogEntry(slug);
-      const launch = activeLaunches.get(slug);
-
-      const titleTokens = (entry?.title || "")
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, " ")
-        .split(" ")
-        .filter((w) => w.length > 2);
-      const slugTokens = String(slug)
-        .toLowerCase()
-        .split("-")
-        .filter((w) => w.length > 2);
-      const imageTokens = (launch?.imageNames || []).map((img) =>
-        String(img)
-          .toLowerCase()
-          .replace(/\.exe$/i, "")
-          .replace(/[^a-z0-9]+/g, "")
-      );
-      if (/tmnt/i.test(slug)) {
-        titleTokens.push("openbor", "rescue", "palooza", "tmnt", "ninja", "turtles");
-      }
-      // Engine / binary names that often ARE the window title (exact or prefix).
-      const engineNames = ["openbor", "hurrican", "dosbox", "gzdoom", "zandronum", "retroarch"];
-
-      const excludeName = (name) =>
-        /^playbound/i.test(name) ||
-        /game view/i.test(name) ||
-        /devtools|chrome|msedge|firefox|discord|slack|spotify|cursor|visual studio|code - |notepad|explorer|program manager|windows input|task switching|taskbar|settings|powershell|cmd\.exe|terminal/i.test(
-          name
-        );
-
-      /** Confident enough to avoid random apps; OpenBOR title alone must pass. */
-      const MIN_SCORE = 5;
-
-      for (let attempt = 0; attempt < retries; attempt++) {
-        try {
-          const sources = await desktopCapturer.getSources({
-            types: ["window"],
-            thumbnailSize: { width: 0, height: 0 },
-          });
-
-          let bestMatch = null;
-          let bestScore = 0;
-
-          for (const w of sources) {
-            if (!w.id || !w.id.startsWith("window:")) continue;
-            const name = (w.name || "").trim().toLowerCase();
-            if (!name || excludeName(name)) continue;
-
-            let score = 0;
-            const title = (entry?.title || "").toLowerCase();
-            if (title && (name.includes(title) || (name.length >= 4 && title.includes(name)))) score += 20;
-            const titleMain = title.split(/[:\-\u2013\u2014]/)[0].trim();
-            if (titleMain && (name === titleMain || name.includes(titleMain) || (name.length >= 4 && titleMain.includes(name)))) {
-              score += 20;
-            }
-            // Window titled exactly like the engine (common for OpenBOR).
-            for (const eng of engineNames) {
-              if (name === eng || name.startsWith(eng + " ") || name.startsWith(eng + "-")) {
-                score += 12;
-              }
-            }
-            for (const t of titleTokens) {
-              if (name.includes(t)) score += 4;
-            }
-            for (const s of slugTokens) {
-              if (name.includes(s)) score += 3;
-            }
-            const nameCompact = name.replace(/[^a-z0-9]+/g, "");
-            for (const img of imageTokens) {
-              if (img.length >= 3 && (name.includes(img) || nameCompact.includes(img))) {
-                score += 15;
-              }
-            }
-
-            if (score > bestScore) {
-              bestScore = score;
-              bestMatch = w;
-            }
-          }
-
-          if (bestMatch && bestScore >= MIN_SCORE) {
-            console.log(
-              "[couch] game window match",
-              bestMatch.name,
-              "score=",
-              bestScore,
-              "slug=",
-              slug
-            );
-            return bestMatch;
-          }
-          if (bestMatch) {
-            console.log(
-              "[couch] weak window match ignored",
-              bestMatch.name,
-              "score=",
-              bestScore,
-              "(need",
-              MIN_SCORE + ")"
-            );
-          }
-        } catch {
-          /* retry */
-        }
-
-        if (attempt < retries - 1) {
-          await new Promise((resolve) => setTimeout(resolve, delayMs));
-        }
-      }
-
-      return null;
-    }
-
     /*
      * Connect streaming: confident game-window match only. Otherwise capture the
      * most active screen — never "first random window" (wrong yellow border).
@@ -13753,12 +13682,16 @@ if (gotLock) {
       session.defaultSession.setDisplayMediaRequestHandler(async (_request, callback) => {
         try {
           const slug = playingGameSlug();
-          if (slug) measureGameWindowForCrop(slug);
+          // Up to ~3s for the window measurement: where the game actually is
+          // beats guessing from which monitor looks busiest.
+          const gameMonitor = slug
+            ? await Promise.race([measureGameWindowForCrop(slug), new Promise((r) => setTimeout(() => r(null), 3000))])
+            : null;
           const sources = await desktopCapturer.getSources({
             types: ["screen"],
             thumbnailSize: { width: 160, height: 90 },
           });
-          const screenSource = findBestScreenSource(sources, Boolean(slug));
+          const screenSource = screenForGameMonitor(sources, gameMonitor) || findBestScreenSource(sources, Boolean(slug));
           if (screenSource) {
             console.log(
               "[couch] display capture → screen",
