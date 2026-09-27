@@ -448,6 +448,9 @@ async function main() {
       links: seed.links,
       features: seed.features,
       tags: seed.tags,
+      multiplayerGamingSteps: seed.multiplayerGamingSteps,
+      faq: seed.faq,
+      verificationNote: seed.verificationNote,
     };
     const payload = pickFields(source, fields);
     for (const field of fields) {

@@ -956,6 +956,177 @@ module.exports = [
     "fromPriceCents": null
   },
   {
+    "slug": "citadel-remonstered",
+    "title": "Citadel Remonstered",
+    "blurb": "Modernized Amiga sci-fi FPS classic — free on GOG under the Preservation Program.",
+    "kind": "external",
+    "developer": "Virtual Dreams / Fairlight",
+    "developerSlug": "virtual-dreams",
+    "art": [
+      "#1e1b4b",
+      "#4338ca"
+    ],
+    "approxSize": "~150 MB",
+    "genres": [
+      "Shooter",
+      "Action"
+    ],
+    "tags": [
+      "FPS",
+      "Sci-Fi",
+      "Amiga",
+      "Retro",
+      "Singleplayer",
+      "Preservation"
+    ],
+    "launchMethods": [
+      "install"
+    ],
+    "features": [
+      "Singleplayer",
+      "Controller Support"
+    ],
+    "multiplayer": false,
+    "hasServerBrowser": false,
+    "isMultiplayer": false,
+    "coverImage": "https://images.gog-statics.com/163f3b885e0ea1240e81bd7cf92a645e3e7212a79ef9f540b097a2668926164b.jpg",
+    "url": "goggalaxy://openGameView/1786501441",
+    "knownExePaths": [
+      "%PROGRAMFILES(X86)%\\GOG Galaxy\\Games\\Citadel Remonstered\\citadel.exe",
+      "%PROGRAMFILES%\\GOG Galaxy\\Games\\Citadel Remonstered\\citadel.exe",
+      "C:\\GOG Games\\Citadel Remonstered\\citadel.exe",
+      "%GAMES%\\Citadel Remonstered\\citadel.exe",
+      "citadel.exe"
+    ],
+    "note": "Free on GOG under the Preservation Program. Opens GOG Galaxy to claim and install with one click.",
+    "hostLaunch": null,
+    "status": "published",
+    "testing": false,
+    "maxPlayers": 1,
+    "platforms": [
+      "Windows"
+    ],
+    "browserPlayable": false,
+    "steamDeck": true,
+    "createdAt": "2026-09-26T18:00:00.000Z",
+    "editions": [],
+    "accessTier": "FREE",
+    "fromPriceCents": null
+  },
+  {
+    "slug": "deus-ex-goty-edition",
+    "title": "Deus Ex: Game of the Year Edition",
+    "blurb": "Ion Storm's genre-defining cyberpunk immersive sim of conspiracy, augmentations, and player choice.",
+    "kind": "external",
+    "developer": "Ion Storm",
+    "developerSlug": "ion-storm",
+    "art": [
+      "#064e3b",
+      "#047857"
+    ],
+    "approxSize": "~1.5 GB",
+    "genres": [
+      "Action",
+      "RPG",
+      "Shooter"
+    ],
+    "tags": [
+      "Cyberpunk",
+      "Immersive Sim",
+      "Sci-Fi",
+      "Classic",
+      "Story Rich",
+      "Conspiracy",
+      "Stealth",
+      "First-Person",
+      "Choice Matters",
+      "Singleplayer"
+    ],
+    "launchMethods": [
+      "install"
+    ],
+    "features": [
+      "Singleplayer",
+      "Mod Support",
+      "Story Rich"
+    ],
+    "multiplayer": false,
+    "hasServerBrowser": false,
+    "isMultiplayer": false,
+    "coverImage": "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/6910/library_600x900_2x.jpg",
+    "url": "goggalaxy://openGameView/1207658995",
+    "knownExePaths": [
+      "%PROGRAMFILES(X86)%\\GOG Galaxy\\Games\\Deus Ex GOTY\\System\\DeusEx.exe",
+      "%PROGRAMFILES%\\GOG Galaxy\\Games\\Deus Ex GOTY\\System\\DeusEx.exe",
+      "C:\\GOG Games\\Deus Ex GOTY\\System\\DeusEx.exe",
+      "%GAMES%\\Deus Ex GOTY\\System\\DeusEx.exe",
+      "%PROGRAMFILES(X86)%\\Steam\\steamapps\\common\\Deus Ex\\System\\DeusEx.exe",
+      "%PROGRAMFILES%\\Steam\\steamapps\\common\\Deus Ex\\System\\DeusEx.exe",
+      "%STEAM%\\steamapps\\common\\Deus Ex\\System\\DeusEx.exe",
+      "DeusEx.exe"
+    ],
+    "note": "Opens GOG Galaxy for your copy of Deus Ex: Game of the Year Edition. PlayBound detects your GOG or Steam install so editions can locate the base game.",
+    "hostLaunch": null,
+    "status": "published",
+    "testing": false,
+    "maxPlayers": 1,
+    "platforms": [
+      "Windows"
+    ],
+    "browserPlayable": false,
+    "steamDeck": true,
+    "createdAt": "2026-09-26T18:00:00.000Z",
+    "editions": [
+      {
+        "slug": "official",
+        "name": "Deus Ex: GOTY — Official Master",
+        "type": "official",
+        "isDefault": true,
+        "platforms": [
+          "Windows"
+        ],
+        "features": [
+          "Singleplayer",
+          "Story Rich",
+          "Immersive Sim"
+        ],
+        "tags": [
+          "Cyberpunk",
+          "Classic",
+          "Vanilla"
+        ]
+      },
+      {
+        "slug": "gmdx",
+        "name": "Deus Ex: GMDX — Augmented Edition",
+        "type": "community",
+        "isDefault": false,
+        "platforms": [
+          "Windows"
+        ],
+        "features": [
+          "Singleplayer",
+          "Modern Renderer",
+          "Overhauled AI",
+          "Rebalanced Augmentations",
+          "High Resolution Audio",
+          "Quality of Life Fixes",
+          "Lay-D Denton Support"
+        ],
+        "tags": [
+          "GMDX",
+          "Augmented Edition",
+          "Cyberpunk",
+          "Immersive Sim",
+          "Overhaul",
+          "Community Remaster"
+        ]
+      }
+    ],
+    "accessTier": "VALUE",
+    "fromPriceCents": 699
+  },
+  {
     "slug": "counter-strike-2",
     "title": "Counter-Strike 2",
     "blurb": "Ten players, one bomb, and nowhere for mistakes to hide.",

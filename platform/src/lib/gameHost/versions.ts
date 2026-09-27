@@ -50,6 +50,7 @@ const EXPECTED_SERVER_VERSIONS: Record<string, string> = {
   hypersomnia: "Hypersomnia dedicated",
   teeworlds: "Ubuntu apt (teeworlds-server)",
   "hurry-curry": "v3.1.1 (native)",
+  "deus-ex-goty-edition": "HX 0.9.89.4 (Wine; operator-owned GOTY files)",
   "earth-2140-trilogy": "OpenE2140 dedicated",
   bombsquad: "BombSquad server",
   "0ad": "Ubuntu apt",
@@ -68,6 +69,7 @@ const HOSTED_CLIENT_VERSIONS: Record<string, string> = {
   bombsquad: "v1.7.x",
   teeworlds: "0.7.5",
   "hurry-curry": "v3.1.1",
+  "deus-ex-goty-edition": "HX 0.9.89.4",
 };
 
 function installFor(slug: string): LauncherInstall | undefined {

@@ -81,6 +81,7 @@ describe("insert-catalog-wave allowlists", () => {
       [
         "baseball-stars-2",
         "castlevania-revamped",
+        "deus-ex-goty-edition",
         "earth-2140-trilogy",
         "final-fantasy-xi",
         "flatout-2",
@@ -109,15 +110,15 @@ describe("insert-catalog-wave allowlists", () => {
   it("only names the batch editions we intend to create", () => {
     expect([...NEW_EDITION_KEYS].sort()).toEqual(
       [
-        "castlevania-revamped/official",
         "cataclysm-dda/bright-nights",
+        "deus-ex-goty-edition/gmdx",
+        "deus-ex-goty-edition/playbound-hx-coop",
         "earth-2140-trilogy/official",
         "earth-2140-trilogy/opene2140",
         "final-fantasy-xi/horizon",
         "freelancer/crossfire",
         "freelancer/discovery",
         "freelancer/shattered-worlds",
-        "hawken-hawkening/official",
         "heroes-of-might-and-magic-3-complete/hota",
         "heroes-of-might-and-magic-3-complete/wog",
         "morrowind/rebirth",
@@ -140,6 +141,7 @@ describe("insert-catalog-wave allowlists", () => {
     expect([...NEW_MOD_SLUGS].sort()).toEqual(
       [
         "cataclysm-dda-magiclysm",
+        "deus-ex-hx",
         "homm3-hd-mod",
         "morrowind-tamriel-rebuilt",
         "osrs-117hd",
@@ -165,6 +167,7 @@ describe("insert-catalog-wave allowlists", () => {
       [
         "alien-swarm",
         "castlevania-revamped",
+        "deus-ex-goty-edition",
         "dune-legacy",
         "freetrain",
         "hawken-hawkening",
@@ -384,10 +387,9 @@ describe("insert-catalog-wave allowlists", () => {
   it("patches CoP/SoC/Anomaly/Clear Sky editions + OpenMW/TES3MP/Lost Alpha recipes", () => {
     expect(Object.keys(PATCH_EDITION_FIELDS).sort()).toEqual(
       [
-        "castlevania-revamped/official",
+        "deus-ex-goty-edition/playbound-hx-coop",
         "dune-legacy/modern-engine",
         "dune-legacy/playbound-edition",
-        "hawken-hawkening/official",
         "morrowind/openmw",
         "morrowind/tes3mp",
         "pokemon-blaze-online/official",
@@ -697,6 +699,9 @@ describe("insert-catalog-wave allowlists", () => {
         links: seed!.links,
         features: seed!.features,
         tags: seed!.tags,
+        multiplayerGamingSteps: seed!.multiplayerGamingSteps,
+        faq: seed!.faq,
+        verificationNote: seed!.verificationNote,
       };
       for (const field of PATCH_EDITION_FIELDS[key]!) {
         expect(source[field], `${key}.${field}`).not.toBeUndefined();

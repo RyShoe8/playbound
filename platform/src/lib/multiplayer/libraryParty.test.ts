@@ -103,13 +103,13 @@ describe("Library party button support for games and editions", () => {
     expect(editionSupportsMultiplayer(tf2Official, tf2)).toBe(true);
     expect(editionSupportsMultiplayer(tf2Classic, tf2)).toBe(true);
 
-    // OpenTS: Command & Conquer Tiberian Sun rebuild supports multiplayer
+    // OpenTS: Command & Conquer Tiberian Sun rebuild supports multiplayer via
+    // its own base-game features — it has no edition (the base game installs
+    // on its own, so an "official" row would just duplicate it).
     const opents = games.find((g) => g.slug === "opents");
     expect(opents, "OpenTS should be present in games catalog").toBeDefined();
     const opentsEds = editions.filter((e) => e.gameSlug === "opents");
+    expect(opentsEds, "OpenTS should have no editions").toHaveLength(0);
     expect(gameSupportsParty(opents, opentsEds)).toBe(true);
-    const opentsOfficial = editions.find((e) => e.gameSlug === "opents" && e.slug === "official");
-    expect(opentsOfficial, "OpenTS official edition should exist").toBeDefined();
-    expect(editionSupportsMultiplayer(opentsOfficial, opents)).toBe(true);
   });
 });

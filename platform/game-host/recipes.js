@@ -15,6 +15,7 @@ import { createRequire } from "node:module";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { verifyEtLegacyReady } from "./etLegacyInstall.js";
+import { HX_BASE, hxReady, hxRoomDir, prepareHxRoom } from "./deusExHx.js";
 
 const execFileAsync = promisify(execFile);
 const require = createRequire(import.meta.url);
@@ -181,7 +182,7 @@ const RECIPE_SETTING_TYPES = {
 // A managed room uses one fleet-wide key, translated into each engine's own
 // slot setting below. Party-room settings remain independent.
 for (const slug of [
-  "morrowind", "teeworlds", "openttd", "assaultcube", "medal-of-honor-allied-assault", "mindustry", "hurry-curry",
+  "morrowind", "teeworlds", "openttd", "assaultcube", "medal-of-honor-allied-assault", "mindustry", "hurry-curry", "deus-ex-goty-edition",
   "warzone-2100", "bzflag", "supertuxkart", "xonotic", "openarena",
   "0-ad", "0ad", "bombsquad", "wolfenstein-enemy-territory", "team-fortress-2",
   "unvanquished", "hedgewars", "freedoom", "veloren",
@@ -503,6 +504,28 @@ function resolveOpenRaServerMod(ctx) {
 }
 
 export const recipes = {
+  "deus-ex-goty-edition": {
+    portStart: 7790,
+    portEnd: 7850,
+    portStride: 3,
+    portSpan: 3, // gameplay, query, and uplink all bind UDP sockets
+    protocol: "udp",
+    binaries: [path.join(HX_BASE, "run-server")],
+    cwd: (_port, ctx) => path.join(hxRoomDir(ctx), "System"),
+    spawnEnv: (_port, ctx) => ({
+      WINEPREFIX: path.join(hxRoomDir(ctx), ".wine"),
+      WINEDEBUG: "-all",
+    }),
+    prepareSpawn: async (port, ctx) => {
+      prepareHxRoom(port, {
+        ...ctx,
+        maxPlayers: ctx.managed ? managedPlayerLimit(ctx, 8) : ctx.maxPlayers,
+      });
+    },
+    args: () => ["server", "01_NYC_UNATCOIsland", "-ini=HX.ini", "-userini=HXUser.ini", "-log=HXServer.log"],
+    startupReadyTimeoutMs: 120_000, // first Wine prefix takes time to initialize
+    startupGraceMs: 2000,
+  },
   morrowind: {
     portStart: 25565,
     portEnd: 25585,
@@ -1847,6 +1870,7 @@ export function listGameHostStatus() {
     const { binary } = resolveRecipe(slug);
     const hasBinary = Boolean(binary);
     let ready = hasBinary;
+    if (slug === "deus-ex-goty-edition") ready = hasBinary && hxReady() && fs.existsSync("/usr/bin/wine");
     if (slug === "wolfenstein-enemy-territory" && hasBinary) {
       const gameDir = path.join(GAMES_ROOT, slug);
       const check = verifyEtLegacyReady(gameDir);

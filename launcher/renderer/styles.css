@@ -10695,7 +10695,169 @@ textarea.input-text {
   border: 1px solid var(--border);
   border-radius: 12px;
   font-size: 13px;
-  color: var(--text-muted);
+}
+
+/* Community Servers Section (matches website format) */
+.home-section-subtitle {
+  margin: 3px 0 0 0;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-muted, #a1a1aa);
+}
+
+.home-community-servers-wrap {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card, #18181b);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.home-community-server-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 18px;
+  transition: background 0.16s ease;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+}
+
+.home-community-server-row:last-child {
+  border-bottom: none;
+}
+
+.home-community-server-row:hover {
+  background: var(--bg-card-hover, rgba(255, 255, 255, 0.04));
+}
+
+.home-community-server-main {
+  min-width: 0;
+  flex: 1 1 280px;
+}
+
+.home-community-server-title-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.home-community-server-game {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--text-main, #fff);
+}
+
+.home-community-server-game .home-server-icon {
+  color: var(--color-primary, #a855f7);
+  flex-shrink: 0;
+}
+
+.home-community-server-name {
+  font-weight: 600;
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.home-community-server-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  background: rgba(168, 85, 247, 0.15);
+  color: var(--color-primary, #a855f7);
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.home-community-server-subline {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--text-muted, #a1a1aa);
+}
+
+.home-community-server-addr {
+  font-family: var(--font-mono, monospace);
+  color: rgba(161, 161, 170, 0.85);
+}
+
+.home-community-server-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 12.5px;
+  color: var(--text-muted, #a1a1aa);
+  flex-wrap: wrap;
+}
+
+.home-community-server-players {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  color: var(--text-main, #fff);
+}
+
+.home-community-server-players .home-users-icon {
+  color: var(--color-primary, #a855f7);
+  flex-shrink: 0;
+}
+
+.home-community-server-bots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted, #a1a1aa);
+}
+
+.home-community-server-bots .home-bot-icon {
+  color: #22d3ee;
+  flex-shrink: 0;
+}
+
+.home-community-server-region {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  font-size: 11.5px;
+  color: rgba(161, 161, 170, 0.7);
+}
+
+.home-community-server-btn {
+  flex: none;
+  border-radius: 9999px !important;
+  font-weight: 700;
+  padding: 5px 14px !important;
+  font-size: 12px;
+}
+
+.home-community-server-install-btn {
+  background: rgba(168, 85, 247, 0.15) !important;
+  border: 1px solid rgba(168, 85, 247, 0.4) !important;
+  color: var(--color-primary, #c084fc) !important;
+}
+
+.home-community-server-install-btn:hover {
+  background: rgba(168, 85, 247, 0.25) !important;
+  color: #fff !important;
 }
 
 /* Controller confidence ------------------------------------- */

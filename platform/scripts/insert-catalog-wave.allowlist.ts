@@ -10,7 +10,7 @@
 
 /** Parent games to create only when absent. Draft until a human publishes. */
 export const NEW_GAME_SLUGS: readonly string[] = [
-  "deus-ex",
+  "deus-ex-goty-edition",
   "trackmania",
   "the-spike-cross",
   "populous-the-beginning",
@@ -43,7 +43,8 @@ export const NEW_GAME_SLUGS: readonly string[] = [
 
 /** `gameSlug/editionSlug` pairs to create only when absent. */
 export const NEW_EDITION_KEYS: readonly string[] = [
-  "deus-ex/playbound-hx-coop",
+  "deus-ex-goty-edition/gmdx",
+  "deus-ex-goty-edition/playbound-hx-coop",
   "stalker-anomaly/official",
   "stalker-anomaly/gamma",
   "s-t-a-l-k-e-r-clear-sky/official",
@@ -57,8 +58,6 @@ export const NEW_EDITION_KEYS: readonly string[] = [
   "pokemon-blaze-online/official",
   "pokemon-blaze-online/windows-32",
   "pokemmo/official",
-  "castlevania-revamped/official",
-  "hawken-hawkening/official",
   /*
    * No `final-fantasy-xi/official` row: the parent carries installSteps, so
    * `listedEditionsFromStored` synthesizes the base edition on its own, and
@@ -99,7 +98,7 @@ export const NEW_MOD_SLUGS: readonly string[] = [
  * Existing catalog games: $set ONLY these fields.
  */
 export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
-  "deus-ex": ["status", "features", "multiplayerGamingSteps"],
+  "deus-ex-goty-edition": ["status", "features", "multiplayerGamingSteps"],
   /*
    * releaseYear audit, 2026-09-22.
    *
@@ -744,6 +743,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
 
 /** Existing editions: $set ONLY these fields. */
 export const PATCH_EDITION_FIELDS: Readonly<Record<string, readonly string[]>> = {
+  "deus-ex-goty-edition/playbound-hx-coop": ["description", "installConfig", "multiplayerGamingSteps", "faq", "verificationNote"],
   // The Windows ZIP includes app/shatteredNews-*.jar (no Main-Class) beside
   // its real root launcher; the old broad hint picked that dependency.
   "shattered-pixel-dungeon/official": ["installConfig"],
@@ -807,8 +807,6 @@ export const PATCH_EDITION_FIELDS: Readonly<Record<string, readonly string[]>> =
   "pokemon-blaze-online/official": ["features", "tags", "installConfig"],
   "pokemon-blaze-online/windows-32": ["features", "tags", "installConfig"],
   "pokemmo/official": ["features", "tags", "installConfig"],
-  "castlevania-revamped/official": ["features", "tags", "installConfig"],
-  "hawken-hawkening/official": ["features", "tags", "installConfig"],
 };
 
 /**

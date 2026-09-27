@@ -32,7 +32,7 @@ const HEAVY_GAME_ENVELOPES: Record<string, ResourceEnvelope> = {
 // cap for another engine without enforcing it would mislead hosts and players.
 export const PLAYER_LIMIT_RECIPES = new Set([
   "counter-strike-2", "hypersomnia", "luanti", "morrowind", "teeworlds", "openttd",
-  "assaultcube", "medal-of-honor-allied-assault", "warzone-2100", "bzflag", "mindustry", "hurry-curry",
+  "assaultcube", "medal-of-honor-allied-assault", "warzone-2100", "bzflag", "mindustry", "hurry-curry", "deus-ex-goty-edition",
   "supertuxkart", "xonotic", "openarena", "0-ad", "0ad", "bombsquad",
   "wolfenstein-enemy-territory", "team-fortress-2", "unvanquished",
   "hedgewars", "freedoom", "veloren",

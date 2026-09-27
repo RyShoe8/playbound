@@ -651,13 +651,21 @@ async function waitForServerPort(port, protocol, child, timeoutMs) {
 
 async function allocPort(recipe, slug) {
   const stride = Math.max(1, Number(recipe.portStride) || 1);
+  const span = Math.max(1, Number(recipe.portSpan) || (stride > 1 ? 2 : 1));
   for (let port = recipe.portStart; port <= recipe.portEnd; port += stride) {
     const key = `${slug}:${port}`;
     if (usedPorts.has(key)) continue;
-    if (!(await isOsPortFree(port, recipe.protocol))) continue;
-    // AssaultCube (and similar) also bind port+1 for info — skip if that
-    // secondary UDP port is already taken so two rooms do not collide.
-    if (stride > 1 && !(await isOsPortFree(port + 1, recipe.protocol))) continue;
+    if (port + span - 1 > recipe.portEnd) continue;
+    // Some games bind query/uplink ports after the gameplay port. Reserve and
+    // probe the whole bundle before giving this base port to a room.
+    let free = true;
+    for (let offset = 0; offset < span; offset += 1) {
+      if (!(await isOsPortFree(port + offset, recipe.protocol))) {
+        free = false;
+        break;
+      }
+    }
+    if (!free) continue;
     usedPorts.add(key);
     return port;
   }

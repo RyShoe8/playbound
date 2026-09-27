@@ -5,6 +5,7 @@ import { Server, Users, ArrowRight, Bot } from "lucide-react";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { isGameCompatible } from "@/lib/compatibility/compatibility";
 import { SectionHeader } from "@/components/ui/bits";
+import { launcherJoinUrl, launcherInstallUrl } from "@/lib/launcher";
 
 export type HomeCommunityServer = {
   id: string;
@@ -23,12 +24,20 @@ export type HomeCommunityServer = {
   steamDeck?: boolean;
 };
 
-export function HomeCommunityServers({ servers }: { servers: HomeCommunityServer[] }) {
+export function HomeCommunityServers({
+  servers,
+  installedGameSlugs = [],
+}: {
+  servers: HomeCommunityServer[];
+  installedGameSlugs?: string[];
+}) {
   const { mode, device } = useCompatibilityFilter();
   const visible =
     mode === "all"
       ? servers
       : servers.filter((s) => !s.platforms || isGameCompatible(s, device.type));
+
+  const installedSet = new Set(installedGameSlugs);
 
   return (
     <section>
@@ -53,6 +62,18 @@ export function HomeCommunityServers({ servers }: { servers: HomeCommunityServer
         <div className="divide-y divide-border rounded-xl border border-border bg-card">
           {visible.map((server) => {
             const addr = `${server.host}:${server.port}`;
+            const isInstalled = installedSet.has(server.gameSlug);
+            const joinUrl = launcherJoinUrl(
+              server.gameSlug,
+              server.host,
+              server.port,
+              server.serverName
+            );
+            const installUrl = launcherInstallUrl(
+              server.gameSlug,
+              server.editionSlug
+            );
+
             return (
               <Link
                 key={server.id || addr}
@@ -88,6 +109,35 @@ export function HomeCommunityServers({ servers }: { servers: HomeCommunityServer
                   ) : null}
                   <span className="uppercase tracking-wider text-muted-foreground/70">
                     {server.region}
+                  </span>
+                  {!isInstalled && (
+                    <span
+                      role="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.location.href = joinUrl;
+                      }}
+                      className="inline-flex cursor-pointer items-center justify-center rounded-full border border-border bg-secondary/80 px-2.5 py-1 text-xs font-semibold text-foreground/80 shadow-sm transition hover:bg-secondary hover:text-foreground"
+                      title="Join if you already have the game installed"
+                    >
+                      Join
+                    </span>
+                  )}
+                  <span
+                    role="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      window.location.href = isInstalled ? joinUrl : (installUrl || joinUrl);
+                    }}
+                    className={
+                      isInstalled
+                        ? "inline-flex cursor-pointer items-center justify-center rounded-full bg-primary px-3 py-1 text-xs font-bold text-primary-foreground shadow-sm transition hover:brightness-110"
+                        : "inline-flex cursor-pointer items-center justify-center rounded-full border border-primary/40 bg-primary/15 px-3 py-1 text-xs font-bold text-primary shadow-sm transition hover:bg-primary/25"
+                    }
+                  >
+                    {isInstalled ? "Join" : "Install & join"}
                   </span>
                 </div>
               </Link>

@@ -1813,6 +1813,17 @@ export const developers: Developer[] = [
     artHue: 170,
   },
   {
+    slug: "virtual-dreams",
+    name: "Virtual Dreams / Fairlight",
+    tagline: "Creators of the 1995 Amiga classic Citadel.",
+    about:
+      "Original creators of the 1995 Amiga sci-fi classic Citadel, preserved and remastered on modern platforms via the GOG Preservation Program.",
+    founded: 1995,
+    location: "Sweden",
+    website: "https://www.gog.com/en/game/citadel_remonstered",
+    artHue: 220,
+  },
+  {
     slug: "ion-storm",
     name: "Ion Storm",
     tagline: "The studio behind Deus Ex, Anachronox, and Thief: Deadly Shadows.",
@@ -1820,6 +1831,7 @@ export const developers: Developer[] = [
       "Ion Storm's Austin studio, led by Warren Spector, developed Deus Ex. The broader company also made Anachronox and Thief: Deadly Shadows.",
     founded: 1996,
     location: "Dallas and Austin, Texas, USA",
+    website: "https://www.mobygames.com/company/50036/ion-storm-austin/",
     artHue: 45,
   },
 ];
