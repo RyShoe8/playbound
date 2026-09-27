@@ -7763,13 +7763,27 @@ function measureGameWindowNow(slug, done) {
     });
     bg.on("close", (code) => {
       debugLog(`[measure] exit=${code} ${out.trim()}`);
+      const monitor = code === 0 ? parseMonitorRect(out) : null;
+      if (!monitor) {
+        // Remote Play may request capture while a newly launched game is
+        // still creating its window. A miss is not a completed measurement:
+        // let the next capture attempt look for the actual game window.
+        cropMeasuredForSlug = null;
+        cropMeasurePromise = null;
+        done(null);
+        return;
+      }
       lastCropRect = parseRectPair(out);
-      lastGameMonitor = parseMonitorRect(out);
+      lastGameMonitor = monitor;
       if (win && !win.isDestroyed()) win.webContents.send("couch-crop-rect", lastCropRect);
       debugLog(`[measure] crop rect: ${lastCropRect ? JSON.stringify(lastCropRect) : "none (fills monitor)"}`);
       done(lastGameMonitor);
     });
-    bg.on("error", () => done(null));
+    bg.on("error", () => {
+      cropMeasuredForSlug = null;
+      cropMeasurePromise = null;
+      done(null);
+    });
     bg.unref();
   } catch (err) {
     if (win && !win.isDestroyed()) {
@@ -13681,17 +13695,32 @@ if (gotLock) {
     try {
       session.defaultSession.setDisplayMediaRequestHandler(async (_request, callback) => {
         try {
-          const slug = playingGameSlug();
-          // Up to ~3s for the window measurement: where the game actually is
-          // beats guessing from which monitor looks busiest.
+          const remotePlayCapture = Boolean(couchHost?.getState?.()?.session?.remotePlay);
+          const slug = remotePlayCapture
+            ? activeRemotePlayHostGameSlug || playingGameSlug()
+            : playingGameSlug();
+          // The game can still be opening when Remote Play asks for its first
+          // frame. Wait longer for its process-owned window; a busy browser
+          // on another monitor is not a safe substitute for that game.
           const gameMonitor = slug
-            ? await Promise.race([measureGameWindowForCrop(slug), new Promise((r) => setTimeout(() => r(null), 3000))])
+            ? await Promise.race([measureGameWindowForCrop(slug), new Promise((r) => setTimeout(() => r(null), remotePlayCapture ? 8000 : 3000))])
             : null;
+          if (remotePlayCapture && !gameMonitor) {
+            console.warn("[remote-play] waiting for game window before display capture:", slug || "game not launched yet");
+            callback({});
+            return;
+          }
           const sources = await desktopCapturer.getSources({
             types: ["screen"],
             thumbnailSize: { width: 160, height: 90 },
           });
-          const screenSource = screenForGameMonitor(sources, gameMonitor) || findBestScreenSource(sources, Boolean(slug));
+          const matchedScreen = screenForGameMonitor(sources, gameMonitor);
+          if (remotePlayCapture && !matchedScreen) {
+            console.warn("[remote-play] game monitor has no matching capture source:", slug);
+            callback({});
+            return;
+          }
+          const screenSource = matchedScreen || findBestScreenSource(sources, Boolean(slug));
           if (screenSource) {
             console.log(
               "[couch] display capture → screen",
