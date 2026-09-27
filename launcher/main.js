@@ -12436,7 +12436,13 @@ function localDedicatedServerFor(slug, editionSlug = null) {
     return { ok: false, reason: `PlayBound has no server template for ${entry?.title || slug}.` };
   }
   const game = ensureGameInstallRecord(loadState()[slug]);
-  const installedEdition = editionSlug ? game?.editions?.[editionSlug] : null;
+  // HX ships its dedicated binary inside the isolated co-op edition, not the
+  // original Deus Ex install. Party reconciliation does not carry an edition.
+  const installedEdition = editionSlug
+    ? game?.editions?.[editionSlug]
+    : slug === "deus-ex"
+      ? game?.editions?.["playbound-hx-coop"]
+      : null;
   const gameDir = installedEdition?.dir || game?.dir;
   const exe = resolveLocalServerBinary(gameDir, hostLaunch);
   if (!exe) {
@@ -12445,7 +12451,7 @@ function localDedicatedServerFor(slug, editionSlug = null) {
       reason: `${entry?.title || slug} does not ship ${hostLaunch.binaryHint} in this install.`,
     };
   }
-  return { ok: true, exe, cwd: gameDir || path.dirname(exe), hostLaunch, entry };
+  return { ok: true, exe, cwd: slug === "deus-ex" ? path.dirname(exe) : gameDir || path.dirname(exe), hostLaunch, entry };
 }
 
 /**

@@ -13,6 +13,7 @@ import type {
 } from "@/lib/editionTypes";
 import type { HardwareRequirementsBlock } from "@/lib/hardware/types";
 import type { InstallStep } from "@/lib/data/types";
+import { DEUS_EX_HX_URL } from "@/lib/data/deusExMods";
 import {
   ARENA_GAMEFILES_FILE,
   ARENA_GAMEFILES_URL,
@@ -5658,6 +5659,55 @@ export const editions: EditionSeed[] = [
     tags: ["Roguelike", "Survival", "Sci-Fi", "Post-Apocalyptic"],
     aliases: ["Cataclysm Bright Nights", "Cataclysm-BN", "CBN"],
     verificationLevel: "community_verified",
+  },
+  {
+    gameSlug: "deus-ex",
+    slug: "playbound-hx-coop",
+    name: "Deus Ex: HX Co-op — PlayBound Edition",
+    version: "0.9.89.4",
+    shortDescription: "Deus Ex's original campaign, now a shared operation through HX and PlayBound Connect.",
+    description:
+      "A patrol is easier to outsmart when one agent watches the cameras and another slips through the back door. HX brings friends into Deus Ex's campaign together; PlayBound sets up the same mod build on each PC and gives your party a private network for joining the host. This edition copies your legal GOG or Steam GOTY installation into its own folder, applies Hanfling's original HX archive, and launches HX.exe. Your untouched master copy stays where it is. HX is still an alpha: normal campaign saves are unavailable, and GMDX is not compatible.",
+    type: "enhanced",
+    status: "active",
+    visibility: "public",
+    sortOrder: 20,
+    links: { website: "https://builds.hx.hanfling.de/testing/", wiki: "https://wiki.deusexcoop.com/index.php?title=Installation" },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "locate-then-zip",
+        requiresBaseDir: true,
+        overlayUrl: DEUS_EX_HX_URL,
+        overlayFileName: "HX-0.9.89.4.zip",
+        versionLabel: "HX 0.9.89.4",
+        exeHint: "^HX\\.exe$",
+        baseExeHint: "DeusEx",
+        knownExePaths: ["System/HX.exe", "System\\HX.exe"],
+        note: "Requires your own Deus Ex GOTY 1.112fm installation. PlayBound copies it to a separate edition folder, applies HX, and launches System/HX.exe.",
+        steps: [
+          { platform: "windows", text: "Install Deus Ex GOTY from GOG or Steam. Each player needs their own copy." },
+          { platform: "windows", text: "Click Install with PlayBound. Your base game is copied into a separate HX edition folder and the official HX archive is applied." },
+          { platform: "windows", text: "Join the same PlayBound party, choose My computer, and start the HX edition. PlayBound starts HX's dedicated server on the leader's PC, or the leader hosts a listen game from HX. Friends connect to the leader's PlayBound network address." },
+        ],
+      },
+    },
+    platforms: ["Windows"],
+    features: ["Co-op", "Multiplayer", "Story Campaign", "PlayBound Connect", "Mod Support"],
+    tags: ["Cyberpunk", "Immersive Sim", "Classic", "Co-op"],
+    aliases: ["DXHX", "HX", "Deus Ex Co-op"],
+    multiplayerGamingSteps: [
+      { platform: "windows", text: "Everyone installs the PlayBound HX Co-op Edition and joins the same PlayBound party." },
+      { platform: "windows", text: "The leader chooses My computer in PlayBound Connect. PlayBound starts HCC.exe as a dedicated server; alternatively, host and play from HX → Net Game → Host Game → Listen Server." },
+      { platform: "windows", text: "Friends open HX → Net Game, enter the leader's PlayBound network IP in the IP Address field, and click Connect. Direct IP uses UDP 7790; the party network avoids router port forwarding." },
+    ],
+    faq: [
+      { q: "Does this edition include Deus Ex?", a: "No. It needs a legal Deus Ex GOTY installation from GOG or Steam on each PC." },
+      { q: "Does PlayBound host the game?", a: "PlayBound starts the HX dedicated server on the party leader's Windows PC, or the leader hosts a listen server in-game. Connect links friends to either server." },
+      { q: "Can I combine it with GMDX?", a: "No. HX and GMDX are separate editions." },
+    ],
+    verificationLevel: "untested",
+    verificationNote: "The upstream HX archive, file layout, and connection instructions were checked. End-to-end hosting and joining still need a two-PC test.",
   },
 ];
 

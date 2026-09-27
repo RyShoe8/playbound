@@ -1812,6 +1812,16 @@ export const developers: Developer[] = [
     website: "https://corsixth.com/",
     artHue: 170,
   },
+  {
+    slug: "ion-storm",
+    name: "Ion Storm",
+    tagline: "The studio behind Deus Ex, Anachronox, and Thief: Deadly Shadows.",
+    about:
+      "Ion Storm's Austin studio, led by Warren Spector, developed Deus Ex. The broader company also made Anachronox and Thief: Deadly Shadows.",
+    founded: 1996,
+    location: "Dallas and Austin, Texas, USA",
+    artHue: 45,
+  },
 ];
 
 export const developersBySlug = new Map(developers.map((d) => [d.slug, d]));

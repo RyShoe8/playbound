@@ -220,8 +220,12 @@ export function canSelfHost(gameSlug: string): boolean {
  * game with no port on file simply does not get one.
  */
 export function publicLobbyPortFor(gameSlug: string): Pick<SelfHostConfig, "port" | "protocol"> | null {
-  const declared = getMultiplayerAdapter(gameSlug).selfHost;
+  const adapter = getMultiplayerAdapter(gameSlug);
+  const declared = adapter.selfHost;
   if (declared?.port) return { port: declared.port, protocol: declared.protocol };
+  if (adapter.host?.port && adapter.host.protocol) {
+    return { port: adapter.host.port, protocol: adapter.host.protocol };
+  }
   const hostable = HOSTABLE_GAMES[gameSlug];
   if (!hostable) return null;
   return { port: hostable.defaultPort, protocol: hostable.protocol };
