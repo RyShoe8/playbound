@@ -49,12 +49,15 @@ if (!TOKEN || !GUILD_ID || !MONGODB_URI) {
 }
 
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildVoiceStates,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-  ],
+  /*
+   * Only what the bot uses. GuildMessages + MessageContent made Discord stream
+   * the full text of every message in every channel to this process, which
+   * nothing here reads (the only handler is interactionCreate) — likely most
+   * of the 5 GB that exhausted Render's free bandwidth. Voice states stay:
+   * moving party members into voice reads member.voice. Sending messages
+   * needs no intent.
+   */
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
 });
 const mongo = new MongoClient(MONGODB_URI);
 let games;
@@ -1168,8 +1171,11 @@ async function provisionMissing() {
      * wherever Discord put it and the guild looked unsorted despite the pass
      * having "run".
      */
-    await sortCategories(guild);
-    await sortChannelsAlphabetically(guild);
+    // Nothing moved, nothing to sort: skip two more full channel-list fetches.
+    if (needs.length) {
+      await sortCategories(guild);
+      await sortChannelsAlphabetically(guild);
+    }
   } finally {
     backfillRunning = false;
   }
