@@ -15,6 +15,10 @@ import { RecaptchaNotice } from "@/components/RecaptchaNotice";
 import { HomeGamesSections } from "@/components/HomeGamesSections";
 import { HomeHeroPromoSection } from "@/components/HomeHeroPromoSection";
 import { PlayWithFriends } from "@/components/friends/PlayWithFriends";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import dbConnect from "@/lib/db";
+import LibraryEntry from "@/lib/models/LibraryEntry";
 import {
   HomeCommunityServers,
   type HomeCommunityServer,
@@ -52,8 +56,21 @@ async function loadCommunityServers(): Promise<HomeCommunityServer[]> {
 
 async function HomeCommunityServersSection() {
   await connection();
+  let installedGameSlugs: string[] = [];
+  try {
+    const session = await getServerSession(authOptions).catch(() => null);
+    if (session?.user) {
+      await dbConnect();
+      const entries = await LibraryEntry.find({ userId: session.user.id, installed: true })
+        .select("gameSlug")
+        .lean();
+      installedGameSlugs = entries.map((e) => String(e.gameSlug));
+    }
+  } catch {
+    /* fallback empty installed list */
+  }
   const servers = await loadCommunityServers();
-  return <HomeCommunityServers servers={servers} />;
+  return <HomeCommunityServers servers={servers} installedGameSlugs={installedGameSlugs} />;
 }
 
 function HomeCommunityServersFallback() {

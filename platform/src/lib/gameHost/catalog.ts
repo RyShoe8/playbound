@@ -18,6 +18,13 @@ export type HostableGame = {
 };
 
 export const HOSTABLE_GAMES: Record<string, HostableGame> = {
+  "deus-ex-goty-edition": {
+    slug: "deus-ex-goty-edition",
+    title: "Deus Ex: HX Co-op",
+    defaultPort: 7790,
+    portEnd: 7850,
+    protocol: "udp",
+  },
   morrowind: {
     slug: "morrowind",
     title: "TES3MP",

@@ -3098,6 +3098,9 @@ function resolveInstallDir(entry, exePath) {
   if (/binaries[/\\]system$/i.test(dir)) {
     return path.resolve(dir, "..", "..");
   }
+  if (path.basename(dir).toLowerCase() === "system" && fs.existsSync(path.resolve(dir, ".."))) {
+    return path.resolve(dir, "..");
+  }
   return dir;
 }
 
@@ -5697,6 +5700,30 @@ async function installLocateThenZip(slug, entry, editionExtra) {
         } catch {
           /* ignore */
         }
+      }
+    }
+  }
+
+  if (!sourceDir) {
+    // If the base game is already installed at a known location on disk (GOG Galaxy, GOG Games, Steam, etc.),
+    // automatically use it for one-click install without prompting the player for a folder.
+    const baseEntry = catalogEntry(slug) || entry;
+    const knownExe =
+      findKnownExecutable(baseEntry) ||
+      (baseEntry !== entry ? findKnownExecutable(entry) : null);
+    if (knownExe && fs.existsSync(knownExe)) {
+      const parentDir = path.dirname(knownExe);
+      const grandParent = path.dirname(parentDir);
+      if (
+        path.basename(parentDir).toLowerCase() === "system" &&
+        fs.existsSync(grandParent) &&
+        findExecutable(grandParent, baseExeHint)
+      ) {
+        sourceDir = grandParent;
+      } else if (findExecutable(parentDir, baseExeHint)) {
+        sourceDir = parentDir;
+      } else if (findExecutable(grandParent, baseExeHint)) {
+        sourceDir = grandParent;
       }
     }
   }
@@ -12440,7 +12467,7 @@ function localDedicatedServerFor(slug, editionSlug = null) {
   // original Deus Ex install. Party reconciliation does not carry an edition.
   const installedEdition = editionSlug
     ? game?.editions?.[editionSlug]
-    : slug === "deus-ex"
+    : slug === "deus-ex-goty-edition"
       ? game?.editions?.["playbound-hx-coop"]
       : null;
   const gameDir = installedEdition?.dir || game?.dir;
@@ -12451,7 +12478,7 @@ function localDedicatedServerFor(slug, editionSlug = null) {
       reason: `${entry?.title || slug} does not ship ${hostLaunch.binaryHint} in this install.`,
     };
   }
-  return { ok: true, exe, cwd: slug === "deus-ex" ? path.dirname(exe) : gameDir || path.dirname(exe), hostLaunch, entry };
+  return { ok: true, exe, cwd: slug === "deus-ex-goty-edition" ? path.dirname(exe) : gameDir || path.dirname(exe), hostLaunch, entry };
 }
 
 /**

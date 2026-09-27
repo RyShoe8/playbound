@@ -8,6 +8,7 @@ import {
   cacheInvoke,
   cachePeek,
   cachePut,
+  escapeHtml,
   filterCatalogGames,
   formatStatNumber,
   markViewReady,
@@ -34,10 +35,13 @@ const HOME_SHELL_HTML = `
 
     <div id="home-live-section" class="hidden">
       <div class="section-header">
-        <span>Community Servers</span>
+        <div>
+          <span>Community Servers</span>
+          <p class="home-section-subtitle">Dedicated servers hosted by PlayBound — join and play right now</p>
+        </div>
         <button class="btn-secondary btn-sm" id="home-browse-servers">All Servers</button>
       </div>
-      <div id="home-live-list" class="home-join-list"></div>
+      <div id="home-live-list" class="home-community-servers-wrap"></div>
     </div>
 
     <div id="home-people-section" class="hidden">
@@ -58,12 +62,19 @@ const HOME_SHELL_HTML = `
 
     <div id="home-free-offers-section" class="hidden">
       <div class="section-header">
-        <span>🎁 Free Games This Week</span>
-        <button class="btn-secondary btn-sm" id="home-browse-free-games">See All on Web</button>
+        <div>
+          <span>🎁 Free Games This Week</span>
+          <p id="home-free-offers-count" class="home-section-subtitle"></p>
+        </div>
+        <button class="btn-secondary btn-sm" id="home-browse-free-games">Game Deals</button>
       </div>
       <div id="home-free-offers-grid" class="game-grid"></div>
     </div>
 `;
+
+/** Free offers is a browse-shaped row, not a resume/join row — cap it so it
+ * cannot dominate the page the way an unlimited list of "free" cards would. */
+const FREE_OFFERS_HOME_LIMIT = 20;
 
 function ensureHomeShell() {
   const container = views.home;
@@ -78,7 +89,7 @@ function ensureHomeShell() {
     document.getElementById("home-browse-servers")?.addEventListener("click", () => api.navigateTo?.("servers"));
     document.getElementById("home-browse-friends")?.addEventListener("click", () => api.navigateTo?.("friends"));
     document.getElementById("home-browse-free-games")?.addEventListener("click", () => {
-      window.playbound.openExternal("https://playbound.club/free-games");
+      api.navigateTo?.("deals");
     });
   }
   return container;
@@ -156,6 +167,141 @@ function buildJoinRow({ game, reason, buttonLabel, title, onClick, badge }) {
 
   row.append(art, body, btn);
   row.addEventListener("click", () => api.openGameDetail?.(game.slug, "home"));
+  return row;
+}
+
+const SERVER_ICON = `<svg class="home-server-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>`;
+
+const USERS_ICON = `<svg class="home-users-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
+
+const BOT_ICON = `<svg class="home-bot-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>`;
+
+/**
+ * Build a community server row matching the website's format.
+ */
+function buildCommunityServerRow({ server, game, installed, onJoin }) {
+  const row = document.createElement("div");
+  row.className = "home-community-server-row";
+
+  const host = server?.host || "";
+  const port = server?.port || 0;
+  const addr = host && port ? `${host}:${port}` : (server?.name || "");
+  const title = game?.title || server?.gameTitle || game?.slug || server?.gameSlug || "";
+  const serverName = server?.serverName || server?.name || (addr || title);
+  const region = (server?.region || "US").toUpperCase();
+  const playerCount =
+    server?.players == null
+      ? "—"
+      : `${formatStatNumber(server.players)}/${server.maxPlayers != null ? formatStatNumber(server.maxPlayers) : "—"}`;
+
+  const main = document.createElement("div");
+  main.className = "home-community-server-main";
+
+  const titleLine = document.createElement("div");
+  titleLine.className = "home-community-server-title-line";
+
+  const gameSpan = document.createElement("span");
+  gameSpan.className = "home-community-server-game";
+  gameSpan.innerHTML = `${SERVER_ICON} ${escapeHtml(title)}`;
+
+  const nameSpan = document.createElement("span");
+  nameSpan.className = "home-community-server-name";
+  nameSpan.textContent = serverName;
+
+  const badge = document.createElement("span");
+  badge.className = "home-community-server-badge";
+  badge.textContent = "PlayBound Hosted";
+
+  titleLine.append(gameSpan, nameSpan, badge);
+
+  const subline = document.createElement("div");
+  subline.className = "home-community-server-subline";
+  if (server?.editionSlug) {
+    const editionSpan = document.createElement("span");
+    editionSpan.textContent = `Edition: ${server.editionSlug}`;
+    subline.appendChild(editionSpan);
+  }
+  if (addr) {
+    const addrSpan = document.createElement("span");
+    addrSpan.className = "home-community-server-addr";
+    addrSpan.textContent = addr;
+    subline.appendChild(addrSpan);
+  }
+
+  main.append(titleLine, subline);
+
+  const meta = document.createElement("div");
+  meta.className = "home-community-server-meta";
+
+  const playersSpan = document.createElement("span");
+  playersSpan.className = "home-community-server-players";
+  playersSpan.innerHTML = `${USERS_ICON} ${escapeHtml(playerCount)}`;
+  meta.appendChild(playersSpan);
+
+  if (server?.bots) {
+    const botsSpan = document.createElement("span");
+    botsSpan.className = "home-community-server-bots";
+    botsSpan.innerHTML = `${BOT_ICON} ${server.bots} bot${server.bots === 1 ? "" : "s"}`;
+    meta.appendChild(botsSpan);
+  }
+
+  const regionSpan = document.createElement("span");
+  regionSpan.className = "home-community-server-region";
+  regionSpan.textContent = region;
+  meta.appendChild(regionSpan);
+
+  if (!installed) {
+    const joinBtn = document.createElement("button");
+    joinBtn.type = "button";
+    joinBtn.className = "btn-secondary btn-sm home-community-server-btn";
+    joinBtn.textContent = "Join";
+    joinBtn.title = "Join if already installed";
+    joinBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if (joinBtn.disabled) return;
+      joinBtn.disabled = true;
+      const original = joinBtn.textContent;
+      joinBtn.textContent = "Joining…";
+      try {
+        await joinBestServer(game, server);
+      } catch (err) {
+        setStatus(err?.message || String(err), true);
+      } finally {
+        joinBtn.disabled = false;
+        joinBtn.textContent = original;
+      }
+    });
+    meta.appendChild(joinBtn);
+  }
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = installed
+    ? "btn-primary btn-sm home-community-server-btn"
+    : "btn-secondary btn-sm home-community-server-btn home-community-server-install-btn";
+  btn.textContent = installed ? "Join" : "Install & join";
+  btn.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    if (btn.disabled) return;
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = installed ? "Joining…" : "Opening…";
+    try {
+      await onJoin();
+    } catch (err) {
+      setStatus(err?.message || String(err), true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  });
+  meta.appendChild(btn);
+
+  row.append(main, meta);
+  row.addEventListener("click", () => {
+    api.openGameDetail?.(game?.slug || server?.gameSlug, "home");
+  });
+
   return row;
 }
 
@@ -310,7 +456,7 @@ function paintLive(entries) {
   const sec = document.getElementById("home-live-section");
   const list = document.getElementById("home-live-list");
   if (!sec || !list) return;
-  if (entries.length === 0) {
+  if (!entries || entries.length === 0) {
     // Hide rather than show a row of zeroes — "nobody is playing" is not a
     // thing worth a section header.
     sec.classList.add("hidden");
@@ -320,15 +466,11 @@ function paintLive(entries) {
   sec.classList.remove("hidden");
   list.replaceChildren(
     ...entries.map((e) =>
-      buildJoinRow({
+      buildCommunityServerRow({
+        server: e.server,
         game: e.game,
-        reason: e.reason || topNonControllerReason(e) || "",
-        buttonLabel: e.installed ? "Join" : "Install & join",
-        title: e.server
-          ? `${e.server.name || e.server.host} — ${formatStatNumber(e.server.players)} players`
-          : "Find a server",
-        badge: controllerBadge(e.controller),
-        onClick: async () => {
+        installed: e.installed,
+        onJoin: async () => {
           if (!e.installed) {
             api.openGameDetail?.(e.game.slug, "home");
             return;
@@ -617,17 +759,10 @@ async function loadPlayableRows() {
         art: ["#2a2739", "#4a4658"],
       };
       const isInst = installed.has(server.gameSlug);
-      const playerCountText = server.players != null
-        ? `${formatStatNumber(server.players)}${server.maxPlayers ? `/${formatStatNumber(server.maxPlayers)}` : ""} players`
-        : "Online";
-      const botsText = server.bots ? ` (${server.bots} bots)` : "";
-      const editionText = server.editionSlug ? `${server.editionSlug} · ` : "";
       return {
         game: g,
         installed: isInst,
         server,
-        reason: `${editionText}${playerCountText}${botsText}`,
-        controller: null,
       };
     });
     paintLive(commEntries.slice(0, 6));
@@ -712,18 +847,34 @@ function loadLiveStats() {
   })();
 }
 
-function loadFreeOffers() {
+/**
+ * @param {Promise<unknown>} [readyGate] Resolves once the ranked rows above
+ * this one have painted. Free Games is the browse-shaped row at the bottom
+ * of the page and must never appear before them — it's often the fastest
+ * fetch (cached, single call) while the ranked rows above await several
+ * endpoints, so without this gate it would pop in first and sit alone at
+ * the top of an otherwise-empty page.
+ */
+function loadFreeOffers(readyGate) {
   void (async () => {
     try {
-      const res = await cacheInvoke("freeOffers", CACHE_TTL.freeOffers, () =>
-        window.playbound.getFreeOffers?.()
-      );
+      const [res] = await Promise.all([
+        cacheInvoke("freeOffers", CACHE_TTL.freeOffers, () => window.playbound.getFreeOffers?.()),
+        readyGate,
+      ]);
       const offers = Array.isArray(res?.offers) ? res.offers : [];
       const freeSec = document.getElementById("home-free-offers-section");
       const freeGrid = document.getElementById("home-free-offers-grid");
+      const freeCount = document.getElementById("home-free-offers-count");
       if (freeSec && freeGrid && offers.length > 0) {
         freeSec.classList.remove("hidden");
-        freeGrid.replaceChildren(...offers.map(createFreeOfferCard));
+        freeGrid.replaceChildren(...offers.slice(0, FREE_OFFERS_HOME_LIMIT).map(createFreeOfferCard));
+        if (freeCount) {
+          freeCount.textContent =
+            offers.length > FREE_OFFERS_HOME_LIMIT
+              ? `Showing ${FREE_OFFERS_HOME_LIMIT} of ${offers.length}`
+              : "";
+        }
       }
     } catch {
       /* ignore */
@@ -747,8 +898,8 @@ export async function renderHomeView() {
   ensureHomeShell();
   syncDiscoveryControls();
   loadLiveStats();
-  void loadPlayableRows();
-  loadFreeOffers();
+  const rowsReady = loadPlayableRows();
+  loadFreeOffers(rowsReady);
   markViewReady(views.home);
 }
 

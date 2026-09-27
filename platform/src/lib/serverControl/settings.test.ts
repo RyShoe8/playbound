@@ -266,6 +266,8 @@ describe("coverage of the games PlayBound hosts", () => {
       "OpenE2140 uses OpenRA engine flags; profile pending initial production testing.",
     hypersomnia:
       "Configured by JSON files in the server's conf.d/, and the server also writes runtime_prefs.json which overrides them on restart — so a live settings change has to go through RCON rather than the spawn config. The recipe pins a fixed 16-slot casual room; expose arena, cycle and slots after a two-client production test establishes which of those survive a restart.",
+    "deus-ex-goty-edition":
+      "HX's HCC.exe uses a per-room HX.ini and supports the fleet max-player cap (up to eight). Expose additional map and game-rule settings only after a Steam-client join test against the Wine VPS server.",
   };
 
 

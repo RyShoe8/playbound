@@ -36,6 +36,11 @@ test("installLocateThenZip checks loadState for existing base game install befor
   );
   assert.match(
     body,
+    /findKnownExecutable/,
+    "installLocateThenZip must check findKnownExecutable on disk before prompting"
+  );
+  assert.match(
+    body,
     /dialog\.showOpenDialog/,
     "installLocateThenZip must still prompt when no base game install is known"
   );

@@ -8,7 +8,7 @@ export const deusExMods: ModSeed[] = [{
   title: "HX — Deus Ex Co-op",
   tagline: "Take the original Deus Ex campaign online with a friend.",
   description: "HX turns Deus Ex's campaign into a shared mission. Every player needs Deus Ex: Game of the Year Edition and the same HX build; launch System/HX.exe to host or join.",
-  baseGameSlug: "deus-ex",
+  baseGameSlug: "deus-ex-goty-edition",
   developerSlug: "sebastian-kaufel",
   license: "Creator-owned; redistribution terms not stated",
   releaseYear: 2015,

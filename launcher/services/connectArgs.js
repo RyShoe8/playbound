@@ -252,6 +252,7 @@ const CLIENT_CONNECT_ARGS = {
   openciv3: null,
   "dungeon-keeper-gold": null,
   starcraft: null,
+  "deus-ex-goty-edition": null, // HX joins a dedicated server through Net Game → IP Address.
   openlara: null,
   "flatout-2": null,
   hindstrike: null,

@@ -1259,8 +1259,8 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "Direct peer-to-peer / LAN or Battle.net multiplayer.",
   },
 
-  "deus-ex": {
-    gameSlug: "deus-ex",
+  "deus-ex-goty-edition": {
+    gameSlug: "deus-ex-goty-edition",
     title: "Deus Ex: HX Co-op",
     tier: "tier1_improved",
     adapterType: "direct-ip",
@@ -1275,8 +1275,8 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       inGameJoinPrompt: true,
       inGameSteps: [
         "Install and launch the PlayBound HX Co-op Edition on every PC",
-        "Leader: PlayBound starts HX's dedicated server with HCC.exe; launch HX to join it. To host and play in one process instead, use HX → Net Game → Host Game → Listen Server",
-        "Friends: HX → Net Game → enter the leader's PlayBound network IP → Connect",
+        "Leader: choose My computer (PlayBound starts HX's dedicated server with HCC.exe) or PlayBound server (a dedicated HX room on our VPS). To host and play in one process instead, use HX → Net Game → Host Game → Listen Server",
+        "Friends: HX → Net Game → enter the address and port shown in the PlayBound party → Connect",
       ],
     },
     virtualLan: {
@@ -1285,7 +1285,7 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
         "Leader hosts an HX dedicated or listen server; friends connect to the leader's PlayBound network IP",
       ],
     },
-    notes: "HX adds campaign co-op to Deus Ex GOTY. PlayBound starts the HCC.exe dedicated server on the party leader's Windows PC; HX also supports an in-game listen server. UDP 7790 handles gameplay (7791–7792 are used for listing); Connect supplies reachability without router forwarding. No PlayBound VPS recipe is provisioned.",
+    notes: "HX adds campaign co-op to Deus Ex GOTY. PlayBound can start the HCC.exe dedicated server on the party leader's Windows PC, or run it on a PlayBound VPS under Wine (UDP 7790 gameplay, 7791–7792 query/uplink); HX also supports an in-game listen server. Connect supplies reachability without router forwarding for the local-PC path.",
   },
 
   openciv3: {
