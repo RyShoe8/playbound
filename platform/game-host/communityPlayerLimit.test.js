@@ -72,8 +72,12 @@ test("the scheduler and agent agree on the bot-fill recipes, and each honours it
   for (const slug of slugs) {
     const ctx = { managed: true, partyId: "community-12345678", name: "Community", settings: { maxPlayers: 12, botFill: 6 } };
     assert.equal(botFillCount(slug, ctx), 6, `${slug} accepts botFill`);
-    const args = recipes[slug].args(27030, ctx).join(" ");
-    assert.match(args, /bot_quota 6|tf_bot_quota 6|minplayers 6|bot_minplayers 6|g_bot_defaultFill 3/, `${slug} passes the fill`);
-    assert.doesNotMatch(recipes[slug].args(27030, { ...ctx, settings: { maxPlayers: 12 } }).join(" "), /bot_quota|minplayers|defaultFill/);
+    // The fill reaches the server either on the command line or as a post-start command.
+    const after = (recipes[slug].afterStartCommands?.(ctx) || []).join(" | ");
+    const args = `${recipes[slug].args(27030, ctx).join(" ")} | ${after}`;
+    assert.match(args, /bot_quota 6|tf_bot_quota 6|minplayers 6|bot_minplayers 6|g_bot_defaultFill 3|sv_minPlayers 6|bot maxbots 6/, `${slug} passes the fill`);
+    const off = { ...ctx, settings: { maxPlayers: 12 } };
+    const offText = `${recipes[slug].args(27030, off).join(" ")} | ${(recipes[slug].afterStartCommands?.(off) || []).join(" ")}`;
+    assert.doesNotMatch(offText, /bot_quota|minplayers|defaultFill|sv_minPlayers|bot maxbots|omnibot_enable 1/i);
   }
 });

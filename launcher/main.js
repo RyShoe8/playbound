@@ -3643,13 +3643,29 @@ function couchDisqualifiesPlayBoundControls() {
   return Boolean(state?.active) && state?.session?.solo !== true && state?.session?.remotePlay !== true;
 }
 
+/**
+ * Profiles that ship inside the launcher, used when the catalog has none.
+ * HoloCure's is a menu cursor on top of its native pad support: the
+ * multiplayer mod's menus answer only the mouse, so a controller player was
+ * stuck on the Play / Multiplayer screen with no way forward.
+ */
+const BUNDLED_CONTROL_PROFILES = {
+  holocure: "./services/inputEngine/profiles/holocure.json",
+};
+
+function bundledControlProfile(slug) {
+  const file = BUNDLED_CONTROL_PROFILES[slug];
+  // A fresh copy: the engine mutates stickMouseSettings for live overrides.
+  return file ? JSON.parse(JSON.stringify(require(file))) : null;
+}
+
 async function availablePlayBoundControlsProfile(slug, editionSlug, allowPreview = false) {
   const { hasControlsHost } = require("./services/couch/windowsVigem");
   if (process.platform !== "win32" || couchDisqualifiesPlayBoundControls() || !hasControlsHost()) return null;
   const outRunPilot = !app.isPackaged && slug === "outrun" && process.env.PLAYBOUND_CONTROLS_PILOT_OUTRUN === "1";
   const profile = outRunPilot
     ? require("./services/inputEngine/profiles/outrun.json")
-    : await fetchControlProfile(slug, editionSlug, allowPreview);
+    : (await fetchControlProfile(slug, editionSlug, allowPreview)) || bundledControlProfile(slug);
   const approved = profile?.status === "verified" && profile?.antiCheatCompatibility === "verified";
   const testing = allowPreview && profile?.status === "testing";
   return (approved || testing || outRunPilot) && profile?.inputStrategy === "keyboard_mouse" ? profile : null;
@@ -12937,6 +12953,10 @@ ipcMain.handle("update-playbound-controls-settings", (_event, partial) => {
 ipcMain.handle("get-playbound-controls-availability", async (_event, slug, editionSlug) => {
   if (typeof slug !== "string" || !slug || slug.length > 120) return { available: false };
   const profile = await availablePlayBoundControlsProfile(slug, editionSlug || null, true);
+  // A supplement rides on native pad support (HoloCure's menu cursor): the
+  // launch dialog keeps its ordinary Controller choice and this activates
+  // underneath it, so it is not offered as an alternative control scheme.
+  if (profile?.supplementsNativePad) return { available: false };
   const outRunPilot = !app.isPackaged && slug === "outrun" && process.env.PLAYBOUND_CONTROLS_PILOT_OUTRUN === "1";
   return { available: Boolean(profile), preview: Boolean(profile?.status === "testing" && !outRunPilot), name: profile?.name || null };
 });

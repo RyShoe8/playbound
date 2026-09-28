@@ -8,11 +8,14 @@ import { withOutboundUtm } from "@/lib/utm";
 import { PlayCta } from "@/components/GameCard";
 import { launcherJoinUrl } from "@/lib/launcher";
 import type { Game } from "@/lib/data/types";
-import {
-  DISCORD_HANDOFF_MS,
-  firePlayboundDeepLink,
-  parseDiscordInviteCode,
-} from "@/lib/openPlayboundDeepLink";
+import { openDiscordInvite } from "@/lib/openPlayboundDeepLink";
+
+/**
+ * How long Join Discord waits for the room's own invite before opening the
+ * event invite it already has. Chrome drops a discord:// launch that arrives
+ * more than ~5s after the click, so a slow round trip must not hold it.
+ */
+const ROOM_INVITE_WAIT_MS = 2000;
 
 export function EventActionBar({
   eventId,
@@ -104,29 +107,18 @@ export function EventActionBar({
     setVoiceBusy(true);
     setVoiceError(null);
     try {
-      const res = await fetch(`/api/events/${eventId}/discord`, { method: "POST" });
-      const data = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        inviteUrl?: string | null;
-      };
-      if (!res.ok) {
-        setVoiceError(data.error || "Could not launch Discord voice.");
-        return;
-      }
-
-      const inviteUrl = data.inviteUrl || discord;
-      const code = parseDiscordInviteCode(inviteUrl);
-      if (!code) {
-        window.open(inviteUrl, "_blank", "noopener,noreferrer");
-        return;
-      }
-
-      firePlayboundDeepLink(`discord://-/invite/${code}`);
-      window.setTimeout(() => {
-        if (document.visibilityState === "visible") {
-          window.open(inviteUrl, "_blank", "noopener,noreferrer");
-        }
-      }, DISCORD_HANDOFF_MS);
+      const request = fetch(`/api/events/${eventId}/discord`, { method: "POST" }).then(
+        async (res) => ({
+          ok: res.ok,
+          data: (await res.json().catch(() => ({}))) as { error?: string; inviteUrl?: string | null },
+        })
+      );
+      const result = await Promise.race([
+        request,
+        new Promise<null>((resolve) => window.setTimeout(() => resolve(null), ROOM_INVITE_WAIT_MS)),
+      ]);
+      // A failed room request still opens the event invite: the click should land in Discord either way.
+      openDiscordInvite(result?.data.inviteUrl || discord);
     } catch {
       setVoiceError("Could not launch Discord voice.");
     } finally {

@@ -40,7 +40,10 @@ export const PLAYER_LIMIT_RECIPES = new Set([
 
 // Engines with a native bot fill mode (bots leave as people join, return as
 // they leave). Must match BOT_FILL_RECIPES in game-host/recipes.js.
-const BOT_FILL_RECIPES = new Set(["xonotic", "openarena", "team-fortress-2", "counter-strike-2", "unvanquished"]);
+const BOT_FILL_RECIPES = new Set([
+  "xonotic", "openarena", "team-fortress-2", "counter-strike-2", "unvanquished",
+  "medal-of-honor-allied-assault", "wolfenstein-enemy-territory",
+]);
 
 /** Bots to fill a server to: a share of its slots, always leaving one free for a person. */
 export function botFillFor(maxPlayers: number, percent: number | undefined) {

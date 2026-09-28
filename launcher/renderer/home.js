@@ -250,30 +250,6 @@ function buildCommunityServerRow({ server, game, installed, onJoin }) {
   regionSpan.textContent = region;
   meta.appendChild(regionSpan);
 
-  if (!installed) {
-    const joinBtn = document.createElement("button");
-    joinBtn.type = "button";
-    joinBtn.className = "btn-secondary btn-sm home-community-server-btn";
-    joinBtn.textContent = "Join";
-    joinBtn.title = "Join if already installed";
-    joinBtn.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      if (joinBtn.disabled) return;
-      joinBtn.disabled = true;
-      const original = joinBtn.textContent;
-      joinBtn.textContent = "Joining…";
-      try {
-        await joinBestServer(game, server);
-      } catch (err) {
-        setStatus(err?.message || String(err), true);
-      } finally {
-        joinBtn.disabled = false;
-        joinBtn.textContent = original;
-      }
-    });
-    meta.appendChild(joinBtn);
-  }
-
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = installed

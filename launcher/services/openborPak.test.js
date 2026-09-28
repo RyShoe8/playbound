@@ -82,6 +82,21 @@ test("rewrites DualSense template that left special on keyboard F", () => {
   assert.equal(next.readInt32LE(P1_KEYS_OFFSET + 11 * 4), 614, "screenshot btn14");
 });
 
+test("moves Xbox pads off the DualSense hat indices they do not have", () => {
+  // Written by the old XBOX_P1_KEYS: Xbox buttons, DualSense hat 628-631.
+  // An Xbox pad is 10 buttons + 5 axes + 1 hat, so its hat is 621-624 and
+  // 628-631 do not exist — remote guests got face buttons and no movement.
+  const buf = Buffer.alloc(348, 0);
+  buf.writeUInt32LE(OPENBOR_CFG_VERSION, 0);
+  const broken = [628, 630, 631, 629, 600, 601, 602, 603, 604, 605, 607, 606];
+  broken.forEach((k, i) => buf.writeInt32LE(k, P1_KEYS_OFFSET + i * 4));
+  const next = applyOpenBorP1Keys(buf, { family: "xbox", label: "Xbox Controller" });
+  assert.ok(next);
+  assert.deepEqual(readPlayerKeys(next, 0).slice(0, 4), [621, 623, 624, 622], "up down left right");
+  assert.equal(applyOpenBorP1Keys(next, { family: "xbox" }), null, "second apply must no-op");
+  assert.equal(applyOpenBorP1Keys(buf, { family: "dualsense" }), null, "a DualSense cfg is left alone");
+});
+
 test("rewrites cfg when P1 and P2 share the same joy port", () => {
   const buf = Buffer.alloc(348, 0);
   buf.writeUInt32LE(OPENBOR_CFG_VERSION, 0);

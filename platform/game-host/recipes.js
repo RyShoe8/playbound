@@ -233,7 +233,10 @@ function settingNumber(slug, ctx, key, fallback, min, max) {
   return typeof value === "number" && Number.isFinite(value) ? Math.max(min, Math.min(max, Math.round(value))) : fallback;
 }
 
-export const BOT_FILL_RECIPES = ["xonotic", "openarena", "team-fortress-2", "counter-strike-2", "unvanquished"];
+export const BOT_FILL_RECIPES = [
+  "xonotic", "openarena", "team-fortress-2", "counter-strike-2", "unvanquished",
+  "medal-of-honor-allied-assault", "wolfenstein-enemy-territory",
+];
 for (const slug of BOT_FILL_RECIPES) {
   RECIPE_SETTING_TYPES[slug] = { ...RECIPE_SETTING_TYPES[slug], botFill: "number" };
 }
@@ -773,6 +776,11 @@ export const recipes = {
         "+set", "sv_gamespy", "0",
         "+set", "sv_maxclients", String(managedPlayerLimit(ctx)),
         "+set", "g_gametype", "1",
+        // OpenMOHAA's own fill: bots join until sv_minPlayers are playing and
+        // leave as people join; sv_maxbots must allow that many.
+        ...(botFillCount("medal-of-honor-allied-assault", ctx)
+          ? ["+set", "sv_maxbots", String(botFillCount("medal-of-honor-allied-assault", ctx)), "+set", "sv_minPlayers", String(botFillCount("medal-of-honor-allied-assault", ctx))]
+          : []),
         "+map", "dm/mohdm1",
       ];
     },
@@ -1274,6 +1282,15 @@ export const recipes = {
     ],
   },
   "wolfenstein-enemy-territory": {
+    /*
+     * Omni-bot's MaxBots is "total players": it adds bots up to N and kicks one
+     * for each person who joins. Sent over rcon after start because the
+     * command only exists once the bot library has loaded.
+     */
+    afterStartCommands: (ctx) => {
+      const n = botFillCount("wolfenstein-enemy-territory", ctx);
+      return n ? [`bot maxbots ${n}`] : [];
+    },
     portStart: 27950,
     portEnd: 27959,
     protocol: "udp",
@@ -1311,9 +1328,17 @@ export const recipes = {
         "+set",
         "sv_pure",
         "0",
+        /*
+         * Omni-bot ships with ET: Legacy (legacy/omni-bot). Enabled only when a
+         * bot fill is asked for; its MaxBots ("total players") is then set by
+         * afterStartCommands once the bot library has loaded with the map.
+         */
         "+set",
         "omnibot_enable",
-        "0",
+        botFillCount("wolfenstein-enemy-territory", ctx) ? "1" : "0",
+        ...(botFillCount("wolfenstein-enemy-territory", ctx)
+          ? ["+set", "omnibot_path", path.join(gameDir, "legacy", "omni-bot")]
+          : []),
         /*
          * Only what the host actually chose. An unset value is left to the
          * engine rather than pinned to whatever number this file believes the

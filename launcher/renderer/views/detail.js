@@ -1202,7 +1202,7 @@ async function renderGameDetailView(slug, opts = {}) {
   });
   document.getElementById("sidebar-link-discord")?.addEventListener("click", () => {
     const d = detail.discord || detail.discordInvite;
-    if (d) window.playbound.openExternal(d, { campaign: "launcher_sidebar", content: slug });
+    if (d) window.playbound.openDiscordInvite(d);
   });
   document.getElementById("sidebar-link-github")?.addEventListener("click", () => {
     if (detail.githubRepo) window.playbound.openExternal(`https://github.com/${detail.githubRepo}`, { campaign: "launcher_sidebar", content: slug });
@@ -1971,7 +1971,7 @@ async function renderGameDetailView(slug, opts = {}) {
         // Already placed in the new channel — an invite would send someone to a
         // room they are standing in.
       } else if (res.inviteUrl || res.party?.discord?.inviteUrl) {
-        window.playbound.openExternal(res.inviteUrl || res.party.discord.inviteUrl);
+        window.playbound.openDiscordInvite(res.inviteUrl || res.party.discord.inviteUrl);
       }
       api.navigateTo("friends");
     } catch (err) {

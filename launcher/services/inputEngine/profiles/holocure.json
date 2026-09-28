@@ -1,0 +1,34 @@
+{
+  "gameSlug": "holocure",
+  "editionSlug": null,
+  "name": "PlayBound Menu Cursor — HoloCure",
+  "version": "0.1.0",
+  "platform": "windows",
+  "inputStrategy": "keyboard_mouse",
+  "supplementsNativePad": true,
+  "status": "verified",
+  "antiCheatCompatibility": "verified",
+  "testedControllers": [],
+  "notes": "HoloCure plays natively on a controller, but PippleCultist's multiplayer mod menus (Play/Multiplayer, network adapter, Host/Join LAN) only answer the mouse. This profile runs alongside the native pad and only adds a cursor: right stick moves it, right-stick click (R3) left-clicks. HoloCure uses neither natively, so gameplay is unchanged.",
+  "actions": [
+    {
+      "id": "click",
+      "label": "Click (menus)",
+      "output": {
+        "type": "mouseButton",
+        "button": "left"
+      }
+    }
+  ],
+  "bindings": [
+    {
+      "actionId": "click",
+      "physicalInput": "RS"
+    }
+  ],
+  "contexts": [],
+  "stickMouseSettings": {
+    "enabled": true,
+    "sensitivity": 1.6
+  }
+}

@@ -1117,10 +1117,31 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
 
     if (communityServerId) persistManagedRooms();
     else persistPartyRooms();
+    // Commands some recipes need once the game is up (ET's Omni-bot fill).
+    // Best effort and off the start path: a missed command costs bots, not the room.
+    if (typeof recipe.afterStartCommands === "function" && room.rcon && room.rconPassword) {
+      void runAfterStartCommands(room, recipe.afterStartCommands(ctx) || []);
+    }
     return { room };
   }
 
   return { error: lastError };
+}
+
+/** Send a recipe's post-start commands, retrying while the game finishes loading. */
+async function runAfterStartCommands(room, commands) {
+  for (const command of commands) {
+    for (let attempt = 0; attempt < 6; attempt++) {
+      if (!rooms.has(room.roomId)) return;
+      try {
+        const reply = await sendRoomRcon(room, command);
+        if (!/unknown command/i.test(String(reply || ""))) break;
+      } catch {
+        /* not ready yet */
+      }
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+    }
+  }
 }
 
 function testPartyId(gameSlug) {

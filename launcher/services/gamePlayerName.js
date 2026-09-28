@@ -621,9 +621,8 @@ function getPlayerNameLaunchArgs(slug, playerName, existingArgs = []) {
 
   // Hedgewars
   if (s === "hedgewars") {
-    if (!/--nick\b/i.test(argsStr)) {
-      return ["--nick", name];
-    }
+    // The frontend accepts --config-dir/--data-dir and hwplay:// only.
+    // Nickname is written to [net] nick by ensureGamePlayerName above.
     return [];
   }
 

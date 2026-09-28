@@ -32,7 +32,7 @@ export function firePlayboundDeepLink(deepLink: string): void {
   a.remove();
 }
 
-export const DISCORD_HANDOFF_MS = 1200;
+export const DISCORD_HANDOFF_MS = 2500;
 
 /** Invite code from discord.gg / discord.com/invite URLs. */
 export function parseDiscordInviteCode(inviteUrl: string): string | null {
@@ -75,19 +75,52 @@ function openHttpsInNewTab(url: string): Window | null {
 }
 
 /**
- * Prefer the Discord desktop app via discord://, and always open the https
- * invite on the same click so people without the app still get Discord web.
- * A Windows protocol prompt blurs the tab without hiding it — that is not
- * treated as a successful app handoff.
+ * The one way every Discord button on the site opens an invite: the desktop
+ * app first, the browser only when the app never takes focus.
+ *
+ * discord:// starts Discord even when it is not running, so the fallback waits
+ * DISCORD_HANDOFF_MS for the tab to blur or hide before opening web Discord —
+ * opening both on every click put people in two Discords, and opening only the
+ * web invite never joined the app they were signed into.
+ *
+ * Call it synchronously from the click handler. Chrome refuses a custom
+ * protocol launch without a recent user gesture, so a deep link fired after an
+ * awaited fetch can be dropped silently — which is how "Join Discord" did
+ * nothing when the app was closed. Callers that need a server round trip first
+ * (provisioning a voice room) should open the invite they already have, then
+ * do the round trip in the background.
  */
 export function openDiscordInvite(inviteUrl: string): () => void {
   const httpsUrl = inviteUrl;
   const code = parseDiscordInviteCode(inviteUrl);
-  openHttpsInNewTab(httpsUrl);
-  if (code) {
-    firePlayboundDeepLink(`discord://-/invite/${code}`);
+  if (!code) {
+    openHttpsInNewTab(httpsUrl);
+    return () => {};
   }
-  return () => {};
+
+  let handedOff = false;
+  const onHandoff = () => {
+    handedOff = true;
+  };
+  const onVisibility = () => {
+    if (document.visibilityState === "hidden") handedOff = true;
+  };
+  window.addEventListener("blur", onHandoff);
+  window.addEventListener("pagehide", onHandoff);
+  document.addEventListener("visibilitychange", onVisibility);
+  const cleanup = () => {
+    window.clearTimeout(timer);
+    window.removeEventListener("blur", onHandoff);
+    window.removeEventListener("pagehide", onHandoff);
+    document.removeEventListener("visibilitychange", onVisibility);
+  };
+  const timer = window.setTimeout(() => {
+    cleanup();
+    if (!handedOff) openHttpsInNewTab(httpsUrl);
+  }, DISCORD_HANDOFF_MS);
+
+  firePlayboundDeepLink(`discord://-/invite/${code}`);
+  return cleanup;
 }
 
 /** Trigger a file download (or open the download page) in a new gesture-safe way. */

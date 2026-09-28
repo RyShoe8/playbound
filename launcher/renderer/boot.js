@@ -361,7 +361,7 @@ function wireShell() {
 
   document.getElementById("sidebar-discord")?.addEventListener("click", (e) => {
     e.preventDefault();
-    window.playbound.openExternal(DISCORD_INVITE, { campaign: "discord" });
+    window.playbound.openDiscordInvite(DISCORD_INVITE);
   });
 
   document.getElementById("sidebar-feedback")?.addEventListener("click", (e) => {
