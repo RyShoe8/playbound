@@ -4320,7 +4320,7 @@ async function launchPartyGame(party) {
     }
 
     if (wantsPeer && peerAddresses.length > 0) {
-      const port = Number(party.port || catalogGame?.port || meta.defaultPort || 0);
+      const port = Number(party.port || lan.hostPort || catalogGame?.port || meta.defaultPort || 0);
       peerConnect = {
         // One opponent in a two-player peer game; the first peer is the one.
         host: peerAddresses[0],
@@ -4452,7 +4452,7 @@ async function launchPartyGame(party) {
           } else {
             const connectMeta = (await window.playbound.getConnectMeta?.(slug)) || {};
             const listenPort = Number(
-              party.port || catalogGame?.port || connectMeta.defaultPort || 0
+              party.port || lan.hostPort || catalogGame?.port || connectMeta.defaultPort || 0
             );
             if (connectMeta.protocol === "udp" || connectMeta.protocol === "both") {
               /*

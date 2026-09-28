@@ -6,11 +6,13 @@ describe("party LAN host readiness", () => {
     const lan = lanPayloadFromDoc("baseball-stars-2", "self", { status: "ready" });
     expect(lan.enabled).toBe(true);
     expect(lan.requiresHostReady).toBe(true);
+    expect(lan.hostPort).toBe(55435);
   });
 
   it("does not probe a discovery-only virtual LAN game", () => {
     const lan = lanPayloadFromDoc("holocure", "self", { status: "ready" });
     expect(lan.enabled).toBe(true);
     expect(lan.requiresHostReady).toBe(false);
+    expect(lan.hostPort).toBeNull();
   });
 });

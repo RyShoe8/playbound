@@ -15,7 +15,7 @@ import {
   managementUrl,
   type NetBirdParty,
 } from "./client";
-import { getVirtualLanConfig, isVirtualLanGame } from "@/lib/multiplayer/adapters";
+import { getMultiplayerAdapter, getVirtualLanConfig, isVirtualLanGame } from "@/lib/multiplayer/adapters";
 import { defaultHostMode } from "@/lib/multiplayer/hostModes";
 import {
   partyEventProps,
@@ -206,10 +206,12 @@ export function lanPayloadFromDoc(
   // still wait for the host's actual game listener. Discovery-only LAN games
   // have no listener to probe and can join once the party is in flight.
   const requiresHostReady = resolvedMode === "self" && !isVirtualLanGame(gameSlug);
+  const hostPort = requiresHostReady ? getMultiplayerAdapter(gameSlug).selfHost?.port || null : null;
   if (!config) {
     return {
       enabled: false,
       requiresHostReady: false,
+      hostPort: null,
       configured: isVirtualLanConfigured(),
       status: "none" as PartyLanStatus,
       adapterFile: null,
@@ -220,6 +222,7 @@ export function lanPayloadFromDoc(
   return {
     enabled: true,
     requiresHostReady,
+    hostPort,
     /*
      * Whether an overlay could ever be provisioned, as opposed to not having
      * been yet. Without this the launcher cannot tell "still setting up" from
