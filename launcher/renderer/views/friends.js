@@ -4253,11 +4253,6 @@ async function launchPartyGame(party) {
     if (!lanReady) return;
   }
 
-  if (catalogGame?.kind === "external" && catalogGame.url) {
-    window.playbound.openExternal(catalogGame.url);
-    return;
-  }
-
   if (usingDedicatedHost) {
     setStatus("Waiting for the PlayBound server — try Join Game again in a moment.");
     return;
