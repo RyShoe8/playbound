@@ -6908,6 +6908,23 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
     }
   }
 
+  // A GOG install can be recorded against its Windows wrapper from an older
+  // Locate/scan. Party netplay needs the bundled ROM, so prefer that file when
+  // it is present without requiring the player to reinstall or locate again.
+  const netplayConfig = require("./services/retroArchNetplay").getNetplayConfig(slug);
+  if (netplayConfig?.romFile && path.basename(launchPath).toLowerCase() !== netplayConfig.romFile.toLowerCase()) {
+    const siblingRom = path.join(path.dirname(launchPath), netplayConfig.romFile);
+    const romPaths = (entry?.knownExePaths || []).filter(
+      (raw) => path.basename(String(raw).replace(/\\/g, "/")).toLowerCase() === netplayConfig.romFile.toLowerCase()
+    );
+    const knownRom = romPaths.length ? findKnownPathOnly({ ...entry, knownExePaths: romPaths }) : null;
+    const rom = fs.existsSync(siblingRom) ? siblingRom : knownRom;
+    if (rom && isAllowedExecutablePath(rom)) {
+      persistEditionExe(slug, edSlug, launchPath, rom);
+      launchPath = rom;
+    }
+  }
+
   const isRom = /\.(gb|gbc|gba|nes|sfc|smc|z64|n64|gen|zip)$/i.test(launchPath);
   if (isRom) {
     const ext = path.extname(launchPath);
@@ -6935,7 +6952,9 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
      * This is the same mechanism Mr. Boom already uses, generalised to any ROM.
      */
     if (resolvedJoin?.host && isNetplayRomGame(slug)) {
-      args = ["-L", runtime.corePath, romFile, "-f", "-C", resolvedJoin.host, ...args];
+      // connectArgs has already contributed -C <host> above. Use one copy.
+      const hasClientFlag = args.includes("-C");
+      args = ["-L", runtime.corePath, romFile, "-f", ...(hasClientFlag ? [] : ["-C", resolvedJoin.host]), ...args];
     } else if (isNetplayRomGame(slug) && join === null) {
       // Solo play or hosting — add -H so a joiner can connect later.
       // The -H flag is harmless when nobody joins: RetroArch plays normally.
