@@ -19,3 +19,9 @@ test("GOG netplay launch prefers the owned ROM and avoids duplicate connect flag
   assert.match(netplayLaunch, /persistEditionExe\(slug, edSlug, launchPath, rom\)/);
   assert.match(netplayLaunch, /const hasClientFlag = args\.includes\("-C"\)/);
 });
+
+test("a guest arms a direct-IP party join until the host listener is ready", () => {
+  assert.match(friends, /lan\.requiresHostReady && !party\.selfHostReady/);
+  assert.match(friends, /party\.lan\?\.requiresHostReady && !partyConnectReady\(party, false\)/);
+  assert.match(friends, /pendingJoin = \{ partyId, at: Date\.now\(\) \}/);
+});

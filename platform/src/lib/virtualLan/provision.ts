@@ -202,9 +202,14 @@ export function lanPayloadFromDoc(
   const needsOverlay =
     resolvedMode !== "public" && (isVirtualLanGame(gameSlug) || resolvedMode === "self");
   const config = needsOverlay ? getVirtualLanConfig(gameSlug) : null;
+  // Direct-IP self-hosted games use NetBird for reachability, but guests must
+  // still wait for the host's actual game listener. Discovery-only LAN games
+  // have no listener to probe and can join once the party is in flight.
+  const requiresHostReady = resolvedMode === "self" && !isVirtualLanGame(gameSlug);
   if (!config) {
     return {
       enabled: false,
+      requiresHostReady: false,
       configured: isVirtualLanConfigured(),
       status: "none" as PartyLanStatus,
       adapterFile: null,
@@ -214,6 +219,7 @@ export function lanPayloadFromDoc(
   }
   return {
     enabled: true,
+    requiresHostReady,
     /*
      * Whether an overlay could ever be provisioned, as opposed to not having
      * been yet. Without this the launcher cannot tell "still setting up" from

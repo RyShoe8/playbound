@@ -66,6 +66,7 @@ function partyConnectReady(party, isLeader) {
   const lan = party.lan || {};
   if (hosted.enabled && hosted.status !== "ready") return false;
   if (lan.enabled && lan.configured !== false && lan.status !== "ready") return false;
+  if (!isLeader && lan.requiresHostReady && !party.selfHostReady) return false;
   // The leader's own launcher is what makes a self-hosted room ready, so the
   // leader is never the one waiting for it.
   if (!isLeader && party.hostMode === "self" && !lan.enabled && !party.selfHostReady) return false;
@@ -3473,6 +3474,17 @@ function wirePartyView(slot, party) {
           void window.playbound.openExternal(url);
         }
         setStatus("Opened game view — streaming game from host PC.");
+        return;
+      }
+      // A direct-IP game needs both the NetBird segment and the host's game
+      // listener. Arm the join locally while the host's probe is catching up;
+      // posting join-game now only returns "Waiting for host" and makes the
+      // player click repeatedly even though the party can finish automatically.
+      if (!isLeader && party.lan?.requiresHostReady && !partyConnectReady(party, false)) {
+        pendingJoin = { partyId, at: Date.now() };
+        setStatus("Waiting for the host game — PlayBound will join when it is ready.");
+        blurPartyFocus();
+        void api.refreshFriendsData();
         return;
       }
       joinInFlight = true;
