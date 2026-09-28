@@ -24,4 +24,5 @@ test("a guest arms a direct-IP party join until the host listener is ready", () 
   assert.match(friends, /lan\.requiresHostReady && !party\.selfHostReady/);
   assert.match(friends, /party\.lan\?\.requiresHostReady && !partyConnectReady\(party, false\)/);
   assert.match(friends, /pendingJoin = \{ partyId, at: Date\.now\(\) \}/);
+  assert.match(friends, /party\.port \|\| lan\.hostPort \|\| catalogGame\?\.port \|\| connectMeta\.defaultPort/);
 });
