@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { supportsMultiplayer, supportsLauncherParty, hasServerBrowser, editionSupportsPartyPlay } from "./support";
+import { games } from "@/lib/data/games";
 
 describe("supportsMultiplayer", () => {
   it("counts the play modes that used to be missed", () => {
@@ -79,6 +80,18 @@ describe("supportsLauncherParty", () => {
     const browserMmo = { tags: ["MMO"], launcherInstall: { enabled: true, kind: "external" } };
     expect(supportsMultiplayer(browserMmo)).toBe(true);
     expect(supportsLauncherParty(browserMmo)).toBe(false);
+  });
+
+  it("includes owned GOG ROMs that PlayBound launches through RetroArch netplay", () => {
+    for (const slug of ["baseball-stars-2", "soccer-brawl", "super-sidekicks"]) {
+      const game = games.find((entry) => entry.slug === slug);
+      expect(game, slug).toBeDefined();
+      expect(supportsLauncherParty(game), slug).toBe(true);
+    }
+    expect(supportsLauncherParty({
+      features: ["Multiplayer"],
+      launcherInstall: { enabled: true, kind: "external", url: "goggalaxy://openGameView/123" },
+    })).toBe(false);
   });
 
   it("excludes a singleplayer game and a disabled recipe", () => {
