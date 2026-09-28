@@ -1918,14 +1918,6 @@ function buildPartyViewHtml(party) {
         )} — everyone in this party has to be able to play.</p>`
       : "";
 
-  const openRaStockMod =
-    !party.editionSlug || party.editionSlug === "official" || party.editionSlug === "__base__";
-  const openRaModLabel =
-    party.openRaMod === "cnc"
-      ? "Tiberian Dawn"
-      : party.openRaMod === "d2k"
-        ? "Dune 2000"
-        : "Red Alert (default)";
   const openRaEditionLabel = party.editionSlug
     ? party.editionSlug === "official"
       ? "OpenRA (Official)"
@@ -1943,21 +1935,10 @@ function buildPartyViewHtml(party) {
                  !party.editionSlug || party.editionSlug === "official" ? " selected" : ""
                }>OpenRA (Official)</option>
              </select>
-           </div>${
-             openRaStockMod
-               ? `<div class="party-field-group" style="margin-top: 8px;">
-             <label class="party-field-label" for="party-openra-mod-select">Mod / Game</label>
-             <select class="input-text party-openra-mod-select" id="party-openra-mod-select" aria-label="OpenRA Mod">
-               <option value=""${!party.openRaMod || party.openRaMod === "ra" ? " selected" : ""}>Red Alert (default)</option>
-               <option value="cnc"${party.openRaMod === "cnc" ? " selected" : ""}>Tiberian Dawn</option>
-               <option value="d2k"${party.openRaMod === "d2k" ? " selected" : ""}>Dune 2000</option>
-             </select>
            </div>`
-               : ""
-           }`
         : `<p class="party-game-platform-note" style="margin-top: 4px;">Edition: ${escapeHtml(
             openRaEditionLabel
-          )}${openRaStockMod ? ` · Mod: ${escapeHtml(openRaModLabel)}` : ""}</p>`
+          )}</p>`
       : "";
 
   const gameHtml = isLeader && !ended
@@ -2388,17 +2369,24 @@ function buildPartyViewHtml(party) {
   `;
 }
 
-function installHref(gameSlug, editionSlug, mods) {
-  const q = new URLSearchParams();
-  if (editionSlug && editionSlug !== "__base__") q.set("edition", editionSlug);
-  for (const mod of mods || []) q.append("mod", mod);
-  q.set("return", "friends");
-  return `playbound://install/${gameSlug}?${q.toString()}`;
-}
-
-function markPartyInstallReturn(gameSlug) {
-  state.returnToFriendsParty = true;
-  state.partyInstallReturnSlug = gameSlug || null;
+async function installFromParty(gameSlug, editionSlug, mods = []) {
+  if (!gameSlug || !window.playbound.install) return;
+  setStatus(`Installing ${gameSlug}…`);
+  try {
+    const result = await window.playbound.install(gameSlug, null, editionSlug || null, mods);
+    if (result?.status === "installed") {
+      for (const mod of mods) await window.playbound.installMod?.(mod, null);
+      setStatus(result.note || "Install complete — you're still in the party.");
+      void window.playbound.syncLibraryNow?.({ quiet: true });
+      void api.refreshFriendsData();
+    } else if (result?.status === "installer-opened") {
+      setStatus("Installer opened — finish setup, then return to the party.");
+    } else if (result?.error) {
+      setStatus(result.error, true);
+    }
+  } catch (err) {
+    setStatus(err?.message || String(err), true);
+  }
 }
 
 function missingSummary(m, editionSlug) {
@@ -2467,7 +2455,6 @@ function buildPartyConfigSyncHtml(party, userId) {
       ? hostMember.installedEditionSlug
       : null) ||
     (party.editionSlug && party.editionSlug !== "__base__" ? party.editionSlug : null);
-  const href = installHref(party.gameSlug, installEdition, sync.modSlugs || []);
   const installLabel = sync.editionName
     ? `Install ${sync.editionName}`
     : installEdition
@@ -2500,9 +2487,7 @@ function buildPartyConfigSyncHtml(party, userId) {
                 party.gameSlug
               )}" data-can-set="${isYouHost ? "1" : "0"}"><span class="party-member-sub">Loading editions…</span></div>`
             : showInstall
-            ? `<button type="button" class="party-sync-install btn-party-install" data-href="${escapeHtml(
-                href
-              )}" data-edition="${escapeHtml(installEdition || "")}" data-confirm-version="${
+            ? `<button type="button" class="party-sync-install btn-party-install" data-edition="${escapeHtml(installEdition || "")}" data-confirm-version="${
                 isYouHost && !versionSelectedByHost ? "1" : "0"
               }">${ICON.download} ${escapeHtml(installLabel)}</button>`
             : ""
@@ -2693,10 +2678,7 @@ async function fillPartyEditionPickers(slot, party) {
             .map((ed) => {
               const slug = ed.editionSlug || ed.slug;
               const name = ed.editionName || ed.name || slug;
-              const href = installHref(gameSlug, slug, []);
-              return `<button type="button" class="party-sync-install btn-party-install party-edition-pick-btn" data-href="${escapeHtml(
-                href
-              )}" data-edition="${escapeHtml(slug)}" data-party-id="${escapeHtml(
+              return `<button type="button" class="party-sync-install btn-party-install party-edition-pick-btn" data-edition="${escapeHtml(slug)}" data-party-id="${escapeHtml(
                 partyId
               )}" data-can-set="${canSet ? "1" : "0"}">${ICON.download} ${escapeHtml(name)}</button>`;
             })
@@ -2709,12 +2691,7 @@ async function fillPartyEditionPickers(slot, party) {
           if (btn.dataset.canSet === "1" && edition && window.playbound.setPartyEdition) {
             await window.playbound.setPartyEdition(partyId, edition);
           }
-          const href = btn.dataset.href;
-          if (href && window.playbound.openDeepLink) {
-            markPartyInstallReturn(gameSlug);
-            void window.playbound.openDeepLink(href);
-          }
-          void api.refreshFriendsData();
+          await installFromParty(gameSlug, edition, []);
         });
       });
     } catch (err) {
@@ -3284,18 +3261,6 @@ function wirePartyView(slot, party) {
     enhanceSelect(gameSelect);
   }
 
-  const openRaModSelect = slot.querySelector("#party-openra-mod-select");
-  if (openRaModSelect) {
-    openRaModSelect.addEventListener("change", async () => {
-      pendingJoin = null;
-      setStatus("");
-      const val = openRaModSelect.value || null;
-      await optimisticPartyAction(party, current => current,
-        () => window.playbound.setPartyOpenRaMod?.(partyId, val), "Couldn't change OpenRA game mode.");
-    });
-    enhanceSelect(openRaModSelect);
-  }
-
   const openRaEditionSelect = slot.querySelector("#party-openra-edition-select");
   if (openRaEditionSelect) {
     openRaEditionSelect.addEventListener("change", async () => {
@@ -3391,19 +3356,17 @@ function wirePartyView(slot, party) {
 
   slot.querySelectorAll(".btn-party-install").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      const href = btn.dataset.href;
-      if (!href || !window.playbound.openDeepLink) return;
+      if (!window.playbound.install) return;
       /*
-       * Host Install must lock the version before navigating away — otherwise
+       * Host Install must lock the version before starting the download — otherwise
        * preferredPartyEditionSlug alone never unlocks guest Install, and the
-       * host leaving Friends mid-download used to look like the party vanished.
+       * guests could not install the matching edition.
        */
       if (btn.dataset.confirmVersion === "1" && window.playbound.setPartyEdition) {
         const edition = btn.dataset.edition || null;
         await window.playbound.setPartyEdition(partyId, edition);
       }
-      markPartyInstallReturn(party.gameSlug);
-      void window.playbound.openDeepLink(href);
+      await installFromParty(party.gameSlug, btn.dataset.edition || null, party.configSync?.modSlugs || []);
     });
   });
 
@@ -4097,7 +4060,6 @@ async function launchPartyGame(party) {
   if (!(await isGameReadyToPlay(slug))) {
     const title = party.gameTitle || slug;
     setStatus(`${title} isn't installed yet — install it, then join.`, true);
-    api.openGameDetail(slug, "friends");
     return;
   }
 
@@ -4168,10 +4130,9 @@ async function launchPartyGame(party) {
                   ? undefined
                   : state.accountState?.username || hosted.name || party.gameTitle || "",
               partyId: party.id,
-              // Explicit override for OpenRA's "official" edition, which is one
-              // client covering Red Alert/Tiberian Dawn/Dune 2000 — editionSlug
-              // alone can't say which one the party actually started.
-              mod: party.openRaMod || undefined,
+              // Public OpenRA servers report their actual mod. Use that
+              // automatically; the player only chooses an edition.
+              mod: slug === "openra" ? party.openRaMod || undefined : undefined,
             },
             party.editionSlug || null,
             launchOpts
@@ -4416,11 +4377,9 @@ async function launchPartyGame(party) {
         }
         const res = await window.playbound.play(
           slug,
-          launchConnect && typeof launchConnect === "object"
-            ? { ...launchConnect, mod: party.openRaMod || undefined }
-            : party.openRaMod
-              ? { mod: party.openRaMod }
-              : launchConnect,
+          slug === "openra" && party.openRaMod
+            ? { ...(launchConnect && typeof launchConnect === "object" ? launchConnect : {}), mod: party.openRaMod }
+            : launchConnect,
           edition,
           launchOpts
         );
@@ -4537,8 +4496,7 @@ async function launchPartyGame(party) {
     console.warn("launchPartyGame failed:", msg);
     setStatus(msg, true);
     if (/not installed/i.test(msg)) {
-      markPartyInstallReturn(slug);
-      api.navigateTo("gameDetail", { slug });
+      setStatus(`${party.gameTitle || slug} isn't installed yet — use Install in the party panel.`, true);
     }
   }
 }

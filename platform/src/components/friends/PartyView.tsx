@@ -14,15 +14,12 @@ import {
   PARTY_NAME_MAX,
   PARTY_VISIBILITIES,
   PARTY_VISIBILITY_LABELS,
-  OPENRA_MODS,
-  OPENRA_MOD_LABELS,
   partyDisplayName,
 } from "@/lib/playTogether/types";
 import type { LaunchMethod } from "@/lib/data/types";
 import { launcherJoinUrl, launcherPlayUrl } from "@/lib/launcher";
 import { isBrowserGame } from "@/lib/gameLaunch";
 import { supportsMultiplayer, supportsLauncherParty } from "@/lib/multiplayer/support";
-import { openRaEditionAllowsStockModPicker } from "@/lib/multiplayer/openRaMod";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { isGameCompatible } from "@/lib/compatibility/compatibility";
 import { launcherDownloadUrlForOs } from "@/lib/launcherDownload";
@@ -91,7 +88,6 @@ export function PartyView({
     setHostMode,
     setSavedWorld,
     setName,
-    setOpenRaMod,
     setEdition,
   } = usePartyStore();
   const [voiceBusy, setVoiceBusy] = useState(false);
@@ -233,15 +229,11 @@ export function PartyView({
     };
   }, [party.gameSlug]);
 
-  const openRaStockMod = openRaEditionAllowsStockModPicker(party.editionSlug);
   const openRaEditionName =
     openRaEditions?.find((e) => e.slug === (party.editionSlug || "official"))?.name ||
     (party.editionSlug && party.editionSlug !== "official"
       ? party.editionSlug
       : "OpenRA (Official)");
-  const openRaModName =
-    OPENRA_MOD_LABELS[(party.openRaMod as keyof typeof OPENRA_MOD_LABELS) || "ra"] ||
-    OPENRA_MOD_LABELS.ra;
 
   /*
    * After the hooks, not before them. The session arrives a render late, so
@@ -671,28 +663,6 @@ export function PartyView({
                         )}
                       </PremiumSelect>
                     </label>
-                    {openRaStockMod ? (
-                      <label className="block">
-                        <span className="text-xs font-semibold text-muted-foreground">
-                          Mod / Game
-                        </span>
-                        <PremiumSelect
-                          value={party.openRaMod || ""}
-                          onChange={(e) => void setOpenRaMod(party.id, e.target.value || null)}
-                        >
-                          <option value="">Red Alert (default)</option>
-                          {OPENRA_MODS.filter((m) => m !== "ra").map((m) => (
-                            <option key={m} value={m}>
-                              {OPENRA_MOD_LABELS[m]}
-                            </option>
-                          ))}
-                        </PremiumSelect>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Official OpenRA bundles all three — set this to whichever one you&apos;re
-                          hosting, or joiners get rejected as &quot;incompatible mod&quot;.
-                        </p>
-                      </label>
-                    ) : null}
                   </div>
                 ) : null}
               </div>
@@ -705,7 +675,6 @@ export function PartyView({
                 {party.gameSlug === "openra" ? (
                   <p className="mt-1 text-xs text-muted-foreground">
                     Edition: {openRaEditionName}
-                    {openRaStockMod ? ` · Mod: ${openRaModName}` : ""}
                   </p>
                 ) : null}
                 {!couchMode && party.hostModes && party.hostModes.length > 1 ? (

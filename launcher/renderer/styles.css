@@ -4146,6 +4146,7 @@ textarea.input-text {
   left: 220px;
   right: 0;
   height: 34px;
+  transition: height 180ms ease;
   background: var(--bg-sidebar);
   border-top: 1px solid var(--border);
   display: flex;
@@ -4155,6 +4156,14 @@ textarea.input-text {
   font-size: 12px;
   color: var(--text-muted);
   z-index: 10;
+}
+
+#statusbar.statusbar--expanded { height: 56px; }
+#statusbar.statusbar--expanded #statusbar-msg {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 #statusbar-left {

@@ -22,6 +22,13 @@ function baseProfile() {
 }
 
 describe("controlProfileSchema", () => {
+  it("accepts the Enemy Territory controller preview as a keyboard-and-mouse profile", () => {
+    const profile = JSON.parse(readFileSync(join(process.cwd(), "../launcher/services/inputEngine/profiles/wolfenstein-enemy-territory.json"), "utf8"));
+    const result = controlProfileSchema.parse(profile);
+    expect(result.status).toBe("testing");
+    expect(result.stickMouseSettings?.enabled).toBe(true);
+    expect(result.bindings.some((binding) => binding.physicalInput === "RT")).toBe(true);
+  });
   it("accepts the OutRun pilot with mouse movement disabled", () => {
     const pilot = JSON.parse(readFileSync(join(process.cwd(), "../launcher/services/inputEngine/profiles/outrun.json"), "utf8"));
     const result = controlProfileSchema.parse(pilot);

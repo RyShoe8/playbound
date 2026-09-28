@@ -1,0 +1,42 @@
+{
+  "gameSlug": "wolfenstein-enemy-territory",
+  "editionSlug": null,
+  "name": "PlayBound Controls Preview — Enemy Territory",
+  "version": "0.1.0",
+  "platform": "windows",
+  "inputStrategy": "keyboard_mouse",
+  "status": "testing",
+  "antiCheatCompatibility": "unknown",
+  "testedControllers": [],
+  "notes": "Preview keyboard-and-mouse layout based on the documented PC bindings. Needs a live Enemy Territory test, including multiplayer and any server-side anti-cheat, before verification.",
+  "actions": [
+    { "id": "forward", "label": "Move forward", "output": { "type": "key", "vk": "W" } },
+    { "id": "backward", "label": "Move backward", "output": { "type": "key", "vk": "S" } },
+    { "id": "left", "label": "Strafe left", "output": { "type": "key", "vk": "A" } },
+    { "id": "right", "label": "Strafe right", "output": { "type": "key", "vk": "D" } },
+    { "id": "fire", "label": "Fire", "output": { "type": "mouseButton", "button": "left" } },
+    { "id": "aim", "label": "Aim / alternate fire", "output": { "type": "mouseButton", "button": "right" } },
+    { "id": "jump", "label": "Jump", "output": { "type": "key", "vk": "Space" } },
+    { "id": "crouch", "label": "Crouch", "output": { "type": "key", "vk": "C" } },
+    { "id": "reload", "label": "Reload", "output": { "type": "key", "vk": "R" } },
+    { "id": "use", "label": "Use", "output": { "type": "key", "vk": "F" } },
+    { "id": "sprint", "label": "Sprint", "output": { "type": "key", "vk": "LeftShift" } },
+    { "id": "menu", "label": "Menu", "output": { "type": "key", "vk": "Escape" } }
+  ],
+  "bindings": [
+    { "actionId": "forward", "physicalInput": "LEFT_UP" },
+    { "actionId": "backward", "physicalInput": "LEFT_DOWN" },
+    { "actionId": "left", "physicalInput": "LEFT_LEFT" },
+    { "actionId": "right", "physicalInput": "LEFT_RIGHT" },
+    { "actionId": "fire", "physicalInput": "RT" },
+    { "actionId": "aim", "physicalInput": "LT" },
+    { "actionId": "jump", "physicalInput": "A" },
+    { "actionId": "crouch", "physicalInput": "B" },
+    { "actionId": "reload", "physicalInput": "X" },
+    { "actionId": "use", "physicalInput": "Y" },
+    { "actionId": "sprint", "physicalInput": "LS" },
+    { "actionId": "menu", "physicalInput": "START" }
+  ],
+  "contexts": [],
+  "stickMouseSettings": { "enabled": true, "deadzone": 0.15, "curve": "exponential", "sensitivity": 1.35, "acceleration": 0.35, "smoothing": 0.08, "maxVelocity": 900 }
+}
