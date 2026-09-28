@@ -294,6 +294,12 @@ function hasArbiterLaunch(slug) {
 }
 
 const DEFAULT_GAME_PORTS = {
+  // RetroArch FBNeo netplay hosts on TCP 55435. The party's self-host probe
+  // must see this listener before guests try to join over NetBird.
+  "baseball-stars": 55435,
+  "baseball-stars-2": 55435,
+  "super-sidekicks": 55435,
+  "soccer-brawl": 55435,
   /* ECWolf's own default; --join takes host[:port] and omits it when default. */
   wolfenstein: 5029,
   openarena: 27960,

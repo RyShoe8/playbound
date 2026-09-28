@@ -9665,6 +9665,15 @@ let remotePlayPollTimer = null;
 let remotePlayRegisterTimer = null;
 const remotePlayInFlight = new Set();
 
+async function handleRemotePlayUnauthorized() {
+  const token = loadSettings().launcherToken;
+  if (!token) return;
+  const check = await validateLauncherToken(token);
+  if (check.valid) return; // A route-specific 401 is not permission to sign out.
+  stopRemotePlayLoop();
+  clearLocalToken("PlayBound session expired — sign in again from Settings to use Remote Play.");
+}
+
 async function registerRemotePlayDevice() {
   const settings = loadSettings();
   if (!settings.launcherToken) return;
@@ -9678,6 +9687,10 @@ async function registerRemotePlayDevice() {
         capabilities: { remotePlayHost: true, remotePlayClient: true },
       }),
     });
+    if (res.status === 401) {
+      await handleRemotePlayUnauthorized();
+      if (!loadSettings().launcherToken) return;
+    }
     if (!res.ok) reportCouchOps("failed", { phase: "registration", code: "DEVICE_REGISTRATION_FAILED", message: `HTTP ${res.status}` }, "remote_play");
   } catch (err) {
     console.warn("[remote-play] device registration failed:", err?.message || err);
@@ -9824,6 +9837,10 @@ async function pollRemotePlayRequests() {
       { headers: launcherApiHeaders() }
     );
     if (!res.ok) {
+      if (res.status === 401) {
+        await handleRemotePlayUnauthorized();
+        return;
+      }
       reportCouchOps("failed", { phase: "host_poll", code: "HOST_POLL_FAILED", message: `HTTP ${res.status}` }, "remote_play");
       return;
     }

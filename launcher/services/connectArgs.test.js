@@ -100,6 +100,9 @@ test("new peer-hosted games expose the address and port their launch path needs"
   assert.equal(clientConnectArgs("bombsquad"), null);
   // AssaultCube joins via official URL protocol after the host creates a server.
   assert.equal(defaultGamePort("assaultcube"), 28763);
+  for (const slug of ["baseball-stars", "baseball-stars-2", "super-sidekicks", "soccer-brawl"]) {
+    assert.equal(defaultGamePort(slug), 55435, `${slug} must probe RetroArch's netplay listener`);
+  }
   assert.equal(joinsFromInGameMenu("assaultcube"), false);
   assert.deepEqual(
     applyConnectTemplates(CLIENT_CONNECT_ARGS.assaultcube, {

@@ -131,7 +131,7 @@ export const PARTY_COPY = {
   serverStarting: "Server Starting…",
   joinArmed: "Joining when the server is ready…",
   joinArmedTitle: "PlayBound will join you as soon as the server is up — click to stop waiting",
-  hostMustStart: "The party host must start the game first",
+  hostMustStart: "The host must use Start Game in this party before you can join",
   serverStillStarting: "The game server is still starting",
   serverPending: "Server is starting — click to join when ready",
   connectFailed: "Could not start the party connection",
