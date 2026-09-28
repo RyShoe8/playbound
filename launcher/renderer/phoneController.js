@@ -188,7 +188,7 @@ export function promptPlayControllerChoice(opts = {}) {
                 <span class="phone-controller-choice-title">${preview ? "PlayBound Controls Preview" : enhancedOnly ? "PlayBound Controls" : "Controller (Gamepad)"}</span>
                 <span class="phone-controller-choice-tag">${preview ? "Testing" : enhancedOnly ? "Enhanced" : "Direct"}</span>
               </div>
-              <span class="phone-controller-choice-sub">${preview ? "Try this unverified layout and help us tune it" : enhancedOnly ? "Map your controller to this game's keyboard controls" : "Play with an Xbox, PlayStation, Switch Pro, or USB controller"}</span>
+              <span class="phone-controller-choice-sub">${preview ? "Use a connected controller: PlayBound maps it to this game's keyboard and mouse controls. This layout is still being tested." : enhancedOnly ? "Use a connected controller: PlayBound maps it to this game's keyboard and mouse controls." : "Use a connected Xbox, PlayStation, Switch Pro, or USB controller with this game's own controller controls."}</span>
             </div>
           </button>
 

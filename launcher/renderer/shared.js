@@ -855,10 +855,23 @@ export function setStatusAction(action) {
   }
 }
 
+let statusExpansionTimer = null;
 export function setStatus(text, isError = false) {
   setStatusAction(null);
   const statusMsg = document.getElementById("statusbar-msg");
   if (!statusMsg) return;
+  const statusbar = document.getElementById("statusbar");
+  if (statusExpansionTimer) clearTimeout(statusExpansionTimer);
+  if (text) {
+    statusbar?.classList.add("statusbar--expanded");
+    statusExpansionTimer = setTimeout(() => {
+      statusbar?.classList.remove("statusbar--expanded");
+      statusExpansionTimer = null;
+    }, 5000);
+  } else {
+    statusbar?.classList.remove("statusbar--expanded");
+    statusExpansionTimer = null;
+  }
   statusMsg.textContent = text || "";
   statusMsg.style.color = isError ? "var(--danger)" : "var(--text-muted)";
   if (isError && text) {

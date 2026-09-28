@@ -3651,6 +3651,7 @@ function couchDisqualifiesPlayBoundControls() {
  */
 const BUNDLED_CONTROL_PROFILES = {
   holocure: "./services/inputEngine/profiles/holocure.json",
+  "wolfenstein-enemy-territory": "./services/inputEngine/profiles/wolfenstein-enemy-territory.json",
 };
 
 function bundledControlProfile(slug) {
@@ -3680,6 +3681,7 @@ function notifyPlayBoundControlsState(active) {
 
 async function applyControllerConfig(slug, installDir, opts = {}) {
   const inputMode = opts?.inputMode || (couchHost?.getState?.()?.active ? "phone" : null);
+  let enhancedControlsActive = false;
 
   /*
    * PlayBound Controls: keyboard/mouse synthesis for games with no native
@@ -3696,11 +3698,32 @@ async function applyControllerConfig(slug, installDir, opts = {}) {
     // pilot; packaged launchers still require a verified catalog profile.
     const profile = await availablePlayBoundControlsProfile(slug, opts?.editionSlug || null, opts?.controlsPreview === true);
     if (profile && gamepadBridge.activatePlayBoundControls(profile)) {
+      enhancedControlsActive = true;
       const key = `${profile.gameSlug}::${profile.editionSlug || ""}`;
       gamepadBridge.updateControlsSettings(loadSettings().controlOverrides?.[key] || {});
       notifyPlayBoundControlsState(true);
       console.log(`[playbound-controls] activated "${profile.name}" for ${slug}`);
     }
+  }
+
+  // The keyboard/mouse profile owns this session's controller. Enabling the
+  // game's joystick config as well can make one press fire two actions.
+  if (enhancedControlsActive) {
+    // Enemy Territory may have an in_joystick setting left by an earlier
+    // native-pad launch. Do not let that consume the same pad as the mapper.
+    if (slug === "wolfenstein-enemy-territory") {
+      const configPath = gameControllerConfig.configPathFor(slug, installDir);
+      if (configPath) {
+        try {
+          const current = await fsp.readFile(configPath, "utf8");
+          const withoutNativePad = current.replace(/seta\s+in_joystick\s+"1"/g, 'seta in_joystick "0"');
+          if (withoutNativePad !== current) await fsp.writeFile(configPath, withoutNativePad);
+        } catch (err) {
+          if (err?.code !== "ENOENT") console.warn("[playbound-controls] ET joystick config:", err?.message || err);
+        }
+      }
+    }
+    return true;
   }
 
   if (!gameControllerConfig.supportsControllerConfig(slug)) return false;
