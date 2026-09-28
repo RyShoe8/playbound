@@ -19,6 +19,7 @@ import { listEditionsForGames } from "@/lib/editions";
 import { TAGS, FEATURES } from "@/lib/gamePayload";
 import { supportsController } from "@/lib/controller/support";
 import { getMultiplayerAdapter } from "@/lib/multiplayer/adapters";
+import { supportsLauncherParty } from "@/lib/multiplayer/support";
 
 export async function GET(req: Request) {
   try {
@@ -99,6 +100,7 @@ export async function GET(req: Request) {
                  * nothing.
                  */
                 hostLaunch: getMultiplayerAdapter(g.slug)?.host ?? null,
+                partyLaunchable: supportsLauncherParty({ ...g, launcherInstall: recipe }),
                 status: g.status || "published",
                 testing: g.status === "testing",
                 maxPlayers: typeof g.maxPlayers === "number" ? g.maxPlayers : null,
@@ -129,6 +131,7 @@ export async function GET(req: Request) {
           multiplayer: hasServerBrowser(g),
           hasServerBrowser: hasServerBrowser(g),
           isMultiplayer: supportsMultiplayer(g),
+          partyLaunchable: false,
           status: g.status || "published",
           testing: g.status === "testing",
           maxPlayers: typeof g.maxPlayers === "number" ? g.maxPlayers : null,

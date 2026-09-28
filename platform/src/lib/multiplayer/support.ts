@@ -91,7 +91,7 @@ export function supportsMultiplayer(game: MultiplayerInput | null | undefined): 
 const UNPARTYABLE_KINDS = new Set(["external"]);
 
 type LauncherPartyInput = MultiplayerInput & {
-  launcherInstall?: { enabled?: boolean; kind?: string; url?: string | null } | null;
+  launcherInstall?: { enabled?: boolean; kind?: string; url?: string | null; knownExePaths?: string[] } | null;
 };
 
 /**
@@ -107,7 +107,13 @@ export function supportsLauncherParty(game: LauncherPartyInput | null | undefine
   const install = game.launcherInstall;
   if (!install?.enabled) return false;
   if (install.kind === "external") {
-    return Boolean(install.url && install.url.startsWith("steam://"));
+    if (install.url?.startsWith("steam://")) return true;
+    // GOG Galaxy is only the acquisition step for these ROMs. Once owned,
+    // PlayBound locates the ZIP and runs RetroArch netplay for the party.
+    return Boolean(
+      /^goggalaxy:\/\/openGameView\/\d+$/i.test(install.url || "") &&
+      install.knownExePaths?.some((file) => /\.zip$/i.test(file))
+    );
   }
   return !UNPARTYABLE_KINDS.has(String(install.kind));
 }

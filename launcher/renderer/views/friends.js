@@ -6,6 +6,7 @@ import { maybeOfferPhoneControllerThenPlay } from "../phoneController.js";
 import { ensureCouchBackground, startCouchSessionQuiet, pushHostDisplayToPeers } from "./couch.js";
 import { ensureHostDisplayStream } from "../hostDisplayStream.js";
 import { maybeShowLaunchGuidance } from "../guidanceModal.js";
+import { catalogGameSupportsParty } from "../partyGameEligibility.js";
 import {
   api,
   buildActivityPanelHtml,
@@ -13,7 +14,6 @@ import {
   enhanceSelect,
   escapeHtml,
   executableNoun,
-  filterByDiscovery,
   filterByCompatibility,
   filterCatalogGames,
   filterRealEditions,
@@ -1684,7 +1684,7 @@ let partyCouchCoopFilter = false;
 let partyCouchFilterExplicit = false;
 
 async function ensurePartyGames() {
-  const cacheKey = `${state.compatibilityFilter || "compatible"}:${state.discoveryMode || "all"}`;
+  const cacheKey = state.compatibilityFilter || "compatible";
   if (partyGamesCache && partyGamesCacheKey === cacheKey) return partyGamesCache;
   const catalog = state.catalogCache?.length
     ? state.catalogCache
@@ -1700,8 +1700,7 @@ async function ensurePartyGames() {
      * A party already pointing at something excluded here stays selectable:
      * partyGameOptionsHtml appends the current slug when the list lacks it.
      */
-    .filter((g) => g.isMultiplayer ?? g.multiplayer ?? false)
-    .filter((g) => g.kind !== "external" || (typeof g.url === "string" && g.url.startsWith("steam://")))
+    .filter(catalogGameSupportsParty)
     .filter((g) => filterByCompatibility([g]).length > 0)
     .map((g) => ({
       slug: g.slug,
@@ -1767,7 +1766,9 @@ function partyGameOptionsHtml(selectedSlug, party) {
   const required = Array.isArray(party?.requiredPlatforms) ? party.requiredPlatforms : [];
   const memberCount = Array.isArray(party?.members) ? party.members.length : 1;
   const couchOnly = new Set(party?.couchOnlyGames || []);
-  const games = filterByDiscovery(partyGamesCache || [])
+  // Party choices describe what this group can launch, regardless of the
+  // Free/All preference used while browsing Discover.
+  const games = (partyGamesCache || [])
     .filter((g) => partyCanAllPlay(g, required))
     .filter((g) => fitsPartySize(g.maxPlayers, memberCount))
     /*
