@@ -20,7 +20,6 @@ let _cachedParties = [];
 let _cachedEvents = [];
 let _cachedMyLfg = { active: false, gameSlugs: [] };
 let _activeParty = null;
-let _refreshTimer = null;
 
 function formatEventDate(isoStr) {
   if (!isoStr) return "";
@@ -81,9 +80,6 @@ export async function renderMultiplayerView(params = {}) {
   const container = views.multiplayer;
   if (!container) return;
 
-  if (params.tab) {
-    state.multiplayerState.activeTab = params.tab;
-  }
   if (params.game) {
     state.serversState.selectedSlug = params.game;
     state.serversState.selectedModSlug = "";
@@ -99,43 +95,11 @@ export async function renderMultiplayerView(params = {}) {
   paintMultiplayerView(container);
   markViewReady(container);
 
-  // Set up periodic background refresh every 30s while view is active
-  if (_refreshTimer) clearInterval(_refreshTimer);
-  _refreshTimer = setInterval(async () => {
-    if (state.currentView === "multiplayer") {
-      await loadMultiplayerData();
-      paintStatsBarOnly();
-      if (state.multiplayerState.activeTab === "overview" || state.multiplayerState.activeTab === "games") {
-        paintTabContent();
-      }
-    } else {
-      clearInterval(_refreshTimer);
-      _refreshTimer = null;
-    }
-  }, 30_000);
-}
-
-function getFilteredGames() {
-  const games = _cachedActivity?.games || [];
-  const search = (state.multiplayerState.gameSearch || "").trim().toLowerCase();
-  const filter = state.multiplayerState.filterType || "all";
-
-  return games.filter((g) => {
-    // Installed only filter
-    if (state.multiplayerState.installedOnly && state._installedGameSlugs) {
-      if (!state._installedGameSlugs.has(g.gameSlug)) return false;
-    }
-    if (search) {
-      const matchTitle = (g.gameTitle || "").toLowerCase().includes(search);
-      const matchGenre = (g.genre || "").toLowerCase().includes(search);
-      const matchTags = Array.isArray(g.tags) && g.tags.some((t) => t.toLowerCase().includes(search));
-      if (!matchTitle && !matchGenre && !matchTags) return false;
-    }
-    if (filter === "parties") return (g.openPartyCount || 0) > 0;
-    if (filter === "looking") return (g.usersLookingCount || 0) > 0;
-    if (filter === "servers") return (g.serverPlayerCount || 0) > 0 || (g.serversOnline || 0) > 0;
-    return true;
-  });
+  /*
+   * No background refresh. Each repaint re-wired the embedded server browser,
+   * which refetched the list every 30s; the browser now loads once from the
+   * server-side cache and refreshes only on its own Refresh button.
+   */
 }
 
 function paintMultiplayerView(container) {
@@ -145,11 +109,9 @@ function paintMultiplayerView(container) {
     totalOpenParties: 0,
     totalUsersLooking: 0,
   };
-  const activeTab = state.multiplayerState.activeTab || "overview";
   const ltpActive = state.multiplayerState.ltpActive;
   const ltpDrawerOpen = state.multiplayerState.ltpDrawerOpen;
   const createPartyOpen = state.multiplayerState.createPartyOpen;
-  const filteredGames = getFilteredGames();
 
   container.innerHTML = `
     <div class="mp-hub-container">
@@ -331,36 +293,16 @@ function paintMultiplayerView(container) {
         </div>
       </div>
 
-      <!-- Main Navigation Tabs -->
+      <!-- Live & starting-soon events replace the old All Activity / Games / Server Browser / Events tabs. -->
+      ${renderSoonEventsSection()}
+
       <div class="mp-tabs-bar">
         <div class="mp-tabs-nav">
-          <button type="button" class="mp-tab-btn ${activeTab === "overview" ? "active" : ""}" data-tab="overview">
-            All Activity
-          </button>
-          <button type="button" class="mp-tab-btn ${activeTab === "games" ? "active" : ""}" data-tab="games">
-            Games (${filteredGames.length})
-          </button>
-          <button type="button" class="mp-tab-btn ${activeTab === "servers" ? "active" : ""}" data-tab="servers">
-            Live Server Browser
-          </button>
-          <button type="button" class="mp-tab-btn ${activeTab === "events" ? "active" : ""}" data-tab="events">
-            Events (${_cachedEvents.length})
-          </button>
-          <div class="mp-tabs-divider"></div>
           <label class="mp-global-filter-toggle" id="mp-installed-filter-label" title="Filter to installed games">
             <input type="checkbox" id="mp-installed-filter" ${state.multiplayerState.installedOnly ? "checked" : ""} />
             <span>Installed only</span>
           </label>
         </div>
-
-        ${
-          activeTab === "games"
-            ? `<div class="mp-tab-search-box">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <input type="search" id="mp-games-search" placeholder="Search games, tags…" value="${escapeHtml(state.multiplayerState.gameSearch || "")}" />
-              </div>`
-            : ""
-        }
       </div>
 
       <!-- Tab Content Area -->
@@ -369,6 +311,7 @@ function paintMultiplayerView(container) {
   `;
 
   bindHeaderListeners();
+  bindSoonEvents();
   paintTabContent();
 }
 
@@ -511,25 +454,6 @@ function bindHeaderListeners() {
     }
   });
 
-  // Tabs switching
-  document.querySelectorAll(".mp-tab-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const tab = btn.dataset.tab;
-      state.multiplayerState.activeTab = tab;
-      document.querySelectorAll(".mp-tab-btn").forEach((b) => b.classList.toggle("active", b === btn));
-      paintTabContent();
-    });
-  });
-
-  // Games search
-  const gamesSearch = document.getElementById("mp-games-search");
-  if (gamesSearch) {
-    gamesSearch.oninput = (e) => {
-      state.multiplayerState.gameSearch = e.target.value;
-      paintTabContent();
-    };
-  }
-
   // Global Installed Only Filter
   const installedFilter = document.getElementById("mp-installed-filter");
   if (installedFilter) {
@@ -614,35 +538,9 @@ function wireLtpChipRemoveListeners() {
   });
 }
 
-function paintStatsBarOnly() {
-  const summary = _cachedActivity?.summary;
-  if (!summary) return;
-  const grid = document.getElementById("mp-hub-stat-grid");
-  if (!grid) return;
-  const vals = grid.querySelectorAll(".mp-hub-stat-val");
-  if (vals.length >= 4) {
-    vals[0].textContent = (summary.totalServerPlayers || 0).toLocaleString();
-    vals[1].textContent = summary.totalOpenParties || 0;
-    vals[2].textContent = summary.totalUsersLooking || 0;
-    vals[3].textContent = (summary.totalServersOnline || 0).toLocaleString();
-  }
-}
-
 function paintTabContent() {
   const container = document.getElementById("mp-tab-content-area");
-  if (!container) return;
-
-  const tab = state.multiplayerState.activeTab || "overview";
-
-  if (tab === "overview") {
-    paintOverviewTab(container);
-  } else if (tab === "games") {
-    paintGamesTab(container);
-  } else if (tab === "servers") {
-    paintServersTab(container);
-  } else if (tab === "events") {
-    paintEventsTab(container);
-  }
+  if (container) paintOverviewTab(container);
 }
 
 function paintOverviewTab(container) {
@@ -677,7 +575,6 @@ function paintOverviewTab(container) {
     </div>
   `;
 
-  bindGameCardActions(container);
   bindPartyCardActions(container);
 
   document.getElementById("mp-start-party-sec-btn")?.addEventListener("click", () => {
@@ -689,189 +586,43 @@ function paintOverviewTab(container) {
   void wireServersBrowser(null, state.serversState.selectedSlug);
 }
 
-function paintGamesTab(container) {
-  const filtered = getFilteredGames();
-  const curFilter = state.multiplayerState.filterType || "all";
+/** How far ahead an event counts as "starting soon". */
+const EVENT_SOON_WINDOW_MS = 15 * 60_000;
+/** Events without an end time are treated as running this long. */
+const DEFAULT_EVENT_LENGTH_MS = 2 * 3600_000;
 
-  container.innerHTML = `
-    <div class="section-header" style="margin-top: 0">
-      <div>
-        <h2 class="view-title" style="font-size: 1.25rem; margin:0">Multiplayer Games Directory (${filtered.length})</h2>
-        <p class="view-sub" style="margin: 2px 0 0">Explore all multiplayer-supported titles, community servers, and matchmaking.</p>
-      </div>
-    </div>
-
-    <div class="mp-games-tab-head">
-      <div class="mp-filter-chips-row">
-        <button type="button" class="mp-filter-chip ${curFilter === "all" ? "active" : ""}" data-filter="all">All</button>
-        <button type="button" class="mp-filter-chip ${curFilter === "parties" ? "active" : ""}" data-filter="parties">With Parties</button>
-        <button type="button" class="mp-filter-chip ${curFilter === "looking" ? "active" : ""}" data-filter="looking">Looking for Players</button>
-        <button type="button" class="mp-filter-chip ${curFilter === "servers" ? "active" : ""}" data-filter="servers">Live Servers</button>
-      </div>
-    </div>
-
-    ${
-      filtered.length === 0
-        ? `<div class="mp-empty-card">
-            <p>${state.multiplayerState.installedOnly ? "No installed multiplayer games match your current filter. Try turning off 'Installed only'." : "No multiplayer games match your filter or search."}</p>
-          </div>`
-        : `<div class="mp-games-grid">${filtered.map(renderMultiplayerGameCard).join("")}</div>`
-    }
-  `;
-
-  container.querySelectorAll(".mp-filter-chip").forEach((btn) => {
-    btn.onclick = () => {
-      state.multiplayerState.filterType = btn.dataset.filter;
-      paintGamesTab(container);
-    };
-  });
-
-  bindGameCardActions(container);
+/** Live now, or starting within EVENT_SOON_WINDOW_MS. Mirrors isLiveOrStartingSoon on the site. */
+function isLiveOrStartingSoon(ev, now = Date.now()) {
+  if (ev.status === "cancelled" || ev.status === "completed") return false;
+  const starts = new Date(ev.startsAt).getTime();
+  if (!Number.isFinite(starts)) return false;
+  const ends = ev.endsAt ? new Date(ev.endsAt).getTime() : starts + DEFAULT_EVENT_LENGTH_MS;
+  if (ev.status === "live") return now <= ends;
+  return starts - now <= EVENT_SOON_WINDOW_MS && now <= ends;
 }
 
-function paintServersTab(container) {
-  container.innerHTML = buildServersBrowserHtml("Real-time community servers with 1-click launch and ping.");
-  void wireServersBrowser(container, state.serversState.selectedSlug);
+function renderSoonEventsSection() {
+  const events = (_cachedEvents || []).filter((ev) => isLiveOrStartingSoon(ev));
+  if (events.length === 0) return "";
+  return `
+    <div class="mp-section">
+      <div class="section-header" style="margin-top:0">
+        <div>
+          <h2 class="view-title" style="font-size:1.25rem; margin:0">Live &amp; Starting Soon</h2>
+        </div>
+        <button type="button" class="btn-secondary btn-sm" id="mp-browse-all-events">All Events →</button>
+      </div>
+      <div class="mp-events-grid">${events.map(renderEventCard).join("")}</div>
+    </div>
+  `;
 }
 
-function paintEventsTab(container) {
-  const events = _cachedEvents || [];
-
-  container.innerHTML = `
-    <div class="section-header" style="margin-top:0">
-      <div>
-        <h2 class="view-title" style="font-size:1.25rem; margin:0">Community Multiplayer Events</h2>
-        <p class="view-sub" style="margin:2px 0 0">Tournaments, game nights, and organized play sessions.</p>
-      </div>
-      <button type="button" class="btn-secondary btn-sm" id="mp-browse-all-events">See Full Events Hub →</button>
-    </div>
-
-    ${
-      events.length === 0
-        ? `<div class="mp-empty-card"><p>No upcoming events scheduled right now.</p></div>`
-        : `<div class="mp-events-grid">${events.map(renderEventCard).join("")}</div>`
-    }
-  `;
-
+function bindSoonEvents() {
   document.getElementById("mp-browse-all-events")?.addEventListener("click", () => {
     api.navigateTo?.("events");
   });
-
-  container.querySelectorAll(".mp-btn-view-ev").forEach((btn) => {
-    btn.onclick = () => {
-      const id = btn.dataset.id;
-      api.navigateTo?.("eventDetail", { eventId: id });
-    };
-  });
-}
-
-function renderMultiplayerGameCard(g) {
-  const coverUrl = g.coverImage || "";
-  const serverPlayers = g.serverPlayerCount || 0;
-  const openParties = g.openPartyCount || 0;
-  const usersLooking = g.usersLookingCount || 0;
-  const serversOnline = g.serversOnline || 0;
-
-  return `
-    <div class="mp-game-card" data-slug="${escapeHtml(g.gameSlug)}">
-      <div class="mp-game-card-cover-wrap">
-        ${
-          coverUrl
-            ? `<img src="${escapeHtml(coverUrl)}" class="mp-game-card-cover" alt="${escapeHtml(g.gameTitle)}" />`
-            : `<div class="mp-game-card-no-cover">${escapeHtml(g.gameTitle)}</div>`
-        }
-        <div class="mp-game-card-overlay"></div>
-        <div class="mp-game-card-badges">
-          ${g.isFree ? `<span class="chip chip-accent" style="font-size:10px;">Free</span>` : ""}
-          ${g.genre ? `<span class="chip" style="font-size:10px;">${escapeHtml(g.genre)}</span>` : ""}
-        </div>
-      </div>
-
-      <div class="mp-game-card-body">
-        <h3 class="mp-game-card-title">${escapeHtml(g.gameTitle)}</h3>
-
-        <div class="mp-game-card-metrics">
-          ${
-            serverPlayers > 0
-              ? `<span class="mp-metric-pill cyan"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/></svg> ${serverPlayers.toLocaleString()} playing</span>`
-              : serversOnline > 0
-              ? `<span class="mp-metric-pill muted">${serversOnline} servers</span>`
-              : ""
-          }
-          ${
-            openParties > 0
-              ? `<span class="mp-metric-pill purple"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg> ${openParties} ${openParties === 1 ? "party" : "parties"}</span>`
-              : ""
-          }
-          ${
-            usersLooking > 0
-              ? `<span class="mp-metric-pill amber"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/></svg> ${usersLooking} LFG</span>`
-              : ""
-          }
-          ${
-            serverPlayers === 0 && openParties === 0 && usersLooking === 0 && serversOnline === 0
-              ? `<span class="mp-metric-pill muted">Online Multiplayer</span>`
-              : ""
-          }
-        </div>
-
-        <div class="mp-game-card-actions">
-          <button type="button" class="btn-secondary btn-sm mp-btn-browse-servers" data-slug="${escapeHtml(g.gameSlug)}" title="View community servers for ${escapeHtml(g.gameTitle)}">
-            Servers
-          </button>
-          <button type="button" class="btn-secondary btn-sm mp-btn-card-party" data-slug="${escapeHtml(g.gameSlug)}" title="Start party for ${escapeHtml(g.gameTitle)}">
-            + Party
-          </button>
-          <button type="button" class="btn-primary btn-sm mp-btn-card-play" data-slug="${escapeHtml(g.gameSlug)}">
-            Play
-          </button>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function bindGameCardActions(container) {
-  container.querySelectorAll(".mp-btn-browse-servers").forEach((btn) => {
-    btn.onclick = (e) => {
-      e.stopPropagation();
-      const slug = btn.dataset.slug;
-      state.serversState.selectedSlug = slug;
-      state.serversState.selectedModSlug = "";
-      state.multiplayerState.activeTab = "servers";
-      document.querySelectorAll(".mp-tab-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === "servers"));
-      paintTabContent();
-      const embed = document.querySelector(".servers-browser-embedded");
-      if (embed) embed.scrollIntoView({ behavior: "smooth" });
-    };
-  });
-
-  container.querySelectorAll(".mp-btn-card-party").forEach((btn) => {
-    btn.onclick = (e) => {
-      e.stopPropagation();
-      const slug = btn.dataset.slug;
-      state.multiplayerState.selectedGameForParty = slug;
-      state.multiplayerState.createPartyOpen = true;
-      state.multiplayerState.ltpDrawerOpen = false;
-      paintMultiplayerView(views.multiplayer);
-      const drawer = document.getElementById("mp-create-party-drawer");
-      if (drawer) drawer.scrollIntoView({ behavior: "smooth" });
-    };
-  });
-
-  container.querySelectorAll(".mp-btn-card-play").forEach((btn) => {
-    btn.onclick = (e) => {
-      e.stopPropagation();
-      const slug = btn.dataset.slug;
-      api.openGameDetail?.(slug, "multiplayer");
-    };
-  });
-
-  container.querySelectorAll(".mp-game-card").forEach((card) => {
-    card.onclick = () => {
-      const slug = card.dataset.slug;
-      api.openGameDetail?.(slug, "multiplayer");
-    };
+  document.querySelectorAll(".mp-btn-view-ev").forEach((btn) => {
+    btn.onclick = () => api.navigateTo?.("eventDetail", { eventId: btn.dataset.id });
   });
 }
 
@@ -918,9 +669,12 @@ function bindPartyCardActions(container) {
 }
 
 function renderEventCard(ev) {
-  const isLive = ev.status === "live";
+  const startsMs = new Date(ev.startsAt).getTime();
+  const isLive = ev.status === "live" || startsMs <= Date.now();
   const going = ev.counts?.going ?? 0;
-  const whenStr = formatEventDate(ev.startsAt);
+  const whenStr = isLive
+    ? formatEventDate(ev.startsAt)
+    : `Starts in ${Math.max(1, Math.ceil((startsMs - Date.now()) / 60_000))} min`;
 
   return `
     <div class="mp-event-card">

@@ -11,8 +11,16 @@
  *   jump, special, start, screenshot
  *
  * Codes ≥ 600 are joystick slots (JOY_LIST_FIRST); below that are keyboard.
- * OpenBOR uses JOY_MAX_INPUTS = 64 per port, so port N button B is
- *   JOY_LIST_FIRST + N * 64 + B
+ * OpenBOR uses JOY_MAX_INPUTS = 64 per port, so port N input I is
+ *   JOY_LIST_FIRST + N * 64 + I
+ *
+ * Within a port the inputs are buttons, then two per axis (- then +), then
+ * four per hat (up, right, down, left), counted from 1 after the buttons:
+ *   hat up = buttons + 2 * axes + 1
+ * so the d-pad index depends on the pad. Logs/OpenBorLog.txt prints each
+ * pad's counts ("5 axes, 10 buttons, 1 hat(s)"). A DualSense reports 15
+ * buttons and 6 axes, putting the hat at 28 — which is exactly what the
+ * capture below recorded.
  */
 
 const OPENBOR_CFG_VERSION = 0x00033747;
@@ -35,10 +43,14 @@ const DUALSENSE_P1_KEYS = [
 ];
 
 /**
- * Xbox pads on the same engine — button indices differ from DualSense.
+ * Xbox pads on the same engine, which sees them through DirectInput as
+ * 10 buttons, 5 axes and 1 hat (OpenBorLog.txt on a real session), so the
+ * hat starts at 10 + 2 * 5 + 1 = 21. This used to reuse the DualSense 628–631,
+ * inputs an Xbox pad does not have: every remote-play guest (a virtual
+ * Xbox 360 pad) got face buttons and no movement at all.
  */
 const XBOX_P1_KEYS = [
-  628, 630, 631, 629,
+  621, 623, 624, 622, // up down left right (hat)
   600, 601, // A, B
   602, 603, // X, Y
   604, 605, // LB, RB
@@ -93,6 +105,16 @@ function p1HasBrokenDualSenseSpecial(buf) {
   return dirsAreJoy && keys[8] === 603 && keys[9] === 102;
 }
 
+/**
+ * True when an Xbox pad was written with the DualSense hat indices, which is
+ * what every install got before XBOX_P1_KEYS was corrected.
+ */
+function p1HasDualSenseHatOnXbox(buf) {
+  if (!isOpenBorCfg(buf)) return false;
+  const dirs = readP1Keys(buf).slice(0, 4);
+  return dirs.every((k, i) => k === DUALSENSE_P1_KEYS[i]) && readP1Keys(buf)[4] === XBOX_P1_KEYS[4];
+}
+
 function joyPortOfKey(code) {
   const n = Number(code) | 0;
   if (n < JOY_LIST_FIRST) return -1;
@@ -129,7 +151,8 @@ function applyOpenBorP1Keys(buf, profile) {
   const shouldFix =
     p1StillKeyboard(buf) ||
     playersShareJoyPort(buf) ||
-    (family !== "xbox" && p1HasBrokenDualSenseSpecial(buf));
+    (family !== "xbox" && p1HasBrokenDualSenseSpecial(buf)) ||
+    (family === "xbox" && p1HasDualSenseHatOnXbox(buf));
   if (!shouldFix) return null;
   const p1Keys = keysForProfile(profile);
   const next = Buffer.from(buf);
@@ -158,6 +181,7 @@ module.exports = {
   joyPortOfKey,
   p1StillKeyboard,
   p1HasBrokenDualSenseSpecial,
+  p1HasDualSenseHatOnXbox,
   playersShareJoyPort,
   applyOpenBorP1Keys,
 };

@@ -83,7 +83,7 @@ async function runTests() {
   assert.deepStrictEqual(getPlayerNameLaunchArgs("openarena", "Jacky", ["+set", "name", "Other"]), []);
   assert.deepStrictEqual(getPlayerNameLaunchArgs("xonotic", "Jacky"), ["+name", "Jacky"]);
   assert.deepStrictEqual(getPlayerNameLaunchArgs("freeciv", "Jacky"), ["--name", "Jacky"]);
-  assert.deepStrictEqual(getPlayerNameLaunchArgs("hedgewars", "Jacky"), ["--nick", "Jacky"]);
+  assert.deepStrictEqual(getPlayerNameLaunchArgs("hedgewars", "Jacky"), []);
   assert.deepStrictEqual(getPlayerNameLaunchArgs("space-station-14", "Jacky"), ["--username", "Jacky"]);
   assert.deepStrictEqual(getPlayerNameLaunchArgs("opentyrian-2000", "Jacky"), ["--net-player-name=Jacky"]);
   assert.deepStrictEqual(getPlayerNameLaunchArgs("assaultcube", "Jacky"), ["-nJacky"]);

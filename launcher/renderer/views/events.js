@@ -103,7 +103,7 @@ function createEventCard(ev, gameCatalogMap = new Map()) {
   });
   card.querySelector(".btn-ev-discord")?.addEventListener("click", (e) => {
     e.stopPropagation();
-    if (ev.discordInviteUrl) window.playbound.openExternal(ev.discordInviteUrl);
+    if (ev.discordInviteUrl) window.playbound.openDiscordInvite(ev.discordInviteUrl);
   });
   card.addEventListener("pointerenter", () => prefetchEventDetail(ev.id), { once: true });
   card.addEventListener("click", () => api.openEventDetail(ev.id, "events"));
@@ -764,7 +764,7 @@ async function renderEventDetailView(eventId) {
   // Wire Discord button
   container.querySelector("#btn-event-detail-discord")?.addEventListener("click", () => {
     if (event.discordInviteUrl) {
-      window.playbound.openExternal(event.discordInviteUrl);
+      window.playbound.openDiscordInvite(event.discordInviteUrl);
     }
   });
 

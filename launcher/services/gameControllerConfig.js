@@ -34,6 +34,7 @@ const {
   isOpenBorCfg,
   p1StillKeyboard,
   p1HasBrokenDualSenseSpecial,
+  p1HasDualSenseHatOnXbox,
 } = require("./openborCfg");
 
 /**
@@ -474,7 +475,8 @@ const GAMES = {
         isOpenBorCfg(buf) &&
         (p1StillKeyboard(buf) ||
           playersShareJoyPort(buf) ||
-          p1HasBrokenDualSenseSpecial(buf))
+          p1HasBrokenDualSenseSpecial(buf) ||
+          p1HasDualSenseHatOnXbox(buf))
       );
     },
     apply(buf, profile) {

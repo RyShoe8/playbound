@@ -2,32 +2,24 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
   Swords,
   Users,
   Server,
   Radio,
   Plus,
-  Search,
-  Sparkles,
-  CalendarDays,
   X,
-  Check,
-  Filter,
   ArrowRight,
-  ShieldAlert,
 } from "lucide-react";
 import { usePartyStore } from "@/stores/partyStore";
 import { CreatePartyPanel } from "@/components/friends/CreatePartyPanel";
-import { MultiplayerGameCard } from "@/components/MultiplayerGameCard";
 import { MultiplayerFriendsSection } from "@/components/MultiplayerFriendsSection";
 import { MultiplayerOpenParties } from "@/components/MultiplayerOpenParties";
 import { MultiplayerEvents, type PlatformEvent } from "@/components/MultiplayerEvents";
 import { GlobalServerBrowser } from "@/components/GlobalServerBrowser";
 import type { PublicPartyPayload } from "@/lib/playTogether/party";
 import type {
-  GameMultiplayerActivity,
   MultiplayerActivityResponse,
 } from "@/lib/multiplayer/activity";
 import { cn } from "@/lib/utils";
@@ -52,7 +44,6 @@ export function MultiplayerHome({
   initialEvents,
 }: Props) {
   const { activeParty } = usePartyStore();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const queryTab = searchParams.get("tab");
 
@@ -60,35 +51,13 @@ export function MultiplayerHome({
   const [activityData, setActivityData] = useState<MultiplayerActivityResponse | null>(
     initialActivity || null
   );
-  const [activityLoading, setActivityLoading] = useState(!initialActivity);
 
-  // Active section tab
-  const [activeTab, setActiveTab] = useState<"overview" | "games" | "parties" | "servers" | "events">(
-    queryTab === "games" || queryTab === "parties" || queryTab === "servers" || queryTab === "events"
-      ? queryTab
-      : searchParams.get("game")
-      ? "servers"
-      : "overview"
-  );
-
-  const [previousQueryTab, setPreviousQueryTab] = useState(queryTab);
-  if (queryTab !== previousQueryTab) {
-    setPreviousQueryTab(queryTab);
-    if (
-      queryTab &&
-      (queryTab === "overview" ||
-        queryTab === "games" ||
-        queryTab === "parties" ||
-        queryTab === "servers" ||
-        queryTab === "events")
-    ) {
-      setActiveTab(queryTab);
-    }
-  }
+  // Old ?tab=servers / ?game= links now just land on the server browser.
+  const wantsServers = queryTab === "servers" || Boolean(searchParams.get("game"));
 
   // Create party drawer
   const [createPartyOpen, setCreatePartyOpen] = useState(false);
-  const [selectedGameForParty, setSelectedGameForParty] = useState<string | undefined>(undefined);
+  const [selectedGameForParty] = useState<string | undefined>(undefined);
 
   // Looking to party state
   const [ltpDrawerOpen, setLtpDrawerOpen] = useState(false);
@@ -98,10 +67,6 @@ export function MultiplayerHome({
   const [ltpSearchQuery, setLtpSearchQuery] = useState("");
   const [installedOnly, setInstalledOnly] = useState(false);
   const installedSet = useMemo(() => new Set(installedGameSlugs || []), [installedGameSlugs]);
-
-  // Game filter state
-  const [gameSearch, setGameSearch] = useState("");
-  const [filterType, setFilterType] = useState<"all" | "parties" | "looking" | "servers">("all");
 
   const serverBrowserRef = useRef<HTMLDivElement>(null);
 
@@ -114,22 +79,21 @@ export function MultiplayerHome({
       setActivityData(data);
     } catch (err) {
       console.error("Failed to load multiplayer activity:", err);
-    } finally {
-      setActivityLoading(false);
     }
   }, []);
 
+  // The server-side snapshot is the page's data; no background polling.
   useEffect(() => {
-    let initialTimer: ReturnType<typeof setTimeout> | undefined;
-    if (!initialActivity) {
-      initialTimer = setTimeout(() => void loadActivity(), 0);
-    }
-    const interval = setInterval(loadActivity, 30_000);
-    return () => {
-      if (initialTimer) clearTimeout(initialTimer);
-      clearInterval(interval);
-    };
+    if (initialActivity) return;
+    const initialTimer = setTimeout(() => void loadActivity(), 0);
+    return () => clearTimeout(initialTimer);
   }, [loadActivity, initialActivity]);
+
+  useEffect(() => {
+    if (!wantsServers) return;
+    const timer = setTimeout(() => serverBrowserRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+    return () => clearTimeout(timer);
+  }, [wantsServers]);
 
   // Check viewer's own Looking to Party state
   useEffect(() => {
@@ -194,38 +158,7 @@ export function MultiplayerHome({
     }
   }
 
-  // Filtered games
-  const gamesList = activityData?.games || [];
-  const filteredGames = useMemo(() => {
-    return gamesList.filter((game) => {
-      // Access allowed slugs filter
-      if (allowedSlugs && allowedSlugs.length > 0 && !allowedSlugs.includes(game.gameSlug)) {
-        return false;
-      }
-
-      // Global installed filter
-      if (installedOnly && !installedSet.has(game.gameSlug)) {
-        return false;
-      }
-
-      // Search term
-      if (gameSearch.trim()) {
-        const q = gameSearch.toLowerCase();
-        const matchesTitle = game.gameTitle.toLowerCase().includes(q);
-        const matchesTags = game.tags?.some((t) => t.toLowerCase().includes(q));
-        const matchesGenre = game.genre?.toLowerCase().includes(q);
-        if (!matchesTitle && !matchesTags && !matchesGenre) return false;
-      }
-
-      // Filter tabs
-      if (filterType === "parties") return game.openPartyCount > 0;
-      if (filterType === "looking") return game.usersLookingCount > 0;
-      if (filterType === "servers") return game.serverPlayerCount > 0 || game.serversOnline > 0;
-
-      return true;
-    });
-  }, [gamesList, allowedSlugs, installedOnly, installedSet, gameSearch, filterType]);
-
+  const gamesList = useMemo(() => activityData?.games || [], [activityData]);
 
   // Available games for LTP picker, sorting installed games first
   const ltpAvailableGames = useMemo(() => {
@@ -248,47 +181,6 @@ export function MultiplayerHome({
       return a.gameTitle.localeCompare(b.gameTitle);
     });
   }, [gamesList, ltpSearchQuery, installedSet]);
-
-  // Handle tab switching with URL sync
-  function handleTabChange(tab: "overview" | "games" | "parties" | "servers" | "events") {
-    setActiveTab(tab);
-    const params = new URLSearchParams(window.location.search);
-    if (tab === "overview") {
-      params.delete("tab");
-    } else {
-      params.set("tab", tab);
-    }
-    const qs = params.toString();
-    const next = qs ? `/multiplayer?${qs}` : "/multiplayer";
-    const current = `${window.location.pathname}${window.location.search}`;
-    if (current !== next) {
-      router.replace(next, { scroll: false });
-    }
-  }
-
-  // Jump to server browser for a specific game
-  function handleBrowseServers(slug: string) {
-    handleTabChange("servers");
-    setTimeout(() => {
-      serverBrowserRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
-  }
-
-  // Start a party for a specific game
-  function handleStartPartyForGame(slug: string) {
-    setSelectedGameForParty(slug);
-    setCreatePartyOpen(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  // Select a game for Looking to Party
-  function handleSelectForLtp(slug: string) {
-    if (!ltpSelectedSlugs.includes(slug)) {
-      setLtpSelectedSlugs((prev) => [...prev, slug]);
-    }
-    setLtpDrawerOpen(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
 
   const summary = activityData?.summary || {
     totalServerPlayers: 0,
@@ -595,60 +487,11 @@ export function MultiplayerHome({
         </div>
       )}
 
-      {/* Main Navigation Tabs */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/60 pb-3">
-        <div className="flex items-center gap-1.5 overflow-x-auto">
-          <button
-            type="button"
-            onClick={() => handleTabChange("overview")}
-            className={cn(
-              "rounded-xl px-4 py-2 text-xs font-bold transition-all",
-              activeTab === "overview"
-                ? "bg-primary text-primary-foreground shadow"
-                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-            )}
-          >
-            All Activity
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTabChange("games")}
-            className={cn(
-              "rounded-xl px-4 py-2 text-xs font-bold transition-all",
-              activeTab === "games"
-                ? "bg-primary text-primary-foreground shadow"
-                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-            )}
-          >
-            Games ({filteredGames.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTabChange("servers")}
-            className={cn(
-              "rounded-xl px-4 py-2 text-xs font-bold transition-all",
-              activeTab === "servers"
-                ? "bg-primary text-primary-foreground shadow"
-                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-            )}
-          >
-            Live Server Browser
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTabChange("events")}
-            className={cn(
-              "rounded-xl px-4 py-2 text-xs font-bold transition-all",
-              activeTab === "events"
-                ? "bg-primary text-primary-foreground shadow"
-                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-            )}
-          >
-            Events
-          </button>
+      {/* Live & starting-soon events replace the old All Activity / Games / Server Browser / Events tabs. */}
+      <MultiplayerEvents initialEvents={initialEvents} />
 
-          {/* Global Filter: Installed Only (placed to the right of events) */}
-          <div className="h-5 w-px bg-border/60 mx-1.5" />
+      <div className="space-y-8">
+        <div className="flex justify-end">
           <label className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer select-none px-2 py-1 rounded-lg hover:bg-secondary/50 transition-colors">
             <input
               type="checkbox"
@@ -660,170 +503,26 @@ export function MultiplayerHome({
           </label>
         </div>
 
-        {/* Search for Games */}
-        {activeTab === "games" && (
-          <div className="relative min-w-[200px] flex-1 sm:max-w-xs">
-            <Search className="absolute left-3 top-2.5 size-3.5 text-muted-foreground" />
-            <input
-              type="search"
-              placeholder="Search games, tags…"
-              value={gameSearch}
-              onChange={(e) => setGameSearch(e.target.value)}
-              className="h-9 w-full rounded-xl border border-border bg-secondary/50 pl-8 pr-3 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-            />
-          </div>
-        )}
-      </div>
+        <MultiplayerFriendsSection
+          signedIn={signedIn}
+          onJoinLtpWithFriend={(friendSlugs) => {
+            setLtpSelectedSlugs(friendSlugs);
+            setLtpDrawerOpen(true);
+          }}
+        />
 
-      {/* View: Overview (All Activity Feed) */}
-      {activeTab === "overview" && (
-        <div className="space-y-8">
-          {/* Friends Active Section */}
-          <MultiplayerFriendsSection
-            signedIn={signedIn}
-            onJoinLtpWithFriend={(friendSlugs) => {
-              setLtpSelectedSlugs(friendSlugs);
-              setLtpDrawerOpen(true);
-            }}
-          />
+        <MultiplayerOpenParties
+          signedIn={signedIn}
+          initialParties={initialParties}
+          installedGameSlugs={installedGameSlugs}
+          installedOnly={installedOnly}
+          onStartParty={() => {
+            setCreatePartyOpen(true);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        />
 
-          {/* Open Parties Section */}
-          <MultiplayerOpenParties
-            signedIn={signedIn}
-            initialParties={initialParties}
-            installedGameSlugs={installedGameSlugs}
-            installedOnly={installedOnly}
-            onStartParty={() => {
-              setCreatePartyOpen(true);
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-          />
-
-
-          {/* Live Servers Ecosystem */}
-          <div ref={serverBrowserRef} className="space-y-4 pt-4 border-t border-border/50">
-            <div>
-              <div className="inline-flex items-center gap-1.5 rounded-md bg-cyan-500/20 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-cyan-300 border border-cyan-500/30">
-                <Server className="size-3" />
-                Live Server Ecosystem
-              </div>
-              <h2 className="text-lg font-extrabold tracking-tight mt-1 text-foreground">
-                Live Community & Dedicated Servers
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                Real-time query data from official master lists and community game servers.
-              </p>
-            </div>
-
-            <GlobalServerBrowser
-              installedGameSlugs={installedGameSlugs}
-              installedModSlugs={installedModSlugs}
-              signedIn={signedIn}
-              allowedSlugs={allowedSlugs}
-              hideInstalledToggle={true}
-              installedOnly={installedOnly}
-            />
-          </div>
-
-          {/* Events */}
-          <div className="pt-4 border-t border-border/50">
-            <MultiplayerEvents initialEvents={initialEvents} />
-          </div>
-        </div>
-      )}
-
-      {/* View: Games Directory */}
-      {activeTab === "games" && (
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-base font-extrabold tracking-tight flex items-center gap-2">
-                <Swords className="size-4 text-primary" />
-                Multiplayer Games Directory ({filteredGames.length})
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                Explore all multiplayer-supported titles, community servers, and matchmaking.
-              </p>
-            </div>
-
-            {/* Sub-filters */}
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setFilterType("all")}
-                className={cn(
-                  "rounded-lg px-2.5 py-1 text-xs font-semibold",
-                  filterType === "all" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                All
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilterType("parties")}
-                className={cn(
-                  "rounded-lg px-2.5 py-1 text-xs font-semibold",
-                  filterType === "parties" ? "bg-secondary text-primary font-bold" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                With Parties
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilterType("looking")}
-                className={cn(
-                  "rounded-lg px-2.5 py-1 text-xs font-semibold",
-                  filterType === "looking" ? "bg-secondary text-amber-400 font-bold" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                Looking for Players
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilterType("servers")}
-                className={cn(
-                  "rounded-lg px-2.5 py-1 text-xs font-semibold",
-                  filterType === "servers" ? "bg-secondary text-cyan-400 font-bold" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                Live Servers
-              </button>
-            </div>
-          </div>
-
-          {activityLoading ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="h-44 rounded-2xl border border-border/50 bg-secondary/20 animate-pulse" />
-              ))}
-            </div>
-          ) : filteredGames.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border/70 bg-secondary/10 p-8 text-center">
-              <p className="text-sm font-semibold text-muted-foreground">
-                {installedOnly
-                  ? "No installed multiplayer games match your current filter. Try turning off 'Installed only'."
-                  : "No multiplayer games match your current filter."}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredGames.map((game) => (
-                <MultiplayerGameCard
-                  key={game.gameSlug}
-                  activity={game}
-                  onSelectGameForLtp={handleSelectForLtp}
-                  onBrowseServers={handleBrowseServers}
-                  onStartParty={handleStartPartyForGame}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* View: Live Servers Browser */}
-      {activeTab === "servers" && (
-        <div ref={serverBrowserRef} className="space-y-4">
+        <div ref={serverBrowserRef} className="space-y-4 pt-4 border-t border-border/50">
           <div>
             <div className="inline-flex items-center gap-1.5 rounded-md bg-cyan-500/20 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-cyan-300 border border-cyan-500/30">
               <Server className="size-3" />
@@ -833,7 +532,7 @@ export function MultiplayerHome({
               Live Community & Dedicated Servers
             </h2>
             <p className="text-xs text-muted-foreground">
-              Real-time query data from official master lists and community game servers. Player counts represent total players on those servers, not concurrent PlayBound accounts.
+              Real-time query data from official master lists and community game servers.
             </p>
           </div>
 
@@ -846,14 +545,7 @@ export function MultiplayerHome({
             installedOnly={installedOnly}
           />
         </div>
-      )}
-
-      {/* View: Events */}
-      {activeTab === "events" && (
-        <div className="space-y-4">
-          <MultiplayerEvents initialEvents={initialEvents} />
-        </div>
-      )}
+      </div>
     </div>
   );
 }

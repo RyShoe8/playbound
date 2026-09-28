@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CalendarDays, Users, Trophy, Sparkles, ArrowRight } from "lucide-react";
+import { Radio, Users, Trophy, Sparkles, ArrowRight } from "lucide-react";
 
 export type PlatformEvent = {
   id: string;
@@ -10,6 +10,7 @@ export type PlatformEvent = {
   eventType: string;
   gameSlug?: string | null;
   gameTitle?: string | null;
+  status?: string | null;
   startsAt: string;
   endsAt?: string | null;
   rsvpCount?: number;
@@ -20,55 +21,58 @@ type Props = {
   initialEvents?: PlatformEvent[];
 };
 
+/** How far ahead an event counts as "starting soon". */
+export const EVENT_SOON_WINDOW_MS = 15 * 60_000;
+/** Events without an end time are treated as running this long. */
+const DEFAULT_EVENT_LENGTH_MS = 2 * 3600_000;
+
+/**
+ * Live now, or starting within EVENT_SOON_WINDOW_MS. Anything further out
+ * lives on /events — the multiplayer page is for what you can join right now.
+ */
+export function isLiveOrStartingSoon(event: PlatformEvent, now: number): boolean {
+  if (event.status === "cancelled" || event.status === "completed") return false;
+  const starts = new Date(event.startsAt).getTime();
+  if (!Number.isFinite(starts)) return false;
+  const ends = event.endsAt ? new Date(event.endsAt).getTime() : starts + DEFAULT_EVENT_LENGTH_MS;
+  if (event.status === "live") return now <= ends;
+  return starts - now <= EVENT_SOON_WINDOW_MS && now <= ends;
+}
+
 export function MultiplayerEvents({ initialEvents }: Props = {}) {
-  const [events, setEvents] = useState<PlatformEvent[]>(initialEvents ? initialEvents.slice(0, 4) : []);
-  const [loading, setLoading] = useState(!initialEvents);
+  const [events, setEvents] = useState<PlatformEvent[]>(initialEvents ?? []);
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     let mounted = true;
     async function loadEvents() {
       try {
-        const res = await fetch("/api/events?limit=6");
+        const res = await fetch("/api/events?limit=12");
         if (!res.ok) return;
         const data = await res.json();
-        if (mounted && Array.isArray(data.events)) {
-          setEvents(data.events.slice(0, 4));
-        }
+        if (mounted && Array.isArray(data.events)) setEvents(data.events);
       } catch (err) {
         console.error("Failed to load multiplayer events:", err);
-      } finally {
-        if (mounted) setLoading(false);
       }
     }
-
-    loadEvents();
+    if (!initialEvents) void loadEvents();
+    // Re-check the clock so an event appears 15 minutes out and drops off when it ends.
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
     return () => {
       mounted = false;
+      window.clearInterval(timer);
     };
-  }, []);
+  }, [initialEvents]);
 
-  if (loading) {
-    return (
-      <div className="animate-pulse space-y-3 rounded-2xl border border-border/50 bg-secondary/10 p-5">
-        <div className="h-4 w-32 rounded bg-secondary/60" />
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="h-28 rounded-xl bg-secondary/40" />
-          <div className="h-28 rounded-xl bg-secondary/40" />
-        </div>
-      </div>
-    );
-  }
-
-  if (events.length === 0) {
-    return null; // Omit cleanly when there are no scheduled events
-  }
+  const visible = events.filter((event) => isLiveOrStartingSoon(event, now));
+  if (visible.length === 0) return null;
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="text-base font-extrabold tracking-tight flex items-center gap-2">
-          <CalendarDays className="size-4 text-primary" />
-          Upcoming Multiplayer Events & Game Nights
+          <Radio className="size-4 text-primary" />
+          Live &amp; Starting Soon
         </h2>
         <Link
           href="/events"
@@ -80,12 +84,11 @@ export function MultiplayerEvents({ initialEvents }: Props = {}) {
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {events.map((event) => {
+        {visible.map((event) => {
           const starts = new Date(event.startsAt);
-          const isToday = new Date().toDateString() === starts.toDateString();
-          const timeStr = isToday
-            ? `Today at ${starts.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
-            : starts.toLocaleDateString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+          const live = event.status === "live" || starts.getTime() <= now;
+          const minutes = Math.max(1, Math.ceil((starts.getTime() - now) / 60_000));
+          const timeStr = live ? "Live now" : `Starts in ${minutes} min`;
 
           return (
             <Link

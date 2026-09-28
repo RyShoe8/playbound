@@ -1,6 +1,6 @@
 "use client";
 
-import { firePlayboundDeepLink, parseDiscordInviteCode } from "@/lib/openPlayboundDeepLink";
+import { openDiscordInvite } from "@/lib/openPlayboundDeepLink";
 
 export function DiscordLinkPrompt({
   open,
@@ -37,9 +37,9 @@ export function DiscordLinkPrompt({
               href={inviteUrl}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => {
-                const code = parseDiscordInviteCode(inviteUrl);
-                if (code) firePlayboundDeepLink(`discord://-/invite/${code}`);
+              onClick={(e) => {
+                e.preventDefault();
+                openDiscordInvite(inviteUrl);
               }}
               className="inline-flex rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold hover:bg-secondary/80"
             >

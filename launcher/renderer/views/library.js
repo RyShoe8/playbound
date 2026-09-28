@@ -1728,7 +1728,7 @@ function buildStartPartyButton(game, opts = {}, edition = null) {
       } else if (res.inPartyVoice || res.moved) {
         // Already placed in voice channel
       } else if (res.inviteUrl || res.party?.discord?.inviteUrl) {
-        window.playbound.openExternal(res.inviteUrl || res.party.discord.inviteUrl);
+        window.playbound.openDiscordInvite(res.inviteUrl || res.party.discord.inviteUrl);
       }
       api.navigateTo("friends");
     } catch (err) {

@@ -28,13 +28,11 @@ import { isGameCompatible } from "@/lib/compatibility/compatibility";
 import { launcherDownloadUrlForOs } from "@/lib/launcherDownload";
 import {
   detectLauncherOs,
-  DISCORD_HANDOFF_MS,
-  firePlayboundDeepLink,
-  parseDiscordInviteCode,
+  openDiscordInvite,
   openPlayboundDeepLink,
 } from "@/lib/openPlayboundDeepLink";
 import { withOutboundUtm } from "@/lib/utm";
-import { SITE_DISCORD_INVITE } from "@/lib/site";
+
 import { DiscordLinkPrompt } from "@/components/friends/DiscordLinkPrompt";
 import { PartyHostInstallPicker } from "@/components/friends/PartyHostInstallPicker";
 import { PartyChat } from "@/components/friends/PartyChat";
@@ -415,21 +413,7 @@ export function PartyView({
         void provisionDiscord(party.id);
       }
 
-      const code = parseDiscordInviteCode(inviteUrl);
-      if (!code) {
-        window.open(inviteUrl, "_blank", "noopener,noreferrer");
-        return;
-      }
-
-      // Fire desktop app deep link first without creating a blank tab
-      firePlayboundDeepLink(`discord://-/invite/${code}`);
-
-      // Fall back to opening browser tab if app did not take focus
-      window.setTimeout(() => {
-        if (document.visibilityState === "visible") {
-          window.open(inviteUrl, "_blank", "noopener,noreferrer");
-        }
-      }, DISCORD_HANDOFF_MS);
+      openDiscordInvite(inviteUrl);
     } catch {
       setVoiceError("Could not launch Discord voice.");
     } finally {

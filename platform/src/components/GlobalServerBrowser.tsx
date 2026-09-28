@@ -499,26 +499,32 @@ export function GlobalServerBrowser({
     []
   );
 
+  /*
+   * Mods and edition names arrive asynchronously after the first load. Read
+   * them through refs so their arrival does not refetch the list — the browser
+   * loads once per selection and otherwise only on Refresh.
+   */
+  const modsRef = useRef(mods);
+  const editionNamesRef = useRef(editionNameBySlug);
+  // Declared before the load effect so it runs first in the same commit.
+  useEffect(() => {
+    modsRef.current = mods;
+    editionNamesRef.current = editionNameBySlug;
+  }, [mods, editionNameBySlug]);
+
   useEffect(() => {
     const mod = effectiveModSlug
-      ? mods.find((m) => m.slug === effectiveModSlug) || null
+      ? modsRef.current.find((m) => m.slug === effectiveModSlug) || null
       : null;
     const editionLabel = effectiveEditionSlug
-      ? editionNameBySlug.get(effectiveEditionSlug) || effectiveEditionSlug
+      ? editionNamesRef.current.get(effectiveEditionSlug) || effectiveEditionSlug
       : "";
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadServers(effectiveGameSlug, mod, effectiveEditionSlug, editionLabel);
     return () => {
       abortRef.current?.abort();
     };
-  }, [
-    effectiveGameSlug,
-    effectiveModSlug,
-    effectiveEditionSlug,
-    editionNameBySlug,
-    mods,
-    loadServers,
-  ]);
+  }, [effectiveGameSlug, effectiveModSlug, effectiveEditionSlug, loadServers]);
 
   const estFor = useCallback(
     (s: GameServer) => {
