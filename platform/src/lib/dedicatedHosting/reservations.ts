@@ -23,8 +23,8 @@ export async function reconcileDedicatedCapacityReservations(now = new Date()): 
   const activeIds = new Set(activeRooms.map((s) => String(s.dedicatedSubscriptionId)));
   let changed = 0;
   for (const sub of subs) {
-    const runnable = ["active", "past_due", "suspended"].includes(sub.status);
-    const state = runnable ? "active" : activeIds.has(String(sub._id)) ? "releasing" : "released";
+    const owed = ["active", "past_due"].includes(sub.status);
+    const state = owed ? "active" : activeIds.has(String(sub._id)) ? "releasing" : "released";
     const envelope = unitEnvelope(tier, sub.slotCapacity);
     const prior = bySubId.get(String(sub._id));
     if (prior && String(prior.userId) === String(sub.userId) && prior.tier === sub.tier && prior.regionKey === sub.regionKey &&

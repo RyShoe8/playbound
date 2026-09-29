@@ -35,8 +35,10 @@ const DedicatedSubscriptionSchema = new Schema(
     graceUntil: { type: Date, default: null },
     retainDataUntil: { type: Date, default: null },
     stripeCustomerId: { type: String, default: null },
-    stripeSubscriptionId: { type: String, default: null, index: true },
+    stripeSubscriptionId: { type: String, default: null },
     stripePriceId: { type: String, default: null },
+    billingLastCheckedAt: { type: Date, default: null },
+    billingLastError: { type: String, default: null },
     billingSnapshot: {
       slots: { type: Number, default: null },
       monthlyPriceCents: { type: Number, default: null },
@@ -47,5 +49,6 @@ const DedicatedSubscriptionSchema = new Schema(
 );
 
 DedicatedSubscriptionSchema.index({ status: 1, regionKey: 1 });
+DedicatedSubscriptionSchema.index({ stripeSubscriptionId: 1 }, { unique: true, partialFilterExpression: { stripeSubscriptionId: { $type: "string" } } });
 
 export default models.DedicatedSubscription || model("DedicatedSubscription", DedicatedSubscriptionSchema);

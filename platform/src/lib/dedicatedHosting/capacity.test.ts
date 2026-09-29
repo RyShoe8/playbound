@@ -98,6 +98,21 @@ describe("Dedicated Basic capacity holds", () => {
     expect((await regionalInventory("us-central")).availableSlots).toBe(24);
   });
 
+  it("releases a suspended subscription only after its runtime has stopped", async () => {
+    const sub = await DedicatedSubscription.create({ userId, tier: "basic", regionKey: "us-central", slotCapacity: 16, status: "suspended" });
+    expect((await regionalInventory("us-central")).availableSlots).toBe(24);
+    const room = await CommunityServer.create({
+      slug: "capacity-suspended-room", name: "Stopping room", gameSlug: "xonotic", regionKey: "us-central", profileKey: "xonotic:base",
+      ownerType: "user", ownerId: userId, dedicatedSubscriptionId: sub._id, allocatedSlots: 8, maxPlayerCount: 8, slotsHeld: true,
+      desiredState: "stopped", runtimeState: "running",
+    });
+    expect((await regionalInventory("us-central")).availableSlots).toBe(16);
+    expect(await paidReservedEnvelope("us-central")).toEqual({ cpuCores: 2, ramBytes: 4 * gib });
+    await CommunityServer.updateOne({ _id: room._id }, { $set: { runtimeState: "stopped", slotsHeld: false } });
+    expect((await regionalInventory("us-central")).availableSlots).toBe(24);
+    expect(await paidReservedEnvelope("us-central")).toEqual({ cpuCores: 0, ramBytes: 0 });
+  });
+
   it("fails closed on stale metrics and an unhealthy node", async () => {
     metrics = { ...metrics, collectedAt: new Date(Date.now() - 10 * 60_000).toISOString() };
     await expect(createCapacityHold({ userId, regionKey: "us-central", slots: 4, checkoutKey: "checkout-five" })).rejects.toThrow("STALE_OR_MISSING_METRICS");

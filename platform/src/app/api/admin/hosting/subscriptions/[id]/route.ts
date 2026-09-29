@@ -36,6 +36,9 @@ export async function PATCH(req: Request, ctx: Ctx) {
     return await withRegionCapacityLease(initial.regionKey, async () => {
       const current = await DedicatedSubscription.findById(id).lean();
       if (!current) return NextResponse.json({ error: "Not found" }, { status: 404 });
+      if (current.source === "stripe" && (parsed.data.status !== undefined || parsed.data.slotCapacity !== undefined)) {
+        return NextResponse.json({ error: "Paid subscription status and size must be changed through the billing workflow" }, { status: 409 });
+      }
       const nextSlots = parsed.data.slotCapacity ?? current.slotCapacity;
       const nextStatus = parsed.data.status ?? current.status;
       if (parsed.data.slotCapacity !== undefined) {
@@ -47,7 +50,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
           return NextResponse.json({ error: "More slots are in use than that. Stop servers first." }, { status: 409 });
         }
       }
-      const reserves = (status: string) => ["active", "past_due", "suspended"].includes(status);
+      const reserves = (status: string) => ["active", "past_due"].includes(status);
       const added = (reserves(nextStatus) ? nextSlots : 0) - (reserves(current.status) ? current.slotCapacity : 0);
       if (added > 0) {
         const inventory = await regionalInventory(current.regionKey);

@@ -91,4 +91,18 @@ describe("manual subscriptions share commercial capacity inventory", () => {
     expect(reservation?.releasedAt).toBeInstanceOf(Date);
     expect(await DedicatedCapacityReservation.countDocuments({ subscriptionId: sub!._id })).toBe(1);
   });
+  it("cannot mutate a Stripe subscription outside the billing workflow", async () => {
+    const buyer = await user("PaidBuyer");
+    const sub = await DedicatedSubscription.create({ userId: buyer._id, tier: "basic", regionKey: "us-central",
+      slotCapacity: 8, status: "active", source: "stripe", stripeSubscriptionId: "sub_test_admin_guard" });
+    for (const body of [{ slotCapacity: 16 }, { status: "canceled" }]) {
+      const response = await PATCH(new Request("http://localhost/api/admin/hosting/subscriptions", {
+        method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
+      }), { params: Promise.resolve({ id: String(sub._id) }) });
+      expect(response.status).toBe(409);
+    }
+    const unchanged = await DedicatedSubscription.findById(sub._id);
+    expect(unchanged?.slotCapacity).toBe(8);
+    expect(unchanged?.status).toBe("active");
+  });
 });

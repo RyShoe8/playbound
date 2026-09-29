@@ -157,12 +157,19 @@ export async function reconcileDedicatedServers(now = new Date()) {
 export async function paidReservedEnvelope(regionKey: string): Promise<{ cpuCores: number; ramBytes: number }> {
   await dbConnect();
   const [subs, holds] = await Promise.all([DedicatedSubscription.find({ regionKey, status: { $in: ["active", "past_due", "suspended"] } })
-    .select({ slotCapacity: 1, tier: 1 })
+    .select({ _id: 1, slotCapacity: 1, tier: 1, status: 1 })
     .lean(), DedicatedCapacityHold.find({ regionKey, state: "held", expiresAt: { $gt: new Date() } }).select({ slots: 1 }).lean()]);
   if (!subs.length && !holds.length) return { cpuCores: 0, ramBytes: 0 };
+  const suspendedIds = subs.filter((s) => s.status === "suspended").map((s) => s._id);
+  const activeSuspendedRooms = suspendedIds.length ? await CommunityServer.find({
+    regionKey, ownerType: "user", dedicatedSubscriptionId: { $in: suspendedIds },
+    $or: [{ slotsHeld: true }, { runtimeState: { $in: ["pending", "running"] } }],
+  }).select({ dedicatedSubscriptionId: 1 }).lean() : [];
+  const activeSuspendedIds = new Set(activeSuspendedRooms.map((s) => String(s.dedicatedSubscriptionId)));
+  const owedSubs = subs.filter((s) => s.status !== "suspended" || activeSuspendedIds.has(String(s._id)));
   const tier = await getTier();
   const rc = tier.resourceClass;
-  const units = subs.reduce((sum, s) => sum + Math.ceil(Number(s.slotCapacity) / Math.max(1, rc.slotsPerUnit)), 0) +
+  const units = owedSubs.reduce((sum, s) => sum + Math.ceil(Number(s.slotCapacity) / Math.max(1, rc.slotsPerUnit)), 0) +
     holds.reduce((sum, h) => sum + Math.ceil(Number(h.slots) / Math.max(1, rc.slotsPerUnit)), 0);
   return { cpuCores: units * rc.cpuPerUnit, ramBytes: units * rc.memoryMbPerUnit * 1024 * 1024 };
 }

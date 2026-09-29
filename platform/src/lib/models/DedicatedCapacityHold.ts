@@ -19,6 +19,7 @@ const DedicatedCapacityHoldSchema = new Schema({
   expiresAt: { type: Date, required: true },
   convertedAt: { type: Date, default: null },
   releasedAt: { type: Date, default: null },
+  billingLastCheckedAt: { type: Date, default: null },
 }, { timestamps: true });
 
 DedicatedCapacityHoldSchema.index({ regionKey: 1, state: 1, expiresAt: 1 });
