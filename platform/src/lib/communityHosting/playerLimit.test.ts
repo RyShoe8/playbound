@@ -24,6 +24,18 @@ describe("community hosting bot fill", () => {
     expect(config.botFillPercent).toBe(50);
     expect(hostingSettingsSchema.parse(config).botFillPercent).toBe(50);
   });
+
+  it("reports an OpenMOHAA room that did not apply or activate its requested bots", async () => {
+    const { botFillIssue } = await import("./reconcile");
+    const now = new Date("2026-09-29T12:00:00Z");
+    const startedAt = now.getTime() - 10 * 60_000;
+    expect(botFillIssue(8, {}, 0, startedAt, now)).toBe("BOT_FILL_NOT_APPLIED");
+    expect(botFillIssue(8, { botFill: 8 }, 0, startedAt, now)).toBe("BOT_FILL_INACTIVE");
+    expect(botFillIssue(8, { botFill: 8 }, 0, now.getTime() - 60_000, now)).toBeNull();
+    expect(botFillIssue(8, { botFill: 8 }, 8, startedAt, now)).toBeNull();
+    expect(botFillIssue(0, {}, 0, startedAt, now)).toBeNull();
+    expect(botFillIssue(8, {}, null, startedAt, now)).toBeNull();
+  });
 });
 
 describe("community hosting settings drift", () => {

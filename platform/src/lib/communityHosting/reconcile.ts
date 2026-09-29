@@ -87,6 +87,23 @@ export function hasSettingsDrift(
   return maxPlayersDrift || botFillDrift;
 }
 
+/** Distinguish a missing agent setting from a server that accepted it but spawned no bots. */
+export function botFillIssue(
+  desiredFill: number | undefined,
+  roomSettings: Record<string, unknown> | undefined,
+  actualBots: number | null,
+  roomStartedAt: number | undefined,
+  now: Date
+): "BOT_FILL_NOT_APPLIED" | "BOT_FILL_INACTIVE" | null {
+  if (!desiredFill || actualBots === null) return null;
+  if (typeof roomSettings?.botFill !== "number") return "BOT_FILL_NOT_APPLIED";
+  if (roomSettings.botFill !== desiredFill || actualBots > 0) return null;
+  // OpenMOHAA may spend time building navigation data after its port opens.
+  // Wait for a settled room before reporting a broken fill as unhealthy.
+  if (!roomStartedAt || now.getTime() - roomStartedAt < 5 * 60_000) return null;
+  return "BOT_FILL_INACTIVE";
+}
+
 /**
  * The size a server is charged against the automatic-hosting budget.
  *
@@ -331,6 +348,10 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
       if (!server.onlineSince) server.onlineSince = now;
       const recipeSlug = profile?.recipeSlug || server.gameSlug;
       const desiredSettings = managedRoomSettings(recipeSlug, config);
+      const botIssue = recipeSlug === "medal-of-honor-allied-assault"
+        ? botFillIssue(desiredSettings?.botFill, room.settings, bots, room.processStartedAt ?? room.createdAt, now)
+        : null;
+      if (botIssue) server.health = "unhealthy";
       if (desiredSettings) {
         if (!server.settings) server.settings = {};
         const sSettings = server.settings as Record<string, unknown>;
@@ -343,7 +364,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
       }
 
       server.lastReconciledAt = now;
-      server.decisionReason = players === null ? "PLAYER_QUERY_UNKNOWN" : "RUNNING";
+      server.decisionReason = botIssue || (players === null ? "PLAYER_QUERY_UNKNOWN" : "RUNNING");
       server.recoveryAttempts = 0;
       server.nextRecoveryAt = null;
       await server.save();
