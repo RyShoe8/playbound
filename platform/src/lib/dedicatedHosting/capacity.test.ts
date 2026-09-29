@@ -16,7 +16,7 @@ import CommunityServer from "@/lib/models/CommunityServer";
 import DedicatedCapacityHold from "@/lib/models/DedicatedCapacityHold";
 import DedicatedCapacityLease from "@/lib/models/DedicatedCapacityLease";
 import DedicatedSubscription from "@/lib/models/DedicatedSubscription";
-import { attachCheckoutSessionToHold, createCapacityHold, decideInventory, regionalInventory, releaseCapacityHold } from "./capacity";
+import { attachCheckoutSessionToHold, createCapacityHold, decideInventory, markCheckoutAttempt, regionalInventory, releaseCapacityHold } from "./capacity";
 import { getTier } from "./tier";
 import { paidReservedEnvelope } from "./reconcile";
 
@@ -56,6 +56,16 @@ describe("Dedicated Basic capacity holds", () => {
     expect(attached.expiresAt.getTime()).toBe(sessionExpiresAt.getTime() + 5 * 60_000);
     expect(await releaseCapacityHold(String(hold._id))).toBe(true);
     expect((await regionalInventory("us-central")).availableSlots).toBe(24);
+  });
+
+  it("keeps one stable requested Stripe expiry across retries", async () => {
+    const hold = await createCapacityHold({ userId, regionKey: "us-central", slots: 8, checkoutKey: "checkout-retry", stripePriceId: "price_8", monthlyPriceCents: 1299, currency: "usd" });
+    const first = await markCheckoutAttempt(String(hold._id));
+    const second = await markCheckoutAttempt(String(hold._id), new Date(Date.now() + 60_000));
+    expect(second.requestedSessionExpiresAt.getTime()).toBe(first.requestedSessionExpiresAt.getTime());
+    expect(second.expiresAt.getTime()).toBe(first.requestedSessionExpiresAt.getTime() + 5 * 60_000);
+    expect((await regionalInventory("us-central")).availableSlots).toBe(16);
+    await expect(createCapacityHold({ userId, regionKey: "us-central", slots: 8, checkoutKey: "checkout-retry", stripePriceId: "price_changed", monthlyPriceCents: 1299, currency: "usd" })).rejects.toThrow("another request");
   });
 
   it("serializes racing buyers of the last 16 slots", async () => {

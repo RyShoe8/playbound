@@ -162,7 +162,7 @@ export async function regionalInventory(regionKey: string, now = new Date()): Pr
   });
 }
 
-export async function createCapacityHold(input: { userId: string; regionKey: string; slots: number; checkoutKey: string }, now = new Date()) {
+export async function createCapacityHold(input: { userId: string; regionKey: string; slots: number; checkoutKey: string; stripePriceId?: string; monthlyPriceCents?: number; currency?: string }, now = new Date()) {
   if (!Types.ObjectId.isValid(input.userId) || !/^[a-z0-9-]{2,40}$/.test(input.regionKey) ||
       !/^[a-zA-Z0-9_-]{8,100}$/.test(input.checkoutKey)) throw new Error("Invalid capacity request");
   await dbConnect();
@@ -171,7 +171,10 @@ export async function createCapacityHold(input: { userId: string; regionKey: str
     if (!tier.packages.some((p) => p.enabled && p.slots === input.slots)) throw new Error("Unavailable slot package");
     const existing = await DedicatedCapacityHold.findOne({ checkoutKey: input.checkoutKey });
     if (existing) {
-      if (String(existing.userId) !== input.userId || existing.regionKey !== input.regionKey || existing.slots !== input.slots) throw new Error("Checkout key already belongs to another request");
+      if (String(existing.userId) !== input.userId || existing.regionKey !== input.regionKey || existing.slots !== input.slots ||
+          (input.stripePriceId && (existing.stripePriceId !== input.stripePriceId || existing.monthlyPriceCents !== input.monthlyPriceCents || existing.currency !== input.currency))) {
+        throw new Error("Checkout key already belongs to another request");
+      }
       if (existing.state !== "held" || existing.expiresAt <= now) throw new Error("Capacity hold has expired");
       return existing;
     }
@@ -196,6 +199,26 @@ export async function attachCheckoutSessionToHold(holdId: string, sessionId: str
     if (hold.checkoutSessionId && hold.checkoutSessionId !== sessionId) throw new Error("Capacity hold already has a checkout session");
     hold.checkoutSessionId = sessionId;
     hold.expiresAt = new Date(sessionExpiresAt.getTime() + CHECKOUT_WEBHOOK_GRACE_MINUTES * 60_000);
+    await hold.save();
+    return hold;
+  });
+}
+
+/** Stripe may accept a create request even if our HTTP response is lost. Keep
+ * capacity through the full possible session life before contacting Stripe. */
+export async function markCheckoutAttempt(holdId: string, now = new Date()) {
+  if (!Types.ObjectId.isValid(holdId)) throw new Error("Invalid capacity hold");
+  await dbConnect();
+  const initial = await DedicatedCapacityHold.findById(holdId).select({ regionKey: 1 }).lean();
+  if (!initial) throw new Error("Capacity hold not found");
+  return withRegionCapacityLease(initial.regionKey, async () => {
+    const hold = await DedicatedCapacityHold.findById(holdId);
+    if (!hold || hold.state !== "held" || hold.expiresAt <= now) throw new Error("Capacity hold has expired");
+    // Our Checkout create requests use 35-minute expiry. Five minutes allows
+    // delayed webhook delivery even when the create response never reaches us.
+    if (!hold.requestedSessionExpiresAt) hold.requestedSessionExpiresAt = new Date((Math.floor(now.getTime() / 1000) + 35 * 60) * 1000);
+    const conservativeExpiry = new Date(hold.requestedSessionExpiresAt.getTime() + CHECKOUT_WEBHOOK_GRACE_MINUTES * 60_000);
+    if (hold.expiresAt < conservativeExpiry) hold.expiresAt = conservativeExpiry;
     await hold.save();
     return hold;
   });
