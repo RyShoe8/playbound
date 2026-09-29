@@ -248,6 +248,7 @@ function PlanTab({ tier, onSave, onSync }: { tier: Tier; onSave: (t: Tier) => vo
               <label className="flex items-center gap-1"><input type="checkbox" checked={r.salesEnabled} onChange={(e) => set("regions", t.regions.map((x, j) => (j === i ? { ...x, salesEnabled: e.target.checked } : x)))} /> sales</label>
             </div>
           ))}
+          {t.regions.map((r) => <CapacityStatus key={r.key} regionKey={r.key} />)}
         </section>
         <button type="button" className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" onClick={() => onSave({ ...t, packages: pkgs.map((p, i) => ({ ...p, order: i })) })}>
           Save plan
@@ -255,6 +256,20 @@ function PlanTab({ tier, onSave, onSync }: { tier: Tier; onSave: (t: Tier) => vo
       </div>
     </div>
   );
+}
+
+function CapacityStatus({ regionKey }: { regionKey: string }) {
+  const [capacity, setCapacity] = useState<{ availableSlots: number; reason: string | null } | null>(null);
+  const refresh = useCallback(() => {
+    void api(`/api/admin/hosting/capacity?region=${encodeURIComponent(regionKey)}`)
+      .then((data) => setCapacity(data))
+      .catch(() => setCapacity({ availableSlots: 0, reason: "CAPACITY_UNAVAILABLE" }));
+  }, [regionKey]);
+  useEffect(() => { const timer = setTimeout(refresh, 0); return () => clearTimeout(timer); }, [refresh]);
+  return <div className="flex items-center justify-between gap-2 rounded border border-border p-2 text-xs">
+    <span>{regionKey}: {capacity ? capacity.reason ? `Unavailable (${capacity.reason.replaceAll("_", " ").toLowerCase()})` : `${capacity.availableSlots} Basic slots available` : "Checking capacity…"}</span>
+    <button type="button" className="text-primary" onClick={refresh}>Refresh</button>
+  </div>;
 }
 
 const FIT_TONE = { safe: "text-emerald-500", warning: "text-amber-500", exceeds: "text-red-500", unknown: "text-muted-foreground" } as const;

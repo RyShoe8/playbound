@@ -15,6 +15,7 @@ vi.mock("@/lib/requireAdmin", () => ({ requireAdminSession: async () => ({ sessi
 import User from "@/lib/models/User";
 import DedicatedSubscription from "@/lib/models/DedicatedSubscription";
 import DedicatedCapacityLease from "@/lib/models/DedicatedCapacityLease";
+import DedicatedCapacityReservation from "@/lib/models/DedicatedCapacityReservation";
 import CommunityHostingConfig from "@/lib/models/CommunityHostingConfig";
 import { POST } from "@/app/api/admin/hosting/subscriptions/route";
 import { PATCH } from "@/app/api/admin/hosting/subscriptions/[id]/route";
@@ -27,7 +28,7 @@ beforeAll(async () => {
 }, 120_000);
 afterAll(async () => { await mongoose.disconnect(); await mongo?.stop(); });
 beforeEach(async () => {
-  await Promise.all([User.deleteMany({}), DedicatedSubscription.deleteMany({}), DedicatedCapacityLease.deleteMany({}), CommunityHostingConfig.deleteMany({})]);
+  await Promise.all([User.deleteMany({}), DedicatedSubscription.deleteMany({}), DedicatedCapacityLease.deleteMany({}), DedicatedCapacityReservation.deleteMany({}), CommunityHostingConfig.deleteMany({})]);
   await CommunityHostingConfig.create({ key: "global", node: { regionKey: "us-central", enabled: true, draining: false }, budget: { cpuCores: 4, ramBytes: 8 * 1024 ** 3 } });
   metrics = { ...metrics, collectedAt: new Date().toISOString() };
 });
@@ -44,6 +45,9 @@ describe("manual subscriptions share commercial capacity inventory", () => {
     await user("BuyerOne");
     await user("BuyerTwo");
     expect((await grant("BuyerOne", 16)).status).toBe(201);
+    const reservation = await DedicatedCapacityReservation.findOne({ state: "active" }).lean();
+    expect(reservation?.slots).toBe(16);
+    expect(reservation?.cpuCores).toBe(2);
     expect((await grant("BuyerTwo", 16)).status).toBe(409);
     expect(await DedicatedSubscription.countDocuments()).toBe(1);
   });
@@ -72,5 +76,19 @@ describe("manual subscriptions share commercial capacity inventory", () => {
     metrics = { ...metrics, collectedAt: new Date(Date.now() - 600_000).toISOString() };
     expect((await grant("BuyerSix", 4)).status).toBe(409);
     expect(await DedicatedSubscription.countDocuments()).toBe(0);
+  });
+
+  it("releases one durable reservation when a manual grant is canceled", async () => {
+    await user("BuyerSeven");
+    expect((await grant("BuyerSeven", 8)).status).toBe(201);
+    const sub = await DedicatedSubscription.findOne({ slotCapacity: 8 }).lean();
+    const response = await PATCH(new Request("http://localhost/api/admin/hosting/subscriptions", {
+      method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: "canceled" }),
+    }), { params: Promise.resolve({ id: String(sub!._id) }) });
+    expect(response.status).toBe(200);
+    const reservation = await DedicatedCapacityReservation.findOne({ subscriptionId: sub!._id }).lean();
+    expect(reservation?.state).toBe("released");
+    expect(reservation?.releasedAt).toBeInstanceOf(Date);
+    expect(await DedicatedCapacityReservation.countDocuments({ subscriptionId: sub!._id })).toBe(1);
   });
 });
