@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { HostingSupport } from "@/components/hosting/HostingSupport";
 
 type Server = {
   id: string;
@@ -32,6 +33,9 @@ type Me = {
     slotCapacity: number;
     allocatedSlots: number;
     status: string;
+    source: "manual" | "stripe";
+    cancelAtPeriodEnd?: boolean;
+    currentPeriodEnd?: string | null;
   };
   limits?: { maxSavedServers: number; startsDisabled: boolean };
   games?: Game[];
@@ -127,6 +131,7 @@ export function HostingDashboard() {
           See hosting plans
         </Link>
         {sharedSection ? <div className="pt-6 text-left">{sharedSection}</div> : null}
+        <div className="pt-6 text-left"><HostingSupport /></div>
       </div>
     );
   }
@@ -147,6 +152,11 @@ export function HostingDashboard() {
         <div className="h-2 w-full max-w-md overflow-hidden rounded bg-secondary" aria-hidden>
           <div className="h-full bg-primary" style={{ width: `${Math.min(100, (sub.allocatedSlots / sub.slotCapacity) * 100)}%` }} />
         </div>
+        {sub.cancelAtPeriodEnd ? <p className="text-sm text-amber-500">Your plan is set to end {sub.currentPeriodEnd ? new Date(sub.currentPeriodEnd).toLocaleDateString() : "after the paid period"}. Your servers stay available until then.</p> : null}
+        {sub.source === "stripe" && (sub.status === "active" || sub.status === "past_due") ? <button type="button" disabled={busy !== null} className="text-sm text-primary underline disabled:opacity-50" onClick={() => {
+          if (!sub.cancelAtPeriodEnd && !window.confirm("End your Dedicated Basic plan after the current paid period? Your servers will stay available until then.")) return;
+          void run("billing", () => api("/api/hosting/subscription", { method: "PATCH", body: JSON.stringify({ cancelAtPeriodEnd: !sub.cancelAtPeriodEnd }) }), sub.cancelAtPeriodEnd ? "Cancellation removed." : "Cancellation scheduled for the end of your paid period.");
+        }}>{sub.cancelAtPeriodEnd ? "Keep my plan" : "Cancel at period end"}</button> : null}
       </header>
 
       {me.limits?.startsDisabled ? (
@@ -194,6 +204,7 @@ export function HostingDashboard() {
           </p>
         ) : null}
       </section>
+      <HostingSupport servers={me.servers.map((server) => ({ id: server.id, name: server.name }))} />
     </div>
   );
 }

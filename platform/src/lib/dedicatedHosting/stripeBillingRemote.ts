@@ -29,3 +29,11 @@ export async function retrieveBillingSubscription(subscriptionId: string) {
   if (!key) throw new Error("Stripe secret key is not configured");
   return new Stripe(key).subscriptions.retrieve(subscriptionId);
 }
+
+/** Customer cancellation takes effect at the end of the paid period. Never
+ * cancel immediately from a local dashboard action. */
+export async function setStripeCancelAtPeriodEnd(subscriptionId: string, cancel: boolean) {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) throw new Error("Stripe secret key is not configured");
+  return new Stripe(key).subscriptions.update(subscriptionId, { cancel_at_period_end: cancel });
+}

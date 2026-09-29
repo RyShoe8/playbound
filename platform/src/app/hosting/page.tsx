@@ -29,6 +29,7 @@ const INCLUDED = [
   "PlayBound Server Control",
   "Maps & mods from the PlayBound catalog",
   "Automatic server-configuration backups",
+  "Hosting support from PlayBound",
   "Admin & moderation tools",
   "Listing in Multiplayer",
   "One-click join from the launcher",
@@ -113,7 +114,7 @@ export default async function HostingPage() {
             ))}
           </ul>
           <p className="text-xs text-muted-foreground">
-            Switch your slots between any of these at no charge. Your stopped servers keep their settings and worlds.
+            Switch your slots between any of these at no charge. Your stopped servers keep their PlayBound settings.
           </p>
         </div>
       </section>
