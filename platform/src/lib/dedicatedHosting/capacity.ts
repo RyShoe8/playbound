@@ -122,7 +122,7 @@ export async function regionalInventory(regionKey: string, now = new Date()): Pr
 
   const [subs, holds, freeServers, userServers, events] = await Promise.all([
     DedicatedSubscription.find({ regionKey, status: { $in: ["active", "past_due"] } }).select({ _id: 1, slotCapacity: 1 }).lean(),
-    DedicatedCapacityHold.find({ regionKey, state: "held", expiresAt: { $gt: now } }).select({ slots: 1 }).lean(),
+    DedicatedCapacityHold.find({ regionKey, state: "held", $or: [{ expiresAt: { $gt: now } }, { planChangeSubscriptionId: { $type: "objectId" } }] }).select({ slots: 1 }).lean(),
     CommunityServer.find({ regionKey, ownerType: { $ne: "user" }, desiredState: "running", runtimeState: { $in: ["pending", "running"] } })
       .select({ _id: 1, profileKey: 1 }).lean(),
     // A canceled subscription can still have a room until reconcile confirms

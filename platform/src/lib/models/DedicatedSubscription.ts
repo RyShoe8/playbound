@@ -44,6 +44,19 @@ const DedicatedSubscriptionSchema = new Schema(
       monthlyPriceCents: { type: Number, default: null },
       currency: { type: String, default: "usd" },
     },
+    scheduledChange: {
+      type: new Schema({
+        targetSlots: { type: Number, required: true, min: 1 },
+        stripePriceId: { type: String, required: true },
+        monthlyPriceCents: { type: Number, required: true, min: 0 },
+        currency: { type: String, required: true },
+        effectiveAt: { type: Date, required: true },
+        requestKey: { type: String, required: true },
+        scheduleId: { type: String, default: null },
+        state: { type: String, enum: ["preparing", "scheduled"], default: "preparing" },
+      }, { _id: false }),
+      default: null,
+    },
   },
   { timestamps: true }
 );

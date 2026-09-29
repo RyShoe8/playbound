@@ -36,8 +36,11 @@ type Me = {
     source: "manual" | "stripe";
     cancelAtPeriodEnd?: boolean;
     currentPeriodEnd?: string | null;
+    scheduledChange?: { targetSlots: number; effectiveAt: string; state: "preparing" | "scheduled" } | null;
   };
   limits?: { maxSavedServers: number; startsDisabled: boolean };
+  packages?: Array<{ slots: number; priceCents: number; currency: string }>;
+  pendingUpgradeSlots?: number | null;
   games?: Game[];
   servers: Server[];
   shared?: Array<Server & { role: string }>;
@@ -137,7 +140,7 @@ export function HostingDashboard() {
   }
 
   const sub = me.subscription;
-  const free = sub.slotCapacity - sub.allocatedSlots;
+  const free = Math.min(sub.slotCapacity, sub.scheduledChange?.targetSlots || sub.slotCapacity) - sub.allocatedSlots;
   const atLimit = me.limits ? me.servers.length >= me.limits.maxSavedServers : false;
 
   return (
@@ -153,10 +156,23 @@ export function HostingDashboard() {
           <div className="h-full bg-primary" style={{ width: `${Math.min(100, (sub.allocatedSlots / sub.slotCapacity) * 100)}%` }} />
         </div>
         {sub.cancelAtPeriodEnd ? <p className="text-sm text-amber-500">Your plan is set to end {sub.currentPeriodEnd ? new Date(sub.currentPeriodEnd).toLocaleDateString() : "after the paid period"}. Your servers stay available until then.</p> : null}
+        {sub.scheduledChange ? <p className="text-sm text-amber-500">{sub.scheduledChange.targetSlots} slots from {new Date(sub.scheduledChange.effectiveAt).toLocaleDateString()} · {sub.scheduledChange.state === "preparing" ? "billing schedule pending" : "scheduled"}. New server starts are limited to {sub.scheduledChange.targetSlots} slots now.</p> : null}
+        {me.pendingUpgradeSlots ? <p className="text-sm text-amber-500">Upgrade to {me.pendingUpgradeSlots} slots is being reconciled. Extra capacity is reserved; contact hosting support if this stays pending.</p> : null}
         {sub.source === "stripe" && (sub.status === "active" || sub.status === "past_due") ? <button type="button" disabled={busy !== null} className="text-sm text-primary underline disabled:opacity-50" onClick={() => {
           if (!sub.cancelAtPeriodEnd && !window.confirm("End your Dedicated Basic plan after the current paid period? Your servers will stay available until then.")) return;
           void run("billing", () => api("/api/hosting/subscription", { method: "PATCH", body: JSON.stringify({ cancelAtPeriodEnd: !sub.cancelAtPeriodEnd }) }), sub.cancelAtPeriodEnd ? "Cancellation removed." : "Cancellation scheduled for the end of your paid period.");
         }}>{sub.cancelAtPeriodEnd ? "Keep my plan" : "Cancel at period end"}</button> : null}
+        {sub.source === "stripe" && sub.status === "active" && !sub.cancelAtPeriodEnd && !sub.scheduledChange && !me.pendingUpgradeSlots ? <div className="flex flex-wrap items-center gap-2 pt-2 text-sm">
+          <span className="text-muted-foreground">Need more slots?</span>
+          {(me.packages || []).filter((p) => p.slots > sub.slotCapacity).map((p) => <button key={p.slots} type="button" disabled={busy !== null} className="rounded border border-border px-2 py-1 hover:bg-secondary disabled:opacity-50" onClick={() => {
+            if (!window.confirm(`Upgrade to ${p.slots} slots for $${(p.priceCents / 100).toFixed(2)}/${p.currency.toUpperCase()} per month? Stripe may charge a prorated amount now.`)) return;
+            void run("billing", () => api("/api/hosting/subscription", { method: "POST", body: JSON.stringify({ slots: p.slots }) }), "Plan upgraded.");
+          }}>{p.slots} slots · ${(p.priceCents / 100).toFixed(2)}/mo</button>)}
+          {(me.packages || []).filter((p) => p.slots < sub.slotCapacity).map((p) => <button key={p.slots} type="button" disabled={busy !== null || sub.allocatedSlots > p.slots} className="rounded border border-border px-2 py-1 hover:bg-secondary disabled:opacity-50" title={sub.allocatedSlots > p.slots ? "Stop enough servers first" : undefined} onClick={() => {
+            if (!window.confirm(`Schedule ${p.slots} slots for $${(p.priceCents / 100).toFixed(2)}/${p.currency.toUpperCase()} per month, starting next billing period? New server starts will be limited to ${p.slots} slots now.`)) return;
+            void run("billing", () => api("/api/hosting/subscription", { method: "PUT", body: JSON.stringify({ slots: p.slots }) }), "Downgrade scheduled for the next billing period.");
+          }}>{p.slots} slots next period · ${(p.priceCents / 100).toFixed(2)}/mo</button>)}
+        </div> : null}
       </header>
 
       {me.limits?.startsDisabled ? (

@@ -39,7 +39,7 @@ export async function allocateSlots(subscriptionId: string, serverId: string, sl
     {
       _id: subscriptionId,
       status: { $in: [...RUNNABLE_STATUSES] },
-      $expr: { $lte: [{ $add: ["$allocatedSlots", slots] }, "$slotCapacity"] },
+      $expr: { $lte: [{ $add: ["$allocatedSlots", slots] }, { $min: ["$slotCapacity", { $ifNull: ["$scheduledChange.targetSlots", "$slotCapacity"] }] }] },
     },
     { $inc: { allocatedSlots: slots } },
     { new: true }
@@ -52,7 +52,7 @@ export async function allocateSlots(subscriptionId: string, serverId: string, sl
   if (!(RUNNABLE_STATUSES as readonly string[]).includes(String(sub.status))) {
     return { ok: false, code: "NOT_RUNNABLE", error: "Your hosting subscription is not active" };
   }
-  const free = Math.max(0, Number(sub.slotCapacity) - Number(sub.allocatedSlots));
+  const free = Math.max(0, Math.min(Number(sub.slotCapacity), Number(sub.scheduledChange?.targetSlots) || Number(sub.slotCapacity)) - Number(sub.allocatedSlots));
   return {
     ok: false,
     code: "INSUFFICIENT_SLOTS",

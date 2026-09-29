@@ -4,6 +4,7 @@ import DedicatedSubscription from "@/lib/models/DedicatedSubscription";
 import { completeCheckoutSession, syncDedicatedStripeSubscription } from "./billingEvents";
 import { releaseCapacityHold } from "./capacity";
 import { retrieveCheckoutStatus } from "./stripeBillingRemote";
+import { reconcilePreparingDowngrade } from "./customerBilling";
 
 /** Oldest-first bounded scan. Every attempt advances the cursor, including a
  * failure, so one broken account cannot starve everyone behind it. */
@@ -22,6 +23,7 @@ export async function reconcileDedicatedBilling() {
     if (Date.now() - started > 45_000) break;
     try {
       await syncDedicatedStripeSubscription(sub.stripeSubscriptionId!);
+      await reconcilePreparingDowngrade(String(sub._id));
       checked++;
     } catch (error) {
       failed++;

@@ -9,12 +9,13 @@ export async function GET() {
   const { error } = await requireAdminSession();
   if (error) return error;
   await dbConnect();
-  const [subs, failed, lastReceipt, heldCount] = await Promise.all([
-    DedicatedSubscription.find({ source: "stripe" }).select({ status: 1, billingSnapshot: 1, cancelAtPeriodEnd: 1 }).lean(),
+  const [subs, failed, lastReceipt, heldCount, pendingUpgrades] = await Promise.all([
+    DedicatedSubscription.find({ source: "stripe" }).select({ status: 1, billingSnapshot: 1, cancelAtPeriodEnd: 1, scheduledChange: 1 }).lean(),
     DedicatedSubscription.find({ source: "stripe", billingLastError: { $type: "string", $ne: "" } })
       .sort({ billingLastCheckedAt: -1 }).limit(20).select({ _id: 1, stripeSubscriptionId: 1, billingLastError: 1, billingLastCheckedAt: 1 }).lean(),
     StripeWebhookReceipt.findOne({}).sort({ processedAt: -1 }).select({ eventType: 1, processedAt: 1 }).lean(),
     DedicatedCapacityHold.countDocuments({ state: "held", expiresAt: { $gt: new Date() } }),
+    DedicatedCapacityHold.find({ state: "held", planChangeSubscriptionId: { $type: "objectId" } }).select({ planChangeSubscriptionId: 1, toSlots: 1, createdAt: 1 }).lean(),
   ]);
   const counts = { active: 0, pastDue: 0, suspended: 0, canceled: 0, canceling: 0 };
   let monthlyRevenueCents = 0;
@@ -30,6 +31,8 @@ export async function GET() {
     stripeKeyConfigured: Boolean(process.env.STRIPE_SECRET_KEY),
     webhookSecretConfigured: Boolean(process.env.STRIPE_WEBHOOK_SECRET),
     counts, monthlyRevenueCents, heldCount,
+    scheduledDowngrades: subs.filter((sub) => Boolean(sub.scheduledChange)).length,
+    pendingUpgrades: pendingUpgrades.map((hold) => ({ subscriptionId: String(hold.planChangeSubscriptionId), toSlots: hold.toSlots, at: hold.createdAt })),
     lastWebhook: lastReceipt ? { type: lastReceipt.eventType, at: lastReceipt.processedAt } : null,
     failures: failed.map((sub) => ({ id: String(sub._id), stripeSubscriptionId: sub.stripeSubscriptionId,
       message: sub.billingLastError, checkedAt: sub.billingLastCheckedAt })),
