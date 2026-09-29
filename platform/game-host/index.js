@@ -1231,6 +1231,7 @@ function publicRoom(room) {
     host: room.host || PUBLIC_IP,
     port: room.port,
     createdAt: room.createdAt,
+    processStartedAt: room.processStartedAt,
     settings: room.settings || {},
     pid: room.pid || null,
     // Whether this room can take live commands — not the password that does it.

@@ -361,6 +361,13 @@ function reportSigningConfig(config, opts = {}) {
 function runPowerShellJson(script) {
   const prelude = "$ProgressPreference = 'SilentlyContinue'\n";
   const encoded = Buffer.from(prelude + script, "utf16le").toString("base64");
+  // Codex and other hosts may prepend a PowerShell 7 module directory to
+  // PSModulePath. Windows PowerShell 5 then finds that incompatible copy of
+  // Microsoft.PowerShell.Security first and cannot load Authenticode cmdlets.
+  // Put Windows PowerShell's own modules first for this Windows-only helper.
+  const windowsRoot = process.env.SystemRoot || "C:\\Windows";
+  const windowsModulePath = require("path").join(windowsRoot, "System32", "WindowsPowerShell", "v1.0", "Modules");
+  const modulePath = [windowsModulePath, process.env.PSModulePath || ""].filter(Boolean).join(";");
   const stdout = execFileSync(
     "powershell.exe",
     ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded],
@@ -368,6 +375,7 @@ function runPowerShellJson(script) {
       encoding: "utf8",
       maxBuffer: 32 * 1024 * 1024,
       stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env, PSModulePath: modulePath },
     }
   );
   const text = (stdout || "").trim();

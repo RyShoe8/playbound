@@ -21,6 +21,7 @@ export type GameHostRoom = {
   name?: string;
   roomCode?: string | null;
   createdAt?: number;
+  processStartedAt?: number;
   /**
    * What the agent actually started this room with — the recipe's defaults
    * plus whatever host-chosen settings it accepted. Read it rather than
