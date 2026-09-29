@@ -28,7 +28,7 @@ function combos(slots: number, min: number, step: number): string[] {
 const INCLUDED = [
   "PlayBound Server Control",
   "Maps & mods from the PlayBound catalog",
-  "Automatic backups",
+  "Automatic server-configuration backups",
   "Admin & moderation tools",
   "Listing in Multiplayer",
   "One-click join from the launcher",

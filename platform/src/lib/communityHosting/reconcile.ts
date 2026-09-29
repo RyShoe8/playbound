@@ -256,7 +256,14 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
   if (!config?.enabled) return { action: "disabled" };
   // PlayBound Dedicated capacity is owed to paying customers whether or not
   // their servers are running; automatic Community Servers use what is left.
-  const paid = await paidReservedEnvelope(config.node.regionKey).catch(() => ({ cpuCores: 0, ramBytes: 0 }));
+  let paid: ResourceEnvelope;
+  try {
+    paid = await paidReservedEnvelope(config.node.regionKey);
+  } catch (error) {
+    // Never let free servers take commercial capacity when the reservation
+    // ledger cannot be read. Retry on the next scheduled pass.
+    return { action: "waiting", reason: error instanceof Error ? error.message : "PAID_CAPACITY_UNAVAILABLE" };
+  }
   config.budget = {
     cpuCores: Math.max(0, config.budget.cpuCores - paid.cpuCores),
     ramBytes: Math.max(0, config.budget.ramBytes - paid.ramBytes),
