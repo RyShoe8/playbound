@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!data) return { title: "Not Found" };
   return pageMetadata({
     title: `${data.game.title} Server Hosting — PlayBound Dedicated`,
-    description: `Host a ${data.game.title} server with PlayBound Dedicated Basic: use your slots for ${data.game.title} today and switch them to another supported game tomorrow. Maps, admin tools, backups and one-click joining included.`,
+    description: `Host a ${data.game.title} server with PlayBound Dedicated Basic: use your slots for ${data.game.title} today and switch them to another supported game tomorrow. Maps, admin tools, server-configuration backups and one-click joining included.`,
     path: `/hosting/${gameSlug}`,
   });
 }

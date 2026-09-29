@@ -12,6 +12,7 @@ import dbConnect from "@/lib/db";
 import CommunityServer from "@/lib/models/CommunityServer";
 import CommunityServerProfile from "@/lib/models/CommunityServerProfile";
 import DedicatedSubscription from "@/lib/models/DedicatedSubscription";
+import DedicatedCapacityHold from "@/lib/models/DedicatedCapacityHold";
 import { listManagedHostRooms, sendRoomCommand, stopManagedHostRoom } from "@/lib/gameHost/client";
 import { managedQueryKind, queryManagedOccupancy } from "@/lib/communityHosting/playerQuery";
 import { reconcileAllocations, releaseSlots, RUNNABLE_STATUSES } from "./entitlement";
@@ -149,12 +150,13 @@ export async function reconcileDedicatedServers(now = new Date()) {
  */
 export async function paidReservedEnvelope(regionKey: string): Promise<{ cpuCores: number; ramBytes: number }> {
   await dbConnect();
-  const subs = await DedicatedSubscription.find({ regionKey, status: { $in: [...RUNNABLE_STATUSES] } })
+  const [subs, holds] = await Promise.all([DedicatedSubscription.find({ regionKey, status: { $in: ["active", "past_due", "suspended"] } })
     .select({ slotCapacity: 1, tier: 1 })
-    .lean();
-  if (!subs.length) return { cpuCores: 0, ramBytes: 0 };
+    .lean(), DedicatedCapacityHold.find({ regionKey, state: "held", expiresAt: { $gt: new Date() } }).select({ slots: 1 }).lean()]);
+  if (!subs.length && !holds.length) return { cpuCores: 0, ramBytes: 0 };
   const tier = await getTier();
   const rc = tier.resourceClass;
-  const units = subs.reduce((sum, s) => sum + Math.ceil(Number(s.slotCapacity) / Math.max(1, rc.slotsPerUnit)), 0);
+  const units = subs.reduce((sum, s) => sum + Math.ceil(Number(s.slotCapacity) / Math.max(1, rc.slotsPerUnit)), 0) +
+    holds.reduce((sum, h) => sum + Math.ceil(Number(h.slots) / Math.max(1, rc.slotsPerUnit)), 0);
   return { cpuCores: units * rc.cpuPerUnit, ramBytes: units * rc.memoryMbPerUnit * 1024 * 1024 };
 }

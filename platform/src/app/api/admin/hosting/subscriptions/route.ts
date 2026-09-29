@@ -6,6 +6,7 @@ import DedicatedSubscription from "@/lib/models/DedicatedSubscription";
 import CommunityServer from "@/lib/models/CommunityServer";
 import User from "@/lib/models/User";
 import { getTier } from "@/lib/dedicatedHosting/tier";
+import { regionalInventory, withRegionCapacityLease } from "@/lib/dedicatedHosting/capacity";
 
 /** GET — every PlayBound Dedicated subscription with its customer and server counts. */
 export async function GET() {
@@ -76,23 +77,37 @@ export async function POST(req: Request) {
   if (!tier.regions.some((r) => r.key === parsed.data.regionKey)) {
     return NextResponse.json({ error: "Unknown region" }, { status: 400 });
   }
-  const existing = await DedicatedSubscription.findOne({
-    userId: user._id,
-    tier: tier.key,
-    status: { $in: ["active", "past_due", "suspended"] },
-  }).lean();
-  if (existing) {
-    return NextResponse.json({ error: "That user already has a subscription; change its slots instead." }, { status: 409 });
+  if (parsed.data.slotCapacity > tier.maxSlotsSold || parsed.data.slotCapacity < tier.minAllocation ||
+      parsed.data.slotCapacity % tier.allocationIncrement !== 0) {
+    return NextResponse.json({ error: "Slot count is outside the Basic plan's supported sizes" }, { status: 400 });
   }
-  const sub = await DedicatedSubscription.create({
-    userId: user._id,
-    tier: tier.key,
-    regionKey: parsed.data.regionKey,
-    slotCapacity: parsed.data.slotCapacity,
-    status: "active",
-    source: "manual",
-    grantedBy: session!.user.id,
-    note: parsed.data.note || null,
-  });
-  return NextResponse.json({ ok: true, id: String(sub._id) }, { status: 201 });
+  try {
+    return await withRegionCapacityLease(parsed.data.regionKey, async () => {
+      const existing = await DedicatedSubscription.findOne({
+        userId: user._id,
+        tier: tier.key,
+        status: { $in: ["active", "past_due", "suspended"] },
+      }).lean();
+      if (existing) {
+        return NextResponse.json({ error: "That user already has a subscription; change its slots instead." }, { status: 409 });
+      }
+      const inventory = await regionalInventory(parsed.data.regionKey);
+      if (inventory.availableSlots < parsed.data.slotCapacity) {
+        return NextResponse.json({ error: inventory.reason || "Not enough regional capacity" }, { status: 409 });
+      }
+      const sub = await DedicatedSubscription.create({
+        userId: user._id,
+        tier: tier.key,
+        regionKey: parsed.data.regionKey,
+        slotCapacity: parsed.data.slotCapacity,
+        status: "active",
+        source: "manual",
+        grantedBy: session!.user.id,
+        note: parsed.data.note || null,
+      });
+      return NextResponse.json({ ok: true, id: String(sub._id) }, { status: 201 });
+    });
+  } catch (cause) {
+    return NextResponse.json({ error: cause instanceof Error ? cause.message : "Capacity check failed" }, { status: 503 });
+  }
 }
