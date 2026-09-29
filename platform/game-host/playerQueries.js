@@ -58,7 +58,7 @@ function q3Body(packet) {
  * then one line per client ("score ping \"name\""). Bots report ping 0 in
  * ioquake3 and DarkPlaces, so they are not counted as players.
  */
-export function parseQuake3Status(packet) {
+export function parseQuake3Status(packet, { mohaa = false } = {}) {
   if (!Buffer.isBuffer(packet) || packet.length < 20 || packet.readInt32LE(0) !== -1) return null;
   const text = q3Body(packet).toString("latin1");
   if (!/^statusResponse/i.test(text)) return null;
@@ -70,6 +70,12 @@ export function parseQuake3Status(packet) {
   let players = 0;
   let bots = 0;
   for (const line of lines.slice(2)) {
+    // OpenMOHAA sends `ping "name"` (no score), and its network status only
+    // includes human clients. Its internal bots are not network clients.
+    if (mohaa) {
+      if (/^\s*-?\d+\s+"[^"]*"/.test(line)) players++;
+      continue;
+    }
     const m = line.match(/^\s*-?\d+\s+(-?\d+)/);
     if (!m) continue;
     if (Number(m[1]) > 0) players++;
@@ -83,7 +89,16 @@ export async function queryQuake3(port, { mohaa = false } = {}) {
   const packet = await udpRequest(port, mohaa ? MOHAA_GETSTATUS : Q3_GETSTATUS, {
     accept: (p) => p.length > 4 && p.readInt32LE(0) === -1 && /^statusResponse/i.test(q3Body(p).subarray(0, 16).toString("latin1")),
   });
-  return packet ? parseQuake3Status(packet) : null;
+  return packet ? parseQuake3Status(packet, { mohaa }) : null;
+}
+
+/** OpenMOHAA's native fill runs every frame but its UDP status omits bots. */
+export function openMohaaBotCount(humanPlayers, configuredFill) {
+  if (!Number.isInteger(humanPlayers) || humanPlayers < 0) return null;
+  if (!Number.isInteger(configuredFill) || configuredFill <= 0) return 0;
+  // The recipe sets sv_minPlayers to configuredFill and leaves sv_numbots at
+  // zero. G_SpawnBots therefore keeps (minimum - humans) bots in the match.
+  return Math.max(0, configuredFill - humanPlayers);
 }
 
 /* ── Mindustry: discovery ping ─────────────────────────────────────────── */
@@ -605,7 +620,12 @@ export async function queryRoomOccupancy(room) {
     return (await queryA2sOccupancy(room.port, { anyApp })) ||
       (room.host ? queryA2sOccupancy(room.port, { anyApp, host: room.host }) : null);
   }
-  if (QUAKE3_GAMES.has(slug)) return queryQuake3(room.port, { mohaa: slug === "medal-of-honor-allied-assault" });
+  if (slug === "medal-of-honor-allied-assault") {
+    const status = await queryQuake3(room.port, { mohaa: true });
+    if (!status) return null;
+    return { ...status, bots: openMohaaBotCount(status.players, room.settings?.botFill) };
+  }
+  if (QUAKE3_GAMES.has(slug)) return queryQuake3(room.port);
   if (slug === "mindustry") return queryMindustry(room.port);
   if (slug === "assaultcube") return queryAssaultCube(room.port);
   if (slug === "space-station-14") return querySpaceStation14(room.port);
