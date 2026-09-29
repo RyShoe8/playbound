@@ -106,10 +106,10 @@ export async function PUT(req: Request, ctx: Ctx) {
   if (new Set(parsed.data.packages.map((p) => p.slots)).size !== parsed.data.packages.length) {
     return NextResponse.json({ error: "Each slot package must have a unique slot count" }, { status: 400 });
   }
-  // Checkout and webhook activation are not wired yet. Keep the sales switch
-  // fail-closed even if an administrator checks it while configuring the tier.
+  // Keep sales fail-closed until the remaining billing flows, persistent-data
+  // backups, game readiness tests and launch acceptance checks are complete.
   if (parsed.data.salesEnabled) {
-    return NextResponse.json({ error: "Sales cannot be enabled until checkout, capacity holds, and webhook verification are ready" }, { status: 409 });
+    return NextResponse.json({ error: "Sales remain closed until the Dedicated Basic launch checks are complete" }, { status: 409 });
   }
   const previous = await getTier(key);
   const packages = preservedPackagePrices(previous, parsed.data.packages);

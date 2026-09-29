@@ -70,7 +70,7 @@ type CustomerServer = {
   statusReason: string | null;
 };
 
-const TABS = ["Plan", "Games", "Subscriptions", "Customer servers"] as const;
+const TABS = ["Plan", "Games", "Subscriptions", "Customer servers", "Billing"] as const;
 type Tab = (typeof TABS)[number];
 
 async function api(path: string, init?: RequestInit) {
@@ -151,8 +151,55 @@ export function AdminHostingPanel() {
       {tab === "Games" ? <GamesTab tier={tier} profiles={profiles} onSave={saveTier} /> : null}
       {tab === "Subscriptions" ? <SubscriptionsTab tier={tier} subs={subs} act={act} /> : null}
       {tab === "Customer servers" ? <ServersTab servers={servers} act={act} /> : null}
+      {tab === "Billing" ? <BillingTab /> : null}
     </div>
   );
+}
+
+type BillingStatus = {
+  stripeKeyConfigured: boolean;
+  webhookSecretConfigured: boolean;
+  counts: { active: number; pastDue: number; suspended: number; canceled: number; canceling: number };
+  monthlyRevenueCents: number;
+  heldCount: number;
+  lastWebhook: { type: string; at: string } | null;
+  failures: Array<{ id: string; stripeSubscriptionId: string | null; message: string; checkedAt: string | null }>;
+};
+
+function BillingTab() {
+  const [status, setStatus] = useState<BillingStatus | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const refresh = useCallback(() => void api("/api/admin/hosting/billing")
+    .then((data) => { setStatus(data as BillingStatus); setError(null); })
+    .catch((cause) => setError(cause instanceof Error ? cause.message : "Billing status unavailable")), []);
+  useEffect(() => { const timer = setTimeout(refresh, 0); return () => clearTimeout(timer); }, [refresh]);
+  if (error) return <p className="text-sm text-red-500">{error}</p>;
+  if (!status) return <p className="text-sm text-muted-foreground">Loading billing status…</p>;
+  return <div className="space-y-4">
+    <div className="flex flex-wrap gap-3">
+      {[
+        ["Active", status.counts.active], ["Past due", status.counts.pastDue],
+        ["Suspended", status.counts.suspended], ["Canceling", status.counts.canceling],
+        ["Capacity holds", status.heldCount], ["Active monthly list price", `$${(status.monthlyRevenueCents / 100).toFixed(2)}`],
+      ].map(([label, value]) => <div key={label} className="min-w-32 rounded-xl border border-border bg-card p-3">
+        <p className="text-xs text-muted-foreground">{label}</p><p className="text-xl font-semibold">{value}</p>
+      </div>)}
+    </div>
+    <section className="rounded-xl border border-border bg-card p-4 text-sm">
+      <h2 className="font-semibold">Stripe connection</h2>
+      <p>Secret key: {status.stripeKeyConfigured ? "configured" : "missing"} · Webhook signing secret: {status.webhookSecretConfigured ? "configured" : "missing"}</p>
+      <p>Last processed webhook: {status.lastWebhook ? `${status.lastWebhook.type} · ${new Date(status.lastWebhook.at).toLocaleString()}` : "none"}</p>
+      <p className="mt-1 text-xs text-muted-foreground">Configuration and receipts are local signals; this panel does not claim a live Stripe health check.</p>
+      <button type="button" className="mt-2 text-xs text-primary" onClick={refresh}>Refresh</button>
+    </section>
+    <section className="rounded-xl border border-border bg-card p-4 text-sm">
+      <h2 className="font-semibold">Billing reconciliation failures</h2>
+      {status.failures.length ? <ul className="mt-2 space-y-2">{status.failures.map((failure) => <li key={failure.id}>
+        <span className="font-mono text-xs">{failure.stripeSubscriptionId || failure.id}</span> · {failure.message}
+        {failure.checkedAt ? <span className="block text-xs text-muted-foreground">{new Date(failure.checkedAt).toLocaleString()}</span> : null}
+      </li>)}</ul> : <p className="mt-1 text-muted-foreground">No recorded failures.</p>}
+    </section>
+  </div>;
 }
 
 function num(v: string) {
@@ -185,7 +232,7 @@ function PlanTab({ tier, onSave, onSync }: { tier: Tier; onSave: (t: Tier) => vo
           Description
           <textarea className={`${input} mt-1 w-full`} rows={3} value={t.description} onChange={(e) => set("description", e.target.value)} />
         </label>
-        <p className="text-xs text-muted-foreground">Sales remain closed until checkout, capacity holds, verified webhooks, and launch checks are ready.</p>
+        <p className="text-xs text-muted-foreground">Sales remain closed until billing, backups, and launch-game checks are complete.</p>
         <label className="flex items-center gap-2 text-sm text-red-500">
           <input type="checkbox" checked={t.startsDisabled} onChange={(e) => set("startsDisabled", e.target.checked)} /> Emergency: disable all server starts
           (running servers stop on the next reconcile)
@@ -372,7 +419,7 @@ function SubscriptionsTab({ tier, subs, act }: { tier: Tier; subs: Sub[]; act: (
     <div className="space-y-4">
       <section className="flex flex-wrap items-end gap-2 rounded-xl border border-border bg-card p-4">
         <h2 className="w-full font-semibold">Grant a subscription</h2>
-        <p className="w-full text-xs text-muted-foreground">For the gradual rollout, before checkout exists. Marked as a manual grant.</p>
+        <p className="w-full text-xs text-muted-foreground">For rollout testing. Manual grants are separate from Stripe billing.</p>
         <label className="text-sm">Username or email<input className={`${input} mt-1 block w-56`} value={user} onChange={(e) => setUser(e.target.value)} /></label>
         <label className="text-sm">Slots<input className={`${input} mt-1 block w-20`} type="number" value={slots} onChange={(e) => setSlots(num(e.target.value))} /></label>
         <label className="text-sm">Region
@@ -403,7 +450,7 @@ function SubscriptionsTab({ tier, subs, act }: { tier: Tier; subs: Sub[]; act: (
                 <td>{s.status}</td>
                 <td>{s.source}</td>
                 <td className="space-x-2 whitespace-nowrap">
-                  <button type="button" className="text-xs text-primary" onClick={() => {
+                  {s.source === "manual" ? <><button type="button" className="text-xs text-primary" onClick={() => {
                     const v = window.prompt("New slot capacity", String(s.slotCapacity));
                     if (v) patch(s.id, { slotCapacity: num(v) }, "Slots updated.");
                   }}>Resize</button>
@@ -414,7 +461,7 @@ function SubscriptionsTab({ tier, subs, act }: { tier: Tier; subs: Sub[]; act: (
                   )}
                   <button type="button" className="text-xs text-red-500" onClick={() => {
                     if (window.confirm("Cancel this subscription? Servers stop; saved servers are kept.")) patch(s.id, { status: "canceled" }, "Canceled.");
-                  }}>Cancel</button>
+                  }}>Cancel</button></> : <span className="text-xs text-muted-foreground">Managed by Stripe</span>}
                 </td>
               </tr>
             ))}

@@ -52,6 +52,9 @@ export async function prepareBasicCheckout(input: { userId: string; regionKey: s
   try {
     session = await stripeSession("checkout/sessions", {
       mode: "subscription",
+      // Keep initial payment synchronous; deferred payment methods can settle
+      // after the capacity hold has expired.
+      "payment_method_types[0]": "card",
       "line_items[0][price]": pkg.stripePriceId,
       "line_items[0][quantity]": "1",
       client_reference_id: input.userId,

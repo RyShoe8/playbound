@@ -121,7 +121,7 @@ export async function regionalInventory(regionKey: string, now = new Date()): Pr
   if (!result.ok) return { availableUnits: 0, availableSlots: 0, reason: "NODE_UNREACHABLE" };
 
   const [subs, holds, freeServers, userServers, events] = await Promise.all([
-    DedicatedSubscription.find({ regionKey, status: { $in: ["active", "past_due", "suspended"] } }).select({ _id: 1, slotCapacity: 1 }).lean(),
+    DedicatedSubscription.find({ regionKey, status: { $in: ["active", "past_due"] } }).select({ _id: 1, slotCapacity: 1 }).lean(),
     DedicatedCapacityHold.find({ regionKey, state: "held", expiresAt: { $gt: now } }).select({ slots: 1 }).lean(),
     CommunityServer.find({ regionKey, ownerType: { $ne: "user" }, desiredState: "running", runtimeState: { $in: ["pending", "running"] } })
       .select({ _id: 1, profileKey: 1 }).lean(),

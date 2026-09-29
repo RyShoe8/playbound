@@ -39,6 +39,10 @@
     {
       "path": "/api/cron/community-hosting",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/dedicated-billing",
+      "schedule": "*/10 * * * *"
     }
   ]
 }
