@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { parseQuake3Status, parseMindustryPing, parseAssaultCubeInfo, LOCAL_QUERY_GAMES } from "./playerQueries.js";
+import { parseQuake3Status, openMohaaBotCount, parseMindustryPing, parseAssaultCubeInfo, LOCAL_QUERY_GAMES } from "./playerQueries.js";
 import { parseA2sOccupancy } from "./a2sQuery.js";
 
 const ff = Buffer.from([0xff, 0xff, 0xff, 0xff]);
@@ -12,7 +12,16 @@ test("Quake 3 status counts players with a ping and ignores bots (ping 0)", () =
 
 test("MOHAA status replies carry a 0x01 direction byte", () => {
   const body = 'statusResponse\n\\sv_maxclients\\16\\g_gametype\\1\n';
-  assert.deepEqual(parseQuake3Status(Buffer.concat([ff, Buffer.from([0x01]), Buffer.from(body)])), { players: 0, maxPlayers: 16, bots: 0 });
+  assert.deepEqual(parseQuake3Status(Buffer.concat([ff, Buffer.from([0x01]), Buffer.from(body)]), { mohaa: true }), { players: 0, maxPlayers: 16, bots: 0 });
+});
+
+test("OpenMOHAA status counts its one-number human lines and native bot fill", () => {
+  const body = 'statusResponse\n\\sv_maxclients\\16\\g_gametype\\1\n48 "Alice"\n72 "Bob"\n';
+  assert.deepEqual(parseQuake3Status(Buffer.concat([ff, Buffer.from([0x01]), Buffer.from(body)]), { mohaa: true }), { players: 2, maxPlayers: 16, bots: 0 });
+  assert.equal(openMohaaBotCount(0, 8), 8);
+  assert.equal(openMohaaBotCount(2, 8), 6);
+  assert.equal(openMohaaBotCount(8, 8), 0);
+  assert.equal(openMohaaBotCount(0, undefined), 0);
 });
 
 test("non-status packets are unknown, not empty", () => {
