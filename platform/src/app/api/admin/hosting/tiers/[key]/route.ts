@@ -68,7 +68,7 @@ export async function GET(_req: Request, ctx: Ctx) {
   const { key } = await ctx.params;
   const tier = await getTier(key);
   await dbConnect();
-  const profiles = await CommunityServerProfile.find({}).select({ key: 1, gameSlug: 1, editionSlug: 1, recipeSlug: 1, envelope: 1, sampleCount: 1, verification: 1 }).lean();
+  const profiles = await CommunityServerProfile.find({}).select({ key: 1, gameSlug: 1, editionSlug: 1, recipeSlug: 1, envelope: 1, sampleCount: 1, verification: 1, queryVerified: 1, joinVerified: 1, lastVerifiedAt: 1 }).lean();
   const rc = tier.resourceClass;
   const unitRam = rc.memoryMbPerUnit * 1024 * 1024;
   const profileInfo = profiles.map((p) => {
@@ -80,6 +80,10 @@ export async function GET(_req: Request, ctx: Ctx) {
       editionSlug: p.editionSlug || null,
       recipeSlug: p.recipeSlug,
       verification: p.verification,
+      queryVerified: Boolean(p.queryVerified),
+      joinVerified: Boolean(p.joinVerified),
+      measuredThroughPlayers: p.envelope?.measuredThroughPlayers || 0,
+      lastVerifiedAt: p.lastVerifiedAt || null,
       capEnforced: slotCapEnforced(p.recipeSlug || p.gameSlug),
       samples: p.sampleCount || 0,
       cpuCores: env.cpuCores,

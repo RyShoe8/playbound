@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { HostingSupport } from "@/components/hosting/HostingSupport";
 
 type TierGame = {
   profileKey: string;
@@ -38,6 +39,11 @@ type ProfileInfo = {
   key: string;
   gameSlug: string;
   recipeSlug: string;
+  verification: string;
+  queryVerified: boolean;
+  joinVerified: boolean;
+  measuredThroughPlayers: number;
+  lastVerifiedAt: string | null;
   capEnforced: boolean;
   samples: number;
   cpuCores: number;
@@ -70,7 +76,7 @@ type CustomerServer = {
   statusReason: string | null;
 };
 
-const TABS = ["Plan", "Games", "Subscriptions", "Customer servers", "Billing"] as const;
+const TABS = ["Plan", "Games", "Subscriptions", "Customer servers", "Billing", "Support"] as const;
 type Tab = (typeof TABS)[number];
 
 async function api(path: string, init?: RequestInit) {
@@ -88,18 +94,21 @@ export function AdminHostingPanel() {
   const [profiles, setProfiles] = useState<ProfileInfo[]>([]);
   const [subs, setSubs] = useState<Sub[]>([]);
   const [servers, setServers] = useState<CustomerServer[]>([]);
+  const [openSupport, setOpenSupport] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [t, s, cs] = await Promise.all([
+    const [t, s, cs, support] = await Promise.all([
       api("/api/admin/hosting/tiers/basic"),
       api("/api/admin/hosting/subscriptions"),
       api("/api/admin/hosting/servers"),
+      api("/api/admin/hosting/support?summary=1").catch(() => ({ open: 0 })),
     ]);
     setTier(t.tier);
     setProfiles(t.profiles);
     setSubs(s.subscriptions);
     setServers(cs.servers);
+    setOpenSupport(support.open || 0);
   }, []);
 
   useEffect(() => {
@@ -142,7 +151,7 @@ export function AdminHostingPanel() {
             onClick={() => setTab(t)}
             className={`rounded-lg px-3 py-1.5 text-sm ${tab === t ? "bg-primary text-primary-foreground" : "border border-border hover:bg-secondary"}`}
           >
-            {t}
+            {t}{t === "Support" && openSupport > 0 ? ` (${openSupport})` : ""}
           </button>
         ))}
       </div>
@@ -152,6 +161,7 @@ export function AdminHostingPanel() {
       {tab === "Subscriptions" ? <SubscriptionsTab tier={tier} subs={subs} act={act} /> : null}
       {tab === "Customer servers" ? <ServersTab servers={servers} act={act} /> : null}
       {tab === "Billing" ? <BillingTab /> : null}
+      {tab === "Support" ? <HostingSupport admin /> : null}
     </div>
   );
 }
@@ -374,6 +384,9 @@ function GamesTab({ tier, profiles, onSave }: { tier: Tier; profiles: ProfileInf
                   </td>
                   <td className={`text-xs ${FIT_TONE[p?.fit || "unknown"]}`}>
                     {p?.fit === "unknown" || !p ? "No samples yet" : `${p.fit.toUpperCase()} · ${p.cpuCores.toFixed(2)} CPU / ${Math.round(p.ramBytes / 1024 / 1024)} MB · ${p.samples} samples`}
+                    {p ? <span className="block text-muted-foreground" title={p.lastVerifiedAt ? `Last verified ${new Date(p.lastVerifiedAt).toLocaleString()}` : "No profile verification date"}>
+                      Community: {p.verification} · query {p.queryVerified ? "yes" : "no"} · join {p.joinVerified ? "yes" : "no"} · measured through {p.measuredThroughPlayers} players
+                    </span> : null}
                     {p?.fit === "exceeds" ? <span className="block">Consider Pro</span> : null}
                   </td>
                   <td><button type="button" className="text-xs text-red-500" onClick={() => setGames((x) => x.filter((_, j) => j !== i))}>Remove</button></td>

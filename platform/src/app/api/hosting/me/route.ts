@@ -25,6 +25,7 @@ export async function GET(req: Request) {
         slotCapacity: sub.slotCapacity,
         allocatedSlots: sub.allocatedSlots,
         status: sub.status,
+        source: sub.source,
         cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
         currentPeriodEnd: sub.currentPeriodEnd,
       },
