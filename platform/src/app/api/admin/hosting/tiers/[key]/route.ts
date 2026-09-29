@@ -4,7 +4,7 @@ import { z } from "zod";
 import dbConnect from "@/lib/db";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import CommunityServerProfile from "@/lib/models/CommunityServerProfile";
-import { getTier, saveTier, slotCapEnforced } from "@/lib/dedicatedHosting/tier";
+import { getTier, preservedPackagePrices, saveTier, slotCapEnforced } from "@/lib/dedicatedHosting/tier";
 import { HOSTING_TIER_TAG } from "@/lib/dedicatedHosting/publicTier";
 import { getEffectiveEnvelope } from "@/lib/communityHosting/reconcile";
 
@@ -38,6 +38,8 @@ const tierSchema = z.object({
     currency: z.string().length(3).default("usd"),
     enabled: z.boolean(),
     order: z.number().int(),
+    // The client never chooses a Stripe Price. It is preserved only when the
+    // saved amount, currency and slot count still match the previous package.
     stripePriceId: z.string().nullable().default(null),
   })).max(20),
   games: z.array(z.object({
@@ -101,7 +103,17 @@ export async function PUT(req: Request, ctx: Ctx) {
   for (const g of parsed.data.games) {
     if (g.minSlots > g.maxSlots) return NextResponse.json({ error: `${g.profileKey}: minimum slots exceed maximum` }, { status: 400 });
   }
-  const tier = await saveTier(key, parsed.data);
+  if (new Set(parsed.data.packages.map((p) => p.slots)).size !== parsed.data.packages.length) {
+    return NextResponse.json({ error: "Each slot package must have a unique slot count" }, { status: 400 });
+  }
+  // Checkout and webhook activation are not wired yet. Keep the sales switch
+  // fail-closed even if an administrator checks it while configuring the tier.
+  if (parsed.data.salesEnabled) {
+    return NextResponse.json({ error: "Sales cannot be enabled until checkout, capacity holds, and webhook verification are ready" }, { status: 409 });
+  }
+  const previous = await getTier(key);
+  const packages = preservedPackagePrices(previous, parsed.data.packages);
+  const tier = await saveTier(key, { ...parsed.data, packages });
   revalidateTag(HOSTING_TIER_TAG, { expire: 0 });
   return NextResponse.json({ ok: true, tier });
 }
