@@ -23,11 +23,17 @@ import { automaticBackups } from "./backups";
 import { parseCurrentMap } from "@/lib/serverControl/rcon";
 import { getServerSettingProfile } from "@/lib/serverControl/settings";
 import { getTier } from "./tier";
+import { reconcileDedicatedCapacityReservations } from "./reservations";
 
 const MAX_BACKOFF_MINUTES = 30;
 
 export async function reconcileDedicatedServers(now = new Date()) {
   await dbConnect();
+  await reconcileDedicatedCapacityReservations(now).catch((error) => {
+    // The subscription is still counted directly by inventory and free-hosting
+    // reservation logic. A mirror write failure must not stop paid recovery.
+    console.warn("[dedicated-hosting] reservation reconciliation failed:", error instanceof Error ? error.message : error);
+  });
   const agent = await listManagedHostRooms();
   if (!agent.ok) return { action: "waiting", reason: agent.error };
   const rooms = new Map(agent.rooms.filter((r) => r.communityServerId).map((r) => [r.communityServerId!, r]));

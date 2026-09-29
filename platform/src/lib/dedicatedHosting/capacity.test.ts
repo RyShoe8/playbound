@@ -80,7 +80,7 @@ describe("Dedicated Basic capacity holds", () => {
     const sub = await DedicatedSubscription.create({ userId, tier: "basic", regionKey: "us-central", slotCapacity: 16, status: "canceled" });
     const room = await CommunityServer.create({
       slug: "capacity-canceled-room", name: "Stopping room", gameSlug: "xonotic", regionKey: "us-central", profileKey: "xonotic:base",
-      ownerType: "user", ownerId: userId, dedicatedSubscriptionId: sub._id, allocatedSlots: 16, slotsHeld: true,
+      ownerType: "user", ownerId: userId, dedicatedSubscriptionId: sub._id, allocatedSlots: 0, maxPlayerCount: 16, slotsHeld: false,
       desiredState: "stopped", runtimeState: "running",
     });
     expect((await regionalInventory("us-central")).availableSlots).toBe(8);

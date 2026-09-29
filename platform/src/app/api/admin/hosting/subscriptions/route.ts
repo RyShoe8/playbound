@@ -7,6 +7,7 @@ import CommunityServer from "@/lib/models/CommunityServer";
 import User from "@/lib/models/User";
 import { getTier } from "@/lib/dedicatedHosting/tier";
 import { regionalInventory, withRegionCapacityLease } from "@/lib/dedicatedHosting/capacity";
+import { reconcileDedicatedCapacityReservations } from "@/lib/dedicatedHosting/reservations";
 
 /** GET — every PlayBound Dedicated subscription with its customer and server counts. */
 export async function GET() {
@@ -105,7 +106,8 @@ export async function POST(req: Request) {
         grantedBy: session!.user.id,
         note: parsed.data.note || null,
       });
-      return NextResponse.json({ ok: true, id: String(sub._id) }, { status: 201 });
+      const reservationPending = await reconcileDedicatedCapacityReservations().then(() => false).catch(() => true);
+      return NextResponse.json({ ok: true, id: String(sub._id), reservationPending }, { status: 201 });
     });
   } catch (cause) {
     return NextResponse.json({ error: cause instanceof Error ? cause.message : "Capacity check failed" }, { status: 503 });

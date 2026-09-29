@@ -6,6 +6,7 @@ import { requireAdminSession } from "@/lib/requireAdmin";
 import DedicatedSubscription from "@/lib/models/DedicatedSubscription";
 import { regionalInventory, withRegionCapacityLease } from "@/lib/dedicatedHosting/capacity";
 import { getTier } from "@/lib/dedicatedHosting/tier";
+import { reconcileDedicatedCapacityReservations } from "@/lib/dedicatedHosting/reservations";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -55,7 +56,8 @@ export async function PATCH(req: Request, ctx: Ctx) {
         }
       }
       await DedicatedSubscription.updateOne({ _id: id }, { $set: parsed.data });
-      return NextResponse.json({ ok: true });
+      const reservationPending = await reconcileDedicatedCapacityReservations().then(() => false).catch(() => true);
+      return NextResponse.json({ ok: true, reservationPending });
     });
   } catch (cause) {
     return NextResponse.json({ error: cause instanceof Error ? cause.message : "Capacity check failed" }, { status: 503 });

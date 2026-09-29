@@ -127,8 +127,8 @@ export async function regionalInventory(regionKey: string, now = new Date()): Pr
       .select({ _id: 1, profileKey: 1 }).lean(),
     // A canceled subscription can still have a room until reconcile confirms
     // it stopped. Do not sell those resources a second time in that gap.
-    CommunityServer.find({ regionKey, ownerType: "user", allocatedSlots: { $gt: 0 }, $or: [{ slotsHeld: true }, { runtimeState: { $in: ["pending", "running"] } }] })
-      .select({ dedicatedSubscriptionId: 1, allocatedSlots: 1 }).lean(),
+    CommunityServer.find({ regionKey, ownerType: "user", $or: [{ slotsHeld: true }, { runtimeState: { $in: ["pending", "running"] } }] })
+      .select({ dedicatedSubscriptionId: 1, allocatedSlots: 1, maxPlayerCount: 1 }).lean(),
     CapacityReservation.find({ regionKey, state: { $in: ["planned", "active"] }, warmupAt: { $lte: new Date(now.getTime() + HOLD_MINUTES * 60_000) }, protectedUntil: { $gt: now } })
       .select({ communityServerId: 1, cpuCores: 1, ramBytes: 1 }).lean(),
   ]);
@@ -139,7 +139,8 @@ export async function regionalInventory(regionKey: string, now = new Date()): Pr
   const occupied: Envelope[] = [
     ...subs.map((s) => unitEnvelope(tier, s.slotCapacity)),
     ...holds.map((h) => unitEnvelope(tier, h.slots)),
-    ...userServers.filter((s) => !countedSubIds.has(String(s.dedicatedSubscriptionId))).map((s) => unitEnvelope(tier, s.allocatedSlots)),
+    ...userServers.filter((s) => !countedSubIds.has(String(s.dedicatedSubscriptionId)))
+      .map((s) => unitEnvelope(tier, Math.max(s.allocatedSlots || 0, s.maxPlayerCount || 0, tier.minAllocation))),
     ...freeServers.map((s) => ({
       cpuCores: Math.max(1, Number(byProfile.get(s.profileKey)?.cpuCores) || 0),
       ramBytes: Math.max(1536 * 1024 ** 2, Number(byProfile.get(s.profileKey)?.ramBytes) || 0),
