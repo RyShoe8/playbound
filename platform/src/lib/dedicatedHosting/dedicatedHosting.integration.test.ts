@@ -100,6 +100,18 @@ describe("PlayBound Dedicated Basic slot pool", () => {
     expect(await used()).toBeLessThanOrEqual(16);
   });
 
+  it("honors a scheduled downgrade's smaller cap before the next billing period", async () => {
+    const eight = await make("openttd:base", 8);
+    const extra = await make("xonotic:base", 4);
+    expect(await startServer(userId, eight)).toMatchObject({ ok: true });
+    await DedicatedSubscription.updateOne({ _id: subId }, { $set: { scheduledChange: {
+      targetSlots: 8, stripePriceId: "price_future", monthlyPriceCents: 1299, currency: "usd",
+      effectiveAt: new Date(Date.now() + 25 * 24 * 60 * 60_000), requestKey: "test-downgrade", state: "scheduled",
+    } } });
+    expect(await startServer(userId, extra)).toMatchObject({ status: 409 });
+    expect(await used()).toBe(8);
+  });
+
   it("switches games by stopping one and starting another; the first keeps its settings", async () => {
     const openttd = await make("openttd:base", 16, "OpenTTD World");
     await CommunityServer.updateOne({ _id: openttd }, { $set: { settings: { map: "big" } } });

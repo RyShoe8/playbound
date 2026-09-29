@@ -172,6 +172,8 @@ type BillingStatus = {
   counts: { active: number; pastDue: number; suspended: number; canceled: number; canceling: number };
   monthlyRevenueCents: number;
   heldCount: number;
+  scheduledDowngrades: number;
+  pendingUpgrades: Array<{ subscriptionId: string; toSlots: number; at: string }>;
   lastWebhook: { type: string; at: string } | null;
   failures: Array<{ id: string; stripeSubscriptionId: string | null; message: string; checkedAt: string | null }>;
 };
@@ -190,7 +192,9 @@ function BillingTab() {
       {[
         ["Active", status.counts.active], ["Past due", status.counts.pastDue],
         ["Suspended", status.counts.suspended], ["Canceling", status.counts.canceling],
-        ["Capacity holds", status.heldCount], ["Active monthly list price", `$${(status.monthlyRevenueCents / 100).toFixed(2)}`],
+        ["Capacity holds", status.heldCount], ["Pending upgrades", status.pendingUpgrades.length],
+        ["Scheduled downgrades", status.scheduledDowngrades],
+        ["Active monthly list price", `$${(status.monthlyRevenueCents / 100).toFixed(2)}`],
       ].map(([label, value]) => <div key={label} className="min-w-32 rounded-xl border border-border bg-card p-3">
         <p className="text-xs text-muted-foreground">{label}</p><p className="text-xl font-semibold">{value}</p>
       </div>)}
@@ -202,6 +206,10 @@ function BillingTab() {
       <p className="mt-1 text-xs text-muted-foreground">Configuration and receipts are local signals; this panel does not claim a live Stripe health check.</p>
       <button type="button" className="mt-2 text-xs text-primary" onClick={refresh}>Refresh</button>
     </section>
+    {status.pendingUpgrades.length ? <section className="rounded-xl border border-border bg-card p-4 text-sm">
+      <h2 className="font-semibold">Upgrades awaiting Stripe reconciliation</h2>
+      <ul className="mt-2 space-y-1">{status.pendingUpgrades.map((hold) => <li key={hold.subscriptionId}>{hold.subscriptionId} → {hold.toSlots} slots · {new Date(hold.at).toLocaleString()}</li>)}</ul>
+    </section> : null}
     <section className="rounded-xl border border-border bg-card p-4 text-sm">
       <h2 className="font-semibold">Billing reconciliation failures</h2>
       {status.failures.length ? <ul className="mt-2 space-y-2">{status.failures.map((failure) => <li key={failure.id}>

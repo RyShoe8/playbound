@@ -10,7 +10,11 @@ vi.mock("@/lib/gameHost/client", () => ({ fetchGameHostMetrics: async () => ({ o
   memory: { totalBytes: 16 * 1024 ** 3, freeBytes: 12 * 1024 ** 3 },
   storage: [{ path: "/games", freeBytes: 100 * 1024 ** 3, usedBytes: 0, totalBytes: 100 * 1024 ** 3 }],
 } }) }));
-vi.mock("./stripeBillingRemote", () => ({ retrievePaidCheckout: async (sessionId: string) => {
+vi.mock("./stripeBillingRemote", () => ({ retrieveCompletedCheckout: async (sessionId: string) => {
+  if (!remote.paid) throw new Error("Checkout is not paid");
+  return { id: sessionId, customer: "cus_test_1", subscription: "sub_test_1", client_reference_id: userId,
+    metadata: { playbound_hold_id: String(holdId) } };
+}, retrievePaidCheckout: async (sessionId: string) => {
   if (!remote.paid) throw new Error("Checkout is not paid");
   return {
     session: { id: sessionId, customer: "cus_test_1", client_reference_id: userId,
@@ -23,7 +27,7 @@ vi.mock("./stripeBillingRemote", () => ({ retrievePaidCheckout: async (sessionId
 }, retrieveCheckoutStatus: async () => ({ status: "complete", paymentStatus: remote.paid ? "paid" : "unpaid" }),
 retrieveBillingSubscription: async () => ({ id: "sub_test_1", customer: "cus_test_1", status: remote.status,
   cancel_at_period_end: false, metadata: { playbound_hold_id: String(holdId) },
-  items: { data: [{ quantity: 1, price: { id: remote.priceId }, current_period_start: 1_800_000_000, current_period_end: 1_802_592_000 }] },
+  items: { data: [{ quantity: 1, price: { id: remote.priceId, unit_amount: remote.priceId === "price_basic_12" ? 1799 : remote.priceId === "price_basic_4" ? 799 : 1299, currency: "usd" }, current_period_start: 1_800_000_000, current_period_end: 1_802_592_000 }] },
 }) }));
 
 import DedicatedCapacityHold from "@/lib/models/DedicatedCapacityHold";
@@ -32,7 +36,7 @@ import DedicatedCapacityLease from "@/lib/models/DedicatedCapacityLease";
 import DedicatedCapacityReservation from "@/lib/models/DedicatedCapacityReservation";
 import DedicatedSubscription from "@/lib/models/DedicatedSubscription";
 import StripeWebhookReceipt from "@/lib/models/StripeWebhookReceipt";
-import { processDedicatedStripeEvent } from "./billingEvents";
+import { processDedicatedStripeEvent, syncDedicatedStripeSubscription } from "./billingEvents";
 import { reconcileDedicatedBilling } from "./billingReconcile";
 
 let mongo: MongoMemoryServer;
@@ -164,5 +168,70 @@ describe("Dedicated Basic paid-event conversion", () => {
     await DedicatedSubscription.create({ userId: new Types.ObjectId(), tier: "basic", regionKey: "us-central", slotCapacity: 24, status: "active" });
     await expect(reconcileDedicatedBilling()).resolves.toMatchObject({ checked: 0, failed: 1 });
     expect((await DedicatedSubscription.findOne({ stripeSubscriptionId: "sub_test_1" }))?.status).toBe("suspended");
+  });
+  it("applies only a price change backed by a reserved upgrade delta", async () => {
+    await processDedicatedStripeEvent(event("evt_paid_1"));
+    remote.priceId = "price_basic_12";
+    await expect(syncDedicatedStripeSubscription("sub_test_1")).rejects.toThrow("capacity-reserved");
+    expect((await DedicatedSubscription.findOne({ stripeSubscriptionId: "sub_test_1" }))?.slotCapacity).toBe(8);
+    const sub = await DedicatedSubscription.findOne({ stripeSubscriptionId: "sub_test_1" });
+    const upgrade = await DedicatedCapacityHold.create({
+      userId, tier: "basic", regionKey: "us-central", slots: 4, checkoutKey: "upgrade-test-key",
+      planChangeSubscriptionId: sub!._id, fromSlots: 8, toSlots: 12,
+      stripePriceId: "price_basic_12", monthlyPriceCents: 1799, currency: "usd", state: "held",
+      expiresAt: new Date(Date.now() - 1000),
+    });
+    // Upgrade holds remain in inventory even after the ordinary checkout
+    // expiry, until Stripe and the local reservation agree.
+    await syncDedicatedStripeSubscription("sub_test_1");
+    const updated = await DedicatedSubscription.findOne({ stripeSubscriptionId: "sub_test_1" });
+    expect(updated?.slotCapacity).toBe(12);
+    expect(updated?.stripePriceId).toBe("price_basic_12");
+    expect(updated?.billingSnapshot.monthlyPriceCents).toBe(1799);
+    expect((await DedicatedCapacityHold.findById(upgrade._id))?.state).toBe("converted");
+    expect((await DedicatedCapacityReservation.findOne({ subscriptionId: updated?._id }))?.slots).toBe(12);
+    await syncDedicatedStripeSubscription("sub_test_1");
+    expect(await DedicatedCapacityReservation.countDocuments()).toBe(1);
+    await processDedicatedStripeEvent(event("evt_original_checkout_replayed_late"));
+    expect(await DedicatedSubscription.countDocuments()).toBe(1);
+    expect(await StripeWebhookReceipt.countDocuments({ eventId: "evt_original_checkout_replayed_late" })).toBe(1);
+  });
+  it("repairs a Checkout conversion interrupted after the subscription write", async () => {
+    await processDedicatedStripeEvent(event("evt_paid_1"));
+    await DedicatedCapacityHold.updateOne({ _id: holdId }, { $set: { state: "held", checkoutSessionId: null, convertedAt: null } });
+    await processDedicatedStripeEvent(event("evt_recovery_1"));
+    expect((await DedicatedCapacityHold.findById(holdId))?.state).toBe("converted");
+    expect(await DedicatedSubscription.countDocuments()).toBe(1);
+    expect(await DedicatedCapacityReservation.countDocuments()).toBe(1);
+  });
+  it("applies a scheduled downgrade at renewal and releases reserved capacity", async () => {
+    await processDedicatedStripeEvent(event("evt_paid_1"));
+    await DedicatedSubscription.updateOne({ stripeSubscriptionId: "sub_test_1" }, { $set: { scheduledChange: {
+      targetSlots: 4, stripePriceId: "price_basic_4", monthlyPriceCents: 799, currency: "usd",
+      effectiveAt: new Date(Date.now() + 60 * 60_000), requestKey: "downgrade-test", state: "scheduled", scheduleId: "sub_sched_test",
+    } } });
+    remote.priceId = "price_basic_4";
+    await expect(syncDedicatedStripeSubscription("sub_test_1")).rejects.toThrow("capacity-reserved");
+    await DedicatedSubscription.updateOne({ stripeSubscriptionId: "sub_test_1" }, { $set: { "scheduledChange.effectiveAt": new Date(Date.now() - 60_000) } });
+    await syncDedicatedStripeSubscription("sub_test_1");
+    const sub = await DedicatedSubscription.findOne({ stripeSubscriptionId: "sub_test_1" });
+    expect(sub?.slotCapacity).toBe(4);
+    expect(sub?.stripePriceId).toBe("price_basic_4");
+    expect(sub?.scheduledChange).toBeNull();
+    expect((await DedicatedCapacityReservation.findOne({ subscriptionId: sub?._id }))?.slots).toBe(4);
+  });
+  it("applies the smaller slot cap even when the first downgraded invoice fails", async () => {
+    await processDedicatedStripeEvent(event("evt_paid_1"));
+    await DedicatedSubscription.updateOne({ stripeSubscriptionId: "sub_test_1" }, { $set: { scheduledChange: {
+      targetSlots: 4, stripePriceId: "price_basic_4", monthlyPriceCents: 799, currency: "usd",
+      effectiveAt: new Date(Date.now() - 60_000), requestKey: "downgrade-failed-payment", state: "scheduled",
+    } } });
+    remote.priceId = "price_basic_4";
+    remote.status = "past_due";
+    await syncDedicatedStripeSubscription("sub_test_1");
+    const sub = await DedicatedSubscription.findOne({ stripeSubscriptionId: "sub_test_1" });
+    expect(sub?.slotCapacity).toBe(4);
+    expect(sub?.status).toBe("past_due");
+    expect(sub?.graceUntil).toBeTruthy();
   });
 });
