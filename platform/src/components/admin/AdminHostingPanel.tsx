@@ -147,7 +147,7 @@ export function AdminHostingPanel() {
         ))}
       </div>
       {message ? <p className="rounded-lg border border-border bg-secondary/50 p-2 text-sm" role="status">{message}</p> : null}
-      {tab === "Plan" ? <PlanTab tier={tier} onSave={saveTier} /> : null}
+      {tab === "Plan" ? <PlanTab key={JSON.stringify(tier)} tier={tier} onSave={saveTier} onSync={() => act(() => api("/api/admin/hosting/stripe-prices", { method: "POST" }), "Stripe prices synchronized. Sales remain disabled.")} /> : null}
       {tab === "Games" ? <GamesTab tier={tier} profiles={profiles} onSave={saveTier} /> : null}
       {tab === "Subscriptions" ? <SubscriptionsTab tier={tier} subs={subs} act={act} /> : null}
       {tab === "Customer servers" ? <ServersTab servers={servers} act={act} /> : null}
@@ -160,7 +160,7 @@ function num(v: string) {
   return Number.isFinite(n) ? n : 0;
 }
 
-function PlanTab({ tier, onSave }: { tier: Tier; onSave: (t: Tier) => void }) {
+function PlanTab({ tier, onSave, onSync }: { tier: Tier; onSave: (t: Tier) => void; onSync: () => void }) {
   const [t, setT] = useState<Tier>(tier);
   const set = <K extends keyof Tier>(k: K, v: Tier[K]) => setT((prev) => ({ ...prev, [k]: v }));
   const field = (label: string, k: keyof Tier, help?: string) => (
@@ -185,9 +185,7 @@ function PlanTab({ tier, onSave }: { tier: Tier; onSave: (t: Tier) => void }) {
           Description
           <textarea className={`${input} mt-1 w-full`} rows={3} value={t.description} onChange={(e) => set("description", e.target.value)} />
         </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={t.salesEnabled} onChange={(e) => set("salesEnabled", e.target.checked)} /> Sales enabled
-        </label>
+        <p className="text-xs text-muted-foreground">Sales remain closed until checkout, capacity holds, verified webhooks, and launch checks are ready.</p>
         <label className="flex items-center gap-2 text-sm text-red-500">
           <input type="checkbox" checked={t.startsDisabled} onChange={(e) => set("startsDisabled", e.target.checked)} /> Emergency: disable all server starts
           (running servers stop on the next reconcile)
@@ -220,7 +218,7 @@ function PlanTab({ tier, onSave }: { tier: Tier; onSave: (t: Tier) => void }) {
         </section>
         <section className="space-y-3 rounded-xl border border-border bg-card p-4">
           <h2 className="font-semibold">Slot packages</h2>
-          <p className="text-xs text-muted-foreground">Prices shown on /hosting. Once billing is live, a price change applies to new purchases only.</p>
+          <p className="text-xs text-muted-foreground">Save changed prices, then sync to Stripe. Existing subscriptions keep their original price. Sync does not open checkout.</p>
           <table className="w-full text-sm">
             <thead className="text-left text-xs text-muted-foreground">
               <tr><th>Slots</th><th>Price / month</th><th>On sale</th><th /></tr>
@@ -231,7 +229,7 @@ function PlanTab({ tier, onSave }: { tier: Tier; onSave: (t: Tier) => void }) {
                   <td><input className={`${input} w-16`} type="number" value={p.slots} onChange={(e) => set("packages", pkgs.map((x, j) => (j === i ? { ...x, slots: num(e.target.value) } : x)))} /></td>
                   <td>$<input className={`${input} w-20`} type="number" step="0.01" value={(p.priceCents / 100).toFixed(2)} onChange={(e) => set("packages", pkgs.map((x, j) => (j === i ? { ...x, priceCents: Math.round(num(e.target.value) * 100) } : x)))} /></td>
                   <td><input type="checkbox" checked={p.enabled} onChange={(e) => set("packages", pkgs.map((x, j) => (j === i ? { ...x, enabled: e.target.checked } : x)))} /></td>
-                  <td><button type="button" className="text-xs text-red-500" onClick={() => set("packages", pkgs.filter((_, j) => j !== i))}>Remove</button></td>
+                  <td><span className="text-xs text-muted-foreground">{p.stripePriceId ? "Synced" : "Needs sync"}</span> <button type="button" className="text-xs text-red-500" onClick={() => set("packages", pkgs.filter((_, j) => j !== i))}>Remove</button></td>
                 </tr>
               ))}
             </tbody>
@@ -239,6 +237,7 @@ function PlanTab({ tier, onSave }: { tier: Tier; onSave: (t: Tier) => void }) {
           <button type="button" className="text-sm text-primary" onClick={() => set("packages", [...pkgs, { slots: 4, priceCents: 0, currency: "usd", enabled: false, order: pkgs.length, stripePriceId: null }])}>
             + Add package
           </button>
+          <button type="button" className="ml-4 text-sm text-primary" onClick={onSync}>Sync saved prices to Stripe</button>
         </section>
         <section className="space-y-2 rounded-xl border border-border bg-card p-4">
           <h2 className="font-semibold">Regions</h2>

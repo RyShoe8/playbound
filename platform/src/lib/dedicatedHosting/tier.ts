@@ -69,8 +69,18 @@ export type HostingTier = {
   safetyReservePercent: number;
   regions: Array<{ key: string; label: string; salesEnabled: boolean }>;
   packages: Array<{ slots: number; priceCents: number; currency: string; enabled: boolean; order: number; stripePriceId: string | null }>;
+  stripeProductId: string | null;
   games: TierGame[];
 };
+
+/** Client-submitted Stripe IDs are never trusted. An existing ID survives only
+ * when the commercial terms that created it are unchanged. */
+export function preservedPackagePrices(previous: HostingTier, incoming: HostingTier["packages"]): HostingTier["packages"] {
+  return incoming.map((pkg) => {
+    const old = previous.packages.find((x) => x.slots === pkg.slots && x.priceCents === pkg.priceCents && x.currency.toLowerCase() === pkg.currency.toLowerCase());
+    return { ...pkg, stripePriceId: old?.stripePriceId ?? null };
+  });
+}
 
 /**
  * The tier as stored, or the launch defaults if admin has never saved it.
