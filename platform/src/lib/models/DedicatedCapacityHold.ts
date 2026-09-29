@@ -10,6 +10,11 @@ const DedicatedCapacityHoldSchema = new Schema({
   slots: { type: Number, required: true, min: 1 },
   checkoutKey: { type: String, required: true, unique: true },
   checkoutSessionId: { type: String, default: null },
+  requestedSessionExpiresAt: { type: Date, default: null },
+  // Immutable commercial terms captured before sending a customer to Stripe.
+  stripePriceId: { type: String, default: null },
+  monthlyPriceCents: { type: Number, default: null },
+  currency: { type: String, default: null },
   state: { type: String, enum: ["held", "converted", "released"], default: "held" },
   expiresAt: { type: Date, required: true },
   convertedAt: { type: Date, default: null },
