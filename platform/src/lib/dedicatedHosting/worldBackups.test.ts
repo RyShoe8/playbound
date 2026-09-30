@@ -7,7 +7,7 @@ describe("world-data backups", () => {
   it("lists exactly the games the host agent can back up", () => {
     const agent = readFileSync(join(process.cwd(), "game-host/dedicatedDataBackups.js"), "utf8");
     const block = agent.match(/const WORLD_SOURCES = \{([\s\S]*?)\n\};/)?.[1] ?? "";
-    const onHost = [...block.matchAll(/^\s{2}([a-z0-9-]+):/gm)].map((m) => m[1]).sort();
+    const onHost = [...block.matchAll(/^\s{2}"?([a-z0-9-]+)"?:/gm)].map((m) => m[1]).sort();
     expect([...WORLD_BACKUP_GAMES].sort()).toEqual(onHost);
   });
 

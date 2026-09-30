@@ -12,7 +12,10 @@ import { worldBackupOnHost, type WorldBackupInfo } from "@/lib/gameHost/client";
 import { authorizeServer, recordActivity, type Fail } from "./access";
 import { retentionFor } from "./backups";
 
-export const WORLD_BACKUP_GAMES = ["mindustry", "openttd", "luanti", "freeciv", "morrowind"] as const;
+export const WORLD_BACKUP_GAMES = [
+  "mindustry", "openttd", "luanti", "freeciv", "morrowind",
+  "terraria", "factorio", "core-keeper", "vintage-story", "rimworld-together",
+] as const;
 
 export function hasWorldBackups(recipeSlug: string): boolean {
   return (WORLD_BACKUP_GAMES as readonly string[]).includes(recipeSlug);

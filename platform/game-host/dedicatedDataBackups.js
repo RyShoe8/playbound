@@ -19,6 +19,12 @@ const WORLD_SOURCES = {
   // Player, cell, world and map data. The scripts around it are copied from
   // the install on every start, so they are not part of a restore point.
   morrowind: (folder) => ["morrowind-servers", folder, "server", "data"],
+  // Paid-plan games (dedicatedRecipes.js). Each folder is the one that recipe writes the world to.
+  terraria: (folder) => ["terraria-servers", folder, "Worlds"],
+  factorio: (folder) => ["factorio-servers", folder, "saves"],
+  "core-keeper": (folder) => ["core-keeper-servers", folder, "data"],
+  "vintage-story": (folder) => ["vintage-story-servers", folder, "data"],
+  "rimworld-together": (folder) => ["rimworld-together-servers", folder, "Assets"],
 };
 
 /** Games whose customer servers keep world data worth a restore point. */
