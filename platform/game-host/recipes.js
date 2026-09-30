@@ -48,6 +48,23 @@ function luantiWorldDir(ctx) {
     : path.join(HOST_HOME, "luanti-worlds", `pb-${ctx.partyId.slice(-8)}`);
 }
 
+/**
+ * Freeciv has no player-limit flag. Its `maxplayers` server setting is the
+ * cap (a join is refused once the pregame is full), and a `--read` startup
+ * script is how a setting is applied before the first connection. Customer
+ * servers keep script and saves inside their isolated home.
+ */
+function freecivRoomDir(ctx) {
+  return ctx.customerOwned ? customerHomeDir("freeciv-servers", ctx) : path.join(HOST_HOME, "freeciv-rooms");
+}
+function freecivScriptPath(ctx) {
+  const id = String(ctx.partyId || "room").replace(/[^a-zA-Z0-9_-]/g, "").slice(-24);
+  return path.join(freecivRoomDir(ctx), `pb-${id}.serv`);
+}
+function freecivSavesDir(ctx) {
+  return path.join(freecivRoomDir(ctx), "saves");
+}
+
 /** spawnEnv for engines that only read HOME/XDG_*: isolated for customers. */
 function isolatedHomeEnv(dirName) {
   return (_port, ctx) => {
@@ -211,7 +228,7 @@ for (const slug of [
   "morrowind", "teeworlds", "openttd", "assaultcube", "medal-of-honor-allied-assault", "mindustry", "hurry-curry", "deus-ex-goty-edition",
   "warzone-2100", "bzflag", "supertuxkart", "xonotic", "openarena",
   "0-ad", "0ad", "bombsquad", "wolfenstein-enemy-territory", "team-fortress-2",
-  "unvanquished", "hedgewars", "freedoom", "veloren",
+  "unvanquished", "hedgewars", "freedoom", "veloren", "freeciv",
 ]) {
   RECIPE_SETTING_TYPES[slug] = { ...RECIPE_SETTING_TYPES[slug], maxPlayers: "number" };
 }
@@ -481,6 +498,8 @@ function appImageServerArgs(binary) {
  * without one fall back to a per-party directory, as before.
  */
 function tes3mpRoomDir(ctx) {
+  // A paid server's room is its isolated home, the folder dedicatedDataBackups.js snapshots.
+  if (ctx.customerOwned) return customerHomeDir("morrowind-servers", ctx);
   const key = typeof ctx.saveKey === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(ctx.saveKey) ? ctx.saveKey : null;
   if (key) return path.join(TES3MP_CONFIG_DIR, `world-${key}`);
   return path.join(TES3MP_CONFIG_DIR, `pb-${String(ctx.partyId || "room").slice(-16)}`);
@@ -1120,7 +1139,18 @@ export const recipes = {
     portEnd: 5576,
     protocol: "tcp",
     binaries: gameBin("freeciv", ["freeciv-server"]),
-    args: (port) => ["-p", String(port)],
+    args: (port, ctx) => [
+      "-p", String(port),
+      ...(ctx?.managed ? ["--read", freecivScriptPath(ctx)] : []),
+      ...(ctx?.customerOwned ? ["--saves", freecivSavesDir(ctx)] : []),
+    ],
+    prepareSpawn: async (_port, ctx) => {
+      if (!ctx?.managed) return;
+      fs.mkdirSync(freecivRoomDir(ctx), { recursive: true, mode: 0o700 });
+      if (ctx.customerOwned) fs.mkdirSync(freecivSavesDir(ctx), { recursive: true, mode: 0o700 });
+      fs.writeFileSync(freecivScriptPath(ctx), `set maxplayers ${managedPlayerLimit(ctx)}\n`, "utf8");
+    },
+    spawnEnv: (port, ctx) => (ctx?.customerOwned ? isolatedHomeEnv("freeciv-servers")(port, ctx) : {}),
   },
   bzflag: {
     // Ubuntu's bzflag-server unit commonly owns/restarts on the default 5154.

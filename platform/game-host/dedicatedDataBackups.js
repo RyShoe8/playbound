@@ -8,13 +8,32 @@ const MAX_BYTES = 5 * 1024 ** 3;
 const MAX_FILES = 50_000;
 const BACKUP_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// World data for each game, relative to the shared home. Every path sits
+// inside one customer server's own pb-<id> folder — never a shared directory.
+const WORLD_SOURCES = {
+  mindustry: (folder) => ["mindustry", folder],
+  openttd: (folder) => ["openttd-servers", folder],
+  luanti: (folder) => ["luanti-servers", folder],
+  // Saved games only; the startup script beside them is regenerated each start.
+  freeciv: (folder) => ["freeciv-servers", folder, "saves"],
+  // Player, cell, world and map data. The scripts around it are copied from
+  // the install on every start, so they are not part of a restore point.
+  morrowind: (folder) => ["morrowind-servers", folder, "server", "data"],
+};
+
+/** Games whose customer servers keep world data worth a restore point. */
+export const WORLD_BACKUP_GAMES = Object.freeze(Object.keys(WORLD_SOURCES));
+
+export function isWorldBackupGame(gameSlug) {
+  return Object.hasOwn(WORLD_SOURCES, gameSlug);
+}
+
 function paths(serverId, gameSlug, home) {
   if (!/^[0-9a-f]{24}$/i.test(serverId)) throw new Error("Invalid customer server ID");
-  if (gameSlug !== "mindustry" && gameSlug !== "openttd" && gameSlug !== "luanti") throw new Error("This game has no persistent world-data backup");
+  const locate = Object.hasOwn(WORLD_SOURCES, gameSlug) ? WORLD_SOURCES[gameSlug] : null;
+  if (!locate) throw new Error("This game has no persistent world-data backup");
   const folder = `pb-${serverId}`;
-  const source = gameSlug === "mindustry"
-    ? path.join(home, "mindustry", folder)
-    : path.join(home, gameSlug === "luanti" ? "luanti-servers" : "openttd-servers", folder);
+  const source = path.join(home, ...locate(folder));
   const backupRoot = path.join(home, "dedicated-backups", serverId, gameSlug);
   return { source, backupRoot };
 }

@@ -51,7 +51,7 @@ export function snapshotHash(snap: Snapshot): string {
   return createHash("sha256").update(stable).digest("hex");
 }
 
-async function retentionFor(server: ServerLike): Promise<number> {
+export async function retentionFor(server: ServerLike): Promise<number> {
   const sub = await DedicatedSubscription.findById(server.dedicatedSubscriptionId).select({ tier: 1 }).lean();
   return (await getTier(sub?.tier || "basic")).backupRetention;
 }
