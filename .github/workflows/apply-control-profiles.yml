@@ -2,6 +2,11 @@ name: Apply PlayBound Controls profiles
 
 on:
   workflow_dispatch:
+    inputs:
+      only:
+        description: "Optional: insert only this exact game slug (e.g. outrun). Leave empty for the whole wave."
+        required: false
+        default: ""
   push:
     branches: [main]
     paths:
@@ -40,11 +45,13 @@ jobs:
         run: npm ci
       - name: Validate and preview exact inserts
         if: steps.mongo.outputs.available == 'true'
-        run: npm run insert:control-profile-wave
+        run: npm run insert:control-profile-wave -- ${ONLY:+--only="$ONLY"}
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          ONLY: ${{ github.event.inputs.only }}
       - name: Insert missing profiles only
         if: steps.mongo.outputs.available == 'true'
-        run: npm run insert:control-profile-wave -- --apply
+        run: npm run insert:control-profile-wave -- --apply ${ONLY:+--only="$ONLY"}
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          ONLY: ${{ github.event.inputs.only }}

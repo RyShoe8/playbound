@@ -3663,13 +3663,12 @@ function bundledControlProfile(slug) {
 async function availablePlayBoundControlsProfile(slug, editionSlug, allowPreview = false) {
   const { hasControlsHost } = require("./services/couch/windowsVigem");
   if (process.platform !== "win32" || couchDisqualifiesPlayBoundControls() || !hasControlsHost()) return null;
-  const outRunPilot = !app.isPackaged && slug === "outrun" && process.env.PLAYBOUND_CONTROLS_PILOT_OUTRUN === "1";
-  const profile = outRunPilot
-    ? require("./services/inputEngine/profiles/outrun.json")
-    : (await fetchControlProfile(slug, editionSlug, allowPreview)) || bundledControlProfile(slug);
+  // Signed and unsigned builds must resolve profiles identically: the live
+  // catalog first, then the bundled fallback. No build-type-only overrides.
+  const profile = (await fetchControlProfile(slug, editionSlug, allowPreview)) || bundledControlProfile(slug);
   const approved = profile?.status === "verified" && profile?.antiCheatCompatibility === "verified";
   const testing = allowPreview && profile?.status === "testing";
-  return (approved || testing || outRunPilot) && profile?.inputStrategy === "keyboard_mouse" ? profile : null;
+  return (approved || testing) && profile?.inputStrategy === "keyboard_mouse" ? profile : null;
 }
 
 /** Tell the renderer whether its Gamepad API polling loop needs to run for PlayBound Controls. */
@@ -3694,8 +3693,6 @@ async function applyControllerConfig(slug, installDir, opts = {}) {
   gamepadBridge.deactivatePlayBoundControls();
   notifyPlayBoundControlsState(false);
   if (process.platform === "win32" && !couchDisqualifiesPlayBoundControls() && inputMode !== "keyboard") {
-    // The shared availability resolver also allows the explicit local OutRun
-    // pilot; packaged launchers still require a verified catalog profile.
     const profile = await availablePlayBoundControlsProfile(slug, opts?.editionSlug || null, opts?.controlsPreview === true);
     if (profile && gamepadBridge.activatePlayBoundControls(profile)) {
       enhancedControlsActive = true;
@@ -12998,8 +12995,7 @@ ipcMain.handle("get-playbound-controls-availability", async (_event, slug, editi
   // launch dialog keeps its ordinary Controller choice and this activates
   // underneath it, so it is not offered as an alternative control scheme.
   if (profile?.supplementsNativePad) return { available: false };
-  const outRunPilot = !app.isPackaged && slug === "outrun" && process.env.PLAYBOUND_CONTROLS_PILOT_OUTRUN === "1";
-  return { available: Boolean(profile), preview: Boolean(profile?.status === "testing" && !outRunPilot), name: profile?.name || null };
+  return { available: Boolean(profile), preview: Boolean(profile?.status === "testing"), name: profile?.name || null };
 });
 ipcMain.handle("get-overlay-shortcut", () => ({
   accelerator: overlayShortcut(),
