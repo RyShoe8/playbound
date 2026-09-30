@@ -277,6 +277,106 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
    */
   deponia: { releaseYear: 2012, sizeMB: 5000 },
   "caravan-sandwitch": { releaseYear: 2024, sizeMB: 5000 },
+
+  /*
+   * Dedicated Basic catalog drafts, 2026-09-30. These are deliberately only
+   * controller/capacity/party-instruction fields. Server-configurable games
+   * retain maxPlayers=null: the live server's own slot setting is the truth.
+   * Steam's first-party app pages/API establish multiplayer and pad support;
+   * fixed caps come from the publishers' descriptions. Status is untouched;
+   * the wave fills a Steam handoff only when a draft has no launcher recipe.
+   */
+  // EA's BF1942 PC manual documents LAN/Internet play, but no native pad.
+  "battlefield-1942-the-complete-collection": {
+    hasControllerSupport: false,
+    multiplayerGamingSteps: [{ platform: "all", text: "Use Battlefield 1942's LAN or direct-IP multiplayer with matching game versions. The original GameSpy server list is offline; PlayBound does not claim to restore it." }],
+  },
+  // Steam 2773280: Online PvP and LAN PvP; no native controller category.
+  "aneurism-iv": {
+    steamAppId: "2773280",
+    hasControllerSupport: false,
+    multiplayerGamingSteps: [{ platform: "all", text: "Use ANEURISM IV's in-game multiplayer server list or LAN menu. Every player needs their own game copy." }],
+  },
+  // Steam 413150 explicitly advertises eight-player online farming and full pad support.
+  "stardew-valley": {
+    steamAppId: "413150",
+    hasControllerSupport: true,
+    maxPlayers: 8,
+    multiplayerGamingSteps: [{ platform: "all", text: "The host loads a co-op farm; friends join through the in-game Co-op menu or a Steam invite. Desktop online farms can host up to eight people. Split-screen is also available on one PC." }],
+  },
+  // Steam 211820: online co-op/PvP; no native controller category.
+  starbound: {
+    steamAppId: "211820",
+    hasControllerSupport: false,
+    multiplayerGamingSteps: [{ platform: "all", text: "Join a friend's Starbound game through Steam or connect to a dedicated server by address. Every player needs the same game and compatible mods." }],
+  },
+  // Steam 1169040 and the developer's pinned multiplayer guide: pad support,
+  // Steam invites, LAN and dedicated-server direct IP. No useful fixed cap.
+  necesse: {
+    steamAppId: "1169040",
+    hasControllerSupport: true,
+    multiplayerGamingSteps: [{ platform: "all", text: "Host a world with Friends-only or Public visibility, then invite friends in-game or through Steam. Dedicated-server players can join by IP. Keep game and mod versions aligned." }],
+  },
+  // Steam 322330: online/LAN co-op and PvP, full controller support.
+  "dont-starve-together": {
+    steamAppId: "322330",
+    hasControllerSupport: true,
+    multiplayerGamingSteps: [{ platform: "all", text: "Host a world or join from Don't Starve Together's server browser. Dedicated worlds need the owner's Klei cluster token; every player joins with their own game copy." }],
+  },
+  // Steam 602960: up to 16 players on one submarine; no native pad category.
+  barotrauma: {
+    steamAppId: "602960",
+    hasControllerSupport: false,
+    maxPlayers: 16,
+    multiplayerGamingSteps: [{ platform: "all", text: "Find the same Barotrauma server in-game or join by address. A submarine crew supports up to 16 players; install the server's required content before joining." }],
+  },
+  // Steam 427520: partial controller support. Factorio's official multiplayer
+  // wiki documents public/LAN lists and Connect to address; slots are configurable.
+  factorio: {
+    steamAppId: "427520",
+    hasControllerSupport: true,
+    multiplayerGamingSteps: [{ platform: "all", text: "Open Multiplayer, then browse public or LAN games or choose Connect to address. Everyone needs the same Factorio version and mod set. Controller support is partial, so some menus still need keyboard or mouse." }],
+  },
+  // Steam 105600: online co-op/PvP and full controller support; server cap varies.
+  terraria: {
+    steamAppId: "105600",
+    hasControllerSupport: true,
+    multiplayerGamingSteps: [{ platform: "all", text: "Use Multiplayer to host and play, join a friend through Steam, or connect to a Terraria server by IP and port. The host chooses the server's player limit." }],
+  },
+  // Vintage Story's official wiki documents LAN/dedicated servers and states
+  // that the base game has no native gamepad support.
+  "vintage-story": {
+    hasControllerSupport: false,
+    multiplayerGamingSteps: [{ platform: "all", text: "Open a world to LAN or join a Vintage Story dedicated server by address. The server owner sets its player limit and required mods; the base game has no native controller support." }],
+  },
+  // Steam 1621690: explicitly 1–8 players, full controller support.
+  "core-keeper": {
+    steamAppId: "1621690",
+    hasControllerSupport: true,
+    maxPlayers: 8,
+    multiplayerGamingSteps: [{ platform: "all", text: "Host a Core Keeper world, then share its game ID with friends or use the in-game invite. Online co-op supports up to eight players." }],
+  },
+  // The base Steam app, not Alloyed Collective DLC (2781620).
+  "risk-of-rain-2": {
+    steamAppId: "632360",
+    hasControllerSupport: true,
+    multiplayerGamingSteps: [{ platform: "all", text: "Host an online co-op lobby and invite friends through Steam. Each player needs the base game; Alloyed Collective is optional DLC, not a standalone game." }],
+  },
+  // Vanilla RimWorld has no multiplayer. Steam 294100 lists only partial pad
+  // support; the separate RimWorld Together edition owns multiplayer.
+  rimworld: { steamAppId: "294100", hasControllerSupport: true },
+  // Steam 240: multiplayer, no native controller category; Source server list.
+  "counter-strike-source": {
+    steamAppId: "240",
+    hasControllerSupport: false,
+    multiplayerGamingSteps: [{ platform: "all", text: "Join the same Counter-Strike: Source server from the in-game browser or connect by address. PlayBound does not supply Valve matchmaking for private parties." }],
+  },
+  // Steam 304930: online/LAN PvP and co-op, no native controller category.
+  unturned: {
+    steamAppId: "304930",
+    hasControllerSupport: false,
+    multiplayerGamingSteps: [{ platform: "all", text: "Use Unturned's server browser or direct connect to join the host's server. Public dedicated servers need a valid Steam game-server login token from their owner." }],
+  },
 };
 
 /** The correction block for a slug, or undefined when there is nothing to apply. */

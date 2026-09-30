@@ -166,6 +166,8 @@ const LOCAL_COUCH_GAMES = new Set([
 const ONLINE_COUCH_GAMES = new Set([
   // RVGL supports 2–4 player split-screen with separate pads (or shared keyboard).
   "re-volt-rvgl",
+  // Stardew Valley supports local split-screen co-op alongside online farms.
+  "stardew-valley",
 ]);
 
 /**

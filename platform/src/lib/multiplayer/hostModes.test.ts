@@ -3,6 +3,7 @@ import {
   findOrphanedAdapters,
   getConnectArgsTemplate,
   getDefaultGamePort,
+  getHostedInGameSteps,
   getMultiplayerAdapter,
   MULTIPLAYER_ADAPTERS,
 } from "./adapters";
@@ -20,8 +21,26 @@ import {
   publicLobbyPortFor,
   resolvedHostMode,
 } from "./hostModes";
+import { lanPayloadFromDoc } from "@/lib/virtualLan/provision";
 
 describe("host mode configuration", () => {
+  it("offers LAN-capable games a party network and only ready dedicated recipes a VPS room", () => {
+    for (const slug of ["battlefield-1942-the-complete-collection", "aneurism-iv", "stardew-valley", "starbound", "necesse", "dont-starve-together", "factorio", "terraria", "vintage-story", "counter-strike-source", "unturned"]) {
+      expect(hostModesFor(slug)).toContain("self");
+      expect(getMultiplayerAdapter(slug).virtualLan?.inGameSteps?.length).toBeGreaterThan(0);
+    }
+    for (const slug of ["counter-strike-source", "terraria", "core-keeper", "factorio", "necesse", "barotrauma"]) {
+      expect(canUseDedicated(slug)).toBe(true);
+      expect(lanPayloadFromDoc(slug, "dedicated").enabled).toBe(false);
+      expect(getHostedInGameSteps(slug).length).toBeGreaterThan(0);
+    }
+    for (const slug of ["battlefield-1942-the-complete-collection", "aneurism-iv", "stardew-valley", "starbound", "vintage-story", "risk-of-rain-2", "rimworld", "dont-starve-together", "unturned"]) {
+      expect(canUseDedicated(slug)).toBe(false);
+    }
+    expect(hostModesFor("stardew-valley")).toContain("couch");
+    expect(hostModesFor("witchbrook")).toEqual([]);
+    expect(hostModesFor("risk-of-rain-2-alloyed-collective")).toEqual([]);
+  });
   /*
    * The regression guard. A game typed `managed-server` that is not in
    * HOSTABLE_GAMES has no dedicated server to run and is not peer-hosted

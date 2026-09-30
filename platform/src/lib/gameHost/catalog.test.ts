@@ -1,12 +1,33 @@
 import { describe, expect, it } from "vitest";
 import {
   HOSTABLE_GAMES,
+  PARTY_DEDICATED_GAMES,
+  DEDICATED_ONLY_GAMES,
+  partyDedicatedPlayerLimit,
   emptyHostedPayload,
   getHostableGame,
   isHostableGame,
 } from "./catalog";
 
 describe("game host catalog", () => {
+  it("offers party rooms only for reviewed dedicated recipes, without community rotation", async () => {
+    const { recipes } = await import("../../../game-host/recipes.js");
+    const bySlug = recipes as Record<string, { portStart: number; portEnd: number; protocol: string } | undefined>;
+    for (const [slug, game] of Object.entries(PARTY_DEDICATED_GAMES)) {
+      expect(DEDICATED_ONLY_GAMES[slug]).toEqual(game);
+      expect(HOSTABLE_GAMES[slug]).toBeUndefined();
+      expect(bySlug[slug]?.portStart).toBe(game.defaultPort);
+      expect(bySlug[slug]?.portEnd).toBe(game.portEnd);
+      expect(bySlug[slug]?.protocol).toBe(game.protocol);
+      expect(getHostableGame(slug)).toEqual(game);
+    }
+    for (const slug of ["witchbrook", "risk-of-rain-2", "starbound", "stardew-valley", "vintage-story", "aneurism-iv", "rimworld", "unturned", "dont-starve-together"]) {
+      expect(PARTY_DEDICATED_GAMES[slug]).toBeUndefined();
+    }
+    expect(partyDedicatedPlayerLimit("core-keeper", 32)).toBe(8);
+    expect(partyDedicatedPlayerLimit("barotrauma", 32)).toBe(16);
+    expect(partyDedicatedPlayerLimit("factorio", 12)).toBe(12);
+  });
   it("marks listen-server games as hostable", () => {
     expect(isHostableGame("openra")).toBe(true);
     expect(isHostableGame("openttd")).toBe(true);

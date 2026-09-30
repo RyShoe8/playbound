@@ -601,7 +601,7 @@ export function queryTes3mp(room) {
 const QUAKE3_GAMES = new Set([
   "xonotic", "openarena", "wolfenstein-enemy-territory", "unvanquished", "medal-of-honor-allied-assault",
 ]);
-const A2S_GAMES = new Set(["counter-strike-2", "team-fortress-2"]);
+const A2S_GAMES = new Set(["counter-strike-2", "counter-strike-source", "team-fortress-2"]);
 // TCP games with no usable query protocol: counted by established connections.
 const TCP_CLIENT_GAMES = new Set(["freeciv", "battle-for-wesnoth", "triplea", "hedgewars", "warzone-2100", "ysoccer"]);
 

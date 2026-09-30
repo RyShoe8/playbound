@@ -294,7 +294,7 @@ export function botFillCount(slug, ctx) {
 }
 
 function managedPlayerLimit(ctx, fallback = 16) {
-  const requested = ctx?.managed ? ctx?.settings?.maxPlayers : null;
+  const requested = ctx?.settings?.maxPlayers;
   return Number.isInteger(requested) ? Math.max(2, Math.min(64, requested)) : fallback;
 }
 

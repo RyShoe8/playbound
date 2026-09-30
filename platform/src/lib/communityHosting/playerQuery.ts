@@ -10,6 +10,7 @@ import { queryManagedHostOccupancy } from "@/lib/gameHost/client";
  */
 export const QUERY_BY_GAME: Record<string, string> = {
   "counter-strike-2": "agent-local",
+  "counter-strike-source": "agent-local",
   "team-fortress-2": "agent-local",
   xonotic: "agent-local",
   openarena: "agent-local",
