@@ -7,15 +7,24 @@ export function CardCategoryTags({
   className,
   max = 4,
   size = "sm",
+  controller = false,
 }: {
   genres?: string[];
   tags?: string[];
   className?: string;
   max?: number;
   size?: "sm" | "md";
+  /** Game supports a controller, natively or through PlayBound Controls. */
+  controller?: boolean;
 }) {
   const seen = new Set<string>();
   const chips: string[] = [];
+  // Listed first and outside `max`, so a crowded card never drops it.
+  if (controller) {
+    seen.add("controller");
+    chips.push("Controller");
+  }
+  const limit = chips.length + max;
   for (const raw of [...genres, ...tags]) {
     const label = String(raw || "").trim();
     if (!label) continue;
@@ -23,7 +32,7 @@ export function CardCategoryTags({
     if (seen.has(key)) continue;
     seen.add(key);
     chips.push(label);
-    if (chips.length >= max) break;
+    if (chips.length >= limit) break;
   }
   if (chips.length === 0) return null;
   return (

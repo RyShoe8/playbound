@@ -44,8 +44,16 @@ assert.match(gateBody, /session\?\.solo\s*!==\s*true/);
 // Both real call sites must route through the shared gate rather than
 // re-deriving their own couch/phone exclusion — that duplication is exactly
 // how the previous "always excludes inputMode === 'phone'" bug happened.
-const availableBody = functionBody("async function availablePlayBoundControlsProfile(");
+// The availability check now lives in playBoundControlsResolution (which also
+// reports why a game was skipped); availablePlayBoundControlsProfile only
+// delegates to it, so the shared gate is asserted on the resolver.
+const availableBody = functionBody("async function playBoundControlsResolution(");
 assert.match(availableBody, /couchDisqualifiesPlayBoundControls\(\)/);
+assert.match(
+  functionBody("async function availablePlayBoundControlsProfile("),
+  /playBoundControlsResolution\(/,
+  "the profile lookup must go through the resolver that carries the couch gate"
+);
 assert.doesNotMatch(
   availableBody,
   /couchHost\?\.getState\?\.\(\)\?\.active(?!.*couchDisqualifiesPlayBoundControls)/,

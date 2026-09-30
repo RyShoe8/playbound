@@ -2220,6 +2220,7 @@ async function fetchControlProfile(slug, editionSlug, preview = false) {
       headers: launcherApiHeaders({ accept: "application/json" }),
     });
     if (!res.ok) {
+      console.warn(`[playbound-controls] profile lookup for "${slug}" failed: HTTP ${res.status}`);
       return null;
     }
     const data = await res.json();
@@ -2227,6 +2228,7 @@ async function fetchControlProfile(slug, editionSlug, preview = false) {
     controlProfileCache.set(key, { at: Date.now(), profile });
     return profile;
   } catch (err) {
+    console.warn(`[playbound-controls] profile lookup for "${slug}" failed:`, err?.message || err);
     return null;
   }
 }

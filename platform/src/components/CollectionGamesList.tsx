@@ -5,6 +5,7 @@ import type { Game } from "@/lib/data/types";
 import { GameArt } from "@/components/GameArt";
 import { LaunchBadge, PlayCta } from "@/components/GameCard";
 import { CardCategoryTags } from "@/components/CardCategoryTags";
+import { supportsController } from "@/lib/controller/support";
 import { useGameTier } from "@/components/AccessTiersProvider";
 import { accessPriceLabel } from "@/lib/access/discoveryMode";
 import { isBaseGameRequirement } from "@/lib/access/resolver";
@@ -47,7 +48,7 @@ function CollectionGameRow({ game, index }: { game: Game; index: number }) {
           <span className="font-bold tabular-nums text-muted-foreground">{price}</span>
           <span className="text-muted-foreground">{game.genres.join(" · ")}</span>
         </div>
-        <CardCategoryTags genres={game.genres} tags={game.tags} className="mt-1.5" />
+        <CardCategoryTags genres={game.genres} tags={game.tags} controller={supportsController(game)} className="mt-1.5" />
       </div>
       <PlayCta game={game} size="sm" />
     </div>

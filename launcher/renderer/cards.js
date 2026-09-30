@@ -10,11 +10,18 @@ import {
   state,
   resizedImageUrl,
 } from "./shared.js";
+import { itemSupportsController } from "./controllerTag.js";
 
 /** Mirrors CardCategoryTags: genres then tags, deduped, capped. */
-function categoryChipsHtml(item, { extra = [], max = 4 } = {}) {
+function categoryChipsHtml(item, { extra = [], max = 4, controller = false } = {}) {
   const seen = new Set();
   const chips = [];
+  // Listed first and outside `max`, so a crowded card never drops it.
+  if (controller) {
+    seen.add("controller");
+    chips.push("Controller");
+  }
+  const limit = chips.length + max;
   for (const raw of [...(item.genres || []), ...(item.tags || []), ...extra]) {
     const label = String(raw || "").trim();
     if (!label) continue;
@@ -22,7 +29,7 @@ function categoryChipsHtml(item, { extra = [], max = 4 } = {}) {
     if (seen.has(key)) continue;
     seen.add(key);
     chips.push(label);
-    if (chips.length >= max) break;
+    if (chips.length >= limit) break;
   }
   if (!chips.length) return "";
   return `<div class="card-tags">${chips
@@ -177,7 +184,7 @@ export function createGameCard(game, playingNow) {
   footer.innerHTML = `
     <div class="card-meta-copy">
       <p class="card-price">${escapeHtml(price)}</p>
-      ${categoryChipsHtml(game)}
+      ${categoryChipsHtml(game, { controller: itemSupportsController(game) })}
       ${editionChipsHtml(game)}
     </div>
     ${

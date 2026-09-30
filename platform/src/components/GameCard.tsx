@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { TelemetryAnchor } from "@/components/TelemetryAnchor";
 import { MobileOutboundCta } from "@/components/MobileOutboundCta";
 import { CardCategoryTags } from "@/components/CardCategoryTags";
+import { supportsController } from "@/lib/controller/support";
 import { useIncompatibilityLabel } from "@/components/compatibility/useFilteredGames";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { useGameTier } from "@/components/AccessTiersProvider";
@@ -297,6 +298,7 @@ export function GameCard({
           <CardCategoryTags
             genres={game.genres}
             tags={game.tags}
+            controller={supportsController(game)}
             size="sm"
             max={3}
             className="mt-1.5 min-w-0"
