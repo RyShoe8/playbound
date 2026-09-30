@@ -219,6 +219,7 @@ cp -f "$AGENT_SRC/index.js" "$AGENT_SRC/agentRoutes.js" "$AGENT_SRC/recipes.js" 
   "$AGENT_SRC/managedRegistry.js" "$AGENT_SRC/processMetrics.js" "$AGENT_SRC/a2sQuery.js" "$AGENT_SRC/playerQueries.js" \
   "$AGENT_SRC/communityHostingTick.js" "$AGENT_SRC/rvglDisplay.js" \
   "$AGENT_SRC/dedicatedDataBackups.js" "$AGENT_SRC/worldBackupRunner.js" "$AGENT_SRC/dedicatedDataBackupsWorker.js" \
+  "$AGENT_SRC/dedicatedRecipes.js" \
   "$AGENT_SRC/package.json" "$AGENT_DIR/"
 mkdir -p "$AGENT_DIR/assets"
 cp -f "$AGENT_SRC/assets/et-playbound.cfg" "$AGENT_DIR/assets/" 2>/dev/null || true
