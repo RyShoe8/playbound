@@ -25,6 +25,9 @@ const WORLD_SOURCES = {
   "core-keeper": (folder) => ["core-keeper-servers", folder, "data"],
   "vintage-story": (folder) => ["vintage-story-servers", folder, "data"],
   "rimworld-together": (folder) => ["rimworld-together-servers", folder, "Assets"],
+  necesse: (folder) => ["necesse-servers", folder, "saves"],
+  "dont-starve-together": (folder) => ["dont-starve-together-servers", folder, "PlayBound", "Cluster_1", "Master", "save"],
+  barotrauma: (folder) => ["barotrauma-servers", folder, "runtime", "Data", "Multiplayer"],
 };
 
 /** Games whose customer servers keep world data worth a restore point. */

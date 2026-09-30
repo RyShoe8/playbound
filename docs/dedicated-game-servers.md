@@ -1,81 +1,43 @@
-# Dedicated plan game servers
+# Paid Dedicated game servers
 
-Games on the paid Dedicated plan whose server recipes live in
-`platform/game-host/dedicatedRecipes.js`. They are **not** in `HOSTABLE_GAMES`
-(`platform/src/lib/gameHost/catalog.ts`), so they do not switch on free party
-hosting, community rotation or the Connect page. They appear in the admin's
-tier game list at `/admin/hosting` and start only for a customer's own server.
-See `DEDICATED_ONLY_GAMES` in that file.
+These recipes live in `platform/game-host/dedicatedRecipes.js` and are offered only through the paid Dedicated tier. They are deliberately absent from `HOSTABLE_GAMES`, so adding a draft does not enable free party rooms or community rotation. Catalog publication is separate and has not been changed. Witchbrook is omitted until release.
 
-**Status of every game here: recipe written from upstream documentation, not
-yet started on the VPS.** Add each to the tier as `draft`, install it, start a
-test server, then move it to `testing` and `verified` in `/admin/hosting`.
-Sales stay closed until you decide otherwise.
+`DEDICATED_ONLY_GAMES` in `platform/src/lib/gameHost/catalog.ts` supplies draft profile stubs in `/admin/hosting`. An installed binary does **not** mean the game is verified or available for sale. Promote a profile only after the agent starts the server, a real client joins, the purchased slot cap rejects player N+1, a clean stop preserves data, and a backup restores correctly.
 
-Catalog slugs are assumed to be the ones below. Confirm each in `/admin/games`
-before enabling: the recipe key, the profile key (`<slug>:base`) and the
-catalog slug must be identical.
+## VPS files installed
 
-## Slot cap
+The public server packages are under `/opt/playbound-host/games/<slug>` and owned by `playbound`. Re-runnable installation scripts are in `platform/game-host/tools/`:
 
-The cap is the customer's purchased slots, sent as `settings.maxPlayers` and
-applied through the game's own setting on every start:
+- `install-dedicated-steam.sh` uses the distro `/usr/games/steamcmd`, not the broken `/usr/local/bin/steamcmd` wrapper. It installed Counter-Strike: Source, Unturned, Core Keeper, Barotrauma, Don't Starve Together, Necesse, and ANEURISM IV from anonymous Steam apps.
+- `install-dedicated-direct.sh` staged and validated the official Factorio, Terraria, and Trackmania downloads and the RimWorld Together release. Terraria 1.4.5.8 is nested at `1458/Linux/TerrariaServer.bin.x86_64` and needs its executable bit set.
+- Vintage Story has a recipe but no file on the VPS: its official current server archive is behind a Vintage Story game-account login. Do not guess a versioned CDN URL.
+- SteamCMD reported success for anonymous Starbound app 211820 and Risk of Rain 2 tool 1180760 but delivered **no server executable** (only manifests and `EmptySteamDepot` for Risk of Rain 2). Neither is provisioned.
 
-| Game | Slug | Cap applied through | Source |
-|---|---|---|---|
-| Counter-Strike: Source | `counter-strike-source` | `-maxplayers N` | LinuxGSM `cssserver` start parameters |
-| Terraria | `terraria` | `-maxplayers N` | Terraria `serverconfig.txt` |
-| Unturned | `unturned` | `-maxplayers N` | LinuxGSM `untserver` start parameters |
-| RimWorld Together | `rimworld-together` | `Configs/ServerConfig.json` `MaxPlayers` | Server refuses joins when full (`ServerNetwork.cs`) |
-| Core Keeper | `core-keeper` | `data/ServerConfig.json` `maxNumberPlayers` | LinuxGSM game config |
-| Vintage Story | `vintage-story` | `data/serverconfig.json` `MaxClients` | LinuxGSM game config |
-| Factorio | `factorio` | `server-settings.json` `max_players` | LinuxGSM game config |
+The VPS UFW rules for the draft recipe port ranges are installed. Contabo's separate firewall, if enabled, must also admit the same ranges before client testing. Future full `install.sh` runs derive UFW ranges from the recipes. The changed agent modules were copied to `/opt/playbound-host/agent` and the agent was restarted on September 30; the prior agent is backed up at `/opt/playbound-host/agent-pre-paid-20260930`. Health reported 14 recovered rooms and all ten installed paid packages. Do not run the full installer solely to refresh these drafts: it also restarts other services.
 
-Each server keeps its files in its own `pb-<server id>` folder under the
-agent's home (`<game>-servers/`), so one customer never shares a world.
+## Recipe state
 
-## Installing on the VPS
+- **Counter-Strike: Source** — installed; smoke start bound UDP 27060 with four slots. Confirm a real client joins and RCON works.
+- **Terraria** — installed; binary path corrected. New-world generation takes longer than 30 seconds, so readiness waits up to three minutes. Confirm the completed world, stop, and reload.
+- **Unturned** — installed. Use the official `ServerHelper.sh` for the required Steam libraries. A private `gslt.txt` is required per customer server before Internet startup; the recipe writes `Commands.dat` with the purchased cap and assigned port and stores saves in that customer's folder. Test joining after token provisioning.
+- **RimWorld Together** — installed; smoke start listened on TCP 25590 and wrote configuration and assets to a private customer directory. Test an actual RimWorld client and backup restore.
+- **Core Keeper** — installed; smoke testing found that world generation needs Xvfb and a private `steamclient.so` link. The revised recipe uses both, reserves the query port, and passes the slot cap on the command line. Test a real client and capture the generated game ID.
+- **Vintage Story** — recipe written; official archive and startup test pending account access.
+- **Factorio** — installed; smoke start hosted on UDP 34197, created a save in the private customer directory, and saved on SIGINT. Test a real client and backup restore.
+- **Necesse** — installed; smoke start hosted with six slots in an isolated data directory. The agent sends `stop` and allows time to save before forcing termination. Test restart and backup restore.
+- **Don't Starve Together** — installed; single-shard Master recipe written with separate game and Steam ports, a private cluster, and a purchased slot cap. A private Klei `cluster_token.txt` must be provisioned at `<server-home>/PlayBound/Cluster_1/cluster_token.txt`; no token is put in process arguments. Caves need a second shard process and are not part of this draft.
+- **Barotrauma** — installed; the actual recipe's isolated runtime reached `Server started` on non-default ports. The recipe links the Steam library into the private home, copies the package per customer because the game reads `serversettings.xml` beside its executable, then forces port, query port, privacy, and a cap of at most 16. SteamAPI initialization still reported a warning, though the direct Lidgren server started; test a real client, campaign save, and backup restore.
+- **Trackmania** — installed; recipe creates a separate runtime copy and private config. Each server requires its own dedicated-server account in `<server-home>/dedicated-account.json` with `login` and `password`; a real account and PC client are needed for validation. The archive includes training maps. Dedicated rooms are PC-only per Nadeo.
 
-Files go under `GAME_HOST_GAMES_DIR` (default `/opt/playbound-host/games`), one
-folder per slug, owned by the `playbound` user. The recipe looks for these
-binaries:
+## Not yet safe to offer
 
-| Slug | Binary | Where the server comes from |
-|---|---|---|
-| `counter-strike-source` | `srcds_run` | SteamCMD app `232330` |
-| `terraria` | `TerrariaServer` | Terraria dedicated server download (terraria.org) |
-| `unturned` | `Unturned_Headless.x86_64` | SteamCMD app `1110390` |
-| `rimworld-together` | `RTServer` | GitHub release of Rimworld-Together (self-contained linux-x64) |
-| `core-keeper` | `CoreKeeperServer` | SteamCMD app `1963720` |
-| `vintage-story` | `VintagestoryServer` | vintagestory.at server tarball |
-| `factorio` | `bin/x64/factorio` | factorio.com headless build |
+- **ANEURISM IV** — the official Linux dedicated binary is installed, but it requires a 17-digit Steam owner ID and uses fixed local UDP 27015/27016 for Steam. Those ports are already occupied by the existing fleet; multiple instances require network namespaces or separate VMs. Do not add a misleading port-allocating recipe until that isolation exists.
+- **Starbound** — the server runs from paid game files; anonymous SteamCMD returned only an app manifest. Provision a licensed Steam installation before implementing and testing a per-customer `storage` directory.
+- **Stardew Valley** — no standalone official headless binary. JunimoServer is a community host built around a licensed Stardew game installation, SMAPI, and Docker; it requires a Steam account that owns the game and a separate container lifecycle rather than this agent's one-process recipe interface.
+- **Risk of Rain 2** — anonymous SteamCMD's dedicated-tool app returned `EmptySteamDepot`. The community Wine wrapper warns that the old official dedicated build has not matched current clients since 2022. Do not sell it as a working server until a current compatible build is available and a join test succeeds.
 
-## What to confirm on the first test start
+## Customer data and secrets
 
-These are the parts written from documentation that this environment could not
-run:
+Every paid recipe uses a server ID scoped folder beneath `/var/lib/playbound-host/<game>-servers/pb-<server-id>`. Unturned's `Servers/<id>` path is a symlink to that private folder. Barotrauma and Trackmania use a private runtime copy because their settings sit beside the executable. The world-backup allowlist includes the newly isolated world directories; verify each save format and restore with a real client before promotion. Unturned is excluded from automated backups until its save-only path is confirmed; backing up its entire directory would include the private login token. Customer tokens and account passwords belong in `0600` files under their own server folder, never in a catalog row or command line.
 
-- **Counter-Strike: Source:** the `steamclient.so` link (`~/.steam/sdk32`). If the server reports LAN-only, the file is missing or in a different folder.
-- **Terraria:** the server must keep running with no console attached (the agent keeps its input pipe open). Worlds are created on first start at `Worlds/world.wld`.
-- **Unturned:** the per-server folder `Servers/pb-<id>` is created inside the shared install on first start.
-- **Core Keeper:** whether `-datapath` picks up `data/ServerConfig.json`, and how players connect (it uses Steam relay unless a direct address is used).
-- **Vintage Story:** the server fills in the rest of `serverconfig.json` on first load; confirm it keeps the port and player cap the agent wrote.
-- **Factorio:** the `config.ini` layout (`read-data` / `write-data`) and that `--create` produced `saves/save.zip` before the server started.
-- **All:** the slot cap actually refuses player N+1. Only then mark the game `verified`.
-
-## Not yet done
-
-| Game | Why |
-|---|---|
-| Barotrauma | Cap is `maxplayers` in `serversettings.xml`, but the server reads that file and its saves from its install directory, so per-customer isolation needs a copy or symlink layout first. |
-| Don't Starve Together | Cap is `max_players` in `cluster.ini`, but each server needs a Klei cluster token. Decide whose token is used before writing the recipe. |
-| Necesse | Cap is `slots` in `server.cfg`; the command-line switches were not verifiable from here. Needs the server's `-help` output. |
-| Starbound | Cap is `maxPlayers` in `starbound_server.config`; the SteamCMD download needs an account that owns the game. |
-| Stardew Valley, Risk of Rain 2, Trackmania, ANEURISM IV, Witchbrook | No dedicated server found that could be verified from public documentation. Stardew's multiplayer host is the game itself; Witchbrook is not confirmed released. |
-
-Backups (`platform/game-host/dedicatedDataBackups.js`) cover Mindustry,
-OpenTTD, Luanti, Freeciv, Morrowind and all five games above that keep a world:
-Terraria (`Worlds/`), Factorio (`saves/`), Core Keeper (`data/`), Vintage Story
-(`data/`) and RimWorld Together (`Assets/`). A restore needs the server stopped
-and first saves the current world as a "before a restore" point. On the first
-test server, confirm that a restored world loads.
+The new recipes are present in the live agent health response. This confirms binary detection, not client compatibility or readiness for sale. Keep the catalog games unpublished and the hosting profiles in draft until the client-join, stop/restart, slot-cap, and backup checks above pass.

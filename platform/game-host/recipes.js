@@ -230,7 +230,7 @@ for (const slug of [
   "warzone-2100", "bzflag", "supertuxkart", "xonotic", "openarena",
   "0-ad", "0ad", "bombsquad", "wolfenstein-enemy-territory", "team-fortress-2",
   "unvanquished", "hedgewars", "freedoom", "veloren", "freeciv",
-  "counter-strike-source", "terraria", "unturned", "rimworld-together", "core-keeper", "vintage-story", "factorio",
+  "counter-strike-source", "terraria", "unturned", "rimworld-together", "core-keeper", "vintage-story", "factorio", "necesse", "dont-starve-together", "barotrauma", "trackmania",
 ]) {
   RECIPE_SETTING_TYPES[slug] = { ...RECIPE_SETTING_TYPES[slug], maxPlayers: "number" };
 }

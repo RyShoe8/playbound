@@ -347,6 +347,10 @@ export const DEDICATED_ONLY_GAMES: Record<string, HostableGame> = {
   "core-keeper": { slug: "core-keeper", title: "Core Keeper", defaultPort: 1300, portEnd: 1320, protocol: "udp" },
   "vintage-story": { slug: "vintage-story", title: "Vintage Story", defaultPort: 42420, portEnd: 42440, protocol: "both" },
   factorio: { slug: "factorio", title: "Factorio", defaultPort: 34197, portEnd: 34217, protocol: "udp" },
+  necesse: { slug: "necesse", title: "Necesse", defaultPort: 14160, portEnd: 14180, protocol: "udp" },
+  "dont-starve-together": { slug: "dont-starve-together", title: "Don't Starve Together", defaultPort: 11020, portEnd: 11041, protocol: "udp" },
+  barotrauma: { slug: "barotrauma", title: "Barotrauma", defaultPort: 27220, portEnd: 27239, protocol: "udp" },
+  trackmania: { slug: "trackmania", title: "Trackmania", defaultPort: 23520, portEnd: 23539, protocol: "both" },
 };
 
 export const HOSTABLE_SLUGS = Object.keys(HOSTABLE_GAMES);

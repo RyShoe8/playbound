@@ -680,12 +680,21 @@ function freePort(slug, port) {
 }
 
 function stopRoom(room) {
-  if (!room) return;
+  if (!room) return 0;
   const pid = room.child?.pid || room.pid;
+  const shutdownRecipe = recipes[room.gameSlug];
+  let graceful = Boolean(room.child?.stdin?.writable && shutdownRecipe?.shutdownCommand);
+  let shutdownWaitMs = 0;
   // A recovered room has no ChildProcess handle. Never signal a reused PID.
   if (pid && room.processIdentity && isSameProcess(pid, room.processIdentity)) {
     const members = processGroupMembers(pid);
     try {
+      if (graceful) room.child.stdin.write(shutdownRecipe.shutdownCommand);
+    } catch {
+      // Fall back to the normal signal path if the console pipe has closed.
+      graceful = false;
+    }
+    if (!graceful) try {
       // Only signal a group when this room owns it. Legacy party processes
       // inherited the agent's group and must be stopped by PID alone.
       if (members.some((member) => member.pid === pid)) process.kill(-pid, "SIGTERM");
@@ -697,20 +706,21 @@ function stopRoom(room) {
         /* already dead */
       }
     }
-    try {
+    if (!graceful) try {
       // Also send direct SIGTERM to child
       room.child?.kill("SIGTERM");
     } catch {
       /* already dead */
     }
 
-    // Force SIGKILL after 500ms to guarantee no zombie/hung threads consume CPU
+    // Bound a console save/quit, or force a non-console process down quickly.
+    shutdownWaitMs = graceful ? (Number(shutdownRecipe.shutdownGraceMs) || 20_000) : 500;
     setTimeout(() => {
       for (const member of members.length ? members : [{ pid, identity: room.processIdentity }]) {
         if (!isSameProcess(member.pid, member.identity)) continue;
         try { process.kill(member.pid, "SIGKILL"); } catch { /* already dead */ }
       }
-    }, 500).unref();
+    }, shutdownWaitMs).unref();
   }
   freePort(room.gameSlug, room.port);
   rooms.delete(room.roomId);
@@ -722,11 +732,16 @@ function stopRoom(room) {
     if (byParty.get(room.partyId) === room.roomId) byParty.delete(room.partyId);
     persistPartyRooms();
   }
+  return shutdownWaitMs;
 }
 
-async function waitForStoppedRoom(pid, identity) {
+async function waitForStoppedRoom(pid, identity, timeoutMs = 650) {
   if (!pid || !identity) return true;
-  await new Promise((resolve) => setTimeout(resolve, 650));
+  const deadline = Date.now() + timeoutMs;
+  do {
+    if (!isSameProcess(pid, identity)) return true;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  } while (Date.now() < deadline);
   return !isSameProcess(pid, identity);
 }
 
@@ -870,7 +885,7 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
     }
     resolved = resolveRecipe(gameSlug, roomCtx);
   }
-  const { recipe, binary } = resolved;
+  let { recipe, binary } = resolved;
   if (!binary) {
     return { error: missingDedicatedBinaryMessage(gameSlug, recipe, roomCtx) };
   }
@@ -936,6 +951,10 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
         continue;
       }
     }
+
+    // A few engines require their config beside the executable. Preparation
+    // creates a private runtime copy; resolve it only after that copy exists.
+    if (recipe.resolveBinary) binary = resolveRecipe(gameSlug, ctx)?.binary || binary;
 
     const args = recipe.args(port, ctx, binary);
     const hostHome = process.env.HOME || "/var/lib/playbound-host";
@@ -1201,10 +1220,8 @@ async function runTestSpawn(gameSlug) {
     scope: "process-group",
     processCount: second.processCount,
   } : first;
-  stopRoom(result.room);
-
-  // Wait for the SIGKILL inside stopRoom to land (500ms timer + margin)
-  await new Promise((resolve) => setTimeout(resolve, 600));
+  const stopWaitMs = stopRoom(result.room);
+  await waitForStoppedRoom(result.room.pid, result.room.processIdentity, stopWaitMs + 750);
 
   recordSpawnTest(gameSlug, { ok: true, durationMs, port, resources });
   return { ok: true, durationMs, port, resources };
@@ -1411,8 +1428,8 @@ const server = http.createServer(async (req, res) => {
       if (room) {
         const pid = room.pid;
         const identity = room.processIdentity;
-        stopRoom(room);
-        if (!(await waitForStoppedRoom(pid, identity))) {
+        const stopWaitMs = stopRoom(room);
+        if (!(await waitForStoppedRoom(pid, identity, stopWaitMs + 750))) {
           json(res, 500, { error: "Managed process did not stop; inspect the host before retrying" });
           return;
         }
