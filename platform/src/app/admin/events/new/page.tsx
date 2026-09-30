@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { listGames } from "@/lib/catalog";
+import { eventGameOptions } from "@/lib/events/gameOptions";
 import { NewEventForm } from "./NewEventForm";
 
 export default async function NewEventPage() {
@@ -19,11 +20,7 @@ export default async function NewEventPage() {
     <div className="mx-auto max-w-lg space-y-6 px-4 py-8">
       <h1 className="text-2xl font-extrabold">New Event</h1>
       <NewEventForm
-        gameOptions={games.map((g) => ({
-          slug: g.slug,
-          title: g.title,
-          coverImage: g.coverImage || null,
-        }))}
+        gameOptions={eventGameOptions(games)}
       />
     </div>
   );

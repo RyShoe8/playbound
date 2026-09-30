@@ -333,7 +333,8 @@ export const HOSTABLE_SLUG_ALIASES: Record<string, string> = {
  * Games offered only on the paid Dedicated plan. Deliberately NOT in
  * HOSTABLE_GAMES: that list also switches on community rotation. A reviewed
  * subset is separately offered to parties through PARTY_DEDICATED_GAMES;
- * planned/credential-dependent recipes stay out of that subset. All entries
+ * games without server files or a usable recipe stay out. Some installed
+ * recipes still require a per-room credential before startup. All entries
  * remain available to the paid Dedicated tier. Ports must match the agent's
  * dedicatedRecipes.js; a test checks them.
  *
@@ -357,7 +358,8 @@ export const DEDICATED_ONLY_GAMES: Record<string, HostableGame> = {
 export const PARTY_DEDICATED_GAMES: Record<string, HostableGame> = Object.fromEntries(
   [
     "counter-strike-source", "terraria", "core-keeper",
-    "factorio", "necesse", "barotrauma",
+    "factorio", "necesse", "barotrauma", "unturned",
+    "rimworld-together", "dont-starve-together", "trackmania",
   ].map((slug) => [slug, DEDICATED_ONLY_GAMES[slug]])
 );
 

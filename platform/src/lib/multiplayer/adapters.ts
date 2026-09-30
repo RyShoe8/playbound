@@ -142,6 +142,7 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
   "dont-starve-together": {
     gameSlug: "dont-starve-together", title: "Don't Starve Together", tier: "tier1_improved",
     adapterType: "virtual-lan", protocol: "udp",
+    client: { inGameJoinPrompt: true, inGameSteps: ["Join the PlayBound server from Don't Starve Together's server browser after its Klei cluster token has been configured"] },
     virtualLan: { inGameSteps: ["Host: start a LAN world", "Friends: find and join the world in the LAN server list"] },
   },
   factorio: {
@@ -182,7 +183,18 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
   unturned: {
     gameSlug: "unturned", title: "Unturned", tier: "tier1_improved",
     adapterType: "virtual-lan", protocol: "udp",
+    client: { inGameJoinPrompt: true, inGameSteps: ["Use Unturned's server browser or direct connect to the PlayBound server address after its Steam game-server token has been configured"] },
     virtualLan: { inGameSteps: ["Host: start a LAN server", "Friends: find it in Unturned's LAN server list"] },
+  },
+  "rimworld-together": {
+    gameSlug: "rimworld-together", title: "RimWorld Together", tier: "tier3_official",
+    adapterType: "official", protocol: "official",
+    client: { inGameJoinPrompt: true, inGameSteps: ["With the RimWorld Together mod installed, join the PlayBound server by address"] },
+  },
+  trackmania: {
+    gameSlug: "trackmania", title: "Trackmania", tier: "tier3_official",
+    adapterType: "official", protocol: "official",
+    client: { inGameJoinPrompt: true, inGameSteps: ["Find the PlayBound Trackmania room in-game after its dedicated-server account has been configured"] },
   },
   // ─── TIER 1: PlayBound Multiplayer Editions ───────────────────────────────
 

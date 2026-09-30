@@ -3,6 +3,7 @@ import { z } from "zod";
 import dbConnect from "@/lib/db";
 import PlatformEvent from "@/lib/models/PlatformEvent";
 import { getGame } from "@/lib/catalog";
+import { supportsMultiplayer } from "@/lib/multiplayer/support";
 import { defaultEndsAt } from "@/lib/events/time";
 import { Tournament } from "@/lib/models/Tournament";
 import {
@@ -48,7 +49,8 @@ export const eventUpdateSchema = eventCreateSchema.partial().extend({
 
 export async function validateGameSlug(slug: string | null | undefined) {
   if (!slug) return true;
-  return Boolean(await getGame(slug));
+  const game = await getGame(slug);
+  return Boolean(game && supportsMultiplayer(game));
 }
 
 export async function listPublicEvents(opts?: {

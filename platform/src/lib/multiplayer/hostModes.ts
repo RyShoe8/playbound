@@ -357,6 +357,11 @@ export function couchPayloadFromDoc(
 
 /** Picker options, in display order, with copy explaining the tradeoff. */
 export function hostModeOptions(gameSlug: string): HostModeOption[] {
+  const credentialHint: Record<string, string> = {
+    unturned: "Requires a private Steam game-server login token for this room before it can start.",
+    "dont-starve-together": "Requires a private Klei cluster token for this room before it can start.",
+    trackmania: "Requires a dedicated-server account for this room before it can start.",
+  };
   return [
     {
       mode: "public" as const,
@@ -380,7 +385,7 @@ export function hostModeOptions(gameSlug: string): HostModeOption[] {
       mode: "dedicated" as const,
       available: canUseDedicated(gameSlug),
       label: "PlayBound server",
-      hint: "We host the room on our server. It stays up even if you leave, and anyone can join without being in your party.",
+      hint: credentialHint[gameSlug] || "We host the room on our server. It stays up even if you leave, and anyone can join without being in your party.",
     },
   ].filter((option) => option.available);
 }
