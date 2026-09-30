@@ -1440,8 +1440,8 @@ const SPACE_STATION_14: ServerSettingProfile = {
 const RE_VOLT: ServerSettingProfile = {
   slug: "re-volt-rvgl",
   unavailable: {
-    map: "The track is picked in the lobby, which is where a -lobby server puts everyone.",
-    gameMode: "Race settings belong to the lobby rather than to the server.",
+    map: "Only the RVGL lobby host can choose the track. PlayBound's VPS host has no verified race-control channel yet.",
+    gameMode: "Only the RVGL lobby host can start a race or change its settings. Use player hosting to control the lobby today.",
     password: "A session password would lock out the party, whose connect args carry none.",
   },
   settings: [],

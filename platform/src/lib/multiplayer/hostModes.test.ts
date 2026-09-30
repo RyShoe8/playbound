@@ -172,6 +172,12 @@ describe("host mode configuration", () => {
     expect(defaultHostMode("assaultcube")).toBe("dedicated");
   });
 
+  it("defaults Re-Volt to the player host who can start races, while retaining VPS hosting", () => {
+    expect(hostModesFor("re-volt-rvgl")).toContain("self");
+    expect(hostModesFor("re-volt-rvgl")).toContain("dedicated");
+    expect(defaultHostMode("re-volt-rvgl")).toBe("self");
+  });
+
   it("still falls back to `official` for a genuinely unknown game", () => {
     // The alias lookup must not turn an unknown slug into a match.
     expect(getMultiplayerAdapter("not-a-real-game").adapterType).toBe("official");

@@ -270,6 +270,10 @@ export function hostModesFor(gameSlug: string): PartyHostMode[] {
  */
 export function defaultHostMode(gameSlug: string): PartyHostMode | null {
   const modes = hostModesFor(gameSlug);
+  // RVGL gives race setup/start controls to the actual host. A party member
+  // joining our VPS lobby cannot operate those controls, so prefer the
+  // verified player-hosted path until the VPS has a real race control channel.
+  if (getMultiplayerAdapter(gameSlug).gameSlug === "re-volt-rvgl" && modes.includes("self")) return "self";
   if (modes.includes("public")) return "public";
   if (modes.includes("dedicated")) return "dedicated";
   if (modes.includes("self")) return "self";
