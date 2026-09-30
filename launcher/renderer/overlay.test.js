@@ -9,7 +9,7 @@ const { test } = require("node:test");
 const source = readFileSync(join(__dirname, "overlay.js"), "utf8");
 
 async function renderOverlay(context, serverSettings, extraPlaybound = {}) {
-  const root = { innerHTML: "", querySelectorAll: () => [] };
+  const root = { innerHTML: "", querySelectorAll: () => [], querySelector: () => null };
   const subject = { textContent: "" };
   const buttons = new Map();
   const tabs = {
@@ -61,6 +61,18 @@ test("Server controls remain available with a party", async () => {
   assert.match(overlay.root.innerHTML, /Server settings are unavailable/);
   overlay.clickTab("controls");
   assert.match(overlay.root.innerHTML, /Controls isn&#39;t active|Controls isn't active/);
+});
+
+test("Re-Volt leader sees the VPS host lobby in the existing Server tab", async () => {
+  let reads = 0;
+  const overlay = await renderOverlay(
+    { party: { id: "0123456789abcdef01234567", gameSlug: "re-volt-rvgl", rvglLobby: true }, controls: null },
+    { supported: false, reason: "No declarative server settings" },
+    { getRvglLobby: async () => { reads += 1; return { image: "aGVsbG8=" }; } }
+  );
+  assert.match(overlay.root.innerHTML, /Control the PlayBound VPS lobby/);
+  assert.match(overlay.root.innerHTML, /data-rvgl-key="Return"/);
+  assert.ok(reads >= 1);
 });
 
 test("Controls tab shows active control mapping for selected method when specialized controls is inactive", async () => {
