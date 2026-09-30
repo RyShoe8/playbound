@@ -34,10 +34,15 @@ function loadMongoUri() {
 
 async function main() {
   const args = process.argv.slice(2);
-  if (args.some((arg) => arg !== "--apply")) throw new Error(`Unknown argument(s): ${args.join(", ")}`);
+  const onlyArg = args.find((arg) => arg.startsWith("--only="));
+  if (args.some((arg) => arg !== "--apply" && arg !== onlyArg)) throw new Error(`Unknown argument(s): ${args.join(", ")}`);
   const apply = args.includes("--apply");
+  // Optional single-game rollout. The slug must be named exactly; the script
+  // stays insert-only either way and never touches an existing row.
+  const only = onlyArg ? onlyArg.slice("--only=".length) : "";
+  if (onlyArg && !/^[a-z0-9][a-z0-9-]{0,80}$/.test(only)) throw new Error("--only needs one exact game slug.");
   const pilot = JSON.parse(readFileSync(resolve(platformDir, "../launcher/services/inputEngine/profiles/outrun.json"), "utf8"));
-  const profiles = [
+  const allProfiles = [
     controlProfileSchema.parse({
       ...pilot,
       version: "0.1.1",
@@ -49,6 +54,8 @@ async function main() {
     ...testingControlProfiles.map((profile) => controlProfileSchema.parse(profile)),
     ...testingControlProfilesWave2.map((profile) => controlProfileSchema.parse(profile)),
   ];
+  const profiles = only ? allProfiles.filter((p) => p.gameSlug === only) : allProfiles;
+  if (only && !profiles.length) throw new Error(`No profile for "${only}" is defined in this wave. Nothing was written.`);
   const keys = profiles.map((p) => `${p.gameSlug}::${p.editionSlug || ""}`);
   if (new Set(keys).size !== keys.length) throw new Error("Duplicate profile target in the wave.");
 
