@@ -7,6 +7,7 @@ import path from "node:path";
 const HOME = fs.mkdtempSync(path.join(os.tmpdir(), "pb-dedicated-"));
 process.env.HOME = HOME;
 const { recipes, acceptedSettingsFor } = await import("./recipes.js");
+const { createWorldBackup, restoreWorldBackup, WORLD_BACKUP_GAMES } = await import("./dedicatedDataBackups.js");
 
 const NEW = ["counter-strike-source", "terraria", "unturned", "rimworld-together", "core-keeper", "vintage-story", "factorio"];
 const ID_A = "64b0c0ffee64b0c0ffee1234";
@@ -113,6 +114,28 @@ test("new port ranges do not overlap any other recipe", () => {
       const [a, b] = span(recipes[x]); const [c, d] = span(recipes[y]);
       assert.ok(b < c || a > d, `${x} overlaps ${y}`);
     }
+  }
+});
+
+test("world backups cover the folder each paid-plan recipe writes its world to", () => {
+  // The game creates these on first run; here a world file is put where each game keeps it.
+  const worldFile = {
+    terraria: ["Worlds", "world.wld"],
+    factorio: ["saves", "save.zip"],
+    "core-keeper": ["data", "world.dat"],
+    "vintage-story": ["data", "Saves", "default.vcdbs"],
+    "rimworld-together": ["Assets", "Saves", "colony.json"],
+  };
+  for (const [slug, parts] of Object.entries(worldFile)) {
+    assert.ok(WORLD_BACKUP_GAMES.includes(slug), `${slug} is backed up`);
+    const file = path.join(HOME, `${slug}-servers`, `pb-${ID_B}`, ...parts);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, "world v1");
+    const backup = createWorldBackup(ID_B, slug, 3, HOME);
+    assert.ok(backup.files >= 1, `${slug} backed up its world`);
+    fs.writeFileSync(file, "world v2");
+    restoreWorldBackup(ID_B, slug, backup.id, 3, HOME);
+    assert.equal(fs.readFileSync(file, "utf8"), "world v1", `${slug} restores its world`);
   }
 });
 

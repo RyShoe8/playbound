@@ -85,7 +85,9 @@ test("the worker-thread runner does the same work off the event loop and hides h
 
 test("the agent route only accepts games the backup module supports", async () => {
   const { WORLD_BACKUP_GAMES, isWorldBackupGame } = await import("./dedicatedDataBackups.js");
-  assert.deepEqual([...WORLD_BACKUP_GAMES].sort(), ["freeciv", "luanti", "mindustry", "morrowind", "openttd"]);
+  assert.deepEqual([...WORLD_BACKUP_GAMES].sort(), [
+    "core-keeper", "factorio", "freeciv", "luanti", "mindustry", "morrowind", "openttd", "rimworld-together", "terraria", "vintage-story",
+  ]);
   assert.equal(isWorldBackupGame("constructor"), false);
   const source = fs.readFileSync(new URL("./index.js", import.meta.url), "utf8");
   assert.match(source, /world-backups/);

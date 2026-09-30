@@ -71,11 +71,11 @@ run:
 | Don't Starve Together | Cap is `max_players` in `cluster.ini`, but each server needs a Klei cluster token. Decide whose token is used before writing the recipe. |
 | Necesse | Cap is `slots` in `server.cfg`; the command-line switches were not verifiable from here. Needs the server's `-help` output. |
 | Starbound | Cap is `maxPlayers` in `starbound_server.config`; the SteamCMD download needs an account that owns the game. |
-| RimWorld Together backups | World data is the `Assets/` folder in the server's working directory. Not added to world backups yet. |
 | Stardew Valley, Risk of Rain 2, Trackmania, ANEURISM IV, Witchbrook | No dedicated server found that could be verified from public documentation. Stardew's multiplayer host is the game itself; Witchbrook is not confirmed released. |
 
-Backups (`platform/game-host/dedicatedDataBackups.js`) currently cover
-Mindustry, OpenTTD, Luanti, Freeciv and Morrowind. Games with world data in
-this list are Terraria (`Worlds/`), Factorio (`saves/`), Core Keeper
-(`data/`), Vintage Story (`data/`) and RimWorld Together (`Assets/`). Add each
-only after you have confirmed it.
+Backups (`platform/game-host/dedicatedDataBackups.js`) cover Mindustry,
+OpenTTD, Luanti, Freeciv, Morrowind and all five games above that keep a world:
+Terraria (`Worlds/`), Factorio (`saves/`), Core Keeper (`data/`), Vintage Story
+(`data/`) and RimWorld Together (`Assets/`). A restore needs the server stopped
+and first saves the current world as a "before a restore" point. On the first
+test server, confirm that a restored world loads.
