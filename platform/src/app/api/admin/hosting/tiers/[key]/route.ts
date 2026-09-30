@@ -7,6 +7,7 @@ import CommunityServerProfile from "@/lib/models/CommunityServerProfile";
 import { getTier, preservedPackagePrices, saveTier, slotCapEnforced } from "@/lib/dedicatedHosting/tier";
 import { HOSTING_TIER_TAG } from "@/lib/dedicatedHosting/publicTier";
 import { getEffectiveEnvelope } from "@/lib/communityHosting/reconcile";
+import { hostableProfileStubs, loadHostableEditionRefs } from "@/lib/dedicatedHosting/hostableProfiles";
 
 type Ctx = { params: Promise<{ key: string }> };
 
@@ -71,11 +72,18 @@ export async function GET(_req: Request, ctx: Ctx) {
   const profiles = await CommunityServerProfile.find({}).select({ key: 1, gameSlug: 1, editionSlug: 1, recipeSlug: 1, envelope: 1, sampleCount: 1, verification: 1, queryVerified: 1, joinVerified: 1, lastVerifiedAt: 1 }).lean();
   const rc = tier.resourceClass;
   const unitRam = rc.memoryMbPerUnit * 1024 * 1024;
-  const profileInfo = profiles.map((p) => {
+  // Hostable games with no stored row yet are listed too, so admin can pick them.
+  const stubs = hostableProfileStubs(profiles, await loadHostableEditionRefs());
+  const allProfiles = [
+    ...profiles.map((p) => ({ ...p, stored: true })),
+    ...stubs.map((s) => ({ ...s, stored: false, envelope: undefined, sampleCount: 0, verification: "testing", queryVerified: false, joinVerified: false, lastVerifiedAt: null })),
+  ];
+  const profileInfo = allProfiles.map((p) => {
     const env = getEffectiveEnvelope(p.envelope, p.gameSlug, p.sampleCount);
     const worst = Math.max(env.cpuCores / Math.max(rc.cpuPerUnit, 1e-9), env.ramBytes / Math.max(unitRam, 1));
     return {
       key: p.key,
+      stored: p.stored,
       gameSlug: p.gameSlug,
       editionSlug: p.editionSlug || null,
       recipeSlug: p.recipeSlug,
