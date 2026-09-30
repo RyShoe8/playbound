@@ -19,6 +19,7 @@ import { authorizeServer, recordActivity } from "./access";
 import { applyLiveState } from "./liveControl";
 import { allowedSlotSizes, getTier, tierGame, type HostingTier } from "./tier";
 import { getHostableGame } from "@/lib/gameHost/catalog";
+import { isPendingDedicatedProfile } from "./pendingGames";
 
 export type Fail = { error: string; status: 400 | 403 | 404 | 409 | 503 };
 const fail = (error: string, status: Fail["status"] = 400): Fail => ({ error, status });
@@ -64,7 +65,7 @@ export async function sharedServers(userId: string) {
 /** Games this tier offers for new servers in a region, with their allowed sizes. */
 export async function offeredGames(tier: HostingTier, regionKey: string) {
   const games = tier.games.filter(
-    (g) => g.enabled && g.newServerCreationEnabled && (!g.supportedRegions.length || g.supportedRegions.includes(regionKey))
+    (g) => g.enabled && g.newServerCreationEnabled && !isPendingDedicatedProfile(g.profileKey) && (!g.supportedRegions.length || g.supportedRegions.includes(regionKey))
   );
   const profiles = await CommunityServerProfile.find({ key: { $in: games.map((g) => g.profileKey) } })
     .select({ key: 1, gameSlug: 1, editionSlug: 1, blockedReason: 1, verification: 1 })
@@ -93,6 +94,7 @@ export async function createServer(
   if (!sub) return fail("You need a PlayBound Dedicated subscription to create servers.", 403);
   const tier = await getTier(sub.tier);
   const game = tierGame(tier, String(input.profileKey || ""));
+  if (isPendingDedicatedProfile(String(input.profileKey || ""))) return fail("This game is planned for Dedicated Basic but is not ready to host yet.");
   if (!game || !game.enabled || !game.newServerCreationEnabled) return fail("That game isn't available for new servers.");
   if (game.supportedRegions.length && !game.supportedRegions.includes(sub.regionKey)) {
     return fail("That game isn't available in your hosting region.");
@@ -186,6 +188,7 @@ export async function startServer(userId: string, serverId: string) {
   const tier = await getTier(sub.tier);
   if (tier.startsDisabled) return fail("Server starts are temporarily paused. Please try again later.", 503);
   const game = tierGame(tier, server.profileKey);
+  if (isPendingDedicatedProfile(server.profileKey)) return fail("This game is planned for Dedicated Basic but is not ready to host yet.", 503);
   if (!game || !game.enabled || !game.existingServerStartEnabled) return fail("This game is temporarily unavailable for hosting.", 503);
 
   const held = await allocateSlots(String(sub._id), String(server._id), server.allocatedSlots);
@@ -225,6 +228,9 @@ export async function launchRoom(server: {
   _id: unknown; gameSlug: string; editionSlug?: string | null; mod?: string | null; name: string;
   profileKey: string; allocatedSlots: number; settings?: Record<string, unknown> | null;
 }) {
+  if (isPendingDedicatedProfile(server.profileKey)) {
+    return { status: "failed" as const, error: "This game is planned for Dedicated Basic but is not ready to host yet." };
+  }
   const profile = await CommunityServerProfile.findOne({ key: server.profileKey }).select({ recipeSlug: 1 }).lean();
   const settings: Record<string, string | number | boolean> = {};
   for (const [k, v] of Object.entries(server.settings || {})) {
@@ -272,6 +278,7 @@ export async function restartServer(userId: string, serverId: string) {
   const auth = await authorizeServer(userId, serverId, "server:restart");
   if ("error" in auth) return auth;
   const server = auth.server;
+  if (isPendingDedicatedProfile(server.profileKey)) return fail("This game is planned for Dedicated Basic but is not ready to host yet.", 503);
   if (server.desiredState !== "running" || !server.slotsHeld) return startServer(userId, serverId);
   await recordActivity(server._id, { id: userId }, "server_restarted");
   const stopped = await stopManagedHostRoom(String(server._id));
