@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminViewSession } from "@/lib/requireAdmin";
 import dbConnect from "@/lib/db";
 import MirrorAttempt from "@/lib/models/MirrorAttempt";
 import MirrorSource from "@/lib/models/MirrorSource";
@@ -7,7 +7,7 @@ import Artifact from "@/lib/models/Artifact";
 import { filterCurrentArtifacts } from "@/lib/mirrors/currentArtifacts";
 
 export async function GET() {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
 
   try {

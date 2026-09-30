@@ -8,7 +8,7 @@ import { ensureDeveloperExists } from "@/lib/developers";
 import { getGame } from "@/lib/catalog";
 import { modPayloadSchema, withDefaultModArt } from "@/lib/modPayload";
 import { withSyncedPublished } from "@/lib/catalogStatus";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 import { listAllMods } from "@/lib/mods";
 import {
   ensureDerivedModFields,
@@ -17,7 +17,7 @@ import {
 } from "@/lib/enrich";
 
 export async function GET() {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
   const mods = await listAllMods();
   return NextResponse.json({ mods });

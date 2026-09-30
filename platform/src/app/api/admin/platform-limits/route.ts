@@ -3,7 +3,7 @@ import { z } from "zod";
 import dbConnect from "@/lib/db";
 import PlatformLimits from "@/lib/models/PlatformLimits";
 import { getPoolStatus, invalidatePoolStatus } from "@/lib/entitlements/pool";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 import { PARTY_STRUCTURAL_MAX } from "@/lib/playTogether/types";
 import { firstZodErrorMessage } from "@/lib/zodError";
 
@@ -32,20 +32,19 @@ const limitsSchema = z
   .refine((v) => Object.keys(v).length > 0, { message: "Nothing to update" });
 
 export async function GET() {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
 
   try {
     await dbConnect();
     const [limits, usage] = await Promise.all([
-      PlatformLimits.findOneAndUpdate(
-        { singletonKey: "default" },
-        { $setOnInsert: { singletonKey: "default" } },
-        { upsert: true, new: true, setDefaultsOnInsert: true }
-      ).lean(),
+      PlatformLimits.findOne({ singletonKey: "default" }).lean(),
       getPoolStatus(),
     ]);
-    return NextResponse.json({ limits, usage });
+    return NextResponse.json({
+      limits: limits ?? { singletonKey: "default", freePartySlotPool: 200, maxFreePartySize: 8 },
+      usage,
+    });
   } catch (err) {
     console.error("Platform limits read error:", err);
     return NextResponse.json({ error: "Failed to load platform limits" }, { status: 500 });

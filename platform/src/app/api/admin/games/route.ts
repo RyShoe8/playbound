@@ -7,7 +7,7 @@ import { developersBySlug } from "@/lib/data";
 import { ensureDeveloperExists } from "@/lib/developers";
 import { gamePayloadSchema, withDefaultArt, withDefaultLauncherInstall } from "@/lib/gamePayload";
 import { withSyncedPublished } from "@/lib/catalogStatus";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 import { listAllGames } from "@/lib/catalog";
 import {
   ensureDerivedGameFields,
@@ -18,7 +18,7 @@ import { requestDiscordProvision, hasPlayboundDiscordChannel, requestNewGameDisc
 import { firstZodErrorMessage } from "@/lib/zodError";
 
 export async function GET() {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
   const games = await listAllGames();
   return NextResponse.json({ games });

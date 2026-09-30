@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { unstable_rethrow } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { canViewAdmin } from "@/lib/adminAccess";
 import { assertPublicHttpUrl } from "@/lib/pageMeta";
 import {
   extractEpicProduct,
@@ -20,7 +21,7 @@ function isAllowedEpicUrl(url: URL): boolean {
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (session?.user?.role !== "admin") {
+    if (!canViewAdmin(session?.user?.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

@@ -4,7 +4,7 @@ import { z } from "zod";
 import dbConnect from "@/lib/db";
 import { gameControlsSchema } from "@/lib/controls/schema";
 import CatalogGame from "@/lib/models/CatalogGame";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 import { firstZodErrorMessage } from "@/lib/zodError";
 
 /**
@@ -55,7 +55,7 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { error } = await requireAdminSession();
+    const { error } = await requireAdminViewSession();
     if (error) return error;
 
     const { slug } = await params;

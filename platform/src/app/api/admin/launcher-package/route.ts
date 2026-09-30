@@ -6,7 +6,7 @@ import CatalogGame from "@/lib/models/CatalogGame";
 import EditionModel from "@/lib/models/Edition";
 import { editions as seedEditions } from "@/lib/data/editions";
 import { archiveArtifactOnHost, archivedArtifactStatusOnHost } from "@/lib/gameHost/client";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 import { registerVerifiedUploadedPackage } from "@/lib/mirrors/uploadedPackages";
 
 const payload = z.object({
@@ -178,7 +178,7 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
   const relativePath = new URL(req.url).searchParams.get("relativePath") || "";
   if (!relativePath.startsWith("launcher-packages/")) return NextResponse.json({ error: "Invalid package path" }, { status: 400 });

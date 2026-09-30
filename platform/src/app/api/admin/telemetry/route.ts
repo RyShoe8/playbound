@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminViewSession } from "@/lib/requireAdmin";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
 import User from "@/lib/models/User";
 import { eventsForFamily, type OpsFamily } from "@/lib/admin/opsEvents";
@@ -20,7 +20,7 @@ const querySchema = z.object({
 });
 
 export async function GET(req: Request) {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
 
   const url = new URL(req.url);

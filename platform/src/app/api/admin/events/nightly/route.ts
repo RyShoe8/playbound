@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 import AutomatedEventConfig from "@/lib/models/AutomatedEventConfig";
 import CatalogGame from "@/lib/models/CatalogGame";
 import Edition from "@/lib/models/Edition";
@@ -10,7 +10,7 @@ import { games as seedGames } from "@/lib/data/games";
 import { editions as seedEditions } from "@/lib/data/editions";
 
 export async function GET() {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
   await dbConnect();
   const [config, dbGames] = await Promise.all([

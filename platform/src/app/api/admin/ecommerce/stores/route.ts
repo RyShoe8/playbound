@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { revalidateTag } from "next/cache";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 import dbConnect from "@/lib/db";
 import StoreProvider from "@/lib/models/StoreProvider";
 import IngestionLog from "@/lib/models/IngestionLog";
@@ -15,7 +15,7 @@ import {
 import { ensureCommerceStores } from "@/lib/commerce/ensureStores";
 
 export async function GET() {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
   await ensureCommerceStores();
   const [stores, logs] = await Promise.all([

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 import CommunityServerProfile from "@/lib/models/CommunityServerProfile";
 import { getTier, preservedPackagePrices, saveTier, slotCapEnforced } from "@/lib/dedicatedHosting/tier";
 import { HOSTING_TIER_TAG } from "@/lib/dedicatedHosting/publicTier";
@@ -64,7 +64,7 @@ const tierSchema = z.object({
  * one resource unit.
  */
 export async function GET(_req: Request, ctx: Ctx) {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
   const { key } = await ctx.params;
   const tier = await getTier(key);

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminViewSession } from "@/lib/requireAdmin";
 import { regionalInventory } from "@/lib/dedicatedHosting/capacity";
 import { getTier } from "@/lib/dedicatedHosting/tier";
 
 export async function GET(req: Request) {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
   const tier = await getTier();
   const regionKey = new URL(req.url).searchParams.get("region") || tier.regions[0]?.key;

@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminViewSession } from "@/lib/requireAdmin";
 import CommunityServer from "@/lib/models/CommunityServer";
 import User from "@/lib/models/User";
 import { customerServerView } from "@/lib/dedicatedHosting/view";
 
 /** GET — every customer (PlayBound Dedicated) server, with its owner. */
 export async function GET() {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
   await dbConnect();
   const servers = await CommunityServer.find({ ownerType: "user" }).sort({ updatedAt: -1 }).limit(1000).lean();

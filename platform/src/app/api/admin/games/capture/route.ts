@@ -2,7 +2,7 @@ import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { blobToDetachedBuffer, compressImageBuffer } from "@/lib/compressImage";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 
 const schema = z.object({
   url: z.string().trim().url().max(500),
@@ -10,7 +10,7 @@ const schema = z.object({
 });
 
 export async function GET() {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
   return NextResponse.json({
     available: Boolean(process.env.MICROLINK_API_KEY && process.env.BLOB_READ_WRITE_TOKEN),

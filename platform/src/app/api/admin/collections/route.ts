@@ -4,12 +4,12 @@ import { z } from "zod";
 import dbConnect from "@/lib/db";
 import CatalogCollection from "@/lib/models/CatalogCollection";
 import { collectionPayloadSchema } from "@/lib/collectionPayload";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 import { listAllCollections } from "@/lib/collections";
 import { listGames } from "@/lib/catalog";
 
 export async function GET() {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
   const collections = await listAllCollections();
   return NextResponse.json({ collections });

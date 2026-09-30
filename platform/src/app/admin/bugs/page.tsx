@@ -1,3 +1,4 @@
+import { canViewAdmin } from "@/lib/adminAccess";
 import Link from "next/link";
 import { connection } from "next/server";
 import type { Metadata } from "next";
@@ -31,7 +32,7 @@ export default async function AdminBugsPage({
 }) {
   await connection();
   const session = await getServerSession(authOptions);
-  if (session?.user?.role !== "admin") redirect("/");
+  if (!canViewAdmin(session?.user?.role)) redirect("/");
 
   const sp = await searchParams;
   const currentFilter =

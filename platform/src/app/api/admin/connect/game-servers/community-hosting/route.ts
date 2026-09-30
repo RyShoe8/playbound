@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 import CommunityHostingConfig from "@/lib/models/CommunityHostingConfig";
 import CommunityServerProfile from "@/lib/models/CommunityServerProfile";
 import CommunityServer from "@/lib/models/CommunityServer";
@@ -17,7 +17,7 @@ import { runningReservationEnvelope } from "@/lib/communityHosting/capacity";
 import { managedQueryKind, queryManagedOccupancy, type ManagedOccupancy } from "@/lib/communityHosting/playerQuery";
 
 export async function GET() {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
   await dbConnect();
 

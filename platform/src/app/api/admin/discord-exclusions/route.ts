@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { canViewAdmin } from "@/lib/adminAccess";
+import { requireAdminSession } from "@/lib/requireAdmin";
 import fs from "fs";
 import path from "path";
 
 const EXCLUSIONS_FILE = path.join(process.cwd(), "discord-exclusions.json");
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const session = await getServerSession(authOptions);
-  if (session?.user?.role !== "admin") {
+  if (!canViewAdmin(session?.user?.role)) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
@@ -25,8 +27,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (session?.user?.role !== "admin") {
+  const { error } = await requireAdminSession();
+  if (error) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
