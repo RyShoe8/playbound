@@ -99,6 +99,7 @@ export async function requestManagedHostRoom(opts: {
   mod?: string | null;
   name: string;
   settings?: Record<string, string | number | boolean>;
+  customerOwned?: boolean;
 }): Promise<ManagedHostStatus | { status: "failed"; error: string }> {
   try {
     const res = await hostFetch("/managed", { method: "POST", body: JSON.stringify(opts) });

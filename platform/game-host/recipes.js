@@ -871,10 +871,15 @@ export const recipes = {
         `[network]\nmax_clients = ${managedPlayerLimit(ctx)}\n`, "utf8");
     },
     startupGraceMs: 1500,
-    spawnEnv: () => ({
-      HOME: HOST_HOME,
-      XDG_DATA_HOME: HOST_HOME,
-    }),
+    spawnEnv: (_port, ctx) => {
+      if (ctx.customerOwned) {
+        const id = String(ctx.partyId || "").replace(/[^a-zA-Z0-9_-]/g, "").slice(-24);
+        const home = path.join(HOST_HOME, "openttd-servers", `pb-${id}`);
+        fs.mkdirSync(home, { recursive: true, mode: 0o700 });
+        return { HOME: home, XDG_DATA_HOME: home, XDG_CONFIG_HOME: home };
+      }
+      return { HOME: HOST_HOME, XDG_DATA_HOME: HOST_HOME };
+    },
   },
   luanti: {
     portStart: 30000,

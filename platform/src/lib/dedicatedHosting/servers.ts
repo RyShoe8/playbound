@@ -238,6 +238,7 @@ export async function launchRoom(server: {
     mod: server.mod || null,
     name: server.name,
     settings,
+    customerOwned: true,
   });
 }
 

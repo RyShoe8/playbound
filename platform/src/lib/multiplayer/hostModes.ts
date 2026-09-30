@@ -162,6 +162,12 @@ const LOCAL_COUCH_GAMES = new Set([
   "hindstrike-homebrew-retroarch",
 ]);
 
+/** Games with local simultaneous play alongside their online host modes. */
+const ONLINE_COUCH_GAMES = new Set([
+  // RVGL supports 2–4 player split-screen with separate pads (or shared keyboard).
+  "re-volt-rvgl",
+]);
+
 /**
  * Every couch-only game, for labelling a picker before a game is chosen.
  *
@@ -176,7 +182,8 @@ export function couchOnlyGameSlugs(): string[] {
 /** True when the party can only play this together by sharing one machine. */
 export function canUseCouch(gameSlug: string): boolean {
   const adapter = getMultiplayerAdapter(gameSlug);
-  return LOCAL_COUCH_GAMES.has(adapter.gameSlug) || LOCAL_COUCH_GAMES.has(gameSlug);
+  return LOCAL_COUCH_GAMES.has(adapter.gameSlug) || LOCAL_COUCH_GAMES.has(gameSlug)
+    || ONLINE_COUCH_GAMES.has(adapter.gameSlug) || ONLINE_COUCH_GAMES.has(gameSlug);
 }
 
 export interface HostModeOption {
