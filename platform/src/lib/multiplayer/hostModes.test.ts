@@ -174,8 +174,11 @@ describe("host mode configuration", () => {
 
   it("defaults Re-Volt to the controllable VPS lobby while retaining player hosting", () => {
     expect(hostModesFor("re-volt-rvgl")).toContain("self");
+    expect(hostModesFor("re-volt-rvgl")).toContain("couch");
     expect(hostModesFor("re-volt-rvgl")).toContain("dedicated");
     expect(defaultHostMode("re-volt-rvgl")).toBe("dedicated");
+    expect(isValidHostMode("re-volt-rvgl", "couch")).toBe(true);
+    expect(couchOnlyGameSlugs()).not.toContain("re-volt-rvgl");
   });
 
   it("still falls back to `official` for a genuinely unknown game", () => {

@@ -753,6 +753,7 @@ function persistManagedRooms() {
     editionSlug: r.editionSlug || null, name: r.name, host: r.host, port: r.port,
     pid: r.pid, identity: r.processIdentity, createdAt: r.createdAt,
     processStartedAt: r.processStartedAt, settings: r.settings,
+    customerOwned: Boolean(r.customerOwned),
     rcon: r.rcon, rconPassword: r.rconPassword, cwd: r.cwd || null,
   })));
 }
@@ -786,7 +787,7 @@ async function startRoom(opts) {
   return startCoordinator.withPartyLock(key, () => startRoomUnlocked(opts));
 }
 
-async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername, saveKey }) {
+async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername, saveKey, customerOwned }) {
   if (shuttingDown) return { error: "Agent is shutting down" };
   const lookup = communityServerId ? byManaged : byParty;
   const ownerId = communityServerId || partyId;
@@ -821,6 +822,7 @@ async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, e
       settings,
       leaderUsername,
       saveKey: cleanSaveKey,
+      customerOwned: Boolean(customerOwned && communityServerId),
     });
   } finally {
     startCoordinator.releaseCapacity();
@@ -828,11 +830,11 @@ async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, e
   }
 }
 
-async function startRoomReserved({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername, saveKey }) {
+async function startRoomReserved({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername, saveKey, customerOwned }) {
 
   // Recipes use partyId as a filesystem namespace; managed IDs serve that
   // internal purpose without creating a Party or entering byParty.
-  const roomCtx = { editionSlug, mod, partyId: partyId || communityServerId, managed: Boolean(communityServerId), name, settings, leaderUsername, saveKey };
+  const roomCtx = { editionSlug, mod, partyId: partyId || communityServerId, managed: Boolean(communityServerId), customerOwned: Boolean(customerOwned && communityServerId), name, settings, leaderUsername, saveKey };
   let resolved = resolveRecipe(gameSlug, roomCtx);
   if (!resolved) return { error: `Game ${gameSlug} is not hostable` };
 
@@ -887,6 +889,7 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
   const ctx = {
     partyId: partyId || communityServerId,
     managed: Boolean(communityServerId),
+    customerOwned: Boolean(customerOwned && communityServerId),
     name: serverName,
     editionSlug: editionSlug || "",
     // Explicit override for games where edition alone can't say which mod to
@@ -967,6 +970,7 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
       roomId,
       partyId,
       communityServerId: communityServerId || null,
+      customerOwned: ctx.customerOwned,
       editionSlug: editionSlug || null,
       gameSlug,
       saveKey: ctx.saveKey || null,
@@ -1341,6 +1345,7 @@ const server = http.createServer(async (req, res) => {
         communityServerId, gameSlug, partyId: null,
         name: String(body.name || "PlayBound.Club Community Server").slice(0, 40),
         editionSlug: body.editionSlug, mod: body.mod, settings: body.settings,
+        customerOwned: body.customerOwned === true,
       }).then((result) => {
         managedJobs.set(communityServerId, result.error
           ? { status: "failed", error: result.error, at: Date.now() }
