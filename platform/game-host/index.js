@@ -42,6 +42,8 @@ import { httpsGetStream } from "./downloadStream.js";
 import { createManagedRegistry, createPartyRegistry, isSameProcess, processIdentity, processGroupMembers, rehydrateManagedRoom } from "./managedRegistry.js";
 import { processMetrics } from "./processMetrics.js";
 import { queryRoomOccupancy } from "./playerQueries.js";
+import { isWorldBackupGame } from "./dedicatedDataBackups.js";
+import { runWorldBackup } from "./worldBackupRunner.js";
 import { captureRvglLobby, sendRvglLobbyInput } from "./rvglDisplay.js";
 
 const require = createRequire(import.meta.url);
@@ -1354,6 +1356,46 @@ const server = http.createServer(async (req, res) => {
         managedJobs.set(communityServerId, { status: "failed", error: String(error?.message || error), at: Date.now() });
       });
       json(res, 202, job);
+      return;
+    }
+
+    /*
+     * World-data restore points for a paid server: { action: "list" | "create"
+     * | "restore", gameSlug, retention?, backupId? }. The platform names the
+     * game; the module picks the one folder that server owns, so a caller
+     * never supplies a path. A restore replaces the world on disk, so it is
+     * refused while the server runs or is starting.
+     */
+    const worldBackupMatch = url.pathname.match(/^\/managed\/([a-fA-F0-9]{24})\/world-backups$/);
+    if (req.method === "POST" && worldBackupMatch) {
+      // Lower-cased: the room registry is keyed by the platform's lower-case id.
+      const serverId = worldBackupMatch[1].toLowerCase();
+      const body = await readBody(req);
+      const gameSlug = String(body.gameSlug || "");
+      if (!isWorldBackupGame(gameSlug)) {
+        json(res, 400, { error: "This game has no world-data backups" });
+        return;
+      }
+      const retention = Number.isInteger(body.retention) ? body.retention : 3;
+      const activeId = byManaged.get(serverId);
+      const busy = Boolean((activeId && rooms.has(activeId)) || managedJobs.get(serverId)?.status === "pending");
+      try {
+        if (body.action === "list") {
+          json(res, 200, { backups: await runWorldBackup("listWorldBackups", [serverId, gameSlug]) });
+        } else if (body.action === "create") {
+          json(res, 200, { backup: await runWorldBackup("createWorldBackup", [serverId, gameSlug, retention]) });
+        } else if (body.action === "restore") {
+          if (busy) {
+            json(res, 409, { error: "Stop the server before restoring its world data." });
+            return;
+          }
+          json(res, 200, { result: await runWorldBackup("restoreWorldBackup", [serverId, gameSlug, String(body.backupId || ""), retention]) });
+        } else {
+          json(res, 400, { error: "Unknown action" });
+        }
+      } catch (error) {
+        json(res, 422, { error: String(error?.message || "World-data backup failed") });
+      }
       return;
     }
 

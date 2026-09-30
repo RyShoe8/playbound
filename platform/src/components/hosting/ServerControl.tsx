@@ -51,6 +51,8 @@ const ACTION_LABELS: Record<string, string> = {
   backup_created: "created a restore point",
   backup_restored: "restored a backup",
   backup_deleted: "deleted a restore point",
+  world_backup_created: "backed up the world data",
+  world_backup_restored: "restored the world data",
   player_kicked: "kicked a player",
   console_command: "ran a console command",
   access_granted: "gave someone a role",
@@ -224,7 +226,7 @@ export function ServerControl({ serverId }: { serverId: string }) {
       {tab === "Players" ? <PlayersTab base={base} running={running} canKick={may("server:kick_players")} canBan={may("server:ban_players")} run={run} /> : null}
       {tab === "Console" ? <ConsoleTab base={base} running={running} /> : null}
       {tab === "Backups" ? (
-        <BackupsTab base={base} canCreate={may("server:create_backup")} canRestore={may("server:restore_backup")} canExport={may("server:configure")} run={run} />
+        <BackupsTab base={base} status={control.status.status} canCreate={may("server:create_backup")} canRestore={may("server:restore_backup")} canExport={may("server:configure")} run={run} />
       ) : null}
       {tab === "Access" ? <AccessTab base={base} canManage={may("server:manage_access")} run={run} /> : null}
       {tab === "Activity" ? <ActivityTab base={base} /> : null}
@@ -649,12 +651,14 @@ const BACKUP_KIND: Record<BackupRow["kind"], string> = { manual: "Restore point"
 
 function BackupsTab({
   base,
+  status,
   canCreate,
   canRestore,
   canExport,
   run,
 }: {
   base: string;
+  status: string;
   canCreate: boolean;
   canRestore: boolean;
   canExport: boolean;
@@ -745,7 +749,96 @@ function BackupsTab({
       ) : (
         <p className="text-sm text-muted-foreground">No restore points yet.</p>
       )}
+      <WorldDataSection base={base} status={status} canCreate={canCreate} canRestore={canRestore} run={run} />
     </div>
+  );
+}
+
+type WorldBackupRow = { id: string; createdAt: string; bytes: number; files: number; kind: "manual" | "before-restore" };
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  if (bytes < 1024 ** 3) return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+  return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
+}
+
+/** Saved worlds and player data for games that keep them on the host. Renders nothing for other games. */
+function WorldDataSection({
+  base,
+  status,
+  canCreate,
+  canRestore,
+  run,
+}: {
+  base: string;
+  status: string;
+  canCreate: boolean;
+  canRestore: boolean;
+  run: (w: () => Promise<unknown>, done?: string) => Promise<void>;
+}) {
+  const [data, setData] = useState<{ supported: boolean; backups: WorldBackupRow[]; retention: number } | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+  const load = useCallback(async () => {
+    try {
+      setData(await api(`${base}/world-backups`));
+      setProblem(null);
+    } catch (e) {
+      setProblem(e instanceof Error ? e.message : "Could not load world backups");
+    }
+  }, [base]);
+  useEffect(() => {
+    const first = setTimeout(() => void load(), 0);
+    return () => clearTimeout(first);
+  }, [load]);
+  if (problem) return <p className="text-xs text-destructive">World data: {problem}</p>;
+  if (!data?.supported) return null;
+  const stopped = status !== "running" && status !== "pending";
+  return (
+    <section className="space-y-3 border-t border-border pt-4">
+      <h3 className="font-semibold">World data</h3>
+      <p className="text-xs text-muted-foreground">
+        A world backup saves this server&apos;s saved games and player data on the host. Up to {data.retention} are kept; the oldest goes first.
+        Restoring replaces the current world, so the server must be stopped. The current world is backed up first.
+      </p>
+      {canCreate ? (
+        <button
+          type="button"
+          className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground"
+          onClick={() => void run(async () => { await api(`${base}/world-backups`, { method: "POST", body: JSON.stringify({ action: "create" }) }); await load(); }, "World data backed up.")}
+        >
+          Back up world data
+        </button>
+      ) : null}
+      {data.backups.length ? (
+        <ul className="divide-y divide-border rounded-xl border border-border bg-card">
+          {data.backups.map((b) => (
+            <li key={b.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-2 text-sm">
+              <span>
+                <span className="font-medium">{b.kind === "before-restore" ? "Before a restore" : "World backup"}</span>{" "}
+                <span className="text-xs text-muted-foreground">{new Date(b.createdAt).toLocaleString()}</span>
+                <span className="block text-xs text-muted-foreground">{formatBytes(b.bytes)} · {b.files.toLocaleString()} files</span>
+              </span>
+              {canRestore ? (
+                <button
+                  type="button"
+                  className="text-xs text-primary disabled:opacity-50"
+                  disabled={!stopped}
+                  title={stopped ? undefined : "Stop the server first"}
+                  onClick={() => {
+                    if (!window.confirm("Restore this world? The current world is saved first, so you can undo this.")) return;
+                    void run(async () => { await api(`${base}/world-backups`, { method: "POST", body: JSON.stringify({ action: "restore", backupId: b.id }) }); await load(); }, "World data restored.");
+                  }}
+                >
+                  Restore
+                </button>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-muted-foreground">No world backups yet.</p>
+      )}
+    </section>
   );
 }
 

@@ -35,7 +35,7 @@ export const PLAYER_LIMIT_RECIPES = new Set([
   "assaultcube", "medal-of-honor-allied-assault", "warzone-2100", "bzflag", "mindustry", "hurry-curry", "deus-ex-goty-edition",
   "supertuxkart", "xonotic", "openarena", "0-ad", "0ad", "bombsquad",
   "wolfenstein-enemy-territory", "team-fortress-2", "unvanquished",
-  "hedgewars", "freedoom", "veloren",
+  "hedgewars", "freedoom", "veloren", "freeciv",
 ]);
 
 // Engines with a native bot fill mode (bots leave as people join, return as

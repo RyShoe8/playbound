@@ -122,6 +122,25 @@ export async function stopManagedHostRoom(communityServerId: string): Promise<{ 
   }
 }
 
+export type WorldBackupInfo = { id: string; createdAt: string; bytes: number; files: number; kind: "manual" | "before-restore" };
+
+/** One world-data backup operation for a paid server, run by the agent on the host. */
+export async function worldBackupOnHost(
+  communityServerId: string,
+  body: { action: "list" | "create" | "restore"; gameSlug: string; retention?: number; backupId?: string }
+): Promise<{ ok: true; backups?: WorldBackupInfo[]; backup?: WorldBackupInfo } | { ok: false; error: string }> {
+  if (!/^[a-fA-F0-9]{24}$/.test(communityServerId)) return { ok: false, error: "Invalid server" };
+  try {
+    // Copying a large world can take a while; the agent does it off its main thread.
+    const res = await hostFetch(`/managed/${communityServerId}/world-backups`, { method: "POST", body: JSON.stringify(body) }, 120_000);
+    if (!res) return { ok: false, error: "Game host is not configured" };
+    const data = (await res.json()) as { backups?: WorldBackupInfo[]; backup?: WorldBackupInfo; error?: string };
+    return res.ok ? { ok: true, backups: data.backups, backup: data.backup } : { ok: false, error: data.error || `Game host returned ${res.status}` };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Game host unreachable" };
+  }
+}
+
 export type GameHostHealth = {
   ok?: boolean;
   publicIp?: string | null;
