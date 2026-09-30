@@ -9,6 +9,7 @@
  *   stdin — optional string written after spawn (Mindustry)
  */
 
+import { createDedicatedRecipes } from "./dedicatedRecipes.js";
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
@@ -229,6 +230,7 @@ for (const slug of [
   "warzone-2100", "bzflag", "supertuxkart", "xonotic", "openarena",
   "0-ad", "0ad", "bombsquad", "wolfenstein-enemy-territory", "team-fortress-2",
   "unvanquished", "hedgewars", "freedoom", "veloren", "freeciv",
+  "counter-strike-source", "terraria", "unturned", "rimworld-together", "core-keeper", "vintage-story", "factorio",
 ]) {
   RECIPE_SETTING_TYPES[slug] = { ...RECIPE_SETTING_TYPES[slug], maxPlayers: "number" };
 }
@@ -1879,6 +1881,18 @@ export const recipes = {
     spawnEnv: () => ({ ALSOFT_DRIVERS: "null", SDL_AUDIODRIVER: "dummy" }),
   },
 };
+
+/*
+ * Paid Dedicated plan games live in dedicatedRecipes.js. They are merged here
+ * so the agent, its tests and the health report treat them like any recipe,
+ * but a slug can never shadow an existing one.
+ */
+for (const [slug, recipe] of Object.entries(createDedicatedRecipes({
+  fs, path, execFile: execFileAsync, GAMES_ROOT, HOST_HOME, gameBin, firstExisting, managedPlayerLimit, customerHomeDir, isolatedHomeEnv,
+}))) {
+  if (recipes[slug]) throw new Error(`dedicated recipe "${slug}" collides with an existing recipe`);
+  recipes[slug] = recipe;
+}
 
 recipes["0ad"] = recipes["0-ad"];
 recipes["openmohaa"] = recipes["medal-of-honor-allied-assault"];

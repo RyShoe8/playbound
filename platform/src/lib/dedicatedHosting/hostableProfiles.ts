@@ -10,7 +10,12 @@
 import dbConnect from "@/lib/db";
 import Edition from "@/lib/models/Edition";
 import { editions as seedEditions } from "@/lib/data/editions";
-import { HOSTABLE_SLUGS, HOSTABLE_SLUG_ALIASES } from "@/lib/gameHost/catalog";
+import { DEDICATED_ONLY_GAMES, HOSTABLE_SLUGS, HOSTABLE_SLUG_ALIASES } from "@/lib/gameHost/catalog";
+
+/** Every game the admin can put on a tier: hostable everywhere, plus the paid-plan-only games. */
+function tierSlugs(): string[] {
+  return [...HOSTABLE_SLUGS.filter((slug) => !HOSTABLE_SLUG_ALIASES[slug]), ...Object.keys(DEDICATED_ONLY_GAMES)];
+}
 
 export type EditionRef = { gameSlug: string; slug: string };
 export type StoredProfileRef = { key: string; gameSlug: string; editionSlug?: string | null };
@@ -24,7 +29,7 @@ export type ProfileStub = {
 export function hostableProfileStubs(stored: StoredProfileRef[], editions: EditionRef[]): ProfileStub[] {
   const storedKeys = new Set(stored.map((p) => p.key));
   const storedPairs = new Set(stored.map((p) => `${p.gameSlug}:${p.editionSlug || ""}`));
-  const slugs = HOSTABLE_SLUGS.filter((slug) => !HOSTABLE_SLUG_ALIASES[slug]);
+  const slugs = tierSlugs();
   const stubs: ProfileStub[] = [];
   const add = (gameSlug: string, editionSlug: string | null) => {
     const key = `${gameSlug}:${editionSlug || "base"}`;
@@ -41,7 +46,7 @@ export function hostableProfileStubs(stored: StoredProfileRef[], editions: Editi
 
 /** Non-archived, non-hidden editions of hostable games, from the database and the seed file. */
 export async function loadHostableEditionRefs(): Promise<EditionRef[]> {
-  const slugs = HOSTABLE_SLUGS.filter((slug) => !HOSTABLE_SLUG_ALIASES[slug]);
+  const slugs = tierSlugs();
   await dbConnect();
   const rows = await Edition.find({
     gameSlug: { $in: slugs },

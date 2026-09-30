@@ -329,6 +329,26 @@ export const HOSTABLE_SLUG_ALIASES: Record<string, string> = {
   revolt: "re-volt-rvgl",
 };
 
+/**
+ * Games offered only on the paid Dedicated plan. Deliberately NOT in
+ * HOSTABLE_GAMES: that list also switches on free party hosting, the public
+ * Connect page and community rotation, none of which should offer a game whose
+ * server has not been installed and tested on the host. These appear in the
+ * admin's tier game list (as drafts) and are started only for a customer's own
+ * server. Ports must match game-host/dedicatedRecipes.js; a test checks them.
+ *
+ * Slugs are the catalog slugs — confirm them in /admin before enabling a game.
+ */
+export const DEDICATED_ONLY_GAMES: Record<string, HostableGame> = {
+  "counter-strike-source": { slug: "counter-strike-source", title: "Counter-Strike: Source", defaultPort: 27060, portEnd: 27070, protocol: "udp" },
+  terraria: { slug: "terraria", title: "Terraria", defaultPort: 7870, portEnd: 7890, protocol: "tcp" },
+  unturned: { slug: "unturned", title: "Unturned", defaultPort: 27075, portEnd: 27099, protocol: "udp" },
+  "rimworld-together": { slug: "rimworld-together", title: "RimWorld Together", defaultPort: 25590, portEnd: 25610, protocol: "tcp" },
+  "core-keeper": { slug: "core-keeper", title: "Core Keeper", defaultPort: 1300, portEnd: 1320, protocol: "udp" },
+  "vintage-story": { slug: "vintage-story", title: "Vintage Story", defaultPort: 42420, portEnd: 42440, protocol: "both" },
+  factorio: { slug: "factorio", title: "Factorio", defaultPort: 34197, portEnd: 34217, protocol: "udp" },
+};
+
 export const HOSTABLE_SLUGS = Object.keys(HOSTABLE_GAMES);
 
 export function isHostableGame(slug: string | null | undefined): boolean {
