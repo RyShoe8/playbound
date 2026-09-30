@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Check, Server } from "lucide-react";
 import { pageMetadata } from "@/lib/seo";
 import { loadPublicTier, publicGames } from "@/lib/dedicatedHosting/publicTier";
+import { PENDING_DEDICATED_GAMES } from "@/lib/dedicatedHosting/pendingGames";
 
 export const metadata: Metadata = pageMetadata({
   title: "Game Server Hosting — PlayBound Dedicated",
@@ -40,6 +41,10 @@ export default async function HostingPage() {
   const { tier: t, live } = await loadPublicTier();
   const packages = [...(t.packages || [])].filter((p) => p.enabled !== false).sort((a, b) => a.order - b.order);
   const games = publicGames(t);
+  const lineup = [
+    ...games.map((game) => ({ gameSlug: game.gameSlug, title: game.title, requirement: null as string | null })),
+    ...PENDING_DEDICATED_GAMES,
+  ].sort((a, b) => a.title.localeCompare(b.title));
   const region = t.regions?.find((r) => r.salesEnabled)?.label || "US Central";
   const salesOpen = live && Boolean(t.salesEnabled);
 
@@ -104,17 +109,25 @@ export default async function HostingPage() {
           </ul>
         </div>
         <div className="space-y-3">
-          <h2 className="text-xl font-bold">Games you can host</h2>
-          <ul className="grid grid-cols-2 gap-2 text-sm">
-            {games.map((g) => (
-              <li key={g.gameSlug} className="flex items-center gap-2">
-                <Server className="h-4 w-4 text-muted-foreground" aria-hidden />
-                <Link href={`/hosting/${g.gameSlug}`} className="hover:text-primary hover:underline">{g.title}</Link>
+          <h2 className="text-xl font-bold">Dedicated game lineup</h2>
+          <ul className="grid gap-3 text-sm sm:grid-cols-2">
+            {lineup.map((g) => (
+              <li key={g.gameSlug} className="flex items-start gap-2">
+                <Server className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                {g.requirement ? (
+                  <span className="text-muted-foreground">
+                    <span className="font-medium text-foreground">{g.title}</span>
+                    <span className="ml-2 rounded bg-secondary px-1.5 py-0.5 text-xs">Planned</span>
+                    <span className="mt-1 block text-xs">{g.requirement}</span>
+                  </span>
+                ) : (
+                  <Link href={`/hosting/${g.gameSlug}`} className="hover:text-primary hover:underline">{g.title}</Link>
+                )}
               </li>
             ))}
           </ul>
           <p className="text-xs text-muted-foreground">
-            Switch your slots between any of these at no charge. Your stopped servers keep their PlayBound settings.
+            Linked games can use your slots once enabled and verified. Planned games cannot be selected or started yet.
           </p>
         </div>
       </section>

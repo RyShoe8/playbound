@@ -24,6 +24,7 @@ import { parseCurrentMap } from "@/lib/serverControl/rcon";
 import { getServerSettingProfile } from "@/lib/serverControl/settings";
 import { getTier } from "./tier";
 import { reconcileDedicatedCapacityReservations } from "./reservations";
+import { isPendingDedicatedProfile } from "./pendingGames";
 
 const MAX_BACKOFF_MINUTES = 30;
 
@@ -60,7 +61,8 @@ export async function reconcileDedicatedServers(now = new Date()) {
     const room = rooms.get(id);
     const sub = subById.get(String(server.dedicatedSubscriptionId));
     const runnable = Boolean(sub && (RUNNABLE_STATUSES as readonly string[]).includes(String(sub.status)));
-    const wantOnline = server.desiredState === "running" && runnable && !tier.startsDisabled;
+    const planned = isPendingDedicatedProfile(server.profileKey);
+    const wantOnline = server.desiredState === "running" && runnable && !tier.startsDisabled && !planned;
 
     if (!wantOnline) {
       if (room) {
@@ -71,7 +73,7 @@ export async function reconcileDedicatedServers(now = new Date()) {
       const forced = server.desiredState === "running";
       if (forced) {
         server.desiredState = "stopped";
-        server.decisionReason = runnable ? "STARTS_DISABLED" : "SUBSCRIPTION_INACTIVE";
+        server.decisionReason = planned ? "GAME_NOT_READY" : runnable ? "STARTS_DISABLED" : "SUBSCRIPTION_INACTIVE";
       }
       server.runtimeState = "stopped";
       server.playerCount = null;
@@ -81,7 +83,7 @@ export async function reconcileDedicatedServers(now = new Date()) {
       await server.save();
       await releaseSlots(id);
       if (forced) {
-        await recordActivity(server._id, { kind: "system" }, "server_stopped", runnable ? "Server starts are paused" : "Hosting subscription is not active");
+        await recordActivity(server._id, { kind: "system" }, "server_stopped", planned ? "This game is not ready for Dedicated hosting" : runnable ? "Server starts are paused" : "Hosting subscription is not active");
       }
       stopped += 1;
       continue;

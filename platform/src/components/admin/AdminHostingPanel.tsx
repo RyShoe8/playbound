@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { HostingSupport } from "@/components/hosting/HostingSupport";
+import { PENDING_DEDICATED_GAMES, isPendingDedicatedProfile } from "@/lib/dedicatedHosting/pendingGames";
 
 type TierGame = {
   profileKey: string;
@@ -346,7 +347,7 @@ function GamesTab({ tier, profiles, onSave }: { tier: Tier; profiles: ProfileInf
   const [adding, setAdding] = useState("");
   const byKey = new Map(profiles.map((p) => [p.key, p]));
   const update = (i: number, patch: Partial<TierGame>) => setGames((g) => g.map((x, j) => (j === i ? { ...x, ...patch } : x)));
-  const available = profiles.filter((p) => !games.some((g) => g.profileKey === p.key));
+  const available = profiles.filter((p) => !isPendingDedicatedProfile(p.key) && !games.some((g) => g.profileKey === p.key));
   const rc = tier.resourceClass;
   return (
     <section className="space-y-3 rounded-xl border border-border bg-card p-4">
@@ -365,6 +366,13 @@ function GamesTab({ tier, profiles, onSave }: { tier: Tier; profiles: ProfileInf
           <tbody>
             {games.map((g, i) => {
               const p = byKey.get(g.profileKey);
+              if (isPendingDedicatedProfile(g.profileKey)) {
+                const note = PENDING_DEDICATED_GAMES.find((item) => g.profileKey.startsWith(`${item.gameSlug}:`));
+                return <tr key={g.profileKey} className="border-t border-border text-sm text-muted-foreground">
+                  <td className="py-2 font-mono text-xs">{g.profileKey}</td>
+                  <td colSpan={8}>Planned · {note?.requirement}</td>
+                </tr>;
+              }
               return (
                 <tr key={g.profileKey} className="border-t border-border align-top">
                   <td className="py-2 font-mono text-xs">{g.profileKey}{!p || p.stored === false ? <span className="block text-amber-500">no server profile yet</span> : null}</td>
@@ -403,6 +411,12 @@ function GamesTab({ tier, profiles, onSave }: { tier: Tier; profiles: ProfileInf
                 </tr>
               );
             })}
+            {PENDING_DEDICATED_GAMES.filter((item) => !games.some((g) => g.profileKey.startsWith(`${item.gameSlug}:`))).map((item) => (
+              <tr key={item.gameSlug} className="border-t border-border text-sm text-muted-foreground">
+                <td className="py-2 font-mono text-xs">{item.title}</td>
+                <td colSpan={8}>Planned · {item.requirement}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -425,7 +439,7 @@ function GamesTab({ tier, profiles, onSave }: { tier: Tier; profiles: ProfileInf
           + Add
         </button>
       </div>
-      <button type="button" className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" onClick={() => onSave({ ...tier, games })}>
+      <button type="button" className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" onClick={() => onSave({ ...tier, games: games.map((g) => isPendingDedicatedProfile(g.profileKey) ? { ...g, enabled: false, newServerCreationEnabled: false, existingServerStartEnabled: false } : g) })}>
         Save games
       </button>
     </section>

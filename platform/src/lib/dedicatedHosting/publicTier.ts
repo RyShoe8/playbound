@@ -10,6 +10,7 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { getHostableGame } from "@/lib/gameHost/catalog";
 import { BASIC_DEFAULTS, getTier, type HostingTier } from "./tier";
+import { isPendingDedicatedProfile } from "./pendingGames";
 
 export const HOSTING_TIER_TAG = "hosting-tier";
 
@@ -48,7 +49,7 @@ export type PublicHostingGame = { gameSlug: string; title: string; editions: str
 export function publicGames(tier: HostingTier): PublicHostingGame[] {
   const byGame = new Map<string, PublicHostingGame>();
   for (const g of tier.games || []) {
-    if (g.enabled === false || g.newServerCreationEnabled === false) continue;
+    if (g.enabled === false || g.newServerCreationEnabled === false || isPendingDedicatedProfile(g.profileKey)) continue;
     const [gameSlug, edition] = g.profileKey.split(":");
     const current = byGame.get(gameSlug) || {
       gameSlug,
