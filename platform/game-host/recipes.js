@@ -1794,25 +1794,22 @@ export const recipes = {
     portEnd: 2330,
     protocol: "udp",
     binaries: gameBin("re-volt-rvgl", ["rvgl.64", "rvgl.32", "rvgl", "rvgl.exe", "rvgl-server"]),
-    resolveBinary: (candidates) => {
-      const realBin = firstExisting(candidates);
-      if (!realBin) return null;
-      if (fs.existsSync("/usr/bin/xvfb-run")) return "/usr/bin/xvfb-run";
-      return realBin;
-    },
+    resolveBinary: (candidates) => firstExisting(candidates) && fs.existsSync("/usr/bin/xvfb-run")
+      ? "/usr/bin/xvfb-run" : null,
+    prepareSpawn: () => fs.mkdirSync("/var/lib/playbound-host/rvgl-displays", { recursive: true, mode: 0o700 }),
     args: (port, ctx, binary) => {
       const realBin = firstExisting(gameBin("re-volt-rvgl", ["rvgl.64", "rvgl.32", "rvgl", "rvgl.exe", "rvgl-server"]));
       const baseArgs = [
-        "-dedicated",
         "-lobby",
-        "-port",
+        "-profile", "PlayBound",
+        "-serverport",
         String(port),
-        "-name",
-        ctx.name || "PlayBound.club Party",
         "-nosound",
+        "-window", "640", "480",
       ];
       if (binary && binary.endsWith("xvfb-run") && realBin) {
-        return ["-a", realBin, ...baseArgs];
+        return ["-n", String(port), "-f", `/var/lib/playbound-host/rvgl-displays/${port}.xauth`,
+          "-s", "-screen 0 640x480x24 -nolisten tcp", realBin, ...baseArgs];
       }
       return baseArgs;
     },

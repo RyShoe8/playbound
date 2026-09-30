@@ -37,6 +37,32 @@ export type ManagedHostStatus = {
   at?: number;
 };
 
+export async function getRvglLobbyDisplay(roomId: string): Promise<{ image?: string; error?: string }> {
+  if (!/^room_[a-f0-9]{16}$/.test(roomId)) return { error: "Invalid room" };
+  try {
+    const response = await hostFetch(`/rooms/${roomId}/rvgl-lobby`, { method: "GET" }, 8_000);
+    if (!response) return { error: "Game host is not configured" };
+    const data = await response.json() as { image?: string; error?: string };
+    return response.ok ? { image: data.image } : { error: data.error || "Lobby display unavailable" };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Lobby display unavailable" };
+  }
+}
+
+export async function sendRvglLobbyControl(roomId: string, input: unknown): Promise<{ ok?: boolean; error?: string }> {
+  if (!/^room_[a-f0-9]{16}$/.test(roomId)) return { error: "Invalid room" };
+  try {
+    const response = await hostFetch(`/rooms/${roomId}/rvgl-lobby`, {
+      method: "POST", body: JSON.stringify(input),
+    }, 8_000);
+    if (!response) return { error: "Game host is not configured" };
+    const data = await response.json() as { ok?: boolean; error?: string };
+    return response.ok ? { ok: true } : { error: data.error || "Could not control lobby" };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Could not control lobby" };
+  }
+}
+
 export async function listManagedHostRooms(): Promise<
   | { ok: true; rooms: GameHostRoom[]; jobs: Record<string, ManagedHostStatus> }
   | { ok: false; error: string }

@@ -37,7 +37,7 @@ export DEBIAN_FRONTEND=noninteractive
 echo "==> packages"
 apt-get update -y
 apt-get install -y --no-install-recommends \
-  ca-certificates curl wget unzip tar xz-utils \
+  ca-certificates curl wget unzip tar xz-utils xvfb xauth xdotool imagemagick \
   ufw jq coturn git \
   openjdk-17-jre-headless \
   openttd \

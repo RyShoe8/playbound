@@ -40,7 +40,61 @@ let state = {
   tes3mpCommandBusy: null,
   guide: null,
   guideScheme: null,
+  rvglEnabled: false,
+  rvglImage: null,
+  rvglError: null,
+  rvglBusy: false,
 };
+
+async function refreshRvglLobby() {
+  if (!state.rvglEnabled || !state.partyId || state.rvglBusy || state.activeTab !== "server") return;
+  const partyId = state.partyId;
+  const result = await window.playbound.getRvglLobby(partyId);
+  if (state.partyId !== partyId) return;
+  state.rvglError = result?.error || null;
+  if (result?.image) {
+    state.rvglImage = result.image;
+    const preview = document.getElementById("rvgl-preview");
+    if (preview) preview.src = `data:image/jpeg;base64,${result.image}`;
+  }
+  const message = document.getElementById("rvgl-error");
+  if (message) message.textContent = state.rvglError || "";
+}
+
+async function sendRvglInput(input) {
+  if (state.rvglBusy || !state.partyId) return;
+  state.rvglBusy = true;
+  const result = await window.playbound.sendRvglLobbyInput(state.partyId, input);
+  state.rvglBusy = false;
+  state.rvglError = result?.error || null;
+  await refreshRvglLobby();
+}
+
+function renderRvglLobby() {
+  root.innerHTML = `<p class="note">Control the PlayBound VPS lobby. Choose the track and race settings on the host screen, then start the race.</p>
+    <img id="rvgl-preview" alt="Live Re-Volt host lobby" draggable="false"
+      style="display:block;width:100%;aspect-ratio:4/3;object-fit:contain;cursor:pointer;border-radius:6px;background:#000"
+      ${state.rvglImage ? `src="data:image/jpeg;base64,${state.rvglImage}"` : ""}>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">
+      ${["Up", "Down", "Left", "Right", "Return", "Escape", "Tab"].map((key) =>
+        `<button class="apply" data-rvgl-key="${key}">${key === "Return" ? "Select" : key}</button>`).join("")}
+    </div>
+    <p id="rvgl-error" class="note warn">${escapeHtml(state.rvglError || "")}</p>
+    <p class="hint">Click the host screen or use these buttons. Only the party leader can control it.</p>`;
+  root.querySelector("#rvgl-preview")?.addEventListener("click", (event) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    void sendRvglInput({ type: "click", x: Math.min(639, Math.floor((event.clientX - rect.left) * 640 / rect.width)),
+      y: Math.min(479, Math.floor((event.clientY - rect.top) * 480 / rect.height)) });
+  });
+  root.querySelectorAll("[data-rvgl-key]").forEach((button) => {
+    button.addEventListener("click", () => void sendRvglInput({ type: "key", key: button.dataset.rvglKey }));
+  });
+  void refreshRvglLobby();
+}
+
+setInterval(() => {
+  if (document.visibilityState === "visible") void refreshRvglLobby();
+}, 1500);
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -199,6 +253,11 @@ function renderServerTab() {
     root.innerHTML = `<p class="note">${escapeHtml(
       data.error || "No party is open right now."
     )}</p>`;
+    return;
+  }
+
+  if (state.rvglEnabled) {
+    renderRvglLobby();
     return;
   }
 
@@ -691,6 +750,11 @@ async function load() {
   const context = await window.playbound.getOverlayContext();
   const party = context?.party || null;
   state.partyId = party?.id || null;
+  state.rvglEnabled = Boolean(party?.rvglLobby);
+  if (!state.rvglEnabled) {
+    state.rvglImage = null;
+    state.rvglError = null;
+  }
   state.controls = context?.controls || null;
   state.guide = context?.guide || null;
   subject.textContent =

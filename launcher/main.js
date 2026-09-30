@@ -12927,6 +12927,7 @@ async function overlayContext() {
       gameSlug: party.gameSlug || null,
       gameTitle: party.gameTitle || null,
       memberCount: Array.isArray(party.members) ? party.members.length : null,
+      rvglLobby: party.gameSlug === "re-volt-rvgl" && party.hostMode === "dedicated" && party.hosted?.status === "ready",
     },
     controls,
     guide,
@@ -13020,6 +13021,18 @@ ipcMain.handle("get-server-settings", async (_event, partyId) => {
   } catch (err) {
     return { error: err.message };
   }
+});
+
+ipcMain.handle("get-rvgl-lobby", async (_event, partyId) => {
+  if (!/^[a-f0-9]{24}$/i.test(String(partyId || ""))) return { error: "Invalid party" };
+  try { return await launcherJson(`/api/parties/${partyId}/rvgl-lobby`); }
+  catch (err) { return { error: err.message }; }
+});
+
+ipcMain.handle("send-rvgl-lobby-input", async (_event, partyId, input) => {
+  if (!/^[a-f0-9]{24}$/i.test(String(partyId || ""))) return { error: "Invalid party" };
+  try { return await launcherJson(`/api/parties/${partyId}/rvgl-lobby`, { method: "POST", body: input }); }
+  catch (err) { return { error: err.message }; }
 });
 
 ipcMain.handle("apply-server-settings", async (_event, partyId, settings) => {

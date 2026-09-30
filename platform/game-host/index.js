@@ -42,6 +42,7 @@ import { httpsGetStream } from "./downloadStream.js";
 import { createManagedRegistry, createPartyRegistry, isSameProcess, processIdentity, processGroupMembers, rehydrateManagedRoom } from "./managedRegistry.js";
 import { processMetrics } from "./processMetrics.js";
 import { queryRoomOccupancy } from "./playerQueries.js";
+import { captureRvglLobby, sendRvglLobbyInput } from "./rvglDisplay.js";
 
 const require = createRequire(import.meta.url);
 const { injectPlayboundAdmin, listTes3mpAccounts, claimTes3mpAdmin, requestTes3mpSetHour, requestTes3mpCommand } = require(
@@ -1481,6 +1482,29 @@ const server = http.createServer(async (req, res) => {
      * transport and deliberately does not try to be a second validator of
      * something it cannot interpret.
      */
+    const rvglLobbyMatch = url.pathname.match(/^\/rooms\/(room_[a-f0-9]{16})\/rvgl-lobby$/);
+    if ((req.method === "GET" || req.method === "POST") && rvglLobbyMatch) {
+      const room = rooms.get(rvglLobbyMatch[1]);
+      if (!room || room.gameSlug !== "re-volt-rvgl" || !room.pid ||
+          !isSameProcess(room.pid, room.processIdentity)) {
+        json(res, 404, { error: "RVGL lobby is not running" });
+        return;
+      }
+      res.setHeader("cache-control", "no-store");
+      try {
+        if (req.method === "GET") {
+          json(res, 200, { image: await captureRvglLobby(room.port) });
+        } else {
+          await sendRvglLobbyInput(room.port, await readBody(req));
+          room.lastActivityAt = Date.now();
+          json(res, 200, { ok: true });
+        }
+      } catch (error) {
+        json(res, 502, { error: error instanceof Error ? error.message : "RVGL display unavailable" });
+      }
+      return;
+    }
+
     const rconMatch = url.pathname.match(/^\/rooms\/([^/]+)\/rcon$/);
     if (req.method === "POST" && rconMatch) {
       const room = rooms.get(rconMatch[1]);

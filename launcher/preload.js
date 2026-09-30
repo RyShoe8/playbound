@@ -210,6 +210,8 @@ contextBridge.exposeInMainWorld("playbound", {
   setOverlayShortcut: (accelerator) => ipcRenderer.invoke("set-overlay-shortcut", accelerator),
   onOverlayOpened: (cb) => ipcRenderer.on("overlay-opened", () => cb()),
   getServerSettings: (partyId) => ipcRenderer.invoke("get-server-settings", partyId),
+  getRvglLobby: (partyId) => ipcRenderer.invoke("get-rvgl-lobby", partyId),
+  sendRvglLobbyInput: (partyId, input) => ipcRenderer.invoke("send-rvgl-lobby-input", partyId, input),
   updatePlayBoundControlsSettings: (partial) =>
     ipcRenderer.invoke("update-playbound-controls-settings", partial || {}),
   applyServerSettings: (partyId, settings) =>
