@@ -70,6 +70,7 @@ const {
   resolveGameDir,
 } = require("./openciv3Display");
 const { ensureHolocureFullscreen } = require("./holocureDisplay");
+const { ensureOutrunWindowSize } = require("./outrunDisplay");
 const {
   GES_SLUG,
   preflightGoldeneye,
@@ -3660,15 +3661,27 @@ function bundledControlProfile(slug) {
   return file ? JSON.parse(JSON.stringify(require(file))) : null;
 }
 
-async function availablePlayBoundControlsProfile(slug, editionSlug, allowPreview = false) {
+async function playBoundControlsResolution(slug, editionSlug, allowPreview = false) {
   const { hasControlsHost } = require("./services/couch/windowsVigem");
-  if (process.platform !== "win32" || couchDisqualifiesPlayBoundControls() || !hasControlsHost()) return null;
+  const { resolveControlsAvailability, logControlsSkip } = require("./services/controlsAvailability");
   // Signed and unsigned builds must resolve profiles identically: the live
   // catalog first, then the bundled fallback. No build-type-only overrides.
-  const profile = (await fetchControlProfile(slug, editionSlug, allowPreview)) || bundledControlProfile(slug);
-  const approved = profile?.status === "verified" && profile?.antiCheatCompatibility === "verified";
-  const testing = allowPreview && profile?.status === "testing";
-  return (approved || testing) && profile?.inputStrategy === "keyboard_mouse" ? profile : null;
+  const result = await resolveControlsAvailability({
+    platform: process.platform,
+    couchDisqualifies: process.platform === "win32" && couchDisqualifiesPlayBoundControls(),
+    hasControlsHost: process.platform === "win32" && hasControlsHost(),
+    fetchProfile: fetchControlProfile,
+    bundledProfile: bundledControlProfile,
+    slug,
+    editionSlug,
+    allowPreview,
+  });
+  logControlsSkip(slug, result.reason);
+  return result;
+}
+
+async function availablePlayBoundControlsProfile(slug, editionSlug, allowPreview = false) {
+  return (await playBoundControlsResolution(slug, editionSlug, allowPreview)).profile;
 }
 
 /** Tell the renderer whether its Gamepad API polling loop needs to run for PlayBound Controls. */
@@ -6363,6 +6376,18 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
       await ensureUnknownHorizonsSafeDisplay();
     } catch (err) {
       console.warn("[unknown-horizons] display ensure skipped:", err?.message || err);
+    }
+  }
+
+  if (slug === "outrun") {
+    try {
+      const result = await ensureOutrunWindowSize({
+        dirs: [info.dir, info.exe ? path.dirname(info.exe) : null],
+        workArea: screen.getPrimaryDisplay().workAreaSize,
+      });
+      if (result.changed) console.log(`[outrun] window size set to index ${result.index}`);
+    } catch (err) {
+      console.warn("[outrun] display ensure skipped:", err?.message || err);
     }
   }
 
@@ -12990,12 +13015,12 @@ ipcMain.handle("update-playbound-controls-settings", (_event, partial) => {
 });
 ipcMain.handle("get-playbound-controls-availability", async (_event, slug, editionSlug) => {
   if (typeof slug !== "string" || !slug || slug.length > 120) return { available: false };
-  const profile = await availablePlayBoundControlsProfile(slug, editionSlug || null, true);
+  const { profile, reason } = await playBoundControlsResolution(slug, editionSlug || null, true);
   // A supplement rides on native pad support (HoloCure's menu cursor): the
   // launch dialog keeps its ordinary Controller choice and this activates
   // underneath it, so it is not offered as an alternative control scheme.
   if (profile?.supplementsNativePad) return { available: false };
-  return { available: Boolean(profile), preview: Boolean(profile?.status === "testing"), name: profile?.name || null };
+  return { available: Boolean(profile), preview: Boolean(profile?.status === "testing"), name: profile?.name || null, reason: reason || null };
 });
 ipcMain.handle("get-overlay-shortcut", () => ({
   accelerator: overlayShortcut(),

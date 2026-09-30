@@ -376,6 +376,7 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
     const availability = await pb()?.getPlayBoundControlsAvailability?.(gameSlug, detail?.editionSlug || null);
     enhancedAvailable = Boolean(availability?.available);
     enhancedPreview = enhancedAvailable && Boolean(availability?.preview);
+    if (!enhancedAvailable && availability?.reason) console.info(`[playbound-controls] no controls popup for ${gameSlug}: ${availability.reason}`);
   } catch {
     // A failed profile lookup must not block an ordinary game launch.
   }

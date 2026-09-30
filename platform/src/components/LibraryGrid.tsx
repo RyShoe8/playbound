@@ -15,6 +15,7 @@ import {
 import { startPcUninstall } from "@/lib/watchLibraryGone";
 import { GameArt } from "@/components/GameArt";
 import { CardCategoryTags } from "@/components/CardCategoryTags";
+import { supportsController } from "@/lib/controller/support";
 import { LibraryModsDisclosure, type LibraryModItem } from "@/components/LibraryModsDisclosure";
 import { LibraryDeviceHint } from "@/components/LibraryDeviceHint";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
@@ -525,7 +526,7 @@ function MobileLibraryRow({
             ownedElsewhere={ownedElsewhere}
             game={game}
           />
-          <CardCategoryTags genres={game.genres} tags={game.tags} />
+          <CardCategoryTags genres={game.genres} tags={game.tags} controller={supportsController(game)} />
         </div>
       </div>
       <div className="mt-3 flex flex-wrap gap-2 border-t border-border pt-3">
