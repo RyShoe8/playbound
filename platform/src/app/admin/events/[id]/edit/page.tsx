@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth/next";
 import { Types } from "mongoose";
 import { authOptions } from "@/lib/auth";
 import { listGames } from "@/lib/catalog";
+import { eventGameOptions } from "@/lib/events/gameOptions";
 import dbConnect from "@/lib/db";
 import PlatformEvent from "@/lib/models/PlatformEvent";
 import { Tournament } from "@/lib/models/Tournament";
@@ -59,11 +60,7 @@ export default async function EditEventPage({ params }: Props) {
           tournamentFormat,
           teamSize,
         }}
-        gameOptions={games.map((g) => ({
-          slug: g.slug,
-          title: g.title,
-          coverImage: g.coverImage || null,
-        }))}
+        gameOptions={eventGameOptions(games)}
       />
     </div>
   );
