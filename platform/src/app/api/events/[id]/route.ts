@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth/next";
 import { Types } from "mongoose";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
+import { canViewAdmin } from "@/lib/adminAccess";
 import dbConnect from "@/lib/db";
 import PlatformEvent from "@/lib/models/PlatformEvent";
 import EventRsvp from "@/lib/models/EventRsvp";
@@ -53,7 +54,7 @@ export async function GET(_req: Request, ctx: Ctx) {
     const session = await getServerSession(authOptions);
 
     if (event.visibility === "unlisted") {
-      const isAdmin = session?.user?.role === "admin";
+      const isAdmin = canViewAdmin(session?.user?.role);
       const isOrg =
         session?.user?.id &&
         (String(event.organizerId || event.createdBy) === session.user.id);

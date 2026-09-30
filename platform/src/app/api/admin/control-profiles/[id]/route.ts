@@ -4,11 +4,11 @@ import { z } from "zod";
 import dbConnect from "@/lib/db";
 import ControlProfile from "@/lib/models/ControlProfile";
 import { controlProfileSchema } from "@/lib/controlProfiles/schema";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 import { validateProfileTarget } from "@/lib/controlProfiles/validateTarget";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
 
   const { id } = await params;

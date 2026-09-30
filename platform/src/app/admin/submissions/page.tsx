@@ -1,3 +1,4 @@
+import { canViewAdmin } from "@/lib/adminAccess";
 import Link from "next/link";
 import { connection } from "next/server";
 import type { Metadata } from "next";
@@ -17,7 +18,7 @@ export default async function AdminSubmissionsPage() {
   // independently, so the layout's opt-out does not cover this page.
   await connection();
   const session = await getServerSession(authOptions);
-  if (session?.user?.role !== "admin") redirect("/");
+  if (!canViewAdmin(session?.user?.role)) redirect("/");
 
   let items: {
     _id: { toString(): string };

@@ -4,12 +4,12 @@ import { z } from "zod";
 import dbConnect from "@/lib/db";
 import ControlProfile from "@/lib/models/ControlProfile";
 import { controlProfileSchema } from "@/lib/controlProfiles/schema";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 import { validateProfileTarget } from "@/lib/controlProfiles/validateTarget";
 
 /** ?gameSlug=<slug> lists that game's profiles (draft/testing/verified); no query lists everything, newest first. */
 export async function GET(req: Request) {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
 
   const gameSlug = new URL(req.url).searchParams.get("gameSlug");

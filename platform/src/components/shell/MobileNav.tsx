@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { canViewAdmin } from "@/lib/adminAccess";
 import { Gamepad2, House, LibraryBig, Mouse, Puzzle, Shield, Swords } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -19,7 +20,7 @@ export function MobileNav() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
-  const isAdmin = session?.user?.role === "admin";
+  const isAdmin = canViewAdmin(session?.user?.role);
 
   /*
    * Admin is part of the list rather than a sibling appended after it, so the

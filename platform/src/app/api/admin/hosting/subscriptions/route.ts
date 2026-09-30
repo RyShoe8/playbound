@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 import DedicatedSubscription from "@/lib/models/DedicatedSubscription";
 import CommunityServer from "@/lib/models/CommunityServer";
 import User from "@/lib/models/User";
@@ -11,7 +11,7 @@ import { reconcileDedicatedCapacityReservations } from "@/lib/dedicatedHosting/r
 
 /** GET — every PlayBound Dedicated subscription with its customer and server counts. */
 export async function GET() {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
   await dbConnect();
   const subs = await DedicatedSubscription.find({}).sort({ createdAt: -1 }).limit(500).lean();

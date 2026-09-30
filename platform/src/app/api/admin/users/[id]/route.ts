@@ -6,7 +6,7 @@ import { isFounderAdminEmail } from "@/lib/admin";
 import { requireAdminSession } from "@/lib/requireAdmin";
 
 const patchSchema = z.object({
-  role: z.enum(["user", "admin"]).optional(),
+  role: z.enum(["user", "developer", "admin_viewer", "admin"]).optional(),
   tester: z.boolean().optional(),
   disabled: z.boolean().optional(),
   suspendedUntil: z.union([z.string().min(1), z.null()]).optional(),
@@ -39,7 +39,7 @@ export async function PATCH(
     if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     if (isFounderAdminEmail(user.email)) {
-      if (body.role === "user") {
+      if (body.role !== undefined && body.role !== "admin") {
         return NextResponse.json({ error: "Cannot demote the founder admin" }, { status: 403 });
       }
       if (body.disabled === true) {
@@ -48,7 +48,7 @@ export async function PATCH(
     }
 
     if (session.user.id === id) {
-      if (body.role === "user") {
+      if (body.role !== undefined && body.role !== "admin") {
         return NextResponse.json({ error: "Cannot demote yourself" }, { status: 403 });
       }
       if (body.disabled === true) {

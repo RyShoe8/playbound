@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import GameSubmission from "@/lib/models/GameSubmission";
 import { isFounderAdminEmail } from "@/lib/admin";
+import { canViewAdmin } from "@/lib/adminAccess";
 import { sendMail } from "@/lib/mailer";
 
 const submitSchema = z.object({
@@ -20,7 +21,7 @@ const submitSchema = z.object({
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (session?.user?.role !== "admin") {
+  if (!canViewAdmin(session?.user?.role)) {
     return NextResponse.json({ error: "Admin only" }, { status: 403 });
   }
 

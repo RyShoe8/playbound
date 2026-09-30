@@ -23,9 +23,10 @@ const PAGE = read("src", "app", "admin", "connect", "parties", "page.tsx");
 const OLD_ROUTE = read("src", "app", "admin", "platform-limits", "page.tsx");
 
 describe("the route", () => {
-  it("is admin-only on both verbs", () => {
-    const guards = ROUTE.match(/requireAdminSession\(\)/g) || [];
-    expect(guards.length).toBeGreaterThanOrEqual(2);
+  it("lets Admin Viewer read limits but reserves changes for Admin", () => {
+    expect(ROUTE).toMatch(/GET\(\)[\s\S]*?requireAdminViewSession\(\)/);
+    expect(ROUTE).toMatch(/PATCH\(req: Request\)[\s\S]*?requireAdminSession\(\)/);
+    expect(ROUTE).toMatch(/PlatformLimits\.findOne\(\{ singletonKey: "default" \}\)/);
   });
 
   it("validates rather than coercing by hand", () => {

@@ -1,3 +1,4 @@
+import { canViewAdmin } from "@/lib/adminAccess";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
@@ -33,11 +34,16 @@ export const metadata: Metadata = {
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   await connection();
   const session = await getServerSession(authOptions);
-  if (session?.user?.role !== "admin") redirect("/");
+  if (!canViewAdmin(session?.user?.role)) redirect("/");
 
   return (
     <div>
       <AdminNav />
+      {session?.user?.role === "admin_viewer" && (
+        <div role="status" className="border-b border-border bg-secondary/60 px-4 py-3 text-sm text-muted-foreground sm:px-6">
+          <strong className="text-foreground">Admin Viewer</strong> · Read-only access. Changes require an Admin account.
+        </div>
+      )}
       {children}
     </div>
   );

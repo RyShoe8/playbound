@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminViewSession } from "@/lib/requireAdmin";
 import DedicatedSupportTicket from "@/lib/models/DedicatedSupportTicket";
 import User from "@/lib/models/User";
 import { ticketView } from "@/lib/dedicatedHosting/support";
 
 export async function GET(req: Request) {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
   await dbConnect();
   if (new URL(req.url).searchParams.get("summary") === "1") {

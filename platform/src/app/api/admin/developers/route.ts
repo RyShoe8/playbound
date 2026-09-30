@@ -3,11 +3,11 @@ import { z } from "zod";
 import dbConnect from "@/lib/db";
 import Developer from "@/lib/models/Developer";
 import { developerPayloadSchema } from "@/lib/developerPayload";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 import { listAllDevelopers } from "@/lib/developers";
 
 export async function GET() {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
   const developers = await listAllDevelopers();
   return NextResponse.json({ developers });

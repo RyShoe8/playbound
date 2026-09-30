@@ -1,3 +1,4 @@
+import { canViewAdmin } from "@/lib/adminAccess";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { getServerSession } from "next-auth/next";
@@ -10,7 +11,7 @@ export default async function NewEventPage() {
   // independently, so the layout's opt-out does not cover this page.
   await connection();
   const session = await getServerSession(authOptions);
-  if (session?.user?.role !== "admin") redirect("/events");
+  if (!canViewAdmin(session?.user?.role)) redirect("/events");
 
   const games = await listGames();
 

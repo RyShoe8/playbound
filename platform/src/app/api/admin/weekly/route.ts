@@ -5,7 +5,7 @@ import dbConnect from "@/lib/db";
 import WeeklyIssue from "@/lib/models/WeeklyIssue";
 import { getGame } from "@/lib/catalog";
 import { newsletterEmailDraftSchema } from "@/lib/newsletterEmailSchema";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 import { buildIssueFromDate, listWeeklyIssuesAdmin, saveNewsletterFooterTemplate } from "@/lib/weekly";
 
 const createSchema = z.object({
@@ -16,7 +16,7 @@ const createSchema = z.object({
 });
 
 export async function GET() {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
   const issues = await listWeeklyIssuesAdmin();
   return NextResponse.json({ issues });

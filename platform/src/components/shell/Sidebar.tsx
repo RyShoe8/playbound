@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { canViewAdmin } from "@/lib/adminAccess";
 import {
   BadgePercent,
   CalendarDays,
@@ -111,7 +112,7 @@ export function Sidebar() {
             {label}
           </Link>
         ))}
-        {session?.user?.role === "admin" && (
+        {canViewAdmin(session?.user?.role) && (
           <div className="pt-4">
             <Link
               href="/admin"

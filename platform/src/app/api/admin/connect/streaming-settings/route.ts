@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 import {
   getConnectSettings,
   setStreamingMetricsEnabled,
@@ -12,7 +12,7 @@ const patchSchema = z.object({
 });
 
 export async function GET() {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
   try {
     const settings = await getConnectSettings();

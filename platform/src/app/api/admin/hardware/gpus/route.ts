@@ -1,20 +1,13 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 import dbConnect from "@/lib/db";
 import HardwareGpu from "@/lib/models/HardwareGpu";
 import { z } from "zod";
 import { PERFORMANCE_TIERS } from "@/lib/hardware/types";
 import { identityKeyFromName } from "@/lib/hardware/normalize";
 
-async function requireAdmin() {
-  const session = await getServerSession(authOptions);
-  if (session?.user?.role !== "admin") return null;
-  return session;
-}
-
 export async function GET() {
-  if (!(await requireAdmin())) {
+  if ((await requireAdminViewSession()).error) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   await dbConnect();
@@ -38,7 +31,7 @@ const postSchema = z.object({
 });
 
 export async function POST(req: Request) {
-  if (!(await requireAdmin())) {
+  if ((await requireAdminSession()).error) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   try {
@@ -66,7 +59,7 @@ export async function POST(req: Request) {
 }
 
 export async function PATCH(req: Request) {
-  if (!(await requireAdmin())) {
+  if ((await requireAdminSession()).error) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   try {

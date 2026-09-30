@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminViewSession } from "@/lib/requireAdmin";
 import { getConnectSettings } from "@/lib/connect/connectSettings";
 import { ensureCouchStore } from "@/lib/couch/ensureStore";
 import {
@@ -12,7 +12,7 @@ import CouchSessionModel from "@/lib/models/CouchSession";
  * GET /api/admin/connect/streaming — live Couch sessions + latest metrics.
  */
 export async function GET() {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
 
   try {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 import dbConnect from "@/lib/db";
 import Artifact from "@/lib/models/Artifact";
 import MirrorSource from "@/lib/models/MirrorSource";
@@ -14,8 +14,9 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error } = await requireAdminSession();
+  const { session, error } = await requireAdminViewSession();
   if (error) return error;
+  const mayPersistStatus = session?.user?.role === "admin";
 
   try {
     await dbConnect();
@@ -37,7 +38,7 @@ export async function GET(
       if (remote && remote.status === "uploading") {
         const expected = remote.sizeBytes || artifact.sizeBytes || 0;
         artifact.vpsStatusMessage = formatVpsTransferMessage(remote.bytesReceived, expected);
-        await artifact.save();
+        if (mayPersistStatus) await artifact.save();
         transfer = {
           bytesReceived: remote.bytesReceived ?? 0,
           sizeBytes: expected || undefined,
@@ -49,7 +50,7 @@ export async function GET(
           remote.status === "verified"
             ? null
             : remote.message || "The VPS did not retain the archive transfer.";
-        await artifact.save();
+        if (mayPersistStatus) await artifact.save();
       }
     }
 

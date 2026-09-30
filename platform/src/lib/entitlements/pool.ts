@@ -32,15 +32,11 @@ export type PoolStatus = {
   maxFreePartySize: number;
 };
 
-/** The limits document, created with its defaults on first read. */
+/** Read limits without writing; the admin update creates the singleton if needed. */
 export async function getPlatformLimits() {
   await dbConnect();
-  const doc = await PlatformLimits.findOneAndUpdate(
-    { singletonKey: "default" },
-    { $setOnInsert: { singletonKey: "default" } },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
-  ).lean();
-  const limits = doc as unknown as {
+  const doc = await PlatformLimits.findOne({ singletonKey: "default" }).lean();
+  const limits = (doc ?? {}) as {
     freePartySlotPool?: number;
     maxFreePartySize?: number;
     /* Earlier names for the free cap, read so a live document is not lost. */

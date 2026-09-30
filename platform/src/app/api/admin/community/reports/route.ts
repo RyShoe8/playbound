@@ -2,14 +2,14 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 import dbConnect from "@/lib/db";
 import ContentReport from "@/lib/models/ContentReport";
 import { REPORT_STATUSES } from "@/lib/discussion/reportConstants";
 import { writeAuditLog } from "@/lib/discussion/permissions";
 
 export async function GET(req: Request) {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
 
   const url = new URL(req.url);

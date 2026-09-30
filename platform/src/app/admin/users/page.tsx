@@ -24,7 +24,7 @@ export default async function AdminUsersPage() {
     id: String(u._id),
     username: u.username,
     email: u.email,
-    role: u.role as "user" | "admin",
+    role: u.role as AdminUserRow["role"],
     tester: Boolean(u.tester),
     emailVerified: Boolean(u.emailVerified),
     disabled: Boolean(u.disabled),
@@ -36,8 +36,9 @@ export default async function AdminUsersPage() {
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight">Users</h1>
         <p className="mt-1 text-muted-foreground">
-          Promote or demote admins, grant tester access, disable login, or permanently delete accounts. Founder and your
-          own account are protected.
+          {session?.user?.role === "admin"
+            ? "Manage Admin and Admin Viewer access, tester status, and accounts. Founder and your own account are protected."
+            : "View account access and status. Only Admins can make changes."}
         </p>
       </div>
 
@@ -61,7 +62,7 @@ export default async function AdminUsersPage() {
                   <p className="text-xs text-muted-foreground">{u.email}</p>
                 </td>
                 <td className="px-4 py-2.5">
-                  {u.role === "admin" ? "admin" : u.tester ? "Tester" : "user"}
+                  {u.role === "admin" ? "Admin" : u.role === "admin_viewer" ? "Admin Viewer" : u.role === "developer" ? "Developer" : u.tester ? "Tester" : "User"}
                 </td>
                 <td className="px-4 py-2.5">{u.emailVerified ? "Yes" : "No"}</td>
                 <td className="px-4 py-2.5">{u.disabled ? "Disabled" : "Active"}</td>
@@ -72,7 +73,7 @@ export default async function AdminUsersPage() {
                   />
                 </td>
                 <td className="px-4 py-2.5">
-                  <UserActions user={u} currentUserId={session?.user?.id ?? ""} />
+                  {session?.user?.role === "admin" ? <UserActions user={u} currentUserId={session.user.id} /> : <span className="text-muted-foreground">Read only</span>}
                 </td>
               </tr>
             ))}

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 import { clearSeededArtifacts, findSeededArtifacts } from "@/lib/mirrors/seededArtifacts";
 
 /**
@@ -12,7 +12,7 @@ import { clearSeededArtifacts, findSeededArtifacts } from "@/lib/mirrors/seededA
  * only be performed from a terminal nobody has is a cleanup that never happens.
  */
 export async function GET() {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
 
   try {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminViewSession } from "@/lib/requireAdmin";
 import { HOSTABLE_GAMES } from "@/lib/gameHost/catalog";
 import {
   fetchGameHostHealth,
@@ -15,7 +15,7 @@ import dbConnect from "@/lib/db";
 import CommunityHostingConfig from "@/lib/models/CommunityHostingConfig";
 
 export async function GET() {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
   await dbConnect();
   const storedSettings = await CommunityHostingConfig.findOne({ key: "global" }).select({ monitoring: 1 }).lean();

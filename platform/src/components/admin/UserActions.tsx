@@ -7,7 +7,7 @@ export type AdminUserRow = {
   id: string;
   username: string;
   email: string;
-  role: "user" | "admin";
+  role: "user" | "developer" | "admin_viewer" | "admin";
   tester: boolean;
   emailVerified: boolean;
   disabled: boolean;
@@ -26,7 +26,7 @@ export function UserActions({
   const [error, setError] = useState("");
   const isSelf = user.id === currentUserId;
 
-  async function patch(body: { role?: "user" | "admin"; tester?: boolean; disabled?: boolean }) {
+  async function patch(body: { role?: AdminUserRow["role"]; tester?: boolean; disabled?: boolean }) {
     setBusy(true);
     setError("");
     try {
@@ -71,7 +71,7 @@ export function UserActions({
   return (
     <div className="space-y-1">
       <div className="flex flex-wrap gap-1.5">
-        {user.role === "user" ? (
+        {user.role !== "admin" ? (
           <button
             type="button"
             disabled={busy}
@@ -80,7 +80,18 @@ export function UserActions({
           >
             Make admin
           </button>
-        ) : (
+        ) : null}
+        {user.role !== "admin_viewer" ? (
+          <button
+            type="button"
+            disabled={busy || isSelf}
+            onClick={() => patch({ role: "admin_viewer" })}
+            className="rounded-full border border-border bg-secondary px-2.5 py-1 text-[11px] font-bold disabled:opacity-60"
+          >
+            Make Admin Viewer
+          </button>
+        ) : null}
+        {user.role !== "user" ? (
           <button
             type="button"
             disabled={busy || isSelf}
@@ -89,7 +100,7 @@ export function UserActions({
           >
             Demote
           </button>
-        )}
+        ) : null}
         {user.tester ? (
           <button
             type="button"

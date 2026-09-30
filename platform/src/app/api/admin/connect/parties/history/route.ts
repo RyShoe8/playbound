@@ -1,9 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminViewSession } from "@/lib/requireAdmin";
 import { listPartyHistoryForConnectAdmin } from "@/lib/playTogether/adminPartyHistory";
 
 export async function GET(req: NextRequest) {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
 
   try {

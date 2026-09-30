@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminViewSession } from "@/lib/requireAdmin";
 import DedicatedSubscription from "@/lib/models/DedicatedSubscription";
 import DedicatedCapacityHold from "@/lib/models/DedicatedCapacityHold";
 import StripeWebhookReceipt from "@/lib/models/StripeWebhookReceipt";
 
 export async function GET() {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
   await dbConnect();
   const [subs, failed, lastReceipt, heldCount, pendingUpgrades] = await Promise.all([

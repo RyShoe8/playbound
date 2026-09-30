@@ -9,7 +9,7 @@ import { BUG_REPORT_KINDS, BUG_REPORT_SOURCES, isBugReportStatus } from "@/lib/b
 import { isFounderAdminEmail } from "@/lib/admin";
 import { sendMail } from "@/lib/mailer";
 import { userFromLauncherBearer } from "@/lib/library";
-import { requireAdminSession } from "@/lib/requireAdmin";
+import { requireAdminViewSession } from "@/lib/requireAdmin";
 import { recaptchaErrorMessage, verifyRecaptcha } from "@/lib/recaptcha";
 import { escapeHtml } from "@/lib/newsletterEmail";
 
@@ -28,7 +28,7 @@ const createSchema = z.object({
 });
 
 export async function GET(req: Request) {
-  const { error } = await requireAdminSession();
+  const { error } = await requireAdminViewSession();
   if (error) return error;
 
   const status = new URL(req.url).searchParams.get("status");
