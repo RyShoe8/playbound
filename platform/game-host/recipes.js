@@ -31,6 +31,32 @@ const TEEWORLDS_CONFIG_DIR = path.join(HOST_HOME, "teeworlds");
 const HYPERSOMNIA_APPDATA_ROOT = path.join(HOST_HOME, "hypersomnia");
 const TES3MP_CONFIG_DIR = path.join(HOST_HOME, "tes3mp");
 
+/** Per-server home for paid Dedicated Hosting servers, kept apart from the
+ * shared community HOST_HOME. Same pb-<id> convention as dedicatedDataBackups.js. */
+function customerHomeDir(dirName, ctx) {
+  const id = String(ctx?.partyId || "").replace(/[^a-zA-Z0-9_-]/g, "").slice(-24);
+  const home = path.join(HOST_HOME, dirName, `pb-${id}`);
+  fs.mkdirSync(home, { recursive: true, mode: 0o700 });
+  return home;
+}
+
+/** Customer worlds live inside their isolated home so dedicatedDataBackups.js
+ * can snapshot exactly one server's data; community worlds stay shared. */
+function luantiWorldDir(ctx) {
+  return ctx.customerOwned
+    ? path.join(customerHomeDir("luanti-servers", ctx), "world")
+    : path.join(HOST_HOME, "luanti-worlds", `pb-${ctx.partyId.slice(-8)}`);
+}
+
+/** spawnEnv for engines that only read HOME/XDG_*: isolated for customers. */
+function isolatedHomeEnv(dirName) {
+  return (_port, ctx) => {
+    if (!ctx?.customerOwned) return { HOME: HOST_HOME };
+    const home = customerHomeDir(dirName, ctx);
+    return { HOME: home, XDG_DATA_HOME: home, XDG_CONFIG_HOME: home, XDG_CACHE_HOME: home, XDG_STATE_HOME: home };
+  };
+}
+
 function teeworldsConfigPath(ctx) {
   const party = String(ctx.partyId || "default").replace(/[^a-zA-Z0-9_-]/g, "").slice(-24);
   return path.join(TEEWORLDS_CONFIG_DIR, `pb-${party || "default"}.cfg`);
@@ -785,7 +811,7 @@ export const recipes = {
       ];
     },
     startupGraceMs: 2500,
-    spawnEnv: () => ({ HOME: HOST_HOME }),
+    spawnEnv: isolatedHomeEnv("openmohaa-servers"),
   },
   openra: {
     portStart: 1234,
@@ -887,7 +913,7 @@ export const recipes = {
     protocol: "udp",
     binaries: gameBin("luanti", ["luantiserver", "minetestserver"]),
     args: (port, ctx) => {
-      const world = path.join(HOST_HOME, "luanti-worlds", `pb-${ctx.partyId.slice(-8)}`);
+      const world = luantiWorldDir(ctx);
       const config = path.join(world, "playbound.conf");
       return [
         "--port",
@@ -899,12 +925,12 @@ export const recipes = {
         "--config",
         config,
         "--logfile",
-        path.join(HOST_HOME, "logs", "minetest.log"),
+        path.join(ctx.customerOwned ? customerHomeDir("luanti-servers", ctx) : path.join(HOST_HOME, "logs"), "minetest.log"),
       ];
     },
     prepareSpawn: async (port, ctx) => {
       fs.mkdirSync(path.join(HOST_HOME, "logs"), { recursive: true });
-      const world = path.join(HOST_HOME, "luanti-worlds", `pb-${ctx.partyId.slice(-8)}`);
+      const world = luantiWorldDir(ctx);
       fs.mkdirSync(world, {
         recursive: true,
       });
@@ -935,7 +961,7 @@ export const recipes = {
       }
       await new Promise((resolve) => setTimeout(resolve, 300));
     },
-    spawnEnv: () => ({ HOME: HOST_HOME }),
+    spawnEnv: isolatedHomeEnv("luanti-servers"),
   },
   /*
    * Hurry Curry! — WebSocket/JSON over TCP.
@@ -986,7 +1012,7 @@ export const recipes = {
         dataDir,
       ];
     },
-    spawnEnv: () => ({ HOME: HOST_HOME }),
+    spawnEnv: isolatedHomeEnv("hurry-curry-servers"),
   },
   mindustry: {
     portStart: 6567,
@@ -1068,15 +1094,16 @@ export const recipes = {
         ...gameBin("warzone-2100", ["warzone2100"]),
       ]),
     prepareSpawn: async (_port, ctx) => {
-      fs.mkdirSync(WZ_AUTOHOST_DIR, { recursive: true });
+      const autohostDir = ctx?.customerOwned ? path.join(customerHomeDir("warzone-2100-servers", ctx), "autohost") : WZ_AUTOHOST_DIR;
+      fs.mkdirSync(autohostDir, { recursive: true });
       const autohostId = warzoneAutohostId(ctx);
       fs.writeFileSync(
-        path.join(WZ_AUTOHOST_DIR, `${autohostId}.json`),
+        path.join(autohostDir, `${autohostId}.json`),
         JSON.stringify(buildWarzoneAutohostConfig(ctx), null, 2)
       );
     },
     args: (port, ctx) => [
-      `--configdir=${WZ_CONFIG_DIR}`,
+      `--configdir=${ctx?.customerOwned ? customerHomeDir("warzone-2100-servers", ctx) : WZ_CONFIG_DIR}`,
       // Warzone 4.7 resolves the name literally; without ".json" it reports
       // "Missing specified file: autohost/<id>" and exits.
       `--autohost=${warzoneAutohostId(ctx)}.json`,
@@ -1086,7 +1113,7 @@ export const recipes = {
       "--nosound",
     ],
     startupGraceMs: 2500,
-    spawnEnv: () => ({ HOME: HOST_HOME }),
+    spawnEnv: isolatedHomeEnv("warzone-2100-servers"),
   },
   freeciv: {
     portStart: 5556,
@@ -1142,13 +1169,13 @@ export const recipes = {
      * server.cfg in your config directory") without this file. Everything
      * PlayBound sets is on the command line, so an empty one is enough.
      */
-    prepareSpawn: async () => {
-      const dir = path.join(HOST_HOME, ".xonotic", "data");
+    prepareSpawn: async (_port, ctx) => {
+      const dir = path.join(ctx?.customerOwned ? customerHomeDir("xonotic-servers", ctx) : HOST_HOME, ".xonotic", "data");
       fs.mkdirSync(dir, { recursive: true });
       const cfg = path.join(dir, "server.cfg");
       if (!fs.existsSync(cfg)) fs.writeFileSync(cfg, "// PlayBound: settings are passed on the command line.\n", "utf8");
     },
-    spawnEnv: () => ({ HOME: HOST_HOME }),
+    spawnEnv: isolatedHomeEnv("xonotic-servers"),
     args: (port, ctx) => [
       "+port",
       String(port),
@@ -1378,15 +1405,15 @@ export const recipes = {
     // Without ~/.steam/sdk64/steamclient.so the server falls back to LAN-only
     // mode, which internet clients cannot join. The install doesn't ship a
     // 64-bit copy; copy steamcmd's linux64/steamclient.so into linux64/.
-    prepareSpawn: async () => {
-      const sdk = path.join(HOST_HOME, ".steam", "sdk64");
+    prepareSpawn: async (_port, ctx) => {
+      const sdk = path.join(ctx?.customerOwned ? customerHomeDir("team-fortress-2-servers", ctx) : HOST_HOME, ".steam", "sdk64");
       const target = path.join(GAMES_ROOT, "team-fortress-2", "linux64", "steamclient.so");
       const link = path.join(sdk, "steamclient.so");
       if (!fs.existsSync(target) || fs.existsSync(link)) return;
       fs.mkdirSync(sdk, { recursive: true });
       fs.symlinkSync(target, link);
     },
-    spawnEnv: () => ({ HOME: HOST_HOME }),
+    spawnEnv: isolatedHomeEnv("team-fortress-2-servers"),
     startupReadyTimeoutMs: 60_000,
     args: (port, ctx) => [
       "-game",

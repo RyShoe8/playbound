@@ -10,11 +10,11 @@ const BACKUP_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}
 
 function paths(serverId, gameSlug, home) {
   if (!/^[0-9a-f]{24}$/i.test(serverId)) throw new Error("Invalid customer server ID");
-  if (gameSlug !== "mindustry" && gameSlug !== "openttd") throw new Error("This game has no persistent world-data backup");
+  if (gameSlug !== "mindustry" && gameSlug !== "openttd" && gameSlug !== "luanti") throw new Error("This game has no persistent world-data backup");
   const folder = `pb-${serverId}`;
   const source = gameSlug === "mindustry"
     ? path.join(home, "mindustry", folder)
-    : path.join(home, "openttd-servers", folder);
+    : path.join(home, gameSlug === "luanti" ? "luanti-servers" : "openttd-servers", folder);
   const backupRoot = path.join(home, "dedicated-backups", serverId, gameSlug);
   return { source, backupRoot };
 }
