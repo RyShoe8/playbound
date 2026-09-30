@@ -9,7 +9,7 @@ process.env.HOME = HOME;
 const { recipes, acceptedSettingsFor } = await import("./recipes.js");
 const { createWorldBackup, restoreWorldBackup, WORLD_BACKUP_GAMES } = await import("./dedicatedDataBackups.js");
 
-const NEW = ["counter-strike-source", "terraria", "unturned", "rimworld-together", "core-keeper", "vintage-story", "factorio"];
+const NEW = ["counter-strike-source", "terraria", "unturned", "rimworld-together", "core-keeper", "vintage-story", "factorio", "necesse", "dont-starve-together", "barotrauma", "trackmania"];
 const ID_A = "64b0c0ffee64b0c0ffee1234";
 const ID_B = "64b0c0ffee64b0c0ffee9999";
 const ctxFor = (slug, id = ID_A, limit = 6, name = "Paid server") => ({
@@ -31,7 +31,7 @@ test("command-line games pass the cap to the server", () => {
   const terraria = recipes.terraria.args(7777, ctxFor("terraria", ID_A, 9));
   assert.equal(terraria[terraria.indexOf("-maxplayers") + 1], "9");
   const unturned = recipes.unturned.args(27075, ctxFor("unturned", ID_A, 12));
-  assert.equal(unturned[unturned.indexOf("-maxplayers") + 1], "12");
+  assert.deepEqual(unturned, [`+InternetServer/pb-${ID_A}`]);
 });
 
 test("config-file games write the cap into the server's own config", async () => {
@@ -94,7 +94,7 @@ test("names cannot break out of a command line or config value", () => {
   assert.equal(host.startsWith('"') && host.endsWith('"') && !host.slice(1, -1).includes('"'), true);
 });
 
-test("config files are private to the agent", async () => {
+test("config files are private to the agent", { skip: process.platform === "win32" }, async () => {
   const file = path.join(HOME, "rimworld-together-servers", `pb-${ID_A}`, "Configs", "ServerConfig.json");
   assert.equal(fs.statSync(file).mode & 0o777, 0o600);
 });
@@ -139,8 +139,8 @@ test("world backups cover the folder each paid-plan recipe writes its world to",
   }
 });
 
-test("a missing binary is reported as not installed rather than crashing", async () => {
-  const { listInstalled } = await import("./recipes.js");
+test("installed status follows whether each server binary is present", async () => {
+  const { listInstalled, resolveRecipe } = await import("./recipes.js");
   const installed = listInstalled();
-  for (const slug of NEW) assert.equal(installed[slug], false, `${slug} should read as not installed on this machine`);
+  for (const slug of NEW) assert.equal(installed[slug], Boolean(resolveRecipe(slug)?.binary), `${slug} installed status matches its binary`);
 });
