@@ -37,6 +37,8 @@ type Tier = {
 };
 type ProfileInfo = {
   key: string;
+  /** false: the game is hostable but has no saved profile row yet. */
+  stored?: boolean;
   gameSlug: string;
   recipeSlug: string;
   verification: string;
@@ -365,7 +367,7 @@ function GamesTab({ tier, profiles, onSave }: { tier: Tier; profiles: ProfileInf
               const p = byKey.get(g.profileKey);
               return (
                 <tr key={g.profileKey} className="border-t border-border align-top">
-                  <td className="py-2 font-mono text-xs">{g.profileKey}{!p ? <span className="block text-amber-500">no server profile yet</span> : null}</td>
+                  <td className="py-2 font-mono text-xs">{g.profileKey}{!p || p.stored === false ? <span className="block text-amber-500">no server profile yet</span> : null}</td>
                   <td><input type="checkbox" checked={g.enabled} onChange={(e) => update(i, { enabled: e.target.checked })} /></td>
                   <td><input type="checkbox" checked={g.newServerCreationEnabled} onChange={(e) => update(i, { newServerCreationEnabled: e.target.checked })} /></td>
                   <td><input type="checkbox" checked={g.existingServerStartEnabled} onChange={(e) => update(i, { existingServerStartEnabled: e.target.checked })} /></td>
