@@ -71,13 +71,13 @@ async function sendRvglInput(input) {
 }
 
 function renderRvglLobby() {
-  root.innerHTML = `<p class="note">Control the PlayBound VPS lobby. Choose the track and race settings on the host screen, then start the race.</p>
+  root.innerHTML = `<p class="note">Control the PlayBound VPS lobby. Choose the track and race settings, then select Spectate so the server has no idle car. Start the race from the waiting room.</p>
     <img id="rvgl-preview" alt="Live Re-Volt host lobby" draggable="false"
       style="display:block;width:100%;aspect-ratio:4/3;object-fit:contain;cursor:pointer;border-radius:6px;background:#000"
       ${state.rvglImage ? `src="data:image/jpeg;base64,${state.rvglImage}"` : ""}>
     <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">
       ${["Up", "Down", "Left", "Right", "Return", "Escape", "Tab"].map((key) =>
-        `<button class="apply" data-rvgl-key="${key}">${key === "Return" ? "Select" : key}</button>`).join("")}
+        `<button class="apply" data-rvgl-key="${key}">${key === "Return" ? "Select / Start Race" : key}</button>`).join("")}
     </div>
     <p id="rvgl-error" class="note warn">${escapeHtml(state.rvglError || "")}</p>
     <p class="hint">Click the host screen or use these buttons. Only the party leader can control it.</p>`;
