@@ -331,11 +331,11 @@ export const HOSTABLE_SLUG_ALIASES: Record<string, string> = {
 
 /**
  * Games offered only on the paid Dedicated plan. Deliberately NOT in
- * HOSTABLE_GAMES: that list also switches on free party hosting, the public
- * Connect page and community rotation, none of which should offer a game whose
- * server has not been installed and tested on the host. These appear in the
- * admin's tier game list (as drafts) and are started only for a customer's own
- * server. Ports must match game-host/dedicatedRecipes.js; a test checks them.
+ * HOSTABLE_GAMES: that list also switches on community rotation. A reviewed
+ * subset is separately offered to parties through PARTY_DEDICATED_GAMES;
+ * planned/credential-dependent recipes stay out of that subset. All entries
+ * remain available to the paid Dedicated tier. Ports must match the agent's
+ * dedicatedRecipes.js; a test checks them.
  *
  * Slugs are the catalog slugs — confirm them in /admin before enabling a game.
  */
@@ -353,6 +353,21 @@ export const DEDICATED_ONLY_GAMES: Record<string, HostableGame> = {
   trackmania: { slug: "trackmania", title: "Trackmania", defaultPort: 23520, portEnd: 23539, protocol: "both" },
 };
 
+/** Dedicated recipes offered to parties, without enrolling them in community rotation. */
+export const PARTY_DEDICATED_GAMES: Record<string, HostableGame> = Object.fromEntries(
+  [
+    "counter-strike-source", "terraria", "core-keeper",
+    "factorio", "necesse", "barotrauma",
+  ].map((slug) => [slug, DEDICATED_ONLY_GAMES[slug]])
+);
+
+/** Party rooms use the admin's server cap, bounded by a game's fixed limit. */
+export function partyDedicatedPlayerLimit(slug: string, configured: number): number {
+  const gameCap: Record<string, number> = { "core-keeper": 8, barotrauma: 16 };
+  const safeConfigured = Number.isInteger(configured) ? Math.max(2, Math.min(64, configured)) : 16;
+  return Math.min(safeConfigured, gameCap[slug] ?? 64);
+}
+
 export const HOSTABLE_SLUGS = Object.keys(HOSTABLE_GAMES);
 
 export function isHostableGame(slug: string | null | undefined): boolean {
@@ -361,7 +376,7 @@ export function isHostableGame(slug: string | null | undefined): boolean {
 
 export function getHostableGame(slug: string): HostableGame | null {
   if (!slug) return null;
-  const direct = HOSTABLE_GAMES[slug];
+  const direct = HOSTABLE_GAMES[slug] || PARTY_DEDICATED_GAMES[slug];
   if (direct) return direct;
   const aliased = HOSTABLE_SLUG_ALIASES[slug];
   return aliased ? HOSTABLE_GAMES[aliased] || null : null;

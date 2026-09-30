@@ -5,12 +5,15 @@
 
 import type { Document } from "mongoose";
 import User from "@/lib/models/User";
+import CommunityHostingConfig from "@/lib/models/CommunityHostingConfig";
 import { getHostedInGameSteps } from "@/lib/multiplayer/adapters";
 import { createHostRoom, deleteHostRoom, isGameHostConfigured, listHostRooms } from "./client";
 import {
   emptyHostedPayload,
   getHostableGame,
   isHostableGame,
+  PARTY_DEDICATED_GAMES,
+  partyDedicatedPlayerLimit,
   type HostedStatus,
 } from "./catalog";
 import { defaultHostMode } from "@/lib/multiplayer/hostModes";
@@ -139,6 +142,10 @@ export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
    * of being handed to the agent.
    */
   const planned = coerceSettingValues(slug, (hosted.settings as Record<string, unknown>) || {});
+  if (PARTY_DEDICATED_GAMES[slug]) {
+    const config = await CommunityHostingConfig.findOne({ key: "global" }).select({ maxPlayersPerServer: 1 }).lean();
+    planned.values.maxPlayers = partyDedicatedPlayerLimit(slug, Number(config?.maxPlayersPerServer ?? 16));
+  }
   /*
    * Only pass party.openRaMod for Official OpenRA. Fixed-mod editions (CA,
    * RA2, OpenE2140, …) must not let a stale stock-mod choice override the

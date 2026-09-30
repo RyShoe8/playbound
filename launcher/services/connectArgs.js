@@ -193,6 +193,14 @@ const CLIENT_CONNECT_ARGS = {
   // Source / Valve Engines
   "team-fortress-2": ["+connect", "{host}:{port}"],
   "counter-strike-2": ["+connect", "{host}:{port}"],
+  "counter-strike-source": ["+connect", "{host}:{port}"],
+  // These dedicated clients join from their own multiplayer/address menus.
+  // Explicit null makes Join Game surface and copy the party server address.
+  terraria: null,
+  "core-keeper": null,
+  factorio: null,
+  necesse: null,
+  barotrauma: null,
   "dota-2": ["+connect", "{host}:{port}"],
   "alien-swarm": ["+connect", "{host}:{port}"],
   "alien-swarm-reactive-drop": ["+connect", "{host}:{port}"],

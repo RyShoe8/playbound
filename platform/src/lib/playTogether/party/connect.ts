@@ -4,7 +4,7 @@ import { type PartyPayload } from "@/lib/playTogether/types";
 import { provisionPartyHost, reconcilePartyHostAlive } from "@/lib/gameHost/provision";
 import { provisionPartyLan, partyLanNeedsProvision } from "@/lib/virtualLan/provision";
 import { isHostableGame, type HostedStatus } from "@/lib/gameHost/catalog";
-import { getMultiplayerAdapter, isVirtualLanGame } from "@/lib/multiplayer/adapters";
+import { getMultiplayerAdapter } from "@/lib/multiplayer/adapters";
 import { isDiscoveryReflectorConfigured, isVirtualLanConfigured } from "@/lib/virtualLan/client";
 import { resolvedHostMode } from "@/lib/multiplayer/hostModes";
 import { readySummary } from "@/lib/playTogether/partyRules";
@@ -111,7 +111,7 @@ function pendingPartyConnect(doc: PartyDoc): { host: boolean; lan: boolean } {
   return {
     host: hostMode === "dedicated" && isHostableGame(slug) && (hs === "none" || hs === "failed"),
     // A LAN already "pending" is in flight and left alone until stale.
-    lan: (isVirtualLanGame(slug) || hostMode === "self") && partyLanNeedsProvision(doc.lan),
+    lan: hostMode === "self" && partyLanNeedsProvision(doc.lan),
   };
 }
 
@@ -193,7 +193,7 @@ export async function ensurePartyConnectReady(
     }
   }
 
-  if (isVirtualLanGame(slug) || hostMode === "self") {
+  if (hostMode === "self") {
     /*
      * Checked before readiness, because a party network can provision
      * perfectly and still be useless. A game that finds peers by broadcast

@@ -98,6 +98,24 @@ export const NEW_MOD_SLUGS: readonly string[] = [
  * Existing catalog games: $set ONLY these fields.
  */
 export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
+  // Database-only Dedicated Basic drafts. Scope to verified scalar/step fields;
+  // multiplayer feature chips are appended below without replacing CMS data.
+  "battlefield-1942-the-complete-collection": ["hasControllerSupport", "multiplayerGamingSteps"],
+  "aneurism-iv": ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps"],
+  "stardew-valley": ["steamAppId", "hasControllerSupport", "maxPlayers", "multiplayerGamingSteps"],
+  starbound: ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps"],
+  necesse: ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps"],
+  "dont-starve-together": ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps"],
+  barotrauma: ["steamAppId", "hasControllerSupport", "maxPlayers", "multiplayerGamingSteps"],
+  factorio: ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps"],
+  terraria: ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps"],
+  "vintage-story": ["hasControllerSupport", "multiplayerGamingSteps"],
+  "core-keeper": ["steamAppId", "hasControllerSupport", "maxPlayers", "multiplayerGamingSteps"],
+  // The owner is renaming a DLC-imported draft to the base game; skip until that row exists.
+  "risk-of-rain-2": ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps"],
+  rimworld: ["steamAppId", "hasControllerSupport"],
+  "counter-strike-source": ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps"],
+  unturned: ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps"],
   "deus-ex-goty-edition": ["status", "features", "multiplayerGamingSteps"],
   /*
    * releaseYear audit, 2026-09-22.
@@ -739,6 +757,62 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   "flatout-2": ["comparableTo"],
   opents: ["comparableTo"],
   "star-wars-galactic-battlegrounds-saga": ["comparableTo"],
+};
+
+/** A draft the owner is still renaming in the CMS; no row is expected yet. */
+export const SKIP_MISSING_PATCH_GAMES: readonly string[] = ["risk-of-rain-2"];
+
+/** Append only; do not replace these database-only drafts' curated features. */
+export const ADD_GAME_FEATURES: Readonly<Record<string, readonly string[]>> = {
+  "battlefield-1942-the-complete-collection": ["Multiplayer"],
+  "aneurism-iv": ["Multiplayer", "LAN Support"],
+  "stardew-valley": ["Multiplayer", "Co-op", "Couch Co-Op", "Split-Screen Co-op", "Controller Support"],
+  starbound: ["Multiplayer", "Co-op"],
+  necesse: ["Multiplayer", "Co-op", "LAN Support", "Controller Support"],
+  "dont-starve-together": ["Multiplayer", "Co-op", "LAN Support", "Controller Support"],
+  barotrauma: ["Multiplayer", "Co-op"],
+  factorio: ["Multiplayer", "Co-op", "LAN Support", "Controller Support"],
+  terraria: ["Multiplayer", "Co-op", "Controller Support"],
+  "vintage-story": ["Multiplayer", "Co-op", "LAN Support"],
+  "core-keeper": ["Multiplayer", "Co-op", "Controller Support"],
+  "risk-of-rain-2": ["Multiplayer", "Co-op", "Controller Support"],
+  // Vanilla RimWorld is single-player. Its one mod edition is separate.
+  rimworld: ["Controller Support"],
+  "counter-strike-source": ["Multiplayer"],
+  unturned: ["Multiplayer", "Co-op", "LAN Support"],
+};
+
+/** Fill only absent launcher recipes on these Steam drafts. Existing recipes always win. */
+export const FILL_MISSING_STEAM_LAUNCH: Readonly<Record<string, string>> = {
+  "aneurism-iv": "2773280",
+  "stardew-valley": "413150",
+  starbound: "211820",
+  necesse: "1169040",
+  "dont-starve-together": "322330",
+  barotrauma: "602960",
+  factorio: "427520",
+  terraria: "105600",
+  "core-keeper": "1621690",
+  "risk-of-rain-2": "632360",
+  rimworld: "294100",
+  "counter-strike-source": "240",
+  unturned: "304930",
+};
+
+/** Prefer the client binary where a Steam install also ships server/tools. */
+export const STEAM_CLIENT_EXE_HINTS: Readonly<Record<string, string>> = {
+  "stardew-valley": "Stardew Valley.exe",
+  starbound: "starbound.exe",
+  necesse: "Necesse.exe",
+  "dont-starve-together": "dontstarve_steam.exe",
+  barotrauma: "Barotrauma.exe",
+  factorio: "factorio.exe",
+  terraria: "Terraria.exe",
+  "core-keeper": "CoreKeeper.exe",
+  "risk-of-rain-2": "Risk of Rain 2.exe",
+  rimworld: "RimWorldWin64.exe",
+  "counter-strike-source": "hl2.exe",
+  unturned: "Unturned.exe",
 };
 
 /** Existing editions: $set ONLY these fields. */

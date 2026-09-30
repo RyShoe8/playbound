@@ -6,6 +6,7 @@
  *   - explicit allowlists only (never the whole seed catalog)
  *   - inserts: create only when absent; new games are draft / unpublished
  *   - patches: $set ONLY allowlisted fields on existing named docs
+ *   - additive feature chips: $addToSet ONLY named drafts; never replace CMS arrays
  *   - retire editions: $set visibility=hidden + status=archived only
  *   - never deletes rows, never upserts patches, never publishes a parent game
  *   - never writes a slug that is not on an allowlist
@@ -14,11 +15,15 @@
  */
 import { loadEnvConfig } from "@next/env";
 import {
+  ADD_GAME_FEATURES,
+  FILL_MISSING_STEAM_LAUNCH,
+  STEAM_CLIENT_EXE_HINTS,
   NEW_EDITION_KEYS,
   NEW_GAME_SLUGS,
   NEW_MOD_SLUGS,
   PATCH_EDITION_FIELDS,
   PATCH_GAME_FIELDS,
+  SKIP_MISSING_PATCH_GAMES,
   PATCH_MOD_FIELDS,
   RETIRE_EDITION_KEYS,
   RETIRE_MOD_SLUGS,
@@ -393,14 +398,60 @@ async function main() {
       delete payload.coverImage;
     }
 
-    const result = await CatalogGame.updateOne({ slug }, { $set: payload });
+    const additions = ADD_GAME_FEATURES[slug] ?? [];
+    if (additions.length && fields.includes("features")) {
+      throw new Error(`insert-catalog-wave — refuse conflicting feature writes for ${slug}`);
+    }
+    const update = additions.length
+      ? { $set: payload, $addToSet: { features: { $each: [...additions] } } }
+      : { $set: payload };
+    const result = await CatalogGame.updateOne({ slug }, update);
     if (result.matchedCount !== 1) {
+      if (result.matchedCount === 0 && SKIP_MISSING_PATCH_GAMES.includes(slug)) {
+        console.warn(`insert-catalog-wave — ${slug} draft not renamed yet, skipping`);
+        gamesPatchSkipped++;
+        continue;
+      }
       throw new Error(
         `insert-catalog-wave — patch ${slug} matched ${result.matchedCount}, expected 1`
       );
     }
     console.log(`patch game ${slug} fields=[${fields.join(", ")}]`);
     gamesPatched++;
+  }
+
+  // Steam is a launch handoff, not a download recipe. Do not replace a
+  // curator's existing recipe (including an intentionally disabled one).
+  // Exception: the imported Risk of Rain 2 draft may still carry Alloyed
+  // Collective's DLC app id after its slug/title are corrected. Replace only
+  // that exact, provably wrong handoff; never touch another store's recipe.
+  const correctedDlc = await CatalogGame.updateOne(
+    { slug: "risk-of-rain-2", status: "draft", $or: [
+      { "launcherInstall.steamAppId": "2781620" },
+      { "launcherInstall.url": "steam://run/2781620" },
+    ] },
+    { $set: {
+      "launcherInstall.enabled": true,
+      "launcherInstall.kind": "external",
+      "launcherInstall.url": "steam://run/632360",
+      "launcherInstall.steamAppId": "632360",
+      "launcherInstall.exeHint": "Risk of Rain 2.exe",
+    } }
+  );
+  if (correctedDlc.modifiedCount) console.log("replace Risk of Rain 2 DLC Steam handoff with base game");
+  for (const [slug, appId] of Object.entries(FILL_MISSING_STEAM_LAUNCH)) {
+    const result = await CatalogGame.updateOne(
+      { slug, status: "draft", $or: [{ launcherInstall: null }, { launcherInstall: { $exists: false } }] },
+      { $set: { launcherInstall: {
+        enabled: true,
+        kind: "external",
+        url: `steam://run/${appId}`,
+        steamAppId: appId,
+        ...(STEAM_CLIENT_EXE_HINTS[slug] ? { exeHint: STEAM_CLIENT_EXE_HINTS[slug] } : {}),
+        note: "Steam installs and launches this game. Each player needs their own copy where required.",
+      } } }
+    );
+    if (result.modifiedCount) console.log(`fill missing Steam launch ${slug}`);
   }
 
   let editionsPatched = 0;

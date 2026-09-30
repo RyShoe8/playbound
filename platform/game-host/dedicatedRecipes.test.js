@@ -34,6 +34,14 @@ test("command-line games pass the cap to the server", () => {
   assert.deepEqual(unturned, [`+InternetServer/pb-${ID_A}`]);
 });
 
+test("party-hosted recipes honor the admin slot cap without a customer subscription", () => {
+  const party = { partyId: ID_A, managed: false, customerOwned: false, settings: { maxPlayers: 5 } };
+  const css = recipes["counter-strike-source"].args(27060, party);
+  assert.equal(css[css.indexOf("-maxplayers") + 1], "5");
+  const terraria = recipes.terraria.args(7870, party);
+  assert.equal(terraria[terraria.indexOf("-maxplayers") + 1], "5");
+});
+
 test("config-file games write the cap into the server's own config", async () => {
   await recipes["rimworld-together"].prepareSpawn(25590, ctxFor("rimworld-together"));
   const rwt = read("rimworld-together-servers", `pb-${ID_A}`, "Configs", "ServerConfig.json");

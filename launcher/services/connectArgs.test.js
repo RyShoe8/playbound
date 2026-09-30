@@ -113,6 +113,14 @@ test("new peer-hosted games expose the address and port their launch path needs"
   );
 });
 
+test("new party dedicated games either join directly or show the server address", () => {
+  assert.deepEqual(CLIENT_CONNECT_ARGS["counter-strike-source"], ["+connect", "{host}:{port}"]);
+  for (const slug of ["terraria", "core-keeper", "factorio", "necesse", "barotrauma"]) {
+    assert.equal(CLIENT_CONNECT_ARGS[slug], null, slug);
+    assert.equal(joinsFromInGameMenu(slug), true, slug);
+  }
+});
+
 test("every shipped list resolves to a complete join line", () => {
   for (const [slug, templates] of Object.entries(CLIENT_CONNECT_ARGS)) {
     if (!Array.isArray(templates)) continue;

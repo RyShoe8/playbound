@@ -73,8 +73,8 @@ export function partyLanNeedsProvision(lan?: PartyLanFields | null): boolean {
  * self-hosted room on any other game had no reachable path to the host.
  */
 function partyNeedsOverlay(party: PartyLike, slug: string): boolean {
-  if (isVirtualLanGame(slug)) return true;
-  return String(party.hostMode || "") === "self";
+  const mode = String(party.hostMode || defaultHostMode(slug) || "");
+  return mode === "self";
 }
 
 function ensureLan(party: PartyLike): PartyLanFields {
@@ -199,8 +199,7 @@ export function lanPayloadFromDoc(
   lan?: PartyLanFields | null
 ) {
   const resolvedMode = hostMode || defaultHostMode(gameSlug);
-  const needsOverlay =
-    resolvedMode !== "public" && (isVirtualLanGame(gameSlug) || resolvedMode === "self");
+  const needsOverlay = resolvedMode === "self";
   const config = needsOverlay ? getVirtualLanConfig(gameSlug) : null;
   // Direct-IP self-hosted games use NetBird for reachability, but guests must
   // still wait for the host's actual game listener. Discovery-only LAN games
