@@ -25,4 +25,9 @@ describe("hostable profile stubs", () => {
     expect(stubs.some((s) => s.gameSlug === "0-ad" || s.gameSlug === "tes3mp")).toBe(false);
     expect(stubs.some((s) => s.gameSlug === "not-a-hostable-game")).toBe(false);
   });
+
+  it("limits admin fallback profiles to games present in the database catalog", () => {
+    const stubs = hostableProfileStubs([], [{ gameSlug: "openra", slug: "combined-arms" }], ["openarena"]);
+    expect(stubs.map((profile) => profile.key)).toEqual(["openarena:base"]);
+  });
 });

@@ -9,7 +9,7 @@
  */
 import dbConnect from "@/lib/db";
 import Edition from "@/lib/models/Edition";
-import { editions as seedEditions } from "@/lib/data/editions";
+import CatalogGame from "@/lib/models/CatalogGame";
 import { DEDICATED_ONLY_GAMES, HOSTABLE_SLUGS, HOSTABLE_SLUG_ALIASES } from "@/lib/gameHost/catalog";
 
 /** Every game the admin can put on a tier: hostable everywhere, plus the paid-plan-only games. */
@@ -26,10 +26,10 @@ export type ProfileStub = {
   recipeSlug: string;
 };
 
-export function hostableProfileStubs(stored: StoredProfileRef[], editions: EditionRef[]): ProfileStub[] {
+export function hostableProfileStubs(stored: StoredProfileRef[], editions: EditionRef[], catalogSlugs = tierSlugs()): ProfileStub[] {
   const storedKeys = new Set(stored.map((p) => p.key));
   const storedPairs = new Set(stored.map((p) => `${p.gameSlug}:${p.editionSlug || ""}`));
-  const slugs = tierSlugs();
+  const slugs = catalogSlugs.filter((slug) => tierSlugs().includes(slug));
   const stubs: ProfileStub[] = [];
   const add = (gameSlug: string, editionSlug: string | null) => {
     const key = `${gameSlug}:${editionSlug || "base"}`;
@@ -44,7 +44,7 @@ export function hostableProfileStubs(stored: StoredProfileRef[], editions: Editi
   return stubs;
 }
 
-/** Non-archived, non-hidden editions of hostable games, from the database and the seed file. */
+/** Non-archived, non-hidden editions of hostable games, from the database. */
 export async function loadHostableEditionRefs(): Promise<EditionRef[]> {
   const slugs = tierSlugs();
   await dbConnect();
@@ -53,16 +53,11 @@ export async function loadHostableEditionRefs(): Promise<EditionRef[]> {
     status: { $ne: "archived" },
     visibility: { $ne: "hidden" },
   }).select({ gameSlug: 1, slug: 1, suppressesSeed: 1 }).lean();
-  const suppressed = new Set(rows.filter((e) => (e as { suppressesSeed?: boolean }).suppressesSeed).map((e) => `${e.gameSlug}:${e.slug}`));
-  const refs = new Map<string, EditionRef>();
-  for (const e of rows) {
-    if (!(e as { suppressesSeed?: boolean }).suppressesSeed) refs.set(`${e.gameSlug}:${e.slug}`, { gameSlug: e.gameSlug, slug: e.slug });
-  }
-  for (const s of seedEditions) {
-    const key = `${s.gameSlug}:${s.slug}`;
-    if (slugs.includes(s.gameSlug) && s.status !== "archived" && s.visibility !== "hidden" && !refs.has(key) && !suppressed.has(key)) {
-      refs.set(key, { gameSlug: s.gameSlug, slug: s.slug });
-    }
-  }
-  return [...refs.values()];
+  return rows.filter((e) => !(e as { suppressesSeed?: boolean }).suppressesSeed).map((e) => ({ gameSlug: e.gameSlug, slug: e.slug }));
+}
+
+export async function loadHostableCatalogSlugs(): Promise<string[]> {
+  await dbConnect();
+  const rows = await CatalogGame.find({ slug: { $in: tierSlugs() }, status: { $ne: "archived" } }).select("slug").lean() as Array<{ slug: string }>;
+  return rows.map((row) => row.slug);
 }
