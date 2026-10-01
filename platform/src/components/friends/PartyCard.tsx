@@ -54,7 +54,7 @@ export function PartyCard({ party }: { party: PartyCardParty }) {
         </div>
 
         <Link
-          href={`/friends?party=${party.id}`}
+          href={`/party/${party.id}`}
           className="rounded-full bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground hover:bg-primary/90"
         >
           {isPlaying ? "View Party" : "Join Party"}

@@ -402,6 +402,7 @@ export function FriendsView({
   const [lfgGames, setLfgGames] = useState<string[]>([]);
   const [lfgPickerOpen, setLfgPickerOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [createGameSlug, setCreateGameSlug] = useState<string | undefined>();
   const {
     playingFriends,
     awayFriends,
@@ -423,6 +424,7 @@ export function FriendsView({
   const router = useRouter();
   const pathname = usePathname();
   const partyParam = searchParams.get("party");
+  const gameParam = searchParams.get("game");
   const joiningPartyRef = useRef<string | null>(null);
   
   const { 
@@ -471,13 +473,22 @@ export function FriendsView({
       } else {
         void refreshPartyAndFriends();
       }
+      if (gameParam) {
+        if (!usePartyStore.getState().activeParty && games.some((game) => game.slug === gameParam)) {
+          queueMicrotask(() => {
+            setCreateGameSlug(gameParam);
+            setCreateOpen(true);
+          });
+        }
+        router.replace("/friends", { scroll: false });
+      }
       startPartyPolling(5000);
     }
     return () => {
       stopPolling();
       stopPartyPolling();
     };
-  }, [status, startPolling, stopPolling, startPartyPolling, stopPartyPolling, partyParam, joinParty, pathname, router]);
+  }, [status, startPolling, stopPolling, startPartyPolling, stopPartyPolling, partyParam, gameParam, games, joinParty, pathname, router]);
 
   async function patchVisibility(patch: Record<string, boolean>) {
     setAppearBusy(true);
@@ -594,7 +605,7 @@ export function FriendsView({
 
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <Link
-            href="/signup?from=party"
+            href={gameParam ? `/signup?from=party&next=${encodeURIComponent(`/friends?game=${gameParam}`)}` : "/signup?from=party"}
             onClick={() => telemetry.track("anon_create_party_clicked", { source: "friends" })}
             className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground transition-all hover:brightness-110"
           >
@@ -691,7 +702,7 @@ export function FriendsView({
 
       {addOpen ? <AddFriends games={games} genres={genres} /> : null}
       {createOpen ? (
-        <CreatePartyPanel onCreated={() => setCreateOpen(false)} />
+        <CreatePartyPanel gameSlug={createGameSlug} onCreated={() => { setCreateOpen(false); setCreateGameSlug(undefined); }} />
       ) : null}
       {lfgPickerOpen && !lfgActive ? (
         <LfgGamePicker
@@ -764,6 +775,9 @@ export function FriendsView({
       {partyError && !activeParty ? (
         <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-3.5 text-sm font-semibold text-destructive flex items-center justify-between gap-2">
           <span>{partyError}</span>
+          {partyError.toLowerCase().includes("friends-only") ? (
+            <span>Ask the host to add you as a friend or switch the party to Public.</span>
+          ) : null}
           <button
             type="button"
             onClick={() => usePartyStore.setState({ error: null })}

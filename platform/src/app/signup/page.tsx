@@ -38,6 +38,10 @@ export default function SignupPage() {
    * clicking "Create a party" loses the thread.
    */
   const fromCta = params.get("from") || "";
+  const requestedNext = params.get("next") || "";
+  const partyNext = /^\/party\/[0-9a-f]{24}$/i.test(requestedNext) || /^\/friends\?game=[a-z0-9-]+$/i.test(requestedNext)
+    ? requestedNext
+    : null;
   /*
    * Signup opened inside the launcher's account window.
    *
@@ -46,6 +50,11 @@ export default function SignupPage() {
    * otherwise the account gets created and the app never links to it.
    */
   const fromLauncher = params.get("launcher") === "1";
+  const loginHref = fromLauncher
+    ? `/login?callbackUrl=${encodeURIComponent(LAUNCHER_HANDOFF)}`
+    : partyNext
+      ? `/login?callbackUrl=${encodeURIComponent(partyNext)}`
+      : "/login";
 
   useEffect(() => {
     storeInviteTokenFromSearch(search);
@@ -95,7 +104,7 @@ export default function SignupPage() {
           Click it to activate your account, then sign in.
         </p>
         <Link
-          href={fromLauncher ? `/login?callbackUrl=${encodeURIComponent(LAUNCHER_HANDOFF)}` : "/login"}
+          href={loginHref}
           className="text-sm font-semibold text-primary hover:underline"
         >
           Go to sign in →
@@ -124,7 +133,9 @@ export default function SignupPage() {
         callbackUrl={
           fromLauncher
             ? `/welcome?next=${encodeURIComponent(LAUNCHER_HANDOFF)}`
-            : "/welcome"
+            : partyNext
+              ? `/welcome?next=${encodeURIComponent(partyNext)}`
+              : "/welcome"
         }
         label="Sign up with Google"
       />
@@ -196,7 +207,7 @@ export default function SignupPage() {
       <p className="mt-5 text-center text-sm text-muted-foreground">
         Already have an account?{" "}
         <Link
-          href={fromLauncher ? `/login?callbackUrl=${encodeURIComponent(LAUNCHER_HANDOFF)}` : "/login"}
+          href={loginHref}
           className="font-semibold text-primary hover:underline"
         >
           Sign in

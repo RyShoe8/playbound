@@ -178,7 +178,7 @@ export function MultiplayerOpenParties({
 
                 {isMember ? (
                   <Link
-                    href={`/friends?party=${party.id}`}
+                    href={`/party/${party.id}`}
                     className="rounded-xl bg-secondary px-3 py-1.5 text-xs font-bold text-foreground hover:bg-secondary/80"
                   >
                     Your Party

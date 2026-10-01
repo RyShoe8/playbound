@@ -58,6 +58,17 @@ type MultiplayerInput = {
   multiplayer?: boolean;
 };
 
+/** Card CTA: local-only play must not be advertised as an online party. */
+export function supportsOnlineMultiplayer(game: MultiplayerInput | null | undefined): boolean {
+  if (!game) return false;
+  if ((game as { isMultiplayer?: boolean }).isMultiplayer === false || game.multiplayer === false) return false;
+  const values = [...(game.features ?? []), ...(game.tags ?? [])];
+  if (values.some((value) => /^(multiplayer|online multiplayer|online co-op|dedicated servers|matchmaking|mmo|mmorpg|pvp|cross-play|crossplay|lan support|lan)$/i.test(value.trim())) || hasServerBrowser(game)) return true;
+  const hasCoop = values.some((value) => /^(co-op|coop|cooperative)$/i.test(value.trim()));
+  const localOnly = values.some((value) => /^(couch co-op|split-screen co-op|local co-op|local multiplayer|hotseat)$/i.test(value.trim()));
+  return hasCoop && !localOnly;
+}
+
 /** A game with a server list is multiplayer whatever its features say. */
 export function hasServerBrowser(game: { launchMethods?: string[] } | null | undefined): boolean {
   return Boolean(game?.launchMethods?.includes("server"));

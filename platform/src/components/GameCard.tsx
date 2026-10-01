@@ -24,6 +24,7 @@ import { TelemetryAnchor } from "@/components/TelemetryAnchor";
 import { MobileOutboundCta } from "@/components/MobileOutboundCta";
 import { CardCategoryTags } from "@/components/CardCategoryTags";
 import { supportsController } from "@/lib/controller/support";
+import { supportsOnlineMultiplayer } from "@/lib/multiplayer/support";
 import { useIncompatibilityLabel } from "@/components/compatibility/useFilteredGames";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { useGameTier } from "@/components/AccessTiersProvider";
@@ -267,8 +268,7 @@ export function GameCard({
   const displayEditions = getDisplayEditionsForGame(game.slug);
 
   return (
-    <Link
-      href={`/games/${game.slug}`}
+    <div
       /*
        * Whether this game runs on a phone, decided on the server.
        *
@@ -285,6 +285,7 @@ export function GameCard({
         className
       )}
     >
+      <Link href={`/games/${game.slug}`} className="flex flex-1 flex-col">
       <div className="relative w-full aspect-[3/4] shrink-0 overflow-hidden">
         <GameArt game={game} className="size-full" />
         <IncompatibleCorner game={game} />
@@ -334,7 +335,16 @@ export function GameCard({
           </p>
         ) : null}
       </div>
-    </Link>
+      </Link>
+      {supportsOnlineMultiplayer(game) && (
+        <Link
+          href={`/friends?game=${encodeURIComponent(game.slug)}`}
+          className="m-2.5 mt-0 rounded-lg bg-primary px-3 py-2 text-center text-xs font-bold text-primary-foreground transition hover:opacity-90"
+        >
+          Start Party
+        </Link>
+      )}
+    </div>
   );
 }
 

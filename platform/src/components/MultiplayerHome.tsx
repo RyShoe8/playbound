@@ -309,7 +309,7 @@ export function MultiplayerHome({
             </div>
           </div>
           <Link
-            href={`/friends?party=${activeParty.id}`}
+            href={`/party/${activeParty.id}`}
             className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground hover:brightness-110 flex items-center gap-1.5"
           >
             Open Party View
