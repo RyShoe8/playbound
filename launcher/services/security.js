@@ -29,6 +29,8 @@ function exactOrSubdomain(host, domain) {
  * project that owns the download.
  */
 const DOWNLOAD_DOMAINS = [
+  // ModDB's signed download CDN; GMDX is verified against the author's MD5.
+  "dl.dbolical.com",
   // Project download sites reached by one-click recipes.
   "sourceforge.net",
   "gitlab.com",
