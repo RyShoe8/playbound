@@ -4,6 +4,8 @@ import { editions } from "./editions";
 import { NEW_EDITION_KEYS } from "../../../scripts/insert-catalog-wave.allowlist";
 import Edition from "@/lib/models/Edition";
 import { retailerToStoreSlug, STORE_CAPABILITIES } from "@/lib/commerce/stores";
+import { launcherInstallSchema } from "@/lib/gamePayload";
+import { toLauncherCatalogEntry } from "@/lib/launcherInstall";
 
 describe("owned-game executable pickup", () => {
   it("gives each selected game a specific executable and acquisition path", () => {
@@ -14,7 +16,7 @@ describe("owned-game executable pickup", () => {
       expect(pickup.knownExePaths.some((path) => path.toLowerCase().endsWith(pickup.exeHint.toLowerCase())), slug).toBe(true);
       expect(pickup.storeUrl, slug).toMatch(/^(?:https:\/\/|steam:\/\/)/);
     }
-    expect(DRAFT_INSTALL_PICKUP["battlefield-1942-the-complete-collection"].acquisitionAvailable).toBe(false);
+    expect(DRAFT_INSTALL_PICKUP["battlefield-1942-anthology"].acquisitionAvailable).toBe(false);
     expect(DRAFT_INSTALL_PICKUP["stardew-valley"].storeUrl).toBe("https://www.gog.com/en/game/stardew_valley");
     expect(DRAFT_INSTALL_PICKUP.starbound.storeUrl).toBe("https://www.gog.com/en/game/starbound");
     expect(DRAFT_INSTALL_PICKUP["vintage-story"].storeUrl).toContain("vintagestory.at/store/");
@@ -38,5 +40,17 @@ describe("owned-game executable pickup", () => {
       expect(installer?.kind, slug).toBe("locate-then-zip");
       expect(installer?.baseExeHint, slug).toBe("DeusEx");
     }
+  });
+
+  it("carries an archived setup executable through validation into the launcher catalog", () => {
+    const recipe = launcherInstallSchema.parse({
+      enabled: true, kind: "direct-zip", url: "https://mirror.playbound.club/launcher-packages/games/battlefield-1942-the-complete-collection/anthology.zip",
+      archiveInstallerName: "bf1942-setup.exe", knownExePaths: ["BF1942.exe"],
+    });
+    const entry = toLauncherCatalogEntry({
+      slug: "battlefield-1942-anthology", title: "Battlefield 1942 Anthology", tagline: "",
+      sizeMB: 2500, art: { from: "#123456", to: "#654321" }, launcherInstall: recipe,
+    });
+    expect(entry.archiveInstallerName).toBe("bf1942-setup.exe");
   });
 });

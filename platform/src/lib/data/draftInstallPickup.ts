@@ -11,7 +11,7 @@ export type DraftInstallPickup = {
   registryTitles?: string[];
   /** Exact stale Steam handoff that should become the owner's chosen store. */
   replaceSteamUrl?: string;
-  /** Do not invent an Install action when there is no lawful acquisition path. */
+  /** Do not invent a storefront Install action when only an uploaded package exists. */
   acquisitionAvailable?: boolean;
 };
 
@@ -34,11 +34,15 @@ export const DRAFT_INSTALL_PICKUP: Readonly<Record<string, DraftInstallPickup>> 
     knownExePaths: ["Risk of Rain 2.exe", "%STEAM%\\steamapps\\common\\Risk of Rain 2\\Risk of Rain 2.exe"],
     registryTitles: ["Risk of Rain 2"],
   },
-  "battlefield-1942-the-complete-collection": {
+  "battlefield-1942-anthology": {
     storeUrl: "https://www.ea.com/games/battlefield/battlefield-1942",
     exeHint: "BF1942.exe",
-    knownExePaths: ["BF1942.exe", "C:\\Program Files (x86)\\EA GAMES\\Battlefield 1942\\BF1942.exe"],
-    registryTitles: ["Battlefield 1942", "Battlefield 1942: The Complete Collection"],
+    knownExePaths: [
+      "BF1942.exe",
+      "C:\\Program Files (x86)\\EA GAMES\\Battlefield 1942\\BF1942.exe",
+      "C:\\Program Files (x86)\\EA GAMES\\Battlefield 1942 WWII Anthology\\BF1942.exe",
+    ],
+    registryTitles: ["Battlefield 1942", "Battlefield 1942: World War II Anthology", "Battlefield 1942 WWII Anthology"],
     acquisitionAvailable: false,
   },
   "aneurism-iv": {

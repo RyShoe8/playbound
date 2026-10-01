@@ -113,8 +113,8 @@ export interface GameMultiplayerAdapter {
 export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
   // These games expose LAN hosting in their own clients. Connect provides the
   // party network and launch; each game's menu remains responsible for joining.
-  "battlefield-1942-the-complete-collection": {
-    gameSlug: "battlefield-1942-the-complete-collection", title: "Battlefield 1942: The Complete Collection",
+  "battlefield-1942-anthology": {
+    gameSlug: "battlefield-1942-anthology", title: "Battlefield 1942: World War II Anthology",
     tier: "tier1_improved", adapterType: "virtual-lan", protocol: "udp",
     virtualLan: { inGameSteps: ["Host: create a LAN game", "Friends: find the match in Battlefield 1942's LAN browser"] },
   },

@@ -1986,6 +1986,20 @@ export function GameEditorForm({
                         className={field}
                       />
                     </div>
+                    {(form.launcherInstall?.kind === "direct-zip" || form.launcherInstall?.kind === "direct-7z") && (
+                      <div>
+                        <label className={label}>Installer inside archive (optional)</label>
+                        <input
+                          value={form.launcherInstall?.archiveInstallerName ?? ""}
+                          onChange={(e) => patchLauncher({ archiveInstallerName: e.target.value || null })}
+                          placeholder="setup.exe"
+                          className={field}
+                        />
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Use when the ZIP contains a setup program and companion files, rather than a portable game.
+                        </p>
+                      </div>
+                    )}
                     <div>
                       <label className={label}>Version label</label>
                       <input

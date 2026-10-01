@@ -244,6 +244,8 @@ async function main() {
       downloadKind: m.downloadKind,
       assetPattern: m.assetPattern ?? null,
       directUrl: m.directUrl ?? null,
+      installerFile: m.installerFile ?? null,
+      archiveSha256: m.archiveSha256 ?? null,
       installRelativePath: m.installRelativePath ?? "mods",
       art: m.art ?? defaultArtFor([], m.slug),
       coverImage: m.coverImage ?? null,
@@ -458,8 +460,8 @@ async function main() {
   // Database-only paid games: a store hands off the acquisition; PlayBound
   // discovers the owned executable afterwards. Patch only detection subfields
   // so an admin's install method, download URL, and other recipe settings stay
-  // authoritative. BF1942 has no current legal digital store, so it receives
-  // detection hints only and no synthetic Install action.
+  // authoritative. Anthology's existing verified VPS package is preserved;
+  // there is no storefront handoff to synthesize if that recipe is absent.
   for (const [slug, pickup] of Object.entries(DRAFT_INSTALL_PICKUP)) {
     const doc = await CatalogGame.findOne({ slug }).select("launcherInstall").lean();
     if (!doc) continue;
@@ -492,6 +494,11 @@ async function main() {
       "launcherInstall.knownExePaths": [...new Set([...knownExePaths, ...pickup.knownExePaths])],
       "launcherInstall.registryTitles": [...new Set([...registryTitles, ...(pickup.registryTitles ?? [])])],
     };
+    if (slug === "battlefield-1942-anthology" &&
+        existing.kind === "direct-zip" &&
+        /^https:\/\/mirror\.playbound\.club\/launcher-packages\/games\/battlefield-1942-the-complete-collection\/[^/]+\.zip$/i.test(String(existing.url || ""))) {
+      detection["launcherInstall.archiveInstallerName"] = "bf1942-setup.exe";
+    }
     if (pickup.acquisitionAvailable !== false && !existing.enabled) {
       detection["launcherInstall.enabled"] = true;
     }

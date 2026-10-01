@@ -56,6 +56,7 @@ const LauncherInstallSchema = new Schema(
       default: [],
     },
     knownExePaths: { type: [String], default: [] },
+    archiveInstallerName: { type: String, default: null },
     registryTitles: { type: [String], default: [] },
     installRoot: { type: String, default: null },
     connectArgs: { type: [String], default: [] },

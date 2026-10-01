@@ -4976,6 +4976,38 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     await verifyChecksumMd5(downloadPath, entry.checksumMd5);
   }
 
+  if (entry.archiveInstallerName) {
+    if (process.platform !== "win32" || !["direct-zip", "direct-7z"].includes(entry.kind) ||
+        !/^[a-z0-9._-]+\.exe$/i.test(entry.archiveInstallerName) ||
+        !/\.(zip|7z)$/i.test(dl.name)) {
+      throw new Error("This archived setup requires a Windows ZIP/7z and a safe installer filename.");
+    }
+    const stagingDir = await fsp.mkdtemp(path.join(downloadDir, `${slug}-setup-`));
+    try {
+      sendProgress({ phase: "extracting", addon: "Preparing the game installer…" });
+      if (/\.7z$/i.test(dl.name)) await extract7z(downloadPath, stagingDir);
+      else await extractZip(downloadPath, stagingDir);
+      const installer = findNamedPortableExe(stagingDir, entry.archiveInstallerName);
+      if (!installer) throw new Error(`Archive does not contain ${entry.archiveInstallerName}.`);
+      sendProgress({ phase: "installer-ready", addon: "Finish the game installer…" });
+      // data.bin must stay beside setup.exe until the elevated wizard exits.
+      await runWindowsElevatedInstaller(installer, path.dirname(installer));
+      const known = findKnownExecutable(entry);
+      const installed = known
+        ? markInstalledFromExe(slug, { ...entry, ...editionExtra }, known, dl.version)
+        : await new Promise((resolve, reject) => {
+          startInstallerPoll(slug, { ...entry, ...editionExtra }, dl.version, (err, result) =>
+            err ? reject(err) : resolve(result));
+        });
+      void reportInstall(slug);
+      void telemetry.editionInstalled(editionInfoFor(slug, { version: dl.version, ...editionExtra }));
+      return installed;
+    } finally {
+      await fsp.rm(stagingDir, { recursive: true, force: true }).catch(() => {});
+      await removeFileWithRetries(downloadPath).catch(() => {});
+    }
+  }
+
   /*
    * An AppImage is the game, not an installer.
    *
@@ -6034,6 +6066,23 @@ async function addCustomGameExecutable(customTitle = null) {
   return { status: "installed", slug, title: rawTitle, exe, dir };
 }
 
+async function runWindowsElevatedInstaller(installerPath, gameDir) {
+  if (process.platform !== "win32") throw new Error("This patch installer runs on Windows only.");
+  const quote = (value) => `'${String(value).replaceAll("'", "''")}'`;
+  const script = `$ErrorActionPreference = 'Stop'; $p = Start-Process -FilePath ${quote(installerPath)} -WorkingDirectory ${quote(gameDir)} -Verb RunAs -Wait -PassThru; if ($p.ExitCode -ne 0) { exit $p.ExitCode }`;
+  const encoded = Buffer.from(script, "utf16le").toString("base64");
+  await new Promise((resolve, reject) => {
+    const child = spawn("powershell.exe", ["-NoProfile", "-EncodedCommand", encoded], {
+      windowsHide: true,
+      stdio: "ignore",
+    });
+    child.on("error", reject);
+    child.on("exit", (code) => code === 0
+      ? resolve()
+      : reject(new Error(`Patch installer was cancelled or exited with code ${code}.`)));
+  });
+}
+
 async function placeModFiles(slug, install, baseDirOverride) {
   const dl = await resolveModDownload(install);
   let targetDir = resolveModTargetDir(
@@ -6052,7 +6101,45 @@ async function placeModFiles(slug, install, baseDirOverride) {
   }
   await fsp.mkdir(targetDir, { recursive: true });
   const downloadPath = path.join(app.getPath("temp"), "playbound-launcher", "mods", dl.name);
+  // A MediaFire source page resolves to a short-lived, checksum-pinned CDN
+  // URL. Register only that validated archive host before downloading.
+  registerDownloadHostFromUrl(dl.url);
   await downloadTo(dl.url, downloadPath);
+
+  if (install.installerFile) {
+    if (!/^[a-z0-9._-]+\.exe$/i.test(install.installerFile) ||
+        !/^[a-f0-9]{64}$/i.test(install.archiveSha256 || "")) {
+      throw new Error("Patch installer is missing a safe filename or checksum.");
+    }
+    const stagingRoot = path.join(app.getPath("temp"), "playbound-launcher", "mod-installers");
+    await fsp.mkdir(stagingRoot, { recursive: true });
+    const stagingDir = await fsp.mkdtemp(path.join(stagingRoot, `${slug}-`));
+    try {
+      await verifyChecksumSha256(downloadPath, install.archiveSha256);
+      sendProgress({ phase: "extracting" });
+      if (/\.7z$/i.test(dl.name)) await extract7z(downloadPath, stagingDir);
+      else if (/\.zip$/i.test(dl.name)) await extractZip(downloadPath, stagingDir);
+      else throw new Error("Patch installer archive must be a .7z or .zip file.");
+      const installer = findNamedPortableExe(stagingDir, install.installerFile);
+      if (!installer) throw new Error(`Patch archive does not contain ${install.installerFile}.`);
+      sendProgress({ phase: "installer-ready", addon: "Finish the widescreen patch installer…" });
+      await runWindowsElevatedInstaller(installer, targetDir);
+      const state = loadState();
+      if (!state.__mods__ || typeof state.__mods__ !== "object") state.__mods__ = {};
+      state.__mods__[slug] = {
+        title: install.title || slug, version: dl.version, dir: targetDir,
+        baseGameSlug: install.baseGameSlug, installedAt: new Date().toISOString(),
+        installerManagedExternally: true,
+      };
+      saveState(state);
+      await syncLibrary(slug, "install", dl.version, { kind: "mod", baseGameSlug: install.baseGameSlug }).catch(() => {});
+      sendProgress({ phase: "done" });
+      return { status: "installed", version: dl.version, dir: targetDir, baseGameSlug: install.baseGameSlug };
+    } finally {
+      await fsp.rm(stagingDir, { recursive: true, force: true }).catch(() => {});
+      await removeFileWithRetries(downloadPath).catch(() => {});
+    }
+  }
 
   /**
    * Files this mod replaced, and where the originals were parked.
@@ -9050,6 +9137,9 @@ async function uninstallMod(slug) {
   const state = loadState();
   if (!state.__mods__ || !state.__mods__[slug]) return { status: "not-installed" };
   const info = state.__mods__[slug];
+  const externalInstallerWarning = info.installerManagedExternally
+    ? "Removed from PlayBound. This patch's installer does not provide a verified automatic rollback; reinstall the original game files to undo it."
+    : null;
   const baseGameSlug = info.baseGameSlug || null;
 
   /**
@@ -9095,7 +9185,7 @@ async function uninstallMod(slug) {
     await syncLibrary(slug, "uninstall", undefined, { kind: "mod", baseGameSlug });
   }
   notifyUninstalled(slug);
-  return { status: "uninstalled", dir: info.dir || null, baseGameSlug, restored, warning };
+  return { status: "uninstalled", dir: info.dir || null, baseGameSlug, restored, warning: warning || externalInstallerWarning };
 }
 
 function sanitizeShortcutName(name) {

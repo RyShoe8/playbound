@@ -13,7 +13,7 @@ describe("draft multiplayer catalog wave", () => {
       for (const field of PATCH_GAME_FIELDS[slug]) {
         // Older patch entries source their fields elsewhere; only the new
         // draft slugs are required to live in the correction overlay.
-        if (slug in FILL_MISSING_STEAM_LAUNCH || ["battlefield-1942-the-complete-collection", "vintage-story", "rimworld"].includes(slug)) {
+        if (slug in FILL_MISSING_STEAM_LAUNCH || ["battlefield-1942-anthology", "vintage-story", "rimworld"].includes(slug)) {
           expect(source?.[field]).not.toBeUndefined();
         }
       }

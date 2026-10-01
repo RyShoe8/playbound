@@ -57,6 +57,8 @@ const CatalogModSchema = new Schema(
     assetPatternMac: { type: String, default: null },
     assetPatternLinux: { type: String, default: null },
     directUrl: { type: String, default: null },
+    installerFile: { type: String, default: null },
+    archiveSha256: { type: String, default: null },
     directUrlMac: { type: String, default: null },
     directUrlLinux: { type: String, default: null },
     /** Path under the base game install dir (e.g. "mods"). Empty = game root. */
