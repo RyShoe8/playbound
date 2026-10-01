@@ -362,10 +362,18 @@ function GamesTab({ tier, profiles, onSave }: { tier: Tier; profiles: ProfileInf
   const byKey = new Map(profiles.map((p) => [p.key, p]));
   const update = (i: number, patch: Partial<TierGame>) => setGames((g) => g.map((x, j) => (j === i ? { ...x, ...patch } : x)));
   const available = profiles.filter((p) => !isPendingDedicatedProfile(p.key) && !games.some((g) => g.profileKey === p.key));
+  const storedAvailable = available.filter((p) => p.stored !== false);
+  const catalogAvailable = available.filter((p) => p.stored === false);
+  const catalogGameCount = new Set(profiles.filter((p) => !isPendingDedicatedProfile(p.key)).map((p) => p.gameSlug)).size;
+  const catalogEditionCount = profiles.filter((p) => !isPendingDedicatedProfile(p.key) && p.key.split(":")[1] !== "base").length;
+  const addProfile = (key: string) => {
+    setGames((current) => current.some((game) => game.profileKey === key) ? current : [...current, { profileKey: key, enabled: false, newServerCreationEnabled: false, existingServerStartEnabled: false, minSlots: 4, maxSlots: 16, slotIncrement: 4, supportedRegions: tier.regions.map((r) => r.key), allowedMods: [], readinessStatus: "draft" }]);
+  };
   const rc = tier.resourceClass;
   return (
     <section className="space-y-3 rounded-xl border border-border bg-card p-4">
       <h2 className="font-semibold">Basic game catalog</h2>
+      <p className="text-sm">{catalogGameCount} dedicated-server games · {catalogEditionCount} edition profiles in the database catalog · {games.length} profiles currently on Basic</p>
       <p className="text-xs text-muted-foreground">
         Removing a game from new servers does not touch existing customer servers; &ldquo;Existing starts&rdquo; controls whether theirs can still start.
         Resource fit compares each profile&apos;s measured envelope with one unit ({rc.cpuPerUnit} CPU / {rc.memoryMbPerUnit} MB).
@@ -435,6 +443,8 @@ function GamesTab({ tier, profiles, onSave }: { tier: Tier; profiles: ProfileInf
         </table>
       </div>
       <div className="flex flex-wrap items-center gap-2">
+        <p className="w-full text-xs text-muted-foreground">{games.length} in Basic · {storedAvailable.length} additional saved server profiles · {catalogAvailable.length} catalog games or editions awaiting a saved profile. Adding one keeps it disabled until you verify and enable it.</p>
+        {([['Saved server profiles', storedAvailable], ['Catalog entries without a saved server profile', catalogAvailable]] as const).map(([label, entries]) => entries.length ? <div key={label} className="w-full space-y-2 rounded-lg border border-border p-3"><h3 className="text-xs font-semibold">{label} ({entries.length})</h3><div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">{entries.map((profile) => <div key={profile.key} className="flex items-center justify-between gap-2 text-xs"><span className="truncate font-mono" title={profile.key}>{profile.key}</span><button type="button" className="shrink-0 text-primary hover:underline" onClick={() => addProfile(profile.key)}>Add to Basic</button></div>)}</div></div> : null)}
         <select className={input} value={adding} onChange={(e) => setAdding(e.target.value)}>
           <option value="">Add a server profile…</option>
           {available.map((p) => (
@@ -446,7 +456,7 @@ function GamesTab({ tier, profiles, onSave }: { tier: Tier; profiles: ProfileInf
           className="text-sm text-primary disabled:opacity-50"
           disabled={!adding}
           onClick={() => {
-            setGames((g) => [...g, { profileKey: adding, enabled: false, newServerCreationEnabled: true, existingServerStartEnabled: true, minSlots: 4, maxSlots: 16, slotIncrement: 4, supportedRegions: tier.regions.map((r) => r.key), allowedMods: [], readinessStatus: "draft" }]);
+            addProfile(adding);
             setAdding("");
           }}
         >

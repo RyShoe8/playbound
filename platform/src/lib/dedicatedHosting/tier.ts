@@ -15,7 +15,7 @@ export const BASIC_DEFAULTS = {
   description:
     "Your slots. Your servers. Your games. Run one big server or several smaller ones, switch between supported games whenever you want, and manage everything through PlayBound.",
   salesEnabled: false,
-  regions: [{ key: "us-central", label: "US Central", salesEnabled: true, latitude: 41.88, longitude: -87.63 }],
+  regions: [{ key: "us-central", label: "US Central", salesEnabled: true, latitude: 32.7767, longitude: -96.7970 }],
   packages: [
     { slots: 4, priceCents: 799, order: 0 },
     { slots: 8, priceCents: 1299, order: 1 },
@@ -92,7 +92,15 @@ export function preservedPackagePrices(previous: HostingTier, incoming: HostingT
 export async function getTier(key = BASIC_TIER_KEY): Promise<HostingTier> {
   await dbConnect();
   const doc = await DedicatedHostingTier.findOne({ key }).lean();
-  if (doc) return JSON.parse(JSON.stringify(doc)) as HostingTier;
+  if (doc) {
+    const tier = JSON.parse(JSON.stringify(doc)) as HostingTier;
+    // The original Basic row predates map coordinates. Use Dallas for this
+    // known VPS region until an admin saves its precise location in the DB.
+    tier.regions = tier.regions.map((region) => region.key === "us-central" && region.latitude == null && region.longitude == null
+      ? { ...region, latitude: 32.7767, longitude: -96.7970 }
+      : region);
+    return tier;
+  }
   // Materialise schema defaults without saving, so the shape is always complete.
   const draft = new DedicatedHostingTier(key === BASIC_TIER_KEY ? BASIC_DEFAULTS : { key }).toObject();
   return JSON.parse(JSON.stringify(draft)) as HostingTier;

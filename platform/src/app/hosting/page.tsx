@@ -9,6 +9,7 @@ import { listGames } from "@/lib/catalog";
 import { loadPublicTier, publicGames } from "@/lib/dedicatedHosting/publicTier";
 import { PENDING_DEDICATED_GAMES } from "@/lib/dedicatedHosting/pendingGames";
 import { hostingGameArt } from "@/lib/dedicatedHosting/publicGameArt";
+import { loadHostingInventory } from "@/lib/dedicatedHosting/inventory";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
@@ -31,11 +32,13 @@ const FEATURES = [
 const price = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
 export default async function HostingPage() {
-  const [{ tier, live }, catalog] = await Promise.all([loadPublicTier(), listGames().catch(() => [])]);
+  const [{ tier, live }, catalog, inventory] = await Promise.all([loadPublicTier(), listGames().catch(() => []), loadHostingInventory()]);
   const packages = [...tier.packages].filter((p) => p.enabled !== false).sort((a, b) => a.order - b.order);
-  const games = publicGames(tier);
-  const editionCount = games.reduce((total, game) => total + new Set(game.editions).size, 0);
+  const enrolled = publicGames(tier);
+  const games = inventory.length ? inventory : enrolled;
+  const editionCount = games.reduce((total, game) => total + game.editions.length, 0);
   const available = new Set(games.map((g) => g.gameSlug));
+  const selectable = new Set(enrolled.map((g) => g.gameSlug));
   const cards = new Map(catalog.filter((g) => available.has(g.slug)).map((g) => [g.slug, g]));
   const lineup = [...games.map((g) => ({ gameSlug: g.gameSlug, title: g.title, requirement: null as string | null })), ...PENDING_DEDICATED_GAMES].sort((a, b) => a.title.localeCompare(b.title));
   const artBySlug = await hostingGameArt(lineup.map((game) => game.gameSlug));
@@ -65,7 +68,7 @@ export default async function HostingPage() {
           <Server className="mb-4 text-primary" /><h3 className="text-2xl font-bold">Basic</h3>
           <p className="mt-2 text-sm text-muted-foreground">Flexible game hosting for your group or community.</p>
           <p className="mt-6 text-3xl font-bold">{packages.length ? `From ${price(Math.min(...packages.map((p) => p.priceCents)))}` : "Flexible pricing"}<span className="text-sm font-normal text-muted-foreground"> / month</span></p>
-          <p className="mt-2 text-sm">{games.length} supported games · {editionCount} additional editions · switch games without switching plans</p>
+          <p className="mt-2 text-sm">{games.length} dedicated-server games · {editionCount} additional editions · {enrolled.length} currently selectable on Basic</p>
           <ul className="mt-6 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">{FEATURES.map((item) => <li key={item} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{item}</li>)}</ul>
           <div className="mt-7"><BasicSlotPicker packages={packages} available={live && tier.salesEnabled} region={region} /></div>
           <p className="mt-4 text-sm text-muted-foreground">For games without an enforceable player cap, slots reserve server capacity. Those servers stop after 30 minutes of confirmed inactivity.</p>
@@ -83,11 +86,11 @@ export default async function HostingPage() {
 
     <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-card p-6"><div><h2 className="text-xl font-bold">Need a hand with your server?</h2><p className="mt-1 text-sm text-muted-foreground">Open a support request in PlayBound or join the dedicated-server support room on Discord.</p></div><div className="flex flex-wrap gap-3"><Link href="/hosting/servers" className="rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary">PlayBound support</Link><a href="/api/hosting/support/discord" target="_blank" rel="noopener noreferrer" className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Discord support ↗</a></div></section>
 
-    <section id="all-games" className="space-y-5"><div><h2 className="text-2xl font-bold">Every game on Basic</h2><p className="text-sm text-muted-foreground">{games.length} supported games and {editionCount} additional editions. Pick one for the whole night or divide your slots across several.</p></div>
+    <section id="all-games" className="space-y-5"><div><h2 className="text-2xl font-bold">Dedicated-server games</h2><p className="text-sm text-muted-foreground">{games.length} games and {editionCount} additional editions in our catalog. {enrolled.length} games are currently selectable on Basic; others are being prepared for hosting.</p></div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">{lineup.map((g) => {
         const art = artBySlug[g.gameSlug] || cards.get(g.gameSlug);
-        const content = <><div className="relative aspect-[16/10] overflow-hidden bg-secondary">{art ? <GameArt game={{ ...art, title: g.title }} showTitle={false} iconSize="sm" className="size-full" /> : <div className="flex size-full items-center justify-center"><Server className="h-8 w-8 text-primary/60" /></div>}</div><div className="p-3"><h3 className="line-clamp-2 text-sm font-semibold leading-snug">{g.title}</h3>{g.requirement ? <><span className="mt-1 inline-block rounded bg-secondary px-1.5 py-0.5 text-xs">Planned</span><p className="mt-1 text-xs text-muted-foreground">{g.requirement}</p></> : null}</div></>;
-        return g.requirement ? <article key={g.gameSlug} className="overflow-hidden rounded-xl border border-border bg-card">{content}</article> : <Link key={g.gameSlug} href={`/hosting/${g.gameSlug}`} className="overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-primary/50">{content}</Link>;
+        const content = <><div className="relative aspect-[16/10] overflow-hidden bg-secondary">{art ? <GameArt game={{ ...art, title: g.title }} showTitle={false} iconSize="sm" className="size-full" /> : <div className="flex size-full items-center justify-center"><Server className="h-8 w-8 text-primary/60" /></div>}</div><div className="p-3"><h3 className="line-clamp-2 text-sm font-semibold leading-snug">{g.title}</h3>{g.requirement ? <><span className="mt-1 inline-block rounded bg-secondary px-1.5 py-0.5 text-xs">Planned</span><p className="mt-1 text-xs text-muted-foreground">{g.requirement}</p></> : !selectable.has(g.gameSlug) ? <span className="mt-1 inline-block rounded bg-secondary px-1.5 py-0.5 text-xs">Preparing for Basic</span> : null}</div></>;
+        return g.requirement || !selectable.has(g.gameSlug) ? <article key={g.gameSlug} className="overflow-hidden rounded-xl border border-border bg-card">{content}</article> : <Link key={g.gameSlug} href={`/hosting/${g.gameSlug}`} className="overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-primary/50">{content}</Link>;
       })}</div><p className="text-xs text-muted-foreground">Planned games cannot be selected or started yet.</p></section>
   </main>;
 }

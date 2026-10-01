@@ -6,8 +6,9 @@ import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin
 import CommunityServerProfile from "@/lib/models/CommunityServerProfile";
 import { getTier, preservedPackagePrices, saveTier, slotCapEnforced } from "@/lib/dedicatedHosting/tier";
 import { HOSTING_TIER_TAG } from "@/lib/dedicatedHosting/publicTier";
+import { HOSTING_INVENTORY_TAG } from "@/lib/dedicatedHosting/inventory";
 import { getEffectiveEnvelope } from "@/lib/communityHosting/reconcile";
-import { hostableProfileStubs, loadHostableEditionRefs } from "@/lib/dedicatedHosting/hostableProfiles";
+import { hostableProfileStubs, loadHostableEditionRefs, loadHostableCatalogSlugs } from "@/lib/dedicatedHosting/hostableProfiles";
 
 type Ctx = { params: Promise<{ key: string }> };
 
@@ -32,7 +33,13 @@ const tierSchema = z.object({
   paymentGraceHours: count.max(24 * 60),
   cancellationRetentionDays: count.max(365),
   safetyReservePercent: z.number().min(0).max(90),
-  regions: z.array(z.object({ key: z.string().regex(/^[a-z0-9-]{2,40}$/), label: z.string().min(1).max(60), salesEnabled: z.boolean() })).max(20),
+  regions: z.array(z.object({
+    key: z.string().regex(/^[a-z0-9-]{2,40}$/),
+    label: z.string().min(1).max(60),
+    salesEnabled: z.boolean(),
+    latitude: z.number().min(24).max(50).nullable().optional(),
+    longitude: z.number().min(-125).max(-66).nullable().optional(),
+  })).max(20),
   packages: z.array(z.object({
     slots: count.min(1).max(512),
     priceCents: count.max(1_000_000),
@@ -73,7 +80,8 @@ export async function GET(_req: Request, ctx: Ctx) {
   const rc = tier.resourceClass;
   const unitRam = rc.memoryMbPerUnit * 1024 * 1024;
   // Hostable games with no stored row yet are listed too, so admin can pick them.
-  const stubs = hostableProfileStubs(profiles, await loadHostableEditionRefs());
+  const [editionRefs, catalogSlugs] = await Promise.all([loadHostableEditionRefs(), loadHostableCatalogSlugs()]);
+  const stubs = hostableProfileStubs(profiles, editionRefs, catalogSlugs);
   const allProfiles = [
     ...profiles.map((p) => ({ ...p, stored: true })),
     ...stubs.map((s) => ({ ...s, stored: false, envelope: undefined, sampleCount: 0, verification: "testing", queryVerified: false, joinVerified: false, lastVerifiedAt: null })),
@@ -127,5 +135,6 @@ export async function PUT(req: Request, ctx: Ctx) {
   const packages = preservedPackagePrices(previous, parsed.data.packages);
   const tier = await saveTier(key, { ...parsed.data, packages });
   revalidateTag(HOSTING_TIER_TAG, { expire: 0 });
+  revalidateTag(HOSTING_INVENTORY_TAG, { expire: 0 });
   return NextResponse.json({ ok: true, tier });
 }
