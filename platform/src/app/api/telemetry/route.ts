@@ -185,7 +185,8 @@ export async function POST(req: Request) {
     // Let Next's own control-flow errors through — see unstable_rethrow.
     unstable_rethrow(err);
     console.error("[telemetry] save failed", err);
-    // Fail-soft to clients — do not leak internals.
-    return withCors(req, NextResponse.json({ ok: true }));
+    // A launcher install must retry if its write failed. A success response
+    // would persist the client receipt and permanently hide the missing event.
+    return withCors(req, NextResponse.json({ error: "Telemetry unavailable" }, { status: 503 }));
   }
 }

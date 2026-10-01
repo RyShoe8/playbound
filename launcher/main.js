@@ -2200,6 +2200,12 @@ async function downloadTo(url, dest, attempts = 3) {
         failure.code = err.code;
         throw failure;
       }
+      if (/UND_ERR_CONNECT_TIMEOUT|ETIMEDOUT|ConnectTimeoutError/i.test(String(detail))) {
+        throw new Error(
+          "Download failed: the host timed out after three attempts. Check your connection and retry the install; no game files were changed.",
+          { cause: err }
+        );
+      }
       throw new Error(`Download failed (${detail})`, { cause: err });
     }
   }
@@ -3030,12 +3036,56 @@ function findSteamInstallExe(entry) {
   return null;
 }
 
+/** Search only matching game folders in common store roots before opening a file picker. */
+function findExeInStoreTitleDirs(entry) {
+  if (process.platform !== "win32" || !entry?.title) return null;
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const titles = [entry.title, ...(entry.registryTitles || [])].map(normalize).filter((s) => s.length >= 6);
+  const bases = expectedExeBasenames(entry);
+  if (!titles.length || !bases.length) return null;
+  const drives = listFixedDriveRoots();
+  const roots = drives.flatMap((drive) => [
+    path.join(drive, "GOG"),
+    path.join(drive, "GOG Games"),
+    path.join(drive, "Program Files (x86)", "GOG Galaxy", "Games"),
+    path.join(drive, "Program Files", "GOG Galaxy", "Games"),
+  ]);
+  for (const root of roots) {
+    let folders;
+    try { folders = fs.readdirSync(root, { withFileTypes: true }); } catch { continue; }
+    for (const folder of folders) {
+      if (!folder.isDirectory() || !titles.includes(normalize(folder.name))) continue;
+      const gameDir = path.join(root, folder.name);
+      const queue = [{ dir: gameDir, depth: 0 }];
+      while (queue.length) {
+        const next = queue.shift();
+        if (!next || next.depth > 4) continue;
+        let entries;
+        try { entries = fs.readdirSync(next.dir, { withFileTypes: true }); } catch { continue; }
+        for (const item of entries) {
+          const full = path.join(next.dir, item.name);
+          if (item.isFile() && bases.includes(item.name.toLowerCase()) && !isUninstallerExe(item.name)) {
+            rememberLocatedRoot(full);
+            if (isAllowedExecutablePath(full)) return full;
+          }
+          if (item.isDirectory() && next.depth < 4 && !shouldSkipScanDir(item.name)) {
+            queue.push({ dir: full, depth: next.depth + 1 });
+          }
+        }
+      }
+    }
+  }
+  return null;
+}
+
 function findKnownExecutable(entry) {
   const known = findKnownPathOnly(entry);
   if (known) return known;
   // Before any guessing: Steam knows exactly where it put things.
   const steamExe = findSteamInstallExe(entry);
   if (steamExe) return steamExe;
+  const storeExe = findExeInStoreTitleDirs(entry);
+  if (storeExe) return storeExe;
   /*
    * macOS installs land in /Applications, and almost no recipe carries a mac
    * knownExePath — 28 of the 33 that define any are Windows-only. Every other
@@ -3654,6 +3704,8 @@ function couchDisqualifiesPlayBoundControls() {
 const BUNDLED_CONTROL_PROFILES = {
   holocure: "./services/inputEngine/profiles/holocure.json",
   "wolfenstein-enemy-territory": "./services/inputEngine/profiles/wolfenstein-enemy-territory.json",
+  outrun: "./services/inputEngine/profiles/outrun.json",
+  "shadow-warrior-classic-complete": "./services/inputEngine/profiles/shadow-warrior-classic-complete.json",
 };
 
 function bundledControlProfile(slug) {
@@ -3707,6 +3759,7 @@ async function applyControllerConfig(slug, installDir, opts = {}) {
   gamepadBridge.deactivatePlayBoundControls();
   notifyPlayBoundControlsState(false);
   if (process.platform === "win32" && !couchDisqualifiesPlayBoundControls() && inputMode !== "keyboard") {
+    // Testing profiles activate only after the player chooses Preview.
     const profile = await availablePlayBoundControlsProfile(slug, opts?.editionSlug || null, opts?.controlsPreview === true);
     if (profile && gamepadBridge.activatePlayBoundControls(profile)) {
       enhancedControlsActive = true;
@@ -4674,9 +4727,9 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     const fromEdition = catalogEntryFromEdition(editionMeta);
     if (fromEdition) {
       entry = { ...(entry || {}), ...fromEdition };
-    } else if (!(entry?.kind && entry.kind !== "external")) {
+    } else if (!entry?.kind || (entry.kind === "external" && !entry.knownExePaths?.length)) {
       // Use an edition's own hand-off only when its parent game has no
-      // installable PlayBound recipe. A game-level package is the one
+      // installable or detectable PlayBound recipe. A game-level package is the one
       // canonical Daggerfall installation, even though its historical edition
       // metadata is still labelled Classic DOS.
       if (editionMeta.installMethod === "official_download") {
@@ -4746,6 +4799,8 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   await ensureSteamPrerequisites(entry);
 
   if (entry.kind === "external") {
+    sendProgress({ phase: "external-handoff", slug, title: entry.title || slug,
+      message: `Opening the store for ${entry.title || slug}… PlayBound will watch for the completed install.` });
     await openExternalInstallHandoff(entry.url, slug);
     /*
      * Watch for the game to appear, whatever the store does next.
@@ -4909,21 +4964,24 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     if (tempFree !== null && tempFree < estimatedDownloadBytes + estimatedExtractBytes) {
       const totalGB = ((estimatedDownloadBytes + estimatedExtractBytes) / (1024 * 1024 * 1024)).toFixed(1);
       const freeGB = (tempFree / (1024 * 1024 * 1024)).toFixed(1);
+      const clearGB = Math.ceil((estimatedDownloadBytes + estimatedExtractBytes - tempFree) / (1024 * 1024 * 1024) * 10) / 10;
       const drive = path.parse(path.resolve(gameDir)).root;
       throw new Error(
         `Not enough free disk space on drive ${drive}. ` +
           `${entry.title || slug} requires ~${totalGB} GB during installation (download + extraction), but only ${freeGB} GB is available. ` +
-          `Please install to a drive with more space in Settings.`
+          `Free at least ${clearGB.toFixed(1)} GB on ${drive}, or choose a drive with more space in Settings.`
       );
     }
   } else {
     if (targetDirFree !== null && targetDirFree < estimatedExtractBytes) {
       const neededGB = (estimatedExtractBytes / (1024 * 1024 * 1024)).toFixed(1);
       const freeGB = (targetDirFree / (1024 * 1024 * 1024)).toFixed(1);
+      const clearGB = Math.ceil((estimatedExtractBytes - targetDirFree) / (1024 * 1024 * 1024) * 10) / 10;
       const drive = path.parse(path.resolve(gameDir)).root;
       throw new Error(
         `Not enough free disk space on target drive ${drive}. ` +
-          `${entry.title || slug} requires at least ${neededGB} GB, but only ${freeGB} GB is available.`
+          `${entry.title || slug} requires at least ${neededGB} GB, but only ${freeGB} GB is available. ` +
+          `Free at least ${clearGB.toFixed(1)} GB on ${drive}, or choose a drive with more space in Settings.`
       );
     }
     // If temp drive (often C:) has less than 2x the download size, stage download on target drive (e.g. D:)
@@ -6392,14 +6450,18 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
   void telemetry.launchAttempted({ ...launchInfo(), phase: join?.host ? "join" : "play" });
 
   let info = game.editions?.[edSlug] || null;
+  if (info && !exeOnDisk(info)) {
+    const playable = playableExePath(info);
+    if (playable) info = { ...info, exe: playable };
+  }
   if (info) {
     await maybeRepairWolfensteinEtInstall(slug, info, edSlug);
     await maybeRepairZeldaMudoraInstall(slug, info);
     await maybeRepairDaggerfallUnityInstall(slug, info, edSlug);
   }
-  if (!editionSlug && !exeOnDisk(info) && exeOnDisk(game)) {
+  if (!editionSlug && !exeOnDisk(info) && playableExePath(game)) {
     info = {
-      exe: game.exe,
+      exe: playableExePath(game),
       dir: game.dir,
       version: game.version,
       editionSlug: game.editionSlug,
@@ -6411,8 +6473,9 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
   }
   if (!editionSlug && !exeOnDisk(info) && game.editions) {
     for (const [key, ed] of Object.entries(game.editions)) {
-      if (exeOnDisk(ed)) {
-        info = { ...ed, editionSlug: key };
+      const playable = playableExePath(ed);
+      if (playable) {
+        info = { ...ed, exe: playable, editionSlug: key };
         await maybeRepairWolfensteinEtInstall(slug, info, key);
         await maybeRepairZeldaMudoraInstall(slug, info);
         await maybeRepairDaggerfallUnityInstall(slug, info, key);
@@ -7158,6 +7221,15 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
       args = ["-L", runtime.corePath, romFile, "-f", "-H", ...args];
     } else {
       args = ["-L", runtime.corePath, romFile, "-f", ...args];
+    }
+  }
+
+  if (slug === "shadow-warrior-classic-complete" && process.platform === "win32") {
+    const gogLaunch = require("./services/gogShadowWarrior").resolveGogShadowWarriorLaunch(launchPath);
+    if (gogLaunch?.error) throw new Error(gogLaunch.error);
+    if (gogLaunch?.binary) {
+      launchPath = gogLaunch.binary;
+      args = gogLaunch.args;
     }
   }
 
@@ -12643,6 +12715,13 @@ function setupAutoUpdater() {
   autoUpdater.on("checking-for-update", () => emit({ phase: "checking" }));
   autoUpdater.on("update-available", (info) => {
     pendingUpdate = info;
+    // A stale feed must never offer an older unsigned installer as an update.
+    if (compareVersions(info.version, app.getVersion()) <= 0) {
+      autoUpdater.autoDownload = false;
+      pendingUpdate = null;
+      emit({ phase: "none", version: app.getVersion(), channel: getEffectiveUpdateChannel() });
+      return;
+    }
     /*
      * Downloading is decided per offered version, not once at startup: a
      * version that has already failed verification too many times must not be

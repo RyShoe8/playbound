@@ -191,7 +191,7 @@ async function countActivePlatformPlayers(scope: Scope = {}): Promise<number> {
   const prop = propertyMatch(scope);
 
   const starts = await TelemetryEvent.find({
-    event: "session_started",
+    event: { $in: ["edition_launched", "session_started"] },
     createdAt: { $gte: since },
     sessionId: { $nin: [null, ""] },
     ...prop,
@@ -205,7 +205,7 @@ async function countActivePlatformPlayers(scope: Scope = {}): Promise<number> {
       ...new Set(starts.map((s) => s.sessionId).filter((id): id is string => Boolean(id))),
     ];
     const ends = await TelemetryEvent.find({
-      event: "session_ended",
+      event: { $in: ["game_ended", "session_ended"] },
       sessionId: { $in: sessionIds },
       createdAt: { $gte: since },
     })
@@ -245,7 +245,7 @@ async function countActivePlatformPlayers(scope: Scope = {}): Promise<number> {
 
   if (candidateIds.size) {
     const closed = await TelemetryEvent.find({
-      event: { $in: ["session_ended", "game_finished"] },
+      event: { $in: ["game_ended", "session_ended", "game_finished"] },
       createdAt: { $gte: since },
       $or: [
         { userId: { $in: [...candidateIds] } },
@@ -277,7 +277,7 @@ async function countActivePlatformPlayersByGame(): Promise<Map<string, number>> 
   };
 
   const starts = await TelemetryEvent.find({
-    event: "session_started",
+    event: { $in: ["edition_launched", "session_started"] },
     createdAt: { $gte: since },
     sessionId: { $nin: [null, ""] },
     "properties.gameSlug": { $nin: [null, ""] },
@@ -290,7 +290,7 @@ async function countActivePlatformPlayersByGame(): Promise<Map<string, number>> 
       ...new Set(starts.map((s) => s.sessionId).filter((id): id is string => Boolean(id))),
     ];
     const ends = await TelemetryEvent.find({
-      event: "session_ended",
+      event: { $in: ["game_ended", "session_ended"] },
       sessionId: { $in: sessionIds },
       createdAt: { $gte: since },
     })
@@ -347,7 +347,7 @@ async function countActivePlatformPlayersByGame(): Promise<Map<string, number>> 
 
   if (allCandidateIds.size) {
     const closed = await TelemetryEvent.find({
-      event: { $in: ["session_ended", "game_finished"] },
+      event: { $in: ["game_ended", "session_ended", "game_finished"] },
       createdAt: { $gte: since },
       $or: [
         { userId: { $in: [...allCandidateIds] } },
@@ -389,7 +389,7 @@ async function countPlayersThisMonth(scope: Scope = {}): Promise<number> {
   const prop = propertyMatch(scope);
 
   const rows = await TelemetryEvent.find({
-    event: { $in: ["game_started", "session_started"] },
+    event: { $in: ["game_started", "edition_launched", "session_started"] },
     createdAt: { $gte: since },
     ...prop,
   })

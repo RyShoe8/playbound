@@ -93,8 +93,8 @@ export type TelemetryEventMap = {
    * Official edition of a game that has none stored — so games predating
    * editions still report cleanly instead of dropping out of the funnel.
    *
-   * These are additive. The existing game_* events above are unchanged and
-   * still fire; edition events sit alongside them rather than replacing them.
+   * Edition events identify launcher actions; browser game events remain
+   * separate because the browser has no native edition install lifecycle.
    */
   edition_view: EditionProps & Extra;
   edition_installed: EditionProps & { installMethod?: string; version?: string } & Extra;
@@ -107,8 +107,8 @@ export type TelemetryEventMap = {
   /**
    * Play sessions, reported by the launcher.
    *
-   * `game_ended` is edition-aware and distinct from the older `game_finished`
-   * above, which is kept firing so existing dashboards keep working.
+   * `game_ended` is the edition-aware launcher completion event. Browser
+   * sessions use `game_finished`.
    */
   game_ended: EditionProps & { durationMs?: number } & Extra;
   session_started: EditionProps & { sessionKind?: string } & Extra;

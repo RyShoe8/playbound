@@ -6577,6 +6577,16 @@ module.exports = [
     "hasServerBrowser": false,
     "isMultiplayer": false,
     "coverImage": "https://images.gog-statics.com/68242319701d590dce72be3f0e2fe7fd716c98e958e69dda7ea9f9c8eb6e09f2.jpg",
+    "exeHint": "JFSW|DOSBox|SW",
+    "registryTitles": ["Shadow Warrior Complete"],
+    "knownExePaths": [
+      "C:\\GOG Games\\Shadow Warrior Complete\\JFSW.exe",
+      "C:\\GOG Games\\Shadow Warrior Complete\\DOSBOX\\DOSBox.exe",
+      "%PROGRAMFILES(X86)%\\GOG Galaxy\\Games\\Shadow Warrior Complete\\JFSW.exe",
+      "%PROGRAMFILES(X86)%\\GOG Galaxy\\Games\\Shadow Warrior Complete\\DOSBOX\\DOSBox.exe",
+      "%PROGRAMFILES%\\GOG Galaxy\\Games\\Shadow Warrior Complete\\JFSW.exe",
+      "%PROGRAMFILES%\\GOG Galaxy\\Games\\Shadow Warrior Complete\\DOSBOX\\DOSBox.exe"
+    ],
     "url": "https://www.gog.com/en/game/shadow_warrior_complete",
     "note": "Free on GOG — a free GOG account is required to add it to your library, no payment involved.",
     "hostLaunch": null,

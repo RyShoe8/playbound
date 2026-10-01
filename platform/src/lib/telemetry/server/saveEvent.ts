@@ -61,7 +61,7 @@ export async function saveEvent(input: SaveTelemetryEventInput): Promise<void> {
     ? new Date(input.timestamp)
     : new Date();
 
-  await TelemetryEvent.create({
+  const document = {
     event: input.event,
     properties: props,
     userId: input.userId ?? null,
@@ -76,7 +76,18 @@ export async function saveEvent(input: SaveTelemetryEventInput): Promise<void> {
     device: deviceFromProps || client.device,
     isBot,
     createdAt: Number.isNaN(createdAt.getTime()) ? new Date() : createdAt,
-  });
+  };
+
+  if (input.event === "launcher_install" && input.anonymousId) {
+    // Retried first contacts must keep the original install time and count.
+    await TelemetryEvent.updateOne(
+      { event: "launcher_install", anonymousId: input.anonymousId },
+      { $setOnInsert: document },
+      { upsert: true }
+    );
+  } else {
+    await TelemetryEvent.create(document);
+  }
 
   // The telemetry route is serverless: an unawaited write can be killed after
   // the response, making failures visible in Ops but absent from Bugs.

@@ -1062,6 +1062,14 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
         if (!decision.restart) {
           console.log(`[${gameSlug}:${port}] not restarting — ${decision.reason}`);
           stopRoom(room);
+          if (communityServerId) {
+            const tail = startupLog.slice(-3).join(" | ");
+            managedJobs.set(communityServerId, {
+              status: "failed",
+              error: `${gameSlug} exited with code ${code ?? "unknown"}${tail ? `: ${tail}` : ""}`,
+              at: Date.now(),
+            });
+          }
           return;
         }
 
@@ -1090,6 +1098,13 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
         } catch (err) {
           console.warn(`[${gameSlug}:${port}] restart failed:`, err?.message || err);
           stopRoom(room);
+          if (communityServerId) {
+            managedJobs.set(communityServerId, {
+              status: "failed",
+              error: `${gameSlug} restart failed: ${err?.message || err}`,
+              at: Date.now(),
+            });
+          }
         }
       });
     };

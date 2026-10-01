@@ -121,6 +121,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   rimworld: ["steamAppId", "hasControllerSupport"],
   "counter-strike-source": ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps"],
   unturned: ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps"],
+  "shadow-warrior-classic-complete": ["launcherInstall"],
   "deus-ex-goty-edition": ["status", "features", "multiplayerGamingSteps"],
   /*
    * releaseYear audit, 2026-09-22.

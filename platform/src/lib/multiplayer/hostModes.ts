@@ -181,7 +181,12 @@ export function couchOnlyGameSlugs(): string[] {
   return [...LOCAL_COUCH_GAMES].sort();
 }
 
-/** True when the party can only play this together by sharing one machine. */
+/** All games offered in the Couch party filter, including games with online modes. */
+export function couchCapableGameSlugs(): string[] {
+  return [...new Set([...LOCAL_COUCH_GAMES, ...ONLINE_COUCH_GAMES])].sort();
+}
+
+/** True when this game supports a shared-screen party session. */
 export function canUseCouch(gameSlug: string): boolean {
   const adapter = getMultiplayerAdapter(gameSlug);
   return LOCAL_COUCH_GAMES.has(adapter.gameSlug) || LOCAL_COUCH_GAMES.has(gameSlug)

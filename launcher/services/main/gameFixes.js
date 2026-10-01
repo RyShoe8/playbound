@@ -551,9 +551,10 @@ const SOLARUS_REPAIR_SLUGS = new Set([
  * manually reinstall.
  */
 const ZBOM_REPAIR_MARKER = "-- PlayBound Solarus 2 controller repair v3";
+const ZBOM_SAVEGAMES_REPAIR_MARKER = "-- PlayBound Solarus 2 savegame syntax repair v4";
 
 function patchZeldaMudoraSavegames(code) {
-  if (code.includes(ZBOM_REPAIR_MARKER)) return code;
+  if (code.includes(ZBOM_SAVEGAMES_REPAIR_MARKER)) return code;
 
   code = code.replace(/axis % 2/g, "(tonumber(axis) or 0) % 2");
 
@@ -564,7 +565,7 @@ function patchZeldaMudoraSavegames(code) {
 
   const oldButtonAndAxis = /function savegame_menu:on_joypad_button_pressed\(button\)[\s\S]*?function savegame_menu:on_joypad_axis_moved\(axis, state\)[\s\S]*?end\s*\n\s*function savegame_menu:on_joypad_hat_moved/;
 
-  const newButtonAndAxis = `${ZBOM_REPAIR_MARKER}
+  const newButtonAndAxis = `${ZBOM_SAVEGAMES_REPAIR_MARKER}
 local function is_confirm_button(button)
   local b = tostring(button):lower()
   return b == "0" or b == "a" or b == "space" or b == "return" or b == "6" or b == "start"
@@ -642,7 +643,7 @@ function savegame_menu:on_joypad_hat_moved`;
   code = code.replace(oldButtonAndAxis, newButtonAndAxis);
 
   code = code.replace(
-    /function savegame_menu:joypad_button_pressed_phase_select_file\(button\)[\s\S]*?end/,
+    /function savegame_menu:joypad_button_pressed_phase_select_file\(button\)[\s\S]*?(?=function savegame_menu:direction_pressed_phase_select_file)/,
     `function savegame_menu:joypad_button_pressed_phase_select_file(button)
   if is_confirm_button(button) then
     return self:key_pressed_phase_select_file("space")
@@ -664,7 +665,7 @@ end`
   );
 
   code = code.replace(
-    /function savegame_menu:joypad_button_pressed_phase_erase_file\(button\)[\s\S]*?end/,
+    /function savegame_menu:joypad_button_pressed_phase_erase_file\(button\)[\s\S]*?(?=function savegame_menu:direction_pressed_phase_erase_file)/,
     `function savegame_menu:joypad_button_pressed_phase_erase_file(button)
   if is_cancel_button(button) then
     sol.audio.play_sound("ok")
@@ -678,7 +679,7 @@ end`
   );
 
   code = code.replace(
-    /function savegame_menu:joypad_button_pressed_phase_confirm_erase\(button\)[\s\S]*?end/,
+    /function savegame_menu:joypad_button_pressed_phase_confirm_erase\(button\)[\s\S]*?(?=function savegame_menu:direction_pressed_phase_confirm_erase)/,
     `function savegame_menu:joypad_button_pressed_phase_confirm_erase(button)
   if is_cancel_button(button) then
     sol.audio.play_sound("ok")
@@ -692,7 +693,7 @@ end`
   );
 
   code = code.replace(
-    /function savegame_menu:joypad_button_pressed_phase_options\(button\)[\s\S]*?end/,
+    /function savegame_menu:joypad_button_pressed_phase_options\(button\)[\s\S]*?(?=function savegame_menu:direction_pressed_phase_options)/,
     `function savegame_menu:joypad_button_pressed_phase_options(button)
   if is_cancel_button(button) then
     if self.modifying_option then
@@ -720,7 +721,7 @@ end`
   );
 
   code = code.replace(
-    /function savegame_menu:joypad_button_pressed_phase_choose_name\(button\)[\s\S]*?end/,
+    /function savegame_menu:joypad_button_pressed_phase_choose_name\(button\)[\s\S]*?(?=function savegame_menu:direction_pressed_phase_choose_name)/,
     `function savegame_menu:joypad_button_pressed_phase_choose_name(button)
   local b = tostring(button):lower()
   if b == "6" or b == "start" then
@@ -948,7 +949,15 @@ async function maybeRepairZeldaMudoraInstall(slug, info) {
       cp.on("close", () => resolve(Buffer.concat(chunks)));
       cp.on("error", () => resolve(Buffer.alloc(0)));
     });
-    const needsRepair = !gameManagerContent.includes(Buffer.from(ZBOM_REPAIR_MARKER));
+    const savegamesContent = await new Promise((resolve) => {
+      const cp = spawn(bin, ["e", "-so", solarusFile, "scripts/menus/savegames.lua"], { windowsHide: true });
+      const chunks = [];
+      cp.stdout.on("data", (chunk) => chunks.push(chunk));
+      cp.on("close", () => resolve(Buffer.concat(chunks)));
+      cp.on("error", () => resolve(Buffer.alloc(0)));
+    });
+    const needsRepair = !gameManagerContent.includes(Buffer.from(ZBOM_REPAIR_MARKER))
+      || !savegamesContent.includes(Buffer.from(ZBOM_SAVEGAMES_REPAIR_MARKER));
     if (!needsRepair) return;
 
     const tempDir = path.join(app.getPath("temp"), "zbom_patch_" + Date.now());

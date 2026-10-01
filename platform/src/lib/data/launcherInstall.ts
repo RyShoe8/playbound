@@ -11,6 +11,22 @@ import {
  * Used by seed:launcher-install and as fallback when Mongo has no recipe yet.
  */
 export const launcherInstallBySlug: Record<string, LauncherInstall> = {
+  "shadow-warrior-classic-complete": {
+    enabled: true,
+    kind: "external",
+    url: "https://www.gog.com/en/game/shadow_warrior_complete",
+    exeHint: "JFSW|DOSBox|SW",
+    knownExePaths: [
+      "C:\\GOG Games\\Shadow Warrior Complete\\JFSW.exe",
+      "C:\\GOG Games\\Shadow Warrior Complete\\DOSBOX\\DOSBox.exe",
+      "%PROGRAMFILES(X86)%\\GOG Galaxy\\Games\\Shadow Warrior Complete\\JFSW.exe",
+      "%PROGRAMFILES(X86)%\\GOG Galaxy\\Games\\Shadow Warrior Complete\\DOSBOX\\DOSBox.exe",
+      "%PROGRAMFILES%\\GOG Galaxy\\Games\\Shadow Warrior Complete\\JFSW.exe",
+      "%PROGRAMFILES%\\GOG Galaxy\\Games\\Shadow Warrior Complete\\DOSBOX\\DOSBox.exe",
+    ],
+    registryTitles: ["Shadow Warrior Classic Complete", "Shadow Warrior Complete"],
+    note: "Claim and install the free GOG release. PlayBound watches for the finished install.",
+  },
   "ye-guild-clerk": {
     enabled: true,
     kind: "external",

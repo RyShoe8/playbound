@@ -10,6 +10,7 @@ import {
 import {
   canSelfHost,
   canUseCouch,
+  couchCapableGameSlugs,
   couchOnlyGameSlugs,
   canUseDedicated,
   couchPayloadFromDoc,
@@ -198,6 +199,8 @@ describe("host mode configuration", () => {
     expect(defaultHostMode("re-volt-rvgl")).toBe("dedicated");
     expect(isValidHostMode("re-volt-rvgl", "couch")).toBe(true);
     expect(couchOnlyGameSlugs()).not.toContain("re-volt-rvgl");
+    expect(couchCapableGameSlugs()).toContain("re-volt-rvgl");
+    expect(couchPayloadFromDoc("re-volt-rvgl", "couch", { status: "ready" }).enabled).toBe(true);
   });
 
   it("still falls back to `official` for a genuinely unknown game", () => {
