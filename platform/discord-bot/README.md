@@ -52,6 +52,15 @@ Manual triggers:
 
 `POST /api/admin/games/[slug]/provision-discord` on the Next app forwards to this worker when `DISCORD_BOT_WEBHOOK_URL` + `BOT_WEBHOOK_SECRET` are set on Vercel.
 
+## Dedicated server support
+
+`POST /hosting-support` (with the same bearer secret) idempotently creates
+`#dedicated-server-support` and returns a permanent invite for that channel.
+The hosting page and My Servers support panel link through
+`/api/hosting/support/discord` to send visitors into the room. This requires
+the existing `DISCORD_BOT_WEBHOOK_URL` and `BOT_WEBHOOK_SECRET` on Vercel and
+the bot's Manage Channels/Create Instant Invite permissions.
+
 ## New catalog game in #general
 
 When a game is **created already published** or **first published** on production (`VERCEL_ENV=production`), the Next app POSTs `/announce-game` to this worker. The bot posts **one embed** in the server’s `#general` (not franchise `#general` channels under game categories): hero image, `thatOneThing`, and the title linked to the game page — no extra content links.
@@ -65,4 +74,3 @@ The post includes title, description, game page URL, and a screenshot (or cover)
 - **Event Rooms category**: Temporary voice and text rooms created for Game Nights and tournaments live under the `Event Rooms` category.
 - **#events channel**: When event rooms are provisioned or scheduled announcements are sent (`POST /events/announce`), the bot posts event cards directly into the server's `#events` channel.
 - Optional env: `DISCORD_EVENTS_CHANNEL_ID` to pin the exact events channel.
-

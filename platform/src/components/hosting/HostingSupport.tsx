@@ -44,7 +44,7 @@ export function HostingSupport({ admin = false, servers = [] }: { admin?: boolea
   }
 
   return <section className="space-y-4 rounded-xl border border-border bg-card p-5" aria-label="Hosting support">
-    <div><h2 className="text-lg font-semibold">Hosting support</h2><p className="text-sm text-muted-foreground">{admin ? "Customer requests and replies" : "Ask us about your servers or billing. Replies appear here."}</p></div>
+    <div><h2 className="text-lg font-semibold">Hosting support</h2><p className="text-sm text-muted-foreground">{admin ? "Customer requests and replies" : "Ask us about your servers or billing. Replies appear here."}</p>{!admin ? <a href="/api/hosting/support/discord" target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm font-semibold text-primary hover:underline">Get help in our dedicated-server Discord room ↗</a> : null}</div>
     {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
     {!admin ? <form className="space-y-3" onSubmit={async (event) => {
       event.preventDefault();

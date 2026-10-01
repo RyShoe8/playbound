@@ -28,6 +28,11 @@ latest commit (root directory `platform/master-adapter`).
      - `ZEROAD_LOBBY_JID` / `ZEROAD_LOBBY_PASSWORD` — 0 A.D. lobby account (plain password, or 64-char hex from `user.cfg` `lobby.password`; the adapter runs official `EncryptPassword` before SASL)
      - `ZEROAD_LOBBY_ROOMS` — comma-separated MUC rooms (default `arena27,arena26,arena`)
 3. Health check: `/health`
+   The `responseBytes` fields report how many JSON bytes the adapter has sent
+   since its last restart, and how many it would have sent without gzip. Compare
+   them with Render's outbound-bandwidth chart to determine how much of that
+   chart comes from server-list responses. Clients that accept gzip get
+   compressed responses for larger lists.
 4. On Vercel:
    - `MASTER_ADAPTER_URL` — service URL (no trailing slash)
    - `MASTER_ADAPTER_KEY` — same secret

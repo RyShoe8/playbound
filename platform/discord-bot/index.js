@@ -1636,6 +1636,28 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // One permanent room for Dedicated support. An invite targets this channel,
+  // so Discord opens the conversation rather than dropping visitors in #general.
+  if (req.method === "POST" && req.url === "/hosting-support") {
+    if (!requireSecret(req, res)) return;
+    try {
+      const guild = await client.guilds.fetch(GUILD_ID);
+      await guild.channels.fetch();
+      const { channel } = await ensureTextChannel(guild, {
+        name: "dedicated-server-support",
+        topic: "Help with PlayBound Dedicated servers, setup, and billing. Please don't post passwords or account secrets.",
+      });
+      const invite = await inviteFor(channel);
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ inviteUrl: invite.url, channelId: channel.id }));
+    } catch (err) {
+      console.error("hosting-support", err);
+      res.writeHead(503, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "Dedicated support room is temporarily unavailable" }));
+    }
+    return;
+  }
+
   if (req.method === "POST" && req.url === "/provision") {
     if (!requireSecret(req, res)) return;
     let body = "";

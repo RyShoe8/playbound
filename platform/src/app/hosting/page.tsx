@@ -2,12 +2,13 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
 import { Check, Server } from "lucide-react";
-import { GameCard } from "@/components/GameCard";
+import { GameArt } from "@/components/GameArt";
+import { BasicSlotPicker } from "@/components/hosting/BasicSlotPicker";
 import { HostingRegionMap } from "@/components/hosting/HostingRegionMap";
 import { listGames } from "@/lib/catalog";
-import { toDiscoverListingGame } from "@/lib/discoverListing";
 import { loadPublicTier, publicGames } from "@/lib/dedicatedHosting/publicTier";
 import { PENDING_DEDICATED_GAMES } from "@/lib/dedicatedHosting/pendingGames";
+import { hostingGameArt } from "@/lib/dedicatedHosting/publicGameArt";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
@@ -27,36 +28,24 @@ const FEATURES = [
   "Bring your servers into parties and events",
   "Get PlayBound hosting support",
 ];
-const FEATURED = ["openra", "openhv", "mindustry", "supertuxkart", "terraria", "openttd", "xonotic", "factorio", "hedgewars", "warzone-2100"];
 const price = (cents: number) => `$${(cents / 100).toFixed(2)}`;
-
-function combos(slots: number, min: number, step: number): string[] {
-  const valid = (n: number) => n >= min && n % step === 0;
-  const out = [`1 × ${slots}-player server`];
-  if (valid(slots / 2)) out.push(`2 × ${slots / 2}-player servers`);
-  else if (valid(slots - min) && slots - min !== min) out.push(`1 × ${slots - min} + 1 × ${min}-player servers`);
-  if (slots >= min * 2 && valid(min)) out.push(`${Math.floor(slots / min)} × ${min}-player servers`);
-  return [...new Set(out)];
-}
 
 export default async function HostingPage() {
   const [{ tier, live }, catalog] = await Promise.all([loadPublicTier(), listGames().catch(() => [])]);
   const packages = [...tier.packages].filter((p) => p.enabled !== false).sort((a, b) => a.order - b.order);
   const games = publicGames(tier);
+  const editionCount = games.reduce((total, game) => total + new Set(game.editions).size, 0);
   const available = new Set(games.map((g) => g.gameSlug));
   const cards = new Map(catalog.filter((g) => available.has(g.slug)).map((g) => [g.slug, g]));
-  const featured = [
-    ...FEATURED.map((slug) => cards.get(slug)).filter((g) => g != null),
-    ...catalog.filter((g) => available.has(g.slug) && !FEATURED.includes(g.slug)),
-  ].slice(0, 10);
   const lineup = [...games.map((g) => ({ gameSlug: g.gameSlug, title: g.title, requirement: null as string | null })), ...PENDING_DEDICATED_GAMES].sort((a, b) => a.title.localeCompare(b.title));
+  const artBySlug = await hostingGameArt(lineup.map((game) => game.gameSlug));
   const region = tier.regions.find((r) => r.salesEnabled)?.label || "US Central";
 
   return <main className="w-full space-y-16 px-4 py-10 sm:px-6 lg:px-8">
     <section className="relative overflow-hidden rounded-3xl border border-border bg-card">
-      <div className="absolute inset-y-0 right-0 hidden w-1/2 lg:block">
-        <Image src="/games/xonotic/cover.webp" alt="Xonotic game art" fill priority sizes="50vw" className="object-cover opacity-55" />
-        <div className="absolute inset-0 bg-gradient-to-r from-card via-card/50 to-transparent" />
+      <div className="absolute inset-0 grid grid-cols-3 sm:grid-cols-4 lg:left-1/3 lg:grid-cols-4" aria-hidden="true">
+        {["openra", "mindustry", "supertuxkart", "xonotic", "openttd", "hedgewars", "warzone-2100", "0ad"].map((slug) => <div key={slug} className="relative overflow-hidden"><Image src={`/games/${slug}/cover.webp`} alt="" fill priority={slug === "openra"} sizes="(max-width: 1024px) 33vw, 17vw" className="object-cover" /></div>)}
+        <div className="absolute inset-0 bg-card/55 lg:bg-gradient-to-r lg:from-card lg:via-card/70 lg:to-card/20" />
       </div>
       <div className="relative max-w-3xl space-y-5 p-8 sm:p-12 lg:py-20">
         <p className="text-sm font-semibold uppercase tracking-widest text-primary">PlayBound Dedicated</p>
@@ -71,13 +60,16 @@ export default async function HostingPage() {
 
     <section id="plans" className="space-y-6">
       <div><h2 className="text-3xl font-bold">Choose how you host</h2><p className="text-muted-foreground">Start with Basic. Pro and Extreme are on the way.</p></div>
-      <div className="grid gap-5 lg:grid-cols-3">
-        <article className="rounded-2xl border border-primary/50 bg-card p-6">
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <article id="basic" className="rounded-2xl border border-primary/50 bg-card p-6 lg:row-span-2 lg:p-8">
           <Server className="mb-4 text-primary" /><h3 className="text-2xl font-bold">Basic</h3>
           <p className="mt-2 text-sm text-muted-foreground">Flexible game hosting for your group or community.</p>
           <p className="mt-6 text-3xl font-bold">{packages.length ? `From ${price(Math.min(...packages.map((p) => p.priceCents)))}` : "Flexible pricing"}<span className="text-sm font-normal text-muted-foreground"> / month</span></p>
-          <p className="mt-2 text-sm">{games.length} supported games</p>
-          <Link href="#basic" className="mt-5 inline-block text-sm font-semibold text-primary hover:underline">See what is included →</Link>
+          <p className="mt-2 text-sm">{games.length} supported games · {editionCount} additional editions · switch games without switching plans</p>
+          <ul className="mt-6 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">{FEATURES.map((item) => <li key={item} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{item}</li>)}</ul>
+          <div className="mt-7"><BasicSlotPicker packages={packages} available={live && tier.salesEnabled} region={region} /></div>
+          <p className="mt-4 text-sm text-muted-foreground">For games without an enforceable player cap, slots reserve server capacity. Those servers stop after 30 minutes of confirmed inactivity.</p>
+          <Link href="#all-games" className="mt-4 inline-block text-sm font-semibold text-primary hover:underline">See all {games.length} games →</Link>
         </article>
         {(["Pro", "Extreme"] as const).map((name) => <article key={name} className="rounded-2xl border border-border bg-card/70 p-6">
           <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold">Coming soon</span>
@@ -87,34 +79,15 @@ export default async function HostingPage() {
       </div>
     </section>
 
-    <section id="basic" className="grid gap-8 rounded-2xl border border-border bg-card p-6 lg:grid-cols-2 lg:p-8">
-      <div><h2 className="text-3xl font-bold">Everything in Basic</h2><p className="mt-2 text-muted-foreground">One plan follows the games you actually play.</p>
-        <ul className="mt-6 space-y-3 text-sm">{FEATURES.map((item) => <li key={item} className="flex items-start gap-3"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{item}</li>)}</ul>
-      </div>
-      <div className="relative min-h-72 overflow-hidden rounded-xl">
-        <Image src="/games/mindustry/cover.webp" alt="Mindustry game art" fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-        <p className="absolute bottom-5 left-5 right-5 text-lg font-semibold text-white">Build a world together. Keep it running your way.</p>
-      </div>
-    </section>
+    <section className="rounded-2xl border border-border bg-card p-6 lg:p-8"><div className="flex flex-wrap items-end justify-between gap-4"><div><h2 className="text-2xl font-bold">Where we host</h2><p className="mt-2 text-sm text-muted-foreground">Available hosting regions appear on this map as they come online. Choose the region closest to your players when you subscribe.</p></div><Link href="/hosting/servers" className="text-sm font-semibold text-primary hover:underline">Manage your servers →</Link></div><HostingRegionMap regions={tier.regions} /></section>
 
-    <section className="space-y-5"><div><h2 className="text-2xl font-bold">Pick your slots</h2><p className="text-sm text-muted-foreground">A slot is a player seat for games with a server-enforced limit. Stopped servers use none. Hosted in {region}; billed monthly with no setup fee.</p></div>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{packages.map((p) => <article key={p.slots} className="flex flex-col rounded-xl border border-border bg-card p-5">
-        <div className="flex items-baseline justify-between"><h3 className="text-xl font-bold">{p.slots} slots</h3><p className="text-lg font-semibold">{price(p.priceCents)}<span className="text-sm font-normal text-muted-foreground">/month</span></p></div>
-        <ul className="mt-3 flex-1 space-y-1 text-sm text-muted-foreground">{combos(p.slots, tier.minAllocation || 4, tier.allocationIncrement || 4).map((c) => <li key={c}>{c}</li>)}<li>or any combination</li></ul>
-        <span className="mt-4 rounded-lg bg-secondary px-3 py-2 text-center text-sm font-medium text-muted-foreground">{live && tier.salesEnabled ? "Checkout opening soon" : "Early access — coming soon"}</span>
-      </article>)}</div>
-      <p className="text-sm text-muted-foreground">For games where PlayBound cannot enforce a player cap, the slot choice reserves server capacity instead of limiting admission. PlayBound stops those servers after 30 minutes of confirmed inactivity.</p>
-    </section>
+    <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-card p-6"><div><h2 className="text-xl font-bold">Need a hand with your server?</h2><p className="mt-1 text-sm text-muted-foreground">Open a support request in PlayBound or join the dedicated-server support room on Discord.</p></div><div className="flex flex-wrap gap-3"><Link href="/hosting/servers" className="rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary">PlayBound support</Link><a href="/api/hosting/support/discord" target="_blank" rel="noopener noreferrer" className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Discord support ↗</a></div></section>
 
-    <section className="space-y-5"><div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="text-2xl font-bold">Games on Basic</h2><p className="text-sm text-muted-foreground">{games.length} games available for new servers. Here are a few favorites.</p></div><a href="#all-games" className="text-sm font-semibold text-primary hover:underline">See all {games.length} games →</a></div>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">{featured.map((game) => <GameCard key={game.slug} game={toDiscoverListingGame(game)} className="!w-full" />)}</div>
-    </section>
-
-    <section className="grid gap-8 lg:grid-cols-2"><div className="rounded-2xl border border-border bg-card p-6"><h2 className="text-2xl font-bold">Close to your players</h2><p className="mt-2 text-sm text-muted-foreground">Hosting locations update here as they come online. Choose an available region when you subscribe.</p><HostingRegionMap regions={tier.regions} /></div>
-      <div className="rounded-2xl border border-border bg-card p-6"><h2 className="text-2xl font-bold">Your server, your people</h2><p className="mt-2 text-sm text-muted-foreground">Feature a public server on PlayBound, or share an unlisted server by link. Invite trusted PlayBound members to help run every server on your plan.</p><Link href="/hosting/servers" className="mt-4 inline-block text-sm font-semibold text-primary hover:underline">Manage your servers →</Link></div>
-    </section>
-
-    <section id="all-games" className="space-y-4"><h2 className="text-2xl font-bold">All Basic games</h2><ul className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">{lineup.map((g) => <li key={g.gameSlug} className="flex items-start gap-2"><Server className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />{g.requirement ? <span className="text-muted-foreground"><span className="font-medium text-foreground">{g.title}</span><span className="ml-2 rounded bg-secondary px-1.5 py-0.5 text-xs">Planned</span><span className="mt-1 block text-xs">{g.requirement}</span></span> : <Link href={`/hosting/${g.gameSlug}`} className="hover:text-primary hover:underline">{g.title}</Link>}</li>)}</ul><p className="text-xs text-muted-foreground">Linked games can use your slots once enabled and verified. Planned games cannot be selected or started yet.</p></section>
+    <section id="all-games" className="space-y-5"><div><h2 className="text-2xl font-bold">Every game on Basic</h2><p className="text-sm text-muted-foreground">{games.length} supported games and {editionCount} additional editions. Pick one for the whole night or divide your slots across several.</p></div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">{lineup.map((g) => {
+        const art = artBySlug[g.gameSlug] || cards.get(g.gameSlug);
+        const content = <><div className="relative aspect-[16/10] overflow-hidden bg-secondary">{art ? <GameArt game={{ ...art, title: g.title }} showTitle={false} iconSize="sm" className="size-full" /> : <div className="flex size-full items-center justify-center"><Server className="h-8 w-8 text-primary/60" /></div>}</div><div className="p-3"><h3 className="line-clamp-2 text-sm font-semibold leading-snug">{g.title}</h3>{g.requirement ? <><span className="mt-1 inline-block rounded bg-secondary px-1.5 py-0.5 text-xs">Planned</span><p className="mt-1 text-xs text-muted-foreground">{g.requirement}</p></> : null}</div></>;
+        return g.requirement ? <article key={g.gameSlug} className="overflow-hidden rounded-xl border border-border bg-card">{content}</article> : <Link key={g.gameSlug} href={`/hosting/${g.gameSlug}`} className="overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-primary/50">{content}</Link>;
+      })}</div><p className="text-xs text-muted-foreground">Planned games cannot be selected or started yet.</p></section>
   </main>;
 }
