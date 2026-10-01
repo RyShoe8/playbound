@@ -19,13 +19,18 @@ on:
       - "platform/src/lib/data/editions.ts"
       - "platform/src/lib/data/editorial.ts"
       - "platform/src/lib/data/catalogCorrections.ts"
+      - "platform/src/lib/data/dedicatedDraftEditorial.ts"
       - "platform/src/lib/data/developers.ts"
+      - "platform/scripts/seed-developers.ts"
       - "platform/src/lib/data/teeworldsCatalog.ts"
       - "platform/src/lib/data/mods.ts"
       - ".github/workflows/apply-catalog-wave.yml"
 
 jobs:
   apply:
+    # The Dedicated-draft commit uses the isolated job below. A global wave
+    # here would also rewrite unrelated catalog rows on the same push.
+    if: ${{ !contains(github.event.head_commit.message, '[catalog-scope:dedicated-drafts]') }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -84,5 +89,36 @@ jobs:
       - name: Patch Combined Arms, VoxeLibre, and DREAM download fields
         if: steps.check_mongo.outputs.has_mongo == 'true'
         run: npm run patch:named-mods -- openra-combined-arms luanti-voxelibre dfu-dream
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+
+  apply-dedicated-drafts:
+    if: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[catalog-scope:dedicated-drafts]') }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check Mongo URI
+        id: check_mongo
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: |
+          if [[ ! "$MONGODB_URI" =~ ^mongodb(\+srv)?:// ]]; then
+            echo "MONGODB_URI is not configured; no catalog rows were changed."
+            exit 1
+          fi
+      - name: Install Platform Dependencies
+        run: npm ci
+      - name: Create only the developers for these drafts
+        run: npm run seed:developers -- --slugs=dice,wube-software,concernedape,hopoo-games,re-logic,anego-studios,pugstorm,ludeon-studios,fakefish-undertow
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      - name: Patch only the fifteen named draft games
+        run: npm run insert:catalog-wave -- --games=battlefield-1942-anthology,counter-strike-source,factorio,necesse,dont-starve-together,barotrauma,stardew-valley,aneurism-iv,risk-of-rain-2,starbound,terraria,vintage-story,core-keeper,rimworld,unturned
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}

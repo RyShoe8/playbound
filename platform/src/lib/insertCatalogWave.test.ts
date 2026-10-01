@@ -14,6 +14,7 @@ import {
 import { editions } from "@/lib/data/editions";
 import { gamesBySlug } from "@/lib/data/games";
 import { correctionsFor } from "@/lib/data/catalogCorrections";
+import { dedicatedDraftEditorialFor, DEDICATED_DRAFT_EDITORIAL } from "@/lib/data/dedicatedDraftEditorial";
 import { developersBySlug } from "@/lib/data/developers";
 import { modAuthorsBySlug } from "@/lib/data/modAuthors";
 import { attributionFor, MOD_ATTRIBUTIONS } from "@/lib/data/modAttributions";
@@ -69,6 +70,7 @@ import {
 import { ASSAULTCUBE_SLUG } from "@/lib/data/assaultCubeSpecs";
 import { mods } from "@/lib/data/mods";
 import { getMultiplayerAdapter } from "@/lib/multiplayer/adapters";
+import CatalogGame from "@/lib/models/CatalogGame";
 
 /**
  * Deploy insert:catalog-wave must stay scoped. The August 2026 bug was an
@@ -198,6 +200,7 @@ describe("insert-catalog-wave allowlists", () => {
         "s-t-a-l-k-e-r-clear-sky",
         "s-t-a-l-k-e-r-shadow-of-chernobyl",
         "seven-kingdoms-ancient-adversaries",
+        "shadow-warrior-classic-complete",
         "sky-children-of-the-light",
         "slapshot-rebound",
         "space-station-14",
@@ -405,6 +408,7 @@ describe("insert-catalog-wave allowlists", () => {
   it("patches CoP/SoC/Anomaly/Clear Sky editions + OpenMW/TES3MP/Lost Alpha recipes", () => {
     expect(Object.keys(PATCH_EDITION_FIELDS).sort()).toEqual(
       [
+        "deus-ex-goty-edition/gmdx",
         "deus-ex-goty-edition/playbound-hx-coop",
         "dune-legacy/modern-engine",
         "dune-legacy/playbound-edition",
@@ -682,20 +686,23 @@ describe("insert-catalog-wave allowlists", () => {
       // source exists — the point of this test is that the wave can never
       // reach a $set with nothing behind it.
       const corrections = correctionsFor(slug);
+      const draftEditorial = dedicatedDraftEditorialFor(slug);
       expect(
-        seed || ed || corrections,
+        seed || ed || corrections || draftEditorial,
         `no seed/editorial/correction for default-path patch ${slug}`
       ).toBeTruthy();
       const source = {
         ...(seed as unknown as Record<string, unknown> | undefined),
         ...((ed ?? {}) as unknown as Record<string, unknown>),
         ...((corrections ?? {}) as Record<string, unknown>),
+        ...((draftEditorial ?? {}) as Record<string, unknown>),
       };
       for (const field of fields) {
         // launcherInstall may live only on launcherInstallBySlug for some games;
         // those use the default seed.launcherInstall ?? overlay path at apply time.
         if (field === "launcherInstall" && source[field] === undefined) continue;
-        expect(source[field], `${slug}.${field}`).not.toBeUndefined();
+        const value = field.split(".").reduce<unknown>((part, key) => part && typeof part === "object" ? (part as Record<string, unknown>)[key] : undefined, source);
+        expect(value, `${slug}.${field}`).not.toBeUndefined();
       }
     }
     for (const key of Object.keys(PATCH_EDITION_FIELDS)) {
@@ -724,6 +731,34 @@ describe("insert-catalog-wave allowlists", () => {
       for (const field of PATCH_EDITION_FIELDS[key]!) {
         expect(source[field], `${key}.${field}`).not.toBeUndefined();
       }
+    }
+  });
+
+  it("keeps the Dedicated draft editorial limited to the fifteen requested game slugs", async () => {
+    expect(Object.keys(DEDICATED_DRAFT_EDITORIAL).sort()).toEqual([
+      "battlefield-1942-anthology", "counter-strike-source", "factorio", "necesse",
+      "dont-starve-together", "barotrauma", "stardew-valley", "aneurism-iv",
+      "risk-of-rain-2", "starbound", "terraria", "vintage-story", "core-keeper",
+      "rimworld", "unturned",
+    ].sort());
+    for (const [slug, patch] of Object.entries(DEDICATED_DRAFT_EDITORIAL)) {
+      expect(String(patch.longDescription).trim().split(/\s+/).length, `${slug} editorial length`).toBeGreaterThanOrEqual(400);
+      expect((patch.faq as unknown[]).length, `${slug} FAQ`).toBeGreaterThanOrEqual(4);
+      expect((patch.bestFor as unknown[]).length, `${slug} best for`).toBeGreaterThanOrEqual(2);
+      expect((patch.notFor as unknown[]).length, `${slug} not for`).toBeGreaterThanOrEqual(2);
+      expect(PATCH_GAME_FIELDS[slug]).not.toContain("status");
+      expect(PATCH_GAME_FIELDS[slug]).not.toContain("published");
+      expect(PATCH_GAME_FIELDS[slug]).not.toContain("launcherInstall");
+      const doc = new CatalogGame({
+        slug,
+        title: slug,
+        sizeMB: 1,
+        website: "https://playbound.club/",
+        art: { from: "#000000", to: "#111111", icon: "Gamepad2" },
+        systemRequirements: { min: "Windows", recommended: "Windows" },
+        ...patch,
+      });
+      await expect(doc.validate(), `${slug} Mongoose validation`).resolves.toBeUndefined();
     }
   });
 

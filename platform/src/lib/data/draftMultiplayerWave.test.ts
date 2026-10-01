@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ADD_GAME_FEATURES, FILL_MISSING_STEAM_LAUNCH, PATCH_GAME_FIELDS, SKIP_MISSING_PATCH_GAMES, STEAM_CLIENT_EXE_HINTS } from "../../../scripts/insert-catalog-wave.allowlist";
 import { correctionsFor } from "./catalogCorrections";
+import { dedicatedDraftEditorialFor } from "./dedicatedDraftEditorial";
 import { FEATURES } from "../gamePayload";
 
 describe("draft multiplayer catalog wave", () => {
@@ -9,12 +10,13 @@ describe("draft multiplayer catalog wave", () => {
     for (const [slug, features] of Object.entries(ADD_GAME_FEATURES)) {
       expect(PATCH_GAME_FIELDS[slug]).toBeDefined();
       for (const feature of features) expect(canonical.has(feature)).toBe(true);
-      const source = correctionsFor(slug);
+      const source = { ...correctionsFor(slug), ...dedicatedDraftEditorialFor(slug) };
       for (const field of PATCH_GAME_FIELDS[slug]) {
         // Older patch entries source their fields elsewhere; only the new
         // draft slugs are required to live in the correction overlay.
         if (slug in FILL_MISSING_STEAM_LAUNCH || ["battlefield-1942-anthology", "vintage-story", "rimworld"].includes(slug)) {
-          expect(source?.[field]).not.toBeUndefined();
+          const value = field.split(".").reduce<unknown>((part, key) => part && typeof part === "object" ? (part as Record<string, unknown>)[key] : undefined, source);
+          expect(value, `${slug}.${field}`).not.toBeUndefined();
         }
       }
     }
