@@ -54,18 +54,13 @@ export default async function BlogPostPage({ params }: Props) {
         publisher: { "@id": ORGANIZATION_ID },
         ...(post.coverImageUrl ? { image: post.coverImageUrl } : {}),
       }} />
-      <div className="mx-auto max-w-5xl space-y-6">
+      <div className="w-full space-y-6">
         <Link href="/blog" className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"><ArrowLeft className="size-4" /> All posts</Link>
         <article className="overflow-hidden rounded-2xl border border-border bg-card shadow-lg shadow-black/10">
           <header className="border-b border-border bg-gradient-to-br from-primary/15 via-card to-card px-6 py-8 sm:px-10 sm:py-12">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">PlayBound Blog</p>
             <h1 className="mt-4 text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">{post.title}</h1>
-            <p className="mt-5 max-w-3xl text-lg leading-relaxed text-muted-foreground">{post.summary}</p>
-            <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2 border-t border-border pt-5 text-sm text-muted-foreground">
-              <span className="inline-flex items-center gap-2"><PenLine className="size-4 text-primary" aria-hidden /> By <span className="font-semibold text-foreground">{post.authorName}</span></span>
-              <span className="inline-flex items-center gap-2"><CalendarDays className="size-4 text-primary" aria-hidden /> Published <time dateTime={publishedDate} className="font-semibold text-foreground">{formatDate(publishedDate)}</time></span>
-              {updatedLater ? <span>Updated <time dateTime={post.updatedAt}>{formatDate(post.updatedAt)}</time></span> : null}
-            </div>
+            <p className="mt-5 text-lg leading-relaxed text-muted-foreground">{post.summary}</p>
           </header>
           {post.coverImageUrl ? (
             <div className="border-b border-border bg-background/40 px-6 py-6 sm:px-10">
@@ -74,7 +69,12 @@ export default async function BlogPostPage({ params }: Props) {
               <img src={post.coverImageUrl} alt="" className="mx-auto block h-auto max-w-full rounded-xl" />
             </div>
           ) : null}
-          <div className="mx-auto max-w-3xl px-6 py-8 sm:px-10 sm:py-10">
+          <div className="flex flex-wrap gap-x-6 gap-y-2 border-b border-border px-6 py-5 text-sm text-muted-foreground sm:px-10">
+            <span className="inline-flex items-center gap-2"><PenLine className="size-4 text-primary" aria-hidden /> By <span className="font-semibold text-foreground">{post.authorName}</span></span>
+            <span className="inline-flex items-center gap-2"><CalendarDays className="size-4 text-primary" aria-hidden /> Published <time dateTime={publishedDate} className="font-semibold text-foreground">{formatDate(publishedDate)}</time></span>
+            {updatedLater ? <span>Updated <time dateTime={post.updatedAt}>{formatDate(post.updatedAt)}</time></span> : null}
+          </div>
+          <div className="px-6 py-8 sm:px-10 sm:py-10">
             <BlogMarkdown content={post.bodyMarkdown} />
           </div>
           <footer className="border-t border-border bg-secondary/20 px-6 py-5 sm:px-10">
