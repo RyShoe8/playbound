@@ -19,9 +19,13 @@ const qualityBar = (verdict: string, genuinelyFree = false) => ({
   lastVerified: "2026-10-01",
 });
 
-const installFrom = (store: string, note: string) => [
+const installFrom = (store: string, note: string, otherPlatforms: readonly ("macos" | "linux")[] = ["macos", "linux"]) => [
   { platform: "all", text: `Get your own copy from ${store}, then install it with that store's client or installer. ${note}` },
   { platform: "windows", text: "Return to PlayBound and use Locate if the launcher does not discover the installed executable automatically." },
+  ...otherPlatforms.map((platform) => ({
+    platform,
+    text: `Install the ${platform === "macos" ? "macOS" : "Linux"} build for the copy you own. Return to PlayBound after installation; if PlayBound cannot locate it automatically, launch it through the store client.`,
+  })),
 ];
 
 export const DEDICATED_DRAFT_EDITORIAL: Readonly<Record<string, DraftPatch>> = {
@@ -54,7 +58,10 @@ We keep Battlefield 1942 here because the big, messy multiplayer night is still 
       { q: "Can I play with a controller?", a: "There is no native PC gamepad support. Keyboard and mouse are the default controls." },
       { q: "Do all players need the same version?", a: "Yes. Server and clients need matching game versions and compatible expansion content." },
     ],
-    installSteps: [{ platform: "windows", text: "Install from a copy you are entitled to use. PlayBound's installer handles the staged Anthology package where available; use Locate if an existing installation is not detected." }],
+    installSteps: [
+      { platform: "windows", text: "Click Install in PlayBound to use the staged Battlefield 1942 Anthology installer. Follow its prompts to install the base game and both expansions; allow the installer to finish before launching." },
+      { platform: "windows", text: "If you already own and installed the Anthology elsewhere, choose Locate and point PlayBound to BF1942.exe in that installation. This release has no native macOS or Linux client." },
+    ],
   },
   "counter-strike-source": {
     tagline: "One bombsite, a few grenades, and no second chance until the round ends.",
@@ -84,7 +91,7 @@ We keep Source in the catalog because it is still an easy way to see why round-b
       { q: "Does it have native controller support?", a: "The PC release is designed around keyboard and mouse; no native full-controller claim is made here." },
       { q: "What modes are included?", a: "Bomb defusal and hostage rescue are the classic core, and community servers can run custom maps and modes." },
     ],
-    installSteps: installFrom("Steam", "The game remains tied to your Steam library."),
+    installSteps: installFrom("Steam", "The game remains tied to your Steam library.", ["linux"]),
   },
   factorio: {
     tagline: "The conveyor belt works. Then the copper runs out. Then it's three in the morning.",
@@ -266,7 +273,7 @@ We include it because multiplayer can be about shared places and conflicting mot
       { q: "Does each player need a copy?", a: "Yes. Each player should own and install the game." },
       { q: "Is this a linear co-op campaign?", a: "No. It is a shared city with systemic and social play rather than a fixed co-op campaign." },
     ],
-    installSteps: installFrom("Steam", "Every player needs their own copy."),
+    installSteps: installFrom("Steam", "Every player needs their own copy.", ["macos"]),
   },
   "risk-of-rain-2": {
     tagline: "A small landing party becomes an absurd storm of items, monsters, and bad ideas.",
@@ -296,7 +303,7 @@ We keep Risk of Rain 2 here because few multiplayer games produce such different
       { q: "Can I play alone?", a: "Yes. Single-player and online co-op are both supported." },
       { q: "Do mods need to match in co-op?", a: "Modded groups should align their game versions and required mod sets before joining." },
     ],
-    installSteps: installFrom("Steam", "Choose the base game; Alloyed Collective is optional DLC."),
+    installSteps: installFrom("Steam", "Choose the base game; Alloyed Collective is optional DLC.", []),
   },
   starbound: {
     tagline: "Fix the ship, beam down, and come back with a story that was not on the mission list.",
@@ -389,7 +396,12 @@ We include it because the depth gives a committed group something rare: a shared
       { q: "Does it support controllers natively?", a: "The base PC game does not advertise native gamepad support." },
       { q: "Is it sold on Steam?", a: "No. The official Vintage Story store and its listed partners sell game accounts." },
     ],
-    installSteps: installFrom("the official Vintage Story store", "A purchased game account is required to download the client."),
+    installSteps: [
+      { platform: "all", text: "Purchase a Vintage Story game account, sign in at the official client area, and download the build for your operating system. This is a separate purchase and download, not a Steam install." },
+      { platform: "windows", text: "Run the Windows installer, then return to PlayBound. If the game is not detected, use Locate and select Vintagestory.exe." },
+      { platform: "macos", text: "Install the macOS build and the .NET 10 runtime required by the developer. Launch the installed app after both are ready." },
+      { platform: "linux", text: "Install the Linux build and .NET 10 runtime. The client needs GLIBC 2.34 or newer; launch it from the installed folder after those dependencies are ready." },
+    ],
   },
   "core-keeper": {
     tagline: "The cave keeps getting bigger; so does the pile of reasons to go back down.",
@@ -420,7 +432,7 @@ We keep Core Keeper on PlayBound because it gives a group a compact, readable wo
       { q: "Is the game free?", a: "No. Every player needs a legitimate purchased copy." },
       { q: "Does GOG multiplayer need Galaxy?", a: "Yes. The GOG listing says GOG Galaxy is required for Core Keeper's online features." },
     ],
-    installSteps: installFrom("GOG or Steam", "Choose the store where you own the game. GOG's online features require GOG Galaxy."),
+    installSteps: installFrom("GOG or Steam", "Choose the store where you own the game. GOG's online features require GOG Galaxy.", ["linux"]),
   },
   rimworld: {
     tagline: "Three crash survivors, one bad harvest, and a story nobody meant to write.",
@@ -480,7 +492,12 @@ We keep Unturned because it offers real server-based multiplayer without a purch
       { q: "Does Unturned have native full-controller support?", a: "The PC Steam listing does not advertise full native controller support." },
       { q: "Do mods need to match the server?", a: "Players need any maps or workshop content required by the server." },
     ],
-    installSteps: [{ platform: "all", text: "Add the free base game to your Steam library and install it. Return to PlayBound; use Locate if the installed executable is not found automatically." }],
+    installSteps: [
+      { platform: "all", text: "Add Unturned's free base game to your Steam library and install it through Steam. There is no separate PlayBound download or purchase." },
+      { platform: "windows", text: "Return to PlayBound after Steam finishes. PlayBound looks for Unturned.exe; use Locate to select the installation if it is not found automatically." },
+      { platform: "macos", text: "In Steam, install the macOS build. Launch it from your library after Steam finishes downloading." },
+      { platform: "linux", text: "In Steam, install the Linux build. Launch it from your library after Steam finishes downloading." },
+    ],
   },
 };
 

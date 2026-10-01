@@ -41,8 +41,24 @@ three games.
   case for this.
 - Verify: green Install dot for the game on `/admin/games`, and actually run
   the install once.
+- **Install steps are mandatory, even when the launcher recipe works.** Save
+  concrete, ordered `installSteps` on the game: where to obtain a lawful copy,
+  what PlayBound's Install or Locate action does, what executable is found,
+  and any required post-install step. Cover **every supported OS** with an
+  `all` step plus OS-specific steps where the process differs. Read the saved
+  game back from the admin page and confirm the Install section is populated;
+  source-file text alone does not prove the database has those steps. Never
+  claim one-click support on an OS that only has a store/client handoff.
 - **Accurate install size**: Determine and record the real download / installed disk footprint in `sizeMB`. Do not leave placeholder or guessed sizes. Inspect the upstream package archives and extracted folder sizes so the launcher and game cards accurately reflect disk requirements to players.
 - **Multi-version & architecture wiring**: Ensure games are wired for all versions, architectures, and platforms they support (Windows 64-bit/32-bit, Linux, macOS). If distinct architectures or engine variations exist (such as legacy 32-bit Windows builds or community forks), create dedicated Editions (`src/lib/data/editions.ts`) or per-platform recipe URLs (`urlLinux`, `urlMac`, `urlMacX64`) so players on any supported configuration have a one-click install.
+- **Hardware requirements are mandatory for every supported platform.** Copy
+  the developer's minimum and recommended CPU, RAM, graphics/API, OS and free
+  space into `systemRequirements`; populate `hardwareRequirements` with only
+  the structured figures the source actually supports and record provenance.
+  State when a recommendation is unpublished. Check the platform's actual
+  current build before promising an install (an obsolete Mac requirement on a
+  store page is not proof of a current Mac download). Do not confuse a
+  storefront's free-space requirement with measured installed size.
 
 ## 2. Editorial — every field on the edit page, in PlayBound's voice
 
@@ -82,6 +98,17 @@ three games.
   description explains what playing actually feels like and names the honest
   catches; **Why we picked it** makes PlayBound's opinion unmistakable. Do not
   repeat the same neutral facts in all four fields.
+- **Originality is required throughout the editorial.** Write the verdict,
+  That One Thing, tagline, description, long description, and Why we picked it
+  specifically for this game. Do not copy or lightly rephrase a store page,
+  review, wiki, another PlayBound entry, or an AI-generated stock line. Avoid
+  interchangeable hooks such as "one more run," "anything can happen," or
+  "a routine trip becomes an adventure." That One Thing should name one
+  distinctive, verifiable gameplay mechanic or plausible in-game moment;
+  make it vivid or funny when the game earns it, without inventing mechanics
+  or presenting a fabricated play session as something we tested. Before
+  saving, compare the copy with nearby game entries: if swapping game names
+  still makes it work, rewrite it.
 - PlayBound Bar checkboxes are a claim, not a formality. Only check **Tested
   by PlayBound** after actually installing and playing it yourself. A game
   with that box unchecked stays in **Testing** status, not **Published** —

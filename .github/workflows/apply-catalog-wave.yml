@@ -20,6 +20,7 @@ on:
       - "platform/src/lib/data/editorial.ts"
       - "platform/src/lib/data/catalogCorrections.ts"
       - "platform/src/lib/data/dedicatedDraftEditorial.ts"
+      - "platform/src/lib/data/dedicatedDraftRequirements.ts"
       - "platform/src/lib/data/developers.ts"
       - "platform/scripts/seed-developers.ts"
       - "platform/src/lib/data/teeworldsCatalog.ts"
@@ -114,11 +115,7 @@ jobs:
           fi
       - name: Install Platform Dependencies
         run: npm ci
-      - name: Create only the developers for these drafts
-        run: npm run seed:developers -- --slugs=dice,wube-software,concernedape,hopoo-games,re-logic,anego-studios,pugstorm,ludeon-studios,fakefish-undertow
-        env:
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
       - name: Patch only the fifteen named draft games
-        run: npm run insert:catalog-wave -- --games=battlefield-1942-anthology,counter-strike-source,factorio,necesse,dont-starve-together,barotrauma,stardew-valley,aneurism-iv,risk-of-rain-2,starbound,terraria,vintage-story,core-keeper,rimworld,unturned
+        run: npm run insert:catalog-wave -- --games=battlefield-1942-anthology,counter-strike-source,factorio,necesse,dont-starve-together,barotrauma,stardew-valley,aneurism-iv,risk-of-rain-2,starbound,terraria,vintage-story,core-keeper,rimworld,unturned --fields=installSteps,systemRequirements,hardwareRequirements
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
