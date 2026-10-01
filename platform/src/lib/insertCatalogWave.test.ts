@@ -749,6 +749,8 @@ describe("insert-catalog-wave allowlists", () => {
       expect(PATCH_GAME_FIELDS[slug]).not.toContain("status");
       expect(PATCH_GAME_FIELDS[slug]).not.toContain("published");
       expect(PATCH_GAME_FIELDS[slug]).not.toContain("launcherInstall");
+      expect(PATCH_GAME_FIELDS[slug].some((field) => field === "access" || field.startsWith("access."))).toBe(false);
+      expect(patch).not.toHaveProperty("access");
       const doc = new CatalogGame({
         slug,
         title: slug,
