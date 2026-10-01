@@ -61,7 +61,7 @@ beforeAll(async () => {
   await mongoose.connect(mongo.getUri(), { dbName: "dedicated-control-test" });
   const tier = await getTier();
   await saveTier("basic", {
-    games: [...tier.games, { ...tier.games[0], profileKey: "openarena:base", maxSlots: 16 }].map((g) => ({ ...g, enabled: true })),
+    games: [...tier.games, { ...tier.games[0], profileKey: "openarena:base" }].map((g) => ({ ...g, enabled: true })),
   });
   ids.owner = await user("Owner");
   ids.admin = await user("Admin");

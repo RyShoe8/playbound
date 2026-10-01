@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import CommunityServerProfile from "@/lib/models/CommunityServerProfile";
+import CatalogGame from "@/lib/models/CatalogGame";
+import Edition from "@/lib/models/Edition";
+import { fetchGameHostHealth } from "@/lib/gameHost/client";
 import { profileSettingsSchema, validateProfileReadiness } from "@/lib/communityHosting/profileSettings";
 import { getEffectiveEnvelope } from "@/lib/communityHosting/reconcile";
 
@@ -18,6 +21,17 @@ export async function PUT(req: Request, context: { params: Promise<{ key: string
 
   const [gameSlug, editionPart] = normalizedKey.split(":");
   const editionSlug = editionPart === "base" ? null : editionPart;
+  if (parsed.data.enabled) {
+    const [catalogGame, edition, health] = await Promise.all([
+      CatalogGame.findOne({ slug: gameSlug, status: "published", published: true }).select("slug").lean(),
+      editionSlug ? Edition.findOne({ gameSlug, slug: editionSlug, status: { $ne: "archived" }, visibility: { $ne: "hidden" }, suppressesSeed: { $ne: true } }).select("features isDefault").lean() : Promise.resolve(null),
+      fetchGameHostHealth(),
+    ]);
+    if (!catalogGame || !health.configured || !health.health.gameStatus?.[gameSlug]?.ready ||
+      (editionSlug && (!edition || edition.isDefault || (!edition.features?.includes("Dedicated Servers") && !current)))) {
+      return NextResponse.json({ error: "Publish the game and verify its dedicated-server files before enabling community hosting" }, { status: 409 });
+    }
+  }
   const base = current ? null : await CommunityServerProfile.findOne({
     gameSlug,
     $or: [{ editionSlug: null }, { key: `${gameSlug}:base` }],

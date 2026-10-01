@@ -244,7 +244,7 @@ export function CommunityHostingPanel() {
     </>}
     {message && <p role="status" className="text-sm">{message}</p>}
     <div><h3 className="font-semibold">Games for automatic hosting</h3><p className="text-xs text-muted-foreground">Tick the games and editions available for community hosting. Usage is measured CPU and RAM per server.</p>
-      <div className="text-sm">{data?.profiles.length ? <ProfileChecklist profiles={data.profiles} titles={data.titles || {}} editionNames={data.editionNames || {}} onSaved={load} /> : <p className="text-muted-foreground">No games measured yet.</p>}</div>
+      <div className="text-sm">{data?.profiles.length ? <ProfileChecklist profiles={data.profiles} titles={data.titles || {}} editionNames={data.editionNames || {}} onSaved={load} /> : <p className="text-muted-foreground">No published catalog games with ready dedicated-server files yet.</p>}</div>
     </div>
     <div><h3 className="font-semibold">Running and queued servers</h3><div className="mt-2 space-y-1 text-sm">{data?.servers.length ? data.servers.map((s) => {
       const botsLabel = s.bots ? ` (${s.bots} bot${s.bots === 1 ? "" : "s"})` : "";

@@ -11,6 +11,7 @@ import { Types } from "mongoose";
 import dbConnect from "@/lib/db";
 import CommunityServer from "@/lib/models/CommunityServer";
 import DedicatedSubscription from "@/lib/models/DedicatedSubscription";
+import CatalogGame from "@/lib/models/CatalogGame";
 import ServerBackup from "@/lib/models/ServerBackup";
 import { authorizeServer, recordActivity, type Fail } from "./access";
 import { allowedSlotSizes, getTier, tierGame } from "./tier";
@@ -150,8 +151,9 @@ export async function restoreBackup(userId: string, serverId: string, backupId: 
     const sub = await DedicatedSubscription.findById(server.dedicatedSubscriptionId).lean();
     const tier = await getTier(sub?.tier || "basic");
     const game = tierGame(tier, server.profileKey);
+    const catalogGame = await CatalogGame.findOne({ slug: server.gameSlug }).select("maxPlayers").lean();
     if (server.slotsHeld || server.desiredState === "running") notes.push(`Size kept at ${server.allocatedSlots} slots: stop the server to restore ${snap.slots}.`);
-    else if (!game || !allowedSlotSizes(tier, game).includes(snap.slots)) notes.push(`Size kept at ${server.allocatedSlots} slots: ${snap.slots} is no longer offered.`);
+    else if (!game || !allowedSlotSizes(tier, game, sub?.slotCapacity || 0, catalogGame?.maxPlayers).includes(snap.slots)) notes.push(`Size kept at ${server.allocatedSlots} slots: ${snap.slots} is no longer offered.`);
     else server.allocatedSlots = snap.slots;
   }
   // Bans and rotation go to the running room on the next reconcile.

@@ -12,7 +12,7 @@ export default function AdminHostingPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">PlayBound Dedicated</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          The paid hosting product at /hosting. Plan settings, the Basic game catalog, subscriptions and every customer
+          The paid hosting product at /hosting. Plan settings, subscription game catalogs, subscriptions and every customer
           server. Separate from the PlayBound subscription and from automatic Community Servers.
         </p>
       </div>

@@ -7,7 +7,10 @@ import CommunityServer from "@/lib/models/CommunityServer";
 import CapacityReservation from "@/lib/models/CapacityReservation";
 import PlatformEvent from "@/lib/models/PlatformEvent";
 import AutomatedEventConfig from "@/lib/models/AutomatedEventConfig";
-import { fetchGameHostMetrics, listManagedHostRooms, requestManagedHostRoom, stopManagedHostRoom } from "@/lib/gameHost/client";
+import CatalogGame from "@/lib/models/CatalogGame";
+import Edition from "@/lib/models/Edition";
+import { fetchGameHostHealth, fetchGameHostMetrics, listManagedHostRooms, requestManagedHostRoom, stopManagedHostRoom } from "@/lib/gameHost/client";
+import { readyPublishedHostableCatalog } from "@/lib/dedicatedHosting/hostableProfiles";
 import { canScaleDownEmptyServer, placementDecision, runningReservationEnvelope, type ResourceEnvelope } from "./capacity";
 import { managedQueryKind, QUERY_BY_GAME, queryManagedPlayerCount, queryManagedOccupancy } from "./playerQuery";
 import { recordResourceSample } from "./samples";
@@ -174,7 +177,7 @@ async function acquireLease(now: Date): Promise<string | null> {
   }
 }
 
-async function syncReservations(now: Date, regionKey: string) {
+async function syncReservations(now: Date, regionKey: string, profiles: Array<{ key: string; gameSlug: string; editionSlug?: string | null; envelope?: { cpuCores?: number; ramBytes?: number } }>) {
   const expired = await CapacityReservation.find({ state: { $in: ["planned", "active"] }, protectedUntil: { $lt: now } }).select({ _id: 1, eventId: 1, communityServerId: 1 }).lean();
   for (const reservation of expired) {
     await CapacityReservation.updateOne({ _id: reservation._id }, { $set: { state: "released", decisionReason: "PROTECTION_ENDED" } });
@@ -189,7 +192,6 @@ async function syncReservations(now: Date, regionKey: string) {
     generatedBy: "game_night_planner", startsAt: { $gte: now, $lt: new Date(now.getTime() + 8 * 86_400_000) },
     status: { $ne: "cancelled" },
   }).select({ _id: 1, gameSlug: 1, editionSlug: 1, startsAt: 1, endsAt: 1 }).lean();
-  const profiles = await CommunityServerProfile.find({ enabled: true }).lean();
   const wanted = new Set<string>();
   for (const event of events) {
     const profile = profiles.find((p) => p.gameSlug === event.gameSlug && (p.editionSlug || null) === (event.editionSlug || null));
@@ -296,9 +298,23 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
       return { action: "waiting", reason: "NO_HEALTHY_NODE" };
     }
     const metrics = metricResult.metrics;
-    const profiles = await CommunityServerProfile.find({ enabled: true }).lean();
+    const [rawProfiles, health] = await Promise.all([
+      CommunityServerProfile.find({ enabled: true }).lean(),
+      fetchGameHostHealth(),
+    ]);
+    const readySlugs = new Set(health.configured ? Object.entries(health.health.gameStatus || {})
+      .filter(([, status]) => status.ready).map(([slug]) => slug) : []);
+    const [catalogGames, catalogEditions] = await Promise.all([
+      CatalogGame.find({ slug: { $in: [...readySlugs] } }).select("slug title status published").lean(),
+      Edition.find({ gameSlug: { $in: [...readySlugs] }, status: { $ne: "archived" }, visibility: { $ne: "hidden" }, suppressesSeed: { $ne: true } })
+        .select("gameSlug slug features isDefault").lean(),
+    ]);
+    const eligible = readyPublishedHostableCatalog(catalogGames, catalogEditions, rawProfiles, readySlugs);
+    const eligibleKeys = new Set([...eligible.games.map((game) => `${game.slug}:base`),
+      ...eligible.editions.map((edition) => `${edition.gameSlug}:${edition.slug}`)]);
+    const profiles = rawProfiles.filter((profile) => eligibleKeys.has(profile.key));
     const profileByKey = new Map(profiles.map((p) => [p.key, p]));
-    await syncReservations(now, config.node.regionKey);
+    await syncReservations(now, config.node.regionKey, profiles);
     const active = await CommunityServer.find({
       regionKey: config.node.regionKey,
       // Customer servers are reconciled by dedicatedHosting/reconcile, never rotated here.

@@ -15,7 +15,7 @@ export async function GET(req: Request) {
   if (!sub) return NextResponse.json({ subscription: null, servers: [], shared: sharedView }, { headers: { "cache-control": "no-store" } });
   const tier = await getTier(sub.tier);
   const [servers, games, pendingUpgrade] = await Promise.all([
-    listCustomerServers(String(sub._id)), offeredGames(tier, sub.regionKey),
+    listCustomerServers(String(sub._id)), offeredGames(tier, sub.regionKey, sub.slotCapacity),
     DedicatedCapacityHold.findOne({ planChangeSubscriptionId: sub._id, state: "held" }).select({ toSlots: 1 }).lean(),
   ]);
   const region = tier.regions.find((r) => r.key === sub.regionKey);

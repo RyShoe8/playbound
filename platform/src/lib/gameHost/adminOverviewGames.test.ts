@@ -17,4 +17,13 @@ describe("dedicatedOverviewSlugs", () => {
       { tes3mp: "morrowind" }
     )).toEqual(["morrowind"]);
   });
+
+  it("includes catalog-only dedicated games and collapses legacy Counter-Strike 2 names", () => {
+    expect(dedicatedOverviewSlugs(
+      ["counter-strike-2"],
+      { counterstrike2: { installed: true }, csgo: { installed: true } },
+      { counterstrike2: "counter-strike-2", csgo: "counter-strike-2" },
+      ["factorio", "counterstrike2", "csgo"]
+    )).toEqual(["counter-strike-2", "factorio"]);
+  });
 });

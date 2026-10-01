@@ -13,6 +13,7 @@ import dbConnect from "@/lib/db";
 import CommunityServer from "@/lib/models/CommunityServer";
 import CommunityServerProfile from "@/lib/models/CommunityServerProfile";
 import DedicatedSubscription from "@/lib/models/DedicatedSubscription";
+import CatalogGame from "@/lib/models/CatalogGame";
 import { listManagedHostRooms, requestManagedHostRoom, stopManagedHostRoom } from "@/lib/gameHost/client";
 import { allocateSlots, releaseSlots, RUNNABLE_STATUSES } from "./entitlement";
 import { authorizeServer, recordActivity } from "./access";
@@ -69,7 +70,7 @@ export async function sharedServers(userId: string) {
 }
 
 /** Games this tier offers for new servers in a region, with their allowed sizes. */
-export async function offeredGames(tier: HostingTier, regionKey: string) {
+export async function offeredGames(tier: HostingTier, regionKey: string, purchasedSlots: number) {
   const games = tier.games.filter(
     (g) => g.enabled && g.newServerCreationEnabled && !isPendingDedicatedProfile(g.profileKey) && (!g.supportedRegions.length || g.supportedRegions.includes(regionKey))
   );
@@ -77,6 +78,9 @@ export async function offeredGames(tier: HostingTier, regionKey: string) {
     .select({ key: 1, gameSlug: 1, editionSlug: 1, recipeSlug: 1, blockedReason: 1, verification: 1 })
     .lean();
   const byKey = new Map(profiles.map((p) => [p.key, p]));
+  const catalog = await CatalogGame.find({ slug: { $in: games.map((g) => g.profileKey.split(":")[0]) } })
+    .select("slug maxPlayers").lean() as Array<{ slug: string; maxPlayers?: number | null }>;
+  const gameCaps = new Map(catalog.map((row) => [row.slug, row.maxPlayers]));
   return games.map((g) => {
     const [gameSlug, edition] = g.profileKey.split(":");
     const profile = byKey.get(g.profileKey);
@@ -87,7 +91,7 @@ export async function offeredGames(tier: HostingTier, regionKey: string) {
       gameTitle: getHostableGame(slug)?.title || slug,
       editionSlug: profile?.editionSlug ?? (edition === "base" ? null : edition),
       capEnforced: slotCapEnforced(profile?.recipeSlug || slug),
-      sizes: allowedSlotSizes(tier, g),
+      sizes: allowedSlotSizes(tier, g, purchasedSlots, gameCaps.get(slug)),
       blocked: profile?.verification === "blocked",
     };
   }).filter((g) => g.sizes.length && !g.blocked);
@@ -107,7 +111,9 @@ export async function createServer(
     return fail("That game isn't available in your hosting region.");
   }
   const slots = Number(input.slots);
-  if (!allowedSlotSizes(tier, game).includes(slots)) return fail("That server size isn't available for this game.");
+  const gameSlug = game.profileKey.split(":")[0];
+  const catalogGame = await CatalogGame.findOne({ slug: gameSlug }).select("maxPlayers").lean();
+  if (!allowedSlotSizes(tier, game, sub.slotCapacity, catalogGame?.maxPlayers).includes(slots)) return fail("That server size isn't available for this game.");
   if (slots > sub.slotCapacity) return fail(`Your plan has ${sub.slotCapacity} slots; this server needs ${slots}.`);
   const name = cleanServerName(input.name);
   if (!name) return fail(`Server name must be 2–${SERVER_NAME_MAX} characters.`);
@@ -117,7 +123,7 @@ export async function createServer(
     return fail(`You can save up to ${tier.maxSavedServers} servers. Delete one you no longer need first.`, 409);
   }
   const profile = await CommunityServerProfile.findOne({ key: game.profileKey }).lean();
-  const [gameSlug, edition] = game.profileKey.split(":");
+  const [, edition] = game.profileKey.split(":");
   const server = await CommunityServer.create({
     // Permanent identity: never derived from the editable name.
     slug: `${gameSlug}-${randomBytes(4).toString("hex")}`,
@@ -174,7 +180,8 @@ export async function updateServer(
       const sub = await DedicatedSubscription.findById(server.dedicatedSubscriptionId).lean();
       const tier = await getTier(sub?.tier || "basic");
       const game = tierGame(tier, server.profileKey);
-      if (!game || !allowedSlotSizes(tier, game).includes(slots)) return fail("That server size isn't available for this game.");
+      const catalogGame = await CatalogGame.findOne({ slug: server.gameSlug }).select("maxPlayers").lean();
+      if (!game || !allowedSlotSizes(tier, game, sub?.slotCapacity || 0, catalogGame?.maxPlayers).includes(slots)) return fail("That server size isn't available for this game.");
       changes.push(`size ${server.allocatedSlots} → ${slots} slots`);
       server.allocatedSlots = slots;
     }
@@ -237,6 +244,10 @@ export async function launchRoom(server: {
 }) {
   if (isPendingDedicatedProfile(server.profileKey)) {
     return { status: "failed" as const, error: "This game is planned for Dedicated Basic but is not ready to host yet." };
+  }
+  const catalogGame = await CatalogGame.findOne({ slug: server.gameSlug }).select("maxPlayers").lean();
+  if (catalogGame?.maxPlayers && server.allocatedSlots > catalogGame.maxPlayers) {
+    return { status: "failed" as const, error: `This game supports at most ${catalogGame.maxPlayers} players. Stop this server and reduce its slots.` };
   }
   const profile = await CommunityServerProfile.findOne({ key: server.profileKey }).select({ recipeSlug: 1 }).lean();
   const settings: Record<string, string | number | boolean> = {};

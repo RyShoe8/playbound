@@ -6,15 +6,15 @@ import CommunityServerProfile from "@/lib/models/CommunityServerProfile";
 import CommunityServer from "@/lib/models/CommunityServer";
 import CapacityReservation from "@/lib/models/CapacityReservation";
 import { hostingSettingsSchema } from "@/lib/communityHosting/settings";
-import { fetchGameHostMetrics, listManagedHostRooms } from "@/lib/gameHost/client";
+import { fetchGameHostHealth, fetchGameHostMetrics, listManagedHostRooms } from "@/lib/gameHost/client";
 import CatalogGame from "@/lib/models/CatalogGame";
 import Edition from "@/lib/models/Edition";
-import { HOSTABLE_SLUGS, HOSTABLE_GAMES, HOSTABLE_SLUG_ALIASES } from "@/lib/gameHost/catalog";
-import { editions as seedEditions } from "@/lib/data/editions";
+import { HOSTABLE_SLUGS, DEDICATED_ONLY_GAMES, HOSTABLE_SLUG_ALIASES } from "@/lib/gameHost/catalog";
 import { getEffectiveEnvelope, managedRoomSettings } from "@/lib/communityHosting/reconcile";
 import { populationPeriods, populationReading } from "@/lib/communityHosting/population";
 import { runningReservationEnvelope } from "@/lib/communityHosting/capacity";
 import { managedQueryKind, queryManagedOccupancy, type ManagedOccupancy } from "@/lib/communityHosting/playerQuery";
+import { readyPublishedHostableCatalog } from "@/lib/dedicatedHosting/hostableProfiles";
 
 export async function GET() {
   const { error } = await requireAdminViewSession();
@@ -23,7 +23,7 @@ export async function GET() {
 
   const aliasSlugs = Object.keys(HOSTABLE_SLUG_ALIASES);
 
-  const [config, profiles, servers, reservations, metrics, agent] = await Promise.all([
+  const [config, profiles, servers, reservations, metrics, agent, health] = await Promise.all([
     CommunityHostingConfig.findOne({ key: "global" }).lean(),
     CommunityServerProfile.find({ gameSlug: { $nin: aliasSlugs } }).sort({ gameSlug: 1 }).lean(),
     CommunityServer.find({
@@ -31,7 +31,7 @@ export async function GET() {
       runtimeState: { $in: ["running", "pending", "starting"] },
     }).sort({ updatedAt: -1 }).limit(50).lean(),
     CapacityReservation.find({ state: { $in: ["planned", "active", "missed"] } }).sort({ warmupAt: 1 }).limit(100).lean(),
-    fetchGameHostMetrics(), listManagedHostRooms(),
+    fetchGameHostMetrics(), listManagedHostRooms(), fetchGameHostHealth(),
   ]);
   const asOf = new Date();
   const population = await populationPeriods(config?.node?.regionKey || "us-central", asOf);
@@ -86,40 +86,29 @@ export async function GET() {
     ramBytes: runningReservations.reduce((sum, envelope) => sum + envelope.ramBytes, 0),
   };
   const defaults = new CommunityHostingConfig({ key: "global" }).toObject();
-  // Display names for the game/edition checklist; include only hostable canonical catalog games.
-  const gameSlugs = [...new Set([...profiles.map((p) => p.gameSlug), ...HOSTABLE_SLUGS])].filter((s) => !HOSTABLE_SLUG_ALIASES[s]);
+  // Community selection is drawn from the live catalog and VPS state, never
+  // seed editions or profiles for unpublished / uninstalled games.
+  const recipeSlugs = [...new Set([...HOSTABLE_SLUGS, ...Object.keys(DEDICATED_ONLY_GAMES)])]
+    .filter((s) => !HOSTABLE_SLUG_ALIASES[s]);
+  const readySlugs = new Set(recipeSlugs.filter((slug) => health.configured &&
+    (health.health.gameStatus?.[slug]?.ready === true)));
   const [titleRows, editionRows] = await Promise.all([
-    CatalogGame.find({ slug: { $in: gameSlugs } }).select({ slug: 1, title: 1 }).lean(),
+    CatalogGame.find({ slug: { $in: [...readySlugs] } })
+      .select({ slug: 1, title: 1, status: 1, published: 1 }).lean(),
     Edition.find({
-      gameSlug: { $in: gameSlugs },
+      gameSlug: { $in: [...readySlugs] },
       status: { $ne: "archived" },
       visibility: { $ne: "hidden" },
-    }).select({ gameSlug: 1, slug: 1, name: 1, suppressesSeed: 1 }).lean(),
+    }).select({ gameSlug: 1, slug: 1, name: 1, features: 1, isDefault: 1, suppressesSeed: 1 }).lean(),
   ]);
 
-  const titles: Record<string, string> = Object.fromEntries(titleRows.map((g) => [g.slug, g.title]));
-  for (const slug of gameSlugs) {
-    if (!titles[slug] && HOSTABLE_GAMES[slug]?.title) {
-      titles[slug] = HOSTABLE_GAMES[slug].title;
-    }
-  }
+  const eligible = readyPublishedHostableCatalog(titleRows, editionRows.filter((e) => !e.suppressesSeed), profiles, readySlugs);
+  const titles: Record<string, string> = Object.fromEntries(eligible.games.map((g) => [g.slug, g.title]));
+  const gameSlugs = Object.keys(titles);
 
-  const suppressedSeedSlugs = new Set(
-    editionRows.filter((e) => (e as unknown as { suppressesSeed?: boolean }).suppressesSeed).map((e) => `${e.gameSlug}:${e.slug}`)
-  );
   const allEditionsMap = new Map<string, { gameSlug: string; slug: string; name: string }>();
-  for (const e of editionRows) {
-    if (!(e as unknown as { suppressesSeed?: boolean }).suppressesSeed) {
-      allEditionsMap.set(`${e.gameSlug}:${e.slug}`, { gameSlug: e.gameSlug, slug: e.slug, name: e.name });
-    }
-  }
-  for (const s of seedEditions) {
-    if (gameSlugs.includes(s.gameSlug) && s.status !== "archived" && s.visibility !== "hidden") {
-      const k = `${s.gameSlug}:${s.slug}`;
-      if (!allEditionsMap.has(k) && !suppressedSeedSlugs.has(k)) {
-        allEditionsMap.set(k, { gameSlug: s.gameSlug, slug: s.slug, name: s.name });
-      }
-    }
+  for (const e of eligible.editions) {
+    allEditionsMap.set(`${e.gameSlug}:${e.slug}`, { gameSlug: e.gameSlug, slug: e.slug, name: e.name || e.slug });
   }
   const editionNames = Object.fromEntries([...allEditionsMap.values()].map((e) => [`${e.gameSlug}:${e.slug}`, e.name]));
 
@@ -182,11 +171,6 @@ export async function GET() {
         });
       }
     }
-  }
-
-  // Preserve any remaining stored profiles
-  for (const p of profiles) {
-    if (!finalProfilesMap.has(p.key)) finalProfilesMap.set(p.key, p);
   }
 
   return NextResponse.json({

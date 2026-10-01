@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hostableProfileStubs } from "./hostableProfiles";
+import { hostableProfileStubs, readyPublishedHostableCatalog } from "./hostableProfiles";
 
 describe("hostable profile stubs", () => {
   it("offers every hostable game's base profile when nothing is stored", () => {
@@ -29,5 +29,29 @@ describe("hostable profile stubs", () => {
   it("limits admin fallback profiles to games present in the database catalog", () => {
     const stubs = hostableProfileStubs([], [{ gameSlug: "openra", slug: "combined-arms" }], ["openarena"]);
     expect(stubs.map((profile) => profile.key)).toEqual(["openarena:base"]);
+  });
+
+  it("offers a database-tagged dedicated game before a code recipe is registered", () => {
+    const stubs = hostableProfileStubs([], [], ["new-dedicated-game"]);
+    expect(stubs.map((profile) => profile.key)).toEqual(["new-dedicated-game:base"]);
+  });
+});
+
+describe("ready published hosting catalog", () => {
+  it("keeps unready and unpublished games in VPS testing but out of enrollment", () => {
+    const games = [
+      { slug: "openra", title: "OpenRA", status: "published", published: true },
+      { slug: "factorio", title: "Factorio", status: "testing", published: false },
+      { slug: "terraria", title: "Terraria", status: "published", published: true },
+    ];
+    const editions = [
+      { gameSlug: "openra", slug: "combined-arms", features: ["Dedicated Servers"] },
+      { gameSlug: "openra", slug: "official", isDefault: true, features: ["Dedicated Servers"] },
+      { gameSlug: "openra", slug: "singleplayer-mod", features: ["Singleplayer"] },
+      { gameSlug: "factorio", slug: "modded", features: ["Dedicated Servers"] },
+    ];
+    const result = readyPublishedHostableCatalog(games, editions, [], new Set(["openra", "factorio"]));
+    expect(result.games.map((game) => game.slug)).toEqual(["openra"]);
+    expect(result.editions.map((edition) => edition.slug)).toEqual(["combined-arms"]);
   });
 });
