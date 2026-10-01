@@ -10,7 +10,7 @@ import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { isGameCompatible } from "@/lib/compatibility/compatibility";
 import { offerToGameLike } from "@/lib/freeOffers/compatibility";
 
-export function ActiveOffersGrid({ offers }: { offers: FreeOfferRecord[] }) {
+export function ActiveOffersGrid({ offers, landscape = false }: { offers: FreeOfferRecord[]; landscape?: boolean }) {
   const { mode, device } = useCompatibilityFilter();
 
   const filteredOffers = useMemo(() => {
@@ -41,10 +41,10 @@ export function ActiveOffersGrid({ offers }: { offers: FreeOfferRecord[] }) {
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className={landscape ? "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" : "grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}>
         {shownOffers.map((offer) => (
           <div key={`${offer.store}-${offer.externalId}`} className="cv-card">
-            <FreeGameCard offer={offer} className="w-full sm:w-full" />
+            <FreeGameCard offer={offer} landscape={landscape} className="w-full" />
           </div>
         ))}
       </div>
