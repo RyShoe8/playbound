@@ -145,8 +145,8 @@ describe("PlayBound Dedicated Basic slot pool", () => {
     expect(await createServer(userId, { profileKey: "xonotic:base", slots: 4, name: "Eleventh" })).toMatchObject({ status: 409 });
     await CommunityServer.deleteMany({});
     expect(await createServer(userId, { profileKey: "counter-strike-2:base", slots: 4, name: "CS2" })).toMatchObject({ status: 400 });
-    expect(await createServer(userId, { profileKey: "bombsquad:base", slots: 12, name: "Too big" })).toMatchObject({ status: 400 });
-    expect(await createServer(userId, { profileKey: "xonotic:base", slots: 6, name: "Odd size" })).toMatchObject({ status: 400 });
+    expect(await createServer(userId, { profileKey: "bombsquad:base", slots: 17, name: "Too big" })).toMatchObject({ status: 400 });
+    expect(await createServer(userId, { profileKey: "xonotic:base", slots: 6, name: "Six slots" })).toMatchObject({ status: 201 });
   });
 
   it("refuses starts on a suspended subscription and stops its running servers on reconcile", async () => {

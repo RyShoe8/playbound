@@ -9,9 +9,6 @@ type TierGame = {
   enabled: boolean;
   newServerCreationEnabled: boolean;
   existingServerStartEnabled: boolean;
-  minSlots: number;
-  maxSlots: number;
-  slotIncrement: number;
   supportedRegions: string[];
   allowedMods: string[];
   readinessStatus: "draft" | "testing" | "verified";
@@ -38,6 +35,9 @@ type Tier = {
 };
 type ProfileInfo = {
   key: string;
+  title: string;
+  editionName: string | null;
+  editionSlug: string | null;
   /** false: the game is hostable but has no saved profile row yet. */
   stored?: boolean;
   gameSlug: string;
@@ -80,6 +80,8 @@ type CustomerServer = {
 };
 
 const TABS = ["Plan", "Games", "Subscriptions", "Customer servers", "Billing", "Support"] as const;
+const HOSTING_TIERS = ["basic", "pro", "extreme"] as const;
+type HostingTierKey = (typeof HOSTING_TIERS)[number];
 type Tab = (typeof TABS)[number];
 
 async function api(path: string, init?: RequestInit) {
@@ -94,21 +96,24 @@ const input = "rounded border border-border bg-background px-2 py-1 text-sm";
 export function AdminHostingPanel() {
   const [tab, setTab] = useState<Tab>("Plan");
   const [tier, setTier] = useState<Tier | null>(null);
-  const [profiles, setProfiles] = useState<ProfileInfo[]>([]);
+  const [tierCatalogs, setTierCatalogs] = useState<Record<HostingTierKey, { tier: Tier; profiles: ProfileInfo[] }> | null>(null);
+  const [selectedCatalogTier, setSelectedCatalogTier] = useState<HostingTierKey>("basic");
   const [subs, setSubs] = useState<Sub[]>([]);
   const [servers, setServers] = useState<CustomerServer[]>([]);
   const [openSupport, setOpenSupport] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [t, s, cs, support] = await Promise.all([
+    const [t, pro, extreme, s, cs, support] = await Promise.all([
       api("/api/admin/hosting/tiers/basic"),
+      api("/api/admin/hosting/tiers/pro"),
+      api("/api/admin/hosting/tiers/extreme"),
       api("/api/admin/hosting/subscriptions"),
       api("/api/admin/hosting/servers"),
       api("/api/admin/hosting/support?summary=1").catch(() => ({ open: 0 })),
     ]);
     setTier(t.tier);
-    setProfiles(t.profiles);
+    setTierCatalogs({ basic: t, pro, extreme });
     setSubs(s.subscriptions);
     setServers(cs.servers);
     setOpenSupport(support.open || 0);
@@ -124,7 +129,19 @@ export function AdminHostingPanel() {
     try {
       const r = await api("/api/admin/hosting/tiers/basic", { method: "PUT", body: JSON.stringify(next) });
       setTier(r.tier);
+      setTierCatalogs((current) => current ? { ...current, basic: { ...current.basic, tier: r.tier } } : current);
       setMessage("Saved.");
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Save failed");
+    }
+  }
+
+  async function saveCatalogTier(next: Tier) {
+    setMessage(null);
+    try {
+      await api(`/api/admin/hosting/tiers/${selectedCatalogTier}`, { method: "PUT", body: JSON.stringify(next) });
+      await load();
+      setMessage("Subscription game selection saved, including lower-tier inheritance.");
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Save failed");
     }
@@ -160,7 +177,15 @@ export function AdminHostingPanel() {
       </div>
       {message ? <p className="rounded-lg border border-border bg-secondary/50 p-2 text-sm" role="status">{message}</p> : null}
       {tab === "Plan" ? <PlanTab key={JSON.stringify(tier)} tier={tier} onSave={saveTier} onSync={() => act(() => api("/api/admin/hosting/stripe-prices", { method: "POST" }), "Stripe prices synchronized. Sales remain disabled.")} /> : null}
-      {tab === "Games" ? <GamesTab tier={tier} profiles={profiles} onSave={saveTier} /> : null}
+      {tab === "Games" && tierCatalogs ? <>
+        <div className="flex flex-wrap gap-2" aria-label="Hosting subscription tier">
+          {HOSTING_TIERS.map((key) => <button key={key} type="button" aria-pressed={selectedCatalogTier === key}
+            onClick={() => setSelectedCatalogTier(key)}
+            className={`rounded-lg px-3 py-1.5 text-sm capitalize ${selectedCatalogTier === key ? "bg-primary text-primary-foreground" : "border border-border hover:bg-secondary"}`}>{key}</button>)}
+        </div>
+        <GamesTab key={`${selectedCatalogTier}:${tierCatalogs[selectedCatalogTier].tier.games.length}`} tier={tierCatalogs[selectedCatalogTier].tier}
+          tierKey={selectedCatalogTier} profiles={tierCatalogs[selectedCatalogTier].profiles} onSave={saveCatalogTier} />
+      </> : null}
       {tab === "Subscriptions" ? <SubscriptionsTab tier={tier} subs={subs} act={act} /> : null}
       {tab === "Customer servers" ? <ServersTab servers={servers} act={act} /> : null}
       {tab === "Billing" ? <BillingTab /> : null}
@@ -260,7 +285,6 @@ function PlanTab({ tier, onSave, onSync }: { tier: Tier; onSave: (t: Tier) => vo
           (running servers stop on the next reconcile)
         </label>
         {field("Minimum server allocation", "minAllocation", "slots")}
-        {field("Allocation increment", "allocationIncrement", "slots")}
         {field("Maximum slots sold", "maxSlotsSold")}
         {field("Maximum saved servers", "maxSavedServers")}
         {field("Backups kept per server", "backupRetention")}
@@ -356,33 +380,30 @@ function CapacityStatus({ regionKey }: { regionKey: string }) {
 
 const FIT_TONE = { safe: "text-emerald-500", warning: "text-amber-500", exceeds: "text-red-500", unknown: "text-muted-foreground" } as const;
 
-function GamesTab({ tier, profiles, onSave }: { tier: Tier; profiles: ProfileInfo[]; onSave: (t: Tier) => void }) {
+function GamesTab({ tier, tierKey, profiles, onSave }: { tier: Tier; tierKey: HostingTierKey; profiles: ProfileInfo[]; onSave: (t: Tier) => void }) {
   const [games, setGames] = useState<TierGame[]>(tier.games);
-  const [adding, setAdding] = useState("");
   const byKey = new Map(profiles.map((p) => [p.key, p]));
   const update = (i: number, patch: Partial<TierGame>) => setGames((g) => g.map((x, j) => (j === i ? { ...x, ...patch } : x)));
   const available = profiles.filter((p) => !isPendingDedicatedProfile(p.key) && !games.some((g) => g.profileKey === p.key));
-  const storedAvailable = available.filter((p) => p.stored !== false);
-  const catalogAvailable = available.filter((p) => p.stored === false);
   const catalogGameCount = new Set(profiles.filter((p) => !isPendingDedicatedProfile(p.key)).map((p) => p.gameSlug)).size;
   const catalogEditionCount = profiles.filter((p) => !isPendingDedicatedProfile(p.key) && p.key.split(":")[1] !== "base").length;
   const addProfile = (key: string) => {
-    setGames((current) => current.some((game) => game.profileKey === key) ? current : [...current, { profileKey: key, enabled: false, newServerCreationEnabled: false, existingServerStartEnabled: false, minSlots: 4, maxSlots: 16, slotIncrement: 4, supportedRegions: tier.regions.map((r) => r.key), allowedMods: [], readinessStatus: "draft" }]);
+    setGames((current) => current.some((game) => game.profileKey === key) ? current : [...current, { profileKey: key, enabled: true, newServerCreationEnabled: false, existingServerStartEnabled: false, supportedRegions: tier.regions.map((r) => r.key), allowedMods: [], readinessStatus: "testing" }]);
   };
   const rc = tier.resourceClass;
   return (
     <section className="space-y-3 rounded-xl border border-border bg-card p-4">
-      <h2 className="font-semibold">Basic game catalog</h2>
-      <p className="text-sm">{catalogGameCount} dedicated-server games · {catalogEditionCount} edition profiles in the database catalog · {games.length} profiles currently on Basic</p>
+      <h2 className="font-semibold">Subscription Management</h2>
+      <p className="text-sm">{catalogGameCount} ready, published dedicated-server games · {catalogEditionCount} supported editions · {games.length} selected for {tierKey[0].toUpperCase() + tierKey.slice(1)}</p>
       <p className="text-xs text-muted-foreground">
-        Removing a game from new servers does not touch existing customer servers; &ldquo;Existing starts&rdquo; controls whether theirs can still start.
+        Pro selections also join Basic; Extreme selections also join Pro and Basic. New server creation stays off until you enable it. Removing a game from new servers does not touch existing customer servers; &ldquo;Existing starts&rdquo; controls whether theirs can still start.
         Resource fit compares each profile&apos;s measured envelope with one unit ({rc.cpuPerUnit} CPU / {rc.memoryMbPerUnit} MB).
       </p>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[900px] text-sm">
           <thead className="text-left text-xs text-muted-foreground">
             <tr>
-              <th className="py-1">Profile</th><th>Basic</th><th>New servers</th><th>Existing starts</th><th>Slots (min–max, step)</th><th>Readiness</th><th>Slot cap</th><th>Resource fit</th><th />
+              <th className="py-1">Game / edition</th><th>Included</th><th>New servers</th><th>Existing starts</th><th>Readiness</th><th>Slot cap</th><th>Resource fit</th><th />
             </tr>
           </thead>
           <tbody>
@@ -392,20 +413,15 @@ function GamesTab({ tier, profiles, onSave }: { tier: Tier; profiles: ProfileInf
                 const note = PENDING_DEDICATED_GAMES.find((item) => g.profileKey.startsWith(`${item.gameSlug}:`));
                 return <tr key={g.profileKey} className="border-t border-border text-sm text-muted-foreground">
                   <td className="py-2 font-mono text-xs">{g.profileKey}</td>
-                  <td colSpan={8}>Planned · {note?.requirement}</td>
+                  <td colSpan={7}>Planned · {note?.requirement}</td>
                 </tr>;
               }
               return (
                 <tr key={g.profileKey} className="border-t border-border align-top">
-                  <td className="py-2 font-mono text-xs">{g.profileKey}{!p || p.stored === false ? <span className="block text-amber-500">no server profile yet</span> : null}</td>
+                  <td className="py-2 text-xs"><span className="font-medium">{p ? `${p.title}${p.editionName ? ` · ${p.editionName}` : " · Base game"}` : g.profileKey}</span><span className="block font-mono text-[10px] text-muted-foreground">{g.profileKey}</span>{!p ? <span className="block text-amber-500">No longer ready and published</span> : p.stored === false ? <span className="block text-amber-500">No saved server profile yet</span> : null}</td>
                   <td><input type="checkbox" checked={g.enabled} onChange={(e) => update(i, { enabled: e.target.checked })} /></td>
                   <td><input type="checkbox" checked={g.newServerCreationEnabled} onChange={(e) => update(i, { newServerCreationEnabled: e.target.checked })} /></td>
                   <td><input type="checkbox" checked={g.existingServerStartEnabled} onChange={(e) => update(i, { existingServerStartEnabled: e.target.checked })} /></td>
-                  <td className="whitespace-nowrap">
-                    <input className={`${input} w-12`} type="number" value={g.minSlots} onChange={(e) => update(i, { minSlots: num(e.target.value) })} />–
-                    <input className={`${input} w-12`} type="number" value={g.maxSlots} onChange={(e) => update(i, { maxSlots: num(e.target.value) })} />,
-                    <input className={`${input} w-12`} type="number" value={g.slotIncrement} onChange={(e) => update(i, { slotIncrement: num(e.target.value) })} />
-                  </td>
                   <td>
                     <select className={input} value={g.readinessStatus} onChange={(e) => update(i, { readinessStatus: e.target.value as TierGame["readinessStatus"] })}>
                       <option value="draft">Draft</option>
@@ -433,35 +449,27 @@ function GamesTab({ tier, profiles, onSave }: { tier: Tier; profiles: ProfileInf
                 </tr>
               );
             })}
-            {PENDING_DEDICATED_GAMES.filter((item) => !games.some((g) => g.profileKey.startsWith(`${item.gameSlug}:`))).map((item) => (
-              <tr key={item.gameSlug} className="border-t border-border text-sm text-muted-foreground">
-                <td className="py-2 font-mono text-xs">{item.title}</td>
-                <td colSpan={8}>Planned · {item.requirement}</td>
-              </tr>
-            ))}
           </tbody>
         </table>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <p className="w-full text-xs text-muted-foreground">{games.length} in Basic · {storedAvailable.length} additional saved server profiles · {catalogAvailable.length} catalog games or editions awaiting a saved profile. Adding one keeps it disabled until you verify and enable it.</p>
-        {([['Saved server profiles', storedAvailable], ['Catalog entries without a saved server profile', catalogAvailable]] as const).map(([label, entries]) => entries.length ? <div key={label} className="w-full space-y-2 rounded-lg border border-border p-3"><h3 className="text-xs font-semibold">{label} ({entries.length})</h3><div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">{entries.map((profile) => <div key={profile.key} className="flex items-center justify-between gap-2 text-xs"><span className="truncate font-mono" title={profile.key}>{profile.key}</span><button type="button" className="shrink-0 text-primary hover:underline" onClick={() => addProfile(profile.key)}>Add to Basic</button></div>)}</div></div> : null)}
-        <select className={input} value={adding} onChange={(e) => setAdding(e.target.value)}>
-          <option value="">Add a server profile…</option>
-          {available.map((p) => (
-            <option key={p.key} value={p.key}>{p.key}</option>
-          ))}
-        </select>
-        <button
-          type="button"
-          className="text-sm text-primary disabled:opacity-50"
-          disabled={!adding}
-          onClick={() => {
-            addProfile(adding);
-            setAdding("");
-          }}
-        >
-          + Add
-        </button>
+      <div>
+        <h3 className="font-semibold">Ready games available for {tierKey[0].toUpperCase() + tierKey.slice(1)}</h3>
+        <p className="mt-1 text-xs text-muted-foreground">Only published games with ready VPS files appear here. Base games and supported editions are selected separately.</p>
+        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {[...new Set(available.map((p) => p.gameSlug))].sort((a, b) =>
+            (available.find((p) => p.gameSlug === a)?.title || a).localeCompare(available.find((p) => p.gameSlug === b)?.title || b)
+          ).map((slug) => {
+            const rows = available.filter((p) => p.gameSlug === slug).sort((a, b) => Number(Boolean(a.editionSlug)) - Number(Boolean(b.editionSlug)));
+            return <div key={slug} className="rounded-lg border border-border px-2 py-1.5 text-sm">
+              <p className="font-medium">{rows[0]?.title || slug}</p>
+              {rows.map((profile) => <button key={profile.key} type="button" onClick={() => addProfile(profile.key)}
+                className={`flex w-full items-center gap-2 py-0.5 text-left hover:text-primary ${profile.editionSlug ? "pl-4 text-xs text-muted-foreground" : "text-sm"}`}>
+                <span className="text-primary">＋</span>{profile.editionName || "Base game"}
+                {!profile.stored && <span className="ml-auto text-[10px] text-amber-500">profile needed</span>}
+              </button>)}
+            </div>;
+          })}
+        </div>
       </div>
       <button type="button" className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" onClick={() => onSave({ ...tier, games: games.map((g) => isPendingDedicatedProfile(g.profileKey) ? { ...g, enabled: false, newServerCreationEnabled: false, existingServerStartEnabled: false } : g) })}>
         Save games

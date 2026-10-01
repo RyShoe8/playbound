@@ -7,6 +7,16 @@ import DedicatedHostingTier from "@/lib/models/DedicatedHostingTier";
 import { PLAYER_LIMIT_RECIPES } from "@/lib/communityHosting/reconcile";
 
 export const BASIC_TIER_KEY = "basic";
+export const HOSTING_TIER_KEYS = ["basic", "pro", "extreme"] as const;
+export type HostingTierKey = (typeof HOSTING_TIER_KEYS)[number];
+
+export function lowerHostingTiers(key: HostingTierKey): HostingTierKey[] {
+  return key === "extreme" ? ["pro", "basic"] : key === "pro" ? ["basic"] : [];
+}
+
+export function higherHostingTiers(key: HostingTierKey): HostingTierKey[] {
+  return key === "basic" ? ["pro", "extreme"] : key === "pro" ? ["extreme"] : [];
+}
 
 /** The Basic 1.0 launch defaults. Everything here is editable in /admin/hosting. */
 export const BASIC_DEFAULTS = {
@@ -25,17 +35,8 @@ export const BASIC_DEFAULTS = {
     { slots: 32, priceCents: 3999, order: 5 },
   ],
   // Launch catalog. OpenRA editions are added per edition profile in admin.
-  games: [
-    { profileKey: "assaultcube:base", maxSlots: 16 },
-    { profileKey: "bombsquad:base", maxSlots: 8 },
-    { profileKey: "openra:base", maxSlots: 32 },
-    { profileKey: "openttd:base", maxSlots: 32 },
-    { profileKey: "xonotic:base", maxSlots: 32 },
-    { profileKey: "hedgewars:base", maxSlots: 8 },
-    { profileKey: "mindustry:base", maxSlots: 32 },
-    { profileKey: "supertuxkart:base", maxSlots: 8 },
-    { profileKey: "warzone-2100:base", maxSlots: 12 },
-  ].map((g) => ({ ...g, supportedRegions: ["us-central"], readinessStatus: "draft" as const })),
+  games: ["assaultcube", "bombsquad", "openra", "openttd", "xonotic", "hedgewars", "mindustry", "supertuxkart", "warzone-2100"]
+    .map((slug) => ({ profileKey: `${slug}:base`, supportedRegions: ["us-central"], readinessStatus: "draft" as const })),
 };
 
 export type TierGame = {
@@ -43,9 +44,6 @@ export type TierGame = {
   enabled: boolean;
   newServerCreationEnabled: boolean;
   existingServerStartEnabled: boolean;
-  minSlots: number;
-  maxSlots: number;
-  slotIncrement: number;
   supportedRegions: string[];
   allowedMods: string[];
   readinessStatus: "draft" | "testing" | "verified";
@@ -102,7 +100,12 @@ export async function getTier(key = BASIC_TIER_KEY): Promise<HostingTier> {
     return tier;
   }
   // Materialise schema defaults without saving, so the shape is always complete.
-  const draft = new DedicatedHostingTier(key === BASIC_TIER_KEY ? BASIC_DEFAULTS : { key }).toObject();
+  const draft = new DedicatedHostingTier(key === BASIC_TIER_KEY ? BASIC_DEFAULTS : {
+    key,
+    name: `PlayBound Dedicated ${key === "pro" ? "Pro" : "Extreme"}`,
+    salesEnabled: false,
+    games: [],
+  }).toObject();
   return JSON.parse(JSON.stringify(draft)) as HostingTier;
 }
 
@@ -116,6 +119,37 @@ export async function saveTier(key: string, values: Partial<HostingTier>): Promi
   return getTier(key);
 }
 
+/** Enrollment flows downward without replacing a lower tier's own settings. */
+export function inheritTierGames(lower: HostingTier, selected: TierGame[]): TierGame[] {
+  const byKey = new Map(lower.games.map((game) => [game.profileKey, game]));
+  for (const game of selected.filter((entry) => entry.enabled)) {
+    const existing = byKey.get(game.profileKey);
+    if (existing?.enabled) continue;
+    byKey.set(game.profileKey, existing ? { ...existing, enabled: true } : {
+      ...game,
+      supportedRegions: lower.regions.map((region) => region.key),
+    });
+  }
+  return [...byKey.values()];
+}
+
+export async function includeHigherTierGamesInLowerTiers(key: HostingTierKey, games: TierGame[]): Promise<void> {
+  for (const lowerKey of lowerHostingTiers(key)) {
+    const lower = await getTier(lowerKey);
+    const inherited = inheritTierGames(lower, games);
+    if (inherited.some((game, i) => game !== lower.games[i])) await saveTier(lowerKey, { games: inherited });
+  }
+}
+
+export async function retainHigherTierSelections(key: HostingTierKey, tier: HostingTier): Promise<TierGame[]> {
+  let next = tier;
+  for (const higherKey of higherHostingTiers(key)) {
+    const higher = await getTier(higherKey);
+    next = { ...next, games: inheritTierGames(next, higher.games) };
+  }
+  return next.games;
+}
+
 /**
  * Whether the agent can actually hold a server to its slot count.
  *
@@ -127,14 +161,11 @@ export function slotCapEnforced(recipeSlug: string): boolean {
   return PLAYER_LIMIT_RECIPES.has(recipeSlug);
 }
 
-/** Valid server sizes for a game in a tier: multiples of the increment inside both ranges. */
-export function allowedSlotSizes(tier: HostingTier, game: TierGame): number[] {
-  const step = Math.max(tier.allocationIncrement, game.slotIncrement || 1);
-  const min = Math.max(tier.minAllocation, game.minSlots || 1);
-  const max = Math.min(tier.maxSlotsSold, game.maxSlots || tier.maxSlotsSold);
-  const sizes: number[] = [];
-  for (let s = Math.ceil(min / step) * step; s <= max; s += step) sizes.push(s);
-  return sizes;
+/** Any whole number of purchased slots is valid, up to the game's verified cap. */
+export function allowedSlotSizes(tier: HostingTier, _game: TierGame, purchasedSlots: number, gameMaxPlayers?: number | null): number[] {
+  const cap = gameMaxPlayers && gameMaxPlayers > 0 ? gameMaxPlayers : purchasedSlots;
+  const max = Math.min(tier.maxSlotsSold, purchasedSlots, cap);
+  return Array.from({ length: Math.max(0, Math.floor(max)) }, (_, i) => i + 1);
 }
 
 export function tierGame(tier: HostingTier, profileKey: string): TierGame | null {

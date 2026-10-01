@@ -321,6 +321,8 @@ export const HOSTABLE_SLUG_ALIASES: Record<string, string> = {
   etlegacy: "wolfenstein-enemy-territory",
   tf2: "team-fortress-2",
   cs2: "counter-strike-2",
+  counterstrike2: "counter-strike-2",
+  csgo: "counter-strike-2",
   wesnoth: "battle-for-wesnoth",
   doom: "freedoom",
   ss14: "space-station-14",

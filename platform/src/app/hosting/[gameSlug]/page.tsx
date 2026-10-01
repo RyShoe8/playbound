@@ -20,14 +20,14 @@ async function load(gameSlug: string) {
   const { tier } = await loadPublicTier();
   const game = publicGames(tier).find((g) => g.gameSlug === gameSlug);
   if (!game) return null;
+  const catalog = await getGame(gameSlug).catch(() => undefined);
   const sizes = [
     ...new Set(
       tier.games
         .filter((g) => g.profileKey.startsWith(`${gameSlug}:`) && g.enabled !== false && g.newServerCreationEnabled !== false)
-        .flatMap((g) => allowedSlotSizes(tier, g))
+        .flatMap((g) => allowedSlotSizes(tier, g, tier.maxSlotsSold, catalog?.maxPlayers))
     ),
   ].sort((a, b) => a - b);
-  const catalog = await getGame(gameSlug).catch(() => undefined);
   const cheapest = [...tier.packages].filter((p) => p.enabled !== false).sort((a, b) => a.priceCents - b.priceCents)[0];
   return { tier, game, sizes, catalog, cheapest };
 }
@@ -54,7 +54,7 @@ export default async function GameHostingPage({ params }: Props) {
     ...new Set((profile?.settings ?? []).map((s) => s.feature).filter((f): f is NonNullable<typeof f> => Boolean(f) && f !== "slots")),
   ].map((f) => CONTROL_FEATURE_LABELS[f]);
   const others = publicGames(tier).filter((g) => g.gameSlug !== gameSlug);
-  const smallest = sizes[0] || 4;
+  const exampleSize = Math.min(4, sizes.at(-1) || 4);
 
   return (
     <div className="mx-auto max-w-4xl space-y-12 px-4 py-12 sm:px-6 lg:px-8">
@@ -80,7 +80,7 @@ export default async function GameHostingPage({ params }: Props) {
         <div className="space-y-3 rounded-xl border border-border bg-card p-5">
           <h2 className="font-semibold">Your {game.title} server</h2>
           <ul className="space-y-2 text-sm">
-            <li className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden /> Sizes: {sizes.join(", ")} players</li>
+            <li className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden /> Choose 1–{sizes.at(-1) || tier.maxSlotsSold} player slots, depending on your plan</li>
             {game.editions.length ? (
               <li className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden /> Editions: {game.editions.join(", ")}</li>
             ) : null}
@@ -100,7 +100,7 @@ export default async function GameHostingPage({ params }: Props) {
         <div className="space-y-3 rounded-xl border border-border bg-card p-5">
           <h2 className="font-semibold">How slots work</h2>
           <p className="text-sm text-muted-foreground">
-            {`A plan is a pool of player slots. A ${smallest}-player ${game.title} server uses ${smallest} of them while it runs, and none while it's stopped. Run several servers at once, or stop this one and start a different game with the same slots — no charge for switching, and your stopped servers keep their settings.`}
+            {`A plan is a pool of player slots. A ${exampleSize}-player ${game.title} server uses ${exampleSize} of them while it runs, and none while it's stopped. Run several servers at once, or stop this one and start a different game with the same slots — no charge for switching, and your stopped servers keep their settings.`}
           </p>
         </div>
       </section>

@@ -34,8 +34,6 @@ export async function loadPublicTier(): Promise<{ tier: HostingTier; live: boole
         enabled: true,
         newServerCreationEnabled: true,
         existingServerStartEnabled: true,
-        minSlots: 4,
-        slotIncrement: 4,
         allowedMods: [],
       })),
     } as unknown as HostingTier;
@@ -43,7 +41,7 @@ export async function loadPublicTier(): Promise<{ tier: HostingTier; live: boole
   }
 }
 
-export type PublicHostingGame = { gameSlug: string; title: string; editions: string[]; maxSlots: number };
+export type PublicHostingGame = { gameSlug: string; title: string; editions: string[] };
 
 /** Games on sale for new servers, one entry per game (editions folded in). */
 export function publicGames(tier: HostingTier): PublicHostingGame[] {
@@ -55,10 +53,8 @@ export function publicGames(tier: HostingTier): PublicHostingGame[] {
       gameSlug,
       title: getHostableGame(gameSlug)?.title || gameSlug,
       editions: [],
-      maxSlots: 0,
     };
     if (edition && edition !== "base") current.editions.push(edition);
-    current.maxSlots = Math.max(current.maxSlots, Math.min(g.maxSlots || 0, tier.maxSlotsSold || 32));
     byGame.set(gameSlug, current);
   }
   return [...byGame.values()].sort((a, b) => a.title.localeCompare(b.title));

@@ -17,8 +17,24 @@ function tierSlugs(): string[] {
   return [...HOSTABLE_SLUGS.filter((slug) => !HOSTABLE_SLUG_ALIASES[slug]), ...Object.keys(DEDICATED_ONLY_GAMES)];
 }
 
-export type EditionRef = { gameSlug: string; slug: string };
+export type EditionRef = { gameSlug: string; slug: string; name?: string; features?: string[]; isDefault?: boolean };
 export type StoredProfileRef = { key: string; gameSlug: string; editionSlug?: string | null };
+export type CatalogGameRef = { slug: string; title: string; status: string; published: boolean };
+
+/** The shared admin enrollment gate. Files, publication and edition support
+ * are independent: a game can be visible in VPS testing long before it appears
+ * in Community Hosting or a paid subscription's available-game picker. */
+export function readyPublishedHostableCatalog(
+  games: CatalogGameRef[], editions: EditionRef[], stored: StoredProfileRef[], readySlugs: ReadonlySet<string>
+): { games: CatalogGameRef[]; editions: EditionRef[] } {
+  const eligibleGames = games.filter((game) => game.status === "published" && game.published && readySlugs.has(game.slug));
+  const allowed = new Set(eligibleGames.map((game) => game.slug));
+  const storedKeys = new Set(stored.map((profile) => profile.key));
+  const eligibleEditions = editions.filter((edition) => allowed.has(edition.gameSlug) &&
+    !edition.isDefault && edition.slug !== "official" && edition.slug !== "base" &&
+    (edition.features?.includes("Dedicated Servers") || storedKeys.has(`${edition.gameSlug}:${edition.slug}`)));
+  return { games: eligibleGames, editions: eligibleEditions };
+}
 export type ProfileStub = {
   key: string;
   gameSlug: string;
@@ -29,7 +45,7 @@ export type ProfileStub = {
 export function hostableProfileStubs(stored: StoredProfileRef[], editions: EditionRef[], catalogSlugs = tierSlugs()): ProfileStub[] {
   const storedKeys = new Set(stored.map((p) => p.key));
   const storedPairs = new Set(stored.map((p) => `${p.gameSlug}:${p.editionSlug || ""}`));
-  const slugs = catalogSlugs.filter((slug) => tierSlugs().includes(slug));
+  const slugs = catalogSlugs;
   const stubs: ProfileStub[] = [];
   const add = (gameSlug: string, editionSlug: string | null) => {
     const key = `${gameSlug}:${editionSlug || "base"}`;
@@ -46,18 +62,18 @@ export function hostableProfileStubs(stored: StoredProfileRef[], editions: Editi
 
 /** Non-archived, non-hidden editions of hostable games, from the database. */
 export async function loadHostableEditionRefs(): Promise<EditionRef[]> {
-  const slugs = tierSlugs();
+  const slugs = (await loadHostableCatalogRefs()).map((game) => game.slug);
   await dbConnect();
   const rows = await Edition.find({
     gameSlug: { $in: slugs },
     status: { $ne: "archived" },
     visibility: { $ne: "hidden" },
-  }).select({ gameSlug: 1, slug: 1, suppressesSeed: 1 }).lean();
-  return rows.filter((e) => !(e as { suppressesSeed?: boolean }).suppressesSeed).map((e) => ({ gameSlug: e.gameSlug, slug: e.slug }));
+  }).select({ gameSlug: 1, slug: 1, name: 1, features: 1, isDefault: 1, suppressesSeed: 1 }).lean();
+  return rows.filter((e) => !(e as { suppressesSeed?: boolean }).suppressesSeed).map((e) => ({ gameSlug: e.gameSlug, slug: e.slug, name: e.name, features: e.features, isDefault: e.isDefault }));
 }
 
-export async function loadHostableCatalogSlugs(): Promise<string[]> {
+export async function loadHostableCatalogRefs(): Promise<CatalogGameRef[]> {
   await dbConnect();
-  const rows = await CatalogGame.find({ slug: { $in: tierSlugs() }, status: { $ne: "archived" } }).select("slug").lean() as Array<{ slug: string }>;
-  return rows.map((row) => row.slug);
+  return CatalogGame.find({ $or: [{ slug: { $in: tierSlugs() } }, { features: "Dedicated Servers" }] })
+    .select("slug title status published").lean() as Promise<CatalogGameRef[]>;
 }

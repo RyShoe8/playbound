@@ -94,6 +94,7 @@ type OverviewData = {
   games: Array<{
     slug: string;
     title: string;
+    hasRecipe: boolean;
     installed: boolean;
     ready: boolean;
     clientVersion: string;
@@ -701,8 +702,7 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-lg font-semibold">Dedicated games on VPS</h2>
               <p className="text-xs text-muted-foreground">
-                All VPS recipes, including draft and testing games · dot = last spawn test ·
-                icon = files on disk · client vs server version
+                Every dedicated-server game, including unpublished titles and games awaiting a VPS recipe · dot = last spawn test · icon = files on disk
               </p>
             </div>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -725,7 +725,7 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{game.title}</p>
                       <p className="text-xs text-muted-foreground">
-                        {game.ready ? "Ready" : game.installed ? "Binary only" : "Missing"}
+                        {!game.hasRecipe ? "Recipe needed" : game.ready ? "Ready" : game.installed ? "Binary only" : "Files missing"}
                       </p>
                       <p
                         className={`mt-0.5 text-xs ${
@@ -744,7 +744,7 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
                     <button
                       type="button"
                       onClick={() => void runTestSpawn(game.slug)}
-                      disabled={testBusy || testAllBusy || !game.installed || isTesting}
+                      disabled={testBusy || testAllBusy || !game.hasRecipe || !game.installed || isTesting}
                       className="shrink-0 rounded-md border border-border px-2 py-1 text-xs font-medium hover:bg-secondary disabled:opacity-50"
                     >
                       {isTesting ? (

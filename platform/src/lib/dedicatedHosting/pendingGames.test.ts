@@ -24,7 +24,7 @@ describe("planned Dedicated games", () => {
     const tier = {
       maxSlotsSold: 32,
       games: ["starbound", "factorio"].map((slug) => ({
-        profileKey: `${slug}:base`, enabled: true, newServerCreationEnabled: true, maxSlots: 8,
+        profileKey: `${slug}:base`, enabled: true, newServerCreationEnabled: true,
       })),
     } as HostingTier;
     expect(publicGames(tier).map((game) => game.gameSlug)).toEqual(["factorio"]);

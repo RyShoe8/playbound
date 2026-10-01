@@ -96,7 +96,14 @@ export async function GET() {
   const gameStatus = health?.gameStatus || {};
   const versionRows = hostableGameVersionRows(health?.gameVersions || {});
   const versionBySlug = Object.fromEntries(versionRows.map((v) => [v.slug, v]));
-  const gameSlugs = dedicatedOverviewSlugs(Object.keys({ ...HOSTABLE_GAMES, ...DEDICATED_ONLY_GAMES }), gameStatus, HOSTABLE_SLUG_ALIASES);
+  // The database's Dedicated Servers taxonomy includes games awaiting a VPS
+  // recipe or installed files. They must remain visible for operator testing.
+  const catalogGames = await CatalogGame.find({ features: "Dedicated Servers" })
+    .select({ slug: 1, title: 1 }).lean();
+  const gameSlugs = dedicatedOverviewSlugs(
+    Object.keys({ ...HOSTABLE_GAMES, ...DEDICATED_ONLY_GAMES }),
+    gameStatus, HOSTABLE_SLUG_ALIASES, catalogGames.map((game) => game.slug)
+  );
   // Admin inventory includes draft/testing/watchlist titles. Public catalog
   // visibility must not decide whether an operator can test a VPS recipe.
   const catalogTitles = await CatalogGame.find({ slug: { $in: gameSlugs } })
@@ -104,15 +111,18 @@ export async function GET() {
   const titleBySlug = new Map(catalogTitles.map((game) => [game.slug, game.title]));
   const games = gameSlugs.map((slug) => {
     const game = HOSTABLE_GAMES[slug] ?? DEDICATED_ONLY_GAMES[slug];
-    const status = gameStatus[slug];
-    const installed = status?.installed ?? health?.games?.[slug] ?? false;
-    const ready = status?.ready ?? installed;
+    const agentAlias = Object.keys(HOSTABLE_SLUG_ALIASES).find((alias) => HOSTABLE_SLUG_ALIASES[alias] === slug && gameStatus[alias]);
+    const status = gameStatus[slug] ?? (agentAlias ? gameStatus[agentAlias] : undefined);
+    const hasRecipe = Boolean(game);
+    const installed = hasRecipe && (status?.installed ?? health?.games?.[slug] ?? false);
+    const ready = hasRecipe && (status?.ready ?? installed);
     const versions = versionBySlug[slug];
     const clientVersion = versions?.clientVersion ?? clientVersionForHostableGame(slug);
     const serverVersion = versions?.serverVersion ?? health?.gameVersions?.[slug] ?? "—";
     return {
       slug,
-      title: game?.title ?? titleBySlug.get(slug) ?? slug.replace(/-/g, " "),
+      title: titleBySlug.get(slug) ?? game?.title ?? slug.replace(/-/g, " "),
+      hasRecipe,
       installed,
       ready,
       defaultPort: game?.defaultPort ?? null,
