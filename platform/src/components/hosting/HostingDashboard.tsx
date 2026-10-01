@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { HostingSupport } from "@/components/hosting/HostingSupport";
+import { HostingAdmins } from "@/components/hosting/HostingAdmins";
 
 type Server = {
   id: string;
@@ -23,7 +24,7 @@ type Server = {
   statusReason: string | null;
 };
 
-type Game = { profileKey: string; gameSlug: string; gameTitle: string; editionSlug: string | null; sizes: number[] };
+type Game = { profileKey: string; gameSlug: string; gameTitle: string; editionSlug: string | null; sizes: number[]; capEnforced: boolean };
 
 type Me = {
   subscription: null | {
@@ -46,7 +47,7 @@ type Me = {
   shared?: Array<Server & { role: string }>;
 };
 
-const VISIBILITY_LABEL = { public: "Public", unlisted: "Unlisted", private: "Private" } as const;
+const VISIBILITY_LABEL = { public: "Public", unlisted: "Unlisted", private: "Hidden" } as const;
 
 async function api(path: string, init?: RequestInit) {
   const res = await fetch(path, { ...init, headers: { "content-type": "application/json", ...(init?.headers || {}) } });
@@ -174,6 +175,8 @@ export function HostingDashboard() {
           }}>{p.slots} slots next period · ${(p.priceCents / 100).toFixed(2)}/mo</button>)}
         </div> : null}
       </header>
+
+      <HostingAdmins />
 
       {me.limits?.startsDisabled ? (
         <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">Server starts are temporarily paused.</p>
@@ -326,7 +329,7 @@ function CreateServer({
         </select>
       </label>
       <fieldset className="text-sm">
-        <legend>Server size ({free} slots free now)</legend>
+        <legend>Server size ({free} capacity slots free now){game && !game.capEnforced ? " · no enforced player cap" : ""}</legend>
         <div className="mt-1 flex flex-wrap gap-2">
           {sizes.map((n) => (
             <button
@@ -336,7 +339,7 @@ function CreateServer({
               onClick={() => setSlots(n)}
               className={`rounded-lg border px-3 py-1.5 ${size === n ? "border-primary bg-primary/10 font-semibold" : "border-border"}`}
             >
-              {n} players
+              {game?.capEnforced ? `${n} players` : `${n} capacity slots`}
             </button>
           ))}
         </div>
@@ -354,7 +357,7 @@ function CreateServer({
         <select className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5" value={visibility} onChange={(e) => setVisibility(e.target.value)}>
           <option value="public">Public — listed in Multiplayer</option>
           <option value="unlisted">Unlisted — join by link or invite</option>
-          <option value="private">Private</option>
+          <option value="private">Hidden — no public page (not password protected)</option>
         </select>
       </label>
       <div className="flex flex-wrap gap-2">

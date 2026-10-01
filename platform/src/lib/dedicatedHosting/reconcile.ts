@@ -3,7 +3,8 @@
  *
  * Runs on the same VPS timer as the Community Server reconcile but separately
  * from it: that pass rotates, idles and downsizes free servers, and exits
- * early when automatic hosting is off. Paid servers take none of that. A
+ * early when automatic hosting is off. Paid servers stay up except for
+ * games without an enforceable player cap after 30 verified empty minutes. A
  * server whose owner wants it online is restarted if its room is gone; one
  * they stopped is stopped; a subscription that can no longer run takes its
  * servers down; and slots follow the rooms that actually exist.
@@ -22,11 +23,21 @@ import { applyLiveState } from "./liveControl";
 import { automaticBackups } from "./backups";
 import { parseCurrentMap } from "@/lib/serverControl/rcon";
 import { getServerSettingProfile } from "@/lib/serverControl/settings";
-import { getTier } from "./tier";
+import { getTier, slotCapEnforced } from "./tier";
 import { reconcileDedicatedCapacityReservations } from "./reservations";
 import { isPendingDedicatedProfile } from "./pendingGames";
 
 const MAX_BACKOFF_MINUTES = 30;
+const UNBOUNDED_IDLE_MS = 30 * 60_000;
+
+/** Never infer idleness from a failed/unknown player query. */
+export function shouldStopUnboundedIdleServer(input: {
+  capEnforced: boolean; players: number | null; lastOccupiedAt: Date | null; onlineSince: Date | null; now: Date;
+}) {
+  if (input.capEnforced || input.players !== 0 || !input.onlineSince) return false;
+  const latestActivity = Math.max(input.onlineSince.getTime(), input.lastOccupiedAt?.getTime() || 0);
+  return input.now.getTime() - latestActivity >= UNBOUNDED_IDLE_MS;
+}
 
 export async function reconcileDedicatedServers(now = new Date()) {
   await dbConnect();
@@ -91,10 +102,32 @@ export async function reconcileDedicatedServers(now = new Date()) {
 
     if (room) {
       const profile = profileByKey.get(server.profileKey);
+      const capEnforced = slotCapEnforced(profile?.recipeSlug || server.gameSlug);
       const queryKind = managedQueryKind(server.gameSlug, profile);
       const occupancy = queryKind
         ? await queryManagedOccupancy({ queryKind, host: room.host, port: room.port, communityServerId: id }).catch(() => null)
         : null;
+      if (shouldStopUnboundedIdleServer({
+        capEnforced, players: occupancy?.players ?? null,
+        lastOccupiedAt: server.lastOccupiedAt,
+        onlineSince: server.runtimeId === room.roomId ? server.onlineSince : now,
+        now,
+      })) {
+        const result = await stopManagedHostRoom(id);
+        if (!result.ok) continue;
+        server.desiredState = "stopped";
+        server.runtimeState = "stopped";
+        server.decisionReason = "IDLE_30_MINUTES";
+        server.playerCount = 0;
+        server.host = null;
+        server.port = null;
+        server.onlineSince = null;
+        await server.save();
+        await releaseSlots(id);
+        await recordActivity(server._id, { kind: "system" }, "server_stopped", "No players for 30 minutes");
+        stopped += 1;
+        continue;
+      }
       if (server.runtimeId !== room.roomId) server.onlineSince = now;
       server.runtimeId = room.roomId;
       server.host = room.host;
@@ -102,7 +135,7 @@ export async function reconcileDedicatedServers(now = new Date()) {
       server.runtimeState = "running";
       server.playerCount = occupancy?.players ?? null;
       server.bots = occupancy?.bots ?? null;
-      server.maxPlayerCount = server.allocatedSlots;
+      server.maxPlayerCount = capEnforced ? server.allocatedSlots : null;
       server.health = occupancy ? "healthy" : "unknown";
       server.playerCountCheckedAt = occupancy ? now : null;
       if ((occupancy?.players ?? 0) > 0) server.lastOccupiedAt = now;

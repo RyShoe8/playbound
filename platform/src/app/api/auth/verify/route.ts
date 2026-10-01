@@ -40,6 +40,10 @@ export async function POST(req: Request) {
     void redeemFriendInvitesForEmail(String(email).toLowerCase(), String(user._id)).catch(
       (err) => console.error("redeemFriendInvitesForEmail failed:", err)
     );
+    const { redeemHostingAdminInvites } = await import("@/lib/dedicatedHosting/admins");
+    void redeemHostingAdminInvites(String(email).toLowerCase(), String(user._id)).catch(
+      (err) => console.error("redeemHostingAdminInvites failed:", err)
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {

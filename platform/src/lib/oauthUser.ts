@@ -87,6 +87,10 @@ export async function resolveOAuthUser(
       void redeemFriendInvitesForEmail(email, existing._id.toString()).catch((err) =>
         console.error("redeemFriendInvitesForEmail failed:", err)
       );
+      const { redeemHostingAdminInvites } = await import("@/lib/dedicatedHosting/admins");
+      void redeemHostingAdminInvites(email, existing._id.toString()).catch((err) =>
+        console.error("redeemHostingAdminInvites failed:", err)
+      );
     }
 
     return {
@@ -116,6 +120,10 @@ export async function resolveOAuthUser(
     const { redeemFriendInvitesForEmail } = await import("@/lib/friends/redeemInvites");
     void redeemFriendInvitesForEmail(email, created._id.toString()).catch((err) =>
       console.error("redeemFriendInvitesForEmail failed:", err)
+    );
+    const { redeemHostingAdminInvites } = await import("@/lib/dedicatedHosting/admins");
+    void redeemHostingAdminInvites(email, created._id.toString()).catch((err) =>
+      console.error("redeemHostingAdminInvites failed:", err)
     );
   }
 

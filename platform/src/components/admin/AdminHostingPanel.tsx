@@ -32,7 +32,7 @@ type Tier = {
   paymentGraceHours: number;
   cancellationRetentionDays: number;
   safetyReservePercent: number;
-  regions: Array<{ key: string; label: string; salesEnabled: boolean }>;
+  regions: Array<{ key: string; label: string; salesEnabled: boolean; latitude?: number | null; longitude?: number | null }>;
   packages: Pkg[];
   games: TierGame[];
 };
@@ -230,6 +230,7 @@ function num(v: string) {
 
 function PlanTab({ tier, onSave, onSync }: { tier: Tier; onSave: (t: Tier) => void; onSync: () => void }) {
   const [t, setT] = useState<Tier>(tier);
+  const [newRegionKey, setNewRegionKey] = useState("");
   const set = <K extends keyof Tier>(k: K, v: Tier[K]) => setT((prev) => ({ ...prev, [k]: v }));
   const field = (label: string, k: keyof Tier, help?: string) => (
     <label className="flex items-center justify-between gap-3 text-sm">
@@ -313,9 +314,22 @@ function PlanTab({ tier, onSave, onSync }: { tier: Tier; onSave: (t: Tier) => vo
             <div key={r.key} className="flex items-center gap-2 text-sm">
               <input className={`${input} w-32`} value={r.label} onChange={(e) => set("regions", t.regions.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))} />
               <code className="text-xs text-muted-foreground">{r.key}</code>
+              <label>Lat <input aria-label={`${r.label} latitude`} type="number" min="24" max="50" step="0.01" className={`${input} w-20`} value={r.latitude ?? ""} onChange={(e) => set("regions", t.regions.map((x, j) => j === i ? { ...x, latitude: e.target.value === "" ? null : Number(e.target.value) } : x))} /></label>
+              <label>Lon <input aria-label={`${r.label} longitude`} type="number" min="-125" max="-66" step="0.01" className={`${input} w-20`} value={r.longitude ?? ""} onChange={(e) => set("regions", t.regions.map((x, j) => j === i ? { ...x, longitude: e.target.value === "" ? null : Number(e.target.value) } : x))} /></label>
               <label className="flex items-center gap-1"><input type="checkbox" checked={r.salesEnabled} onChange={(e) => set("regions", t.regions.map((x, j) => (j === i ? { ...x, salesEnabled: e.target.checked } : x)))} /> sales</label>
             </div>
           ))}
+          <form className="flex flex-wrap items-center gap-2 text-sm" onSubmit={(event) => {
+            event.preventDefault();
+            const key = newRegionKey.trim().toLowerCase();
+            if (!/^[a-z0-9-]{2,40}$/.test(key) || t.regions.some((r) => r.key === key)) return;
+            set("regions", [...t.regions, { key, label: key.replace(/-/g, " "), salesEnabled: false, latitude: null, longitude: null }]);
+            setNewRegionKey("");
+          }}>
+            <input aria-label="New region key" className={input} placeholder="us-east" value={newRegionKey} onChange={(event) => setNewRegionKey(event.target.value)} />
+            <button type="submit" className="text-primary hover:underline">Add region</button>
+            <span className="text-xs text-muted-foreground">Set its map coordinates and enable sales after capacity is ready.</span>
+          </form>
           {t.regions.map((r) => <CapacityStatus key={r.key} regionKey={r.key} />)}
         </section>
         <button type="button" className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" onClick={() => onSave({ ...t, packages: pkgs.map((p, i) => ({ ...p, order: i })) })}>

@@ -17,7 +17,7 @@ import { listManagedHostRooms, requestManagedHostRoom, stopManagedHostRoom } fro
 import { allocateSlots, releaseSlots, RUNNABLE_STATUSES } from "./entitlement";
 import { authorizeServer, recordActivity } from "./access";
 import { applyLiveState } from "./liveControl";
-import { allowedSlotSizes, getTier, tierGame, type HostingTier } from "./tier";
+import { allowedSlotSizes, getTier, slotCapEnforced, tierGame, type HostingTier } from "./tier";
 import { getHostableGame } from "@/lib/gameHost/catalog";
 import { isPendingDedicatedProfile } from "./pendingGames";
 
@@ -55,10 +55,16 @@ export async function listCustomerServers(subscriptionId: string) {
 export async function sharedServers(userId: string) {
   await dbConnect();
   if (!Types.ObjectId.isValid(userId)) return [];
-  const rows = await CommunityServer.find({ ownerType: "user", "access.userId": userId }).sort({ name: 1 }).lean();
+  const subs = await DedicatedSubscription.find({ "admins.userId": userId, status: { $ne: "expired" } }).select({ _id: 1 }).lean();
+  const adminIds = subs.map((s) => s._id);
+  const rows = await CommunityServer.find({ ownerType: "user", ownerId: { $ne: userId }, $or: [
+    { "access.userId": userId }, { dedicatedSubscriptionId: { $in: adminIds } },
+  ] }).sort({ name: 1 }).lean();
+  const adminSet = new Set(adminIds.map(String));
   return rows.map((r) => ({
     ...r,
-    role: ((r.access as Array<{ userId: unknown; role: string }>) || []).find((a) => String(a.userId) === userId)?.role || "moderator",
+    role: adminSet.has(String(r.dedicatedSubscriptionId)) ? "administrator" :
+      ((r.access as Array<{ userId: unknown; role: string }>) || []).find((a) => String(a.userId) === userId)?.role || "moderator",
   }));
 }
 
@@ -68,7 +74,7 @@ export async function offeredGames(tier: HostingTier, regionKey: string) {
     (g) => g.enabled && g.newServerCreationEnabled && !isPendingDedicatedProfile(g.profileKey) && (!g.supportedRegions.length || g.supportedRegions.includes(regionKey))
   );
   const profiles = await CommunityServerProfile.find({ key: { $in: games.map((g) => g.profileKey) } })
-    .select({ key: 1, gameSlug: 1, editionSlug: 1, blockedReason: 1, verification: 1 })
+    .select({ key: 1, gameSlug: 1, editionSlug: 1, recipeSlug: 1, blockedReason: 1, verification: 1 })
     .lean();
   const byKey = new Map(profiles.map((p) => [p.key, p]));
   return games.map((g) => {
@@ -80,6 +86,7 @@ export async function offeredGames(tier: HostingTier, regionKey: string) {
       gameSlug: slug,
       gameTitle: getHostableGame(slug)?.title || slug,
       editionSlug: profile?.editionSlug ?? (edition === "base" ? null : edition),
+      capEnforced: slotCapEnforced(profile?.recipeSlug || slug),
       sizes: allowedSlotSizes(tier, g),
       blocked: profile?.verification === "blocked",
     };

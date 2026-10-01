@@ -267,7 +267,7 @@ function Overview({ server, control }: { server: Server; control: Control }) {
         ) : null}
       </section>
       <section className="space-y-1 rounded-xl border border-border bg-card p-4 text-sm">
-        <p><span className="text-muted-foreground">Visibility:</span> {server.visibility === "public" ? "Public — listed in Multiplayer" : server.visibility === "unlisted" ? "Unlisted — join by link or invite" : "Private"}</p>
+        <p><span className="text-muted-foreground">Visibility:</span> {server.visibility === "public" ? "Public — listed in Multiplayer" : server.visibility === "unlisted" ? "Unlisted — join by link or invite" : "Hidden — not password protected"}</p>
         <p><span className="text-muted-foreground">Size:</span> {server.slots} slots</p>
         {server.description ? <p><span className="text-muted-foreground">Description:</span> {server.description}</p> : null}
         {control.capabilities.liveApply ? (
@@ -324,7 +324,7 @@ function SettingsTab({
             <select className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5" value={visibility} onChange={(e) => setVisibility(e.target.value as Server["visibility"])}>
               <option value="public">Public — listed in Multiplayer</option>
               <option value="unlisted">Unlisted — join by link or invite</option>
-              <option value="private">Private</option>
+              <option value="private">Hidden — no public page (not password protected)</option>
             </select>
           </label>
           <div className="flex flex-wrap gap-2">
