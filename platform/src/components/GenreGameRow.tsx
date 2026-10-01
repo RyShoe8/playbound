@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 interface GenreGameRowProps {
   genre: string;
   games: DiscoverListingGame[];
+  layout?: "carousel" | "grid";
   playingNowBySlug?: Record<string, number>;
   className?: string;
 }
@@ -16,6 +17,7 @@ interface GenreGameRowProps {
 export function GenreGameRow({
   genre,
   games,
+  layout = "carousel",
   playingNowBySlug = {},
   className,
 }: GenreGameRowProps) {
@@ -65,7 +67,7 @@ export function GenreGameRow({
         </div>
 
         {/* Navigation Arrow Controls */}
-        <div className="flex items-center gap-1.5">
+        {layout === "carousel" && <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => handleScroll("left")}
@@ -92,10 +94,17 @@ export function GenreGameRow({
           >
             <ChevronRight className="size-4" />
           </button>
-        </div>
+        </div>}
       </div>
 
-      {/* Horizontal Scrolling Row */}
+      {layout === "grid" ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          {games.map((g) => (
+            <GameCard key={g.slug} game={g} playingNow={playingNowBySlug[g.slug] ?? 0} className="min-w-0 w-full" />
+          ))}
+        </div>
+      ) : (
+      /* Horizontal Scrolling Row */
       <div className="relative group/row">
         {canScrollLeft && (
           <div className="pointer-events-none absolute left-0 top-0 bottom-0 z-10 w-10 bg-gradient-to-r from-background to-transparent transition-opacity" />
@@ -117,6 +126,7 @@ export function GenreGameRow({
           <div className="pointer-events-none absolute right-0 top-0 bottom-0 z-10 w-10 bg-gradient-to-l from-background to-transparent transition-opacity" />
         )}
       </div>
+      )}
     </section>
   );
 }

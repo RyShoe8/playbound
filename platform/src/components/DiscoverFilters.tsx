@@ -691,7 +691,12 @@ export function DiscoverFilters({
           <div className="space-y-8">
             {visibleSections.map(({ genre, games: rowGames }) => (
               <div key={genre} className="cv-row">
-                <GenreGameRow genre={genre} games={rowGames} playingNowBySlug={playingNowBySlug} />
+                <GenreGameRow
+                  genre={genre}
+                  games={rowGames}
+                  playingNowBySlug={playingNowBySlug}
+                  layout={selectedGenre && selectedTags.length === 0 && selectedFeatures.length === 0 ? "grid" : "carousel"}
+                />
               </div>
             ))}
           </div>
