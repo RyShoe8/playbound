@@ -19,6 +19,14 @@ describe("Dedicated draft installation and hardware data", () => {
       expect(gamePayloadSchema.shape.hardwareRequirements.safeParse(data.hardwareRequirements).success, slug).toBe(true);
       expect(data.hardwareRequirements.provenance.sourceUrl).toMatch(/^https:\/\//);
       expect(data.hardwareRequirements.min).not.toEqual({});
+      expect(data.hardwareRequirements.provenance.verifiedAt, slug).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(data.systemRequirements.min.trim().length, `${slug}: minimum breakdown`).toBeGreaterThan(40);
+      expect(data.systemRequirements.recommended.trim().length, `${slug}: recommended breakdown or explicit gap`).toBeGreaterThan(25);
+      expect(typeof data.hardwareRequirements.min.cpuText, `${slug}: sourced CPU`).toBe("string");
+      expect(typeof data.hardwareRequirements.min.ramMB, `${slug}: sourced RAM`).toBe("number");
+      if (!data.hardwareRequirements.recommended) {
+        expect(data.systemRequirements.recommended, `${slug}: explain unpublished recommendation`).toMatch(/no separate|does not publish/i);
+      }
       const supported = (DEDICATED_DRAFT_EDITORIAL[slug].platforms as string[])
         .map((platform) => platform === "macOS" ? "macos" : platform.toLowerCase());
       expect(data.hardwareRequirements.min.os, slug).toEqual(supported);
