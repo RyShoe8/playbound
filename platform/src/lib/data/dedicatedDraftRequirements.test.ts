@@ -10,8 +10,8 @@ const slugs = [
   "rimworld", "unturned",
 ];
 
-describe("Dedicated draft installation and hardware data", () => {
-  it("covers exactly the fifteen named drafts with sourced, schema-valid requirements", () => {
+describe("Dedicated-hosting batch installation and hardware data", () => {
+  it("covers exactly the fifteen named games regardless of catalog status", () => {
     expect(Object.keys(DEDICATED_DRAFT_REQUIREMENTS).sort()).toEqual([...slugs].sort());
     for (const slug of slugs) {
       const data = DEDICATED_DRAFT_REQUIREMENTS[slug];

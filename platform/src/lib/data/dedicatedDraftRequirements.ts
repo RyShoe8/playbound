@@ -1,6 +1,8 @@
 /**
- * Developer-published client requirements for the fifteen named Dedicated
- * drafts, reviewed 2026-10-01. Steam requirement text is for the base game,
+ * Developer-published client requirements for the fifteen named games in the
+ * dedicated-hosting batch, reviewed 2026-10-01. Their current catalog status
+ * may be Draft or Testing; these requirements are not status-gated.
+ * Steam requirement text is for the base game,
  * not optional DLC or server hosting. Structured floors use a conservative
  * common floor when operating systems differ; the text calls out the
  * OS-specific figures. No install size is inferred from a

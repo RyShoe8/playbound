@@ -737,7 +737,7 @@ describe("insert-catalog-wave allowlists", () => {
     }
   });
 
-  it("keeps the Dedicated draft editorial limited to the fifteen requested game slugs", async () => {
+  it("keeps the dedicated-hosting editorial limited to the fifteen requested game slugs", async () => {
     expect(Object.keys(DEDICATED_DRAFT_EDITORIAL).sort()).toEqual([
       "battlefield-1942-anthology", "counter-strike-source", "factorio", "necesse",
       "dont-starve-together", "barotrauma", "stardew-valley", "aneurism-iv",
