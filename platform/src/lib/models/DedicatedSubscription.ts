@@ -16,6 +16,16 @@ import { Schema, model, models } from "mongoose";
 const DedicatedSubscriptionSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    // Trusted operators can administer every server on this subscription,
+    // including servers created after the grant. Billing remains owner-only.
+    admins: {
+      type: [new Schema({
+        userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+        grantedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+        grantedAt: { type: Date, default: Date.now },
+      }, { _id: false })],
+      default: [],
+    },
     tier: { type: String, required: true, default: "basic" },
     regionKey: { type: String, required: true },
     slotCapacity: { type: Number, required: true, min: 1 },
@@ -62,6 +72,7 @@ const DedicatedSubscriptionSchema = new Schema(
 );
 
 DedicatedSubscriptionSchema.index({ status: 1, regionKey: 1 });
+DedicatedSubscriptionSchema.index({ "admins.userId": 1 });
 DedicatedSubscriptionSchema.index({ stripeSubscriptionId: 1 }, { unique: true, partialFilterExpression: { stripeSubscriptionId: { $type: "string" } } });
 
 export default models.DedicatedSubscription || model("DedicatedSubscription", DedicatedSubscriptionSchema);

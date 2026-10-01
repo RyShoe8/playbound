@@ -10,6 +10,7 @@ import dbConnect from "@/lib/db";
 import CommunityServer from "@/lib/models/CommunityServer";
 import ServerActivity from "@/lib/models/ServerActivity";
 import User from "@/lib/models/User";
+import DedicatedSubscription from "@/lib/models/DedicatedSubscription";
 
 export const PERMISSIONS = [
   "server:view",
@@ -76,7 +77,13 @@ export async function authorizeServer(
   if (!Types.ObjectId.isValid(serverId) || !Types.ObjectId.isValid(userId)) return { error: "Server not found", status: 404 };
   const server = await CommunityServer.findOne({ _id: serverId, ownerType: "user" });
   if (!server) return { error: "Server not found", status: 404 };
-  const role = roleOn(server, userId);
+  let role = roleOn(server, userId);
+  if (role !== "owner" && server.dedicatedSubscriptionId) {
+    const subscription = await DedicatedSubscription.findOne({
+      _id: server.dedicatedSubscriptionId, "admins.userId": userId, status: { $ne: "expired" },
+    }).select({ _id: 1 }).lean();
+    if (subscription) role = "administrator";
+  }
   if (!role) return { error: "Server not found", status: 404 };
   if (!can(role, permission)) return { error: "You don't have permission to do that on this server.", status: 403 };
   return { server, role };

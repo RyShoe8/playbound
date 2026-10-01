@@ -15,7 +15,7 @@ export const BASIC_DEFAULTS = {
   description:
     "Your slots. Your servers. Your games. Run one big server or several smaller ones, switch between supported games whenever you want, and manage everything through PlayBound.",
   salesEnabled: false,
-  regions: [{ key: "us-central", label: "US Central", salesEnabled: true }],
+  regions: [{ key: "us-central", label: "US Central", salesEnabled: true, latitude: 41.88, longitude: -87.63 }],
   packages: [
     { slots: 4, priceCents: 799, order: 0 },
     { slots: 8, priceCents: 1299, order: 1 },
@@ -67,7 +67,7 @@ export type HostingTier = {
   paymentGraceHours: number;
   cancellationRetentionDays: number;
   safetyReservePercent: number;
-  regions: Array<{ key: string; label: string; salesEnabled: boolean }>;
+  regions: Array<{ key: string; label: string; salesEnabled: boolean; latitude?: number | null; longitude?: number | null }>;
   packages: Array<{ slots: number; priceCents: number; currency: string; enabled: boolean; order: number; stripePriceId: string | null }>;
   stripeProductId: string | null;
   games: TierGame[];

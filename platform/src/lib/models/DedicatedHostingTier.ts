@@ -30,6 +30,8 @@ const RegionSchema = new Schema(
     key: { type: String, required: true },
     label: { type: String, required: true },
     salesEnabled: { type: Boolean, default: true },
+    latitude: { type: Number, min: 24, max: 50, default: null },
+    longitude: { type: Number, min: -125, max: -66, default: null },
   },
   { _id: false }
 );

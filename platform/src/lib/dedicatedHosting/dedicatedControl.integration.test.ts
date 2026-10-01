@@ -13,6 +13,7 @@ const sent: string[] = [];
 let spawns = 0;
 vi.mock("@/lib/db", () => ({ default: async () => undefined }));
 vi.mock("next/cache", () => ({ unstable_cache: (fn: unknown) => fn }));
+vi.mock("@/lib/mailer", () => ({ sendMail: vi.fn(async () => undefined) }));
 vi.mock("@/lib/gameHost/client", () => ({
   requestManagedHostRoom: vi.fn(async (opts: { communityServerId: string }) => {
     // Every spawn gets a new room id, as the real agent does.
@@ -41,6 +42,9 @@ import ServerActivity from "@/lib/models/ServerActivity";
 import { createServer, startServer, stopServer, deleteServer, updateServer } from "./servers";
 import { applyControlSettings, getControl, kickPlayer, listPlayers, runConsole } from "./control";
 import { grantAccess, revokeAccess } from "./access";
+import { authorizeServer } from "./access";
+import { sharedServers } from "./servers";
+import { addHostingAdmin, redeemHostingAdminInvites, removeHostingAdmin } from "./admins";
 import { getTier, saveTier } from "./tier";
 
 let mongo: MongoMemoryServer;
@@ -85,6 +89,38 @@ beforeEach(async () => {
 });
 
 describe("customer Server Control", () => {
+  it("gives a subscription administrator access to existing and future servers, then revokes it", async () => {
+    await grantAccess(serverId, ids.owner, "Stranger", "moderator");
+    await DedicatedSubscription.updateOne({ userId: ids.owner }, {
+      $push: { admins: { userId: ids.stranger, grantedBy: ids.owner, grantedAt: new Date() } },
+    });
+    expect(await authorizeServer(ids.stranger, serverId, "server:configure")).toMatchObject({ role: "administrator" });
+    expect(await authorizeServer(ids.stranger, serverId, "server:manage_subscription")).toMatchObject({ status: 403 });
+    const another = await createServer(ids.owner, { profileKey: "openarena:base", slots: 8, name: "Another Room" });
+    if ("error" in another) throw new Error(another.error);
+    const secondId = String(another.server._id);
+    expect(await authorizeServer(ids.stranger, secondId, "server:start")).toMatchObject({ role: "administrator" });
+    expect((await sharedServers(ids.stranger)).map((s) => String(s._id))).toContain(secondId);
+    await DedicatedSubscription.updateOne({ userId: ids.owner }, { $pull: { admins: { userId: ids.stranger } } });
+    expect(await authorizeServer(ids.stranger, serverId, "server:configure")).toMatchObject({ status: 403 });
+    expect(await authorizeServer(ids.stranger, secondId, "server:view")).toMatchObject({ status: 404 });
+  });
+  it("lets the owner add a verified PlayBound name as an account administrator", async () => {
+    await User.updateOne({ _id: ids.stranger }, { $set: { emailVerified: true } });
+    expect(await addHostingAdmin(ids.owner, { username: "Stranger" })).toMatchObject({ ok: true });
+    expect(await authorizeServer(ids.stranger, serverId, "server:configure")).toMatchObject({ role: "administrator" });
+    expect(await removeHostingAdmin(ids.owner, { userId: ids.stranger })).toMatchObject({ ok: true });
+    expect(await authorizeServer(ids.stranger, serverId, "server:view")).toMatchObject({ status: 404 });
+  });
+  it("grants an email invitation only after that address is verified", async () => {
+    await User.updateOne({ _id: ids.stranger }, { $set: { emailVerified: false } });
+    expect(await addHostingAdmin(ids.owner, { email: "stranger@example.com" })).toMatchObject({ invited: true });
+    expect(await authorizeServer(ids.stranger, serverId, "server:view")).toMatchObject({ status: 404 });
+    expect(await redeemHostingAdminInvites("stranger@example.com", ids.stranger)).toBe(0);
+    await User.updateOne({ _id: ids.stranger }, { $set: { emailVerified: true } });
+    expect(await redeemHostingAdminInvites("stranger@example.com", ids.stranger)).toBe(1);
+    expect(await authorizeServer(ids.stranger, serverId, "server:configure")).toMatchObject({ role: "administrator" });
+  });
   it("hides the server from people with no role", async () => {
     expect(await getControl(ids.stranger, serverId)).toMatchObject({ status: 404 });
     expect(await startServer(ids.stranger, serverId)).toMatchObject({ status: 404 });
