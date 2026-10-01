@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { BlogMarkdown } from "@/components/BlogMarkdown";
+import { uploadAdminMediaFile } from "@/lib/adminUploadHelper";
 import type { BlogPostRecord } from "@/lib/blog";
 
 type Draft = Pick<BlogPostRecord, "slug" | "title" | "summary" | "bodyMarkdown" | "coverImageUrl" | "authorName" | "published">;
@@ -25,6 +26,29 @@ export function BlogManager({ initialPosts, canEdit }: { initialPosts: BlogPostR
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const selected = posts.find((post) => post.id === selectedId);
+
+  async function uploadCover(file: File) {
+    if (!canEdit || busy) return;
+    if (!file.type.startsWith("image/") || file.size > 30 * 1024 * 1024) {
+      setMessage("Choose an image under 30 MB.");
+      return;
+    }
+    setBusy(true);
+    setMessage("Uploading cover image…");
+    try {
+      const url = await uploadAdminMediaFile(file, {
+        slug: `blog-${draft.slug || "new-post"}`,
+        kind: "cover",
+        prefix: "uploads",
+      });
+      setDraft((current) => ({ ...current, coverImageUrl: url }));
+      setMessage("Cover uploaded. Save the post to keep it.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not upload cover image");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   function select(post: BlogPostRecord | null) {
     setSelectedId(post?.id || null);
@@ -105,6 +129,11 @@ export function BlogManager({ initialPosts, canEdit }: { initialPosts: BlogPostR
             <div className="space-y-4">
               <h3 className="text-3xl font-bold">{draft.title || "Untitled post"}</h3>
               <p className="text-muted-foreground">{draft.summary}</p>
+              {draft.coverImageUrl ? (
+                // Admin-selected artwork may be hosted outside our image optimizer.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={draft.coverImageUrl} alt="" className="aspect-video w-full rounded-xl object-cover" />
+              ) : null}
               <BlogMarkdown content={draft.bodyMarkdown} />
             </div>
           ) : (
@@ -126,10 +155,24 @@ export function BlogManager({ initialPosts, canEdit }: { initialPosts: BlogPostR
                 <input className={inputClass} value={draft.authorName} disabled={!canEdit} maxLength={100}
                   onChange={(event) => setDraft((current) => ({ ...current, authorName: event.target.value }))} />
               </label>
-              <label className="space-y-1 text-sm font-semibold">Cover image URL (optional)
-                <input className={inputClass} value={draft.coverImageUrl || ""} disabled={!canEdit} type="url" placeholder="https://..."
-                  onChange={(event) => setDraft((current) => ({ ...current, coverImageUrl: event.target.value }))} />
-              </label>
+              <div className="space-y-2 text-sm">
+                <p className="font-semibold">Cover image (optional)</p>
+                <p className="text-xs text-muted-foreground">Recommended: 1600 × 900 px (16:9). Keep important details away from the edges; cards may crop the image. JPG, PNG, WebP, or AVIF works best.</p>
+                {draft.coverImageUrl ? (
+                  // Admin-selected artwork may be hosted outside our image optimizer.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={draft.coverImageUrl} alt="Current cover preview" className="aspect-video w-full max-w-2xl rounded-lg border border-border object-cover" />
+                ) : null}
+                {canEdit ? <label className="inline-flex cursor-pointer rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:border-primary/40">
+                  {busy ? "Uploading…" : "Upload cover image"}
+                  <input className="sr-only" type="file" accept="image/jpeg,image/png,image/webp,image/avif" disabled={busy}
+                    onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void uploadCover(file); }} />
+                </label> : null}
+                <label className="block space-y-1 font-semibold">Or paste an image URL
+                  <input className={inputClass} value={draft.coverImageUrl || ""} disabled={!canEdit || busy} type="url" placeholder="https://..."
+                    onChange={(event) => setDraft((current) => ({ ...current, coverImageUrl: event.target.value }))} />
+                </label>
+              </div>
               <label className="space-y-1 text-sm font-semibold">Article (Markdown)
                 <textarea className={`${inputClass} min-h-[340px] font-mono leading-relaxed`} value={draft.bodyMarkdown} disabled={!canEdit}
                   onChange={(event) => setDraft((current) => ({ ...current, bodyMarkdown: event.target.value }))} />
