@@ -81,7 +81,7 @@ export default async function DealsPage() {
       : null;
 
   return (
-    <div className="mx-auto max-w-7xl space-y-12 px-4 py-8 sm:px-6 lg:px-8">
+    <div className="w-full space-y-12 px-4 py-8 sm:px-6 lg:px-8">
       <JsonLd
         data={graph(
           // graph() drops null entries itself, so no spread dance is needed.
