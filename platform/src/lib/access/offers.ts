@@ -23,6 +23,7 @@ export const KNOWN_RETAILERS = [
   "Green Man Gaming",
   "GamersGate",
   "eBay",
+  "Vintage Story Store",
 ] as const;
 
 function isRecord(raw: unknown): raw is Record<string, unknown> {

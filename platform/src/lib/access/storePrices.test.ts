@@ -23,6 +23,7 @@ describe("detectRetailer", () => {
     expect(detectRetailer("https://www.ebay.com/itm/123")).toBe("eBay");
     expect(detectRetailer("https://www.ebay.com/sch/i.html?_nkw=morrowind")).toBe("eBay");
     expect(detectRetailer("https://www.ebay.co.uk/itm/123")).toBe("eBay");
+    expect(detectRetailer("https://www.vintagestory.at/store/category/1-game-account-game-servers/")).toBe("Vintage Story Store");
     expect(detectRetailer("https://example.com/x")).toBeNull();
   });
 });

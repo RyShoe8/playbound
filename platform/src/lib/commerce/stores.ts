@@ -19,6 +19,7 @@ export const COMMERCE_STORE_SLUGS = [
   "ebay",
   "prime_gaming",
   "alienware_arena",
+  "vintage_story",
 ] as const;
 
 export type CommerceStoreSlug = (typeof COMMERCE_STORE_SLUGS)[number];
@@ -152,6 +153,15 @@ export const STORE_CAPABILITIES: Record<CommerceStoreSlug, StoreCapabilities> = 
     freeOfferIngest: true,
     discountScan: false, // giveaway-key platform, same as prime_gaming.
     retailer: null,
+  },
+  vintage_story: {
+    discovery: "manual",
+    livePrice: false,
+    titleSearch: false,
+    feedIngest: false,
+    freeOfferIngest: false,
+    discountScan: false,
+    retailer: "Vintage Story Store",
   },
 };
 
@@ -318,6 +328,18 @@ export const SEED_COMMERCE_STORES: Array<{
     freeOffersEnabled: true,
     discountScanEnabled: false,
     discovery: "api",
+  },
+  {
+    slug: "vintage_story",
+    name: "Vintage Story Store",
+    baseUrl: "https://www.vintagestory.at/store/",
+    color: "oklch(0.65 0.10 70)",
+    matchingEnabled: false,
+    priceRefreshEnabled: false,
+    affiliateDefault: false,
+    freeOffersEnabled: false,
+    discountScanEnabled: false,
+    discovery: "manual",
   },
 ];
 

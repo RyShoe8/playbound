@@ -71,6 +71,27 @@ export type EditionSeed = {
 
 export const editions: EditionSeed[] = [
   {
+    gameSlug: "risk-of-rain-2",
+    slug: "alloyed-collective",
+    name: "Risk of Rain 2: Alloyed Collective",
+    shortDescription: "Two new survivors and a fresh route through Petrichor V's mechanical uprising.",
+    description:
+      "Alloyed Collective makes another Risk of Rain 2 run feel unfamiliar again. New stages interrupt the routes you know, new items tempt you into different builds, and the Drifter and Operator give you two more ways to survive a bad landing. The new enemies and drones keep the pressure on while you learn what this part of Petrichor V is hiding.\n\nThis is paid DLC for Risk of Rain 2, not a second game or a separate executable. Buy and install the base game through Steam first, then add Alloyed Collective to that Steam account. PlayBound launches the installed Risk of Rain 2 client; Steam supplies the DLC content. One player owning the DLC can bring its stages, monsters, and items into a multiplayer lobby, while players without it cannot select its survivors or permanently unlock its content.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    sortOrder: 10,
+    links: { website: "https://store.steampowered.com/app/2781620/Risk_of_Rain_2_Alloyed_Collective/" },
+    installMethod: "steam",
+    installConfig: { steam: { appId: "2781620" } },
+    requirements: { notes: "Requires a Steam copy of the base game Risk of Rain 2 (app 632360). The DLC has no separate game executable." },
+    platforms: ["Windows"],
+    features: ["Singleplayer", "Multiplayer", "Co-op", "Controller Support"],
+    aliases: ["Alloyed Collective", "Risk of Rain 2 DLC 3"],
+    verificationLevel: "official",
+    verificationNote: "Steam lists this as downloadable content requiring Risk of Rain 2; PlayBound launches the base game's executable.",
+  },
+  {
     gameSlug: "daggerfall",
     slug: "daggerfall-unity",
     name: "Daggerfall Unity",
