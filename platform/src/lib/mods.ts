@@ -35,6 +35,8 @@ export type CatalogModPublic = {
   downloadKind: "github-zip" | "direct-zip" | "external";
   assetPattern?: string;
   directUrl?: string;
+  installerFile?: string;
+  archiveSha256?: string;
   installRelativePath: string;
   art: GameArt;
   coverImage?: string;
@@ -103,6 +105,8 @@ export type ModInstallMeta = {
   repo: string | null;
   assetPattern: string | null;
   url: string | null;
+  installerFile?: string;
+  archiveSha256?: string;
   installRelativePath: string;
   platforms?: ("Windows" | "macOS" | "Linux")[];
   approxSize: string | null;
@@ -129,6 +133,8 @@ function toMod(doc: LeanMod): CatalogModPublic {
     downloadKind: (doc.downloadKind as CatalogModPublic["downloadKind"]) || "github-zip",
     assetPattern: (doc.assetPattern as string) || undefined,
     directUrl: (doc.directUrl as string) || undefined,
+    installerFile: (doc.installerFile as string) || undefined,
+    archiveSha256: (doc.archiveSha256 as string) || undefined,
     installRelativePath: String(doc.installRelativePath ?? "mods"),
     art: (doc.art as GameArt) || seed?.art || { from: "#1e293b", to: "#64748b", icon: "Package" },
     coverImage: (doc.coverImage as string) || usableSeedMedia(seed?.coverImage),
@@ -179,6 +185,8 @@ export function toInstallMeta(mod: CatalogModPublic): ModInstallMeta {
     repo: mod.githubRepo ?? null,
     assetPattern: mod.assetPattern ?? null,
     url: mod.downloadKind === "direct-zip" || mod.downloadKind === "external" ? mod.directUrl ?? mod.website : null,
+    installerFile: mod.installerFile,
+    archiveSha256: mod.archiveSha256,
     installRelativePath: mod.installRelativePath || "",
     platforms: mod.platforms?.length ? mod.platforms : undefined,
     approxSize: sizeLabel(mod.sizeMB),
@@ -268,6 +276,8 @@ function seedToModPublic(seed: (typeof seedMods)[number]): CatalogModPublic {
     downloadKind: seed.downloadKind,
     assetPattern: seed.assetPattern || undefined,
     directUrl: seed.directUrl || undefined,
+    installerFile: seed.installerFile,
+    archiveSha256: seed.archiveSha256,
     installRelativePath: seed.installRelativePath || "mods",
     art: seed.art || { from: "#1e293b", to: "#64748b", icon: "Package" },
     coverImage: usableSeedMedia(seed.coverImage),

@@ -63,6 +63,8 @@ export type LauncherInstall = {
   assetPatternMac?: string | null;
   assetPatternLinux?: string | null;
   fileName?: string | null;
+  /** Setup executable inside a downloaded archive (the archive is not a portable game). */
+  archiveInstallerName?: string | null;
   /** itch.io's upload_id for the specific file to grab when a page lists several downloads. */
   uploadId?: string | null;
   versionLabel?: string | null;
@@ -163,6 +165,7 @@ export type LauncherCatalogEntry = {
   assetPatternMac?: string;
   assetPatternLinux?: string;
   fileName?: string;
+  archiveInstallerName?: string;
   uploadId?: string;
   versionLabel?: string;
   knownExePaths?: string[];
@@ -374,6 +377,7 @@ export function toLauncherCatalogEntry(input: {
   if (li.assetPatternMac) entry.assetPatternMac = li.assetPatternMac;
   if (li.assetPatternLinux) entry.assetPatternLinux = li.assetPatternLinux;
   if (li.fileName) entry.fileName = li.fileName;
+  if (li.archiveInstallerName) entry.archiveInstallerName = li.archiveInstallerName;
   if (li.uploadId) entry.uploadId = li.uploadId;
   if (li.versionLabel) entry.versionLabel = li.versionLabel;
   if (li.knownExePaths?.length) entry.knownExePaths = li.knownExePaths;

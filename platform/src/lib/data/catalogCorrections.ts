@@ -287,7 +287,7 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
    * the wave fills a Steam handoff only when a draft has no launcher recipe.
    */
   // EA's BF1942 PC manual documents LAN/Internet play, but no native pad.
-  "battlefield-1942-the-complete-collection": {
+  "battlefield-1942-anthology": {
     hasControllerSupport: false,
     multiplayerGamingSteps: [{ platform: "all", text: "Use Battlefield 1942's LAN or direct-IP multiplayer with matching game versions. The original GameSpy server list is offline; PlayBound does not claim to restore it." }],
   },

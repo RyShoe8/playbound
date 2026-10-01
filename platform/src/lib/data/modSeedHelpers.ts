@@ -15,6 +15,9 @@ export type ModSeed = {
   downloadKind: "github-zip" | "direct-zip" | "external";
   assetPattern?: string | null;
   directUrl?: string | null;
+  /** A checksum-pinned archive containing an installer, rather than files to overlay. */
+  installerFile?: string;
+  archiveSha256?: string;
   installRelativePath: string;
   art?: { from: string; to: string; icon: string };
   coverImage?: string;

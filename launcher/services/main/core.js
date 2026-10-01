@@ -1212,9 +1212,12 @@ async function resolveModDownload(install) {
       effectiveUrl = install.urlLinux || install.directUrlLinux;
     }
     if (!effectiveUrl) throw new Error("Mod has no direct download URL");
+    if (install.installerFile && /^https:\/\/www\.mediafire\.com\/file\//i.test(effectiveUrl)) {
+      effectiveUrl = await require("../mediafireDownload").resolveMediafireArchive(effectiveUrl);
+    }
     let name = path.basename(new URL(effectiveUrl).pathname) || "mod.zip";
     // ContentDB and similar end with /download/
-    if (!/\.(zip|jar)$/i.test(name) || /^download$/i.test(name)) {
+    if (!/\.(zip|jar|7z)$/i.test(name) || /^download$/i.test(name)) {
       name = `${install.slug || "mod"}.zip`;
     }
     return { url: effectiveUrl, name, version: install.versionLabel || "fixed" };

@@ -85,6 +85,7 @@ export const NEW_EDITION_KEYS: readonly string[] = [
  * High-quality community total conversions, expansions, and engine modernizations.
  */
 export const NEW_MOD_SLUGS: readonly string[] = [
+  "battlefield-1942-widescreen-patch",
   "deus-ex-hx",
   "morrowind-tamriel-rebuilt",
   "homm3-hd-mod",
@@ -101,7 +102,7 @@ export const NEW_MOD_SLUGS: readonly string[] = [
 export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   // Database-only Dedicated Basic drafts. Scope to verified scalar/step fields;
   // multiplayer feature chips are appended below without replacing CMS data.
-  "battlefield-1942-the-complete-collection": ["hasControllerSupport", "multiplayerGamingSteps"],
+  "battlefield-1942-anthology": ["hasControllerSupport", "multiplayerGamingSteps"],
   "aneurism-iv": ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps"],
   "stardew-valley": ["steamAppId", "hasControllerSupport", "maxPlayers", "multiplayerGamingSteps"],
   starbound: ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps"],
@@ -765,7 +766,7 @@ export const SKIP_MISSING_PATCH_GAMES: readonly string[] = ["risk-of-rain-2"];
 
 /** Append only; do not replace these database-only drafts' curated features. */
 export const ADD_GAME_FEATURES: Readonly<Record<string, readonly string[]>> = {
-  "battlefield-1942-the-complete-collection": ["Multiplayer"],
+  "battlefield-1942-anthology": ["Multiplayer", "Mod Support"],
   "aneurism-iv": ["Multiplayer", "LAN Support"],
   "stardew-valley": ["Multiplayer", "Co-op", "Couch Co-Op", "Split-Screen Co-op", "Controller Support"],
   starbound: ["Multiplayer", "Co-op"],
