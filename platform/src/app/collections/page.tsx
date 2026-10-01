@@ -12,9 +12,9 @@ import { absoluteUrl } from "@/lib/site";
  */
 
 export const metadata = pageMetadata({
-  title: "Curated Collections of Free Games",
+  title: "Curated Game Collections",
   description:
-    "Hand-picked groupings of free games: the best free RTS games, LAN party favourites, games under 500MB, and more. Every title clears the PlayBound Bar.",
+    "Hand-picked free and affordable games for different moods, including multiplayer favorites and games with great mods. Every title clears the PlayBound Bar.",
   path: "/collections",
 });
 

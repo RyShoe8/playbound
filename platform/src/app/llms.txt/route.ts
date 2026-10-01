@@ -34,7 +34,7 @@ async function buildLlmsTxt(): Promise<string> {
   lines.push(`# ${SITE_NAME}`);
   lines.push("");
   lines.push(
-    "> A deliberately small, curated catalog of free and affordable games that are genuinely good."
+    "> A curated catalog of great value games, standout mods and total conversions, and multiplayer worth coming back to."
   );
   lines.push(
     "> Free games are not scarce; good ones are. Every title listed here has been"

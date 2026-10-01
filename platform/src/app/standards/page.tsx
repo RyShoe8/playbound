@@ -16,7 +16,7 @@ export const metadata = pageMetadata({
 const FAQ = [
   {
     q: "What does PlayBound mean by 'worth the cost'?",
-    a: "The game is free, or it returns far more than it asks for — a deep discount from an authorized source, or years of mods, editions and community servers behind it. There is no fixed price ceiling; what matters is the gap between what you pay and what you get, and in practice that keeps the catalog cheap. Cosmetic shops, battle passes, and premium extras are acceptable when they remain optional. Paid competitive advantages, a trial pretending to be a full game, paywalled core content, and bait-and-switch pricing fail the bar. A genuinely free live-service game can qualify, and so can a $5.99 classic you own outright.",
+    a: "The game is free, or it gives you far more than its price suggests. A deep discount, years of mods and total conversions, or a lively multiplayer community can add lasting value. There is no fixed price ceiling. Optional cosmetics and expansions are fine, but paid competitive advantages, disguised trials, and paywalled core content fail the bar. Price alone never makes a game good enough to recommend.",
   },
   {
     q: "Why does PlayBound have so few games?",
@@ -25,6 +25,10 @@ const FAQ = [
   {
     q: "Do you actually play the games before listing them?",
     a: "Yes. We install it, launch it, and play it ourselves. We have spent hours building definitive editions and making multiplayer work because a store-page claim is not the same as a game we can confidently put in front of you. If we cannot get a real session going, it does not ship.",
+  },
+  {
+    q: "Does every game need multiplayer?",
+    a: "No. We love great single-player games. But good multiplayer is a major reason we choose a game: a lasting community, a memorable co-op night, or a competitive scene you can actually join makes a game more valuable. When we recommend multiplayer, we test how it works rather than relying on a store badge.",
   },
   {
     q: "How often is the standard re-checked?",
@@ -75,9 +79,10 @@ export default async function StandardsPage() {
         The PlayBound Bar
       </h1>
       <p className="mt-4 max-w-3xl text-lg leading-relaxed text-muted-foreground">
-        Great games are not scarce because they are free. They are scarce because most
-        titles — free or paid — are not worth your evening. What is scarce is a
-        trustworthy answer to which ones are actually good, and worth what they cost.
+        A great game should reward the time and money you put into it. That might mean
+        a brilliant solo experience, years of mods and total conversions, or a
+        multiplayer community that makes you want to come back. We look for the
+        games that deliver, then make it easier to play their best versions.
       </p>
       <p className="mt-4 max-w-3xl leading-relaxed text-muted-foreground">
         So {SITE_NAME} is deliberately small. Every game is tested and played
@@ -112,17 +117,15 @@ export default async function StandardsPage() {
         <h2 className="mt-2 text-2xl font-extrabold tracking-tight">Small price. Ridiculous value.</h2>
         <div className="mt-3 max-w-3xl space-y-3 leading-relaxed text-muted-foreground">
           <p>
-            PlayBound is not trying to be Steam or catalog every worthwhile game. We focus on games
-            that return far more than they ask for: genuinely good free games, and paid ones that
-            earn their place through a deep discount or a living community where mods, editions,
-            servers, and open-source engines turn one purchase into years of play.
+            We focus on games that return far more than they ask for: genuinely good free games,
+            and affordable paid games whose depth, discounts, mods, editions, or multiplayer
+            communities make them easy to keep playing.
           </p>
           <p>
-            There is no fixed price ceiling any more. A game at full price with nothing behind it
-            does not belong here; the same game at seventy percent off, or with a decade of mods and
-            a dozen playable editions, very much does. What we measure is the gap between what a
-            game costs and what you get, rather than one number on the store page. In practice that
-            still means a cheap catalog — you will not find full-price blockbusters here.
+            A deep sale can open the door, but the game still has to be good. Mods and total
+            conversions can turn one purchase into whole new experiences; a thriving co-op or
+            competitive scene can make every session different. We weigh what you get against
+            what you pay, without a fixed price ceiling.
           </p>
           <p>
             None of this is a claim that developers should work for less. Good developers deserve

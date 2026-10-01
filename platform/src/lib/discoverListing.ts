@@ -6,6 +6,7 @@ export type DiscoverListingGame = Pick<Game,
   | "launchMethods" | "art" | "coverImage" | "browserPlayable"
   | "steamDeck" | "platforms" | "hardwareRequirements" | "access"
   | "status" | "website"
+  | "hasControllerSupport"
 > & { multiplayer?: boolean; isMultiplayer?: boolean };
 
 export function toDiscoverListingGame(game: Game): DiscoverListingGame {
@@ -27,6 +28,7 @@ export function toDiscoverListingGame(game: Game): DiscoverListingGame {
     access: game.access,
     status: game.status,
     website: game.website,
+    hasControllerSupport: game.hasControllerSupport,
     multiplayer: multiplayer.multiplayer,
     isMultiplayer: multiplayer.isMultiplayer,
   };

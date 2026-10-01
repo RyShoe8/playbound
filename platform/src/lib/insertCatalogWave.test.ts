@@ -127,6 +127,7 @@ describe("insert-catalog-wave allowlists", () => {
         "pokemmo/official",
         "populous-the-beginning/official",
         "populous-the-beginning/populous-reincarnated",
+        "risk-of-rain-2/alloyed-collective",
         "s-t-a-l-k-e-r-clear-sky/official",
         "s-t-a-l-k-e-r-shadow-of-chernobyl/lost-alpha",
         "s-t-a-l-k-e-r-shadow-of-chernobyl/official",
@@ -140,6 +141,7 @@ describe("insert-catalog-wave allowlists", () => {
   it("only names the batch mods we intend to create", () => {
     expect([...NEW_MOD_SLUGS].sort()).toEqual(
       [
+        "battlefield-1942-widescreen-patch",
         "cataclysm-dda-magiclysm",
         "deus-ex-hx",
         "homm3-hd-mod",
@@ -165,6 +167,22 @@ describe("insert-catalog-wave allowlists", () => {
   it("patches the allowlisted games only", () => {
     expect(Object.keys(PATCH_GAME_FIELDS).sort()).toEqual(
       [
+        // Dedicated Basic catalog drafts, added after this explicit allowlist test.
+        "battlefield-1942-anthology",
+        "aneurism-iv",
+        "stardew-valley",
+        "starbound",
+        "necesse",
+        "dont-starve-together",
+        "barotrauma",
+        "factorio",
+        "terraria",
+        "vintage-story",
+        "core-keeper",
+        "risk-of-rain-2",
+        "rimworld",
+        "counter-strike-source",
+        "unturned",
         "alien-swarm",
         "castlevania-revamped",
         "deus-ex-goty-edition",

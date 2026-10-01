@@ -79,7 +79,7 @@ export function EditionCard({
           )}
         </div>
 
-        <CardCategoryTags genres={game.genres} tags={edition.tags} controller={supportsController(edition) || (edition.hasControllerSupport !== false && supportsController(game))} className="mb-1" />
+        <CardCategoryTags genres={game.genres} features={edition.features ?? game.features} tags={edition.tags} controller={supportsController(edition) || (edition.hasControllerSupport !== false && supportsController(game))} className="mb-1" />
         <div className="flex flex-wrap items-center gap-2">
           <EditionTypeBadge edition={edition} />
           <VerificationBadge level={edition.verificationLevel} />
