@@ -73,7 +73,7 @@ test("installLocateThenZip merges nested GAME folder if overlay contains one", (
 
 test("an explicit edition launch cannot fall back to another installed edition", () => {
   const body = fn("playGameInner");
-  assert.match(body, /!editionSlug\s*&&\s*!exeOnDisk\(info\)\s*&&\s*exeOnDisk\(game\)/);
+  assert.match(body, /!editionSlug\s*&&\s*!exeOnDisk\(info\)\s*&&\s*playableExePath\(game\)/);
   assert.match(body, /!editionSlug\s*&&\s*!exeOnDisk\(info\)\s*&&\s*game\.editions/);
 });
 

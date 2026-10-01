@@ -37,7 +37,7 @@ describe("owned-game executable pickup", () => {
     for (const slug of ["gmdx", "playbound-hx-coop"]) {
       const edition = editions.find((item) => item.gameSlug === "deus-ex-goty-edition" && item.slug === slug);
       const installer = edition?.installConfig?.playbound_installer;
-      expect(installer?.kind, slug).toBe("locate-then-zip");
+      expect(installer?.kind, slug).toBe(slug === "gmdx" ? "locate-then-nsis" : "locate-then-zip");
       expect(installer?.baseExeHint, slug).toBe("DeusEx");
     }
   });
