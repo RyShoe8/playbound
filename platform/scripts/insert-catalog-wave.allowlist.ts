@@ -106,7 +106,7 @@ const DEDICATED_DRAFT_EDITORIAL_FIELDS = [
   "tagline", "description", "developerSlug", "developerName", "releaseYear", "license",
   "genres", "platforms", "launchMethods", "browserPlayable", "qualityBar",
   "thatOneThing", "longDescription", "whyWePickedIt", "bestFor", "notFor",
-  "comparableTo", "faq", "installSteps",
+  "comparableTo", "faq", "installSteps", "systemRequirements", "hardwareRequirements",
 ] as const;
 
 export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {

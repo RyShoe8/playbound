@@ -63,8 +63,16 @@ async function main() {
   const scopedGames = scopeArg
     ? new Set(scopeArg.slice("--games=".length).split(",").map((slug) => slug.trim()).filter(Boolean))
     : null;
+  const fieldsArg = process.argv.find((arg) => arg.startsWith("--fields="));
+  const scopedFields = fieldsArg
+    ? new Set(fieldsArg.slice("--fields=".length).split(",").map((field) => field.trim()).filter(Boolean))
+    : null;
   if (scopedGames && (scopedGames.size === 0 || [...scopedGames].some((slug) => !PATCH_GAME_FIELDS[slug]))) {
     throw new Error("--games must list nonempty, comma-separated slugs already in PATCH_GAME_FIELDS");
+  }
+  if (scopedFields && (!scopedGames || scopedFields.size === 0 || [...scopedGames].some((slug) =>
+    [...scopedFields].some((field) => !PATCH_GAME_FIELDS[slug].includes(field))))) {
+    throw new Error("--fields requires --games and fields allowlisted for every named game");
   }
   const inScope = (slug: string) => !scopedGames || scopedGames.has(slug);
   if (!process.env.MONGODB_URI) {
@@ -106,6 +114,7 @@ async function main() {
   const { launcherInstallBySlug } = await import("../src/lib/data/launcherInstall");
   const { correctionsFor } = await import("../src/lib/data/catalogCorrections");
   const { dedicatedDraftEditorialFor } = await import("../src/lib/data/dedicatedDraftEditorial");
+  const { dedicatedDraftRequirementsFor } = await import("../src/lib/data/dedicatedDraftRequirements");
   const { attributionFor } = await import("../src/lib/data/modAttributions");
   const { modAuthorsBySlug } = await import("../src/lib/data/modAuthors");
   const { defaultArtFor } = await import("../src/lib/gamePayload");
@@ -280,7 +289,9 @@ async function main() {
   let gamesPatched = 0;
   let gamesPatchSkipped = 0;
   for (const slug of patchGameSlugs) {
-    const fields = PATCH_GAME_FIELDS[slug];
+    const fields = scopedFields
+      ? PATCH_GAME_FIELDS[slug].filter((field) => scopedFields.has(field))
+      : PATCH_GAME_FIELDS[slug];
     if (!fields || fields.length === 0) {
       console.warn(`insert-catalog-wave — empty patch field list for ${slug}, skipping`);
       gamesPatchSkipped++;
@@ -395,6 +406,8 @@ async function main() {
     }
     const draftEditorial = dedicatedDraftEditorialFor(slug);
     if (draftEditorial) source = { ...source, ...draftEditorial };
+    const draftRequirements = dedicatedDraftRequirementsFor(slug);
+    if (draftRequirements) source = { ...source, ...draftRequirements };
 
     const payload = pickFields(source, fields);
     for (const field of fields) {
@@ -416,7 +429,7 @@ async function main() {
       delete payload.coverImage;
     }
 
-    const additions = ADD_GAME_FEATURES[slug] ?? [];
+    const additions = scopedFields ? [] : (ADD_GAME_FEATURES[slug] ?? []);
     if (additions.length && fields.includes("features")) {
       throw new Error(`insert-catalog-wave — refuse conflicting feature writes for ${slug}`);
     }
