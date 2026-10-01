@@ -29,7 +29,7 @@ export default async function BlogPage() {
                 {post.coverImageUrl ? (
                   // Admin-supplied HTTPS image; the browser loads it directly.
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={post.coverImageUrl} alt="" loading="lazy" className="aspect-video w-full object-cover" />
+                  <img src={post.coverImageUrl} alt="" loading="lazy" className="aspect-video w-full bg-secondary/30 object-contain" />
                 ) : null}
                 <div className="flex flex-1 flex-col gap-3 p-5">
                   <p className="text-xs font-semibold text-primary">{post.publishedAt ? new Date(post.publishedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" }) : ""}</p>
