@@ -15,6 +15,7 @@ import { retentionFor } from "./backups";
 export const WORLD_BACKUP_GAMES = [
   "mindustry", "openttd", "luanti", "freeciv", "morrowind",
   "terraria", "factorio", "core-keeper", "vintage-story", "rimworld-together",
+  "barotrauma", "dont-starve-together", "necesse",
 ] as const;
 
 export function hasWorldBackups(recipeSlug: string): boolean {

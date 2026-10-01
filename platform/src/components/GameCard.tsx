@@ -297,6 +297,7 @@ export function GameCard({
           <p className="text-[11px] font-extrabold tracking-wide text-muted-foreground">{price}</p>
           <CardCategoryTags
             genres={game.genres}
+            features={game.features}
             tags={game.tags}
             controller={supportsController(game)}
             size="sm"

@@ -48,7 +48,7 @@ function CollectionGameRow({ game, index }: { game: Game; index: number }) {
           <span className="font-bold tabular-nums text-muted-foreground">{price}</span>
           <span className="text-muted-foreground">{game.genres.join(" · ")}</span>
         </div>
-        <CardCategoryTags genres={game.genres} tags={game.tags} controller={supportsController(game)} className="mt-1.5" />
+        <CardCategoryTags genres={game.genres} features={game.features} tags={game.tags} controller={supportsController(game)} className="mt-1.5" />
       </div>
       <PlayCta game={game} size="sm" />
     </div>

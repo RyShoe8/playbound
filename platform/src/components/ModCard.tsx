@@ -71,6 +71,7 @@ export function ModCard({
         <CardCategoryTags
           genres={mod.license ? [mod.license] : []}
           tags={mod.tags}
+          variant="mod"
           className="mt-2"
           max={3}
           size="md"

@@ -23,7 +23,7 @@ import { listGames } from "@/lib/catalog";
 export const metadata: Metadata = pageMetadata({
   title: "Great Games on a Real-World Budget",
   description:
-    "PlayBound curates exceptional free and affordable games, tests them ourselves, and makes the best editions, mods, and multiplayer easier to enjoy.",
+    "PlayBound curates great value games, standout mods and total conversions, and multiplayer worth coming back to. Every game is played and tested by us.",
   path: "/about",
 });
 
@@ -61,7 +61,7 @@ export default async function AboutPage() {
       icon: Users,
       title: "Multiplayer & Parties",
       description:
-        "Join Game starts a PlayBound Connect room so friends behind home internet land in the same server. Public server lists and official-game parties still work the way they always have.",
+        "A great game night is one of the best kinds of value. We seek out multiplayer games worth playing together and make parties, servers, and joining friends easier.",
       href: "/connect",
     },
     {
@@ -74,7 +74,7 @@ export default async function AboutPage() {
       icon: Layers,
       title: "Preservation & Modding",
       description:
-        "Supporting open-source engines, standalone fan projects, and curated mod ecosystems that keep legendary games thriving for decades.",
+        "Mods, total conversions, source ports, and fan projects can make a good game feel new again. We find the versions worth your time and help you play them.",
     },
   ];
 
@@ -87,7 +87,7 @@ export default async function AboutPage() {
             name: "About PlayBound",
             url: absoluteUrl("/about"),
             description:
-              "Learn about PlayBound's mission to curate exceptional free and affordable games and provide an open, privacy-first gaming ecosystem.",
+              "Learn why PlayBound curates great value games, standout mods and total conversions, and memorable multiplayer experiences.",
             publisher: { "@id": ORGANIZATION_ID },
           },
           breadcrumbSchema([
@@ -110,10 +110,9 @@ export default async function AboutPage() {
           </span>
         </h1>
         <p className="max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-          We built PlayBound around a simple belief: a small budget should still buy years of great
-          play. Outstanding free games, and the paid ones that hand you a deep discount or a decade
-          of mods, get drowned out by store clutter, pay-to-win systems, and catalogs built for
-          volume instead of trust.
+          We built PlayBound around a simple belief: a small budget can still lead to years of great
+          play. We look for games that earn your time, whether that means an unforgettable solo
+          adventure, a deep library of mods, or a multiplayer night you want to repeat.
         </p>
       </header>
 
@@ -144,19 +143,20 @@ export default async function AboutPage() {
         </h2>
         <div className="space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
           <p>
-            Parts of the mainstream video game industry have shifted toward aggressive live-service
-            economies, paid competitive advantages, loot boxes, and dark UX patterns designed to extract time and money.
-            Meanwhile, passionate independent developers, open-source maintainers, and community teams
-            have quietly built extraordinary games that are free or remarkably affordable.
+            Some games give you much more than their price suggests. A free favorite, a classic on
+            a great deal, or a game transformed by mods and total conversions can keep surprising
+            you for years. And when the multiplayer is good, those games become places to meet up,
+            compete, cooperate, and make new stories with friends.
           </p>
           <p>
-            The problem is discovery. Finding these gems usually requires digging through forum threads,
-            compiling GitHub repositories, and manually configuring dependencies.
+            Finding the right game is only the start. Knowing which edition to play, which mods
+            make it better, and how to get everyone into the same session can take more work than
+            playing it. We do that homework and share what we learn.
           </p>
           <p>
-            <strong>PlayBound changes that.</strong> We provide a sleek, centralized catalog and an
-            integrated desktop launcher that turns great free and affordable games into seamless one-click experiences.
-            No ads, no bundled spyware, and no paywalls.
+            <strong>PlayBound brings it together.</strong> Our curated catalog tells you why each
+            game is worth playing. Our launcher helps you install the version we recommend, try
+            the best community additions, and get into a game with friends.
           </p>
         </div>
       </section>

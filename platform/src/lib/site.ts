@@ -47,7 +47,7 @@ function publicHostFrom(siteUrl: string): string {
 export const SITE_TAGLINE = "Discover. Play. Connect.";
 
 export const SITE_DESCRIPTION =
-  "Great games don't have to cost $70. PlayBound finds exceptional free and affordable games, tests them, improves them with the best community tools and mods, and makes them easier to install and play together.";
+  "PlayBound finds great free and affordable games with lasting value: memorable solo adventures, strong multiplayer, and mods and total conversions that give you more to play. We test them and make the best versions easier to enjoy.";
 
 /**
  * One line for the share card.
@@ -59,7 +59,7 @@ export const SITE_DESCRIPTION =
  * stopped being free-only, because nothing tied it to the description here.
  */
 export const SITE_SOCIAL_SUBTITLE =
-  "Exceptional free and affordable games — tested, improved, and easy to play together.";
+  "Great value games, standout mods, and multiplayer worth coming back to.";
 
 /** Host for share artwork. Never a dev or preview origin — see publicHostFrom. */
 export const SITE_PUBLIC_HOST = publicHostFrom(SITE_URL);
@@ -94,7 +94,7 @@ export const QUALITY_BAR = [
     key: "genuinelyFree" as const,
     title: "Worth the cost",
     description:
-      "Free, or returning far more than it asks for — a deep discount, or years of mods, editions and community servers behind it. There is no fixed price ceiling; what counts is the gap between what you pay and what you get. Good developers deserve to be paid, and optional cosmetics, expansions, and premium extras are welcome. But we won't list games that sell competitive advantages, disguise a trial as free, or charge again to finish the core experience.",
+      "Free, or returning far more than it asks for. A great game at a deep discount, a rich mod scene, a total conversion, or an active multiplayer community can all make a small purchase go a long way. We judge the game and its lasting value, not a fixed price ceiling. Optional extras are welcome; paid competitive advantages, disguised trials, and paywalls on the core experience are not.",
   },
   {
     key: "finished" as const,

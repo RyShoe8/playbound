@@ -526,7 +526,7 @@ function MobileLibraryRow({
             ownedElsewhere={ownedElsewhere}
             game={game}
           />
-          <CardCategoryTags genres={game.genres} tags={game.tags} controller={supportsController(game)} />
+          <CardCategoryTags genres={game.genres} features={game.features} tags={game.tags} controller={supportsController(game)} />
         </div>
       </div>
       <div className="mt-3 flex flex-wrap gap-2 border-t border-border pt-3">
@@ -673,7 +673,7 @@ function DesktopLibraryRow({
             </Link>
             <p className="truncate text-sm text-muted-foreground">{game.genres.join(" · ")}</p>
           </div>
-          <CardCategoryTags genres={game.genres} tags={game.tags} />
+          <CardCategoryTags genres={game.genres} features={game.features} tags={game.tags} controller={supportsController(game)} />
         </div>
         <div className="mt-2">
           <StatusBadges

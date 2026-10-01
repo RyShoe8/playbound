@@ -295,7 +295,7 @@ export function HomeHeroPromoSection({
                   <Sparkles className="size-3" /> Discover. Play. Connect.
                 </Badge>
                 <span className="text-xs font-semibold text-muted-foreground">
-                  Free games and deep value — big discounts, big mod scenes
+                  Free games, lasting value, great multiplayer
                 </span>
               </div>
 
@@ -307,9 +307,9 @@ export function HomeHeroPromoSection({
               </h1>
 
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
-                Great games don&apos;t have to cost $70. PlayBound finds exceptional free and affordable
-                games, tests them, improves them with the best community tools and mods, and makes
-                them easier to install and play together.
+                PlayBound finds great free and affordable games with something worth coming back
+                for: memorable solo adventures, rich mods and total conversions, and multiplayer
+                that makes the next game night easy to plan. We play and test the games we recommend.
               </p>
 
               <div className="mt-5 max-w-xl rounded-2xl border border-border bg-secondary/40 p-4">
