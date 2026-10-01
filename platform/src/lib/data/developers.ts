@@ -1,6 +1,17 @@
 import type { Developer } from "./types";
 
 export const developers: Developer[] = [
+  // Studios behind the Dedicated Basic draft catalog. The developer seeder is
+  // insert-only per slug; an existing CMS profile is never overwritten.
+  { slug: "dice", name: "DICE", tagline: "The studio behind Battlefield 1942.", about: "Swedish game studio that developed Battlefield 1942 and its combined-arms multiplayer foundation.", founded: 0, location: "Sweden", website: "https://www.ea.com/ea-studios/dice", artHue: 210 },
+  { slug: "wube-software", name: "Wube Software", tagline: "Creators of Factorio.", about: "The Czech studio developing Factorio and its automation-focused expansions.", founded: 0, location: "Czech Republic", website: "https://factorio.com/", artHue: 35 },
+  { slug: "concernedape", name: "ConcernedApe", tagline: "Creator of Stardew Valley.", about: "Eric Barone created Stardew Valley and continues to develop it under the name ConcernedApe.", founded: 0, location: "", website: "https://www.stardewvalley.net/", artHue: 135 },
+  { slug: "hopoo-games", name: "Hopoo Games", tagline: "Creators of Risk of Rain 2.", about: "The original development team behind the Risk of Rain series, including the base game Risk of Rain 2.", founded: 0, location: "", website: "https://www.riskofrain.com/", artHue: 25 },
+  { slug: "re-logic", name: "Re-Logic", tagline: "Creators of Terraria.", about: "The studio behind Terraria and its long-running world of building, exploration, and bosses.", founded: 0, location: "", website: "https://terraria.org/", artHue: 75 },
+  { slug: "anego-studios", name: "Anego Studios", tagline: "Creators of Vintage Story.", about: "The independent studio developing Vintage Story and its own survival-focused voxel engine.", founded: 2016, location: "", website: "https://www.vintagestory.at/", artHue: 30 },
+  { slug: "pugstorm", name: "Pugstorm", tagline: "Creators of Core Keeper.", about: "The studio developing the underground exploration and crafting game Core Keeper.", founded: 0, location: "", website: "https://corekeepergame.com/", artHue: 180 },
+  { slug: "ludeon-studios", name: "Ludeon Studios", tagline: "Creators of RimWorld.", about: "The studio behind RimWorld, a colony simulation designed to generate stories from its systems and characters.", founded: 0, location: "", website: "https://rimworldgame.com/", artHue: 15 },
+  { slug: "fakefish-undertow", name: "FakeFish & Undertow Games", tagline: "The teams behind Barotrauma.", about: "FakeFish and Undertow Games jointly developed Barotrauma, the cooperative submarine survival game.", founded: 0, location: "", website: "https://barotraumagame.com/", artHue: 205 },
   /*
    * Published-catalog developer-attribution pass, 2026-09-25. Each of the
    * following games was stuck on the admin import tool's generic

@@ -57,18 +57,29 @@ function pickFields(
 }
 
 async function main() {
+  // Optional operational scope for an explicitly named game batch. The
+  // scheduled/deploy wave keeps its established behavior when omitted.
+  const scopeArg = process.argv.find((arg) => arg.startsWith("--games="));
+  const scopedGames = scopeArg
+    ? new Set(scopeArg.slice("--games=".length).split(",").map((slug) => slug.trim()).filter(Boolean))
+    : null;
+  if (scopedGames && (scopedGames.size === 0 || [...scopedGames].some((slug) => !PATCH_GAME_FIELDS[slug]))) {
+    throw new Error("--games must list nonempty, comma-separated slugs already in PATCH_GAME_FIELDS");
+  }
+  const inScope = (slug: string) => !scopedGames || scopedGames.has(slug);
   if (!process.env.MONGODB_URI) {
+    if (scopedGames) throw new Error("Scoped catalog wave cannot run: MONGODB_URI is not set");
     console.warn("insert-catalog-wave skipped — MONGODB_URI is not set.");
     process.exit(0);
   }
 
-  const allowedEditions = new Set(NEW_EDITION_KEYS);
-  const allowedMods = new Set(NEW_MOD_SLUGS);
-  const patchGameSlugs = Object.keys(PATCH_GAME_FIELDS);
-  const patchEditionKeys = Object.keys(PATCH_EDITION_FIELDS);
-  const patchModSlugs = Object.keys(PATCH_MOD_FIELDS);
-  const retireEditionKeys = [...RETIRE_EDITION_KEYS];
-  const retireModSlugs = [...RETIRE_MOD_SLUGS];
+  const allowedEditions = new Set(scopedGames ? [] : NEW_EDITION_KEYS);
+  const allowedMods = new Set(scopedGames ? [] : NEW_MOD_SLUGS);
+  const patchGameSlugs = Object.keys(PATCH_GAME_FIELDS).filter(inScope);
+  const patchEditionKeys = scopedGames ? [] : Object.keys(PATCH_EDITION_FIELDS);
+  const patchModSlugs = scopedGames ? [] : Object.keys(PATCH_MOD_FIELDS);
+  const retireEditionKeys = scopedGames ? [] : [...RETIRE_EDITION_KEYS];
+  const retireModSlugs = scopedGames ? [] : [...RETIRE_MOD_SLUGS];
 
   if (
     NEW_GAME_SLUGS.length === 0 &&
@@ -94,6 +105,7 @@ async function main() {
   const { developersBySlug } = await import("../src/lib/data/developers");
   const { launcherInstallBySlug } = await import("../src/lib/data/launcherInstall");
   const { correctionsFor } = await import("../src/lib/data/catalogCorrections");
+  const { dedicatedDraftEditorialFor } = await import("../src/lib/data/dedicatedDraftEditorial");
   const { attributionFor } = await import("../src/lib/data/modAttributions");
   const { modAuthorsBySlug } = await import("../src/lib/data/modAuthors");
   const { defaultArtFor } = await import("../src/lib/gamePayload");
@@ -151,6 +163,7 @@ async function main() {
   let gamesCreated = 0;
   let gamesSkipped = 0;
   for (const slug of NEW_GAME_SLUGS) {
+    if (scopedGames) continue;
     const seed = games.find((g) => g.slug === slug);
     if (!seed) {
       console.warn(`insert-catalog-wave — game ${slug} not in seed, skipping`);
@@ -339,7 +352,7 @@ async function main() {
       };
     } else {
       const seed = games.find((g) => g.slug === slug);
-      const corrections = correctionsFor(slug);
+      const corrections = correctionsFor(slug) ?? dedicatedDraftEditorialFor(slug);
       /*
        * A game curated entirely in the admin CMS has no seed row, so the wave
        * skipped it and there was no safe way to fix one wrong field. A
@@ -380,6 +393,8 @@ async function main() {
     if (slugCorrections) {
       source = { ...source, ...slugCorrections };
     }
+    const draftEditorial = dedicatedDraftEditorialFor(slug);
+    if (draftEditorial) source = { ...source, ...draftEditorial };
 
     const payload = pickFields(source, fields);
     for (const field of fields) {
@@ -428,7 +443,7 @@ async function main() {
   // Exception: the imported Risk of Rain 2 draft may still carry Alloyed
   // Collective's DLC app id after its slug/title are corrected. Replace only
   // that exact, provably wrong handoff; never touch another store's recipe.
-  const correctedDlc = await CatalogGame.updateOne(
+  const correctedDlc = scopedGames ? { modifiedCount: 0 } : await CatalogGame.updateOne(
     { slug: "risk-of-rain-2", status: "draft", $or: [
       { "launcherInstall.steamAppId": "2781620" },
       { "launcherInstall.url": "steam://run/2781620" },
@@ -443,6 +458,7 @@ async function main() {
   );
   if (correctedDlc.modifiedCount) console.log("replace Risk of Rain 2 DLC Steam handoff with base game");
   for (const [slug, appId] of Object.entries(FILL_MISSING_STEAM_LAUNCH)) {
+    if (scopedGames) continue;
     const result = await CatalogGame.updateOne(
       { slug, status: "draft", $or: [{ launcherInstall: null }, { launcherInstall: { $exists: false } }] },
       { $set: { launcherInstall: {
@@ -463,6 +479,7 @@ async function main() {
   // authoritative. Anthology's existing verified VPS package is preserved;
   // there is no storefront handoff to synthesize if that recipe is absent.
   for (const [slug, pickup] of Object.entries(DRAFT_INSTALL_PICKUP)) {
+    if (scopedGames) continue;
     const doc = await CatalogGame.findOne({ slug }).select("launcherInstall").lean();
     if (!doc) continue;
     const existing = doc.launcherInstall;
@@ -525,6 +542,7 @@ async function main() {
   // These two storefront links were supplied by the curator. Keep the game's
   // existing offers/prices untouched; the normal GOG matcher can price them.
   for (const slug of ["stardew-valley", "starbound"] as const) {
+    if (scopedGames) continue;
     await CatalogGame.updateOne(
       { slug, $or: [{ gogStoreUrl: null }, { gogStoreUrl: { $exists: false } }] },
       { $set: { gogStoreUrl: DRAFT_INSTALL_PICKUP[slug].storeUrl } }
@@ -710,6 +728,7 @@ async function main() {
   const { partyMaxPlayersBySlug } = await import("../src/lib/data/partyMaxPlayers");
   let maxPlayersPatched = 0;
   for (const [slug, maxPlayers] of Object.entries(partyMaxPlayersBySlug)) {
+    if (scopedGames) continue;
     const result = await CatalogGame.updateOne({ slug }, { $set: { maxPlayers } });
     if (result.matchedCount === 1) {
       maxPlayersPatched++;

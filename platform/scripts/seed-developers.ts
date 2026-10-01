@@ -18,12 +18,19 @@ async function main() {
   const Developer = (await import("../src/lib/models/Developer")).default;
   const { developers } = await import("../src/lib/data/developers");
 
+  const slugArg = process.argv.find((arg) => arg.startsWith("--slugs="));
+  const requested = slugArg ? new Set(slugArg.slice("--slugs=".length).split(",").map((slug) => slug.trim()).filter(Boolean)) : null;
+  if (requested && (requested.size === 0 || [...requested].some((slug) => !developers.some((dev) => dev.slug === slug)))) {
+    throw new Error("--slugs must name nonempty, comma-separated developer slugs from the seed registry");
+  }
+
   await dbConnect();
 
   let created = 0;
   let skipped = 0;
 
   for (const d of developers) {
+    if (requested && !requested.has(d.slug)) continue;
     const existing = await Developer.findOne({ slug: d.slug }).lean();
     if (existing) {
       skipped++;

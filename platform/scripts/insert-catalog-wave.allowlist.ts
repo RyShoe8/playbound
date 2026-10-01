@@ -102,25 +102,32 @@ export const NEW_MOD_SLUGS: readonly string[] = [
  * screenshots, or artwork selected later in the admin CMS. New rows still
  * receive their initial seed media through NEW_GAME_SLUGS.
  */
+const DEDICATED_DRAFT_EDITORIAL_FIELDS = [
+  "tagline", "description", "developerSlug", "developerName", "releaseYear", "license",
+  "genres", "platforms", "launchMethods", "browserPlayable", "qualityBar",
+  "thatOneThing", "longDescription", "whyWePickedIt", "bestFor", "notFor",
+  "comparableTo", "faq", "installSteps",
+] as const;
+
 export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   // Database-only Dedicated Basic drafts. Scope to verified scalar/step fields;
   // multiplayer feature chips are appended below without replacing CMS data.
-  "battlefield-1942-anthology": ["hasControllerSupport", "multiplayerGamingSteps"],
-  "aneurism-iv": ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps"],
-  "stardew-valley": ["steamAppId", "hasControllerSupport", "maxPlayers", "multiplayerGamingSteps"],
-  starbound: ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps"],
-  necesse: ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps"],
-  "dont-starve-together": ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps"],
-  barotrauma: ["steamAppId", "hasControllerSupport", "maxPlayers", "multiplayerGamingSteps"],
-  factorio: ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps"],
-  terraria: ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps"],
-  "vintage-story": ["hasControllerSupport", "multiplayerGamingSteps"],
-  "core-keeper": ["steamAppId", "hasControllerSupport", "maxPlayers", "multiplayerGamingSteps"],
+  "battlefield-1942-anthology": ["hasControllerSupport", "multiplayerGamingSteps", "website", "access.priceType", "access.purchaseRequired", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
+  "aneurism-iv": ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
+  "stardew-valley": ["steamAppId", "hasControllerSupport", "maxPlayers", "multiplayerGamingSteps", "website", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
+  starbound: ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps", "website", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
+  necesse: ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
+  "dont-starve-together": ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
+  barotrauma: ["steamAppId", "hasControllerSupport", "maxPlayers", "multiplayerGamingSteps", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
+  factorio: ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps", "website", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
+  terraria: ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps", "website", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
+  "vintage-story": ["hasControllerSupport", "multiplayerGamingSteps", "website", "access.priceType", "access.purchaseRequired", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
+  "core-keeper": ["steamAppId", "hasControllerSupport", "maxPlayers", "multiplayerGamingSteps", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
   // The owner is renaming a DLC-imported draft to the base game; skip until that row exists.
-  "risk-of-rain-2": ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps"],
-  rimworld: ["steamAppId", "hasControllerSupport"],
-  "counter-strike-source": ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps"],
-  unturned: ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps"],
+  "risk-of-rain-2": ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
+  rimworld: ["steamAppId", "hasControllerSupport", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
+  "counter-strike-source": ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
+  unturned: ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps", "access.priceType", "access.purchaseRequired", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
   "shadow-warrior-classic-complete": ["launcherInstall"],
   "deus-ex-goty-edition": ["status", "features", "multiplayerGamingSteps"],
   /*
