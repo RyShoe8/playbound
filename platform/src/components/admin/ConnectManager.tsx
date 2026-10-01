@@ -701,8 +701,8 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-lg font-semibold">Dedicated games on VPS</h2>
               <p className="text-xs text-muted-foreground">
-                Green/red dot = last spawn test · install icon = files on disk · client vs server
-                version on each card
+                All VPS recipes, including draft and testing games · dot = last spawn test ·
+                icon = files on disk · client vs server version
               </p>
             </div>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
