@@ -60,6 +60,42 @@ three games.
   store page is not proof of a current Mac download). Do not confuse a
   storefront's free-space requirement with measured installed size.
 
+### Hardware specification completion gate
+
+Complete this for **each game and each edition with different requirements**
+before marking it ready. The 8-item editorial indicator does not check these
+fields, so a green editorial indicator alone is insufficient.
+
+1. Confirm the currently offered client builds and `platforms` against the
+   developer's own download/store page. For **Windows, macOS and Linux
+   separately**, transcribe the published minimum and recommended OS version,
+   architecture, CPU, RAM, GPU, VRAM, graphics API, and free disk space into
+   `systemRequirements.min` and `.recommended`. Include required runtimes or
+   instruction-set limitations where the developer names them.
+2. Populate `hardwareRequirements.min` and `.recommended` with the published
+   structured values (`os`, `arch`, `cpuText`, `gpuText`, `ramMB`, `vramMB`,
+   `storageMB`, `apis`) and fill `provenance.source`, `sourceUrl` and
+   `verifiedAt`. The structured format has only one specification per tier:
+   if platforms differ, use a conservative shared floor and spell out each
+   platform's actual figures in the text. Never put a Windows-only DirectX
+   requirement on a structured spec that also claims macOS or Linux support.
+3. If the developer does not publish a recommended tier or a particular
+   number (often GPU, VRAM or storage), write **"not published"** for that
+   tier or field in the text, and leave its structured value unset. Do not
+   invent a benchmark or silently copy the Windows numbers onto Mac/Linux.
+   Distinguish older requirements still shown on a store page from confirmed
+   support for a current client build.
+4. Record the **actual package download/installed size** separately as
+   `sizeMB`. The store's "space available" figure is a hardware requirement,
+   not an install-size measurement. If the current package is larger than the
+   published free-space minimum, state that discrepancy and allow enough room
+   for the real package; do not present the outdated minimum as sufficient.
+5. Save, reopen the **database-backed admin edit page**, and verify both
+   requirement fields survived for every supported platform. Check the public
+   game page and hardware-compatibility result for a supported OS (especially
+   Mac/Linux when Windows DirectX is listed). Only then count the hardware
+   specification as complete.
+
 ## 2. Editorial — every field on the edit page, in PlayBound's voice
 
 - Fill Basics, Access & pricing, Taxonomy, and Cover & media completely — not
