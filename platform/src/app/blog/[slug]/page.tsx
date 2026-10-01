@@ -45,20 +45,22 @@ export default async function BlogPostPage({ params }: Props) {
         publisher: { "@id": ORGANIZATION_ID },
         ...(post.coverImageUrl ? { image: post.coverImageUrl } : {}),
       }} />
-      <Link href="/blog" className="text-sm font-semibold text-primary hover:underline">← All posts</Link>
-      <article className="mt-8">
-        <header className="space-y-4">
-          <h1 className="text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">{post.title}</h1>
-          <p className="text-lg leading-relaxed text-muted-foreground">{post.summary}</p>
-          <p className="text-sm text-muted-foreground">By {post.authorName}{post.publishedAt ? ` · ${new Date(post.publishedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" })}` : ""}</p>
-        </header>
-        {post.coverImageUrl ? (
-          // Admin-supplied HTTPS image; the browser loads it directly.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={post.coverImageUrl} alt="" className="mt-8 aspect-video w-full rounded-xl object-cover" />
-        ) : null}
-        <BlogMarkdown content={post.bodyMarkdown} className="mt-10" />
-      </article>
+      <div className="mx-auto max-w-5xl">
+        <Link href="/blog" className="text-sm font-semibold text-primary hover:underline">← All posts</Link>
+        <article className="mt-8">
+          <header className="space-y-4">
+            <h1 className="text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">{post.title}</h1>
+            <p className="text-lg leading-relaxed text-muted-foreground">{post.summary}</p>
+            <p className="text-sm text-muted-foreground">By {post.authorName}{post.publishedAt ? ` · ${new Date(post.publishedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" })}` : ""}</p>
+          </header>
+          {post.coverImageUrl ? (
+            // Admin-supplied HTTPS image; the browser loads it directly.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={post.coverImageUrl} alt="" className="mx-auto mt-8 block h-auto max-w-full rounded-xl" />
+          ) : null}
+          <BlogMarkdown content={post.bodyMarkdown} className="mt-10" />
+        </article>
+      </div>
     </main>
   );
 }
