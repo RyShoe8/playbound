@@ -49,7 +49,7 @@ export default async function HostingPage() {
   const salesOpen = live && Boolean(t.salesEnabled);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-14 px-4 py-12 sm:px-6 lg:px-8">
+    <div className="w-full space-y-14 px-4 py-12 sm:px-6 lg:px-8">
       <section className="space-y-4 text-center">
         <p className="text-sm font-semibold tracking-wide text-primary uppercase">PlayBound Dedicated Basic</p>
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Your slots. Your servers. Your games.</h1>

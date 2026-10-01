@@ -29,7 +29,7 @@ const lanGames = listVirtualLanGames();
 
 export default function ConnectPage() {
   return (
-    <div className="mx-auto max-w-4xl space-y-12 px-4 py-12 sm:px-6 lg:px-8">
+    <div className="w-full space-y-12 px-4 py-12 sm:px-6 lg:px-8">
       <JsonLd
         data={graph(
           {

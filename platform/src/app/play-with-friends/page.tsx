@@ -48,7 +48,7 @@ export default async function PlayWithFriendsIndexPage() {
   const managedCount = multiplayerGames.filter((g) => isPlayBoundManagedMultiplayer(g.slug)).length;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+    <div className="w-full px-4 py-12 sm:px-6 lg:px-8">
       <JsonLd
         data={graph(
           {
