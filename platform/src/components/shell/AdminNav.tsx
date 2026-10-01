@@ -15,6 +15,7 @@ import {
   LayoutDashboard,
   Library,
   Mail,
+  Newspaper,
   MessagesSquare,
   Puzzle,
   Tags,
@@ -69,6 +70,7 @@ export const links: NavItem[] = [
   { href: "/admin/hardware", label: "Hardware", icon: Cpu },
   { href: "/admin/community", label: "Community", icon: MessagesSquare },
   { href: "/admin/weekly", label: "Weekly", icon: Mail },
+  { href: "/admin/blog", label: "Blog", icon: Newspaper },
   {
     href: "/admin/ecommerce",
     label: "eCommerce",
