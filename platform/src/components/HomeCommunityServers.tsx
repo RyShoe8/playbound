@@ -110,20 +110,6 @@ export function HomeCommunityServers({
                   <span className="uppercase tracking-wider text-muted-foreground/70">
                     {server.region}
                   </span>
-                  {!isInstalled && (
-                    <span
-                      role="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        window.location.href = joinUrl;
-                      }}
-                      className="inline-flex cursor-pointer items-center justify-center rounded-full border border-border bg-secondary/80 px-2.5 py-1 text-xs font-semibold text-foreground/80 shadow-sm transition hover:bg-secondary hover:text-foreground"
-                      title="Join if you already have the game installed"
-                    >
-                      Join
-                    </span>
-                  )}
                   <span
                     role="button"
                     onClick={(e) => {
@@ -137,7 +123,7 @@ export function HomeCommunityServers({
                         : "inline-flex cursor-pointer items-center justify-center rounded-full border border-primary/40 bg-primary/15 px-3 py-1 text-xs font-bold text-primary shadow-sm transition hover:bg-primary/25"
                     }
                   >
-                    {isInstalled ? "Join" : "Install & join"}
+                    {isInstalled ? "Join" : "Install"}
                   </span>
                 </div>
               </Link>
