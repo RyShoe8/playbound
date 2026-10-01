@@ -63,8 +63,10 @@ three games.
 ### Hardware specification completion gate
 
 Complete this for **each game and each edition with different requirements**
-before marking it ready. The 8-item editorial indicator does not check these
-fields, so a green editorial indicator alone is insufficient.
+before marking it ready, including games already in **Testing**. These fields
+remain required as a game moves from Draft to Testing to Published. The 8-item
+editorial indicator does not check them, so a green editorial indicator alone
+is insufficient.
 
 1. Confirm the currently offered client builds and `platforms` against the
    developer's own download/store page. For **Windows, macOS and Linux
