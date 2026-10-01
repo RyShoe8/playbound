@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdminViewSession } from "@/lib/requireAdmin";
-import { HOSTABLE_GAMES } from "@/lib/gameHost/catalog";
+import { DEDICATED_ONLY_GAMES, HOSTABLE_GAMES, HOSTABLE_SLUG_ALIASES } from "@/lib/gameHost/catalog";
+import { dedicatedOverviewSlugs } from "@/lib/gameHost/adminOverviewGames";
 import {
   fetchGameHostHealth,
   fetchGameHostMetrics,
@@ -9,10 +10,11 @@ import {
   listHostRooms,
   listManagedHostRooms,
 } from "@/lib/gameHost/client";
-import { hostableGameVersionRows } from "@/lib/gameHost/versions";
+import { clientVersionForHostableGame, hostableGameVersionRows, versionsLikelyMismatch } from "@/lib/gameHost/versions";
 import { listActivePartiesForConnectAdmin } from "@/lib/playTogether/adminActiveParties";
 import dbConnect from "@/lib/db";
 import CommunityHostingConfig from "@/lib/models/CommunityHostingConfig";
+import CatalogGame from "@/lib/models/CatalogGame";
 
 export async function GET() {
   const { error } = await requireAdminViewSession();
@@ -94,22 +96,31 @@ export async function GET() {
   const gameStatus = health?.gameStatus || {};
   const versionRows = hostableGameVersionRows(health?.gameVersions || {});
   const versionBySlug = Object.fromEntries(versionRows.map((v) => [v.slug, v]));
-  const games = Object.values(HOSTABLE_GAMES).map((game) => {
-    const status = gameStatus[game.slug];
-    const installed = status?.installed ?? health?.games?.[game.slug] ?? false;
+  const gameSlugs = dedicatedOverviewSlugs(Object.keys({ ...HOSTABLE_GAMES, ...DEDICATED_ONLY_GAMES }), gameStatus, HOSTABLE_SLUG_ALIASES);
+  // Admin inventory includes draft/testing/watchlist titles. Public catalog
+  // visibility must not decide whether an operator can test a VPS recipe.
+  const catalogTitles = await CatalogGame.find({ slug: { $in: gameSlugs } })
+    .select({ slug: 1, title: 1 }).lean();
+  const titleBySlug = new Map(catalogTitles.map((game) => [game.slug, game.title]));
+  const games = gameSlugs.map((slug) => {
+    const game = HOSTABLE_GAMES[slug] ?? DEDICATED_ONLY_GAMES[slug];
+    const status = gameStatus[slug];
+    const installed = status?.installed ?? health?.games?.[slug] ?? false;
     const ready = status?.ready ?? installed;
-    const versions = versionBySlug[game.slug];
+    const versions = versionBySlug[slug];
+    const clientVersion = versions?.clientVersion ?? clientVersionForHostableGame(slug);
+    const serverVersion = versions?.serverVersion ?? health?.gameVersions?.[slug] ?? "—";
     return {
-      slug: game.slug,
-      title: game.title,
+      slug,
+      title: game?.title ?? titleBySlug.get(slug) ?? slug.replace(/-/g, " "),
       installed,
       ready,
-      defaultPort: game.defaultPort,
-      protocol: game.protocol,
-      clientVersion: versions?.clientVersion ?? "—",
-      serverVersion: versions?.serverVersion ?? "—",
+      defaultPort: game?.defaultPort ?? null,
+      protocol: game?.protocol ?? null,
+      clientVersion,
+      serverVersion,
       serverVersionSource: versions?.serverVersionSource ?? "expected",
-      versionMismatch: versions?.versionMismatch ?? false,
+      versionMismatch: versions?.versionMismatch ?? versionsLikelyMismatch(clientVersion, serverVersion, slug),
     };
   }).sort((a, b) => a.title.localeCompare(b.title));
 
