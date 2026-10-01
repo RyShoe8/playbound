@@ -273,7 +273,17 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
   const owner = await acquireLease(now);
   if (!owner) return { action: "busy" };
   try {
-    const [metricResult, agent] = await Promise.all([fetchGameHostMetrics(), listManagedHostRooms()]);
+    let [metricResult, agent] = await Promise.all([fetchGameHostMetrics(), listManagedHostRooms()]);
+    // One slow VPS response should not turn a healthy node into an ops bug.
+    // Retry only the failed read; each host request has its own 12-second cap.
+    if (!metricResult.ok || !agent.ok) {
+      const [metricsRetry, roomsRetry] = await Promise.all([
+        metricResult.ok ? Promise.resolve(metricResult) : fetchGameHostMetrics(),
+        agent.ok ? Promise.resolve(agent) : listManagedHostRooms(),
+      ]);
+      metricResult = metricsRetry;
+      agent = roomsRetry;
+    }
     if (!metricResult.ok || !agent.ok) {
       const reason = !metricResult.ok ? metricResult.error : (agent.ok ? "NO_HEALTHY_NODE" : agent.error);
       await saveEvent({

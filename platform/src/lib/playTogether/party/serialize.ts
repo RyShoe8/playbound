@@ -7,7 +7,7 @@ import { PARTY_MAX_SIZE, type PartyStatus, type PartyVisibility, type PartyPaylo
 import { hostedPayloadFromDoc, hostedPayloadForPublicServer } from "@/lib/gameHost/provision";
 import { lanPayloadFromDoc } from "@/lib/virtualLan/provision";
 import { serverControlAvailability } from "@/lib/serverControl/partyServer";
-import { couchOnlyGameSlugs, couchPayloadFromDoc, hostModeOptions, publicLobbyPortFor, resolvedHostMode, type PartyHostMode } from "@/lib/multiplayer/hostModes";
+import { couchCapableGameSlugs, couchOnlyGameSlugs, couchPayloadFromDoc, hostModeOptions, publicLobbyPortFor, resolvedHostMode, type PartyHostMode } from "@/lib/multiplayer/hostModes";
 import { computePartyActions } from "@/lib/playTogether/partyActions";
 import { computePartyReadiness } from "@/lib/playTogether/partyReadiness";
 import { getPartySlotContext } from "@/lib/entitlements/pool";
@@ -164,6 +164,7 @@ function serializeParty(
      */
     serverControl: serverControlPayload(doc, hostMode, gameTitle),
     couchOnlyGames: couchOnlyGameSlugs(),
+    couchCapableGames: couchCapableGameSlugs(),
     publicServer: hostMode === "public" ? publicServer : null,
     /*
      * Only for a public self-hosted room. Party members reach the host over the

@@ -16,7 +16,14 @@
  * with: `releaseYear` had been defaulted to the year each game was added to
  * PlayBound, which is why sixteen titles claimed to have shipped in 2026.
  */
+import { launcherInstallBySlug } from "./launcherInstall";
+
 const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
+  // GOG's free game page and GOG's DOSBox install layout. The launcher now
+  // watches the install and launches DOSBox with the game's config files.
+  "shadow-warrior-classic-complete": {
+    launcherInstall: launcherInstallBySlug["shadow-warrior-classic-complete"],
+  },
   // Released 27 May 2007 ("Birdie Beta") — Wikipedia infobox, Teeworlds.
   // The GitHub repo only dates to 2010 and is not the release date.
   teeworlds: { releaseYear: 2007 },

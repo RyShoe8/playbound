@@ -300,6 +300,8 @@ export type PartyPayload = {
    * before one is chosen. Static, not per-party — see couchOnlyGameSlugs.
    */
   couchOnlyGames: string[];
+  /** Games available under the Couch party filter, including games with online modes. */
+  couchCapableGames: string[];
   /**
    * Community dedicated server the party picked. Present only when hostMode is
    * `public`; Join Game uses the same host/port via `hosted` so existing

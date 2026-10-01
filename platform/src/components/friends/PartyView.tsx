@@ -102,7 +102,7 @@ export function PartyView({
   const [openRaEditions, setOpenRaEditions] = useState<
     { slug: string; name: string }[] | null
   >(null);
-  /** When on: only LOCAL_COUCH_GAMES. When off: all party multiplayer (including Connect couch titles). */
+  /** Filters the game picker; the selected party host mode controls the session. */
   const [couchCoopFilter, setCouchCoopFilter] = useState(false);
   const { mode, device } = useCompatibilityFilter();
 
@@ -168,7 +168,7 @@ export function PartyView({
    * it.
    */
   const partyGames = useMemo(() => {
-    const couchSlugs = new Set(party.couchOnlyGames || []);
+    const couchSlugs = new Set(party.couchCapableGames || party.couchOnlyGames || []);
     return filterGamesForParty(
       games
         .filter((g) => supportsMultiplayer(g))
@@ -187,6 +187,7 @@ export function PartyView({
     party.requiredPlatforms,
     party.members.length,
     party.couchOnlyGames,
+    party.couchCapableGames,
     couchCoopFilter,
   ]);
 
@@ -327,8 +328,7 @@ export function PartyView({
     const hasCouchStream = Boolean(
       party.couch?.enabled ||
       party.hostMode === "couch" ||
-      (party.gameSlug && couchOnly.has(party.gameSlug)) ||
-      couchCoopFilter
+      (party.gameSlug && couchOnly.has(party.gameSlug))
     );
     if (hasCouchStream && !isLeader) {
       e?.preventDefault();
@@ -984,7 +984,7 @@ export function PartyView({
               </ol>
             )}
 
-          {couchCoopFilter &&
+          {couchMode &&
             actions.couch &&
             (actions.couch.status === "ready" && actions.couch.joinCode ? (
               <div className="w-full space-y-2 self-start">

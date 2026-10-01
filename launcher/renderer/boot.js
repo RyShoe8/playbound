@@ -49,10 +49,9 @@ import {
 async function finishPartyInstallReturn(slug) {
   if (!shouldReturnToFriendsAfterPartyInstall(slug)) return false;
   clearPartyInstallReturn();
-  setStatus("Install complete — back in your party.");
+  setStatus("Install complete — ready for your party.");
   const areaSlot = document.getElementById("friends-party-area");
   if (areaSlot) areaSlot.dataset.sig = "";
-  await navigateTo("friends", { force: true });
   return true;
 }
 
@@ -660,6 +659,9 @@ function wireMainEvents() {
       // upstream that is simply slow. Keep the user informed with animated bar.
       tickPhase(phaseStartedAt, withElapsed(`${titlePrefix}Finding the download…`));
       setProgress("indeterminate");
+    } else if (phase === "external-handoff") {
+      setStatus(message || `${titlePrefix}Opening the store — waiting for installation…`);
+      setProgress(null);
     } else if (phase === "queued") {
       // No bar: this install has not started and has no progress of its own.
       setStatus(message || `${titlePrefix}Queued — waiting for current install to finish…`);
@@ -742,24 +744,14 @@ function wireMainEvents() {
     cacheInvalidate("installed");
     cacheInvalidate("installedMods");
     markViewDirty(views.library, views.gameDetail, views.editionDetail);
-    if (returnToParty) {
-      /* navigateTo("friends") above already refreshed the party panel. */
-    } else if (data?.slug && !data?.uninstalled && data?.scanned == null) {
-      // When a game finishes installing, take you to the game page for that game
-      if (
-        state.currentView === "editionDetail" &&
-        state.currentEditionDetail?.gameSlug === data.slug
-      ) {
-        api.renderEditionDetailView?.(
-          state.currentEditionDetail.gameSlug,
-          state.currentEditionDetail.editionSlug,
-          { force: true }
-        );
-      } else if (state.currentView === "gameDetail" && state.currentDetailSlug === data.slug) {
-        api.renderGameDetailView?.(data.slug, { force: true });
-      } else {
-        void api.openGameDetail?.(data.slug);
-      }
+    if (state.currentView === "editionDetail" && state.currentEditionDetail?.gameSlug === data?.slug) {
+      api.renderEditionDetailView?.(
+        state.currentEditionDetail.gameSlug,
+        state.currentEditionDetail.editionSlug,
+        { force: true }
+      );
+    } else if (state.currentView === "gameDetail" && state.currentDetailSlug === data?.slug) {
+      api.renderGameDetailView?.(data.slug, { force: true });
     } else if (state.currentView === "library") api.renderLibraryView?.();
     else if (state.currentView === "home") api.paintHomeGrids?.(state.catalogCache, state.recentCache);
     /* Party config-sync needs a fresh poll after install so “wrong version” clears. */

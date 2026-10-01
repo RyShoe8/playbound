@@ -27,7 +27,7 @@ test("a non-native OutRun profile offers PlayBound Controls instead of forcing k
     globalThis.window = {
       playbound: {
         couchState: async () => ({ active: false }),
-        getPlayBoundControlsAvailability: async () => ({ available: true }),
+        getPlayBoundControlsAvailability: async () => ({ available: true, preview: true }),
         getControllerSupport: async () => ({ kind: "unsupported" }),
         stopGamepadBridge: async () => {},
         startGamepadBridge: async () => { bridgeStarts++; return { ok: true }; },
@@ -45,7 +45,7 @@ test("a non-native OutRun profile offers PlayBound Controls instead of forcing k
     assert.doesNotMatch(root.innerHTML, /data-choice="phone"/);
     chooseController();
     assert.equal(await launch, true);
-    assert.deepEqual(playCalls, [{ inputMode: "controller" }]);
+    assert.deepEqual(playCalls, [{ inputMode: "controller", controlsPreview: true }]);
     assert.equal(bridgeStarts, 0, "keyboard synthesis must not start the virtual controller bridge");
   } finally {
     globalThis.window = oldWindow;

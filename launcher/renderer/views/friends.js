@@ -1606,7 +1606,7 @@ function partyRequirementsFor(party) {
   const hostMode = String(party.hostMode || "");
   const isLanEnabled = Boolean(party.lan?.enabled);
   const isP2POrLanGame = /re-volt|rvgl|direct-ip|virtual-lan|hedgewars|bombsquad/i.test(slug);
-  const needsNetBird = isLanEnabled || hostMode === "self" || isP2POrLanGame;
+  const needsNetBird = hostMode !== "couch" && (isLanEnabled || hostMode === "self" || isP2POrLanGame);
   const needsJava = /mindustry|triplea|freecol|megaglest/i.test(slug);
 
   // Couch-over-online titles (e.g. TMNT Rescue-Palooza, X-Men, Streets of Rage, Lovers in a Dangerous Spacetime):
@@ -1680,7 +1680,7 @@ function buildRequirementsBannerHtml(party, isLeader = false) {
  */
 let partyGamesCache = null;
 let partyGamesCacheKey = null;
-/** Party game picker: true = couch only; false = online multiplayer list. */
+/** Party game picker: true = couch-capable games; false = all multiplayer. */
 let partyCouchCoopFilter = false;
 let partyCouchFilterExplicit = false;
 
@@ -1766,7 +1766,7 @@ function partyGameOptionLabel(title, { testing = false, genres = [] } = {}) {
 function partyGameOptionsHtml(selectedSlug, party) {
   const required = Array.isArray(party?.requiredPlatforms) ? party.requiredPlatforms : [];
   const memberCount = Array.isArray(party?.members) ? party.members.length : 1;
-  const couchOnly = new Set(party?.couchOnlyGames || []);
+  const couchCapable = new Set(party?.couchCapableGames || party?.couchOnlyGames || []);
   // Party choices describe what this group can launch, regardless of the
   // Free/All preference used while browsing Discover.
   const games = (partyGamesCache || [])
@@ -1776,7 +1776,7 @@ function partyGameOptionsHtml(selectedSlug, party) {
      * Couch Multiplayer Type → only Connect/local couch titles. Online → all
      * party multiplayer titles (including Connect couch titles like TMNT/X-Men).
      */
-    .filter((g) => (partyCouchCoopFilter ? couchOnly.has(g.slug) : true));
+    .filter((g) => (partyCouchCoopFilter ? couchCapable.has(g.slug) : true));
   const options = [`<option value="">Select a game</option>`];
   for (const g of games) {
     const label = partyGameOptionLabel(g.title, {
@@ -2147,7 +2147,7 @@ function buildPartyViewHtml(party) {
    * Couch join code / QR: show strictly when Multiplayer Type = Couch.
    * When in Online mode, this panel must never be displayed under Join Game.
    */
-  const isCouchMode = Boolean(partyCouchCoopFilter);
+  const isCouchMode = Boolean(couch.enabled || party.hostMode === "couch");
   const autoJoinArmed = pendingJoin?.partyId === party.id && !ended;
   const joinBtn = actions ? (autoJoinArmed ? actions.joinArmed : actions.join) : null;
   const joinGameHtml = joinBtn && joinBtn.visible
@@ -3401,8 +3401,7 @@ function wirePartyView(slot, party) {
       const hasCouchStream = Boolean(
         couch.enabled ||
         party.hostMode === "couch" ||
-        isCouchGame ||
-        partyCouchCoopFilter
+        isCouchGame
       );
       if (hasCouchStream && !isLeader) {
         let base =

@@ -34,6 +34,15 @@ async function main() {
     const again = await telemetry.launcherInstalled();
     assert.equal(again.alreadyTracked, true);
     assert.equal(events.length, 1, "a successful install event is persisted once");
+
+    const edition = { gameSlug: "openra", editionSlug: "official" };
+    await telemetry.editionLaunched(edition);
+    await telemetry.editionExited(edition);
+    assert.deepEqual(
+      events.map((item) => item.event),
+      ["launcher_install", "edition_launched", "game_ended"],
+      "a play session has one start and one end event"
+    );
   } finally {
     global.fetch = originalFetch;
   }

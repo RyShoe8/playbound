@@ -29,8 +29,8 @@
  *
  *   launches   `edition_launched` is the completion. `launch_attempted` fires
  *              before spawn, so it counts attempts, not successes, and
- *              `session_started` fires alongside `edition_launched` for the
- *              same launch — either would double-count.
+ *              older builds also emitted `session_started` for the same
+ *              launch — counting both would double-count historical data.
  *
  * Rate is failures over failures plus completions, so it is the share of
  * finished attempts that failed.

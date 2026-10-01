@@ -8,8 +8,6 @@ export const LAUNCHER_OPS_EVENTS = [
   "edition_launched",
   "edition_updated",
   "edition_uninstalled",
-  "session_started",
-  "session_ended",
   "game_ended",
   "join_attempted",
   "exe_located",
@@ -29,11 +27,7 @@ export const LAUNCHER_OPS_EVENTS = [
  *
  * `launcher_install` is the case that prompted this. It fires once per launcher
  * installation and never again — telemetry.js keys the receipt to
- * settings.analyticsId, and settings.json survives upgrades, so installing a
- * newer build does not re-fire it. The /admin Launcher Installs tile does not
- * settle the question either: it counts distinct anonymousIds over all traffic
- * tagged browser "Launcher", not this event, so it reads the same whether or not
- * the event has ever arrived.
+ * settings.analyticsId, and settings.json survives upgrades.
  *
  * Deliberately only affects Recent events. Top events stays a straight ranking —
  * if one of these places in the top fifteen it earned the spot on its own.

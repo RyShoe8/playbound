@@ -420,10 +420,10 @@ async function toggleLibraryAddPanel(forceOpen = false) {
       row.type = "button";
       row.className = "library-add-row";
       row.innerHTML = `<span class="library-add-row-title">${escapeHtml(game.title)}</span>
-        <span class="library-add-row-hint">${selectExecutableLabel()}</span>`;
+        <span class="library-add-row-hint">Find install automatically; choose a file if needed</span>`;
       row.addEventListener("click", async () => {
         try {
-          setStatus(`Locate ${game.title}…`);
+          setStatus(`Searching this PC for ${game.title}…`);
           const res = await window.playbound.locateExe(game.slug);
           if (res?.status === "cancelled") {
             setStatus("Locate cancelled.");
@@ -672,7 +672,7 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
     actions.querySelector(".btn-lib-locate")?.addEventListener("click", async (e) => {
       e.stopPropagation();
       try {
-        setStatus(`Locate ${game.title}…`);
+        setStatus(`Searching this PC for ${game.title}…`);
         const res = await window.playbound.locateExe(game.slug);
         if (res?.status === "cancelled") {
           setStatus("Locate cancelled.");

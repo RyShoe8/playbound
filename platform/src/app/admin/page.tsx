@@ -25,9 +25,6 @@ import { getAdminLauncherDownloadUrl } from "@/lib/launcherDownload";
 
 export const metadata: Metadata = { title: "Admin" };
 
-/** parseUserAgent stamps this on every request coming from the desktop app. */
-const LAUNCHER_CLIENT = "Launcher";
-
 async function computeDashboardKpis() {
   try {
     await dbConnect();
@@ -56,32 +53,20 @@ async function computeDashboardKpis() {
       User.countDocuments({ emailVerified: true }),
       periodDocumentCounts(User),
       periodDistinctUsers((filter) => TelemetryEvent.distinct("userId", filter)),
-      /*
-       * Installs are distinct launcher clients, not linked accounts.
-       *
-       * This counted launcher_connected, which fires once from the account
-       * handoff exchange and only when firstConnect is true. Someone who
-       * installs the launcher and plays without ever linking a site account —
-       * which is nearly everyone — never produced it, so the number sat at 7
-       * while launcher telemetry poured in from anonymous clients.
-       *
-       * parseUserAgent tags launcher traffic as browser "Launcher", and
-       * anonymousId is per-install and indexed, so distinct anonymousId over
-       * that traffic is the real figure.
-       */
+      // Count confirmed first contacts, not arbitrary events from a client.
       periodDistinctUsers(
         (filter) => TelemetryEvent.distinct("anonymousId", filter),
-        { field: "anonymousId", match: { browser: LAUNCHER_CLIENT } }
+        { field: "anonymousId", match: { event: "launcher_install" } }
       ),
       TelemetryEvent.distinct("anonymousId", {
-        browser: LAUNCHER_CLIENT,
+        event: "launcher_install",
         anonymousId: { $nin: [null, ""] },
       }).then((ids: unknown[]) => ids.length),
       periodTelemetryCounts(TelemetryEvent, "launcher_connected"),
       TelemetryEvent.countDocuments({ event: "launcher_connected" }),
       periodDocumentCounts(BugReport),
       periodTelemetryCounts(TelemetryEvent, "error"),
-      periodTelemetryCounts(TelemetryEvent, "game_started"),
+      periodTelemetryCounts(TelemetryEvent, ["game_started", "edition_launched"]),
       periodDocumentCounts(NewsletterSubscriber, { subscribed: true }),
       NewsletterSubscriber.countDocuments({ subscribed: true }),
       periodDocumentCounts(GameSubmission),
@@ -143,7 +128,7 @@ async function computeDashboardKpis() {
 }
 
 function loadDashboardKpis() {
-  return unstable_cache(computeDashboardKpis, ["admin-dashboard-kpis-v2"], {
+  return unstable_cache(computeDashboardKpis, ["admin-dashboard-kpis-v3"], {
     revalidate: 60,
     tags: ["admin-kpis"],
   })();
@@ -209,12 +194,12 @@ export default async function AdminPage() {
           <PeriodStatTile
             label="Launcher Installs"
             primary={String(kpis.launcherInstallsTotal)}
-            hint={`Distinct launcher clients · ${kpis.launcherLinksTotal} linked to an account`}
+            hint={`Confirmed first contacts · ${kpis.launcherLinksTotal} linked to an account`}
             periods={kpis.launcherInstalls}
           />
           <PeriodStatTile
             label="Games Played"
-            hint="game_started (site + launcher)"
+            hint="Browser game starts + launcher edition launches"
             href="/admin/analytics/gameplay"
             periods={kpis.gamesPlayed}
           />

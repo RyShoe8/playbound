@@ -1973,7 +1973,7 @@ async function renderGameDetailView(slug, opts = {}) {
       } else if (res.inviteUrl || res.party?.discord?.inviteUrl) {
         window.playbound.openDiscordInvite(res.inviteUrl || res.party.discord.inviteUrl);
       }
-      api.navigateTo("friends");
+      void api.refreshFriendsData?.();
     } catch (err) {
       setStatus(err.message || String(err), true);
     } finally {

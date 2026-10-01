@@ -37,6 +37,12 @@ describe("controlProfileSchema", () => {
     expect(result.bindings).toHaveLength(12);
     expect(result.bindings.some((binding) => binding.physicalInput === "A")).toBe(false);
   });
+  it("accepts the Shadow Warrior DOSBox preview", () => {
+    const profile = JSON.parse(readFileSync(join(process.cwd(), "../launcher/services/inputEngine/profiles/shadow-warrior-classic-complete.json"), "utf8"));
+    const result = controlProfileSchema.parse(profile);
+    expect(result.status).toBe("testing");
+    expect(result.stickMouseSettings?.enabled).toBe(false);
+  });
   it("accepts a minimal valid profile", () => {
     const result = controlProfileSchema.safeParse(baseProfile());
     expect(result.success).toBe(true);

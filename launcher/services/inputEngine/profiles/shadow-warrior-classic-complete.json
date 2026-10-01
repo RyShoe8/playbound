@@ -1,0 +1,34 @@
+{
+  "gameSlug": "shadow-warrior-classic-complete",
+  "editionSlug": null,
+  "name": "PlayBound Controls Preview — Shadow Warrior Classic",
+  "version": "0.1.0",
+  "platform": "windows",
+  "inputStrategy": "keyboard_mouse",
+  "status": "testing",
+  "antiCheatCompatibility": "unknown",
+  "testedControllers": [],
+  "notes": "Preview for the GOG DOSBox edition. Movement, fire, use and pause need a live controller check before verification.",
+  "actions": [
+    { "id": "forward", "label": "Move forward", "output": { "type": "key", "vk": "ArrowUp" } },
+    { "id": "backward", "label": "Move backward", "output": { "type": "key", "vk": "ArrowDown" } },
+    { "id": "left", "label": "Turn left", "output": { "type": "key", "vk": "ArrowLeft" } },
+    { "id": "right", "label": "Turn right", "output": { "type": "key", "vk": "ArrowRight" } },
+    { "id": "fire", "label": "Fire", "output": { "type": "key", "vk": "LeftCtrl" } },
+    { "id": "use", "label": "Open / use", "output": { "type": "key", "vk": "Space" } },
+    { "id": "strafe", "label": "Strafe", "output": { "type": "key", "vk": "LeftAlt" } },
+    { "id": "menu", "label": "Menu", "output": { "type": "key", "vk": "Escape" } }
+  ],
+  "bindings": [
+    { "actionId": "forward", "physicalInput": "LEFT_UP" },
+    { "actionId": "backward", "physicalInput": "LEFT_DOWN" },
+    { "actionId": "left", "physicalInput": "LEFT_LEFT" },
+    { "actionId": "right", "physicalInput": "LEFT_RIGHT" },
+    { "actionId": "fire", "physicalInput": "RT" },
+    { "actionId": "use", "physicalInput": "A" },
+    { "actionId": "strafe", "physicalInput": "LT" },
+    { "actionId": "menu", "physicalInput": "START" }
+  ],
+  "contexts": [],
+  "stickMouseSettings": { "enabled": false }
+}

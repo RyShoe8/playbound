@@ -194,11 +194,10 @@ function createTelemetry({
     editionLaunched(info) {
       const key = sessionKey(info.gameSlug, info.editionSlug);
       openSessions.set(key, { startedAt: Date.now(), info });
-      void track("edition_launched", {
+      return track("edition_launched", {
         ...editionProps(info),
         installMethod: info.installMethod || "playbound_installer",
       });
-      return track("session_started", { ...editionProps(info), sessionKind: "play" });
     },
 
     /** User clicked Play — before spawn. */
@@ -283,9 +282,7 @@ function createTelemetry({
     },
 
     /**
-     * Game exited. Emits both `game_ended` and `session_ended` — the first is
-     * the edition-aware successor to the older game_finished event, the second
-     * is the session-level pair to session_started.
+     * Game exited. One edition-aware completion event carries the duration.
      *
      * Does nothing when no session is open, so a spurious exit signal cannot
      * invent a zero-length session.
@@ -298,8 +295,7 @@ function createTelemetry({
 
       const durationMs = Math.max(0, Date.now() - open.startedAt);
       const props = { ...editionProps(open.info), durationMs };
-      void track("game_ended", props);
-      return track("session_ended", { ...props, sessionKind: "play" });
+      return track("game_ended", props);
     },
 
     /** Close any session still open — used when the launcher itself quits. */
@@ -310,8 +306,7 @@ function createTelemetry({
         pending.map(([, open]) => {
           const durationMs = Math.max(0, Date.now() - open.startedAt);
           const props = { ...editionProps(open.info), durationMs };
-          void track("game_ended", props);
-          return track("session_ended", { ...props, sessionKind: "play", incomplete: true });
+          return track("game_ended", { ...props, incomplete: true });
         })
       );
     },

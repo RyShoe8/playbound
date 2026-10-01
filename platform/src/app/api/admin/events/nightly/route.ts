@@ -4,10 +4,9 @@ import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin
 import AutomatedEventConfig from "@/lib/models/AutomatedEventConfig";
 import CatalogGame from "@/lib/models/CatalogGame";
 import Edition from "@/lib/models/Edition";
+import { mongoVisibleFilter } from "@/lib/catalogStatus";
 import { DEFAULT_NIGHTLY, normalizeNightly } from "@/lib/events/nightlySchedule";
 import { supportsMultiplayer } from "@/lib/multiplayer/support";
-import { games as seedGames } from "@/lib/data/games";
-import { editions as seedEditions } from "@/lib/data/editions";
 
 export async function GET() {
   const { error } = await requireAdminViewSession();
@@ -16,8 +15,7 @@ export async function GET() {
   const [config, dbGames] = await Promise.all([
     AutomatedEventConfig.findOne({ key: "global" }).select({ nightly: 1 }).lean(),
     CatalogGame.find({
-      status: { $ne: "draft" },
-      published: { $ne: false },
+      ...mongoVisibleFilter(),
       playboundSupported: { $ne: false },
     })
       .select({ slug: 1, title: 1, features: 1, tags: 1, launchMethods: 1, multiplayer: 1 })
@@ -25,11 +23,6 @@ export async function GET() {
   ]);
 
   const gameMap = new Map<string, { slug: string; title: string }>();
-  for (const g of seedGames) {
-    if (g.status !== "draft" && supportsMultiplayer(g)) {
-      gameMap.set(g.slug, { slug: g.slug, title: g.title });
-    }
-  }
   for (const g of (dbGames || [])) {
     if (supportsMultiplayer(g)) {
       gameMap.set(g.slug, { slug: g.slug, title: g.title });
@@ -40,7 +33,6 @@ export async function GET() {
     a.title.localeCompare(b.title)
   );
   const candidateSlugs = candidateGames.map((g) => g.slug);
-  const candidateSlugSet = new Set(candidateSlugs);
 
   const dbEditions = await Edition.find({
     gameSlug: { $in: candidateSlugs },
@@ -51,11 +43,6 @@ export async function GET() {
     .lean();
 
   const editionMap = new Map<string, { gameSlug: string; slug: string; name: string }>();
-  for (const e of seedEditions) {
-    if (e.gameSlug && candidateSlugSet.has(e.gameSlug)) {
-      editionMap.set(`${e.gameSlug}:${e.slug}`, { gameSlug: e.gameSlug, slug: e.slug, name: e.name });
-    }
-  }
   for (const e of (dbEditions || [])) {
     editionMap.set(`${e.gameSlug}:${e.slug}`, { gameSlug: e.gameSlug, slug: e.slug, name: e.name });
   }
@@ -90,8 +77,7 @@ export async function PUT(req: Request) {
   const [dbGames, dbEditions] = await Promise.all([
     CatalogGame.find({
       slug: { $in: selected.map((g) => g.slug) },
-      status: { $ne: "draft" },
-      published: { $ne: false },
+      ...mongoVisibleFilter(),
       playboundSupported: { $ne: false },
     })
       .select({ slug: 1, features: 1, tags: 1, launchMethods: 1, multiplayer: 1 })
@@ -106,11 +92,6 @@ export async function PUT(req: Request) {
   ]);
 
   const allowedGames = new Set<string>();
-  for (const g of seedGames) {
-    if (g.status !== "draft" && supportsMultiplayer(g)) {
-      allowedGames.add(g.slug);
-    }
-  }
   for (const g of (dbGames || [])) {
     if (supportsMultiplayer(g)) {
       allowedGames.add(g.slug);
@@ -118,9 +99,6 @@ export async function PUT(req: Request) {
   }
 
   const allowedEditions = new Set<string>();
-  for (const e of seedEditions) {
-    if (e.gameSlug) allowedEditions.add(`${e.gameSlug}:${e.slug}`);
-  }
   for (const e of (dbEditions || [])) {
     allowedEditions.add(`${e.gameSlug}:${e.slug}`);
   }
