@@ -1,5 +1,6 @@
 import http from "node:http";
 import { GAMES, gameSource, pollGame } from "./poll.js";
+import { sendJson } from "./jsonResponse.js";
 
 const PORT = Number(process.env.PORT || 8787);
 const ADAPTER_KEY = process.env.MASTER_ADAPTER_KEY || "";
@@ -22,6 +23,12 @@ const lastPollAt = new Map();
 /** In-flight authenticated polls keyed by slug (serialize concurrent CMS logins). */
 /** @type {Map<string, Promise<CacheEntry>>} */
 const livePollInflight = new Map();
+const responseBytes = { sent: 0, withoutCompression: 0, requests: 0 };
+function countResponse(sent, plain) {
+  responseBytes.sent += sent;
+  responseBytes.withoutCompression += plain;
+  responseBytes.requests += 1;
+}
 
 const LIVE_AUTH_CACHE_MS = 45_000;
 
@@ -327,29 +334,25 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
 
   if (url.pathname === "/health") {
-    res.writeHead(200, { "content-type": "application/json" });
-    res.end(
-      JSON.stringify({
+    sendJson(req, res, 200, {
         ok: true,
         games: GAMES.map((g) => g.slug),
         cached: [...cache.keys()],
-      })
-    );
+        responseBytes,
+      }, {}, countResponse);
     return;
   }
 
   const match = url.pathname.match(/^\/v1\/([a-z0-9-]+)\/servers\/?$/);
   if (match && req.method === "GET") {
     if (!authOk(req)) {
-      res.writeHead(401, { "content-type": "application/json" });
-      res.end(JSON.stringify({ error: "Unauthorized" }));
+      sendJson(req, res, 401, { error: "Unauthorized" }, {}, countResponse);
       return;
     }
     const slug = match[1];
     const game = GAMES.find((g) => g.slug === slug);
     if (!game) {
-      res.writeHead(404, { "content-type": "application/json" });
-      res.end(JSON.stringify({ error: "Unknown slug", servers: [] }));
+      sendJson(req, res, 404, { error: "Unknown slug", servers: [] }, {}, countResponse);
       return;
     }
 
@@ -397,16 +400,13 @@ const server = http.createServer(async (req, res) => {
         }
       }
     }
-    res.writeHead(200, {
-      "content-type": "application/json",
+    sendJson(req, res, 200, entry, {
       "cache-control": liveCreds ? "private, no-store" : "public, max-age=15",
-    });
-    res.end(JSON.stringify(entry));
+    }, countResponse);
     return;
   }
 
-  res.writeHead(404, { "content-type": "application/json" });
-  res.end(JSON.stringify({ error: "Not found" }));
+  sendJson(req, res, 404, { error: "Not found" }, {}, countResponse);
 });
 
 server.listen(PORT, () => {
