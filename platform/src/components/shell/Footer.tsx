@@ -40,6 +40,7 @@ const footerSections: FooterSection[] = [
     title: "Discover",
     links: [
       { href: "/guides", label: "Guides" },
+      { href: "/blog", label: "Blog" },
       { href: "/compare", label: "Compare" },
       { href: "/alternatives", label: "Alternatives" },
       { href: "/standards", label: "Our Standard" },

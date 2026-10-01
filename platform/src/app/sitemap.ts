@@ -7,6 +7,7 @@ import { listMods } from "@/lib/mods";
 import { alternativePages } from "@/lib/data/alternatives";
 import { comparisons } from "@/lib/data/comparisons";
 import { listWeeklyIssues } from "@/lib/weekly";
+import { listPublishedBlogPosts } from "@/lib/blog";
 import { listPublishedGear } from "@/lib/gear";
 import { listPublicEvents } from "@/lib/events/service";
 import { MULTIPLAYER_ADAPTERS } from "@/lib/multiplayer/adapters";
@@ -39,12 +40,13 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
   cacheTag("catalog");
   cacheTag("collections");
   cacheTag("weekly");
+  cacheTag("blog");
   cacheTag("mods");
   cacheTag("gear");
   cacheTag("events");
   cacheTag(HOSTING_TIER_TAG);
   const hostingGames = publicGames((await loadPublicTier()).tier);
-  const [games, mods, weekly, editions, gear, events, collections] = await Promise.all([
+  const [games, mods, weekly, editions, gear, events, collections, blogPosts] = await Promise.all([
     listGames(),
     listMods({ view: "card" }),
     listWeeklyIssues(),
@@ -61,6 +63,7 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
      * at. The database is the source of truth, so the sitemap reads it.
      */
     listCollections(),
+    listPublishedBlogPosts(),
   ]);
 
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -75,6 +78,7 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
      */
     { url: `${SITE_URL}/deals`, changeFrequency: "daily", priority: 0.8 },
     { url: `${SITE_URL}/weekly`, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${SITE_URL}/blog`, changeFrequency: "weekly", priority: 0.7 },
     { url: `${SITE_URL}/discover`, changeFrequency: "weekly", priority: 0.9 },
     { url: `${SITE_URL}/collections`, changeFrequency: "weekly", priority: 0.9 },
     { url: `${SITE_URL}/mods`, changeFrequency: "weekly", priority: 0.7 },
@@ -179,6 +183,12 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "yearly" as const,
       priority: 0.7,
       ...lastMod(i.publishedAt),
+    })),
+    ...blogPosts.map((post) => ({
+      url: `${SITE_URL}/blog/${post.slug}`,
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+      ...lastMod(post.updatedAt || post.publishedAt),
     })),
     ...alternativePages.map((p) => ({
       url: `${SITE_URL}/alternatives/${p.slug}`,
