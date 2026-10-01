@@ -45,6 +45,7 @@ export const NEW_GAME_SLUGS: readonly string[] = [
 export const NEW_EDITION_KEYS: readonly string[] = [
   "deus-ex-goty-edition/gmdx",
   "deus-ex-goty-edition/playbound-hx-coop",
+  "risk-of-rain-2/alloyed-collective",
   "stalker-anomaly/official",
   "stalker-anomaly/gamma",
   "s-t-a-l-k-e-r-clear-sky/official",
@@ -804,7 +805,7 @@ export const STEAM_CLIENT_EXE_HINTS: Readonly<Record<string, string>> = {
   "stardew-valley": "Stardew Valley.exe",
   starbound: "starbound.exe",
   necesse: "Necesse.exe",
-  "dont-starve-together": "dontstarve_steam.exe",
+  "dont-starve-together": "dontstarve_steam_x64.exe",
   barotrauma: "Barotrauma.exe",
   factorio: "factorio.exe",
   terraria: "Terraria.exe",

@@ -138,6 +138,7 @@ async function main() {
   const { SPIKE_CROSS_SLUG, spikeCrossPatchSource } = await import(
     "../src/lib/data/spikeCrossCatalog"
   );
+  const { DRAFT_INSTALL_PICKUP } = await import("../src/lib/data/draftInstallPickup");
   const { ALIEN_SWARM_SLUG, alienSwarmPatchSource } = await import(
     "../src/lib/data/alienSwarmCatalog"
   );
@@ -452,6 +453,75 @@ async function main() {
       } } }
     );
     if (result.modifiedCount) console.log(`fill missing Steam launch ${slug}`);
+  }
+
+  // Database-only paid games: a store hands off the acquisition; PlayBound
+  // discovers the owned executable afterwards. Patch only detection subfields
+  // so an admin's install method, download URL, and other recipe settings stay
+  // authoritative. BF1942 has no current legal digital store, so it receives
+  // detection hints only and no synthetic Install action.
+  for (const [slug, pickup] of Object.entries(DRAFT_INSTALL_PICKUP)) {
+    const doc = await CatalogGame.findOne({ slug }).select("launcherInstall").lean();
+    if (!doc) continue;
+    const existing = doc.launcherInstall;
+    if (!existing) {
+      if (pickup.acquisitionAvailable === false) continue;
+      const result = await CatalogGame.updateOne(
+        { slug, $or: [{ launcherInstall: null }, { launcherInstall: { $exists: false } }] },
+        { $set: { launcherInstall: {
+          enabled: true,
+          kind: "external",
+          url: pickup.storeUrl,
+          exeHint: pickup.exeHint,
+          knownExePaths: pickup.knownExePaths,
+          registryTitles: pickup.registryTitles ?? [],
+          note: "Get and install your own copy from the official store. PlayBound detects its executable afterwards.",
+        } }, $addToSet: { launchMethods: "install" } }
+      );
+      if (result.modifiedCount) console.log(`add store handoff and pickup for ${slug}`);
+      continue;
+    }
+
+    const knownExePaths = Array.isArray(existing.knownExePaths)
+      ? existing.knownExePaths.filter((path: unknown): path is string => typeof path === "string")
+      : [];
+    const registryTitles = Array.isArray(existing.registryTitles)
+      ? existing.registryTitles.filter((title: unknown): title is string => typeof title === "string")
+      : [];
+    const detection: Record<string, unknown> = {
+      "launcherInstall.knownExePaths": [...new Set([...knownExePaths, ...pickup.knownExePaths])],
+      "launcherInstall.registryTitles": [...new Set([...registryTitles, ...(pickup.registryTitles ?? [])])],
+    };
+    if (pickup.acquisitionAvailable !== false && !existing.enabled) {
+      detection["launcherInstall.enabled"] = true;
+    }
+    if (!existing.exeHint || existing.exeHint === STEAM_CLIENT_EXE_HINTS[slug] || slug === "dont-starve-together") {
+      detection["launcherInstall.exeHint"] = pickup.exeHint;
+    }
+    const oldUrl = String(existing.url || "");
+    if (existing.kind === "external" && (
+      !oldUrl ||
+      (pickup.replaceSteamUrl && oldUrl === pickup.replaceSteamUrl) ||
+      (slug === "vintage-story" && /^https?:\/\/(?:www\.)?(?:vintagestory\.at|account\.vintagestory\.at)(?:\/|$)/i.test(oldUrl))
+    )) {
+      detection["launcherInstall.url"] = pickup.storeUrl;
+      if (pickup.replaceSteamUrl && oldUrl === pickup.replaceSteamUrl) {
+        detection["launcherInstall.note"] = "Get your own copy from GOG; PlayBound detects the GOG or Steam installation afterwards.";
+      }
+    }
+    const result = await CatalogGame.updateOne(
+      { slug, "launcherInstall.kind": existing.kind },
+      { $set: detection, ...(pickup.acquisitionAvailable === false ? {} : { $addToSet: { launchMethods: "install" } }) }
+    );
+    if (result.modifiedCount) console.log(`patch owned-game pickup for ${slug}`);
+  }
+  // These two storefront links were supplied by the curator. Keep the game's
+  // existing offers/prices untouched; the normal GOG matcher can price them.
+  for (const slug of ["stardew-valley", "starbound"] as const) {
+    await CatalogGame.updateOne(
+      { slug, $or: [{ gogStoreUrl: null }, { gogStoreUrl: { $exists: false } }] },
+      { $set: { gogStoreUrl: DRAFT_INSTALL_PICKUP[slug].storeUrl } }
+    );
   }
 
   let editionsPatched = 0;

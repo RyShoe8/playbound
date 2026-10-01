@@ -58,6 +58,7 @@ export function detectRetailer(url: string): string | null {
     if (host.endsWith("greenmangaming.com")) return "Green Man Gaming";
     if (host.endsWith("gamersgate.com")) return "GamersGate";
     if (/(^|\.)ebay\./i.test(host)) return "eBay";
+    if (host === "vintagestory.at" || host.endsWith(".vintagestory.at")) return "Vintage Story Store";
     return null;
   } catch {
     return null;
