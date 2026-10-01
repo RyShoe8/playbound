@@ -19,7 +19,7 @@ export default async function ControlsPage() {
   const testing = profiles.filter((profile) => profile.status === "testing");
 
   return (
-    <div className="mx-auto max-w-4xl space-y-12 px-4 py-12 sm:px-6 lg:px-8">
+    <div className="w-full space-y-12 px-4 py-12 sm:px-6 lg:px-8">
       <JsonLd data={graph(
         { "@type": "WebPage", name: "PlayBound Controls", url: absoluteUrl("/controls"), description: "Controller layouts for PC games that were made for keyboard and mouse.", publisher: { "@id": ORGANIZATION_ID } },
         breadcrumbSchema([{ name: "Home", path: "/" }, { name: "Controls", path: "/controls" }])

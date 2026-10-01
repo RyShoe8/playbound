@@ -30,7 +30,7 @@ export default async function BlogPostPage({ params }: Props) {
   const post = await getPublishedBlogPost(slug);
   if (!post) notFound();
   return (
-    <main className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
+    <main className="w-full px-4 py-12 sm:px-6 lg:px-8">
       <JsonLd data={{
         "@context": "https://schema.org",
         "@type": "BlogPosting",

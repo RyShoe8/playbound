@@ -13,7 +13,7 @@ export default async function BlogPage() {
   await connection();
   const posts = await listPublishedBlogPosts();
   return (
-    <main className="mx-auto max-w-6xl space-y-8 px-4 py-12 sm:px-6 lg:px-8">
+    <main className="w-full space-y-8 px-4 py-12 sm:px-6 lg:px-8">
       <header className="max-w-3xl space-y-3">
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">From PlayBound</p>
         <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">The Blog</h1>
