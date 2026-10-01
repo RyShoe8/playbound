@@ -98,6 +98,9 @@ export const NEW_MOD_SLUGS: readonly string[] = [
 
 /**
  * Existing catalog games: $set ONLY these fields.
+ * Images are deliberately absent: a recurring wave must not replace covers,
+ * screenshots, or artwork selected later in the admin CMS. New rows still
+ * receive their initial seed media through NEW_GAME_SLUGS.
  */
 export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   // Database-only Dedicated Basic drafts. Scope to verified scalar/step fields;
@@ -285,8 +288,6 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "launcherInstall",
     "systemRequirements",
     "hardwareRequirements",
-    "art",
-    "coverImage",
     "qualityBar",
     "longDescription",
     "whyWePickedIt",
@@ -360,9 +361,6 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "browserPlayable",
     "steamDeck",
     "website",
-    "art",
-    "coverImage",
-    "screenshots",
     "systemRequirements",
     "hardwareRequirements",
     "launcherInstall",
@@ -402,9 +400,6 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "browserPlayable",
     "steamDeck",
     "website",
-    "art",
-    "coverImage",
-    "screenshots",
     "systemRequirements",
     "hardwareRequirements",
     "launcherInstall",
@@ -439,7 +434,6 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "steamDeck",
     "website",
     "githubRepo",
-    "art",
     "systemRequirements",
     "hardwareRequirements",
     "launcherInstall",
@@ -473,9 +467,6 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
     "browserPlayable",
     "steamDeck",
     "website",
-    "art",
-    "coverImage",
-    "screenshots",
     "systemRequirements",
     "hardwareRequirements",
     "launcherInstall",
