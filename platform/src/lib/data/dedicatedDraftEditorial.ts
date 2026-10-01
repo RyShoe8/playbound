@@ -29,7 +29,6 @@ export const DEDICATED_DRAFT_EDITORIAL: Readonly<Record<string, DraftPatch>> = {
     tagline: "A World War II battlefield big enough for infantry, tanks, ships, and the pilot who absolutely cannot land.",
     description: "DICE's landmark combined-arms shooter bundles Battlefield 1942 with The Road to Rome and Secret Weapons of WWII. Capture flags across enormous maps, switch between infantry and vehicles, and bring friends who know when to repair a tank.",
     developerSlug: "dice", developerName: "DICE", releaseYear: 2004, license: "Proprietary commercial game",
-    access: { priceType: "PAID", purchaseRequired: true },
     website: "https://www.ea.com/games/battlefield/battlefield-1942",
     genres: ["FPS", "Shooter", "Action"], platforms: ["Windows"], launchMethods: ["install"], browserPlayable: false,
     qualityBar: qualityBar("A jeep bounces over a ridge, a fighter cuts across the sky, and suddenly a flag fight becomes an entire war story."),
@@ -391,7 +390,6 @@ We include it because the depth gives a committed group something rare: a shared
       { q: "Is it sold on Steam?", a: "No. The official Vintage Story store and its listed partners sell game accounts." },
     ],
     installSteps: installFrom("the official Vintage Story store", "A purchased game account is required to download the client."),
-    access: { priceType: "PAID", purchaseRequired: true },
   },
   "core-keeper": {
     tagline: "The cave keeps getting bigger; so does the pile of reasons to go back down.",
@@ -458,7 +456,6 @@ We keep RimWorld here because the replay value is not a promise of endless conte
     tagline: "A free zombie sandbox where the scariest thing near the loot might be another player.",
     description: "Smartly Dressed Games' open-world survival game lets you scavenge, craft, build, and negotiate with friends or strangers on public and private servers. The base game is free; surviving a careless supply run is not.",
     developerSlug: "smartly-dressed-games", developerName: "Smartly Dressed Games", releaseYear: 2017, license: "Proprietary free-to-play game",
-    access: { priceType: "FREE", purchaseRequired: false },
     genres: ["Survival", "Shooter", "Sandbox"], platforms: ["Windows", "macOS", "Linux"], launchMethods: ["install"], browserPlayable: false,
     qualityBar: qualityBar("A quick scavenging stop can become a tense escape when the zombies are easier to predict than the people nearby." , true),
     thatOneThing: "The same map can be a cooperative survival trip or a player-driven standoff depending on who arrives first.",
