@@ -131,7 +131,7 @@ export function DealsBrowser({
 
   // Sale cards appear in batches as the reader scrolls (no pagination); the
   // counts and filters above still cover every deal.
-  const { visible: shownDiscounted, sentinel: discountedSentinel } = useProgressiveList(visibleDiscounted, {
+  const { visible: shownDiscounted, sentinel: discountedSentinel, hasMore: moreDiscounted, loadMore } = useProgressiveList(visibleDiscounted, {
     resetKey: `${store}|${genre}|${kind}`,
   });
 
@@ -218,9 +218,8 @@ export function DealsBrowser({
               <h2 className="text-2xl font-bold tracking-tight">On sale now</h2>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              {visibleDiscounted.length === 1 ? "One catalog game" : `${visibleDiscounted.length} catalog games`}{" "}
-              at {minPercentOff}% off or more. Every one has already cleared the PlayBound
-              Bar — the discount is why it is on this page, not why we recommend it.
+              {visibleDiscounted.length === 1 ? "One game" : `${visibleDiscounted.length} games`}{" "}
+              at {minPercentOff}% off or more, found across the stores.
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -231,6 +230,7 @@ export function DealsBrowser({
             ))}
           </div>
           {discountedSentinel}
+          {moreDiscounted && <button type="button" onClick={loadMore} className="mx-auto block rounded-full border border-border bg-card px-5 py-2 text-sm font-bold hover:border-primary/40">Load more deals ({shownDiscounted.length} of {visibleDiscounted.length})</button>}
         </section>
       )}
 
@@ -247,7 +247,7 @@ export function DealsBrowser({
               you can claim before they expire.
             </p>
           </div>
-          <ActiveOffersGrid offers={visibleOffers} />
+          <ActiveOffersGrid offers={visibleOffers} landscape />
         </section>
       )}
     </div>

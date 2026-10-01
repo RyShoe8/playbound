@@ -15,6 +15,7 @@ import { editions } from "@/lib/data/editions";
 import { gamesBySlug } from "@/lib/data/games";
 import { correctionsFor } from "@/lib/data/catalogCorrections";
 import { dedicatedDraftEditorialFor, DEDICATED_DRAFT_EDITORIAL } from "@/lib/data/dedicatedDraftEditorial";
+import { dedicatedDraftRequirementsFor } from "@/lib/data/dedicatedDraftRequirements";
 import { developersBySlug } from "@/lib/data/developers";
 import { modAuthorsBySlug } from "@/lib/data/modAuthors";
 import { attributionFor, MOD_ATTRIBUTIONS } from "@/lib/data/modAttributions";
@@ -687,8 +688,9 @@ describe("insert-catalog-wave allowlists", () => {
       // reach a $set with nothing behind it.
       const corrections = correctionsFor(slug);
       const draftEditorial = dedicatedDraftEditorialFor(slug);
+      const draftRequirements = dedicatedDraftRequirementsFor(slug);
       expect(
-        seed || ed || corrections || draftEditorial,
+        seed || ed || corrections || draftEditorial || draftRequirements,
         `no seed/editorial/correction for default-path patch ${slug}`
       ).toBeTruthy();
       const source = {
@@ -696,6 +698,7 @@ describe("insert-catalog-wave allowlists", () => {
         ...((ed ?? {}) as unknown as Record<string, unknown>),
         ...((corrections ?? {}) as Record<string, unknown>),
         ...((draftEditorial ?? {}) as Record<string, unknown>),
+        ...((draftRequirements ?? {}) as Record<string, unknown>),
       };
       for (const field of fields) {
         // launcherInstall may live only on launcherInstallBySlug for some games;

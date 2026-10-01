@@ -206,4 +206,5 @@ Every field in the Admin Game Form (`/admin/games/[slug]/edit`), the TypeScript 
 | **Taxonomy** | Tags | `tags` | `string[]` | Normalized tags (e.g. `"Creature Collector"`, `"Indie"`, `"Open World"`). |
 | **Taxonomy** | Search Aliases | `aliases` | `string[]` | Alternative names, acronyms, or common abbreviations (one per line). |
 | **Install** | Launcher Install | `launcherInstall` | `LauncherInstall` object | Direct one-click recipe for the launcher (`direct-zip`, `github-zip`, `direct-installer`, etc.). |
-| **System & servers**| System Requirements| `systemRequirements` | `{ min: string, recommended: string }` | Minimum and recommended hardware specifications. |
+| **System & servers** | System Requirements | `systemRequirements` | `{ min: string, recommended: string }` | Break out minimum and recommended CPU, RAM, GPU/graphics API, OS, and free disk space for every supported platform; state when a tier is unpublished. |
+| **System & servers** | Hardware Requirements | `hardwareRequirements` | Structured minimum/recommended CPU, GPU, RAM, VRAM, storage, graphics API and OS, with source URLs | Enter only developer-supported figures. Preserve platform-specific differences in the text breakdown; a Windows-only API or OS must not cause the compatibility checker to reject a supported Mac/Linux build. |

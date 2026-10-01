@@ -31,10 +31,27 @@ export function useProgressiveList<T>(
   useEffect(() => {
     const node = sentinelRef.current;
     if (!node || !hasMore) return;
+    // Browsers can miss an intersection when content-visibility skips the
+    // offscreen card grid. Check the sentinel on scroll as a backstop.
+    let frame = 0;
+    const checkPosition = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        if (node.getBoundingClientRect().top <= window.innerHeight + 1200) {
+          setCount((current) => Math.min(current + step, items.length));
+        }
+      });
+    };
+    window.addEventListener("scroll", checkPosition, { passive: true });
+    window.addEventListener("resize", checkPosition);
+    checkPosition();
     if (typeof IntersectionObserver === "undefined") {
-      // No observer (very old browsers): show everything, deferred a tick.
-      const timer = setTimeout(() => setCount(items.length), 0);
-      return () => clearTimeout(timer);
+      return () => {
+        window.removeEventListener("scroll", checkPosition);
+        window.removeEventListener("resize", checkPosition);
+        cancelAnimationFrame(frame);
+      };
     }
     const observer = new IntersectionObserver(
       (entries) => {
@@ -43,12 +60,18 @@ export function useProgressiveList<T>(
       { rootMargin: "1200px 0px" }
     );
     observer.observe(node);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", checkPosition);
+      window.removeEventListener("resize", checkPosition);
+      cancelAnimationFrame(frame);
+    };
   }, [hasMore, items.length, step, count]);
 
   return {
     visible: hasMore ? items.slice(0, count) : items,
     hasMore,
+    loadMore: () => setCount((current) => Math.min(current + step, items.length)),
     /** Place after the list; renders nothing visible. */
     sentinel: hasMore ? <div ref={sentinelRef} aria-hidden className="h-px w-full" /> : null,
   };

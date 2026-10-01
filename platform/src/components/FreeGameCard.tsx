@@ -51,9 +51,11 @@ function humanizeGameSlug(slug: string): string {
 export function FreeGameCard({
   offer,
   className,
+  landscape = false,
 }: {
   offer: FreeOfferRecord;
   className?: string;
+  landscape?: boolean;
 }) {
   const [imgFailed, setImgFailed] = useState(false);
   const metaTitle = offer.metadata?.title as string | undefined;
@@ -81,18 +83,19 @@ export function FreeGameCard({
   return (
     <div
       className={cn(
-        "group flex h-full w-[250px] shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-border bg-card transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.7)] sm:w-[276px]",
+        "group flex h-full shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-border bg-card transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.7)]",
+        landscape ? "w-full" : "w-[250px] sm:w-[276px]",
         className
       )}
     >
       {/* ── 3:4 Poster Art ─────────────────────────────────────────── */}
-      <div className="relative aspect-[3/4] w-full shrink-0 overflow-hidden bg-secondary">
+      <div className={cn("relative w-full shrink-0 overflow-hidden bg-secondary", landscape ? "aspect-[16/9]" : "aspect-[3/4]")}>
         {coverImage && !imgFailed ? (
           <Image
             src={coverImage}
             alt={displayTitle}
             fill
-            sizes="(max-width: 640px) 250px, 276px"
+            sizes={landscape ? "(min-width: 1024px) 300px, (min-width: 640px) 45vw, 90vw" : "(max-width: 640px) 250px, 276px"}
             className="object-cover transition-transform duration-300 group-hover:scale-105"
             onError={() => setImgFailed(true)}
             unoptimized
@@ -134,7 +137,7 @@ export function FreeGameCard({
       </div>
 
       {/* ── Bottom Body ───────────────────────────────────────────── */}
-      <div className="flex flex-1 flex-col justify-between border-t border-border/70 bg-card/90 p-3">
+      <div className={cn("flex flex-1 flex-col justify-between border-t border-border/70 bg-card/90 p-3", landscape && "min-h-36")}>
         <div>
           <p className="line-clamp-1 text-sm font-bold text-foreground">
             {displayTitle}

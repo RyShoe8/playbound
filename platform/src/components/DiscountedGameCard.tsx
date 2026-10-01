@@ -78,7 +78,7 @@ export function DiscountedGameCard({
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col gap-2 p-3">
+      <div className="flex min-h-36 flex-1 flex-col gap-2 p-3">
         <p className="font-bold leading-tight">{title}</p>
         {genres.length > 0 && (
           <p className="line-clamp-1 text-xs leading-relaxed text-muted-foreground">
