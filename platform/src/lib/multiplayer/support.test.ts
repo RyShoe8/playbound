@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { supportsMultiplayer, supportsLauncherParty, hasServerBrowser, editionSupportsPartyPlay } from "./support";
+import { supportsMultiplayer, supportsOnlineMultiplayer, supportsLauncherParty, hasServerBrowser, editionSupportsPartyPlay } from "./support";
 import { games } from "@/lib/data/games";
 
 describe("supportsMultiplayer", () => {
@@ -64,6 +64,17 @@ describe("supportsMultiplayer", () => {
     // How a curator says "no" about a game whose tags read as yes.
     expect(supportsMultiplayer({ multiplayer: false, tags: ["Co-op"] })).toBe(false);
     expect(supportsMultiplayer({ multiplayer: true, tags: ["Story Rich"] })).toBe(true);
+  });
+});
+
+describe("supportsOnlineMultiplayer", () => {
+  it("offers parties for online games without claiming couch-only play is online", () => {
+    expect(supportsOnlineMultiplayer({ features: ["Multiplayer"] })).toBe(true);
+    expect(supportsOnlineMultiplayer({ features: ["Dedicated Servers"] })).toBe(true);
+    expect(supportsOnlineMultiplayer({ features: ["Co-op"] })).toBe(true);
+    expect(supportsOnlineMultiplayer({ features: ["Couch Co-Op", "Co-op"] })).toBe(false);
+    expect(supportsOnlineMultiplayer({ features: ["Hotseat"] })).toBe(false);
+    expect(supportsOnlineMultiplayer({ multiplayer: false, features: ["Multiplayer"] })).toBe(false);
   });
 });
 

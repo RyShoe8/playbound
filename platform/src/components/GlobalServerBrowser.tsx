@@ -211,7 +211,7 @@ export function GlobalServerBrowser({
           mod: server.mod || null,
           protected: server.protected,
         });
-        router.push(`/friends?party=${partyId}`);
+        router.push(`/party/${partyId}`);
       }
     } catch (err) {
       console.error("Failed to join server with party:", err);

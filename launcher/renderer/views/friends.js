@@ -2303,6 +2303,7 @@ function buildPartyViewHtml(party) {
                   party.maxSize || 8
                 }</span>
               </p>
+              <button type="button" class="copy-server-ip-btn" data-action="copy-party-link" data-party-id="${escapeHtml(party.id)}">Copy party link</button>
             </div>
             <div class="party-header-controls">
               ${hostModeHtml}
@@ -3598,6 +3599,18 @@ function wirePartyView(slot, party) {
       setTimeout(() => {
         if (btn.textContent === "Copied!") btn.textContent = orig;
       }, 2000);
+    });
+  });
+
+  slot.querySelectorAll("[data-action='copy-party-link']").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.partyId;
+      if (!id) return;
+      const url = `https://playbound.club/party/${encodeURIComponent(id)}`;
+      void (window.playbound?.clipboardWrite?.(url) || navigator.clipboard?.writeText?.(url));
+      btn.textContent = "Copied!";
+      setStatus("Party link copied");
+      setTimeout(() => { if (btn.textContent === "Copied!") btn.textContent = "Copy party link"; }, 2000);
     });
   });
 

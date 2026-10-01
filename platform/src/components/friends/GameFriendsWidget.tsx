@@ -104,7 +104,7 @@ export function GameFriendsWidget({ gameSlug }: { gameSlug: string }) {
               <span className="text-xs font-semibold text-muted-foreground">In your party</span>
             ) : (
               <Link
-                href={`/friends?party=${partyId}`}
+                href={`/party/${partyId}`}
                 className="inline-block rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground hover:brightness-110"
               >
                 Join Party

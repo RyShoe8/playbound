@@ -141,7 +141,7 @@ export async function createPartyInviteNotification(opts: {
       type: "party_invite",
       title: `${opts.senderUsername} invited you to a party`,
       body: headline ? `${headline} · ${count}` : count,
-      href: `/friends?party=${encodeURIComponent(opts.partyId)}`,
+      href: `/party/${encodeURIComponent(opts.partyId)}`,
       meta: {
         partyId: opts.partyId,
         fromUserId: opts.senderId,
@@ -183,7 +183,7 @@ export async function createLtpMatchNotification(opts: {
       type: "ltp_match_found",
       title: `${opts.matchedUsername} also wants to play ${opts.gameTitle}`,
       body: opts.partyId ? "A party has been opened. Click to join!" : "Click to view multiplayer.",
-      href: opts.partyId ? `/friends?party=${encodeURIComponent(opts.partyId)}` : `/multiplayer`,
+      href: opts.partyId ? `/party/${encodeURIComponent(opts.partyId)}` : `/multiplayer`,
       meta: {
         matchedUserId: opts.matchedUserId,
         matchedUsername: opts.matchedUsername,
@@ -220,7 +220,7 @@ export async function createLtpPartyReadyNotification(opts: {
       type: "ltp_party_ready",
       title: `An open ${opts.gameTitle} Party is waiting for you`,
       body: `Hosted by ${opts.partyLeaderUsername}. Click to jump in!`,
-      href: `/friends?party=${encodeURIComponent(opts.partyId)}`,
+      href: `/party/${encodeURIComponent(opts.partyId)}`,
       meta: {
         partyId: opts.partyId,
         gameSlug: opts.gameSlug,

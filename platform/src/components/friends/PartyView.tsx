@@ -91,6 +91,7 @@ export function PartyView({
     setEdition,
   } = usePartyStore();
   const [voiceBusy, setVoiceBusy] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [worldBusy, setWorldBusy] = useState(false);
   const [worldError, setWorldError] = useState<string | null>(null);
   const [voiceError, setVoiceError] = useState<string | null>(null);
@@ -457,6 +458,21 @@ export function PartyView({
               ) : null}
             </p>
             <PartyCapacityNote party={party} />
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(`${window.location.origin}/party/${party.id}`);
+                  setLinkCopied(true);
+                  window.setTimeout(() => setLinkCopied(false), 3000);
+                } catch {
+                  setLinkCopied(false);
+                }
+              }}
+              className="text-xs font-semibold text-primary hover:underline"
+            >
+              {linkCopied ? "Party link copied" : "Copy party link"}
+            </button>
           </div>
 
           <div className="flex flex-wrap gap-3 md:justify-end">

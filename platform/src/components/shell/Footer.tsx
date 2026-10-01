@@ -31,6 +31,7 @@ const footerSections: FooterSection[] = [
       { href: "/multiplayer", label: "Multiplayer" },
       { href: "/connect", label: "Connect" },
       { href: "/play-with-friends", label: "Play Together" },
+      { href: "/hosting", label: "Game Server Hosting" },
       { href: "/controls", label: "Controls" },
       { href: "/events", label: "Events" },
     ],
