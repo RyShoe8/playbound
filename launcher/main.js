@@ -24,6 +24,7 @@ const os = require("os");
 const bundledCatalog = require("./catalog");
 const { localCoopPlayerCapacity } = require("./services/couch/localCoop");
 const { createTelemetry } = require("./telemetry");
+const { resolveGmdxDownload, verifyGmdxInstaller } = require("./services/gmdxInstaller");
 const Platform = require("./platform");
 const GameLauncher = require("./services/GameLauncher");
 const { classifyLaunchFailure } = require("./services/classifyLaunchFailure");
@@ -4798,6 +4799,9 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   if (entry.kind === "locate-then-zip") {
     return installLocateThenZip(slug, entry, editionExtra);
   }
+  if (entry.kind === "locate-then-nsis") {
+    return installLocateThenZip(slug, entry, editionExtra);
+  }
 
   let gameDir =
     targetDir ||
@@ -5743,6 +5747,47 @@ async function maybeOpenEditionPostInstallHandoff(entry, gameDir) {
  * P99-style: user picks an existing Titanium client folder, we copy it into
  * the edition dir, then merge an overlay zip (P99Files) without wiping assets.
  */
+async function installLocatedNsis(slug, entry, editionExtra, sourceDir) {
+  if (process.platform !== "win32" || slug !== "deus-ex-goty-edition" || editionExtra.editionSlug !== "gmdx") {
+    throw new Error("This installer is only available for the Windows GMDX edition.");
+  }
+  const url = await resolveGmdxDownload();
+  const downloadPath = path.join(app.getPath("temp"), "playbound-launcher", "GMDX-AE-1.2_Lite.exe");
+  sendProgress({ phase: "resolving" });
+  await downloadResilientArtifact({
+    slug,
+    artifactId: "deus-ex-goty-edition--gmdx--1.2--GMDX-AE-1.2_Lite.exe",
+    version: "GMDX AE 1.2 Lite",
+    directUrl: url,
+    dest: downloadPath,
+  });
+  await verifyGmdxInstaller(downloadPath);
+
+  const gameDir = editionInstallDir(slug, editionExtra.editionSlug);
+  // The NSIS /D switch must be last and unquoted, even when the path has spaces.
+  sendProgress({ phase: "extracting" });
+  await fsp.rm(gameDir, { recursive: true, force: true });
+  await fsp.mkdir(path.dirname(gameDir), { recursive: true });
+  await fsp.cp(sourceDir, gameDir, { recursive: true });
+  try {
+    await new Promise((resolve, reject) => {
+      const child = spawn(downloadPath, ["/S", `/D=${gameDir}`], { windowsHide: true, stdio: "ignore" });
+      child.once("error", reject);
+      child.once("exit", (code) => code === 0 ? resolve() : reject(new Error(`GMDX installer exited with code ${code}`)));
+    });
+    const exe = path.join(gameDir, "System", "GMDX_AE.exe");
+    if (!fs.existsSync(exe)) throw new Error("GMDX installer finished, but System/GMDX_AE.exe was not created.");
+    const version = entry.versionLabel || "GMDX AE 1.2 Lite";
+    markInstalled(slug, { version, exe, dir: gameDir, ...editionExtra });
+    sendProgress({ phase: "done" });
+    void reportInstall(slug);
+    void telemetry.editionInstalled(editionInfoFor(slug, { version, ...editionExtra }));
+    return { status: "installed", version, dir: gameDir, editionSlug: editionExtra.editionSlug };
+  } finally {
+    await removeFileWithRetries(downloadPath).catch(() => {});
+  }
+}
+
 async function installLocateThenZip(slug, entry, editionExtra) {
   const baseExeHint =
     entry.baseExeHint ||
@@ -5845,6 +5890,10 @@ async function installLocateThenZip(slug, entry, editionExtra) {
     else {
       throw new Error(`That folder does not contain ${baseExeHint}. Pick the installed base-game folder.`);
     }
+  }
+
+  if (entry.kind === "locate-then-nsis") {
+    return installLocatedNsis(slug, entry, editionExtra, sourceDir);
   }
 
   // Some editions pin a direct overlay URL (for example P99), while others

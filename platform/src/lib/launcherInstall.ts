@@ -24,6 +24,8 @@ export const LAUNCHER_INSTALL_KINDS = [
    * game-level recipe could not express what editions already did.
    */
   "locate-then-zip",
+  /** Copy an owned base game, then apply a verified NSIS mod installer to that copy. */
+  "locate-then-nsis",
   /** Anonymous public depot via a PlayBound-managed SteamCMD runtime. */
   "steamcmd",
   "external",

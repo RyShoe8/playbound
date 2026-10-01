@@ -5436,23 +5436,16 @@ export const editions: EditionSeed[] = [
     installMethod: "playbound_installer",
     installConfig: {
       playbound_installer: {
-        kind: "locate-then-zip",
+        kind: "locate-then-nsis",
         requiresBaseDir: true,
-        overlayUrl:
-          "https://mirror.playbound.club/launcher-packages/editions/deus-ex/gmdx/gmdx.zip",
-        overlayFileName: "gmdx.zip",
-        versionLabel: "Augmented Edition",
-        exeHint: "GMDX|DeusEx",
+        versionLabel: "GMDX AE 1.2 Lite",
+        exeHint: "^GMDX_AE\\.exe$",
         baseExeHint: "DeusEx",
         knownExePaths: [
-          "System/GMDX.exe",
-          "System\\GMDX.exe",
-          "GMDX.exe",
-          "System/DeusEx.exe",
-          "System\\DeusEx.exe",
-          "DeusEx.exe",
+          "System/GMDX_AE.exe",
+          "System\\GMDX_AE.exe",
         ],
-        note: "Requires a legal Deus Ex: Game of the Year Edition install (GOG or Steam). PlayBound copies your base game files to a dedicated folder and applies GMDX: Augmented Edition, keeping your original untouched.",
+        note: "Requires a legal Deus Ex: Game of the Year Edition install (GOG or Steam). PlayBound verifies the official GMDX AE 1.2 Lite installer, copies your base game to a dedicated folder, and installs GMDX there. Your original stays untouched.",
         steps: [
           {
             platform: "windows",
@@ -5460,11 +5453,11 @@ export const editions: EditionSeed[] = [
           },
           {
             platform: "windows",
-            text: "Click Install with PlayBound. PlayBound automatically detects your base game, copies the files to a separate edition directory, and applies the GMDX overlay.",
+            text: "Click Install with PlayBound. PlayBound detects your base game, copies it into a separate edition folder, downloads the official GMDX installer, and applies it to that copy.",
           },
           {
             platform: "windows",
-            text: "Click Play. GMDX launches with modern renderer and resolution settings pre-configured.",
+            text: "Click Play to start GMDX_AE.exe from the separate edition folder.",
           },
         ],
       },
@@ -5497,7 +5490,7 @@ export const editions: EditionSeed[] = [
     ],
     verificationLevel: "community_verified",
     verificationNote:
-      "Configured for one-click locate-then-zip over legal GOG or Steam Deus Ex GOTY installations.",
+      "GMDX AE 1.2 Lite from the author's ModDB release; installer MD5 verified before running against an isolated copy of a legal GOG or Steam Deus Ex GOTY installation.",
   },
   {
     gameSlug: "deus-ex-goty-edition",

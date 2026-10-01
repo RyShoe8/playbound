@@ -810,6 +810,7 @@ export const STEAM_CLIENT_EXE_HINTS: Readonly<Record<string, string>> = {
 
 /** Existing editions: $set ONLY these fields. */
 export const PATCH_EDITION_FIELDS: Readonly<Record<string, readonly string[]>> = {
+  "deus-ex-goty-edition/gmdx": ["installMethod", "installConfig", "verificationNote"],
   "deus-ex-goty-edition/playbound-hx-coop": ["description", "installConfig", "multiplayerGamingSteps", "faq", "verificationNote"],
   // The Windows ZIP includes app/shatteredNews-*.jar (no Main-Class) beside
   // its real root launcher; the old broad hint picked that dependency.

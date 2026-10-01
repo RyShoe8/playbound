@@ -165,6 +165,8 @@ for (const packaged of [true, false]) {
   check("rejects a brand-alike vercel preview in a packaged build", !sec.hostAllowedForDownload("playbound-attacker.vercel.app"));
   check("rejects a brand-alike vercel preview as API base in a packaged build", !sec.isAllowedApiBase("https://playbound-attacker.vercel.app"));
   check("still accepts sourceforge mirrors", sec.hostAllowedForDownload("downloads.sourceforge.net"));
+  check("accepts the GMDX ModDB download CDN", sec.hostAllowedForDownload("fmt5.dl.dbolical.com"));
+  check("rejects a ModDB CDN lookalike", !sec.hostAllowedForDownload("fmt5.dl.dbolical.com.attacker.example"));
   check("still accepts itch mirrors", sec.hostAllowedForDownload("itchio-mirror-7.b-cdn.net"));
   check("accepts official GameJolt downloads", sec.hostAllowedForDownload("download.gamejolt.net"));
 }
