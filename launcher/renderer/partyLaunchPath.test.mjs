@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const friends = readFileSync(new URL("./views/friends.js", import.meta.url), "utf8");
+const connectState = readFileSync(new URL("./partyConnectState.js", import.meta.url), "utf8");
 const main = readFileSync(new URL("../main.js", import.meta.url), "utf8");
 
 test("an installed party game reaches PlayBound play instead of its store link", () => {
@@ -21,7 +22,7 @@ test("GOG netplay launch prefers the owned ROM and avoids duplicate connect flag
 });
 
 test("a guest arms a direct-IP party join until the host listener is ready", () => {
-  assert.match(friends, /lan\.requiresHostReady && !party\.selfHostReady/);
+  assert.match(connectState, /lan\.requiresHostReady && !party\.selfHostReady/);
   assert.match(friends, /party\.lan\?\.requiresHostReady && !partyConnectReady\(party, false\)/);
   assert.match(friends, /pendingJoin = \{ partyId, at: Date\.now\(\) \}/);
   assert.match(friends, /party\.port \|\| lan\.hostPort \|\| catalogGame\?\.port \|\| connectMeta\.defaultPort/);

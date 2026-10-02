@@ -205,7 +205,10 @@ export function lanPayloadFromDoc(
   // still wait for the host's actual game listener. Discovery-only LAN games
   // have no listener to probe and can join once the party is in flight.
   const requiresHostReady = resolvedMode === "self" && !isVirtualLanGame(gameSlug);
-  const hostPort = requiresHostReady ? getMultiplayerAdapter(gameSlug).selfHost?.port || null : null;
+  const adapter = getMultiplayerAdapter(gameSlug);
+  const hostPort = needsOverlay
+    ? adapter.virtualLan?.hostPort || adapter.selfHost?.port || adapter.host?.port || null
+    : null;
   if (!config) {
     return {
       enabled: false,

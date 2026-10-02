@@ -237,6 +237,9 @@ export function publicLobbyPortFor(gameSlug: string): Pick<SelfHostConfig, "port
   const adapter = getMultiplayerAdapter(gameSlug);
   const declared = adapter.selfHost;
   if (declared?.port) return { port: declared.port, protocol: declared.protocol };
+  if (adapter.virtualLan?.hostPort) {
+    return { port: adapter.virtualLan.hostPort, protocol: adapter.protocol === "tcp" ? "tcp" : "udp" };
+  }
   if (adapter.host?.port && adapter.host.protocol) {
     return { port: adapter.host.port, protocol: adapter.host.protocol };
   }
