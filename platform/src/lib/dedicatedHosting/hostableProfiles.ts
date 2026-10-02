@@ -11,6 +11,7 @@ import dbConnect from "@/lib/db";
 import Edition from "@/lib/models/Edition";
 import CatalogGame from "@/lib/models/CatalogGame";
 import { DEDICATED_ONLY_GAMES, HOSTABLE_SLUGS, HOSTABLE_SLUG_ALIASES } from "@/lib/gameHost/catalog";
+import { isNonDedicatedCatalogGame } from "@/lib/gameHost/nonDedicatedCatalog";
 
 /** Every game the admin can put on a tier: hostable everywhere, plus the paid-plan-only games. */
 function tierSlugs(): string[] {
@@ -27,7 +28,7 @@ export type CatalogGameRef = { slug: string; title: string; status: string; publ
 export function readyPublishedHostableCatalog(
   games: CatalogGameRef[], editions: EditionRef[], stored: StoredProfileRef[], readySlugs: ReadonlySet<string>
 ): { games: CatalogGameRef[]; editions: EditionRef[] } {
-  const eligibleGames = games.filter((game) => game.status === "published" && game.published && readySlugs.has(game.slug));
+  const eligibleGames = games.filter((game) => !isNonDedicatedCatalogGame(game.slug, game.title) && game.status === "published" && game.published && readySlugs.has(game.slug));
   const allowed = new Set(eligibleGames.map((game) => game.slug));
   const storedKeys = new Set(stored.map((profile) => profile.key));
   const eligibleEditions = editions.filter((edition) => allowed.has(edition.gameSlug) &&
@@ -74,6 +75,7 @@ export async function loadHostableEditionRefs(): Promise<EditionRef[]> {
 
 export async function loadHostableCatalogRefs(): Promise<CatalogGameRef[]> {
   await dbConnect();
-  return CatalogGame.find({ $or: [{ slug: { $in: tierSlugs() } }, { features: "Dedicated Servers" }] })
-    .select("slug title status published").lean() as Promise<CatalogGameRef[]>;
+  const rows = await CatalogGame.find({ $or: [{ slug: { $in: tierSlugs() } }, { features: "Dedicated Servers" }] })
+    .select("slug title status published").lean() as CatalogGameRef[];
+  return rows.filter((game) => !isNonDedicatedCatalogGame(game.slug, game.title));
 }
