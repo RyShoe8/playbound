@@ -13,6 +13,7 @@ import { listPublicEvents } from "@/lib/events/service";
 import { MULTIPLAYER_ADAPTERS } from "@/lib/multiplayer/adapters";
 import { SITE_URL } from "@/lib/site";
 import { cacheLife, cacheTag } from "next/cache";
+import { connection } from "next/server";
 import { lastMod, newestUpdate } from "@/lib/sitemapDates";
 import { hasControls } from "@/lib/controls/types";
 import { HOSTING_TIER_TAG, loadPublicTier, publicGames } from "@/lib/dedicatedHosting/publicTier";
@@ -24,15 +25,16 @@ import { HOSTING_TIER_TAG, loadPublicTier, publicGames } from "@/lib/dedicatedHo
  * no standalone value that would compete with the game page itself.
  */
 /*
- * Cached, not rebuilt per request.
+ * Cache the assembled data, but render the XML at request time.
  *
  * This carried `export const revalidate = 3600` before Cache Components. The
  * migration removed it, and without a replacement the route turned dynamic —
  * meaning every crawler hit re-read the games, mods, editions, gear, events,
  * collections and developers to assemble 846 URLs from scratch.
  *
- * Tagged "catalog" so a game edit still refreshes it rather than waiting out
- * the window.
+ * Metadata routes are cached by default. Without a request-time boundary,
+ * Vercel can keep serving an old XML response after the tagged data changes.
+ * The cached data is tagged so catalog and blog edits refresh it immediately.
  */
 async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
   "use cache";
@@ -257,5 +259,6 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  await connection();
   return buildSitemap();
 }

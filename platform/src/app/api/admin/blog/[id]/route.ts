@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { Types } from "mongoose";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
@@ -25,6 +25,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       },
     }, { runValidators: true });
     revalidateTag("blog", { expire: 0 });
+    revalidatePath("/sitemap.xml");
     return NextResponse.json({ ok: true });
   } catch (err) {
     if (err instanceof z.ZodError) return NextResponse.json({ error: err.issues[0]?.message || "Invalid post" }, { status: 400 });
