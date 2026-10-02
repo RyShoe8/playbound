@@ -89,6 +89,69 @@ export function createDedicatedRecipes(deps) {
   const keepStdinOpen = () => "";
 
   return {
+    // The 2023 Enhanced client uses a separate protocol and its own lobby
+    // backend. This server is for the bundled 1997 Original client only.
+    "quake-ii": {
+      portStart: 27910,
+      portEnd: 27929,
+      protocol: "udp",
+      binaries: ["/usr/lib/yamagi-quake2/q2ded"],
+      resolveBinary: (candidates) => fs.existsSync(path.join(GAMES_ROOT, "quake-ii-original", "baseq2", "pak0.pak"))
+        ? firstExisting(candidates) : null,
+      cwd: () => path.join(GAMES_ROOT, "quake-ii-original"),
+      spawnEnv: isolatedHomeEnv("quake-ii-servers"),
+      stdin: keepStdinOpen,
+      shutdownCommand: "quit\n",
+      args: (port, ctx) => [
+        "-datadir", path.join(GAMES_ROOT, "quake-ii-original"),
+        "+set", "port", String(port),
+        "+set", "deathmatch", "1",
+        "+set", "maxclients", String(Math.min(16, managedPlayerLimit(ctx))),
+        "+set", "hostname", `"${serverName(ctx, "PlayBound Quake II Original").replace(/[;\x00-\x1f\x7f]/g, " ")}"`,
+        "+map", "q2dm1",
+      ],
+    },
+    "goldeneye-source": {
+      portStart: 27120,
+      portEnd: 27139,
+      protocol: "udp",
+      rcon: "source",
+      binaries: gameBin("goldeneye-source", ["run-server.sh"]),
+      resolveBinary: (candidates, ctx) => {
+        if (ctx) {
+          const runtime = path.join(serverDir("goldeneye-source-servers", ctx), "runtime", "run-server.sh");
+          if (fs.existsSync(runtime)) return runtime;
+        }
+        return firstExisting(candidates);
+      },
+      cwd: (_port, ctx) => path.join(serverDir("goldeneye-source-servers", ctx), "runtime"),
+      startupReadyTimeoutMs: 90_000,
+      spawnEnv: (_port, ctx) => {
+        const home = serverDir("goldeneye-source-servers", ctx);
+        return { HOME: home, WINEPREFIX: path.join(home, "wineprefix"), WINEDEBUG: "-all" };
+      },
+      prepareSpawn: async (_port, ctx) => {
+        const home = serverDir("goldeneye-source-servers", ctx);
+        const runtime = path.join(home, "runtime");
+        if (fs.existsSync(path.join(runtime, "srcds.exe"))) return;
+        const source = path.join(GAMES_ROOT, "goldeneye-source");
+        const stage = path.join(home, `.runtime-${process.pid}`);
+        if (fs.existsSync(stage)) fs.rmSync(stage, { recursive: true });
+        fs.cpSync(source, stage, { recursive: true });
+        if (!fs.existsSync(path.join(stage, "srcds.exe")) || !fs.existsSync(path.join(stage, "gesource", "gameinfo.txt"))) {
+          fs.rmSync(stage, { recursive: true });
+          throw new Error("GoldenEye: Source needs Source 2007 server and the GE:S 5.0.6 server archive");
+        }
+        fs.renameSync(stage, runtime);
+      },
+      args: (port, ctx) => [
+        "-console", "-game", "gesource", "-strictportbind", "-norestart",
+        "-port", String(port), "+map", "ge_archives",
+        "-maxplayers", String(managedPlayerLimit(ctx)),
+        "+hostname", `"${serverName(ctx, "PlayBound GoldenEye: Source")}"`,
+        ...(ctx.rconPassword ? ["+rcon_password", ctx.rconPassword] : []),
+      ],
+    },
     "counter-strike-source": {
       portStart: 27060,
       portEnd: 27070,

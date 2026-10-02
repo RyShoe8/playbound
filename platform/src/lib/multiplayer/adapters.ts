@@ -1769,7 +1769,7 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       inGameSteps: ["Create Server", "Pick a map and start"],
     },
     notes:
-      "Source sourcemod on Source SDK Base 2007 (Steam app 218). Client-hosted listen server; no srcds recipe on the VPS, so it is self-host only for now. PlayBound launches via steam -applaunch 218 — there is no standalone non-Steam install.",
+      "Source sourcemod on Source SDK Base 2007 (Steam app 218). Client-hosted listen servers are supported; the VPS dedicated recipe requires Wine and remains a draft until its server files and client joins are verified. PlayBound launches via steam -applaunch 218.",
   },
 
   "alien-swarm": {
@@ -1881,13 +1881,10 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
    * for PlayBound to host or template — a party gets voice, presence and a
    * synchronised launch, and the players group up in-game with /invite.
    *
-   * Quake II is here rather than as a managed-server for the same reason the
-   * Enhanced build is the default: its multiplayer runs through Nightdive's own
-   * crossplay backend and server browser, which PlayBound cannot spawn a
-   * process for. The bundled 1997 Original executable is classic q2 protocol on
-   * UDP 27910 and could be hosted, but the two builds cannot see each other's
-   * games, so offering a room that only the Original build can join would be a
-   * trap rather than a feature.
+   * The Enhanced build stays on Nightdive's crossplay lobby backend. The
+   * paid-plan Quake II recipe hosts only the bundled 1997 Original build;
+   * it is kept out of automatic party hosting because the default Enhanced
+   * client cannot join that server's classic network protocol.
    */
   "final-fantasy-xi": {
     gameSlug: "final-fantasy-xi",
@@ -1906,7 +1903,7 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     adapterType: "official",
     protocol: "official",
     notes:
-      "The Enhanced build's crossplay backend and server browser handle matchmaking, up to 16 players online and 4 in co-op. PlayBound provides party launch and presence so everyone starts the same build — Enhanced and Original cannot see each other's games.",
+      "The Enhanced build uses Nightdive's crossplay lobbies. A separate draft dedicated-server recipe supports the bundled 1997 Original build only. Choose the Original executable to join that server; Enhanced and Original cannot join each other's games.",
   },
 
   "next-gen-chess": {

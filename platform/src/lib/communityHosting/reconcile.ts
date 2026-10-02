@@ -40,7 +40,7 @@ export const PLAYER_LIMIT_RECIPES = new Set([
   "wolfenstein-enemy-territory", "team-fortress-2", "unvanquished",
   "hedgewars", "freedoom", "veloren", "freeciv",
   // Paid Dedicated plan games (game-host/dedicatedRecipes.js).
-  "counter-strike-source", "terraria", "unturned", "rimworld-together", "core-keeper", "vintage-story", "factorio", "necesse", "dont-starve-together", "barotrauma", "trackmania",
+  "counter-strike-source", "goldeneye-source", "quake-ii", "terraria", "unturned", "rimworld-together", "core-keeper", "vintage-story", "factorio", "necesse", "dont-starve-together", "barotrauma", "trackmania",
 ]);
 
 // Engines with a native bot fill mode (bots leave as people join, return as

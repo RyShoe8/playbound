@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { idleSamplesFromSpawnTest } from "./spawnTestSamples";
+import { idleSamplesFromSpawnTest, lastIdleTestReading } from "./spawnTestSamples";
 
 const measured = { ok: true, resources: {
   rssBytes: 256 * 1024 * 1024, cpuCores: 0.12, sampleIntervalMs: 1500,
@@ -7,6 +7,18 @@ const measured = { ok: true, resources: {
 } };
 
 describe("spawn-test resource samples", () => {
+  it("shows valid VPS idle readings without treating failed or incomplete tests as measurements", () => {
+    expect(lastIdleTestReading({ ok: true, at: "2026-09-30T12:00:00Z", resources: {
+      cpuCores: 0.12, rssBytes: 100_000_000,
+    } })).toEqual({ cpuCores: 0.12, ramBytes: 100_000_000, at: "2026-09-30T12:00:00Z" });
+    expect(lastIdleTestReading({ ok: false, at: "2026-09-30T12:00:00Z", resources: {
+      cpuCores: 0.12, rssBytes: 100_000_000,
+    } })).toBeNull();
+    expect(lastIdleTestReading({ ok: true, at: "2026-09-30T12:00:00Z", resources: {
+      cpuCores: null, rssBytes: 100_000_000,
+    } })).toBeNull();
+  });
+
   it("records only a successful single base-game test for the requested slug", () => {
     expect(idleSamplesFromSpawnTest({ ...measured, gameSlug: "factorio" }, "factorio"))
       .toMatchObject([{ profileKey: "factorio:base", ramBytes: measured.resources.rssBytes,

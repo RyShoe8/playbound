@@ -21,7 +21,7 @@ describe("game host catalog", () => {
       expect(bySlug[slug]?.protocol).toBe(game.protocol);
       expect(getHostableGame(slug)).toEqual(game);
     }
-    for (const slug of ["witchbrook", "risk-of-rain-2", "starbound", "stardew-valley", "vintage-story", "aneurism-iv", "rimworld"]) {
+    for (const slug of ["witchbrook", "risk-of-rain-2", "starbound", "stardew-valley", "vintage-story", "aneurism-iv", "rimworld", "quake-ii"]) {
       expect(PARTY_DEDICATED_GAMES[slug]).toBeUndefined();
     }
     expect(partyDedicatedPlayerLimit("core-keeper", 32)).toBe(8);
