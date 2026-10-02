@@ -1,33 +1,40 @@
 import { describe, expect, it } from "vitest";
-import { allowedSlotSizes, higherHostingTiers, inheritTierGames, lowerHostingTiers, type HostingTier, type TierGame } from "./tier";
+import { allowedSlotSizes, inheritTierGames, lowerHostingTiers, type HostingTier, type TierGame } from "./tier";
 
 const profile: TierGame = {
   profileKey: "openra:combined-arms", enabled: true,
   newServerCreationEnabled: false, existingServerStartEnabled: false,
   supportedRegions: ["us-east"], allowedMods: [],
 };
-const lower = { games: [], maxSlotsSold: 32, regions: [{ key: "us-central" }] } as unknown as HostingTier;
+const higher = { games: [], maxSlotsSold: 32, regions: [{ key: "us-central" }] } as unknown as HostingTier;
 
 describe("hosting tier inheritance", () => {
-  it("cascades Extreme to Pro and Basic, and Pro to Basic", () => {
-    expect(lowerHostingTiers("extreme")).toEqual(["pro", "basic"]);
+  it("inherits Basic into Pro and Extreme, and Pro into Extreme", () => {
+    expect(lowerHostingTiers("extreme")).toEqual(["basic", "pro"]);
     expect(lowerHostingTiers("pro")).toEqual(["basic"]);
-    expect(higherHostingTiers("basic")).toEqual(["pro", "extreme"]);
+    expect(lowerHostingTiers("basic")).toEqual([]);
   });
 
-  it("adds selected editions without overriding lower-tier settings", () => {
-    const inherited = inheritTierGames(lower, [profile]);
+  it("adds lower-tier editions without overriding higher-tier settings", () => {
+    const inherited = inheritTierGames(higher, [profile]);
     expect(inherited).toMatchObject([{ profileKey: profile.profileKey, enabled: true, supportedRegions: ["us-central"] }]);
-    const custom = { ...profile, enabled: false, adminNote: "Basic limit" };
-    expect(inheritTierGames({ ...lower, games: [custom] }, [profile])).toEqual([{ ...custom, enabled: true }]);
+    const custom = { ...profile, enabled: false, adminNote: "Extreme limit" };
+    expect(inheritTierGames({ ...higher, games: [custom] }, [profile])).toEqual([{ ...custom, enabled: true }]);
   });
 
   it("does not inherit unselected profiles", () => {
-    expect(inheritTierGames(lower, [{ ...profile, enabled: false }])).toEqual([]);
+    expect(inheritTierGames(higher, [{ ...profile, enabled: false }])).toEqual([]);
+  });
+
+  it("does not let a higher tier disable a lower tier's new-server availability", () => {
+    const available = { ...profile, newServerCreationEnabled: true, existingServerStartEnabled: true };
+    const disabled = { ...profile, enabled: false };
+    expect(inheritTierGames({ ...higher, games: [disabled] }, [available])).toEqual([{ ...disabled,
+      enabled: true, newServerCreationEnabled: true, existingServerStartEnabled: true }]);
   });
 
   it("uses purchased slots and the catalog cap, ignoring old per-game limits", () => {
-    const tier = { ...lower, allocationIncrement: 4, minAllocation: 4 };
+    const tier = { ...higher, allocationIncrement: 4, minAllocation: 4 };
     const oldProfile = { ...profile, minSlots: 4, maxSlots: 8, slotIncrement: 4 };
     expect(allowedSlotSizes(tier, oldProfile, 12, 10)).toEqual(Array.from({ length: 10 }, (_, i) => i + 1));
     expect(allowedSlotSizes(tier, oldProfile, 12, null)).toEqual(Array.from({ length: 12 }, (_, i) => i + 1));

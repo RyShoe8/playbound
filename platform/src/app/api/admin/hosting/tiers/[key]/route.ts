@@ -4,7 +4,7 @@ import { z } from "zod";
 import dbConnect from "@/lib/db";
 import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 import CommunityServerProfile from "@/lib/models/CommunityServerProfile";
-import { getTier, preservedPackagePrices, saveTier, slotCapEnforced, HOSTING_TIER_KEYS, includeHigherTierGamesInLowerTiers, retainHigherTierSelections, type HostingTierKey } from "@/lib/dedicatedHosting/tier";
+import { getTier, preservedPackagePrices, saveTier, slotCapEnforced, HOSTING_TIER_KEYS, retainLowerTierSelections, type HostingTierKey } from "@/lib/dedicatedHosting/tier";
 import { HOSTING_TIER_TAG } from "@/lib/dedicatedHosting/publicTier";
 import { HOSTING_INVENTORY_TAG } from "@/lib/dedicatedHosting/inventory";
 import { getEffectiveEnvelope } from "@/lib/communityHosting/reconcile";
@@ -156,9 +156,8 @@ export async function PUT(req: Request, ctx: Ctx) {
     if (ineligible) return NextResponse.json({ error: `${ineligible.profileKey} must be published and VPS-ready before subscription enrollment` }, { status: 409 });
   }
   const packages = preservedPackagePrices(previous, parsed.data.packages);
-  const inheritedGames = await retainHigherTierSelections(key as HostingTierKey, { ...previous, ...parsed.data, packages });
+  const inheritedGames = await retainLowerTierSelections(key as HostingTierKey, { ...previous, ...parsed.data, packages });
   const tier = await saveTier(key, { ...parsed.data, packages, games: inheritedGames });
-  await includeHigherTierGamesInLowerTiers(key as HostingTierKey, tier.games);
   revalidateTag(HOSTING_TIER_TAG, { expire: 0 });
   revalidateTag(HOSTING_INVENTORY_TAG, { expire: 0 });
   return NextResponse.json({ ok: true, tier });
