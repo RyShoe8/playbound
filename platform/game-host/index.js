@@ -635,6 +635,9 @@ function probeUdpPort(port) {
 
 /** True when the OS will let us bind this port for the recipe's protocol. */
 async function isOsPortFree(port, protocol) {
+  // A Linux bind probe can race the game even before spawn (UDP socket close is
+  // asynchronous). /proc is read-only and covers allocation and readiness.
+  if (process.platform === "linux") return !isLinuxPortBound(port, protocol);
   const needTcp = protocol === "tcp" || protocol === "both" || !protocol;
   const needUdp = protocol === "udp" || protocol === "both";
   if (needTcp && !(await probeTcpPort(port))) return false;
@@ -647,7 +650,7 @@ async function waitForServerPort(port, protocol, child, timeoutMs) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     if (child.exitCode !== null || child.signalCode !== null) return false;
-    if (process.platform === "linux" ? isLinuxPortBound(port, protocol) : !(await isOsPortFree(port, protocol))) return true;
+    if (!(await isOsPortFree(port, protocol))) return true;
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
   return false;
@@ -805,7 +808,7 @@ async function startRoom(opts) {
   return startCoordinator.withPartyLock(key, () => startRoomUnlocked(opts));
 }
 
-async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername, saveKey, customerOwned }) {
+async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername, saveKey, customerOwned, testSpawn = false }) {
   if (shuttingDown) return { error: "Agent is shutting down" };
   const lookup = communityServerId ? byManaged : byParty;
   const ownerId = communityServerId || partyId;
@@ -841,6 +844,7 @@ async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, e
       leaderUsername,
       saveKey: cleanSaveKey,
       customerOwned: Boolean(customerOwned && communityServerId),
+      testSpawn,
     });
   } finally {
     startCoordinator.releaseCapacity();
@@ -848,11 +852,11 @@ async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, e
   }
 }
 
-async function startRoomReserved({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername, saveKey, customerOwned }) {
+async function startRoomReserved({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername, saveKey, customerOwned, testSpawn = false }) {
 
   // Recipes use partyId as a filesystem namespace; managed IDs serve that
   // internal purpose without creating a Party or entering byParty.
-  const roomCtx = { editionSlug, mod, partyId: partyId || communityServerId, managed: Boolean(communityServerId), customerOwned: Boolean(customerOwned && communityServerId), name, settings, leaderUsername, saveKey };
+  const roomCtx = { editionSlug, mod, partyId: partyId || communityServerId, managed: Boolean(communityServerId), customerOwned: Boolean(customerOwned && communityServerId), testSpawn, name, settings, leaderUsername, saveKey };
   let resolved = resolveRecipe(gameSlug, roomCtx);
   if (!resolved) return { error: `Game ${gameSlug} is not hostable` };
 
@@ -908,6 +912,7 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
     partyId: partyId || communityServerId,
     managed: Boolean(communityServerId),
     customerOwned: Boolean(customerOwned && communityServerId),
+    testSpawn,
     name: serverName,
     editionSlug: editionSlug || "",
     // Explicit override for games where edition alone can't say which mod to
@@ -1214,6 +1219,7 @@ async function runTestSpawn(gameSlug) {
     gameSlug,
     partyId,
     name: `PlayBound test ${gameSlug}`.slice(0, 40),
+    testSpawn: true,
   });
   const durationMs = Date.now() - started;
 
