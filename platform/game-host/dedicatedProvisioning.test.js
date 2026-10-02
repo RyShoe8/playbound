@@ -45,6 +45,18 @@ test("Don't Starve Together needs a private token and uses unique Steam ports", 
   assert.ok(!args.includes("test-token"));
 });
 
+test("Unturned can start anonymously for direct IP joins, and uses a token when supplied", async () => {
+  const ctx = context("unturned-one", 8);
+  await recipes.unturned.prepareSpawn(27075, ctx);
+  const data = path.join(home, "unturned-servers", "pb-unturned-one");
+  const config = path.join(data, "Server", "Commands.dat");
+  assert.match(fs.readFileSync(config, "utf8"), /MaxPlayers 8/);
+  assert.doesNotMatch(fs.readFileSync(config, "utf8"), /GSLT/);
+  fs.writeFileSync(path.join(data, "gslt.txt"), "a".repeat(32), { mode: 0o600 });
+  await recipes.unturned.prepareSpawn(27075, ctx);
+  assert.match(fs.readFileSync(config, "utf8"), /GSLT a{32}/);
+});
+
 test("Barotrauma gets a separate executable and capped XML per customer", async () => {
   const source = path.join(games, "barotrauma");
   fs.mkdirSync(source);

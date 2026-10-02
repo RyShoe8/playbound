@@ -363,7 +363,7 @@ export function couchPayloadFromDoc(
 /** Picker options, in display order, with copy explaining the tradeoff. */
 export function hostModeOptions(gameSlug: string): HostModeOption[] {
   const credentialHint: Record<string, string> = {
-    unturned: "Requires a private Steam game-server login token for this room before it can start.",
+    unturned: "A Steam game-server token is optional. Without one, join this server directly through PlayBound; it will not appear in Steam's public server list.",
     "dont-starve-together": "Requires a private Klei cluster token for this room before it can start.",
     trackmania: "Requires a dedicated-server account for this room before it can start.",
   };
