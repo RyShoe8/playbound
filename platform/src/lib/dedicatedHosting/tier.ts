@@ -36,7 +36,7 @@ export const BASIC_DEFAULTS = {
   ],
   // Launch catalog. OpenRA editions are added per edition profile in admin.
   games: ["assaultcube", "bombsquad", "openra", "openttd", "xonotic", "hedgewars", "mindustry", "supertuxkart", "warzone-2100"]
-    .map((slug) => ({ profileKey: `${slug}:base`, supportedRegions: ["us-central"], readinessStatus: "draft" as const })),
+    .map((slug) => ({ profileKey: `${slug}:base`, supportedRegions: ["us-central"] })),
 };
 
 export type TierGame = {
@@ -46,7 +46,6 @@ export type TierGame = {
   existingServerStartEnabled: boolean;
   supportedRegions: string[];
   allowedMods: string[];
-  readinessStatus: "draft" | "testing" | "verified";
   adminNote?: string | null;
 };
 

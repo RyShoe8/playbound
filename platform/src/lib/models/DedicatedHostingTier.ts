@@ -45,7 +45,6 @@ const TierGameSchema = new Schema(
     existingServerStartEnabled: { type: Boolean, default: true },
     supportedRegions: { type: [String], default: [] },
     allowedMods: { type: [String], default: [] },
-    readinessStatus: { type: String, enum: ["draft", "testing", "verified"], default: "draft" },
     adminNote: { type: String, default: null },
   },
   { _id: false }

@@ -4,7 +4,7 @@ import { allowedSlotSizes, higherHostingTiers, inheritTierGames, lowerHostingTie
 const profile: TierGame = {
   profileKey: "openra:combined-arms", enabled: true,
   newServerCreationEnabled: false, existingServerStartEnabled: false,
-  supportedRegions: ["us-east"], allowedMods: [], readinessStatus: "testing",
+  supportedRegions: ["us-east"], allowedMods: [],
 };
 const lower = { games: [], maxSlotsSold: 32, regions: [{ key: "us-central" }] } as unknown as HostingTier;
 
