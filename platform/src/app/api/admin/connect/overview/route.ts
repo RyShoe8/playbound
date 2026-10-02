@@ -15,6 +15,7 @@ import { listActivePartiesForConnectAdmin } from "@/lib/playTogether/adminActive
 import dbConnect from "@/lib/db";
 import CommunityHostingConfig from "@/lib/models/CommunityHostingConfig";
 import CatalogGame from "@/lib/models/CatalogGame";
+import { isNonDedicatedCatalogGame } from "@/lib/gameHost/nonDedicatedCatalog";
 
 export async function GET() {
   const { error } = await requireAdminViewSession();
@@ -102,14 +103,14 @@ export async function GET() {
     .select({ slug: 1, title: 1 }).lean();
   const gameSlugs = dedicatedOverviewSlugs(
     Object.keys({ ...HOSTABLE_GAMES, ...DEDICATED_ONLY_GAMES }),
-    gameStatus, HOSTABLE_SLUG_ALIASES, catalogGames.map((game) => game.slug)
-  );
+    gameStatus, HOSTABLE_SLUG_ALIASES, catalogGames.filter((game) => !isNonDedicatedCatalogGame(game.slug, game.title)).map((game) => game.slug)
+  ).filter((slug) => !isNonDedicatedCatalogGame(slug));
   // Admin inventory includes draft/testing/watchlist titles. Public catalog
   // visibility must not decide whether an operator can test a VPS recipe.
   const catalogTitles = await CatalogGame.find({ slug: { $in: gameSlugs } })
     .select({ slug: 1, title: 1 }).lean();
   const titleBySlug = new Map(catalogTitles.map((game) => [game.slug, game.title]));
-  const games = gameSlugs.map((slug) => {
+  const games = gameSlugs.filter((slug) => !isNonDedicatedCatalogGame(slug, titleBySlug.get(slug))).map((slug) => {
     const game = HOSTABLE_GAMES[slug] ?? DEDICATED_ONLY_GAMES[slug];
     const agentAlias = Object.keys(HOSTABLE_SLUG_ALIASES).find((alias) => HOSTABLE_SLUG_ALIASES[alias] === slug && gameStatus[alias]);
     const status = gameStatus[slug] ?? (agentAlias ? gameStatus[agentAlias] : undefined);
