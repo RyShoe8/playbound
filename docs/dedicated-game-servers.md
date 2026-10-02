@@ -1,6 +1,6 @@
 # Paid Dedicated game servers
 
-These recipes live in `platform/game-host/dedicatedRecipes.js`. Installed recipes are also available as PlayBound-hosted party modes through `PARTY_DEDICATED_GAMES`, without enrolling them in free community-server rotation. Unturned, Don't Starve Together, and Trackmania still require a private per-room credential before their party server can start. Catalog publication is separate and has not been changed. Witchbrook is omitted until release.
+These recipes live in `platform/game-host/dedicatedRecipes.js`. Installed recipes in `PARTY_DEDICATED_GAMES` are available as PlayBound-hosted party modes. Published games whose files the VPS reports ready can also be selected for Community Hosting, but they are not enrolled in rotation automatically. Unturned, Don't Starve Together, and Trackmania still require a private per-room credential before their party server can start. Catalog publication is separate and has not been changed. Witchbrook is omitted until release.
 
 `DEDICATED_ONLY_GAMES` in `platform/src/lib/gameHost/catalog.ts` supplies draft profile stubs in `/admin/hosting`. An installed binary does **not** mean the game is verified or available for sale. Promote a profile only after the agent starts the server, a real client joins, the purchased slot cap rejects player N+1, a clean stop preserves data, and a backup restores correctly.
 

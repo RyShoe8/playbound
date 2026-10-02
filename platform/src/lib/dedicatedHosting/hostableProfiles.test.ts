@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hostableProfileStubs, readyPublishedHostableCatalog } from "./hostableProfiles";
+import { hostableProfileStubs, readyGameHostSlugs, readyPublishedHostableCatalog } from "./hostableProfiles";
 
 describe("hostable profile stubs", () => {
   it("offers every hostable game's base profile when nothing is stored", () => {
@@ -38,6 +38,30 @@ describe("hostable profile stubs", () => {
 });
 
 describe("ready published hosting catalog", () => {
+  it("uses every ready VPS recipe even before the website's static recipe list catches up", () => {
+    const ready = readyGameHostSlugs({
+      "new-vps-game": { ready: true },
+      "old-alias": { ready: true },
+      "missing-files": { ready: false },
+    }, { "old-alias": "new-vps-game" });
+    const games = [
+      { slug: "new-vps-game", title: "New VPS Game", status: "published", published: true },
+      { slug: "missing-files", title: "Missing Files", status: "published", published: true },
+    ];
+    expect([...ready]).toEqual(["new-vps-game"]);
+    expect(readyPublishedHostableCatalog(games, [], [], ready).games.map((game) => game.slug)).toEqual(["new-vps-game"]);
+  });
+
+  it("uses the catalog status when the legacy published flag is stale", () => {
+    const games = [
+      { slug: "factorio", title: "Factorio", status: "published", published: false },
+      { slug: "legacy-game", title: "Legacy Game", published: true },
+      { slug: "draft-game", title: "Draft Game", status: "draft", published: true },
+    ];
+    expect(readyPublishedHostableCatalog(games, [], [], new Set(games.map((game) => game.slug)))
+      .games.map((game) => game.slug)).toEqual(["factorio", "legacy-game"]);
+  });
+
   it("keeps unready and unpublished games in VPS testing but out of enrollment", () => {
     const games = [
       { slug: "openra", title: "OpenRA", status: "published", published: true },
