@@ -11,11 +11,7 @@ export const HOSTING_TIER_KEYS = ["basic", "pro", "extreme"] as const;
 export type HostingTierKey = (typeof HOSTING_TIER_KEYS)[number];
 
 export function lowerHostingTiers(key: HostingTierKey): HostingTierKey[] {
-  return key === "extreme" ? ["pro", "basic"] : key === "pro" ? ["basic"] : [];
-}
-
-export function higherHostingTiers(key: HostingTierKey): HostingTierKey[] {
-  return key === "basic" ? ["pro", "extreme"] : key === "pro" ? ["extreme"] : [];
+  return key === "extreme" ? ["basic", "pro"] : key === "pro" ? ["basic"] : [];
 }
 
 /** The Basic 1.0 launch defaults. Everything here is editable in /admin/hosting. */
@@ -86,7 +82,7 @@ export function preservedPackagePrices(previous: HostingTier, incoming: HostingT
  * build must not touch the database. The row is created by the first admin
  * save (saveTier).
  */
-export async function getTier(key = BASIC_TIER_KEY): Promise<HostingTier> {
+async function getStoredTier(key: string): Promise<HostingTier> {
   await dbConnect();
   const doc = await DedicatedHostingTier.findOne({ key }).lean();
   if (doc) {
@@ -108,43 +104,54 @@ export async function getTier(key = BASIC_TIER_KEY): Promise<HostingTier> {
   return JSON.parse(JSON.stringify(draft)) as HostingTier;
 }
 
+/** Every lower plan's games are available on higher plans, even before those
+ * higher plans have a saved database row. Reads never write tier documents. */
+export async function getTier(key = BASIC_TIER_KEY): Promise<HostingTier> {
+  let tier = await getStoredTier(key);
+  if (!HOSTING_TIER_KEYS.includes(key as HostingTierKey)) return tier;
+  for (const lowerKey of lowerHostingTiers(key as HostingTierKey)) {
+    tier = { ...tier, games: inheritTierGames(tier, (await getStoredTier(lowerKey)).games) };
+  }
+  return tier;
+}
+
 /** Admin save: write the whole tier, creating it on first save. */
 export async function saveTier(key: string, values: Partial<HostingTier>): Promise<HostingTier> {
   await dbConnect();
-  const current = (await getTier(key)) as HostingTier & Record<string, unknown>;
+  const current = (await getStoredTier(key)) as HostingTier & Record<string, unknown>;
   const merged: Record<string, unknown> = { ...current, ...values, key };
   for (const field of ["_id", "__v", "createdAt", "updatedAt"]) delete merged[field];
   await DedicatedHostingTier.updateOne({ key }, { $set: merged }, { upsert: true, runValidators: true });
   return getTier(key);
 }
 
-/** Enrollment flows downward without replacing a lower tier's own settings. */
-export function inheritTierGames(lower: HostingTier, selected: TierGame[]): TierGame[] {
-  const byKey = new Map(lower.games.map((game) => [game.profileKey, game]));
+/** A lower tier's selection and availability also apply to every higher tier. */
+export function inheritTierGames(higher: HostingTier, selected: TierGame[]): TierGame[] {
+  const byKey = new Map(higher.games.map((game) => [game.profileKey, game]));
   for (const game of selected.filter((entry) => entry.enabled)) {
     const existing = byKey.get(game.profileKey);
-    if (existing?.enabled) continue;
-    byKey.set(game.profileKey, existing ? { ...existing, enabled: true } : {
+    if (existing) {
+      const newServerCreationEnabled = existing.newServerCreationEnabled || game.newServerCreationEnabled;
+      const existingServerStartEnabled = existing.existingServerStartEnabled || game.existingServerStartEnabled;
+      if (!existing.enabled || existing.newServerCreationEnabled !== newServerCreationEnabled ||
+        existing.existingServerStartEnabled !== existingServerStartEnabled) {
+        byKey.set(game.profileKey, { ...existing, enabled: true, newServerCreationEnabled, existingServerStartEnabled });
+      }
+      continue;
+    }
+    byKey.set(game.profileKey, {
       ...game,
-      supportedRegions: lower.regions.map((region) => region.key),
+      supportedRegions: higher.regions.map((region) => region.key),
     });
   }
   return [...byKey.values()];
 }
 
-export async function includeHigherTierGamesInLowerTiers(key: HostingTierKey, games: TierGame[]): Promise<void> {
+export async function retainLowerTierSelections(key: HostingTierKey, tier: HostingTier): Promise<TierGame[]> {
+  let next = tier;
   for (const lowerKey of lowerHostingTiers(key)) {
     const lower = await getTier(lowerKey);
-    const inherited = inheritTierGames(lower, games);
-    if (inherited.some((game, i) => game !== lower.games[i])) await saveTier(lowerKey, { games: inherited });
-  }
-}
-
-export async function retainHigherTierSelections(key: HostingTierKey, tier: HostingTier): Promise<TierGame[]> {
-  let next = tier;
-  for (const higherKey of higherHostingTiers(key)) {
-    const higher = await getTier(higherKey);
-    next = { ...next, games: inheritTierGames(next, higher.games) };
+    next = { ...next, games: inheritTierGames(next, lower.games) };
   }
   return next.games;
 }

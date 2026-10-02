@@ -140,7 +140,7 @@ export function AdminHostingPanel() {
     try {
       await api(`/api/admin/hosting/tiers/${selectedCatalogTier}`, { method: "PUT", body: JSON.stringify(next) });
       await load();
-      setMessage("Subscription game selection saved, including lower-tier inheritance.");
+      setMessage("Subscription game selection saved. Lower-tier games appear on higher plans automatically.");
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Save failed");
     }
@@ -183,7 +183,12 @@ export function AdminHostingPanel() {
             className={`rounded-lg px-3 py-1.5 text-sm capitalize ${selectedCatalogTier === key ? "bg-primary text-primary-foreground" : "border border-border hover:bg-secondary"}`}>{key}</button>)}
         </div>
         <GamesTab key={`${selectedCatalogTier}:${tierCatalogs[selectedCatalogTier].tier.games.length}`} tier={tierCatalogs[selectedCatalogTier].tier}
-          tierKey={selectedCatalogTier} profiles={tierCatalogs[selectedCatalogTier].profiles} onSave={saveCatalogTier} />
+          tierKey={selectedCatalogTier} profiles={tierCatalogs[selectedCatalogTier].profiles} onSave={saveCatalogTier}
+          inheritedFrom={new Map([
+            ...(selectedCatalogTier === "basic" ? [] : tierCatalogs.basic.tier.games.filter((game) => game.enabled).map((game) => [game.profileKey, "Basic"] as const)),
+            ...(selectedCatalogTier === "extreme" ? tierCatalogs.pro.tier.games.filter((game) => game.enabled && !tierCatalogs.basic.tier.games.some((basic) => basic.profileKey === game.profileKey && basic.enabled))
+              .map((game) => [game.profileKey, "Pro"] as const) : []),
+          ])} />
       </> : null}
       {tab === "Subscriptions" ? <SubscriptionsTab tier={tier} subs={subs} act={act} /> : null}
       {tab === "Customer servers" ? <ServersTab servers={servers} act={act} /> : null}
@@ -379,7 +384,7 @@ function CapacityStatus({ regionKey }: { regionKey: string }) {
 
 const FIT_TONE = { safe: "text-emerald-500", warning: "text-amber-500", exceeds: "text-red-500", unknown: "text-muted-foreground" } as const;
 
-function GamesTab({ tier, tierKey, profiles, onSave }: { tier: Tier; tierKey: HostingTierKey; profiles: ProfileInfo[]; onSave: (t: Tier) => void }) {
+function GamesTab({ tier, tierKey, profiles, inheritedFrom, onSave }: { tier: Tier; tierKey: HostingTierKey; profiles: ProfileInfo[]; inheritedFrom: Map<string, string>; onSave: (t: Tier) => void }) {
   const [games, setGames] = useState<TierGame[]>(tier.games);
   const byKey = new Map(profiles.map((p) => [p.key, p]));
   const update = (i: number, patch: Partial<TierGame>) => setGames((g) => g.map((x, j) => (j === i ? { ...x, ...patch } : x)));
@@ -395,7 +400,7 @@ function GamesTab({ tier, tierKey, profiles, onSave }: { tier: Tier; tierKey: Ho
       <h2 className="font-semibold">Subscription Management</h2>
       <p className="text-sm">{catalogGameCount} ready, published dedicated-server games · {catalogEditionCount} supported editions · {games.length} selected for {tierKey[0].toUpperCase() + tierKey.slice(1)}</p>
       <p className="text-xs text-muted-foreground">
-        Pro selections also join Basic; Extreme selections also join Pro and Basic. New server creation stays off until you enable it. Removing a game from new servers does not touch existing customer servers; &ldquo;Existing starts&rdquo; controls whether theirs can still start.
+        Basic selections also appear on Pro and Extreme; Pro selections also appear on Extreme. New server creation stays off until you enable it. Removing a game from new servers does not touch existing customer servers; &ldquo;Existing starts&rdquo; controls whether theirs can still start.
         Resource fit compares each profile&apos;s measured envelope with one unit ({rc.cpuPerUnit} CPU / {rc.memoryMbPerUnit} MB).
       </p>
       <div className="overflow-x-auto">
@@ -408,6 +413,7 @@ function GamesTab({ tier, tierKey, profiles, onSave }: { tier: Tier; tierKey: Ho
           <tbody>
             {games.map((g, i) => {
               const p = byKey.get(g.profileKey);
+              const sourceTier = inheritedFrom.get(g.profileKey);
               if (isPendingDedicatedProfile(g.profileKey)) {
                 const note = PENDING_DEDICATED_GAMES.find((item) => g.profileKey.startsWith(`${item.gameSlug}:`));
                 return <tr key={g.profileKey} className="border-t border-border text-sm text-muted-foreground">
@@ -417,8 +423,8 @@ function GamesTab({ tier, tierKey, profiles, onSave }: { tier: Tier; tierKey: Ho
               }
               return (
                 <tr key={g.profileKey} className="border-t border-border align-top">
-                  <td className="py-2 text-xs"><span className="font-medium">{p ? `${p.title}${p.editionName ? ` · ${p.editionName}` : " · Base game"}` : g.profileKey}</span><span className="block font-mono text-[10px] text-muted-foreground">{g.profileKey}</span>{!p ? <span className="block text-amber-500">No longer ready and published</span> : p.stored === false ? <span className="block text-amber-500">No saved server profile yet</span> : null}</td>
-                  <td><input type="checkbox" checked={g.enabled} onChange={(e) => update(i, { enabled: e.target.checked })} /></td>
+                  <td className="py-2 text-xs"><span className="font-medium">{p ? `${p.title}${p.editionName ? ` · ${p.editionName}` : " · Base game"}` : g.profileKey}</span><span className="block font-mono text-[10px] text-muted-foreground">{g.profileKey}</span>{sourceTier ? <span className="block text-primary">Included with {sourceTier}</span> : null}{!p ? <span className="block text-amber-500">No longer ready and published</span> : p.stored === false ? <span className="block text-amber-500">No saved server profile yet</span> : null}</td>
+                  <td><input type="checkbox" checked={g.enabled} disabled={Boolean(sourceTier)} onChange={(e) => update(i, { enabled: e.target.checked })} /></td>
                   <td><input type="checkbox" checked={g.newServerCreationEnabled} onChange={(e) => update(i, { newServerCreationEnabled: e.target.checked })} /></td>
                   <td><input type="checkbox" checked={g.existingServerStartEnabled} onChange={(e) => update(i, { existingServerStartEnabled: e.target.checked })} /></td>
                   <td className="text-xs">
@@ -437,7 +443,7 @@ function GamesTab({ tier, tierKey, profiles, onSave }: { tier: Tier; tierKey: Ho
                     </span> : null}
                     {p?.fit === "exceeds" ? <span className="block">Consider Pro</span> : null}
                   </td>
-                  <td><button type="button" className="text-xs text-red-500" onClick={() => setGames((x) => x.filter((_, j) => j !== i))}>Remove</button></td>
+                  <td>{!sourceTier ? <button type="button" className="text-xs text-red-500" onClick={() => setGames((x) => x.filter((_, j) => j !== i))}>Remove</button> : null}</td>
                 </tr>
               );
             })}
