@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
 import BlogPost from "@/lib/models/BlogPost";
@@ -33,6 +33,7 @@ export async function POST(req: Request) {
       publishedAt: input.published ? new Date() : null,
     });
     revalidateTag("blog", { expire: 0 });
+    revalidatePath("/sitemap.xml");
     return NextResponse.json({ id: String(post._id), slug: post.slug }, { status: 201 });
   } catch (err) {
     if (err instanceof z.ZodError) return NextResponse.json({ error: err.issues[0]?.message || "Invalid post" }, { status: 400 });
