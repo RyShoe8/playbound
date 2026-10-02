@@ -3,7 +3,17 @@ import CommunityServerProfile from "@/lib/models/CommunityServerProfile";
 import CatalogGame from "@/lib/models/CatalogGame";
 import { HOSTABLE_SLUG_ALIASES } from "@/lib/gameHost/catalog";
 import { recordResourceSample, type MeasuredSample } from "@/lib/communityHosting/samples";
-import type { SpawnTestResult } from "@/lib/gameHost/client";
+import type { LastSpawnTestEntry, SpawnTestResult } from "@/lib/gameHost/client";
+
+/** Last VPS reading can predate database sample recording. Keep it separate from saved samples. */
+export function lastIdleTestReading(entry?: LastSpawnTestEntry): { cpuCores: number; ramBytes: number; at: string } | null {
+  const cpuCores = entry?.resources?.cpuCores;
+  const ramBytes = entry?.resources?.rssBytes;
+  if (!entry?.ok || !Number.isFinite(cpuCores) || cpuCores == null || cpuCores < 0 ||
+    !Number.isFinite(ramBytes) || ramBytes == null || ramBytes <= 0 ||
+    !entry.at || !Number.isFinite(Date.parse(entry.at))) return null;
+  return { cpuCores, ramBytes, at: entry.at };
+}
 
 /** A spawn test measures one idle base-game recipe, never an edition or player load. */
 export function idleSamplesFromSpawnTest(result: SpawnTestResult, requestedSlug?: string): MeasuredSample[] {

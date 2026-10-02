@@ -122,7 +122,7 @@ export async function GET() {
     const serverVersion = versions?.serverVersion ?? health?.gameVersions?.[slug] ?? "—";
     return {
       slug,
-      title: titleBySlug.get(slug) ?? game?.title ?? slug.replace(/-/g, " "),
+      title: DEDICATED_ONLY_GAMES[slug]?.title ?? titleBySlug.get(slug) ?? game?.title ?? slug.replace(/-/g, " "),
       hasRecipe,
       installed,
       ready,

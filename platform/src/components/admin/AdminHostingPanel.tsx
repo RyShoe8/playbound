@@ -46,6 +46,7 @@ type ProfileInfo = {
   lastVerifiedAt: string | null;
   capEnforced: boolean;
   samples: number;
+  idleTest: { cpuCores: number; ramBytes: number; at: string } | null;
   cpuCores: number;
   ramBytes: number;
   fit: "unknown" | "safe" | "warning" | "exceeds";
@@ -435,7 +436,10 @@ function GamesTab({ tier, tierKey, profiles, inheritedFrom, onSave }: { tier: Ti
                     )}
                   </td>
                   <td className={`text-xs ${FIT_TONE[p?.fit || "unknown"]}`}>
-                    {p?.fit === "unknown" || !p ? "No samples yet" : `${p.fit.toUpperCase()} · ${p.cpuCores.toFixed(2)} CPU / ${Math.round(p.ramBytes / 1024 / 1024)} MB · ${p.samples} samples`}
+                    {p?.fit === "unknown" || !p ? "No saved samples yet" : `${p.fit.toUpperCase()} · ${p.cpuCores.toFixed(2)} CPU / ${Math.round(p.ramBytes / 1024 / 1024)} MB · ${p.samples} samples`}
+                    {p?.idleTest ? <span className="block text-muted-foreground" title={`Last VPS idle spawn test ${new Date(p.idleTest.at).toLocaleString()}; player-load usage can be higher`}>
+                      Idle test · {p.idleTest.cpuCores.toFixed(2)} CPU / {Math.round(p.idleTest.ramBytes / 1024 / 1024)} MB RAM
+                    </span> : null}
                     {p ? <span className="block text-muted-foreground" title={p.lastVerifiedAt ? `Last verified ${new Date(p.lastVerifiedAt).toLocaleString()}` : "No profile verification date"}>
                       Community: {p.verification} · query {p.queryVerified ? "yes" : "no"} · join {p.joinVerified ? "yes" : "no"} · measured through {p.measuredThroughPlayers} players
                     </span> : null}

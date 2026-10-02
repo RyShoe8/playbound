@@ -24,6 +24,27 @@ const recipes = createDedicatedRecipes({
 });
 const context = (partyId, maxPlayers = 6) => ({ customerOwned: true, partyId, settings: { maxPlayers }, name: "A & B" });
 
+test("GoldenEye: Source isolates its Windows runtime and Wine prefix per server", async () => {
+  const source = path.join(games, "goldeneye-source");
+  fs.mkdirSync(path.join(source, "gesource"), { recursive: true });
+  fs.writeFileSync(path.join(source, "srcds.exe"), "server");
+  fs.writeFileSync(path.join(source, "run-server.sh"), "launcher");
+  fs.writeFileSync(path.join(source, "gesource", "gameinfo.txt"), "mod");
+  const a = context("ges-a", 8);
+  const b = context("ges-b", 4);
+  await recipes["goldeneye-source"].prepareSpawn(27120, a);
+  await recipes["goldeneye-source"].prepareSpawn(27121, b);
+  const rootA = path.join(home, "goldeneye-source-servers", "pb-ges-a");
+  const rootB = path.join(home, "goldeneye-source-servers", "pb-ges-b");
+  assert.equal(recipes["goldeneye-source"].resolveBinary(recipes["goldeneye-source"].binaries, a), path.join(rootA, "runtime", "run-server.sh"));
+  assert.equal(recipes["goldeneye-source"].spawnEnv(27120, a).WINEPREFIX, path.join(rootA, "wineprefix"));
+  assert.equal(recipes["goldeneye-source"].spawnEnv(27121, b).WINEPREFIX, path.join(rootB, "wineprefix"));
+  assert.equal(fs.readFileSync(path.join(rootA, "runtime", "gesource", "gameinfo.txt"), "utf8"), "mod");
+  const args = recipes["goldeneye-source"].args(27120, a);
+  assert.equal(args[args.indexOf("-maxplayers") + 1], "8");
+  assert.equal(args[args.indexOf("-port") + 1], "27120");
+});
+
 test("Necesse uses the bundled Java and keeps its world in the customer's data directory", () => {
   const args = recipes.necesse.args(14160, context("one", 5));
   assert.equal(args[args.indexOf("-slots") + 1], "5");

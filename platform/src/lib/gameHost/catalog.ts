@@ -344,6 +344,8 @@ export const HOSTABLE_SLUG_ALIASES: Record<string, string> = {
  */
 export const DEDICATED_ONLY_GAMES: Record<string, HostableGame> = {
   "counter-strike-source": { slug: "counter-strike-source", title: "Counter-Strike: Source", defaultPort: 27060, portEnd: 27070, protocol: "udp" },
+  "goldeneye-source": { slug: "goldeneye-source", title: "GoldenEye: Source", defaultPort: 27120, portEnd: 27139, protocol: "udp" },
+  "quake-ii": { slug: "quake-ii", title: "Quake II (Original)", defaultPort: 27910, portEnd: 27929, protocol: "udp" },
   terraria: { slug: "terraria", title: "Terraria", defaultPort: 7870, portEnd: 7890, protocol: "tcp" },
   unturned: { slug: "unturned", title: "Unturned", defaultPort: 27075, portEnd: 27099, protocol: "udp" },
   "rimworld-together": { slug: "rimworld-together", title: "RimWorld Together", defaultPort: 25590, portEnd: 25610, protocol: "tcp" },

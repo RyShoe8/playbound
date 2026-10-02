@@ -10,6 +10,7 @@ import { HOSTING_INVENTORY_TAG } from "@/lib/dedicatedHosting/inventory";
 import { getEffectiveEnvelope } from "@/lib/communityHosting/reconcile";
 import { hostableProfileStubs, loadHostableEditionRefs, loadHostableCatalogRefs, readyPublishedHostableCatalog } from "@/lib/dedicatedHosting/hostableProfiles";
 import { fetchGameHostHealth } from "@/lib/gameHost/client";
+import { lastIdleTestReading } from "@/lib/gameHost/spawnTestSamples";
 
 type Ctx = { params: Promise<{ key: string }> };
 
@@ -96,6 +97,8 @@ export async function GET(_req: Request, ctx: Ctx) {
   const profileInfo = allProfiles.map((p) => {
     const env = getEffectiveEnvelope(p.envelope, p.gameSlug, p.sampleCount);
     const worst = Math.max(env.cpuCores / Math.max(rc.cpuPerUnit, 1e-9), env.ramBytes / Math.max(unitRam, 1));
+    const idleTest = health.configured && !p.editionSlug
+      ? lastIdleTestReading(health.health.lastSpawnTest?.[p.gameSlug]) : null;
     return {
       key: p.key,
       stored: p.stored,
@@ -111,6 +114,7 @@ export async function GET(_req: Request, ctx: Ctx) {
       lastVerifiedAt: p.lastVerifiedAt || null,
       capEnforced: slotCapEnforced(p.recipeSlug || p.gameSlug),
       samples: p.sampleCount || 0,
+      idleTest,
       cpuCores: env.cpuCores,
       ramBytes: env.ramBytes,
       // Measured envelopes are padded peaks across all observed player counts.
