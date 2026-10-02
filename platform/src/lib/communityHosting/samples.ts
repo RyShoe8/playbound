@@ -12,6 +12,9 @@ export type MeasuredSample = {
   nodeRamPercent?: number | null;
   phase: "startup" | "idle" | "occupied";
   source: "audit" | "live";
+  sampleIntervalMs?: number;
+  processCount?: number;
+  scope?: string;
 };
 
 /** Measurements can raise a future placement envelope. Lowering needs admin review. */

@@ -23,6 +23,7 @@ type LastSpawnTestEntry = {
   at: string;
   durationMs?: number | null;
   port?: number | null;
+  resources?: { rssBytes?: number; cpuCores?: number | null; scope?: string } | null;
 };
 
 type ConnectAdminPartyRow = {
@@ -305,13 +306,15 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
       const json = (await res.json()) as {
         ok?: boolean;
         message?: string;
+        samplesRecorded?: number;
+        sampleWarning?: string;
         result?: { ok?: boolean; error?: string };
       };
       if (!json.ok) {
         setTestStatus(json.message || json.result?.error || `Spawn test failed for ${gameSlug}`);
         setError(json.message || json.result?.error || `Spawn test failed for ${gameSlug}`);
       } else {
-        setTestStatus(`${gameSlug} spawn OK`);
+        setTestStatus(`${gameSlug} spawn OK · ${json.samplesRecorded ? "idle CPU/RAM saved" : json.sampleWarning || "no usable CPU/RAM reading"}`);
       }
       await load(true);
     } catch (err) {
@@ -337,6 +340,8 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
       const json = (await res.json()) as {
         ok?: boolean;
         message?: string;
+        samplesRecorded?: number;
+        sampleWarning?: string;
         result?: { results?: Record<string, { ok?: boolean; skipped?: boolean }> };
       };
       if (!json.ok) {
@@ -346,7 +351,7 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
         const results = json.result?.results || {};
         const tested = Object.values(results).filter((r) => !r.skipped).length;
         const passed = Object.values(results).filter((r) => r.ok).length;
-        setTestStatus(`Finished: ${passed}/${tested} passed`);
+        setTestStatus(`Finished: ${passed}/${tested} passed · ${json.samplesRecorded || 0} idle CPU/RAM samples saved${json.sampleWarning ? " · sample save failed" : ""}`);
       }
       await load(true);
     } catch (err) {
@@ -727,6 +732,12 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
                       <p className="text-xs text-muted-foreground">
                         {!game.hasRecipe ? "Recipe needed" : game.ready ? "Ready" : game.installed ? "Binary only" : "Files missing"}
                       </p>
+                      {spawnEntry?.ok && Number.isFinite(spawnEntry.resources?.rssBytes) && (spawnEntry.resources?.rssBytes ?? 0) > 0 &&
+                        Number.isFinite(spawnEntry.resources?.cpuCores) && (
+                        <p className="text-xs text-muted-foreground" title="Last spawn-test idle reading; player-load usage can be higher">
+                          Idle test · {spawnEntry.resources!.cpuCores!.toFixed(2)} CPU / {Math.round(spawnEntry.resources!.rssBytes! / 1024 / 1024)} MB RAM
+                        </p>
+                      )}
                       <p
                         className={`mt-0.5 text-xs ${
                           game.versionMismatch ? "text-amber-400" : "text-muted-foreground"

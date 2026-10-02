@@ -24,4 +24,14 @@ describe("dedicated server catalog exclusions", () => {
       expect(isNonDedicatedCatalogGame(slug)).toBe(false);
     }
   });
+
+  it("excludes City of Heroes variants from both catalog and agent inventory", () => {
+    expect(isNonDedicatedCatalogGame("city-of-heroes-homecoming")).toBe(true);
+    expect(isNonDedicatedCatalogGame("city-of-heroes-freedom")).toBe(true);
+    expect(isNonDedicatedCatalogGame("city-of-heros")).toBe(true);
+    expect(isNonDedicatedCatalogGame("some-cms-slug", "City of Heroes: Homecoming")).toBe(true);
+    expect(isNonDedicatedCatalogGame("some-cms-slug", "City of Heroes Homecoming")).toBe(true);
+    expect(isNonDedicatedCatalogGame("some-cms-slug", "City of Heroes: Rebirth")).toBe(true);
+    expect(isNonDedicatedCatalogGame("heroes-of-the-city")).toBe(false);
+  });
 });
