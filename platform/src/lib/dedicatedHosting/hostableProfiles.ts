@@ -2,10 +2,12 @@
  * Profiles the admin can offer on a tier: every stored profile, plus a
  * read-only stub for each hostable game (and edition) that has no stored row
  * yet. Without the stubs, a game the agent can host never appears in the
- * "Add a server profile" list until something has already written its row.
+ * subscription game picker until something has written a community profile.
  *
  * Mirrors how the community-hosting screen lists hostable games. Nothing here
- * writes: the stored row is still created the first time admin saves it.
+ * writes, and paid hosting can run from a stub using the game recipe and
+ * default resource estimate. A community profile is optional for paid hosting;
+ * it is created separately when an operator configures Community Hosting.
  */
 import dbConnect from "@/lib/db";
 import Edition from "@/lib/models/Edition";

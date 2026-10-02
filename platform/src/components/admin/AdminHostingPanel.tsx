@@ -37,8 +37,6 @@ type ProfileInfo = {
   title: string;
   editionName: string | null;
   editionSlug: string | null;
-  /** false: the game is hostable but has no saved profile row yet. */
-  stored?: boolean;
   gameSlug: string;
   recipeSlug: string;
   verification: string;
@@ -423,7 +421,7 @@ function GamesTab({ tier, tierKey, profiles, inheritedFrom, onSave }: { tier: Ti
               }
               return (
                 <tr key={g.profileKey} className="border-t border-border align-top">
-                  <td className="py-2 text-xs"><span className="font-medium">{p ? `${p.title}${p.editionName ? ` · ${p.editionName}` : " · Base game"}` : g.profileKey}</span><span className="block font-mono text-[10px] text-muted-foreground">{g.profileKey}</span>{sourceTier ? <span className="block text-primary">Included with {sourceTier}</span> : null}{!p ? <span className="block text-amber-500">No longer ready and published</span> : p.stored === false ? <span className="block text-amber-500">No saved server profile yet</span> : null}</td>
+                  <td className="py-2 text-xs"><span className="font-medium">{p ? `${p.title}${p.editionName ? ` · ${p.editionName}` : " · Base game"}` : g.profileKey}</span><span className="block font-mono text-[10px] text-muted-foreground">{g.profileKey}</span>{sourceTier ? <span className="block text-primary">Included with {sourceTier}</span> : null}{!p ? <span className="block text-amber-500">No longer ready and published</span> : null}</td>
                   <td><input type="checkbox" checked={g.enabled} disabled={Boolean(sourceTier)} onChange={(e) => update(i, { enabled: e.target.checked })} /></td>
                   <td><input type="checkbox" checked={g.newServerCreationEnabled} onChange={(e) => update(i, { newServerCreationEnabled: e.target.checked })} /></td>
                   <td><input type="checkbox" checked={g.existingServerStartEnabled} onChange={(e) => update(i, { existingServerStartEnabled: e.target.checked })} /></td>
@@ -463,7 +461,6 @@ function GamesTab({ tier, tierKey, profiles, inheritedFrom, onSave }: { tier: Ti
               {rows.map((profile) => <button key={profile.key} type="button" onClick={() => addProfile(profile.key)}
                 className={`flex w-full items-center gap-2 py-0.5 text-left hover:text-primary ${profile.editionSlug ? "pl-4 text-xs text-muted-foreground" : "text-sm"}`}>
                 <span className="text-primary">＋</span>{profile.editionName || "Base game"}
-                {!profile.stored && <span className="ml-auto text-[10px] text-amber-500">profile needed</span>}
               </button>)}
             </div>;
           })}

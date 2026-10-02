@@ -158,6 +158,7 @@ export type LastSpawnTestEntry = {
   at: string;
   durationMs?: number | null;
   port?: number | null;
+  resources?: { rssBytes?: number; cpuCores?: number | null; sampleIntervalMs?: number; scope?: string } | null;
 };
 
 export type SpawnTestResult = {
@@ -167,6 +168,14 @@ export type SpawnTestResult = {
   port?: number | null;
   skipped?: boolean;
   gameSlug?: string;
+  resources?: {
+    available?: boolean;
+    rssBytes?: number;
+    cpuCores?: number | null;
+    sampleIntervalMs?: number;
+    processCount?: number;
+    scope?: string;
+  };
   results?: Record<string, SpawnTestResult>;
   lastSpawnTest?: Record<string, LastSpawnTestEntry>;
 };

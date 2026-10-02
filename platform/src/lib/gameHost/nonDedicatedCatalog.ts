@@ -42,5 +42,11 @@ function normalizeTitle(title: string): string {
 }
 
 export function isNonDedicatedCatalogGame(slug: string, title?: string): boolean {
-  return NON_DEDICATED_SLUGS.has(slug) || Boolean(title && NON_DEDICATED_TITLES.has(normalizeTitle(title)));
+  // The CMS can name the Homecoming release separately from the base title.
+  // Neither variant has a PlayBound-hostable dedicated-server recipe.
+  const cityOfHeroesSlug = /^(city-of-heroes|city-of-heros)(-|$)/.test(slug);
+  const normalized = title ? normalizeTitle(title) : "";
+  const cityOfHeroesTitle = normalized.startsWith("cityofheroes") || normalized.startsWith("cityofheros");
+  return cityOfHeroesSlug || cityOfHeroesTitle || NON_DEDICATED_SLUGS.has(slug) ||
+    Boolean(normalized && NON_DEDICATED_TITLES.has(normalized));
 }
