@@ -7,6 +7,7 @@ import { ensureCouchBackground, startCouchSessionQuiet, pushHostDisplayToPeers }
 import { ensureHostDisplayStream } from "../hostDisplayStream.js";
 import { maybeShowLaunchGuidance } from "../guidanceModal.js";
 import { catalogGameSupportsParty } from "../partyGameEligibility.js";
+import { partyConnectFailed, partyConnectReady } from "../partyConnectState.js";
 import {
   api,
   buildActivityPanelHtml,
@@ -61,25 +62,6 @@ const PENDING_JOIN_TIMEOUT_MS = 4 * 60 * 1000;
  * fresh payload rather than of the render's local variables — the auto-join
  * needs the answer for the party the server just sent back.
  */
-function partyConnectReady(party, isLeader) {
-  const hosted = party.hosted || {};
-  const lan = party.lan || {};
-  if (hosted.enabled && hosted.status !== "ready") return false;
-  if (lan.enabled && lan.configured !== false && lan.status !== "ready") return false;
-  if (!isLeader && lan.requiresHostReady && !party.selfHostReady) return false;
-  // The leader's own launcher is what makes a self-hosted room ready, so the
-  // leader is never the one waiting for it.
-  if (!isLeader && party.hostMode === "self" && !lan.enabled && !party.selfHostReady) return false;
-  return true;
-}
-
-/** Whether connect has failed outright, so waiting would be waiting forever. */
-function partyConnectFailed(party) {
-  const hosted = party.hosted || {};
-  const lan = party.lan || {};
-  return (hosted.enabled && hosted.status === "failed") || (lan.enabled && lan.status === "failed");
-}
-
 let friendsPollInterval = null;
 let friendsPollMs = 5000;
 let localPlaying = false;
@@ -1873,12 +1855,13 @@ function buildPartyViewHtml(party) {
    */
   const joinConnectFailed =
     !inFlight &&
-    ((hosted.enabled && hosted.status === "failed") || (lan.enabled && lan.status === "failed"));
+    ((party.hostMode !== "self" && hosted.enabled && hosted.status === "failed") ||
+      (lan.enabled && lan.status === "failed"));
   const memberWaitingForConnect =
     !isLeader &&
     !couch.enabled &&
     ((party.hostMode === "self" && !lan.enabled && !party.selfHostReady) ||
-      (hosted.enabled && hosted.status !== "ready") ||
+      (party.hostMode !== "self" && hosted.enabled && hosted.status !== "ready") ||
       (lan.enabled && lan.configured !== false && lan.status !== "ready"));
   /*
    * An armed join stays clickable so it can be called off. Everything else
@@ -2184,7 +2167,7 @@ function buildPartyViewHtml(party) {
   const hurryCurryAddr = isHurryCurry && hostedAddr ? `ws://${hostedAddr}` : hostedAddr;
   const copyAddr = isHurryCurry ? hurryCurryAddr : hostedAddr;
   const hostedReadyHtml =
-    party.hostMode !== "public" && hosted.enabled && hosted.status === "ready" && hostedAddr
+    party.hostMode !== "public" && party.hostMode !== "self" && hosted.enabled && hosted.status === "ready" && hostedAddr
       ? `<div class="party-server-info">
            <span class="party-server-label">Server IP:</span>
            <span class="party-server-addr-val">${escapeHtml(copyAddr)}</span>
@@ -2240,7 +2223,7 @@ function buildPartyViewHtml(party) {
           .join("")}</ol>`
       : "";
   const hostedStepsHtml =
-    hosted.enabled && Array.isArray(hosted.steps) && hosted.steps.length
+    party.hostMode !== "self" && hosted.enabled && Array.isArray(hosted.steps) && hosted.steps.length
       ? `<ol class="party-lan-steps party-hosted-steps">${hosted.steps
           .map((s) => `<li>${escapeHtml(String(s))}</li>`)
           .join("")}</ol>`
@@ -4120,7 +4103,7 @@ async function launchPartyGame(party) {
   };
 
   const hosted = party.hosted || {};
-  if (hosted.status === "ready" && hosted.host && hosted.port) {
+  if (party.hostMode !== "self" && hosted.status === "ready" && hosted.host && hosted.port) {
     const address = `${hosted.host}:${hosted.port}`;
     try {
       const launched = await maybeOfferPhoneControllerThenPlay(
@@ -4263,13 +4246,14 @@ async function launchPartyGame(party) {
     const meta = (await window.playbound.getConnectMeta?.(slug)) || {};
     const symmetric = Boolean(meta.symmetric);
     let peerAddresses = lanReady?.peerAddresses || [];
+    let hostAddress = lanReady?.hostAddress || null;
     const wantsPeer = symmetric || !isLeader;
 
     const myId = String(state.accountState?.id || state.accountState?._id || "");
     const otherMember = (party.members || []).find((m) => String(m.userId) !== myId);
     const peerName = otherMember?.username || (symmetric ? "the other player" : "the host");
 
-    if (wantsPeer && peerAddresses.length === 0) {
+    if (wantsPeer && (symmetric ? peerAddresses.length === 0 : !hostAddress)) {
       // Don't fail immediately: poll for the peer for up to 12s so the first player doesn't have to guess and repeatedly re-click
       for (let attempt = 1; attempt <= 8; attempt++) {
         setStatus(`Waiting for ${peerName} to click Join Game… (${Math.round(attempt * 1.5)}s)`);
@@ -4284,19 +4268,20 @@ async function launchPartyGame(party) {
           });
           if (Array.isArray(check?.peerAddresses) && check.peerAddresses.length > 0) {
             peerAddresses = check.peerAddresses;
-            break;
           }
+          if (typeof check?.hostAddress === "string") hostAddress = check.hostAddress;
+          if (symmetric ? peerAddresses.length > 0 : Boolean(hostAddress)) break;
         } catch {
           /* retry */
         }
       }
     }
 
-    if (wantsPeer && peerAddresses.length > 0) {
+    if (wantsPeer && (symmetric ? peerAddresses.length > 0 : Boolean(hostAddress))) {
       const port = Number(party.port || lan.hostPort || catalogGame?.port || meta.defaultPort || 0);
       peerConnect = {
         // One opponent in a two-player peer game; the first peer is the one.
-        host: peerAddresses[0],
+        host: symmetric ? peerAddresses[0] : hostAddress,
         port,
         name: state.accountState?.username || "",
         // Seat 1 is the leader's, 2 is everyone else's. Ignored by games whose
@@ -4493,11 +4478,17 @@ async function launchPartyGame(party) {
           })();
         }
         if (!(isLeader && party.hostMode === "self")) {
-          setStatus(
-            peerConnect?.host
+          const peerAddress = peerConnect?.host
+            ? `${peerConnect.host}${peerConnect.port ? `:${peerConnect.port}` : ""}`
+            : null;
+          if (res?.manualConnect && peerAddress) {
+            void window.playbound.clipboardWrite?.(peerAddress);
+            setStatus(`Copied ${peerAddress} — join the host from the game's multiplayer menu.`);
+          } else {
+            setStatus(peerAddress
               ? `Joining ${party.gameTitle || slug} via party network…`
-              : `Launched ${party.gameTitle || slug}`
-          );
+              : `Launched ${party.gameTitle || slug}`);
+          }
         }
       },
       slug

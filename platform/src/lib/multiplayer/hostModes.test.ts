@@ -26,7 +26,7 @@ import { lanPayloadFromDoc } from "@/lib/virtualLan/provision";
 
 describe("host mode configuration", () => {
   it("offers LAN-capable games a party network and only ready dedicated recipes a VPS room", () => {
-    for (const slug of ["battlefield-1942-anthology", "aneurism-iv", "stardew-valley", "starbound", "necesse", "dont-starve-together", "factorio", "terraria", "vintage-story", "counter-strike-source", "unturned"]) {
+    for (const slug of ["battlefield-1942-anthology", "aneurism-iv", "stardew-valley", "starbound", "necesse", "dont-starve-together", "factorio", "terraria", "vintage-story", "counter-strike-source", "barotrauma", "unturned"]) {
       expect(hostModesFor(slug)).toContain("self");
       expect(getMultiplayerAdapter(slug).virtualLan?.inGameSteps?.length).toBeGreaterThan(0);
     }
@@ -41,6 +41,34 @@ describe("host mode configuration", () => {
     expect(hostModesFor("stardew-valley")).toContain("couch");
     expect(hostModesFor("witchbrook")).toEqual([]);
     expect(hostModesFor("risk-of-rain-2-alloyed-collective")).toEqual([]);
+  });
+
+  it("offers the requested games their supported local and VPS party paths", () => {
+    for (const slug of ["dont-starve-together", "deus-ex-goty-edition", "barotrauma", "necesse", "factorio", "counter-strike-source"]) {
+      expect(hostModesFor(slug)).toContain("self");
+      expect(hostModesFor(slug)).toContain("dedicated");
+    }
+    for (const slug of ["stardew-valley", "star-wars-galactic-battlegrounds-saga"]) {
+      expect(hostModesFor(slug)).toContain("self");
+      expect(hostModesFor(slug)).not.toContain("dedicated");
+    }
+  });
+
+  it("uses the in-game host port for a self-hosted party", () => {
+    const ports: Record<string, number> = {
+      "stardew-valley": 24642,
+      necesse: 14159,
+      "dont-starve-together": 10999,
+      factorio: 34197,
+      "counter-strike-source": 27015,
+      barotrauma: 27015,
+      "star-wars-galactic-battlegrounds-saga": 2300,
+      "deus-ex-goty-edition": 7790,
+    };
+    for (const [slug, port] of Object.entries(ports)) {
+      expect(lanPayloadFromDoc(slug, "self").hostPort).toBe(port);
+      expect(publicLobbyPortFor(slug)?.port).toBe(port);
+    }
   });
   /*
    * The regression guard. A game typed `managed-server` that is not in

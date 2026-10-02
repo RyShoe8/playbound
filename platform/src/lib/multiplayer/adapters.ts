@@ -57,6 +57,8 @@ export interface VirtualLanConfig {
   /** Discovery needs L2 broadcast, so a routed overlay (WireGuard) will not do. */
   requiresBroadcast?: boolean;
   adapterFile?: string;
+  /** Port used by the player's in-game host, which may differ from the VPS recipe. */
+  hostPort?: number;
   /** What the player still has to click once the overlay is up. */
   inGameSteps?: string[];
 }
@@ -126,7 +128,7 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
   "stardew-valley": {
     gameSlug: "stardew-valley", title: "Stardew Valley", tier: "tier1_improved",
     adapterType: "virtual-lan", protocol: "udp",
-    virtualLan: { inGameSteps: ["Host: load a co-op farm", "Friends: join the farm from the Co-op menu"] },
+    virtualLan: { hostPort: 24642, inGameSteps: ["Host: load a co-op farm", "Friends: join the farm from the Co-op menu"] },
   },
   starbound: {
     gameSlug: "starbound", title: "Starbound", tier: "tier1_improved",
@@ -137,19 +139,19 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     gameSlug: "necesse", title: "Necesse", tier: "tier1_improved",
     adapterType: "virtual-lan", protocol: "udp",
     client: { inGameJoinPrompt: true, inGameSteps: ["Multiplayer → Join by IP; enter the PlayBound server address and port"] },
-    virtualLan: { inGameSteps: ["Host: open a world to LAN", "Friends: join the world from the LAN list"] },
+    virtualLan: { hostPort: 14159, inGameSteps: ["Host: open a world to LAN", "Friends: join the world from the LAN list"] },
   },
   "dont-starve-together": {
     gameSlug: "dont-starve-together", title: "Don't Starve Together", tier: "tier1_improved",
     adapterType: "virtual-lan", protocol: "udp",
     client: { inGameJoinPrompt: true, inGameSteps: ["Join the PlayBound server from Don't Starve Together's server browser after its Klei cluster token has been configured"] },
-    virtualLan: { inGameSteps: ["Host: start a LAN world", "Friends: find and join the world in the LAN server list"] },
+    virtualLan: { hostPort: 10999, inGameSteps: ["Host: start a LAN world", "Friends: find and join the world in the LAN server list"] },
   },
   factorio: {
     gameSlug: "factorio", title: "Factorio", tier: "tier1_improved",
     adapterType: "virtual-lan", protocol: "udp",
     client: { inGameJoinPrompt: true, inGameSteps: ["Play → Multiplayer → Connect to address; enter the PlayBound server address and port"] },
-    virtualLan: { inGameSteps: ["Host: host a LAN game", "Friends: find it under Browse LAN Games"] },
+    virtualLan: { hostPort: 34197, inGameSteps: ["Host: host a LAN game", "Friends: find it under Browse LAN Games"] },
   },
   terraria: {
     gameSlug: "terraria", title: "Terraria", tier: "tier1_improved",
@@ -166,7 +168,7 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     gameSlug: "counter-strike-source", title: "Counter-Strike: Source", tier: "tier1_improved",
     adapterType: "virtual-lan", protocol: "udp",
     client: { launchArguments: ["+connect", "{host}:{port}"], inGameSteps: ["If the game opens at its menu, use the console: connect <PlayBound server address>:<port>"] },
-    virtualLan: { inGameSteps: ["Host: create a LAN server in-game", "Friends: find it in the LAN server browser or connect to the host's PlayBound network address"] },
+    virtualLan: { hostPort: 27015, inGameSteps: ["Host: create a LAN server in-game", "Friends: find it in the LAN server browser or connect to the host's PlayBound network address"] },
   },
   "core-keeper": {
     gameSlug: "core-keeper", title: "Core Keeper", tier: "tier3_official",
@@ -175,10 +177,11 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "Dedicated server accepts direct IP connections; the game also supports a Game ID path.",
   },
   barotrauma: {
-    gameSlug: "barotrauma", title: "Barotrauma", tier: "tier3_official",
-    adapterType: "official", protocol: "official",
+    gameSlug: "barotrauma", title: "Barotrauma", tier: "tier1_improved",
+    adapterType: "virtual-lan", protocol: "udp",
     client: { inGameJoinPrompt: true, inGameSteps: ["Multiplayer → Direct Connect; enter the PlayBound server address and port"] },
-    notes: "Dedicated submarine server; guests join via the game's address field.",
+    virtualLan: { requiresBroadcast: false, hostPort: 27015, inGameSteps: ["Host: Multiplayer → Host Server and start a game", "Friends: Multiplayer → Direct Connect; enter the host's PlayBound network address and port"] },
+    notes: "The client can host a submarine game on the leader's PC; PlayBound can also run the separate dedicated server on its VPS. Guests join either room through Direct Connect.",
   },
   unturned: {
     gameSlug: "unturned", title: "Unturned", tier: "tier1_improved",

@@ -12075,6 +12075,7 @@ ipcMain.handle("prepare-virtual-lan", async (event, opts) => {
       pointed,
       isLeader: Boolean(reported?.isLeader),
       peerAddresses: Array.isArray(reported?.peerAddresses) ? reported.peerAddresses : [],
+      hostAddress: typeof reported?.hostAddress === "string" ? reported.hostAddress : null,
     };
   } catch (err) {
     const message = err?.message || String(err);
