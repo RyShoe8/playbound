@@ -11,7 +11,6 @@ type TierGame = {
   existingServerStartEnabled: boolean;
   supportedRegions: string[];
   allowedMods: string[];
-  readinessStatus: "draft" | "testing" | "verified";
   adminNote?: string | null;
 };
 type Pkg = { slots: number; priceCents: number; currency: string; enabled: boolean; order: number; stripePriceId: string | null };
@@ -388,7 +387,7 @@ function GamesTab({ tier, tierKey, profiles, onSave }: { tier: Tier; tierKey: Ho
   const catalogGameCount = new Set(profiles.filter((p) => !isPendingDedicatedProfile(p.key)).map((p) => p.gameSlug)).size;
   const catalogEditionCount = profiles.filter((p) => !isPendingDedicatedProfile(p.key) && p.key.split(":")[1] !== "base").length;
   const addProfile = (key: string) => {
-    setGames((current) => current.some((game) => game.profileKey === key) ? current : [...current, { profileKey: key, enabled: true, newServerCreationEnabled: false, existingServerStartEnabled: false, supportedRegions: tier.regions.map((r) => r.key), allowedMods: [], readinessStatus: "testing" }]);
+    setGames((current) => current.some((game) => game.profileKey === key) ? current : [...current, { profileKey: key, enabled: true, newServerCreationEnabled: false, existingServerStartEnabled: false, supportedRegions: tier.regions.map((r) => r.key), allowedMods: [] }]);
   };
   const rc = tier.resourceClass;
   return (
@@ -403,7 +402,7 @@ function GamesTab({ tier, tierKey, profiles, onSave }: { tier: Tier; tierKey: Ho
         <table className="w-full min-w-[900px] text-sm">
           <thead className="text-left text-xs text-muted-foreground">
             <tr>
-              <th className="py-1">Game / edition</th><th>Included</th><th>New servers</th><th>Existing starts</th><th>Readiness</th><th>Slot cap</th><th>Resource fit</th><th />
+              <th className="py-1">Game / edition</th><th>Included</th><th>New servers</th><th>Existing starts</th><th>Slot cap</th><th>Resource fit</th><th />
             </tr>
           </thead>
           <tbody>
@@ -413,7 +412,7 @@ function GamesTab({ tier, tierKey, profiles, onSave }: { tier: Tier; tierKey: Ho
                 const note = PENDING_DEDICATED_GAMES.find((item) => g.profileKey.startsWith(`${item.gameSlug}:`));
                 return <tr key={g.profileKey} className="border-t border-border text-sm text-muted-foreground">
                   <td className="py-2 font-mono text-xs">{g.profileKey}</td>
-                  <td colSpan={7}>Planned · {note?.requirement}</td>
+                  <td colSpan={6}>Planned · {note?.requirement}</td>
                 </tr>;
               }
               return (
@@ -422,13 +421,6 @@ function GamesTab({ tier, tierKey, profiles, onSave }: { tier: Tier; tierKey: Ho
                   <td><input type="checkbox" checked={g.enabled} onChange={(e) => update(i, { enabled: e.target.checked })} /></td>
                   <td><input type="checkbox" checked={g.newServerCreationEnabled} onChange={(e) => update(i, { newServerCreationEnabled: e.target.checked })} /></td>
                   <td><input type="checkbox" checked={g.existingServerStartEnabled} onChange={(e) => update(i, { existingServerStartEnabled: e.target.checked })} /></td>
-                  <td>
-                    <select className={input} value={g.readinessStatus} onChange={(e) => update(i, { readinessStatus: e.target.value as TierGame["readinessStatus"] })}>
-                      <option value="draft">Draft</option>
-                      <option value="testing">Testing</option>
-                      <option value="verified">Verified</option>
-                    </select>
-                  </td>
                   <td className="text-xs">
                     {p?.capEnforced ? (
                       <span className="text-emerald-500">Enforced</span>

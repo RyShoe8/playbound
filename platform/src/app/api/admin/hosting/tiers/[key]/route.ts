@@ -58,7 +58,6 @@ const tierSchema = z.object({
     existingServerStartEnabled: z.boolean(),
     supportedRegions: z.array(z.string()).max(20),
     allowedMods: z.array(z.string()).max(200),
-    readinessStatus: z.enum(["draft", "testing", "verified"]),
     adminNote: z.string().max(500).nullable().optional(),
   })).max(200),
 });
