@@ -45,19 +45,24 @@ test("Don't Starve Together needs a private token and uses unique Steam ports", 
   assert.ok(!args.includes("test-token"));
 });
 
-test("Unturned can start anonymously for direct IP joins, and uses a token when supplied", async () => {
+test("Unturned permits a token-free admin smoke test but requires a token for Internet rooms", async () => {
   const ctx = context("unturned-one", 8);
-  await recipes.unturned.prepareSpawn(27075, ctx);
+  await assert.rejects(recipes.unturned.prepareSpawn(27075, ctx), /login token is required/);
+  const audit = { ...ctx, testSpawn: true };
+  await recipes.unturned.prepareSpawn(27075, audit);
   const data = path.join(home, "unturned-servers", "pb-unturned-one");
   const config = path.join(data, "Server", "Commands.dat");
   assert.match(fs.readFileSync(config, "utf8"), /MaxPlayers 8/);
   assert.doesNotMatch(fs.readFileSync(config, "utf8"), /GSLT/);
+  assert.match(recipes.unturned.args(27075, audit)[0], /^\+LanServer\//);
   fs.writeFileSync(path.join(data, "gslt.txt"), "a".repeat(32), { mode: 0o600 });
   await recipes.unturned.prepareSpawn(27075, ctx);
   assert.match(fs.readFileSync(config, "utf8"), /GSLT a{32}/);
+  assert.match(recipes.unturned.args(27075, ctx)[0], /^\+InternetServer\//);
 });
 
 test("Barotrauma gets a separate executable and capped XML per customer", async () => {
+  assert.equal(recipes.barotrauma.resolveBinary(recipes.barotrauma.binaries), null);
   const source = path.join(games, "barotrauma");
   fs.mkdirSync(source);
   fs.writeFileSync(path.join(source, "DedicatedServer"), "executable");
@@ -76,9 +81,14 @@ test("Barotrauma gets a separate executable and capped XML per customer", async 
   assert.match(xmlA, /ServerName="A &amp; B"/);
   assert.match(xmlB, /queryport="27223"/);
   assert.equal(fs.readFileSync(path.join(source, "asset.txt"), "utf8"), "shared asset");
+  const audit = { ...context("baro-audit"), customerOwned: false };
+  await recipes.barotrauma.prepareSpawn(27224, audit);
+  assert.equal(recipes.barotrauma.resolveBinary(recipes.barotrauma.binaries, audit),
+    path.join(home, "barotrauma-servers-rooms", "pb-baro-audit", "runtime", "DedicatedServer"));
 });
 
 test("Trackmania keeps each account private and changes only the intended XML tags", async () => {
+  assert.equal(recipes.trackmania.resolveBinary(recipes.trackmania.binaries), null);
   const source = path.join(games, "trackmania", "UserData", "Config");
   fs.mkdirSync(source, { recursive: true });
   fs.writeFileSync(path.join(games, "trackmania", "TrackmaniaServer"), "executable");
@@ -102,4 +112,11 @@ test("Trackmania keeps each account private and changes only the intended XML ta
   assert.match(xml, /<server_port>23520<\/server_port>/);
   assert.match(xml, /<xmlrpc_port>23521<\/xmlrpc_port>/);
   assert.match(xml, /<login>user<\/login><password>secret<\/password>/);
+  const audit = { ...context("track-audit"), customerOwned: false };
+  const auditHome = path.join(home, "trackmania-servers-rooms", "pb-track-audit");
+  fs.mkdirSync(auditHome, { recursive: true });
+  fs.writeFileSync(path.join(auditHome, "dedicated-account.json"), JSON.stringify({ login: "audit", password: "private" }));
+  await recipes.trackmania.prepareSpawn(23522, audit);
+  assert.equal(recipes.trackmania.resolveBinary(recipes.trackmania.binaries, audit),
+    path.join(auditHome, "runtime", "TrackmaniaServer"));
 });

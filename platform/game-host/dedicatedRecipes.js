@@ -173,9 +173,10 @@ export function createDedicatedRecipes(deps) {
           }
         } else fs.symlinkSync(data, link, "dir");
         const tokenFile = path.join(data, "gslt.txt");
-        // Unturned permits anonymous servers. They are hidden from Steam's public
-        // browser but remain joinable by direct address, which PlayBound provides.
+        // Anonymous startup is only useful for the admin spawn/usage test.
+        // Unturned requires a GSLT for Internet servers joined by address.
         const token = fs.existsSync(tokenFile) ? fs.readFileSync(tokenFile, "utf8").trim() : null;
+        if (!token && !ctx.testSpawn) throw new Error("An Unturned Steam game-server login token is required in this server's private gslt.txt for Internet hosting");
         if (token !== null && !/^[A-Fa-f0-9]{20,64}$/.test(token)) throw new Error("Invalid Unturned game-server login token");
         const configDir = path.join(data, "Server");
         fs.mkdirSync(configDir, { recursive: true, mode: 0o700 });
@@ -183,7 +184,9 @@ export function createDedicatedRecipes(deps) {
           `Name ${serverName(ctx, "PlayBound Dedicated")}\nMap PEI\nMaxPlayers ${managedPlayerLimit(ctx)}\nPort ${_port}\n${token ? `GSLT ${token}\n` : ""}`,
           { mode: 0o600 });
       },
-      args: (_port, ctx) => [`+InternetServer/pb-${serverId(ctx)}`],
+      args: (_port, ctx) => [
+        `${ctx.testSpawn && !fs.existsSync(path.join(serverDir("unturned-servers", ctx), "gslt.txt")) ? "+LanServer" : "+InternetServer"}/pb-${serverId(ctx)}`,
+      ],
     },
 
     "rimworld-together": {
@@ -380,10 +383,9 @@ export function createDedicatedRecipes(deps) {
       protocol: "udp",
       binaries: gameBin("barotrauma", ["DedicatedServer"]),
       resolveBinary: (candidates, ctx) => {
-        if (ctx?.customerOwned) {
-          const runtime = path.join(serverDir("barotrauma-servers", ctx), "runtime", "DedicatedServer");
-          if (fs.existsSync(runtime)) return runtime;
-        }
+        if (!ctx) return firstExisting(candidates);
+        const runtime = path.join(serverDir("barotrauma-servers", ctx), "runtime", "DedicatedServer");
+        if (fs.existsSync(runtime)) return runtime;
         return firstExisting(candidates);
       },
       cwd: (_port, ctx) => path.join(serverDir("barotrauma-servers", ctx), "runtime"),
@@ -427,10 +429,9 @@ export function createDedicatedRecipes(deps) {
       protocol: "both",
       binaries: gameBin("trackmania", ["TrackmaniaServer"]),
       resolveBinary: (candidates, ctx) => {
-        if (ctx?.customerOwned) {
-          const runtime = path.join(serverDir("trackmania-servers", ctx), "runtime", "TrackmaniaServer");
-          if (fs.existsSync(runtime)) return runtime;
-        }
+        if (!ctx) return firstExisting(candidates);
+        const runtime = path.join(serverDir("trackmania-servers", ctx), "runtime", "TrackmaniaServer");
+        if (fs.existsSync(runtime)) return runtime;
         return firstExisting(candidates);
       },
       cwd: (_port, ctx) => path.join(serverDir("trackmania-servers", ctx), "runtime"),
