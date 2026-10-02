@@ -1086,7 +1086,7 @@ const NO_CONFIG_NEEDED = {
    * OutRun's shipped Settings.txt binds only keyboard keys. Saying so here stops
    * the launcher offering phone-as-controller for a game that cannot read it.
    */
-  "quake-ii": {
+  "quake-ii-enhanced": {
     kind: "native",
     note: "The Enhanced build ships full controller support — it was built for the console releases of the 2023 remaster — and remaps in its own options. The bundled 1997 executable is much rougher with a pad.",
   },

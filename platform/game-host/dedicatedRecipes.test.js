@@ -9,7 +9,7 @@ process.env.HOME = HOME;
 const { recipes, acceptedSettingsFor } = await import("./recipes.js");
 const { createWorldBackup, restoreWorldBackup, WORLD_BACKUP_GAMES } = await import("./dedicatedDataBackups.js");
 
-const NEW = ["counter-strike-source", "goldeneye-source", "quake-ii", "terraria", "unturned", "rimworld-together", "core-keeper", "vintage-story", "factorio", "necesse", "dont-starve-together", "barotrauma", "trackmania"];
+const NEW = ["counter-strike-source", "goldeneye-source", "terraria", "unturned", "rimworld-together", "core-keeper", "vintage-story", "factorio", "necesse", "dont-starve-together", "barotrauma", "trackmania"];
 const ID_A = "64b0c0ffee64b0c0ffee1234";
 const ID_B = "64b0c0ffee64b0c0ffee9999";
 const ctxFor = (slug, id = ID_A, limit = 6, name = "Paid server") => ({
@@ -25,14 +25,16 @@ test("every paid-plan recipe accepts the slot cap the platform sends", () => {
   }
 });
 
+test("Quake II Enhanced does not advertise the incompatible Original server", () => {
+  assert.equal(recipes["quake-ii"], undefined);
+  assert.equal(recipes["quake-ii-enhanced"], undefined);
+});
+
 test("command-line games pass the cap to the server", () => {
   const css = recipes["counter-strike-source"].args(27060, ctxFor("counter-strike-source"));
   assert.equal(css[css.indexOf("-maxplayers") + 1], "6");
   const ges = recipes["goldeneye-source"].args(27120, ctxFor("goldeneye-source"));
   assert.equal(ges[ges.indexOf("-maxplayers") + 1], "6");
-  const q2 = recipes["quake-ii"].args(27910, ctxFor("quake-ii"));
-  assert.deepEqual(q2.slice(q2.indexOf("maxclients") - 1, q2.indexOf("maxclients") + 2), ["+set", "maxclients", "6"]);
-  assert.deepEqual(q2.slice(q2.indexOf("port") - 1, q2.indexOf("port") + 2), ["+set", "port", "27910"]);
   const terraria = recipes.terraria.args(7777, ctxFor("terraria", ID_A, 9));
   assert.equal(terraria[terraria.indexOf("-maxplayers") + 1], "9");
   const unturned = recipes.unturned.args(27075, ctxFor("unturned", ID_A, 12));
@@ -105,10 +107,6 @@ test("names cannot break out of a command line or config value", () => {
   const css = recipes["counter-strike-source"].args(27060, ctxFor("counter-strike-source", ID_A, 6, 'x"; quit; "'));
   const host = css[css.indexOf("+hostname") + 1];
   assert.equal(host.startsWith('"') && host.endsWith('"') && !host.slice(1, -1).includes('"'), true);
-  const q2 = recipes["quake-ii"].args(27910, ctxFor("quake-ii", ID_A, 6, 'x"; quit; "'));
-  const q2Host = q2[q2.indexOf("hostname") + 1];
-  assert.equal(q2Host.startsWith('"') && q2Host.endsWith('"'), true);
-  assert.doesNotMatch(q2Host, /[;\r\n\\]/);
 });
 
 test("config files are private to the agent", { skip: process.platform === "win32" }, async () => {

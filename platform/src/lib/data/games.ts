@@ -7907,24 +7907,23 @@ const facts: Game[] = [
    *
    * The GOG product (`quake_ii_quad_damage`, id 1443696817) is a pack of two
    * game rows: Quake II Enhanced (1947927225, 3612 MB installer) and Quake II
-   * (Original) (1441704824, 690 MB). sizeMB is the two together, because
-   * buying it gives you both and the launcher's disk estimate should not
-   * assume you skip one. GOG lists Windows only — there is no Mac or Linux
-   * build of the remaster — so platforms stays a single entry.
+   * (Original) (1441704824, 690 MB). The catalog row is for Enhanced; the
+   * Original is a separate optional download. GOG lists Windows only for the
+   * remaster, so platforms stays a single entry.
    */
   {
-    slug: "quake-ii",
-    title: "Quake II",
+    slug: "quake-ii-enhanced",
+    title: "Quake II Enhanced",
     tagline: "The shotgun still kicks, and the Strogg still scream when you hit them.",
     description:
-      "id Software's 1997 military sci-fi shooter, sold by GOG as Nightdive's 2023 remaster with the original 1997 executable included. One purchase covers the base campaign, both retail mission packs, MachineGames' new Call of the Machine expansion, the Nintendo 64 port, 16-player online deathmatch and 4-player co-op with crossplay.",
+      "id Software's 1997 military sci-fi shooter, sold by GOG as Nightdive's 2023 remaster with the Original available as a separate download. One purchase covers the base campaign, both retail mission packs, MachineGames' new Call of the Machine expansion, the Nintendo 64 port, 16-player online deathmatch and 4-player co-op with crossplay.",
     developerSlug: "id-software",
     genres: ["FPS", "Shooter", "Action", "Horror"],
     tags: ["Classic", "Retro", "Sci-Fi", "Arena Shooter", "Mods", "PvP"],
     aliases: ["Quake 2", "Quake II Enhanced", "Quake II Remastered", "Quad Damage"],
     license: "Commercial · DRM-free purchase",
     releaseYear: 1997,
-    sizeMB: 4302,
+    sizeMB: 3612,
     status: "draft",
     platforms: ["Windows"],
     features: [
@@ -7939,7 +7938,6 @@ const facts: Game[] = [
       "Custom Maps",
       "Community Content",
       "Story Campaign",
-      "Dedicated Servers",
     ],
     launchMethods: ["install"],
     browserPlayable: false,
@@ -8015,8 +8013,8 @@ const facts: Game[] = [
       enabled: true,
       kind: "external",
       url: "https://www.gog.com/en/game/quake_ii_quad_damage",
-      knownExePaths: ["quake2ex.exe", "rerelease\\quake2ex.exe", "quake2.exe"],
-      note: "Uses GOG's DRM-free offline installer. Galaxy is optional. The installer lays down both the Enhanced and Original builds.",
+      knownExePaths: ["quake2ex_gog.exe", "quake2ex.exe", "rerelease\\quake2ex.exe"],
+      note: "Uses GOG's DRM-free Quake II Enhanced installer. Galaxy is optional; Original is a separate install in the same purchase.",
     },
     firstPlaySteps: [
       {
@@ -8029,7 +8027,7 @@ const facts: Game[] = [
       },
       {
         platform: "windows",
-        text: "For mods, launch the bundled Original executable instead — the Enhanced build does not load 1997-era game DLLs.",
+        text: "For classic mods, install the separate Quake II (Original) entry from your GOG library.",
       },
     ],
     multiplayerGamingSteps: [
@@ -8043,7 +8041,7 @@ const facts: Game[] = [
       },
       {
         platform: "all",
-        text: "For a private match, one player hosts from the multiplayer menu and shares the address through the party.",
+        text: "For a private match, one player hosts from the multiplayer menu and shares the invite code through the party.",
       },
     ],
   },

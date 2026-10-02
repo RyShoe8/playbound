@@ -1,10 +1,11 @@
 /**
  * Server recipes for games offered on the paid Dedicated plan.
  *
- * Kept apart from recipes.js on purpose: none of these is part of free
- * community or party hosting, and each arrives as a `draft` profile that an
- * admin tests before it is offered. The slot cap is the one thing every recipe
- * must get right, so each one applies `managedPlayerLimit(ctx)` through the
+ * Kept apart from recipes.js for the paid hosting recipe set. Published games
+ * with VPS-ready files can also be selected for Community Hosting by an admin;
+ * they are never enrolled in rotation automatically. The slot cap is the one
+ * thing every recipe must get right, so each one applies
+ * `managedPlayerLimit(ctx)` through the
  * mechanism the game's own server documents:
  *
  *   counter-strike-source  -maxplayers N            (LinuxGSM start parameters)
@@ -89,28 +90,6 @@ export function createDedicatedRecipes(deps) {
   const keepStdinOpen = () => "";
 
   return {
-    // The 2023 Enhanced client uses a separate protocol and its own lobby
-    // backend. This server is for the bundled 1997 Original client only.
-    "quake-ii": {
-      portStart: 27910,
-      portEnd: 27929,
-      protocol: "udp",
-      binaries: ["/usr/lib/yamagi-quake2/q2ded"],
-      resolveBinary: (candidates) => fs.existsSync(path.join(GAMES_ROOT, "quake-ii-original", "baseq2", "pak0.pak"))
-        ? firstExisting(candidates) : null,
-      cwd: () => path.join(GAMES_ROOT, "quake-ii-original"),
-      spawnEnv: isolatedHomeEnv("quake-ii-servers"),
-      stdin: keepStdinOpen,
-      shutdownCommand: "quit\n",
-      args: (port, ctx) => [
-        "-datadir", path.join(GAMES_ROOT, "quake-ii-original"),
-        "+set", "port", String(port),
-        "+set", "deathmatch", "1",
-        "+set", "maxclients", String(Math.min(16, managedPlayerLimit(ctx))),
-        "+set", "hostname", `"${serverName(ctx, "PlayBound Quake II Original").replace(/[;\x00-\x1f\x7f]/g, " ")}"`,
-        "+map", "q2dm1",
-      ],
-    },
     "goldeneye-source": {
       portStart: 27120,
       portEnd: 27139,

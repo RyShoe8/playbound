@@ -9,20 +9,23 @@
  */
 import { cacheLife, cacheTag } from "next/cache";
 import { getHostableGame } from "@/lib/gameHost/catalog";
-import { BASIC_DEFAULTS, getTier, type HostingTier } from "./tier";
+import { BASIC_DEFAULTS, getTier, type HostingTier, type HostingTierKey } from "./tier";
 import { isPendingDedicatedProfile } from "./pendingGames";
 
 export const HOSTING_TIER_TAG = "hosting-tier";
 
-export async function loadPublicTier(): Promise<{ tier: HostingTier; live: boolean }> {
+export async function loadPublicTier(key: HostingTierKey = "basic"): Promise<{ tier: HostingTier; live: boolean }> {
   "use cache";
   cacheLife("hours");
   cacheTag(HOSTING_TIER_TAG);
   try {
-    return { tier: await getTier(), live: true };
+    return { tier: await getTier(key), live: true };
   } catch {
     const fallback = {
       ...BASIC_DEFAULTS,
+      key,
+      name: `PlayBound Dedicated ${key === "basic" ? "Basic" : key === "pro" ? "Pro" : "Extreme"}`,
+      salesEnabled: false,
       startsDisabled: false,
       minAllocation: 4,
       allocationIncrement: 4,

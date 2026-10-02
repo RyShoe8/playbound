@@ -51,6 +51,7 @@ const EXPECTED_SERVER_VERSIONS: Record<string, string> = {
   teeworlds: "Ubuntu apt (teeworlds-server)",
   "hurry-curry": "v3.1.1 (native)",
   "deus-ex-goty-edition": "HX 0.9.89.4 (Wine; operator-owned GOTY files)",
+  "goldeneye-source": "5.0.6",
   "earth-2140-trilogy": "OpenE2140 dedicated",
   bombsquad: "BombSquad server",
   "0ad": "Ubuntu apt",

@@ -1,6 +1,8 @@
-import { permanentRedirect } from "next/navigation";
+import { HostingTierDetails } from "@/components/hosting/HostingTierDetails";
+import { pageMetadata } from "@/lib/seo";
 
-/** Basic is the only plan on sale, and /hosting is its page. */
+export const metadata = pageMetadata({ title: "Basic Game Hosting", description: "Every game, edition and feature in PlayBound Dedicated Basic.", path: "/hosting/basic" });
+
 export default function HostingBasicPage() {
-  permanentRedirect("/hosting");
+  return <HostingTierDetails tierKey="basic" />;
 }

@@ -1884,10 +1884,6 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
    * for PlayBound to host or template — a party gets voice, presence and a
    * synchronised launch, and the players group up in-game with /invite.
    *
-   * The Enhanced build stays on Nightdive's crossplay lobby backend. The
-   * paid-plan Quake II recipe hosts only the bundled 1997 Original build;
-   * it is kept out of automatic party hosting because the default Enhanced
-   * client cannot join that server's classic network protocol.
    */
   "final-fantasy-xi": {
     gameSlug: "final-fantasy-xi",
@@ -1899,14 +1895,15 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       "One persistent world on HorizonXI — no lobby to host. PlayBound provides party launch and presence; players group in-game. Horizon is single-box (one account per IP), so a party of housemates needs an IP exception from its Discord.",
   },
 
-  "quake-ii": {
-    gameSlug: "quake-ii",
-    title: "Quake II",
+  "quake-ii-enhanced": {
+    gameSlug: "quake-ii-enhanced",
+    title: "Quake II Enhanced",
     tier: "tier3_official",
     adapterType: "official",
     protocol: "official",
+    client: { inGameJoinPrompt: true, inGameSteps: ["Host: create an Enhanced multiplayer lobby", "Friends: join from the game's multiplayer menu using the host's invite code"] },
     notes:
-      "The Enhanced build uses Nightdive's crossplay lobbies. A separate draft dedicated-server recipe supports the bundled 1997 Original build only. Choose the Original executable to join that server; Enhanced and Original cannot join each other's games.",
+      "The stock Enhanced client uses Nightdive's multiplayer lobbies and the 2023 protocol. PlayBound coordinates the party and launch; it cannot host a compatible dedicated room.",
   },
 
   "next-gen-chess": {

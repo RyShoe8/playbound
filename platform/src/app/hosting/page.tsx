@@ -2,14 +2,14 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
 import { Check, Server } from "lucide-react";
-import { GameArt } from "@/components/GameArt";
 import { BasicSlotPicker } from "@/components/hosting/BasicSlotPicker";
+import { HostingGameTile } from "@/components/hosting/HostingGameTile";
 import { HostingRegionMap } from "@/components/hosting/HostingRegionMap";
-import { listGames } from "@/lib/catalog";
+import { mostPopularGames } from "@/lib/catalog";
 import { loadPublicTier, publicGames } from "@/lib/dedicatedHosting/publicTier";
-import { PENDING_DEDICATED_GAMES } from "@/lib/dedicatedHosting/pendingGames";
 import { hostingGameArt } from "@/lib/dedicatedHosting/publicGameArt";
 import { loadHostingInventory } from "@/lib/dedicatedHosting/inventory";
+import { rankedHostingGames } from "@/lib/dedicatedHosting/publicLineup";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
@@ -18,31 +18,27 @@ export const metadata: Metadata = pageMetadata({
   path: "/hosting",
 });
 
-const FEATURES = [
-  "Switch games without buying another plan",
-  "Split your slot pool across several games and servers",
-  "Keep your settings with automatic server-configuration backups",
-  "Back up and restore saved worlds for supported games",
-  "Manage maps, mods and players in the admin panel and PlayBound overlay",
-  "Feature public servers on PlayBound.club and offer one-click joining",
-  "Invite trusted PlayBound members to help manage your servers",
-  "Bring your servers into parties and events",
-  "Get PlayBound hosting support",
+const BASIC_FEATURES = [
+  "Switch games whenever you want",
+  "Split slots across several servers",
+  "Back up and restore supported worlds",
+  "Manage maps and players from PlayBound",
+  "List public servers on PlayBound.club",
 ];
-const price = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+const PLAN_NAMES = ["Basic", "Pro", "Extreme"] as const;
 
 export default async function HostingPage() {
-  const [{ tier, live }, catalog, inventory] = await Promise.all([loadPublicTier(), listGames().catch(() => []), loadHostingInventory()]);
-  const packages = [...tier.packages].filter((p) => p.enabled !== false).sort((a, b) => a.order - b.order);
-  const enrolled = publicGames(tier);
-  const games = inventory.length ? inventory : enrolled;
-  const editionCount = games.reduce((total, game) => total + game.editions.length, 0);
-  const available = new Set(games.map((g) => g.gameSlug));
-  const selectable = new Set(enrolled.map((g) => g.gameSlug));
-  const cards = new Map(catalog.filter((g) => available.has(g.slug)).map((g) => [g.slug, g]));
-  const lineup = [...games.map((g) => ({ gameSlug: g.gameSlug, title: g.title, requirement: null as string | null })), ...PENDING_DEDICATED_GAMES].sort((a, b) => a.title.localeCompare(b.title));
-  const artBySlug = await hostingGameArt(lineup.map((game) => game.gameSlug));
-  const region = tier.regions.find((r) => r.salesEnabled)?.label || "US Central";
+  const [[basic, pro, extreme], inventory, popular] = await Promise.all([
+    Promise.all([loadPublicTier("basic"), loadPublicTier("pro"), loadPublicTier("extreme")]),
+    loadHostingInventory(),
+    mostPopularGames(1000).catch(() => []),
+  ]);
+  const tiers = [basic, pro, extreme];
+  const popularSlugs = popular.map((game) => game.slug);
+  const ranked = tiers.map(({ tier }) => rankedHostingGames(publicGames(tier), inventory, popularSlugs));
+  const artBySlug = await hostingGameArt([...new Set(ranked.flatMap((games) => games.slice(0, 10).map((game) => game.gameSlug)))]);
+  const packages = [...basic.tier.packages].filter((pkg) => pkg.enabled !== false).sort((a, b) => a.order - b.order);
+  const region = basic.tier.regions.find((r) => r.salesEnabled)?.label || "US Central";
 
   return <main className="w-full space-y-16 px-4 py-10 sm:px-6 lg:px-8">
     <section className="relative overflow-hidden rounded-3xl border border-border bg-card">
@@ -63,34 +59,32 @@ export default async function HostingPage() {
 
     <section id="plans" className="space-y-6">
       <div><h2 className="text-3xl font-bold">Choose how you host</h2><p className="text-muted-foreground">Start with Basic. Pro and Extreme are on the way.</p></div>
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <article id="basic" className="rounded-2xl border border-primary/50 bg-card p-6 lg:row-span-2 lg:p-8">
-          <Server className="mb-4 text-primary" /><h3 className="text-2xl font-bold">Basic</h3>
-          <p className="mt-2 text-sm text-muted-foreground">Flexible game hosting for your group or community.</p>
-          <p className="mt-6 text-3xl font-bold">{packages.length ? `From ${price(Math.min(...packages.map((p) => p.priceCents)))}` : "Flexible pricing"}<span className="text-sm font-normal text-muted-foreground"> / month</span></p>
-          <p className="mt-2 text-sm">{games.length} dedicated-server games · {editionCount} additional editions · {enrolled.length} currently selectable on Basic</p>
-          <ul className="mt-6 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">{FEATURES.map((item) => <li key={item} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{item}</li>)}</ul>
-          <div className="mt-7"><BasicSlotPicker packages={packages} available={live && tier.salesEnabled} region={region} /></div>
-          <p className="mt-4 text-sm text-muted-foreground">For games without an enforceable player cap, slots reserve server capacity. Those servers stop after 30 minutes of confirmed inactivity.</p>
-          <Link href="#all-games" className="mt-4 inline-block text-sm font-semibold text-primary hover:underline">See all {games.length} games →</Link>
-        </article>
-        {(["Pro", "Extreme"] as const).map((name) => <article key={name} className="rounded-2xl border border-border bg-card/70 p-6">
-          <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold">Coming soon</span>
-          <h3 className="mt-5 text-2xl font-bold">{name}</h3>
-          <p className="mt-2 text-sm text-muted-foreground">More room for growing communities. Details will follow when this plan is ready.</p>
-        </article>)}
+      <div className="grid items-stretch gap-5 lg:grid-cols-3">
+        {PLAN_NAMES.map((name, index) => {
+          const games = ranked[index];
+          const comingSoon = index > 0;
+          return <article key={name} className={`flex min-w-0 flex-col rounded-2xl border bg-card p-5 sm:p-6 ${index === 0 ? "border-primary/50" : "border-border"}`}>
+            <div className="min-h-44">
+              {comingSoon ? <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold">Coming soon</span> : <Server className="mb-4 text-primary" />}
+              <h3 className="mt-3 text-2xl font-bold">{name}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{comingSoon ? "More room for growing communities, with every game from the plans below it." : "Flexible game hosting for your group or community."}</p>
+              <p className="mt-4 text-sm font-semibold">{games.length} {games.length === 1 ? "game" : "games"} · {games.reduce((sum, game) => sum + game.editions.length, 0)} additional editions</p>
+            </div>
+            {index === 0 ? <>
+              <ul className="space-y-2 text-sm">{BASIC_FEATURES.map((feature) => <li key={feature} className="flex items-start gap-2"><Check className="mt-0.5 size-4 shrink-0 text-primary" />{feature}</li>)}</ul>
+              <div className="mt-5"><BasicSlotPicker packages={packages} available={basic.live && basic.tier.salesEnabled} region={region} /></div>
+            </> : <p className="text-sm text-muted-foreground">Pricing and additional features will be announced before this plan opens.</p>}
+            <div className="mt-7 flex-1 space-y-2">
+              <h4 className="text-sm font-bold">{games.length ? "Popular games" : "Games coming soon"}</h4>
+              {games.slice(0, 10).map((game) => <HostingGameTile key={game.gameSlug} game={game} art={artBySlug[game.gameSlug]} compact />)}
+            </div>
+            <Link href={`/hosting/${name.toLowerCase()}`} className="mt-6 inline-flex justify-center rounded-lg border border-primary/40 px-4 py-3 text-sm font-semibold text-primary hover:bg-primary/10">See all games and plan details →</Link>
+          </article>;
+        })}
       </div>
     </section>
 
-    <section className="rounded-2xl border border-border bg-card p-6 lg:p-8"><div className="flex flex-wrap items-end justify-between gap-4"><div><h2 className="text-2xl font-bold">Where we host</h2><p className="mt-2 text-sm text-muted-foreground">Available hosting regions appear on this map as they come online. Choose the region closest to your players when you subscribe.</p></div><Link href="/hosting/servers" className="text-sm font-semibold text-primary hover:underline">Manage your servers →</Link></div><HostingRegionMap regions={tier.regions} /></section>
-
+    <section className="rounded-2xl border border-border bg-card p-6 lg:p-8"><div className="flex flex-wrap items-end justify-between gap-4"><div><h2 className="text-2xl font-bold">Where we host</h2><p className="mt-2 text-sm text-muted-foreground">Available hosting regions appear on this map as they come online. Choose the region closest to your players when you subscribe.</p></div><Link href="/hosting/servers" className="text-sm font-semibold text-primary hover:underline">Manage your servers →</Link></div><HostingRegionMap regions={basic.tier.regions} /></section>
     <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-card p-6"><div><h2 className="text-xl font-bold">Need a hand with your server?</h2><p className="mt-1 text-sm text-muted-foreground">Open a support request in PlayBound or join the dedicated-server support room on Discord.</p></div><div className="flex flex-wrap gap-3"><Link href="/hosting/servers" className="rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary">PlayBound support</Link><a href="/api/hosting/support/discord" target="_blank" rel="noopener noreferrer" className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Discord support ↗</a></div></section>
-
-    <section id="all-games" className="space-y-5"><div><h2 className="text-2xl font-bold">Dedicated-server games</h2><p className="text-sm text-muted-foreground">{games.length} games and {editionCount} additional editions in our catalog. {enrolled.length} games are currently selectable on Basic; others are being prepared for hosting.</p></div>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">{lineup.map((g) => {
-        const art = artBySlug[g.gameSlug] || cards.get(g.gameSlug);
-        const content = <><div className="relative aspect-[16/10] overflow-hidden bg-secondary">{art ? <GameArt game={{ ...art, title: g.title }} showTitle={false} iconSize="sm" className="size-full" /> : <div className="flex size-full items-center justify-center"><Server className="h-8 w-8 text-primary/60" /></div>}</div><div className="p-3"><h3 className="line-clamp-2 text-sm font-semibold leading-snug">{g.title}</h3>{g.requirement ? <><span className="mt-1 inline-block rounded bg-secondary px-1.5 py-0.5 text-xs">Planned</span><p className="mt-1 text-xs text-muted-foreground">{g.requirement}</p></> : !selectable.has(g.gameSlug) ? <span className="mt-1 inline-block rounded bg-secondary px-1.5 py-0.5 text-xs">Preparing for Basic</span> : null}</div></>;
-        return g.requirement || !selectable.has(g.gameSlug) ? <article key={g.gameSlug} className="overflow-hidden rounded-xl border border-border bg-card">{content}</article> : <Link key={g.gameSlug} href={`/hosting/${g.gameSlug}`} className="overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-primary/50">{content}</Link>;
-      })}</div><p className="text-xs text-muted-foreground">Planned games cannot be selected or started yet.</p></section>
   </main>;
 }

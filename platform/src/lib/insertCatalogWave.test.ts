@@ -95,7 +95,6 @@ describe("insert-catalog-wave allowlists", () => {
         "pokemon-blaze-online",
         "pokemmo",
         "populous-the-beginning",
-        "quake-ii",
         "relic-hunters-zero-remix",
         "s-t-a-l-k-e-r-clear-sky",
         "soccer-brawl",
@@ -247,7 +246,6 @@ describe("insert-catalog-wave allowlists", () => {
         "openra",
         "bzflag",
         // Testing-catalog cleanup pass, 2026-09-25 — see the allowlist's own comment.
-        "quake-ii",
         "hypersomnia",
         "final-fantasy-xi",
         "theme-hospital",

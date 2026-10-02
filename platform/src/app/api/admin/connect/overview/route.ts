@@ -10,7 +10,7 @@ import {
   listHostRooms,
   listManagedHostRooms,
 } from "@/lib/gameHost/client";
-import { clientVersionForHostableGame, hostableGameVersionRows, versionsLikelyMismatch } from "@/lib/gameHost/versions";
+import { clientVersionForHostableGame, expectedServerVersionForHostableGame, hostableGameVersionRows, versionsLikelyMismatch } from "@/lib/gameHost/versions";
 import { listActivePartiesForConnectAdmin } from "@/lib/playTogether/adminActiveParties";
 import dbConnect from "@/lib/db";
 import CommunityHostingConfig from "@/lib/models/CommunityHostingConfig";
@@ -119,7 +119,7 @@ export async function GET() {
     const ready = hasRecipe && (status?.ready ?? installed);
     const versions = versionBySlug[slug];
     const clientVersion = versions?.clientVersion ?? clientVersionForHostableGame(slug);
-    const serverVersion = versions?.serverVersion ?? health?.gameVersions?.[slug] ?? "—";
+    const serverVersion = versions?.serverVersion ?? health?.gameVersions?.[slug] ?? expectedServerVersionForHostableGame(slug);
     return {
       slug,
       title: DEDICATED_ONLY_GAMES[slug]?.title ?? titleBySlug.get(slug) ?? game?.title ?? slug.replace(/-/g, " "),
