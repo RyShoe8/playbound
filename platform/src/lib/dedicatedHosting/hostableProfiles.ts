@@ -14,6 +14,7 @@ import Edition from "@/lib/models/Edition";
 import CatalogGame from "@/lib/models/CatalogGame";
 import { DEDICATED_ONLY_GAMES, HOSTABLE_SLUGS, HOSTABLE_SLUG_ALIASES } from "@/lib/gameHost/catalog";
 import { isNonDedicatedCatalogGame } from "@/lib/gameHost/nonDedicatedCatalog";
+import { normalizeStatus } from "@/lib/catalogStatus";
 
 /** Every game the admin can put on a tier: hostable everywhere, plus the paid-plan-only games. */
 function tierSlugs(): string[] {
@@ -22,7 +23,18 @@ function tierSlugs(): string[] {
 
 export type EditionRef = { gameSlug: string; slug: string; name?: string; features?: string[]; isDefault?: boolean };
 export type StoredProfileRef = { key: string; gameSlug: string; editionSlug?: string | null };
-export type CatalogGameRef = { slug: string; title: string; status: string; published: boolean };
+export type CatalogGameRef = { slug: string; title: string; status?: string; published?: boolean };
+
+/** The VPS reports recipe readiness. The website's compiled recipe list can lag
+ * a newly deployed agent, so it must not narrow this set in admin pickers. */
+export function readyGameHostSlugs(
+  gameStatus: Record<string, { ready: boolean }> | undefined,
+  aliases: Readonly<Record<string, string>>,
+): Set<string> {
+  return new Set(Object.entries(gameStatus || {})
+    .filter(([slug, status]) => status.ready && !aliases[slug])
+    .map(([slug]) => slug));
+}
 
 /** The shared admin enrollment gate. Files, publication and edition support
  * are independent: a game can be visible in VPS testing long before it appears
@@ -30,7 +42,7 @@ export type CatalogGameRef = { slug: string; title: string; status: string; publ
 export function readyPublishedHostableCatalog(
   games: CatalogGameRef[], editions: EditionRef[], stored: StoredProfileRef[], readySlugs: ReadonlySet<string>
 ): { games: CatalogGameRef[]; editions: EditionRef[] } {
-  const eligibleGames = games.filter((game) => !isNonDedicatedCatalogGame(game.slug, game.title) && game.status === "published" && game.published && readySlugs.has(game.slug));
+  const eligibleGames = games.filter((game) => !isNonDedicatedCatalogGame(game.slug, game.title) && normalizeStatus(game) === "published" && readySlugs.has(game.slug));
   const allowed = new Set(eligibleGames.map((game) => game.slug));
   const storedKeys = new Set(stored.map((profile) => profile.key));
   const eligibleEditions = editions.filter((edition) => allowed.has(edition.gameSlug) &&

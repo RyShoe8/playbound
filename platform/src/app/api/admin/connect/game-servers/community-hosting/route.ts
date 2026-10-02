@@ -9,12 +9,12 @@ import { hostingSettingsSchema } from "@/lib/communityHosting/settings";
 import { fetchGameHostHealth, fetchGameHostMetrics, listManagedHostRooms } from "@/lib/gameHost/client";
 import CatalogGame from "@/lib/models/CatalogGame";
 import Edition from "@/lib/models/Edition";
-import { HOSTABLE_SLUGS, DEDICATED_ONLY_GAMES, HOSTABLE_SLUG_ALIASES } from "@/lib/gameHost/catalog";
+import { HOSTABLE_SLUG_ALIASES } from "@/lib/gameHost/catalog";
 import { getEffectiveEnvelope, managedRoomSettings } from "@/lib/communityHosting/reconcile";
 import { populationPeriods, populationReading } from "@/lib/communityHosting/population";
 import { runningReservationEnvelope } from "@/lib/communityHosting/capacity";
 import { managedQueryKind, queryManagedOccupancy, type ManagedOccupancy } from "@/lib/communityHosting/playerQuery";
-import { readyPublishedHostableCatalog } from "@/lib/dedicatedHosting/hostableProfiles";
+import { readyGameHostSlugs, readyPublishedHostableCatalog } from "@/lib/dedicatedHosting/hostableProfiles";
 
 export async function GET() {
   const { error } = await requireAdminViewSession();
@@ -88,10 +88,7 @@ export async function GET() {
   const defaults = new CommunityHostingConfig({ key: "global" }).toObject();
   // Community selection is drawn from the live catalog and VPS state, never
   // seed editions or profiles for unpublished / uninstalled games.
-  const recipeSlugs = [...new Set([...HOSTABLE_SLUGS, ...Object.keys(DEDICATED_ONLY_GAMES)])]
-    .filter((s) => !HOSTABLE_SLUG_ALIASES[s]);
-  const readySlugs = new Set(recipeSlugs.filter((slug) => health.configured &&
-    (health.health.gameStatus?.[slug]?.ready === true)));
+  const readySlugs = readyGameHostSlugs(health.configured ? health.health.gameStatus : undefined, HOSTABLE_SLUG_ALIASES);
   const [titleRows, editionRows] = await Promise.all([
     CatalogGame.find({ slug: { $in: [...readySlugs] } })
       .select({ slug: 1, title: 1, status: 1, published: 1 }).lean(),

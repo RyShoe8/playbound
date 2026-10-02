@@ -7,6 +7,7 @@ import Edition from "@/lib/models/Edition";
 import { fetchGameHostHealth } from "@/lib/gameHost/client";
 import { profileSettingsSchema, validateProfileReadiness } from "@/lib/communityHosting/profileSettings";
 import { getEffectiveEnvelope } from "@/lib/communityHosting/reconcile";
+import { normalizeStatus } from "@/lib/catalogStatus";
 
 export async function PUT(req: Request, context: { params: Promise<{ key: string }> }) {
   const { session, error } = await requireAdminSession();
@@ -23,11 +24,11 @@ export async function PUT(req: Request, context: { params: Promise<{ key: string
   const editionSlug = editionPart === "base" ? null : editionPart;
   if (parsed.data.enabled) {
     const [catalogGame, edition, health] = await Promise.all([
-      CatalogGame.findOne({ slug: gameSlug, status: "published", published: true }).select("slug").lean(),
+      CatalogGame.findOne({ slug: gameSlug }).select("slug status published").lean(),
       editionSlug ? Edition.findOne({ gameSlug, slug: editionSlug, status: { $ne: "archived" }, visibility: { $ne: "hidden" }, suppressesSeed: { $ne: true } }).select("features isDefault").lean() : Promise.resolve(null),
       fetchGameHostHealth(),
     ]);
-    if (!catalogGame || !health.configured || !health.health.gameStatus?.[gameSlug]?.ready ||
+    if (!catalogGame || normalizeStatus(catalogGame) !== "published" || !health.configured || !health.health.gameStatus?.[gameSlug]?.ready ||
       (editionSlug && (!edition || edition.isDefault || (!edition.features?.includes("Dedicated Servers") && !current)))) {
       return NextResponse.json({ error: "Publish the game and verify its dedicated-server files before enabling community hosting" }, { status: 409 });
     }
