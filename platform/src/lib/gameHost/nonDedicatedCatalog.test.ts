@@ -13,7 +13,7 @@ describe("dedicated server catalog exclusions", () => {
     ["renegade-x", "Renegade X"], ["stalker-call-of-pripyat", "S.T.A.L.K.E.R.: Call of Pripyat"],
     ["stalker-clear-sky", "S.T.A.L.K.E.R.: Clear Sky"],
     ["stalker-shadow-of-chernobyl", "S.T.A.L.K.E.R.: Shadow of Chernobyl"],
-    ["star-wars-galaxies", "Star Wars Galaxies"], ["zero-k", "Zero-K"],
+    ["star-wars-galaxies", "Star Wars Galaxies"], ["starcraft", "StarCraft"], ["zero-k", "Zero-K"],
   ])("excludes %s even when tagged Dedicated Servers", (slug, title) => {
     expect(isNonDedicatedCatalogGame(slug)).toBe(true);
     expect(isNonDedicatedCatalogGame("unknown-slug", title)).toBe(true);
@@ -33,5 +33,10 @@ describe("dedicated server catalog exclusions", () => {
     expect(isNonDedicatedCatalogGame("some-cms-slug", "City of Heroes Homecoming")).toBe(true);
     expect(isNonDedicatedCatalogGame("some-cms-slug", "City of Heroes: Rebirth")).toBe(true);
     expect(isNonDedicatedCatalogGame("heroes-of-the-city")).toBe(false);
+  });
+
+  it("does not offer StarCraft as a VPS dedicated game", () => {
+    expect(isNonDedicatedCatalogGame("starcraft")).toBe(true);
+    expect(isNonDedicatedCatalogGame("cms-remaster", "StarCraft: Remastered")).toBe(true);
   });
 });

@@ -173,13 +173,14 @@ export function createDedicatedRecipes(deps) {
           }
         } else fs.symlinkSync(data, link, "dir");
         const tokenFile = path.join(data, "gslt.txt");
-        if (!fs.existsSync(tokenFile)) throw new Error("An Unturned Steam game-server login token is required in this server's private gslt.txt");
-        const token = fs.readFileSync(tokenFile, "utf8").trim();
-        if (!/^[A-Fa-f0-9]{20,64}$/.test(token)) throw new Error("Invalid Unturned game-server login token");
+        // Unturned permits anonymous servers. They are hidden from Steam's public
+        // browser but remain joinable by direct address, which PlayBound provides.
+        const token = fs.existsSync(tokenFile) ? fs.readFileSync(tokenFile, "utf8").trim() : null;
+        if (token !== null && !/^[A-Fa-f0-9]{20,64}$/.test(token)) throw new Error("Invalid Unturned game-server login token");
         const configDir = path.join(data, "Server");
         fs.mkdirSync(configDir, { recursive: true, mode: 0o700 });
         fs.writeFileSync(path.join(configDir, "Commands.dat"),
-          `Name ${serverName(ctx, "PlayBound Dedicated")}\nMap PEI\nMaxPlayers ${managedPlayerLimit(ctx)}\nPort ${_port}\nGSLT ${token}\n`,
+          `Name ${serverName(ctx, "PlayBound Dedicated")}\nMap PEI\nMaxPlayers ${managedPlayerLimit(ctx)}\nPort ${_port}\n${token ? `GSLT ${token}\n` : ""}`,
           { mode: 0o600 });
       },
       args: (_port, ctx) => [`+InternetServer/pb-${serverId(ctx)}`],

@@ -23,6 +23,7 @@ const NON_DEDICATED_SLUGS = new Set([
   "stalker-clear-sky",
   "stalker-shadow-of-chernobyl",
   "star-wars-galaxies",
+  "starcraft",
   "zero-k",
 ]);
 
@@ -32,7 +33,7 @@ const NON_DEDICATED_TITLES = new Set([
   "Monster Hunter Frontier", "OpenSpades", "PlanetSide 2", "PokeMMO",
   "Pokémon Blaze Online", "Project Celeste", "Red Eclipse", "Renegade X",
   "S.T.A.L.K.E.R.: Call of Pripyat", "S.T.A.L.K.E.R.: Clear Sky",
-  "S.T.A.L.K.E.R.: Shadow of Chernobyl", "Star Wars Galaxies", "Zero-K",
+  "S.T.A.L.K.E.R.: Shadow of Chernobyl", "Star Wars Galaxies", "StarCraft", "Zero-K",
 ].map(normalizeTitle));
 
 function normalizeTitle(title: string): string {
@@ -47,6 +48,7 @@ export function isNonDedicatedCatalogGame(slug: string, title?: string): boolean
   const cityOfHeroesSlug = /^(city-of-heroes|city-of-heros)(-|$)/.test(slug);
   const normalized = title ? normalizeTitle(title) : "";
   const cityOfHeroesTitle = normalized.startsWith("cityofheroes") || normalized.startsWith("cityofheros");
-  return cityOfHeroesSlug || cityOfHeroesTitle || NON_DEDICATED_SLUGS.has(slug) ||
+  const starcraftTitle = normalized === "starcraft" || normalized === "starcraftremastered";
+  return cityOfHeroesSlug || cityOfHeroesTitle || starcraftTitle || NON_DEDICATED_SLUGS.has(slug) ||
     Boolean(normalized && NON_DEDICATED_TITLES.has(normalized));
 }

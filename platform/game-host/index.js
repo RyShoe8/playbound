@@ -41,6 +41,7 @@ import { createStartCoordinator } from "./startLock.js";
 import { httpsGetStream } from "./downloadStream.js";
 import { createManagedRegistry, createPartyRegistry, isSameProcess, processIdentity, processGroupMembers, rehydrateManagedRoom } from "./managedRegistry.js";
 import { processMetrics } from "./processMetrics.js";
+import { isLinuxPortBound } from "./portReadiness.js";
 import { queryRoomOccupancy } from "./playerQueries.js";
 import { isWorldBackupGame } from "./dedicatedDataBackups.js";
 import { runWorldBackup } from "./worldBackupRunner.js";
@@ -646,7 +647,7 @@ async function waitForServerPort(port, protocol, child, timeoutMs) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     if (child.exitCode !== null || child.signalCode !== null) return false;
-    if (!(await isOsPortFree(port, protocol))) return true;
+    if (process.platform === "linux" ? isLinuxPortBound(port, protocol) : !(await isOsPortFree(port, protocol))) return true;
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
   return false;
