@@ -257,8 +257,8 @@ const providers: Record<string, ServerProvider> = {
    * installs the GOG build, and the remaster's crossplay backend also carries
    * GOG and console players while exposing no public total.
    */
-  "quake-ii": {
-    slug: "quake-ii",
+  "quake-ii-enhanced": {
+    slug: "quake-ii-enhanced",
     fetchServers: fetchQuakeIIPlayers,
   },
   mrboom: {

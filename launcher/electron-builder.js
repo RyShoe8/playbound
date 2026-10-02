@@ -86,6 +86,7 @@ module.exports = {
     "utm.js",
     "openciv3Display.js",
     "holocureDisplay.js",
+    "outrunDisplay.js",
     "platform/**/*",
     "services/**/*",
     "renderer/**/*",

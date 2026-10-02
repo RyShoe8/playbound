@@ -19,6 +19,9 @@ import { supportsController } from "@/lib/controller/support";
 import { LibraryModsDisclosure, type LibraryModItem } from "@/components/LibraryModsDisclosure";
 import { LibraryDeviceHint } from "@/components/LibraryDeviceHint";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
+import { useLauncherOs } from "@/hooks/useLauncherOs";
+import { launcherDownloadUrlForOs } from "@/lib/launcherDownload";
+import { openPlayboundDeepLink } from "@/lib/openPlayboundDeepLink";
 import { CreatePartyPanel } from "@/components/friends/CreatePartyPanel";
 import { Badge } from "@/components/ui/bits";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
@@ -408,6 +411,22 @@ function UninstallFromPcButton({
   );
 }
 
+function LibraryLauncherAction({ href, label, className }: { href: string; label: "Play" | "Install"; className: string }) {
+  const os = useLauncherOs();
+  const [opening, setOpening] = useState(false);
+  return <button type="button" className={className} disabled={opening} onClick={() => {
+    setOpening(true);
+    openPlayboundDeepLink(href, {
+      downloadUrl: launcherDownloadUrlForOs(os),
+      autoDownload: true,
+      onResult: () => window.setTimeout(() => setOpening(false), 1500),
+    });
+  }}>
+    {label === "Play" ? <Play className="size-3 fill-current" /> : <Download className="size-3" />}
+    {opening ? "Opening…" : label}
+  </button>;
+}
+
 function DesktopInstalledActions({
   slug,
   editionSlug,
@@ -429,12 +448,7 @@ function DesktopInstalledActions({
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <a
-        href={launcherPlayUrl(slug, editionSlug)}
-        className={cn(chip, "bg-play text-play-foreground hover:brightness-110")}
-      >
-        <Play className="size-3 fill-current" /> Play
-      </a>
+      <LibraryLauncherAction href={launcherPlayUrl(slug, editionSlug)} label="Play" className={cn(chip, "bg-play text-play-foreground hover:brightness-110")} />
       {hasServerBrowser ? (
         <JoinMultiplayerButton slug={slug} title={title} className={chip} />
       ) : null}
@@ -727,12 +741,7 @@ function DesktopLibraryRow({
                     <div className="flex items-center gap-1.5 shrink-0">
                       {isEdInstalled ? (
                         <>
-                          <a
-                            href={launcherPlayUrl(game.slug, ed.slug)}
-                            className="inline-flex min-h-7 items-center gap-1 rounded-full bg-play px-2.5 text-[11px] font-bold text-play-foreground hover:brightness-110"
-                          >
-                            <Play className="size-3 fill-current" /> Play
-                          </a>
+                          <LibraryLauncherAction href={launcherPlayUrl(game.slug, ed.slug)} label="Play" className="inline-flex min-h-7 items-center gap-1 rounded-full bg-play px-2.5 text-[11px] font-bold text-play-foreground hover:brightness-110" />
                           {/*
                             * Scoped to this edition. A plain link rather than
                             * the watched button below it, because the game
@@ -748,12 +757,7 @@ function DesktopLibraryRow({
                           </a>
                         </>
                       ) : (
-                        <a
-                          href={launcherInstallUrl(game.slug, ed.slug)}
-                          className="inline-flex min-h-7 items-center gap-1 rounded-full bg-primary px-2.5 text-[11px] font-bold text-primary-foreground hover:brightness-110"
-                        >
-                          <Download className="size-3" /> Install
-                        </a>
+                        <LibraryLauncherAction href={launcherInstallUrl(game.slug, ed.slug)} label="Install" className="inline-flex min-h-7 items-center gap-1 rounded-full bg-primary px-2.5 text-[11px] font-bold text-primary-foreground hover:brightness-110" />
                       )}
                       {isEdParty ? (
                         <LibraryStartPartyButton

@@ -31,11 +31,10 @@ export const NEW_GAME_SLUGS: readonly string[] = [
   "castlevania-revamped",
   "hawken-hawkening",
   /*
-   * 2026-09-22 wave. Quake II is a paid GOG listing, like the other commercial
-   * masters in the catalog; the rest are free. All four land as drafts and need
+   * 2026-09-22 wave. Quake II was inserted then and later renamed to
+   * quake-ii-enhanced through the admin panel. The rest land as drafts and need
    * hands-on testing before anyone ticks Tested by PlayBound.
    */
-  "quake-ii",
   "outrun",
   "hypersomnia",
   "final-fantasy-xi",
@@ -528,9 +527,9 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   bzflag: ["features", "thatOneThing", "comparableTo"],
 
   /*
-   * Testing-catalog cleanup pass, 2026-09-25. quake-ii, outrun, hypersomnia
-   * and final-fantasy-xi were inserted by the 2026-09-22 wave (NEW_GAME_SLUGS
-   * above) with a full seed payload, but nothing has ever patched the live
+   * Testing-catalog cleanup pass, 2026-09-25. Quake II, outrun, hypersomnia
+   * and final-fantasy-xi were inserted by the 2026-09-22 wave with a full seed
+   * payload, but nothing had patched the live
    * rows since — so admin's own "Prefill from URL" auto-import (used before
    * hands-on editorial passed over these four) is still what's live. That
    * importer's install-step/FAQ template assumed every game is browser-
@@ -554,7 +553,6 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
    * build was ever published, and neither editorial.ts's installSteps nor
    * games.ts's platforms array ever claimed one.
    */
-  "quake-ii": ["description", "releaseYear", "sizeMB", "installSteps", "faq", "comparableTo"],
   outrun: ["description", "sizeMB", "platforms", "features", "installSteps", "faq", "comparableTo"],
   hypersomnia: ["description", "releaseYear", "sizeMB", "installSteps", "faq", "comparableTo"],
   "final-fantasy-xi": ["description", "releaseYear", "sizeMB", "installSteps", "faq", "comparableTo"],

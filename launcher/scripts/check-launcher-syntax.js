@@ -43,6 +43,32 @@ const launcherDir = path.join(__dirname, "..");
 
 /** CommonJS entrypoints — parsed as scripts. */
 const COMMONJS_FILES = ["bootstrap.js", "main.js", "preload.js"];
+const BUILDER_CONFIG = path.join(launcherDir, "electron-builder.js");
+
+// electron-builder only packs root files explicitly listed in `files`. A
+// top-level require can pass syntax and smoke checks, then crash the installed
+// app if its sibling module was omitted (OutRun's display helper did exactly
+// that in the signed 0.3.141 release).
+const builderSource = fs.readFileSync(BUILDER_CONFIG, "utf8");
+for (const entry of COMMONJS_FILES) {
+  const source = fs.readFileSync(path.join(launcherDir, entry), "utf8");
+  for (const match of source.matchAll(/require\(["'](\.\/[^"']+)["']\)/g)) {
+    const relative = match[1].slice(2);
+    if (relative.includes("/")) continue; // platform/ and services/ have globs.
+    if (fs.existsSync(path.join(launcherDir, relative)) && fs.statSync(path.join(launcherDir, relative)).isDirectory()) {
+      if (!builderSource.includes(`"${relative}/**/*"`)) {
+        console.error(`[check-launcher-syntax] Root directory ${relative} required by ${entry} is missing from electron-builder files.`);
+        process.exit(1);
+      }
+      continue;
+    }
+    const file = /\.[cm]?js$/.test(relative) ? relative : `${relative}.js`;
+    if (!fs.existsSync(path.join(launcherDir, file)) || !builderSource.includes(`"${file}"`)) {
+      console.error(`[check-launcher-syntax] Root dependency ${file} required by ${entry} is missing from electron-builder files.`);
+      process.exit(1);
+    }
+  }
+}
 
 /** Directories whose .js/.mjs files are ES modules. */
 const MODULE_DIRS = ["renderer"];

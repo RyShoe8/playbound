@@ -7126,7 +7126,7 @@ export const editorial: Record<string, GameEditorial> = {
       },
     ],
   },
-  "quake-ii": {
+  "quake-ii-enhanced": {
     qualityBar: {
       genuinelyFree: false,
       finished: true,
@@ -7140,13 +7140,13 @@ export const editorial: Record<string, GameEditorial> = {
     thatOneThing:
       "Ten dollars buys you five campaigns. The 1997 original, both retail mission packs, the Nintendo 64 port's completely different level set, and Call of the Machine — twenty-eight brand-new levels MachineGames built in 2023 for a game that was already twenty-six years old.",
     longDescription:
-      "Quake II was id Software's hard left turn away from the gothic hellscape of Quake. Out went the runes and the shamblers; in came a military invasion of Stroggos, a planet of industrial corridors, blast furnaces and cyborgs who used to be people. It was also id's first game to give you objectives: hubs you return to, switches that open something three levels back, a computer voice telling you the security grid is down. The change was not universally loved at the time, and it is the reason Quake II plays less like a corridor sprint than its predecessor and more like a grind through a factory you are slowly breaking.\n\nWhat holds up is the weight. The chaingun spins up before it fires and drifts your aim while it does. The railgun punches a blue line through two Gladiators and the wall behind them. The super shotgun is a two-barrel commitment you regret at range. Enemies pause, flinch and stumble — the Berserker winds up its hammer, the Iron Maiden fires rockets that track, the Gunner lobs grenades in an arc you can watch and step out of. Almost nothing in the roster kills you without telegraphing first, which is what makes hard difficulty feel like a fair fight instead of a memory test.\n\nThe 2023 remaster by Nightdive Studios is the version that ships by default now, and it is unusually thorough. Widescreen and 4K, restored AI behaviours that were broken in 1997, colored dynamic lighting, re-rendered cinematics, and a rebuilt multiplayer layer with crossplay, bots and a working server browser. Sonic Mayhem's soundtrack — the one that made half of PC gaming think industrial metal was what shooters sounded like — is intact. MachineGames contributed Call of the Machine, a full new expansion, and the N64 port's separate nineteen-level campaign is thrown in.\n\nMultiplayer is where the price stops mattering. Sixteen players online, four-player co-op through every campaign including the expansions, split-screen for up to eight on one PC, and crossplay against console players. Deathmatch is still railgun-and-rocket movement shooting, and it is still fast.\n\nThe one honest catch: the Enhanced build cannot load the 1997 mod ecosystem, because Quake II mods shipped as native game DLLs compiled against the old engine. This is why the GOG purchase includes the untouched Original executable in the same install — that is the one you point at Action Quake II, Rocket Arena or a two-decade back catalogue of maps. Two builds, one price, and you pick per session.\n\nPlayBound lists paid games when the ratio is absurd, and this is one of the clearest cases in the catalog: five campaigns, two engines, working crossplay multiplayer and an intact mod scene for less than a sandwich.",
+      "Quake II was id Software's hard left turn away from the gothic hellscape of Quake. Out went the runes and the shamblers; in came a military invasion of Stroggos, a planet of industrial corridors, blast furnaces and cyborgs who used to be people. It was also id's first game to give you objectives: hubs you return to, switches that open something three levels back, a computer voice telling you the security grid is down. The change was not universally loved at the time, and it is the reason Quake II plays less like a corridor sprint than its predecessor and more like a grind through a factory you are slowly breaking.\n\nWhat holds up is the weight. The chaingun spins up before it fires and drifts your aim while it does. The railgun punches a blue line through two Gladiators and the wall behind them. The super shotgun is a two-barrel commitment you regret at range. Enemies pause, flinch and stumble — the Berserker winds up its hammer, the Iron Maiden fires rockets that track, the Gunner lobs grenades in an arc you can watch and step out of. Almost nothing in the roster kills you without telegraphing first, which is what makes hard difficulty feel like a fair fight instead of a memory test.\n\nThe 2023 remaster by Nightdive Studios is the version that ships by default now, and it is unusually thorough. Widescreen and 4K, restored AI behaviours that were broken in 1997, colored dynamic lighting, re-rendered cinematics, and a rebuilt multiplayer layer with crossplay, bots and a working server browser. Sonic Mayhem's soundtrack — the one that made half of PC gaming think industrial metal was what shooters sounded like — is intact. MachineGames contributed Call of the Machine, a full new expansion, and the N64 port's separate nineteen-level campaign is thrown in.\n\nMultiplayer is where the price stops mattering. Sixteen players online, four-player co-op through every campaign including the expansions, split-screen for up to eight on one PC, and crossplay against console players. Deathmatch is still railgun-and-rocket movement shooting, and it is still fast.\n\nThe one honest catch: the Enhanced build cannot load the 1997 mod ecosystem, because Quake II mods shipped as native game DLLs compiled against the old engine. This is why the GOG purchase includes Quake II (Original) as a separate GOG download — that is the one you point at Action Quake II, Rocket Arena or a two-decade back catalogue of maps. Two builds, one price, and you pick per session.\n\nPlayBound lists paid games when the ratio is absurd, and this is one of the clearest cases in the catalog: five campaigns, two engines, working crossplay multiplayer and an intact mod scene for less than a sandwich.",
     whyWePickedIt:
-      "We picked Quake II because it is the answer to the argument that preservation and commerce cannot coexist. Nightdive did not re-release a ROM and charge for nostalgia — they fixed bugs id shipped in 1997, restored AI that never worked, wired up crossplay, and then left the original executable in the box so the mod community that kept this game alive for twenty-six years does not lose anything. That is what a remaster should be, and ten dollars for five campaigns is the kind of value our catalog exists to point at.",
+      "We picked Quake II because it is the answer to the argument that preservation and commerce cannot coexist. Nightdive did not re-release a ROM and charge for nostalgia — they fixed bugs id shipped in 1997, restored AI that never worked, wired up crossplay, while GOG kept the separate Original download available so the mod community that kept this game alive for twenty-six years does not lose anything. That is what a remaster should be, and ten dollars for five campaigns is the kind of value our catalog exists to point at.",
     bestFor: [
       "Anyone who wants a shooter campaign with weight and readable enemies rather than bullet sponges",
       "Four friends who want genuine online or split-screen co-op through a full campaign",
-      "Mod archaeologists — the bundled Original build still loads 1997-era game DLLs",
+      "Mod archaeologists — the separately installed Original build still loads 1997-era game DLLs",
       "Steam Deck and low-spec owners; even the Enhanced build asks very little",
     ],
     notFor: [
@@ -7169,7 +7169,7 @@ export const editorial: Record<string, GameEditorial> = {
       },
       {
         platform: "windows",
-        text: "Run the DRM-free offline installer into its own folder. Roughly 4.3 GB downloads; allow about 5 GB on disk.",
+        text: "Run the Quake II Enhanced offline installer into its own folder. Allow about 5 GB on disk.",
       },
       {
         platform: "windows",
@@ -7177,13 +7177,13 @@ export const editorial: Record<string, GameEditorial> = {
       },
       {
         platform: "windows",
-        text: "For classic mods, launch the Original executable from the same install folder instead.",
+        text: "For classic mods, install Quake II (Original) separately from your GOG library.",
       },
     ],
     faq: [
       {
         q: "Which version of Quake II does the GOG purchase give me?",
-        a: "Both. GOG's Quake II listing is a pack containing Quake II (Enhanced) — Nightdive's 2023 remaster — and Quake II (Original), the untouched 1997 build. One purchase installs both, and you choose which executable to launch.",
+        a: "Both. GOG's Quake II listing is a pack containing Quake II (Enhanced) — Nightdive's 2023 remaster — and Quake II (Original), the untouched 1997 build. One purchase grants both; install the two entries separately.",
       },
       {
         q: "Is Quake II free?",

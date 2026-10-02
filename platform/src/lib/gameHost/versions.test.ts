@@ -12,6 +12,11 @@ describe("gameHost versions", () => {
     expect(expectedServerVersionForHostableGame("freeciv")).toBe("3.2.5");
   });
 
+  it("labels the installed GoldenEye: Source server build", () => {
+    expect(clientVersionForHostableGame("goldeneye-source")).toBe("5.0.6");
+    expect(expectedServerVersionForHostableGame("goldeneye-source")).toBe("5.0.6");
+  });
+
   it("flags Freeciv 3.1 server against 3.2.5 client", () => {
     expect(versionsLikelyMismatch("3.2.5", "3.1.0")).toBe(true);
     expect(versionsLikelyMismatch("3.2.5", "3.2.5")).toBe(false);

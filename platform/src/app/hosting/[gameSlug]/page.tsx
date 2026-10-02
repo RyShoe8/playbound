@@ -4,22 +4,29 @@ import { notFound } from "next/navigation";
 import { Check } from "lucide-react";
 import { pageMetadata } from "@/lib/seo";
 import { getGame } from "@/lib/catalog";
-import { allowedSlotSizes } from "@/lib/dedicatedHosting/tier";
+import { allowedSlotSizes, type HostingTierKey } from "@/lib/dedicatedHosting/tier";
 import { loadPublicTier, publicGames } from "@/lib/dedicatedHosting/publicTier";
 import { getServerSettingProfile, CONTROL_FEATURE_LABELS } from "@/lib/serverControl/settings";
 
 type Props = { params: Promise<{ gameSlug: string }> };
 
-/** One page per game on sale, e.g. /hosting/openra — "OpenRA server hosting". */
+const TIER_KEYS: HostingTierKey[] = ["basic", "pro", "extreme"];
+const planName = (key: HostingTierKey) => key === "basic" ? "Basic" : key === "pro" ? "Pro" : "Extreme";
+
+/** One page per game included in a hosting tier. */
 export async function generateStaticParams() {
-  const { tier } = await loadPublicTier();
-  return publicGames(tier).map((g) => ({ gameSlug: g.gameSlug }));
+  const plans = await Promise.all(TIER_KEYS.map((key) => loadPublicTier(key)));
+  return [...new Set(plans.flatMap(({ tier }) => publicGames(tier).map((game) => game.gameSlug)))]
+    .map((gameSlug) => ({ gameSlug }));
 }
 
 async function load(gameSlug: string) {
-  const { tier } = await loadPublicTier();
-  const game = publicGames(tier).find((g) => g.gameSlug === gameSlug);
-  if (!game) return null;
+  const plans = await Promise.all(TIER_KEYS.map((key) => loadPublicTier(key)));
+  const index = plans.findIndex(({ tier }) => publicGames(tier).some((game) => game.gameSlug === gameSlug));
+  if (index < 0) return null;
+  const tierKey = TIER_KEYS[index];
+  const { tier } = plans[index];
+  const game = publicGames(tier).find((entry) => entry.gameSlug === gameSlug)!;
   const catalog = await getGame(gameSlug).catch(() => undefined);
   const sizes = [
     ...new Set(
@@ -29,7 +36,7 @@ async function load(gameSlug: string) {
     ),
   ].sort((a, b) => a - b);
   const cheapest = [...tier.packages].filter((p) => p.enabled !== false).sort((a, b) => a.priceCents - b.priceCents)[0];
-  return { tier, game, sizes, catalog, cheapest };
+  return { tier, tierKey, game, sizes, catalog, cheapest };
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -38,7 +45,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!data) return { title: "Not Found" };
   return pageMetadata({
     title: `${data.game.title} Server Hosting — PlayBound Dedicated`,
-    description: `Host a ${data.game.title} server with PlayBound Dedicated Basic: use your slots for ${data.game.title} today and switch them to another supported game tomorrow. Maps, admin tools, server-configuration backups and one-click joining included.`,
+    description: `Host a ${data.game.title} server with PlayBound Dedicated ${planName(data.tierKey)}: use your slots for ${data.game.title} today and switch them to another supported game tomorrow. Maps, admin tools, server-configuration backups and one-click joining included.`,
     path: `/hosting/${gameSlug}`,
   });
 }
@@ -47,7 +54,7 @@ export default async function GameHostingPage({ params }: Props) {
   const { gameSlug } = await params;
   const data = await load(gameSlug);
   if (!data) notFound();
-  const { tier, game, sizes, catalog, cheapest } = data;
+  const { tier, tierKey, game, sizes, catalog, cheapest } = data;
   const profile = getServerSettingProfile(gameSlug);
   const live = Boolean(profile?.controlChannel);
   const controls = [
@@ -59,7 +66,7 @@ export default async function GameHostingPage({ params }: Props) {
   return (
     <div className="mx-auto max-w-4xl space-y-12 px-4 py-12 sm:px-6 lg:px-8">
       <section className="space-y-4">
-        <p className="text-sm font-semibold tracking-wide text-primary uppercase">Included with PlayBound Dedicated Basic</p>
+        <p className="text-sm font-semibold tracking-wide text-primary uppercase">Included with PlayBound Dedicated {planName(tierKey)}</p>
         <h1 className="text-4xl font-bold tracking-tight">{game.title} Server Hosting</h1>
         <p className="max-w-2xl text-lg text-muted-foreground">
           Use your slots for {game.title} today and switch them to another supported game tomorrow. No config files, no FTP,
@@ -67,12 +74,12 @@ export default async function GameHostingPage({ params }: Props) {
         </p>
         {catalog?.tagline ? <p className="max-w-2xl text-sm text-muted-foreground">{catalog.tagline}</p> : null}
         <div className="flex flex-wrap gap-3 pt-2">
-          <Link href="/hosting" className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
-            {cheapest ? `See plans — from $${(cheapest.priceCents / 100).toFixed(2)}/month` : "See plans"}
+          <Link href={`/hosting/${tierKey}`} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+            {tierKey === "basic" && cheapest ? `See Basic — from $${(cheapest.priceCents / 100).toFixed(2)}/month` : `Explore ${planName(tierKey)} plan`}
           </Link>
-          <Link href={`/games/${gameSlug}`} className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-secondary">
+          {catalog ? <Link href={`/games/${gameSlug}`} className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-secondary">
             About {game.title}
-          </Link>
+          </Link> : null}
         </div>
       </section>
 

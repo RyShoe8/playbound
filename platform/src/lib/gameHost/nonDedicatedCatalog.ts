@@ -17,6 +17,8 @@ const NON_DEDICATED_SLUGS = new Set([
   "pokemmo",
   "pokemon-blaze-online",
   "project-celeste",
+  "quake-ii",
+  "quake-ii-enhanced",
   "red-eclipse",
   "renegade-x",
   "stalker-call-of-pripyat",
@@ -32,6 +34,7 @@ const NON_DEDICATED_TITLES = new Set([
   "Final Fantasy XI", "Hawken", "Hawken: Hawkening", "Marathon 2",
   "Monster Hunter Frontier", "OpenSpades", "PlanetSide 2", "PokeMMO",
   "Pokémon Blaze Online", "Project Celeste", "Red Eclipse", "Renegade X",
+  "Quake II (Original)", "Quake II Enhanced",
   "S.T.A.L.K.E.R.: Call of Pripyat", "S.T.A.L.K.E.R.: Clear Sky",
   "S.T.A.L.K.E.R.: Shadow of Chernobyl", "Star Wars Galaxies", "StarCraft", "Zero-K",
 ].map(normalizeTitle));

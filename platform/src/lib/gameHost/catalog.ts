@@ -332,20 +332,18 @@ export const HOSTABLE_SLUG_ALIASES: Record<string, string> = {
 };
 
 /**
- * Games offered only on the paid Dedicated plan. Deliberately NOT in
- * HOSTABLE_GAMES: that list also switches on community rotation. A reviewed
- * subset is separately offered to parties through PARTY_DEDICATED_GAMES;
- * games without server files or a usable recipe stay out. Some installed
- * recipes still require a per-room credential before startup. All entries
- * remain available to the paid Dedicated tier. Ports must match the agent's
- * dedicatedRecipes.js; a test checks them.
+ * Additional dedicated recipes. Deliberately NOT in HOSTABLE_GAMES: that list
+ * also switches on party hosting. Community Hosting can opt into any published,
+ * VPS-ready recipe from the agent; it does not rotate one merely because it is
+ * listed here. A reviewed subset is separately offered to parties through
+ * PARTY_DEDICATED_GAMES. Some installed recipes need per-room credentials.
+ * Ports must match the agent's dedicatedRecipes.js; a test checks them.
  *
  * Slugs are the catalog slugs — confirm them in /admin before enabling a game.
  */
 export const DEDICATED_ONLY_GAMES: Record<string, HostableGame> = {
   "counter-strike-source": { slug: "counter-strike-source", title: "Counter-Strike: Source", defaultPort: 27060, portEnd: 27070, protocol: "udp" },
   "goldeneye-source": { slug: "goldeneye-source", title: "GoldenEye: Source", defaultPort: 27120, portEnd: 27139, protocol: "udp" },
-  "quake-ii": { slug: "quake-ii", title: "Quake II (Original)", defaultPort: 27910, portEnd: 27929, protocol: "udp" },
   terraria: { slug: "terraria", title: "Terraria", defaultPort: 7870, portEnd: 7890, protocol: "tcp" },
   unturned: { slug: "unturned", title: "Unturned", defaultPort: 27075, portEnd: 27099, protocol: "udp" },
   "rimworld-together": { slug: "rimworld-together", title: "RimWorld Together", defaultPort: 25590, portEnd: 25610, protocol: "tcp" },
