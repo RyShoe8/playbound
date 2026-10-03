@@ -27,6 +27,10 @@ test -f "$work/stage/mods/bf1942/settings/maplist.con"
 test -d "$work/stage/mods/bf1942/archives"
 test -f "$work/stage/bf1942_lnxded.static"
 chmod 755 "$work/stage/bf1942_lnxded.static" "$work/stage/bf1942_lnxded.dynamic"
+ln -s bf1942_lnxded.static "$work/stage/bf1942_lnxded"
+# The archived distribution marks many files world-writable. Keep the server
+# files writable only by the dedicated playbound account.
+chmod -R go-w "$work/stage"
 install -d -o playbound -g playbound "$root"
 chown -R playbound:playbound "$work/stage"
 mv -- "$work/stage" "$dest"

@@ -94,7 +94,7 @@ export function createDedicatedRecipes(deps) {
       portStart: 14567,
       portEnd: 14586,
       protocol: "udp",
-      binaries: gameBin("battlefield-1942-anthology", ["bf1942_lnxded.static", "bf1942_lnxded.dynamic"]),
+      binaries: gameBin("battlefield-1942-anthology", ["bf1942_lnxded"]),
       cwd: () => path.join(GAMES_ROOT, "battlefield-1942-anthology"),
       spawnEnv: isolatedHomeEnv("battlefield-1942-anthology-servers"),
       startupReadyTimeoutMs: 60_000,
@@ -107,7 +107,8 @@ export function createDedicatedRecipes(deps) {
           throw new Error("Battlefield 1942 dedicated server files are incomplete");
         }
         const overlay = serverDir("battlefield-1942-anthology-servers", ctx);
-        const settings = path.join(overlay, "mods", "bf1942", "settings");
+        // +overlayPath resolves settings/ directly under the overlay root.
+        const settings = path.join(overlay, "settings");
         if (!fs.existsSync(settings)) fs.cpSync(source, settings, { recursive: true });
         fs.mkdirSync(path.join(overlay, "logs"), { recursive: true, mode: 0o700 });
         const config = path.join(settings, "serversettings.con");
@@ -129,7 +130,8 @@ export function createDedicatedRecipes(deps) {
         const lines = original.split(/\r?\n/).filter((line) => !Object.keys(values).some((key) => line.startsWith(`${key} `)));
         fs.writeFileSync(config, `${lines.join("\n").trimEnd()}\n${Object.entries(values).map(([key, value]) => `${key} ${value}`).join("\n")}\n`, { mode: 0o600 });
       },
-      args: (_port, ctx) => ["+overlayPath", serverDir("battlefield-1942-anthology-servers", ctx), "+statusMonitor", "1"],
+      // statusMonitor needs an interactive ncurses terminal; the agent has none.
+      args: (_port, ctx) => ["+overlayPath", serverDir("battlefield-1942-anthology-servers", ctx)],
     },
     "goldeneye-source": {
       portStart: 27120,
