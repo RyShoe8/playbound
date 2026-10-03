@@ -11,7 +11,10 @@ app.commandLine.appendSwitch("disk-cache-size", "268435456");
 // HTTPS playbound.club → LAN host WebRTC: Chromium PNA otherwise blocks host candidates.
 app.commandLine.appendSwitch(
   "disable-features",
-  "PrivateNetworkAccessSendPreflights,PrivateNetworkAccessRespectPreflightResults,BlockInsecurePrivateNetworkRequests"
+  // WebRtcHideLocalIpsWithMdns: both ends of Remote Play / Connect are launcher
+  // windows, and Chromium's random ".local" candidate names routinely fail to
+  // resolve between two PCs, leaving ICE stuck on "checking" with no video.
+  "PrivateNetworkAccessSendPreflights,PrivateNetworkAccessRespectPreflightResults,BlockInsecurePrivateNetworkRequests,WebRtcHideLocalIpsWithMdns"
 );
 
 const { spawn, exec, execFile, execFileSync } = require("child_process");

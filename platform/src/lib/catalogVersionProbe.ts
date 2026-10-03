@@ -12,6 +12,8 @@ export type ProbeResult = {
   /** When set, cron / Check now may write these onto the recipe. */
   patch?: {
     url?: string;
+    urlMac?: string;
+    urlLinux?: string;
     fileName?: string;
     versionLabel?: string;
     directUrl?: string;
@@ -231,6 +233,79 @@ export async function probeDirectUrl(url: string, currentVersion?: string | null
   }
 }
 
+const BOMBSQUAD_INDEX = "https://files.ballistica.net/bombsquad/builds/";
+
+/** 1.8.0b3 -> alpha < beta < release; higher number wins within a stage. */
+export function bombSquadVersionKey(v: string): number[] | null {
+  const m = v.match(/^(\d+)\.(\d+)\.(\d+)(?:([ab])(\d+))?$/);
+  if (!m) return null;
+  const stage = m[4] === "a" ? 0 : m[4] === "b" ? 1 : 2;
+  return [Number(m[1]), Number(m[2]), Number(m[3]), stage, Number(m[5] || 0)];
+}
+
+function compareKeys(a: number[], b: number[]): number {
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i];
+  return 0;
+}
+
+/** Pick the newest build that ships all three desktop packages. */
+export function pickBombSquadBuild(listing: string): {
+  version: string;
+  windows: string;
+  mac: string;
+  linux: string;
+} | null {
+  const have = new Map<string, { windows?: string; mac?: string; linux?: string }>();
+  const re = /BombSquad_(Windows|Mac|Linux_x86_64)_(\d+\.\d+\.\d+(?:[ab]\d+)?)\.(zip|dmg|tar\.gz)/g;
+  for (const m of listing.matchAll(re)) {
+    const entry = have.get(m[2]) || {};
+    if (m[1] === "Windows" && m[3] === "zip") entry.windows = m[0];
+    if (m[1] === "Mac" && m[3] === "dmg") entry.mac = m[0];
+    if (m[1] === "Linux_x86_64" && m[3] === "tar.gz") entry.linux = m[0];
+    have.set(m[2], entry);
+  }
+  let best: { version: string; key: number[]; files: { windows?: string; mac?: string; linux?: string } } | null = null;
+  for (const [version, files] of have) {
+    if (!files.windows || !files.mac || !files.linux) continue;
+    const key = bombSquadVersionKey(version);
+    if (!key) continue;
+    if (!best || compareKeys(key, best.key) > 0) {
+      best = { version, key, files };
+    }
+  }
+  if (!best) return null;
+  return { version: best.version, windows: best.files.windows!, mac: best.files.mac!, linux: best.files.linux! };
+}
+
+/**
+ * BombSquad publishes every build into one directory listing and retires the
+ * old files, so a pinned filename goes 404 at each release. Read the listing and
+ * return the newest build's three desktop URLs.
+ */
+async function probeBombSquadBuilds(currentVersion?: string | null, currentUrl?: string | null): Promise<ProbeResult> {
+  try {
+    const res = await fetch(BOMBSQUAD_INDEX, { headers: { "user-agent": PROBE_UA } });
+    if (!res.ok) return { status: "skipped", detectedVersion: currentVersion || null, note: `BombSquad index HTTP ${res.status}` };
+    const build = pickBombSquadBuild(await res.text());
+    if (!build) return { status: "skipped", detectedVersion: currentVersion || null, note: "No complete BombSquad build in index" };
+    const url = BOMBSQUAD_INDEX + build.windows;
+    const stale = build.version !== currentVersion || url !== currentUrl;
+    return {
+      status: stale ? "updated" : "ok",
+      detectedVersion: build.version,
+      note: "BombSquad build index",
+      patch: {
+        url,
+        urlMac: BOMBSQUAD_INDEX + build.mac,
+        urlLinux: BOMBSQUAD_INDEX + build.linux,
+        versionLabel: build.version,
+      },
+    };
+  } catch (err) {
+    return { status: "skipped", detectedVersion: currentVersion || null, note: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 async function probeOpenttdLatest(): Promise<ProbeResult> {
   try {
     const res = await fetch("https://cdn.openttd.org/openttd-releases/latest.yaml", {
@@ -393,6 +468,9 @@ export async function probeGameInstall(install: {
     return engine;
   }
   if (kind === "openttd-zip") return probeOpenttdLatest();
+  if (kind.startsWith("direct") && install.url?.startsWith(BOMBSQUAD_INDEX)) {
+    return probeBombSquadBuilds(install.versionLabel, install.url);
+  }
   if (kind.startsWith("direct") && install.url) {
     const reach = await probeDirectUrl(install.url, install.versionLabel);
     if (reach.status === "broken") return reach;
