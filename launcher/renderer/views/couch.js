@@ -515,6 +515,11 @@ async function answerOffer(controllerId, remoteSdp, session) {
           { urls: "stun:stun.cloudflare.com:3478" },
           { urls: "stun:global.stun.twilio.com:3478" },
         ];
+  console.log(
+    `[couch] ICE servers (${Array.isArray(hostIce) && hostIce.length > 0 ? "platform" : "FALLBACK STUN only"}): ` +
+      iceServers.map((s) => String(s.urls).replace(/^(w+:)/, "$1")).join(", ") +
+      ` · turn=${iceServers.some((s) => /^turns?:/.test(String(Array.isArray(s.urls) ? s.urls[0] : s.urls)))}`
+  );
   pc = new RTCPeerConnection({ iceServers });
   peers.set(controllerId, pc);
   pc.onicecandidateerror = (ev) => {
@@ -800,6 +805,7 @@ function paint(state) {
   }
 
   const s = state.session;
+  const isRemotePlay = Boolean(s.remotePlay);
   const snap = s.snapshot || {};
   const controllers = snap.controllers || [];
   const joinUrl = s.joinUrl || "";
@@ -816,7 +822,9 @@ function paint(state) {
     s.driverOk === false
       ? `<div class="couch-warn">${escapeHtml(
           s.driverReason ||
-            "Controllers are still setting up. End the session and click Start Couch Mode again, then Allow if Windows asks."
+            (isRemotePlay
+            ? "Controllers are still setting up. End Remote Play and start it again, then Allow if Windows asks."
+            : "Controllers are still setting up. End the session and click Start Couch Mode again, then Allow if Windows asks.")
         )}</div>`
       : "";
 
@@ -824,8 +832,8 @@ function paint(state) {
     <div class="couch-session">
       <div class="couch-session-head">
         <div>
-          <p class="couch-eyebrow">Couch Mode · live</p>
-          <h1>Connect Controllers</h1>
+          <p class="couch-eyebrow">${isRemotePlay ? "Remote Play · live" : "Couch Mode · live"}</p>
+          <h1>${isRemotePlay ? "Streaming to your other PC" : "Connect Controllers"}</h1>
           <p class="couch-code">Code <strong>${escapeHtml(s.joinCode)}</strong></p>
         </div>
         <div class="couch-actions">
