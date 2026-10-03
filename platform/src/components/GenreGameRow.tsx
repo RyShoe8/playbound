@@ -98,9 +98,9 @@ export function GenreGameRow({
       </div>
 
       {layout === "grid" ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+        <div className="flex flex-wrap items-stretch gap-4">
           {games.map((g) => (
-            <GameCard key={g.slug} game={g} playingNow={playingNowBySlug[g.slug] ?? 0} className="min-w-0 w-full" />
+            <GameCard key={g.slug} game={g} playingNow={playingNowBySlug[g.slug] ?? 0} />
           ))}
         </div>
       ) : (

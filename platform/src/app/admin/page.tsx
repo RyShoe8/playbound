@@ -35,6 +35,8 @@ async function computeDashboardKpis() {
       activeUsers,
       launcherInstalls,
       launcherInstallsTotal,
+      gameDownloads,
+      gameDownloadsTotal,
       launcherLinks,
       launcherLinksTotal,
       bugReports,
@@ -62,6 +64,8 @@ async function computeDashboardKpis() {
         event: "launcher_install",
         anonymousId: { $nin: [null, ""] },
       }).then((ids: unknown[]) => ids.length),
+      periodTelemetryCounts(TelemetryEvent, "game_download_clicked"),
+      TelemetryEvent.countDocuments({ event: "game_download_clicked" }),
       periodTelemetryCounts(TelemetryEvent, "launcher_connected"),
       TelemetryEvent.countDocuments({ event: "launcher_connected" }),
       periodDocumentCounts(BugReport),
@@ -84,6 +88,8 @@ async function computeDashboardKpis() {
       activeUsers,
       launcherInstalls,
       launcherInstallsTotal,
+      gameDownloads,
+      gameDownloadsTotal,
       launcherLinks,
       launcherLinksTotal,
       bugs: addPeriodCounts(bugReports, errorEvents),
@@ -109,6 +115,8 @@ async function computeDashboardKpis() {
       activeUsers: empty,
       launcherInstalls: empty,
       launcherInstallsTotal: 0,
+      gameDownloads: empty,
+      gameDownloadsTotal: 0,
       launcherLinks: empty,
       launcherLinksTotal: 0,
       bugs: empty,
@@ -128,7 +136,7 @@ async function computeDashboardKpis() {
 }
 
 function loadDashboardKpis() {
-  return unstable_cache(computeDashboardKpis, ["admin-dashboard-kpis-v3"], {
+  return unstable_cache(computeDashboardKpis, ["admin-dashboard-kpis-v4"], {
     revalidate: 60,
     tags: ["admin-kpis"],
   })();
@@ -196,6 +204,13 @@ export default async function AdminPage() {
             primary={String(kpis.launcherInstallsTotal)}
             hint={`Confirmed first contacts · ${kpis.launcherLinksTotal} linked to an account`}
             periods={kpis.launcherInstalls}
+          />
+          <PeriodStatTile
+            label="Game Downloads"
+            primary={String(kpis.gameDownloadsTotal)}
+            hint="Manual game-file clicks · completion not verified"
+            href="/admin/analytics?event=game_download_clicked"
+            periods={kpis.gameDownloads}
           />
           <PeriodStatTile
             label="Games Played"
