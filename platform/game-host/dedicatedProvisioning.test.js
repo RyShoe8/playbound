@@ -37,8 +37,8 @@ test("Battlefield 1942 isolates settings and caps players without copying game a
   await recipes["battlefield-1942-anthology"].prepareSpawn(14568, b);
   const overlayA = path.join(home, "battlefield-1942-anthology-servers", "pb-bf-a");
   const overlayB = path.join(home, "battlefield-1942-anthology-servers", "pb-bf-b");
-  const configA = path.join(overlayA, "mods", "bf1942", "settings", "serversettings.con");
-  const configB = path.join(overlayB, "mods", "bf1942", "settings", "serversettings.con");
+  const configA = path.join(overlayA, "settings", "serversettings.con");
+  const configB = path.join(overlayB, "settings", "serversettings.con");
   assert.match(fs.readFileSync(configA, "utf8"), /game.serverPort 14567\n/);
   assert.match(fs.readFileSync(configA, "utf8"), /game.serverMaxPlayers 12\n/);
   assert.match(fs.readFileSync(configB, "utf8"), /game.serverPort 14568\n/);
@@ -46,7 +46,7 @@ test("Battlefield 1942 isolates settings and caps players without copying game a
   assert.match(fs.readFileSync(configA, "utf8"), /game.serverInternet 0\n/);
   assert.equal(fs.readFileSync(path.join(source, "settings", "serversettings.con"), "utf8").includes("Original"), true);
   assert.equal(fs.existsSync(path.join(overlayA, "mods", "bf1942", "archives")), false);
-  assert.deepEqual(recipes["battlefield-1942-anthology"].args(14567, a), ["+overlayPath", overlayA, "+statusMonitor", "1"]);
+  assert.deepEqual(recipes["battlefield-1942-anthology"].args(14567, a), ["+overlayPath", overlayA]);
   await recipes["battlefield-1942-anthology"].prepareSpawn(14569, a);
   assert.equal((fs.readFileSync(configA, "utf8").match(/game.serverPort /g) || []).length, 1);
 });
