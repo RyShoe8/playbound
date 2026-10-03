@@ -7,7 +7,7 @@
 
 import { escapeHtml, setStatus, views, api } from "../shared.js";
 import { CADENCE } from "../cadence.js";
-import { ensureHostDisplayStream, stopHostDisplayStream, setCropRect, markStreamStale } from "../hostDisplayStream.js";
+import { ensureHostDisplayStream, stopHostDisplayStream, setCropRect, markStreamStale, getRawDisplayTrack } from "../hostDisplayStream.js";
 import { disableGamepadBridge } from "../gamepadBridge.js";
 
 let wired = false;
@@ -31,6 +31,7 @@ function reportOps(status, fields) {
 }
 let lastState = null;
 let stateRevision = 0;
+let pendingCaptureRefresh = false;
 
 function pb() {
   return window.playbound;
@@ -152,7 +153,14 @@ function ensureWired() {
     // connection already succeeded (with a possibly-stale, pre-mode-switch
     // capture) before this signal arrived — pushHostDisplayToPeers no-ops
     // when there are no peers yet, per its own guard.
-    void pushHostDisplayToPeers();
+    // A capture attached before the first answer can be refreshed there.
+    // Renegotiating while that answer is connecting races the first video.
+    pendingCaptureRefresh = true;
+    if ([...peers.values()].some((pc) => pc.connectionState === "connected" && pc.signalingState === "stable")) {
+      void pushHostDisplayToPeers().then((sent) => {
+        if (sent) pendingCaptureRefresh = false;
+      });
+    }
   });
 }
 
@@ -420,7 +428,8 @@ function applyVideoEncodePrefs(pc) {
 
 /**
  * Re-push host game view onto every live peer (e.g. capture started after Join).
- * Controllers stay on recvonly; we renegotiate so late capture still lands.
+ * An already-negotiated video sender only needs replaceTrack; only peers that
+ * initially answered without video need a new offer.
  *
  * Always replaceTrack on the existing video transceiver when possible — a bare
  * addTrack after the first answer often skips renegotiation when the track id
@@ -431,9 +440,19 @@ export async function pushHostDisplayToPeers() {
   if (!display || peers.size === 0) return false;
   let sentAny = false;
   for (const [controllerId, pc] of peers.entries()) {
+    // Re-offering during the initial answer interrupts first-frame delivery.
+    if (pc.connectionState !== "connected" || pc.signalingState !== "stable") continue;
     try {
+      const hasNegotiatedVideo = pc.getTransceivers?.().some((transceiver) =>
+        transceiver.sender?.track?.kind === "video" &&
+        ["sendonly", "sendrecv"].includes(transceiver.currentDirection)
+      );
       const attached = await attachDisplayTracks(pc);
       if (!attached) continue;
+      if (hasNegotiatedVideo) {
+        sentAny = true;
+        continue;
+      }
       /*
        * iceRestart: true works around a real Chromium/libwebrtc bug — an
        * answerer that later calls createOffer() to renegotiate (us, here)
@@ -512,7 +531,13 @@ async function answerOffer(controllerId, remoteSdp, session) {
         controllerId,
         transport: "webrtc",
       });
-      void pushHostDisplayToPeers();
+      // The first answer already carries video. Refresh only when the
+      // display mode changed after that track was attached.
+      if (pendingCaptureRefresh) {
+        void pushHostDisplayToPeers().then((sent) => {
+          if (sent) pendingCaptureRefresh = false;
+        });
+      }
       // The rect may have been computed (and its one broadcast already sent)
       // before this peer connected at all — fetch the current value directly
       // rather than relying solely on that single push. Applied to the shared
@@ -604,6 +629,7 @@ async function answerOffer(controllerId, remoteSdp, session) {
       ? "[couch] display captured before first answer"
       : "[couch] display NOT captured before first answer — will retry after"
   );
+  pendingCaptureRefresh = !capturedBeforeAnswer;
   if (!capturedBeforeAnswer) reportOps("failed", { phase: "capture", code: "DISPLAY_CAPTURE_MISSING", message: "No display track before first answer" });
 
   const answer = await pc.createAnswer();
@@ -634,6 +660,59 @@ async function answerOffer(controllerId, remoteSdp, session) {
   }
 
   startStatsLogging(pc, controllerId);
+  startFrameWatchdog(pc, controllerId);
+}
+
+/**
+ * Remote Play hang: the peer connects, the canvas draws at 60fps, yet the
+ * video sender encodes nothing (framesEncoded 0, 0 kbps) so the client sits on
+ * "waiting for the first video frame" forever. If the canvas-captured track
+ * has produced no frames a few seconds after the answer, swap the sender to
+ * the raw capture track — heavier (native resolution, no crop) but it makes
+ * frames flow, and it logs which path failed.
+ */
+function startFrameWatchdog(pc, controllerId) {
+  let attempts = 0;
+  const timer = window.setInterval(async () => {
+    attempts += 1;
+    if (!pc || ["closed", "failed", "disconnected"].includes(pc.connectionState) || attempts > 4) {
+      window.clearInterval(timer);
+      return;
+    }
+    if (pc.connectionState !== "connected") {
+      console.warn(`[couch] ${controllerId} WebRTC not connected after ${attempts * 3}s: conn=${pc.connectionState} ice=${pc.iceConnectionState} gathering=${pc.iceGatheringState} signaling=${pc.signalingState}`);
+      return;
+    }
+    try {
+      const sender = pc.getSenders().find((s) => s.track?.kind === "video");
+      if (!sender) return;
+      let encoded = 0;
+      let bytes = 0;
+      (await pc.getStats()).forEach((r) => {
+        if (r.type === "outbound-rtp" && r.kind === "video") {
+          encoded = r.framesEncoded || 0;
+          bytes = r.bytesSent || 0;
+        }
+      });
+      if (encoded > 0 || bytes > 0) {
+        window.clearInterval(timer);
+        return;
+      }
+      console.warn(
+        `[couch] ${controllerId} sender has encoded no frames (track muted=${sender.track.muted}, ` +
+          `readyState=${sender.track.readyState}, dir=${pc.getTransceivers().find((t) => t.sender === sender)?.currentDirection})`
+      );
+      if (attempts < 2) return;
+      const raw = getRawDisplayTrack();
+      if (raw && sender.track.id !== raw.id) {
+        await sender.replaceTrack(raw);
+        applyVideoEncodePrefs(pc);
+        console.warn(`[couch] ${controllerId} canvas track produced no frames — fell back to raw capture track`);
+      }
+    } catch (err) {
+      console.warn("[couch] frame watchdog failed:", err?.message || err);
+    }
+  }, 3000);
 }
 
 /**
@@ -667,6 +746,7 @@ function startStatsLogging(pc, controllerId) {
             ` @${report.framesPerSecond || "?"}fps` +
             ` bitrate=${bitrateKbps != null ? bitrateKbps + "kbps" : "?"}` +
             ` qualityLimitation=${report.qualityLimitationReason || "none"}` +
+            ` conn=${pc.connectionState}/ice=${pc.iceConnectionState}` +
             ` encodeTimeAvg=${
               report.totalEncodeTime && report.framesEncoded
                 ? `${Math.round((report.totalEncodeTime / report.framesEncoded) * 1000)}ms`
@@ -833,6 +913,7 @@ async function startSession() {
 function cleanupPeerState() {
   stopSignalPoll();
   stopHostDisplayStream();
+  pendingCaptureRefresh = false;
   for (const pc of peers.values()) {
     try {
       pc.close();

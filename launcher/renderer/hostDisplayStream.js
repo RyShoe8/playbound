@@ -278,6 +278,12 @@ async function captureHostDisplayStream(forceNew) {
   }
 }
 
+/** The undownscaled capture track — fallback when the canvas track never emits frames. */
+export function getRawDisplayTrack() {
+  const t = hostDisplayStream?.getVideoTracks()[0];
+  return t && t.readyState === "live" ? t : null;
+}
+
 export function stopHostDisplayStream() {
   captureGeneration++;
   streamStale = false;
