@@ -9,7 +9,7 @@ process.env.HOME = HOME;
 const { recipes, acceptedSettingsFor } = await import("./recipes.js");
 const { createWorldBackup, restoreWorldBackup, WORLD_BACKUP_GAMES } = await import("./dedicatedDataBackups.js");
 
-const NEW = ["counter-strike-source", "goldeneye-source", "terraria", "unturned", "rimworld-together", "core-keeper", "vintage-story", "factorio", "necesse", "dont-starve-together", "barotrauma", "trackmania"];
+const NEW = ["battlefield-1942-anthology", "counter-strike-source", "goldeneye-source", "terraria", "unturned", "rimworld-together", "core-keeper", "vintage-story", "factorio", "necesse", "dont-starve-together", "barotrauma", "trackmania"];
 const ID_A = "64b0c0ffee64b0c0ffee1234";
 const ID_B = "64b0c0ffee64b0c0ffee9999";
 const ctxFor = (slug, id = ID_A, limit = 6, name = "Paid server") => ({

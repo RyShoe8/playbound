@@ -58,6 +58,16 @@ If Contabo shows a network firewall, allow:
 - `49152:50152/udp` coturn TURN relay fallback range
 - UDP/TCP ranges printed at the end of `install.sh` (OpenRA 1234–1250/tcp, OpenArena 27960–27980/udp, ET 27950–27959/udp, …)
 
+## Battlefield 1942 Anthology
+
+The VPS recipe runs DICE's Linux dedicated server with separate settings per
+room. `install.sh` downloads the pinned server archive and opens UDP
+14567–14586. For a targeted install without repeating the full VPS bootstrap,
+run `sudo bash tools/install-battlefield-1942.sh`, then update the agent files
+and restart `playbound-game-host`. The installer leaves an existing game tree
+untouched. The admin spawn test verifies startup; a client join is still needed
+before enrolling it in Community Hosting.
+
 ## Wolfenstein: Enemy Territory
 
 Preferred path once the agent supports ensure:

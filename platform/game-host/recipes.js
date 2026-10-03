@@ -230,7 +230,7 @@ for (const slug of [
   "warzone-2100", "bzflag", "supertuxkart", "xonotic", "openarena",
   "0-ad", "0ad", "bombsquad", "wolfenstein-enemy-territory", "team-fortress-2",
   "unvanquished", "hedgewars", "freedoom", "veloren", "freeciv",
-  "counter-strike-source", "goldeneye-source", "terraria", "unturned", "rimworld-together", "core-keeper", "vintage-story", "factorio", "necesse", "dont-starve-together", "barotrauma", "trackmania",
+  "battlefield-1942-anthology", "counter-strike-source", "goldeneye-source", "terraria", "unturned", "rimworld-together", "core-keeper", "vintage-story", "factorio", "necesse", "dont-starve-together", "barotrauma", "trackmania",
 ]) {
   RECIPE_SETTING_TYPES[slug] = { ...RECIPE_SETTING_TYPES[slug], maxPlayers: "number" };
 }
@@ -1991,6 +1991,12 @@ export function listGameHostStatus() {
     }
     if ((slug === "medal-of-honor-allied-assault" || slug === "openmohaa") && hasBinary) {
       ready = fs.existsSync(path.join(GAMES_ROOT, "openmohaa", "main", "Pak0.pk3"));
+    }
+    if (slug === "battlefield-1942-anthology" && hasBinary) {
+      const root = path.join(GAMES_ROOT, slug, "mods", "bf1942");
+      ready = fs.existsSync(path.join(root, "archives", "bf1942", "game.rfa")) &&
+        fs.existsSync(path.join(root, "settings", "serversettings.con")) &&
+        fs.existsSync(path.join(root, "settings", "maplist.con"));
     }
     out[slug] = { installed: hasBinary, ready };
   }

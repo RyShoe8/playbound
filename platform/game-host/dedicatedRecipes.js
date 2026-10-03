@@ -90,6 +90,47 @@ export function createDedicatedRecipes(deps) {
   const keepStdinOpen = () => "";
 
   return {
+    "battlefield-1942-anthology": {
+      portStart: 14567,
+      portEnd: 14586,
+      protocol: "udp",
+      binaries: gameBin("battlefield-1942-anthology", ["bf1942_lnxded.static", "bf1942_lnxded.dynamic"]),
+      cwd: () => path.join(GAMES_ROOT, "battlefield-1942-anthology"),
+      spawnEnv: isolatedHomeEnv("battlefield-1942-anthology-servers"),
+      startupReadyTimeoutMs: 60_000,
+      prepareSpawn: async (port, ctx) => {
+        const root = path.join(GAMES_ROOT, "battlefield-1942-anthology");
+        const source = path.join(root, "mods", "bf1942", "settings");
+        if (!fs.existsSync(path.join(source, "serversettings.con")) ||
+            !fs.existsSync(path.join(source, "maplist.con")) ||
+            !fs.existsSync(path.join(root, "mods", "bf1942", "archives"))) {
+          throw new Error("Battlefield 1942 dedicated server files are incomplete");
+        }
+        const overlay = serverDir("battlefield-1942-anthology-servers", ctx);
+        const settings = path.join(overlay, "mods", "bf1942", "settings");
+        if (!fs.existsSync(settings)) fs.cpSync(source, settings, { recursive: true });
+        fs.mkdirSync(path.join(overlay, "logs"), { recursive: true, mode: 0o700 });
+        const config = path.join(settings, "serversettings.con");
+        const original = fs.readFileSync(config, "utf8");
+        const values = {
+          "game.serverName": `"${serverName(ctx, "PlayBound Dedicated")}"`,
+          "game.serverDedicated": "1",
+          // Direct-IP joins work without publishing to the defunct GameSpy master.
+          "game.serverInternet": "0",
+          "game.serverIP": "0.0.0.0",
+          "game.serverPort": String(port),
+          "game.serverMaxPlayers": String(Math.min(64, managedPlayerLimit(ctx))),
+          "game.serverPassword": "\"\"",
+          "game.gameSpyLANPort": "0",
+          "game.gameSpyPort": "0",
+          "game.ASEPort": "0",
+          "game.serverPunkBuster": "0",
+        };
+        const lines = original.split(/\r?\n/).filter((line) => !Object.keys(values).some((key) => line.startsWith(`${key} `)));
+        fs.writeFileSync(config, `${lines.join("\n").trimEnd()}\n${Object.entries(values).map(([key, value]) => `${key} ${value}`).join("\n")}\n`, { mode: 0o600 });
+      },
+      args: (_port, ctx) => ["+overlayPath", serverDir("battlefield-1942-anthology-servers", ctx), "+statusMonitor", "1"],
+    },
     "goldeneye-source": {
       portStart: 27120,
       portEnd: 27139,
