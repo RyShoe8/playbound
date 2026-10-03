@@ -12,29 +12,34 @@ import {
 } from "./shared.js";
 import { itemSupportsController } from "./controllerTag.js";
 
-/** Mirrors CardCategoryTags: genres then tags, deduped, capped. */
-function categoryChipsHtml(item, { extra = [], max = 4, controller = false } = {}) {
-  const seen = new Set();
-  const chips = [];
-  // Listed first and outside `max`, so a crowded card never drops it.
-  if (controller) {
-    seen.add("controller");
-    chips.push("Controller");
-  }
-  const limit = chips.length + max;
-  for (const raw of [...(item.genres || []), ...(item.tags || []), ...extra]) {
-    const label = String(raw || "").trim();
-    if (!label) continue;
-    const key = label.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    chips.push(label);
-    if (chips.length >= limit) break;
-  }
-  if (!chips.length) return "";
-  return `<div class="card-tags">${chips
-    .map((c) => `<span class="chip">${escapeHtml(c)}</span>`)
-    .join("")}</div>`;
+/** Matches the web card's separate Genre and Features rows. */
+function categoryChipsHtml(item, { max = 3, controller = false } = {}) {
+  const genres = [...new Set((item.genres || []).map((value) => String(value).trim()).filter(Boolean))].slice(0, max);
+  const source = [...(item.features || []), ...(item.tags || [])].map((value) => String(value).trim());
+  const has = (pattern) => source.some((value) => pattern.test(value));
+  const features = [
+    controller && "Controller",
+    has(/^(multiplayer|online multiplayer|online co-op|dedicated servers|matchmaking|mmo|mmorpg|pvp|cross-play|crossplay)$/i) && "Online Multiplayer",
+    has(/^(couch co-op|split-screen co-op|local co-op|local multiplayer|hotseat)$/i) && "Couch Co-Op",
+    has(/^(mod support|mods|modding|workshop)$/i) && "Mods",
+    has(/^(co-op|coop|cooperative|online co-op|local co-op|couch co-op|split-screen co-op)$/i) && "Co-Op",
+  ].filter(Boolean);
+  const row = (label, values) => values.length
+    ? `<div class="card-category-row"><span class="card-category-label">${label}</span>${values.map((value) => `<span class="chip">${escapeHtml(value)}</span>`).join("")}</div>`
+    : "";
+  return genres.length || features.length
+    ? `<div class="card-category-tags">${row("Genre", genres)}${row("Features", features)}</div>`
+    : "";
+}
+
+/** Mirrors the website's online-party gate, excluding local-only play. */
+function supportsOnlineParty(game) {
+  if (game.isMultiplayer === false || game.multiplayer === false) return false;
+  const values = [...(game.features || []), ...(game.tags || [])].map((value) => String(value).trim());
+  if (values.some((value) => /^(multiplayer|online multiplayer|online co-op|dedicated servers|matchmaking|mmo|mmorpg|pvp|cross-play|crossplay|lan support|lan)$/i.test(value)) || game.launchMethods?.includes("server")) return true;
+  const hasCoop = values.some((value) => /^(co-op|coop|cooperative)$/i.test(value));
+  const localOnly = values.some((value) => /^(couch co-op|split-screen co-op|local co-op|local multiplayer|hotseat)$/i.test(value));
+  return hasCoop && !localOnly;
 }
 
 /** Renders edition badges below tags if distinct community/remaster editions exist. */
@@ -135,7 +140,7 @@ function attachCardCover(art, coverUrl) {
  */
 export function createGameCard(game, playingNow) {
   const card = document.createElement("div");
-  card.className = "game-card";
+  card.className = "game-card catalog-game-card";
 
   const bgGrad =
     Array.isArray(game.art) && game.art.length >= 2
@@ -194,6 +199,41 @@ export function createGameCard(game, playingNow) {
     }
   `;
   card.appendChild(footer);
+
+  if (supportsOnlineParty(game)) {
+    const partyButton = document.createElement("button");
+    partyButton.type = "button";
+    partyButton.className = "catalog-party-button";
+    partyButton.textContent = state._activeParty?.status !== "ended" && state._activeParty ? "View Party" : "Start Party";
+    partyButton.addEventListener("click", async (event) => {
+      event.stopPropagation();
+      if (state._activeParty && state._activeParty.status !== "ended") {
+        api.navigateTo("friends");
+        return;
+      }
+      if (!state.accountState?.connected) {
+        api.navigateTo("friends");
+        return;
+      }
+      partyButton.disabled = true;
+      partyButton.textContent = "Starting…";
+      try {
+        const result = await window.playbound.createParty?.({ gameSlug: game.slug, visibility: "friends", maxSize: 8 });
+        if (result?.error || !result?.party) throw new Error(result?.error || "Couldn't create party.");
+        if (result.needsDiscordLink) window.playbound.linkDiscord?.();
+        else if (!result.inPartyVoice && !result.moved && (result.inviteUrl || result.party?.discord?.inviteUrl)) {
+          window.playbound.openDiscordInvite?.(result.inviteUrl || result.party.discord.inviteUrl);
+        }
+        api.navigateTo("friends");
+      } catch (error) {
+        partyButton.title = error?.message || String(error);
+        partyButton.textContent = "Try Again";
+      } finally {
+        partyButton.disabled = false;
+      }
+    });
+    card.appendChild(partyButton);
+  }
 
   card.addEventListener(
     "pointerenter",
