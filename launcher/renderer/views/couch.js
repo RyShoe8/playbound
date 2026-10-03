@@ -517,6 +517,9 @@ async function answerOffer(controllerId, remoteSdp, session) {
         ];
   pc = new RTCPeerConnection({ iceServers });
   peers.set(controllerId, pc);
+  pc.onicecandidateerror = (ev) => {
+    console.warn(`[couch] ICE candidate error ${ev.errorCode || ""} ${ev.url || ""} ${ev.errorText || ""}`);
+  };
   pc.onconnectionstatechange = () => {
     if (pc.connectionState === "connected") reportOps("connected", { phase: "webrtc", code: "PEER_CONNECTED", transport: "webrtc", connectionState: "connected" });
     if (pc.connectionState === "failed") reportOps("failed", { phase: "webrtc", code: "PEER_CONNECTION_FAILED", message: "Host peer connection failed", transport: "webrtc", connectionState: "failed", iceState: pc.iceConnectionState });
@@ -681,6 +684,18 @@ function startFrameWatchdog(pc, controllerId) {
     }
     if (pc.connectionState !== "connected") {
       console.warn(`[couch] ${controllerId} WebRTC not connected after ${attempts * 3}s: conn=${pc.connectionState} ice=${pc.iceConnectionState} gathering=${pc.iceGatheringState} signaling=${pc.signalingState}`);
+      try {
+        const cands = {};
+        const pairs = {};
+        (await pc.getStats()).forEach((r) => {
+          if (r.type === "local-candidate") cands[`local:${r.candidateType}`] = (cands[`local:${r.candidateType}`] || 0) + 1;
+          if (r.type === "remote-candidate") cands[`remote:${r.candidateType}`] = (cands[`remote:${r.candidateType}`] || 0) + 1;
+          if (r.type === "candidate-pair") pairs[r.state] = (pairs[r.state] || 0) + 1;
+        });
+        console.warn(`[couch] ${controllerId} candidates=${JSON.stringify(cands)} pairs=${JSON.stringify(pairs)}`);
+      } catch {
+        /* diagnostic only */
+      }
       return;
     }
     try {

@@ -25,6 +25,8 @@ export function gameProbePatchFields(
   if (!isDirect && !isHeal) return set;
 
   if (result.patch.url) set["launcherInstall.url"] = result.patch.url;
+  if (result.patch.urlMac) set["launcherInstall.urlMac"] = result.patch.urlMac;
+  if (result.patch.urlLinux) set["launcherInstall.urlLinux"] = result.patch.urlLinux;
   if (result.patch.fileName) set["launcherInstall.fileName"] = result.patch.fileName;
   if (result.patch.versionLabel) set["launcherInstall.versionLabel"] = result.patch.versionLabel;
   if (result.patch.kind && isHeal) set["launcherInstall.kind"] = result.patch.kind;

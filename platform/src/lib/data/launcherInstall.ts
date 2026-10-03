@@ -1396,12 +1396,12 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
   bombsquad: {
     enabled: true,
     kind: "direct-zip",
-    url: "https://files.ballistica.net/bombsquad/builds/BombSquad_Windows_1.8.0a116.zip",
-    urlMac: "https://files.ballistica.net/bombsquad/builds/BombSquad_Mac_1.8.0a116.dmg",
-    urlLinux: "https://files.ballistica.net/bombsquad/builds/BombSquad_Linux_x86_64_1.8.0a116.tar.gz",
+    url: "https://files.ballistica.net/bombsquad/builds/BombSquad_Windows_1.8.0b3.zip",
+    urlMac: "https://files.ballistica.net/bombsquad/builds/BombSquad_Mac_1.8.0b3.dmg",
+    urlLinux: "https://files.ballistica.net/bombsquad/builds/BombSquad_Linux_x86_64_1.8.0b3.tar.gz",
     fileName: "BombSquad_Windows.zip",
     exeHint: "BombSquad",
-    versionLabel: "1.8.0a116",
+    versionLabel: "1.8.0b3",
     note: "Official BombSquad desktop package (Windows zip, Mac DMG, Linux tar.gz) with gamepad and LAN party support.",
   },
   "re-volt-rvgl": {
