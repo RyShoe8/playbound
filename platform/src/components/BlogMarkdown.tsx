@@ -15,7 +15,7 @@ export function BlogMarkdown({ content, className }: { content: string; classNam
       "[&_li]:my-1 [&_blockquote]:border-l-2 [&_blockquote]:border-primary/50 [&_blockquote]:pl-4 [&_blockquote]:italic",
       "[&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-secondary [&_pre]:p-4",
       "[&_code]:rounded [&_code]:bg-secondary [&_code]:px-1",
-      "[&_img]:mx-auto [&_img]:h-auto [&_img]:w-auto [&_img]:max-h-80 [&_img]:max-w-full [&_img]:rounded-xl sm:[&_img]:max-w-[40rem] [&_table]:block [&_table]:overflow-x-auto",
+      "[&_img]:mx-auto [&_img]:h-auto [&_img]:w-auto [&_img]:max-h-[32rem] [&_img]:max-w-full [&_img]:border-0 [&_img]:rounded-xl sm:[&_img]:max-w-[56rem] [&_table]:block [&_table]:overflow-x-auto",
       className
     )}>
       <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}

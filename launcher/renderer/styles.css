@@ -607,6 +607,57 @@ body {
   border-radius: 6px;
 }
 
+.catalog-game-card .card-meta {
+  flex-direction: column;
+  flex: 1;
+  justify-content: space-between;
+}
+
+.card-category-tags {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.card-category-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.card-category-label {
+  margin-right: 2px;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.catalog-game-card .card-category-row .chip {
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 10px;
+}
+
+.catalog-game-card .card-playing {
+  margin: 2px 0 0;
+}
+
+.catalog-party-button {
+  margin: 0 10px 10px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent-primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.catalog-party-button:hover { filter: brightness(1.1); }
+.catalog-party-button:disabled { cursor: wait; opacity: 0.7; }
+
 .card-editions {
   display: flex;
   flex-wrap: wrap;
