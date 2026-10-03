@@ -4,16 +4,11 @@ import { Monitor } from "lucide-react";
 import type { Game } from "@/lib/data/types";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { isGameCompatible } from "@/lib/compatibility/compatibility";
-import { AddToLibraryButton } from "@/components/AddToLibraryButton";
 
 export function GameIncompatibilityBanner({
   game,
-  initiallyInLibrary,
-  signedIn,
 }: {
   game: Game;
-  initiallyInLibrary: boolean;
-  signedIn: boolean;
 }) {
   const { device } = useCompatibilityFilter();
   const compatible = isGameCompatible(game, device.type);
@@ -40,16 +35,10 @@ export function GameIncompatibilityBanner({
           <div>
             <p className="font-bold">{headline}</p>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              You can still save it to your library and install it later.
+              Switch to a compatible device to install or play it.
             </p>
           </div>
         </div>
-        <AddToLibraryButton
-          slug={game.slug}
-          initiallyInLibrary={initiallyInLibrary}
-          signedIn={signedIn}
-          saveForLater
-        />
       </div>
     </div>
   );

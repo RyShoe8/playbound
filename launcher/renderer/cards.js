@@ -11,6 +11,7 @@ import {
   resizedImageUrl,
 } from "./shared.js";
 import { itemSupportsController } from "./controllerTag.js";
+import { catalogGameSupportsOnlineParty } from "./partyGameEligibility.js";
 
 /** Matches the web card's separate Genre and Features rows. */
 function categoryChipsHtml(item, { max = 3, controller = false } = {}) {
@@ -30,16 +31,6 @@ function categoryChipsHtml(item, { max = 3, controller = false } = {}) {
   return genres.length || features.length
     ? `<div class="card-category-tags">${row("Genre", genres)}${row("Features", features)}</div>`
     : "";
-}
-
-/** Mirrors the website's online-party gate, excluding local-only play. */
-function supportsOnlineParty(game) {
-  if (game.isMultiplayer === false || game.multiplayer === false) return false;
-  const values = [...(game.features || []), ...(game.tags || [])].map((value) => String(value).trim());
-  if (values.some((value) => /^(multiplayer|online multiplayer|online co-op|dedicated servers|matchmaking|mmo|mmorpg|pvp|cross-play|crossplay|lan support|lan)$/i.test(value)) || game.launchMethods?.includes("server")) return true;
-  const hasCoop = values.some((value) => /^(co-op|coop|cooperative)$/i.test(value));
-  const localOnly = values.some((value) => /^(couch co-op|split-screen co-op|local co-op|local multiplayer|hotseat)$/i.test(value));
-  return hasCoop && !localOnly;
 }
 
 /** Renders edition badges below tags if distinct community/remaster editions exist. */
@@ -200,7 +191,7 @@ export function createGameCard(game, playingNow) {
   `;
   card.appendChild(footer);
 
-  if (supportsOnlineParty(game)) {
+  if (catalogGameSupportsOnlineParty(game)) {
     const partyButton = document.createElement("button");
     partyButton.type = "button";
     partyButton.className = "catalog-party-button";
