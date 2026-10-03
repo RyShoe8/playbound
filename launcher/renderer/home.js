@@ -721,7 +721,7 @@ async function loadPlayableRows() {
   try {
     const commRes = await (window.playbound.getCommunityServers?.() || window.playbound.getServers?.("community"));
     if (commRes && Array.isArray(commRes.servers)) {
-      communityServers = commRes.servers;
+      communityServers = commRes.servers.filter((s) => !s.sourceType || s.sourceType === "playbound_hosted");
     }
   } catch {
     communityServers = [];
@@ -743,7 +743,10 @@ async function loadPlayableRows() {
     });
     paintLive(commEntries.slice(0, 6));
   } else {
-    paintLive(liveRanked.slice(0, 5));
+    // This row is "hosted by PlayBound". The public server index holds other
+    // people's servers, so falling back to it here mislabelled them with the
+    // PlayBound Hosted badge. No PlayBound servers means no row.
+    paintLive([]);
   }
 
   /* ---- row 01: resume ---- */
@@ -776,7 +779,7 @@ async function loadPlayableRows() {
   paintPeople(openParties, lookingCount, bySlug);
 
   /* ---- row 04: recommendations ---- */
-  const shown = new Set([...liveRanked.slice(0, 5).map((e) => e.slug), resumeSlug]);
+  const shown = new Set([...communityServers.slice(0, 6).map((s) => s.gameSlug), resumeSlug]);
   const pickCandidates = catalog.filter((g) => !shown.has(g.slug)).slice(0, 40);
   const pickSupport = await controllerSupportFor(pickCandidates.map((g) => g.slug));
   const picks = rankPlayableNow(
