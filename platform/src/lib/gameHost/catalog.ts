@@ -342,6 +342,7 @@ export const HOSTABLE_SLUG_ALIASES: Record<string, string> = {
  * Slugs are the catalog slugs — confirm them in /admin before enabling a game.
  */
 export const DEDICATED_ONLY_GAMES: Record<string, HostableGame> = {
+  "battlefield-1942-anthology": { slug: "battlefield-1942-anthology", title: "Battlefield 1942 Anthology", defaultPort: 14567, portEnd: 14586, protocol: "udp" },
   "counter-strike-source": { slug: "counter-strike-source", title: "Counter-Strike: Source", defaultPort: 27060, portEnd: 27070, protocol: "udp" },
   "goldeneye-source": { slug: "goldeneye-source", title: "GoldenEye: Source", defaultPort: 27120, portEnd: 27139, protocol: "udp" },
   terraria: { slug: "terraria", title: "Terraria", defaultPort: 7870, portEnd: 7890, protocol: "tcp" },

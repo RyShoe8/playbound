@@ -763,7 +763,7 @@ export const SKIP_MISSING_PATCH_GAMES: readonly string[] = ["risk-of-rain-2"];
 
 /** Append only; do not replace these database-only drafts' curated features. */
 export const ADD_GAME_FEATURES: Readonly<Record<string, readonly string[]>> = {
-  "battlefield-1942-anthology": ["Multiplayer", "Mod Support"],
+  "battlefield-1942-anthology": ["Multiplayer", "Mod Support", "Dedicated Servers"],
   "aneurism-iv": ["Multiplayer", "LAN Support"],
   "stardew-valley": ["Multiplayer", "Co-op", "Couch Co-Op", "Split-Screen Co-op", "Controller Support"],
   starbound: ["Multiplayer", "Co-op"],

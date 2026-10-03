@@ -67,6 +67,9 @@ async function main() {
   const scopedFields = fieldsArg
     ? new Set(fieldsArg.slice("--fields=".length).split(",").map((field) => field.trim()).filter(Boolean))
     : null;
+  const featuresOnly = process.argv.includes("--features-only");
+  const singleFeatureArg = process.argv.find((arg) => arg.startsWith("--feature="));
+  const singleFeature = singleFeatureArg?.slice("--feature=".length).trim();
   if (scopedGames && (scopedGames.size === 0 || [...scopedGames].some((slug) => !PATCH_GAME_FIELDS[slug]))) {
     throw new Error("--games must list nonempty, comma-separated slugs already in PATCH_GAME_FIELDS");
   }
@@ -74,6 +77,11 @@ async function main() {
     [...scopedFields].some((field) => !PATCH_GAME_FIELDS[slug].includes(field))))) {
     throw new Error("--fields requires --games and fields allowlisted for every named game");
   }
+  if (featuresOnly && (!scopedGames || scopedFields || !singleFeature ||
+    [...scopedGames].some((slug) => !ADD_GAME_FEATURES[slug]?.includes(singleFeature)))) {
+    throw new Error("--features-only requires --games and one allowlisted --feature, with no --fields");
+  }
+  if (!featuresOnly && singleFeatureArg) throw new Error("--feature requires --features-only");
   const inScope = (slug: string) => !scopedGames || scopedGames.has(slug);
   if (!process.env.MONGODB_URI) {
     if (scopedGames) throw new Error("Scoped catalog wave cannot run: MONGODB_URI is not set");
@@ -104,6 +112,19 @@ async function main() {
   }
 
   const dbConnect = (await import("../src/lib/db")).default;
+  if (featuresOnly) {
+    const CatalogGame = (await import("../src/lib/models/CatalogGame")).default;
+    await dbConnect();
+    for (const slug of scopedGames!) {
+      const result = await CatalogGame.updateOne(
+        { slug },
+        { $addToSet: { features: singleFeature! } }
+      );
+      if (result.matchedCount !== 1) throw new Error(`insert-catalog-wave — feature patch ${slug} matched ${result.matchedCount}, expected 1`);
+      console.log(`add feature ${slug}: ${singleFeature}`);
+    }
+    process.exit(0);
+  }
   const Edition = (await import("../src/lib/models/Edition")).default;
   const CatalogGame = (await import("../src/lib/models/CatalogGame")).default;
   const CatalogMod = (await import("../src/lib/models/CatalogMod")).default;

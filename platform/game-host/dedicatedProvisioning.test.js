@@ -24,6 +24,33 @@ const recipes = createDedicatedRecipes({
 });
 const context = (partyId, maxPlayers = 6) => ({ customerOwned: true, partyId, settings: { maxPlayers }, name: "A & B" });
 
+test("Battlefield 1942 isolates settings and caps players without copying game assets", async () => {
+  const source = path.join(games, "battlefield-1942-anthology", "mods", "bf1942");
+  fs.mkdirSync(path.join(source, "settings"), { recursive: true });
+  fs.mkdirSync(path.join(source, "archives", "bf1942"), { recursive: true });
+  fs.writeFileSync(path.join(source, "archives", "bf1942", "game.rfa"), "shared asset");
+  fs.writeFileSync(path.join(source, "settings", "serversettings.con"), "game.serverPort 14567\ngame.serverMaxPlayers 32\ngame.serverName \"Original\"\n");
+  fs.writeFileSync(path.join(source, "settings", "maplist.con"), "game.addLevel berlin GPM_CQ bf1942\n");
+  const a = context("bf-a", 12);
+  const b = context("bf-b", 4);
+  await recipes["battlefield-1942-anthology"].prepareSpawn(14567, a);
+  await recipes["battlefield-1942-anthology"].prepareSpawn(14568, b);
+  const overlayA = path.join(home, "battlefield-1942-anthology-servers", "pb-bf-a");
+  const overlayB = path.join(home, "battlefield-1942-anthology-servers", "pb-bf-b");
+  const configA = path.join(overlayA, "mods", "bf1942", "settings", "serversettings.con");
+  const configB = path.join(overlayB, "mods", "bf1942", "settings", "serversettings.con");
+  assert.match(fs.readFileSync(configA, "utf8"), /game.serverPort 14567\n/);
+  assert.match(fs.readFileSync(configA, "utf8"), /game.serverMaxPlayers 12\n/);
+  assert.match(fs.readFileSync(configB, "utf8"), /game.serverPort 14568\n/);
+  assert.match(fs.readFileSync(configB, "utf8"), /game.serverMaxPlayers 4\n/);
+  assert.match(fs.readFileSync(configA, "utf8"), /game.serverInternet 0\n/);
+  assert.equal(fs.readFileSync(path.join(source, "settings", "serversettings.con"), "utf8").includes("Original"), true);
+  assert.equal(fs.existsSync(path.join(overlayA, "mods", "bf1942", "archives")), false);
+  assert.deepEqual(recipes["battlefield-1942-anthology"].args(14567, a), ["+overlayPath", overlayA, "+statusMonitor", "1"]);
+  await recipes["battlefield-1942-anthology"].prepareSpawn(14569, a);
+  assert.equal((fs.readFileSync(configA, "utf8").match(/game.serverPort /g) || []).length, 1);
+});
+
 test("GoldenEye: Source isolates its Windows runtime and Wine prefix per server", async () => {
   const source = path.join(games, "goldeneye-source");
   fs.mkdirSync(path.join(source, "gesource"), { recursive: true });

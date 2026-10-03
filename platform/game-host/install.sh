@@ -226,6 +226,14 @@ cp -f "$AGENT_SRC/assets/et-playbound.cfg" "$AGENT_DIR/assets/" 2>/dev/null || t
 cp -f "$AGENT_SRC/assets/hurry-curry-player-limit.patch" "$AGENT_DIR/assets/" 2>/dev/null || true
 chown -R playbound:playbound "$AGENT_DIR"
 
+# Battlefield 1942 is an archived DICE Linux dedicated distribution, not a
+# SteamCMD app. The installer checks a pinned SHA-256 and never replaces a
+# previously installed tree. The recipe remains unavailable if it fails.
+echo "==> Battlefield 1942 dedicated"
+if ! bash "$AGENT_SRC/tools/install-battlefield-1942.sh"; then
+  echo "WARN: Battlefield 1942 server files unavailable; VPS test will show Files missing" >&2
+fi
+
 if [[ -z "$PUBLIC_IP" ]]; then
   PUBLIC_IP="$(curl -4 -fsS --max-time 8 https://ifconfig.me || true)"
 fi
