@@ -68,6 +68,16 @@ export type TelemetryEventMap = {
     gameSlug?: string;
     url?: string;
   } & Extra;
+  /** Manual game-file link selected; completion is not observable off-site. */
+  game_download_clicked: {
+    gameSlug: string;
+    gameTitle?: string;
+    url?: string;
+    platform?: string;
+    source?: string;
+    surface?: string;
+    deliverySource?: "playbound_vps" | "r2" | "public";
+  } & Extra;
   favorite_added: { gameId?: string; gameSlug?: string } & Extra;
   favorite_removed: { gameId?: string; gameSlug?: string } & Extra;
   review_created: { gameId?: string; gameSlug?: string; rating?: number } & Extra;

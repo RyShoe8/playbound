@@ -56,6 +56,8 @@ interface OverviewData {
   publicBandwidthServedGB?: number;
   totalBandwidthServedBytes?: number;
   totalBandwidthServedGB?: number;
+  manualDownloads?: { total: number; playboundVps: number; r2: number; public: number };
+  vpsNetworkTxBytesSinceBoot?: number | null;
   vpsFilesystemUsedGB: number | null;
   vpsFilesystemTotalGB: number | null;
   vpsFilesystemUsedPercent: number | null;
@@ -882,7 +884,7 @@ export function DownloadMirrorsManager() {
                 {formatDataVolume(overview.totalBandwidthServedBytes ?? overview.vpsBandwidthServedBytes ?? 0)}
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                Total lifetime egress across all delivery tiers
+                Logged download volume across all delivery tiers
               </p>
             </div>
 
@@ -906,6 +908,18 @@ export function DownloadMirrorsManager() {
                   {formatDataVolume(overview.publicBandwidthServedBytes ?? 0)}
                 </div>
               </div>
+            </div>
+
+            <div className="space-y-1 border-t border-border/60 pt-3 text-xs text-muted-foreground">
+              <p>
+                <span className="font-semibold text-foreground">Manual game-file links:</span>{" "}
+                {overview.manualDownloads?.total ?? 0} clicks
+                {overview.manualDownloads?.total ? ` · VPS ${overview.manualDownloads.playboundVps} · R2 ${overview.manualDownloads.r2} · External ${overview.manualDownloads.public}` : ""}
+              </p>
+              <p>These clicks do not claim transferred bytes; browsers cannot confirm an external file finished downloading.</p>
+              {overview.vpsNetworkTxBytesSinceBoot != null && (
+                <p>VPS network sent since boot: {formatDataVolume(overview.vpsNetworkTxBytesSinceBoot)} across all VPS services, including files served by this VPS.</p>
+              )}
             </div>
 
             <div className="flex justify-between text-xs text-muted-foreground pt-1">

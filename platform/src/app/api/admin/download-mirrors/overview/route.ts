@@ -4,6 +4,7 @@ import dbConnect from "@/lib/db";
 import Artifact from "@/lib/models/Artifact";
 import MirrorSource from "@/lib/models/MirrorSource";
 import MirrorAttempt from "@/lib/models/MirrorAttempt";
+import TelemetryEvent from "@/lib/models/TelemetryEvent";
 import { getMirrorSettings } from "@/lib/mirrors/cacheManager";
 import { filterCurrentArtifacts } from "@/lib/mirrors/currentArtifacts";
 import { fetchGameHostMetrics } from "@/lib/gameHost/client";
@@ -115,6 +116,20 @@ export async function GET() {
 
     const totalBandwidthServedGB = Number((totalBandwidthServedBytes / (1024 * 1024 * 1024)).toFixed(2));
 
+    // Manual browser links have no completion callback. Keep their clicks
+    // visible beside transfer metrics without inventing transferred bytes.
+    const manualDownloadRows = await TelemetryEvent.aggregate<{ _id: string; count: number }>([
+      { $match: { event: "game_download_clicked" } },
+      { $group: { _id: { $ifNull: ["$properties.deliverySource", "public"] }, count: { $sum: 1 } } },
+    ]);
+    const manualDownloads = { total: 0, playboundVps: 0, r2: 0, public: 0 };
+    for (const row of manualDownloadRows) {
+      manualDownloads.total += row.count;
+      if (row._id === "playbound_vps") manualDownloads.playboundVps += row.count;
+      else if (row._id === "r2") manualDownloads.r2 += row.count;
+      else manualDownloads.public += row.count;
+    }
+
     const metricsResult = await fetchGameHostMetrics();
     const hostStorage = metricsResult.ok
       ? metricsResult.metrics.storage?.find(
@@ -149,6 +164,8 @@ export async function GET() {
         publicBandwidthServedGB,
         totalBandwidthServedBytes,
         totalBandwidthServedGB,
+        manualDownloads,
+        vpsNetworkTxBytesSinceBoot: metricsResult.ok ? metricsResult.metrics.bandwidth?.txBytesTotal ?? null : null,
         vpsFilesystemUsedGB,
         vpsFilesystemTotalGB,
         vpsFilesystemUsedPercent,

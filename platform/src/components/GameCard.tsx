@@ -3,6 +3,7 @@
 import { useLauncherOs } from "@/hooks/useLauncherOs";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Download, Loader2, MonitorPlay, Play } from "lucide-react";
 import type { Game } from "@/lib/data/types";
@@ -38,6 +39,7 @@ import {
 import { isGameCompatible } from "@/lib/compatibility/compatibility";
 import { withOutboundUtm } from "@/lib/utm";
 import { formatEditionChipName, getEditionChips as getDisplayEditionsForGame } from "@/lib/data/editionChips";
+import { GameDownloadChoiceModal } from "@/components/GameDownloadChoiceModal";
 
 function sizeLabel(sizeMB: number) {
   return sizeMB >= 1000 ? `${(sizeMB / 1000).toFixed(1)} GB` : `${sizeMB} MB`;
@@ -68,6 +70,8 @@ export function PlayCta({
   const { device } = useCompatibilityFilter();
   const { track } = useTelemetry();
   const [status, setStatus] = useState<"idle" | "trying" | "downloaded">("idle");
+  const [showDownloadChoice, setShowDownloadChoice] = useState(false);
+  const { status: sessionStatus } = useSession();
   const os = useLauncherOs();
   const isInstalled = Boolean(installed || (game as { installed?: boolean }).installed);
   const paid = directPurchaseRequired(game.access);
@@ -152,6 +156,15 @@ export function PlayCta({
   function handleInstall(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
+    if (!isInstalled && !paid && sessionStatus !== "authenticated") {
+      setShowDownloadChoice(true);
+      return;
+    }
+    openLauncher();
+  }
+
+  function openLauncher() {
+    setShowDownloadChoice(false);
     void track(isInstalled ? "play_clicked" : "install_clicked", {
       gameSlug: game.slug,
       source: "play_cta",
@@ -172,35 +185,45 @@ export function PlayCta({
   }
 
   return (
-    <button
-      type="button"
-      onClick={handleInstall}
-      disabled={status === "trying"}
-      className={className}
-      title={isInstalled ? `Play ${game.title}` : `Install ${game.title} with PlayBound Launcher`}
-    >
-      {status === "trying" ? (
-        <>
-          <Loader2 className={cn(iconClass, "animate-spin")} />
-          Opening…
-        </>
-      ) : status === "downloaded" ? (
-        <>
-          <Download className={iconClass} />
-          Downloading {osLabel}…
-        </>
-      ) : isInstalled ? (
-        <>
-          <Play className={cn(iconClass, "fill-current")} />
-          Play
-        </>
-      ) : (
-        <>
-          <Download className={iconClass} />
-          {installLabel}
-        </>
-      )}
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={handleInstall}
+        disabled={status === "trying"}
+        className={className}
+        title={isInstalled ? `Play ${game.title}` : paid ? `Install ${game.title} with PlayBound Launcher` : `Get ${game.title} free`}
+      >
+        {status === "trying" ? (
+          <>
+            <Loader2 className={cn(iconClass, "animate-spin")} />
+            Opening…
+          </>
+        ) : status === "downloaded" ? (
+          <>
+            <Download className={iconClass} />
+            Downloading {osLabel}…
+          </>
+        ) : isInstalled ? (
+          <>
+            <Play className={cn(iconClass, "fill-current")} />
+            Play
+          </>
+        ) : (
+          <>
+            <Download className={iconClass} />
+            {installLabel}
+          </>
+        )}
+      </button>
+      {showDownloadChoice && <GameDownloadChoiceModal
+        slug={game.slug}
+        title={game.title}
+        os={os}
+        website={game.website}
+        onLauncher={openLauncher}
+        onClose={() => setShowDownloadChoice(false)}
+      />}
+    </>
   );
 }
 
