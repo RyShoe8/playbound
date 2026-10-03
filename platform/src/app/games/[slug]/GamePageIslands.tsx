@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { toHomeCardGame } from "@/lib/discoverListing";
-import { headers } from "next/headers";
 import { getServerSession } from "next-auth/next";
-import { Play } from "lucide-react";
+import { Play, Users } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import DiscussionTopic from "@/lib/models/DiscussionTopic";
@@ -11,7 +10,6 @@ import LibraryEntry from "@/lib/models/LibraryEntry";
 import { collectionsFeaturing, listGames } from "@/lib/catalog";
 import { getDiscoveryContext } from "@/lib/access/discover";
 import { filterGamesByMode } from "@/lib/access/discoveryMode";
-import { platformFromUserAgent, visiblePlatformsFor } from "@/lib/libraryPlatform";
 import { launcherPlayUrl } from "@/lib/launcher";
 import { getDiscordPresence } from "@/lib/discordPresence";
 import {
@@ -21,7 +19,6 @@ import {
 } from "@/lib/liveActivity";
 import { gameScopedUgcFilter } from "@/lib/ugcTarget";
 import { issueForGame } from "@/lib/weekly";
-import { AdaptiveAddToLibraryButton } from "@/components/AdaptiveAddToLibraryButton";
 import { LocateGameButton } from "@/components/LocateGameButton";
 import { PlayCta } from "@/components/GameCard";
 import {
@@ -42,6 +39,20 @@ import { GameIncompatibilityBanner } from "@/components/GameIncompatibilityBanne
 import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import type { Game } from "@/lib/data/types";
 import type { Edition } from "@/lib/editionTypes";
+import { supportsOnlineMultiplayer } from "@/lib/multiplayer/support";
+
+function GameHeroPartyButton({ game }: { game: Game }) {
+  if (!supportsOnlineMultiplayer(game)) return null;
+  return (
+    <Link
+      href={`/friends?game=${encodeURIComponent(game.slug)}`}
+      className="inline-flex h-12 items-center gap-2 rounded-full bg-primary px-7 text-base font-bold text-primary-foreground transition hover:opacity-90"
+    >
+      <Users className="size-5" aria-hidden />
+      Start Party
+    </Link>
+  );
+}
 
 async function safeQuery<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   try {
@@ -106,7 +117,7 @@ export async function GameHeroActions({
   game: Game;
   choosable: boolean;
 }) {
-  const { signedIn, initiallyInLibrary } = await resolveInitiallyInLibrary(game.slug);
+  const { initiallyInLibrary } = await resolveInitiallyInLibrary(game.slug);
   const buy = bestPurchase(game.access);
   const isBaseGameReq = isBaseGameRequirement(game.access);
   const isCommercialPurchaseOnly = directPurchaseRequired(game.access);
@@ -137,12 +148,7 @@ export async function GameHeroActions({
         <GetGameStoreButtons game={game} size="lg" affiliates={affiliates} />
       ) : null}
       {!initiallyInLibrary && <LocateGameButton slug={game.slug} size="lg" />}
-      <AdaptiveAddToLibraryButton
-        game={game}
-        initiallyInLibrary={initiallyInLibrary}
-        signedIn={signedIn}
-        size="lg"
-      />
+      <GameHeroPartyButton game={game} />
     </>
   );
 }
@@ -172,25 +178,13 @@ export function GameHeroActionsFallback({
       )}
       {/* Omit Get Game here — GameHeroActions hides it once library membership resolves. */}
       <LocateGameButton slug={game.slug} size="lg" />
-      <AdaptiveAddToLibraryButton
-        game={game}
-        initiallyInLibrary={false}
-        signedIn={false}
-        size="lg"
-      />
+      <GameHeroPartyButton game={game} />
     </>
   );
 }
 
 export async function GameIncompatibilityBannerAsync({ game }: { game: Game }) {
-  const { signedIn, initiallyInLibrary } = await resolveInitiallyInLibrary(game.slug);
-  return (
-    <GameIncompatibilityBanner
-      game={game}
-      initiallyInLibrary={initiallyInLibrary}
-      signedIn={signedIn}
-    />
-  );
+  return <GameIncompatibilityBanner game={game} />;
 }
 
 export async function GameTabCount({

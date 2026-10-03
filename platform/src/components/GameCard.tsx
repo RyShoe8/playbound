@@ -304,7 +304,7 @@ export function GameCard({
        */
       data-mobile-compat={isGameCompatible(game, "mobile") ? "true" : "false"}
       className={cn(
-        "group flex h-full w-[250px] shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-border bg-card transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.7)] sm:w-[276px]",
+        "group flex h-full w-[270px] shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-border bg-card transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.7)] sm:w-[292px]",
         className
       )}
     >
