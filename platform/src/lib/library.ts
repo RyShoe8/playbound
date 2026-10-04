@@ -21,11 +21,14 @@ export function mintLauncherHandoffCode(): string {
   return crypto.randomBytes(24).toString("base64url");
 }
 
-/** Mint an independent launcher token without signing out the user's other PCs. */
-export async function issueLauncherTokenForUser(userId: string): Promise<string> {
+/**
+ * Mint an independent launcher token without signing out the user's other PCs.
+ * `client` labels who holds it ("game:hyperdisc-arena"); unset for the launcher.
+ */
+export async function issueLauncherTokenForUser(userId: string, client?: string): Promise<string> {
   await dbConnect();
   const token = mintLauncherToken();
-  await LauncherCredential.create({ userId, tokenHash: hashLauncherToken(token) });
+  await LauncherCredential.create({ userId, tokenHash: hashLauncherToken(token), ...(client ? { client } : {}) });
   return token;
 }
 

@@ -29,6 +29,12 @@ const PlayInviteSchema = new Schema(
       default: null,
       index: true,
     },
+    /**
+     * A PlayBound Connect room code for games that join in-game
+     * (playbound-native): accepting the invite takes you straight into the
+     * sender's room.
+     */
+    connectCode: { type: String, default: null },
     status: {
       type: String,
       enum: PLAY_INVITE_STATUSES,
@@ -54,6 +60,7 @@ export type PlayInviteDoc = {
   editionSlug?: string | null;
   modSlug?: string | null;
   partyId?: Types.ObjectId | null;
+  connectCode?: string | null;
   status: string;
   expiresAt: Date;
   respondedAt?: Date | null;
