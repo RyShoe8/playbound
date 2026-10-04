@@ -27,7 +27,7 @@ export function MixtapeEditor() {
     } catch (err) { setMessage(err instanceof Error ? err.message : "Save failed"); } finally { setBusy(false); }
   }
   async function fileUpload(file: File | undefined, key: "audioUrl" | "coverUrl") {
-    if (!file || busy) return; setBusy(true); setMessage("Checking file…");
+    if (!file || busy) return; setBusy(true); setMessage("Checking fileâ€¦");
     let name = "";
     try {
       const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
@@ -44,7 +44,7 @@ export function MixtapeEditor() {
       };
       let result = await call("archive");
       for (let i = 0; i < 180 && result.state !== "ready"; i++) {
-        setMessage(result.message || "Verifying upload…");
+        setMessage(result.message || "Verifying uploadâ€¦");
         await new Promise(resolve => window.setTimeout(resolve, 2000));
         result = await call("status");
       }
@@ -64,7 +64,7 @@ export function MixtapeEditor() {
         const response = await fetch("/api/admin/mixtape/upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "status", name: pendingUpload.name }) });
         const result = await response.json(); if (!response.ok) throw new Error(result.error);
         if (result.state === "ready") { setForm(prev => ({ ...prev, [pendingUpload.key]: result.url })); setPendingUpload(null); setMessage("Uploaded and verified in R2; save the tape"); ready = true; break; }
-        setMessage(result.message || "Verifying upload…");
+        setMessage(result.message || "Verifying uploadâ€¦");
         await new Promise(resolve => window.setTimeout(resolve, 2000));
       }
       if (!ready) throw new Error("Upload is still processing. Retry completion below.");
