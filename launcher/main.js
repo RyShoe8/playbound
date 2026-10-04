@@ -9878,6 +9878,16 @@ async function openCouchGameViewWindow(rawUrl) {
       }
     });
     couchGameViewWin.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+    // The window has no menu, so Chromium's DevTools shortcuts never fire —
+    // which left the viewer side of a stuck stream with no console to read.
+    couchGameViewWin.webContents.on("before-input-event", (event, input) => {
+      if (input.type !== "keyDown") return;
+      const key = String(input.key || "").toLowerCase();
+      if (key === "f12" || (input.control && input.shift && key === "i")) {
+        event.preventDefault();
+        couchGameViewWin?.webContents.toggleDevTools();
+      }
+    });
     couchGameViewWin.webContents.on("render-process-gone", (_e, details) => {
       console.warn("couchGameViewWin render-process-gone:", details?.reason, details?.exitCode);
       reportCouchOps("failed", { phase: "stream_window", code: "RENDERER_CRASHED", message: String(details?.reason || "Renderer exited"), role: "client" }, activeRemotePlayClientRequestId ? "remote_play" : "couch");
