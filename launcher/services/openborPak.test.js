@@ -77,9 +77,19 @@ test("rewrites DualSense template that left special on keyboard F", () => {
   assert.ok(next);
   assert.equal(next.readInt32LE(P1_KEYS_OFFSET + 4 * 4), 602, "attack btn2");
   assert.equal(next.readInt32LE(P1_KEYS_OFFSET + 8 * 4), 603, "jump btn3");
-  assert.equal(next.readInt32LE(P1_KEYS_OFFSET + 9 * 4), 601, "special btn1");
+  assert.equal(next.readInt32LE(P1_KEYS_OFFSET + 9 * 4), 605, "special btn5");
   assert.equal(next.readInt32LE(P1_KEYS_OFFSET + 10 * 4), 610, "start btn10");
   assert.equal(next.readInt32LE(P1_KEYS_OFFSET + 11 * 4), 614, "screenshot btn14");
+});
+
+test("upgrades the first DualSense template to the play-tested layout", () => {
+  const buf = Buffer.alloc(348, 0);
+  buf.writeUInt32LE(OPENBOR_CFG_VERSION, 0);
+  [628, 630, 631, 629, 602, 600, 122, 120, 603, 601, 610, 614].forEach((k, i) => buf.writeInt32LE(k, P1_KEYS_OFFSET + i * 4));
+  const next = applyOpenBorP1Keys(buf, { family: "dualsense" });
+  assert.ok(next);
+  assert.deepEqual(readPlayerKeys(next, 0), [618, 619, 616, 617, 602, 601, 600, 604, 603, 605, 610, 614]);
+  assert.equal(applyOpenBorP1Keys(next, { family: "dualsense" }), null, "second apply must no-op");
 });
 
 test("moves Xbox pads off the DualSense hat indices they do not have", () => {

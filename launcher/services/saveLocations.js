@@ -18,6 +18,20 @@
 const path = require("path");
 const fs = require("fs");
 
+/** The first of `rels` under `root` that exists, else the first one (it will be created on first save). */
+function firstExistingDir(root, rels) {
+  if (!root) return null;
+  for (const rel of rels) {
+    const dir = path.join(root, rel);
+    try {
+      if (fs.statSync(dir).isDirectory()) return dir;
+    } catch {
+      /* try the next layout */
+    }
+  }
+  return path.join(root, rels[0]);
+}
+
 /**
  * @typedef {object} SaveLocation
  * @property {(ctx: SaveContext) => string | null} resolve  Absolute save dir, or null when unsupported here.
@@ -144,6 +158,23 @@ const LOCATIONS = {
   "shattered-pixel-dungeon": {
     verified: "documented — libGDX user directory used by the desktop build",
     resolve: (c) => path.join(c.home, ".shatteredpixel", "shattered-pixel-dungeon"),
+  },
+  /*
+   * Games that keep settings (window mode, pad bindings) inside their own
+   * install folder, so a reinstall wiped them. Folders located on real
+   * installs on 2026-10-04; nested under the archive's own top folder.
+   */
+  "streets-of-rage-remake": {
+    verified: "located on a real install 2026-10-04 — savegame.sor holds settings and progress",
+    resolve: (c) => firstExistingDir(c.installDir, ["StreetOfRageRemakev5/SORRv5/savegame", "SORRv5/savegame", "savegame"]),
+  },
+  "tmnt-rescue-palooza": {
+    verified: "located on a real install 2026-10-04 — OpenBOR Saves/*.cfg (display, pad bindings) and progress",
+    resolve: (c) => firstExistingDir(c.installDir, ["TMNT Rescue-Palooza 1.15/Saves", "Saves"]),
+  },
+  "x-men-arcade-remake": {
+    verified: "located on a real install 2026-10-04 — OpenBOR Saves/*.cfg and *.hi",
+    resolve: (c) => firstExistingDir(c.installDir, ["XMArcade/Saves", "Saves"]),
   },
   holocure: {
     verified: "documented — GameMaker local app data directory",

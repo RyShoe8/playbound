@@ -120,6 +120,12 @@ module.exports = {
       filter: ["**/*"],
     },
     {
+      // First-run settings some games need (Streets of Rage Remake).
+      from: "resources/game-defaults",
+      to: "game-defaults",
+      filter: ["**/*"],
+    },
+    {
       from: "resources/dgvoodoo-ms-x86",
       to: "dgvoodoo-ms-x86",
       filter: ["**/*"],
