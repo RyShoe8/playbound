@@ -1,6 +1,6 @@
 import { connection } from "next/server";
-import { MixtapeEditor } from "@/components/admin/MixtapeEditor";
+import { redirect } from "next/navigation";
 export default async function Page() {
   await connection();
-  return <MixtapeEditor />;
+  redirect("/admin/pb-games/hyperdisc/mixtapes");
 }
