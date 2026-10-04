@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { clearMyHardwareProfile, getMyHardwareProfile } from "@/lib/hardware/clientProfile";
 import { useTelemetry } from "@/lib/telemetry";
 import { CheckCompatibilityCta } from "@/components/hardware/CheckCompatibilityCta";
 
@@ -50,14 +51,9 @@ export function HardwareProfileCard() {
     let cancelled = false;
     void (async () => {
       try {
-        const res = await fetch("/api/hardware/profile");
+        const res = await getMyHardwareProfile();
         if (cancelled) return;
-        if (res.status === 401) {
-          setProfile(null);
-          return;
-        }
-        const data = await res.json();
-        if (!cancelled) setProfile(data.profile ?? null);
+        setProfile((res.profile as ProfileView | null) ?? null);
       } catch {
         if (!cancelled) setProfile(null);
       }
@@ -71,7 +67,14 @@ export function HardwareProfileCard() {
     setBusy(true);
     setMsg("");
     try {
-      const res = await fetch("/api/hardware/profile", { method: "DELETE" });
+      // Delete the device this card is showing — reads fall back to the
+      // account's latest PC, so deleting a fixed row could leave it visible.
+      const deviceId = (profile as { deviceId?: string } | null | undefined)?.deviceId;
+      const res = await fetch(
+        `/api/hardware/profile${deviceId ? `?deviceId=${encodeURIComponent(deviceId)}` : ""}`,
+        { method: "DELETE" }
+      );
+      clearMyHardwareProfile();
       if (!res.ok) {
         setMsg("Couldn’t delete hardware profile.");
         return;

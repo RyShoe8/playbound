@@ -89,3 +89,22 @@ UserHardwareProfileSchema.index({ userId: 1, deviceId: 1 }, { unique: true });
 const UserHardwareProfile =
   models.UserHardwareProfile || model("UserHardwareProfile", UserHardwareProfileSchema);
 export default UserHardwareProfile;
+
+/**
+ * The profile to judge "will this run on your PC" against.
+ *
+ * Launchers store their profile under their own device id, but every reader
+ * (the launcher's game page, the website's game page, the Discover hardware
+ * filter, the profile card) asked for PRIMARY_DEVICE_ID — a row only
+ * pre-Remote launchers ever wrote. So a fresh sync was invisible to the check
+ * and the panel kept saying "set up your hardware profile", or it graded an
+ * old primary row instead. The exact device wins when it has a row; otherwise
+ * the account's most recently synced PC does.
+ */
+export async function findHardwareProfileForUser(userId: unknown, deviceId?: string | null) {
+  if (deviceId) {
+    const exact = await UserHardwareProfile.findOne({ userId, deviceId }).lean();
+    if (exact) return exact;
+  }
+  return UserHardwareProfile.findOne({ userId }).sort({ collectedAt: -1, updatedAt: -1 }).lean();
+}

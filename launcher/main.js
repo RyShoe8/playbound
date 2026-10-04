@@ -56,6 +56,7 @@ const { steamAppState, steamRuntimeForLaunch } = require("./services/steamPrereq
 const { createSaveData } = require("./services/SaveData");
 const saveLocations = require("./services/saveLocations");
 const controllerProfiles = require("./services/controllerProfiles");
+const openborCfg = require("./services/openborCfg");
 const gameControllerConfig = require("./services/gameControllerConfig");
 const deviceControllerStorage = require("./services/deviceControllerStorage");
 const openborPak = require("./services/openborPak");
@@ -1013,7 +1014,7 @@ async function connectWithToken(token) {
   // Admins get testing titles once the bearer is present.
   void refreshRemoteCatalog();
   void pullCompatibilityPreference();
-  void syncHardwareProfile({ quiet: true });
+  void syncHardwareProfile({ quiet: true, account: check.email || check.username || null });
   startLauncherPresenceLoop();
   startRemotePlayLoop();
   return {
@@ -3832,8 +3833,10 @@ async function applyControllerConfig(slug, installDir, opts = {}) {
     console.log(`[controller] restoring saved ${deviceId} config for ${slug}`);
     await deviceControllerStorage.restoreDeviceConfig(userDataPath, slug, deviceId, configPath, binary);
     deviceControllerStorage.recordActiveDevice(slug, deviceId, configPath, binary);
-    // Couch/Connect: a saved cfg may still have P1+P2 on the same joy port.
-    if (binary && (couchHost?.getState?.()?.active || inputMode === "phone")) {
+    // A saved cfg may still have P1+P2 on one joy port (couch) or an outdated
+    // PlayBound template; applyProfile only rewrites those, never a remap the
+    // player made themselves.
+    if (binary) {
       try {
         const restored = await fsp.readFile(configPath);
         const separated = gameControllerConfig.applyProfile(slug, restored, profile);
@@ -7354,6 +7357,79 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
   const sdlEnv = gameControllerConfig.sdlControllerEnv(slug);
   if (sdlEnv) {
     launchEnv = { ...(launchEnv || process.env), ...sdlEnv };
+  }
+
+  /*
+   * Streets of Rage Remake starts as a tiny window with the first joystick
+   * Windows lists bound, and keeps both in savegame/savegame.sor beside the
+   * game. With no save there yet, start from a play-tested one (fullscreen,
+   * DualSense bound). An existing save is never touched.
+   */
+  if (slug === "streets-of-rage-remake") {
+    try {
+      const saveDir = path.join(path.dirname(info.exe || ""), "savegame");
+      const target = path.join(saveDir, "savegame.sor");
+      const template = [
+        path.join(process.resourcesPath || "", "game-defaults", slug, "savegame.sor"),
+        path.join(__dirname, "resources", "game-defaults", slug, "savegame.sor"),
+      ].find((p) => p && fs.existsSync(p));
+      if (template && !fs.existsSync(target)) {
+        fs.mkdirSync(saveDir, { recursive: true });
+        fs.copyFileSync(template, target);
+        console.log("[sor] seeded default settings");
+      }
+    } catch (err) {
+      console.warn("[sor] default settings skipped:", err?.message || err);
+    }
+  }
+
+  /*
+   * TMNT Rescue-Palooza (OpenBOR): fullscreen on the primary monitor.
+   * DPI-unaware, Windows scales its fullscreen window past a 150% screen; its
+   * own fullscreen option also picks a stretch mode that spans every monitor.
+   * Both verified on a 4K / 150% desktop.
+   */
+  /*
+   * X-Men Arcade Remake (OpenBOR, 352-byte cfg): ships with P1 unbound and
+   * windowed. Bind the play-tested DualSense layout when P1 has no keys at
+   * all, and turn fullscreen on the first launch only.
+   */
+  if (slug === "x-men-arcade-remake") {
+    try {
+      const cfgPath = path.join(path.dirname(info.exe || ""), "Saves", "XMEN_Arcade.cfg");
+      if (fs.existsSync(cfgPath)) {
+        const settings = loadSettings();
+        const firstRun = !settings.openborFullscreenApplied?.[slug];
+        let buf = fs.readFileSync(cfgPath);
+        buf = openborCfg.bindUnboundP1(buf, openborCfg.XMEN_DUALSENSE_P1_KEYS) || buf;
+        buf = openborCfg.applyOpenBorFullscreen(buf, { firstRun }) || buf;
+        if (firstRun) buf = openborCfg.applyXmenDisplayDefaults(buf) || buf;
+        if (!buf.equals(fs.readFileSync(cfgPath))) fs.writeFileSync(cfgPath, buf);
+        if (firstRun) {
+          saveSettings({ ...loadSettings(), openborFullscreenApplied: { ...(settings.openborFullscreenApplied || {}), [slug]: true } });
+        }
+      }
+    } catch (err) {
+      console.warn("[x-men] default settings skipped:", err?.message || err);
+    }
+  }
+
+  if (slug === "tmnt-rescue-palooza" && process.platform === "win32") {
+    launchEnv = { ...(launchEnv || process.env), __COMPAT_LAYER: "HighDpiAware" };
+    try {
+      const cfgPath = gameControllerConfig.configPathFor(slug, info.dir || path.dirname(info.exe || ""));
+      if (cfgPath) {
+        const settings = loadSettings();
+        const firstRun = !settings.openborFullscreenApplied?.[slug];
+        const next = openborCfg.applyOpenBorFullscreen(fs.readFileSync(cfgPath), { firstRun });
+        if (next) fs.writeFileSync(cfgPath, next);
+        if (firstRun) {
+          saveSettings({ ...loadSettings(), openborFullscreenApplied: { ...(settings.openborFullscreenApplied || {}), [slug]: true } });
+        }
+      }
+    } catch (err) {
+      console.warn("[tmnt] fullscreen setup skipped:", err?.message || err);
+    }
   }
 
   // Repair modded editions before launching. Steam restores the original
@@ -12304,12 +12380,12 @@ ipcMain.handle("block-user", async (_event, targetUserId) => {
   }
 });
 
-async function syncHardwareProfile({ quiet = false, force = false } = {}) {
+async function syncHardwareProfile({ quiet = false, force = false, account = null } = {}) {
   const settings = loadSettings();
   if (!settings.launcherToken) {
     return { error: "Not signed in" };
   }
-  if (!shouldSyncHardwareProfile(settings, force)) {
+  if (!shouldSyncHardwareProfile(settings, force, account)) {
     return { success: true, skipped: true, profile: settings.hardwareProfile || null };
   }
   try {
@@ -12334,7 +12410,10 @@ async function syncHardwareProfile({ quiet = false, force = false } = {}) {
     saveSettings({
       ...loadSettings(),
       hardwareProfileSyncedAt: new Date().toISOString(),
+      ...(account ? { hardwareProfileSyncedFor: account } : {}),
     });
+    // Every cached "will this run" answer was for the previous profile.
+    hardwareCompatCache.clear();
     if (!quiet) {
       notifyAccount({
         connected: true,
@@ -12382,7 +12461,12 @@ async function cachedHardwareProfile({ force = false } = {}) {
 ipcMain.handle("get-hardware-profile", async (_event, opts = {}) => {
   try {
     const settings = loadSettings();
-    const profile = await cachedHardwareProfile({ force: Boolean(opts?.force) });
+    // The stored profile is the answer; scanning is for Resync or a PC that
+    // has never been scanned.
+    const profile =
+      !opts?.force && settings.hardwareProfile
+        ? settings.hardwareProfile
+        : await cachedHardwareProfile({ force: Boolean(opts?.force) });
     return {
       profile,
       cached: settings.hardwareProfile || null,
@@ -12395,13 +12479,33 @@ ipcMain.handle("get-hardware-profile", async (_event, opts = {}) => {
 
 ipcMain.handle("sync-hardware-profile", async () => syncHardwareProfile({ quiet: false, force: true }));
 
+/**
+ * "Will this run" answers, per game/edition/mods, for the current profile.
+ * The answer only changes when the profile or the game's requirements do, so
+ * a page revisit should not cost a server round trip. Cleared on resync;
+ * entries also expire so requirement edits in the CMS show up within a session.
+ */
+const HARDWARE_COMPAT_TTL_MS = 30 * 60 * 1000;
+const hardwareCompatCache = new Map();
+
 ipcMain.handle("get-hardware-compatibility", async (_event, gameSlug, opts = {}) => {
   try {
     const settings = loadSettings();
     if (!settings.launcherToken) {
       return { hasProfile: false, result: null, signedIn: false };
     }
+    const cacheKey = JSON.stringify([
+      String(gameSlug || ""),
+      opts?.editionSlug || "",
+      Array.isArray(opts?.modSlugs) ? opts.modSlugs : [],
+      settings.hardwareProfileSyncedAt || "",
+    ]);
+    const hit = hardwareCompatCache.get(cacheKey);
+    if (hit && Date.now() - hit.at < HARDWARE_COMPAT_TTL_MS) return hit.value;
     const params = new URLSearchParams({ gameSlug: String(gameSlug || "") });
+    // This PC's own profile — the server falls back to the account's most
+    // recent one if this device has never synced.
+    params.set("deviceId", getRemoteDeviceId());
     if (opts?.editionSlug) params.set("editionSlug", String(opts.editionSlug));
     if (Array.isArray(opts?.modSlugs) && opts.modSlugs.length) {
       params.set("modSlugs", opts.modSlugs.join(","));
@@ -12413,11 +12517,14 @@ ipcMain.handle("get-hardware-compatibility", async (_event, gameSlug, opts = {})
     if (!res.ok) {
       return { error: data?.error || `HTTP ${res.status}`, hasProfile: false, result: null };
     }
-    return {
+    const value = {
       hasProfile: Boolean(data?.hasProfile),
       result: data?.result ?? null,
       signedIn: true,
     };
+    // Only a real answer is worth keeping; "no profile yet" should re-ask.
+    if (value.hasProfile) hardwareCompatCache.set(cacheKey, { at: Date.now(), value });
+    return value;
   } catch (err) {
     return { error: err.message, hasProfile: false, result: null };
   }

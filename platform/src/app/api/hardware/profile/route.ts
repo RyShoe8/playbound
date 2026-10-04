@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
-import UserHardwareProfile, { PRIMARY_DEVICE_ID } from "@/lib/models/UserHardwareProfile";
+import UserHardwareProfile, { PRIMARY_DEVICE_ID, findHardwareProfileForUser } from "@/lib/models/UserHardwareProfile";
 import HardwareGpu from "@/lib/models/HardwareGpu";
 import { getFriendsUserId } from "@/lib/friendsAuth";
 import { hardwareProfilePayloadSchema } from "@/lib/hardware/schema";
@@ -84,8 +84,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   await dbConnect();
-  const deviceId = deviceIdFrom(new URL(req.url));
-  const doc = await UserHardwareProfile.findOne({ userId, deviceId }).lean();
+  const doc = await findHardwareProfileForUser(userId, new URL(req.url).searchParams.get("deviceId")?.trim() || null);
   if (!doc) {
     return NextResponse.json({ profile: null });
   }
