@@ -20,6 +20,8 @@ public class WindowHelper {
     public static extern bool SetProcessDpiAwarenessContext(IntPtr value);
     [DllImport("user32.dll")]
     public static extern bool SetProcessDPIAware();
+    [DllImport("user32.dll")]
+    public static extern int GetWindowLong(IntPtr hWnd, int nIndex);
     [StructLayout(LayoutKind.Sequential)]
     public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
     [StructLayout(LayoutKind.Sequential)]
@@ -140,7 +142,7 @@ for ($i = 0; $i -lt $maxAttempts; $i++) {
                 $mi.cbSize = [System.Runtime.InteropServices.Marshal]::SizeOf($mi)
                 [WindowHelper]::GetMonitorInfo($monitor, [ref]$mi) | Out-Null
 
-                Write-Output "MAXIMIZED target=$target pid=$($p.Id) attempt=$i RECT=$($rect.Left),$($rect.Top),$($rect.Right),$($rect.Bottom) MONITOR=$($mi.rcMonitor.Left),$($mi.rcMonitor.Top),$($mi.rcMonitor.Right),$($mi.rcMonitor.Bottom)"
+                Write-Output "MAXIMIZED target=$target pid=$($p.Id) attempt=$i RECT=$($rect.Left),$($rect.Top),$($rect.Right),$($rect.Bottom) MONITOR=$($mi.rcMonitor.Left),$($mi.rcMonitor.Top),$($mi.rcMonitor.Right),$($mi.rcMonitor.Bottom) STYLE=$('{0:X8}' -f [WindowHelper]::GetWindowLong($p.MainWindowHandle, -16))"
                 exit 0
             }
         }
