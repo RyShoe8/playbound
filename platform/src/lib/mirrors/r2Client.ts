@@ -32,14 +32,6 @@ let s3ClientInstance: S3Client | null = null;
 
 export function r2HotcacheConfigured(): boolean { return getR2ClientConfig().isConfigured; }
 
-export async function getR2PresignedUploadUrl(key: string, size: number, contentType: string): Promise<string> {
-  const client = getS3Client();
-  if (!client) throw new Error("R2 hotcache is not configured");
-  return getSignedUrl(client, new PutObjectCommand({ Bucket: getR2ClientConfig().bucket,
-    Key: key, ContentLength: size, ContentType: contentType, StorageClass: "STANDARD",
-  }), { expiresIn: 600 });
-}
-
 function getS3Client(): S3Client | null {
   const config = getR2ClientConfig();
   if (!config.isConfigured) return null;
