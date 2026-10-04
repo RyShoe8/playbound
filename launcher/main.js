@@ -94,6 +94,7 @@ const {
   readTes3mpClientName,
   sanitizePlayerName,
 } = require("./services/gamePlayerName");
+const playboundGameToken = require("./services/playboundGameToken");
 const { reconcileCatalog, startupCatalog } = require("./services/catalogMerge");
 const virtualLan = require("./services/virtualLan");
 const {
@@ -7458,6 +7459,21 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
       out.__launchFailedReported = true;
       throw out;
     }
+  }
+
+  /*
+   * PlayBound-native games (HyperDisc Arena) sign in with the launcher's
+   * account: a game-scoped token goes in PLAYBOUND_TOKEN, so friends and
+   * invites work with no prompt. Signed out or offline, the game just starts
+   * signed out.
+   */
+  if (playboundGameToken.isPlayboundNativeGame(slug)) {
+    const gameToken = await playboundGameToken.fetchGameToken({
+      slug,
+      launcherToken: loadSettings().launcherToken,
+      apiBase: getApiBase(),
+    });
+    launchEnv = playboundGameToken.withGameToken(launchEnv, gameToken);
   }
 
   let spawnOpts = { env: launchEnv };
