@@ -40,6 +40,9 @@ export default function SignupPage() {
   const fromCta = params.get("from") || "";
   const requestedNext = params.get("next") || "";
   const partyNext = /^\/party\/[0-9a-f]{24}$/i.test(requestedNext) || /^\/friends\?game=[a-z0-9-]+$/i.test(requestedNext)
+    // A game's sign-in code page (/link?code=ABCD-EFGH), so a new account
+    // comes back to approve the code the game is showing.
+    || /^\/link(\?code=[A-Z0-9-]{8,12})?$/i.test(requestedNext)
     ? requestedNext
     : null;
   /*

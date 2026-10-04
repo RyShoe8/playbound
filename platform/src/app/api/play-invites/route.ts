@@ -25,6 +25,8 @@ export async function POST(req: Request) {
       gameSlug?: string;
       editionSlug?: string | null;
       modSlug?: string | null;
+      /** Connect room code, for games that join in-game. */
+      connectCode?: string | null;
     };
     const gameSlug = String(body.gameSlug || "").trim();
     if (!gameSlug) return NextResponse.json({ error: "gameSlug required" }, { status: 400 });
@@ -38,6 +40,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "recipient required" }, { status: 400 });
     }
 
+    const connectCode =
+      typeof body.connectCode === "string" && /^[A-Z0-9-]{4,16}$/i.test(body.connectCode.trim())
+        ? body.connectCode.trim().toUpperCase()
+        : null;
+
     const results = [];
     for (const recipientId of recipients.slice(0, 20)) {
       const result = await sendPlayInvite({
@@ -46,6 +53,7 @@ export async function POST(req: Request) {
         gameSlug,
         editionSlug: body.editionSlug,
         modSlug: body.modSlug,
+        connectCode,
       });
       results.push({ recipientId, ...result });
     }

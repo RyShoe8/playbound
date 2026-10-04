@@ -2582,6 +2582,19 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes:
       "Official community server revival infrastructure. Connect handles squad party launch and presence while dedicated servers run high-mobility 6v6 mech battles.",
   },
+  // The first game on Connect's native transport: rollback netcode over a
+  // WebRTC data channel, rooms and signaling from /api/multiplayer/.../sessions,
+  // STUN/TURN from the VPS. Sign-in, friends and invites happen in-game
+  // through /api/game-auth/* and /api/play-invites (with connectCode).
+  "hyperdisc-arena": {
+    gameSlug: "hyperdisc-arena",
+    title: "HyperDisc Arena",
+    tier: "tier1_improved",
+    adapterType: "playbound-native",
+    protocol: "custom",
+    notes:
+      "Online 1v1 in-game: Online > invite a friend, or host and share the room code. No ports, no IPs; Connect STUN/TURN handles the route.",
+  },
 };
 
 /**
@@ -2633,6 +2646,9 @@ const EXPECTED_NON_CATALOG_ADAPTERS: ReadonlySet<string> = new Set([
   "hindstrike",
   // RetroArch netplay ROM game; pending catalog entry.
   "baseball-stars",
+  // PlayBound-native multiplayer game; its catalog entry is added through
+  // the admin panel (docs/new-game-checklist.md), not from code.
+  "hyperdisc-arena",
 ]);
 
 /**
