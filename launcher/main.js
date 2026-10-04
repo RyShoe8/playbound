@@ -7981,7 +7981,35 @@ function parseRectPair(text) {
   // Window already fills (or overfills, e.g. borderless-fullscreen slightly
   // beyond the visible monitor rect) the monitor — no crop needed.
   if (left <= 0.01 && top <= 0.01 && width >= 0.98 && height >= 0.98) return null;
+  if (looksLikeScaledFullscreen(text, { left, top, width, height }, monW, monH)) return null;
   return { left, top, width, height };
+}
+
+const WS_POPUP = 0x80000000;
+const WS_CAPTION = 0x00c00000;
+const WS_THICKFRAME = 0x00040000;
+
+/**
+ * A fullscreen game whose swapchain is smaller than the monitor, scaled up by
+ * the GPU/Windows (fullscreen optimizations). Its window still reports the
+ * swapchain size: Castlevania ReVamped fullscreen on a 4K screen measures as
+ * a 1920x1080 window in the middle, while the screen capture shows the game
+ * filling the whole monitor — so cropping to the window zoomed the stream to
+ * its centre quarter. Windowed, the same game is the same 1920x1080 rect but
+ * with WS_POPUP set (style 94000000 vs 14000000), and that crop is right.
+ *
+ * Treated as fullscreen: no caption, no sizing frame, no WS_POPUP, centred,
+ * and the monitor's aspect ratio. Anything else keeps its crop.
+ */
+function looksLikeScaledFullscreen(text, rect, monW, monH) {
+  const styleMatch = /STYLE=([0-9A-F]{8})/i.exec(String(text || ""));
+  if (!styleMatch) return false;
+  const style = parseInt(styleMatch[1], 16) >>> 0;
+  if (style & (WS_POPUP | WS_CAPTION | WS_THICKFRAME)) return false;
+  const centred =
+    Math.abs(rect.left + rect.width / 2 - 0.5) < 0.01 && Math.abs(rect.top + rect.height / 2 - 0.5) < 0.01;
+  const sameAspect = Math.abs((rect.width * monW) / (rect.height * monH) - monW / monH) < 0.02;
+  return centred && sameAspect;
 }
 
 /**
