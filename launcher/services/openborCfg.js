@@ -32,15 +32,23 @@ const JOY_MAX_INPUTS = 64;
 
 /**
  * DualSense / PS-class pads on this 2014 OpenBOR build (SDL joystick 0).
- * Button indices are JOY_LIST_FIRST + SDL button number.
+ * Button indices are JOY_LIST_FIRST + SDL button number; past the 15 buttons
+ * come the stick axes, so 616–619 are the left stick.
+ *
+ * Read back from a hand-tuned, play-tested session on 2026-10-04 (left stick
+ * to move, every action on the pad). It replaces the first template, which
+ * moved on the hat and left attack3/attack4 on the keyboard.
  */
 const DUALSENSE_P1_KEYS = [
-  628, 630, 631, 629, // up down left right (axes/hat)
-  602, 600, // attack=btn2, attack2=btn0
-  122, 120, // attack3=Z, attack4=X
-  603, 601, // jump=btn3, special=btn1
-  610, 614, // start=btn10, screenshot=btn14
+  618, 619, 616, 617, // up down left right (left stick)
+  602, 601, 600, 604, // attack, attack2, attack3, attack4
+  603, 605, // jump, special
+  610, 614, // start, screenshot
 ];
+
+/** The first DualSense template, so configs written with it can be upgraded. */
+const OLD_DUALSENSE_P1_KEYS = [628, 630, 631, 629, 602, 600, 122, 120, 603, 601, 610, 614];
+const OLD_DUALSENSE_HAT = [628, 630, 631, 629];
 
 /**
  * Xbox pads on the same engine, which sees them through DirectInput as
@@ -112,7 +120,14 @@ function p1HasBrokenDualSenseSpecial(buf) {
 function p1HasDualSenseHatOnXbox(buf) {
   if (!isOpenBorCfg(buf)) return false;
   const dirs = readP1Keys(buf).slice(0, 4);
-  return dirs.every((k, i) => k === DUALSENSE_P1_KEYS[i]) && readP1Keys(buf)[4] === XBOX_P1_KEYS[4];
+  return dirs.every((k, i) => k === OLD_DUALSENSE_HAT[i]) && readP1Keys(buf)[4] === XBOX_P1_KEYS[4];
+}
+
+/** P1 still holds a template PlayBound wrote before DUALSENSE_P1_KEYS was tuned. */
+function p1HasOldDualSenseTemplate(buf) {
+  if (!isOpenBorCfg(buf)) return false;
+  const keys = readP1Keys(buf);
+  return keys.every((k, i) => k === OLD_DUALSENSE_P1_KEYS[i]);
 }
 
 function joyPortOfKey(code) {
@@ -151,7 +166,7 @@ function applyOpenBorP1Keys(buf, profile) {
   const shouldFix =
     p1StillKeyboard(buf) ||
     playersShareJoyPort(buf) ||
-    (family !== "xbox" && p1HasBrokenDualSenseSpecial(buf)) ||
+    (family !== "xbox" && (p1HasBrokenDualSenseSpecial(buf) || p1HasOldDualSenseTemplate(buf))) ||
     (family === "xbox" && p1HasDualSenseHatOnXbox(buf));
   if (!shouldFix) return null;
   const p1Keys = keysForProfile(profile);
@@ -166,7 +181,82 @@ function applyOpenBorP1Keys(buf, profile) {
   return next;
 }
 
+/*
+ * Display fields near the end of the same s_savedata (offsets for the 348-byte
+ * TMNT build, verified by toggling them on a 4K / 150% desktop):
+ *   len-28  fullscreen (1 = on)
+ *   len-40  stretch mode — in-game fullscreen sets 2, which stretches the
+ *           picture across every monitor; 0 keeps it on the primary one
+ */
+const FULLSCREEN_FROM_END = 28;
+const STRETCH_FROM_END = 40;
+
+/**
+ * Fullscreen on the primary monitor. `firstRun` turns fullscreen on; after
+ * that only the multi-monitor stretch is repaired, so a player who picks
+ * windowed in-game keeps it. Returns a new Buffer, or null when nothing changes.
+ */
+/** Either OpenBOR save format PlayBound ships: 348-byte (TMNT) or 352-byte (X-Men). */
+const DISPLAY_CFG_VERSIONS = new Set([OPENBOR_CFG_VERSION, 0x00033748]);
+function isOpenBorDisplayCfg(buf) {
+  return Buffer.isBuffer(buf) && buf.length >= 0x34 + BYTES_PER_PLAYER && DISPLAY_CFG_VERSIONS.has(buf.readUInt32LE(0));
+}
+
+function applyOpenBorFullscreen(buf, { firstRun = false } = {}) {
+  if (!isOpenBorDisplayCfg(buf)) return null;
+  const fsOff = buf.length - FULLSCREEN_FROM_END;
+  const stretchOff = buf.length - STRETCH_FROM_END;
+  const next = Buffer.from(buf);
+  if (firstRun) next.writeInt32LE(1, fsOff);
+  if (next.readInt32LE(fsOff) === 1 && next.readInt32LE(stretchOff) !== 0) next.writeInt32LE(0, stretchOff);
+  return next.equals(buf) ? null : next;
+}
+
+/** "No key" in OpenBOR's 352-byte format — X-Men ships every P1 action this way. */
+const UNBOUND = -999;
+
+/**
+ * Bind P1 when the pack shipped it entirely unbound, which left the pad doing
+ * nothing until the player found Options -> Control. Any binding at all means
+ * the player (or the game) chose one, and it is left alone.
+ */
+function bindUnboundP1(buf, keys) {
+  if (!isOpenBorDisplayCfg(buf) || !Array.isArray(keys) || keys.length !== KEYS_PER_PLAYER) return null;
+  for (let i = 0; i < KEYS_PER_PLAYER; i += 1) {
+    if (buf.readInt32LE(P1_KEYS_OFFSET + i * 4) !== UNBOUND) return null;
+  }
+  const next = Buffer.from(buf);
+  keys.forEach((k, i) => next.writeInt32LE(k | 0, P1_KEYS_OFFSET + i * 4));
+  return next;
+}
+
+/** X-Men Arcade Remake, DualSense: play-tested on 2026-10-04 (left stick, every action on the pad). */
+const XMEN_DUALSENSE_P1_KEYS = [618, 619, 616, 617, 602, 604, 603, 606, 601, 605, 610, 614];
+
+/*
+ * X-Men's display options, play-tested 2026-10-04: sharper scaling and the
+ * fullest screen fit the game offers. Offsets in the 352-byte format; the
+ * player changed exactly these three fields in Options to get there.
+ */
+const XMEN_DISPLAY_DEFAULTS = [
+  [260, 1],
+  [284, 5],
+  [288, 7],
+];
+
+/** First launch only: the play-tested display options. Returns a new Buffer or null. */
+function applyXmenDisplayDefaults(buf) {
+  if (!isOpenBorDisplayCfg(buf) || buf.length !== 352) return null;
+  const next = Buffer.from(buf);
+  for (const [offset, value] of XMEN_DISPLAY_DEFAULTS) next.writeInt32LE(value, offset);
+  return next.equals(buf) ? null : next;
+}
+
 module.exports = {
+  applyOpenBorFullscreen,
+  applyXmenDisplayDefaults,
+  bindUnboundP1,
+  XMEN_DUALSENSE_P1_KEYS,
   OPENBOR_CFG_VERSION,
   P1_KEYS_OFFSET,
   JOY_LIST_FIRST,
@@ -182,6 +272,7 @@ module.exports = {
   p1StillKeyboard,
   p1HasBrokenDualSenseSpecial,
   p1HasDualSenseHatOnXbox,
+  p1HasOldDualSenseTemplate,
   playersShareJoyPort,
   applyOpenBorP1Keys,
 };

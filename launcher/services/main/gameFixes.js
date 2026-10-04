@@ -551,7 +551,13 @@ const SOLARUS_REPAIR_SLUGS = new Set([
  * manually reinstall.
  */
 const ZBOM_REPAIR_MARKER = "-- PlayBound Solarus 2 controller repair v3";
-const ZBOM_SAVEGAMES_REPAIR_MARKER = "-- PlayBound Solarus 2 savegame syntax repair v4";
+/*
+ * v5: v4's replacements ended in `end` while their match stopped right before
+ * the next `function`, gluing them into `endfunction` — a Lua syntax error
+ * that kept savegames.lua from loading, so the quest hung on a black screen.
+ * The bump re-runs the repair on every v4 install.
+ */
+const ZBOM_SAVEGAMES_REPAIR_MARKER = "-- PlayBound Solarus 2 savegame syntax repair v5";
 
 function patchZeldaMudoraSavegames(code) {
   if (code.includes(ZBOM_SAVEGAMES_REPAIR_MARKER)) return code;
@@ -661,7 +667,9 @@ function savegame_menu:on_joypad_hat_moved`;
     return self:key_pressed_phase_select_file("space")
   end
   return false
-end`
+end
+
+`
   );
 
   code = code.replace(
@@ -675,7 +683,9 @@ end`
     return self:key_pressed_phase_erase_file("space")
   end
   return false
-end`
+end
+
+`
   );
 
   code = code.replace(
@@ -689,7 +699,9 @@ end`
     return self:key_pressed_phase_confirm_erase("space")
   end
   return false
-end`
+end
+
+`
   );
 
   code = code.replace(
@@ -717,7 +729,9 @@ end`
     return self:key_pressed_phase_options("space")
   end
   return false
-end`
+end
+
+`
   );
 
   code = code.replace(
@@ -743,8 +757,13 @@ end`
     return self:key_pressed_phase_choose_name("space")
   end
   return false
-end`
+end
+
+`
   );
+
+  // Installs patched by v4 carry its glued \`endfunction\`s; split any left.
+  code = code.replace(/\bend(function savegame_menu:)/g, "end\n\n$1");
 
   return code;
 }
