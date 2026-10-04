@@ -1,11 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
+import { upload } from "@vercel/blob/client";
 
 type Track = { tapeId: string; title: string; artist: string; album: string; genre: string; bio: string; audioUrl: string; coverUrl: string; website: string; bandcamp: string; spotify: string; discountCode: string; discountPercent: string | number; year: string | number; starter: boolean; enabled: boolean };
 const blank: Track = { tapeId: "", title: "", artist: "", album: "", genre: "", bio: "", audioUrl: "", coverUrl: "", website: "", bandcamp: "", spotify: "", discountCode: "", discountPercent: "", year: "", starter: false, enabled: true };
 export function MixtapeEditor() {
   const [tracks, setTracks] = useState<Track[]>([]), [form, setForm] = useState<Track>({ ...blank });
   const [menu, setMenu] = useState(""), [filter, setFilter] = useState(""), [message, setMessage] = useState(""), [busy, setBusy] = useState(false);
+  const [pendingUpload, setPendingUpload] = useState<{ name: string; key: "audioUrl" | "coverUrl" } | null>(null);
   const [tester, setTester] = useState("");
   const [players, setPlayers] = useState(0), [holdings, setHoldings] = useState<Record<string, number>>({});
   async function load() {
@@ -25,21 +27,47 @@ export function MixtapeEditor() {
     } catch (err) { setMessage(err instanceof Error ? err.message : "Save failed"); } finally { setBusy(false); }
   }
   async function fileUpload(file: File | undefined, key: "audioUrl" | "coverUrl") {
-    if (!file) return; setBusy(true);
+    if (!file || busy) return; setBusy(true); setMessage("Checking file…");
+    let name = "";
     try {
-      const prepare = await fetch("/api/admin/mixtape/upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ filename: file.name, size: file.size }) });
+      const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+      const sha256 = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join("");
+      const prepare = await fetch("/api/admin/mixtape/upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ filename: file.name, size: file.size, sha256 }) });
       const ticket = await prepare.json(); if (!prepare.ok) throw new Error(ticket.error);
-      let uploaded: Response;
-      try {
-        uploaded = await fetch(ticket.uploadUrl, { method: "PUT", headers: { "Content-Type": ticket.contentType }, body: file });
-      } catch {
-        const destination = new URL(ticket.uploadUrl);
-        throw new Error(`Cannot reach R2 upload destination ${destination.hostname}${destination.pathname.split("/").slice(0, 2).join("/")}. Check the bucket CORS policy and connection.`);
+      name = ticket.name;
+      await upload(ticket.pathname, file, { access: "public", contentType: ticket.contentType, handleUploadUrl: "/api/admin/mixtape/upload/staging", multipart: true,
+        onUploadProgress: ({ percentage }) => setMessage(`Uploading ${file.name}: ${Math.round(percentage)}%`),
+      });
+      const call = async (action: string) => {
+        const response = await fetch("/api/admin/mixtape/upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, name }) });
+        const result = await response.json(); if (!response.ok) throw new Error(result.error); return result;
+      };
+      let result = await call("archive");
+      for (let i = 0; i < 180 && result.state !== "ready"; i++) {
+        setMessage(result.message || "Verifying upload…");
+        await new Promise(resolve => window.setTimeout(resolve, 2000));
+        result = await call("status");
       }
-      if (!uploaded.ok) throw new Error(`R2 hotcache upload failed (${uploaded.status})`);
-      const complete = await fetch("/api/admin/mixtape/upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "complete", name: ticket.name, size: file.size }) });
-      const result = await complete.json(); if (!complete.ok) throw new Error(result.error);
-      setForm(prev => ({ ...prev, [key]: result.url })); setMessage("Uploaded to R2 hotcache; save the tape to add it to the library");
+      if (result.state !== "ready") throw new Error("Upload is still processing. Retry completion below.");
+      setForm(prev => ({ ...prev, [key]: result.url })); setMessage("Uploaded and verified in R2; save the tape to add it to the library");
+      setPendingUpload(null);
+    } catch (err) {
+      if (name) setPendingUpload({ name, key });
+      setMessage(err instanceof Error ? err.message : "Upload failed");
+    } finally { setBusy(false); }
+  }
+  async function resumeUpload() {
+    if (!pendingUpload || busy) return; setBusy(true);
+    try {
+      let ready = false;
+      for (let i = 0; i < 180; i++) {
+        const response = await fetch("/api/admin/mixtape/upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "status", name: pendingUpload.name }) });
+        const result = await response.json(); if (!response.ok) throw new Error(result.error);
+        if (result.state === "ready") { setForm(prev => ({ ...prev, [pendingUpload.key]: result.url })); setPendingUpload(null); setMessage("Uploaded and verified in R2; save the tape"); ready = true; break; }
+        setMessage(result.message || "Verifying upload…");
+        await new Promise(resolve => window.setTimeout(resolve, 2000));
+      }
+      if (!ready) throw new Error("Upload is still processing. Retry completion below.");
     } catch (err) { setMessage(err instanceof Error ? err.message : "Upload failed"); } finally { setBusy(false); }
   }
   const field = (key: keyof Track, label: string) => <label key={key} className="block text-sm">{label}<input className="mt-1 w-full rounded border bg-background p-2" value={String(form[key] ?? "")} onChange={e => setForm({ ...form, [key]: e.target.value })} /></label>;
@@ -54,6 +82,7 @@ export function MixtapeEditor() {
     </section>
     <section className="space-y-3 rounded border p-4"><h2 className="text-xl font-bold">Tester starter packs</h2><p>Re-roll a tester&apos;s collection and six-tape deck. The previous collection is archived. Regular player accounts cannot be reset here.</p><input aria-label="Tester username" className="rounded border bg-background p-2" placeholder="Tester username" value={tester} onChange={e => setTester(e.target.value)} /><button disabled={busy || !tester} className="ml-3 rounded border px-4 py-2" onClick={() => { if (window.confirm(`Reinitialize ${tester}'s test collection?`)) save({ action: "reset-tester", username: tester }); }}>Reinitialize tester</button></section>
     <p role="status">{message}</p>
+    {pendingUpload && <button disabled={busy} className="rounded border px-4 py-2" onClick={resumeUpload}>Retry upload completion</button>}
     <form className="space-y-4 rounded border p-4" onSubmit={e => { e.preventDefault(); save(form); }}>
       <h2 className="text-xl font-bold">{form.tapeId ? "Edit tape" : "Add tape"}</h2>
       <p>All fields are optional. You can save a partial entry and finish it later. Tracks become playable once audio is added.</p>
