@@ -167,6 +167,10 @@ function ensureWired() {
     }
   });
 
+  // The game window moved, resized or left fullscreen mid-stream: only the
+  // crop changes, the capture itself is still good.
+  pb().onCouchCropUpdate?.((rect) => applyCropRect(rect));
+
   pb().onCouchCropRect?.((rect) => {
     // This push fires exactly once, right when main.js's maximize/Alt+Enter/
     // measure sequence finishes for THIS game launch — the one moment a

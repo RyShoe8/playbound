@@ -7808,6 +7808,7 @@ function sendGameExited(slug) {
   cropMeasuredForSlug = null;
   cropMeasurePromise = null;
   lastGameMonitor = null;
+  stopCropTracking();
   // Reported from here rather than the renderer so a session still closes when
   // the window is hidden to the tray or the game outlived the launcher UI.
   void telemetry.editionExited(editionInfoFor(slug));
@@ -8068,6 +8069,7 @@ function measureGameWindowNow(slug, done) {
       lastGameMonitor = monitor;
       if (win && !win.isDestroyed()) win.webContents.send("couch-crop-rect", lastCropRect);
       debugLog(`[measure] crop rect: ${lastCropRect ? JSON.stringify(lastCropRect) : "none (fills monitor)"}`);
+      startCropTracking(slug, script, targets);
       done(lastGameMonitor);
     });
     bg.on("error", () => {
@@ -8082,6 +8084,79 @@ function measureGameWindowNow(slug, done) {
     }
     done(null);
   }
+}
+
+/*
+ * Keep the crop in step with the game window for as long as it streams.
+ *
+ * The first measurement runs when capture starts, which for many games is
+ * before they switch to fullscreen: Castlevania ReVamped measured as a
+ * 1920x1080 window in the middle of a 4K screen, then went fullscreen, and the
+ * stream kept cropping that middle quarter — the client saw a zoomed-in
+ * picture. Re-measuring every few seconds also follows windowed <-> fullscreen
+ * toggles and a player moving or resizing the window.
+ */
+const CROP_TRACK_MS = 3000;
+let cropTrackTimer = null;
+let cropTrackSlug = null;
+
+function stopCropTracking() {
+  if (cropTrackTimer) clearInterval(cropTrackTimer);
+  cropTrackTimer = null;
+  cropTrackSlug = null;
+}
+
+function startCropTracking(slug, script, targets) {
+  if (cropTrackSlug === slug && cropTrackTimer) return;
+  stopCropTracking();
+  cropTrackSlug = slug;
+  let inFlight = false;
+  cropTrackTimer = setInterval(() => {
+    if (!activeLaunches.has(slug) || !couchHost?.getState?.()?.active) {
+      stopCropTracking();
+      return;
+    }
+    if (inFlight) return;
+    inFlight = true;
+    let out = "";
+    const bg = spawn("powershell.exe", ["-ExecutionPolicy", "Bypass", "-File", script, "--measure-only", ...targets], {
+      windowsHide: true,
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    bg.stdout?.on("data", (d) => {
+      out += d.toString();
+    });
+    bg.on("error", () => {
+      inFlight = false;
+    });
+    bg.on("close", (code) => {
+      inFlight = false;
+      if (cropTrackSlug !== slug || code !== 0) return;
+      // A minimized window reports -32000 coordinates; that is not a new
+      // layout, so keep cropping the last real one until it is restored.
+      if (/RECT=-3200\d/.test(out)) return;
+      const monitor = parseMonitorRect(out);
+      if (!monitor) return;
+      const next = parseRectPair(out);
+      if (JSON.stringify(next) === JSON.stringify(lastCropRect)) return;
+      // A different monitor size means the game switched the display mode
+      // (exclusive fullscreen): the running capture is stale and must be
+      // restarted, which is what the full couch-crop-rect push does. A window
+      // that only moved or resized needs nothing but the new crop.
+      const modeChanged =
+        !lastGameMonitor || lastGameMonitor.width !== monitor.width || lastGameMonitor.height !== monitor.height;
+      lastCropRect = next;
+      lastGameMonitor = monitor;
+      if (win && !win.isDestroyed()) {
+        win.webContents.send(modeChanged ? "couch-crop-rect" : "couch-crop-update", lastCropRect);
+        win.webContents.send("couch-status", {
+          message: `[measure] window changed, crop rect: ${lastCropRect ? JSON.stringify(lastCropRect) : "none (fills monitor)"}`,
+        });
+      }
+    });
+    bg.unref();
+  }, CROP_TRACK_MS);
+  cropTrackTimer.unref?.();
 }
 
 function onSpawnedProcessGone(slug) {

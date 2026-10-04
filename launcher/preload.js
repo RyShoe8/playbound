@@ -290,6 +290,7 @@ contextBridge.exposeInMainWorld("playbound", {
     return () => ipcRenderer.removeListener("couch-state", listener);
   },
   onCouchCropRect: (cb) => ipcRenderer.on("couch-crop-rect", (_event, data) => cb(data || null)),
+  onCouchCropUpdate: (cb) => ipcRenderer.on("couch-crop-update", (_event, data) => cb(data || null)),
   onCouchStatus: (cb) => ipcRenderer.on("couch-status", (_event, data) => cb(data || {})),
   onCouchPeerSend: (cb) =>
     ipcRenderer.on("couch-peer-send", (_event, data) => cb(data || {})),
