@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import { formatDataVolume, vpsTransferPercent } from "@/lib/mirrors/vpsProgress";
+import { launcherPackageKind } from "@/lib/mirrors/launcherPackageKind";
 
-type InstalledPackage = { url: string; kind: "direct-zip" | "direct-7z"; fileName: string };
+type InstalledPackage = { url: string; kind: "direct-zip" | "direct-7z" | "direct-installer"; fileName: string };
 
 /** A queued VPS copy, kept so a slow one can be resumed rather than lost. */
 type Pending = {
@@ -152,8 +153,8 @@ export function LauncherPackageUploader({
   }
 
   async function selected(file: File) {
-    if (!/\.(zip|7z)$/i.test(file.name)) {
-      setState("Choose a .zip or .7z launcher package.");
+    if (!launcherPackageKind(file.name)) {
+      setState("Choose a ZIP, 7z, EXE, or MSI file.");
       return;
     }
     setBusy(true);
@@ -187,7 +188,7 @@ export function LauncherPackageUploader({
     try {
       const urlObj = new URL(trimmed);
       const rawName = decodeURIComponent(urlObj.pathname.split("/").pop() || "").replace(/^[0-9]+-/, "");
-      if (!stagedFileName && /\.(zip|7z)$/i.test(rawName)) {
+      if (!stagedFileName && launcherPackageKind(rawName)) {
         setStagedFileName(rawName);
       }
       if (!stagedSizeBytes) {
@@ -211,13 +212,13 @@ export function LauncherPackageUploader({
     if (!fileName) {
       try {
         const rawName = decodeURIComponent(new URL(url).pathname.split("/").pop() || "").replace(/^[0-9]+-/, "");
-        if (/\.(zip|7z)$/i.test(rawName)) fileName = rawName;
+        if (launcherPackageKind(rawName)) fileName = rawName;
       } catch {
         /* ignore */
       }
     }
-    if (!/\.(zip|7z)$/i.test(fileName)) {
-      setState("Enter a .zip or .7z filename.");
+    if (!launcherPackageKind(fileName)) {
+      setState("Enter a ZIP, 7z, EXE, or MSI filename.");
       return;
     }
     if (!Number.isInteger(sizeBytes) || sizeBytes <= 0) {
@@ -258,12 +259,12 @@ export function LauncherPackageUploader({
   }
 
   return <div className="rounded-lg border border-primary/25 bg-primary/5 p-3">
-    <input ref={inputRef} type="file" accept=".zip,.7z,application/zip,application/x-7z-compressed" className="sr-only" onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ""; if (file) void selected(file); }} />
+    <input ref={inputRef} type="file" accept=".zip,.7z,.exe,.msi,application/zip,application/x-7z-compressed,application/x-msdownload,application/x-msi,application/octet-stream" className="sr-only" onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ""; if (file) void selected(file); }} />
     <div className="flex flex-wrap items-center gap-3">
       <button type="button" disabled={busy || !gameSlug} onClick={() => inputRef.current?.click()} className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-60">
-        {busy ? "Working…" : "Upload launcher package"}
+        {busy ? "Working…" : "Upload installer or package"}
       </button>
-      <span className="text-[11px] font-medium text-muted-foreground">ZIP/7z only. It becomes live only after VPS verification.</span>
+      <span className="text-[11px] font-medium text-muted-foreground">ZIP, 7z, EXE, or MSI. After VPS verification, the install recipe is saved automatically.</span>
     </div>
 
     {percent !== null ? (
@@ -328,7 +329,7 @@ export function LauncherPackageUploader({
         disabled={busy}
         className="min-w-0 rounded-md border border-input bg-background px-3 py-2 text-xs"
       />
-      <input value={stagedFileName} onChange={(e) => setStagedFileName(e.target.value)} placeholder="File name.zip" disabled={busy} className="min-w-0 rounded-md border border-input bg-background px-3 py-2 text-xs" />
+      <input value={stagedFileName} onChange={(e) => setStagedFileName(e.target.value)} placeholder="File name.exe" disabled={busy} className="min-w-0 rounded-md border border-input bg-background px-3 py-2 text-xs" />
       <input value={stagedSizeBytes} onChange={(e) => setStagedSizeBytes(e.target.value)} inputMode="numeric" placeholder="Size in bytes" disabled={busy} className="min-w-0 rounded-md border border-input bg-background px-3 py-2 text-xs" />
       <button type="button" disabled={busy || !gameSlug} onClick={() => void archiveStaged()} className="rounded-full border border-primary/40 px-4 py-2 text-xs font-bold text-primary disabled:opacity-60">
         Archive staged package

@@ -19,9 +19,11 @@ export async function POST(req: Request) {
       body,
       request: req,
       onBeforeGenerateToken: async (pathname) => {
-        if (!pathname.startsWith("launcher-packages/")) throw new Error("Invalid package path");
+        if (!/^launcher-packages\/(?:games\/[a-z0-9][a-z0-9-]{0,119}|editions\/[a-z0-9][a-z0-9-]{0,119}\/[a-z0-9][a-z0-9-]{0,119})\/[a-z0-9][a-z0-9._-]*\.(zip|7z|exe|msi)$/i.test(pathname)) {
+          throw new Error("Invalid package path or file type");
+        }
         return {
-          allowedContentTypes: ["application/zip", "application/x-7z-compressed", "application/octet-stream"],
+          allowedContentTypes: ["application/zip", "application/x-7z-compressed", "application/octet-stream", "application/x-msdownload", "application/x-msi", "application/x-ms-installer"],
           maximumSizeInBytes: MAX_PACKAGE_BYTES,
           // Default client tokens expire in 1h; multi-GB packages need longer.
           validUntil: Date.now() + 24 * 60 * 60 * 1000,
