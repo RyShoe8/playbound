@@ -68,6 +68,7 @@ export const links: NavItem[] = [
   },
   { href: "/admin/gear", label: "Gear", icon: Mouse },
   { href: "/admin/hardware", label: "Hardware", icon: Cpu },
+  { href: "/admin/pb-games", label: "PB Games", icon: Gamepad2 },
   { href: "/admin/community", label: "Community", icon: MessagesSquare },
   { href: "/admin/weekly", label: "Weekly", icon: Mail },
   { href: "/admin/blog", label: "Blog", icon: Newspaper },
@@ -301,6 +302,10 @@ const CONNECT_CHILDREN: NavChild[] = [
 ];
 
 export function childrenFor(item: NavItem, gameSlug: string | null): NavChild[] {
+  if (item.href === "/admin/pb-games") return [{
+    label: "HyperDisc", icon: Gamepad2, href: "/admin/pb-games/hyperdisc",
+    match: (p) => p === "/admin/pb-games/hyperdisc" || p.startsWith("/admin/pb-games/hyperdisc/"),
+  }];
   if (item.href === "/admin/games") return gamesChildren(gameSlug);
   if (item.href === "/admin/ecommerce") return ECOMMERCE_CHILDREN;
   if (item.href === "/admin/connect") return CONNECT_CHILDREN;
@@ -423,6 +428,14 @@ export function AdminNav() {
               sub
             />
           ))}
+        </div>
+      )}
+      {(pathname === "/admin/pb-games/hyperdisc" || pathname.startsWith("/admin/pb-games/hyperdisc/")) && (
+        <div className="flex gap-1 overflow-x-auto border-t border-border/60 bg-background/40 px-4 py-1.5 sm:px-6 lg:px-8">
+          <NavPill href="/admin/pb-games/hyperdisc/mixtapes" label="Mixtapes" icon={Library}
+            active={linkActive(pathname, "/admin/pb-games/hyperdisc/mixtapes")}
+            pending={pendingHref === "/admin/pb-games/hyperdisc/mixtapes" && !linkActive(pathname, "/admin/pb-games/hyperdisc/mixtapes")}
+            onClick={() => { if (pathname !== "/admin/pb-games/hyperdisc/mixtapes") setPending({ href: "/admin/pb-games/hyperdisc/mixtapes", from: pathname }); }} sub />
         </div>
       )}
     </nav>
