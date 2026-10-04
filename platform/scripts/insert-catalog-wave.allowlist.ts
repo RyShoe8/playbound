@@ -109,6 +109,9 @@ const DEDICATED_DRAFT_EDITORIAL_FIELDS = [
 ] as const;
 
 export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
+  // First-party GitHub release: add native one-click desktop installs while
+  // preserving every other CMS field on this database-only game.
+  "hyperdisc-arena": ["platforms", "launchMethods", "launcherInstall"],
   // Database-only Dedicated Basic drafts. Scope to verified scalar/step fields;
   // multiplayer feature chips are appended below without replacing CMS data.
   "battlefield-1942-anthology": ["hasControllerSupport", "multiplayerGamingSteps", "website", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],

@@ -19,6 +19,24 @@
 import { launcherInstallBySlug } from "./launcherInstall";
 
 const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
+  // First-party Godot game. The stable v0.2.0 release publishes three complete
+  // desktop archives; the GitHub recipe follows future stable releases while
+  // selecting the asset for the player's operating system.
+  "hyperdisc-arena": {
+    platforms: ["Windows", "macOS", "Linux", "Web"],
+    launchMethods: ["install", "browser"],
+    launcherInstall: {
+      enabled: true,
+      kind: "github-zip",
+      repo: "RyShoe8/hyperdisc-arena",
+      assetPattern: "^HyperDiscArena-windows\\.zip$",
+      assetPatternMac: "^HyperDiscArena-macos\\.zip$",
+      assetPatternLinux: "^HyperDiscArena-linux\\.zip$",
+      exeHint: "HyperDiscArena|HyperDisc Arena",
+      versionLabel: "0.2.0",
+      note: "PlayBound downloads the official desktop build for your operating system and launches it directly.",
+    },
+  },
   // GOG's free game page and GOG's DOSBox install layout. The launcher now
   // watches the install and launches DOSBox with the game's config files.
   "shadow-warrior-classic-complete": {
