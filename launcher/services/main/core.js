@@ -5,6 +5,7 @@
  * (no windows, sessions or timers). main.js requires what it needs from here.
  */
 
+const { shouldSyncHardwareProfile } = require("../hardwareSync");
 const { app, shell, safeStorage, session } = require("electron");
 const { spawn, exec, execFileSync } = require("child_process");
 const crypto = require("crypto");
@@ -2501,15 +2502,6 @@ async function collectHardwareProfile() {
   }
 }
 
-function shouldSyncHardwareProfile(settings, force = false) {
-  if (force) return true;
-  if (!settings?.launcherToken) return false;
-  const lastSynced = settings.hardwareProfileSyncedAt;
-  if (!lastSynced) return true; // 1. First time user loads the launcher
-  const lastDate = new Date(lastSynced).toDateString();
-  const today = new Date().toDateString();
-  return lastDate !== today; // 2. First time user loads the launcher for the day
-}
 
 /**
  * A stable per-install id for PlayBound Remote device identity — deliberately

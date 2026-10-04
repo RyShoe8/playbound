@@ -9,6 +9,7 @@ import type { DiscoverListingGame } from "@/lib/discoverListing";
 import { evaluateCompatibility } from "@/lib/hardware/compatibility";
 import { useTelemetry } from "@/lib/telemetry";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
+import { getMyHardwareProfile } from "@/lib/hardware/clientProfile";
 import { useDiscoveryMode } from "@/hooks/useDiscoveryMode";
 import { useAccessTiers } from "@/components/AccessTiersProvider";
 import { filterGamesByMode } from "@/lib/access/discoveryMode";
@@ -127,10 +128,10 @@ export function DiscoverFilters({
   }, []);
 
   useEffect(() => {
-    void fetch("/api/hardware/profile")
-      .then((r) => (r.ok ? r.json() : null))
+    void getMyHardwareProfile()
       .then((data) => {
-        const p = data?.profile;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const p = data?.profile as any;
         if (!p) return;
         const idx = p.primaryGpuIndex ?? 0;
         const gpu = p.gpus?.[idx] || p.gpus?.[0];
