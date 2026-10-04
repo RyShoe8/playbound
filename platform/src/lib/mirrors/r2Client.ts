@@ -30,6 +30,16 @@ function getR2ClientConfig() {
 
 let s3ClientInstance: S3Client | null = null;
 
+export function r2HotcacheConfigured(): boolean { return getR2ClientConfig().isConfigured; }
+
+export async function getR2PresignedUploadUrl(key: string, size: number, contentType: string): Promise<string> {
+  const client = getS3Client();
+  if (!client) throw new Error("R2 hotcache is not configured");
+  return getSignedUrl(client, new PutObjectCommand({ Bucket: getR2ClientConfig().bucket,
+    Key: key, ContentLength: size, ContentType: contentType, StorageClass: "STANDARD",
+  }), { expiresIn: 600 });
+}
+
 function getS3Client(): S3Client | null {
   const config = getR2ClientConfig();
   if (!config.isConfigured) return null;
@@ -37,6 +47,9 @@ function getS3Client(): S3Client | null {
   if (!s3ClientInstance) {
     s3ClientInstance = new S3Client({
       region: "auto",
+      // Browser presigned PUTs provide their body after signing. Do not sign
+      // an optional checksum for an empty request body.
+      requestChecksumCalculation: "WHEN_REQUIRED",
       endpoint: `https://${config.accountId}.r2.cloudflarestorage.com`,
       credentials: {
         accessKeyId: config.accessKeyId!,

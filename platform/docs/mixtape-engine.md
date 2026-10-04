@@ -65,7 +65,26 @@ PlayBound game/launcher bearer and derive identity from it, never a body user ID
 - `POST /api/mixtape/match`: `action: register | report | dub`.
 - `GET /api/mixtape/match?matchId=...`: participant-only roster/result.
 - `/api/admin/mixtape`: admin library, settings, statistics and tester reset.
-- `/api/admin/mixtape/upload`: admin-scoped Blob uploads.
+- `/api/admin/mixtape/upload`: admin-scoped, size-bound presigned R2 uploads.
+- `/api/mixtape/assets/[name]`: stable links redirecting directly to R2.
+
+## R2 hotcache storage
+
+Audio and covers live under `mixtape/` in the existing download hotcache bucket
+(`R2_BUCKET_NAME`, with the same fallback configuration as the mirror client).
+They do not use Vercel Blob. Uploads go directly from the admin browser to R2;
+the API verifies object size before returning the stable asset URL. R2 keys
+are unique and retained as catalog assets, outside the Artifact eviction list.
+Signed download URLs expire after one hour; stable catalog URLs generate fresh
+redirects, so disk cache keys stay unchanged. Missing R2 configuration fails
+explicitly rather than reporting a simulated successful upload.
+
+The bucket CORS policy must allow the PlayBound admin origin
+`https://playbound.club` to send `PUT` requests with `Content-Type` (and `GET`/`HEAD`
+for browser previews). Add a preview origin only if uploading through a preview
+deployment. Preserve the bucket's existing CORS rules. Credentials remain on
+the server; browser upload permissions are limited to one generated music key
+and expire after ten minutes. No tracks were seeded or uploaded by this feature.
 
 ## Verification
 
