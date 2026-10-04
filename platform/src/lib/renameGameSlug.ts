@@ -22,6 +22,7 @@ import Review from "@/lib/models/Review";
 import StoreMatchSuggestion from "@/lib/models/StoreMatchSuggestion";
 import WeeklyIssue from "@/lib/models/WeeklyIssue";
 import MultiplayerSession from "@/lib/models/MultiplayerSession";
+import GameLink from "@/lib/models/GameLink";
 import RemotePlaySession from "@/lib/models/RemotePlaySession";
 import DeveloperClaim from "@/lib/models/DeveloperClaim";
 import SavedWorld from "@/lib/models/SavedWorld";
@@ -99,6 +100,7 @@ const REFERENCES: SlugReference[] = [
   { label: "reviews", model: Review, field: "gameSlug" },
   { label: "weeklyIssues", model: WeeklyIssue, field: "gameSlug" },
   { label: "multiplayerSessions", model: MultiplayerSession, field: "gameSlug" },
+  { label: "gameLinks", model: GameLink, field: "gameSlug" },
   /*
    * Short-lived (TTL-expiring), same as multiplayerSessions above — but an
    * active PlayBound Remote stream mid-rename would otherwise orphan its

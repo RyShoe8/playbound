@@ -60,6 +60,7 @@ function serializeInvite(doc: Record<string, unknown>) {
     editionSlug: (doc.editionSlug as string) || null,
     modSlug: (doc.modSlug as string) || null,
     partyId: doc.partyId ? String(doc.partyId) : null,
+    connectCode: (doc.connectCode as string) || null,
     status: doc.status as PlayInviteStatus,
     expiresAt: (doc.expiresAt as Date).toISOString(),
     createdAt: (doc.createdAt as Date).toISOString(),
@@ -74,6 +75,8 @@ export async function sendPlayInvite(opts: {
   editionSlug?: string | null;
   modSlug?: string | null;
   partyId?: string | null;
+  /** Connect room code for in-game joins; see PlayInvite.connectCode. */
+  connectCode?: string | null;
 }) {
   await dbConnect();
   const allowed = await checkInviteRecipient(opts.senderId, opts.recipientId);
@@ -91,6 +94,16 @@ export async function sendPlayInvite(opts: {
     expiresAt: { $gt: now },
   }).lean();
   if (existing) {
+    // A game hosting a new room re-invites with the new code: move the
+    // pending invite to it rather than refusing.
+    if (opts.connectCode && opts.connectCode !== existing.connectCode) {
+      const moved = await PlayInvite.findByIdAndUpdate(
+        existing._id,
+        { $set: { connectCode: opts.connectCode, expiresAt: new Date(now.getTime() + PLAY_INVITE_TTL_MS) } },
+        { returnDocument: "after" }
+      ).lean();
+      if (moved) return { invite: serializeInvite(moved), status: 201 as const };
+    }
     return { error: "Invite already pending", status: 409 as const, inviteId: String(existing._id) };
   }
 
@@ -101,6 +114,7 @@ export async function sendPlayInvite(opts: {
     editionSlug: opts.editionSlug || null,
     modSlug: opts.modSlug || null,
     partyId: opts.partyId || null,
+    connectCode: opts.connectCode || null,
     status: "pending",
     expiresAt: new Date(now.getTime() + PLAY_INVITE_TTL_MS),
   });
