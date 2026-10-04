@@ -1,6 +1,6 @@
 # Mixtape Engine
 
-The PlayBound admin screen at `/admin/mixtape` owns the music library and the
+The PlayBound admin screen at `/admin/pb-games/hyperdisc/mixtapes` owns the music library and the
 menu soundtrack. The game fetches metadata at boot and every two minutes, so
 publishing another track or changing menu music does not require a client patch.
 The initial catalog is deliberately empty. No example artist music or discount
