@@ -1,7 +1,19 @@
 import { randomInt } from "node:crypto";
 
 export const DECK_SIZE = 6;
+export const BASE_TAPES = 5;
+export const POOL_TAPES = 15;
 export type Tape = { id: string; starter: boolean; enabled: boolean };
+/** True once the launch catalog exists: five base tapes and fifteen others. */
+export function catalogComplete(tracks: Tape[]): boolean {
+  const base = tracks.filter(t => t.enabled && t.starter).length;
+  const pool = tracks.filter(t => t.enabled && !t.starter).length;
+  return base === BASE_TAPES && pool >= POOL_TAPES;
+}
+/** Decks hold six tapes, or every available tape while there are fewer. */
+export function deckSize(available: number): number {
+  return Math.max(1, Math.min(DECK_SIZE, available));
+}
 export function starterPack(tracks: Tape[], pick = randomInt): string[] {
   const base = tracks.filter(t => t.enabled && t.starter);
   const pool = tracks.filter(t => t.enabled && !t.starter);
@@ -12,9 +24,11 @@ export function starterPack(tracks: Tape[], pick = randomInt): string[] {
   return [...base, ...pool.slice(0, 15)].map(t => t.id);
 }
 export function validateDeck(ids: unknown, owned: string[], active: string[]): string[] {
-  if (!Array.isArray(ids) || ids.length !== DECK_SIZE || new Set(ids).size !== DECK_SIZE ||
+  const size = deckSize(active.filter(id => owned.includes(id)).length);
+  if (!Array.isArray(ids) || ids.length !== size || new Set(ids).size !== size ||
       ids.some(id => typeof id !== "string" || !owned.includes(id) || !active.includes(id))) {
-    throw new Error("Choose six different, available tapes from your collection");
+    throw new Error(size === DECK_SIZE ? "Choose six different, available tapes from your collection"
+      : `Choose ${size} different, available tapes from your collection`);
   }
   return ids;
 }
