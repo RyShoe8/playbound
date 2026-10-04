@@ -7,6 +7,8 @@ const LauncherCredentialSchema = new Schema(
     tokenHash: { type: String, required: true, unique: true, select: false },
     createdAt: { type: Date, required: true, default: Date.now },
     revokedAt: { type: Date, default: null },
+    /** Who holds this bearer: unset for the launcher, "game:<slug>" for a game. */
+    client: { type: String, default: null },
   },
   { timestamps: false }
 );
