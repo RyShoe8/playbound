@@ -29,8 +29,14 @@ export function MixtapeEditor() {
     try {
       const prepare = await fetch("/api/admin/mixtape/upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ filename: file.name, size: file.size }) });
       const ticket = await prepare.json(); if (!prepare.ok) throw new Error(ticket.error);
-      const uploaded = await fetch(ticket.uploadUrl, { method: "PUT", headers: { "Content-Type": ticket.contentType }, body: file });
-      if (!uploaded.ok) throw new Error("R2 hotcache upload failed");
+      let uploaded: Response;
+      try {
+        uploaded = await fetch(ticket.uploadUrl, { method: "PUT", headers: { "Content-Type": ticket.contentType }, body: file });
+      } catch {
+        const destination = new URL(ticket.uploadUrl);
+        throw new Error(`Cannot reach R2 upload destination ${destination.hostname}${destination.pathname.split("/").slice(0, 2).join("/")}. Check the bucket CORS policy and connection.`);
+      }
+      if (!uploaded.ok) throw new Error(`R2 hotcache upload failed (${uploaded.status})`);
       const complete = await fetch("/api/admin/mixtape/upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "complete", name: ticket.name, size: file.size }) });
       const result = await complete.json(); if (!complete.ok) throw new Error(result.error);
       setForm(prev => ({ ...prev, [key]: result.url })); setMessage("Uploaded to R2 hotcache; save the tape to add it to the library");
