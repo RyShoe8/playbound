@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import { upload } from "@vercel/blob/client";
 
 type Track = { tapeId: string; title: string; artist: string; album: string; genre: string; bio: string; audioUrl: string; coverUrl: string; website: string; bandcamp: string; spotify: string; discountCode: string; discountPercent: string | number; year: string | number; starter: boolean; enabled: boolean };
 const blank: Track = { tapeId: "", title: "", artist: "", album: "", genre: "", bio: "", audioUrl: "", coverUrl: "", website: "", bandcamp: "", spotify: "", discountCode: "", discountPercent: "", year: "", starter: false, enabled: true };
@@ -28,9 +27,13 @@ export function MixtapeEditor() {
   async function fileUpload(file: File | undefined, key: "audioUrl" | "coverUrl") {
     if (!file) return; setBusy(true);
     try {
-      const ext = file.name.split(".").pop()?.toLowerCase();
-      const result = await upload(`mixtape/${crypto.randomUUID()}.${ext}`, file, { access: "public", handleUploadUrl: "/api/admin/mixtape/upload" });
-      setForm(prev => ({ ...prev, [key]: result.url })); setMessage("Uploaded; save the tape to add it to the library");
+      const prepare = await fetch("/api/admin/mixtape/upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ filename: file.name, size: file.size }) });
+      const ticket = await prepare.json(); if (!prepare.ok) throw new Error(ticket.error);
+      const uploaded = await fetch(ticket.uploadUrl, { method: "PUT", headers: { "Content-Type": ticket.contentType }, body: file });
+      if (!uploaded.ok) throw new Error("R2 hotcache upload failed");
+      const complete = await fetch("/api/admin/mixtape/upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "complete", name: ticket.name, size: file.size }) });
+      const result = await complete.json(); if (!complete.ok) throw new Error(result.error);
+      setForm(prev => ({ ...prev, [key]: result.url })); setMessage("Uploaded to R2 hotcache; save the tape to add it to the library");
     } catch (err) { setMessage(err instanceof Error ? err.message : "Upload failed"); } finally { setBusy(false); }
   }
   const field = (key: keyof Track, label: string) => <label key={key} className="block text-sm">{label}<input className="mt-1 w-full rounded border bg-background p-2" value={String(form[key] ?? "")} onChange={e => setForm({ ...form, [key]: e.target.value })} /></label>;
