@@ -68,6 +68,7 @@ export const links: NavItem[] = [
   },
   { href: "/admin/gear", label: "Gear", icon: Mouse },
   { href: "/admin/hardware", label: "Hardware", icon: Cpu },
+  { href: "/admin/mixtape", label: "Mixtape", icon: Library },
   { href: "/admin/community", label: "Community", icon: MessagesSquare },
   { href: "/admin/weekly", label: "Weekly", icon: Mail },
   { href: "/admin/blog", label: "Blog", icon: Newspaper },
