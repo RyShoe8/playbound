@@ -37,19 +37,20 @@ export function MixtapeEditor() {
     } catch (err) { setMessage(err instanceof Error ? err.message : "Upload failed"); } finally { setBusy(false); }
   }
   const field = (key: keyof Track, label: string) => <label key={key} className="block text-sm">{label}<input className="mt-1 w-full rounded border bg-background p-2" value={String(form[key] ?? "")} onChange={e => setForm({ ...form, [key]: e.target.value })} /></label>;
-  const base = tracks.filter(t => t.enabled && t.starter).length, pool = tracks.filter(t => t.enabled && !t.starter).length;
+  const base = tracks.filter(t => t.enabled && t.audioUrl && t.starter).length, pool = tracks.filter(t => t.enabled && t.audioUrl && !t.starter).length;
   return <div className="mx-auto max-w-6xl space-y-6 p-6">
     <h1 className="text-3xl font-bold">HyperDisc Mixtape Engine</h1>
     <p>{base} of 5 base tapes · {pool} other tapes · {players} collectors · 100-track launch target. Starter packs become available with exactly 5 base tapes and at least 15 other tapes.</p>
     <section className="space-y-3 rounded border p-4"><h2 className="text-xl font-bold">Menu music</h2>
-      <p>Choose the soundtrack for the title and menu screens. It is independent of each player&apos;s match deck.</p>
-      <select aria-label="Menu music" className="rounded border bg-background p-2" value={menu} onChange={e => setMenu(e.target.value)}><option value="">No menu music</option>{tracks.filter(t => t.enabled).map(t => <option key={t.tapeId} value={t.tapeId}>{t.title} — {t.artist}</option>)}</select>
+      <p>Upload and save a track below, then select it here for the title and menu screens. It is independent of each player&apos;s match deck.</p>
+      <select aria-label="Menu music" className="rounded border bg-background p-2" value={menu} onChange={e => setMenu(e.target.value)}><option value="">No menu music</option>{tracks.filter(t => t.enabled && t.audioUrl).map(t => <option key={t.tapeId} value={t.tapeId}>{t.title || "Untitled track"}{t.artist ? ` — ${t.artist}` : ""}</option>)}</select>
       <button disabled={busy} className="ml-3 rounded border px-4 py-2" onClick={() => save({ action: "menu", tapeId: menu })}>Save menu music</button>
     </section>
     <section className="space-y-3 rounded border p-4"><h2 className="text-xl font-bold">Tester starter packs</h2><p>Re-roll a tester&apos;s collection and six-tape deck. The previous collection is archived. Regular player accounts cannot be reset here.</p><input aria-label="Tester username" className="rounded border bg-background p-2" placeholder="Tester username" value={tester} onChange={e => setTester(e.target.value)} /><button disabled={busy || !tester} className="ml-3 rounded border px-4 py-2" onClick={() => { if (window.confirm(`Reinitialize ${tester}'s test collection?`)) save({ action: "reset-tester", username: tester }); }}>Reinitialize tester</button></section>
     <p role="status">{message}</p>
     <form className="space-y-4 rounded border p-4" onSubmit={e => { e.preventDefault(); save(form); }}>
       <h2 className="text-xl font-bold">{form.tapeId ? "Edit tape" : "Add tape"}</h2>
+      <p>All fields are optional. You can save a partial entry and finish it later. Tracks become playable once audio is added.</p>
       <div className="grid gap-4 sm:grid-cols-2">{field("title", "Track title")}{field("artist", "Artist")}{field("album", "Album")}{field("year", "Release year")}{field("genre", "Genre")}{field("bio", "Artist biography")}{field("website", "Official website")}{field("bandcamp", "Bandcamp / store link")}{field("spotify", "Spotify")}{field("discountCode", "Artist discount code")}{field("discountPercent", "Discount percent (10–20)")}</div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); fileUpload(e.dataTransfer.files[0], "audioUrl"); }} className="rounded border border-dashed p-4"><label>Drop audio or choose a file (OGG, MP3, WAV)<input disabled={busy} type="file" accept=".ogg,.mp3,.wav" onChange={e => fileUpload(e.target.files?.[0], "audioUrl")} /></label>{field("audioUrl", "Audio URL")}</div>

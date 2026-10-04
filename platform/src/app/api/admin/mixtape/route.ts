@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     if (b.action === "reset-tester") {
       const user = await User.findOne({ username: String(b.username || ""), tester: true }).select("_id").lean();
       if (!user) throw new Error("Choose an account marked as a tester");
-      const tracks = await MixtapeTrack.find({ enabled: true }).lean();
+      const tracks = await MixtapeTrack.find({ enabled: true, audioUrl: { $nin: ["", null] } }).lean();
       const ids = starterPack(tracks.map(t => ({ id: t.tapeId, starter: t.starter, enabled: t.enabled })));
       const userId = String(user._id);
       const old = await MixtapeProfile.findOne({ userId }).lean();
@@ -30,13 +30,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
     if (b.action === "menu") {
-      if (b.tapeId && !(await MixtapeTrack.exists({ tapeId: b.tapeId, enabled: true }))) throw new Error("Select an available tape");
+      if (b.tapeId && !(await MixtapeTrack.exists({ tapeId: b.tapeId, enabled: true, audioUrl: { $nin: ["", null] } }))) throw new Error("Select an available tape with audio");
       await MixtapeSettings.updateOne({ key: "hyperdisc-arena" }, { $set: { menuTapeId: String(b.tapeId || "") } }, { upsert: true });
       return NextResponse.json({ ok: true });
     }
     const text = (key: string, max = 200) => String(b[key] || "").trim().slice(0, max);
-    if (!text("title") || !text("artist") || !b.audioUrl) throw new Error("Title, artist, and audio are required");
-    if (!/\.(ogg|mp3|wav)$/i.test(new URL(httpsUrl(b.audioUrl)).pathname)) throw new Error("Audio URL must point to an OGG, MP3, or WAV file");
+    if (b.audioUrl && !/\.(ogg|mp3|wav)$/i.test(new URL(httpsUrl(b.audioUrl)).pathname)) throw new Error("Audio URL must point to an OGG, MP3, or WAV file");
     if (b.coverUrl && !/\.(png|jpe?g)$/i.test(new URL(httpsUrl(b.coverUrl)).pathname)) throw new Error("Cover URL must point to a PNG or JPG file");
     const tapeId = b.tapeId || crypto.randomUUID();
     if (!/^[a-zA-Z0-9_-]{1,80}$/.test(tapeId)) throw new Error("Invalid tape ID");

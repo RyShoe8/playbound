@@ -2,10 +2,10 @@ import { Schema, model, models } from "mongoose";
 
 const track = new Schema({
   tapeId: { type: String, required: true, unique: true },
-  title: { type: String, required: true }, artist: { type: String, required: true },
+  title: { type: String, default: "" }, artist: { type: String, default: "" },
   album: { type: String, default: "" }, year: { type: Number, default: null },
   genre: { type: String, default: "" }, bio: { type: String, default: "" },
-  audioUrl: { type: String, required: true }, coverUrl: { type: String, default: "" },
+  audioUrl: { type: String, default: "" }, coverUrl: { type: String, default: "" },
   website: { type: String, default: "" }, bandcamp: { type: String, default: "" },
   spotify: { type: String, default: "" }, discountCode: { type: String, default: "" },
   discountPercent: { type: Number, default: null },
