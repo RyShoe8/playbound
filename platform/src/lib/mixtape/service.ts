@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import dbConnect from "@/lib/db";
 import MultiplayerSession from "@/lib/models/MultiplayerSession";
 import { MixtapeTrack, MixtapeProfile, MixtapeMatch, MixtapeSettings } from "@/lib/models/Mixtape";
-import { starterPack, validateDeck, confirmedWinner } from "./rules";
+import { starterPack, validateDeck, confirmedWinner, catalogComplete, deckSize } from "./rules";
 
 export async function catalog() {
   await dbConnect();
@@ -12,9 +12,35 @@ export async function catalog() {
 export async function player(userId: string) {
   const { tracks } = await catalog();
   let profile = await MixtapeProfile.findOne({ userId }).lean();
+  const tapes = tracks.map(t => ({ id: t.id, starter: Boolean(t.starter), enabled: true }));
+  if (!catalogComplete(tapes)) {
+    // Testing: until the launch catalog (5 base + 15 others) exists, every
+    // player owns every available tape and decks shrink to what exists. Once
+    // the catalog is complete, new players get the normal starter pack; tester
+    // accounts can be reset from the admin screen to start over.
+    const all = tracks.map(t => t.id);
+    const owned = new Set<string>((profile?.inventory as string[]) || []);
+    const added = all.filter(id => !owned.has(id));
+    if (!profile || added.length) {
+      profile = await MixtapeProfile.findOneAndUpdate({ userId }, {
+        $setOnInsert: { userId, deck: [] },
+        $addToSet: { inventory: { $each: all } },
+        $push: { acquisitions: { $each: added.map(trackId => ({ trackId, source: "test_grant", at: new Date() })) } },
+      }, { upsert: true, returnDocument: "after" }).lean();
+    }
+    const active = new Set(all);
+    const deck = ((profile!.deck as string[]) || []).filter(id => active.has(id));
+    const size = deckSize(all.length);
+    if (all.length && deck.length !== size) {
+      const fill = all.filter(id => !deck.includes(id)).slice(0, Math.max(0, size - deck.length));
+      const next = [...deck, ...fill].slice(0, size);
+      await MixtapeProfile.updateOne({ userId }, { $set: { deck: next } });
+      profile = { ...profile!, deck: next };
+    }
+    return { inventory: profile!.inventory as string[], deck: profile!.deck as string[], tracks };
+  }
   if (!profile) {
-    // An empty/incomplete library does not consume the player's starter grant.
-    const ids = starterPack(tracks.map(t => ({ id: t.id, starter: Boolean(t.starter), enabled: true })));
+    const ids = starterPack(tapes);
     profile = await MixtapeProfile.findOneAndUpdate({ userId }, { $setOnInsert: { userId, inventory: ids, deck: ids.slice(0, 6), acquisitions: ids.map(trackId => ({ trackId, source: "starter_pack", at: new Date() })) } }, { upsert: true, returnDocument: "after" }).lean();
   }
   return { inventory: profile!.inventory as string[], deck: profile!.deck as string[], tracks };
