@@ -31,7 +31,7 @@ jobs:
   apply:
     # The Dedicated-draft commit uses the isolated job below. A global wave
     # here would also rewrite unrelated catalog rows on the same push.
-    if: ${{ !contains(github.event.head_commit.message, '[catalog-scope:dedicated-drafts]') && !contains(github.event.head_commit.message, '[catalog-scope:battlefield-features]') }}
+    if: ${{ !contains(github.event.head_commit.message, '[catalog-scope:dedicated-drafts]') && !contains(github.event.head_commit.message, '[catalog-scope:battlefield-features]') && !contains(github.event.head_commit.message, '[catalog-scope:hyperdisc-install]') }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -143,5 +143,31 @@ jobs:
         run: npm ci
       - name: Add only Battlefield 1942 dedicated-server feature
         run: npm run insert:catalog-wave -- --games=battlefield-1942-anthology --features-only "--feature=Dedicated Servers"
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+
+  apply-hyperdisc-install:
+    if: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[catalog-scope:hyperdisc-install]') }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check Mongo URI
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: |
+          if [[ ! "$MONGODB_URI" =~ ^mongodb(\+srv)?:// ]]; then
+            echo "MONGODB_URI is not configured; no catalog rows were changed."
+            exit 1
+          fi
+      - name: Install Platform Dependencies
+        run: npm ci
+      - name: Wire only HyperDisc Arena desktop installs
+        run: npm run insert:catalog-wave -- --games=hyperdisc-arena --fields=platforms,launchMethods,launcherInstall
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
