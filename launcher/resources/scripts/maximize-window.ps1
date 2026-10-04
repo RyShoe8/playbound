@@ -16,6 +16,10 @@ public class WindowHelper {
     public static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
     [DllImport("user32.dll")]
     public static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
+    [DllImport("user32.dll")]
+    public static extern bool SetProcessDpiAwarenessContext(IntPtr value);
+    [DllImport("user32.dll")]
+    public static extern bool SetProcessDPIAware();
     [StructLayout(LayoutKind.Sequential)]
     public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
     [StructLayout(LayoutKind.Sequential)]
@@ -28,6 +32,18 @@ public class WindowHelper {
 }
 "@
 Add-Type -TypeDefinition $source
+
+# Measure in physical pixels throughout. DwmGetWindowAttribute always reports
+# physical pixels, but GetMonitorInfo answers a DPI-unaware process in scaled
+# ones, so at 150% a centered 1920x1080 window on a 3840x2160 screen came back
+# as RECT=960,540,... against MONITOR=0,0,2560,1440. The crop divided one by
+# the other and Remote Play showed the wrong quarter of the screen.
+# -4 = DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 (Windows 10 1703+).
+try {
+    if (-not [WindowHelper]::SetProcessDpiAwarenessContext([IntPtr]::new(-4))) { [WindowHelper]::SetProcessDPIAware() | Out-Null }
+} catch {
+    try { [WindowHelper]::SetProcessDPIAware() | Out-Null } catch { }
+}
 
 $rawArgs = @($args)
 # Games with their own deliberate window-size override (resize-window.ps1)
