@@ -658,10 +658,10 @@ export function ControllerClient({
           hasEndpoints = Array.isArray(wsUrls) && wsUrls.length > 0;
           const next = {
             ...prev,
-            status: data.status,
-            playerSlot: data.playerSlot,
-            spectator: Boolean(data.spectator),
-            sessionToken: data.sessionToken,
+            status: data.status ?? prev.status,
+            playerSlot: data.playerSlot ?? prev.playerSlot,
+            spectator: data.spectator == null ? prev.spectator : Boolean(data.spectator),
+            sessionToken: data.sessionToken ?? prev.sessionToken,
             wsUrls,
             wsToken: data.wsToken ?? prev.wsToken,
             iceServers:
@@ -720,9 +720,15 @@ export function ControllerClient({
   }, []);
 
   // Transport: prefer WebRTC, fall back to WebSocket
+  const transportReady = Boolean(
+    join && join.status === "approved" && (join.playerSlot != null || join.spectator)
+  );
   useEffect(() => {
-    if (!join || join.status !== "approved" || (join.playerSlot == null && !join.spectator)) return;
+    if (!join || !transportReady) return;
     const session = join;
+    // Token and slot can be refreshed by the approval poll; read them when used
+    // rather than restarting the peer connection to pick them up.
+    const live = () => joinRef.current || session;
 
     let closed = false;
     let pc: RTCPeerConnection | null = null;
@@ -874,7 +880,7 @@ export function ControllerClient({
                 kind: "offer",
                 sdp: offer,
                 from: session.controllerId,
-                playerSlot: session.playerSlot,
+                playerSlot: live().playerSlot,
               });
             })();
           } catch {
@@ -937,8 +943,8 @@ export function ControllerClient({
         send({
           type: "hello",
           controllerId: session.controllerId,
-          sessionToken: session.sessionToken,
-          playerSlot: session.playerSlot,
+          sessionToken: live().sessionToken,
+          playerSlot: live().playerSlot,
           profile: mode,
         });
       };
@@ -967,7 +973,7 @@ export function ControllerClient({
         kind: "offer",
         sdp: offer,
         from: session.controllerId,
-        playerSlot: session.playerSlot,
+        playerSlot: live().playerSlot,
       });
 
       /*
@@ -1195,14 +1201,14 @@ export function ControllerClient({
               controllerId: session.controllerId,
               sessionToken,
               wsToken,
-              playerSlot: session.playerSlot,
+              playerSlot: live().playerSlot,
             })
           );
           send({
             type: "hello",
             controllerId: session.controllerId,
             sessionToken,
-            playerSlot: session.playerSlot,
+            playerSlot: live().playerSlot,
             profile: mode,
           });
         };
@@ -1288,16 +1294,11 @@ export function ControllerClient({
     // tear down a connecting peer and re-offer under the same controller id; its
     // fresh host candidates beat the new offer to the host and landed on the old
     // connection, leaving Remote Play on "checking" forever. The WS fallback
-    // reads the latest endpoints from joinRef when its timers fire.
-  }, [
-    join?.sessionId,
-    join?.controllerId,
-    join?.status,
-    join?.playerSlot,
-    join?.sessionToken,
-    sendInput,
-    reportOps,
-  ]);
+    // reads the latest endpoints from joinRef when its timers fire. Status,
+    // slot and token refreshes from the approval poll restarted it the same
+    // way, so only identity and readiness key it now.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [join?.sessionId, join?.controllerId, transportReady, sendInput, reportOps]);
 
   // Physical gamepad polling
   useEffect(() => {
