@@ -6,7 +6,7 @@ import { starterPack, validateDeck, confirmedWinner } from "./rules";
 
 export async function catalog() {
   await dbConnect();
-  const [tracks, config] = await Promise.all([MixtapeTrack.find({ enabled: true }).sort({ title: 1 }).lean(), MixtapeSettings.findOne({ key: "hyperdisc-arena" }).lean()]);
+  const [tracks, config] = await Promise.all([MixtapeTrack.find({ enabled: true, audioUrl: { $nin: ["", null] } }).sort({ title: 1 }).lean(), MixtapeSettings.findOne({ key: "hyperdisc-arena" }).lean()]);
   return { tracks: tracks.map(t => ({ ...t, id: String(t.tapeId), _id: undefined })), menuTapeId: config?.menuTapeId || "" };
 }
 export async function player(userId: string) {
