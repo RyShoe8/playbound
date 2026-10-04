@@ -963,7 +963,7 @@ export function EditionEditorForm({
             />
           ) : (
             <p className="rounded-lg border border-border/70 bg-secondary/30 p-3 text-xs text-muted-foreground">
-              💡 <strong>Note:</strong> Save this edition first to enable the <strong>Upload launcher package</strong> tool (which uploads and mirrors .zip/.7z archives to the VPS), or configure a direct URL below.
+              💡 <strong>Note:</strong> Save this edition first to enable the <strong>Upload installer or package</strong> tool (ZIP, 7z, EXE, or MSI files are mirrored to the VPS), or configure a direct URL below.
             </p>
           )}
           <InstallMethodFields

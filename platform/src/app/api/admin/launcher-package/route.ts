@@ -8,12 +8,13 @@ import { editions as seedEditions } from "@/lib/data/editions";
 import { archiveArtifactOnHost, archivedArtifactStatusOnHost } from "@/lib/gameHost/client";
 import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 import { registerVerifiedUploadedPackage } from "@/lib/mirrors/uploadedPackages";
+import { launcherPackageKind } from "@/lib/mirrors/launcherPackageKind";
 
 const payload = z.object({
   gameSlug: z.string().trim().regex(/^[a-z0-9][a-z0-9-]{0,119}$/),
   editionSlug: z.string().trim().regex(/^[a-z0-9][a-z0-9-]{0,119}$/).optional(),
   sourceUrl: z.string().url().refine((value) => new URL(value).protocol === "https:", "Package URL must use HTTPS"),
-  fileName: z.string().trim().regex(/^.+\.(zip|7z)$/i, "Upload a .zip or .7z package").max(180),
+  fileName: z.string().trim().regex(/^.+\.(zip|7z|exe|msi)$/i, "Upload a ZIP, 7z, EXE, or MSI file").max(180),
   sizeBytes: z.number().int().positive().max(20 * 1024 * 1024 * 1024),
   relativePath: z.string().trim().min(1).max(400).optional(),
 });
@@ -66,7 +67,8 @@ export async function POST(req: Request) {
     if (!relativePath || !relativePath.startsWith(packagePrefix(input))) {
       return NextResponse.json({ error: "Invalid package path" }, { status: 400 });
     }
-    const kind = input.fileName.toLowerCase().endsWith(".7z") ? "direct-7z" : "direct-zip";
+    const kind = launcherPackageKind(input.fileName);
+    if (!kind) return NextResponse.json({ error: "Unsupported installer file" }, { status: 400 });
 
     if (action === "queue") {
       const queued = await archiveArtifactOnHost({
