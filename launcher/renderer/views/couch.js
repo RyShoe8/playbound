@@ -21,6 +21,37 @@ const peers = new Map();
 const channels = new Map();
 /** @type {Map<string, Array<{ candidate: RTCIceCandidateInit | null, complete: boolean }>>} */
 const pendingRemoteIce = new Map();
+
+/*
+ * Which offer a remote ICE candidate belongs to, by its ICE username fragment.
+ *
+ * A controller that restarts its peer connection (the client re-runs its
+ * WebRTC setup when the host's LAN endpoints arrive) sends a second offer
+ * under the same controller id. Its host candidates are gathered in
+ * milliseconds and routinely reach the signal store before that offer does,
+ * so routing purely by controller id attached them to the PREVIOUS
+ * connection, where they are meaningless. The new connection then saw only
+ * the later srflx candidate, and on a LAN whose router does not hairpin,
+ * ICE sat on "checking" forever with no video.
+ */
+function candidateUfrag(candidate) {
+  if (!candidate) return null;
+  if (candidate.usernameFragment) return String(candidate.usernameFragment);
+  const m = /\bufrag (\S+)/.exec(String(candidate.candidate || ""));
+  return m ? m[1] : null;
+}
+
+function sdpUfrag(sdp) {
+  const m = /a=ice-ufrag:(\S+)/.exec(String(sdp?.sdp || sdp || ""));
+  return m ? m[1] : null;
+}
+
+/** True when this candidate can be applied to pc's current remote description. */
+function candidateMatchesPeer(pc, candidate) {
+  if (!pc?.remoteDescription) return false;
+  const ufrag = candidateUfrag(candidate);
+  return !ufrag || ufrag === sdpUfrag(pc.remoteDescription);
+}
 const reportedOps = new Set();
 function reportOps(status, fields) {
   const key = `${lastState?.session?.sessionId || "none"}:${status}:${fields.code || fields.phase}`;
@@ -312,7 +343,9 @@ async function pollSignals() {
       }
       if (payload.kind === "ice" && payload.from) {
         const pc = peers.get(payload.from);
-        if (pc?.remoteDescription) {
+        // A candidate for an offer not yet answered waits for that offer
+        // rather than landing on the connection it is about to replace.
+        if (candidateMatchesPeer(pc, payload.candidate)) {
           await addRemoteIceCandidate(pc, payload.candidate, payload.complete);
         } else {
           const pending = pendingRemoteIce.get(payload.from) || [];
@@ -603,7 +636,11 @@ async function answerOffer(controllerId, remoteSdp, session) {
   };
 
   await pc.setRemoteDescription(remoteSdp);
+  const offerUfrag = sdpUfrag(remoteSdp);
   for (const ice of pendingRemoteIce.get(controllerId) || []) {
+    // Candidates from an earlier, abandoned offer would only fail here.
+    const ufrag = candidateUfrag(ice.candidate);
+    if (ufrag && offerUfrag && ufrag !== offerUfrag) continue;
     await addRemoteIceCandidate(pc, ice.candidate, ice.complete);
   }
   pendingRemoteIce.delete(controllerId);

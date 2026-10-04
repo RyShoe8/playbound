@@ -1283,15 +1283,18 @@ export function ControllerClient({
         remoteStreamRef.current = null;
       }
     };
-    // Keep the peer connection across input-mode changes (keyboard ↔ controller).
-    // Restart when LAN endpoints arrive so WS fallback can use them.
+    // Keep the peer connection across input-mode changes (keyboard ↔ controller)
+    // and across the host's LAN endpoints arriving. Restarting on wsUrls used to
+    // tear down a connecting peer and re-offer under the same controller id; its
+    // fresh host candidates beat the new offer to the host and landed on the old
+    // connection, leaving Remote Play on "checking" forever. The WS fallback
+    // reads the latest endpoints from joinRef when its timers fire.
   }, [
     join?.sessionId,
     join?.controllerId,
     join?.status,
     join?.playerSlot,
     join?.sessionToken,
-    join?.wsUrls?.length,
     sendInput,
     reportOps,
   ]);
