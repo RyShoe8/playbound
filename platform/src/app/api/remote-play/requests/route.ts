@@ -73,6 +73,7 @@ export async function GET(req: Request) {
   }
   await dbConnect();
   const docs = await RemotePlaySession.find({ userId, hostDeviceId: forDevice, status: "requested" })
+    .select("_id clientDeviceId gameSlug editionSlug startedAt")
     .sort({ startedAt: 1 })
     .lean();
   return NextResponse.json({
