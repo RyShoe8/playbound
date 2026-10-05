@@ -99,6 +99,7 @@ function createHostService(deps) {
         // Soft handle so transport/debug still work without ViGEm.
         const soft = {
           slot,
+          unavailable: true,
           remove() {
             handles.delete(slot);
           },
@@ -432,8 +433,12 @@ function createHostService(deps) {
     const reserveHostSlot = Boolean(opts.reserveHostSlot);
     const prewarmSlot = reserveHostSlot ? 1 : 0;
     try {
-      await ensureSlot(prewarmSlot);
+      const handle = await ensureSlot(prewarmSlot);
+      if (opts.solo && handle?.unavailable) {
+        throw new Error("The phone connected, but PlayBound could not create its virtual controller. Restart PlayBound and try again.");
+      }
     } catch (err) {
+      if (opts.solo) throw err;
       console.warn(`[couch] prewarm slot ${prewarmSlot} failed:`, err?.message || err);
     }
 

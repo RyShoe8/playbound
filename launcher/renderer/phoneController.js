@@ -305,8 +305,13 @@ export function promptPhoneControllerPairing({ session, title }) {
           const pill = document.getElementById("phone-controller-pair-status");
           const text = document.getElementById("phone-pair-status-text");
           if (pill && text) {
-            pill.classList.add("is-connected");
-            text.textContent = "Phone connected! Ready to launch.";
+            const connected = st?.clients?.some((client) =>
+              controllers.some((controller) => controller.status === "approved" && controller.controllerId === client.controllerId)
+            );
+            pill.classList.toggle("is-connected", Boolean(connected));
+            text.textContent = connected
+              ? "Phone connected! Ready to launch."
+              : "Phone approved — connecting its controls to this PC…";
           }
         }
       });
@@ -470,7 +475,7 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
         } else {
           phoneHubSession = state.session;
           showPhoneJoinBanner(state);
-          setStatus("Phone controller paired — launching game…");
+          setStatus("Launching with phone controller — keep your phone connected…");
         }
       }
     }
