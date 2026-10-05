@@ -5,12 +5,13 @@
  * opening this view.
  */
 
-import { escapeHtml, setStatus, views, api } from "../shared.js";
+import { escapeHtml, setProgress, setStatus, views, api } from "../shared.js";
 import { CADENCE } from "../cadence.js";
 import { ensureHostDisplayStream, stopHostDisplayStream, setCropRect, markStreamStale, getRawDisplayTrack } from "../hostDisplayStream.js";
 import { disableGamepadBridge } from "../gamepadBridge.js";
 
 let wired = false;
+let phoneSetupPending = false;
 let signalSince = 0;
 let signalPollInFlight = false;
 const seenSignalIds = new Set();
@@ -111,7 +112,11 @@ export async function startCouchSessionQuiet(opts = {}) {
     return existing;
   }
   let reserveHostSlot = opts.reserveHostSlot;
-  if (reserveHostSlot == null) {
+  // A solo phone is the chosen input for player one. Merely having an idle
+  // physical pad connected must not push it into player two's slot.
+  if (opts.solo) {
+    reserveHostSlot = false;
+  } else if (reserveHostSlot == null) {
     try {
       const pads = navigator.getGamepads?.() || [];
       reserveHostSlot = pads.some((p) => p && p.connected);
@@ -119,21 +124,34 @@ export async function startCouchSessionQuiet(opts = {}) {
       reserveHostSlot = false;
     }
   }
-  const res = await pb().couchStart({
-    hostLabel: opts.hostLabel || "PlayBound",
-    maxPlayers: opts.maxPlayers,
-    reserveHostSlot: Boolean(reserveHostSlot),
-    // Passed through to hostService's session record so PlayBound Controls
-    // can tell "one phone, no party" apart from a real couch party — see
-    // the one caller of this function that actually sets it.
-    solo: Boolean(opts.solo),
-  });
+  if (opts.solo) {
+    phoneSetupPending = true;
+    setStatus("Phone controller: checking what this PC needs…");
+    setProgress("indeterminate");
+  }
+  let res;
+  try {
+    res = await pb().couchStart({
+      hostLabel: opts.hostLabel || "PlayBound",
+      maxPlayers: opts.maxPlayers,
+      reserveHostSlot: Boolean(reserveHostSlot),
+      // Passed through to hostService's session record so PlayBound Controls
+      // can tell "one phone, no party" apart from a real couch party.
+      solo: Boolean(opts.solo),
+    });
+  } finally {
+    if (opts.solo) {
+      phoneSetupPending = false;
+      setProgress(null);
+    }
+  }
   if (!res?.ok) {
     setStatus(res?.error || "Failed to start phone controller", true);
     return null;
   }
   lastState = res.state;
   startSignalPoll();
+  if (opts.solo) setStatus("Phone controller ready — scan the QR code to connect your phone.");
   return res.state;
 }
 
@@ -153,7 +171,8 @@ function ensureWired() {
     const msg = payload?.message;
     if (!msg) return;
     console.log("[couch-status]", msg);
-    if (couchViewVisible()) setStatus(msg);
+    if (phoneSetupPending) setStatus(`Phone controller: ${msg}`);
+    else if (couchViewVisible()) setStatus(msg);
   });
 
   pb().onCouchPeerSend?.((msg) => {

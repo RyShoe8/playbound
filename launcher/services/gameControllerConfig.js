@@ -1192,6 +1192,10 @@ const NO_CONFIG_NEEDED = {
     kind: "native",
     note: "Native gamepad support for 1–4 local chefs; bots fill empty seats.",
   },
+  "hyperdisc-arena": {
+    kind: "native",
+    note: "Godot reads gamepads directly, including hot-plugged virtual pads. The first controller is player one; bindings can be changed under Options > Controls.",
+  },
   freedoom: {
     kind: "native",
     note: "GZDoom and Zandronum feature native XInput and DirectInput controller detection with built-in analog sticks and triggers.",

@@ -277,7 +277,7 @@ test("Luanti is idempotent and declines a foreign file", () => {
 
 test("records why a native game has no writer", () => {
   // Left out silently, this is indistinguishable from having been forgotten.
-  for (const slug of ["supertux", "supertuxkart", "veloren", "shattered-pixel-dungeon", "endless-sky"]) {
+  for (const slug of ["supertux", "supertuxkart", "veloren", "shattered-pixel-dungeon", "endless-sky", "hyperdisc-arena"]) {
     assert.strictEqual(controllerSupportFor(slug).kind, "native", slug);
     assert.strictEqual(supportsControllerConfig(slug), false, `${slug} must not be written to`);
   }

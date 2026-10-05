@@ -105,7 +105,7 @@ function tryQuietInstall(setupPath) {
 async function ensureVigem(onStatus) {
   const status = typeof onStatus === "function" ? onStatus : () => {};
 
-  status("Checking controllers…");
+  status("Checking virtual controller support…");
   let probe = await probeProvider();
   if (probe.ok) {
     return { ok: true, installed: false };
@@ -120,15 +120,15 @@ async function ensureVigem(onStatus) {
     };
   }
 
-  status("Setting up controllers…");
+  status("Installing the virtual controller driver — approve the Windows prompt if it appears…");
   // Prefer elevated silent install (UAC once). Fallback to direct /quiet if already elevated.
   let install = await installBundledSetup(setupPath);
   if (!install.ok) {
-    status("Retrying controller setup…");
+    status("Retrying virtual controller driver installation…");
     install = tryQuietInstall(setupPath);
   }
 
-  status("Finishing controller setup…");
+  status("Verifying the virtual controller driver…");
   // Driver may need a moment after setup exits.
   await new Promise((r) => setTimeout(r, 1500));
   probe = await probeProvider();
