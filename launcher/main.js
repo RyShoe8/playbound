@@ -10292,7 +10292,20 @@ async function handleRemotePlayHostRequest(reqRow) {
   }
 }
 
+let remotePlayPollInFlight = false;
 async function pollRemotePlayRequests() {
+  // The timer runs every four seconds, but a slow API call can take eight.
+  // Never stack requests from this PC against an already struggling API.
+  if (remotePlayPollInFlight) return;
+  remotePlayPollInFlight = true;
+  try {
+    await pollRemotePlayRequestsOnce();
+  } finally {
+    remotePlayPollInFlight = false;
+  }
+}
+
+async function pollRemotePlayRequestsOnce() {
   const settings = loadSettings();
   if (!settings.launcherToken) return;
   try {
@@ -11391,7 +11404,7 @@ ipcMain.handle("couch-signal-poll", async (_event, since) => {
   const res = await apiFetch(
     `${getApiBase()}/api/couch/sessions/${session.sessionId}/signal?${qs}`
   );
-  if (!res.ok) return { messages: [] };
+  if (!res.ok) throw new Error(`Couch signaling returned HTTP ${res.status}`);
   return res.json();
 });
 

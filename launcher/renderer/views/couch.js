@@ -319,7 +319,10 @@ async function pollSignals() {
     if (!session) return;
     // Concurrent signal posts can reach Mongo out of timestamp order. Replay
     // a short window and dedupe by ID instead of losing a late ICE candidate.
-    const res = await pb().couchSignalPoll(Math.max(0, signalSince - 10_000));
+    // The server retains signaling for two minutes. After a slow/failed poll,
+    // replay that whole window and dedupe by ID so an ICE candidate is not
+    // lost merely because the host was offline for more than ten seconds.
+    const res = await pb().couchSignalPoll(Math.max(0, signalSince - 120_000));
     const messages = (res?.messages || []).filter((m) => !seenSignalIds.has(m.id));
 
     if (messages.length > 0) {
