@@ -169,6 +169,15 @@ export interface EditionInstallConfig {
     urlMac?: string | null;
     /** Linux-specific download URL (usually a .tar.gz, .AppImage, or .deb). */
     urlLinux?: string | null;
+    /** Intel-Mac build when it differs from urlMac (same meaning as the game recipe). */
+    urlMacX64?: string | null;
+    uploadId?: string | null;
+    archiveInstallerName?: string | null;
+    steamAppId?: string | null;
+    steamPrerequisites?: { appId: string; name: string }[];
+    needsDirectDrawWrapper?: boolean;
+    needsDotNetMajor?: number | null;
+    gameJoltBuildId?: string | null;
     fileName?: string | null;
     versionLabel?: string | null;
     knownExePaths?: string[];

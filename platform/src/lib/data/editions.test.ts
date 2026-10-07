@@ -18,18 +18,14 @@ describe("OpenE2140 seed parenting", () => {
   });
 });
 
-describe("Privateer Gemini Gold editions", () => {
-  const geminiGold = editions.filter((e) => e.gameSlug === "privateer-gemini-gold");
-
-  it("uses one edition that selects the native installer for each OS", () => {
-    expect(geminiGold).toHaveLength(1);
-    const edition = geminiGold[0];
-    expect(edition.slug).toBe("gemini-gold-1-03");
-    expect(edition.platforms).toEqual(["Windows", "Linux", "macOS"]);
-    expect(edition.installConfig?.playbound_installer).toMatchObject({
-      url: expect.stringMatching(/PrivateerGold1\.03\.exe$/),
-      urlMac: expect.stringMatching(/PrivateerGold1\.03\.dmg$/),
-      urlLinux: expect.stringMatching(/PrivateerGold1\.03\.bz2\.bin$/),
+describe("Privateer Gemini Gold install", () => {
+  it("has no edition row: the base game's own recipe selects the installer per OS", async () => {
+    expect(editions.filter((e) => e.gameSlug === "privateer-gemini-gold")).toHaveLength(0);
+    const { launcherInstallBySlug } = await import("./launcherInstall");
+    expect(launcherInstallBySlug["privateer-gemini-gold"]).toMatchObject({
+      url: expect.stringMatching(/PrivateerGold1.03.exe$/),
+      urlMac: expect.stringMatching(/PrivateerGold1.03.dmg$/),
+      urlLinux: expect.stringMatching(/PrivateerGold1.03.bz2.bin$/),
     });
   });
 });
