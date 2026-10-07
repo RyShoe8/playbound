@@ -330,6 +330,13 @@ function deriveInstallMethod(game: Game): { method: InstallMethod; config: Editi
           assetPattern: recipe.assetPattern ?? null,
           exeHint: recipe.exeHint ?? null,
           url: recipe.url ?? null,
+          // Same per-platform fields the game entry carries, or an edition
+          // derived from a game would only ever install on Windows.
+          urlMac: recipe.urlMac ?? null,
+          urlMacX64: recipe.urlMacX64 ?? null,
+          urlLinux: recipe.urlLinux ?? null,
+          assetPatternMac: recipe.assetPatternMac ?? null,
+          assetPatternLinux: recipe.assetPatternLinux ?? null,
           fileName: recipe.fileName ?? null,
           versionLabel: recipe.versionLabel ?? null,
           knownExePaths: recipe.knownExePaths ?? [],

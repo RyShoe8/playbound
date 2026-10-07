@@ -669,6 +669,7 @@ function catalogEntryFromEdition(edition) {
   if (cfg?.kind) {
     registerDownloadHostFromUrl(cfg.url);
     registerDownloadHostFromUrl(cfg.urlMac);
+    registerDownloadHostFromUrl(cfg.urlMacX64);
     registerDownloadHostFromUrl(cfg.urlLinux);
     registerDownloadHostFromUrl(cfg.overlayUrl);
     // Mod-loader payloads are downloaded later (at install and again as a
@@ -689,8 +690,13 @@ function catalogEntryFromEdition(edition) {
       exeHint: cfg.exeHint || undefined,
       url: cfg.url || undefined,
       urlMac: cfg.urlMac || undefined,
+      urlMacX64: cfg.urlMacX64 || undefined,
       urlLinux: cfg.urlLinux || undefined,
       fileName: cfg.fileName || undefined,
+      archiveInstallerName: cfg.archiveInstallerName || undefined,
+      uploadId: cfg.uploadId || undefined,
+      steamAppId: cfg.steamAppId || undefined,
+      needsDotNetMajor: Number.isFinite(cfg.needsDotNetMajor) && cfg.needsDotNetMajor > 0 ? cfg.needsDotNetMajor : undefined,
       versionLabel: cfg.versionLabel || undefined,
       gameJoltBuildId: cfg.gameJoltBuildId || undefined,
       steamPrerequisites: Array.isArray(cfg.steamPrerequisites) ? cfg.steamPrerequisites : undefined,
