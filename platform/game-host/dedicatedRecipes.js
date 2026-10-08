@@ -198,6 +198,10 @@ export function createDedicatedRecipes(deps) {
       args: (port, ctx) => [
         "-game", "cstrike",
         "-strictportbind",
+        // Source also binds a client UDP port (27005 by default). TF2 and
+        // other Source rooms may already own it even when our game port is free.
+        "+clientport", String(port + 1000),
+        "-nohltv",
         // srcds_run's own restart loop would hide failures from the agent.
         "-norestart",
         "+ip", "0.0.0.0",

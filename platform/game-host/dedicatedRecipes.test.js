@@ -33,6 +33,8 @@ test("Quake II Enhanced does not advertise the incompatible Original server", ()
 test("command-line games pass the cap to the server", () => {
   const css = recipes["counter-strike-source"].args(27060, ctxFor("counter-strike-source"));
   assert.equal(css[css.indexOf("-maxplayers") + 1], "6");
+  assert.equal(css[css.indexOf("+clientport") + 1], "28060");
+  assert.ok(css.includes("-nohltv"));
   const ges = recipes["goldeneye-source"].args(27120, ctxFor("goldeneye-source"));
   assert.equal(ges[ges.indexOf("-maxplayers") + 1], "6");
   const terraria = recipes.terraria.args(7777, ctxFor("terraria", ID_A, 9));

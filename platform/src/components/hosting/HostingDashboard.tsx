@@ -59,7 +59,7 @@ async function api(path: string, init?: RequestInit) {
 function statusOf(s: Server) {
   if (!s.online) return { label: "Offline", tone: "text-muted-foreground" };
   if (s.runtimeState === "running") return { label: "Online", tone: "text-emerald-500" };
-  if (s.runtimeState === "failed") return { label: "Restarting", tone: "text-amber-500" };
+  if (s.runtimeState === "failed") return { label: "Start failed", tone: "text-destructive" };
   return { label: "Starting", tone: "text-amber-500" };
 }
 
@@ -262,6 +262,7 @@ function ServerRow({
           {status.label}
           {s.online && s.players !== null ? ` · ${s.players} / ${s.slots} players` : ""}
         </p>
+        {s.runtimeState === "failed" && s.statusReason ? <p className="mt-1 max-w-md text-xs text-destructive">{s.statusReason}</p> : null}
       </div>
       <div className="flex flex-wrap gap-2">
         {owner ? (
@@ -328,22 +329,13 @@ function CreateServer({
           ))}
         </select>
       </label>
-      <fieldset className="text-sm">
-        <legend>Server size ({free} capacity slots free now){game && !game.capEnforced ? " · no enforced player cap" : ""}</legend>
-        <div className="mt-1 flex flex-wrap gap-2">
-          {sizes.map((n) => (
-            <button
-              key={n}
-              type="button"
-              aria-pressed={size === n}
-              onClick={() => setSlots(n)}
-              className={`rounded-lg border px-3 py-1.5 ${size === n ? "border-primary bg-primary/10 font-semibold" : "border-border"}`}
-            >
-              {game?.capEnforced ? `${n} players` : `${n} capacity slots`}
-            </button>
-          ))}
-        </div>
-      </fieldset>
+      <label className="block text-sm">
+        {game?.capEnforced ? "Player count" : "Server capacity"} ({free} slots free now)
+        <select className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5" value={size || ""} onChange={(e) => setSlots(Number(e.target.value))}>
+          {sizes.map((n) => <option key={n} value={n}>{game?.capEnforced ? `${n} players` : `${n} capacity slots`}</option>)}
+        </select>
+        {game && !game.capEnforced ? <span className="mt-1 block text-xs text-muted-foreground">This game does not enforce a player cap. Your server uses the selected capacity slots.</span> : null}
+      </label>
       <label className="block text-sm">
         Server name
         <input className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5" maxLength={60} value={name} onChange={(e) => setName(e.target.value)} placeholder="Friday Night Red Alert" />

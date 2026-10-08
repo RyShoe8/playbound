@@ -5,6 +5,7 @@ import { currentSubscription, listCustomerServers, offeredGames } from "@/lib/de
 import { customerServerView } from "@/lib/dedicatedHosting/view";
 import { sharedServers } from "@/lib/dedicatedHosting/servers";
 import DedicatedCapacityHold from "@/lib/models/DedicatedCapacityHold";
+import { listManagedHostRooms } from "@/lib/gameHost/client";
 
 /** GET /api/hosting/me — the signed-in customer's PlayBound Dedicated plan and saved servers. */
 export async function GET(req: Request) {
@@ -19,6 +20,27 @@ export async function GET(req: Request) {
     DedicatedCapacityHold.findOne({ planChangeSubscriptionId: sub._id, state: "held" }).select({ toSlots: 1 }).lean(),
   ]);
   const region = tier.regions.find((r) => r.key === sub.regionKey);
+  const serverViews = servers.map(customerServerView);
+  if (serverViews.some((server) => server.online && server.runtimeState === "pending")) {
+    const agent = await listManagedHostRooms();
+    if (agent.ok) {
+      const rooms = new Map(agent.rooms.map((room) => [room.communityServerId, room]));
+      for (const server of serverViews) {
+        if (!server.online || server.runtimeState !== "pending") continue;
+        const room = rooms.get(server.id);
+        const job = agent.jobs[server.id];
+        if (room) {
+          server.runtimeState = "running";
+          server.host = room.host;
+          server.port = room.port;
+          server.statusReason = null;
+        } else if (job?.status === "failed") {
+          server.runtimeState = "failed";
+          server.statusReason = job.error || "The game server could not start.";
+        }
+      }
+    }
+  }
   return NextResponse.json(
     {
       subscription: {
@@ -38,7 +60,7 @@ export async function GET(req: Request) {
       packages: tier.packages.filter((p) => p.enabled && p.stripePriceId).map((p) => ({ slots: p.slots, priceCents: p.priceCents, currency: p.currency })),
       pendingUpgradeSlots: pendingUpgrade?.toSlots || null,
       games,
-      servers: servers.map(customerServerView),
+      servers: serverViews,
       shared: sharedView,
     },
     { headers: { "cache-control": "no-store" } }
