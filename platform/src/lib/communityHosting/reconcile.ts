@@ -11,7 +11,7 @@ import CatalogGame from "@/lib/models/CatalogGame";
 import Edition from "@/lib/models/Edition";
 import { fetchGameHostHealth, fetchGameHostMetrics, listManagedHostRooms, requestManagedHostRoom, stopManagedHostRoom } from "@/lib/gameHost/client";
 import { readyPublishedHostableCatalog } from "@/lib/dedicatedHosting/hostableProfiles";
-import { canScaleDownEmptyServer, placementDecision, runningReservationEnvelope, type ResourceEnvelope } from "./capacity";
+import { canScaleDownEmptyServer, paidScaleDownRank, placementDecision, runningReservationEnvelope, type ResourceEnvelope } from "./capacity";
 import { managedQueryKind, QUERY_BY_GAME, queryManagedPlayerCount, queryManagedOccupancy } from "./playerQuery";
 import { recordResourceSample } from "./samples";
 import { recordPopulationReading } from "./population";
@@ -460,16 +460,24 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
     });
     const plannedReservations = reservations.filter((r) => !r.communityServerId || !alreadyRunning.has(String(r.communityServerId)));
 
-    // Budget downsizing guard: if running servers exceed the configured hosting budget,
-    // cleanly scale down the lowest-priority empty, unprotected servers until within budget.
+    // Paid capacity has already been removed from this budget. Empty community
+    // rooms yield first; if necessary, a paid order also takes precedence over
+    // occupied or event-protected community rooms. Never preempt for a free-only
+    // rotation: in that case retain the existing empty/unprotected safeguard.
     let totalRunningCpu = runningManaged.reduce((sum, e) => sum + e.cpuCores, 0);
     let totalRunningRam = runningManaged.reduce((sum, e) => sum + e.ramBytes, 0);
     const previous = await CommunityServer.find({ regionKey: config.node.regionKey, ownerType: { $ne: "user" } }).select({ profileKey: 1, cooldownUntil: 1, manualPause: 1, onlineSince: 1 }).lean();
 
     if (totalRunningCpu > config.budget.cpuCores || totalRunningRam > config.budget.ramBytes) {
+      const paidNeedsCapacity = paid.cpuCores > 0 || paid.ramBytes > 0;
       const candidatesToScaleDown = runningServers
-        .filter((s) => canScaleDownEmptyServer({ players: s.playerCount, checkedAt: s.playerCountCheckedAt, protectedUntil: s.protectedUntil }, now))
+        .filter((s) => paidNeedsCapacity || canScaleDownEmptyServer({ players: s.playerCount, checkedAt: s.playerCountCheckedAt, protectedUntil: s.protectedUntil }, now))
         .sort((a, b) => {
+          if (paidNeedsCapacity) {
+            const rankA = paidScaleDownRank({ players: a.playerCount, protectedUntil: a.protectedUntil }, now);
+            const rankB = paidScaleDownRank({ players: b.playerCount, protectedUntil: b.protectedUntil }, now);
+            if (rankA !== rankB) return rankA - rankB;
+          }
           const profA = profileByKey.get(a.profileKey);
           const profB = profileByKey.get(b.profileKey);
           return rotationPriority(now, profA, previous) - rotationPriority(now, profB, previous);

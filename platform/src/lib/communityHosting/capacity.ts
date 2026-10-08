@@ -33,6 +33,13 @@ export function canScaleDownEmptyServer(input: {
     now.getTime() - new Date(input.checkedAt).getTime() <= 2 * 60_000 &&
     (!input.protectedUntil || new Date(input.protectedUntil) <= now);
 }
+
+/** Paid capacity preempts idle free rooms before occupied ones. Event-protected
+ * rooms are the last to yield, but cannot block a paid subscription. */
+export function paidScaleDownRank(input: { players: number | null; protectedUntil: Date | null }, now: Date): number {
+  if (input.protectedUntil && new Date(input.protectedUntil) > now) return 2;
+  return input.players === 0 ? 0 : 1;
+}
 export type CapacityReason = "NO_HEALTHY_NODE" | "STALE_METRICS" | "INSUFFICIENT_CAPACITY" | "REGION_UNAVAILABLE" | "PROFILE_NOT_VERIFIED";
 
 export type PlacementInput = {
