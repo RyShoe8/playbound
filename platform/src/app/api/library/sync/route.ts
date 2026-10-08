@@ -15,6 +15,7 @@ const syncSchema = z.object({
   baseGameSlug: z.string().min(1).max(80).optional(),
   action: z.enum(["install", "uninstall"]),
   version: z.string().max(80).optional(),
+  installationId: z.string().uuid().optional(),
   editionSlug: z.string().max(80).nullable().optional(),
 });
 
@@ -57,19 +58,28 @@ export async function POST(req: Request) {
           },
           { upsert: true, returnDocument: "before" }
         );
-        if (!prev || !prev.installed) {
-          void saveEvent({
+        // Acknowledgement is written only after telemetry succeeds, so a
+        // retry repairs a missing event without writing on every startup.
+        if (!prev || !prev.installed || (body.installationId && prev.telemetryAcknowledgedId !== body.installationId)) {
+          await saveEvent({
             event: "mod_installed",
             properties: {
               modSlug: body.slug,
               baseGameSlug: body.baseGameSlug,
               installMethod: "launcher",
               version: body.version,
+              installationId: body.installationId,
             },
             userId: String(user._id),
             timestamp: now.toISOString(),
             userAgent: req.headers.get("user-agent"),
-          }).catch(() => undefined);
+          });
+          if (body.installationId) {
+            await LibraryModEntry.updateOne(
+              { userId: user._id, modSlug: body.slug },
+              { $set: { telemetryAcknowledgedId: body.installationId } }
+            );
+          }
         }
         return NextResponse.json({
           success: true,

@@ -56,6 +56,14 @@ export type TelemetryEventMap = {
     baseGameSlug?: string;
     installMethod?: string;
     version?: string;
+    installationId?: string;
+  } & Extra;
+  /** Manual mod link selected; the off-site installation cannot be verified. */
+  mod_download_clicked: {
+    modSlug: string;
+    baseGameSlug?: string;
+    url?: string;
+    source?: string;
   } & Extra;
   install_clicked: {
     gameId?: string;

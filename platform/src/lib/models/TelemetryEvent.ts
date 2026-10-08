@@ -64,6 +64,18 @@ TelemetryEventSchema.index({ event: 1, "properties.gameSlug": 1, createdAt: -1 }
  */
 TelemetryEventSchema.index({ event: 1, "properties.gameSlug": 1, sessionId: 1, createdAt: -1 });
 TelemetryEventSchema.index({ event: 1, "properties.modSlug": 1, createdAt: -1 });
+// One receipt per physical launcher mod install, even if anonymous telemetry
+// arrives before account-linked library sync (or either path retries).
+TelemetryEventSchema.index(
+  { event: 1, "properties.installationId": 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      event: "mod_installed",
+      "properties.installationId": { $type: "string" },
+    },
+  }
+);
 TelemetryEventSchema.index({ event: 1, "properties.editionSlug": 1, createdAt: -1 });
 
 const TelemetryEvent =
