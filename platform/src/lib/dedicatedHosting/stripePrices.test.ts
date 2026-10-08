@@ -6,7 +6,7 @@ vi.mock("@/lib/db", () => ({ default: async () => undefined }));
 
 import DedicatedHostingTier from "@/lib/models/DedicatedHostingTier";
 import { getTier, saveTier } from "./tier";
-import { syncBasicStripePrices } from "./stripePrices";
+import { syncBasicStripePrices, syncTierStripePrices } from "./stripePrices";
 
 let mongo: MongoMemoryServer;
 let nextPrice = 0;
@@ -28,8 +28,11 @@ beforeEach(async () => {
     const path = new URL(url).pathname.replace("/v1/", "");
     calls.push({ path, method: init.method || "GET" });
     let data: unknown;
-    if (path === "products" && init.method === "POST") data = { id: "prod_basic", active: true };
-    else if (path === "products/prod_basic") data = { id: "prod_basic", active: true };
+    if (path === "products" && init.method === "POST") {
+      const body = new URLSearchParams(init.body as string);
+      data = { id: `prod_${body.get("metadata[playbound_tier]")}`, active: true };
+    }
+    else if (/^products\/prod_(basic|pro|extreme)$/.test(path)) data = { id: path.split("/")[1], active: true };
     else if (path === "prices" && init.method === "POST") {
       const body = new URLSearchParams(init.body as string);
       const price = {
@@ -67,6 +70,35 @@ describe("Basic Stripe price sync", () => {
   it("never creates prices while the sales switch is on", async () => {
     await saveTier("basic", { salesEnabled: true });
     await expect(syncBasicStripePrices()).rejects.toThrow("Pause sales");
+    expect(calls).toHaveLength(0);
+  });
+});
+
+describe("higher-tier Stripe price sync", () => {
+  it("keeps all three tier products and package prices separate", async () => {
+    for (const key of ["pro", "extreme"] as const) {
+      await saveTier(key, { packages: [{ slots: 8, priceCents: key === "pro" ? 2499 : 3499, currency: "usd", enabled: true, order: 0, stripePriceId: null }] });
+    }
+    for (const key of ["basic", "pro", "extreme"] as const) await syncTierStripePrices(key);
+    const tiers = await Promise.all((["basic", "pro", "extreme"] as const).map((key) => getTier(key)));
+    expect(tiers.map((tier) => tier.stripeProductId)).toEqual(["prod_basic", "prod_pro", "prod_extreme"]);
+    expect(new Set(tiers.map((tier) => tier.packages[0].stripePriceId)).size).toBe(3);
+    expect(tiers.map((tier) => prices.get(tier.packages[0].stripePriceId!)?.product)).toEqual(["prod_basic", "prod_pro", "prod_extreme"]);
+  });
+
+  it.each(["pro", "extreme"] as const)("creates and reuses separate %s prices", async (key) => {
+    await saveTier(key, { packages: [{ slots: 8, priceCents: 2499, currency: "usd", enabled: true, order: 0, stripePriceId: null }] });
+    const first = await syncTierStripePrices(key);
+    expect(first).toEqual({ productId: `prod_${key}`, synced: 1, created: 1 });
+    expect(await syncTierStripePrices(key)).toEqual({ productId: `prod_${key}`, synced: 1, created: 0 });
+    const saved = await getTier(key);
+    expect(prices.get(saved.packages[0].stripePriceId!)?.product).toBe(`prod_${key}`);
+    expect((await getTier("basic")).stripeProductId).toBeNull();
+  });
+
+  it("does not sync a higher tier while its sales switch is on", async () => {
+    await saveTier("pro", { salesEnabled: true, packages: [{ slots: 8, priceCents: 2499, currency: "usd", enabled: true, order: 0, stripePriceId: null }] });
+    await expect(syncTierStripePrices("pro")).rejects.toThrow("Pause sales");
     expect(calls).toHaveLength(0);
   });
 });

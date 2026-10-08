@@ -96,6 +96,7 @@ export function AdminHostingPanel() {
   const [tier, setTier] = useState<Tier | null>(null);
   const [tierCatalogs, setTierCatalogs] = useState<Record<HostingTierKey, { tier: Tier; profiles: ProfileInfo[] }> | null>(null);
   const [selectedCatalogTier, setSelectedCatalogTier] = useState<HostingTierKey>("basic");
+  const [selectedPlanTier, setSelectedPlanTier] = useState<HostingTierKey>("basic");
   const [subs, setSubs] = useState<Sub[]>([]);
   const [servers, setServers] = useState<CustomerServer[]>([]);
   const [openSupport, setOpenSupport] = useState(0);
@@ -122,12 +123,12 @@ export function AdminHostingPanel() {
     return () => clearTimeout(timer);
   }, [load]);
 
-  async function saveTier(next: Tier) {
+  async function savePlanTier(next: Tier) {
+    const key = selectedPlanTier;
     setMessage(null);
     try {
-      const r = await api("/api/admin/hosting/tiers/basic", { method: "PUT", body: JSON.stringify(next) });
-      setTier(r.tier);
-      setTierCatalogs((current) => current ? { ...current, basic: { ...current.basic, tier: r.tier } } : current);
+      await api(`/api/admin/hosting/tiers/${key}`, { method: "PUT", body: JSON.stringify(next) });
+      await load();
       setMessage("Saved.");
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Save failed");
@@ -174,7 +175,16 @@ export function AdminHostingPanel() {
         ))}
       </div>
       {message ? <p className="rounded-lg border border-border bg-secondary/50 p-2 text-sm" role="status">{message}</p> : null}
-      {tab === "Plan" ? <PlanTab key={JSON.stringify(tier)} tier={tier} onSave={saveTier} onSync={() => act(() => api("/api/admin/hosting/stripe-prices", { method: "POST" }), "Stripe prices synchronized. Sales remain disabled.")} /> : null}
+      {tab === "Plan" && tierCatalogs ? <>
+        <div className="flex flex-wrap gap-2" aria-label="Hosting plan tier">
+          {HOSTING_TIERS.map((key) => <button key={key} type="button" aria-pressed={selectedPlanTier === key}
+            onClick={() => setSelectedPlanTier(key)}
+            className={`rounded-lg px-3 py-1.5 text-sm capitalize ${selectedPlanTier === key ? "bg-primary text-primary-foreground" : "border border-border hover:bg-secondary"}`}>{key}</button>)}
+        </div>
+        <PlanTab key={`${selectedPlanTier}:${JSON.stringify(tierCatalogs[selectedPlanTier].tier)}`}
+          tier={tierCatalogs[selectedPlanTier].tier} onSave={savePlanTier}
+          onSync={() => act(() => api("/api/admin/hosting/stripe-prices", { method: "POST", body: JSON.stringify({ tier: selectedPlanTier }) }), `${selectedPlanTier[0].toUpperCase()}${selectedPlanTier.slice(1)} Stripe prices synchronized. Sales remain disabled.`)} />
+      </> : null}
       {tab === "Games" && tierCatalogs ? <>
         <div className="flex flex-wrap gap-2" aria-label="Hosting subscription tier">
           {HOSTING_TIERS.map((key) => <button key={key} type="button" aria-pressed={selectedCatalogTier === key}
