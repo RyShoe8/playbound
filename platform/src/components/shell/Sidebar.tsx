@@ -16,9 +16,7 @@ import {
   Mouse,
   Play,
   Puzzle,
-  Server,
   Shield,
-  ShieldCheck,
   Swords,
   Users,
 } from "lucide-react";
@@ -47,7 +45,6 @@ const nav = [
    */
   { href: "/deals", label: "Game Deals", icon: BadgePercent },
   { href: "/gear", label: "Gear", icon: Mouse },
-  { href: "/standards", label: "Our Standard", icon: ShieldCheck },
   { href: "/feedback", label: "Provide Feedback", icon: Megaphone },
 ];
 

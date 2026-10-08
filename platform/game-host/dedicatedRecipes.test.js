@@ -33,6 +33,7 @@ test("Quake II Enhanced does not advertise the incompatible Original server", ()
 test("command-line games pass the cap to the server", () => {
   const css = recipes["counter-strike-source"].args(27060, ctxFor("counter-strike-source"));
   assert.equal(css[css.indexOf("-maxplayers") + 1], "6");
+  assert.equal(css[css.indexOf("+map") + 1], "de_dust2");
   assert.equal(css[css.indexOf("+clientport") + 1], "28060");
   assert.ok(css.includes("-nohltv"));
   const ges = recipes["goldeneye-source"].args(27120, ctxFor("goldeneye-source"));
@@ -41,6 +42,16 @@ test("command-line games pass the cap to the server", () => {
   assert.equal(terraria[terraria.indexOf("-maxplayers") + 1], "9");
   const unturned = recipes.unturned.args(27075, ctxFor("unturned", ID_A, 12));
   assert.deepEqual(unturned, [`+InternetServer/pb-${ID_A}`]);
+});
+
+test("Counter-Strike: Source uses an accepted starting map and time limit", () => {
+  const settings = acceptedSettingsFor("counter-strike-source", { map: "cs_office", mp_timelimit: 25, unwanted: "quit" });
+  assert.deepEqual(settings, { map: "cs_office", mp_timelimit: 25 });
+  const args = recipes["counter-strike-source"].args(27060, { ...ctxFor("counter-strike-source"), settings });
+  assert.equal(args[args.indexOf("+map") + 1], "cs_office");
+  assert.equal(args[args.indexOf("+mp_timelimit") + 1], "25");
+  const unsafe = recipes["counter-strike-source"].args(27060, { ...ctxFor("counter-strike-source"), settings: { map: "cs_office;quit" } });
+  assert.equal(unsafe[unsafe.indexOf("+map") + 1], "de_dust2");
 });
 
 test("party-hosted recipes honor the admin slot cap without a customer subscription", () => {
