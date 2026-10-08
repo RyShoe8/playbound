@@ -10,8 +10,7 @@ import { getHostedInGameSteps } from "@/lib/multiplayer/adapters";
 import { createHostRoom, deleteHostRoom, isGameHostConfigured, listHostRooms } from "./client";
 import {
   emptyHostedPayload,
-  getHostableGame,
-  isHostableGame,
+  getPartyHostableGame,
   PARTY_DEDICATED_GAMES,
   partyDedicatedPlayerLimit,
   type HostedStatus,
@@ -92,7 +91,8 @@ export async function reconcilePartyHostAlive(party: PartyLike): Promise<void> {
 
 export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
   const slug = String(party.gameSlug || "");
-  if (!isHostableGame(slug)) return false;
+  const recipe = getPartyHostableGame(slug, party.editionSlug);
+  if (!recipe) return false;
 
   await reconcilePartyHostAlive(party);
   const hosted = ensureHosted(party);
@@ -128,7 +128,7 @@ export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
    * catalog's — 0 A.D. is `0ad` here and `0-ad` on the box. Sending the
    * catalog slug would have the agent look up a recipe it does not have.
    */
-  const hostSlug = getHostableGame(slug)?.slug || slug;
+  const hostSlug = recipe.slug;
   /*
    * Start it as the host asked for it.
    *
@@ -141,10 +141,10 @@ export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
    * they were saved — anything the game no longer declares is dropped instead
    * of being handed to the agent.
    */
-  const planned = coerceSettingValues(slug, (hosted.settings as Record<string, unknown>) || {});
-  if (PARTY_DEDICATED_GAMES[slug]) {
+  const planned = coerceSettingValues(hostSlug, (hosted.settings as Record<string, unknown>) || {});
+  if (PARTY_DEDICATED_GAMES[hostSlug]) {
     const config = await CommunityHostingConfig.findOne({ key: "global" }).select({ maxPlayersPerServer: 1 }).lean();
-    planned.values.maxPlayers = partyDedicatedPlayerLimit(slug, Number(config?.maxPlayersPerServer ?? 16));
+    planned.values.maxPlayers = partyDedicatedPlayerLimit(hostSlug, Number(config?.maxPlayersPerServer ?? 16));
   }
   /*
    * Only pass party.openRaMod for Official OpenRA. Fixed-mod editions (CA,
@@ -220,7 +220,7 @@ export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
 export async function releasePartyHost(party: PartyLike): Promise<void> {
   const hosted = party.hosted;
   if (!hosted?.roomId) {
-    if (hosted && isHostableGame(String(party.gameSlug || ""))) {
+    if (hosted && getPartyHostableGame(String(party.gameSlug || ""), party.editionSlug)) {
       hosted.status = "none";
       hosted.host = null;
       hosted.port = null;
@@ -248,12 +248,14 @@ export async function releasePartyHost(party: PartyLike): Promise<void> {
 export function hostedPayloadFromDoc(
   gameSlug: string,
   hostMode: string | null,
-  hosted?: PartyHostFields | null
+  hosted?: PartyHostFields | null,
+  editionSlug?: string | null
 ) {
-  const resolvedMode = hostMode || defaultHostMode(gameSlug);
+  const resolvedMode = hostMode || defaultHostMode(gameSlug, editionSlug);
   const isDedicated = resolvedMode === "dedicated";
   const base = emptyHostedPayload(gameSlug);
-  const enabled = isDedicated && isHostableGame(gameSlug);
+  const recipe = getPartyHostableGame(gameSlug, editionSlug);
+  const enabled = isDedicated && Boolean(recipe);
   /*
    * Same reasoning as the virtual-LAN payload: without this the launcher
    * cannot tell "the room is still starting" from "this deployment has no game
@@ -261,7 +263,7 @@ export function hostedPayloadFromDoc(
    * something that would never become ready.
    */
   const configured = isGameHostConfigured();
-  const steps = enabled ? getHostedInGameSteps(gameSlug) : [];
+  const steps = enabled ? getHostedInGameSteps(recipe!.slug) : [];
   if (!hosted) return { ...base, enabled, configured, steps };
   const ready = hosted.status === "ready" && Boolean(hosted.host && hosted.port);
   return {

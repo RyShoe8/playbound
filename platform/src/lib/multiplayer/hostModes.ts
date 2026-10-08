@@ -26,7 +26,7 @@
  * what a game listens on. Adding a game there gives it self-hosting for free.
  */
 
-import { HOSTABLE_GAMES, isHostableGame } from "@/lib/gameHost/catalog";
+import { HOSTABLE_GAMES, getPartyHostableGame, isHostableGame } from "@/lib/gameHost/catalog";
 import { hasServerBrowser } from "@/lib/servers/browserGames";
 import {
   getMultiplayerAdapter,
@@ -248,8 +248,8 @@ export function publicLobbyPortFor(gameSlug: string): Pick<SelfHostConfig, "port
   return { port: hostable.defaultPort, protocol: hostable.protocol };
 }
 
-export function canUseDedicated(gameSlug: string): boolean {
-  return isHostableGame(gameSlug);
+export function canUseDedicated(gameSlug: string, editionSlug?: string | null): boolean {
+  return Boolean(getPartyHostableGame(gameSlug, editionSlug));
 }
 
 /**
@@ -269,12 +269,15 @@ export function canUsePublicServer(gameSlug: string): boolean {
  * community server is the usual choice; hosting locally or on PlayBound is
  * the alternative.
  */
-export function hostModesFor(gameSlug: string): PartyHostMode[] {
+export function hostModesFor(gameSlug: string, editionSlug?: string | null): PartyHostMode[] {
+  // The Deus Ex adapter describes HX. Vanilla and GMDX do not have that
+  // network protocol, even though they share the parent catalog slug.
+  if (gameSlug === "deus-ex-goty-edition" && editionSlug !== "playbound-hx-coop") return [];
   const modes: PartyHostMode[] = [];
   if (canUsePublicServer(gameSlug)) modes.push("public");
   if (canSelfHost(gameSlug)) modes.push("self");
   if (canUseCouch(gameSlug)) modes.push("couch");
-  if (canUseDedicated(gameSlug)) modes.push("dedicated");
+  if (canUseDedicated(gameSlug, editionSlug)) modes.push("dedicated");
   return modes;
 }
 
@@ -285,8 +288,8 @@ export function hostModesFor(gameSlug: string): PartyHostMode[] {
  * Legacy parties with a live VPS room and a null hostMode are resolved through
  * `resolvedHostMode` so they do not silently switch to public.
  */
-export function defaultHostMode(gameSlug: string): PartyHostMode | null {
-  const modes = hostModesFor(gameSlug);
+export function defaultHostMode(gameSlug: string, editionSlug?: string | null): PartyHostMode | null {
+  const modes = hostModesFor(gameSlug, editionSlug);
   if (modes.includes("public")) return "public";
   if (modes.includes("dedicated")) return "dedicated";
   if (modes.includes("self")) return "self";
@@ -304,7 +307,8 @@ export function defaultHostMode(gameSlug: string): PartyHostMode | null {
 export function resolvedHostMode(
   gameSlug: string,
   hostMode: PartyHostMode | string | null | undefined,
-  hosted?: { roomId?: string | null } | null
+  hosted?: { roomId?: string | null } | null,
+  editionSlug?: string | null
 ): PartyHostMode | null {
   if (
     hostMode === "public" ||
@@ -315,12 +319,12 @@ export function resolvedHostMode(
     return hostMode;
   }
   if (hosted?.roomId) return "dedicated";
-  return defaultHostMode(gameSlug);
+  return defaultHostMode(gameSlug, editionSlug);
 }
 
 /** Is this a mode the game actually supports? Guards untrusted input. */
-export function isValidHostMode(gameSlug: string, mode: unknown): mode is PartyHostMode {
-  return typeof mode === "string" && hostModesFor(gameSlug).includes(mode as PartyHostMode);
+export function isValidHostMode(gameSlug: string, mode: unknown, editionSlug?: string | null): mode is PartyHostMode {
+  return typeof mode === "string" && hostModesFor(gameSlug, editionSlug).includes(mode as PartyHostMode);
 }
 
 /** What the party doc stores about its couch session. */
@@ -364,7 +368,8 @@ export function couchPayloadFromDoc(
 }
 
 /** Picker options, in display order, with copy explaining the tradeoff. */
-export function hostModeOptions(gameSlug: string): HostModeOption[] {
+export function hostModeOptions(gameSlug: string, editionSlug?: string | null): HostModeOption[] {
+  const availableModes = new Set(hostModesFor(gameSlug, editionSlug));
   const credentialHint: Record<string, string> = {
     unturned: "Internet hosting requires a Steam game-server login token for this server. The admin smoke test can run without one, but players cannot join that LAN test over the Internet.",
     "dont-starve-together": "Requires a private Klei cluster token for this room before it can start.",
@@ -373,25 +378,25 @@ export function hostModeOptions(gameSlug: string): HostModeOption[] {
   return [
     {
       mode: "public" as const,
-      available: canUsePublicServer(gameSlug),
+      available: availableModes.has("public"),
       label: "Public server",
       hint: "Join a community dedicated server from the live list. You will play with whoever is already there — not a private room.",
     },
     {
       mode: "self" as const,
-      available: canSelfHost(gameSlug),
+      available: availableModes.has("self"),
       label: "My computer",
       hint: "Your PC runs the game. Lowest latency, and your party reaches it over the PlayBound network — no port forwarding. The room ends when you quit.",
     },
     {
       mode: "couch" as const,
-      available: canUseCouch(gameSlug),
+      available: availableModes.has("couch"),
       label: "Online multiplayer",
       hint: "Connect online multiplayer for local co-op games: the game runs on your PC; friends join with the link (keyboard & mouse by default, pads optional) ± game view.",
     },
     {
       mode: "dedicated" as const,
-      available: canUseDedicated(gameSlug),
+      available: availableModes.has("dedicated"),
       label: "PlayBound server",
       hint: credentialHint[gameSlug] || "We host the room on our server. It stays up even if you leave, and anyone can join without being in your party.",
     },

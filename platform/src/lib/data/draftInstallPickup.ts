@@ -46,7 +46,7 @@ export const DRAFT_INSTALL_PICKUP: Readonly<Record<string, DraftInstallPickup>> 
     acquisitionAvailable: false,
   },
   "aneurism-iv": {
-    storeUrl: "steam://run/2773280",
+    storeUrl: "steam://store/2773280",
     exeHint: "ANEURISM IV.exe",
     knownExePaths: ["ANEURISM IV.exe"],
     registryTitles: ["ANEURISM IV"],
@@ -105,7 +105,7 @@ export const DRAFT_INSTALL_PICKUP: Readonly<Record<string, DraftInstallPickup>> 
     registryTitles: ["Counter-Strike: Source"],
   },
   unturned: {
-    storeUrl: "steam://run/304930", exeHint: "Unturned.exe",
+    storeUrl: "steam://store/304930", exeHint: "Unturned.exe",
     knownExePaths: ["Unturned.exe"], registryTitles: ["Unturned"],
   },
   "vintage-story": {

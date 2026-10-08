@@ -25,8 +25,8 @@ describe("Deus Ex HX co-op", () => {
   });
 
   it("offers a local dedicated server, listen hosting, and direct-IP join", () => {
-    expect(hostModesFor("deus-ex-goty-edition")).toContain("self");
-    expect(hostModesFor("deus-ex-goty-edition")).toContain("dedicated");
+    expect(hostModesFor("deus-ex-goty-edition", "playbound-hx-coop")).toContain("self");
+    expect(hostModesFor("deus-ex-goty-edition", "playbound-hx-coop")).toContain("dedicated");
     const adapter = getMultiplayerAdapter("deus-ex-goty-edition");
     expect(adapter.adapterType).toBe("direct-ip");
     expect(adapter.host?.binaryHint).toBe("HCC.exe");
@@ -37,6 +37,7 @@ describe("Deus Ex HX co-op", () => {
   });
 
   it("offers local and dedicated HX hosting", () => {
-    expect(hostModesFor("deus-ex-goty-edition")).toEqual(["self", "dedicated"]);
+    expect(hostModesFor("deus-ex-goty-edition", "playbound-hx-coop")).toEqual(["self", "dedicated"]);
+    expect(hostModesFor("deus-ex-goty-edition", "gmdx")).toEqual([]);
   });
 });

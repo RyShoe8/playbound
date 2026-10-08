@@ -11,7 +11,7 @@
  * told which.
  */
 
-import { isHostableGame, getHostableGame } from "@/lib/gameHost/catalog";
+import { getPartyHostableGame } from "@/lib/gameHost/catalog";
 import { resolvedHostMode } from "@/lib/multiplayer/hostModes";
 import type { ServerControlAdapter } from "./adapter";
 import { getServerSettingProfile, type ServerSettingValues } from "./settings";
@@ -74,7 +74,7 @@ export type ServerControlAvailability =
 export function serverControlAvailability(party: PartyServerSource): ServerControlAvailability {
   const slug = String(party.gameSlug || "");
   const title = party.gameTitle || slug || "this game";
-  const hostMode = resolvedHostMode(slug, party.hostMode, party.hosted);
+  const hostMode = resolvedHostMode(slug, party.hostMode, party.hosted, party.editionSlug);
 
   if (hostMode === "public" || hostMode === "couch") {
     return {
@@ -88,11 +88,12 @@ export function serverControlAvailability(party: PartyServerSource): ServerContr
     };
   }
 
-  if (!isHostableGame(slug)) {
+  const recipe = getPartyHostableGame(slug, party.editionSlug);
+  if (!recipe) {
     return { available: false, reason: `PlayBound does not host ${title} servers.` };
   }
 
-  const profile = getServerSettingProfile(slug);
+  const profile = getServerSettingProfile(recipe.slug);
   if (!profile) {
     return { available: false, reason: `PlayBound has no server settings for ${title} yet.` };
   }
@@ -159,7 +160,7 @@ export function createPartyServerAdapter(
 
   const slug = String(party.gameSlug);
 
-  if (resolvedHostMode(slug, party.hostMode, party.hosted) === "self") {
+  if (resolvedHostMode(slug, party.hostMode, party.hosted, party.editionSlug) === "self") {
     return createLocalAdapter({
       room: {
         partyId: String(party._id),
@@ -189,7 +190,7 @@ export function createPartyServerAdapter(
       gameSlug: slug,
       // The agent keys recipes by its own slug, which is not always the
       // catalog's — 0 A.D. is `0ad` here and `0-ad` on the box.
-      hostSlug: getHostableGame(slug)?.slug || slug,
+      hostSlug: getPartyHostableGame(slug, party.editionSlug)?.slug || slug,
       roomId: party.hosted?.roomId || null,
       name: party.hosted?.name || "PlayBound.club Party",
       editionSlug: party.editionSlug || null,

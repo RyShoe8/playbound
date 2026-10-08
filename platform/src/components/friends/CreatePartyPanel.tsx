@@ -9,10 +9,11 @@ import {
   type PartyVisibility,
 } from "@/lib/playTogether/types";
 import { telemetry } from "@/lib/telemetry";
-import { isHostableGame } from "@/lib/gameHost/catalog";
+import { getPartyHostableGame } from "@/lib/gameHost/catalog";
 import { defaultHostMode, hostModeOptions, canUsePublicServer, type PartyHostMode } from "@/lib/multiplayer/hostModes";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { requiredPartyEditionSlug } from "@/lib/playTogether/partyEdition";
 
 const VISIBILITY_OPTIONS: { value: Exclude<PartyVisibility, "event">; hint: string }[] = [
   { value: "public", hint: "Anyone signed in can join. Listed on Events." },
@@ -42,15 +43,16 @@ export function CreatePartyPanel({
   const [password, setPassword] = useState("");
   const [wantVoice, setWantVoice] = useState(true);
   const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
+  const partyEditionSlug = editionSlug || requiredPartyEditionSlug(gameSlug);
 
   /*
    * Only offered when the game genuinely supports more than one; a picker with
    * a single choice is noise, and the server applies the same default anyway.
    */
-  const modeOptions = gameSlug ? hostModeOptions(gameSlug) : [];
+  const modeOptions = gameSlug ? hostModeOptions(gameSlug, partyEditionSlug) : [];
   const showHostModes = modeOptions.length > 1;
   const [hostMode, setHostMode] = useState<PartyHostMode | null>(
-    gameSlug ? defaultHostMode(gameSlug) : null
+    gameSlug ? defaultHostMode(gameSlug, partyEditionSlug) : null
   );
 
   async function handleCreate() {
@@ -67,7 +69,7 @@ export function CreatePartyPanel({
     try {
       telemetry.track("party_create_clicked", {
         gameSlug: gameSlug || "",
-        editionSlug: editionSlug || "",
+        editionSlug: partyEditionSlug || "",
         visibility,
         wantVoice,
         hostMode: hostMode || "",
@@ -75,7 +77,7 @@ export function CreatePartyPanel({
       const party = await createParty({
         name: name.trim() || null,
         gameSlug: gameSlug || null,
-        editionSlug: editionSlug || null,
+        editionSlug: partyEditionSlug || null,
         visibility,
         maxSize: 8,
         password: visibility === "password" ? password.trim() : null,
@@ -121,7 +123,7 @@ export function CreatePartyPanel({
         <p className="text-sm text-muted-foreground">
           {gameSlug && canUsePublicServer(gameSlug)
             ? "Join a public dedicated server from the live list once the party is up, or host on your PC or a PlayBound server instead."
-            : gameSlug && isHostableGame(gameSlug)
+            : gameSlug && getPartyHostableGame(gameSlug, editionSlug)
               ? "PlayBound will start a public server for this game so friends can join without port forwarding."
               : "Host a lobby, invite friends, then pick a game in the party window."}
         </p>

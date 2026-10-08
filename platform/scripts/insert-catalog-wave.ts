@@ -63,6 +63,11 @@ async function main() {
   const scopedGames = scopeArg
     ? new Set(scopeArg.slice("--games=".length).split(",").map((slug) => slug.trim()).filter(Boolean))
     : null;
+  const editionsArg = process.argv.find((arg) => arg.startsWith("--editions="));
+  const scopedEditions = editionsArg
+    ? new Set(editionsArg.slice("--editions=".length).split(",").map((key) => key.trim()).filter(Boolean))
+    : null;
+  const scopedRun = Boolean(scopedGames || scopedEditions);
   const fieldsArg = process.argv.find((arg) => arg.startsWith("--fields="));
   const scopedFields = fieldsArg
     ? new Set(fieldsArg.slice("--fields=".length).split(",").map((field) => field.trim()).filter(Boolean))
@@ -70,6 +75,13 @@ async function main() {
   const featuresOnly = process.argv.includes("--features-only");
   const singleFeatureArg = process.argv.find((arg) => arg.startsWith("--feature="));
   const singleFeature = singleFeatureArg?.slice("--feature=".length).trim();
+  if (scopedGames && scopedEditions) throw new Error("--games and --editions are mutually exclusive");
+  if (scopedEditions && (scopedEditions.size === 0 || [...scopedEditions].some((key) => !PATCH_EDITION_FIELDS[key]))) {
+    throw new Error("--editions must list nonempty, comma-separated keys already in PATCH_EDITION_FIELDS");
+  }
+  if (scopedEditions && (scopedFields || featuresOnly || singleFeatureArg)) {
+    throw new Error("--editions cannot be combined with game field or feature scopes");
+  }
   if (scopedGames && (scopedGames.size === 0 || [...scopedGames].some((slug) => !PATCH_GAME_FIELDS[slug]))) {
     throw new Error("--games must list nonempty, comma-separated slugs already in PATCH_GAME_FIELDS");
   }
@@ -82,20 +94,20 @@ async function main() {
     throw new Error("--features-only requires --games and one allowlisted --feature, with no --fields");
   }
   if (!featuresOnly && singleFeatureArg) throw new Error("--feature requires --features-only");
-  const inScope = (slug: string) => !scopedGames || scopedGames.has(slug);
+  const inScope = (slug: string) => !scopedEditions && (!scopedGames || scopedGames.has(slug));
   if (!process.env.MONGODB_URI) {
-    if (scopedGames) throw new Error("Scoped catalog wave cannot run: MONGODB_URI is not set");
+    if (scopedRun) throw new Error("Scoped catalog wave cannot run: MONGODB_URI is not set");
     console.warn("insert-catalog-wave skipped — MONGODB_URI is not set.");
     process.exit(0);
   }
 
-  const allowedEditions = new Set(scopedGames ? [] : NEW_EDITION_KEYS);
-  const allowedMods = new Set(scopedGames ? [] : NEW_MOD_SLUGS);
+  const allowedEditions = new Set(scopedRun ? [] : NEW_EDITION_KEYS);
+  const allowedMods = new Set(scopedRun ? [] : NEW_MOD_SLUGS);
   const patchGameSlugs = Object.keys(PATCH_GAME_FIELDS).filter(inScope);
-  const patchEditionKeys = scopedGames ? [] : Object.keys(PATCH_EDITION_FIELDS);
-  const patchModSlugs = scopedGames ? [] : Object.keys(PATCH_MOD_FIELDS);
-  const retireEditionKeys = scopedGames ? [] : [...RETIRE_EDITION_KEYS];
-  const retireModSlugs = scopedGames ? [] : [...RETIRE_MOD_SLUGS];
+  const patchEditionKeys = scopedEditions ? [...scopedEditions] : scopedGames ? [] : Object.keys(PATCH_EDITION_FIELDS);
+  const patchModSlugs = scopedRun ? [] : Object.keys(PATCH_MOD_FIELDS);
+  const retireEditionKeys = scopedRun ? [] : [...RETIRE_EDITION_KEYS];
+  const retireModSlugs = scopedRun ? [] : [...RETIRE_MOD_SLUGS];
 
   if (
     NEW_GAME_SLUGS.length === 0 &&
@@ -134,6 +146,7 @@ async function main() {
   const { developersBySlug } = await import("../src/lib/data/developers");
   const { launcherInstallBySlug } = await import("../src/lib/data/launcherInstall");
   const { correctionsFor } = await import("../src/lib/data/catalogCorrections");
+  const { CATALOG_EDITION_CORRECTIONS } = await import("../src/lib/data/catalogEditionCorrections");
   const { accessAuditModCorrection } = await import("../src/lib/data/accessAuditModCorrections");
   const { dedicatedDraftEditorialFor } = await import("../src/lib/data/dedicatedDraftEditorial");
   const { dedicatedDraftRequirementsFor } = await import("../src/lib/data/dedicatedDraftRequirements");
@@ -194,7 +207,7 @@ async function main() {
   let gamesCreated = 0;
   let gamesSkipped = 0;
   for (const slug of NEW_GAME_SLUGS) {
-    if (scopedGames) continue;
+    if (scopedRun) continue;
     const seed = games.find((g) => g.slug === slug);
     if (!seed) {
       console.warn(`insert-catalog-wave — game ${slug} not in seed, skipping`);
@@ -311,7 +324,7 @@ async function main() {
   let gamesPatched = 0;
   let gamesPatchSkipped = 0;
   for (const slug of patchGameSlugs) {
-    const fields = scopedFields
+    let fields = scopedFields
       ? PATCH_GAME_FIELDS[slug].filter((field) => scopedFields.has(field))
       : PATCH_GAME_FIELDS[slug];
     if (!fields || fields.length === 0) {
@@ -325,6 +338,31 @@ async function main() {
       console.warn(`insert-catalog-wave — patch game ${slug} not in DB, skipping (no upsert)`);
       gamesPatchSkipped++;
       continue;
+    }
+
+    // These two records had a known bad external handoff in the live CMS.
+    // If an admin has since selected another recipe, leave it authoritative.
+    const staleHandoffs: Record<string, string> = {
+      "aneurism-iv": "https://vellocetsoftware.com/games/",
+      unturned: "https://smartlydressedgames.com/unturned/",
+    };
+    if (fields.includes("launcherInstall.url") && staleHandoffs[slug]) {
+      const current = await CatalogGame.findOne({ slug }).select("launcherInstall.kind launcherInstall.url").lean();
+      if (current?.launcherInstall?.kind !== "external" ||
+          ![staleHandoffs[slug], (correctionsFor(slug)?.launcherInstall as { url?: string } | undefined)?.url]
+            .includes(String(current.launcherInstall.url || ""))) {
+        fields = fields.filter((field) => !field.startsWith("launcherInstall."));
+        console.warn(`insert-catalog-wave — preserve curator's ${slug} install recipe`);
+      }
+    }
+    if (slug === "rimworld" && fields.includes("launcherInstall.exeHint")) {
+      const current = await CatalogGame.findOne({ slug }).select("launcherInstall.kind launcherInstall.exeHint").lean();
+      if (current?.launcherInstall?.kind !== "external" ||
+          !["RimWorldWin64.exe", "RimWorldWin64|RimWorldLinux|RimWorld.app"]
+            .includes(String(current.launcherInstall.exeHint || ""))) {
+        fields = fields.filter((field) => field !== "launcherInstall.exeHint");
+        console.warn("insert-catalog-wave — preserve curator's rimworld executable hint");
+      }
     }
 
     let source: Record<string, unknown>;
@@ -473,12 +511,23 @@ async function main() {
     gamesPatched++;
   }
 
+  // The old feature badge was added by an earlier wave. Steam's current PC
+  // listing does not advertise controller support, and there is no verified
+  // PlayBound profile. Pull just that one stale badge, preserving every other
+  // CMS-curated feature and never replacing the array from seed data.
+  if (!featuresOnly && inScope("rimworld") && (!scopedFields || scopedFields.has("hasControllerSupport"))) {
+    await CatalogGame.updateOne(
+      { slug: "rimworld", features: "Controller Support" },
+      { $pull: { features: "Controller Support" } }
+    );
+  }
+
   // Steam is a launch handoff, not a download recipe. Do not replace a
   // curator's existing recipe (including an intentionally disabled one).
   // Exception: the imported Risk of Rain 2 draft may still carry Alloyed
   // Collective's DLC app id after its slug/title are corrected. Replace only
   // that exact, provably wrong handoff; never touch another store's recipe.
-  const correctedDlc = scopedGames ? { modifiedCount: 0 } : await CatalogGame.updateOne(
+  const correctedDlc = scopedRun ? { modifiedCount: 0 } : await CatalogGame.updateOne(
     { slug: "risk-of-rain-2", status: "draft", $or: [
       { "launcherInstall.steamAppId": "2781620" },
       { "launcherInstall.url": "steam://run/2781620" },
@@ -493,7 +542,7 @@ async function main() {
   );
   if (correctedDlc.modifiedCount) console.log("replace Risk of Rain 2 DLC Steam handoff with base game");
   for (const [slug, appId] of Object.entries(FILL_MISSING_STEAM_LAUNCH)) {
-    if (scopedGames) continue;
+    if (scopedRun) continue;
     const result = await CatalogGame.updateOne(
       { slug, status: "draft", $or: [{ launcherInstall: null }, { launcherInstall: { $exists: false } }] },
       { $set: { launcherInstall: {
@@ -514,7 +563,7 @@ async function main() {
   // authoritative. Anthology's existing verified VPS package is preserved;
   // there is no storefront handoff to synthesize if that recipe is absent.
   for (const [slug, pickup] of Object.entries(DRAFT_INSTALL_PICKUP)) {
-    if (scopedGames) continue;
+    if (scopedRun) continue;
     const doc = await CatalogGame.findOne({ slug }).select("launcherInstall").lean();
     if (!doc) continue;
     const existing = doc.launcherInstall;
@@ -577,7 +626,7 @@ async function main() {
   // These two storefront links were supplied by the curator. Keep the game's
   // existing offers/prices untouched; the normal GOG matcher can price them.
   for (const slug of ["stardew-valley", "starbound"] as const) {
-    if (scopedGames) continue;
+    if (scopedRun) continue;
     await CatalogGame.updateOne(
       { slug, $or: [{ gogStoreUrl: null }, { gogStoreUrl: { $exists: false } }] },
       { $set: { gogStoreUrl: DRAFT_INSTALL_PICKUP[slug].storeUrl } }
@@ -601,37 +650,49 @@ async function main() {
     }
 
     const seed = editions.find((e) => e.gameSlug === gameSlug && e.slug === editionSlug);
-    if (!seed) {
+    const editionCorrection = CATALOG_EDITION_CORRECTIONS[key];
+    if (!seed && !editionCorrection) {
       console.warn(`insert-catalog-wave — patch edition ${key} not in seed, skipping`);
       editionsPatchSkipped++;
       continue;
     }
 
-    const existing = await Edition.findOne({ gameSlug, slug: editionSlug }).select("_id").lean();
+    const existing = await Edition.findOne({ gameSlug, slug: editionSlug }).select("_id installConfig").lean();
     if (!existing) {
       console.warn(`insert-catalog-wave — patch edition ${key} not in DB, skipping (no upsert)`);
       editionsPatchSkipped++;
       continue;
     }
 
+    if (key === "rimworld/rimworld-together") {
+      const currentInstaller = (existing.installConfig as { playbound_installer?: { kind?: string; repo?: string } } | null)?.playbound_installer;
+      if (!currentInstaller || !["github-zip", "locate-then-zip"].includes(currentInstaller.kind || "") ||
+          currentInstaller.repo !== "RimWorld-Together/Rimworld-Together") {
+        console.warn(`insert-catalog-wave — preserve curator's ${key} install recipe`);
+        editionsPatchSkipped++;
+        continue;
+      }
+    }
+
     const source: Record<string, unknown> = {
-      name: seed.name,
-      description: seed.description,
-      version: seed.version,
-      installConfig: seed.installConfig,
-      shortDescription: seed.shortDescription,
-      visibility: seed.visibility,
-      status: seed.status,
-      installMethod: seed.installMethod,
-      requirements: seed.requirements,
-      hardwareRequirements: seed.hardwareRequirements,
-      aliases: seed.aliases,
-      links: seed.links,
-      features: seed.features,
-      tags: seed.tags,
-      multiplayerGamingSteps: seed.multiplayerGamingSteps,
-      faq: seed.faq,
-      verificationNote: seed.verificationNote,
+      name: seed?.name,
+      description: seed?.description,
+      version: seed?.version,
+      installConfig: seed?.installConfig,
+      shortDescription: seed?.shortDescription,
+      visibility: seed?.visibility,
+      status: seed?.status,
+      installMethod: seed?.installMethod,
+      requirements: seed?.requirements,
+      hardwareRequirements: seed?.hardwareRequirements,
+      aliases: seed?.aliases,
+      links: seed?.links,
+      features: seed?.features,
+      tags: seed?.tags,
+      multiplayerGamingSteps: seed?.multiplayerGamingSteps,
+      faq: seed?.faq,
+      verificationNote: seed?.verificationNote,
+      ...editionCorrection,
     };
     const payload = pickFields(source, fields);
     for (const field of fields) {
@@ -766,7 +827,7 @@ async function main() {
   const { partyMaxPlayersBySlug } = await import("../src/lib/data/partyMaxPlayers");
   let maxPlayersPatched = 0;
   for (const [slug, maxPlayers] of Object.entries(partyMaxPlayersBySlug)) {
-    if (scopedGames) continue;
+    if (scopedRun) continue;
     const result = await CatalogGame.updateOne({ slug }, { $set: { maxPlayers } });
     if (result.matchedCount === 1) {
       maxPlayersPatched++;

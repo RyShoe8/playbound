@@ -2,6 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { hostedPayloadFromDoc } from "./provision";
 
 describe("hostedPayloadFromDoc", () => {
+  it("advertises a server only for the matching multiplayer edition", () => {
+    expect(hostedPayloadFromDoc("rimworld", "dedicated", null, "rimworld-together").enabled).toBe(true);
+    expect(hostedPayloadFromDoc("rimworld", "dedicated", null, null).enabled).toBe(false);
+    expect(hostedPayloadFromDoc("deus-ex-goty-edition", "dedicated", null, "gmdx").enabled).toBe(false);
+  });
   it("withholds connection details until the room is ready", () => {
     const payload = hostedPayloadFromDoc("freedoom", "dedicated", {
       status: "pending",

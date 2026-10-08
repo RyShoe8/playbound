@@ -273,7 +273,10 @@ We include it because multiplayer can be about shared places and conflicting mot
       { q: "Does each player need a copy?", a: "Yes. Each player should own and install the game." },
       { q: "Is this a linear co-op campaign?", a: "No. It is a shared city with systemic and social play rather than a fixed co-op campaign." },
     ],
-    installSteps: installFrom("Steam", "Every player needs their own copy.", ["macos"]),
+    installSteps: [
+      { platform: "windows", text: "Get ANEURISM IV in Steam and install its Windows build. PlayBound looks for ANEURISM IV.exe after Steam finishes." },
+      { platform: "macos", text: "Get ANEURISM IV in Steam and install its Apple Silicon macOS build. Launch it from Steam after installation; the listed macOS build does not support Intel Macs." },
+    ],
   },
   "risk-of-rain-2": {
     tagline: "A small landing party becomes an absurd storm of items, monsters, and bad ideas.",
@@ -447,7 +450,7 @@ Colonists bring skills, traits, histories, and relationships. You assign work pr
 
 There is plenty of room for creativity. Some players design a highly efficient workshop and defensive perimeter; others build around the people and accept a more chaotic settlement. The Steam Workshop and broader mod community extend the simulation in many directions. That variety is a major part of RimWorld's long-term value, but it also means mod compatibility deserves attention before adding a large collection to a save.
 
-Vanilla RimWorld is single-player. PlayBound's separate RimWorld Together edition is where multiplayer belongs; the base game's page should not imply native online co-op. Steam lists partial controller support on PC, so keyboard and mouse remain useful for dense management screens. The game is paid, and its expansions are optional purchases rather than prerequisites to understand the original colony sim.
+Vanilla RimWorld is single-player. PlayBound's separate RimWorld Together edition is where multiplayer belongs; the base game's page should not imply native online co-op. Steam's PC listing does not advertise controller support, so keyboard and mouse are the reliable way to navigate its dense management screens. The game is paid, and its expansions are optional purchases rather than prerequisites to understand the original colony sim.
 
 The most revealing moments are often small. A skilled doctor may be unavailable when a patient needs help; a colonist's mood may change the outcome of an otherwise manageable raid; a meal stockpile can disappear at exactly the wrong time. None of these events is impressive in isolation. Together they make a settlement feel like a fragile society rather than a spreadsheet. Learning to absorb those surprises is the real skill the game asks you to develop.
 
@@ -459,7 +462,7 @@ We keep RimWorld here because the replay value is not a promise of endless conte
     faq: [
       { q: "Does vanilla RimWorld have multiplayer?", a: "No. The base game is single-player; multiplayer requires a separate mod or edition such as RimWorld Together." },
       { q: "Do I need DLC to play?", a: "No. The base game is complete without optional expansions." },
-      { q: "Is controller support complete on PC?", a: "Steam lists partial controller support; a mouse and keyboard are still useful for detailed management." },
+      { q: "Does the PC version support controllers?", a: "Steam does not advertise controller support for RimWorld on PC. Use a mouse and keyboard for its detailed management screens." },
       { q: "Can I use mods?", a: "Yes. RimWorld has a large mod ecosystem, but compatibility with your game version and save matters." },
     ],
     installSteps: installFrom("Steam or the official RimWorld store", "Install the base game before adding any separate multiplayer edition."),

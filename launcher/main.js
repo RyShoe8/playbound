@@ -6033,7 +6033,13 @@ async function installLocateThenZip(slug, entry, editionExtra) {
   });
   sendProgress({ phase: "extracting" });
   // Merge overlay into the copied base game tree (do not delete gameDir).
-  await extractArchive(downloadPath, gameDir);
+  // Some overlays are game mods rather than root-level engine files. RimWorld
+  // Together's release archive contains About/ and a version directory; it
+  // belongs under Mods/<mod name>, not beside the RimWorld executable.
+  const overlayDest = resolveInsideGameDir(gameDir, entry.overlayDest || "");
+  if (!overlayDest) throw new Error("Edition overlay has an unsafe destination path");
+  await fsp.mkdir(overlayDest, { recursive: true });
+  await extractArchive(downloadPath, overlayDest);
   await removeFileWithRetries(downloadPath);
 
   // If the base game was copied flat into gameDir, but the overlay archive had

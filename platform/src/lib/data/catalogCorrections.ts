@@ -328,6 +328,9 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
     steamAppId: "2773280",
     hasControllerSupport: false,
     multiplayerGamingSteps: [{ platform: "all", text: "Use ANEURISM IV's in-game multiplayer server list or LAN menu. Every player needs their own game copy." }],
+    // The live launcher handoff points at Vellocet's general games page. Its
+    // actual Windows and Apple-Silicon macOS builds are delivered by Steam.
+    launcherInstall: { url: "steam://store/2773280", steamAppId: "2773280" },
   },
   // Steam 413150 explicitly advertises eight-player online farming and full pad support.
   "stardew-valley": {
@@ -394,9 +397,13 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
     hasControllerSupport: true,
     multiplayerGamingSteps: [{ platform: "all", text: "Host an online co-op lobby and invite friends through Steam. Each player needs the base game; Alloyed Collective is optional DLC, not a standalone game." }],
   },
-  // Vanilla RimWorld has no multiplayer. Steam 294100 lists only partial pad
-  // support; the separate RimWorld Together edition owns multiplayer.
-  rimworld: { steamAppId: "294100", hasControllerSupport: true },
+  // Vanilla RimWorld has no multiplayer. Steam's PC listing does not advertise
+  // controller support; the separate RimWorld Together edition owns multiplayer.
+  rimworld: {
+    steamAppId: "294100",
+    hasControllerSupport: false,
+    launcherInstall: { exeHint: "RimWorldWin64|RimWorldLinux|RimWorld.app" },
+  },
   // Steam 240: multiplayer, no native controller category; Source server list.
   "counter-strike-source": {
     steamAppId: "240",
@@ -408,6 +415,9 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
     steamAppId: "304930",
     hasControllerSupport: false,
     multiplayerGamingSteps: [{ platform: "all", text: "Use Unturned's server browser or direct connect to join the host's server. Public dedicated servers need a valid Steam game-server login token from their owner." }],
+    // The live launcher handoff opens the developer's homepage. This Steam
+    // in-client page can claim the free license before Steam installs it.
+    launcherInstall: { url: "steam://store/304930", steamAppId: "304930" },
   },
 };
 

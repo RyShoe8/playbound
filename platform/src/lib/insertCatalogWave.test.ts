@@ -14,6 +14,7 @@ import {
 import { editions } from "@/lib/data/editions";
 import { gamesBySlug } from "@/lib/data/games";
 import { correctionsFor } from "@/lib/data/catalogCorrections";
+import { CATALOG_EDITION_CORRECTIONS } from "@/lib/data/catalogEditionCorrections";
 import { accessAuditModCorrection } from "@/lib/data/accessAuditModCorrections";
 import { dedicatedDraftEditorialFor, DEDICATED_DRAFT_EDITORIAL } from "@/lib/data/dedicatedDraftEditorial";
 import { dedicatedDraftRequirementsFor } from "@/lib/data/dedicatedDraftRequirements";
@@ -420,6 +421,7 @@ describe("insert-catalog-wave allowlists", () => {
         "pokemon-blaze-online/official",
         "pokemon-blaze-online/windows-32",
         "pokemmo/official",
+        "rimworld/rimworld-together",
         "s-t-a-l-k-e-r-clear-sky/official",
         "s-t-a-l-k-e-r-shadow-of-chernobyl/lost-alpha",
         "s-t-a-l-k-e-r-shadow-of-chernobyl/official",
@@ -714,28 +716,15 @@ describe("insert-catalog-wave allowlists", () => {
     for (const key of Object.keys(PATCH_EDITION_FIELDS)) {
       const [gameSlug, editionSlug] = key.split("/");
       const seed = editions.find((e) => e.gameSlug === gameSlug && e.slug === editionSlug);
-      expect(seed, `missing edition seed ${key}`).toBeTruthy();
+      const correction = CATALOG_EDITION_CORRECTIONS[key];
+      expect(seed || correction, `missing edition source ${key}`).toBeTruthy();
       const source: Record<string, unknown> = {
-        name: seed!.name,
-        description: seed!.description,
-        version: seed!.version,
-        installConfig: seed!.installConfig,
-        shortDescription: seed!.shortDescription,
-        visibility: seed!.visibility,
-        status: seed!.status,
-        installMethod: seed!.installMethod,
-        requirements: seed!.requirements,
-        hardwareRequirements: seed!.hardwareRequirements,
-        aliases: seed!.aliases,
-        links: seed!.links,
-        features: seed!.features,
-        tags: seed!.tags,
-        multiplayerGamingSteps: seed!.multiplayerGamingSteps,
-        faq: seed!.faq,
-        verificationNote: seed!.verificationNote,
+        ...(seed ?? {}),
+        ...correction,
       };
       for (const field of PATCH_EDITION_FIELDS[key]!) {
-        expect(source[field], `${key}.${field}`).not.toBeUndefined();
+        const value = field.split(".").reduce<unknown>((part, segment) => part && typeof part === "object" ? (part as Record<string, unknown>)[segment] : undefined, source);
+        expect(value, `${key}.${field}`).not.toBeUndefined();
       }
     }
   });
@@ -802,5 +791,22 @@ describe("insert-catalog-wave allowlists", () => {
     expect(src).toMatch(/SUPER_NOVA_STRIKE_SLUG/);
     expect(src).toMatch(/space-station-14/);
     expect(src).toContain('from "./insert-catalog-wave.allowlist"');
+  });
+
+  it("applies this push through four named game records and one named edition only", () => {
+    const workflow = readFileSync(join(process.cwd(), "..", ".github", "workflows", "apply-catalog-wave.yml"), "utf8");
+    const scopedJob = workflow.split("  apply-four-games:")[1]?.split("  apply-battlefield-features:")[0] ?? "";
+    expect(workflow).toContain("!contains(github.event.head_commit.message, '[catalog-scope:four-games]')");
+    expect(scopedJob).toContain("--games=unturned,aneurism-iv --fields=launcherInstall.url,launcherInstall.steamAppId");
+    expect(scopedJob).toContain("--games=aneurism-iv --fields=installSteps");
+    expect(scopedJob).toContain("--games=rimworld --fields=hasControllerSupport,launcherInstall.exeHint");
+    expect(scopedJob).toContain("--editions=rimworld/rimworld-together");
+    expect(scopedJob).not.toMatch(/--games=(?:[^\s]*(?:deus-ex-goty-edition|risk-of-rain-2|battlefield-1942-anthology))/);
+
+    const script = readFileSync(join(process.cwd(), "scripts", "insert-catalog-wave.ts"), "utf8");
+    expect(script).toContain("const scopedRun = Boolean(scopedGames || scopedEditions)");
+    expect(script).toContain("const allowedEditions = new Set(scopedRun ? [] : NEW_EDITION_KEYS)");
+    expect(script).toContain("const allowedMods = new Set(scopedRun ? [] : NEW_MOD_SLUGS)");
+    expect(script).toContain("if (scopedRun) continue;");
   });
 });

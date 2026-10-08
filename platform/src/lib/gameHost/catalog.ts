@@ -387,6 +387,15 @@ export function getHostableGame(slug: string): HostableGame | null {
   return aliased ? HOSTABLE_GAMES[aliased] || null : null;
 }
 
+/** A few server recipes belong to a multiplayer edition, not its single-player parent. */
+export function getPartyHostableGame(gameSlug: string, editionSlug?: string | null): HostableGame | null {
+  if (gameSlug === "rimworld") {
+    return editionSlug === "rimworld-together" ? getHostableGame("rimworld-together") : null;
+  }
+  if (gameSlug === "deus-ex-goty-edition" && editionSlug !== "playbound-hx-coop") return null;
+  return getHostableGame(gameSlug);
+}
+
 export type PartyHostedPayload = {
   enabled: boolean;
   /** False when this deployment has no game-host credentials — rooms will never start. */
