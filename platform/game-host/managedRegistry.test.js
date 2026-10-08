@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { createManagedRegistry, isSameProcess, processIdentity, rehydrateManagedRoom } from "./managedRegistry.js";
+import { createManagedRegistry, isSameProcess, processIdentity, rehydrateManagedRoom, recoveredManagedRoomExited } from "./managedRegistry.js";
 
 test("managed manifest survives a new registry instance", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "playbound-managed-"));
@@ -31,4 +31,12 @@ test("a recovered room retains process identity for safe stop", () => {
   assert.equal(room.processIdentity, identity);
   assert.equal(room.child, null);
   assert.equal(room.partyId, null);
+});
+
+test("only a dead recovered managed room needs liveness reaping", () => {
+  const recovered = rehydrateManagedRoom({ communityServerId: "server-1", pid: 123, identity: "boot:123" });
+  assert.equal(recoveredManagedRoomExited(recovered, () => false), true);
+  assert.equal(recoveredManagedRoomExited(recovered, () => true), false);
+  assert.equal(recoveredManagedRoomExited({ ...recovered, child: {} }, () => false), false);
+  assert.equal(recoveredManagedRoomExited({ ...recovered, communityServerId: null }, () => false), false);
 });

@@ -277,8 +277,11 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
   try {
     let [metricResult, agent] = await Promise.all([fetchGameHostMetrics(), listManagedHostRooms()]);
     // One slow VPS response should not turn a healthy node into an ops bug.
-    // Retry only the failed read; each host request has its own 12-second cap.
+    // A planned agent restart can close the connection for about a second.
+    // Wait for its listener to return before retrying only the failed reads;
+    // each host request still has its own 12-second cap.
     if (!metricResult.ok || !agent.ok) {
+      await new Promise((resolve) => setTimeout(resolve, 1_500));
       const [metricsRetry, roomsRetry] = await Promise.all([
         metricResult.ok ? Promise.resolve(metricResult) : fetchGameHostMetrics(),
         agent.ok ? Promise.resolve(agent) : listManagedHostRooms(),

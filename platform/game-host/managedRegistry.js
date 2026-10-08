@@ -23,6 +23,11 @@ export function isSameProcess(pid, identity) {
   return Boolean(identity && processIdentity(pid) === identity);
 }
 
+/** A recovered managed room has no ChildProcess exit event to clear it. */
+export function recoveredManagedRoomExited(room, sameProcess = isSameProcess) {
+  return Boolean(room.communityServerId && !room.child && !sameProcess(room.pid, room.processIdentity));
+}
+
 export function processGroupMembers(leaderPid) {
   const members = [];
   try {

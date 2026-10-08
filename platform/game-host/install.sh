@@ -530,7 +530,7 @@ cd "$BASE"
 # the distro python3 (3.12 on the VPS) fails with NameError: Self.
 export LD_LIBRARY_PATH=/opt/playbound-host/python314/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
 exec /opt/playbound-host/python314/bin/python3 -OB ./bombsquad_server \
-  --config "$CONFIG" --root "$STATE_DIR/root" --noninteractive --no-auto-restart
+  --config "$CONFIG" --root "$STATE_DIR/root" --noninteractive
 EOF
   chmod +x "$BOMBSQUAD_DIR/run-server"
 fi
