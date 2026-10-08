@@ -8,11 +8,21 @@ let metrics = {
   memory: { totalBytes: 16 * 1024 ** 3, freeBytes: 12 * 1024 ** 3 },
   storage: [{ path: "/opt/playbound-host/games", totalBytes: 200 * 1024 ** 3, usedBytes: 20 * 1024 ** 3, freeBytes: 180 * 1024 ** 3, usedPercent: 10 }],
 };
+let managedRooms: Array<{ communityServerId: string; gameSlug: string; host: string; port: number; resources: { available: boolean; cpuCores: number; rssBytes: number } }> = [];
+let queriedPlayers: number | null = 0;
 vi.mock("@/lib/db", () => ({ default: async () => undefined }));
-vi.mock("@/lib/gameHost/client", () => ({ fetchGameHostMetrics: async () => ({ ok: true, metrics }) }));
+vi.mock("@/lib/gameHost/client", () => ({
+  fetchGameHostMetrics: async () => ({ ok: true, metrics }),
+  listManagedHostRooms: async () => ({ ok: true, rooms: managedRooms }),
+}));
+vi.mock("@/lib/communityHosting/playerQuery", async (importOriginal) => ({
+  ...await importOriginal<typeof import("@/lib/communityHosting/playerQuery")>(),
+  queryManagedOccupancy: async () => queriedPlayers === null ? null : { players: queriedPlayers, maxPlayers: 16 },
+}));
 
 import CommunityHostingConfig from "@/lib/models/CommunityHostingConfig";
 import CommunityServer from "@/lib/models/CommunityServer";
+import CommunityServerProfile from "@/lib/models/CommunityServerProfile";
 import DedicatedCapacityHold from "@/lib/models/DedicatedCapacityHold";
 import DedicatedCapacityLease from "@/lib/models/DedicatedCapacityLease";
 import DedicatedSubscription from "@/lib/models/DedicatedSubscription";
@@ -32,9 +42,11 @@ beforeAll(async () => {
 }, 120_000);
 afterAll(async () => { await mongoose.disconnect(); await mongo?.stop(); });
 beforeEach(async () => {
-  await Promise.all([DedicatedCapacityHold.deleteMany({}), DedicatedCapacityLease.deleteMany({}), DedicatedSubscription.deleteMany({}), CommunityHostingConfig.deleteMany({}), CommunityServer.deleteMany({})]);
+  await Promise.all([DedicatedCapacityHold.deleteMany({}), DedicatedCapacityLease.deleteMany({}), DedicatedSubscription.deleteMany({}), CommunityHostingConfig.deleteMany({}), CommunityServer.deleteMany({}), CommunityServerProfile.deleteMany({})]);
   await CommunityHostingConfig.create({ key: "global", node: { regionKey: "us-central", enabled: true, draining: false }, budget: { cpuCores: 4, ramBytes: 8 * gib }, safety: { maxCpuPercent: 80, maxRamPercent: 85, minFreeRamBytes: gib, maxMetricsAgeSeconds: 120 } });
   metrics = { ...metrics, collectedAt: new Date().toISOString(), cpu: { cores: 8, usagePercent: 10 } };
+  managedRooms = [];
+  queriedPlayers = 0;
 });
 
 describe("Dedicated Basic capacity holds", () => {
@@ -135,5 +147,22 @@ describe("Dedicated Basic capacity holds", () => {
       now: new Date(),
     });
     expect(decision.availableSlots).toBe(12); // 20 GB less 15% reserve = three 5 GB units.
+  });
+
+  it("uses measured idle community rooms without declaring the region sold out", async () => {
+    await CommunityServerProfile.create({ key: "openarena:base", gameSlug: "openarena", recipeSlug: "openarena",
+      queryVerified: true, queryKind: "a2s-local", envelope: { cpuCores: 1, ramBytes: 1536 * 1024 ** 2 }, sampleCount: 1 });
+    for (let i = 0; i < 5; i++) {
+      const server = await CommunityServer.create({ slug: `idle-arena-${i}`, name: `Idle arena ${i}`,
+        gameSlug: "openarena", profileKey: "openarena:base", regionKey: "us-central",
+        desiredState: "running", runtimeState: "running", ownerType: "community" });
+      managedRooms.push({ communityServerId: String(server._id), gameSlug: "openarena", host: "127.0.0.1", port: 27000 + i,
+        resources: { available: true, cpuCores: 0.02, rssBytes: 64 * 1024 ** 2 } });
+    }
+    expect((await regionalInventory("us-central")).availableSlots).toBeGreaterThanOrEqual(4);
+    const hold = await createCapacityHold({ userId, regionKey: "us-central", slots: 4, checkoutKey: "idle-room-checkout" });
+    expect(hold.state).toBe("held");
+    queriedPlayers = null;
+    expect((await regionalInventory("us-central")).reason).toBe("SOLD_OUT");
   });
 });

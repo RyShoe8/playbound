@@ -34,7 +34,7 @@ export function BasicSlotPicker({ packages, available, region, regionKey }: { pa
         if (/hold has expired|session is no longer open|key already belongs/i.test(message)) {
           window.sessionStorage.removeItem(storageKey);
         }
-        throw new Error(message);
+        throw new Error(message === "SOLD_OUT" ? "No hosting capacity is available in this region right now. Please try again later." : message);
       }
       if (typeof data?.url !== "string" || new URL(data.url).hostname !== "checkout.stripe.com") {
         throw new Error("Checkout returned an invalid destination");
