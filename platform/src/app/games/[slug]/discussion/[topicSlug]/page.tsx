@@ -20,7 +20,7 @@ export async function generateMetadata({
   const includeTesting = await viewerCanSeeTesting();
   const game = await getGame(slug, { includeTesting });
   if (!game) return privateMetadata("Discussion");
-  if (game.status === "testing") return privateMetadata("Discussion");
+  if (game.status === "testing" || game.status === "ready") return privateMetadata("Discussion");
   try {
     await dbConnect();
     const topic = await DiscussionTopic.findOne({

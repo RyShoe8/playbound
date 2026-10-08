@@ -16,7 +16,10 @@ export function MixtapeEditor() {
     setTracks(data.tracks); setMenu(data.settings?.menuTapeId || "");
     setPlayers(data.stats?.players || 0); setHoldings(Object.fromEntries((data.stats?.holdings || []).map((r: { _id: string; count: number }) => [r._id, r.count])));
   }
-  useEffect(() => { load().catch(err => setMessage(err.message)); }, []);
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void load().catch(err => setMessage(err.message)); }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
   async function save(body: unknown) {
     setBusy(true); setMessage("");
     try {

@@ -8,6 +8,7 @@ import User from "@/lib/models/User";
 import { getTier } from "@/lib/dedicatedHosting/tier";
 import { regionalInventory, withRegionCapacityLease } from "@/lib/dedicatedHosting/capacity";
 import { reconcileDedicatedCapacityReservations } from "@/lib/dedicatedHosting/reservations";
+import { normalizeUsername } from "@/lib/username";
 
 /** GET — every PlayBound Dedicated subscription with its customer and server counts. */
 export async function GET() {
@@ -70,7 +71,13 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message || "Invalid" }, { status: 400 });
   await dbConnect();
   const q = parsed.data.user;
-  const user = await User.findOne(q.includes("@") ? { email: q.toLowerCase() } : { usernameNormalized: q.toLowerCase() })
+  const user = await User.findOne(q.includes("@") ? { email: q.toLowerCase() } : {
+    $or: [
+      { usernameNormalized: normalizeUsername(q) },
+      // Accounts created before usernameNormalized was added still have a valid username.
+      { username: { $regex: new RegExp(`^${q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i") } },
+    ],
+  })
     .select({ _id: 1 })
     .lean();
   if (!user) return NextResponse.json({ error: "No user with that username or email" }, { status: 404 });

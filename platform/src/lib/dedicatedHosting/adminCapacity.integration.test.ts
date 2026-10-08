@@ -41,6 +41,14 @@ const grant = (name: string, slots: number) => POST(new Request("http://localhos
 }));
 
 describe("manual subscriptions share commercial capacity inventory", () => {
+  it("finds a legacy username without usernameNormalized, ignoring case", async () => {
+    const legacy = await user("LegacyHost");
+    await User.collection.updateOne({ _id: legacy._id }, { $unset: { usernameNormalized: "" } });
+    expect((await grant("legacyhost", 4)).status).toBe(201);
+    const sub = await DedicatedSubscription.findOne().lean();
+    expect(String(sub?.userId)).toBe(String(legacy._id));
+  });
+
   it("refuses a grant that would oversell the remaining regional budget", async () => {
     await user("BuyerOne");
     await user("BuyerTwo");

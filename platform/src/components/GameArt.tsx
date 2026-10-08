@@ -112,9 +112,9 @@ export function GameArt({
       {showTitle && (
         <div className="absolute inset-x-0 bottom-0 z-20 flex items-center gap-1.5 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-3 pt-8 pb-2.5">
           <p className="min-w-0 truncate text-base font-bold text-white drop-shadow">{game.title}</p>
-          {game.status === "testing" ? (
+          {(game.status === "testing" || game.status === "ready") ? (
             <Badge tone="warn" className="shrink-0 text-[10px]">
-              Testing
+              {game.status === "ready" ? "Ready" : "Testing"}
             </Badge>
           ) : null}
         </div>

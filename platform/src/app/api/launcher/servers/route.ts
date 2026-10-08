@@ -28,7 +28,7 @@ export async function GET(req: Request) {
         browserPlayable: Boolean(g.browserPlayable),
         steamDeck: Boolean(g.steamDeck),
         status: g.status || "published",
-        testing: g.status === "testing",
+        testing: g.status === "testing" || g.status === "ready",
       }))
       .sort((a, b) => a.title.localeCompare(b.title));
 

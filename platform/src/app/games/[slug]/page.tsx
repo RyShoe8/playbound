@@ -11,6 +11,7 @@ import DiscussionTopic from "@/lib/models/DiscussionTopic";
 import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import { fetchGithubReleases } from "@/lib/github";
 import { getGame, canonicalSlugFor } from "@/lib/catalog";
+import { isTestingGameStatus } from "@/lib/catalogStatus";
 import { listUnlockedByMaster } from "@/lib/masterCopy";
 import { getDeveloper } from "@/lib/developers";
 import { getGameLiveStats, type EntityLiveStats } from "@/lib/liveActivity";
@@ -131,7 +132,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const includeTesting = await viewerCanSeeTesting();
   const game = await getGame(slug, { includeTesting });
   if (!game) return privateMetadata("Game Not Found");
-  if (game.status === "testing") return privateMetadata(gameTitle(game));
+  if (isTestingGameStatus(game.status)) return privateMetadata(gameTitle(game));
 
   // The canonical collapses all nine ?tab= variants into one indexable URL.
   return pageMetadata({
@@ -242,9 +243,9 @@ export async function GamePageFrame({
         )}
       />
 
-      {game.status === "testing" && (
+      {isTestingGameStatus(game.status) && (
         <div className="border-b border-amber-500/40 bg-amber-400/10 px-4 py-2 text-center text-sm font-semibold text-amber-700 dark:text-amber-300 sm:px-6 lg:px-8">
-          Testing
+          {game.status === "ready" ? "Ready for release" : "Testing"}
         </div>
       )}
 

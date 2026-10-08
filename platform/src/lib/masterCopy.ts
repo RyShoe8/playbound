@@ -235,7 +235,7 @@ export function toLauncherUnlocks(
     browserPlayable: Boolean(game.browserPlayable),
     launchMethods: Array.isArray(game.launchMethods) ? game.launchMethods : [],
     platforms: Array.isArray(game.platforms) ? game.platforms : [],
-    testing: game.status === "testing",
+    testing: game.status === "testing" || game.status === "ready",
   });
 
   const mapEdition = ({ game, edition }: MasterCopyEditionUnlock) => ({

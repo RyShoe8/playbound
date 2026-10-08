@@ -781,8 +781,16 @@ function persistManagedRooms() {
 
 async function recoverManagedRooms() {
   for (const saved of managedRegistry.read()) {
-    if (!isSameProcess(saved.pid, saved.identity)) continue;
-    if (await isOsPortFree(saved.port, recipes[saved.gameSlug]?.protocol)) continue;
+    const failure = !isSameProcess(saved.pid, saved.identity)
+      ? "Managed runtime was no longer running when the game-host agent restarted"
+      : await isOsPortFree(saved.port, recipes[saved.gameSlug]?.protocol)
+        ? "Managed runtime was running but its game port was not bound when the game-host agent restarted"
+        : null;
+    if (failure) {
+      console.warn(`[${saved.gameSlug}:${saved.port}] ${failure}`);
+      managedJobs.set(saved.communityServerId, { status: "failed", error: failure, at: Date.now() });
+      continue;
+    }
     const room = rehydrateManagedRoom(saved);
     // Rooms saved before cwd was persisted: recompute it the way the spawn
     // did (managed rooms use the community server id as their party id).

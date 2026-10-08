@@ -10,6 +10,7 @@ import {
 import { CADENCE } from "@/lib/realtime/cadence";
 import { getAnonymousId, getSessionId } from "@/lib/telemetry/context";
 import { couchControllerJoinLabel, type CouchControlChoice } from "@/lib/couch/joinLabel";
+import { couchJoinHttpFailure, couchJoinRequestFailure, type CouchJoinFailure } from "@/lib/couch/joinFailure";
 import { mapPhoneHubPad, selectPhoneHubPads, type HubPadState } from "@/lib/couch/phoneHubPads";
 import { createPhoneHubExtras, type HubExtraRow } from "@/lib/couch/phoneHubExtras";
 import {
@@ -183,7 +184,7 @@ export function ControllerClient({
   const reportedOps = useRef(new Set<string>());
   const reportOps = useCallback((status: "connected" | "first_frame" | "failed", fields: {
     phase: string; code: string; message?: string; transport?: string;
-    connectionState?: string; iceState?: string;
+    connectionState?: string; iceState?: string; httpStatus?: number;
   }) => {
     const current = joinRef.current;
     const key = `${current?.sessionId || code}:${status}:${fields.code}`;
@@ -521,6 +522,7 @@ export function ControllerClient({
     let cancelled = false;
     async function run() {
       setError(null);
+      let failure: CouchJoinFailure | null = null;
       const stored = loadStored(code);
       const label = couchControllerJoinLabel({
         mode,
@@ -540,8 +542,15 @@ export function ControllerClient({
             spectator: remotePlayStream,
           }),
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Join failed");
+        const data = await res.json().catch(() => null);
+        if (!res.ok) {
+          failure = couchJoinHttpFailure(res.status, data?.error);
+          throw new Error(typeof data?.error === "string" ? data.error : `Join failed (HTTP ${res.status})`);
+        }
+        if (!data?.sessionId || !data?.controllerId || !data?.controllerToken) {
+          failure = { code: "JOIN_INVALID_RESPONSE", message: "Couch join returned an incomplete response" };
+          throw new Error("The session did not respond correctly. Try again.");
+        }
         if (cancelled) return;
         const next: JoinState = {
           sessionId: data.sessionId,
@@ -565,7 +574,7 @@ export function ControllerClient({
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : "Join failed");
-          reportOps("failed", { phase: "join", code: "JOIN_FAILED", message: "Could not join couch session" });
+          reportOps("failed", { phase: "join", ...(failure || couchJoinRequestFailure(e)) });
         }
       }
     }
@@ -1458,6 +1467,10 @@ export function ControllerClient({
         <Eyebrow>Couldn’t join</Eyebrow>
         <h1 className="pbc-title">{error}</h1>
         <p className="pbc-code">{code}</p>
+        <button type="button" className="pbc-join-retry" onClick={() => {
+          setJoin(null);
+          setJoinEpoch((value) => value + 1);
+        }}>Try again</button>
       </Shell>
     );
   }
@@ -3418,6 +3431,18 @@ function ControllerStyles() {
   border-radius: 8px;
   background: rgba(139, 109, 255, 0.10);
   border: 1px solid rgba(139, 109, 255, 0.25);
+}
+
+.pbc-join-retry {
+  margin-top: 16px;
+  padding: 10px 18px;
+  border: 1px solid var(--pbc-accent);
+  border-radius: 10px;
+  background: var(--pbc-accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .pbc-pulse {
