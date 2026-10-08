@@ -69,7 +69,7 @@ const CatalogModSchema = new Schema(
     published: { type: Boolean, default: true, index: true },
     status: {
       type: String,
-      enum: ["draft", "watchlist", "testing", "published"],
+      enum: ["draft", "watchlist", "testing", "published", "archived"],
       default: "published",
       index: true,
     },

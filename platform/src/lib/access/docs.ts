@@ -45,6 +45,9 @@ export function accessFromDoc(raw: unknown): GameAccess | undefined {
     requiresGameSlugs: Array.isArray(a.requiresGameSlugs)
       ? a.requiresGameSlugs.filter((s): s is string => typeof s === "string" && s.length > 0)
       : [],
+    requiredExternalGameName: typeof a.requiredExternalGameName === "string"
+      ? a.requiredExternalGameName.trim() || undefined
+      : undefined,
     offers: offersFromUnknown(a.offers),
   });
 }

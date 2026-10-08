@@ -14,6 +14,7 @@ import {
 import { editions } from "@/lib/data/editions";
 import { gamesBySlug } from "@/lib/data/games";
 import { correctionsFor } from "@/lib/data/catalogCorrections";
+import { accessAuditModCorrection } from "@/lib/data/accessAuditModCorrections";
 import { dedicatedDraftEditorialFor, DEDICATED_DRAFT_EDITORIAL } from "@/lib/data/dedicatedDraftEditorial";
 import { dedicatedDraftRequirementsFor } from "@/lib/data/dedicatedDraftRequirements";
 import { developersBySlug } from "@/lib/data/developers";
@@ -193,6 +194,8 @@ describe("insert-catalog-wave allowlists", () => {
         "hawken-hawkening",
         "hurry-curry",
         "hyperdisc-arena",
+        "openage",
+        "populous-reincarnated",
         "idle-slayer",
         "morrowind",
         "pokemmo",
@@ -508,6 +511,7 @@ describe("insert-catalog-wave allowlists", () => {
             null,
         };
       }
+      source = { ...source, ...accessAuditModCorrection(slug) };
       for (const field of PATCH_MOD_FIELDS[slug]!) {
         expect(source[field], `${slug}.${field} has no source`).toBeDefined();
       }
@@ -734,6 +738,13 @@ describe("insert-catalog-wave allowlists", () => {
         expect(source[field], `${key}.${field}`).not.toBeUndefined();
       }
     }
+  });
+
+  it("soft-archives retired mods instead of deleting their records", () => {
+    const source = readFileSync(join(process.cwd(), "scripts/insert-catalog-wave.ts"), "utf8");
+    expect(source).not.toContain("CatalogMod.deleteMany");
+    expect(source).toContain("CatalogMod.updateMany(");
+    expect(source).toContain('published: false, status: "archived"');
   });
 
   it("keeps the dedicated-hosting editorial limited to the fifteen requested game slugs", async () => {

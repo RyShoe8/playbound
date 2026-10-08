@@ -17,6 +17,7 @@ describe("catalogGameAliases", () => {
     expect(canonicalCatalogGameSlug("metal-slug-remake")).toBe("metal-slug-remake");
     expect(canonicalCatalogGameSlug("openlara")).toBe("tomb-raider-123");
     expect(canonicalCatalogGameSlug("openmohaa")).toBe("medal-of-honor-allied-assault");
+    expect(canonicalCatalogGameSlug("deus-ex")).toBe("deus-ex-goty-edition");
     expect(canonicalCatalogGameSlug("re-volt")).toBe("re-volt-rvgl");
     expect(canonicalCatalogGameSlug("revolt")).toBe("re-volt-rvgl");
     expect(canonicalCatalogGameSlug("rvgl")).toBe("re-volt-rvgl");

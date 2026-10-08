@@ -55,7 +55,7 @@ function toPaidDependency(node: AccessNode): PaidDependency {
   const access = node.access;
   return {
     id: node.id,
-    label: node.label || node.id,
+    label: access?.requiredExternalGameName || node.label || node.id,
     priceType: access?.priceType ?? "PAID",
     qualifyingPriceCents: access?.qualifyingPriceCents ?? null,
     currentPriceCents: access?.currentPriceCents ?? null,
@@ -211,7 +211,8 @@ export function auditAccessGraph(graph: AccessGraph): AccessIssue[] {
 
       if (
         access.priceType === "PAID_BASE_GAME_REQUIRED" &&
-        (node.dependsOn ?? []).length === 0
+        (node.dependsOn ?? []).length === 0 &&
+        !access.requiredExternalGameName
       ) {
         issues.push({
           code: "BASE_GAME_REQUIRED_UNSPECIFIED",

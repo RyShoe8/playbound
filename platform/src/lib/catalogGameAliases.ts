@@ -16,6 +16,7 @@ const CATALOG_GAME_SLUG_ALIASES: Record<string, string> = {
   "c-dogs-retrarch": "c-dogs-sdl",
   keeperfx: "dungeon-keeper-gold",
   "dungeon-keeper": "dungeon-keeper-gold",
+  "deus-ex": "deus-ex-goty-edition",
   /*
    * Three published mods carry baseGameSlug "gradius-remake" while the catalog
    * game is titled "Gradius Remake" under the slug "gradius" (confirmed
