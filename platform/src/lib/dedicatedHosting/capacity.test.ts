@@ -165,4 +165,15 @@ describe("Dedicated Basic capacity holds", () => {
     queriedPlayers = null;
     expect((await regionalInventory("us-central")).reason).toBe("SOLD_OUT");
   });
+
+  it("ignores a stale running row missing from the healthy agent but reserves a pending start", async () => {
+    await CommunityServerProfile.create({ key: "team-fortress-2:base", gameSlug: "team-fortress-2", recipeSlug: "team-fortress-2",
+      envelope: { cpuCores: 2, ramBytes: 2 * gib }, sampleCount: 1 });
+    const server = await CommunityServer.create({ slug: "stale-tf2", name: "Stale TF2", gameSlug: "team-fortress-2",
+      profileKey: "team-fortress-2:base", regionKey: "us-central", ownerType: "community",
+      desiredState: "running", runtimeState: "running" });
+    expect((await regionalInventory("us-central")).availableSlots).toBe(24);
+    await CommunityServer.updateOne({ _id: server._id }, { $set: { runtimeState: "pending" } });
+    expect((await regionalInventory("us-central")).availableSlots).toBe(8);
+  });
 });
