@@ -23,6 +23,8 @@ const UserSchema = new Schema({
    * src/lib/auth.ts.
    */
   authProviders: { type: [String], default: [] },
+  /** Original registration path; linking another sign-in method never changes it. */
+  signupMethod: { type: String, enum: ["google", "standard"], default: undefined },
   /** Avatar URL from the OAuth provider, when there is one. */
   image: { type: String, default: null },
   /**

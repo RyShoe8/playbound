@@ -110,6 +110,7 @@ export async function resolveOAuthUser(
     username: placeholderUsername(),
     email,
     authProviders: [input.provider],
+    signupMethod: input.provider === "google" ? "google" : undefined,
     image: input.image ?? null,
     needsUsername: true,
     emailVerified: true,
