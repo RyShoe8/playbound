@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { UserActions, type AdminUserRow } from "@/components/admin/UserActions";
 import { LocalTime } from "@/components/LocalTime";
+import { signupMethodLabel } from "@/lib/admin/signupMethod";
 
 export const metadata: Metadata = { title: "Admin · Users" };
 
@@ -16,7 +17,7 @@ export default async function AdminUsersPage() {
   const session = await getServerSession(authOptions);
   await dbConnect();
   const users = await User.find()
-    .select("username email role tester emailVerified disabled createdAt")
+    .select("username email role tester emailVerified disabled createdAt authProviders signupMethod +password")
     .sort({ createdAt: -1 })
     .lean();
 
@@ -27,6 +28,11 @@ export default async function AdminUsersPage() {
     role: u.role as AdminUserRow["role"],
     tester: Boolean(u.tester),
     emailVerified: Boolean(u.emailVerified),
+    signupMethod: signupMethodLabel({
+      signupMethod: u.signupMethod,
+      authProviders: u.authProviders,
+      hasPassword: Boolean(u.password),
+    }),
     disabled: Boolean(u.disabled),
     createdAt: new Date(u.createdAt).toISOString(),
   }));
@@ -43,11 +49,12 @@ export default async function AdminUsersPage() {
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-border">
-        <table className="w-full min-w-[720px] text-sm">
+        <table className="w-full min-w-[820px] text-sm">
           <thead>
             <tr className="border-b border-border bg-secondary/40 text-left text-xs tracking-wide text-muted-foreground uppercase">
               <th className="px-4 py-3 font-semibold">User</th>
               <th className="px-4 py-3 font-semibold">Role</th>
+              <th className="px-4 py-3 font-semibold">Signup</th>
               <th className="px-4 py-3 font-semibold">Verified</th>
               <th className="px-4 py-3 font-semibold">Status</th>
               <th className="px-4 py-3 font-semibold">Created</th>
@@ -63,6 +70,9 @@ export default async function AdminUsersPage() {
                 </td>
                 <td className="px-4 py-2.5">
                   {u.role === "admin" ? "Admin" : u.role === "admin_viewer" ? "Admin Viewer" : u.role === "developer" ? "Developer" : u.tester ? "Tester" : "User"}
+                </td>
+                <td className="px-4 py-2.5" title={u.signupMethod === "Unknown" ? "Original method cannot be determined for this older account" : undefined}>
+                  {u.signupMethod}
                 </td>
                 <td className="px-4 py-2.5">{u.emailVerified ? "Yes" : "No"}</td>
                 <td className="px-4 py-2.5">{u.disabled ? "Disabled" : "Active"}</td>

@@ -10,6 +10,7 @@ export type AdminUserRow = {
   role: "user" | "developer" | "admin_viewer" | "admin";
   tester: boolean;
   emailVerified: boolean;
+  signupMethod: "Google" | "Standard" | "Unknown";
   disabled: boolean;
   createdAt: string;
 };

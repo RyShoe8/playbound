@@ -110,6 +110,7 @@ export async function POST(req: Request) {
       usernameNormalized,
       email: normalizedEmail,
       password: hashedPassword,
+      signupMethod: "standard",
       role: isFounderAdminEmail(normalizedEmail) ? "admin" : "user",
       emailVerified: false,
       verificationTokenHash: tokenHash,
