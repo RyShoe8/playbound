@@ -5,7 +5,7 @@ import type Stripe from "stripe";
 
 const remote = vi.hoisted(() => ({ priceId: "price_basic_8", paid: true, status: "active" }));
 vi.mock("@/lib/db", () => ({ default: async () => undefined }));
-vi.mock("@/lib/gameHost/client", () => ({ fetchGameHostMetrics: async () => ({ ok: true, metrics: {
+vi.mock("@/lib/gameHost/client", () => ({ listManagedHostRooms: async () => ({ ok: true, rooms: [], jobs: {} }), fetchGameHostMetrics: async () => ({ ok: true, metrics: {
   collectedAt: new Date().toISOString(), cpu: { cores: 8, usagePercent: 10 },
   memory: { totalBytes: 16 * 1024 ** 3, freeBytes: 12 * 1024 ** 3 },
   storage: [{ path: "/games", freeBytes: 100 * 1024 ** 3, usedBytes: 0, totalBytes: 100 * 1024 ** 3 }],
