@@ -38,10 +38,12 @@ import { randomBytes } from "node:crypto";
  *   managedPlayerLimit: (ctx: object, fallback?: number) => number,
  *   customerHomeDir: (dirName: string, ctx: object) => string,
  *   isolatedHomeEnv: (dirName: string) => (port: number, ctx: object) => Record<string, string>,
+ *   settingToken: (slug: string, ctx: object, key: string, fallback: string) => string,
+ *   settingNumber: (slug: string, ctx: object, key: string, fallback: number, min: number, max: number) => number,
  * }} deps
  */
 export function createDedicatedRecipes(deps) {
-  const { fs, path, execFile, GAMES_ROOT, HOST_HOME, gameBin, firstExisting, managedPlayerLimit, customerHomeDir, isolatedHomeEnv } = deps;
+  const { fs, path, execFile, GAMES_ROOT, HOST_HOME, gameBin, firstExisting, managedPlayerLimit, customerHomeDir, isolatedHomeEnv, settingToken, settingNumber } = deps;
 
   /** One folder per server: the customer's home, or a rooms folder for anything else. */
   function serverDir(dirName, ctx) {
@@ -206,8 +208,9 @@ export function createDedicatedRecipes(deps) {
         "-norestart",
         "+ip", "0.0.0.0",
         "-port", String(port),
-        "+map", "de_dust2",
+        "+map", settingToken("counter-strike-source", ctx, "map", "de_dust2"),
         "-maxplayers", String(managedPlayerLimit(ctx)),
+        "+mp_timelimit", String(settingNumber("counter-strike-source", ctx, "mp_timelimit", 0, 0, 600)),
         // srcds re-splits its command line on spaces, so the name is quoted.
         "+hostname", `"${serverName(ctx, "PlayBound Dedicated")}"`,
         ...(ctx.rconPassword ? ["+rcon_password", ctx.rconPassword] : []),

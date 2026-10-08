@@ -252,6 +252,7 @@ for (const [slug, types] of Object.entries({
   xonotic: { gametype: "string", maxplayers: "number", fraglimit_override: "number", timelimit_override: "number" },
   "team-fortress-2": { map: "string", maxplayers: "number" },
   "counter-strike-2": { map: "string", maxplayers: "number" },
+  "counter-strike-source": { map: "string", mp_timelimit: "number" },
   unvanquished: { map: "string", sv_maxclients: "number" },
   "0-ad": { map: "string" },
   "0ad": { map: "string" },
@@ -1888,7 +1889,7 @@ export const recipes = {
  * but a slug can never shadow an existing one.
  */
 for (const [slug, recipe] of Object.entries(createDedicatedRecipes({
-  fs, path, execFile: execFileAsync, GAMES_ROOT, HOST_HOME, gameBin, firstExisting, managedPlayerLimit, customerHomeDir, isolatedHomeEnv,
+  fs, path, execFile: execFileAsync, GAMES_ROOT, HOST_HOME, gameBin, firstExisting, managedPlayerLimit, customerHomeDir, isolatedHomeEnv, settingToken, settingNumber,
 }))) {
   if (recipes[slug]) throw new Error(`dedicated recipe "${slug}" collides with an existing recipe`);
   recipes[slug] = recipe;

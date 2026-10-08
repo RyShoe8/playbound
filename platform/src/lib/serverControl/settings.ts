@@ -959,6 +959,29 @@ const CS2_MAPS = [
   { value: "de_vertigo", label: "Vertigo" },
 ] as const;
 
+// The stock maps installed in the Counter-Strike: Source server on the VPS.
+// Exclude test_hardware/test_speakers: they are engine test maps, not matches.
+const COUNTER_STRIKE_SOURCE_MAPS = [
+  { value: "de_dust2", label: "Dust2" },
+  { value: "de_dust", label: "Dust" },
+  { value: "de_inferno", label: "Inferno" },
+  { value: "de_nuke", label: "Nuke" },
+  { value: "de_train", label: "Train" },
+  { value: "de_aztec", label: "Aztec" },
+  { value: "de_cbble", label: "Cobblestone" },
+  { value: "de_chateau", label: "Chateau" },
+  { value: "de_piranesi", label: "Piranesi" },
+  { value: "de_prodigy", label: "Prodigy" },
+  { value: "de_tides", label: "Tides" },
+  { value: "de_port", label: "Port" },
+  { value: "cs_office", label: "Office" },
+  { value: "cs_italy", label: "Italy" },
+  { value: "cs_assault", label: "Assault" },
+  { value: "cs_compound", label: "Compound" },
+  { value: "cs_havana", label: "Havana" },
+  { value: "cs_militia", label: "Militia" },
+] as const;
+
 const SOURCE_TIME_LIMIT: ServerSettingDefinition = {
   key: "mp_timelimit",
   label: "Time limit",
@@ -1052,6 +1075,25 @@ const COUNTER_STRIKE_2: ServerSettingProfile = {
       help: "Bots keep the game topped up to this many players. Each person who joins replaces a bot, and it comes back when they leave. 0 for none.",
       apply: "restart",
       backend: "startup",
+    },
+    SOURCE_TIME_LIMIT,
+  ],
+};
+
+const COUNTER_STRIKE_SOURCE: ServerSettingProfile = {
+  slug: "counter-strike-source",
+  controlChannel: "rcon-source",
+  maps: {
+    options: COUNTER_STRIKE_SOURCE_MAPS,
+    changeCommand: "changelevel {value}",
+    nextCommand: "nextlevel {value}",
+    rotation: null,
+  },
+  settings: [
+    {
+      key: "map", label: "Starting map", feature: "map", type: "enum",
+      default: "de_dust2", options: COUNTER_STRIKE_SOURCE_MAPS,
+      apply: "restart", backend: "startup",
     },
     SOURCE_TIME_LIMIT,
   ],
@@ -1515,6 +1557,7 @@ export const SERVER_SETTING_PROFILES: Readonly<Record<string, ServerSettingProfi
   xonotic: XONOTIC,
   "team-fortress-2": TEAM_FORTRESS_2,
   "counter-strike-2": COUNTER_STRIKE_2,
+  "counter-strike-source": COUNTER_STRIKE_SOURCE,
   bombsquad: BOMBSQUAD,
   openra: OPENRA,
   openhv: OPENHV,
