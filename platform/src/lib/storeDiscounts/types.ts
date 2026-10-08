@@ -21,7 +21,7 @@ export type DiscountStoreSlug = (typeof DISCOUNT_STORE_SLUGS)[number];
 
 /** What a provider adapter returns — pre-persistence, no catalog matching. */
 export interface DiscoveredDiscount {
-  /** Store-specific ID: GOG product id, or CheapShark's dealID. */
+  /** Store-specific ID: GOG/GamersGate product id, or CheapShark's dealID. */
   externalId: string;
   title: string;
   store: DiscountStoreSlug;
