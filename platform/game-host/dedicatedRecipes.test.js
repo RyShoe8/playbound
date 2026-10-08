@@ -38,10 +38,18 @@ test("command-line games pass the cap to the server", () => {
   assert.ok(css.includes("-nohltv"));
   const ges = recipes["goldeneye-source"].args(27120, ctxFor("goldeneye-source"));
   assert.equal(ges[ges.indexOf("-maxplayers") + 1], "6");
+  assert.equal(ges[ges.indexOf("+map") + 1], "ge_archives");
   const terraria = recipes.terraria.args(7777, ctxFor("terraria", ID_A, 9));
   assert.equal(terraria[terraria.indexOf("-maxplayers") + 1], "9");
   const unturned = recipes.unturned.args(27075, ctxFor("unturned", ID_A, 12));
   assert.deepEqual(unturned, [`+InternetServer/pb-${ID_A}`]);
+});
+
+test("GoldenEye: Source uses a chosen installed map on restart", () => {
+  const settings = acceptedSettingsFor("goldeneye-source", { map: "ge_facility", mp_timelimit: 20 });
+  const args = recipes["goldeneye-source"].args(27120, { ...ctxFor("goldeneye-source"), settings });
+  assert.equal(args[args.indexOf("+map") + 1], "ge_facility");
+  assert.equal(args[args.indexOf("+mp_timelimit") + 1], "20");
 });
 
 test("Counter-Strike: Source uses an accepted starting map and time limit", () => {

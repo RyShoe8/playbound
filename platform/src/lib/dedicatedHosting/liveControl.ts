@@ -7,7 +7,6 @@
  * reply at ban time, stored server-side, and never returned to a browser.
  */
 import { Types } from "mongoose";
-import CommunityServer from "@/lib/models/CommunityServer";
 import { listManagedHostRooms, sendRoomCommand } from "@/lib/gameHost/client";
 import {
   banCommands,
@@ -20,6 +19,7 @@ import {
   unbanCommands,
 } from "@/lib/serverControl/rcon";
 import { getServerSettingProfile } from "@/lib/serverControl/settings";
+import { applyControlSettings } from "./control";
 import { authorizeServer, recordActivity, type Fail } from "./access";
 
 const MAX_BANS = 500;
@@ -47,16 +47,21 @@ export async function getMaps(userId: string, serverId: string) {
   if ("error" in auth) return auth;
   const profile = getServerSettingProfile(auth.server.gameSlug);
   const spec = profile?.controlChannel ? profile.maps : undefined;
-  if (!spec) return { error: "This game's maps can't be changed from PlayBound.", status: 400 } satisfies Fail;
+  const restartMap = profile?.settings.find((d) => d.feature === "map");
+  if (!spec && !restartMap) return { error: "This game's maps can't be changed from PlayBound.", status: 400 } satisfies Fail;
+  const options = spec?.options ?? (restartMap?.type === "enum" ? restartMap.options : []);
   let current: string | null = null;
   const roomId = await roomIdFor(serverId);
-  if (roomId) current = parseCurrentMap(profile!.controlChannel, await send(roomId, "status").catch(() => ""));
+  if (roomId && spec) current = parseCurrentMap(profile!.controlChannel, await send(roomId, "status").catch(() => ""));
+  if (!current && restartMap) current = String(auth.server.settings?.[restartMap.key] ?? restartMap.default);
   return {
-    options: spec.options,
+    options,
+    freeText: !spec && restartMap?.type === "string",
     current,
     running: Boolean(roomId),
-    canNext: Boolean(spec.nextCommand),
-    canRotate: Boolean(spec.rotation),
+    mode: spec ? "live" as const : "restart" as const,
+    canNext: Boolean(spec?.nextCommand),
+    canRotate: Boolean(spec?.rotation),
     rotation: (auth.server.mapRotation || []) as string[],
     status: 200 as const,
   };
@@ -92,8 +97,21 @@ async function liveMapAction(
   return { ok: true as const, status: 200 as const };
 }
 
-export const changeMap = (userId: string, serverId: string, map: string) =>
-  liveMapAction(userId, serverId, map, changeMapCommand, "map_changed");
+export async function changeMap(userId: string, serverId: string, map: string) {
+  const auth = await authorizeServer(userId, serverId, "server:change_map");
+  if ("error" in auth) return auth;
+  const profile = getServerSettingProfile(auth.server.gameSlug);
+  if (profile?.maps) return liveMapAction(userId, serverId, map, changeMapCommand, "map_changed");
+  const def = profile?.settings.find((d) => d.feature === "map");
+  const allowed = def?.type === "enum" ? def.options.some((o) => o.value === map)
+    : def?.type === "string" ? /^[A-Za-z0-9_./-]{1,64}$/.test(map) : false;
+  if (!def || !allowed) {
+    return { error: "That map isn't on this server.", status: 400 } satisfies Fail;
+  }
+  const result = await applyControlSettings(userId, serverId, { [def.key]: map });
+  if ("error" in result) return result;
+  return { ok: true as const, applied: result.outcome, status: 200 as const };
+}
 
 export const setNextMap = (userId: string, serverId: string, map: string) =>
   liveMapAction(userId, serverId, map, nextMapCommand, "next_map_set");

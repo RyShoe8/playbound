@@ -63,6 +63,33 @@ test("Server controls remain available with a party", async () => {
   assert.match(overlay.root.innerHTML, /Controls isn&#39;t active|Controls isn't active/);
 });
 
+test("Hosted server overlay shows the same map actions and restart warning as web management", async () => {
+  const overlay = await renderOverlay(
+    { party: { id: "hosted:server1", gameTitle: "Counter-Strike: Source" } },
+    { supported: true, maps: true, canEdit: true, phase: "live", gameSlug: "counter-strike-source", definitions: [], values: {}, status: { status: "running", host: "1.2.3.4", port: 27060 } },
+    { getServerMaps: async () => ({ options: [{ value: "de_dust2", label: "Dust2" }, { value: "cs_office", label: "Office" }], current: "de_dust2", running: true, mode: "live", canNext: true, canRotate: false, rotation: [] }) }
+  );
+  assert.match(overlay.root.innerHTML, /Current map/);
+  assert.match(overlay.root.innerHTML, /Office/);
+  assert.match(overlay.root.innerHTML, /Play next/);
+});
+
+test("Hosted server overlay exposes permitted lifecycle, players, and game console even without game settings", async () => {
+  const overlay = await renderOverlay(
+    { party: { id: "hosted:0123456789abcdef01234567", gameTitle: "Example server" } },
+    { supported: false, canEdit: false, phase: "live", definitions: [], values: {},
+      status: { status: "running", host: "1.2.3.4", port: 27015 },
+      permissions: ["server:view", "server:restart", "server:stop", "server:console"],
+      capabilities: { players: true, console: true } },
+    { getHostedServerPlayers: async () => ({ players: [{ name: "Player One", pingMs: 42 }] }) }
+  );
+  assert.match(overlay.root.innerHTML, /Restart/);
+  assert.match(overlay.root.innerHTML, /Stop/);
+  assert.match(overlay.root.innerHTML, /Player One/);
+  assert.match(overlay.root.innerHTML, /Game console/);
+  assert.doesNotMatch(overlay.root.innerHTML, /data-hosted-action="start"/);
+});
+
 test("Re-Volt leader sees the VPS host lobby in the existing Server tab", async () => {
   let reads = 0;
   const overlay = await renderOverlay(

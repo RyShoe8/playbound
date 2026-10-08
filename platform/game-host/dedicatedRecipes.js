@@ -170,8 +170,9 @@ export function createDedicatedRecipes(deps) {
       },
       args: (port, ctx) => [
         "-console", "-game", "gesource", "-strictportbind", "-norestart",
-        "-port", String(port), "+map", "ge_archives",
+        "-port", String(port), "+map", settingToken("goldeneye-source", ctx, "map", "ge_archives"),
         "-maxplayers", String(managedPlayerLimit(ctx)),
+        "+mp_timelimit", String(settingNumber("goldeneye-source", ctx, "mp_timelimit", 0, 0, 600)),
         "+hostname", `"${serverName(ctx, "PlayBound GoldenEye: Source")}"`,
         ...(ctx.rconPassword ? ["+rcon_password", ctx.rconPassword] : []),
       ],

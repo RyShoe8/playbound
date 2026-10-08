@@ -25,6 +25,14 @@ const tabsEl = document.getElementById("tabs");
 let state = {
   data: null,
   draft: {},
+  maps: null,
+  mapPick: "",
+  mapRotationDraft: null,
+  mapBusy: false,
+  hostedPlayers: null,
+  hostedBusy: false,
+  hostedConsoleDraft: "",
+  hostedConsoleLines: [],
   partyId: null,
   busy: false,
   error: null,
@@ -261,7 +269,7 @@ function renderServerTab() {
     return;
   }
 
-  if (!data.supported) {
+  if (!data.supported && !data.maps && !isHostedTarget()) {
     /*
      * Same rule as the site's panel: a game assessed as unable to do something
      * gets the reason, a game nobody has assessed gets a plain line. "Not yet"
@@ -286,7 +294,7 @@ function renderServerTab() {
    */
   const preLaunch = data.phase === "pre-launch";
   const mode = preLaunch ? null : strongestApply(data.definitions, changed);
-  const controls = data.definitions
+  const controls = data.definitions.filter((def) => !state.maps || def.feature !== "map")
     .map((def) => controlHtml(def, state.draft[def.key] ?? data.values[def.key] ?? def.default))
     .join("");
 
@@ -307,7 +315,7 @@ function renderServerTab() {
         ? `<p class="note">Takes effect at the next round. Nobody is disconnected.</p>`
         : "";
 
-  const button = data.canEdit
+  const button = !data.definitions.length ? "" : data.canEdit
     ? `<button class="apply" id="apply" ${
         state.busy || !changed.length || data.status?.status === "unknown" ? "disabled" : ""
       }>${
@@ -378,6 +386,8 @@ function renderServerTab() {
   root.innerHTML = `
     <p class="note">${escapeHtml(statusLine)}</p>
     ${tes3mpHtml}
+    ${renderHostedControls()}
+    ${renderMapControls()}
     ${controls}
     ${warning}
     ${state.error ? `<p class="error">${escapeHtml(state.error)}</p>` : ""}
@@ -385,6 +395,9 @@ function renderServerTab() {
     ${button}
     <p class="hint">Esc to close</p>
   `;
+
+  wireHostedControls();
+  wireMapControls();
 
   root.querySelectorAll("[data-key]").forEach((el) => {
     if (el.tagName === "LABEL") return;
@@ -429,6 +442,169 @@ function renderServerTab() {
   }
   const setHourBtn = document.getElementById("tes3mp-set-hour");
   if (setHourBtn) setHourBtn.addEventListener("click", () => void setTes3mpHour());
+}
+
+function renderHostedControls() {
+  if (!isHostedTarget()) return "";
+  const data = state.data || {};
+  const permissions = data.permissions || [];
+  const may = (permission) => permissions.includes(permission);
+  const running = data.status?.status === "running";
+  const lifecycle = running
+    ? `${may("server:restart") ? `<button class="apply" data-hosted-action="restart" ${state.hostedBusy ? "disabled" : ""}>Restart</button>` : ""}
+       ${may("server:stop") ? `<button class="apply" data-hosted-action="stop" ${state.hostedBusy ? "disabled" : ""}>Stop</button>` : ""}`
+    : may("server:start") ? `<button class="apply" data-hosted-action="start" ${state.hostedBusy ? "disabled" : ""}>Start</button>` : "";
+  const players = state.hostedPlayers?.players;
+  const playersHtml = data.capabilities?.players && running
+    ? `<p class="guide-section">Players</p>${state.hostedPlayers?.error
+      ? `<p class="note">${escapeHtml(state.hostedPlayers.error)}</p>`
+      : Array.isArray(players) && players.length
+        ? players.map((player) => `<div class="binding"><span>${escapeHtml(player.name)}</span><span>${player.pingMs != null ? `${escapeHtml(player.pingMs)} ms` : ""}</span></div>`).join("")
+        : `<p class="note">No players reported.</p>`}`
+    : "";
+  const consoleHtml = data.capabilities?.console && may("server:console") && running
+    ? `<p class="guide-section">Game console</p>
+       <p class="note">Game commands only. This is not a system shell.</p>
+       ${state.hostedConsoleLines.map((line) => `<p class="note">${escapeHtml(line)}</p>`).join("")}
+       <label class="row"><span>Command</span><input id="hosted-console-command" maxlength="200" value="${escapeHtml(state.hostedConsoleDraft)}"></label>
+       <button class="apply" id="hosted-console-send" ${state.hostedBusy ? "disabled" : ""}>Send command</button>`
+    : "";
+  return `${lifecycle ? `<p class="guide-section">Server</p>${lifecycle}` : ""}${playersHtml}${consoleHtml}`;
+}
+
+function wireHostedControls() {
+  if (!isHostedTarget()) return;
+  root.querySelectorAll("[data-hosted-action]").forEach((button) => {
+    button.addEventListener("click", () => void runHostedAction(button.dataset.hostedAction));
+  });
+  root.querySelector("#hosted-console-command")?.addEventListener("input", (event) => {
+    state.hostedConsoleDraft = event.target.value;
+  });
+  root.querySelector("#hosted-console-send")?.addEventListener("click", () => void sendHostedConsole());
+}
+
+async function runHostedAction(action) {
+  if (!isHostedTarget() || state.hostedBusy || !window.playbound?.hostedServerAction) return;
+  state.hostedBusy = true;
+  state.error = null;
+  render();
+  try {
+    const result = await window.playbound.hostedServerAction(state.partyId, action);
+    if (result?.error) state.error = result.error;
+    else {
+      state.notice = action === "start" ? "Server is starting." : action === "stop" ? "Server stopped." : "Server is restarting.";
+      // Keep this server selected after Stop. The general overlay context only
+      // discovers running servers, so a full load would lose the Start action.
+      const data = await window.playbound.getServerSettings(state.partyId);
+      if (data?.error) state.error = data.error;
+      else {
+        state.data = data;
+        state.hostedPlayers = data.capabilities?.players && data.status?.status === "running" && window.playbound.getHostedServerPlayers
+          ? await window.playbound.getHostedServerPlayers(state.partyId) : null;
+      }
+    }
+  } catch (error) {
+    state.error = error.message || "Server action failed";
+  } finally {
+    state.hostedBusy = false;
+    render();
+  }
+}
+
+async function sendHostedConsole() {
+  const command = state.hostedConsoleDraft.trim();
+  if (!isHostedTarget() || state.hostedBusy || !command || !window.playbound?.hostedServerConsole) return;
+  state.hostedBusy = true;
+  state.error = null;
+  render();
+  try {
+    const result = await window.playbound.hostedServerConsole(state.partyId, command);
+    if (result?.error) state.error = result.error;
+    else {
+      state.hostedConsoleLines = [...state.hostedConsoleLines.slice(-7), `> ${command}`, String(result?.output || "Command sent.")];
+      state.hostedConsoleDraft = "";
+    }
+  } catch (error) {
+    state.error = error.message || "Console command failed";
+  } finally {
+    state.hostedBusy = false;
+    render();
+  }
+}
+
+function renderMapControls() {
+  const maps = state.maps;
+  if (!maps || maps.error || !Array.isArray(maps.options) || (!maps.options.length && !maps.freeText)) return "";
+  const pick = maps.freeText ? state.mapPick || maps.current || "" : maps.options.some((o) => o.value === state.mapPick) ? state.mapPick : maps.options[0].value;
+  const label = (value) => maps.options.find((o) => o.value === value)?.label || value;
+  const rotation = state.mapRotationDraft ?? maps.rotation ?? [];
+  const choices = maps.options.map((o) => `<option value="${escapeHtml(o.value)}" ${pick === o.value ? "selected" : ""}>${escapeHtml(o.label)}</option>`).join("");
+  const rotationHtml = maps.canRotate ? `<p class="guide-section">Map rotation</p>
+    ${rotation.length ? rotation.map((value, index) => `<div class="binding"><span>${index + 1}. ${escapeHtml(label(value))}</span>
+      <span><button class="tab" data-map-up="${index}" ${index === 0 ? "disabled" : ""}>↑</button>
+      <button class="tab" data-map-down="${index}" ${index === rotation.length - 1 ? "disabled" : ""}>↓</button>
+      <button class="tab" data-map-remove="${index}">Remove</button></span></div>`).join("") : `<p class="note">No custom rotation.</p>`}
+    <button class="apply" id="map-add" ${rotation.length >= 30 ? "disabled" : ""}>Add ${escapeHtml(label(pick))}</button>
+    <button class="apply" id="map-save" ${state.mapRotationDraft === null || state.mapBusy ? "disabled" : ""}>Save rotation</button>` : "";
+  return `<p class="guide-section">Maps</p>
+    <p class="note">${maps.mode === "restart" || !maps.running ? "Starting map" : "Current map"}: <strong>${escapeHtml(maps.current ? label(maps.current) : maps.running ? "Unknown" : "Server offline")}</strong></p>
+    ${state.data.canEdit ? `<label class="row"><span>${maps.freeText ? "Installed map name" : "Choose map"}</span>${maps.freeText ? `<input type="text" id="map-pick" value="${escapeHtml(pick)}" maxlength="64">` : `<select id="map-pick">${choices}</select>`}</label>
+      ${maps.freeText ? `<p class="note">Enter a map name installed on this server. An unknown map may prevent it from starting.</p>` : ""}
+      ${maps.mode === "restart" && maps.running ? `<p class="note warn">Changing maps restarts the server and disconnects everyone.</p>` : ""}
+      <button class="apply" id="map-change" ${state.mapBusy || !pick || (maps.mode === "live" && !maps.running) ? "disabled" : ""}>${maps.mode === "restart" ? maps.running ? "Change & restart" : "Save starting map" : "Change now"}</button>
+      ${maps.canNext ? `<button class="apply" id="map-next" ${state.mapBusy || !maps.running ? "disabled" : ""}>Play next</button>` : ""}
+      ${rotationHtml}` : ""}`;
+}
+
+function wireMapControls() {
+  const maps = state.maps;
+  if (!maps || maps.error) return;
+  root.querySelector("#map-pick")?.addEventListener(maps.freeText ? "input" : "change", (event) => {
+    state.mapPick = event.target.value;
+    if (!maps.freeText) render();
+    else {
+      const button = root.querySelector("#map-change");
+      if (button) button.disabled = !state.mapPick.trim() || state.mapBusy;
+    }
+  });
+  root.querySelector("#map-change")?.addEventListener("click", () => void runMapAction({ action: "change", map: state.mapPick || maps.current || maps.options[0]?.value }));
+  root.querySelector("#map-next")?.addEventListener("click", () => void runMapAction({ action: "next", map: state.mapPick || maps.options[0]?.value }));
+  root.querySelector("#map-add")?.addEventListener("click", () => {
+    state.mapRotationDraft = [...(state.mapRotationDraft ?? maps.rotation ?? []), state.mapPick || maps.options[0]?.value];
+    render();
+  });
+  root.querySelectorAll("[data-map-up], [data-map-down], [data-map-remove]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const rotation = [...(state.mapRotationDraft ?? maps.rotation ?? [])];
+      const index = Number(button.dataset.mapUp ?? button.dataset.mapDown ?? button.dataset.mapRemove);
+      if (button.dataset.mapRemove !== undefined) rotation.splice(index, 1);
+      else {
+        const other = button.dataset.mapUp !== undefined ? index - 1 : index + 1;
+        [rotation[index], rotation[other]] = [rotation[other], rotation[index]];
+      }
+      state.mapRotationDraft = rotation;
+      render();
+    });
+  });
+  root.querySelector("#map-save")?.addEventListener("click", () => void runMapAction({ action: "rotation", maps: state.mapRotationDraft ?? [] }));
+}
+
+async function runMapAction(action) {
+  if (!state.partyId || state.mapBusy || !window.playbound?.serverMapAction) return;
+  state.mapBusy = true;
+  state.error = null;
+  render();
+  const result = await window.playbound.serverMapAction(state.partyId, action);
+  state.mapBusy = false;
+  if (!result || result.error) {
+    state.error = result?.error || "Could not change the map";
+    render();
+    return;
+  }
+  state.mapRotationDraft = null;
+  state.maps = await window.playbound.getServerMaps(state.partyId);
+  state.notice = action.action === "rotation" ? "Rotation saved." : action.action === "next" ? "Next map set." : state.maps?.mode === "restart" ? "Starting map saved. The server is restarting if it was online." : "Map changed.";
+  render();
 }
 
 /** One decimal is plenty for a slider readout; more just looks noisy. */
@@ -786,6 +962,13 @@ async function load() {
 
   const data = await window.playbound.getServerSettings(state.partyId);
   state.data = data || { error: "Could not reach PlayBound" };
+  state.hostedPlayers = isHostedTarget() && data?.capabilities?.players && data?.status?.status === "running" && window.playbound.getHostedServerPlayers
+    ? await window.playbound.getHostedServerPlayers(state.partyId)
+    : null;
+  state.maps = data?.maps && window.playbound.getServerMaps ? await window.playbound.getServerMaps(state.partyId) : null;
+  if (state.maps?.freeText) state.mapPick = state.maps.current || "";
+  else if (!state.maps?.options?.some((option) => option.value === state.mapPick)) state.mapPick = state.maps?.options?.[0]?.value || "";
+  state.mapRotationDraft = null;
   state.draft = data?.supported ? { ...data.values } : {};
   state.error = null;
   render();

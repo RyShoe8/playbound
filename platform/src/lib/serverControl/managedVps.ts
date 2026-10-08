@@ -23,6 +23,7 @@ type ManagedRef = {
   editionSlug: string | null;
   mod: string | null;
   name: string;
+  customerOwned?: boolean;
   /**
    * What the room is started with. For a customer server this includes
    * `maxPlayers` (its slot count), which the caller keeps out of the editable
@@ -75,7 +76,7 @@ export function createManagedVpsAdapter(ref: ManagedRef): ServerControlAdapter {
   }
 
   async function start(): Promise<ServerRuntimeState> {
-    const result = await requestManagedHostRoom({ communityServerId: ref.id, gameSlug: ref.recipeSlug, editionSlug: ref.editionSlug, mod: ref.mod, name: ref.name, settings: ref.settings });
+    const result = await requestManagedHostRoom({ communityServerId: ref.id, gameSlug: ref.recipeSlug, editionSlug: ref.editionSlug, mod: ref.mod, name: ref.name, settings: ref.settings, customerOwned: ref.customerOwned === true });
     if (result.status === "failed") return down("failed", result.error || "Start failed");
     return state();
   }

@@ -258,8 +258,6 @@ describe("coverage of the games PlayBound hosts", () => {
      */
     mindustry:
       "Configured over stdin with host <map> <mode>; the mode cannot be set without naming a map, so it needs the map entity first.",
-    "medal-of-honor-allied-assault":
-      "The first deployed room pins the proven FFA map and client limit; expose its cvars after the managed host path has had a two-client production test.",
     assaultcube:
       "Uses server command-line flags and config files; profile pending testing of managed server modes.",
     "earth-2140-trilogy":
@@ -306,8 +304,8 @@ describe("coverage of the games PlayBound hosts", () => {
   };
 
   it("knows which profiles are for games PlayBound does not actually host", async () => {
-    const { isHostableGame } = await import("@/lib/gameHost/catalog");
-    const unreachable = Object.keys(SERVER_SETTING_PROFILES).filter((s) => !isHostableGame(s));
+    const { isHostableGame, DEDICATED_ONLY_GAMES } = await import("@/lib/gameHost/catalog");
+    const unreachable = Object.keys(SERVER_SETTING_PROFILES).filter((s) => !isHostableGame(s) && !DEDICATED_ONLY_GAMES[s]);
     const undocumented = unreachable.filter((s) => !READY_BUT_NOT_HOSTED[s]);
     expect(
       undocumented,
