@@ -6,15 +6,10 @@ import { Types } from "mongoose";
 import dbConnect from "@/lib/db";
 import CommunityHostingConfig from "@/lib/models/CommunityHostingConfig";
 import CommunityServer from "@/lib/models/CommunityServer";
-import CommunityServerProfile from "@/lib/models/CommunityServerProfile";
-import CapacityReservation from "@/lib/models/CapacityReservation";
 import DedicatedCapacityHold from "@/lib/models/DedicatedCapacityHold";
 import DedicatedCapacityLease from "@/lib/models/DedicatedCapacityLease";
 import DedicatedSubscription from "@/lib/models/DedicatedSubscription";
 import { fetchGameHostMetrics, listManagedHostRooms, type GameHostMetrics } from "@/lib/gameHost/client";
-import { runningReservationEnvelope, type ResourceEnvelope } from "@/lib/communityHosting/capacity";
-import { getEffectiveEnvelope } from "@/lib/communityHosting/reconcile";
-import { managedQueryKind, queryManagedOccupancy } from "@/lib/communityHosting/playerQuery";
 import { getTier, type HostingTier } from "./tier";
 
 export const HOLD_MINUTES = 15;
@@ -123,52 +118,23 @@ export async function regionalInventory(regionKey: string, now = new Date()): Pr
   const [result, agent] = await Promise.all([fetchGameHostMetrics(), listManagedHostRooms()]);
   if (!result.ok || !agent.ok) return { availableUnits: 0, availableSlots: 0, reason: "NODE_UNREACHABLE" };
 
-  const [subs, holds, freeServers, userServers, events] = await Promise.all([
+  const [subs, holds, userServers] = await Promise.all([
     DedicatedSubscription.find({ regionKey, status: { $in: ["active", "past_due"] } }).select({ _id: 1, slotCapacity: 1 }).lean(),
     DedicatedCapacityHold.find({ regionKey, state: "held", $or: [{ expiresAt: { $gt: now } }, { planChangeSubscriptionId: { $type: "objectId" } }] }).select({ slots: 1 }).lean(),
-    CommunityServer.find({ regionKey, ownerType: { $ne: "user" }, desiredState: "running", runtimeState: { $in: ["pending", "running"] } })
-      .select({ _id: 1, profileKey: 1, gameSlug: 1, runtimeState: 1 }).lean(),
     // A canceled subscription can still have a room until reconcile confirms
     // it stopped. Do not sell those resources a second time in that gap.
     CommunityServer.find({ regionKey, ownerType: "user", $or: [{ slotsHeld: true }, { runtimeState: { $in: ["pending", "running"] } }] })
       .select({ dedicatedSubscriptionId: 1, allocatedSlots: 1, maxPlayerCount: 1 }).lean(),
-    CapacityReservation.find({ regionKey, state: { $in: ["planned", "active"] }, warmupAt: { $lte: new Date(now.getTime() + HOLD_MINUTES * 60_000) }, protectedUntil: { $gt: now } })
-      .select({ communityServerId: 1, cpuCores: 1, ramBytes: 1 }).lean(),
   ]);
-  const profiles = await CommunityServerProfile.find({ key: { $in: freeServers.map((s) => s.profileKey) } })
-    .select({ key: 1, envelope: 1, sampleCount: 1, queryVerified: 1, queryKind: 1 }).lean();
-  const byProfile = new Map(profiles.map((p) => [p.key, p]));
-  const liveRooms = new Map(agent.rooms.filter((room) => room.communityServerId)
-    .map((room) => [room.communityServerId!, room]));
-  // Use the same live, player-aware reservation as Community Hosting. An
-  // pending room, failed player query, or missing process sample keeps the full
-  // conservative baseline. A stale DB "running" row absent from the healthy
-  // agent has no process to reserve; reconciliation will mark it stopped.
-  const freeEnvelopes = await Promise.all(freeServers.map(async (server) => {
-    const profile = byProfile.get(server.profileKey);
-    const baseline = getEffectiveEnvelope(profile?.envelope, server.gameSlug, profile?.sampleCount);
-    const room = liveRooms.get(String(server._id));
-    if (!room) return server.runtimeState === "pending" || agent.jobs?.[String(server._id)]?.status === "pending"
-      ? baseline : null;
-    const queryKind = managedQueryKind(server.gameSlug, profile);
-    const occupancy = queryKind ? await queryManagedOccupancy({
-      queryKind, host: room.host, port: room.port, communityServerId: String(server._id),
-      expectedMod: server.gameSlug === "earth-2140-trilogy" ? "e2140" : undefined,
-    }).catch(() => null) : null;
-    return runningReservationEnvelope({ baseline, players: occupancy?.players ?? null, observed: room.resources });
-  }));
-  const runningFreeIds = new Set(freeServers.flatMap((server, index) =>
-    freeEnvelopes[index] ? [String(server._id)] : []));
+  // Community rooms are preemptible: paid orders claim the regional budget
+  // first, and the community reconciler scales free rooms down to fit what
+  // remains. Charging free rooms here would mark sellable slots SOLD_OUT.
   const countedSubIds = new Set(subs.map((s) => String(s._id)));
   const occupied: Envelope[] = [
     ...subs.map((s) => unitEnvelope(tier, s.slotCapacity)),
     ...holds.map((h) => unitEnvelope(tier, h.slots)),
     ...userServers.filter((s) => !countedSubIds.has(String(s.dedicatedSubscriptionId)))
       .map((s) => unitEnvelope(tier, Math.max(s.allocatedSlots || 0, s.maxPlayerCount || 0, tier.minAllocation))),
-    ...freeEnvelopes.filter((envelope): envelope is ResourceEnvelope => envelope !== null)
-      .map((envelope) => ({ ...envelope, storageBytes: 0 })),
-    ...events.filter((e) => !e.communityServerId || !runningFreeIds.has(String(e.communityServerId)))
-      .map((e) => ({ cpuCores: e.cpuCores, ramBytes: e.ramBytes, storageBytes: 0 })),
   ];
   return decideInventory({
     tier,

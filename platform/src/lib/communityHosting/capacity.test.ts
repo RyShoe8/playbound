@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canScaleDownEmptyServer, placementDecision, runningReservationEnvelope, type PlacementInput } from "./capacity";
+import { canScaleDownEmptyServer, paidScaleDownRank, placementDecision, runningReservationEnvelope, type PlacementInput } from "./capacity";
 
 const GIB = 1024 ** 3;
 const base: PlacementInput = {
@@ -26,6 +26,10 @@ describe("community hosting placement", () => {
     expect(canScaleDownEmptyServer({ players: null, checkedAt: now, protectedUntil: null }, now)).toBe(false);
     expect(canScaleDownEmptyServer({ players: 0, checkedAt: new Date(now.getTime() - 180_000), protectedUntil: null }, now)).toBe(false);
     expect(canScaleDownEmptyServer({ players: 0, checkedAt: now, protectedUntil: new Date(now.getTime() + 60_000) }, now)).toBe(false);
+    expect(paidScaleDownRank({ players: 0, protectedUntil: null }, now)).toBe(0);
+    expect(paidScaleDownRank({ players: 3, protectedUntil: null }, now)).toBe(1);
+    expect(paidScaleDownRank({ players: null, protectedUntil: null }, now)).toBe(1);
+    expect(paidScaleDownRank({ players: 0, protectedUntil: new Date(now.getTime() + 60_000) }, now)).toBe(2);
   });
   it("can place another game when the current fleet is confirmed idle", () => {
     const idle = [

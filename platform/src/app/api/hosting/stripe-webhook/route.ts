@@ -1,6 +1,9 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { processDedicatedStripeEvent } from "@/lib/dedicatedHosting/billingEvents";
 import { verifyStripeWebhook } from "@/lib/dedicatedHosting/stripeWebhook";
+import { reconcileCommunityHosting } from "@/lib/communityHosting/reconcile";
+
+export const maxDuration = 60;
 
 /** Verify first; acknowledge only events whose local side effects completed. */
 export async function POST(req: Request) {
@@ -15,6 +18,14 @@ export async function POST(req: Request) {
   }
   try {
     await processDedicatedStripeEvent(event);
+    if (event.type === "checkout.session.completed" || event.type === "customer.subscription.updated") {
+      // The paid entitlement is committed before the community budget changes.
+      // Do not delay or fail Stripe's acknowledgement while free rooms yield.
+      after(async () => {
+        try { await reconcileCommunityHosting(); }
+        catch (error) { console.error("[dedicated-stripe-webhook] Community capacity reclaim failed:", error); }
+      });
+    }
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("[dedicated-stripe-webhook] Event processing failed:", event.id, event.type, error instanceof Error ? error.message : error);
