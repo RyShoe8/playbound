@@ -56,7 +56,7 @@ test("A2S accepts any app when asked (TF2 reports 440, not CS2's 730)", () => {
 
 test("every queryable game is declared", () => {
   for (const slug of ["counter-strike-2", "team-fortress-2", "xonotic", "openarena", "wolfenstein-enemy-territory",
-    "unvanquished", "medal-of-honor-allied-assault", "mindustry", "assaultcube", "space-station-14", "morrowind"]) {
+    "unvanquished", "medal-of-honor-allied-assault", "mindustry", "assaultcube", "space-station-14", "morrowind", "unturned"]) {
     assert.ok(LOCAL_QUERY_GAMES.has(slug), slug);
   }
 });

@@ -44,10 +44,14 @@ describe("host mode configuration", () => {
   });
 
   it("offers the requested games their supported local and VPS party paths", () => {
-    for (const slug of ["dont-starve-together", "deus-ex-goty-edition", "barotrauma", "necesse", "factorio", "counter-strike-source"]) {
+    for (const slug of ["dont-starve-together", "barotrauma", "necesse", "factorio", "counter-strike-source"]) {
       expect(hostModesFor(slug)).toContain("self");
       expect(hostModesFor(slug)).toContain("dedicated");
     }
+    expect(hostModesFor("deus-ex-goty-edition", "playbound-hx-coop")).toContain("dedicated");
+    expect(hostModesFor("deus-ex-goty-edition", "gmdx")).toEqual([]);
+    expect(hostModesFor("rimworld", "rimworld-together")).toContain("dedicated");
+    expect(hostModesFor("rimworld")).not.toContain("dedicated");
     for (const slug of ["stardew-valley", "star-wars-galactic-battlegrounds-saga"]) {
       expect(hostModesFor(slug)).toContain("self");
       expect(hostModesFor(slug)).not.toContain("dedicated");

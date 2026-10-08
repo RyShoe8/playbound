@@ -104,10 +104,11 @@ function serializeParty(
   const members = (doc.members as Array<Record<string, unknown>>) || [];
   const leaderId = String(doc.leaderId);
   const discord = (doc.discord as Record<string, unknown>) || {};
-  const hostMode = resolvedHostMode(
-    String(doc.gameSlug || ""),
-    doc.hostMode as PartyHostMode | null,
-    doc.hosted as { roomId?: string | null } | null
+    const hostMode = resolvedHostMode(
+      String(doc.gameSlug || ""),
+      doc.hostMode as PartyHostMode | null,
+      doc.hosted as { roomId?: string | null } | null,
+      (doc.editionSlug as string) || null
   );
   const publicServer = serializePublicServer(doc.publicServer as PublicServerFields | null);
 
@@ -154,7 +155,7 @@ function serializeParty(
      * default, same as everywhere else.
      */
     hostMode,
-    hostModes: doc.gameSlug ? hostModeOptions(String(doc.gameSlug)) : [],
+    hostModes: doc.gameSlug ? hostModeOptions(String(doc.gameSlug), (doc.editionSlug as string) || null) : [],
     savedWorldId: doc.savedWorldId ? String(doc.savedWorldId) : null,
     offersSavedWorlds: supportsSavedWorlds(String(doc.gameSlug || "")) && hostMode === "dedicated",
     /*
@@ -190,7 +191,8 @@ function serializeParty(
         : hostedPayloadFromDoc(
             String(doc.gameSlug || ""),
             hostMode,
-            (doc.hosted as Parameters<typeof hostedPayloadFromDoc>[2]) || null
+            (doc.hosted as Parameters<typeof hostedPayloadFromDoc>[2]) || null,
+            (doc.editionSlug as string) || null
           ),
     lan: lanPayloadFromDoc(
       String(doc.gameSlug || ""),

@@ -19,6 +19,7 @@ on:
       - "platform/src/lib/data/editions.ts"
       - "platform/src/lib/data/editorial.ts"
       - "platform/src/lib/data/catalogCorrections.ts"
+      - "platform/src/lib/data/catalogEditionCorrections.ts"
       - "platform/src/lib/data/dedicatedDraftEditorial.ts"
       - "platform/src/lib/data/dedicatedDraftRequirements.ts"
       - "platform/src/lib/data/developers.ts"
@@ -31,7 +32,7 @@ jobs:
   apply:
     # The Dedicated-draft commit uses the isolated job below. A global wave
     # here would also rewrite unrelated catalog rows on the same push.
-    if: ${{ !contains(github.event.head_commit.message, '[catalog-scope:dedicated-drafts]') && !contains(github.event.head_commit.message, '[catalog-scope:battlefield-features]') && !contains(github.event.head_commit.message, '[catalog-scope:hyperdisc-install]') }}
+    if: ${{ !contains(github.event.head_commit.message, '[catalog-scope:dedicated-drafts]') && !contains(github.event.head_commit.message, '[catalog-scope:battlefield-features]') && !contains(github.event.head_commit.message, '[catalog-scope:hyperdisc-install]') && !contains(github.event.head_commit.message, '[catalog-scope:four-games]') }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -117,6 +118,44 @@ jobs:
         run: npm ci
       - name: Patch only the fifteen named draft games
         run: npm run insert:catalog-wave -- --games=battlefield-1942-anthology,counter-strike-source,factorio,necesse,dont-starve-together,barotrauma,stardew-valley,aneurism-iv,risk-of-rain-2,starbound,terraria,vintage-story,core-keeper,rimworld,unturned --fields=installSteps,systemRequirements,hardwareRequirements
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+
+  apply-four-games:
+    if: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[catalog-scope:four-games]') }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Require Mongo URI
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: |
+          if [[ ! "$MONGODB_URI" =~ ^mongodb(\+srv)?:// ]]; then
+            echo "MONGODB_URI is not configured; no catalog rows were changed."
+            exit 1
+          fi
+      - name: Install Platform Dependencies
+        run: npm ci
+      - name: Correct only Unturned and ANEURISM IV store handoffs
+        run: npm run insert:catalog-wave -- --games=unturned,aneurism-iv --fields=launcherInstall.url,launcherInstall.steamAppId
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      - name: Correct only ANEURISM IV platform install steps
+        run: npm run insert:catalog-wave -- --games=aneurism-iv --fields=installSteps
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      - name: Correct only RimWorld controller status and executable pickup
+        run: npm run insert:catalog-wave -- --games=rimworld --fields=hasControllerSupport,launcherInstall.exeHint
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      - name: Correct only RimWorld Together edition install fields
+        run: npm run insert:catalog-wave -- --editions=rimworld/rimworld-together
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
 

@@ -39,4 +39,10 @@ describe("preferredPartyEditionSlug", () => {
   it("does not lock a single-edition game", () => {
     expect(preferredPartyEditionSlug([freedoom[0]], "gzdoom")).toBeNull();
   });
+
+  it("selects the only server-capable edition for a multiplayer party", () => {
+    expect(preferredPartyEditionSlug([{ slug: "rimworld-together" }], null, "rimworld")).toBe("rimworld-together");
+    expect(preferredPartyEditionSlug([{ slug: "gmdx" }, { slug: "playbound-hx-coop" }], "gmdx", "deus-ex-goty-edition"))
+      .toBe("playbound-hx-coop");
+  });
 });

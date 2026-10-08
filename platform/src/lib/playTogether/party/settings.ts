@@ -95,7 +95,6 @@ export async function setPartyGame(
      * party self-hosting a game whose client cannot host, so it resets to
      * whatever the new game's default is.
      */
-    doc.hostMode = defaultHostMode(slug);
     resetPartyConnectState(doc);
   }
   /*
@@ -105,6 +104,7 @@ export async function setPartyGame(
    */
   const editions = await listEditionsForGame(game);
   doc.editionSlug = preferredPartyEditionSlug(editions, doc.editionSlug, slug);
+  if (switchingGame) doc.hostMode = defaultHostMode(slug, doc.editionSlug);
   /*
    * openRaMod only applies to stock OpenRA Official. Leaving it set when the
    * party switches to another game (or a fixed-mod OpenRA edition) made VPS
@@ -176,7 +176,7 @@ export async function setPartyHostMode(
 
   const slug = String(doc.gameSlug || "");
   if (!slug) return { error: "Pick a game first", status: 400 };
-  if (!isValidHostMode(slug, hostMode)) {
+  if (!isValidHostMode(slug, hostMode, doc.editionSlug)) {
     return { error: "That hosting option is not available for this game", status: 400 };
   }
   if (doc.status === "playing" || doc.status === "launching") {
@@ -395,6 +395,11 @@ export async function setPartyEdition(
     for (const member of doc.members) member.ready = false;
   }
   doc.editionSlug = newEdition;
+  if (previousEdition !== newEdition && !isValidHostMode(String(doc.gameSlug), doc.hostMode, newEdition)) {
+    if (doc.hosted?.roomId) await releasePartyHost(doc);
+    doc.hostMode = defaultHostMode(String(doc.gameSlug), newEdition);
+    resetPartyConnectState(doc);
+  }
   /*
    * Host explicitly chose this version (picker or Install). Guests may install
    * from here — preferredPartyEditionSlug alone must not unlock guest Install.

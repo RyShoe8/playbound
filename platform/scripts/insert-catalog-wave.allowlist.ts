@@ -117,7 +117,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   // Database-only Dedicated Basic drafts. Scope to verified scalar/step fields;
   // multiplayer feature chips are appended below without replacing CMS data.
   "battlefield-1942-anthology": ["hasControllerSupport", "multiplayerGamingSteps", "website", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
-  "aneurism-iv": ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
+  "aneurism-iv": ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps", "launcherInstall.url", "launcherInstall.steamAppId", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
   "stardew-valley": ["steamAppId", "hasControllerSupport", "maxPlayers", "multiplayerGamingSteps", "website", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
   starbound: ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps", "website", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
   necesse: ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
@@ -129,9 +129,9 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   "core-keeper": ["steamAppId", "hasControllerSupport", "maxPlayers", "multiplayerGamingSteps", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
   // The owner is renaming a DLC-imported draft to the base game; skip until that row exists.
   "risk-of-rain-2": ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
-  rimworld: ["steamAppId", "hasControllerSupport", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
+  rimworld: ["steamAppId", "hasControllerSupport", "launcherInstall.exeHint", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
   "counter-strike-source": ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
-  unturned: ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
+  unturned: ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps", "launcherInstall.url", "launcherInstall.steamAppId", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
   "shadow-warrior-classic-complete": ["launcherInstall"],
   "deus-ex-goty-edition": ["status", "features", "multiplayerGamingSteps"],
   /*
@@ -780,8 +780,7 @@ export const ADD_GAME_FEATURES: Readonly<Record<string, readonly string[]>> = {
   "vintage-story": ["Multiplayer", "Co-op", "LAN Support"],
   "core-keeper": ["Multiplayer", "Co-op", "Controller Support"],
   "risk-of-rain-2": ["Multiplayer", "Co-op", "Controller Support"],
-  // Vanilla RimWorld is single-player. Its one mod edition is separate.
-  rimworld: ["Controller Support"],
+  // Vanilla RimWorld is single-player; its multiplayer mod is an edition.
   "counter-strike-source": ["Multiplayer"],
   unturned: ["Multiplayer", "Co-op", "LAN Support"],
 };
@@ -821,6 +820,17 @@ export const STEAM_CLIENT_EXE_HINTS: Readonly<Record<string, string>> = {
 
 /** Existing editions: $set ONLY these fields. */
 export const PATCH_EDITION_FIELDS: Readonly<Record<string, readonly string[]>> = {
+  // DB-only RimWorld Together edition: select the client mod ZIP, not one of
+  // the server ZIPs in the same GitHub release. No other edition fields move.
+  "rimworld/rimworld-together": [
+    "installConfig.playbound_installer.kind",
+    "installConfig.playbound_installer.repo",
+    "installConfig.playbound_installer.assetPattern",
+    "installConfig.playbound_installer.baseExeHint",
+    "installConfig.playbound_installer.exeHint",
+    "installConfig.playbound_installer.overlayDest",
+    "installConfig.playbound_installer.requiresBaseDir",
+  ],
   "deus-ex-goty-edition/gmdx": ["installMethod", "installConfig", "verificationNote"],
   "deus-ex-goty-edition/playbound-hx-coop": ["description", "installConfig", "multiplayerGamingSteps", "faq", "verificationNote"],
   // The Windows ZIP includes app/shatteredNews-*.jar (no Main-Class) beside

@@ -17,6 +17,7 @@ import { cleanupPartyDiscordVoice, type PartyVoiceFollowup } from "@/lib/playTog
 import { releasePartyHost } from "@/lib/gameHost/provision";
 import { releasePartyLan } from "@/lib/virtualLan/provision";
 import { defaultHostMode, isValidHostMode, type PartyHostMode } from "@/lib/multiplayer/hostModes";
+import { requiredPartyEditionSlug } from "@/lib/playTogether/partyEdition";
 import { getPartySlotContext } from "@/lib/entitlements/pool";
 import { canSeatAnother } from "@/lib/entitlements/slots";
 import { canJoinParty, canLeaveParty, canRemoveMember, nextLeader, derivePartyStatus } from "@/lib/playTogether/partyRules";
@@ -55,6 +56,7 @@ export async function createParty(opts: {
   const gameSlug = typeof opts.gameSlug === "string" ? opts.gameSlug.trim() : "";
   const game = gameSlug ? await getGame(gameSlug, { includeTesting: true }) : null;
   if (gameSlug && !game) return { error: "Game not found", status: 404 };
+  const partyEditionSlug = opts.editionSlug || requiredPartyEditionSlug(gameSlug);
 
   // One active party per leader — return it idempotently instead of 409/500 races.
   const existing = await findActiveLeaderParty(opts.userId);
@@ -158,7 +160,7 @@ export async function createParty(opts: {
       name: normalizePartyName(opts.name),
       leaderOs: opts.leaderOs || null,
       gameSlug,
-      editionSlug: opts.editionSlug || null,
+      editionSlug: partyEditionSlug,
       modSlugs: opts.modSlugs || [],
       status: "forming",
       visibility,
@@ -173,9 +175,9 @@ export async function createParty(opts: {
        * unsupported or absent value falls back to the game's own default.
        */
       hostMode: gameSlug
-        ? isValidHostMode(gameSlug, opts.hostMode)
+        ? isValidHostMode(gameSlug, opts.hostMode, partyEditionSlug)
           ? (opts.hostMode as PartyHostMode)
-          : defaultHostMode(gameSlug)
+          : defaultHostMode(gameSlug, partyEditionSlug)
         : null,
       eventId: opts.eventId || null,
       lastActivity: now,

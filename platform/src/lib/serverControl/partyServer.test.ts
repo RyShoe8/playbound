@@ -79,7 +79,7 @@ describe("whether a party has a server to control", () => {
      * Once every hostable game is profiled there is no such case left, and the
      * branch is exercised by the assertion below instead.
      */
-    const unprofiled = Object.keys(HOSTABLE_GAMES).find((s) => !SERVER_SETTING_PROFILES[s]);
+    const unprofiled = Object.keys(HOSTABLE_GAMES).find((s) => s !== "deus-ex-goty-edition" && !SERVER_SETTING_PROFILES[s]);
     if (unprofiled) {
       const noProfile = serverControlAvailability(
         party({ gameSlug: unprofiled, gameTitle: "Some Game" })

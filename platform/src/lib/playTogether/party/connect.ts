@@ -3,7 +3,7 @@ import { after } from "next/server";
 import { type PartyPayload } from "@/lib/playTogether/types";
 import { provisionPartyHost, reconcilePartyHostAlive } from "@/lib/gameHost/provision";
 import { provisionPartyLan, partyLanNeedsProvision } from "@/lib/virtualLan/provision";
-import { isHostableGame, type HostedStatus } from "@/lib/gameHost/catalog";
+import { getPartyHostableGame, type HostedStatus } from "@/lib/gameHost/catalog";
 import { getMultiplayerAdapter } from "@/lib/multiplayer/adapters";
 import { isDiscoveryReflectorConfigured, isVirtualLanConfigured } from "@/lib/virtualLan/client";
 import { resolvedHostMode } from "@/lib/multiplayer/hostModes";
@@ -103,13 +103,13 @@ function pendingPartyConnect(doc: PartyDoc): { host: boolean; lan: boolean } {
   const none = { host: false, lan: false };
   if (!doc.gameSlug || !partyConnectCanAutoProvision(doc)) return none;
   const slug = String(doc.gameSlug);
-  const hostMode = resolvedHostMode(slug, doc.hostMode, doc.hosted);
+  const hostMode = resolvedHostMode(slug, doc.hostMode, doc.hosted, doc.editionSlug);
   // Public servers need nothing. Couch parties have no room and no overlay —
   // the session is started by the leader's launcher at Start Game.
   if (hostMode === "public" || hostMode === "couch") return none;
   const hs = (doc.hosted?.status || "none") as HostedStatus;
   return {
-    host: hostMode === "dedicated" && isHostableGame(slug) && (hs === "none" || hs === "failed"),
+    host: hostMode === "dedicated" && Boolean(getPartyHostableGame(slug, doc.editionSlug)) && (hs === "none" || hs === "failed"),
     // A LAN already "pending" is in flight and left alone until stale.
     lan: hostMode === "self" && partyLanNeedsProvision(doc.lan),
   };
@@ -157,7 +157,7 @@ export async function ensurePartyConnectReady(
   doc: PartyDoc
 ): Promise<{ ok: true } | { error: string }> {
   const slug = String(doc.gameSlug || "");
-  const hostMode = resolvedHostMode(slug, doc.hostMode, doc.hosted);
+  const hostMode = resolvedHostMode(slug, doc.hostMode, doc.hosted, doc.editionSlug);
 
   // Nothing to reach in couch mode — the game runs on the leader's PC and the
   // party arrives as controllers, not as clients.
@@ -170,7 +170,7 @@ export async function ensurePartyConnectReady(
     return { ok: true };
   }
 
-  if (hostMode === "dedicated" && isHostableGame(slug)) {
+  if (hostMode === "dedicated" && getPartyHostableGame(slug, doc.editionSlug)) {
     await reconcilePartyHostAlive(doc);
     let hs = (doc.hosted?.status || "none") as HostedStatus;
     if (hs === "ready" && doc.hosted?.host && doc.hosted?.port) {

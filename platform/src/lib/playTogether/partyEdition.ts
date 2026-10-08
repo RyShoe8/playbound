@@ -12,6 +12,8 @@ export type PartyEditionOption = {
 
 const REQUIRED_PARTY_EDITIONS: Readonly<Record<string, string>> = {
   freedoom: "zandronum",
+  rimworld: "rimworld-together",
+  "deus-ex-goty-edition": "playbound-hx-coop",
   // OpenMW is the SP remaster default; parties need TES3MP.
   morrowind: "tes3mp",
 };
@@ -30,12 +32,11 @@ export function preferredPartyEditionSlug(
   currentSlug?: string | null,
   gameSlug?: string | null
 ): string | null {
-  if (editions.length <= 1) return null;
-
   const requiredSlug = requiredPartyEditionSlug(gameSlug);
   if (requiredSlug && editions.some((edition) => edition.slug === requiredSlug)) {
     return requiredSlug;
   }
+  if (editions.length <= 1) return null;
 
   const partyEditions = editions.filter(editionSupportsPartyPlay);
   const candidates = partyEditions.length > 0 ? partyEditions : editions;
