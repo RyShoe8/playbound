@@ -147,7 +147,8 @@ export function ServerControl({ serverId }: { serverId: string }) {
   const running = control.status.status === "running";
   const tabs = [
     "Overview",
-    control.capabilities.settings && (may("server:configure") || may("server:change_map")) ? "Settings" : null,
+    control.capabilities.settings && control.definitions.some((d) => !control.maps || d.feature !== "map") &&
+      (may("server:configure") || may("server:change_map")) ? "Settings" : null,
     control.maps ? "Maps" : null,
     control.capabilities.players ? "Players" : null,
     control.capabilities.console && may("server:console") ? "Console" : null,
@@ -301,7 +302,7 @@ function SettingsTab({
   const [visibility, setVisibility] = useState(server.visibility);
   const running = control.status.status === "running";
   const configure = may("server:configure");
-  const editableDefs = control.definitions.filter((d) => configure || (d.feature === "map" && may("server:change_map")));
+  const editableDefs = control.definitions.filter((d) => !control.maps || d.feature !== "map").filter((d) => configure || (d.feature === "map" && may("server:change_map")));
   const changed = editableDefs.map((d) => d.key).filter((k) => draft[k] !== undefined && draft[k] !== control.values[k]);
   const modeOf = (d: ServerSettingDefinition) => (!running ? null : control.capabilities.liveApply ? d.apply : "restart");
   const restartNeeded = running && changed.some((k) => modeOf(control.definitions.find((d) => d.key === k)!) === "restart");
@@ -536,7 +537,7 @@ function PlayerList({ base, running, canKick, canBan, run }: { base: string; run
   );
 }
 
-type MapsData = { options: { value: string; label: string }[]; current: string | null; running: boolean; canNext: boolean; canRotate: boolean; rotation: string[] };
+type MapsData = { options: { value: string; label: string }[]; freeText: boolean; current: string | null; running: boolean; mode: "live" | "restart"; canNext: boolean; canRotate: boolean; rotation: string[] };
 
 function MapsTab({ base, canChange, run }: { base: string; canChange: boolean; run: (w: () => Promise<unknown>, done?: string) => Promise<void> }) {
   const [data, setData] = useState<MapsData | null>(null);
@@ -558,7 +559,7 @@ function MapsTab({ base, canChange, run }: { base: string; canChange: boolean; r
   if (err) return <p className="text-sm text-destructive">{err}</p>;
   if (!data) return <p className="text-sm text-muted-foreground">Loading maps…</p>;
   const label = (v: string) => data.options.find((o) => o.value === v)?.label || v;
-  const selected = pick || data.options[0]?.value || "";
+  const selected = pick || data.current || data.options[0]?.value || "";
   const rot = rotation ?? data.rotation;
   const move = (i: number, j: number) => {
     const next = [...rot];
@@ -575,21 +576,21 @@ function MapsTab({ base, canChange, run }: { base: string; canChange: boolean; r
     <div className="space-y-6">
       <section className="space-y-3 rounded-xl border border-border bg-card p-4">
         <p className="text-sm">
-          <span className="text-muted-foreground">Current map:</span>{" "}
-          <strong>{data.running ? (data.current ? label(data.current) : "unknown") : "server offline"}</strong>
+          <span className="text-muted-foreground">{data.mode === "restart" || !data.running ? "Starting map:" : "Current map:"}</span>{" "}
+          <strong>{data.current ? label(data.current) : data.running ? "unknown" : "server offline"}</strong>
         </p>
         {canChange ? (
           <div className="flex flex-wrap items-end gap-2">
             <label className="text-sm">
               Map
-              <select className="mt-1 block rounded border border-border bg-background px-2 py-1.5" value={selected} onChange={(e) => setPick(e.target.value)}>
+              {data.freeText ? <input className="mt-1 block rounded border border-border bg-background px-2 py-1.5" value={selected} onChange={(e) => setPick(e.target.value)} maxLength={64} pattern="[A-Za-z0-9_./-]+" /> : <select className="mt-1 block rounded border border-border bg-background px-2 py-1.5" value={selected} onChange={(e) => setPick(e.target.value)}>
                 {data.options.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
-              </select>
+              </select>}
             </label>
-            <button type="button" disabled={!data.running} className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground disabled:opacity-50" onClick={() => void post({ action: "change", map: selected }, `Changing to ${label(selected)}.`)}>
-              Change now
+            <button type="button" disabled={!selected || (data.mode === "live" && !data.running)} className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground disabled:opacity-50" onClick={() => void post({ action: "change", map: selected }, data.mode === "restart" ? data.running ? `Restarting with ${label(selected)}.` : `${label(selected)} saved for the next start.` : `Changing to ${label(selected)}.`)}>
+              {data.mode === "restart" ? data.running ? "Change & restart" : "Save starting map" : "Change now"}
             </button>
             {data.canNext ? (
               <button type="button" disabled={!data.running} className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50" onClick={() => void post({ action: "next", map: selected }, `${label(selected)} is next.`)}>
@@ -598,7 +599,9 @@ function MapsTab({ base, canChange, run }: { base: string; canChange: boolean; r
             ) : null}
           </div>
         ) : null}
-        {!data.running ? <p className="text-xs text-muted-foreground">Start the server to change maps.</p> : null}
+        {data.mode === "restart" && data.running ? <p className="text-xs text-amber-500">Changing maps restarts the server and disconnects everyone.</p> : null}
+        {data.freeText ? <p className="text-xs text-muted-foreground">Enter a map name installed on this server. An unknown map may prevent it from starting.</p> : null}
+        {data.mode === "live" && !data.running ? <p className="text-xs text-muted-foreground">Start the server to change maps.</p> : null}
       </section>
 
       {data.canRotate ? (

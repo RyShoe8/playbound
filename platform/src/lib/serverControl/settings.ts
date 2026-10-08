@@ -1099,6 +1099,36 @@ const COUNTER_STRIKE_SOURCE: ServerSettingProfile = {
   ],
 };
 
+// Stock GE:S 5.0.6 maps in the installed dedicated server's gesource/maps.
+const GOLDENEYE_SOURCE_MAPS = [
+  "ge_archives", "ge_archives_classic", "ge_aztec", "ge_basement", "ge_basement_classic",
+  "ge_bunker", "ge_bunker_classic", "ge_casino", "ge_caverns", "ge_caves",
+  "ge_complex", "ge_complex_classic", "ge_control", "ge_cradle", "ge_dam",
+  "ge_depot", "ge_egyptian", "ge_facility", "ge_facility_backzone", "ge_facility_classic",
+  "ge_library_classic", "ge_runway", "ge_silo", "ge_stack_classic", "ge_temple_classic",
+  "ge_transition",
+].map((value) => ({ value, label: value.slice(3).replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase()) }));
+
+const GOLDENEYE_SOURCE: ServerSettingProfile = {
+  slug: "goldeneye-source",
+  controlChannel: "rcon-source",
+  maps: { options: GOLDENEYE_SOURCE_MAPS, changeCommand: "changelevel {value}", nextCommand: "nextlevel {value}", rotation: null },
+  settings: [
+    { key: "map", label: "Starting map", feature: "map", type: "enum", default: "ge_archives", options: GOLDENEYE_SOURCE_MAPS, apply: "restart", backend: "startup" },
+    SOURCE_TIME_LIMIT,
+  ],
+};
+
+// The seven stock deathmatch maps found in the installed OpenMOHAA Pak files.
+const OPENMOHAA_DM_MAPS = Array.from({ length: 7 }, (_, i) => ({ value: `dm/mohdm${i + 1}`, label: `Deathmatch ${i + 1}` }));
+
+const MEDAL_OF_HONOR_ALLIED_ASSAULT: ServerSettingProfile = {
+  slug: "medal-of-honor-allied-assault",
+  settings: [
+    { key: "map", label: "Map", feature: "map", type: "enum", default: "dm/mohdm1", options: OPENMOHAA_DM_MAPS, apply: "restart", backend: "startup" },
+  ],
+};
+
 /**
  * BombSquad.
  *
@@ -1558,6 +1588,8 @@ export const SERVER_SETTING_PROFILES: Readonly<Record<string, ServerSettingProfi
   "team-fortress-2": TEAM_FORTRESS_2,
   "counter-strike-2": COUNTER_STRIKE_2,
   "counter-strike-source": COUNTER_STRIKE_SOURCE,
+  "goldeneye-source": GOLDENEYE_SOURCE,
+  "medal-of-honor-allied-assault": MEDAL_OF_HONOR_ALLIED_ASSAULT,
   bombsquad: BOMBSQUAD,
   openra: OPENRA,
   openhv: OPENHV,

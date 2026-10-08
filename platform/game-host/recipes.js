@@ -253,6 +253,9 @@ for (const [slug, types] of Object.entries({
   "team-fortress-2": { map: "string", maxplayers: "number" },
   "counter-strike-2": { map: "string", maxplayers: "number" },
   "counter-strike-source": { map: "string", mp_timelimit: "number" },
+  "goldeneye-source": { map: "string", mp_timelimit: "number" },
+  "medal-of-honor-allied-assault": { map: "string" },
+  openmohaa: { map: "string" },
   unvanquished: { map: "string", sv_maxclients: "number" },
   "0-ad": { map: "string" },
   "0ad": { map: "string" },
@@ -829,7 +832,7 @@ export const recipes = {
         ...(botFillCount("medal-of-honor-allied-assault", ctx)
           ? ["+set", "sv_maxbots", String(botFillCount("medal-of-honor-allied-assault", ctx)), "+set", "sv_minPlayers", String(botFillCount("medal-of-honor-allied-assault", ctx))]
           : []),
-        "+map", "dm/mohdm1",
+        "+map", settingToken("medal-of-honor-allied-assault", ctx, "map", "dm/mohdm1"),
       ];
     },
     startupGraceMs: 2500,

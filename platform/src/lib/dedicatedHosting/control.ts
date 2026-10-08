@@ -43,6 +43,7 @@ async function adapterFor(server: {
     editionSlug: server.editionSlug || null,
     mod: server.mod || null,
     name: server.name,
+    customerOwned: true,
     settings: { ...saved, maxPlayers: server.allocatedSlots },
     onChanged: async (values) => {
       await CommunityServer.updateOne({ _id: server._id }, { $set: { settings: stripLocked(server, values) } });
@@ -66,7 +67,8 @@ export async function getControl(userId: string, serverId: string) {
     permissions: [...ROLE_PERMISSIONS[role]],
     capabilities: adapter.capabilities,
     /** A Maps tab: the game declares its maps and can change them over its live channel. */
-    maps: Boolean(getServerSettingProfile(server.gameSlug)?.maps && adapter.capabilities.liveApply),
+    maps: Boolean(getServerSettingProfile(server.gameSlug)?.maps && adapter.capabilities.liveApply) ||
+      Boolean(getServerSettingProfile(server.gameSlug)?.settings.some((d) => d.feature === "map")),
     status,
     definitions: view.definitions.filter((d) => !locked.has(d.key)),
     values,
@@ -145,4 +147,3 @@ export async function runConsole(userId: string, serverId: string, command: stri
     return { error: err instanceof Error ? err.message : "The server didn't answer.", status: 503 } satisfies Fail;
   }
 }
-

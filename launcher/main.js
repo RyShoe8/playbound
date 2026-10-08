@@ -13458,6 +13458,19 @@ function serverSettingsPath(target) {
     : `/api/parties/${encodeURIComponent(id)}/server-settings`;
 }
 
+function serverMapsPath(target) {
+  const id = String(target || "");
+  return id.startsWith("hosted:")
+    ? `/api/hosting/servers/${encodeURIComponent(id.slice(7))}/maps`
+    : `/api/parties/${encodeURIComponent(id)}/server-maps`;
+}
+
+function hostedControlPath(target, suffix) {
+  const id = String(target || "");
+  if (!/^hosted:[a-f0-9]{24}$/i.test(id)) return null;
+  return `/api/hosting/servers/${encodeURIComponent(id.slice(7))}/${suffix}`;
+}
+
 ipcMain.handle("set-overlay-guide", (_event, raw) => {
   overlayGuide = sanitizeOverlayGuide(raw);
   return Boolean(overlayGuide);
@@ -13513,6 +13526,41 @@ ipcMain.handle("get-server-settings", async (_event, partyId) => {
   } catch (err) {
     return { error: err.message };
   }
+});
+
+ipcMain.handle("get-server-maps", async (_event, target) => {
+  if (!target) return { error: "No server selected" };
+  try { return await launcherJson(serverMapsPath(target)); }
+  catch (err) { return { error: err.message }; }
+});
+
+ipcMain.handle("server-map-action", async (_event, target, action) => {
+  if (!target) return { error: "No server selected" };
+  if (!["change", "next", "rotation"].includes(action?.action)) return { error: "Invalid map action" };
+  if (action.action === "rotation" && !String(target).startsWith("hosted:")) return { error: "Party map rotations are unavailable" };
+  try { return await launcherJson(serverMapsPath(target), { method: "POST", body: action }); }
+  catch (err) { return { error: err.message }; }
+});
+
+ipcMain.handle("hosted-server-players", async (_event, target) => {
+  const path = hostedControlPath(target, "players");
+  if (!path) return { error: "No hosted server selected" };
+  try { return await launcherJson(path); }
+  catch (err) { return { error: err.message }; }
+});
+
+ipcMain.handle("hosted-server-action", async (_event, target, action) => {
+  const path = hostedControlPath(target, "action");
+  if (!path || !["start", "stop", "restart"].includes(action)) return { error: "Invalid server action" };
+  try { return await launcherJson(path, { method: "POST", body: { action } }); }
+  catch (err) { return { error: err.message }; }
+});
+
+ipcMain.handle("hosted-server-console", async (_event, target, command) => {
+  const path = hostedControlPath(target, "console");
+  if (!path || typeof command !== "string" || !command.trim() || command.length > 200) return { error: "Invalid console command" };
+  try { return await launcherJson(path, { method: "POST", body: { command } }); }
+  catch (err) { return { error: err.message }; }
 });
 
 ipcMain.handle("get-rvgl-lobby", async (_event, partyId) => {

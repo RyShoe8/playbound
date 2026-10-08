@@ -10,12 +10,14 @@ import { MongoMemoryServer } from "mongodb-memory-server";
 
 const rooms = new Map<string, { roomId: string; host: string; port: number; communityServerId: string }>();
 const sent: string[] = [];
+const launches: Array<{ communityServerId: string; customerOwned?: boolean; settings?: Record<string, unknown> }> = [];
 let spawns = 0;
 vi.mock("@/lib/db", () => ({ default: async () => undefined }));
 vi.mock("next/cache", () => ({ unstable_cache: (fn: unknown) => fn }));
 vi.mock("@/lib/mailer", () => ({ sendMail: vi.fn(async () => undefined) }));
 vi.mock("@/lib/gameHost/client", () => ({
-  requestManagedHostRoom: vi.fn(async (opts: { communityServerId: string }) => {
+  requestManagedHostRoom: vi.fn(async (opts: { communityServerId: string; customerOwned?: boolean; settings?: Record<string, unknown> }) => {
+    launches.push(opts);
     // Every spawn gets a new room id, as the real agent does.
     rooms.set(opts.communityServerId, { roomId: `room-${opts.communityServerId}-${++spawns}`, host: "1.2.3.4", port: 27960, communityServerId: opts.communityServerId });
     return { status: "running" };
@@ -77,6 +79,7 @@ afterAll(async () => {
 beforeEach(async () => {
   rooms.clear();
   sent.length = 0;
+  launches.length = 0;
   await CommunityServer.deleteMany({});
   await DedicatedSubscription.deleteMany({});
   await ServerActivity.deleteMany({});
@@ -228,6 +231,19 @@ describe("maps and bans on customer servers", () => {
     sent.length = 0;
     await reconcileDedicatedServers();
     expect(sent.filter((c) => c.startsWith("addip"))).toHaveLength(0);
+  });
+
+  it("offers restart-only map selection for games without live map commands", async () => {
+    await CommunityServer.updateOne({ _id: serverId }, { $set: { gameSlug: "0ad" } });
+    const { changeMap, getMaps } = await import("./liveControl");
+    expect(await getControl(ids.owner, serverId)).toMatchObject({ maps: true });
+    expect(await getMaps(ids.owner, serverId)).toMatchObject({ mode: "restart", current: "random/mainland", running: false });
+    expect(await changeMap(ids.owner, serverId, "random/islands")).toMatchObject({ ok: true, applied: "queued" });
+    expect((await CommunityServer.findById(serverId).lean())?.settings?.map).toBe("random/islands");
+    await startServer(ids.owner, serverId);
+    expect(await changeMap(ids.owner, serverId, "random/lake")).toMatchObject({ ok: true, applied: "restarted" });
+    expect(launches.at(-1)).toMatchObject({ customerOwned: true, settings: { map: "random/lake" } });
+    expect(await changeMap(ids.owner, serverId, "random/islands;quit")).toMatchObject({ status: 400 });
   });
 
   it("lifts a ban on the running server", async () => {

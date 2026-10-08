@@ -32,6 +32,8 @@ export async function GET(req: Request, ctx: Ctx) {
       phase: control.status.status === "running" ? "live" : "pre-launch",
       canEdit: configure || mapsOnly,
       capabilities: control.capabilities,
+      permissions: control.permissions,
+      maps: control.maps,
       gameSlug: control.server.gameSlug,
       definitions,
       values: control.values,

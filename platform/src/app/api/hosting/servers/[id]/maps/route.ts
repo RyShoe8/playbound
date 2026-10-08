@@ -11,8 +11,8 @@ export async function GET(req: Request, ctx: Ctx) {
   const { id } = await ctx.params;
   const result = await getMaps(userId, id);
   if ("error" in result) return NextResponse.json({ error: result.error }, { status: result.status });
-  const { options, current, running, canNext, canRotate, rotation } = result;
-  return NextResponse.json({ options, current, running, canNext, canRotate, rotation }, { headers: { "cache-control": "no-store" } });
+  const { options, freeText, current, running, mode, canNext, canRotate, rotation } = result;
+  return NextResponse.json({ options, freeText, current, running, mode, canNext, canRotate, rotation }, { headers: { "cache-control": "no-store" } });
 }
 
 /**
