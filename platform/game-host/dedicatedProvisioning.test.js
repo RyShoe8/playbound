@@ -15,6 +15,8 @@ const recipes = createDedicatedRecipes({
   gameBin: (slug, names) => names.map((name) => path.join(games, slug, name)),
   firstExisting,
   managedPlayerLimit: (ctx) => ctx.settings.maxPlayers,
+  settingToken: (_slug, ctx, key, fallback) => String(ctx.settings?.[key] ?? fallback),
+  settingNumber: (_slug, ctx, key, fallback) => Number(ctx.settings?.[key] ?? fallback),
   customerHomeDir: (name, ctx) => {
     const dir = path.join(home, name, `pb-${ctx.partyId}`);
     fs.mkdirSync(dir, { recursive: true });
