@@ -39,7 +39,7 @@ import { getLastSpawnTests, recordSpawnTest } from "./spawnTests.js";
 import { getCachedGameVersions } from "./gameVersions.js";
 import { createStartCoordinator } from "./startLock.js";
 import { httpsGetStream } from "./downloadStream.js";
-import { createManagedRegistry, createPartyRegistry, isSameProcess, processIdentity, processGroupMembers, rehydrateManagedRoom } from "./managedRegistry.js";
+import { createManagedRegistry, createPartyRegistry, isSameProcess, processIdentity, processGroupMembers, rehydrateManagedRoom, recoveredManagedRoomExited } from "./managedRegistry.js";
 import { processMetrics } from "./processMetrics.js";
 import { isLinuxPortBound } from "./portReadiness.js";
 import { queryRoomOccupancy } from "./playerQueries.js";
@@ -807,6 +807,18 @@ async function recoverManagedRooms() {
   persistManagedRooms();
 }
 
+function reapExitedManagedRooms() {
+  for (const room of [...rooms.values()]) {
+    // Spawned children have an exit handler. Recovered rooms have no ChildProcess
+    // object after an agent restart, so their process must be checked explicitly.
+    if (managedJobs.get(room.communityServerId)?.status === "pending" || !recoveredManagedRoomExited(room)) continue;
+    const failure = "Managed runtime exited after the game-host agent recovered it";
+    console.warn(`[${room.gameSlug}:${room.port}] ${failure}`);
+    stopRoom(room);
+    managedJobs.set(room.communityServerId, { status: "failed", error: failure, at: Date.now() });
+  }
+}
+
 function sanitizeSaveKey(value) {
   return typeof value === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(value) ? value : null;
 }
@@ -1340,6 +1352,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === "GET" && url.pathname === "/managed") {
+      reapExitedManagedRooms();
       json(res, 200, {
         rooms: [...rooms.values()].filter((r) => r.communityServerId).map((r) => ({
           ...publicRoom(r), resources: processMetrics(r.pid),
@@ -1803,6 +1816,7 @@ const server = http.createServer(async (req, res) => {
 
 setInterval(() => {
   const now = Date.now();
+  reapExitedManagedRooms();
   for (const room of rooms.values()) {
     if (room.communityServerId) continue; // fleet scheduler owns managed idle policy
     const lastActive = room.lastActivityAt || room.createdAt;
