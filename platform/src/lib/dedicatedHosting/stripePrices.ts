@@ -1,10 +1,10 @@
-/** Explicit, admin-triggered synchronization of Basic's catalog prices.
+/** Explicit, admin-triggered synchronization of a hosting tier's catalog prices.
  * This never enables sales or changes prices on existing subscriptions.
  */
 import { createHash } from "node:crypto";
 import dbConnect from "@/lib/db";
 import DedicatedHostingTier from "@/lib/models/DedicatedHostingTier";
-import { getTier, saveTier } from "./tier";
+import { getTier, HOSTING_TIER_KEYS, saveTier, type HostingTierKey } from "./tier";
 
 type StripeObject = { id: string; active?: boolean; product?: string; unit_amount?: number; currency?: string; recurring?: { interval?: string } };
 
@@ -35,9 +35,10 @@ function matchesPrice(price: StripeObject, productId: string, cents: number, cur
     price.currency?.toLowerCase() === currency.toLowerCase() && price.recurring?.interval === "month";
 }
 
-export async function syncBasicStripePrices(): Promise<{ productId: string; synced: number; created: number }> {
+export async function syncTierStripePrices(tierKey: HostingTierKey): Promise<{ productId: string; synced: number; created: number }> {
+  if (!HOSTING_TIER_KEYS.includes(tierKey)) throw new Error("Unknown hosting tier");
   await dbConnect();
-  const tier = await getTier();
+  const tier = await getTier(tierKey);
   if (tier.salesEnabled) throw new Error("Pause sales before synchronizing prices");
   if (!tier.packages.length) throw new Error("Configure at least one package first");
   if (new Set(tier.packages.map((p) => p.slots)).size !== tier.packages.length) throw new Error("Duplicate slot packages");
@@ -56,7 +57,7 @@ export async function syncBasicStripePrices(): Promise<{ productId: string; sync
     productId = product.id;
     const claimed = await DedicatedHostingTier.updateOne({ key: tier.key, stripeProductId: null }, { $set: { stripeProductId: productId } });
     if (claimed.modifiedCount !== 1) {
-      const current = await getTier();
+      const current = await getTier(tierKey);
       if (current.stripeProductId !== productId) throw new Error("Tier changed during Stripe product sync; retry");
     }
   }
@@ -68,7 +69,7 @@ export async function syncBasicStripePrices(): Promise<{ productId: string; sync
     if (pkg.priceCents <= 0 || !/^[a-z]{3}$/i.test(pkg.currency)) throw new Error(`Invalid price for ${pkg.slots} slots`);
     // If admin changed the amount after this request started, the conditional
     // update below cannot attach the obsolete Stripe Price to the new amount.
-    const current = await getTier();
+    const current = await getTier(tierKey);
     const latest = current.packages.find((p) => p.slots === pkg.slots);
     if (!latest || latest.priceCents !== pkg.priceCents || latest.currency !== pkg.currency || !latest.enabled) {
       throw new Error(`Package ${pkg.slots} changed during sync; retry`);
@@ -102,3 +103,6 @@ export async function syncBasicStripePrices(): Promise<{ productId: string; sync
   }
   return { productId, synced, created };
 }
+
+/** Preserve the original Basic-only entry point for existing callers. */
+export const syncBasicStripePrices = () => syncTierStripePrices("basic");
