@@ -9,7 +9,10 @@ let metrics = {
   storage: [{ path: "/opt/playbound-host/games", totalBytes: 200 * 1024 ** 3, usedBytes: 20 * 1024 ** 3, freeBytes: 180 * 1024 ** 3, usedPercent: 10 }],
 };
 vi.mock("@/lib/db", () => ({ default: async () => undefined }));
-vi.mock("@/lib/gameHost/client", () => ({ fetchGameHostMetrics: async () => ({ ok: true, metrics }) }));
+vi.mock("@/lib/gameHost/client", () => ({
+  fetchGameHostMetrics: async () => ({ ok: true, metrics }),
+  listManagedHostRooms: async () => ({ ok: true, rooms: [] }),
+}));
 vi.mock("@/lib/requireAdmin", () => ({ requireAdminSession: async () => ({ session: { user: { id: "admin-test" } }, error: null }) }));
 
 import User from "@/lib/models/User";

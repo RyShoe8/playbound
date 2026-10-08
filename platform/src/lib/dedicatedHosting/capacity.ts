@@ -11,7 +11,10 @@ import CapacityReservation from "@/lib/models/CapacityReservation";
 import DedicatedCapacityHold from "@/lib/models/DedicatedCapacityHold";
 import DedicatedCapacityLease from "@/lib/models/DedicatedCapacityLease";
 import DedicatedSubscription from "@/lib/models/DedicatedSubscription";
-import { fetchGameHostMetrics, type GameHostMetrics } from "@/lib/gameHost/client";
+import { fetchGameHostMetrics, listManagedHostRooms, type GameHostMetrics } from "@/lib/gameHost/client";
+import { runningReservationEnvelope } from "@/lib/communityHosting/capacity";
+import { getEffectiveEnvelope } from "@/lib/communityHosting/reconcile";
+import { managedQueryKind, queryManagedOccupancy } from "@/lib/communityHosting/playerQuery";
 import { getTier, type HostingTier } from "./tier";
 
 export const HOLD_MINUTES = 15;
@@ -117,14 +120,14 @@ export async function regionalInventory(regionKey: string, now = new Date()): Pr
       !tier.regions.some((r) => r.key === regionKey && r.salesEnabled)) {
     return { availableUnits: 0, availableSlots: 0, reason: "REGION_UNAVAILABLE" };
   }
-  const result = await fetchGameHostMetrics();
-  if (!result.ok) return { availableUnits: 0, availableSlots: 0, reason: "NODE_UNREACHABLE" };
+  const [result, agent] = await Promise.all([fetchGameHostMetrics(), listManagedHostRooms()]);
+  if (!result.ok || !agent.ok) return { availableUnits: 0, availableSlots: 0, reason: "NODE_UNREACHABLE" };
 
   const [subs, holds, freeServers, userServers, events] = await Promise.all([
     DedicatedSubscription.find({ regionKey, status: { $in: ["active", "past_due"] } }).select({ _id: 1, slotCapacity: 1 }).lean(),
     DedicatedCapacityHold.find({ regionKey, state: "held", $or: [{ expiresAt: { $gt: now } }, { planChangeSubscriptionId: { $type: "objectId" } }] }).select({ slots: 1 }).lean(),
     CommunityServer.find({ regionKey, ownerType: { $ne: "user" }, desiredState: "running", runtimeState: { $in: ["pending", "running"] } })
-      .select({ _id: 1, profileKey: 1 }).lean(),
+      .select({ _id: 1, profileKey: 1, gameSlug: 1 }).lean(),
     // A canceled subscription can still have a room until reconcile confirms
     // it stopped. Do not sell those resources a second time in that gap.
     CommunityServer.find({ regionKey, ownerType: "user", $or: [{ slotsHeld: true }, { runtimeState: { $in: ["pending", "running"] } }] })
@@ -132,8 +135,26 @@ export async function regionalInventory(regionKey: string, now = new Date()): Pr
     CapacityReservation.find({ regionKey, state: { $in: ["planned", "active"] }, warmupAt: { $lte: new Date(now.getTime() + HOLD_MINUTES * 60_000) }, protectedUntil: { $gt: now } })
       .select({ communityServerId: 1, cpuCores: 1, ramBytes: 1 }).lean(),
   ]);
-  const profiles = await CommunityServerProfile.find({ key: { $in: freeServers.map((s) => s.profileKey) } }).select({ key: 1, envelope: 1 }).lean();
-  const byProfile = new Map(profiles.map((p) => [p.key, p.envelope]));
+  const profiles = await CommunityServerProfile.find({ key: { $in: freeServers.map((s) => s.profileKey) } })
+    .select({ key: 1, envelope: 1, sampleCount: 1, queryVerified: 1, queryKind: 1 }).lean();
+  const byProfile = new Map(profiles.map((p) => [p.key, p]));
+  const liveRooms = new Map(agent.rooms.filter((room) => room.communityServerId)
+    .map((room) => [room.communityServerId!, room]));
+  // Use the same live, player-aware reservation as Community Hosting. An
+  // absent room, failed player query, or missing process sample keeps the full
+  // conservative baseline; only confirmed-empty rooms get the idle allowance.
+  const freeEnvelopes = await Promise.all(freeServers.map(async (server) => {
+    const profile = byProfile.get(server.profileKey);
+    const baseline = getEffectiveEnvelope(profile?.envelope, server.gameSlug, profile?.sampleCount);
+    const room = liveRooms.get(String(server._id));
+    if (!room) return baseline;
+    const queryKind = managedQueryKind(server.gameSlug, profile);
+    const occupancy = queryKind ? await queryManagedOccupancy({
+      queryKind, host: room.host, port: room.port, communityServerId: String(server._id),
+      expectedMod: server.gameSlug === "earth-2140-trilogy" ? "e2140" : undefined,
+    }).catch(() => null) : null;
+    return runningReservationEnvelope({ baseline, players: occupancy?.players ?? null, observed: room.resources });
+  }));
   const runningFreeIds = new Set(freeServers.map((s) => String(s._id)));
   const countedSubIds = new Set(subs.map((s) => String(s._id)));
   const occupied: Envelope[] = [
@@ -141,11 +162,7 @@ export async function regionalInventory(regionKey: string, now = new Date()): Pr
     ...holds.map((h) => unitEnvelope(tier, h.slots)),
     ...userServers.filter((s) => !countedSubIds.has(String(s.dedicatedSubscriptionId)))
       .map((s) => unitEnvelope(tier, Math.max(s.allocatedSlots || 0, s.maxPlayerCount || 0, tier.minAllocation))),
-    ...freeServers.map((s) => ({
-      cpuCores: Math.max(1, Number(byProfile.get(s.profileKey)?.cpuCores) || 0),
-      ramBytes: Math.max(1536 * 1024 ** 2, Number(byProfile.get(s.profileKey)?.ramBytes) || 0),
-      storageBytes: 0,
-    })),
+    ...freeEnvelopes.map((envelope) => ({ ...envelope, storageBytes: 0 })),
     ...events.filter((e) => !e.communityServerId || !runningFreeIds.has(String(e.communityServerId)))
       .map((e) => ({ cpuCores: e.cpuCores, ramBytes: e.ramBytes, storageBytes: 0 })),
   ];
