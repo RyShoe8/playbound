@@ -4,18 +4,21 @@ import { requireAdminViewSession } from "@/lib/requireAdmin";
 import DedicatedSubscription from "@/lib/models/DedicatedSubscription";
 import DedicatedCapacityHold from "@/lib/models/DedicatedCapacityHold";
 import StripeWebhookReceipt from "@/lib/models/StripeWebhookReceipt";
+import { basicSalesBlockers, stripeMode } from "@/lib/dedicatedHosting/salesReadiness";
+import { getTier } from "@/lib/dedicatedHosting/tier";
 
 export async function GET() {
   const { error } = await requireAdminViewSession();
   if (error) return error;
   await dbConnect();
-  const [subs, failed, lastReceipt, heldCount, pendingUpgrades] = await Promise.all([
+  const [subs, failed, lastReceipt, heldCount, pendingUpgrades, basicTier] = await Promise.all([
     DedicatedSubscription.find({ source: "stripe" }).select({ status: 1, billingSnapshot: 1, cancelAtPeriodEnd: 1, scheduledChange: 1 }).lean(),
     DedicatedSubscription.find({ source: "stripe", billingLastError: { $type: "string", $ne: "" } })
       .sort({ billingLastCheckedAt: -1 }).limit(20).select({ _id: 1, stripeSubscriptionId: 1, billingLastError: 1, billingLastCheckedAt: 1 }).lean(),
     StripeWebhookReceipt.findOne({}).sort({ processedAt: -1 }).select({ eventType: 1, processedAt: 1 }).lean(),
     DedicatedCapacityHold.countDocuments({ state: "held", expiresAt: { $gt: new Date() } }),
     DedicatedCapacityHold.find({ state: "held", planChangeSubscriptionId: { $type: "objectId" } }).select({ planChangeSubscriptionId: 1, toSlots: 1, createdAt: 1 }).lean(),
+    getTier("basic"),
   ]);
   const counts = { active: 0, pastDue: 0, suspended: 0, canceled: 0, canceling: 0 };
   let monthlyRevenueCents = 0;
@@ -29,7 +32,14 @@ export async function GET() {
   }
   return NextResponse.json({
     stripeKeyConfigured: Boolean(process.env.STRIPE_SECRET_KEY),
+    stripeMode: stripeMode(process.env.STRIPE_SECRET_KEY),
     webhookSecretConfigured: Boolean(process.env.STRIPE_WEBHOOK_SECRET),
+    basicSalesEnabled: basicTier.salesEnabled,
+    basicSalesBlockers: basicSalesBlockers(basicTier, {
+      secretKey: process.env.STRIPE_SECRET_KEY,
+      webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+      vercelEnv: process.env.VERCEL_ENV,
+    }),
     counts, monthlyRevenueCents, heldCount,
     scheduledDowngrades: subs.filter((sub) => Boolean(sub.scheduledChange)).length,
     pendingUpgrades: pendingUpgrades.map((hold) => ({ subscriptionId: String(hold.planChangeSubscriptionId), toSlots: hold.toSlots, at: hold.createdAt })),

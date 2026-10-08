@@ -11,9 +11,10 @@ const state = vi.hoisted(() => ({
 vi.mock("@/lib/db", () => ({ default: async () => undefined }));
 vi.mock("@/lib/models/DedicatedSubscription", () => ({ default: { exists: async () => false } }));
 vi.mock("@/lib/dedicatedHosting/tier", () => ({ getTier: async () => ({
-  key: "basic", salesEnabled: state.salesEnabled,
+  key: "basic", salesEnabled: state.salesEnabled, stripeProductId: "prod_basic",
   regions: [{ key: "us-central", salesEnabled: true }],
   packages: [{ slots: 8, enabled: true, stripePriceId: "price_valid", priceCents: 1299, currency: "usd" }],
+  games: [{ profileKey: "openra:base", enabled: true, newServerCreationEnabled: true }],
 }) }));
 vi.mock("@/lib/dedicatedHosting/capacity", () => ({
   createCapacityHold: async () => { state.calls.push("hold"); return state.hold; },
@@ -23,7 +24,7 @@ vi.mock("@/lib/dedicatedHosting/capacity", () => ({
 }));
 
 import { prepareBasicCheckout } from "./checkout";
-const input = { userId: "507f191e810c19729de860ea", regionKey: "us-central", slots: 8, checkoutKey: "stable-key" };
+const input = { userId: "507f191e810c19729de860ea", regionKey: "us-central", slots: 8, checkoutKey: "stable-key", returnOrigin: "https://preview.playbound.club" };
 
 beforeEach(() => {
   state.calls.length = 0;
@@ -32,6 +33,7 @@ beforeEach(() => {
   state.failExpire = false;
   state.hold.checkoutSessionId = null;
   vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_example");
+  vi.stubEnv("STRIPE_WEBHOOK_SECRET", "whsec_example");
   vi.stubGlobal("fetch", vi.fn(async (url: string, init: RequestInit) => {
     const path = new URL(url).pathname;
     if (path.endsWith("/expire")) {
@@ -41,6 +43,7 @@ beforeEach(() => {
     state.calls.push("stripe");
     const fields = new URLSearchParams(init.body as string);
     expect(fields.get("line_items[0][price]")).toBe("price_valid");
+    expect(fields.get("success_url")).toBe("https://preview.playbound.club/hosting?checkout=returned");
     expect(fields.get("expires_at")).toBe(String(state.attempted.requestedSessionExpiresAt.getTime() / 1000));
     expect(new Headers(init.headers).get("Idempotency-Key")).toBe("playbound-checkout-stable-key");
     return new Response(JSON.stringify({ id: "cs_test_1", url: "https://checkout.stripe.com/c/pay/1", expires_at: state.attempted.requestedSessionExpiresAt.getTime() / 1000 }), { status: 200 });

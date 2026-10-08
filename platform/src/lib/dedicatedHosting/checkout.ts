@@ -1,10 +1,10 @@
-/** Checkout preparation only. The public sales switch stays locked until
- * verified webhooks can turn a paid Session into exactly one entitlement. */
+/** Prepare a Basic checkout with a capacity hold; webhook processing grants the entitlement. */
 import dbConnect from "@/lib/db";
 import DedicatedSubscription from "@/lib/models/DedicatedSubscription";
 import { SITE_URL } from "@/lib/site";
 import { attachCheckoutSessionToHold, createCapacityHold, markCheckoutAttempt, releaseCapacityHold } from "./capacity";
 import { getTier } from "./tier";
+import { basicSalesBlockers } from "./salesReadiness";
 
 type CheckoutSession = { id: string; url: string | null; expires_at: number; status?: string };
 
@@ -26,10 +26,16 @@ async function stripeSession(path: string, fields?: Record<string, string>, idem
   return data;
 }
 
-export async function prepareBasicCheckout(input: { userId: string; regionKey: string; slots: number; checkoutKey: string }) {
+export async function prepareBasicCheckout(input: { userId: string; regionKey: string; slots: number; checkoutKey: string; returnOrigin?: string }) {
   await dbConnect();
   const tier = await getTier();
   if (!tier.salesEnabled) throw new Error("Dedicated Basic checkout is not open");
+  const blockers = basicSalesBlockers(tier, {
+    secretKey: process.env.STRIPE_SECRET_KEY,
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+    vercelEnv: process.env.VERCEL_ENV,
+  });
+  if (blockers.length) throw new Error(`Dedicated Basic checkout is unavailable: ${blockers.join("; ")}`);
   if (!tier.regions.some((r) => r.key === input.regionKey && r.salesEnabled)) throw new Error("Region is not for sale");
   const pkg = tier.packages.find((p) => p.slots === input.slots && p.enabled);
   if (!pkg?.stripePriceId || !/^price_[a-zA-Z0-9_]+$/.test(pkg.stripePriceId)) throw new Error("Package price is not synced");
@@ -58,8 +64,8 @@ export async function prepareBasicCheckout(input: { userId: string; regionKey: s
       "line_items[0][price]": pkg.stripePriceId,
       "line_items[0][quantity]": "1",
       client_reference_id: input.userId,
-      success_url: `${SITE_URL}/hosting?checkout=returned`,
-      cancel_url: `${SITE_URL}/hosting?checkout=canceled`,
+      success_url: `${input.returnOrigin || SITE_URL}/hosting?checkout=returned`,
+      cancel_url: `${input.returnOrigin || SITE_URL}/hosting?checkout=canceled`,
       expires_at: String(Math.floor(attempted.requestedSessionExpiresAt!.getTime() / 1000)),
       "metadata[playbound_hold_id]": String(hold._id),
       "metadata[playbound_checkout_key]": input.checkoutKey,

@@ -11,6 +11,7 @@ import { getEffectiveEnvelope } from "@/lib/communityHosting/reconcile";
 import { hostableProfileStubs, loadHostableEditionRefs, loadHostableCatalogRefs, readyPublishedHostableCatalog } from "@/lib/dedicatedHosting/hostableProfiles";
 import { fetchGameHostHealth } from "@/lib/gameHost/client";
 import { lastIdleTestReading } from "@/lib/gameHost/spawnTestSamples";
+import { basicSalesBlockers } from "@/lib/dedicatedHosting/salesReadiness";
 
 type Ctx = { params: Promise<{ key: string }> };
 
@@ -137,12 +138,16 @@ export async function PUT(req: Request, ctx: Ctx) {
   if (new Set(parsed.data.packages.map((p) => p.slots)).size !== parsed.data.packages.length) {
     return NextResponse.json({ error: "Each slot package must have a unique slot count" }, { status: 400 });
   }
-  // Keep sales fail-closed until the remaining billing flows, persistent-data
-  // backups, game readiness tests and launch acceptance checks are complete.
-  if (parsed.data.salesEnabled) {
-    return NextResponse.json({ error: "Sales remain closed until the Dedicated Basic launch checks are complete" }, { status: 409 });
-  }
   const previous = await getTier(key);
+  const packages = preservedPackagePrices(previous, parsed.data.packages);
+  if (parsed.data.salesEnabled) {
+    const blockers = basicSalesBlockers({ ...previous, ...parsed.data, packages }, {
+      secretKey: process.env.STRIPE_SECRET_KEY,
+      webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+      vercelEnv: process.env.VERCEL_ENV,
+    });
+    if (blockers.length) return NextResponse.json({ error: blockers.join("; ") }, { status: 409 });
+  }
   const previouslySelected = new Set(previous.games.filter((game) => game.enabled).map((game) => game.profileKey));
   const newSelections = parsed.data.games.filter((game) => game.enabled && !previouslySelected.has(game.profileKey));
   if (newSelections.length) {
@@ -159,7 +164,6 @@ export async function PUT(req: Request, ctx: Ctx) {
     const ineligible = newSelections.find((game) => !keys.has(game.profileKey));
     if (ineligible) return NextResponse.json({ error: `${ineligible.profileKey} must be published and VPS-ready before subscription enrollment` }, { status: 409 });
   }
-  const packages = preservedPackagePrices(previous, parsed.data.packages);
   const inheritedGames = await retainLowerTierSelections(key as HostingTierKey, { ...previous, ...parsed.data, packages });
   const tier = await saveTier(key, { ...parsed.data, packages, games: inheritedGames });
   revalidateTag(HOSTING_TIER_TAG, { expire: 0 });
