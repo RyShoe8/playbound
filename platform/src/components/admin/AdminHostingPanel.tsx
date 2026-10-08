@@ -15,6 +15,7 @@ type TierGame = {
 };
 type Pkg = { slots: number; priceCents: number; currency: string; enabled: boolean; order: number; stripePriceId: string | null };
 type Tier = {
+  key: "basic" | "pro" | "extreme";
   name: string;
   description: string;
   salesEnabled: boolean;
@@ -125,11 +126,13 @@ export function AdminHostingPanel() {
 
   async function savePlanTier(next: Tier) {
     const key = selectedPlanTier;
+    if (next.salesEnabled && !tierCatalogs?.[key].tier.salesEnabled &&
+        !window.confirm("This opens Basic checkout to every signed-in visitor. A live Stripe key charges real money. Use a Preview deployment with test keys to test payments. Open sales?")) return;
     setMessage(null);
     try {
       await api(`/api/admin/hosting/tiers/${key}`, { method: "PUT", body: JSON.stringify(next) });
       await load();
-      setMessage("Saved.");
+      setMessage(next.salesEnabled ? "Saved. Basic checkout is open for the configured Stripe mode." : "Saved. Sales are closed.");
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Save failed");
     }
@@ -183,7 +186,7 @@ export function AdminHostingPanel() {
         </div>
         <PlanTab key={`${selectedPlanTier}:${JSON.stringify(tierCatalogs[selectedPlanTier].tier)}`}
           tier={tierCatalogs[selectedPlanTier].tier} onSave={savePlanTier}
-          onSync={() => act(() => api("/api/admin/hosting/stripe-prices", { method: "POST", body: JSON.stringify({ tier: selectedPlanTier }) }), `${selectedPlanTier[0].toUpperCase()}${selectedPlanTier.slice(1)} Stripe prices synchronized. Sales remain disabled.`)} />
+          onSync={() => act(() => api("/api/admin/hosting/stripe-prices", { method: "POST", body: JSON.stringify({ tier: selectedPlanTier }) }), `${selectedPlanTier[0].toUpperCase()}${selectedPlanTier.slice(1)} Stripe prices synchronized. Check the Billing tab for checkout status.`)} />
       </> : null}
       {tab === "Games" && tierCatalogs ? <>
         <div className="flex flex-wrap gap-2" aria-label="Hosting subscription tier">
@@ -209,7 +212,10 @@ export function AdminHostingPanel() {
 
 type BillingStatus = {
   stripeKeyConfigured: boolean;
+  stripeMode: "test" | "live" | "unknown" | "missing";
   webhookSecretConfigured: boolean;
+  basicSalesEnabled: boolean;
+  basicSalesBlockers: string[];
   counts: { active: number; pastDue: number; suspended: number; canceled: number; canceling: number };
   monthlyRevenueCents: number;
   heldCount: number;
@@ -222,12 +228,26 @@ type BillingStatus = {
 function BillingTab() {
   const [status, setStatus] = useState<BillingStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const refresh = useCallback(() => void api("/api/admin/hosting/billing")
-    .then((data) => { setStatus(data as BillingStatus); setError(null); })
-    .catch((cause) => setError(cause instanceof Error ? cause.message : "Billing status unavailable")), []);
-  useEffect(() => { const timer = setTimeout(refresh, 0); return () => clearTimeout(timer); }, [refresh]);
-  if (error) return <p className="text-sm text-red-500">{error}</p>;
-  if (!status) return <p className="text-sm text-muted-foreground">Loading billing status…</p>;
+  const [refreshing, setRefreshing] = useState(false);
+  const [checkedAt, setCheckedAt] = useState<Date | null>(null);
+  const refresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const data = await api("/api/admin/hosting/billing", { cache: "no-store" });
+      setStatus(data as BillingStatus);
+      setError(null);
+      setCheckedAt(new Date());
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Billing status unavailable");
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+  useEffect(() => { const timer = setTimeout(() => { void refresh(); }, 0); return () => clearTimeout(timer); }, [refresh]);
+  if (!status) return <div className="space-y-2 text-sm">
+    <p>{refreshing ? "Loading billing status…" : error || "Billing status unavailable"}</p>
+    {!refreshing ? <button type="button" className="text-primary" onClick={() => void refresh()}>Try again</button> : null}
+  </div>;
   return <div className="space-y-4">
     <div className="flex flex-wrap gap-3">
       {[
@@ -242,10 +262,15 @@ function BillingTab() {
     </div>
     <section className="rounded-xl border border-border bg-card p-4 text-sm">
       <h2 className="font-semibold">Stripe connection</h2>
-      <p>Secret key: {status.stripeKeyConfigured ? "configured" : "missing"} · Webhook signing secret: {status.webhookSecretConfigured ? "configured" : "missing"}</p>
+      <p>Secret key: {status.stripeKeyConfigured ? "configured" : "missing"} · Mode: {status.stripeMode} · Webhook signing secret: {status.webhookSecretConfigured ? "configured" : "missing"}</p>
       <p>Last processed webhook: {status.lastWebhook ? `${status.lastWebhook.type} · ${new Date(status.lastWebhook.at).toLocaleString()}` : "none"}</p>
+      <p>Basic checkout: {status.basicSalesEnabled ? "open" : "closed"}</p>
+      {status.basicSalesBlockers.length ? <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">Before opening sales: {status.basicSalesBlockers.join("; ")}.</p>
+        : !status.basicSalesEnabled ? <p className="mt-1 text-xs text-muted-foreground">Ready to open: go to Plan → Basic, turn on Open Basic checkout, then Save plan.</p> : null}
       <p className="mt-1 text-xs text-muted-foreground">Configuration and receipts are local signals; this panel does not claim a live Stripe health check.</p>
-      <button type="button" className="mt-2 text-xs text-primary" onClick={refresh}>Refresh</button>
+      {error ? <p role="alert" className="mt-2 text-xs text-red-500">Refresh failed: {error}</p> : null}
+      <p className="mt-2 text-xs text-muted-foreground" aria-live="polite">{refreshing ? "Checking…" : checkedAt ? `Checked ${checkedAt.toLocaleTimeString()}` : "Not checked yet"}</p>
+      <button type="button" className="mt-1 text-xs text-primary disabled:opacity-50" disabled={refreshing} onClick={() => void refresh()}>{refreshing ? "Refreshing…" : "Refresh"}</button>
     </section>
     {status.pendingUpgrades.length ? <section className="rounded-xl border border-border bg-card p-4 text-sm">
       <h2 className="font-semibold">Upgrades awaiting Stripe reconciliation</h2>
@@ -292,7 +317,10 @@ function PlanTab({ tier, onSave, onSync }: { tier: Tier; onSave: (t: Tier) => vo
           Description
           <textarea className={`${input} mt-1 w-full`} rows={3} value={t.description} onChange={(e) => set("description", e.target.value)} />
         </label>
-        <p className="text-xs text-muted-foreground">Sales remain closed until billing, backups, and launch-game checks are complete.</p>
+        {t.key === "basic" ? <label className="flex items-start gap-2 text-sm">
+          <input type="checkbox" className="mt-1" checked={t.salesEnabled} onChange={(e) => set("salesEnabled", e.target.checked)} />
+          <span><strong>Open Basic checkout</strong><span className="block text-xs text-muted-foreground">Requires a webhook signing secret, synced prices, a sales region, and an enabled game. Test payments belong on a Preview deployment with Stripe test keys and a separate test database. Live keys charge real money.</span></span>
+        </label> : <p className="text-xs text-muted-foreground">{t.name} price sync is available, but paid checkout is not wired for this tier yet. Sales stay closed.</p>}
         <label className="flex items-center gap-2 text-sm text-red-500">
           <input type="checkbox" checked={t.startsDisabled} onChange={(e) => set("startsDisabled", e.target.checked)} /> Emergency: disable all server starts
           (running servers stop on the next reconcile)

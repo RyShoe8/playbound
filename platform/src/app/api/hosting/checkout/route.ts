@@ -9,7 +9,7 @@ const checkoutSchema = z.object({
   checkoutKey: z.string().regex(/^[a-zA-Z0-9_-]{8,100}$/),
 });
 
-/** Prepared for the billing rollout; salesEnabled remains admin-locked off. */
+/** Paid Basic checkout opens only after the admin enables a complete Stripe-backed plan. */
 export async function POST(req: Request) {
   const origin = req.headers.get("origin");
   if (!origin || origin !== new URL(req.url).origin) {
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   const parsed = checkoutSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Invalid checkout request" }, { status: 400 });
   try {
-    return NextResponse.json(await prepareBasicCheckout({ userId, ...parsed.data }), { headers: { "cache-control": "no-store" } });
+    return NextResponse.json(await prepareBasicCheckout({ userId, ...parsed.data, returnOrigin: new URL(req.url).origin }), { headers: { "cache-control": "no-store" } });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Checkout unavailable";
     return NextResponse.json({ error: message }, { status: 409 });

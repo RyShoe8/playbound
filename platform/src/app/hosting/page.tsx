@@ -38,7 +38,8 @@ export default async function HostingPage() {
   const ranked = tiers.map(({ tier }) => rankedHostingGames(publicGames(tier), inventory, popularSlugs));
   const artBySlug = await hostingGameArt([...new Set(ranked.flatMap((games) => games.slice(0, 10).map((game) => game.gameSlug)))]);
   const packages = [...basic.tier.packages].filter((pkg) => pkg.enabled !== false).sort((a, b) => a.order - b.order);
-  const region = basic.tier.regions.find((r) => r.salesEnabled)?.label || "US Central";
+  const salesRegion = basic.tier.regions.find((r) => r.salesEnabled);
+  const region = salesRegion?.label || "US Central";
 
   return <main className="w-full space-y-16 px-4 py-10 sm:px-6 lg:px-8">
     <section className="relative overflow-hidden rounded-3xl border border-border bg-card">
@@ -72,7 +73,7 @@ export default async function HostingPage() {
             </div>
             {index === 0 ? <>
               <ul className="space-y-2 text-sm">{BASIC_FEATURES.map((feature) => <li key={feature} className="flex items-start gap-2"><Check className="mt-0.5 size-4 shrink-0 text-primary" />{feature}</li>)}</ul>
-              <div className="mt-5"><BasicSlotPicker packages={packages} available={basic.live && basic.tier.salesEnabled} region={region} /></div>
+              <div className="mt-5"><BasicSlotPicker packages={packages} available={basic.live && basic.tier.salesEnabled} region={region} regionKey={salesRegion?.key || ""} /></div>
             </> : <p className="text-sm text-muted-foreground">Pricing and additional features will be announced before this plan opens.</p>}
             <div className="mt-7 flex-1 space-y-2">
               <h4 className="text-sm font-bold">{games.length ? "Popular games" : "Games coming soon"}</h4>

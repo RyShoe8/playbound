@@ -30,7 +30,8 @@ export async function HostingTierDetails({ tierKey }: { tierKey: HostingTierKey 
   const games = rankedHostingGames(publicGames(tier), inventory, popular.map((game) => game.slug));
   const artBySlug = await hostingGameArt(games.map((game) => game.gameSlug));
   const packages = [...tier.packages].filter((pkg) => pkg.enabled !== false).sort((a, b) => a.order - b.order);
-  const region = tier.regions.find((entry) => entry.salesEnabled)?.label || "US Central";
+  const salesRegion = tier.regions.find((entry) => entry.salesEnabled);
+  const region = salesRegion?.label || "US Central";
   const editions = games.reduce((sum, game) => sum + game.editions.length, 0);
 
   return <main className="w-full space-y-12 px-4 py-10 sm:px-6 lg:px-8">
@@ -53,7 +54,7 @@ export async function HostingTierDetails({ tierKey }: { tierKey: HostingTierKey 
       </div>
       <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
         <h2 className="text-2xl font-bold">Plan and slots</h2>
-        {tierKey === "basic" ? <div className="mt-4"><BasicSlotPicker packages={packages} available={live && tier.salesEnabled} region={region} /></div> : <p className="mt-4 text-sm text-muted-foreground">Pricing and additional capacity will be announced when {name} opens.</p>}
+        {tierKey === "basic" ? <div className="mt-4"><BasicSlotPicker packages={packages} available={live && tier.salesEnabled} region={region} regionKey={salesRegion?.key || ""} /></div> : <p className="mt-4 text-sm text-muted-foreground">Pricing and additional capacity will be announced when {name} opens.</p>}
         <Link href="/hosting/servers" className="mt-5 inline-block text-sm font-semibold text-primary hover:underline">Manage my servers →</Link>
       </div>
     </section>
