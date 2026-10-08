@@ -78,7 +78,17 @@ export async function saveEvent(input: SaveTelemetryEventInput): Promise<void> {
     createdAt: Number.isNaN(createdAt.getTime()) ? new Date() : createdAt,
   };
 
-  if (input.event === "launcher_install" && input.anonymousId) {
+  if (input.event === "mod_installed" && typeof props.installationId === "string" && props.installationId.length >= 16) {
+    const receipt = { event: "mod_installed", "properties.installationId": props.installationId };
+    await TelemetryEvent.updateOne(
+      receipt,
+      { $setOnInsert: document },
+      { upsert: true }
+    );
+    // Anonymous telemetry may arrive before the player links their launcher.
+    // Attach the account to the existing receipt without creating a second install.
+    if (input.userId) await TelemetryEvent.updateOne(receipt, { $set: { userId: input.userId } });
+  } else if (input.event === "launcher_install" && input.anonymousId) {
     // Retried first contacts must keep the original install time and count.
     await TelemetryEvent.updateOne(
       { event: "launcher_install", anonymousId: input.anonymousId },

@@ -6,6 +6,8 @@ const LibraryModEntrySchema = new Schema({
   baseGameSlug: { type: String, required: true, index: true },
   installed: { type: Boolean, default: true },
   version: { type: String },
+  /** Last install receipt successfully persisted to telemetry. */
+  telemetryAcknowledgedId: { type: String },
   installedAt: { type: Date },
   updatedAt: { type: Date, default: Date.now },
 });
@@ -19,6 +21,7 @@ export type LibraryModEntryDoc = {
   baseGameSlug: string;
   installed: boolean;
   version?: string;
+  telemetryAcknowledgedId?: string;
   installedAt?: Date;
   updatedAt: Date;
 };

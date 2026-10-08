@@ -27,6 +27,7 @@ const batchSchema = z.object({
         slug: z.string().min(1).max(80),
         baseGameSlug: z.string().min(1).max(80),
         version: z.string().max(80).optional(),
+        installationId: z.string().uuid().optional(),
       })
     )
     .max(100)
@@ -130,19 +131,26 @@ export async function POST(req: Request) {
         },
         { upsert: true, returnDocument: "before" }
       );
-      if (!prev || !prev.installed) {
-        void saveEvent({
+      if (!prev || !prev.installed || (item.installationId && prev.telemetryAcknowledgedId !== item.installationId)) {
+        await saveEvent({
           event: "mod_installed",
           properties: {
             modSlug: item.slug,
             baseGameSlug: item.baseGameSlug,
             installMethod: "launcher",
             version: item.version,
+            installationId: item.installationId,
           },
           userId: String(user._id),
           timestamp: now.toISOString(),
           userAgent: req.headers.get("user-agent"),
-        }).catch(() => undefined);
+        });
+        if (item.installationId) {
+          await LibraryModEntry.updateOne(
+            { userId: user._id, modSlug: item.slug },
+            { $set: { telemetryAcknowledgedId: item.installationId } }
+          );
+        }
       }
       modsSynced += 1;
     }

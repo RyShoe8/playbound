@@ -17,6 +17,7 @@ import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { isLauncherInstallable, launcherPlayModUrl } from "@/lib/launcher";
 import { Badge, EmptyHint } from "@/components/ui/bits";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
+import { ModManualDownloadLink } from "@/components/ModManualDownloadLink";
 import { ModArt } from "@/components/ModArt";
 import { ContentForm } from "@/components/ContentForm";
 import { ReviewList } from "@/components/reviews/ReviewList";
@@ -138,6 +139,11 @@ export default async function ModPage({
   const liveStats = await getModLiveStats(mod.slug);
   const isSignedIn = Boolean(session?.user);
   const classificationTags = await getModClassificationsWithAncestry(mod.classificationIds ?? []);
+  const manualUrl = mod.downloadKind === "direct-zip" && mod.directUrl
+    ? mod.directUrl
+    : mod.downloadKind === "github-zip" && mod.githubRepo
+      ? `https://github.com/${mod.githubRepo}/releases`
+      : mod.website;
 
   return (
     <div>
@@ -347,23 +353,32 @@ export default async function ModPage({
                       <Play className="size-4 fill-current" /> Play {base}
                     </a>
                   ) : mod.downloadKind === "external" ? (
-                    <a
+                    <ModManualDownloadLink
                       href={withOutboundUtm(mod.website, {
                         campaign: "mod_page",
                         content: mod.slug,
                       })}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center rounded-full bg-play px-4 py-2 text-sm font-bold text-play-foreground"
-                    >
-                      Open download page
-                    </a>
+                      modSlug={mod.slug}
+                      baseGameSlug={mod.baseGameSlug}
+                      label="Open download page"
+                      primary
+                    />
                   ) : (
                     <LauncherInstallButton
                       slug={mod.slug}
                       kind="install-mod"
                       label="Install mod"
                       className="border-transparent bg-play text-play-foreground"
+                    />
+                  )}
+                  {mod.downloadKind !== "external" && manualUrl && (
+                    <ModManualDownloadLink
+                      href={manualUrl === mod.directUrl
+                        ? manualUrl
+                        : withOutboundUtm(manualUrl, { campaign: "mod_manual", content: mod.slug })}
+                      modSlug={mod.slug}
+                      baseGameSlug={mod.baseGameSlug}
+                      label={manualUrl === mod.website ? "Official mod page" : "Download manually"}
                     />
                   )}
                   {canOneClickBase && !showPlay && (

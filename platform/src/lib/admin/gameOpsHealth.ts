@@ -12,8 +12,9 @@ import { GAME_HEALTH_AREAS, type GameHealthArea, type GameHealthStatus } from "@
  *
  * Install reuses the definition the Ops failure-rate card settled on —
  * `install_failed` against `edition_installed`, and deliberately not
- * `game_installed`/`mod_installed`, which come from library sync rather than
- * an install completing.
+ * `game_installed`/`mod_installed`: those count ownership sync and/or mod
+ * completion receipts, not edition install attempts, so they are not a
+ * comparable denominator for `install_failed`.
  *
  * Join is the party path: a room that could not be provisioned, or a launch
  * that failed while joining one. `launch_attempted` carries `phase: "join"`

@@ -1962,6 +1962,7 @@ async function syncLibrary(slug, action, version, opts = {}) {
             baseGameSlug: opts.baseGameSlug,
             action,
             version,
+            ...(opts.installationId ? { installationId: opts.installationId } : {}),
           }
         : {
             slug,
@@ -1983,6 +1984,34 @@ async function syncLibrary(slug, action, version, opts = {}) {
     }
   } catch (err) {
     console.warn("Library sync error:", err?.message || err);
+  }
+}
+
+/** Retry a completed mod receipt if telemetry was offline at install time. */
+async function reportModInstallTelemetry(slug) {
+  const info = loadState().__mods__?.[slug];
+  if (!info?.installationId || info.telemetryReported) return;
+  const result = await telemetry.track("mod_installed", {
+    modSlug: slug,
+    baseGameSlug: info.baseGameSlug,
+    installMethod: "launcher",
+    version: info.version,
+    installationId: info.installationId,
+  });
+  if (!result?.ok) return;
+  const state = loadState();
+  if (state.__mods__?.[slug]?.installationId === info.installationId) {
+    state.__mods__[slug].telemetryReported = true;
+    saveState(state);
+  }
+}
+
+async function retryModInstallTelemetry() {
+  const mods = loadState().__mods__ || {};
+  for (const [slug, info] of Object.entries(mods)) {
+    if (info?.installationId && !info.telemetryReported) {
+      await reportModInstallTelemetry(slug);
+    }
   }
 }
 
@@ -6243,10 +6272,15 @@ async function placeModFiles(slug, install, baseDirOverride) {
       state.__mods__[slug] = {
         title: install.title || slug, version: dl.version, dir: targetDir,
         baseGameSlug: install.baseGameSlug, installedAt: new Date().toISOString(),
+        installationId: crypto.randomUUID(),
         installerManagedExternally: true,
       };
       saveState(state);
-      await syncLibrary(slug, "install", dl.version, { kind: "mod", baseGameSlug: install.baseGameSlug }).catch(() => {});
+      void reportModInstallTelemetry(slug);
+      await syncLibrary(slug, "install", dl.version, {
+        kind: "mod", baseGameSlug: install.baseGameSlug,
+        installationId: state.__mods__[slug].installationId,
+      }).catch(() => {});
       sendProgress({ phase: "done" });
       return { status: "installed", version: dl.version, dir: targetDir, baseGameSlug: install.baseGameSlug };
     } finally {
@@ -6320,15 +6354,18 @@ async function placeModFiles(slug, install, baseDirOverride) {
     dir: installedDir,
     baseGameSlug: install.baseGameSlug,
     installedAt: new Date().toISOString(),
+    installationId: crypto.randomUUID(),
     ...(exe ? { exe } : {}),
     ...(portable ? { portable: true } : {}),
     ...(backups.length > 0 ? { backups } : {}),
     ...(written.length > 0 ? { written } : {}),
   };
   saveState(state);
+  void reportModInstallTelemetry(slug);
   await syncLibrary(slug, "install", dl.version, {
     kind: "mod",
     baseGameSlug: install.baseGameSlug,
+    installationId: state.__mods__[slug].installationId,
   }).catch(() => {});
   sendProgress({ phase: "done" });
   return {
@@ -14419,6 +14456,7 @@ if (gotLock) {
     createWindow();
     registerOverlayShortcut();
     void telemetry.launcherInstalled();
+    void retryModInstallTelemetry();
     if (loadSettings().launcherToken) {
       startLauncherPresenceLoop();
       startRemotePlayLoop();

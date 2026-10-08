@@ -345,6 +345,7 @@ async function syncLibraryItemsIndividually(token, installs, modInstalls) {
             baseGameSlug: item.baseGameSlug,
             action: "install",
             version: item.version,
+            ...(item.installationId ? { installationId: item.installationId } : {}),
           }),
         },
         LIBRARY_ITEM_SYNC_TIMEOUT_MS
@@ -416,6 +417,7 @@ async function runLibrarySync() {
       slug,
       baseGameSlug: String(info.baseGameSlug),
       ...(info.version ? { version: String(info.version) } : {}),
+      ...(info.installationId ? { installationId: String(info.installationId) } : {}),
     });
   }
 

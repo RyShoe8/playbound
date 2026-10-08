@@ -335,6 +335,8 @@ export default async function GameplayAnalyticsPage({
   let gameInstallsTotal = 0;
   let modInstalls = emptyPeriodCounts();
   let modInstallsTotal = 0;
+  let modManualDownloads = emptyPeriodCounts();
+  let modManualDownloadsTotal = 0;
 
   try {
     // Must come before the Promise.all, not inside it. Promise.all starts
@@ -355,6 +357,8 @@ export default async function GameplayAnalyticsPage({
       gameInstallCount,
       modInstallPeriods,
       modInstallCount,
+      modManualDownloadPeriods,
+      modManualDownloadCount,
     ] = await Promise.all([
       loadGameplayAnalytics({
         game: sp.game,
@@ -369,6 +373,8 @@ export default async function GameplayAnalyticsPage({
       TelemetryEvent.countDocuments({ event: "game_installed" }),
       periodTelemetryCounts(TelemetryEvent, "mod_installed"),
       TelemetryEvent.countDocuments({ event: "mod_installed" }),
+      periodTelemetryCounts(TelemetryEvent, "mod_download_clicked"),
+      TelemetryEvent.countDocuments({ event: "mod_download_clicked" }),
     ]);
     data = gameplay;
     catalog = {
@@ -381,6 +387,8 @@ export default async function GameplayAnalyticsPage({
     gameInstallsTotal = gameInstallCount;
     modInstalls = modInstallPeriods;
     modInstallsTotal = modInstallCount;
+    modManualDownloads = modManualDownloadPeriods;
+    modManualDownloadsTotal = modManualDownloadCount;
   } catch (err) {
     console.error("Failed to load gameplay analytics", err);
     loadError = true;
@@ -446,7 +454,7 @@ export default async function GameplayAnalyticsPage({
             />
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <PeriodStatTile
               label="Game installs"
               primary={String(gameInstallsTotal)}
@@ -457,9 +465,16 @@ export default async function GameplayAnalyticsPage({
             <PeriodStatTile
               label="Mod installs"
               primary={String(modInstallsTotal)}
-              hint={`${catalog.mods} in catalog`}
+              hint={`Confirmed launcher installs · ${catalog.mods} mods in catalog`}
               href="/admin/mods"
               periods={modInstalls}
+            />
+            <PeriodStatTile
+              label="Manual mod link clicks"
+              primary={String(modManualDownloadsTotal)}
+              hint="Download-page clicks; installation not verified"
+              href="/admin/analytics?event=mod_download_clicked"
+              periods={modManualDownloads}
             />
             <StatTile
               label="Developers"
