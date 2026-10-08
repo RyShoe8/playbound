@@ -7,7 +7,7 @@
  *   - inserts: create only when absent; new games are draft / unpublished
  *   - patches: $set ONLY allowlisted fields on existing named docs
  *   - additive feature chips: $addToSet ONLY named drafts; never replace CMS arrays
- *   - retire editions: $set visibility=hidden + status=archived only
+ *   - retire editions/mods: $set archival fields only
  *   - never deletes rows, never upserts patches, never publishes a parent game
  *   - never writes a slug that is not on an allowlist
  *
@@ -134,6 +134,7 @@ async function main() {
   const { developersBySlug } = await import("../src/lib/data/developers");
   const { launcherInstallBySlug } = await import("../src/lib/data/launcherInstall");
   const { correctionsFor } = await import("../src/lib/data/catalogCorrections");
+  const { accessAuditModCorrection } = await import("../src/lib/data/accessAuditModCorrections");
   const { dedicatedDraftEditorialFor } = await import("../src/lib/data/dedicatedDraftEditorial");
   const { dedicatedDraftRequirementsFor } = await import("../src/lib/data/dedicatedDraftRequirements");
   const { attributionFor } = await import("../src/lib/data/modAttributions");
@@ -739,6 +740,9 @@ async function main() {
           null,
       };
     }
+    // This legacy "Loot filter hubs" row is an external link with no live
+    // Diablo II parent. Archive the one orphan without deleting its record.
+    source = { ...source, ...accessAuditModCorrection(slug) };
 
     const payload = pickFields(source, fields);
     for (const field of fields) {
@@ -770,11 +774,14 @@ async function main() {
     }
   }
 
-  // 6. Retire / delete allowlisted non-mod slugs
+  // 6. Soft-retire allowlisted non-mod slugs. Never delete catalog records.
   let modsRetired = 0;
   if (retireModSlugs.length > 0) {
-    const res = await CatalogMod.deleteMany({ slug: { $in: retireModSlugs } });
-    modsRetired = res.deletedCount ?? 0;
+    const res = await CatalogMod.updateMany(
+      { slug: { $in: retireModSlugs }, status: { $ne: "archived" } },
+      { $set: { published: false, status: "archived" } }
+    );
+    modsRetired = res.modifiedCount ?? 0;
     if (modsRetired > 0) {
       console.log(`retired ${modsRetired} non-mod catalog mod(s)`);
     }

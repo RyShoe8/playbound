@@ -70,6 +70,7 @@ export function AccessPricingFields({
     requiresBaseGameAssets: false,
     requiresOwnedBaseGame: false,
     requiresGameSlugs: [],
+    requiredExternalGameName: null,
     offers: [],
   };
   const tier = previewTier(access, catalogTiers);
@@ -320,6 +321,19 @@ export function AccessPricingFields({
           ) : null}
         </div>
       )}
+
+      {access.priceType === "PAID_BASE_GAME_REQUIRED" ? (
+        <label className="block text-xs font-bold tracking-wide text-muted-foreground uppercase">
+          Required game outside the PlayBound catalog
+          <input
+            className="mt-1 w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm font-normal normal-case tracking-normal text-foreground"
+            value={access.requiredExternalGameName ?? ""}
+            onChange={(e) => patch({ requiredExternalGameName: e.target.value || null })}
+            placeholder="e.g. Age of Empires I or II"
+            maxLength={160}
+          />
+        </label>
+      ) : null}
 
       <div className="rounded-lg border border-border bg-secondary/30 px-3 py-2 text-sm">
         <p className="text-xs font-bold tracking-wide text-muted-foreground uppercase">

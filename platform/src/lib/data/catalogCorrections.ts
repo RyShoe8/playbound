@@ -19,6 +19,13 @@
 import { launcherInstallBySlug } from "./launcherInstall";
 
 const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
+  // The live Populous: Reincarnated game row needs the retail parent. Patch
+  // only the nested dependency field; keep all CMS prices and offers intact.
+  "populous-reincarnated": { access: { requiresGameSlugs: ["populous-the-beginning"] } },
+  // openage's own README says it requires original AoE I/II assets (including
+  // supported Definitive Editions). None of those games is cataloged here.
+  // Record the external requirement rather than inventing a catalog game.
+  openage: { access: { requiredExternalGameName: "Age of Empires I or II (supported editions)" } },
   // First-party Godot game. The stable v0.2.0 release publishes three complete
   // desktop archives; the GitHub recipe follows future stable releases while
   // selecting the asset for the player's operating system.

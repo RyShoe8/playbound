@@ -464,6 +464,7 @@ export const gameAccessSchema = z
     requiresBaseGameAssets: z.boolean().optional(),
     requiresOwnedBaseGame: z.boolean().optional(),
     requiresGameSlugs: z.array(z.string().trim().min(1).max(80)).max(20).default([]),
+    requiredExternalGameName: z.string().trim().max(160).optional().nullable(),
     offers: z.array(retailOfferSchema).max(20).optional().default([]),
   })
   .transform((a) => {
@@ -488,6 +489,7 @@ export const gameAccessSchema = z
       requiresBaseGameAssets: Boolean(a.requiresBaseGameAssets),
       requiresOwnedBaseGame: Boolean(a.requiresOwnedBaseGame),
       requiresGameSlugs: a.requiresGameSlugs ?? [],
+      requiredExternalGameName: a.requiredExternalGameName || null,
       offers,
     };
   });
@@ -682,6 +684,7 @@ export function toPayloadAccess(
     requiresBaseGameAssets?: boolean;
     requiresOwnedBaseGame?: boolean;
     requiresGameSlugs?: string[];
+    requiredExternalGameName?: string | null;
     offers?: unknown;
   } | null | undefined
 ): GameAccessPayload | null {

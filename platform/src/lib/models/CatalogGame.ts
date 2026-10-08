@@ -212,6 +212,7 @@ const CatalogGameSchema = new Schema(
       requiresOwnedBaseGame: { type: Boolean, default: false },
       /** Slugs of games this one cannot be played without. */
       requiresGameSlugs: { type: [String], default: [] },
+      requiredExternalGameName: { type: String, default: null },
       /**
        * Where to buy it. Current price is the cheapest active row.
        * Eligibility still uses qualifyingPriceCents, not these.

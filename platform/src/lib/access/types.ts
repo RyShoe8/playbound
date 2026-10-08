@@ -82,6 +82,8 @@ export interface GameAccess {
   requiresOwnedBaseGame?: boolean;
   /** Slugs of games this one cannot be played without. */
   requiresGameSlugs?: string[];
+  /** Name of a required commercial game that PlayBound does not catalog. */
+  requiredExternalGameName?: string | null;
 }
 
 export type AccessNodeKind =

@@ -87,6 +87,16 @@ describe("the tier table from the spec", () => {
     expect(resolveAccess(accessId.game("tc"), g).tier).toBe("VALUE");
   });
 
+  it("names an external required game without pretending it is in the catalog", () => {
+    const g = buildAccessGraph([game("openage", {
+      ...needsRetailAssets,
+      requiredExternalGameName: "Age of Empires I or II (supported editions)",
+    })]);
+    expect(auditAccessGraph(g)).toEqual([]);
+    expect(resolveAccess("game:openage", g).paidDependencies[0]?.label)
+      .toBe("Age of Empires I or II (supported editions)");
+  });
+
   it("cards use the live price, eligibility keeps qualifying", () => {
     const g = buildAccessGraph([
       game("fnv", {

@@ -109,6 +109,8 @@ const DEDICATED_DRAFT_EDITORIAL_FIELDS = [
 ] as const;
 
 export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
+  "populous-reincarnated": ["access.requiresGameSlugs"],
+  openage: ["access.requiredExternalGameName"],
   // First-party GitHub release: add native one-click desktop installs while
   // preserving every other CMS field on this database-only game.
   "hyperdisc-arena": ["platforms", "launchMethods", "launcherInstall"],
@@ -1002,7 +1004,7 @@ export const PATCH_MOD_FIELDS: Readonly<Record<string, readonly string[]>> = {
   "0ad-terra-magna": ["developerSlug", "developerName"],
   "0ad-xiii-century": ["developerSlug", "developerName"],
   "0ad-yayoi-japan": ["developerSlug", "developerName"],
-  "diablo-2-filter": ["developerSlug", "developerName"],
+  "diablo-2-filter": ["developerSlug", "developerName", "published", "status"],
   "endless-sky-all-content": ["developerSlug", "developerName"],
   "endless-sky-arc-over": ["developerSlug", "developerName"],
   "endless-sky-asteroid-expansion": ["developerSlug", "developerName"],

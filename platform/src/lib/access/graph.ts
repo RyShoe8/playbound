@@ -33,13 +33,21 @@ function editionDependencies(gameSlug: string, isStandalone: unknown): string[] 
   return isStandalone === true ? [] : [accessId.game(gameSlug)];
 }
 
+export function eventDependencies(gameSlug: string, editionSlug: string): string[] {
+  const canonical = canonicalCatalogGameSlug(gameSlug);
+  if (!canonical) return [];
+  return editionSlug
+    ? [accessId.edition(canonical, editionSlug)]
+    : [accessId.game(canonical)];
+}
+
 export async function loadAccessGraph(): Promise<AccessGraph> {
   await dbConnect();
 
   const [games, editions, mods, events] = await Promise.all([
     CatalogGame.find({}).select("slug title access").lean(),
     Edition.find({}).select("gameSlug slug name isStandalone").lean(),
-    CatalogMod.find({}).select("slug title baseGameSlug").lean(),
+    CatalogMod.find({ status: { $ne: "archived" } }).select("slug title baseGameSlug").lean(),
     PlatformEvent.find({}).select("_id title gameSlug editionSlug").lean(),
   ]);
 
@@ -108,17 +116,13 @@ export async function loadAccessGraph(): Promise<AccessGraph> {
    */
   for (const ev of events as Array<Record<string, unknown>>) {
     const id = String(ev._id || "");
-    const gameSlug = String(ev.gameSlug || "");
     if (!id) continue;
     const editionSlug = String(ev.editionSlug || "");
-    const dependsOn: string[] = [];
-    if (gameSlug && editionSlug) dependsOn.push(accessId.edition(gameSlug, editionSlug));
-    else if (gameSlug) dependsOn.push(accessId.game(gameSlug));
     nodes.push({
       id: accessId.event(id),
       kind: "event",
       label: String(ev.title || id),
-      dependsOn,
+      dependsOn: eventDependencies(String(ev.gameSlug || ""), editionSlug),
     });
   }
 
