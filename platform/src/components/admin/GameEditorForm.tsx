@@ -2224,8 +2224,8 @@ export function GameEditorForm({
                   title={
                     publishLocked
                       ? `Still needs: ${readiness.missing.join(", ")}`
-                      : value === "testing"
-                        ? "Visible only to admins on site and launcher"
+                      : value === "testing" || value === "ready"
+                        ? "Visible only to admins on site and launcher; Ready means testing is complete"
                         : undefined
                   }
                 >

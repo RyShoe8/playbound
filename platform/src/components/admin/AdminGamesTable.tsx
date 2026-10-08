@@ -332,6 +332,7 @@ export function AdminGamesTable({
         >
           <option value="all">All statuses</option>
           <option value="published">Published</option>
+          <option value="ready">Ready</option>
           <option value="testing">Testing</option>
           <option value="watchlist">Watchlist</option>
           <option value="draft">Draft</option>
@@ -505,6 +506,8 @@ export function AdminGamesTable({
                             ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                             : currentStatus === "testing"
                               ? "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                              : currentStatus === "ready"
+                                ? "border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-400"
                               : currentStatus === "watchlist"
                                 ? "border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
                                 : "border-border bg-secondary/60 text-muted-foreground"

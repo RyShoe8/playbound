@@ -115,7 +115,7 @@ export async function generateMetadata({ params }: { params: Params }) {
   if (!edition) return privateMetadata("Edition Not Found");
 
   // Unlisted editions stay reachable by URL but must not be indexed.
-  if (edition.visibility !== "public" || game.status === "testing") {
+  if (edition.visibility !== "public" || game.status === "testing" || game.status === "ready") {
     return privateMetadata(`${edition.name} · ${game.title}`);
   }
 

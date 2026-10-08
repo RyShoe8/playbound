@@ -192,6 +192,7 @@ describe("insert-catalog-wave allowlists", () => {
         "freetrain",
         "hawken-hawkening",
         "hurry-curry",
+        "hyperdisc-arena",
         "idle-slayer",
         "morrowind",
         "pokemmo",

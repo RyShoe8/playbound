@@ -1,10 +1,17 @@
 /**
- * Catalog visibility: draft / watchlist (CMS only), testing (admins), published (everyone).
+ * Catalog visibility: draft / watchlist (CMS only), testing / ready (admins), published (everyone).
  * Boolean `published` remains synced as status === "published" for legacy filters.
  */
 
-export const CATALOG_STATUSES = ["draft", "watchlist", "testing", "published"] as const;
+export const CATALOG_STATUSES = ["draft", "watchlist", "testing", "ready", "published"] as const;
+/** Mods do not have a release-ready state; it is a game editorial milestone. */
+export const MOD_STATUSES = ["draft", "watchlist", "testing", "published"] as const;
 export type CatalogStatus = (typeof CATALOG_STATUSES)[number];
+export type ModStatus = (typeof MOD_STATUSES)[number];
+
+export function isTestingGameStatus(status: unknown): boolean {
+  return status === "testing" || status === "ready";
+}
 
 function isCatalogStatus(value: unknown): value is CatalogStatus {
   return typeof value === "string" && (CATALOG_STATUSES as readonly string[]).includes(value);
@@ -19,17 +26,23 @@ export function normalizeStatus(doc: {
   return doc.published ? "published" : "draft";
 }
 
+export function normalizeModStatus(doc: { status?: unknown; published?: unknown }): ModStatus {
+  return typeof doc.status === "string" && (MOD_STATUSES as readonly string[]).includes(doc.status)
+    ? doc.status as ModStatus
+    : doc.published ? "published" : "draft";
+}
+
 export function statusToPublished(status: CatalogStatus): boolean {
   return status === "published";
 }
 
 /**
- * Mongo filter for public vs admin (published + testing) surfaces.
+ * Mongo filter for public vs admin (published + testing + ready) surfaces.
  * Includes legacy docs that only have `published: true` and no `status`.
  */
 export function mongoVisibleFilter(opts?: { includeTesting?: boolean }): Record<string, unknown> {
   const statuses: CatalogStatus[] = opts?.includeTesting
-    ? ["published", "testing"]
+    ? ["published", "testing", "ready"]
     : ["published"];
 
   return {

@@ -599,7 +599,7 @@ export function PartyView({
                     {partyGames.map((g) => (
                       <option key={g.slug} value={g.slug}>
                         {partyGameOptionLabel(g.title, {
-                          testing: g.status === "testing",
+                          testing: g.status === "testing" || g.status === "ready",
                           genres: g.genres,
                         })}
                       </option>

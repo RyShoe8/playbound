@@ -112,9 +112,9 @@ export interface Game {
   sizeMB: number;
   /**
    * Catalog visibility. Omitted/undefined on seed rows treated as published.
-   * `testing` is only returned when the caller loaded with includeTesting.
+   * `testing` and `ready` are only returned when the caller loaded with includeTesting.
    */
-  status?: "draft" | "watchlist" | "testing" | "published";
+  status?: "draft" | "watchlist" | "testing" | "ready" | "published";
   platforms: string[];
   features: string[];
   /** Explicit controller / gamepad support override. When undefined, derived from features/tags. */

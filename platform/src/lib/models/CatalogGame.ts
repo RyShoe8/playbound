@@ -268,7 +268,7 @@ const CatalogGameSchema = new Schema(
     publishedAt: { type: Date, default: null },
     status: {
       type: String,
-      enum: ["draft", "watchlist", "testing", "published"],
+      enum: ["draft", "watchlist", "testing", "ready", "published"],
       default: "published",
       index: true,
     },

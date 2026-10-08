@@ -129,7 +129,7 @@ export async function GET(
         browserPlayable: Boolean(game.browserPlayable),
         steamDeck: Boolean(game.steamDeck),
         status: game.status || "published",
-        testing: game.status === "testing",
+        testing: game.status === "testing" || game.status === "ready",
         masterCopy: Boolean(game.masterCopy),
         ...accessFieldsForLauncher(gameTier),
         commerce: toLauncherCommerce(game, gameTier, affiliates),

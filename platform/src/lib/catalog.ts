@@ -580,13 +580,13 @@ const loadPublishedGames = cache(async (): Promise<Game[]> =>
 );
 
 const loadPublishedAndTestingGames = cache(async (): Promise<Game[]> =>
-  unstable_cache(() => readVisibleGames(true), ["catalog-games", "published+testing"], {
+  unstable_cache(() => readVisibleGames(true), ["catalog-games", "published+testing+ready"], {
     revalidate: 300,
     tags: ["catalog"],
   })()
 );
 
-/** Visible catalog. Pass `includeTesting` for admin viewers (published + testing). */
+/** Visible catalog. Pass `includeTesting` for admin viewers (published + testing + ready). */
 export async function listGames(opts?: { includeTesting?: boolean }): Promise<Game[]> {
   if (opts?.includeTesting) return loadPublishedAndTestingGames();
   return loadPublishedGames();
@@ -752,7 +752,7 @@ const loadVisibleGame = cache((slug: string, includeTesting: boolean): Promise<G
         );
       }
     },
-    ["catalog-game", includeTesting ? "published+testing" : "published", slug],
+    ["catalog-game", includeTesting ? "published+testing+ready" : "published", slug],
     { revalidate: 300, tags: ["catalog"] }
   )()
 );

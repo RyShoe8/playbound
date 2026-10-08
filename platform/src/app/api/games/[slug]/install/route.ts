@@ -53,7 +53,7 @@ export async function GET(
       ...entry,
       hostLaunch: getMultiplayerAdapter(game.slug)?.host ?? null,
       status: game.status || "published",
-      testing: game.status === "testing",
+      testing: game.status === "testing" || game.status === "ready",
     },
     {
       headers: {
