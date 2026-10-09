@@ -938,7 +938,7 @@ export const editorial: Record<string, GameEditorial> = {
     },
     maintenanceCheck: {
       kind: "manual",
-      url: "https://us.shop.battle.net/en-us/product/starcraft",
+      url: "https://download.battle.net/en-us/desktop",
       checkedAt: VERIFIED,
       note: "Classic StarCraft receives only sporadic compatibility patches; Blizzard disbanded the Classic Games team in 2024. Free Anthology availability re-confirmed on Battle.net.",
     },

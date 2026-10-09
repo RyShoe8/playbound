@@ -1,0 +1,1516 @@
+{
+ "barotrauma": {
+  "schemes": [
+   {
+    "scheme": "keyboard",
+    "supported": true,
+    "bindings": [
+     {
+      "action": "Move",
+      "input": "W, A, S, D",
+      "group": "Movement"
+     },
+     {
+      "action": "Sprint",
+      "input": "Left Shift",
+      "group": "Movement"
+     },
+     {
+      "action": "Interact",
+      "input": "E",
+      "group": "Interaction"
+     },
+     {
+      "action": "Use item / attack",
+      "input": "Left Mouse",
+      "group": "Combat"
+     },
+     {
+      "action": "Aim / grab",
+      "input": "Right Mouse",
+      "group": "Combat"
+     },
+     {
+      "action": "Health interface",
+      "input": "H",
+      "group": "Interface"
+     },
+     {
+      "action": "Crew list / command",
+      "input": "C",
+      "group": "Interface"
+     },
+     {
+      "action": "Chat",
+      "input": "Tab",
+      "group": "Multiplayer"
+     },
+     {
+      "action": "Radio chat",
+      "input": "R",
+      "group": "Multiplayer"
+     }
+    ],
+    "sourceUrl": "https://barotraumagame.com/wiki/",
+    "sourceLabel": "Barotrauma Wiki",
+    "notes": "Every key is rebindable in the game's options."
+   }
+  ]
+ },
+ "counter-strike-2": {
+  "schemes": [
+   {
+    "scheme": "keyboard",
+    "supported": true,
+    "bindings": [
+     {
+      "action": "Move",
+      "input": "W, A, S, D",
+      "group": "Movement"
+     },
+     {
+      "action": "Jump",
+      "input": "Space",
+      "group": "Movement"
+     },
+     {
+      "action": "Crouch",
+      "input": "Left Ctrl",
+      "group": "Movement"
+     },
+     {
+      "action": "Walk",
+      "input": "Left Shift",
+      "group": "Movement"
+     },
+     {
+      "action": "Fire",
+      "input": "Left Mouse",
+      "group": "Combat"
+     },
+     {
+      "action": "Aim down sights / scope",
+      "input": "Right Mouse",
+      "group": "Combat"
+     },
+     {
+      "action": "Reload",
+      "input": "R",
+      "group": "Combat"
+     },
+     {
+      "action": "Use / defuse / pick up",
+      "input": "E",
+      "group": "Interaction"
+     },
+     {
+      "action": "Buy menu",
+      "input": "B",
+      "group": "Interface"
+     },
+     {
+      "action": "Scoreboard",
+      "input": "Tab",
+      "group": "Interface"
+     },
+     {
+      "action": "Drop weapon",
+      "input": "G",
+      "group": "Inventory"
+     },
+     {
+      "action": "Inspect weapon",
+      "input": "F",
+      "group": "Inventory"
+     },
+     {
+      "action": "Team chat",
+      "input": "U",
+      "group": "Multiplayer"
+     },
+     {
+      "action": "Voice",
+      "input": "K",
+      "group": "Multiplayer"
+     }
+    ],
+    "sourceUrl": "https://counterstrike.fandom.com/wiki/Counter-Strike_2",
+    "sourceLabel": "Counter-Strike Wiki",
+    "notes": "Every key is rebindable in the game's options."
+   }
+  ]
+ },
+ "counter-strike-source": {
+  "schemes": [
+   {
+    "scheme": "keyboard",
+    "supported": true,
+    "bindings": [
+     {
+      "action": "Move",
+      "input": "W, A, S, D",
+      "group": "Movement"
+     },
+     {
+      "action": "Jump",
+      "input": "Space",
+      "group": "Movement"
+     },
+     {
+      "action": "Crouch",
+      "input": "Left Ctrl",
+      "group": "Movement"
+     },
+     {
+      "action": "Walk",
+      "input": "Left Shift",
+      "group": "Movement"
+     },
+     {
+      "action": "Fire",
+      "input": "Left Mouse",
+      "group": "Combat"
+     },
+     {
+      "action": "Secondary fire / zoom",
+      "input": "Right Mouse",
+      "group": "Combat"
+     },
+     {
+      "action": "Reload",
+      "input": "R",
+      "group": "Combat"
+     },
+     {
+      "action": "Use / defuse",
+      "input": "E",
+      "group": "Interaction"
+     },
+     {
+      "action": "Buy menu",
+      "input": "B",
+      "group": "Interface"
+     },
+     {
+      "action": "Scoreboard",
+      "input": "Tab",
+      "group": "Interface"
+     }
+    ],
+    "sourceUrl": "https://developer.valvesoftware.com/wiki/Counter-Strike:_Source",
+    "sourceLabel": "Valve Developer Community",
+    "notes": "Every key is rebindable in the game's options."
+   }
+  ]
+ },
+ "dont-starve-together": {
+  "schemes": [
+   {
+    "scheme": "keyboard",
+    "supported": true,
+    "bindings": [
+     {
+      "action": "Move",
+      "input": "W, A, S, D",
+      "group": "Movement"
+     },
+     {
+      "action": "Primary action / attack",
+      "input": "Left Mouse",
+      "group": "Combat"
+     },
+     {
+      "action": "Inspect / secondary action",
+      "input": "Right Mouse",
+      "group": "Interaction"
+     },
+     {
+      "action": "Rotate camera",
+      "input": "Q / E",
+      "group": "Camera"
+     },
+     {
+      "action": "Map",
+      "input": "Tab",
+      "group": "Interface"
+     },
+     {
+      "action": "Open chat",
+      "input": "Enter",
+      "group": "Multiplayer"
+     },
+     {
+      "action": "Pause (singleplayer)",
+      "input": "P",
+      "group": "Interface"
+     }
+    ],
+    "sourceUrl": "https://dontstarve.wiki.gg/wiki/Controls",
+    "sourceLabel": "Don't Starve Wiki",
+    "notes": "Every key is rebindable in the game's options."
+   }
+  ]
+ },
+ "dota-2": {
+  "schemes": [
+   {
+    "scheme": "keyboard",
+    "supported": true,
+    "bindings": [
+     {
+      "action": "Move / attack-target",
+      "input": "Right Mouse",
+      "group": "Movement"
+     },
+     {
+      "action": "Select",
+      "input": "Left Mouse",
+      "group": "Interaction"
+     },
+     {
+      "action": "Abilities",
+      "input": "Q, W, E, R, D, F",
+      "group": "Combat"
+     },
+     {
+      "action": "Items",
+      "input": "Z, X, C, V, B, N",
+      "group": "Inventory"
+     },
+     {
+      "action": "Attack-move",
+      "input": "A + Click",
+      "group": "Combat"
+     },
+     {
+      "action": "Stop",
+      "input": "S",
+      "group": "Combat"
+     },
+     {
+      "action": "Hold position",
+      "input": "H",
+      "group": "Combat"
+     },
+     {
+      "action": "Shop",
+      "input": "F4",
+      "group": "Interface"
+     },
+     {
+      "action": "Scoreboard",
+      "input": "Tab",
+      "group": "Interface"
+     },
+     {
+      "action": "Center on hero",
+      "input": "F1",
+      "group": "Camera"
+     }
+    ],
+    "sourceUrl": "https://dota2.fandom.com/wiki/Hotkeys",
+    "sourceLabel": "Dota 2 Wiki — Hotkeys",
+    "notes": "Default grid-less layout; Grid hotkeys are an optional preset."
+   }
+  ]
+ },
+ "factorio": {
+  "schemes": [
+   {
+    "scheme": "keyboard",
+    "supported": true,
+    "bindings": [
+     {
+      "action": "Move",
+      "input": "W, A, S, D",
+      "group": "Movement"
+     },
+     {
+      "action": "Mine / shoot",
+      "input": "Left Mouse",
+      "group": "Interaction"
+     },
+     {
+      "action": "Build / interact",
+      "input": "Right Mouse",
+      "group": "Building"
+     },
+     {
+      "action": "Open inventory",
+      "input": "E",
+      "group": "Inventory"
+     },
+     {
+      "action": "Pipette",
+      "input": "Q",
+      "group": "Building"
+     },
+     {
+      "action": "Rotate item",
+      "input": "R",
+      "group": "Building"
+     },
+     {
+      "action": "Pick up item",
+      "input": "F",
+      "group": "Interaction"
+     },
+     {
+      "action": "Map",
+      "input": "M",
+      "group": "Interface"
+     },
+     {
+      "action": "Zoom",
+      "input": "Mouse Wheel",
+      "group": "Camera"
+     },
+     {
+      "action": "Technology",
+      "input": "T",
+      "group": "Interface"
+     }
+    ],
+    "sourceUrl": "https://wiki.factorio.com/Key_bindings",
+    "sourceLabel": "Factorio Wiki — Key bindings",
+    "notes": "Every key is rebindable in the game's options."
+   }
+  ]
+ },
+ "freedoom": {
+  "schemes": [
+   {
+    "scheme": "keyboard",
+    "supported": true,
+    "bindings": [
+     {
+      "action": "Move",
+      "input": "W, A, S, D or Arrow keys",
+      "group": "Movement"
+     },
+     {
+      "action": "Fire",
+      "input": "Left Ctrl or Left Mouse",
+      "group": "Combat"
+     },
+     {
+      "action": "Use / open",
+      "input": "Space or E",
+      "group": "Interaction"
+     },
+     {
+      "action": "Run",
+      "input": "Left Shift",
+      "group": "Movement"
+     },
+     {
+      "action": "Strafe",
+      "input": "Alt + ← / →",
+      "group": "Movement"
+     },
+     {
+      "action": "Automap",
+      "input": "Tab",
+      "group": "Interface"
+     },
+     {
+      "action": "Weapon select",
+      "input": "1–7",
+      "group": "Combat"
+     },
+     {
+      "action": "Menu",
+      "input": "Esc",
+      "group": "Interface"
+     }
+    ],
+    "sourceUrl": "https://freedoom.github.io/",
+    "sourceLabel": "Freedoom project",
+    "notes": "Standard Doom controls; the source port sets the exact keys under Options → Setup → Key Bindings."
+   }
+  ]
+ },
+ "genshin-impact": {
+  "schemes": [
+   {
+    "scheme": "keyboard",
+    "supported": true,
+    "bindings": [
+     {
+      "action": "Move",
+      "input": "W, A, S, D",
+      "group": "Movement"
+     },
+     {
+      "action": "Jump",
+      "input": "Space",
+      "group": "Movement"
+     },
+     {
+      "action": "Sprint",
+      "input": "Left Shift / Right Mouse",
+      "group": "Movement"
+     },
+     {
+      "action": "Normal attack",
+      "input": "Left Mouse",
+      "group": "Combat"
+     },
+     {
+      "action": "Elemental skill",
+      "input": "E",
+      "group": "Combat"
+     },
+     {
+      "action": "Elemental burst",
+      "input": "Q",
+      "group": "Combat"
+     },
+     {
+      "action": "Interact / pick up",
+      "input": "F",
+      "group": "Interaction"
+     },
+     {
+      "action": "Switch party member",
+      "input": "1–4",
+      "group": "Combat"
+     },
+     {
+      "action": "Open map",
+      "input": "M",
+      "group": "Interface"
+     },
+     {
+      "action": "Inventory",
+      "input": "B",
+      "group": "Inventory"
+     },
+     {
+      "action": "Character menu",
+      "input": "C",
+      "group": "Interface"
+     }
+    ],
+    "sourceUrl": "https://genshin-impact.fandom.com/wiki/Controls",
+    "sourceLabel": "Genshin Impact Wiki — Controls",
+    "notes": "Every key is rebindable in the game's options."
+   },
+   {
+    "scheme": "controller",
+    "supported": true,
+    "bindings": [
+     {
+      "action": "Move",
+      "input": "Left stick",
+      "group": "Movement"
+     },
+     {
+      "action": "Camera",
+      "input": "Right stick",
+      "group": "Camera"
+     },
+     {
+      "action": "Jump",
+      "input": "A / Cross",
+      "group": "Movement"
+     },
+     {
+      "action": "Normal attack",
+      "input": "X / Square",
+      "group": "Combat"
+     },
+     {
+      "action": "Elemental skill",
+      "input": "LT / L2",
+      "group": "Combat"
+     },
+     {
+      "action": "Elemental burst",
+      "input": "RT / R2",
+      "group": "Combat"
+     },
+     {
+      "action": "Switch party member",
+      "input": "D-pad",
+      "group": "Combat"
+     },
+     {
+      "action": "Interact",
+      "input": "Y / Triangle",
+      "group": "Interaction"
+     }
+    ],
+    "sourceUrl": "https://genshin-impact.fandom.com/wiki/Controls",
+    "sourceLabel": "Genshin Impact Wiki — Controls"
+   }
+  ]
+ },
+ "guild-wars-2": {
+  "schemes": [
+   {
+    "scheme": "keyboard",
+    "supported": true,
+    "bindings": [
+     {
+      "action": "Move",
+      "input": "W, A, S, D",
+      "group": "Movement"
+     },
+     {
+      "action": "Jump",
+      "input": "Space",
+      "group": "Movement"
+     },
+     {
+      "action": "Dodge",
+      "input": "V",
+      "group": "Combat"
+     },
+     {
+      "action": "Weapon skills",
+      "input": "1–5",
+      "group": "Combat"
+     },
+     {
+      "action": "Heal / utility / elite",
+      "input": "6, 7, 8, 9, 0",
+      "group": "Combat"
+     },
+     {
+      "action": "Interact",
+      "input": "F",
+      "group": "Interaction"
+     },
+     {
+      "action": "Swap weapons",
+      "input": "~ (tilde)",
+      "group": "Combat"
+     },
+     {
+      "action": "Inventory",
+      "input": "I",
+      "group": "Inventory"
+     },
+     {
+      "action": "Hero panel",
+      "input": "H",
+      "group": "Interface"
+     },
+     {
+      "action": "World map",
+      "input": "M",
+      "group": "Interface"
+     }
+    ],
+    "sourceUrl": "https://wiki.guildwars2.com/wiki/Key_bindings",
+    "sourceLabel": "Guild Wars 2 Wiki — Key bindings",
+    "notes": "Every key is rebindable in the game's options."
+   }
+  ]
+ },
+ "holocure": {
+  "schemes": [
+   {
+    "scheme": "keyboard",
+    "supported": true,
+    "bindings": [
+     {
+      "action": "Move",
+      "input": "W, A, S, D or Arrow keys",
+      "group": "Movement"
+     },
+     {
+      "action": "Confirm",
+      "input": "Enter / Z",
+      "group": "Interface"
+     },
+     {
+      "action": "Back",
+      "input": "Esc / X",
+      "group": "Interface"
+     },
+     {
+      "action": "Special attack",
+      "input": "Space",
+      "group": "Combat"
+     }
+    ],
+    "sourceUrl": "https://holocure.fandom.com/wiki/HoloCure_Wiki",
+    "sourceLabel": "HoloCure Wiki",
+    "notes": "Attacks fire automatically, so movement and the special are the only combat inputs."
+   }
+  ]
+ },
+ "league-of-legends": {
+  "schemes": [
+   {
+    "scheme": "keyboard",
+    "supported": true,
+    "bindings": [
+     {
+      "action": "Move / attack",
+      "input": "Right Mouse",
+      "group": "Movement"
+     },
+     {
+      "action": "Select",
+      "input": "Left Mouse",
+      "group": "Interaction"
+     },
+     {
+      "action": "Abilities",
+      "input": "Q, W, E, R",
+      "group": "Combat"
+     },
+     {
+      "action": "Summoner spells",
+      "input": "D, F",
+      "group": "Combat"
+     },
+     {
+      "action": "Items",
+      "input": "1–6",
+      "group": "Inventory"
+     },
+     {
+      "action": "Attack-move",
+      "input": "A + Click",
+      "group": "Combat"
+     },
+     {
+      "action": "Stop",
+      "input": "S",
+      "group": "Combat"
+     },
+     {
+      "action": "Recall",
+      "input": "B",
+      "group": "Movement"
+     },
+     {
+      "action": "Shop",
+      "input": "P",
+      "group": "Interface"
+     },
+     {
+      "action": "Level up ability",
+      "input": "Ctrl + Q/W/E/R",
+      "group": "Combat"
+     },
+     {
+      "action": "Ping menu",
+      "input": "Alt + Click",
+      "group": "Multiplayer"
+     }
+    ],
+    "sourceUrl": "https://leagueoflegends.fandom.com/wiki/Hotkeys",
+    "sourceLabel": "League of Legends Wiki — Hotkeys",
+    "notes": "Every key is rebindable in the game's options."
+   }
+  ]
+ },
+ "necesse": {
+  "schemes": [
+   {
+    "scheme": "keyboard",
+    "supported": true,
+    "bindings": [
+     {
+      "action": "Move",
+      "input": "W, A, S, D",
+      "group": "Movement"
+     },
+     {
+      "action": "Attack / use",
+      "input": "Left Mouse",
+      "group": "Combat"
+     },
+     {
+      "action": "Interact / place",
+      "input": "Right Mouse",
+      "group": "Interaction"
+     },
+     {
+      "action": "Inventory",
+      "input": "E",
+      "group": "Inventory"
+     },
+     {
+      "action": "Sprint",
+      "input": "Left Shift",
+      "group": "Movement"
+     },
+     {
+      "action": "Quick-stack / loot",
+      "input": "Left Ctrl + Click",
+      "group": "Inventory"
+     },
+     {
+      "action": "Hotbar",
+      "input": "1–0",
+      "group": "Inventory"
+     },
+     {
+      "action": "Map",
+      "input": "M",
+      "group": "Interface"
+     }
+    ],
+    "sourceUrl": "https://necessewiki.com/",
+    "sourceLabel": "Necesse Wiki",
+    "notes": "Every key is rebindable in the game's options."
+   }
+  ]
+ },
+ "openarena": {
+  "schemes": [
+   {
+    "scheme": "keyboard",
+    "supported": true,
+    "bindings": [
+     {
+      "action": "Move",
+      "input": "W, A, S, D",
+      "group": "Movement"
+     },
+     {
+      "action": "Jump",
+      "input": "Space",
+      "group": "Movement"
+     },
+     {
+      "action": "Crouch",
+      "input": "C",
+      "group": "Movement"
+     },
+     {
+      "action": "Fire",
+      "input": "Left Mouse",
+      "group": "Combat"
+     },
+     {
+      "action": "Next / previous weapon",
+      "input": "Mouse Wheel",
+      "group": "Combat"
+     },
+     {
+      "action": "Scoreboard",
+      "input": "Tab",
+      "group": "Interface"
+     },
+     {
+      "action": "Talk (all)",
+      "input": "T",
+      "group": "Multiplayer"
+     },
+     {
+      "action": "Team talk",
+      "input": "Y",
+      "group": "Multiplayer"
+     },
+     {
+      "action": "Console",
+      "input": "~ (tilde)",
+      "group": "Interface"
+     }
+    ],
+    "sourceUrl": "https://openarena.ws/",
+    "sourceLabel": "OpenArena",
+    "notes": "Quake III-style defaults; change them in Setup → Controls."
+   }
+  ]
+ },
+ "quake-champions": {
+  "schemes": [
+   {
+    "scheme": "keyboard",
+    "supported": true,
+    "bindings": [
+     {
+      "action": "Move",
+      "input": "W, A, S, D",
+      "group": "Movement"
+     },
+     {
+      "action": "Jump",
+      "input": "Space",
+      "group": "Movement"
+     },
+     {
+      "action": "Crouch / slide",
+      "input": "Left Ctrl",
+      "group": "Movement"
+     },
+     {
+      "action": "Fire",
+      "input": "Left Mouse",
+      "group": "Combat"
+     },
+     {
+      "action": "Alt-fire / zoom",
+      "input": "Right Mouse",
+      "group": "Combat"
+     },
+     {
+      "action": "Champion ability",
+      "input": "Q, E, F",
+      "group": "Combat"
+     },
+     {
+      "action": "Weapons",
+      "input": "1–9",
+      "group": "Combat"
+     },
+     {
+      "action": "Scoreboard",
+      "input": "Tab",
+      "group": "Interface"
+     }
+    ],
+    "sourceUrl": "https://quake.fandom.com/wiki/Quake_Champions",
+    "sourceLabel": "Quake Wiki",
+    "notes": "Every key is rebindable in the game's options."
+   }
+  ]
+ },
+ "quake-ii-enhanced": {
+  "schemes": [
+   {
+    "scheme": "keyboard",
+    "supported": true,
+    "bindings": [
+     {
+      "action": "Move",
+      "input": "W, A, S, D",
+      "group": "Movement"
+     },
+     {
+      "action": "Jump",
+      "input": "Space",
+      "group": "Movement"
+     },
+     {
+      "action": "Crouch",
+      "input": "C",
+      "group": "Movement"
+     },
+     {
+      "action": "Fire",
+      "input": "Left Mouse",
+      "group": "Combat"
+     },
+     {
+      "action": "Next weapon",
+      "input": "Mouse Wheel",
+      "group": "Combat"
+     },
+     {
+      "action": "Use item",
+      "input": "Enter",
+      "group": "Inventory"
+     },
+     {
+      "action": "Inventory",
+      "input": "Tab",
+      "group": "Inventory"
+     },
+     {
+      "action": "Quick save / load",
+      "input": "F6 / F9",
+      "group": "Interface"
+     }
+    ],
+    "sourceUrl": "https://quake.fandom.com/wiki/Quake_II",
+    "sourceLabel": "Quake Wiki — Quake II",
+    "notes": "Every key is rebindable in the game's options."
+   }
+  ]
+ },
+ "rainbow-six-siege": {
+  "schemes": [
+   {
+    "scheme": "keyboard",
+    "supported": true,
+    "bindings": [
+     {
+      "action": "Move",
+      "input": "W, A, S, D",
+      "group": "Movement"
+     },
+     {
+      "action": "Fire",
+      "input": "Left Mouse",
+      "group": "Combat"
+     },
+     {
+      "action": "Aim down sights",
+      "input": "Right Mouse",
+      "group": "Combat"
+     },
+     {
+      "action": "Reload",
+      "input": "R",
+      "group": "Combat"
+     },
+     {
+      "action": "Lean",
+      "input": "Q / E",
+      "group": "Movement"
+     },
+     {
+      "action": "Crouch / prone",
+      "input": "C / Z",
+      "group": "Movement"
+     },
+     {
+      "action": "Gadget",
+      "input": "G",
+      "group": "Combat"
+     },
+     {
+      "action": "Ping",
+      "input": "Middle Mouse",
+      "group": "Multiplayer"
+     },
+     {
+      "action": "Drone view",
+      "input": "Left Ctrl",
+      "group": "Combat"
+     }
+    ],
+    "sourceUrl": "https://rainbowsix.fandom.com/wiki/Tom_Clancy%27s_Rainbow_Six_Siege",
+    "sourceLabel": "Rainbow Six Wiki",
+    "notes": "Every key is rebindable in the game's options."
+   }
+  ]
+ },
+ "shadow-warrior-classic-complete": {
+  "schemes": [
+   {
+    "scheme": "keyboard",
+    "supported": true,
+    "bindings": [
+     {
+      "action": "Move",
+      "input": "W, A, S, D or Arrow keys",
+      "group": "Movement"
+     },
+     {
+      "action": "Fire",
+      "input": "Left Ctrl or Left Mouse",
+      "group": "Combat"
+     },
+     {
+      "action": "Use / open",
+      "input": "Space or E",
+      "group": "Interaction"
+     },
+     {
+      "action": "Run",
+      "input": "Left Shift",
+      "group": "Movement"
+     },
+     {
+      "action": "Jump",
+      "input": "A",
+      "group": "Movement"
+     },
+     {
+      "action": "Crouch",
+      "input": "Z",
+      "group": "Movement"
+     },
+     {
+      "action": "Weapons",
+      "input": "1–0",
+      "group": "Combat"
+     },
+     {
+      "action": "Automap",
+      "input": "Tab",
+      "group": "Interface"
+     }
+    ],
+    "sourceUrl": "https://shadow-warrior.fandom.com/wiki/Shadow_Warrior_(1997)",
+    "sourceLabel": "Shadow Warrior Wiki",
+    "notes": "Every key is rebindable in the game's options."
+   }
+  ]
+ },
+ "star-wars-the-old-republic": {
+  "schemes": [
+   {
+    "scheme": "keyboard",
+    "supported": true,
+    "bindings": [
+     {
+      "action": "Move",
+      "input": "W, A, S, D",
+      "group": "Movement"
+     },
+     {
+      "action": "Autorun",
+      "input": "Num Lock",
+      "group": "Movement"
+     },
+     {
+      "action": "Jump",
+      "input": "Space",
+      "group": "Movement"
+     },
+     {
+      "action": "Abilities",
+      "input": "1–0, Ctrl+1–0, Alt+1–0",
+      "group": "Combat"
+     },
+     {
+      "action": "Interact / loot",
+      "input": "F",
+      "group": "Interaction"
+     },
+     {
+      "action": "Target nearest enemy",
+      "input": "Tab",
+      "group": "Combat"
+     },
+     {
+      "action": "Character sheet",
+      "input": "C",
+      "group": "Interface"
+     },
+     {
+      "action": "Inventory",
+      "input": "I",
+      "group": "Inventory"
+     },
+     {
+      "action": "Map",
+      "input": "M",
+      "group": "Interface"
+     },
+     {
+      "action": "Quest log",
+      "input": "L",
+      "group": "Interface"
+     }
+    ],
+    "sourceUrl": "https://swtor.fandom.com/wiki/Key_bindings",
+    "sourceLabel": "SWTOR Wiki — Key bindings",
+    "notes": "Every key is rebindable in the game's options."
+   }
+  ]
+ },
+ "starcraft": {
+  "schemes": [
+   {
+    "scheme": "keyboard",
+    "supported": true,
+    "bindings": [
+     {
+      "action": "Select",
+      "input": "Left Mouse",
+      "group": "Interaction"
+     },
+     {
+      "action": "Move / attack / rally",
+      "input": "Right Mouse",
+      "group": "Movement"
+     },
+     {
+      "action": "Attack-move",
+      "input": "A + Click",
+      "group": "Combat"
+     },
+     {
+      "action": "Stop",
+      "input": "S",
+      "group": "Combat"
+     },
+     {
+      "action": "Hold position",
+      "input": "H",
+      "group": "Combat"
+     },
+     {
+      "action": "Patrol",
+      "input": "P",
+      "group": "Combat"
+     },
+     {
+      "action": "Control groups",
+      "input": "Ctrl + 1–0 / 1–0",
+      "group": "Interaction"
+     },
+     {
+      "action": "Scroll map",
+      "input": "Arrow keys / Mouse edge",
+      "group": "Camera"
+     },
+     {
+      "action": "Chat",
+      "input": "Enter",
+      "group": "Multiplayer"
+     }
+    ],
+    "sourceUrl": "https://liquipedia.net/starcraft/Hotkeys",
+    "sourceLabel": "Liquipedia — Hotkeys",
+    "notes": "StarCraft: Remastered uses these defaults; building and unit hotkeys follow the on-screen letters."
+   }
+  ]
+ },
+ "stardew-valley": {
+  "schemes": [
+   {
+    "scheme": "keyboard",
+    "supported": true,
+    "bindings": [
+     {
+      "action": "Move",
+      "input": "W, A, S, D",
+      "group": "Movement"
+     },
+     {
+      "action": "Use tool",
+      "input": "Left Mouse",
+      "group": "Interaction"
+     },
+     {
+      "action": "Action / talk / open",
+      "input": "Right Mouse",
+      "group": "Interaction"
+     },
+     {
+      "action": "Open inventory",
+      "input": "E / Esc",
+      "group": "Inventory"
+     },
+     {
+      "action": "Journal",
+      "input": "F",
+      "group": "Interface"
+     },
+     {
+      "action": "Tools / items",
+      "input": "1–0, Mouse Wheel",
+      "group": "Inventory"
+     },
+     {
+      "action": "Map",
+      "input": "M",
+      "group": "Interface"
+     },
+     {
+      "action": "Run toggle",
+      "input": "Left Shift",
+      "group": "Movement"
+     },
+     {
+      "action": "Chat",
+      "input": "T",
+      "group": "Multiplayer"
+     }
+    ],
+    "sourceUrl": "https://stardewvalleywiki.com/Controls",
+    "sourceLabel": "Stardew Valley Wiki — Controls",
+    "notes": "Every key is rebindable in the game's options."
+   },
+   {
+    "scheme": "controller",
+    "supported": true,
+    "bindings": [
+     {
+      "action": "Move",
+      "input": "Left stick",
+      "group": "Movement"
+     },
+     {
+      "action": "Use tool",
+      "input": "X",
+      "group": "Interaction"
+     },
+     {
+      "action": "Action",
+      "input": "A",
+      "group": "Interaction"
+     },
+     {
+      "action": "Menu",
+      "input": "Y",
+      "group": "Interface"
+     },
+     {
+      "action": "Cycle toolbar",
+      "input": "LB / RB",
+      "group": "Inventory"
+     },
+     {
+      "action": "Journal",
+      "input": "Back/View",
+      "group": "Interface"
+     },
+     {
+      "action": "Run",
+      "input": "Left stick (hold B)",
+      "group": "Movement"
+     }
+    ],
+    "sourceUrl": "https://stardewvalleywiki.com/Controls",
+    "sourceLabel": "Stardew Valley Wiki — Controls",
+    "notes": "Xbox layout shown; PlayStation equivalents are used automatically."
+   }
+  ]
+ },
+ "team-fortress-2": {
+  "schemes": [
+   {
+    "scheme": "keyboard",
+    "supported": true,
+    "bindings": [
+     {
+      "action": "Move",
+      "input": "W, A, S, D",
+      "group": "Movement"
+     },
+     {
+      "action": "Jump",
+      "input": "Space",
+      "group": "Movement"
+     },
+     {
+      "action": "Crouch",
+      "input": "Left Ctrl",
+      "group": "Movement"
+     },
+     {
+      "action": "Fire",
+      "input": "Left Mouse",
+      "group": "Combat"
+     },
+     {
+      "action": "Alt-fire",
+      "input": "Right Mouse",
+      "group": "Combat"
+     },
+     {
+      "action": "Reload",
+      "input": "R",
+      "group": "Combat"
+     },
+     {
+      "action": "Weapon slots",
+      "input": "1–3",
+      "group": "Combat"
+     },
+     {
+      "action": "Voice menu",
+      "input": "E / Z / X",
+      "group": "Multiplayer"
+     },
+     {
+      "action": "Scoreboard",
+      "input": "Tab",
+      "group": "Interface"
+     },
+     {
+      "action": "Taunt",
+      "input": "G",
+      "group": "Other"
+     }
+    ],
+    "sourceUrl": "https://wiki.teamfortress.com/wiki/Controls",
+    "sourceLabel": "Official TF2 Wiki — Controls",
+    "notes": "Every key is rebindable in the game's options."
+   }
+  ]
+ },
+ "daggerfall": {
+  "schemes": [
+   {
+    "scheme": "keyboard",
+    "supported": true,
+    "bindings": [
+     {
+      "action": "Move",
+      "input": "W, A, S, D",
+      "group": "Movement"
+     },
+     {
+      "action": "Look",
+      "input": "Mouse",
+      "group": "Camera"
+     },
+     {
+      "action": "Attack",
+      "input": "Left Mouse",
+      "group": "Combat"
+     },
+     {
+      "action": "Use / activate",
+      "input": "Right Mouse",
+      "group": "Interaction"
+     },
+     {
+      "action": "Jump",
+      "input": "Space",
+      "group": "Movement"
+     },
+     {
+      "action": "Run toggle",
+      "input": "Left Shift",
+      "group": "Movement"
+     },
+     {
+      "action": "Inventory",
+      "input": "I",
+      "group": "Inventory"
+     },
+     {
+      "action": "Automap",
+      "input": "Tab",
+      "group": "Interface"
+     },
+     {
+      "action": "Rest",
+      "input": "R",
+      "group": "Interface"
+     },
+     {
+      "action": "Spellbook",
+      "input": "B",
+      "group": "Inventory"
+     }
+    ],
+    "sourceUrl": "https://en.uesp.net/wiki/Daggerfall:Controls",
+    "sourceLabel": "UESP — Daggerfall controls",
+    "notes": "Defaults for Daggerfall Unity; every input is editable in Controls."
+   }
+  ]
+ },
+ "lord-of-the-rings-online": {
+  "schemes": [
+   {
+    "scheme": "keyboard",
+    "supported": true,
+    "bindings": [
+     {
+      "action": "Move",
+      "input": "W, A, S, D",
+      "group": "Movement"
+     },
+     {
+      "action": "Autorun",
+      "input": "Num Lock",
+      "group": "Movement"
+     },
+     {
+      "action": "Jump",
+      "input": "Space",
+      "group": "Movement"
+     },
+     {
+      "action": "Skills",
+      "input": "1–0",
+      "group": "Combat"
+     },
+     {
+      "action": "Target nearest",
+      "input": "Tab",
+      "group": "Combat"
+     },
+     {
+      "action": "Use / loot",
+      "input": "R",
+      "group": "Interaction"
+     },
+     {
+      "action": "Inventory",
+      "input": "B",
+      "group": "Inventory"
+     },
+     {
+      "action": "Map",
+      "input": "M",
+      "group": "Interface"
+     },
+     {
+      "action": "Quest log",
+      "input": "J",
+      "group": "Interface"
+     },
+     {
+      "action": "Character",
+      "input": "C",
+      "group": "Interface"
+     }
+    ],
+    "sourceUrl": "https://lotro-wiki.com/index.php/Key_bindings",
+    "sourceLabel": "LOTRO-Wiki — Key bindings",
+    "notes": "Every key is rebindable in the game's options."
+   }
+  ]
+ },
+ "valorant": {
+  "schemes": [
+   {
+    "scheme": "keyboard",
+    "supported": true,
+    "bindings": [
+     {
+      "action": "Move",
+      "input": "W, A, S, D",
+      "group": "Movement"
+     },
+     {
+      "action": "Walk",
+      "input": "Left Shift",
+      "group": "Movement"
+     },
+     {
+      "action": "Crouch",
+      "input": "Left Ctrl",
+      "group": "Movement"
+     },
+     {
+      "action": "Jump",
+      "input": "Space",
+      "group": "Movement"
+     },
+     {
+      "action": "Fire",
+      "input": "Left Mouse",
+      "group": "Combat"
+     },
+     {
+      "action": "Aim / alt-fire",
+      "input": "Right Mouse",
+      "group": "Combat"
+     },
+     {
+      "action": "Abilities",
+      "input": "C, Q, E, X",
+      "group": "Combat"
+     },
+     {
+      "action": "Reload",
+      "input": "R",
+      "group": "Combat"
+     },
+     {
+      "action": "Buy menu",
+      "input": "B",
+      "group": "Interface"
+     },
+     {
+      "action": "Spike plant / defuse",
+      "input": "4 / hold 4",
+      "group": "Interaction"
+     }
+    ],
+    "sourceUrl": "https://valorant.fandom.com/wiki/Controls",
+    "sourceLabel": "Valorant Wiki — Controls",
+    "notes": "Every key is rebindable in the game's options."
+   }
+  ]
+ }
+}

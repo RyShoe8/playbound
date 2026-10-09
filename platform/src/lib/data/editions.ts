@@ -3204,8 +3204,8 @@ export const editions: EditionSeed[] = [
     installMethod: "external_installer",
     installConfig: {
       external_installer: {
-        url: "https://us.shop.battle.net/en-us/product/starcraft",
-        instructions: "Install Battle.net and select StarCraft (free Anthology).",
+        url: "https://download.battle.net/en-us/desktop",
+        instructions: "Install the Battle.net app, sign in, then choose StarCraft from the game list — the free version includes Brood War.",
       },
     },
     features: ["Singleplayer", "Multiplayer", "Classic Campaign", "Official Matchmaking"],

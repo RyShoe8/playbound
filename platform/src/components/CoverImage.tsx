@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { canOptimizeImage } from "@/lib/imageHosts";
 
 /** Next/Image that disappears on a dead URL so the gradient behind it shows. */
 export function CoverImage({
@@ -18,13 +19,14 @@ export function CoverImage({
 }) {
   const [failed, setFailed] = useState(false);
   if (!src || failed) return null;
-  const remote = /^https?:\/\//i.test(src);
   return (
     <Image
       src={src}
       alt={alt}
       fill
-      unoptimized={remote}
+      // Only hosts next.config allowlists can be optimized; anything else has
+      // to bypass the optimizer or next/image rejects the request.
+      unoptimized={!canOptimizeImage(src)}
       className={cn("object-cover", className)}
       sizes={sizes}
       onError={() => setFailed(true)}

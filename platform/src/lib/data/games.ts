@@ -1787,8 +1787,8 @@ const facts: Game[] = [
        * cannot work.
        */
       kind: "external",
-      url: "https://us.shop.battle.net/en-us/product/starcraft",
-      note: "Free through the Battle.net app. Install Battle.net, then pick StarCraft — the Anthology (StarCraft + Brood War) costs nothing. Remastered is a separate paid upgrade you do not need.",
+      url: "https://download.battle.net/en-us/desktop",
+      note: "StarCraft is free, but Blizzard only distributes it through the Battle.net app. Install Battle.net, sign in, then choose StarCraft from the game list — the free version includes Brood War. StarCraft: Remastered is a separate paid upgrade you do not need.",
     },
     coverImage: "https://opengraph.githubassets.com/1/OpenSCDev/OpenBW",
     screenshots: [
