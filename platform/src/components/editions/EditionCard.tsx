@@ -4,6 +4,7 @@ import { ArrowRight, MessagesSquare } from "lucide-react";
 import type { Game } from "@/lib/data/types";
 import { editionTelemetryProps, type Edition } from "@/lib/editionTypes";
 import { resolveInstallAction } from "@/lib/editionInstall";
+import { canOptimizeImage } from "@/lib/imageHosts";
 import { GameArt } from "@/components/GameArt";
 import { EditionInstallButton } from "./EditionInstallButton";
 import {
@@ -37,7 +38,7 @@ export function EditionCard({
   const discord = edition.links.discord;
   const heroSrc =
     edition.branding.heroImage || edition.branding.logo || game.coverImage || null;
-  const remote = heroSrc ? /^https?:\/\//i.test(heroSrc) : false;
+  const remote = heroSrc ? !canOptimizeImage(heroSrc) : false;
 
   return (
     <div className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-all duration-200 hover:border-primary/40 hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.5)]">

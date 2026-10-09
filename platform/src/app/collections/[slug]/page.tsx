@@ -50,7 +50,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     : `${games.length} free and affordable games`;
 
   return pageMetadata({
-    title: collection.title,
+    // Short names ("Best RTS Games") fall under the 30-character floor on their own.
+    title: [
+      `${collection.title}: ${games.length} Games Picked by PlayBound`,
+      `${collection.title}: ${games.length} Top Picks`,
+      `${collection.title} — ${games.length} Games`,
+      collection.title,
+    ],
     description: `${gamesCountLabel} hand-picked by PlayBound${names ? `, including ${names}` : ""}. ${collection.description}`,
     path: `/collections/${collection.slug}`,
   });

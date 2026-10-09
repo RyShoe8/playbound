@@ -137,3 +137,11 @@ describe("controls on the game page, and the page they link to", () => {
     expect(PAGE).toMatch(/tab === "controls" && !hasControls\(game\.controls\)\) notFound\(\)/);
   });
 });
+
+describe("controls sits straight after Install", () => {
+  it("is listed before servers in the promoted routes", () => {
+    const list = PAGE.slice(PAGE.indexOf("const PROMOTED_ROUTES = ["), PAGE.indexOf("] as const;", PAGE.indexOf("const PROMOTED_ROUTES")));
+    expect(list.indexOf('key: "controls"')).toBeGreaterThan(-1);
+    expect(list.indexOf('key: "controls"')).toBeLessThan(list.indexOf('key: "servers"'));
+  });
+});

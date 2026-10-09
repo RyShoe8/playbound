@@ -15,6 +15,7 @@ import { isTestingGameStatus } from "@/lib/catalogStatus";
 import { listUnlockedByMaster } from "@/lib/masterCopy";
 import { getDeveloper } from "@/lib/developers";
 import { getGameLiveStats, type EntityLiveStats } from "@/lib/liveActivity";
+import { gamePageModified } from "@/lib/pageModified";
 import { listPublicEditionsForGame, hasChoosableEditions } from "@/lib/editions";
 import type { Edition } from "@/lib/editionTypes";
 import { isBrowserGame } from "@/lib/gameLaunch";
@@ -107,17 +108,18 @@ type Tab = (typeof tabs)[number];
 
 /**
  * High-intent sections promoted out of `?tab=` into real indexable URLs.
- * Servers deep-link into the global browser with the game pre-selected.
+ * Controls comes first so it sits straight after Install; Servers deep-link
+ * into the global browser with the game pre-selected.
  * Install stays on the hub as ?tab=install (legacy /install redirects there).
  */
 const PROMOTED_ROUTES = [
-  { key: "servers", label: "servers", href: (slug: string) => `/multiplayer?game=${encodeURIComponent(slug)}` },
   /*
    * Controls is a real URL for the same reason servers is: "<game> keybinds"
    * is a search with intent, and a ?tab= cannot rank because this page's
    * canonical folds every tab variant into one.
    */
   { key: "controls", label: "controls", href: (slug: string) => `/games/${slug}/controls` },
+  { key: "servers", label: "servers", href: (slug: string) => `/multiplayer?game=${encodeURIComponent(slug)}` },
 ] as const;
 
 /** Tabs that remain as query params — low search value, app-like content. */
@@ -215,6 +217,7 @@ export async function GamePageFrame({
     })),
   ]);
   const choosable = hasChoosableEditions(editions);
+  const lastModified = gamePageModified(game, editions, gameMods);
   const signedIn = Boolean(session?.user);
 
   const activeOffer = gameOffers.find((o) => o.isActive) || null;
@@ -229,6 +232,7 @@ export async function GamePageFrame({
       <JsonLd
         data={graph(
           videoGameSchema(game, developer, {
+            dateModified: lastModified,
             liveStats: {
               playingNow: liveStats.playingNow,
               playersThisMonth: liveStats.playersThisMonth,
@@ -527,6 +531,14 @@ export async function GamePageFrame({
           </Suspense>
         )}
         {tab === "controls" && <GameControlsContent game={game} />}
+        {lastModified && (
+          <p className="mt-10 text-xs text-muted-foreground">
+            Last updated{" "}
+            <time dateTime={lastModified}>
+              {new Date(lastModified).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" })}
+            </time>
+          </p>
+        )}
       </div>
     </div>
   );

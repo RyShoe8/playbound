@@ -162,6 +162,8 @@ export function videoGameSchema(
      * numbers instead of a static review count.
      */
     liveStats?: { playingNow: number; playersThisMonth: number; asOf: string };
+    /** Newest change to the game, its editions or its mods (see pageModified.ts). */
+    dateModified?: string | null;
   }
 ): Json {
   const priceCents = gamePriceCents(game);
@@ -188,6 +190,7 @@ export function videoGameSchema(
     applicationSubCategory: game.genres[0],
     fileSize: `${game.sizeMB} MB`,
     datePublished: String(game.releaseYear),
+    ...(opts?.dateModified ? { dateModified: opts.dateModified } : {}),
     license: game.license,
     isAccessibleForFree: priceCents === 0,
     ...(sameAs.length ? { sameAs } : {}),
