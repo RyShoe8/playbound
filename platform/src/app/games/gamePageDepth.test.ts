@@ -35,18 +35,37 @@ function overviewTab(): string {
   return PAGE.slice(start, i + 1);
 }
 
-describe("media is part of the game page", () => {
-  it("the overview renders the media gallery, not just the tab", () => {
-    expect(overviewTab()).toMatch(/<MediaTab game=\{game\} \/>/);
+describe("media lives in its own tab, second after Overview", () => {
+  it("the overview does not embed the gallery again", () => {
+    /*
+     * The gallery used to be repeated at the bottom of the overview as well as
+     * behind the Media tab. The hero reel already carries the media on the
+     * overview, so the duplicate block is gone.
+     */
+    expect(overviewTab()).not.toMatch(/<MediaTab game=\{game\} \/>/);
   });
 
-  it("it is gated on there being media, so no empty heading appears", () => {
-    /*
-     * MediaTab renders its heading and counts unconditionally, so an
-     * ungated call would put "Media" over nothing on every game without
-     * screenshots.
-     */
-    expect(overviewTab()).toMatch(/hasMedia\(game\) &&/);
+  it("the tab order is Overview, Media, Editions, Install, then the rest", () => {
+    const order = [...PAGE.matchAll(/data-tab="(overview|media|editions|install)"/g)].map((m) => m[1]);
+    expect(order.slice(0, 4)).toEqual(["overview", "media", "editions", "install"]);
+    const list = PAGE.slice(PAGE.indexOf("const tabs = ["), PAGE.indexOf("] as const;"));
+    const at = (name: string) => list.indexOf(`"${name}"`);
+    expect(at("media")).toBeGreaterThan(at("overview"));
+    expect(at("editions")).toBeGreaterThan(at("media"));
+    expect(at("install")).toBeGreaterThan(at("editions"));
+  });
+
+  it("Media and Editions are not listed a second time with the trailing tabs", () => {
+    expect(PAGE).toMatch(/t !== "install" && t !== "media" && t !== "editions"/);
+  });
+
+  it("the Editions tab only appears for games that have a real choice of edition", () => {
+    expect(PAGE).toMatch(/\(choosable \|\| tab === "editions"\)/);
+    expect(PAGE).toMatch(/\{tab === "editions" && \(/);
+  });
+
+  it("the tab is gated on there being media, so it never opens onto nothing", () => {
+    expect(PAGE).toMatch(/hasMedia\(game\) \|\| tab === "media"/);
     expect(PAGE).toMatch(/function hasMedia\(game: Game\): boolean/);
   });
 

@@ -1206,7 +1206,7 @@ function MediaTab({
             <ChevronDown className="size-4 text-muted-foreground transition-transform duration-200 group-open:rotate-180" />
           </summary>
           <div className="p-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {screenshots.map((src) => (
+            {screenshots.map((src, i) => (
               <a
                 key={src}
                 href={src}
@@ -1217,7 +1217,7 @@ function MediaTab({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={src}
-                  alt={`${edition.name} screenshot`}
+                  alt={`${edition.name} screenshot ${i + 1} of ${screenshots.length}`}
                   className="h-full w-full object-cover"
                 />
               </a>

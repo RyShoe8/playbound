@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { gamesByDeveloper, listGames } from "@/lib/catalog";
 import { Globe, MapPin, Newspaper } from "lucide-react";
@@ -8,7 +9,7 @@ import { CompatibleCardRow } from "@/components/CompatibleCardRow";
 import { getCatalogLiveStats, playingNowBySlug } from "@/lib/liveActivity";
 import { Avatar, Badge, SectionHeader, StatTile } from "@/components/ui/bits";
 import { withOutboundUtm } from "@/lib/utm";
-import { pageMetadata } from "@/lib/seo";
+import { buildDescription, pageMetadata } from "@/lib/seo";
 import { absoluteUrl } from "@/lib/site";
 import { JsonLd, graph, itemListSchema, breadcrumbSchema } from "@/components/JsonLd";
 
@@ -64,14 +65,25 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
    * rather than a wrong one — but setting it here is still correct.
    */
   const games = await gamesByDeveloper(dev.slug);
-  const titles = games.slice(0, 3).map((g) => g.title);
-  const madeBy = titles.length
-    ? ` Free games from ${dev.name} in the PlayBound catalog: ${titles.join(", ")}.`
-    : "";
+  const n = games.length;
+  const sentence = (text?: string | null) => {
+    const t = (text || "").trim();
+    return t && !/[.!?]$/.test(t) ? `${t}.` : t;
+  };
+  // Lead with the fact the page exists for — who this is and what they made —
+  // then the developer's own words. All games are named while they fit.
+  const lead = n
+    ? `${dev.name} on PlayBound: ${n} game${n === 1 ? "" : "s"} — ${games.map((g) => g.title).join(", ")}.`
+    : `${dev.name} — developer profile on PlayBound.`;
 
   return pageMetadata({
-    title: `${dev.name} — Free Games & Downloads`,
-    description: `${dev.tagline || dev.about || `${dev.name} builds free games.`}${madeBy}`,
+    title: [
+      `${dev.name} — Games & Developer Profile`,
+      `${dev.name} — Games on PlayBound`,
+      `${dev.name}: Developer Profile`,
+      dev.name,
+    ],
+    description: buildDescription([lead, sentence(dev.tagline), sentence(dev.about)]),
     path: `/developers/${dev.slug}`,
     /*
      * This page renders a games list and nothing else, so a developer with no
@@ -189,6 +201,27 @@ export default async function DeveloperPage({ params }: { params: Promise<{ slug
         <SectionHeader title="Games" subtitle={`Everything by ${dev.name} on PlayBound`} />
         <CompatibleCardRow games={devGames} playingNowBySlug={playingNowBySlug(liveStats)} />
       </section>
+
+      {/* The cards above are filtered to the viewer's device; this list is not, so
+          every game stays linked from its developer for crawlers and for anyone
+          whose filter hides some of them. */}
+      {devGames.length > 0 && (
+        <section>
+          <h2 className="text-lg font-bold">
+            All {devGames.length} {devGames.length === 1 ? "game" : "games"} by {dev.name}
+          </h2>
+          <ul className="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
+            {devGames.map((g) => (
+              <li key={g.slug}>
+                <Link href={`/games/${g.slug}`} className="font-semibold text-primary hover:underline">
+                  {g.title}
+                </Link>
+                {g.tagline ? <span className="text-muted-foreground"> — {g.tagline}</span> : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {releases.length > 0 && (
         <section>

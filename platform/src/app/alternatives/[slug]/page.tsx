@@ -43,7 +43,7 @@ export async function generateMetadata({
 
   return pageMetadata({
     /*
-     * The full title, however long.
+     * Every game name stays in the title.
      *
      * This used to cut anything over 60 characters at its first " & ", which
      * traded an indexed keyword for a cosmetic one. Google indexes the whole
@@ -55,8 +55,17 @@ export async function generateMetadata({
      * It also split inside a game's own name. "Free Alternatives to Axis &
      * Allies & Hearts of Iron" became "Free Alternatives to Axis", which names
      * no game that exists.
+     *
+     * pageMetadata picks the first candidate that fits 60 characters as the
+     * crawler counts them: with the brand if it can, without it if that is what
+     * it takes to keep the full name, and only then the shorter "Alternatives
+     * to" wording. Nothing is cut inside a game's name.
      */
-    title: page.title,
+    title: [
+      page.title,
+      page.title.replace(/^Free Alternatives to /, "Alternatives to "),
+      `Free Alternatives to ${page.commercialGame}`,
+    ],
     description: page.verdict,
     path: `/alternatives/${page.slug}`,
   });

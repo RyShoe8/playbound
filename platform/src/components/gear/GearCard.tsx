@@ -14,7 +14,7 @@ export function GearCard({ gear, rank, notes }: { gear: GearItem; rank?: string 
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={gear.coverImage}
-            alt={gear.title}
+            alt={`${gear.title} product photo`}
             className="h-32 w-32 rounded-lg object-cover sm:h-40 sm:w-40"
           />
         </div>

@@ -90,7 +90,7 @@ export function GameHeroMedia({
       aria-roledescription="carousel"
       aria-label={`${title} media`}
     >
-      <Slide item={item} title={title} poster={poster} playing={playingEmbed === index} onPlay={() => setPlayingEmbed(index)} />
+      <Slide item={item} title={title} poster={poster} position={index + 1} count={count} playing={playingEmbed === index} onPlay={() => setPlayingEmbed(index)} />
 
       {count > 1 ? (
         <>
@@ -153,19 +153,23 @@ function Slide({
   item,
   title,
   poster,
+  position,
+  count,
   playing,
   onPlay,
 }: {
   item: HeroMediaItem;
   title: string;
   poster?: string | null;
+  position: number;
+  count: number;
   playing: boolean;
   onPlay: () => void;
 }) {
   if (item.type === "image") {
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={item.src} alt={`${title} screenshot`} className="h-full w-full object-cover" />
+      <img src={item.src} alt={count > 1 ? `${title} screenshot ${position} of ${count}` : `${title} screenshot`} className="h-full w-full object-cover" />
     );
   }
 
@@ -226,7 +230,7 @@ function Slide({
     <>
       {item.poster ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={item.poster} alt="" className="h-full w-full object-cover" />
+        <img src={item.poster} alt={`${title} video preview`} className="h-full w-full object-cover" />
       ) : (
         <span className="block h-full w-full bg-black" />
       )}

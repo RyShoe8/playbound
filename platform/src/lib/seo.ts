@@ -25,13 +25,66 @@ export function buildOgImageUrl(params: {
   return `/api/og?${query.toString()}`;
 }
 
+/**
+ * Length as an SEO crawler measures it: on the HTML-encoded text. An apostrophe
+ * is served as &#x27; (6 characters), so "Asheron's Call" counts as 19, not 14 —
+ * which is how titles and descriptions that looked fine in the source still got
+ * flagged as too long.
+ */
+export function htmlLength(text: string): number {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/'/g, "&#x27;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").length;
+}
+
 /** Meta descriptions get truncated around 160 chars; keep a little headroom. */
-function clampDescription(text: string, max = 158): string {
+function clampDescription(text: string, max = 156): string {
   const clean = text.replace(/\s+/g, " ").trim();
-  if (clean.length <= max) return clean;
-  const cut = clean.slice(0, max - 1);
-  const lastSpace = cut.lastIndexOf(" ");
-  return `${cut.slice(0, lastSpace > 80 ? lastSpace : cut.length)}…`;
+  if (htmlLength(clean) <= max) return clean;
+  let cut = clean;
+  while (cut.length > 0 && htmlLength(cut) > max - 1) {
+    const space = cut.lastIndexOf(" ");
+    cut = space > 40 ? cut.slice(0, space) : cut.slice(0, -1);
+  }
+  return `${cut.replace(/[\s,;:.—-]+$/, "")}…`;
+}
+
+const TITLE_MAX = 60;
+const TITLE_MIN = 30;
+const TITLE_SUFFIX = ` · ${SITE_NAME}`;
+const TITLE_PAD = " — Free PC Games";
+
+/**
+ * Choose a page title that lands between 30 and 60 characters once the root
+ * layout's "· PlayBound" template is added.
+ *
+ * Pass candidates from most to least descriptive; the first that fits wins.
+ * If none fits with the brand, the shortest one that fits on its own is used
+ * without the suffix (absolute), and as a last resort it is cut at a word.
+ * A title too short to rank gets a neutral descriptor appended.
+ */
+export function fitTitle(input: string | string[]): { text: string; absolute: boolean } {
+  const list = (Array.isArray(input) ? input : [input]).map((t) => t.trim()).filter(Boolean);
+  const brand = htmlLength(TITLE_SUFFIX);
+  for (const t of list) {
+    if (htmlLength(t) + brand > TITLE_MAX) continue;
+    if (htmlLength(t) + brand >= TITLE_MIN) return { text: t, absolute: false };
+    const padded = t + TITLE_PAD;
+    if (htmlLength(padded) + brand <= TITLE_MAX) return { text: padded, absolute: false };
+    return { text: t, absolute: false };
+  }
+  for (const t of list) {
+    if (htmlLength(t) <= TITLE_MAX) return { text: t, absolute: true };
+  }
+  let cut = list[list.length - 1] ?? "";
+  while (cut.length > 0 && htmlLength(cut) > TITLE_MAX) {
+    const space = cut.lastIndexOf(" ");
+    cut = space > 10 ? cut.slice(0, space) : cut.slice(0, -1);
+  }
+  return { text: cut, absolute: true };
 }
 
 /**
@@ -47,7 +100,7 @@ function clampDescription(text: string, max = 158): string {
 export function buildDescription(
   parts: (string | false | null | undefined)[],
   min = 120,
-  max = 158
+  max = 156
 ): string {
   const usable = parts.map((p) => (p ? String(p).trim() : "")).filter(Boolean);
   let out = "";
@@ -75,7 +128,7 @@ export function sizeLabel(sizeMB: number): string {
  * preview domain from being treated as authoritative.
  */
 export function pageMetadata(opts: {
-  title: string;
+  title: string | string[];
   description: string;
   path: string;
   images?: string[];
@@ -86,6 +139,7 @@ export function pageMetadata(opts: {
   tags?: string[];
 }): Metadata {
   const description = clampDescription(opts.description);
+  const fitted = fitTitle(opts.title);
   const canonicalPath = opts.path.startsWith("/") ? opts.path : `/${opts.path}`;
 
   // When a page supplies its own image (or dedicated opengraph-image), use it.
@@ -94,7 +148,7 @@ export function pageMetadata(opts: {
     ? opts.images
     : [
         buildOgImageUrl({
-          title: opts.title,
+          title: fitted.text,
           description,
           path: canonicalPath,
           badge: opts.badge,
@@ -109,7 +163,7 @@ export function pageMetadata(opts: {
   );
 
   return {
-    title: opts.title,
+    title: fitted.absolute ? { absolute: fitted.text } : fitted.text,
     description,
     alternates: { canonical: canonicalPath },
     /*
@@ -123,14 +177,14 @@ export function pageMetadata(opts: {
       type: opts.type ?? "website",
       url: canonicalPath,
       siteName: SITE_NAME,
-      title: opts.title,
+      title: fitted.text,
       description,
       images: absoluteImages,
       ...(opts.publishedTime ? { publishedTime: opts.publishedTime } : {}),
     },
     twitter: {
       card: "summary_large_image",
-      title: opts.title,
+      title: fitted.text,
       description,
       images: absoluteImages,
     },

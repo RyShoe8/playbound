@@ -104,7 +104,7 @@ export function GameArt({
       {game.coverImage ? (
         <CoverImage
           src={game.coverImage}
-          alt={`${game.title} cover`}
+          alt={`${game.title} cover art`}
           className="z-[1]"
           sizes="(max-width: 768px) 50vw, 25vw"
         />

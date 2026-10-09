@@ -217,7 +217,7 @@ function MediaRow({
     <div className="flex items-start gap-3 rounded-lg border border-border/60 p-2">
       {preview && kind === "image" ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={abs} alt="" className="h-14 w-20 shrink-0 rounded object-cover bg-secondary" />
+        <img src={abs} alt={`Preview of ${filename}`} className="h-14 w-20 shrink-0 rounded object-cover bg-secondary" />
       ) : (
         <div className="flex h-14 w-20 shrink-0 items-center justify-center rounded bg-secondary text-[10px] font-semibold text-muted-foreground">
           {kind === "video" ? "Video" : "Image"}

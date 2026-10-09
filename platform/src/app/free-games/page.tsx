@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { Gift, Sparkles, Clock, History } from "lucide-react";
 import { listActiveOffers, listRecentlyExpiredOffers } from "@/lib/freeOffers/service";
 import { ActiveOffersGrid } from "@/components/ActiveOffersGrid";
@@ -17,6 +18,9 @@ export const metadata: Metadata = pageMetadata({
 });
 
 export default async function FreeGamesPage() {
+  // Per-request render, like /community: without it the served HTML holds only the
+  // loading skeleton and the page (H1 included) reaches crawlers as client payload.
+  await connection();
   const [activeOffers, recentlyExpired] = await Promise.all([
     listActiveOffers(),
     listRecentlyExpiredOffers(30),

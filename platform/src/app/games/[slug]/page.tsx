@@ -62,7 +62,8 @@ import {
 import { TelemetryOnce } from "@/components/TelemetryOnce";
 import { pageMetadata, privateMetadata, gameDescription, gameTitle } from "@/lib/seo";
 import { canAccessTesting, viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
-import { comparisonsFeaturing } from "@/lib/data/comparisons";
+import { availableComparisonsFeaturing } from "@/lib/comparisonsAvailable";
+import { withAccurateMultiplayerFaq } from "@/lib/multiplayerFaq";
 import { alternativePages } from "@/lib/data/alternatives";
 import { classifyMediaUrl, heroMediaItems } from "@/lib/mediaEmbed";
 import { GameHeroMedia } from "@/components/GameHeroMedia";
@@ -91,6 +92,8 @@ import {
 
 const tabs = [
   "overview",
+  "media",
+  "editions",
   "install",
   "mods",
   "guides",
@@ -98,7 +101,6 @@ const tabs = [
   "news",
   "discussion",
   "reviews",
-  "media",
   "controls",
 ] as const;
 type Tab = (typeof tabs)[number];
@@ -359,6 +361,40 @@ export async function GamePageFrame({
           overview
         </Link>
 
+        {/* Second, right after Overview. Hidden when the game has no screenshots or
+            trailers, but still reachable (and active) by URL. */}
+        {(hasMedia(game) || tab === "media") && (
+          <Link
+            href={`/games/${game.slug}?tab=media`}
+            data-tab="media"
+            className={cn(
+              "border-b-2 px-3 py-3 text-sm font-semibold whitespace-nowrap capitalize transition-colors",
+              tab === "media"
+                ? "border-primary text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            media
+          </Link>
+        )}
+
+        {/* After Media: the ways to play this game. Only for games that actually have
+            a choice — the generated Official edition alone is not one. */}
+        {(choosable || tab === "editions") && (
+          <Link
+            href={`/games/${game.slug}?tab=editions`}
+            data-tab="editions"
+            className={cn(
+              "border-b-2 px-3 py-3 text-sm font-semibold whitespace-nowrap capitalize transition-colors",
+              tab === "editions"
+                ? "border-primary text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            editions
+          </Link>
+        )}
+
         <Link
           href={`/games/${game.slug}?tab=install`}
           data-tab="install"
@@ -393,7 +429,7 @@ export async function GamePageFrame({
           </Link>
         ))}
 
-        {PARAM_TABS.filter((t) => t !== "overview" && t !== "install")
+        {PARAM_TABS.filter((t) => t !== "overview" && t !== "install" && t !== "media" && t !== "editions")
           .filter((t) => {
             if (t === "mods" && gameMods.length === 0) return false;
             return true;
@@ -438,7 +474,7 @@ export async function GamePageFrame({
                   game,
                   game.installSteps?.length ? game.installSteps : deriveInstallSteps(game)
                 ),
-                faqSchema(game.faq?.length ? game.faq : deriveFaq(game))
+                faqSchema(game.faq?.length ? game.faq : (withAccurateMultiplayerFaq({ ...game, faq: deriveFaq(game) }).faq ?? []))
               )}
             />
             {/* Above the instructions on purpose: if the download is currently
@@ -485,6 +521,11 @@ export async function GamePageFrame({
           </Suspense>
         )}
         {tab === "media" && <MediaTab game={game} />}
+        {tab === "editions" && (
+          <Suspense fallback={<EditionsSectionFallback game={game} editions={editions} />}>
+            <GameEditionsBlock game={game} editions={editions} />
+          </Suspense>
+        )}
         {tab === "controls" && <GameControlsContent game={game} />}
       </div>
     </div>
@@ -516,7 +557,7 @@ async function OverviewTab({
     game.masterCopy ? listUnlockedByMaster(game.slug, { includeTesting }) : Promise.resolve(null),
   ]);
 
-  const relatedComparisons = comparisonsFeaturing(game.slug);
+  const relatedComparisons = await availableComparisonsFeaturing(game.slug);
   const relatedAlternatives = alternativePages.filter((p) =>
     p.picks.some((pick) => pick.slug === game.slug)
   );
@@ -787,26 +828,11 @@ async function OverviewTab({
         </section>
 
         {/*
-         * Screenshots and trailers on the page itself, not only behind the
-         * Media tab.
-         *
-         * Images rank on the strength of the page hosting them, and that is
-         * this page — the one worth ranking. Behind ?tab=media they were on a
-         * URL whose canonical points here, so they were doing nothing for
-         * either. The tab stays for people who want just the gallery.
-         */}
-        {/*
          * A taste of the controls, with the full reference a click away.
          * Answers "what are the keys" on the page worth ranking, while
          * leaving /controls a reason to exist — it targets a different search.
          */}
         <GameControlsSummary game={game} />
-
-        {hasMedia(game) && (
-          <section>
-            <MediaTab game={game} />
-          </section>
-        )}
 
         <Suspense fallback={<GameSimilarFallback />}>
           <GameSimilarBlock game={game} />
@@ -1205,11 +1231,12 @@ function GuidesTab({ gameSlug, isSignedIn, items }: { gameSlug: string; isSigned
 }
 
 /**
- * Whether there is any media worth a section.
+ * Whether there is any media worth a tab.
  *
- * MediaTab renders its heading and counts regardless, so without this an
- * empty gallery would appear on the overview of every game that has no
- * screenshots — a heading over nothing.
+ * MediaTab renders its heading and counts regardless, so without this every
+ * game with no screenshots or trailers would show a Media tab that opens onto
+ * an empty gallery. The overview no longer embeds the gallery — the hero reel
+ * already carries the media there, and this tab is the one place for the full set.
  */
 function hasMedia(game: Game): boolean {
   return (game.screenshots?.filter(Boolean).length ?? 0) > 0 || (game.videos?.length ?? 0) > 0;
@@ -1291,7 +1318,7 @@ function MediaTab({ game }: { game: Game }) {
             <ChevronDown className="size-4 text-muted-foreground transition-transform duration-200 group-open:rotate-180" />
           </summary>
           <div className="p-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {shots.map((src) => (
+            {shots.map((src, i) => (
               <a
                 key={src}
                 href={src}
@@ -1300,7 +1327,7 @@ function MediaTab({ game }: { game: Game }) {
                 className="relative aspect-video overflow-hidden rounded-lg border border-border bg-secondary transition-transform hover:scale-[1.01]"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={src} alt={`${game.title} screenshot`} className="h-full w-full object-cover" />
+                <img src={src} alt={`${game.title} screenshot ${i + 1} of ${shots.length}`} className="h-full w-full object-cover" />
               </a>
             ))}
           </div>

@@ -27,7 +27,7 @@ export function EventCard({
         <div className="relative h-40 w-full overflow-hidden bg-secondary/60">
           <img
             src={cover}
-            alt={event.title}
+            alt={`${event.title} event cover image`}
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-card via-card/20 to-transparent" />

@@ -635,7 +635,7 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
               Click an image to set it as the cover. Remaining images stay in the screenshot gallery.
             </p>
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
-              {candidateImages.map((url) => {
+              {candidateImages.map((url, i) => {
                 const selected = form.coverImage === url;
                 return (
                   <button
@@ -650,7 +650,7 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
                     }
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={url} alt="" className="aspect-square w-full object-cover" />
+                    <img src={url} alt={`Imported gallery image ${i + 1}`} className="aspect-square w-full object-cover" />
                     {selected && (
                       <span className="absolute inset-x-0 bottom-0 bg-primary/90 py-0.5 text-[10px] font-bold text-primary-foreground">
                         Cover
@@ -668,7 +668,7 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
             <label className={label}>Cover Image</label>
             <div className="relative inline-block overflow-hidden rounded-md border border-border">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={form.coverImage} alt="Cover" className="h-24 w-auto object-cover" />
+              <img src={form.coverImage} alt="Gear cover image preview" className="h-24 w-auto object-cover" />
               <button
                 type="button"
                 onClick={() => patch("coverImage", null)}

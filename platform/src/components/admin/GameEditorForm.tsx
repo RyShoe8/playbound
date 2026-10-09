@@ -1110,7 +1110,7 @@ export function GameEditorForm({
           {form.coverImage ? (
             <div className="flex items-start gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={form.coverImage} alt="Cover" className="h-28 w-20 rounded-md object-cover border border-border" />
+              <img src={form.coverImage} alt="Game cover image preview" className="h-28 w-20 rounded-md object-cover border border-border" />
               <button
                 type="button"
                 className="text-xs font-semibold text-destructive"
@@ -1124,14 +1124,14 @@ export function GameEditorForm({
           )}
           {(form.screenshots?.length ?? 0) > 0 && (
             <div className="flex flex-wrap gap-2">
-              {form.screenshots!.map((src) => {
+              {form.screenshots!.map((src, i) => {
                 const isCover = form.coverImage === src;
                 return (
                   <div key={src} className="relative">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={src}
-                      alt=""
+                      alt={`Game screenshot ${i + 1}`}
                       className={
                         "h-20 w-32 rounded-md object-cover border " +
                         (isCover ? "border-primary ring-2 ring-primary/40" : "border-border")

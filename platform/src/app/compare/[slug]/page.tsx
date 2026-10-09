@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ExternalLink, Scale } from "lucide-react";
 import { getGame } from "@/lib/catalog";
-import { comparisons, comparisonsBySlug } from "@/lib/data/comparisons";
+import { comparisonsBySlug } from "@/lib/data/comparisons";
+import { availableComparisons } from "@/lib/comparisonsAvailable";
 import { pageMetadata, sizeLabel } from "@/lib/seo";
 import { PlayCta } from "@/components/GameCard";
 import { Badge } from "@/components/ui/bits";
@@ -16,8 +17,8 @@ import {
 import { absoluteUrl } from "@/lib/site";
 import { withOutboundUtm } from "@/lib/utm";
 
-export function generateStaticParams() {
-  return comparisons.map((c) => ({ slug: c.slug }));
+export async function generateStaticParams() {
+  return (await availableComparisons()).map((c) => ({ slug: c.slug }));
 }
 
 export async function generateMetadata({
@@ -30,7 +31,11 @@ export async function generateMetadata({
   if (!cmp) return { title: "Not Found" };
 
   return pageMetadata({
-    title: `${cmp.title} — Which Should You Play?`,
+    title: [
+      `${cmp.title} — Which Should You Play?`,
+      `${cmp.title}: Which to Play?`,
+      cmp.title,
+    ],
     description: cmp.verdict,
     path: `/compare/${cmp.slug}`,
   });

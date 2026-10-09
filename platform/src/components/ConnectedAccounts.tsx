@@ -53,7 +53,7 @@ export function ConnectedAccounts({
                 {discordProfile.avatar && (
                   <img
                     src={discordProfile.avatar}
-                    alt={discordProfile.username}
+                    alt={`${discordProfile.username}'s Discord avatar`}
                     className="size-6 rounded-full"
                   />
                 )}

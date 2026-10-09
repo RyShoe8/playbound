@@ -1,3 +1,4 @@
+import { fitTitle, htmlLength } from "@/lib/seo";
 import { describe, it, expect } from "vitest";
 import {
   gameTitle,
@@ -222,3 +223,52 @@ describe("OpenGraph Image & Metadata Generation", () => {
   });
 });
 
+
+describe("fitTitle / htmlLength (crawler-measured lengths)", () => {
+  const brand = " · PlayBound";
+  const total = (t: { text: string; absolute: boolean }) =>
+    htmlLength(t.text) + (t.absolute ? 0 : htmlLength(brand));
+
+  it("counts an apostrophe as the 6 characters it is served as", () => {
+    expect(htmlLength("Asheron's")).toBe(14);
+    expect(htmlLength("A & B")).toBe(9);
+  });
+
+  it("falls back through candidates until the branded title fits", () => {
+    const t = fitTitle([
+      "Asheron's Call vs EverQuest — Which Should You Play?",
+      "Asheron's Call vs EverQuest: Which to Play?",
+      "Asheron's Call vs EverQuest",
+    ]);
+    expect(t.text).toBe("Asheron's Call vs EverQuest: Which to Play?");
+    expect(total(t)).toBeLessThanOrEqual(60);
+  });
+
+  it("drops the brand when even the bare title is too long to carry it", () => {
+    const t = fitTitle("Star Wars: The Old Republic vs Knights of the Old Republic");
+    expect(t.absolute).toBe(true);
+    expect(total(t)).toBeLessThanOrEqual(60);
+  });
+
+  it("cuts a title that cannot fit at all at a word boundary", () => {
+    const t = fitTitle("An Extremely Long Title That Goes On And On Well Past Any Reasonable Limit For A Search Result");
+    expect(htmlLength(t.text)).toBeLessThanOrEqual(60);
+    expect(t.text.endsWith(" ")).toBe(false);
+  });
+
+  it("pads a title too short to rank", () => {
+    const t = fitTitle("Hidden Gems");
+    expect(t.text).toBe("Hidden Gems — Free PC Games");
+    expect(total(t)).toBeGreaterThanOrEqual(30);
+    expect(total(t)).toBeLessThanOrEqual(60);
+  });
+
+  it("keeps descriptions under 160 even when apostrophes inflate them", () => {
+    const m = pageMetadata({
+      title: "X",
+      description: "It's ".repeat(60),
+      path: "/x",
+    });
+    expect(htmlLength(String(m.description))).toBeLessThanOrEqual(158);
+  });
+});

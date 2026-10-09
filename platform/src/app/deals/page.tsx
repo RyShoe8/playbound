@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { BadgePercent } from "lucide-react";
 import { listActiveOffers } from "@/lib/freeOffers/service";
 import { listDiscountedGames, DEEP_DISCOUNT_MIN_PERCENT } from "@/lib/deals";
@@ -32,6 +33,12 @@ import { absoluteUrl } from "@/lib/site";
  */
 
 export default async function DealsPage() {
+  // Per-request render, like /community: without it the served HTML holds only the
+  // loading skeleton and the page (H1 included) reaches crawlers as client payload.
+  await connection();
+  // Per-request render, like /community: without it the served HTML is only the
+  // loading skeleton and the page (H1 included) arrives as client payload.
+  await connection();
   const [activeOffers, discounted] = await Promise.all([
     listActiveOffers(),
     listDiscountedGames(),

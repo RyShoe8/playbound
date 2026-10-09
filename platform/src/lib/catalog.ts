@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { withAccurateMultiplayerFaq } from "@/lib/multiplayerFaq";
 import { unstable_cache } from "next/cache";
 import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
@@ -405,8 +406,10 @@ function toGame(doc: LeanGame): Game {
     gogStoreUrl: (doc.gogStoreUrl as string) || undefined,
     externalIds: (doc.externalIds as Game["externalIds"]) || undefined,
   };
-  return repairControllerClaims(
-    repairBrowserOnlyFromSeed(attachLauncherInstall(repairMorrowindMultiplayerFromSeed(base, seed), doc))
+  return withAccurateMultiplayerFaq(
+    repairControllerClaims(
+      repairBrowserOnlyFromSeed(attachLauncherInstall(repairMorrowindMultiplayerFromSeed(base, seed), doc))
+    )
   );
 }
 

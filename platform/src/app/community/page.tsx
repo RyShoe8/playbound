@@ -13,7 +13,7 @@ import { EmptyHint, SectionHeader } from "@/components/ui/bits";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Community",
+  title: "Community — Reviews, Guides & Discussions",
   description:
     "Guides, discussion and reviews from players of the free games in the PlayBound catalog.",
   path: "/community",

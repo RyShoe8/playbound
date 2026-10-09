@@ -264,7 +264,7 @@ export default async function EventDetailPage({ params }: Props) {
         <div className="relative h-48 sm:h-64 w-full overflow-hidden rounded-2xl border border-border/80 bg-card/60 shadow-lg shadow-black/20">
           <img
             src={event.coverImage}
-            alt={event.title}
+            alt={`${event.title} event cover image`}
             className="h-full w-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />

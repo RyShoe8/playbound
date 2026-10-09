@@ -93,7 +93,7 @@ export function FreeGameCard({
         {coverImage && !imgFailed ? (
           <Image
             src={coverImage}
-            alt={displayTitle}
+            alt={`${displayTitle} cover art`}
             fill
             sizes={landscape ? "(min-width: 1024px) 300px, (min-width: 640px) 45vw, 90vw" : "(max-width: 640px) 250px, 276px"}
             className="object-cover transition-transform duration-300 group-hover:scale-105"

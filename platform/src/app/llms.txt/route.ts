@@ -2,7 +2,7 @@ import { listGames, collections } from "@/lib/catalog";
 import { cacheLife, cacheTag } from "next/cache";
 import { listDevelopers } from "@/lib/developers";
 import { alternativePages } from "@/lib/data/alternatives";
-import { comparisons } from "@/lib/data/comparisons";
+import { availableComparisons } from "@/lib/comparisonsAvailable";
 import { listWeeklyIssues } from "@/lib/weekly";
 import { SITE_URL, SITE_NAME, QUALITY_BAR } from "@/lib/site";
 import { sizeLabel } from "@/lib/seo";
@@ -125,7 +125,7 @@ async function buildLlmsTxt(): Promise<string> {
 
   lines.push("## Head-to-head comparisons");
   lines.push("");
-  for (const c of comparisons) {
+  for (const c of await availableComparisons()) {
     lines.push(`- [${c.title}](${SITE_URL}/compare/${c.slug}): ${c.verdict}`);
   }
   lines.push("");

@@ -47,7 +47,7 @@ function publicHostFrom(siteUrl: string): string {
 export const SITE_TAGLINE = "Discover. Play. Connect.";
 
 export const SITE_DESCRIPTION =
-  "PlayBound finds great free and affordable games with lasting value: memorable solo adventures, strong multiplayer, and mods and total conversions that give you more to play. We test them and make the best versions easier to enjoy.";
+  "Great free and affordable PC games with lasting value: memorable solo adventures, strong multiplayer, and mods that give you more to play.";
 
 /**
  * One line for the share card.
