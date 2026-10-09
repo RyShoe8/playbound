@@ -13,7 +13,6 @@ import {
   LibraryBig,
   Megaphone,
   MessagesSquare,
-  Mouse,
   Play,
   Puzzle,
   Shield,
@@ -40,11 +39,9 @@ const nav = [
    * Game Deals took the nav slot Weekly had. The newsletter archive is still
    * live at /weekly and still linked from the admin, it just no longer earns
    * primary navigation now that curation is built around free-and-high-value
-   * games. Placed above Gear deliberately: Gear sells hardware, this is about
-   * the games themselves.
+   * games.
    */
   { href: "/deals", label: "Game Deals", icon: BadgePercent },
-  { href: "/gear", label: "Gear", icon: Mouse },
   { href: "/feedback", label: "Provide Feedback", icon: Megaphone },
 ];
 

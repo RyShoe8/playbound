@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { canViewAdmin } from "@/lib/adminAccess";
-import { Gamepad2, House, LibraryBig, Mouse, Puzzle, Shield, Swords } from "lucide-react";
+import { Gamepad2, House, LibraryBig, Puzzle, Shield, Swords } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
@@ -13,7 +13,6 @@ const items = [
   { href: "/mods", label: "Mods", icon: Puzzle },
   { href: "/multiplayer", label: "Multiplayer", icon: Swords },
   { href: "/library", label: "Library", icon: LibraryBig },
-  { href: "/gear", label: "Gear", icon: Mouse },
 ];
 
 export function MobileNav() {
@@ -36,7 +35,7 @@ export function MobileNav() {
      *
      * `flex-1` is `flex: 1 1 0%`, but a flex item keeps `min-width: auto` and
      * so refuses to shrink below its own icon-plus-label width. At the 10px
-     * these labels are set in, seven of those still fit on a 360px screen — the
+     * these labels are set in, the original seven still fit on a 360px screen — the
      * row only breaks once the text is rendered larger than asked for, which is
      * routine on a phone: Chrome for Android inflates small text via font
      * boosting, and accessibility text settings do the same. Measured on a
@@ -53,7 +52,7 @@ export function MobileNav() {
     <nav
       className={cn(
         "fixed inset-x-0 bottom-0 z-40 grid w-full max-w-[100vw] overflow-hidden border-t border-border bg-sidebar/95 backdrop-blur-md lg:hidden",
-        isAdmin ? "grid-cols-7" : "grid-cols-6"
+        isAdmin ? "grid-cols-6" : "grid-cols-5"
       )}
     >
       {navItems.map(({ href, label, icon: Icon }) => (

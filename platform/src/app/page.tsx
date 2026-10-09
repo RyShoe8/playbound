@@ -1,17 +1,15 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { Newspaper, Server } from "lucide-react";
-import { getGame, listGames, listGamesNewestFirst, mostPopularGames } from "@/lib/catalog";
+import { ArrowRight, Server, Swords } from "lucide-react";
+import { listGames, listGamesNewestFirst, mostPopularGames } from "@/lib/catalog";
 import { listCollections } from "@/lib/collections";
 import { listMods } from "@/lib/mods";
-import { listServersForGame } from "@/lib/servers/registry";
 import { toHomeCardGame } from "@/lib/discoverListing";
 import { FeaturedModsRow } from "@/components/access/FeaturedModsRow";
 import { FeaturedCollectionsRow } from "@/components/access/FeaturedCollectionsRow";
-import { NewsletterForm } from "@/components/NewsletterForm";
 import { FreeGamesSection, FreeGamesSectionFallback } from "@/components/FreeGamesSection";
-import { RecaptchaNotice } from "@/components/RecaptchaNotice";
 import { HomeGamesSections } from "@/components/HomeGamesSections";
 import { HomeHeroPromoSection } from "@/components/HomeHeroPromoSection";
 import { PlayWithFriends } from "@/components/friends/PlayWithFriends";
@@ -167,21 +165,23 @@ export default async function HomePage() {
         <FreeGamesSection />
       </Suspense>
 
-      {/* ── Newsletter ─────────────────────────────────────────── */}
-      <section className="overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/20 via-card to-card p-6 sm:p-8">
-        <Badge tone="brand">
-          <Newspaper className="size-3" /> The PlayBound Weekly
-        </Badge>
-        <h2 className="mt-3 text-2xl font-extrabold tracking-tight">
-          Something new to play, every single week.
-        </h2>
-        <p className="mt-2 max-w-lg text-sm text-muted-foreground">
-          One email every Wednesday with what&apos;s worth playing. No spam, unsubscribe any time.
-        </p>
-        <div className="relative mt-5">
-          <NewsletterForm />
+      {/* ── Start a party ───────────────────────────────────────── */}
+      <section className="flex flex-col gap-5 rounded-2xl border border-border bg-gradient-to-br from-primary/20 via-card to-card p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <Badge tone="brand">
+            <Swords className="size-3" /> Play together
+          </Badge>
+          <h2 className="mt-3 text-2xl font-extrabold tracking-tight">Start a party</h2>
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+            Connect through a virtual LAN, bring couch co-op online, or launch a dedicated server for supported games.
+          </p>
         </div>
-        <RecaptchaNotice className="mt-3" />
+        <Link
+          href="/multiplayer?startParty=1"
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition hover:brightness-110"
+        >
+          Start a party <ArrowRight className="size-4" />
+        </Link>
       </section>
 
       {/* ── Latest + Most popular (client-filtered for compatibility) */}

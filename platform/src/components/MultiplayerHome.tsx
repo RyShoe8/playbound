@@ -56,8 +56,16 @@ export function MultiplayerHome({
   const wantsServers = queryTab === "servers" || Boolean(searchParams.get("game"));
 
   // Create party drawer
-  const [createPartyOpen, setCreatePartyOpen] = useState(false);
+  const [createPartyOpen, setCreatePartyOpen] = useState(
+    signedIn && searchParams.get("startParty") === "1"
+  );
   const [selectedGameForParty] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (searchParams.get("startParty") === "1" && !signedIn) {
+      window.location.assign("/login?callbackUrl=%2Fmultiplayer%3FstartParty%3D1");
+    }
+  }, [searchParams, signedIn]);
 
   // Looking to party state
   const [ltpDrawerOpen, setLtpDrawerOpen] = useState(false);
