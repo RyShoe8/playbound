@@ -27,6 +27,17 @@ const BASIC_FEATURES = [
 ];
 const PLAN_NAMES = ["Basic", "Pro", "Extreme"] as const;
 
+const HOSTING_HERO_GAMES: Record<string, string> = {
+  openra: "OpenRA",
+  mindustry: "Mindustry",
+  supertuxkart: "SuperTuxKart",
+  xonotic: "Xonotic",
+  openttd: "OpenTTD",
+  hedgewars: "Hedgewars",
+  "warzone-2100": "Warzone 2100",
+  "0ad": "0 A.D.",
+};
+
 export default async function HostingPage() {
   const [[basic, pro, extreme], inventory, popular] = await Promise.all([
     Promise.all([loadPublicTier("basic"), loadPublicTier("pro"), loadPublicTier("extreme")]),
@@ -44,7 +55,7 @@ export default async function HostingPage() {
   return <main className="w-full space-y-16 px-4 py-10 sm:px-6 lg:px-8">
     <section className="relative overflow-hidden rounded-3xl border border-border bg-card">
       <div className="absolute inset-0 grid grid-cols-3 sm:grid-cols-4 lg:left-1/3 lg:grid-cols-4" aria-hidden="true">
-        {["openra", "mindustry", "supertuxkart", "xonotic", "openttd", "hedgewars", "warzone-2100", "0ad"].map((slug) => <div key={slug} className="relative overflow-hidden"><Image src={`/games/${slug}/cover.webp`} alt="" fill priority={slug === "openra"} sizes="(max-width: 1024px) 33vw, 17vw" className="object-cover" /></div>)}
+        {Object.entries(HOSTING_HERO_GAMES).map(([slug, name]) => <div key={slug} className="relative overflow-hidden"><Image src={`/games/${slug}/cover.webp`} alt={`${name} cover art`} fill priority={slug === "openra"} sizes="(max-width: 1024px) 33vw, 17vw" className="object-cover" /></div>)}
         <div className="absolute inset-0 bg-card/55 lg:bg-gradient-to-r lg:from-card lg:via-card/70 lg:to-card/20" />
       </div>
       <div className="relative max-w-3xl space-y-5 p-8 sm:p-12 lg:py-20">

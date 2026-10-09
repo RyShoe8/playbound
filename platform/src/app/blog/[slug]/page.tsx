@@ -66,7 +66,7 @@ export default async function BlogPostPage({ params }: Props) {
             <div className="bg-background/40 px-6 py-6 sm:px-10">
               {/* Admin-supplied HTTPS image; the browser loads it directly. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={post.coverImageUrl} alt="" className="mx-auto block h-auto w-auto max-h-[32rem] max-w-full border-0 rounded-xl object-contain sm:max-w-[56rem]" />
+              <img src={post.coverImageUrl} alt={`Cover image for ${post.title}`} className="mx-auto block h-auto w-auto max-h-[32rem] max-w-full border-0 rounded-xl object-contain sm:max-w-[56rem]" />
             </div>
           ) : null}
           <div className="flex flex-wrap gap-x-6 gap-y-2 border-b border-border px-6 py-5 text-sm text-muted-foreground sm:px-10">

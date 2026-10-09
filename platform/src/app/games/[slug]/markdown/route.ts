@@ -1,7 +1,7 @@
 import { getGame } from "@/lib/catalog";
 import { getDeveloper } from "@/lib/developers";
 import { modsForGame } from "@/lib/mods";
-import { comparisonsFeaturing } from "@/lib/data/comparisons";
+import { availableComparisonsFeaturing } from "@/lib/comparisonsAvailable";
 import { alternativePages } from "@/lib/data/alternatives";
 import { issueForGame } from "@/lib/weekly";
 import { SITE_URL, QUALITY_BAR } from "@/lib/site";
@@ -34,7 +34,7 @@ export async function GET(
   const developer = await getDeveloper(game.developerSlug);
   const mods = await modsForGame(game.slug);
   const issue = await issueForGame(game.slug);
-  const cmps = comparisonsFeaturing(game.slug);
+  const cmps = await availableComparisonsFeaturing(game.slug);
   const alts = alternativePages.filter((p) =>
     p.picks.some((pick) => pick.slug === game.slug)
   );

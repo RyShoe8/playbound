@@ -201,7 +201,7 @@ export default async function GearProductPage({
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   src={gear.coverImage}
-                  alt={gear.title}
+                  alt={`${gear.title} product photo`}
                   className="w-full rounded-2xl border border-border bg-secondary/20 object-cover"
                 />
               ) : (
@@ -220,7 +220,7 @@ export default async function GearProductPage({
                       src={url}
                       // `gear.name` until the read layer was typed — the model
                       // has no such field, so every alt read "undefined photo 1".
-                      alt={`${gear.title} photo ${i + 1}`}
+                      alt={`${gear.title} product photo ${i + 1}`}
                       className="h-20 w-auto rounded-md border border-border object-cover"
                     />
                   ))}

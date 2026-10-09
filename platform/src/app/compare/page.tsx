@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Scale } from "lucide-react";
-import { comparisons } from "@/lib/data/comparisons";
+import { availableComparisons } from "@/lib/comparisonsAvailable";
 import { pageMetadata } from "@/lib/seo";
 import { JsonLd, graph, breadcrumbSchema, ORGANIZATION_ID } from "@/components/JsonLd";
 import { absoluteUrl } from "@/lib/site";
@@ -12,7 +12,8 @@ export const metadata = pageMetadata({
   path: "/compare",
 });
 
-export default function CompareIndexPage() {
+export default async function CompareIndexPage() {
+  const comparisons = await availableComparisons();
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
       <JsonLd

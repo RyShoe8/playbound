@@ -113,7 +113,7 @@ export default async function DeveloperDashboard() {
                   {g.coverImage ? (
                     <Image
                       src={String(g.coverImage)}
-                      alt={String(g.title)}
+                      alt={`${String(g.title)} cover art`}
                       fill
                       className="object-cover"
                     />

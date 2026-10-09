@@ -5,7 +5,7 @@ import { listAllPublicEditions } from "@/lib/editions";
 import { listDevelopers } from "@/lib/developers";
 import { listMods } from "@/lib/mods";
 import { alternativePages } from "@/lib/data/alternatives";
-import { comparisons } from "@/lib/data/comparisons";
+import { availableComparisons } from "@/lib/comparisonsAvailable";
 import { listWeeklyIssues } from "@/lib/weekly";
 import { listPublishedBlogPosts } from "@/lib/blog";
 import { listPublishedGear } from "@/lib/gear";
@@ -197,7 +197,7 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly" as const,
       priority: 0.8,
     })),
-    ...comparisons.map((c) => ({
+    ...(await availableComparisons()).map((c) => ({
       url: `${SITE_URL}/compare/${c.slug}`,
       changeFrequency: "monthly" as const,
       priority: 0.8,

@@ -1783,7 +1783,7 @@ export function ControllerClient({
 
               <div className="phone-controller-qr-container">
                 <div className="phone-controller-qr-frame">
-                  <img className="phone-controller-qr-img" src={qrSrc} alt="Scan QR code" width={140} height={140} />
+                  <img className="phone-controller-qr-img" src={qrSrc} alt="QR code that opens this session on your phone" width={140} height={140} />
                 </div>
                 <div className="phone-controller-qr-info">
                   <div className="phone-controller-code-box">

@@ -120,7 +120,7 @@ export function LaunchGatewayClient({
             <div className="relative h-28 w-48 overflow-hidden rounded-2xl border border-border/80 shadow-lg shadow-black/40">
               <img
                 src={coverImage.startsWith("http") ? coverImage : `https://playbound.club${coverImage}`}
-                alt={gameTitle}
+                alt={`${gameTitle} cover art`}
                 className="h-full w-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />

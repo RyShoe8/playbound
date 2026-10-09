@@ -360,7 +360,7 @@ export function DeveloperGameEditorForm({ game }: { game: InitialGame }) {
             </div>
             {form.coverImage && (
               <div className="relative mt-2 h-28 w-48 overflow-hidden rounded-lg border border-border">
-                <Image src={form.coverImage} alt="Cover preview" fill className="object-cover" />
+                <Image src={form.coverImage} alt="Game cover image preview" fill className="object-cover" />
               </div>
             )}
           </div>

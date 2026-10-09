@@ -187,7 +187,7 @@ function heroCard(game: {
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={cover}
-          alt=""
+          alt="Game cover art"
           width={size.width}
           height={size.height}
           style={{

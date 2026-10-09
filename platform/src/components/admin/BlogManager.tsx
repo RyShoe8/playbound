@@ -132,7 +132,7 @@ export function BlogManager({ initialPosts, canEdit }: { initialPosts: BlogPostR
               {draft.coverImageUrl ? (
                 // Admin-selected artwork may be hosted outside our image optimizer.
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={draft.coverImageUrl} alt="" className="aspect-video w-full rounded-xl object-cover" />
+                <img src={draft.coverImageUrl} alt={`Cover image for ${draft.title}`} className="aspect-video w-full rounded-xl object-cover" />
               ) : null}
               <BlogMarkdown content={draft.bodyMarkdown} />
             </div>
@@ -161,7 +161,7 @@ export function BlogManager({ initialPosts, canEdit }: { initialPosts: BlogPostR
                 {draft.coverImageUrl ? (
                   // Admin-selected artwork may be hosted outside our image optimizer.
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={draft.coverImageUrl} alt="Current cover preview" className="aspect-video w-full max-w-2xl rounded-lg border border-border object-cover" />
+                  <img src={draft.coverImageUrl} alt="Current blog cover image preview" className="aspect-video w-full max-w-2xl rounded-lg border border-border object-cover" />
                 ) : null}
                 {canEdit ? <label className="inline-flex cursor-pointer rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:border-primary/40">
                   {busy ? "Uploading…" : "Upload cover image"}

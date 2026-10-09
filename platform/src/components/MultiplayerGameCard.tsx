@@ -30,7 +30,7 @@ export function MultiplayerGameCard({
           {activity.coverImage ? (
             <CoverImage
               src={activity.coverImage}
-              alt={activity.gameTitle}
+              alt={`${activity.gameTitle} cover art`}
               sizes="80px"
               className="transition-transform duration-300 group-hover:scale-105"
             />

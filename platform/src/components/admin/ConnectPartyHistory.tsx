@@ -311,7 +311,7 @@ export function ConnectPartyHistory() {
                                 <div className="relative size-6 shrink-0 overflow-hidden rounded">
                                   <Image
                                     src={game.coverUrl}
-                                    alt={game.title}
+                                    alt={`${game.title} cover art`}
                                     fill
                                     sizes="24px"
                                     className="object-cover"

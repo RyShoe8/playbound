@@ -790,7 +790,7 @@ export function EditionEditorForm({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={form.branding.heroImage}
-              alt="Hero"
+              alt="Edition hero image preview"
               className="h-28 w-44 rounded-md border border-border object-cover"
             />
             <button
@@ -807,14 +807,14 @@ export function EditionEditorForm({
 
         {(form.branding.screenshots?.length ?? 0) > 0 && (
           <div className="flex flex-wrap gap-2">
-            {form.branding.screenshots.map((src) => {
+            {form.branding.screenshots.map((src, i) => {
               const isCover = form.branding.heroImage === src;
               return (
                 <div key={src} className="relative">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={src}
-                    alt=""
+                    alt={`Edition screenshot ${i + 1}`}
                     className={
                       "h-20 w-32 rounded-md object-cover border " +
                       (isCover ? "border-primary ring-2 ring-primary/40" : "border-border")

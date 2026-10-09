@@ -58,7 +58,7 @@ export function DiscountedGameCard({
         {game.coverImage && !imgFailed ? (
           <Image
             src={game.coverImage}
-            alt={title}
+            alt={`${title} cover art`}
             fill
             sizes="(min-width: 1024px) 300px, (min-width: 640px) 45vw, 90vw"
             className="object-cover transition-transform duration-300 group-hover:scale-105"
