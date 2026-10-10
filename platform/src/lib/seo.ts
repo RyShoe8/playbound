@@ -84,7 +84,27 @@ export function fitTitle(input: string | string[]): { text: string; absolute: bo
     const space = cut.lastIndexOf(" ");
     cut = space > 10 ? cut.slice(0, space) : cut.slice(0, -1);
   }
-  return { text: cut, absolute: true };
+  return { text: tidyCut(cut), absolute: true };
+}
+
+/**
+ * A title cut at a word boundary can still end on a separator or a connective
+ * ("… — Heroes of Might and", "… (WoG /"). Drop those, and close nothing: an
+ * unbalanced "(" is removed along with what follows it.
+ */
+export function tidyCut(text: string): string {
+  let out = text.trim();
+  const open = out.lastIndexOf("(");
+  if (open > -1 && out.indexOf(")", open) === -1) out = out.slice(0, open);
+  for (let i = 0; i < 6; i++) {
+    const next = out
+      .replace(/[\s\-–—:;,/&|+(]+$/u, "")
+      .replace(/\s+(?:of|and|the|a|an|in|for|to|with|vs)$/iu, "")
+      .trim();
+    if (next === out) break;
+    out = next;
+  }
+  return out || text.trim();
 }
 
 /**
@@ -263,6 +283,16 @@ export function gameTitle(game: Game): string {
  * The root layout appends " · PlayBound". Avoids redundant game name repetition
  * if the edition name already mentions it.
  */
+/**
+ * Edition title candidates, most to least descriptive, for pageMetadata's
+ * fitter. Long edition and game names used to be hard-cut mid-phrase; offering
+ * shorter whole alternatives lets the fitter pick one that ends cleanly.
+ */
+export function editionTitleOptions(edition: Edition, game: Game): string[] {
+  const typeLabel = EDITION_TYPE_LABELS[edition.type] || "Edition";
+  return [...new Set([editionTitle(edition, game), `${edition.name} — ${typeLabel}`, edition.name])];
+}
+
 export function editionTitle(edition: Edition, game: Game): string {
   const typeLabel = EDITION_TYPE_LABELS[edition.type] || "Edition";
   const lowerEd = edition.name.toLowerCase();

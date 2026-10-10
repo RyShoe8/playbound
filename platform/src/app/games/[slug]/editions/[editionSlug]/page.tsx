@@ -41,7 +41,7 @@ import { INSTALL_METHOD_LABELS, VERIFICATION_DESCRIPTIONS } from "@/lib/editionT
 import type { Edition } from "@/lib/editionTypes";
 import type { Game } from "@/lib/data/types";
 import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
-import { pageMetadata, privateMetadata, editionTitle, editionDescription } from "@/lib/seo";
+import { pageMetadata, privateMetadata, editionTitleOptions, editionDescription } from "@/lib/seo";
 import { withOutboundUtm } from "@/lib/utm";
 import { GameArt } from "@/components/GameArt";
 import { SectionHeader } from "@/components/ui/bits";
@@ -109,10 +109,16 @@ export async function generateMetadata({ params }: { params: Params }) {
   const { slug, editionSlug } = await params;
   const includeTesting = await viewerCanSeeTesting();
   const game = await getGame(slug, { includeTesting });
-  if (!game) return privateMetadata("Edition Not Found");
+  if (!game) {
+    // A renamed game redirects from the page body; anything else is a real 404.
+    // Raised here, before the loading skeleton streams, so crawlers get a 404
+    // status rather than a 200 whose visible content is the skeleton.
+    if (await canonicalSlugFor(slug)) return privateMetadata("Edition Not Found");
+    notFound();
+  }
 
   const edition = await getEditionBySlug(game, editionSlug, { includeHidden: includeTesting });
-  if (!edition) return privateMetadata("Edition Not Found");
+  if (!edition) notFound();
 
   // Unlisted editions stay reachable by URL but must not be indexed.
   if (edition.visibility !== "public" || game.status === "testing" || game.status === "ready") {
@@ -120,7 +126,7 @@ export async function generateMetadata({ params }: { params: Params }) {
   }
 
   return pageMetadata({
-    title: editionTitle(edition, game),
+    title: editionTitleOptions(edition, game),
     description: editionDescription(edition, game),
     path: `/games/${game.slug}/editions/${edition.slug}`,
     images: edition.branding.heroImage

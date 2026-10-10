@@ -77,13 +77,26 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     : `${dev.name} — developer profile on PlayBound.`;
 
   return pageMetadata({
+    /*
+     * Every candidate is a "Developer Profile" title, longest to shortest, so a
+     * page never falls back to a different wording just because the name is
+     * long. The old second option, "Games on PlayBound", also repeated the
+     * brand the root layout appends ("… · PlayBound · PlayBound").
+     */
     title: [
       `${dev.name} — Games & Developer Profile`,
-      `${dev.name} — Games on PlayBound`,
+      `${dev.name} — Developer Profile`,
       `${dev.name}: Developer Profile`,
       dev.name,
     ],
-    description: buildDescription([lead, sentence(dev.tagline), sentence(dev.about)]),
+    description: buildDescription([
+      lead,
+      sentence(dev.tagline),
+      sentence(dev.about),
+      // Many profiles have no tagline or about text yet; without a closing
+      // sentence their descriptions came out at 40–65 characters.
+      `Browse ${dev.name}'s games, editions and install options on PlayBound.`,
+    ]),
     path: `/developers/${dev.slug}`,
     /*
      * This page renders a games list and nothing else, so a developer with no

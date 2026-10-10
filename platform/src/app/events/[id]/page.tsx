@@ -61,11 +61,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       `A PlayBound community event${when ? ` on ${when}` : ""}. See who is going and RSVP.`,
     path: `/events/${id}`,
     /*
-     * Unlisted means reachable by link, not listed publicly — so it should not
-     * turn up in search either. Without this the only thing keeping an unlisted
-     * event out of results was nobody linking to it.
+     * Event pages are never indexed, public or not. Events are time-limited, so
+     * a page is stale within days and would linger in results as an expired
+     * URL; the /events listing is the page that should rank. They stay
+     * followable and shareable, and are left out of the sitemap.
      */
-    noIndex: event?.visibility === "unlisted",
+    noIndex: true,
   });
 }
 

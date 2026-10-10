@@ -9,7 +9,6 @@ import { availableComparisons } from "@/lib/comparisonsAvailable";
 import { listWeeklyIssues } from "@/lib/weekly";
 import { listPublishedBlogPosts } from "@/lib/blog";
 import { listPublishedGear } from "@/lib/gear";
-import { listPublicEvents } from "@/lib/events/service";
 import { MULTIPLAYER_ADAPTERS } from "@/lib/multiplayer/adapters";
 import { SITE_URL } from "@/lib/site";
 import { cacheLife, cacheTag } from "next/cache";
@@ -45,16 +44,14 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
   cacheTag("blog");
   cacheTag("mods");
   cacheTag("gear");
-  cacheTag("events");
   cacheTag(HOSTING_TIER_TAG);
   const hostingGames = publicGames((await loadPublicTier()).tier);
-  const [games, mods, weekly, editions, gear, events, collections, blogPosts] = await Promise.all([
+  const [games, mods, weekly, editions, gear, collections, blogPosts] = await Promise.all([
     listGames(),
     listMods({ view: "card" }),
     listWeeklyIssues(),
     listAllPublicEditions(),
     listPublishedGear(),
-    listPublicEvents({ limit: 100, includePast: false }),
     /*
      * The managed list, not the static seed.
      *
@@ -164,14 +161,12 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
       ...lastMod(g.qualityBar?.lastVerified),
     }));
 
-  const eventRoutes: MetadataRoute.Sitemap = events
-    .filter((e) => e.visibility === "public" || !e.visibility)
-    .map((e) => ({
-      url: `${SITE_URL}/events/${e.id}`,
-      changeFrequency: "daily" as const,
-      priority: 0.6,
-      ...lastMod(e.publishedAt || e.createdAt),
-    }));
+  /*
+   * Individual event pages are deliberately absent. Events are time-limited, so
+   * their pages go stale within days and would only accumulate as expired,
+   * thin URLs. The /events listing (a static route above) is the one page that
+   * represents events in search; each event page is also noindex.
+   */
 
   return [
     ...staticRoutes,
@@ -179,7 +174,6 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
     ...controlsRoutes,
     ...editionRoutes,
     ...playWithFriendsRoutes,
-    ...eventRoutes,
     ...weekly.map((i) => ({
       url: `${SITE_URL}/weekly/${i.slug}`,
       changeFrequency: "yearly" as const,

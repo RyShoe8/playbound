@@ -272,3 +272,19 @@ describe("fitTitle / htmlLength (crawler-measured lengths)", () => {
     expect(htmlLength(String(m.description))).toBeLessThanOrEqual(158);
   });
 });
+
+describe("tidyCut", () => {
+  it("drops dangling separators, connectives and open brackets", async () => {
+    const { tidyCut } = await import("./seo");
+    expect(tidyCut("Heroes of Might and Magic III: Horn of the Abyss (HotA) —")).toBe(
+      "Heroes of Might and Magic III: Horn of the Abyss (HotA)"
+    );
+    expect(tidyCut("Heroes III HD+ — PlayBound Edition — Heroes of Might and")).toBe(
+      "Heroes III HD+ — PlayBound Edition — Heroes of Might"
+    );
+    expect(tidyCut("Heroes of Might and Magic III: In the Wake of Gods (WoG /")).toBe(
+      "Heroes of Might and Magic III: In the Wake of Gods"
+    );
+    expect(tidyCut("Plain title")).toBe("Plain title");
+  });
+});
