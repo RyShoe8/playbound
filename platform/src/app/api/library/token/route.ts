@@ -12,7 +12,7 @@ import {
   revokeLauncherToken,
   userFromLauncherBearer,
 } from "@/lib/library";
-import { saveEvent } from "@/lib/telemetry/server/saveEvent";
+import { trackServerEvent } from "@/lib/telemetry/server/trackServerEvent";
 import { canAccessTesting } from "@/lib/requestIncludesTesting";
 
 export async function POST() {
@@ -29,7 +29,7 @@ export async function POST() {
     const token = await issueLauncherTokenForUser(session.user.id);
 
     if (firstConnect) {
-      void saveEvent({
+      void trackServerEvent({
         event: "launcher_connected",
         properties: { firstConnect: true },
         userId: session.user.id,

@@ -13,8 +13,16 @@ import { userFromLauncherBearer } from "@/lib/library";
 const MAX_PROP_KEYS = 40;
 const MAX_PROP_JSON = 8_000;
 
+/**
+ * Event names are lowercase snake_case identifiers (`launcher_install`).
+ * Rejecting anything else keeps stray or hostile names out of the event
+ * dropdown and Top events; every emitter in the launcher and platform already
+ * conforms.
+ */
+const EVENT_NAME = /^[a-z][a-z0-9_]{1,63}$/;
+
 const ingestSchema = z.object({
-  event: z.string().min(1).max(128),
+  event: z.string().regex(EVENT_NAME, "Event names are lowercase snake_case"),
   properties: z.record(z.string(), z.unknown()).optional().default({}),
   timestamp: z.string().datetime().or(z.string().min(1)),
   sessionId: z.string().min(8).max(128),
@@ -78,15 +86,35 @@ function clientCountry(req: Request): string | null {
   );
 }
 
+/** Longest single string kept. Launcher failure events carry ~2 KB stderr tails. */
+const MAX_STRING = 2_100;
+
+/**
+ * Bound the size of an event's properties without losing the event.
+ *
+ * Long strings are shortened first. If the object is still over budget the
+ * largest values are dropped one at a time (and named in `_droppedKeys`), so an
+ * oversized event keeps its identifying fields — game, edition, code — instead
+ * of being replaced wholesale by a marker.
+ */
 function capProperties(props: Record<string, unknown>): Record<string, unknown> {
-  const entries = Object.entries(props).slice(0, MAX_PROP_KEYS);
   const out: Record<string, unknown> = {};
-  for (const [k, v] of entries) {
-    out[k] = v;
+  for (const [k, v] of Object.entries(props).slice(0, MAX_PROP_KEYS)) {
+    out[k] = typeof v === "string" && v.length > MAX_STRING ? `${v.slice(0, MAX_STRING)}…` : v;
   }
-  const json = JSON.stringify(out);
-  if (json.length <= MAX_PROP_JSON) return out;
-  return { _truncated: true, keys: Object.keys(out).slice(0, 10) };
+  if (JSON.stringify(out).length <= MAX_PROP_JSON) return out;
+
+  const dropped: string[] = [];
+  const bySize = Object.keys(out).sort(
+    (a, b) => JSON.stringify(out[b] ?? null).length - JSON.stringify(out[a] ?? null).length
+  );
+  for (const key of bySize) {
+    if (JSON.stringify(out).length <= MAX_PROP_JSON - 200) break;
+    delete out[key];
+    dropped.push(key);
+  }
+  out._droppedKeys = dropped.slice(0, 20);
+  return out;
 }
 
 export async function OPTIONS(req: Request) {
@@ -135,10 +163,17 @@ export async function POST(req: Request) {
 
   try {
     await dbConnect();
-    const limit = await checkRateLimit(`telemetry:${ip}`, {
-      max: 60,
-      windowMs: 60 * 1000,
-    });
+    /*
+     * Two buckets. Per installation (anonymousId) is the fair one: a launcher
+     * burst of install, launch and library events must not be dropped, and one
+     * household behind a shared address must not starve its neighbours. The
+     * per-IP bucket is only a generous backstop against a flood from one source.
+     */
+    const [perClient, perIp] = await Promise.all([
+      checkRateLimit(`telemetry:anon:${body.anonymousId}`, { max: 120, windowMs: 60 * 1000 }),
+      checkRateLimit(`telemetry:ip:${ip}`, { max: 600, windowMs: 60 * 1000 }),
+    ]);
+    const limit = !perClient.ok ? perClient : perIp;
     if (!limit.ok) {
       return withCors(
         req,

@@ -16,7 +16,7 @@ import {
   sendMail,
 } from "@/lib/mailer";
 import { SITE_URL } from "@/lib/site";
-import { saveEvent } from "@/lib/telemetry/server/saveEvent";
+import { trackServerEvent } from "@/lib/telemetry/server/trackServerEvent";
 
 const bodySchema = z.object({
   email: z.string().trim().email("Enter a valid email address").max(200),
@@ -74,7 +74,7 @@ export async function POST(req: Request) {
         friendRequestInviteEmailHtml(String(inviter.username), friendsUrl)
       ).catch((err) => console.error("friend request invite email failed:", err));
 
-      void saveEvent({
+      void trackServerEvent({
         event: "friend_invite_sent",
         properties: { mode: "existing" },
         userId,
@@ -133,7 +133,7 @@ export async function POST(req: Request) {
       friendInviteEmailHtml(String(inviter.username), signupUrl)
     ).catch((err) => console.error("friend invite email failed:", err));
 
-    void saveEvent({
+    void trackServerEvent({
       event: "friend_invite_sent",
       properties: { mode: "deferred" },
       userId,

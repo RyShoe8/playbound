@@ -3,7 +3,7 @@ import dbConnect from "@/lib/db";
 import Friend from "@/lib/models/Friend";
 import { getFriendsUserId } from "@/lib/friendsAuth";
 import { markFriendRequestNotificationsRead } from "@/lib/notifications";
-import { saveEvent } from "@/lib/telemetry/server/saveEvent";
+import { trackServerEvent } from "@/lib/telemetry/server/trackServerEvent";
 
 /** Recipient declines an incoming pending request → status declined. */
 export async function POST(req: Request) {
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
       userId,
       friendshipId,
     });
-    void saveEvent({
+    void trackServerEvent({
       event: "friend_request_declined",
       properties: { friendshipId },
       userId,

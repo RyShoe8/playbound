@@ -4,11 +4,11 @@ import GuidePost from "@/lib/models/GuidePost";
 import DiscussionTopic from "@/lib/models/DiscussionTopic";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
 import { PeriodStatTile, SectionHeader, StatTile } from "@/components/ui/bits";
-import { daysAgo, periodTelemetryCounts } from "@/lib/admin/analyticsPeriods";
+import { adminDaysAgo, periodTelemetryCounts } from "@/lib/admin/analyticsPeriods";
 
 async function loadContentAnalytics() {
   await dbConnect();
-  const d7 = daysAgo(7);
+  const d7 = await adminDaysAgo(7);
 
   const [
     guidesTotal,

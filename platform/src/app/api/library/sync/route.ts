@@ -7,6 +7,7 @@ import { resolveGameForSync } from "@/lib/catalog";
 import { getMod } from "@/lib/mods";
 import { userFromLauncherBearer } from "@/lib/library";
 import { saveEvent } from "@/lib/telemetry/server/saveEvent";
+import { trackServerEvent } from "@/lib/telemetry/server/trackServerEvent";
 import { removeLibraryModsForGame, revalidateLibraryPages } from "@/lib/libraryCascade";
 
 const syncSchema = z.object({
@@ -134,7 +135,7 @@ export async function POST(req: Request) {
         },
         { upsert: true, returnDocument: "after" }
       );
-      void saveEvent({
+      void trackServerEvent({
         event: "game_installed",
         properties: {
           gameSlug: body.slug,

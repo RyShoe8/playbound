@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { connection } from "next/server";
+import { cookies } from "next/headers";
 import dbConnect from "@/lib/db";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
 import User from "@/lib/models/User";
@@ -9,18 +10,8 @@ import { listDevelopers } from "@/lib/developers";
 import { listAllMods } from "@/lib/mods";
 import { PeriodStatTile, SectionHeader, StatTile } from "@/components/ui/bits";
 import { emptyPeriodCounts, periodTelemetryCounts } from "@/lib/admin/analyticsPeriods";
-
-function startOfDay(d: Date): Date {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
-}
-
-function daysAgo(n: number): Date {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return startOfDay(d);
-}
+import { ADMIN_TZ_COOKIE, normalizeTimeZone, zonedDateEndExclusive, zonedDateStart, zonedDaysAgo } from "@/lib/admin/zonedTime";
+import { TimezoneField } from "@/components/admin/AdminTimezone";
 
 function formatDuration(ms: number): string {
   if (!ms || ms < 0) return "—";
@@ -44,17 +35,20 @@ type SearchParams = Promise<{
   game?: string;
   from?: string;
   to?: string;
+  tz?: string;
 }>;
 
 async function loadGameplayAnalytics(filters: {
   game?: string;
   from?: string;
   to?: string;
+  tz: string;
 }) {
   await dbConnect();
 
-  const d7 = daysAgo(7);
-  const d14 = daysAgo(14);
+  const now = new Date();
+  const d7 = zonedDaysAgo(7, now, filters.tz);
+  const d14 = zonedDaysAgo(14, now, filters.tz);
 
   // Sessions + mobile store launches (not counted toward avg duration).
   const recentFilter: Record<string, unknown> = {
@@ -69,15 +63,12 @@ async function loadGameplayAnalytics(filters: {
   if (filters.game) {
     recentFilter["properties.gameSlug"] = filters.game;
   }
-  const createdAt: { $gte?: Date; $lte?: Date } = {};
-  if (filters.from) {
-    const d = new Date(filters.from);
-    if (!Number.isNaN(d.getTime())) createdAt.$gte = d;
-  }
-  if (filters.to) {
-    const d = new Date(filters.to);
-    if (!Number.isNaN(d.getTime())) createdAt.$lte = d;
-  }
+  // Calendar days in the admin's timezone; "to" includes the whole day it names.
+  const createdAt: { $gte?: Date; $lt?: Date } = {};
+  const fromDate = filters.from ? zonedDateStart(filters.from, filters.tz) : null;
+  const toDate = filters.to ? zonedDateEndExclusive(filters.to, filters.tz) : null;
+  if (fromDate) createdAt.$gte = fromDate;
+  if (toDate) createdAt.$lt = toDate;
   if (Object.keys(createdAt).length) recentFilter.createdAt = createdAt;
 
   const [
@@ -221,7 +212,7 @@ async function loadGameplayAnalytics(filters: {
       {
         $group: {
           _id: {
-            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: filters.tz },
           },
           count: { $sum: 1 },
         },
@@ -327,6 +318,8 @@ export default async function GameplayAnalyticsPage({
   // independently, so the layout's opt-out does not cover this page.
   await connection();
   const sp = await searchParams;
+  const cookieTz = (await cookies()).get(ADMIN_TZ_COOKIE)?.value;
+  const tz = normalizeTimeZone(sp.tz || (cookieTz ? decodeURIComponent(cookieTz) : null));
   let data: Awaited<ReturnType<typeof loadGameplayAnalytics>> | null = null;
   let loadError = false;
   let catalog = { games: 0, mods: 0, developers: 0 };
@@ -364,16 +357,17 @@ export default async function GameplayAnalyticsPage({
         game: sp.game,
         from: sp.from,
         to: sp.to,
+        tz,
       }),
       listAllGames(),
       listAllMods(),
       listDevelopers(),
-      periodTelemetryCounts(TelemetryEvent),
-      periodTelemetryCounts(TelemetryEvent, "game_installed"),
+      periodTelemetryCounts(TelemetryEvent, undefined, {}, tz),
+      periodTelemetryCounts(TelemetryEvent, "game_installed", {}, tz),
       TelemetryEvent.countDocuments({ event: "game_installed" }),
-      periodTelemetryCounts(TelemetryEvent, "mod_installed"),
+      periodTelemetryCounts(TelemetryEvent, "mod_installed", {}, tz),
       TelemetryEvent.countDocuments({ event: "mod_installed" }),
-      periodTelemetryCounts(TelemetryEvent, "mod_download_clicked"),
+      periodTelemetryCounts(TelemetryEvent, "mod_download_clicked", {}, tz),
       TelemetryEvent.countDocuments({ event: "mod_download_clicked" }),
     ]);
     data = gameplay;
@@ -654,6 +648,7 @@ export default async function GameplayAnalyticsPage({
               method="get"
               className="mb-4 flex flex-wrap items-end gap-3"
             >
+              <TimezoneField />
               <label className="flex flex-col gap-1 text-xs font-semibold text-muted-foreground">
                 Game slug
                 <input

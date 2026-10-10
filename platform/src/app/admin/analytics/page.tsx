@@ -1,11 +1,15 @@
 import Link from "next/link";
 import { connection } from "next/server";
+import { cookies } from "next/headers";
 import dbConnect from "@/lib/db";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
 import User from "@/lib/models/User";
 import { Types } from "mongoose";
 import { loadAnalyticsSummary } from "@/lib/admin/analyticsSummary";
-import { PINNED_ANALYTICS_EVENTS } from "@/lib/admin/opsEvents";
+import { formatEventName } from "@/lib/telemetry/eventLabels";
+import { ADMIN_TZ_COOKIE, normalizeTimeZone, zonedDateEndExclusive, zonedDateStart } from "@/lib/admin/zonedTime";
+import { TimezoneField } from "@/components/admin/AdminTimezone";
+import { unstable_cache } from "next/cache";
 import { SectionHeader, StatTile } from "@/components/ui/bits";
 import { LocalTime } from "@/components/LocalTime";
 
@@ -13,6 +17,7 @@ type SearchParams = Promise<{
   event?: string;
   from?: string;
   to?: string;
+  tz?: string;
   includeBots?: string;
 }>;
 
@@ -32,74 +37,66 @@ interface TelemetryDoc {
   properties?: Record<string, unknown>;
 }
 
+/**
+ * Every event name we collect, with 90-day volume, for the filter dropdown.
+ * Cached for five minutes: the list changes only when new instrumentation
+ * ships, and the grouping is not free on a large collection.
+ */
+const loadEventNames = unstable_cache(
+  async (includeBots: boolean) => {
+    await dbConnect();
+    const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const rows = await TelemetryEvent.aggregate<{ _id: string; count: number }>([
+      { $match: { createdAt: { $gte: since }, ...(includeBots ? {} : { isBot: { $ne: true } }) } },
+      { $group: { _id: "$event", count: { $sum: 1 } } },
+      { $sort: { _id: 1 } },
+    ]);
+    return rows.filter((r) => typeof r._id === "string" && r._id).map((r) => ({ name: r._id, count: r.count }));
+  },
+  ["admin-analytics-event-names-v1"],
+  { revalidate: 300 }
+);
+
 async function loadAnalytics(filters: {
   event?: string;
   from?: string;
   to?: string;
   includeBots?: boolean;
+  tz: string;
 }) {
   await dbConnect();
 
   const botCondition = filters.includeBots ? {} : { isBot: { $ne: true } };
   const recentFilter: Record<string, unknown> = { ...botCondition };
   if (filters.event) recentFilter.event = filters.event;
-  const createdAt: { $gte?: Date; $lte?: Date } = {};
-  if (filters.from) {
-    const d = new Date(filters.from);
-    if (!Number.isNaN(d.getTime())) createdAt.$gte = d;
-  }
-  if (filters.to) {
-    const d = new Date(filters.to);
-    if (!Number.isNaN(d.getTime())) createdAt.$lte = d;
-  }
-  if (Object.keys(createdAt).length) recentFilter.createdAt = createdAt;
-
   /*
-   * The latest rows for the pinned operational events, alongside the plain
-   * latest-40.
-   *
-   * The latest-40 is dominated by whatever fires most, so an event that fires
-   * once per installation is never in it by chance — launcher_install could be
-   * arriving steadily and still never appear. This is a second, narrow read so
-   * those events are visible without anyone having to filter for them by name.
-   *
-   * Skipped entirely when the viewer is already filtering by event: the main
-   * table is then showing exactly what was asked for, and a companion table
-   * repeating it would be noise. Uses the {event, createdAt} index.
+   * Date filters are calendar days in the admin's own timezone: "from" starts
+   * at their midnight and "to" includes the whole of that day. (Parsing the raw
+   * string used to mean UTC midnight, so "to" excluded the day it named.)
    */
-  const pinnedFilter: Record<string, unknown> = {
-    ...botCondition,
-    event: { $in: [...PINNED_ANALYTICS_EVENTS] },
-  };
-  if (recentFilter.createdAt) pinnedFilter.createdAt = recentFilter.createdAt;
+  const createdAt: { $gte?: Date; $lt?: Date } = {};
+  const fromDate = filters.from ? zonedDateStart(filters.from, filters.tz) : null;
+  const toDate = filters.to ? zonedDateEndExclusive(filters.to, filters.tz) : null;
+  if (fromDate) createdAt.$gte = fromDate;
+  if (toDate) createdAt.$lt = toDate;
+  if (Object.keys(createdAt).length) recentFilter.createdAt = createdAt;
 
   const SELECT = "event userId sessionId url country browser os device isBot createdAt properties";
 
   // Recent events remain live; only the expensive aggregate cards are shared.
-  const [summary, recent, pinnedRecentRaw] = await Promise.all([
-    loadAnalyticsSummary(Boolean(filters.includeBots)),
+  const [summary, recent, eventNames] = await Promise.all([
+    loadAnalyticsSummary(Boolean(filters.includeBots), filters.tz),
     TelemetryEvent.find(recentFilter)
       .sort({ createdAt: -1 })
-      .limit(40)
+      .limit(50)
       .select(SELECT)
       .lean<TelemetryDoc[]>(),
-    filters.event
-      ? Promise.resolve([] as TelemetryDoc[])
-      : TelemetryEvent.find(pinnedFilter)
-          .sort({ createdAt: -1 })
-          .limit(25)
-          .select(SELECT)
-          .lean<TelemetryDoc[]>(),
+    loadEventNames(Boolean(filters.includeBots)),
   ]);
 
-  // A pinned event busy enough to be in the latest 40 is already on screen;
-  // listing it twice in one view reads as duplicated data.
-  const shownIds = new Set(recent.map((doc) => String(doc._id)));
-  const pinnedRecent = pinnedRecentRaw.filter((doc) => !shownIds.has(String(doc._id)));
-
-  const uniqueUserIds = Array.from(
-    new Set([...recent, ...pinnedRecent].map((doc) => doc.userId))
-  ).filter((id): id is string => typeof id === "string" && Types.ObjectId.isValid(id));
+  const uniqueUserIds = Array.from(new Set(recent.map((doc) => doc.userId))).filter(
+    (id): id is string => typeof id === "string" && Types.ObjectId.isValid(id)
+  );
   const users = await User.find({ _id: { $in: uniqueUserIds } }).select("username").lean<Array<{ _id: unknown; username: string }>>();
   const usernameMap = new Map(users.map((u) => [String(u._id), u.username]));
 
@@ -108,21 +105,7 @@ async function loadAnalytics(filters: {
     username: doc.userId ? usernameMap.get(doc.userId) || null : null,
   });
 
-  /*
-   * One list, newest first. The pinned rows are merged in rather than shown
-   * apart so they are simply *in* Recent events — which is the whole point;
-   * a separate table would be one more place to look.
-   *
-   * They can sort in anywhere, including the bottom with an old timestamp. That
-   * is honest: it says the event exists and when it last happened.
-   */
-  const merged = [...recent, ...pinnedRecent].sort((a, b) => {
-    const at = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const bt = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    return bt - at;
-  });
-
-  return { ...summary, recent: merged.map(withUsername) };
+  return { ...summary, eventNames, recent: recent.map(withUsername) };
 }
 
 function pathFromEvent(doc: {
@@ -153,6 +136,9 @@ export default async function AdminAnalyticsPage({
   const sp = await searchParams;
   let data: Awaited<ReturnType<typeof loadAnalytics>> | null = null;
   let loadError = false;
+  // The form's own tz field wins, then the cookie the admin layout sets, then UTC.
+  const cookieTz = (await cookies()).get(ADMIN_TZ_COOKIE)?.value;
+  const tz = normalizeTimeZone(sp.tz || (cookieTz ? decodeURIComponent(cookieTz) : null));
 
   try {
     data = await loadAnalytics({
@@ -160,6 +146,7 @@ export default async function AdminAnalyticsPage({
       from: sp.from,
       to: sp.to,
       includeBots: Boolean(sp.includeBots),
+      tz,
     });
   } catch (err) {
     console.error("Failed to load telemetry analytics", err);
@@ -173,7 +160,7 @@ export default async function AdminAnalyticsPage({
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight">Analytics</h1>
         <p className="mt-1 text-muted-foreground">
-          Summary metrics refresh every minute. Recent events are live.
+          Summary metrics refresh every minute. Recent events are live. Times and days follow your timezone ({tz}).
         </p>
       </div>
 
@@ -277,7 +264,7 @@ export default async function AdminAnalyticsPage({
                             href={`/admin/analytics?event=${encodeURIComponent(row._id)}`}
                             className="font-semibold text-primary hover:underline"
                           >
-                            {row._id}
+                            {formatEventName(row._id)}
                           </Link>
                         </td>
                         <td className="px-4 py-2.5 font-mono">{row.count}</td>
@@ -292,68 +279,39 @@ export default async function AdminAnalyticsPage({
           <section>
             <SectionHeader
               title="Recent events"
-              /*
-                The count is no longer a flat 40: the newest install and error
-                events are merged in, so the number of rows depends on how many
-                of those were not already in the latest 40.
-              */
               subtitle={
                 sp.event
-                  ? `Filtered to ${sp.event}`
+                  ? `Filtered to ${formatEventName(sp.event)}`
                   : sp.includeBots
-                    ? "Latest events, plus the newest install & error events (including bots)"
-                    : "Latest events, plus the newest install & error events"
+                    ? "The 50 most recent events (including bots)"
+                    : "The 50 most recent events"
               }
             />
-            {/*
-              One click to the events you cannot otherwise reach.
-              The latest-40 table is dominated by whatever fires most, so a
-              once-per-install event is never in it by chance — and typing the
-              exact name into the box below means knowing it is `launcher_install`
-              rather than `launcher_installed`.
-            */}
-            <div className="mb-4 flex flex-wrap items-center gap-1.5">
-              <span className="mr-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                Jump to
-              </span>
-              <Link
-                href="/admin/analytics"
-                className={
-                  sp.event
-                    ? "rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground"
-                    : "rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground"
-                }
-              >
-                All events
-              </Link>
-              {PINNED_ANALYTICS_EVENTS.map((name) => (
-                <Link
-                  key={name}
-                  href={`/admin/analytics?event=${encodeURIComponent(name)}`}
-                  className={
-                    sp.event === name
-                      ? "rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground"
-                      : "rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground"
-                  }
-                >
-                  {name}
-                </Link>
-              ))}
-            </div>
 
             <form
               action="/admin/analytics"
               method="get"
               className="mb-4 flex flex-wrap items-end gap-3"
             >
+              <TimezoneField />
               <label className="flex flex-col gap-1 text-xs font-semibold text-muted-foreground">
                 Event
-                <input
+                <select
                   name="event"
                   defaultValue={sp.event || ""}
-                  placeholder="page_view"
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-                />
+                  className="min-w-[14rem] rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                >
+                  <option value="">All events</option>
+                  {/* A filtered-to event with no recent volume must still be selectable. */}
+                  {sp.event && !data.eventNames.some((e) => e.name === sp.event) && (
+                    <option value={sp.event}>{formatEventName(sp.event)}</option>
+                  )}
+                  {data.eventNames.map((e) => (
+                    <option key={e.name} value={e.name}>
+                      {formatEventName(e.name)} ({e.count.toLocaleString("en-US")})
+                    </option>
+                  ))}
+                </select>
               </label>
               <label className="flex flex-col gap-1 text-xs font-semibold text-muted-foreground">
                 From
@@ -437,7 +395,7 @@ export default async function AdminAnalyticsPage({
                           />
                         </td>
                         <td className="px-4 py-2.5 font-semibold">
-                          {doc.event}
+                          <span title={doc.event}>{formatEventName(doc.event)}</span>
                         </td>
                         <td className="max-w-[220px] truncate px-4 py-2.5 text-muted-foreground">
                           {pathFromEvent(doc)}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LocalTime } from "@/components/LocalTime";
 import type { OpsFamily } from "@/lib/admin/opsEvents";
+import { formatEventName } from "@/lib/telemetry/eventLabels";
 
 type OpsItem = {
   _id: string;
@@ -164,7 +165,7 @@ export function AdminOpsConsole({
                       <LocalTime value={item.createdAt} />
                     </td>
                     <td className={`px-3 py-2 font-semibold ${isFailure ? "text-red-500 font-bold" : isRecovery ? "text-amber-500 font-medium" : ""}`}>
-                      {item.event}
+                      {formatEventName(item.event)}
                     </td>
                     <td className="px-3 py-2">
                       {slug ? (

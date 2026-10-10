@@ -1,4 +1,4 @@
-import { saveEvent } from "@/lib/telemetry/server/saveEvent";
+import { trackServerEvent } from "@/lib/telemetry/server/trackServerEvent";
 
 export type PartyTelemetryProps = {
   partyId?: string;
@@ -30,7 +30,7 @@ export type PartyTelemetryProps = {
  */
 export function trackPartyEvent(event: string, props: PartyTelemetryProps): void {
   const { userId, platform, ...rest } = props;
-  void saveEvent({
+  void trackServerEvent({
     event,
     properties: {
       ...rest,

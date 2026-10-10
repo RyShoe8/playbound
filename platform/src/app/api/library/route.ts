@@ -6,7 +6,7 @@ import dbConnect from "@/lib/db";
 import LibraryEntry from "@/lib/models/LibraryEntry";
 import { gamesFor, getGame } from "@/lib/catalog";
 import type { LibraryEntryDTO } from "@/lib/library";
-import { saveEvent } from "@/lib/telemetry/server/saveEvent";
+import { trackServerEvent } from "@/lib/telemetry/server/trackServerEvent";
 import { libraryDeleteAllPlatforms, platformFromRequest } from "@/lib/libraryPlatform";
 import { buildLibraryUnionEntries } from "@/lib/libraryUnion";
 import { removeLibraryModsForGame, revalidateLibraryPages } from "@/lib/libraryCascade";
@@ -180,7 +180,7 @@ export async function POST(req: Request) {
     // `game_installed` from MobileOutboundCta (keepalive) so analytics survive
     // Play Store navigation — skip those sources here to avoid double counts.
     if (!saving && !alreadyInstalled && source === "manual") {
-      void saveEvent({
+      void trackServerEvent({
         event: "game_installed",
         properties: {
           gameSlug: slug,

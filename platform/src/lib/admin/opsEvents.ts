@@ -18,31 +18,6 @@ export const LAUNCHER_OPS_EVENTS = [
   "error",
 ] as const;
 
-/**
- * Events merged into Recent events on /admin/analytics, however rare they are.
- *
- * Recent events is the latest forty rows, which whatever fires most completely
- * dominates. An event that fires once per installation is therefore never in it
- * by chance, and could be arriving steadily while looking absent.
- *
- * `launcher_install` is the case that prompted this. It fires once per launcher
- * installation and never again — telemetry.js keys the receipt to
- * settings.analyticsId, and settings.json survives upgrades.
- *
- * Deliberately only affects Recent events. Top events stays a straight ranking —
- * if one of these places in the top fifteen it earned the spot on its own.
- *
- * Keep this list short: it is one extra indexed query whose rows share a table
- * people read at a glance.
- */
-export const PINNED_ANALYTICS_EVENTS = [
-  "launcher_install",
-  "launcher_connected",
-  "install_failed",
-  "launch_failed",
-  "error",
-] as const;
-
 export const PARTY_OPS_EVENTS = [
   "party_created",
   "party_joined",

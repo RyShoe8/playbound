@@ -14,7 +14,7 @@ import {
   type UserHardwareForCompat,
 } from "@/lib/hardware";
 import { parseFreeTextRequirementsBlock } from "@/lib/hardware/parseFreeTextRequirements";
-import { saveEvent } from "@/lib/telemetry/server/saveEvent";
+import { trackServerEvent } from "@/lib/telemetry/server/trackServerEvent";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -137,7 +137,7 @@ export async function GET(req: Request) {
   const result = evaluateCompatibility(userCompat, requirements);
 
   if (userId) {
-    void saveEvent({
+    void trackServerEvent({
       event: "compatibility_checked",
       properties: {
         gameSlug,
