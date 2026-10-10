@@ -1,4 +1,5 @@
-import { getGame } from "@/lib/catalog";
+import { notFound } from "next/navigation";
+import { canonicalSlugFor, getGame } from "@/lib/catalog";
 import { pageMetadata, privateMetadata, gameTitle } from "@/lib/seo";
 import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { CONTROL_SCHEME_LABELS, documentedSchemes } from "@/lib/controls/types";
@@ -8,7 +9,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const includeTesting = await viewerCanSeeTesting();
   const game = await getGame(slug, { includeTesting });
-  if (!game) return privateMetadata("Controls Not Found");
+  if (!game) {
+    if (await canonicalSlugFor(slug)) return privateMetadata("Controls Not Found");
+    notFound();
+  }
   if (game.status === "testing" || game.status === "ready") return privateMetadata(gameTitle(game));
   const schemes = documentedSchemes(game.controls).filter((scheme) => scheme.bindings.length > 0).map((scheme) => CONTROL_SCHEME_LABELS[scheme.scheme].toLowerCase());
   const list = schemes.length > 1 ? `${schemes.slice(0, -1).join(", ")} and ${schemes.at(-1)}` : schemes[0] || "keyboard";

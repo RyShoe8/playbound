@@ -49,6 +49,31 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
   "shadow-warrior-classic-complete": {
     launcherInstall: launcherInstallBySlug["shadow-warrior-classic-complete"],
   },
+  /*
+   * Developer credits. A storefront or a duplicate record had been used as the
+   * developer on these rows. Names are written out because the wave resolves
+   * developerName only through the seed studio list, which has no entry for
+   * the CMS-created records. Sources: each game's Wikipedia infobox.
+   */
+  // GOG.com is the storefront. id Software made the original; the Enhanced
+  // release is Nightdive Studios' remaster, but only id Software has a
+  // developer page here.
+  "quake-ii-enhanced": { developerSlug: "id-software", developerName: "id Software" },
+  "rollercoaster-tycoon": { developerSlug: "chris-sawyer-productions", developerName: "Chris Sawyer Productions" },
+  // GOG imports that credited the storefront. Developers per each game's own
+  // store page / Wikipedia infobox.
+  "chris-sawyers-locomotion": { developerSlug: "chris-sawyer-productions", developerName: "Chris Sawyer Productions" },
+  "syndicate-wars": { developerSlug: "bullfrog-productions", developerName: "Bullfrog Productions" },
+  "x-com-ufo-defense": { developerSlug: "mythos-games", developerName: "Mythos Games" },
+  "double-dragon-trilogy": { developerSlug: "dotemu", developerName: "DotEmu" },
+  loria: { developerSlug: "loria", developerName: "Loria" },
+  "norco-act-one": { developerSlug: "geography-of-robots", developerName: "Geography of Robots" },
+  "dink-smallwood-hd": { developerSlug: "rtsoft", developerName: "RTsoft" },
+  // "riot" and "riot-games" were two records for the same studio; riot-games
+  // is the canonical one (it already carries Wild Rift).
+  valorant: { developerSlug: "riot-games", developerName: "Riot Games" },
+  "league-of-legends": { developerSlug: "riot-games", developerName: "Riot Games" },
+
   // Released 27 May 2007 ("Birdie Beta") — Wikipedia infobox, Teeworlds.
   // The GitHub repo only dates to 2010 and is not the release date.
   teeworlds: { releaseYear: 2007 },

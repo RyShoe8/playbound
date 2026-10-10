@@ -150,7 +150,18 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
    */
   "thief-gold": ["releaseYear", "features", "comparableTo"],
   mrboom: ["title", "developerSlug", "releaseYear", "faq", "thatOneThing", "comparableTo"],
-  "rollercoaster-tycoon": ["releaseYear", "features", "faq", "comparableTo"],
+  "rollercoaster-tycoon": ["releaseYear", "features", "faq", "comparableTo", "developerSlug", "developerName"],
+  // Credited to GOG.com, the storefront. The developers are id Software
+  // (original) and Nightdive Studios (the enhanced release).
+  "quake-ii-enhanced": ["developerSlug", "developerName"],
+  // Unreleased GOG imports that named the storefront as developer.
+  "chris-sawyers-locomotion": ["developerSlug", "developerName"],
+  "syndicate-wars": ["developerSlug", "developerName"],
+  "x-com-ufo-defense": ["developerSlug", "developerName"],
+  "double-dragon-trilogy": ["developerSlug", "developerName"],
+  loria: ["developerSlug", "developerName"],
+  "norco-act-one": ["developerSlug", "developerName"],
+  "dink-smallwood-hd": ["developerSlug", "developerName"],
   "thief-2-the-metal-age": ["releaseYear", "features", "comparableTo"],
   "stronghold-crusader-hd": ["releaseYear", "features", "comparableTo"],
   triplea: ["releaseYear", "features", "faq", "thatOneThing", "comparableTo"],
@@ -653,7 +664,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   starcraft: ["thatOneThing", "comparableTo"],
   "team-fortress-2": ["thatOneThing", "comparableTo"],
   alephone: ["thatOneThing", "comparableTo"],
-  valorant: ["thatOneThing", "comparableTo"],
+  valorant: ["thatOneThing", "comparableTo", "developerSlug", "developerName"],
   "counter-strike-2": ["thatOneThing", "comparableTo"],
   "asherons-call": ["thatOneThing", "comparableTo"],
   "asphalt-legends": ["thatOneThing", "comparableTo"],
@@ -747,7 +758,7 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   "dc-universe-online": ["comparableTo"],
   "genshin-impact": ["comparableTo"],
   "dota-2": ["comparableTo"],
-  "league-of-legends": ["comparableTo"],
+  "league-of-legends": ["comparableTo", "developerSlug", "developerName"],
   "quake-champions": ["comparableTo"],
   "microsoft-allegiance": ["comparableTo"],
   "strikers-club": ["comparableTo"],

@@ -135,7 +135,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const includeTesting = await viewerCanSeeTesting();
   const game = await getGame(slug, { includeTesting });
-  if (!game) return privateMetadata("Game Not Found");
+  if (!game) {
+    // Renamed games redirect from the page body; anything else is a real 404.
+    // Raised here, ahead of the streamed loading skeleton, so crawlers see a
+    // 404 status instead of a 200 with no heading.
+    if (await canonicalSlugFor(slug)) return privateMetadata("Game Not Found");
+    notFound();
+  }
   if (isTestingGameStatus(game.status)) return privateMetadata(gameTitle(game));
 
   // The canonical collapses all nine ?tab= variants into one indexable URL.
@@ -322,7 +328,13 @@ export async function GamePageFrame({
                   </Link>
                 ))}
               </div>
-              <h1 className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">{game.title}</h1>
+              {/* The controls tab renders its own h1 ("<game> controls"); a second h1
+                  for the game name made the page ambiguous about its subject. */}
+              {tab === "controls" ? (
+                <p className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">{game.title}</p>
+              ) : (
+                <h1 className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">{game.title}</h1>
+              )}
               <p className="mt-2 text-muted-foreground sm:text-lg">{game.tagline}</p>
               <div className="mt-3">
                 <Suspense fallback={<GameHeroPlayingNowFallback />}>
