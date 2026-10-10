@@ -1,0 +1,110 @@
+M|cry-of-fear|cry-of-fear-epilogue|Cry of Fear: Epilogue Remake|Sitnikov Valeriy|TBD||225,926|3 years||Remake of the Epilogue story chapter.
+M|cry-of-fear|jackies-tapes|Jackie's Tapes|Sitnikov Valeriy|TBD||95,877|1 year||Custom story campaign.
+M|cry-of-fear|nostalgia|Nostalgia|ZikShadow|2013|7.3|86,907|9 years||Custom story.
+M|cry-of-fear|alone-cry-of-fear-custom-story|Alone - Cry of Fear Custom Story|WolfSushi|TBD||64,535|9 years||Custom story campaign.
+M|cry-of-fear|simons-book-the-chronicles|Simon's Book: The Chronicles|TamariTM|TBD||49,603|12 years||Custom story continuing Simon's tale.
+M|cry-of-fear|the-scrolls-of-shaimoon-20-full-version|The Scrolls of Shaimoon 2.0|ZikShadow|2014|8.2|51,809|9 years||Full version of the custom campaign.
+M|cry-of-fear|cry-of-russia|Cry of Russia|Russian roulette Games|2020|8.7|28,920|5 years||Standalone-style horror story mod.
+M|cry-of-fear|cry-of-russia-2|Cry of Russia 2|Russian roulette Games|2021|7.9|22,149|3 years||Sequel to Cry of Russia.
+M|cry-of-fear|lambdacore|Cry Of Fear: Back To Black Mesa|LambdaReactors|2020|10|28,492|6 years||Crossover mod set in Black Mesa.
+M|cry-of-fear|the-hole|The Hole|Theevina|2012|7.7|25,459|13 years||Simon gets lost in the subway tunnels.
+M|thief-gold|thief-gold-hd-texture-mod|Thief Gold HD Texture Mod|Bentraxx Productions|2013|9.6|800,019|4 years||HD texture mod for Thief Gold.
+M|thief-gold|thief-the-black-parade|Thief: The Black Parade|skacky|2023|9.9|142,983|1 year||New campaign playing as Hume, a hardened criminal.
+M|thief-gold|thief-gold-esrgan-pack|Thief Gold ESRGAN Pack|Akven|2020|8.3|26,652|6 years||AI-upscaled textures and cinematics.
+M|thief-2-the-metal-age|thief-2-hd-texture-mod|Thief 2 HD Texture Mod|Bentraxx Productions|2014|9.5|237,900|4 years||HD texture mod for Thief II.
+M|thief-2-the-metal-age|thief-2x-hd-texture-mod|Thief 2X HD Texture Mod|Bentraxx Productions|2015|9.7|89,480|11 years||HD textures for Thief 2X: Shadows of the Metal Age.
+M|thief-2-the-metal-age|thief-ii-esrgan-pack|Thief II ESRGAN Pack|Akven|2020|10|17,065|6 years||AI-upscaled textures and cinematics.
+M|thief-2-the-metal-age|ms-golds-rust|M.S. Golds - Rust|CreationProjects|TBD||11,182|14 years||Fan campaign.
+M|thief-2-the-metal-age|thief-2-30-60-fps-video-pack-esrgan-dain-improved|Thief 2 30 & 60 FPS Video Pack|Leo_Maximus|2020||6,567|6 years||All cutscenes processed with ESRGAN and DAIN.
+M|triplea|twilight-imperium|Twilight Imperium|TripleA map developers|2010||16,003|15 years||Adaptation of the Twilight Imperium board game.
+M|triplea|the-middle-earth|The Middle Earth|TripleA map developers|2010|6|10,819|5 years||Map for fighting the War of the Ring.
+M|triplea|global-war|Global War|TripleA map developers|2010||9,856|15 years||Large global WWII map.
+M|triplea|new-world-order|New World Order|TripleA map developers|2010||10,448|15 years||World War II map starting 1 September 1939.
+M|triplea|napoleonic-empires|Napoleonic Empires|TripleA map developers|2011||7,463|15 years||Europe at war in the Napoleonic era.
+M|triplea|feudal-japan|Feudal Japan|TripleA map developers|2010|8|12,311|15 years||16th-century Japanese civil war.
+M|triplea|tiberian-conquest|Tiberian Conquest|feillyne|2011|10|28,799|15 years||Command & Conquer style map.
+M|triplea|invasion-usa|Invasion USA|TripleA map developers|2010|1|7,808|15 years||Near-future invasion scenario.
+M|freedoom|brutal-ultimate-freedoom|Brutal Ultimate Freedoom|TheMacGyverArchiver|2018||34,519|8 years||Brutal Doom-style gameplay for Freedoom.
+M|freedoom|freedoom-delta|Freedoom Delta|GamingMarine|2019|9|24,901|7 years||Enhanced Freedoom.
+M|freedoom|freedoom-badass-edition|Freedoom Bad*ss Edition|Bad*ss Team|2024|10|13,362|2 months||Gameplay-enhanced edition with regular builds.
+M|freedoom|freedoom-newmaps|Freedoom New Maps|pedroJ|2023|10|12,479|1 week||Replaces maps only, no gameplay changes.
+M|freedoom|freedoom-complete-enhanced|Freedoom Complete Enhanced|AT-3109|2023|8.8|10,877|3 years||Both episodes with smooth water, weapons and more.
+M|freedoom|neural-upscale-packs|Freedoom Neural Upscale packs|turtleboy211|TBD||13,508|1 year||AI-upscaled graphics for Freedoom.
+M|openra|cc-tiberian-sun-project-nemesis|C&C Tiberian Sun: Crystallized Nexus|Astor|TBD||517,194|1 month||Tiberian Sun storyline continuing after the Cabal defeat.
+M|openra|cnc-reimage|C&C Re-Image|Lead Games|TBD||134,554|13 years|TC|Conversion set in the times of the First Tiberium War.
+M|openra|attacque-suprior|Attaque Superieur|GraionDilach|TBD||102,891|6 years||Alternate-history Red Alert style mod set in 1973.
+M|openra|red-alert-unplugged|Red Alert: Unplugged|soscared101|2018|10|71,663|7 years||New story continuing C&C: Red Alert (1996).
+M|openra|medieval-warfare|Medieval Warfare|Medieval Warfare team|TBD||63,616|9 years||Medieval conversion.
+M|openra|cc-meets-star-wars|C&C Meets Star Wars|DanAE111|2013|8.5|55,581|13 years|TC|Star Wars total conversion.
+M|openra|openra-the-great-war-wwi-mod|The Great War (WWI)|Holloweye|TBD||50,660|10 years||World War I mod.
+M|openra|over-powered-mod|Over Powered Mod|boolbada|2017|9|60,193|9 years||Gameplay-focused mod.
+M|openra|dune2k-advanced|Dune 2000 Advanced|SirCakealot|2017|10|45,658|4 years||Improvements to Dune 2000 gameplay and maps.
+M|openra|command-and-conquer-the-forgotten-chapter|C&C: The Forgotten Chapter|TreeForge|TBD||42,737|10 years||Adds a forgotten faction.
+M|shadow-warrior-classic-complete|shadow-warrior-95-ultimate-patch|Shadow Warrior '95 - Honorable Restoration|rapappa_the_pepper|2024|8|16,704|2 months||Restores the October 1995 build.
+M|shadow-warrior-classic-complete|shadow-warrior-high-definition-wang|Shadow Warrior: High Definition Wang|Rockso85|2024||9,172|2 years||HD remaster of Lo Wang assets.
+M|shadow-warrior-classic-complete|the-red-dragon-clan|The Red Dragon Clan|Mark Kaminari00|TBD||7,610|3 years||Fan episode.
+M|shadow-warrior-classic-complete|shadow-warrior-voxel-pack|Shadow Warrior Voxel Pack|Build Voxel Team|2024||6,581|2 years||Voxel model replacements.
+M|shadow-warrior-classic-complete|shadow-warrior-alpha-96-re-build|Shadow Warrior Alpha '96 Re-Build|Life_My_Agony|2024|7|6,005|2 years||Rebuild of the 1996 alpha.
+M|warzone-2100|wz2120mod|WZ2120Mod|WZ2100ModsFan|TBD||67,840|3 years||Remake of the Warzone 2120 mod.
+M|warzone-2100|the-zone-of-war|Warzone Campaign Revival (TZoW)|Black Project Studio|TBD||32,251|6 years||Revival of The Zone of War campaign mod.
+M|warzone-2100|warzone-2100-eastern-front|Warzone 2100 Eastern Front|MikSka|2020||24,314|6 years||Eastern Front themed mod.
+M|openciv3|the-ancient-mediterranean-civ3|The Ancient Mediterranean (Civ3)|Thamis|2002|7.3|46,619|16 years||Civ III scenario (compatibility with OpenCiv3 unverified).
+M|openciv3|stargate-sg1-for-conquest|Stargate SG1 for Conquest|ente90|TBD||25,610|13 years||Civ3 Conquests Stargate mod.
+M|openciv3|star-wars-the-mod-awakens-epic-mod|Star Wars: The Mod Awakens Epic Mod|AJB1|2022||13,122|1 year||Star Wars Civ III mod.
+M|openciv3|civilization-downfall|Civilization: Downfall|Vindsval86|2019||11,382|6 years||Civ III scenario.
+M|wolfenstein|unsung|Unsung|Nembo|2011|8.7|103,416|4 years||World War I adventure in Wolfenstein 3D.
+M|wolfenstein|extreme-wolfenstein-3d|Extreme Wolfenstein 3D v4|Sigma64|2017|9.2|72,371|8 years||Gameplay enhancement mod.
+M|wolfenstein|the-orb-of-dilaaria|The Orb of Dilaaria|winwolf3d|2006|9.3|68,896|11 years||Fantasy adventure episode.
+M|wolfenstein|operation-eisenfaust-legacy|Operation Eisenfaust: Legacy|Team RayCast|2014|8.9|64,276|2 weeks||Story and level-design led campaign.
+M|wolfenstein|wolfenstein-3d-hd|Wolfenstein 3D HD|AstroCreep|2020|10|60,088|4 years||HQ remix for LZWolf with lighting.
+M|wolfenstein|splitwolf|SplitWolf|Team RayCast|2016|7.8|58,287|5 years||Split-screen style mod.
+M|wolfenstein|the-golden-parrot|The Golden Parrot|fraggeur|2019|8.5|60,501|2 years||Adventure episode.
+M|wolfenstein|operation-eisenfaust-origins|Operation Eisenfaust: Origins|Team RayCast|2012|8.9|55,356|10 months||Sci-fi total conversion about the origins of Eisenfaust.
+M|wolfenstein|wolfenstein-reloaded|Wolfenstein Reloaded|KFH Games|2006|8.1|45,885|18 years||Six episodes with 10 maps each and 12 bosses.
+M|wolfenstein|trench-warfare|Trench Warfare|ied_machine|2007|8.8|45,647|14 years||Brings the Wolf3D engine into the trenches.
+M|wolfenstein|operation-serpent|Operation Serpent|tankermottind|2015|8.9|37,237|11 years|TC|Total conversion using the ECWolf source port.
+M|wolfenstein|operation-gral|Operation: Gral|RiotEsper|2018|8|32,688|8 years||A Wolfenstein adventure.
+M|wolfenstein|operation-golden-years|Oldfartenstein 3D|OKducky|2022|10|29,939|3 years||Full three-episode version.
+M|wolfenstein|midnight-assault|Midnight Assault|treesapthief|2024|10|37,684|1 year||Fan campaign.
+M|openarena|openarena-omega|OmegA|Bishop-333|2021|10|47,031|3 weeks||Polishes the original experience with added content.
+M|openarena|oaremix|OARemix|RetroSilva|2014|10|28,632|1 month||Single-player campaign with Arena and CTF maps.
+M|star-wars-galactic-battlegrounds-saga|star-wars-galactic-battlegrounds-expanding-fronts|Expanding Fronts|Expanding Fronts Development Team|2016|9.5|1,664,602|8 months||Large expansion for Galactic Battlegrounds.
+M|star-wars-galactic-battlegrounds-saga|order-64-mod|Order 64 Mod|Peter_BladeFury|2023|8|17,882|1 month||Clone Wars era mod.
+M|star-wars-galactic-battlegrounds-saga|star-wars-return-of-the-confederacy|Star Wars: Return of the Confederacy|gamerjolt90|TBD||9,467|2 years||New campaign mod in development.
+M|renegade-x|renegade-x-red-alert-2|Renegade X: Red Alert 2|Ska-ara|TBD||46,170|6 years|TC|Red Alert 2 total conversion.
+M|barotrauma|barotrauma-world-war-2-mod|Barotrauma World War 2 mod|WhisperingDeath_|TBD||18,237|8 years||World War 2 setting.
+M|the-ur-quan-masters|ur-quan-masters-hd|Ur-Quan Masters HD|dczanik|2012|9.4|66,308|13 years||HD remake with new artwork.
+M|the-ur-quan-masters|project-6014|Project 6014|dczanik|TBD||45,951|13 years||Fan-made sequel set in 2165.
+M|ground-control-2-operation-exodus|gc2-reversal-mod|GC2 Reversal Mod|Flamecurse|2011|10|85,654|5 years||Reverses unit roles and balance.
+M|ground-control-2-operation-exodus|terran-empire|Terran Empire|WackyModder|2006|9.4|54,196|20 years||Gameplay mod.
+M|marathon-2|marathon-world|Marathon World|Dark Design|TBD||6,191|17 years||Small Marathon Infinity modification for Aleph One.
+M|deus-ex-goty-edition|new-vision|New Vision|DaveFace|2012|9.7|1,731,380|4 years||Retexturing mod replacing most textures.
+M|deus-ex-goty-edition|gmdx|GMDX|Totalitarian|2017|9.6|1,083,657|2 years||Gameplay, audio, bug patches, level design and graphics overhaul.
+M|deus-ex-goty-edition|deus-ex-revision|Deus Ex: Revision|Caustic Creative|2015|6.9|1,055,188|2 years||Large revision of the game.
+M|deus-ex-goty-edition|the-nameless-mod|The Nameless Mod|Off Topic Productions|2009|9.7|902,271|11 months||Huge single-player campaign set in Forum City.
+M|deus-ex-goty-edition|project-hdtp|Project HDTP|metche_steele|TBD||644,893|11 years||High Definition Texture Package.
+M|deus-ex-goty-edition|nihilum|Deus Ex: Nihilum|FastGamerr|2013|9.2|555,440|4 months||Mod of the Year 2013 best singleplayer mod.
+M|deus-ex-goty-edition|shifter1|Shifter|yukichigai|2007|9.5|523,723|13 years||Gameplay overhaul that removes frustration.
+M|deus-ex-goty-edition|deus-ex-enhanced|Deus Ex Enhanced|Daemonjax|2011|8.5|246,810|15 years||High-resolution fonts, fixes and more.
+M|deus-ex-goty-edition|terminus-machina|Terminus Machina|SilverSpook|2013|9.9|217,908|8 years||Large singleplayer campaign.
+M|deus-ex-goty-edition|malkavian-mod|Malkavian Mod|Catbag Fansubs|2010|9.7|171,099|15 years||Adventure mod about insanity.
+M|deus-ex-goty-edition|biomod|BioMod|Clorf|2010|9.1|165,987|11 years||Extension of Shifter with biomod gameplay.
+M|deus-ex-goty-edition|helios-texture-overhaul|Helios Texture Overhaul|BerZerker|2019|9|133,428|5 years||Texture overhaul.
+M|deus-ex-goty-edition|redsun-2020|Redsun 2020|Senju|2004|8.3|106,321|2 years||Single-player mod following the nanotech agent Joseph.
+M|deus-ex-goty-edition|the-lay-d-denton-project|The Lay D Denton Project|Lay D Dev|2021|9.8|107,091|1 month||Fully immersive female JC experience.
+M|deus-ex-goty-edition|deus-ex-transcended|Deus Ex: Transcended|Hawkbird|2020|9.6|106,323|4 years||Built largely for first-time players.
+M|deus-ex-goty-edition|zodiac|ZODIAC|SteveTack|2006|9|89,011|2 years||Six single-player missions as Paul Denton.
+M|deus-ex-goty-edition|hardcore-dx|Hardcore DX|HardCoreDX Developers|2003|8.7|83,907|16 years||Replaces difficulties with different game styles.
+M|deus-ex-goty-edition|summer-101|Summer 101|Summer 101 Dev|TBD||64,989|13 years|TC|School-life total conversion.
+M|deus-ex-goty-edition|deus-ex-invisible-war-revised-iwr|Deus Ex: Invisible War (Revised)|Neveov|TBD||65,174|13 years||Revised Invisible War plot.
+M|deus-ex-goty-edition|burden-of-80-proof|Burden of 80 Proof|scottc|2007|8.9|66,337|17 years||Party-goer story campaign.
+M|deus-ex-goty-edition|give-me-deus-ex-augmented-edition|GMDX: Augmented Edition|sarge945|2025|9.1|58,435|6 months||Complete overhaul of GMDX.
+M|deus-ex-goty-edition|deus-ex-apocalypse-inside|Deus Ex: Apocalypse Inside|DeusGroup|TBD||63,858|6 years||New protagonist story.
+M|deus-ex-goty-edition|otchlan-mod-chasm-mod-abyss-mod|Otchlan Mod / Chasm Mod|LEADERgry|2015|9|49,825|5 years||Survival horror after a strange event.
+M|deus-ex-goty-edition|hotel-carone|Hotel Carone|carone|2007|9.2|43,086|11 years||Extra UNATCO single-player mission.
+M|deus-ex-goty-edition|trem|That Resident Evil Mod|Deus - Evil|TBD||94,434|13 years|TC|Resident Evil total conversion.
+M|stalker-anomaly|A:screen-space-shaders|Screen Space Shaders|ModDB addon|2025||2,393,218 downloads|Jul 2025||Graphics shader overhaul (Anomaly 1.5.3).
+M|stalker-anomaly|A:hippos-shaders-and-atmospherics|Atmospherics (Anomaly / GAMMA / EFP)|Hippo|2025||2,028,690 downloads|Oct 2025||1.2 GB weather and atmosphere overhaul.
+M|stalker-anomaly|A:trader-overhaul-complete|Trader Overhaul Complete|ModDB addon|2023||1,972,820 downloads|Aug 2023||Extensive trader rework.
+M|stalker-anomaly|A:dynamic-anomalies-overhaul-dao-read-description-please|Dynamic Anomalies Overhaul (DAO)|ModDB addon|2025||1,794,926 downloads|Jul 2025||Overhauls anomaly behavior and spawning.
+M|stalker-anomaly|A:solarint-gunshot-overhaul|JSRS Sound Mod 4.0|Solarint|2022||1,916,367 downloads|Jul 2022||Complete gunshot sound overhaul.

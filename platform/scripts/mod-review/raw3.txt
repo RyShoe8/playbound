@@ -1,0 +1,71 @@
+M|wolfenstein-enemy-territory|etxreal|ETXreaL|treborator|2011|9.6|165,201|15 years||Graphics mod using the enhanced XreaL renderer.
+M|wolfenstein-enemy-territory|enemy-territory-fortress|Enemy Territory Fortress|Crosseh|2005|7.3|76,223|12 years||Free Fortress-style team gameplay mod.
+M|wolfenstein-enemy-territory|east-frontline|East Frontline|TNR360|TBD||42,640|17 years||1939-1945 Eastern Front realism mod with Russians.
+M|wolfenstein-enemy-territory|splatterladder-wolfet-hd-pack|Splatterladder Wolf:ET HD Pack|WolfRTCW|2019|9|18,905|7 years||HD texture pack.
+M|wolfenstein-enemy-territory|wolfenstein-et-4xai-upscale|Wolfenstein: ET 4xAI UpScale|F.I.M.|2020|10|11,173|6 years||4x ESRGAN texture upscale.
+M|wolfenstein-enemy-territory|falckonetwolfenstein-the-frontline|Wolfenstein: The Frontline|FalcK|2006||19,060|20 years||Realism and fun focused modification.
+M|wolfenstein-enemy-territory|modernfront|ModernFront|thewolfteam|2014|9|18,156|11 years||Modern warfare with two playable sides.
+M|wolfenstein-enemy-territory|et-map-packs|ET map packs|ET_stuff|2015||21,155|11 years||Curated compiled map packs.
+M|wolfenstein-enemy-territory|battle-of-wolken|Battle of Wolken|Chr1s_UK|TBD||12,423|18 years||Mapping project turned full mod.
+M|wolfenstein-enemy-territory|navy-seals-covert-operations-et|Navy SEALs: Covert Operations ET|mod_porter|2015|10|11,266|11 years|TC|Port of Navy SEALs: Covert Operations to ET.
+M|wolfenstein-enemy-territory|et-revaluation|ET-Revaluation|Berzerkr|2007|9.5|17,702|19 years||Optical realism mod.
+M|medal-of-honor-allied-assault|medal-of-honor-allied-assault-hd|Medal of Honor Allied Assault HD|djibe89|2004|9.9|204,368|16 years||High-resolution rework of maps and textures.
+M|medal-of-honor-allied-assault|medal-of-honor-blurred-remembrance|Medal of Honor: Blurred Remembrance|ESCALATION|2016|7.3|167,468|5 years||Full single-player style campaign mod.
+M|medal-of-honor-allied-assault|medal-of-honor-cooperative-gameplay|Medal of Honor: Cooperative|Format lib|2015|9.1|150,790|6 years||Full cooperative multiplayer mod.
+M|medal-of-honor-allied-assault|hi-res-realism-texture-mod|Hi-Res Realism Texture mod|czwarty_|2022|9.4|132,243|7 months||Realistic hi-res textures.
+M|medal-of-honor-allied-assault|surgical-operation-hd|Surgical Operation|fukun|2016|9.1|107,736|2 years||High-quality overhaul.
+M|medal-of-honor-allied-assault|mrw-medal-of-honor-allied-assault-edition|MRW: Medal of honor Allied Assault Edition|Marcomix|2015|8.9|93,215|8 years||Realism and graphics edition.
+M|medal-of-honor-allied-assault|enhanced-textures|Enhanced Textures|ElitedFish|2016|10|61,658|9 years||Higher quality textures that keep the original style.
+M|medal-of-honor-allied-assault|moh-vietnam|MoH: Vietnam|E3D|2007|9|50,494|19 years||Vietnam War conversion.
+M|medal-of-honor-allied-assault|trench-warfare1|Trench Warfare|johnkeel105|2006|8.4|43,431|17 years||WWI mod for Spearhead.
+M|medal-of-honor-allied-assault|medal-of-honor-kriegs-europa|Medal Of Honor: Kriegs Europa Single Player Mod|spzabt111|2024|9|35,418|1 month||Single-player campaign mod.
+M|medal-of-honor-allied-assault|hell-in-the-pacific-total-conversion|Hell in the Pacific Total Conversion|killerwhale|2005|9.8|34,819|10 years|TC|Pacific theater total conversion.
+M|medal-of-honor-allied-assault|moh-allied-assault-mp-textures-hd-1080p|MOH: Allied Assault MP Textures HD-1080p|jadster221|2017|10|35,790|9 years||HD multiplayer textures.
+M|medal-of-honor-allied-assault|war-chest-restored|War Chest Restored|Metlar|2026|9|16,791|4 months||Restores War Chest content.
+M|medal-of-honor-allied-assault|modern-warfare-2|Modern Warfare 2|jv_map|TBD||42,042|20 years|TC|Modern-warfare total conversion.
+M|medal-of-honor-allied-assault|medal-of-honor-coop-hazardmodding|HaZardModding Coop: Medal of Honor|HaZardModding|2018|9.9|57,479|3 weeks||Singleplayer campaigns in co-op.
+M|medal-of-honor-allied-assault|model-of-horror-all-lie-is-salt|Model of Horror: All Lie Is Salt|pingvin66666|2019|10|56,168|7 years|TC|Horror total conversion.
+M|medal-of-honor-allied-assault|city-nights-final|City Nights Final|GenCobra|2003|8.8|24,401|14 years||Classic multiplayer conversion.
+M|heroes-of-might-and-magic-3-complete|horn-of-the-abyss|Horn of the Abyss|HotA Crew|2011|9.9|629,395|9 months||The leading fan expansion for Heroes of Might and Magic III.
+M|heroes-of-might-and-magic-3-complete|h3wog|In the Wake of Gods|WoG Team|TBD||409,659|12 years||Major scripting and gameplay expansion for Heroes III.
+M|heroes-of-might-and-magic-3-complete|h3sw|The Succession Wars|H3SW Team|2018|9.7|357,774|1 year||Large mod for Heroes III (see source page for details).
+M|heroes-of-might-and-magic-3-complete|advanced-classes-mod|Advanced Classes Mod|PerryR|2020|10|66,265|3 years||Adds advanced hero classes.
+M|heroes-of-might-and-magic-3-complete|land-of-new-towns|Land of New Towns|AnT1122|2023||26,759|8 months||Adds 15+ new towns.
+M|heroes-of-might-and-magic-3-complete|heroes-chronicles-fully-compability-hdmod|Heroes Chronicles - Fully Compatibility HD mod|HC_VIP|2022|9.5|50,150|3 months||Launches Chronicles campaigns through a new interface.
+M|heroes-of-might-and-magic-3-complete|heroes-3-all-official-campaigns|Heroes 3 all official campaigns|stf911|2020|9|33,748|6 years||All official 3DO campaigns.
+M|heroes-of-might-and-magic-3-complete|mm6-campaign|M&M 6 Campaign|koval321|TBD||26,413|12 years||Maps modeled on Might and Magic 6 areas.
+M|heroes-of-might-and-magic-3-complete|complete-rampage-a-beatem-up-mod-for-homm3|Complete Rampage|SkarWare|2016|10|42,034|9 years|TC|PvP fighting game built from Heroes III.
+M|stronghold-crusader-hd|stronghold-europe|Stronghold Europe|CyberCorpse|2017|9.7|236,286|6 years||Large content mod for Stronghold Crusader.
+M|stronghold-crusader-hd|kingdom-of-heaven|Kingdom Of Heaven|tanguezo|2007|8.8|139,043|19 years||Kingdom of Heaven themed modification.
+M|stronghold-crusader-hd|essential-stronghold|Essential Stronghold|Antstafer|2021||75,286|1 year||Modpack combining the best Stronghold Crusader mods.
+M|stronghold-crusader-hd|gmb-mod|G.M.B. mod|LORD_VALROY|2011|9|194,634|2 months||Improves Stronghold Crusader gameplay.
+M|stronghold-crusader-hd|stronghold-duc-edition|Stronghold Duc Edition|Yobespierre|2022||54,996|2 years||Replaces AI lords with new ones.
+M|stronghold-crusader-hd|revolution-balance-mod|Revolution Balance Mod|W00D2|2020|9|46,553|5 months||Gameplay balance overhaul.
+M|stronghold-crusader-hd|stronghold-overlords|Stronghold Overlords|Masoxx92|2021||39,835|3 years||Changes AI castles, armies and tactics.
+M|stronghold-crusader-hd|stronghold-witcher|Stronghold Witcher|StrongholdWitcherTeam|2024||15,044|2 years||Witcher characters and content in Stronghold Crusader.
+M|team-fortress-2|lambda-fortress-extended-standalone-port|Lambda Fortress: Extended Standalone Port|pencollective|2022|9|57,537|1 year||Standalone port of Lambda Fortress.
+M|team-fortress-2|team-fortress-2-vintage|Team Fortress 2 Vintage|TF2 Vintage Team|2017|8.4|139,700|4 years||Pre-update era TF2 experience.
+M|team-fortress-2|touhou-fortress-2|Touhou Fortress 2|Vanishing Team|2013|8.2|51,938|13 years||Touhou characters with an auto installer.
+M|team-fortress-2|family-fortress|Family Fortress|Aftermath team|TBD||60,599|18 years||Parody mix of TF2 and Family Guy characters.
+M|team-fortress-2|the-survival-mod-tf2-tsm|The Survival Mod (TF2: TSM)|Z00L|TBD||33,680|14 years||Co-op survival mode.
+M|team-fortress-2|the-great-class-dash|The Great Class Dash|Steaky|2010|9.4|108,305|4 years||Platforming-style game mode.
+M|0ad|oniversalis-age-of-exploration|Oniversalis: Age of Exploration|Vasikle|TBD||41,682|7 years|TC|Set in 1492, the age of exploration.
+M|0ad|derphammer|DerpHammer|Timnaka|2020|10|37,882|6 months||Fantasy mod based on Warhammer.
+M|0ad|2941-ad-fall-of-middle-earth|2941 A.D: Fall of Middle-earth|Ferox Raiders|TBD||37,455|6 years||Middle-earth in the year 2941.
+M|0ad|northern-sunset|Northern Sunset|asmartgoat|TBD||28,332|14 years||Mod focused on the Egyptian empire.
+M|0ad|0-ad-desert-storm|0 A.D. Desert Storm|Idanwin|TBD||28,542|13 years||Modern-era desert warfare.
+M|0ad|march-of-the-roman-empire|March of the Roman Empire|false_god|2018|10|22,117|8 years||Roman campaign content.
+M|0ad|dwarfs|Dwarfs|Council of Modders|TBD||17,090|6 years||Dwarf civilization mod.
+M|0ad|fire-emblem-three-wars|Fire Emblem: Three Wars|CheapestDevTeam|TBD||14,985|2 years|TC|Fire Emblem: Three Houses themed total conversion.
+M|0ad|fall-and-rise-of-egypt|Fall And Rise Of Egypt|Flashpoint_Odin|TBD||16,123|8 years||Egypt map pack.
+M|0ad|garamantians|Garamantians|0adModders|2021||11,085|5 years||Adds the Garamantian civilization.
+M|0ad|hyrule-conquest-revival|Hyrule Conquest: Revival|Knights of the Square Laptop|2025||16,840|1 week||Revival of the Hyrule Conquest mod.
+M|alien-swarm|lambda-wars|Lambda Wars|Lambda Wars Dev Team|2012|9.3|1,395,268|7 years||Half-Life 2 RTS, now a free standalone on Steam.
+M|alien-swarm|black-mesa-swarm|Black Mesa Swarm|Black Mesa Development Company|2013|4|41,454|11 years|TC|Remakes Black Mesa as an Alien Swarm total conversion.
+M|alien-swarm|omnibus|Omnibus|Point De Fusion|TBD||191,094|16 years||New campaigns and character models.
+M|alien-swarm|hypovolemia|Hypovolemia|Rose-Boom|2012|8.8|231,362|2 years||Gore-heavy action conversion.
+M|alien-swarm|swarm-keeper|Swarm Keeper|Sander|2012|8|37,396|13 years||Dungeon Keeper inspired modification.
+M|alien-swarm|alien-swarm-director-mod|Alien Swarm Director Mod|ppittle|2011|9.7|61,456|12 years||Adds a Left 4 Dead style director.
+M|alien-swarm|swarm-director-2|Swarm Director 2|BenLubar|2014|9.2|41,427|11 years||Director gameplay overhaul.
+M|alien-swarm|sourceforts-2|SourceForts 2|SourceForts 2 Team|TBD||14,840|10 years||Fort building and base defense.
+M|alien-swarm|the-survival|The Survival|The Survival Dev Team|TBD||33,758|11 years|TC|Episodic survival total conversion.

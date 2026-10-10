@@ -332,3 +332,68 @@ test("GUID matching ignores case and surrounding whitespace", () => {
   const upper = "  030000004C050000E60C000000000000,PS5,a:b1,platform:Windows,  \n";
   assert.equal(missingControllerMappings(upper).length, 1);
 });
+
+/* ── mods ─────────────────────────────────────────────────────────────── */
+
+const { modContentFor, withModContent, withoutModContent } = require("./openMwConfig");
+
+/** readdir over a fake tree: { dir: [[name, isDir], ...] } keyed by path.join'd dir. */
+const fakeList = (tree) => (dir) => {
+  const entries = tree[dir];
+  if (!entries) throw new Error("ENOENT");
+  return entries.map(([name, isDir]) => ({ name, isDirectory: () => Boolean(isDir) }));
+};
+
+test("modContentFor finds plugins inside a Data Files folder, masters first", () => {
+  const root = path.join("mods", "foo");
+  const tree = {
+    [root]: [["Data Files", true], ["readme.txt", false]],
+    [path.join(root, "Data Files")]: [["b.esp", false], ["a.esm", false], ["tex.bsa", false]],
+  };
+  const found = modContentFor(root, fakeList(tree));
+  assert.equal(found.dataDir, path.join(root, "Data Files"));
+  assert.deepEqual(found.plugins, ["a.esm", "b.esp"]);
+  assert.deepEqual(found.archives, ["tex.bsa"]);
+});
+
+test("modContentFor accepts plugins loose at the top and works down a wrapper folder", () => {
+  const top = path.join("mods", "bar");
+  assert.equal(modContentFor(top, fakeList({ [top]: [["x.omwaddon", false]] })).dataDir, top);
+  const wrapped = path.join(top, "Bar-1.2");
+  const found = modContentFor(top, fakeList({ [top]: [["Bar-1.2", true]], [wrapped]: [["x.esp", false]] }));
+  assert.equal(found.dataDir, wrapped);
+});
+
+test("modContentFor reports nothing when there is no plugin or archive", () => {
+  const root = path.join("mods", "empty");
+  assert.deepEqual(modContentFor(root, fakeList({ [root]: [["notes.txt", false]] })), {
+    dataDir: null,
+    plugins: [],
+    archives: [],
+  });
+});
+
+test("withModContent appends a marked block and leaves the rest of the config alone", () => {
+  const cfg = 'data="D:\Morrowind\Data Files"\ncontent=Morrowind.esm\n';
+  const out = withModContent(cfg, "foo", "C:\mods\foo", ["a.esp"], ["t.bsa"]);
+  assert.ok(out.startsWith(cfg.trimEnd()));
+  assert.match(out, /# PlayBound mod: foo \(begin\)\ndata="C:\mods\foo"\nfallback-archive=t\.bsa\ncontent=a\.esp\n# PlayBound mod: foo \(end\)/);
+});
+
+test("registering twice replaces the block rather than duplicating it", () => {
+  const cfg = "content=Morrowind.esm\n";
+  const once = withModContent(cfg, "foo", "C:\a", ["a.esp"]);
+  const twice = withModContent(once, "foo", "C:\b", ["b.esp"]);
+  assert.equal((twice.match(/\(begin\)/g) || []).length, 1);
+  assert.ok(!twice.includes("a.esp"));
+  assert.ok(twice.includes("content=b.esp"));
+});
+
+test("withoutModContent removes only that mod and restores the original config", () => {
+  const cfg = "content=Morrowind.esm\n";
+  const two = withModContent(withModContent(cfg, "foo", "C:\a", ["a.esp"]), "bar", "C:\b", ["b.esp"]);
+  const removed = withoutModContent(two, "foo");
+  assert.ok(!removed.includes("a.esp") && removed.includes("b.esp"));
+  assert.equal(withoutModContent(withModContent(cfg, "foo", "C:\a", ["a.esp"]), "foo").trimEnd(), cfg.trimEnd());
+  assert.equal(withoutModContent(cfg, "nope"), cfg);
+});

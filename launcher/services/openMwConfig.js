@@ -241,7 +241,95 @@ function resolveMorrowindData(candidates, exists) {
   return null;
 }
 
+
+/* ── Mods ─────────────────────────────────────────────────────────────── */
+
+const PLUGIN_EXT = /\.(esm|esp|omwaddon|omwscripts|omwgame)$/i;
+const ARCHIVE_EXT = /\.bsa$/i;
+
+/**
+ * Where an extracted Morrowind mod keeps its plugins, and what it ships.
+ *
+ * Mods arrive in three shapes: plugins loose at the top, plugins inside a
+ * "Data Files" folder, or plugins one or two folders down because the author
+ * zipped their working directory. The shallowest directory that holds a plugin
+ * or archive is the one OpenMW should be given as `data=`.
+ *
+ * `list` is readdirSync(dir, { withFileTypes: true }) so tests can fake a tree.
+ */
+function modContentFor(modDir, list, maxDepth = 3) {
+  const queue = [{ dir: modDir, depth: 0 }];
+  while (queue.length) {
+    const { dir, depth } = queue.shift();
+    let entries;
+    try {
+      entries = list(dir);
+    } catch {
+      continue;
+    }
+    const files = entries.filter((e) => !e.isDirectory()).map((e) => e.name);
+    const plugins = files.filter((f) => PLUGIN_EXT.test(f));
+    const archives = files.filter((f) => ARCHIVE_EXT.test(f));
+    if (plugins.length || archives.length) {
+      const rank = (n) => (/\.(esm|omwgame)$/i.test(n) ? 0 : 1);
+      plugins.sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+      return { dataDir: dir, plugins, archives };
+    }
+    if (depth >= maxDepth) continue;
+    const dirs = entries.filter((e) => e.isDirectory() && !e.name.startsWith("."));
+    // A "Data Files" folder is the conventional root; look there first.
+    dirs.sort((a, b) => (/^data files$/i.test(b.name) ? 1 : 0) - (/^data files$/i.test(a.name) ? 1 : 0));
+    for (const d of dirs) queue.push({ dir: path.join(dir, d.name), depth: depth + 1 });
+  }
+  return { dataDir: null, plugins: [], archives: [] };
+}
+
+function modMarkers(slug) {
+  return { begin: `# PlayBound mod: ${slug} (begin)`, end: `# PlayBound mod: ${slug} (end)` };
+}
+
+/** The config with this mod's block removed; everything else is untouched. */
+function withoutModContent(cfgText, slug) {
+  const { begin, end } = modMarkers(slug);
+  const text = String(cfgText || "");
+  const a = text.indexOf(begin);
+  if (a < 0) return text;
+  const b = text.indexOf(end, a);
+  if (b < 0) return text;
+  const head = text.slice(0, a).replace(/\s*$/, "");
+  const tail = text.slice(b + end.length).replace(/^\s*/, "");
+  return tail ? `${head}\n\n${tail}` : `${head}\n`;
+}
+
+/**
+ * The config with one mod registered: its data directory, its archives and its
+ * plugins, in a marked block so it can be replaced on reinstall and removed on
+ * uninstall without disturbing the rest of the file.
+ *
+ * Appended last, which in OpenMW means loaded last, so a mod overrides the
+ * base game and anything installed before it.
+ */
+function withModContent(cfgText, slug, dataDir, plugins, archives = []) {
+  const { begin, end } = modMarkers(slug);
+  const base = withoutModContent(cfgText, slug).replace(/\s*$/, "");
+  const lines = [
+    "",
+    "",
+    begin,
+    `data="${dataDir}"`,
+    ...archives.map((a) => `fallback-archive=${a}`),
+    ...plugins.map((p) => `content=${p}`),
+    end,
+    "",
+  ];
+  return `${base}\n${lines.join("\n")}`;
+}
+
+
 module.exports = {
+  modContentFor,
+  withModContent,
+  withoutModContent,
   MORROWIND_MASTERS,
   MORROWIND_ARCHIVES,
   CONTROLLER_MAPPINGS,

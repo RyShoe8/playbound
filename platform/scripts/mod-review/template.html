@@ -1,0 +1,108 @@
+<title>PlayBound Mod Review</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: sticky toolbar, then one collapsible section per game; each mod is a row with two approve boxes. */
+:root{
+  --bg:#f5f7f8; --panel:#ffffff; --fg:#17212b; --muted:#5b6b78; --line:#d9e0e5;
+  --accent:#0b6e6e; --accent-fg:#ffffff; --accent-soft:#dff1f0;
+  --ed:#8a4b00; --ed-soft:#fbead0; --ok:#1d7a3c; --font:"Source Sans 3",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f161c; --panel:#17212a; --fg:#e6edf2; --muted:#93a4b1; --line:#2a3944;
+  --accent:#4fc3c0; --accent-fg:#06201f; --accent-soft:#12383a; --ed:#f0b35c; --ed-soft:#3b2a10; --ok:#58c47c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f161c; --panel:#17212a; --fg:#e6edf2; --muted:#93a4b1; --line:#2a3944;
+  --accent:#4fc3c0; --accent-fg:#06201f; --accent-soft:#12383a; --ed:#f0b35c; --ed-soft:#3b2a10; --ok:#58c47c; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;line-height:1.45;padding-inline:16px;padding-block:0 64px}
+.wrap{max-width:1040px;margin:0 auto}
+h1{font-size:1.7rem;margin:24px 0 4px;text-wrap:balance}
+.lede{color:var(--muted);margin:0 0 16px;max-width:68ch}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.bar input[type=search]{flex:1 1 200px;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--fg);font:inherit}
+.chk{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:.9rem}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--fg);padding:7px 12px;border-radius:6px}
+button.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600}
+button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.stats{font-family:var(--mono);font-size:.8rem;color:var(--muted)}
+details{border:1px solid var(--line);background:var(--panel);border-radius:8px;margin-top:14px}
+summary{cursor:pointer;padding:12px 14px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:baseline;font-weight:700;font-size:1.05rem;list-style-position:inside}
+summary .n{font-family:var(--mono);font-weight:400;font-size:.78rem;color:var(--muted)}
+.row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;padding:12px 14px;border-top:1px solid var(--line)}
+.row.dim{opacity:.55}
+.boxes{display:flex;flex-direction:column;gap:6px;font-size:.78rem;color:var(--muted);min-width:78px}
+.boxes label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.t{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
+.t b{font-size:1rem}
+.tag{font-family:var(--mono);font-size:.68rem;padding:1px 6px;border-radius:4px;background:var(--accent-soft);color:var(--accent);text-transform:uppercase;letter-spacing:.04em}
+.tag.ed{background:var(--ed-soft);color:var(--ed)}
+.meta{font-size:.84rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:2px 14px}
+.meta span{font-family:var(--mono);font-size:.76rem}
+.d{margin:2px 0 0;max-width:72ch}
+a{color:var(--accent)}
+.src a{margin-right:10px;font-size:.84rem}
+#out{width:100%;min-height:9rem;margin-top:10px;font-family:var(--mono);font-size:.78rem;background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:8px}
+.note{font-size:.88rem;color:var(--muted);max-width:72ch;margin-top:20px}
+@media (max-width:520px){.row{grid-template-columns:1fr}.boxes{flex-direction:row;gap:14px}}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+<div class="wrap">
+<h1>Mod review, by game</h1>
+<p class="lede">{{TOTAL}} large mods across {{GAMES}} published games, taken from ModDB and Nexus Mods. Tick <b>Mod</b> to add it to the game's mod list. Tick <b>Edition</b> on total conversions you want listed as an edition. {{EDITIONS}} are flagged as edition candidates.</p>
+<div class="bar">
+  <input type="search" id="q" placeholder="Filter by mod, author or game" aria-label="Filter">
+  <label class="chk"><input type="checkbox" id="onlyEd"> Edition candidates only</label>
+  <label class="chk"><input type="checkbox" id="onlyPick"> Selected only</label>
+  <span class="stats" id="stats"></span>
+  <button class="primary" id="exp">Copy my selections</button>
+</div>
+<div id="list"></div>
+<textarea id="out" hidden readonly aria-label="Exported selections"></textarea>
+<p class="note">Counts are visits or downloads on the source site, not PlayBound installs. Mods whose descriptions were thin on the source page have short summaries; full descriptions, file lists, screenshots and requirements are collected for the approved ones next. Total conversions without a standalone installer will need a base-game check before they become editions. OpenCiv3 entries are Civ III scenarios and need a compatibility check.</p>
+</div>
+<script>
+var DATA=/*DATA*/[];
+var KEY="pb-mod-review-v1", S={};
+try{S=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){S={}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function id(g,m){return g.slug+"::"+m.id}
+function render(){
+  var q=document.getElementById("q").value.toLowerCase(),oe=document.getElementById("onlyEd").checked,op=document.getElementById("onlyPick").checked,html="",mods=0,eds=0;
+  DATA.forEach(function(g){
+    var rows="",shown=0,sel=0;
+    g.mods.forEach(function(m){
+      var k=id(g,m),st=S[k]||{};
+      if(st.mod)mods++;if(st.ed)eds++;if(st.mod||st.ed)sel++;
+      var hay=(m.title+" "+m.author+" "+g.title).toLowerCase();
+      if(q&&hay.indexOf(q)<0)return;
+      if(oe&&!m.edition)return;
+      if(op&&!(st.mod||st.ed))return;
+      shown++;
+      var src=m.sources.map(function(s){return '<a href="'+esc(s.url)+'" target="_blank" rel="noopener">'+esc(s.name)+' ↗</a>'}).join("");
+      var meta=[m.author?("by "+esc(m.author)):"",m.year&&m.year!=="TBD"?("released "+esc(m.year)):"",m.upd?("updated "+esc(m.upd)):"",m.cat?esc(m.cat):"",m.size?esc(m.size):""].filter(Boolean).map(function(x){return "<span>"+x+"</span>"}).join("");
+      rows+='<div class="row"><div class="boxes"><label><input type="checkbox" data-k="'+esc(k)+'" data-f="mod"'+(st.mod?" checked":"")+'> Mod</label>'+
+        (m.edition?'<label><input type="checkbox" data-k="'+esc(k)+'" data-f="ed"'+(st.ed?" checked":"")+'> Edition</label>':"")+'</div><div><div class="t"><b>'+esc(m.title)+'</b>'+
+        (m.edition?'<span class="tag ed">edition candidate</span>':"")+(m.rating?'<span class="tag">'+esc(m.rating)+'/10</span>':"")+'</div><div class="meta">'+meta+'<span>'+esc(m.pop)+'</span></div><p class="d">'+esc(m.desc)+'</p><div class="src">'+src+'</div></div></div>';
+    });
+    if(!shown)return;
+    html+='<details'+((q||oe||op)?" open":"")+' data-g="'+esc(g.slug)+'"><summary>'+esc(g.title)+' <span class="n">'+shown+' of '+g.mods.length+' mods · '+sel+' selected</span></summary>'+rows+'</details>';
+  });
+  var open={};document.querySelectorAll("details[open]").forEach(function(d){open[d.dataset.g]=1});
+  document.getElementById("list").innerHTML=html||'<p class="lede">Nothing matches this filter.</p>';
+  document.querySelectorAll("details").forEach(function(d){if(open[d.dataset.g])d.open=true});
+  document.getElementById("stats").textContent=mods+" mods · "+eds+" editions selected";
+}
+document.getElementById("list").addEventListener("change",function(e){
+  var t=e.target;if(!t.dataset.k)return;
+  var s=S[t.dataset.k]||(S[t.dataset.k]={});s[t.dataset.f]=t.checked;save();render();
+});
+["q","onlyEd","onlyPick"].forEach(function(i){document.getElementById(i).addEventListener("input",render)});
+document.getElementById("exp").addEventListener("click",function(){
+  var lines=[];
+  DATA.forEach(function(g){g.mods.forEach(function(m){var st=S[id(g,m)]||{};if(st.mod||st.ed)lines.push(g.slug+" | "+(st.mod?"MOD":"")+(st.mod&&st.ed?"+":"")+(st.ed?"EDITION":"")+" | "+m.title+" | "+m.sources[0].url)})});
+  var txt=lines.length?lines.join("\n"):"(nothing selected yet)";
+  var ta=document.getElementById("out");ta.hidden=false;ta.value=txt;ta.focus();ta.select();
+  try{navigator.clipboard.writeText(txt).then(function(){document.getElementById("exp").textContent="Copied "+lines.length}).catch(function(){})}catch(e){}
+});
+render();
+</script>

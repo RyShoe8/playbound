@@ -1,0 +1,90 @@
+M|morrowind|morrowind-rebirth|Morrowind Rebirth 7.1|trancemaster_1988|2011|9.7|3,236,711|2 weeks||Explore the island of Vvardenfell as you never have before, with a world built anew to be both alien and familiar.
+M|morrowind|province-cyrodiil|Province: Cyrodiil|Province: Cyrodiil Team|TBD||140,263|12 years||Creates the province of Cyrodiil, the Imperial Province.
+M|morrowind|skyrim-home-of-the-nords|Skyrim: Home Of The Nords|ProjectTamriel|2017|10|50,780|9 years||Beyond the Vorndgad Forest, the new province of Skyrim opens to explore.
+M|morrowind|arktwend-the-forgotten-realm|Arktwend - The Forgotten Realm|SureAI Team|2009|9.4|129,232|13 years|TC|Prequel to Nehrim: a total conversion translated into English.
+M|morrowind|ashes-of-apocalypse|Ashes of Apocalypse|travdark|2006|8.5|98,904|18 years|TC|Ashes of Apocalypse: Zero-One, a Morrowind total conversion.
+M|morrowind|sea-of-destiny|Sea of Destiny|travdark|2006|8.1|93,026|13 years||Year-long mod project adding a large island to Morrowind.
+M|morrowind|morrowind-stargate|Morrowind Stargate|confridin|2009|9.1|91,184|14 years||Stargate-based mod for Morrowind.
+M|morrowind|sotha-sil-expanded|Sotha Sil Expanded|Trainwiz|2012|9.8|88,738|12 years||Expands the Clockwork City and Tribunal's ending with a large new area.
+M|morrowind|chaos-heart|Chaos Heart Reshaped|Chaos Heart Dev Group|TBD||83,929|7 years||Series of mods based on the Chaos Heart project.
+M|morrowind|ultima-ix-redemption|Ultima IX: Redemption|Corv|TBD||69,106|2 years||A complete new Ultima game built on Morrowind's engine.
+M|morrowind|rule-12|Rule 12|Black Sun Studios|TBD||64,675|17 years|TC|Post-nuke total conversion for Morrowind.
+M|morrowind|myar-aranath-rellict-of-kallidar|Myar Aranath: Relict of Kallidar|Sp4de|2006|8|48,175|13 years|TC|Total conversion for Morrowind with new world and story.
+N|morrowind|44921|Skyrim Home Of The Nords|Project Tamriel Team|2017|5110|315962|2026-09|New Lands|9MB|100+ quests, regional questlines and a new province.
+N|morrowind|48909|Starwind v3.1 - A Star Wars Conversion|The Starwind Team|2020|629|27674|2023-03|Overhauls|1.5GB|Total conversion that brings Morrowind into the Star Wars universe.
+N|morrowind|46810|Solstheim - Tomb of the Snow Prince|TOTSP Team|2019|2254|358023|2025-12|New Lands|4MB|Improves the visuals, environment design and gameplay of Solstheim.
+N|morrowind|49231|Beautiful Cities of Morrowind|RandomPal and community|2021|2678|512357|2026-04|Overhauls|11MB|Overhaul of nearly every settlement, inspired by concept art.
+N|morrowind|46913|Main Quest Overhaul|AliceL93|2019|648|17122|2022-08|Overhauls|0MB|Overhauls the main quest.
+N|morrowind|42933|Wyrmhaven|Neoptolemus|2013|1559|35297|2021-10|New Lands|46MB|A new island west of Solstheim with quests.
+N|morrowind|44398|The Doors of Oblivion|Ashstaar|2016|1251|173986|2019-03|Quests and Adventures|170MB|Journey through Oblivion: new quests, items, characters, creatures.
+N|morrowind|45399|Project Atlas|Project Atlas Team|2018|6782|557522|2025-05|Models and Textures|190MB|Performance-friendly replacement meshes and textures for the heaviest vanilla areas.
+N|morrowind|27545|Rise of House Telvanni|Pozzo Karpik777 bhl|2009|2841|217195|2015-12|Quests and Adventures|7MB|Heavily expanded House Telvanni questline.
+N|morrowind|44922|Project Cyrodiil|Project Tamriel Team|2017|4288|260552|2026-09|New Lands|11MB|Adds part of Cyrodiil, the Imperial Province.
+N|morrowind|46221|Morrowind Enhanced Textures|Project Enhance|2018|13610|1179926|2024-10|Models and Textures|2.4GB|AI upscale of every in-game texture, vanilla-friendly.
+N|morrowind|6006|Morrowind Comes Alive|Neoptolemus|2006|13344|431151|2015-11|Gameplay|20MB|Adds 1200 NPC types to 550+ cells to bring the world to life.
+N|morrowind|42575|Landscape Retexture|Lougian|2013|8861|386448|2019-06|Models and Textures|51MB|Retextures every region's landscape.
+N|morrowind|43311|skies .iv|Markel|2014|4675|229508|2014-10|Models and Textures|383MB|Comprehensive overhaul of Morrowind's weather and skies.
+M|kotor|kotor-ultimate|KotOR - Ultimate|Thunder3|2017|9.4|1,233,083|5 years||Improves the overall look of the game with replacement textures.
+M|kotor|brotherhood-of-shadow-solomons-revenge|Brotherhood of Shadow: Solomon's Revenge|Silveredge9|2009|9.6|221,036|17 years||Massive fan-made KOTOR expansion with a new multi-hour campaign.
+M|kotor|ryloth-planet-mod|Ryloth Planet Mod|HK-42|TBD||94,165|18 years||Adds the planet Ryloth.
+M|kotor|yavin-iv-planet-mod|Yavin IV Planet Mod|MOTOR Squad|2020|9.8|28,153|5 years||Adds the planet Yavin IV with new quests.
+M|kotor|sleheyron-story-mode|Sleheyron: Story Mode|anysao|2025||6,444|5 months||A new planet expansion.
+M|kotor|darth-revans-empire|Darth Revan's Empire|Darth Revan's Empire Dev Team|TBD||10,878|3 years||Global modification telling the fate of Revan and his empire.
+N|kotor|54|KotOR 1 Restoration 1.2|The K1R Team|2015|12998|389242|2016-06|Content|68MB|Restores as much cut BioWare content as possible.
+N|kotor|69|High Quality Skyboxes II|Kexikus|2015|8970|302821|2021-10|Models and Textures|73MB|Replaces every skybox and planetary backdrop in high resolution.
+N|kotor|1282|Ultimate Character Overhaul -REDUX-|ShiningRedHD|2019|5665|402373|2021-08|Characters|315MB|Texture overhaul of every character and equipment piece.
+N|kotor|1306|KotOR 1 Remastered (AI Upscaled) Cutscenes|Naelavok|2019|2881|114595|2019-12|Visuals and Graphics|6.7GB|AI-upscaled cinematics at high resolutions.
+N|kotor|1360|Ultimate Taris High Resolution - HD Upscale|ShiningRedHD|2020|2203|121239|2022-11|Models and Textures|1.3GB|Complete texture overhaul of Taris and the Sith Base.
+N|kotor|1368|Ultimate Dantooine High Resolution - HD Upscale|ShiningRedHD|2020|2124|113359|2022-11|Models and Textures|471MB|Complete texture overhaul of Dantooine.
+N|kotor|1364|Ultimate Tatooine High Resolution - HD Upscale|ShiningRedHD|2020|2113|113274|2022-11|Models and Textures|445MB|Complete texture overhaul of Tatooine.
+N|kotor|1367|Ultimate Korriban High Resolution - HD Upscale|ShiningRedHD|2020|2092|114247|2022-11|Models and Textures|683MB|Complete texture overhaul of Korriban.
+N|kotor|1365|Ultimate Kashyyyk High Resolution - HD Upscale|ShiningRedHD|2020|2077|110022|2022-11|Models and Textures|301MB|Complete texture overhaul of Kashyyyk.
+N|kotor|1370|Ultimate Endar Spire-Star Forge-Yavin Station HD|ShiningRedHD|2020|2066|111090|2022-11|Models and Textures|474MB|Complete texture overhaul of Endar Spire, Star Forge and Yavin Station.
+N|kotor|1366|Ultimate Manaan High Resolution - HD Upscale|ShiningRedHD|2020|2046|110237|2022-11|Models and Textures|403MB|Complete texture overhaul of Manaan.
+N|kotor|68|Old Republic Skin Overhaul|multiple|2015|3017|244648|2015-11|Models and Textures|37MB|Upgrades environment textures across many locations.
+N|kotor|104|High Quality Blasters|Sithspecter|2016|4090|119134|2016-08|Weapons|24MB|Replaces blasters with newly modeled, high-quality firearms.
+M|kotor2|the-sith-lords-restored-content-mod-tslrcm|The Sith Lords Restored Content Mod (TSLRCM)|TSLRCM group|2012|9.7|2,840,748|5 years||The definitive restored-content mod for KOTOR II.
+M|kotor2|extended-enclave|Extended Enclave|DarthHayze|2014||65,056|12 years||TSLRCM add-on restoring extra material to the Enclave finale.
+M|kotor2|revenge-of-revan|Revenge of Revan|logan23|2025|10|431,429|1 year||Episodic story campaign mod, Episode 1.
+M|kotor2|the-sith-lords-massive-improvement-mod|The Sith Lords Massive Improvement Mod|Drewton|TBD||279,423|15 years||A new way to experience KOTOR II.
+M|kotor2|kotor-ii-tsl-expanded-galaxy|Expanded Galaxy Project KotOR 2&1|Thor110|2019|10|138,519|1 year||Expands both games with new planets and content.
+M|kotor2|kotor-omega|Knights Of The Old Republic: Edge Of Darkness|90SK|2023|9.5|52,011|1 month||New story modification for KOTOR II.
+M|kotor2|cathalan|Cathalan|Jaevyn|2020|10|21,553|4 years||Adds the Cathalan planet with a full storyline.
+M|kotor2|knights-of-the-old-republic-iii-sod|Knights of the Old Republic III: SOD|KOTOR III dev team|TBD||5,505|3 years|TC|Total conversion for TSL with a new main storyline.
+M|kotor2|knights-of-the-old-republic-iii-the-jedi-masters|Knights of the Old Republic III: The Jedi Masters|Trex01|2020|9.6|73,974|3 years|TC|A fan-made KOTOR 3 total conversion.
+M|kotor2|classic-jedi-project-kotor-ii|Classic Jedi Project [KOTOR II]|omega1|2019||22,726|7 years||Original-trilogy formula brought to KOTOR II.
+N|kotor2|1060|Ultimate Character Overhaul -REDUX-|ShiningRedHD|2019|2850|260709|2021-08|Characters|505MB|Texture overhaul of every character and equipment piece.
+N|kotor2|1062|KOTOR 2 UNLIMITED WORLD TEXTURE MOD|facemeltingsolo|2019|1798|72961|2019-08|Models and Textures|3.2GB|Upscaled world textures with transparency fix.
+N|kotor2|1066|KotOR 2 Remastered (AI Upscaled) Cutscenes|Naelavok|2019|1397|57625|2019-11|Visuals and Graphics|8.2GB|AI-upscaled cinematics.
+N|kotor2|1100|Ultimate High Resolution Texture Pack - HD Upscale|ShiningRedHD|2020|1227|57596|2022-12|Models and Textures|1.3GB|Texture overhaul of Peragus, Telos, Harbinger and interiors.
+N|kotor2|1101|Ultimate Nar Shaddaa High Resolution - HD Upscale|ShiningRedHD|2020|940|41920|2022-12|Models and Textures|771MB|Complete texture overhaul of Nar Shaddaa.
+N|kotor2|1102|Ultimate Onderon High Resolution - HD Upscale|ShiningRedHD|2020|989|42618|2022-12|Models and Textures|318MB|Complete texture overhaul of Onderon.
+N|kotor2|1103|Ultimate Dantooine High Resolution - HD Upscale|ShiningRedHD|2020|1007|45813|2022-12|Models and Textures|715MB|Complete texture overhaul of Dantooine.
+N|kotor2|1104|Ultimate Korriban High Resolution - HD Upscale|ShiningRedHD|2020|978|41879|2020-12|Models and Textures|104MB|Complete texture overhaul of Korriban.
+N|kotor2|1105|Ultimate Dxun High Resolution - HD Upscale|ShiningRedHD|2020|1003|43057|2022-12|Models and Textures|460MB|Complete texture overhaul of Dxun.
+N|kotor2|1106|Ultimate Malachor V High Resolution - HD Upscale|ShiningRedHD|2020|980|42171|2022-12|Models and Textures|193MB|Complete texture overhaul of Malachor V.
+N|kotor2|8|Dustil Restoration|Fallen Guardian|2014|919|17813|2019-10|Content|353MB|Restores Obsidian's cut Dustil Onasi content.
+N|kotor2|1059|Ebon Hawk HD - 4X Upscaled Texture|ShiningRedHD|2019|843|31058|2019-07|Ship Skins|479MB|HD textures for the Ebon Hawk.
+N|kotor2|922|TSL Backdrop Improvements|Kexikus|2016|945|24812|2017-08|Models and Textures|102MB|Improves the space scenes and backdrops.
+N|kotor2|23|The Ultimate Saber Mod (USM)|ChAiNz2da et al.|2014|2258|72135|2014-08|Models and Textures|22MB|36 new lightsaber hilt models integrated into TSL.
+N|stardew-valley|3753|Stardew Valley Expanded|FlashShifter|2019|225785|22157646|2025-06|Expansions|4MB|Fan expansion adding 28 NPCs, new areas, quests and events.
+N|stardew-valley|7286|Ridgeside Village|Rafseazz and mamaesh|2020|55188|4558898|2024-11|Expansions|53MB|50+ NPCs, a new location, shops, festivals and events.
+N|stardew-valley|5787|East Scarp|LemurKat et al.|2020|20205|2331341|2026-05|Expansions|39MB|A suburb of Pelican Town with new NPCs, events and orders.
+N|stardew-valley|2571|DeepWoods|Max Makes Mods|2018|18713|754838|2026-01|Locations|1MB|Procedurally generated infinite forest with secrets and dungeons.
+N|stardew-valley|8587|Downtown Zuzu|Zuzu Development Team|2021|7481|580697|2024-11|Expansions|112MB|The infamous Zuzu City as a full new area.
+N|stardew-valley|11111|Sunberry Village|skellady and sophiesalacia|2025|4243|401718|2025-12|Expansions|14MB|New town south of Pelican Town with 15+ NPCs.
+N|stardew-valley|6626|Lunna - Astray in Stardew Valley|Rafseazz|2020|5187|502546|2024-04|Expansions|9MB|New NPCs, locations and content.
+N|stardew-valley|1531|Immersive Farm 2|halloikbenzander|2017|4748|168095|2019-01|Locations|1MB|Large farm with spa, quarry and bigger greenhouse.
+N|stardew-valley|12102|Adventurer's Guild Expanded|SUPERT|2022|5149|278576|2022-06|Expansions|1MB|Expands the Guild with quests and 30+ story events.
+N|stardew-valley|999|Portraiture|Platonymous|2017|67721|2794919|2024-03|Characters|0MB|Higher-resolution portraits with easy portrait-mod switching.
+N|stardew-valley|5255|DaisyNiko's Earthy Recolour|DaisyNiko|2020|64219|2832052|2024-11|Visuals and Graphics|8MB|Warm, earth-toned recolour of the game.
+N|stardew-valley|6367|Vibrant Pastoral Redrawn|Vibrant Pastoral Team|2020|18232|820733|2026-05|Visuals and Graphics|8MB|Full recolour with redrawn assets.
+N|stardew-valley|5450|Seasonal Outfits - Slightly Cuter Aesthetic|Poltergeister et al.|2020|116055|4812966|2026-08|Characters|32MB|Overhauls all character sprites and portraits.
+N|thief-2-the-metal-age|5|Thief 2 HD Mod 1.0|Bentraxx|2018|95|2137|2018-12|Models and Textures|1.8GB|HD textures for all original missions with new visual assets.
+N|thief-2-the-metal-age|4|Vurt's Thief 2 Graphics Overhaul|vurt|2018|39|719|2025-07|Models and Textures|1.4GB|New meshes and 1500+ new textures.
+N|deus-ex-goty-edition|67|Helios Texture Overhaul|BerZerker96|2023|106|3539|2023-01|Visuals and Graphics|2.3GB|Texture overhaul of characters, decorations and items.
+N|deus-ex-goty-edition|77|Modern Upscales|Arthandas|2024|81|5195|2024-11|Visuals and Graphics|100MB|Faithful upscales of all characters, items and decorations.
+N|deus-ex-goty-edition|85|Give Me Deus Ex Augmented Edition|Sarge945|2025|79|4016|2026-05|Mods - Singleplayer|664MB|Complete overhaul of GMDX.
+N|deus-ex-goty-edition|55|Terminus Machina|Silver Spook|2017|26|527|2017-11|Mods - Singleplayer|331MB|Deus Ex meets Fallout with heavy player agency.
+N|deus-ex-goty-edition|89|Deus Ex Upscale Project (DEUP)|Dosekk6|2025|12|703|2026-05|Visuals and Graphics|771MB|Comprehensive global upscale for Deus Ex GOTY.
+N|deus-ex-goty-edition|72|Redsun2020|Jon kurishita|2024|8|109|2024-02|Mods - Singleplayer|168MB|Story of Joseph, the newest nanotech agent.

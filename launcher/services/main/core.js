@@ -1045,6 +1045,18 @@ async function resolveDownload(entry) {
       throw new Error(`No download URL configured for ${entry.title || entry.slug || "this game"}`);
     }
     assertInstallableOnPlatform(entry, effectiveUrl);
+    // A ModDB file page has no static download URL; resolve it to the signed
+    // CDN link and keep the MD5 ModDB publishes for the file.
+    const moddb = require("../moddbDownload");
+    if (moddb.isModdbFilePage(effectiveUrl)) {
+      const resolved = await moddb.resolveModdbDownload(effectiveUrl);
+      return {
+        url: resolved.url,
+        name: resolved.filename || downloadFileName(entry, resolved.url),
+        version: entry.versionLabel || "fixed",
+        md5: resolved.md5,
+      };
+    }
     const name = downloadFileName(entry, effectiveUrl);
     return { url: effectiveUrl, name, version: entry.versionLabel || "fixed" };
   }
@@ -1223,6 +1235,30 @@ async function resolveModDownload(install) {
     if (!effectiveUrl) throw new Error("Mod has no direct download URL");
     if (install.installerFile && /^https:\/\/www\.mediafire\.com\/file\//i.test(effectiveUrl)) {
       effectiveUrl = await require("../mediafireDownload").resolveMediafireArchive(effectiveUrl);
+    }
+    // A ModDB file page has no static download URL; walk it to the signed CDN
+    // link and keep the page's MD5 so the caller can verify the file.
+    const moddb = require("../moddbDownload");
+    if (moddb.isModdbFilePage(effectiveUrl)) {
+      const resolved = await moddb.resolveModdbDownload(effectiveUrl);
+      return {
+        url: resolved.url,
+        name: resolved.filename || `${install.slug || "mod"}.zip`,
+        version: install.versionLabel || "fixed",
+        md5: resolved.md5,
+      };
+    }
+    // Deadly Stream: an anonymous download that needs the page's session cookie.
+    const deadly = require("../deadlystreamDownload");
+    if (deadly.isDeadlyStreamFilePage(effectiveUrl)) {
+      const resolved = await deadly.resolveDeadlyStreamDownload(effectiveUrl);
+      return {
+        url: resolved.url,
+        name: resolved.filename || `${install.slug || "mod"}.zip`,
+        version: install.versionLabel || "fixed",
+        headers: resolved.headers,
+        size: resolved.bytes || undefined,
+      };
     }
     let name = path.basename(new URL(effectiveUrl).pathname) || "mod.zip";
     // ContentDB and similar end with /download/

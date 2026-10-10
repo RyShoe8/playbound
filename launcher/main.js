@@ -2141,15 +2141,18 @@ function sendProgress(payload) {
   }
 }
 
-async function downloadTo(url, dest, attempts = 3) {
+async function downloadTo(url, dest, attempts = 3, extraHeaders = null) {
   let lastErr;
   for (let attempt = 1; attempt <= attempts; attempt++) {
     try {
       let current = assertDownloadUrl(url);
       let res = null;
       for (let hop = 0; hop < 8; hop++) {
+        // A resolver may need to send a session cookie with the download. It is
+        // only ever sent to the host it was issued for, never along a redirect.
+        const sameOrigin = extraHeaders && new URL(current).origin === new URL(url).origin;
         res = await fetch(current, {
-          headers: { "user-agent": "playbound-launcher", accept: "*/*" },
+          headers: { "user-agent": "playbound-launcher", accept: "*/*", ...(sameOrigin ? extraHeaders : {}) },
           redirect: "manual",
           signal: activeDownloadSignal || undefined,
         });
@@ -5070,8 +5073,8 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
         : "";
     throw new Error(`${message || err}.${hint}`);
   }
-  if (entry.checksumMd5) {
-    await verifyChecksumMd5(downloadPath, entry.checksumMd5);
+  if (entry.checksumMd5 || dl.md5) {
+    await verifyChecksumMd5(downloadPath, entry.checksumMd5 || dl.md5);
   }
 
   if (entry.archiveInstallerName) {
@@ -5602,6 +5605,52 @@ async function waitForWritableExecutable(exePath, title, timeoutMs = 90_000) {
  * @returns {Promise<{ morrowindDataFound: boolean, openmwCfgWritten: boolean } | null>}
  *   null when this directory is not an OpenMW-family install.
  */
+/**
+ * Tell an OpenMW install about a Morrowind mod that was just extracted.
+ *
+ * OpenMW does not look in a folder for mods; it loads what openmw.cfg names. So
+ * extracting a plugin is not installing it: without a `data=` line the engine
+ * never sees the files and without `content=` it never loads them. This writes
+ * both, in a block marked with the mod's slug so uninstall (and a reinstall)
+ * can take exactly that block out again.
+ *
+ * Returns null when there is nothing to register — the base game is not an
+ * OpenMW install, or the archive held no plugin — so the caller can leave the
+ * mod installed but say so rather than pretend it will load.
+ */
+async function registerOpenMwMod(baseGameSlug, modSlug, modDir) {
+  try {
+    const state = loadState();
+    const record = ensureGameInstallRecord(state[baseGameSlug]);
+    const dirs = [record?.dir, ...Object.values(record?.editions || {}).map((e) => e && e.dir)].filter(Boolean);
+    const gameDir = dirs.find((d) => openMwConfig.isOpenMwInstall(d, fs.existsSync));
+    if (!gameDir) return null;
+    const found = openMwConfig.modContentFor(modDir, (d) => fs.readdirSync(d, { withFileTypes: true }));
+    if (!found.dataDir) return null;
+    const cfgPath = path.join(gameDir, "openmw.cfg");
+    const cfg = await fsp.readFile(cfgPath, "utf8");
+    await fsp.writeFile(
+      cfgPath,
+      openMwConfig.withModContent(cfg, modSlug, found.dataDir, found.plugins, found.archives)
+    );
+    return { cfgPath, dataDir: found.dataDir, plugins: found.plugins, archives: found.archives };
+  } catch (err) {
+    console.warn("OpenMW mod registration skipped:", err?.message || err);
+    return null;
+  }
+}
+
+/** Remove a mod's block from openmw.cfg. Best effort, like the rest of uninstall. */
+async function unregisterOpenMwMod(cfgPath, modSlug) {
+  try {
+    const cfg = await fsp.readFile(cfgPath, "utf8");
+    const next = openMwConfig.withoutModContent(cfg, modSlug);
+    if (next !== cfg) await fsp.writeFile(cfgPath, next);
+  } catch (err) {
+    console.warn("OpenMW mod unregistration skipped:", err?.message || err);
+  }
+}
+
 async function maybeConfigureOpenMw(gameDir) {
   try {
     if (!openMwConfig.isOpenMwInstall(gameDir, fs.existsSync)) return null;
@@ -6253,7 +6302,9 @@ async function placeModFiles(slug, install, baseDirOverride) {
   // A MediaFire source page resolves to a short-lived, checksum-pinned CDN
   // URL. Register only that validated archive host before downloading.
   registerDownloadHostFromUrl(dl.url);
-  await downloadTo(dl.url, downloadPath);
+  await downloadTo(dl.url, downloadPath, 3, dl.headers || null);
+  // ModDB publishes an MD5 for every file; refuse a download that doesn't match.
+  if (dl.md5) await verifyChecksumMd5(downloadPath, dl.md5);
 
   if (install.installerFile) {
     if (!/^[a-z0-9._-]+\.exe$/i.test(install.installerFile) ||
@@ -6320,7 +6371,7 @@ async function placeModFiles(slug, install, baseDirOverride) {
    * non-archive and failed. Existing mods still route to extraction because
    * their assets really are .zip files; anything else is now copied into place.
    */
-  const isArchive = /\.(zip|dmg|pkg|tar\.gz|tgz|tar\.xz)$/i.test(dl.name);
+  const isArchive = /\.(zip|7z|dmg|pkg|tar\.gz|tgz|tar\.xz)$/i.test(dl.name);
   if (isArchive && !/\.jar$/i.test(dl.name)) {
     sendProgress({ phase: "extracting" });
     await extractArchive(downloadPath, targetDir);
@@ -6352,12 +6403,16 @@ async function placeModFiles(slug, install, baseDirOverride) {
     if (addonDir) installedDir = addonDir;
   }
 
+  // Morrowind runs on OpenMW, which only loads what openmw.cfg names.
+  const openmw = install.baseGameSlug === "morrowind" ? await registerOpenMwMod(install.baseGameSlug, slug, targetDir) : null;
+
   const state = loadState();
   if (!state.__mods__ || typeof state.__mods__ !== "object") state.__mods__ = {};
   state.__mods__[slug] = {
     title: install.title || slug,
     version: dl.version,
     dir: installedDir,
+    ...(openmw ? { openmw: { cfg: openmw.cfgPath, dir: targetDir, plugins: openmw.plugins } } : {}),
     baseGameSlug: install.baseGameSlug,
     installedAt: new Date().toISOString(),
     installationId: crypto.randomUUID(),
@@ -9527,6 +9582,17 @@ async function uninstallMod(slug) {
       await fsp.rm(file, { force: true });
     } catch (err) {
       console.warn(`[mod] cleanup failed for ${file}:`, err?.message || err);
+    }
+  }
+
+  if (info.openmw?.cfg) {
+    await unregisterOpenMwMod(info.openmw.cfg, slug);
+    // The mod lives in its own folder under the engine's mods/ directory.
+    const ownDir = info.openmw.dir;
+    if (ownDir && /[\\/]mods[\\/][^\\/]+$/i.test(ownDir)) {
+      await fsp.rm(ownDir, { recursive: true, force: true }).catch((err) =>
+        console.warn("[mod] could not remove", ownDir, err?.message || err)
+      );
     }
   }
 
