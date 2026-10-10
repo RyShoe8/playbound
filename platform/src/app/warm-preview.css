@@ -89,3 +89,5 @@ html[data-warm-preview] .new-card-art p.truncate{display:none}
 html[data-warm-preview] .new-home-event .new-event-card{display:grid;grid-template-columns:200px minmax(0,1fr)}
 html[data-warm-preview] .new-home-event .new-event-card>:first-child{height:100%;min-height:180px}
 @media(max-width:600px){html[data-warm-preview] .new-home-event .new-event-card{grid-template-columns:1fr}html[data-warm-preview] .new-home-event .new-event-card>:first-child{min-height:0}}
+html[data-warm-preview] .new-page{max-width:1440px;margin:0 auto;padding:28px}
+@media(max-width:600px){html[data-warm-preview] .new-page{padding:20px 14px}}
