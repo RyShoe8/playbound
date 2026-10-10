@@ -91,3 +91,11 @@ html[data-warm-preview] .new-home-event .new-event-card>:first-child{height:100%
 @media(max-width:600px){html[data-warm-preview] .new-home-event .new-event-card{grid-template-columns:1fr}html[data-warm-preview] .new-home-event .new-event-card>:first-child{min-height:0}}
 html[data-warm-preview] .new-page{max-width:1440px;margin:0 auto;padding:28px}
 @media(max-width:600px){html[data-warm-preview] .new-page{padding:20px 14px}}
+
+/* Page shells fill the viewport beside navigation; copy and dialogs keep their own measure. */
+html[data-warm-preview] .new-page,
+html[data-warm-preview] .shell-main main > [class*="max-w-"],
+html[data-warm-preview] .shell-main main :is(div,section,article)[class~="mx-auto"][class*="max-w-"]:not([role="dialog"]):not(.prose) {
+  width:100%;
+  max-width:none;
+}
