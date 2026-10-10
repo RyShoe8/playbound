@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { connection } from "next/server";
 import type { Metadata } from "next";
@@ -59,20 +60,22 @@ function Section({
   );
 }
 
+async function LiveOpenParties() {
+  const parties = await listOpenPublicParties(100);
+  const visible = await filterDiscoverableBySlug(parties, party => party.gameSlug);
+  return <OpenPartiesSection parties={visible} />;
+}
+
 export default async function EventsPage() {
   // Per-request by nature: live data, the signed-in viewer, or both.
   // Reads the database before it reads anything request-scoped, which
   // Cache Components will not allow during a prerender.
   await connection();
-  const [eventsRaw, session, openPartiesRaw] = await Promise.all([
+  const [eventsRaw, session] = await Promise.all([
     listPublicEvents({ limit: 80 }),
     getServerSession(authOptions),
-    listOpenPublicParties(100),
   ]);
-  const [events, openParties] = await Promise.all([
-    filterDiscoverableBySlug(eventsRaw, (e) => e.gameSlug),
-    filterDiscoverableBySlug(openPartiesRaw, (p) => p.gameSlug),
-  ]);
+  const events = await filterDiscoverableBySlug(eventsRaw, (e) => e.gameSlug);
   const isAdmin = session?.user?.role === "admin";
 
   // Event grouping is intentionally based on the current request time.
@@ -130,7 +133,7 @@ export default async function EventsPage() {
         )}
       </div>
 
-      <OpenPartiesSection parties={openParties} />
+      <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Loading open parties…</p>}><LiveOpenParties /></Suspense>
 
       {!hasActive ? (
         <EmptyHint>No upcoming scheduled events yet. Check back soon.</EmptyHint>

@@ -1,7 +1,8 @@
 "use client";
 
+import { pageHref } from "@/lib/designPreview";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useMemo, useState, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ArrowUpDown,
   ChevronDown,
@@ -9,7 +10,6 @@ import {
   Gamepad2,
   MonitorSmartphone,
   Search,
-  SlidersHorizontal,
   Sparkles,
   Tag,
   X,
@@ -110,6 +110,7 @@ export function SearchFilters({
   discoveryMode?: DiscoveryMode;
 }) {
   const router = useRouter();
+  const navigate = (href: string) => router.push(pageHref(href));
   const sp = useSearchParams();
   const { track } = useTelemetry();
 
@@ -207,12 +208,12 @@ export function SearchFilters({
     e.preventDefault();
     const queryTerm = searchInput.trim();
     if (queryTerm) void track("search", { query: queryTerm });
-    router.push(buildUrl({ q: queryTerm || null }));
+    navigate(buildUrl({ q: queryTerm || null }));
   }
 
   function handleClearSearch() {
     setSearchInput("");
-    router.push(buildUrl({ q: null }));
+    navigate(buildUrl({ q: null }));
   }
 
   function toggleInArray(arr: string[], val: string): string[] {
@@ -222,41 +223,41 @@ export function SearchFilters({
   function toggleGenre(g: string) {
     const next = toggleInArray(genres, g);
     void track("filter_changed", { surface: "search", filters: { genre: next } });
-    router.push(buildUrl({ genre: next }));
+    navigate(buildUrl({ genre: next }));
   }
   function toggleTag(t: string) {
     const next = toggleInArray(tags, t);
     void track("filter_changed", { surface: "search", filters: { tag: next } });
-    router.push(buildUrl({ tag: next }));
+    navigate(buildUrl({ tag: next }));
   }
   function togglePlatform(p: string) {
     const next = toggleInArray(platforms, p);
     void track("filter_changed", { surface: "search", filters: { platform: next } });
-    router.push(buildUrl({ platform: next }));
+    navigate(buildUrl({ platform: next }));
   }
   function toggleFeature(f: string) {
     const next = toggleInArray(features, f);
     void track("filter_changed", { surface: "search", filters: { feature: next } });
-    router.push(buildUrl({ feature: next }));
+    navigate(buildUrl({ feature: next }));
   }
   function setSort(s: SortOption) {
     void track("filter_changed", { surface: "search", filters: { sort: s } });
-    router.push(buildUrl({ sort: s }));
+    navigate(buildUrl({ sort: s }));
   }
   function toggleSortDir() {
     const next = sortDir === "asc" ? "desc" : "asc";
     void track("filter_changed", { surface: "search", filters: { sortDir: next } });
-    router.push(buildUrl({ sortDir: next }));
+    navigate(buildUrl({ sortDir: next }));
   }
   function setPrice(next: string) {
     void track("filter_changed", { surface: "search", filters: { price: next } });
-    router.push(buildUrl({ price: next === "any" ? null : next }));
+    navigate(buildUrl({ price: next === "any" ? null : next }));
   }
   function clearFilters() {
     void track("filter_changed", { surface: "search", filters: { cleared: true } });
     const params = new URLSearchParams();
     if (q) params.set("q", q);
-    router.push(`/search?${params.toString()}`);
+    navigate(`/search?${params.toString()}`);
   }
 
   const resultLabel =
