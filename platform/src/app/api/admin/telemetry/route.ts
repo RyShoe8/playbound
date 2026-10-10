@@ -5,6 +5,7 @@ import dbConnect from "@/lib/db";
 import { requireAdminViewSession } from "@/lib/requireAdmin";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
 import User from "@/lib/models/User";
+import { ADMIN_TZ_COOKIE, normalizeTimeZone, zonedDateEndExclusive, zonedDateStart } from "@/lib/admin/zonedTime";
 import { eventsForFamily, type OpsFamily } from "@/lib/admin/opsEvents";
 
 const querySchema = z.object({
@@ -54,14 +55,29 @@ export async function GET(req: Request) {
   if (partyId) filter["properties.partyId"] = partyId;
   if (userId) filter.userId = userId;
 
-  const createdAt: { $gte?: Date; $lte?: Date } = {};
+  /*
+   * `from`/`to` are either full timestamps (the console's own windows) or plain
+   * dates. Plain dates are calendar days in the admin's timezone, with `to`
+   * covering the whole day it names.
+   */
+  const cookieTz = req.headers
+    .get("cookie")
+    ?.split(/;\s*/)
+    .find((c) => c.startsWith(`${ADMIN_TZ_COOKIE}=`))
+    ?.slice(ADMIN_TZ_COOKIE.length + 1);
+  const tz = normalizeTimeZone(url.searchParams.get("tz") || (cookieTz ? decodeURIComponent(cookieTz) : null));
+  const createdAt: { $gte?: Date; $lt?: Date; $lte?: Date } = {};
   if (from) {
-    const d = new Date(from);
+    const d = zonedDateStart(from, tz) ?? new Date(from);
     if (!Number.isNaN(d.getTime())) createdAt.$gte = d;
   }
   if (to) {
-    const d = new Date(to);
-    if (!Number.isNaN(d.getTime())) createdAt.$lte = d;
+    const day = zonedDateEndExclusive(to, tz);
+    if (day) createdAt.$lt = day;
+    else {
+      const d = new Date(to);
+      if (!Number.isNaN(d.getTime())) createdAt.$lte = d;
+    }
   }
   if (Object.keys(createdAt).length) filter.createdAt = createdAt;
 

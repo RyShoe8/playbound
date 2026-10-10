@@ -78,6 +78,22 @@ TelemetryEventSchema.index(
 );
 TelemetryEventSchema.index({ event: 1, "properties.editionSlug": 1, createdAt: -1 });
 
+/*
+ * Retention. Page views are by far the highest-volume event and nothing reads
+ * them past the 60-day comparison windows, so they expire after 180 days.
+ * Every other event is kept: installs, launches and failures are low volume
+ * and are counted lifetime on the admin dashboard. Partial, so the TTL monitor
+ * only ever considers page_view rows.
+ */
+TelemetryEventSchema.index(
+  { createdAt: 1 },
+  {
+    name: "page_view_ttl_180d",
+    expireAfterSeconds: 180 * 24 * 60 * 60,
+    partialFilterExpression: { event: "page_view" },
+  }
+);
+
 const TelemetryEvent =
   models.TelemetryEvent || model("TelemetryEvent", TelemetryEventSchema);
 export default TelemetryEvent;

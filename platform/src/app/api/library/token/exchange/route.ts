@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { exchangeLauncherHandoffCode } from "@/lib/library";
-import { saveEvent } from "@/lib/telemetry/server/saveEvent";
+import { trackServerEvent } from "@/lib/telemetry/server/trackServerEvent";
 
 const bodySchema = z.object({
   code: z.string().min(8).max(128),
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     }
 
     if (result.firstConnect) {
-      void saveEvent({
+      void trackServerEvent({
         event: "launcher_connected",
         properties: { firstConnect: true },
         userId: result.userId,

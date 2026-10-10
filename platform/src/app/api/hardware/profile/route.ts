@@ -7,7 +7,7 @@ import { hardwareProfilePayloadSchema } from "@/lib/hardware/schema";
 import { normalizeAndLinkProfile } from "@/lib/hardware/upsertKnowledge";
 import { normalizeCpuName, normalizeGpuName } from "@/lib/hardware/normalize";
 import { inferGpuTierFromName } from "@/lib/hardware/tiers";
-import { saveEvent } from "@/lib/telemetry/server/saveEvent";
+import { trackServerEvent } from "@/lib/telemetry/server/trackServerEvent";
 
 async function publicProfile(doc: {
   deviceId?: string;
@@ -157,7 +157,7 @@ export async function PUT(req: Request) {
       { upsert: true, returnDocument: "after" }
     );
 
-    void saveEvent({
+    void trackServerEvent({
       event: isCreate ? "hardware_profile_created" : "hardware_profile_updated",
       properties: {
         os: payload.os.family,
@@ -188,7 +188,7 @@ export async function DELETE(req: Request) {
   await dbConnect();
   const deviceId = deviceIdFrom(new URL(req.url));
   await UserHardwareProfile.deleteOne({ userId, deviceId });
-  void saveEvent({
+  void trackServerEvent({
     event: "hardware_profile_deleted",
     properties: { deviceId },
     userId,

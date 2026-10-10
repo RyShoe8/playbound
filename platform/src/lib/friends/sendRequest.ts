@@ -4,7 +4,7 @@ import {
   createFriendAcceptedNotification,
   createFriendRequestNotification,
 } from "@/lib/notifications";
-import { saveEvent } from "@/lib/telemetry/server/saveEvent";
+import { trackServerEvent } from "@/lib/telemetry/server/trackServerEvent";
 
 export type SendFriendRequestResult =
   | { ok: true; friendshipId: string; autoAccepted?: boolean; alreadyPending?: boolean; alreadyFriends?: boolean }
@@ -60,7 +60,7 @@ export async function sendFriendRequestBetween(
           friendshipId: String(existing._id),
         });
         if (!opts?.skipTelemetry) {
-          void saveEvent({
+          void trackServerEvent({
             event: "friend_request_accepted",
             properties: { friendshipId: String(existing._id), via: "reverse_request" },
             userId: requesterId,
@@ -85,7 +85,7 @@ export async function sendFriendRequestBetween(
         friendshipId: String(existing._id),
       });
       if (!opts?.skipTelemetry) {
-        void saveEvent({
+        void trackServerEvent({
           event: "friend_request_sent",
           properties: { targetUserId: String(targetUserId) },
           userId: requesterId,
@@ -113,7 +113,7 @@ export async function sendFriendRequestBetween(
     friendshipId: String(friendRequest._id),
   });
   if (!opts?.skipTelemetry) {
-    void saveEvent({
+    void trackServerEvent({
       event: "friend_request_sent",
       properties: { targetUserId: String(targetUserId) },
       userId: requesterId,

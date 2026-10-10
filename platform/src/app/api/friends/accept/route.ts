@@ -7,7 +7,7 @@ import {
   createFriendAcceptedNotification,
   markFriendRequestNotificationsRead,
 } from "@/lib/notifications";
-import { saveEvent } from "@/lib/telemetry/server/saveEvent";
+import { trackServerEvent } from "@/lib/telemetry/server/trackServerEvent";
 
 export async function POST(req: Request) {
   const userId = await getFriendsUserId(req);
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
       fromUsername: String(fromUsername),
       friendshipId: String(friendRequest._id),
     });
-    void saveEvent({
+    void trackServerEvent({
       event: "friend_request_accepted",
       properties: { friendshipId: String(friendRequest._id) },
       userId,

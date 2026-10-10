@@ -3,7 +3,7 @@ import { z } from "zod";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
 import { getPresenceUserId } from "@/lib/presenceAuth";
-import { saveEvent } from "@/lib/telemetry/server/saveEvent";
+import { trackServerEvent } from "@/lib/telemetry/server/trackServerEvent";
 
 const schema = z.object({
   appearOffline: z.boolean().optional(),
@@ -63,7 +63,7 @@ export async function PATCH(req: Request) {
 
     await User.findByIdAndUpdate(userId, { $set });
     if (body.appearOffline !== undefined) {
-      void saveEvent({
+      void trackServerEvent({
         event: "appear_offline_toggled",
         properties: { enabled: body.appearOffline },
         userId,

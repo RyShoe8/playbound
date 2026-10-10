@@ -4,7 +4,10 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { cookies } from "next/headers";
 import { AdminNav } from "@/components/shell/AdminNav";
+import { AdminTimezoneCookie } from "@/components/admin/AdminTimezone";
+import { ADMIN_TZ_COOKIE } from "@/lib/admin/zonedTime";
 
 // Applies to every /admin/* route. Also disallowed in robots.ts — belt and braces.
 export const metadata: Metadata = {
@@ -36,8 +39,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const session = await getServerSession(authOptions);
   if (!canViewAdmin(session?.user?.role)) redirect("/");
 
+  const adminTz = (await cookies()).get(ADMIN_TZ_COOKIE)?.value ?? null;
+
   return (
     <div>
+      <AdminTimezoneCookie current={adminTz ? decodeURIComponent(adminTz) : null} />
       <AdminNav />
       {session?.user?.role === "admin_viewer" && (
         <div role="status" className="border-b border-border bg-secondary/60 px-4 py-3 text-sm text-muted-foreground sm:px-6">

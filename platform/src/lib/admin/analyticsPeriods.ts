@@ -4,6 +4,24 @@
 
 import dbConnect from "@/lib/db";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
+import { cookies } from "next/headers";
+import { ADMIN_TZ_COOKIE, normalizeTimeZone, zonedDaysAgo, zonedStartOfToday } from "@/lib/admin/zonedTime";
+
+/**
+ * The timezone to bucket days in: an explicit one if given, else the admin's
+ * (cookie set by the admin layout). Outside a request, or inside a cached scope
+ * where cookies are unavailable, it quietly stays undefined so the server
+ * clock is used.
+ */
+async function resolveTimeZone(tz?: string): Promise<string | undefined> {
+  if (tz) return normalizeTimeZone(tz);
+  try {
+    const value = (await cookies()).get(ADMIN_TZ_COOKIE)?.value;
+    return value ? normalizeTimeZone(decodeURIComponent(value)) : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 export type PeriodWindows = {
   now: Date;
@@ -36,7 +54,23 @@ export function daysAgo(n: number, from = new Date()): Date {
   return startOfDay(d);
 }
 
-export function getPeriodWindows(now = new Date()): PeriodWindows {
+/**
+ * Day windows. Without `tz` the boundaries follow the server clock (UTC on
+ * Vercel); with an IANA zone they follow that calendar, so an admin's "today"
+ * starts at their own midnight.
+ */
+export function getPeriodWindows(now = new Date(), tz?: string): PeriodWindows {
+  if (tz) {
+    return {
+      now,
+      today: zonedStartOfToday(now, tz),
+      yesterday: zonedDaysAgo(1, now, tz),
+      d7: zonedDaysAgo(7, now, tz),
+      d14: zonedDaysAgo(14, now, tz),
+      d30: zonedDaysAgo(30, now, tz),
+      d60: zonedDaysAgo(60, now, tz),
+    };
+  }
   const today = startOfDay(now);
   return {
     now,
@@ -47,6 +81,12 @@ export function getPeriodWindows(now = new Date()): PeriodWindows {
     d30: daysAgo(30, now),
     d60: daysAgo(60, now),
   };
+}
+
+/** Start of the calendar day `n` days ago in the admin's timezone. */
+export async function adminDaysAgo(n: number, now = new Date()): Promise<Date> {
+  const tz = await resolveTimeZone();
+  return tz ? zonedDaysAgo(n, now, tz) : daysAgo(n, now);
 }
 
 export function emptyPeriodCounts(): PeriodCounts {
@@ -80,10 +120,11 @@ type Countable = {
  */
 export async function periodDocumentCounts(
   model: Countable,
-  baseFilter: Record<string, unknown> = {}
+  baseFilter: Record<string, unknown> = {},
+  tz?: string
 ): Promise<PeriodCounts> {
   await dbConnect();
-  const w = getPeriodWindows();
+  const w = getPeriodWindows(new Date(), await resolveTimeZone(tz));
 
   const maybeAggregate = (model as { aggregate?: (pipeline: unknown[]) => Promise<unknown[]> }).aggregate;
   if (typeof maybeAggregate === "function") {
@@ -180,12 +221,13 @@ export async function periodDocumentCounts(
 export async function periodTelemetryCounts(
   TelemetryEvent: Countable,
   event?: string | string[],
-  extraFilter: Record<string, unknown> = {}
+  extraFilter: Record<string, unknown> = {},
+  tz?: string
 ): Promise<PeriodCounts> {
   const base: Record<string, unknown> = { ...extraFilter };
   if (typeof event === "string") base.event = event;
   else if (Array.isArray(event)) base.event = { $in: event };
-  return periodDocumentCounts(TelemetryEvent, base);
+  return periodDocumentCounts(TelemetryEvent, base, tz);
 }
 
 /**
@@ -213,7 +255,7 @@ export async function periodDistinctUsers(
   const extraMatch = opts.match || {};
   // Same cold-start race as periodDocumentCounts — needs a live connection.
   await dbConnect();
-  const w = getPeriodWindows();
+  const w = getPeriodWindows(new Date(), await resolveTimeZone());
 
   try {
     const rows = (await TelemetryEvent.aggregate([
