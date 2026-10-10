@@ -5,6 +5,7 @@ import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "./warm-preview.css";
+import { OriginalChrome } from "@/components/new/PreviewMode";
 import { DesignPreview } from "@/components/DesignPreview";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
@@ -185,13 +186,13 @@ export default async function RootLayout({
             <CompatibilityShell accessTiers={accessTiers}>
               <div className="shell-sidebar">
                 <Suspense fallback={null}>
-                  <Sidebar />
+                  <OriginalChrome><Sidebar /></OriginalChrome>
                 </Suspense>
               </div>
               <div className="shell-main flex min-h-screen min-w-0 max-w-full flex-col pb-16 lg:pb-0 lg:pl-60">
                 <div className="shell-topbar w-full max-w-full">
                   <Suspense fallback={null}>
-                    <TopBar />
+                    <OriginalChrome><TopBar /></OriginalChrome>
                   </Suspense>
                 </div>
                 <Suspense fallback={null}><DesignPreview /></Suspense>

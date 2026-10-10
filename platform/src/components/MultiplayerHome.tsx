@@ -1,4 +1,5 @@
 "use client";
+import { pageHref } from "@/lib/designPreview";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -63,7 +64,7 @@ export function MultiplayerHome({
 
   useEffect(() => {
     if (searchParams.get("startParty") === "1" && !signedIn) {
-      window.location.assign("/login?callbackUrl=%2Fmultiplayer%3FstartParty%3D1");
+      window.location.assign(`/login?callbackUrl=${encodeURIComponent(pageHref("/multiplayer?startParty=1"))}`);
     }
   }, [searchParams, signedIn]);
 
@@ -130,7 +131,7 @@ export function MultiplayerHome({
   // Toggle or update Looking to Party
   async function handleToggleLtp(slugs: string[]) {
     if (!signedIn) {
-      window.location.href = "/login?callbackUrl=/multiplayer";
+      window.location.href = `/login?callbackUrl=${encodeURIComponent(pageHref("/multiplayer"))}`;
       return;
     }
     setLtpBusy(true);
@@ -221,7 +222,7 @@ export function MultiplayerHome({
               type="button"
               onClick={() => {
                 if (!signedIn) {
-                  window.location.href = "/login?callbackUrl=/multiplayer";
+                  window.location.href = `/login?callbackUrl=${encodeURIComponent(pageHref("/multiplayer"))}`;
                   return;
                 }
                 setCreatePartyOpen((v) => !v);
@@ -237,7 +238,7 @@ export function MultiplayerHome({
               type="button"
               onClick={() => {
                 if (!signedIn) {
-                  window.location.href = "/login?callbackUrl=/multiplayer";
+                  window.location.href = `/login?callbackUrl=${encodeURIComponent(pageHref("/multiplayer"))}`;
                   return;
                 }
                 setLtpDrawerOpen((v) => !v);
@@ -338,6 +339,7 @@ export function MultiplayerHome({
             </div>
             <button
               type="button"
+              aria-label="Close party panel"
               onClick={() => setCreatePartyOpen(false)}
               className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
             >
@@ -372,6 +374,7 @@ export function MultiplayerHome({
             </div>
             <button
               type="button"
+              aria-label="Close matchmaking panel"
               onClick={() => setLtpDrawerOpen(false)}
               className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
             >
