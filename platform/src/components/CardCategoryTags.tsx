@@ -27,7 +27,7 @@ export function CardCategoryTags({
   const featureLabels = [
     controller && "Controller",
     has(source, /^(multiplayer|online multiplayer|online co-op|dedicated servers|matchmaking|mmo|mmorpg|pvp|cross-play|crossplay)$/i) && "Online Multiplayer",
-    has(source, /^(couch co-op|split-screen co-op|local co-op|local multiplayer|hotseat)$/i) && "Couch Co-Op",
+    has(source, /^(couch co-op|split-screen co-op|local co-op|local multiplayer|hotseat)$/i) && "Couch Multiplayer",
     has(source, /^(mod support|mods|modding|workshop)$/i) && "Mods",
     has(source, /^(co-op|coop|cooperative|online co-op|local co-op|couch co-op|split-screen co-op)$/i) && "Co-Op",
   ].filter((value): value is string => Boolean(value));

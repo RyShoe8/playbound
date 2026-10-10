@@ -16,7 +16,7 @@ const items = [
 ];
 
 export function MobileNav() {
-  const pathname = usePathname();
+  const pathname = usePathname().replace(/^\/new(?=\/|$)/, "") || "/";
   const { data: session } = useSession();
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
   const isAdmin = canViewAdmin(session?.user?.role);

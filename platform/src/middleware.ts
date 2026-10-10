@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { previewPagePath } from "@/lib/designPreview";
 import { getToken } from "next-auth/jwt";
 
 /**
@@ -41,26 +42,36 @@ function hasSessionCookie(req: NextRequest): boolean {
 }
 
 export async function middleware(req: NextRequest) {
-  const { pathname, search } = req.nextUrl;
+  const { pathname: incomingPath, search } = req.nextUrl;
+  const previewPath = previewPagePath(incomingPath);
+  const pathname = previewPath ?? incomingPath;
+  const proceed = () => {
+    if (previewPath === null) return NextResponse.next();
+    const destination = req.nextUrl.clone();
+    destination.pathname = previewPath;
+    const response = NextResponse.rewrite(destination);
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
+    return response;
+  };
 
   if (ALLOWED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
-    return NextResponse.next();
+    return proceed();
   }
 
-  if (!hasSessionCookie(req)) return NextResponse.next();
+  if (!hasSessionCookie(req)) return proceed();
 
   const token = await getToken({
     req,
     secret: process.env.NEXTAUTH_SECRET,
   });
 
-  if (!token?.needsUsername) return NextResponse.next();
+  if (!token?.needsUsername) return proceed();
 
   const url = req.nextUrl.clone();
   url.pathname = "/welcome";
   url.search = "";
   // Send them back where they were headed once the username is claimed.
-  const target = `${pathname}${search}`;
+  const target = `${incomingPath}${search}`;
   if (target && target !== "/") url.searchParams.set("next", target);
   return NextResponse.redirect(url);
 }

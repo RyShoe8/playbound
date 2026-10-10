@@ -5,7 +5,15 @@ import { EventLocalWhen } from "@/components/LocalTime";
 
 export async function GameUpcomingEvents({ gameSlug }: { gameSlug: string }) {
   const events = await listPublicEvents({ gameSlug, limit: 5 });
-  if (!events.length) return null;
+  if (!events.length) return (
+    <section className="preview-only rounded-xl border border-border bg-card p-4 space-y-3">
+      <h2 className="font-bold">Make the next game night happen</h2>
+      <p className="text-sm text-muted-foreground">Nothing scheduled yet. Bring your friends together for a game night.</p>
+      <Link href={`/admin/events/new?game=${encodeURIComponent(gameSlug)}`} className="inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">Create event</Link>
+      <p className="text-xs text-muted-foreground">Event publishing requires an event administrator. Everyone can start a party.</p>
+      <Link href={`/friends?game=${encodeURIComponent(gameSlug)}`} className="block text-sm font-semibold text-primary">Start a party →</Link>
+    </section>
+  );
 
   return (
     <section className="rounded-xl border border-border bg-card p-4">
@@ -23,11 +31,11 @@ export async function GameUpcomingEvents({ gameSlug }: { gameSlug: string }) {
                 {e.eventType === "tournament" ? "🏆 " : e.eventType === "party" ? "🎉 " : "🎉 "}
                 {e.title}
               </Link>
-              <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+              <p className="mt-0.5 flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
                 <CalendarDays className="size-3" />
                 <EventLocalWhen startsAt={e.startsAt} endsAt={e.endsAt} />
               </p>
-              <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+              <p className="mt-0.5 flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
                 <Users className="size-3" />
                 {e.counts?.going ?? 0} going
                 {e.eventType === "tournament"

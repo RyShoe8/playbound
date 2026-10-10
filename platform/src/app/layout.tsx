@@ -4,6 +4,8 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import "./warm-preview.css";
+import { DesignPreview } from "@/components/DesignPreview";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
 import { MobileNav } from "@/components/shell/MobileNav";
@@ -119,6 +121,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        <script dangerouslySetInnerHTML={{ __html: 'if(location.pathname==="/new"||location.pathname.startsWith("/new/"))document.documentElement.setAttribute("data-warm-preview","")' }} />
         {/* Impact.com partner verification. Uses value= per their spec, not the
             usual content= — do not "fix" this to match other meta tags.
             React treats `value` as a controlled DOM property (the same
@@ -188,6 +191,7 @@ export default async function RootLayout({
                     <TopBar />
                   </Suspense>
                 </div>
+                <Suspense fallback={null}><DesignPreview /></Suspense>
                 <main className="flex-1 min-w-0 max-w-full">{children}</main>
                 <div className="shell-footer w-full max-w-full"><Footer /></div>
               </div>

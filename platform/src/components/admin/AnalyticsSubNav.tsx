@@ -11,7 +11,7 @@ const tabs = [
 ];
 
 export function AnalyticsSubNav() {
-  const pathname = usePathname();
+  const pathname = usePathname().replace(/^\/new(?=\/|$)/, "") || "/";
 
   return (
     <div className="border-b border-border/50 bg-card/20">
