@@ -1,5 +1,6 @@
 "use client";
 
+import { NewSiteShell } from "@/components/new/NewSiteShell";
 import { DiscoveryModeToggle } from "@/components/DiscoveryModeToggle";
 import { GameCompatibilityToggle } from "@/components/GameCompatibilityToggle";
 import { openDiscordInvite } from "@/lib/openPlayboundDeepLink";
@@ -32,5 +33,5 @@ export function DesignPreview() {
     document.addEventListener("click", click, true);
     return () => document.removeEventListener("click", click, true);
   }, [pathname, router]);
-  return <><div className="design-preview-bar"><span>New design preview · Live data and actions</span><a href={previewPagePath(pathname) ?? pathname} data-exit-preview>Exit preview</a></div><details className="design-preview-mobile"><summary>Discover, compatibility & community</summary><div className="space-y-4 p-3"><DiscoveryModeToggle variant="sidebar" /><GameCompatibilityToggle variant="sidebar" /><button onClick={() => openDiscordInvite(SITE_DISCORD_INVITE)} className="rounded-lg bg-primary px-4 py-2 font-bold text-primary-foreground">Join Discord</button></div></details></>;
+  return <><NewSiteShell /><div className="design-preview-bar"><span>New design preview · Live data and actions</span><a href={previewPagePath(pathname) ?? pathname} data-exit-preview>Exit preview</a></div><details className="design-preview-mobile"><summary>Discover, compatibility & community</summary><div className="space-y-4 p-3"><DiscoveryModeToggle variant="sidebar" /><GameCompatibilityToggle variant="sidebar" /><button onClick={() => openDiscordInvite(SITE_DISCORD_INVITE)} className="rounded-lg bg-primary px-4 py-2 font-bold text-primary-foreground">Join Discord</button></div></details></>;
 }
