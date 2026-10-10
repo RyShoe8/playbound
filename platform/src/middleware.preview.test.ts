@@ -13,6 +13,11 @@ describe("preview rewrite and username gate", () => {
     expect(normal.headers.get("x-robots-tag")).toBeNull();
     expect(normal.headers.get("x-middleware-rewrite")).toBeNull();
   });
+  it("serves the distinct preview homepage without rewriting to the old home", async () => {
+    const response = await middleware(new NextRequest("https://playbound.club/new"));
+    expect(response.headers.get("x-middleware-rewrite")).toBeNull();
+    expect(response.headers.get("x-robots-tag")).toBe("noindex, nofollow");
+  });
   it("does not bypass username completion via /new", async () => {
     vi.mocked(getToken).mockResolvedValue({ needsUsername: true });
     const response = await middleware(new NextRequest("https://playbound.club/new/admin/events", { headers: { cookie: "next-auth.session-token=test" } }));

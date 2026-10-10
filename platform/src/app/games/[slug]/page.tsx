@@ -228,7 +228,7 @@ export async function GamePageFrame({
   const historicalOffers = gameOffers.filter((o) => !o.isActive);
 
   return (
-    <div>
+    <div className="new-game-page">
       <TelemetryOnce
         event="game_viewed"
         properties={{ gameSlug: game.slug, gameTitle: game.title }}
@@ -261,7 +261,7 @@ export async function GamePageFrame({
 
       {/* ── Hero ───────────────────────────────────────────────── */}
       <section
-        className={`relative overflow-hidden border-b border-border ${
+        className={`new-game-hero relative overflow-hidden border-b border-border ${
           /*
            * Height only when there is something to look at. The hero has
            * always been as tall as its own text, which is right for a game
@@ -312,7 +312,7 @@ export async function GamePageFrame({
           * gap between the title and the buttons, which is exactly where the
           * play control sits.
           */}
-        <div className="pointer-events-none relative z-10 mt-auto px-4 pt-24 pb-14 sm:px-6 lg:px-8">
+        <div className="new-game-intro pointer-events-none relative z-10 mt-auto px-4 pt-24 pb-14 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div className="pointer-events-auto max-w-2xl">
               <div className="flex flex-wrap items-center gap-2">
@@ -354,7 +354,7 @@ export async function GamePageFrame({
       </Suspense>
 
       {/* ── Tabs ───────────────────────────────────────────────── */}
-      <nav className="no-scrollbar sticky top-0 z-20 flex gap-1 overflow-x-auto border-b border-border bg-background/90 px-4 backdrop-blur-md sm:px-6 lg:px-8">
+      <nav className="new-game-tabs no-scrollbar sticky top-0 z-20 flex gap-1 overflow-x-auto border-b border-border bg-background/90 px-4 backdrop-blur-md sm:px-6 lg:px-8">
         <ScrollActiveTab activeKey={tab} />
         <Link
           href={`/games/${game.slug}`}
@@ -604,7 +604,7 @@ async function OverviewTab({
   );
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[1fr_320px]">
+    <div className="new-game-overview grid gap-10 lg:grid-cols-[1fr_320px]">
       <div className="min-w-0 space-y-10">
         {unlocks ? <MasterCopyUnlocks game={game} unlocks={unlocks} affiliates={affiliates} /> : null}
 

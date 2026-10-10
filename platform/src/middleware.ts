@@ -49,7 +49,7 @@ export async function middleware(req: NextRequest) {
     if (previewPath === null) return NextResponse.next();
     const destination = req.nextUrl.clone();
     destination.pathname = previewPath;
-    const response = NextResponse.rewrite(destination);
+    const response = previewPath === "/" ? NextResponse.next() : NextResponse.rewrite(destination);
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
     return response;
   };

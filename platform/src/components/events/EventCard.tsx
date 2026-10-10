@@ -21,7 +21,7 @@ export function EventCard({
   return (
     <Link
       href={`/events/${event.id}`}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-border/80 bg-card/90 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
+      className="new-event-card group flex flex-col overflow-hidden rounded-2xl border border-border/80 bg-card/90 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
     >
       {cover ? (
         <div className="relative h-40 w-full overflow-hidden bg-secondary/60">
