@@ -1,0 +1,80 @@
+M|starcraft|burningground|StarCraft: Burning Ground|Nova Interactive Team|2014|9.6|583,339|1 year|TC|Total conversion for StarCraft 1.16.1 set after the Zerg infestation.
+M|starcraft|scdoc|StarCraft: Dawn of Change|Nova Interactive Team|2017|9.2|287,638|7 years||Story of the UED three years after the Brood War.
+M|starcraft|sc-revolution-mod|SC Revolution Mod|RavenWolf|2011|9.9|310,574|9 years||Classic Brood War with improved mechanics, new units and upgrades.
+M|starcraft|starcraft-fusion|StarCraft Fusion|_dhk_|2008|6.8|115,396|17 years||Complete unofficial add-on for Brood War.
+M|starcraft|dark-evolution|Dark Evolution|Starcraft Modders|2007|8.8|112,847|4 years||Total-conversion style mod for StarCraft.
+M|starcraft|huncraft-genocide|HunCraft Genocide|Huncraft Interactive|2001|10|97,877|2 years||Detailed StarCraft total conversion.
+M|starcraft|warcraft-iii-total-conversion|Warcraft III: Starcraft TC|foo_jam2002|2001|8.6|84,687|3 years|TC|Warcraft III universe brought to StarCraft.
+M|starcraft|starcraft-sons-of-war|StarCraft: Sons of War|Sons of War Development Team|TBD||140,110|17 years|TC|Total conversion for StarCraft.
+M|starcraft|soti|Shadow Of The Infestation|Starcraft Modders|TBD||150,915|13 years||Story after the Brood War with Kerrigan and her brood.
+M|starcraft|starcraftsor|Starcraft SOR MOD|nasaman12|2014|9.6|103,326|7 years||Large mod updating units, balance and campaigns (v4.7).
+M|starcraft|scwttl|Starcraft: War to the Liberty|Devilanc|2018|9.4|100,717|8 years||Multi-part Space/Black Revolution style mod.
+M|starcraft|star-trek-dominion-war|Star Trek: Dominion War|Jstek|2007|8|62,731|13 years||Star Trek fleets and battles in StarCraft.
+M|starcraft|human-empires-ii-the-slave-wars|Human Empires: The Slave Wars|Cantstandian Industries|1986|8.6|100,345|2 years||Total conversion set 300 years in the future.
+M|starcraft|starcraft-coop-campaign|Starcraft & Broodwar Co-op Campaign|ViC Brigade|2014|7.6|261,229|3 months||Cooperative campaign with scripted dialogue and AI balancing.
+M|starcraft|starcraft-insurrection-remastered-mod|StarCraft: Insurrection Remastered Mod|Vorgozz|2017|10|47,899|4 years||Remastered version of the Insurrection campaign.
+M|starcraft|sc-sum-starcraft-super-unit-mod|SC SUM - StarCraft Super Unit Mod|Sahasrahla|2012|9.3|134,890|9 years||Super-unit mod based on Brood War (v1.45).
+M|starcraft|nameless-mod|Nameless Mod|shaggydavid|2009|9.4|80,483|17 years||Experimental nano-virus themed mod.
+M|starcraft|dark-antiquity|Dark Antiquity|dlatjdgus92|2015|9.6|60,288|8 years||Recommended for StarCraft 1.16.1.
+M|starcraft|conflict-of-the-stars|Conflict of the Stars|aseiok21254|2015|9.6|67,961|10 years||Maps SC1 factions onto SC2 Dominion, Protoss and more.
+M|quake-ii-enhanced|quake-ii-call-of-the-void|Call of the Void (Quake 1/2 Crossover)|Rest in Pixels|2025|9.1|98,009|7 months||Story campaign picking up where Call of the Machine leaves off.
+M|quake-ii-enhanced|zaero|Zaero|medve|1998|8.4|57,290|2 years||Classic third-party mission pack.
+M|quake-ii-enhanced|quake-ii-psx|Quake II PSX|Paril|2024|10|66,053|5 months||Full port of the PSX campaign for Quake II Re-release.
+M|quake-ii-enhanced|codered-battle-for-earth|CodeRED - Battle For Earth|Irritant|2003|8.5|51,762|16 years||Story-driven conversion set in 1999.
+M|quake-ii-enhanced|action-quake-ii|Action Quake II|Bravo_Zulu|1998||31,154|10 years||Classic deathmatch mod.
+M|quake-ii-enhanced|gloom|Gloom|pallokallo|2002|9.2|119,650|7 months||Atmospheric team game blending action and strategy.
+M|quake-ii-enhanced|paintball-2|Paintball 2|jitspoe|2007|9.6|129,595|14 years||Digital Paint: Paintball 2.
+M|quake-ii-enhanced|dawn-of-darkness1|Dawn of Darkness|Toadeater|1999|9.4|136,609|6 years|TC|RPG/adventure/action total conversion.
+M|quake-ii-enhanced|project-vortex|Project Vortex|ghz|1999|8.6|48,297|17 years||Action-RPG conversion.
+M|quake-ii-enhanced|quake-ii-heavy-metal-q2hm|Quake II: Heavy Metal (Q2HM)|Hexen Mage Tower|2020|7.8|31,507|1 year||Heavy-metal themed overhaul for Q2PRO.
+M|quake-ii-enhanced|eternal-war-shadows-of-light|Eternal War: Shadows of Light|Xrucifix|2015|7|28,477|11 years||Single-player conversion.
+M|quake-ii-enhanced|oblivion-for-quake-2|Oblivion for Quake 2|Lethargy Software|2012|8.8|23,213|4 years||Unofficial mission pack.
+M|quake-ii-enhanced|the-return|Return to Perdition|MikeM|TBD||52,623|2 months||Sequel set 25 years after the Strogg homeworld attack.
+M|quake-ii-enhanced|quake-2-xp|quake2xp|Quake2xp Team|2022|9.1|530,049|7 months||Multi-platform graphics port with modern lighting.
+M|quake-ii-enhanced|quake-ii-evolved|Quake II Evolved|odium|TBD||48,213|10 years||32-bit high-detail engine modification.
+M|quake-ii-enhanced|quake2-remodel|Quake 2 Weapons Remodel|Turic|2017|9.5|148,245|6 years||Remake of all Quake 2 weapon models.
+M|quake-ii-enhanced|quake-2-neural-upscale|Quake 2 Neural Upscale|Calinou2|2019|9.9|39,883|3 years||World and model textures upscaled with ESRGAN.
+M|quake-ii-enhanced|quake-2-pbr-texture-pack|Quake 2 PBR texture pack|Hellbinder|TBD||25,125|6 years||PBR retexture for quake2xp.
+M|quake-ii-enhanced|quake-2-rtx-retexture-project|Quake 2 RTX Retexture Project|diolator|TBD||70,891|2 years||New textures close to the original for Quake II RTX.
+M|quake-ii-enhanced|cinematic-mod-for-quake-ii-rtx|CiNEmatic|Artistic AI Bytes|2020|10|40,532|2 years||Cinematic visuals for Quake II RTX.
+M|quake-ii-enhanced|berserkerquake2|Berserker@Quake2|medve|2008|9.3|255,658|8 years||Brings Quake 2's graphics system into the new century.
+M|quake-ii-enhanced|transformers-quake-2|Transformers Quake 2|Alpha-Prime|2009|8.9|81,571|4 years||Transformers conversion.
+M|quake-ii-enhanced|ddaynormandy|D-Day: Normandy|Gen_PATTON|2007|9.1|97,917|19 years||WWII team-based mod with classes.
+M|quake-ii-enhanced|sonic-mayhem|Sonic Mayhem|Colonthree Enterprises|2017|9.3|24,780|7 years||Single-player unit for the 20th anniversary.
+M|counter-strike-source|counter-strike-source-offensive|Source Offensive|PiMoNFeeD|2022|9.5|1,481,789|3 months||Plays CS:S like CS:GO with weapons, HUD and more.
+M|counter-strike-source|cspromod|CSPromod|CSPromod Dev Team|2007|6.5|291,720|14 years||Competitive-focused CS:S mod.
+M|counter-strike-source|counter-strike-source-global-offensive|Counter-Strike Source: Global Offensive|TaZus|2016|7|141,374|4 years||CS:GO gameplay in CS:S.
+M|counter-strike-source|zombie-horde|Zombie Horde|deegz|2007|7.8|262,569|18 years||Zombie Horde v1.0 game mode.
+M|counter-strike-source|situation-outbreak-two|Situation Outbreak Two|Agent Red Productions|TBD||53,675|14 years|TC|Prequel to the Half-Life 2 total conversion.
+M|counter-strike-source|respect-and-honor-1944|Respect and Honor 1944|durthwarrior|2009|5.9|53,499|17 years||WWII conversion.
+M|counter-strike-source|headcrab-mod|Headcrab Mod|Thony36|2009|9.4|112,060|14 years||Squad vs a horde of 50 headcrabs.
+M|counter-strike-source|aliens-mod-css|Aliens Mod CSS|MixiSoft|2012|9|87,443|13 years||Aliens-themed mod.
+M|counter-strike-source|hd-world-by-clipodel|HD World by Clipodel|clipodel|2011|6|77,616|13 years||Improved weapon models and detailed world textures.
+M|counter-strike-source|metal-gear-solid-2-big-shell-remake|D.B's Metal Gear Solid CS:S / CS:GO|D.B CREATION|2012|10|77,546|12 years||Remake of the Big Shell.
+M|counter-strike-source|counter-strike-re-source-2019|Counter-Strike: Re-Source|gEck0_|2019|9.4|118,974|7 years||Re-creation of classic CS elements.
+M|counter-strike-source|sg-stargate-maps|SG Stargate Maps|D.B CREATION|2010|7.7|452,226|12 years||Stargate-themed maps.
+M|counter-strike-source|css-post-apocalyptic-full-pack|CS:S Post-Apocalyptic FULL pack|CS:S Post-Apoc dev studio|TBD||86,920|16 years||Post-apocalyptic map and model pack.
+M|battlefield-1942-anthology|forgotten-hope|Forgotten Hope|Forgotten Hope Devs|2006|9.4|570,084|7 years||More realistic WWII combat with new vehicles and weapons.
+M|battlefield-1942-anthology|forgotten-hope-secret-weapon|Forgotten Hope: Secret Weapon|FHSW Europe Community|TBD||921,925|3 months||Community continuation of Secret Weapons.
+M|battlefield-1942-anthology|desert-combat|Desert Combat|Ridiculer|2004|9.4|588,390|9 years||Modern-warfare conversion (Gulf War).
+M|battlefield-1942-anthology|battlegroup42|BattleGroup42|BattleGroup42 Development Team|2003|9.7|707,257|2 years||Historically accurate equipment and tactics.
+M|battlefield-1942-anthology|eve-of-destruction1|Eve Of Destruction|Lotte/EoD|2003|9.6|362,076|9 years||Vietnam conflict conversion (1946-1973).
+M|battlefield-1942-anthology|battlefield-1918|Battlefield 1918|inside1918|2011|9.4|1,037,379|2 months|TC|World War I total conversion.
+M|battlefield-1942-anthology|high-definition-remaster|High-Definition Remaster|ScureHD|2019|9.9|316,807|3 years||HD texture and model remaster.
+M|battlefield-1942-anthology|battlefield-high-definition|Battlefield: High Definition|LieutenantClone|2007|9.3|204,708|18 years||High-definition visual upgrade.
+M|battlefield-1942-anthology|warfront1|Warfront|bf_takiwa|2017|9.7|240,781|10 months||200+ vehicles and 75+ weapons.
+M|battlefield-1942-anthology|battlefield-galactic-conquest|Battlefield: Galactic Conquest|Wrafe|2006|9.2|197,694|3 years||Star Wars infantry battles.
+M|battlefield-1942-anthology|battlefield-1941|Battlefield 1941|-=BMV=-|2004|8.8|186,402|11 years||Early WWII Eastern Front.
+M|battlefield-1942-anthology|wwii-reality|WWII Reality|Pilot_51|2008|9.7|182,851|17 years||Visuals and weapon realism overhaul.
+M|battlefield-1942-anthology|battlefield40k-bf1942|Battlefield 40K - BF1942|Battlefield 40K Developers|2006|8.9|133,858|4 years|TC|Warhammer 40,000 conversion.
+M|battlefield-1942-anthology|dc-global-front|DC Global Front|Marshall_Nord|2010|8.9|128,433|13 years||Mini-mod for Desert Combat.
+M|battlefield-1942-anthology|conflict-in-somalia|Conflict In Somalia|Blackburns|2003|8.2|113,716|15 years||Battle of Mogadishu era conversion.
+M|battlefield-1942-anthology|combat-in-flames|Combat In Flames|Hooyie Studio|2010|8.7|105,663|14 years||WWII conversion.
+M|battlefield-1942-anthology|forgotten-honor-mod|Forgotten Honor Mod|commander29|2007|9.5|104,694|9 years||Forgotten Hope variant.
+M|battlefield-1942-anthology|finnwars|FinnWars|Stimor|2006|9.7|102,987|2 years||Finland vs the Soviet Union in WWII.
+M|battlefield-1942-anthology|siege-medieval-warfare|Siege: Medieval Warfare|Sniperjack|TBD||100,252|16 years||Medieval conversion.
+M|battlefield-1942-anthology|gloria-victis|Gloria Victis|PFT|2014|9.2|98,893|9 years||Polish campaign mod for Forgotten Hope 0.7.
+M|battlefield-1942-anthology|the-great-war2|The Great War|ytres|2004|8|71,902|15 years||Original WWI mod.
+M|battlefield-1942-anthology|silent-heroes|Silent Heroes|WFW-PREDATOR|2006|9.3|88,064|15 years||Modern conflict conversion.
+M|battlefield-1942-anthology|experience-world-war-2|Experience World War 2|jimhoey|2005|9|91,134|15 years||Realistic WWII experience.
+M|battlefield-1942-anthology|fhrmod|Forgotten Hope Revisited|ziba128|2012|9.6|286,375|8 years||Gameplay enhancements and graphics for Forgotten Hope 0.7.
