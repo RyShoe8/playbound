@@ -15,6 +15,7 @@ export function DesignPreview() {
   useEffect(() => {
     const active = previewPagePath(window.location.pathname) !== null;
     document.documentElement.toggleAttribute("data-warm-preview", active);
+    document.documentElement.dataset.previewPage = (previewPagePath(window.location.pathname) ?? "").split("/")[1] || "home";
     if (!active) return;
     const click = (event: MouseEvent) => {
       const anchor = event.target instanceof Element ? event.target.closest("a") : null;
@@ -31,5 +32,5 @@ export function DesignPreview() {
     document.addEventListener("click", click, true);
     return () => document.removeEventListener("click", click, true);
   }, [pathname, router]);
-  return <><div className="design-preview-bar"><span>New design preview · Live data and actions</span><a href={previewPagePath(pathname) ?? "/"} data-exit-preview>Exit preview</a></div><details className="design-preview-mobile"><summary>Discover, compatibility & community</summary><div className="space-y-4 p-3"><DiscoveryModeToggle variant="sidebar" /><GameCompatibilityToggle variant="sidebar" /><button onClick={() => openDiscordInvite(SITE_DISCORD_INVITE)} className="rounded-lg bg-primary px-4 py-2 font-bold text-primary-foreground">Join Discord</button></div></details></>;
+  return <><div className="design-preview-bar"><span>New design preview · Live data and actions</span><a href={previewPagePath(pathname) ?? pathname} data-exit-preview>Exit preview</a></div><details className="design-preview-mobile"><summary>Discover, compatibility & community</summary><div className="space-y-4 p-3"><DiscoveryModeToggle variant="sidebar" /><GameCompatibilityToggle variant="sidebar" /><button onClick={() => openDiscordInvite(SITE_DISCORD_INVITE)} className="rounded-lg bg-primary px-4 py-2 font-bold text-primary-foreground">Join Discord</button></div></details></>;
 }

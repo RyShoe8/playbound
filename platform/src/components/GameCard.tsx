@@ -305,12 +305,12 @@ export function GameCard({
        */
       data-mobile-compat={isGameCompatible(game, "mobile") ? "true" : "false"}
       className={cn(
-        "group flex h-full w-[270px] shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-border bg-card transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.7)] sm:w-[292px]",
+        "new-game-card group flex h-full w-[270px] shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-border bg-card transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.7)] sm:w-[292px]",
         className
       )}
     >
       <Link href={`/games/${game.slug}`} className="flex flex-1 flex-col">
-      <div className="relative w-full aspect-[3/4] shrink-0 overflow-hidden">
+      <div className="new-card-art relative w-full aspect-[3/4] shrink-0 overflow-hidden">
         <GameArt game={game} className="size-full" />
         <IncompatibleCorner game={game} />
         <div className="absolute top-2 right-2 z-20">
@@ -319,6 +319,7 @@ export function GameCard({
       </div>
       <div className="flex flex-1 flex-col justify-between gap-2 border-t border-border/70 bg-card/90 px-2.5 py-2">
         <div className="min-w-0 flex-1">
+          <h3 className="new-card-title">{game.title}</h3>
           <p className="text-[11px] font-extrabold tracking-wide text-muted-foreground">{price}</p>
           <CardCategoryTags
             genres={game.genres}

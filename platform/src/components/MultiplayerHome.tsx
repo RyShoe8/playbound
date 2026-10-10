@@ -198,9 +198,9 @@ export function MultiplayerHome({
   };
 
   return (
-    <div className="space-y-8 px-4 py-6 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <div className="new-multiplayer space-y-8 px-4 py-6 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-3xl border border-border/70 bg-gradient-to-br from-card via-card/90 to-primary/5 p-6 sm:p-8 shadow-2xl backdrop-blur-md">
+      <div className="new-multiplayer-heading relative overflow-hidden rounded-3xl border border-border/70 bg-gradient-to-br from-card via-card/90 to-primary/5 p-6 sm:p-8 shadow-2xl backdrop-blur-md">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="max-w-2xl space-y-2">
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
@@ -257,7 +257,7 @@ export function MultiplayerHome({
         </div>
 
         {/* Real-time Summary Stat Bar */}
-        <div className="relative z-10 mt-6 pt-6 border-t border-border/50 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="new-multiplayer-stats relative z-10 mt-6 pt-6 border-t border-border/50 grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="rounded-xl border border-border/40 bg-secondary/30 p-3">
             <div className="flex items-center gap-2 text-muted-foreground text-xs font-semibold">
               <Server className="size-3.5 text-cyan-400" />
@@ -498,8 +498,8 @@ export function MultiplayerHome({
       {/* Live & starting-soon events replace the old All Activity / Games / Server Browser / Events tabs. */}
       <MultiplayerEvents initialEvents={initialEvents} />
 
-      <div className="space-y-8">
-        <div className="flex justify-end">
+      <div className="new-multiplayer-layout space-y-8">
+        <div className="new-multiplayer-filter flex justify-end">
           <label className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer select-none px-2 py-1 rounded-lg hover:bg-secondary/50 transition-colors">
             <input
               type="checkbox"
@@ -511,7 +511,7 @@ export function MultiplayerHome({
           </label>
         </div>
 
-        <MultiplayerFriendsSection
+        <aside className="new-multiplayer-friends"><MultiplayerFriendsSection
           signedIn={signedIn}
           onJoinLtpWithFriend={(friendSlugs) => {
             setLtpSelectedSlugs(friendSlugs);
@@ -519,7 +519,8 @@ export function MultiplayerHome({
           }}
         />
 
-        <MultiplayerOpenParties
+        </aside>
+        <div className="new-multiplayer-parties"><MultiplayerOpenParties
           signedIn={signedIn}
           initialParties={initialParties}
           installedGameSlugs={installedGameSlugs}
@@ -530,7 +531,8 @@ export function MultiplayerHome({
           }}
         />
 
-        <div ref={serverBrowserRef} className="space-y-4 pt-4 border-t border-border/50">
+        </div>
+        <div ref={serverBrowserRef} className="new-multiplayer-servers space-y-4 pt-4 border-t border-border/50">
           <div>
             <div className="inline-flex items-center gap-1.5 rounded-md bg-cyan-500/20 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-cyan-300 border border-cyan-500/30">
               <Server className="size-3" />
