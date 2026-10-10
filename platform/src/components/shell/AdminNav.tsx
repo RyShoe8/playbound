@@ -380,7 +380,7 @@ function NavPill({
 }
 
 export function AdminNav() {
-  const pathname = usePathname();
+  const pathname = usePathname().replace(/^\/new(?=\/|$)/, "") || "/";
   const [pending, setPending] = useState<{ href: string; from: string } | null>(null);
   const pendingHref = pending?.from === pathname ? pending.href : null;
 

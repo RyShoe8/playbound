@@ -1,5 +1,6 @@
 "use client";
 
+import { useSession } from "next-auth/react";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, usePathname } from "next/navigation";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
@@ -93,6 +94,19 @@ export function DiscoverFilters({
   const [selectedTags, setSelectedTags] = useState<string[]>(() => initialTags);
   const [featuresOpen, setFeaturesOpen] = useState(() => initialFeatures.length > 0);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>(() => initialFeatures);
+  const { data: session } = useSession();
+  const [excludeLibrary, setExcludeLibrary] = useState(false);
+  const [librarySlugs, setLibrarySlugs] = useState<{ userId: string; slugs: string[] } | null>(null);
+  const [libraryError, setLibraryError] = useState(false);
+  useEffect(() => {
+    if (!session?.user || !excludeLibrary) return;
+    const controller = new AbortController();
+    fetch("/api/library", { signal: controller.signal })
+      .then((response) => { if (!response.ok) throw new Error("Library unavailable"); return response.json(); })
+      .then((data) => { setLibrarySlugs({ userId: session.user.id, slugs: data.entries.map((entry: { gameSlug: string }) => entry.gameSlug) }); setLibraryError(false); })
+      .catch(() => { if (!controller.signal.aborted) setLibraryError(true); });
+    return () => controller.abort();
+  }, [session?.user?.id, excludeLibrary]);
   const [sort, setSort] = useState<SortOption>("name");
   const [multiplayerOnly, setMultiplayerOnly] = useState(false);
   /** Only games with someone in them right now, per the shared live snapshot. */
@@ -153,6 +167,10 @@ export function DiscoverFilters({
   /* Filter games based on current filter states (before genre split) */
   const baseFiltered = useMemo(() => {
     let list = games.slice();
+    if (excludeLibrary && session?.user && librarySlugs?.userId === session.user.id && !libraryError) {
+      const owned = new Set(librarySlugs.slugs);
+      list = list.filter((game) => !owned.has(game.slug));
+    }
 
     /*
      * Every selected tag must match, not any. Tags describe what a game is
@@ -230,6 +248,10 @@ export function DiscoverFilters({
     return list;
   }, [
     games,
+    excludeLibrary,
+    librarySlugs,
+    libraryError,
+    session?.user,
     selectedTags,
     selectedFeatures,
     multiplayerOnly,
@@ -664,6 +686,11 @@ export function DiscoverFilters({
           </div>
         </div>
 
+        <div className="preview-only">
+          <Checkbox checked={excludeLibrary} onCheckedChange={setExcludeLibrary} disabled={!session?.user} label="Exclude my library" description={!session?.user ? "Sign in to use this filter." : undefined} />
+          {excludeLibrary && !librarySlugs && !libraryError && <p role="status">Loading your library…</p>}
+          {excludeLibrary && libraryError && <p role="alert">Could not load your library. Showing all games. Uncheck and retry.</p>}
+        </div>
         {/* Row 2: Secondary Checkbox Filters */}
         <div className="flex items-center gap-3.5 border-t border-border/40 pt-2 pl-0.5">
           <Checkbox

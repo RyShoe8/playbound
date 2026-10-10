@@ -1,0 +1,41 @@
+/* Entirely opt-in. The existing design and admin information architecture stay intact. */
+.design-preview-bar { display: none; }
+html[data-warm-preview] {
+  --background: #15161c; --foreground: #f1eee9; --card: #202129;
+  --card-foreground: #f1eee9; --popover: #25262e; --popover-foreground: #f1eee9;
+  --primary: #dda688; --primary-foreground: #241c17; --ring: #dda688;
+  --secondary: #292a32; --secondary-foreground: #f1eee9;
+  --muted: #292a32; --muted-foreground: #b1adb7;
+  --accent: #342b25; --accent-foreground: #f1eee9;
+  --border: #ffffff12; --input: #ffffff24; --sidebar: #111217;
+  --sidebar-primary: #dda688; --sidebar-primary-foreground: #241c17;
+  --sidebar-accent: #342b25; --sidebar-accent-foreground: #f1eee9;
+  --sidebar-ring: #dda688; --sidebar-border: #ffffff12;
+  --play: #dda688; --play-foreground: #241c17; --surface: #1a1b22; --surface-2: #25262e;
+  --bg-card-hover: #292a32; --border-focus: #dda68866;
+}
+html[data-warm-preview] .design-preview-bar { display:flex; justify-content:space-between; gap:1rem; padding:.5rem 1rem; background:#342b25; color:#e7bfa7; font-size:12px; }
+html[data-warm-preview] .design-preview-bar a { text-decoration:underline; }
+html[data-warm-preview] h1 { letter-spacing:-.035em; }
+html[data-warm-preview] button, html[data-warm-preview] a { outline-offset:4px; }
+html[data-warm-preview] .preview-mod-strip { width:270px; }
+html[data-warm-preview] .preview-mod-art { height:auto; aspect-ratio:3/4; flex-shrink:0; }
+html[data-warm-preview] .preview-mod-card { border-radius:12px; }
+html[data-warm-preview] .preview-brand-old { display:none; }
+.preview-brand-new { display:none; }
+html[data-warm-preview] .preview-brand-new { display:block; width:180px; height:auto; }
+@media(min-width:640px) { html[data-warm-preview] .preview-mod-strip { width:292px; } }
+
+.preview-only { display:none; }
+html[data-warm-preview] .preview-only { display:block; }
+
+@font-face { font-family:WarmSans; src:url('/brand/warm-fonts/dm-sans.ttf') format('truetype'); font-weight:400; font-display:swap; }
+@font-face { font-family:WarmSans; src:url('/brand/warm-fonts/dm-sans-bold.ttf') format('truetype'); font-weight:600 900; font-display:swap; }
+@font-face { font-family:WarmHeading; src:url('/brand/warm-fonts/barlow-condensed.ttf') format('truetype'); font-weight:700; font-display:swap; }
+html[data-warm-preview] body { font-family:WarmSans,system-ui,sans-serif; }
+html[data-warm-preview] h1 { font-family:WarmHeading,system-ui,sans-serif; font-size:clamp(2rem,3.2vw,3rem); font-weight:700; }
+html[data-warm-preview] .shell-sidebar aside { box-shadow:none; }
+html[data-warm-preview] .preview-mod-card .line-clamp-2 { min-height:2.8em; }
+
+.design-preview-mobile { display:none; }
+@media(max-width:1023px) { html[data-warm-preview] .design-preview-mobile { display:block; border-bottom:1px solid var(--border); padding:12px; font-size:13px; } }

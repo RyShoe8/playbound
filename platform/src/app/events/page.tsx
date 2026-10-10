@@ -125,7 +125,7 @@ export default async function EventsPage() {
             href="/admin/events/new"
             className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-all hover:brightness-110"
           >
-            <Plus className="size-4" /> New Event
+            <Plus className="size-4" /> Create event
           </Link>
         )}
       </div>

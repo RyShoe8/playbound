@@ -62,7 +62,7 @@ export function ModCard({
 
   const body = (
     <>
-      <ModArt mod={mod} baseGame={baseGame} className="h-[152px] w-full" />
+      <ModArt mod={mod} baseGame={baseGame} className="preview-mod-art h-[152px] w-full" />
       <div className="flex flex-1 flex-col p-4">
         <p className="truncate text-[19px] font-bold leading-tight">{mod.title}</p>
         <p className="mt-1 flex-1 text-[14px] leading-relaxed text-muted-foreground line-clamp-2">
@@ -89,7 +89,7 @@ export function ModCard({
   );
 
   const shellClass = cn(
-    "group flex h-full flex-col overflow-hidden rounded-[14px] border border-border bg-card transition-all duration-[250ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:border-[var(--border-focus,oklch(1_0_0/18%))] hover:bg-[var(--bg-card-hover,oklch(0.24_0.018_278))] hover:shadow-[0_12px_30px_rgba(0,0,0,0.5)]",
+    "preview-mod-card group flex h-full flex-col overflow-hidden rounded-[14px] border border-border bg-card transition-all duration-[250ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:border-[var(--border-focus,oklch(1_0_0/18%))] hover:bg-[var(--bg-card-hover,oklch(0.24_0.018_278))] hover:shadow-[0_12px_30px_rgba(0,0,0,0.5)]",
     className
   );
 

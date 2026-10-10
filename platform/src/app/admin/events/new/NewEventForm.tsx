@@ -6,7 +6,9 @@ import { Upload, X, Image as ImageIcon } from "lucide-react";
 
 export function NewEventForm({
   gameOptions,
+  initialGameSlug = "",
 }: {
+  initialGameSlug?: string;
   gameOptions: { slug: string; title: string; coverImage?: string | null }[];
 }) {
   const router = useRouter();
@@ -14,7 +16,7 @@ export function NewEventForm({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [eventType, setEventType] = useState("game_night");
-  const [gameSlug, setGameSlug] = useState("");
+  const [gameSlug, setGameSlug] = useState(initialGameSlug);
   const [coverImage, setCoverImage] = useState<string | null>(null);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [startsAt, setStartsAt] = useState("");

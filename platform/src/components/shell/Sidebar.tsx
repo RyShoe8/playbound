@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { canViewAdmin } from "@/lib/adminAccess";
@@ -19,6 +20,7 @@ import {
   Swords,
   Users,
 } from "lucide-react";
+import { openDiscordInvite } from "@/lib/openPlayboundDeepLink";
 import { SITE_DISCORD_INVITE } from "@/lib/site";
 import { withOutboundUtm } from "@/lib/utm";
 import { cn } from "@/lib/utils";
@@ -46,7 +48,7 @@ const nav = [
 ];
 
 export function Sidebar() {
-  const pathname = usePathname();
+  const pathname = usePathname().replace(/^\/new(?=\/|$)/, "") || "/";
   const { data: session } = useSession();
   const asideRef = useRef<HTMLElement>(null);
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
@@ -82,10 +84,11 @@ export function Sidebar() {
       className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col overflow-y-auto no-scrollbar border-r border-sidebar-border bg-sidebar lg:flex"
     >
       <Link href="/" className="flex shrink-0 items-center gap-2.5 px-5 pt-5 pb-6">
-        <span className="flex size-9 items-center justify-center rounded-xl bg-primary shadow-[0_0_28px_-6px_var(--primary)]">
+        <span className="preview-brand-old flex size-9 items-center justify-center rounded-xl bg-primary shadow-[0_0_28px_-6px_var(--primary)]">
           <Play className="size-4.5 fill-primary-foreground text-primary-foreground" />
         </span>
-        <span className="text-lg font-extrabold tracking-tight">
+        <Image width={960} height={260} unoptimized src="/brand/playbound-warm.svg" alt="PlayBound — Discover. Play. Connect." className="preview-brand-new" />
+        <span className="preview-brand-old text-lg font-extrabold tracking-tight">
           Play<span className="text-primary">Bound</span>
         </span>
       </Link>
@@ -127,6 +130,7 @@ export function Sidebar() {
       <div className="shrink-0 border-t border-sidebar-border p-3">
         <a
           href={withOutboundUtm(SITE_DISCORD_INVITE, { campaign: "discord_sidebar" })}
+          onClick={(event) => { if (document.documentElement.hasAttribute("data-warm-preview")) { event.preventDefault(); openDiscordInvite(SITE_DISCORD_INVITE); } }}
           target="_blank"
           rel="noopener noreferrer"
           className="mb-3 flex flex-col gap-2 rounded-xl border border-primary/30 bg-primary/10 p-3 transition-colors hover:border-primary/50 hover:bg-primary/15"

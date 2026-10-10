@@ -16,7 +16,7 @@ export function ModPreviewCard({
     <ModCard
       mod={mod}
       baseGame={baseGame}
-      className={cn("w-[324px] shrink-0 snap-start", className)}
+      className={cn("preview-mod-strip w-[324px] shrink-0 snap-start", className)}
     />
   );
 }
