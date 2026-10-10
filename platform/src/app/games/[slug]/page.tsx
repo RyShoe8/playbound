@@ -69,7 +69,6 @@ import { alternativePages } from "@/lib/data/alternatives";
 import { classifyMediaUrl, heroMediaItems } from "@/lib/mediaEmbed";
 import { GameHeroMedia } from "@/components/GameHeroMedia";
 import { GameControlsContent } from "./GameControlsContent";
-import { GameControlsSummary } from "./GameControlsSummary";
 import { HlsVideo } from "@/components/HlsVideo";
 import { deriveInstallSteps, deriveFaq } from "@/lib/enrich";
 import {
@@ -102,7 +101,6 @@ const tabs = [
   "news",
   "discussion",
   "reviews",
-  "controls",
 ] as const;
 type Tab = (typeof tabs)[number];
 
@@ -114,21 +112,21 @@ type Tab = (typeof tabs)[number];
  */
 const PROMOTED_ROUTES = [
   /*
-   * Controls is a real URL for the same reason servers is: "<game> keybinds"
-   * is a search with intent, and a ?tab= cannot rank because this page's
-   * canonical folds every tab variant into one.
+   * Controls lives on the game page itself (the #controls section), so the
+   * game page is the one rich URL for "<game> controls" and "<game> keybinds"
+   * rather than splitting that relevance across two pages. The nav item is a
+   * jump link to the section.
    */
-  { key: "controls", label: "controls", href: (slug: string) => `/games/${slug}/controls` },
+  { key: "controls", label: "controls", href: (slug: string) => `/games/${slug}#controls` },
   { key: "servers", label: "servers", href: (slug: string) => `/multiplayer?game=${encodeURIComponent(slug)}` },
 ] as const;
 
 /** Tabs that remain as query params — low search value, app-like content. */
-const PARAM_TABS = tabs.filter((tab) => tab !== "controls");
+const PARAM_TABS = tabs;
 
 type GamePageProps = {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ tab?: string; category?: string; sort?: string; filter?: string; q?: string }>;
-  forcedTab?: Tab;
 };
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
@@ -166,7 +164,6 @@ async function safeQuery<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
 export async function GamePageFrame({
   params,
   searchParams,
-  forcedTab,
 }: GamePageProps) {
   const { slug } = await params;
   const sp = await searchParams;
@@ -189,8 +186,9 @@ export async function GamePageFrame({
     notFound();
   }
 
-  const tab: Tab = forcedTab ?? (tabs.includes(rawTab as Tab) ? (rawTab as Tab) : "overview");
-  if (tab === "controls" && !hasControls(game.controls)) notFound();
+  // Controls used to be ?tab=controls and then /controls; both now live on this page.
+  if (rawTab === "controls") permanentRedirect(`/games/${game.slug}#controls`);
+  const tab: Tab = tabs.includes(rawTab as Tab) ? (rawTab as Tab) : "overview";
   // Trailers and screenshots for the hero reel — the same URLs the Media tab
   // renders, ordered videos-first. Empty for a game with no media, which is
   // what keeps the generated-art hero for those.
@@ -328,13 +326,7 @@ export async function GamePageFrame({
                   </Link>
                 ))}
               </div>
-              {/* The controls tab renders its own h1 ("<game> controls"); a second h1
-                  for the game name made the page ambiguous about its subject. */}
-              {tab === "controls" ? (
-                <p className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">{game.title}</p>
-              ) : (
-                <h1 className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">{game.title}</h1>
-              )}
+              <h1 className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">{game.title}</h1>
               <p className="mt-2 text-muted-foreground sm:text-lg">{game.tagline}</p>
               <div className="mt-3">
                 <Suspense fallback={<GameHeroPlayingNowFallback />}>
@@ -439,7 +431,7 @@ export async function GamePageFrame({
             key={r.key}
             href={r.href(game.slug)}
             data-tab={r.key}
-            className={cn("border-b-2 px-3 py-3 text-sm font-semibold whitespace-nowrap capitalize transition-colors", tab === r.key ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground")}
+            className="border-b-2 border-transparent px-3 py-3 text-sm font-semibold whitespace-nowrap capitalize text-muted-foreground transition-colors hover:text-foreground"
           >
             {r.label}
           </Link>
@@ -542,7 +534,6 @@ export async function GamePageFrame({
             <GameEditionsBlock game={game} editions={editions} />
           </Suspense>
         )}
-        {tab === "controls" && <GameControlsContent game={game} />}
         {lastModified && (
           <p className="mt-10 text-xs text-muted-foreground">
             Last updated{" "}
@@ -852,11 +843,17 @@ async function OverviewTab({
         </section>
 
         {/*
-         * A taste of the controls, with the full reference a click away.
-         * Answers "what are the keys" on the page worth ranking, while
-         * leaving /controls a reason to exist — it targets a different search.
+         * The complete controls reference, in the page's own HTML. This is the
+         * page worth ranking for "<game> controls", so it carries every
+         * binding rather than a preview with a link to a thinner second URL.
          */}
-        <GameControlsSummary game={game} />
+        {hasControls(game.controls) && (
+          <section id="controls" className="scroll-mt-24">
+            <Suspense fallback={<div className="h-48 animate-pulse rounded-xl bg-muted/30" />}>
+              <GameControlsContent game={game} />
+            </Suspense>
+          </section>
+        )}
 
         <Suspense fallback={<GameSimilarFallback />}>
           <GameSimilarBlock game={game} />

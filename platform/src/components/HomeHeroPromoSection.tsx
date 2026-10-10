@@ -29,7 +29,8 @@ import type { CatalogLiveStats } from "@/lib/liveActivity";
 import { directPurchaseRequired } from "@/lib/access/resolver";
 import { accessPriceLabel, scopeCatalogLiveStats } from "@/lib/access/discoveryMode";
 import { useAccessTiers } from "@/components/AccessTiersProvider";
-import { formatEditionChipName, getEditionChips as getDisplayEditionsForGame } from "@/lib/data/editionChips";
+import { formatEditionChipName } from "@/lib/data/editionChips";
+import { useEditionChips } from "@/components/EditionChipsProvider";
 
 interface HomeHeroPromoSectionProps {
   gamesNewestFirst: Game[];
@@ -46,7 +47,7 @@ function FeaturedGameHero({ hero, badge }: { hero: Game; badge: string }) {
   const isPaid = directPurchaseRequired(hero.access);
   const price = accessPriceLabel(hero.access?.currentPriceCents ?? null);
   const buyOffer = hero.access?.offers?.[0];
-  const displayEditions = getDisplayEditionsForGame(hero.slug);
+  const displayEditions = useEditionChips(hero.slug);
 
   return (
     <section className="relative h-full overflow-hidden rounded-2xl border border-border shadow-md">

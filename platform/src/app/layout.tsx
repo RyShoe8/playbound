@@ -18,6 +18,8 @@ import { TelemetryProvider } from "@/components/TelemetryProvider";
 import { CompatibilityShell } from "@/components/CompatibilityShell";
 import { PopoutDetector } from "@/components/PopoutDetector";
 import { gameAccessTiers } from "@/lib/access/tiers";
+import { loadEditionChips } from "@/lib/editionChipsLive";
+import { EditionChipsProvider } from "@/components/EditionChipsProvider";
 import {
   SITE_URL,
   SITE_NAME,
@@ -97,7 +99,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const accessTiers = await gameAccessTiers();
+  const [accessTiers, editionChips] = await Promise.all([gameAccessTiers(), loadEditionChips()]);
   /*
    * suppressHydrationWarning on <html>: Vercel injects data-dpl-id onto this
    * element in the HTML it serves. React never rendered that attribute, so
@@ -179,6 +181,7 @@ export default async function RootLayout({
             </Suspense>
             <PartySyncProvider />
             <PopoutDetector />
+            <EditionChipsProvider chips={editionChips}>
             <CompatibilityShell accessTiers={accessTiers}>
               <div className="shell-sidebar">
                 <Suspense fallback={null}>
@@ -201,6 +204,7 @@ export default async function RootLayout({
                 </Suspense>
               </div>
             </CompatibilityShell>
+            </EditionChipsProvider>
           </TelemetryProvider>
         </SessionProvider>
       </body>

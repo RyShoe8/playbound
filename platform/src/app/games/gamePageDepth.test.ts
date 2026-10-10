@@ -94,47 +94,41 @@ describe("media lives in its own tab, second after Overview", () => {
   });
 });
 
-describe("controls on the game page, and the page they link to", () => {
-  it("the overview shows a controls summary", () => {
-    expect(overviewTab()).toMatch(/<GameControlsSummary game=\{game\} \/>/);
+describe("controls on the game page", () => {
+  it("the overview carries the complete controls reference in its own HTML", () => {
+    expect(overviewTab()).toMatch(/<section id="controls"/);
+    expect(overviewTab()).toMatch(/<GameControlsContent game=\{game\} \/>/);
   });
 
-  it("the summary is an h2, the dedicated page an h1", () => {
-    /*
-     * Same subject, different jobs. Two h1s saying "<game> controls" across
-     * two URLs is the shape that makes Google pick one and drop the other.
-     */
-    const summary = readFileSync(
-      path.join(process.cwd(), "src", "app", "games", "[slug]", "GameControlsSummary.tsx"),
-      "utf8"
-    );
+  it("the section is an h2 with h3 sub-sections, so the page keeps one h1", () => {
     const full = readFileSync(
       path.join(process.cwd(), "src", "app", "games", "[slug]", "GameControlsContent.tsx"),
       "utf8"
     );
-    // Strip comments first: the components discuss h1 and h2 in prose, and
-    // matching that would test the documentation rather than the markup.
-    const code = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
-    expect(code(summary)).toMatch(/<h2[^>]*>\{game\.title\} controls<\/h2>/);
-    expect(code(summary)).not.toMatch(/<h1/);
-    expect(code(full)).toMatch(/<h1/);
+    const code = full.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+    expect(code).not.toMatch(/<h1/);
+    expect(code).toMatch(/<h2[^>]*>\{game\.title\} controls<\/h2>/);
   });
 
-  it("the summary previews rather than reprints, and links onward", () => {
-    // If it showed everything, /controls would be a duplicate of a section
-    // of the hub and would deserve to be dropped.
-    const summary = readFileSync(
-      path.join(process.cwd(), "src", "app", "games", "[slug]", "GameControlsSummary.tsx"),
+  it("uses the full column width rather than a centred narrow box", () => {
+    const full = readFileSync(
+      path.join(process.cwd(), "src", "app", "games", "[slug]", "GameControlsContent.tsx"),
       "utf8"
     );
-    expect(summary).toMatch(/const PREVIEW_ROWS = \d+/);
-    expect(summary).toMatch(/\.slice\(0, PREVIEW_ROWS\)/);
-    expect(summary).toMatch(/href=\{`\/games\/\$\{game\.slug\}\/controls`\}/);
+    expect(full).not.toMatch(/max-w-4xl/);
   });
 
-  it("the controls route 404s when there is nothing to show", () => {
-    // A promoted URL that renders an empty section is a thin page.
-    expect(PAGE).toMatch(/tab === "controls" && !hasControls\(game\.controls\)\) notFound\(\)/);
+  it("the old URLs redirect to the section instead of being separate pages", () => {
+    expect(PAGE).toMatch(/rawTab === "controls"\) permanentRedirect\(`\/games\/\$\{game\.slug\}#controls`\)/);
+    const route = readFileSync(
+      path.join(process.cwd(), "src", "app", "games", "[slug]", "controls", "page.tsx"),
+      "utf8"
+    );
+    expect(route).toMatch(/permanentRedirect\(`\/games\/\$\{game\.slug\}#controls`\)/);
+  });
+
+  it("only games with documented controls get the section", () => {
+    expect(overviewTab()).toMatch(/hasControls\(game\.controls\) && \(\s*<section id="controls"/);
   });
 });
 

@@ -38,7 +38,8 @@ import {
 } from "@/lib/mobilePlay";
 import { isGameCompatible } from "@/lib/compatibility/compatibility";
 import { withOutboundUtm } from "@/lib/utm";
-import { formatEditionChipName, getEditionChips as getDisplayEditionsForGame } from "@/lib/data/editionChips";
+import { formatEditionChipName } from "@/lib/data/editionChips";
+import { useEditionChips } from "@/components/EditionChipsProvider";
 import { GameDownloadChoiceModal } from "@/components/GameDownloadChoiceModal";
 
 function sizeLabel(sizeMB: number) {
@@ -288,7 +289,7 @@ export function GameCard({
   const isBaseGameReq = isBaseGameRequirement(game.access);
   const tier = useGameTier(game.slug);
   const price = isBaseGameReq ? "FREE" : accessPriceLabel(tier.fromPriceCents);
-  const displayEditions = getDisplayEditionsForGame(game.slug);
+  const displayEditions = useEditionChips(game.slug);
 
   return (
     <div

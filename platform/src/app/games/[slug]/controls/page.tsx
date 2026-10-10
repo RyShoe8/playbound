@@ -1,29 +1,22 @@
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { canonicalSlugFor, getGame } from "@/lib/catalog";
-import { pageMetadata, privateMetadata, gameTitle } from "@/lib/seo";
+import { privateMetadata } from "@/lib/seo";
 import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
-import { CONTROL_SCHEME_LABELS, documentedSchemes } from "@/lib/controls/types";
-import { GamePageFrame } from "../page";
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const includeTesting = await viewerCanSeeTesting();
-  const game = await getGame(slug, { includeTesting });
-  if (!game) {
-    if (await canonicalSlugFor(slug)) return privateMetadata("Controls Not Found");
-    notFound();
-  }
-  if (game.status === "testing" || game.status === "ready") return privateMetadata(gameTitle(game));
-  const schemes = documentedSchemes(game.controls).filter((scheme) => scheme.bindings.length > 0).map((scheme) => CONTROL_SCHEME_LABELS[scheme.scheme].toLowerCase());
-  const list = schemes.length > 1 ? `${schemes.slice(0, -1).join(", ")} and ${schemes.at(-1)}` : schemes[0] || "keyboard";
-  return pageMetadata({
-    title: `${game.title} Controls & Keybinds`,
-    description: `Default ${list} controls for ${game.title} — every key, button and binding.`,
-    path: `/games/${game.slug}/controls`,
-    images: game.coverImage ? [game.coverImage] : undefined,
-  });
+/**
+ * Controls are a section of the game page (#controls), not a page of their own.
+ * Kept as a permanent redirect so every indexed or shared /controls URL lands on
+ * the game page and passes its ranking signals there.
+ */
+export async function generateMetadata() {
+  return privateMetadata("Controls");
 }
 
-export default function GameControlsPage({ params }: { params: Promise<{ slug: string }> }) {
-  return <GamePageFrame params={params} searchParams={Promise.resolve({})} forcedTab="controls" />;
+export default async function GameControlsRedirect({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const game = await getGame(slug, { includeTesting: await viewerCanSeeTesting() });
+  if (game) permanentRedirect(`/games/${game.slug}#controls`);
+  const canonical = await canonicalSlugFor(slug);
+  if (canonical) permanentRedirect(`/games/${canonical}#controls`);
+  notFound();
 }
