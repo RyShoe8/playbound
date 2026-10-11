@@ -9,6 +9,7 @@ This is a coverage record, not a claim that every production action has been exe
 - Browser launcher detection remains a focus/visibility handoff heuristic, not proof that the launcher is installed. Added four regression tests covering successful handoff, OS-specific fallback, explicit download opt-in, and cancellation.
 - 41 focused download/platform/mobile/search tests and the four new handoff tests passed; TypeScript and changed-component lint passed. The full-suite count below predates these additions.
 - User authorized scoped live test records when needed. No such records have been created yet; the browser remains signed out, so authenticated write flows remain unverified.
+- Deployed install change verified on `/new/games/openra?tab=install`: Get It Free opens both choices and resolves the manual link to the official OpenRA Windows portable release on GitHub. Verified the destination, not a completed game download or installation. Screenshot: `.tmp/new-preview/manual-download-live.png`.
 
 ## Fixed
 
