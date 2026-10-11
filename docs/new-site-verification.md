@@ -2,6 +2,14 @@
 
 This is a coverage record, not a claim that every production action has been exercised.
 
+## October 11 follow-up
+
+- Community-server search now includes visible game titles and slugs. Verified live by searching Hedgewars and finding its community row.
+- Free-game install choices no longer depend on website authentication: signed-in users can choose a manual download too. The Install tab uses the same shared game CTA. Paid games keep their purchase/install path; mobile routing remains unchanged.
+- Browser launcher detection remains a focus/visibility handoff heuristic, not proof that the launcher is installed. Added four regression tests covering successful handoff, OS-specific fallback, explicit download opt-in, and cancellation.
+- 41 focused download/platform/mobile/search tests and the four new handoff tests passed; TypeScript and changed-component lint passed. The full-suite count below predates these additions.
+- User authorized scoped live test records when needed. No such records have been created yet; the browser remains signed out, so authenticated write flows remain unverified.
+
 ## Fixed
 
 - Hidden original headers and preview headers no longer remain mounted together after hydration. This removes duplicate notification polling from the inactive shell.
