@@ -1,4 +1,5 @@
 "use client";
+import { matchesServerSearch } from "@/lib/servers/search";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 import { Checkbox } from "@/components/ui/Checkbox";
 
@@ -552,9 +553,7 @@ export function GlobalServerBrowser({
         const editionLabel = s.gameType
           ? editionNameBySlug.get(s.gameType) || s.gameType
           : "";
-        return `${s.name} ${s.map || ""} ${s.gameType || ""} ${editionLabel} ${s.players}/${s.maxPlayers}`
-          .toLowerCase()
-          .includes(q);
+        return matchesServerSearch(s, q, editionLabel);
       });
     }
     const sorted = list.slice().sort((a, b) => {
