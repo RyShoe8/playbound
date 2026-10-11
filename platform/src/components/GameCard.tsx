@@ -3,7 +3,6 @@
 import { useLauncherOs } from "@/hooks/useLauncherOs";
 
 import { useState } from "react";
-import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Download, Loader2, MonitorPlay, Play } from "lucide-react";
 import type { Game } from "@/lib/data/types";
@@ -72,7 +71,6 @@ export function PlayCta({
   const { track } = useTelemetry();
   const [status, setStatus] = useState<"idle" | "trying" | "downloaded">("idle");
   const [showDownloadChoice, setShowDownloadChoice] = useState(false);
-  const { status: sessionStatus } = useSession();
   const os = useLauncherOs();
   const isInstalled = Boolean(installed || (game as { installed?: boolean }).installed);
   const paid = directPurchaseRequired(game.access);
@@ -157,7 +155,8 @@ export function PlayCta({
   function handleInstall(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    if (!isInstalled && !paid && sessionStatus !== "authenticated") {
+    // Signing into the website does not mean the desktop launcher is installed.
+    if (!isInstalled && !paid) {
       setShowDownloadChoice(true);
       return;
     }
