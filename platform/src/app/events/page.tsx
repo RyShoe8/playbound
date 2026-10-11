@@ -1,4 +1,7 @@
 import { Suspense } from "react";
+import { headers } from "next/headers";
+import { NewEventsSchedule } from "@/components/new/NewEventsSchedule";
+import { PlayWithFriends } from "@/components/friends/PlayWithFriends";
 import Link from "next/link";
 import { connection } from "next/server";
 import type { Metadata } from "next";
@@ -116,6 +119,22 @@ export default async function EventsPage() {
   );
 
   const hasActive = events.length > 0;
+
+  if ((await headers()).get("x-playbound-design-preview") === "1") {
+    return <div className="new-page new-events-page">
+      <header className="new-page-heading"><div><p className="new-eyebrow">Your next game night</p><h1>Events & game nights</h1><p>A week of reasons to get the group together.</p></div>
+        {isAdmin && <Link href="/new/admin/events/new" className="new-button primary"><Plus className="size-4" /> Create event</Link>}
+      </header>
+      <div className="new-events-layout">
+        <NewEventsSchedule events={[...events].sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))} titles={Object.fromEntries(titles)} />
+        <aside className="new-events-rail">
+          <section className="new-panel new-pad"><p className="new-eyebrow">Your week</p><h2>Make room for a game night</h2><p>Times are shown in your local timezone. Open an event to see its edition, RSVP, and available Join options.</p><Link href="/new/multiplayer" className="new-button primary">Play now</Link></section>
+          <section className="new-panel new-pad"><PlayWithFriends surface="new_events" compact /></section>
+          <Suspense fallback={<p role="status">Loading open parties…</p>}><LiveOpenParties /></Suspense>
+        </aside>
+      </div>
+    </div>;
+  }
 
   return (
     <div className="space-y-10 px-4 py-6 sm:px-6 lg:px-8">
