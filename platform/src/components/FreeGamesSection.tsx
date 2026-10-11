@@ -10,11 +10,11 @@ import { FreeGamesSectionClient } from "@/components/FreeGamesSectionClient";
  * Delegates to FreeGamesSectionClient for dynamic device compatibility filtering.
  * Hidden gracefully when no active offers exist.
  */
-export async function FreeGamesSection() {
+export async function FreeGamesSection({ diversifyStores = false }: { diversifyStores?: boolean } = {}) {
   const offers = await listActiveOffers();
   if (offers.length === 0) return null;
 
-  return <FreeGamesSectionClient offers={offers} />;
+  return <FreeGamesSectionClient offers={offers} diversifyStores={diversifyStores} />;
 }
 
 /** Loading fallback for Suspense boundary. */

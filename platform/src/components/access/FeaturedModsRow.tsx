@@ -37,9 +37,13 @@ export type FeaturedMod = {
 export function FeaturedModsRow({
   candidates,
   limit = 8,
+  title = "Mods",
+  grid = false,
 }: {
   candidates: FeaturedMod[];
   limit?: number;
+  title?: string;
+  grid?: boolean;
 }) {
   const { mode: discoveryMode } = useDiscoveryMode();
   const { mode: compatMode, device } = useCompatibilityFilter();
@@ -62,12 +66,12 @@ export function FeaturedModsRow({
 
   return (
     <section>
-      <SectionHeader title="Mods" subtitle="Packageable add-ons for PlayBound titles" href="/mods" />
-      <CardRow>
+      <SectionHeader title={title} subtitle="Packageable add-ons for PlayBound titles" href="/mods" />
+      {grid ? <div className="new-mod-grid">{visible.map(({ mod, baseGame }) => <ModPreviewCard key={mod.slug} mod={mod} baseGame={baseGame} />)}</div> : <CardRow>
         {visible.map(({ mod, baseGame }) => (
           <ModPreviewCard key={mod.slug} mod={mod} baseGame={baseGame} />
         ))}
-      </CardRow>
+      </CardRow>}
     </section>
   );
 }

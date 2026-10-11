@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
-  credentials: [] as Array<{ userId: string; tokenHash: string; createdAt: Date; revokedAt: Date | null }>,
+  credentials: [] as Array<{ userId: string; tokenHash: string; createdAt: Date; revokedAt: Date | null; client?: string }>,
   legacyHash: "" as string,
   legacyCreatedAt: new Date(),
 }));
@@ -12,7 +12,7 @@ vi.mock("@/lib/models/LauncherCredential", () => ({
     create: async (doc: { userId: string; tokenHash: string }) => {
       state.credentials.push({ ...doc, createdAt: new Date(), revokedAt: null });
     },
-    exists: async ({ userId }: { userId: string }) => state.credentials.some((item) => item.userId === userId),
+    exists: async (query: { userId: string; client?: null; revokedAt?: null }) => state.credentials.some(item => item.userId === query.userId && (!("client" in query) || !item.client) && (!("revokedAt" in query) || item.revokedAt === null)),
     findOne: ({ tokenHash, revokedAt }: { tokenHash: string; revokedAt: null }) => ({
       select: async () => state.credentials.find((item) => item.tokenHash === tokenHash && item.revokedAt === revokedAt) || null,
     }),
@@ -24,6 +24,7 @@ vi.mock("@/lib/models/LauncherCredential", () => ({
 }));
 vi.mock("@/lib/models/User", () => ({
   default: {
+    exists: async ({ _id }: { _id: string }) => _id === "user-1" && Boolean(state.legacyHash),
     findById: () => ({ select: async () => ({ _id: "user-1", disabled: false, email: "player@example.com" }) }),
     findOne: ({ launcherTokenHash }: { launcherTokenHash: string }) => ({
       select: async () => launcherTokenHash === state.legacyHash
@@ -39,7 +40,7 @@ vi.mock("@/lib/models/User", () => ({
 }));
 
 import {
-  hashLauncherToken, hasLauncherConnection, issueLauncherTokenForUser,
+  hashLauncherToken, hasLauncherConnection, hasLinkedLauncher, issueLauncherTokenForUser,
   revokeLauncherToken, userFromLauncherBearer,
 } from "@/lib/library";
 
@@ -74,5 +75,21 @@ describe("launcher credentials across PCs", () => {
     expect(await revokeLauncherToken(legacy)).toBe(true);
     expect(await userFromLauncherBearer(requestFor(legacy))).toBeNull();
     expect((await userFromLauncherBearer(requestFor(laptop)))?._id).toBe("user-1");
+  });
+});
+
+
+describe("homepage launcher promotion", () => {
+  it("recognizes linked launchers without confusing game credentials or other accounts", async () => {
+    state.legacyHash = "";
+    state.credentials = [{ userId: "user-1", tokenHash: "game", createdAt: new Date(), revokedAt: null, client: "game:test" }];
+    expect(await hasLinkedLauncher("user-1")).toBe(false);
+    state.credentials.push({ userId: "user-1", tokenHash: "desktop", createdAt: new Date(), revokedAt: null });
+    expect(await hasLinkedLauncher("user-1")).toBe(true);
+    expect(await hasLinkedLauncher("user-2")).toBe(false);
+    state.credentials[1].revokedAt = new Date();
+    expect(await hasLinkedLauncher("user-1")).toBe(false);
+    state.legacyHash = "legacy";
+    expect(await hasLinkedLauncher("user-1")).toBe(true);
   });
 });
