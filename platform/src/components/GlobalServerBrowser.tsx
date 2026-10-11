@@ -1,4 +1,5 @@
 "use client";
+import { pageHref } from "@/lib/designPreview";
 import { matchesServerSearch } from "@/lib/servers/search";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -212,7 +213,7 @@ export function GlobalServerBrowser({
           mod: server.mod || null,
           protected: server.protected,
         });
-        router.push(`/party/${partyId}`);
+        router.push(pageHref(`/party/${partyId}`));
       }
     } catch (err) {
       console.error("Failed to join server with party:", err);
@@ -850,7 +851,7 @@ export function GlobalServerBrowser({
                         {s.players == null ? "—" : `${s.players}/${s.maxPlayers ?? "—"}`}
                       </span>
                       {s.bots ? (
-                        <span className="ml-1 text-xs text-muted-foreground">({s.bots} bots)</span>
+                        <span className="block text-xs text-muted-foreground">{s.bots} bots</span>
                       ) : null}
                     </td>
                     <td className="px-3 py-3 text-muted-foreground">{s.map || "—"}</td>

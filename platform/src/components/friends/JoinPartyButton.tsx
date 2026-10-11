@@ -1,4 +1,5 @@
 "use client";
+import { pageHref } from "@/lib/designPreview";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -43,7 +44,7 @@ export function JoinPartyButton({
         if (party.hasPassword) setAskPassword(true);
         return;
       }
-      router.push("/friends");
+      router.push(pageHref("/friends"));
     } finally {
       setBusy(false);
     }

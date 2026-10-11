@@ -114,3 +114,16 @@ html[data-warm-preview] :is(.shell-sidebar,.shell-topbar){display:none}
 .new-topbar{height:72px;margin:0 32px;border-bottom:1px solid #ffffff12;display:flex;align-items:center;justify-content:space-between;gap:18px}.new-topbar form{display:flex;align-items:center;gap:12px;flex:1;color:#aaa3af}.new-topbar input{background:transparent;border:0;padding:12px 0;font-size:13px;width:100%;outline-offset:4px}.new-topbar>div{display:flex;align-items:center;gap:18px}
 @media(min-width:1024px){html[data-warm-preview] .shell-main{padding-left:206px}}
 @media(max-width:1023px){.new-sidebar{display:none}.new-topbar{margin:0 16px;height:60px}}
+
+/* Compact rails must respond to their own available width, not the viewport. */
+html[data-warm-preview] .new-empty-parties { flex-direction:column; align-items:stretch; }
+html[data-warm-preview] .new-empty-parties>div { min-width:0; width:100%; }
+html[data-warm-preview] .new-empty-parties button { align-self:flex-start; white-space:normal; }
+html[data-warm-preview] .new-friends-layout { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:24px; align-items:start; }
+html[data-warm-preview] .new-friends-layout>* { min-width:0; margin-top:0; grid-column:1/-1; }
+html[data-warm-preview] .new-friends-layout>.new-friends-list { grid-column:1; grid-row:2 / span 4; border:1px solid var(--border); border-radius:12px; background:var(--card); padding:20px; }
+html[data-warm-preview] .new-friends-layout>.new-friends-privacy { grid-column:2; grid-row:2; padding:18px; }
+html[data-warm-preview] .new-friends-layout>.new-friends-party { grid-column:2; }
+@media(max-width:900px) { html[data-warm-preview] .new-friends-layout { grid-template-columns:minmax(0,1fr); } html[data-warm-preview] .new-friends-layout>:is(.new-friends-list,.new-friends-privacy,.new-friends-party) { grid-column:1; grid-row:auto; } }
+html[data-warm-preview] .new-friends-list>section>.grid { grid-template-columns:minmax(0,1fr); }
+html[data-warm-preview] .new-friends-party .grid { grid-template-columns:minmax(0,1fr); }

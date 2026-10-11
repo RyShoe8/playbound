@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { redirect, notFound } from "next/navigation";
 import { Types } from "mongoose";
 import dbConnect from "@/lib/db";
@@ -16,12 +17,13 @@ export default async function PartyLinkPage({ params }: { params: Promise<{ id: 
   const party = await Party.findById(id).select("visibility status").lean();
   if (!party || party.status === "ended") notFound();
 
-  const destination = `/friends?party=${encodeURIComponent(id)}`;
+  const prefix = (await headers()).get("x-playbound-design-preview") === "1" ? "/new" : "";
+  const destination = `${prefix}/friends?party=${encodeURIComponent(id)}`;
   if (await getFriendsUserId()) redirect(destination);
 
   const friendsOnly = party.visibility === "friends";
-  const signupHref = `/signup?from=party&next=${encodeURIComponent(`/party/${id}`)}`;
-  const loginHref = `/login?callbackUrl=${encodeURIComponent(`/party/${id}`)}`;
+  const signupHref = `/signup?from=party&next=${encodeURIComponent(`${prefix}/party/${id}`)}`;
+  const loginHref = `/login?callbackUrl=${encodeURIComponent(`${prefix}/party/${id}`)}`;
   return (
     <main className="mx-auto flex min-h-[65vh] max-w-xl flex-col justify-center px-4 py-12 text-center sm:px-6">
       <div className="rounded-2xl border border-border bg-card p-8">
