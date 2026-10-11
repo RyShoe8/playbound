@@ -24,7 +24,7 @@ type Server = {
   statusReason: string | null;
 };
 
-type Game = { profileKey: string; gameSlug: string; gameTitle: string; editionSlug: string | null; sizes: number[]; capEnforced: boolean };
+type Game = { editionTitle?: string | null; profileKey: string; gameSlug: string; gameTitle: string; editionSlug: string | null; sizes: number[]; capEnforced: boolean };
 
 type Me = {
   subscription: null | {
@@ -305,8 +305,8 @@ function CreateServer({
 }) {
   const [profileKey, setProfileKey] = useState(games[0]?.profileKey || "");
   const game = games.find((g) => g.profileKey === profileKey);
-  const sizes = (game?.sizes || []).filter((n) => n <= capacity);
-  const [slots, setSlots] = useState<number>(sizes[0] || 4);
+  const sizes = (game?.sizes || []).filter((n) => n >= 2 && n <= capacity);
+  const [slots, setSlots] = useState<number>(sizes[0] || 2);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [visibility, setVisibility] = useState("public");
@@ -324,7 +324,7 @@ function CreateServer({
           {games.map((g) => (
             <option key={g.profileKey} value={g.profileKey}>
               {g.gameTitle}
-              {g.editionSlug ? ` — ${g.editionSlug}` : ""}
+              {g.editionSlug ? ` — ${g.editionTitle || g.editionSlug.replace(/-/g, " ")}` : ""}
             </option>
           ))}
         </select>

@@ -7,7 +7,6 @@ import { ChevronDown, Download, ExternalLink, FolderOpen, Play, Trash2, UserPlus
 import type { Game } from "@/lib/data/types";
 import {
   launcherInstallUrl,
-  launcherLocateUrl,
   launcherOpenFolderUrl,
   launcherPlayUrl,
   launcherUninstallUrl,
@@ -460,13 +459,6 @@ function DesktopInstalledActions({
       >
         <FolderOpen className="size-3" /> Folder
       </a>
-      <a
-        href={launcherLocateUrl(slug)}
-        className={cn(chip, "bg-secondary text-secondary-foreground hover:bg-secondary/70")}
-        title="Select .exe in the PlayBound app"
-      >
-        Locate
-      </a>
       <RemoveFromLibraryButton slug={slug} onRemoved={() => setHidden(true)} />
       <UninstallFromPcButton
         slug={slug}
@@ -786,13 +778,6 @@ function DesktopLibraryRow({
                     title="Open install folder"
                   >
                     <FolderOpen className="size-3" /> Folder
-                  </a>
-                  <a
-                    href={launcherLocateUrl(game.slug)}
-                    className="inline-flex min-h-7 items-center gap-1 rounded-full bg-secondary px-2.5 text-[11px] font-bold text-secondary-foreground hover:bg-secondary/70"
-                    title="Select .exe in the PlayBound app"
-                  >
-                    Locate
                   </a>
                 </>
               ) : null}

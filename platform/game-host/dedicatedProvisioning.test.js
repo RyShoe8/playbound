@@ -51,6 +51,13 @@ test("Battlefield 1942 isolates settings and caps players without copying game a
   assert.deepEqual(recipes["battlefield-1942-anthology"].args(14567, a), ["+overlayPath", overlayA]);
   await recipes["battlefield-1942-anthology"].prepareSpawn(14569, a);
   assert.equal((fs.readFileSync(configA, "utf8").match(/game.serverPort /g) || []).length, 1);
+  a.settings.map = "wake";
+  a.settings.gameMode = "GPM_COOP";
+  a.settings.botSkill = 60;
+  await recipes["battlefield-1942-anthology"].prepareSpawn(14569, a);
+  assert.equal(fs.readFileSync(path.join(overlayA, "settings", "maplist.con"), "utf8"), "game.addLevel wake GPM_COOP bf1942\ngame.setCurrentLevel wake GPM_COOP bf1942\n");
+  assert.match(fs.readFileSync(configA, "utf8"), /game.serverCoopAiSkill 60\n/);
+  assert.match(fs.readFileSync(path.join(overlayB, "settings", "maplist.con"), "utf8"), /berlin GPM_CQ/);
 });
 
 test("GoldenEye: Source isolates its Windows runtime and Wine prefix per server", async () => {

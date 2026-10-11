@@ -115,6 +115,11 @@ export function createDedicatedRecipes(deps) {
         fs.mkdirSync(path.join(overlay, "logs"), { recursive: true, mode: 0o700 });
         const config = path.join(settings, "serversettings.con");
         const original = fs.readFileSync(config, "utf8");
+        const map = settingToken("battlefield-1942-anthology", ctx, "map", "berlin");
+        if (!/^[a-z0-9_]+$/i.test(map)) throw new Error("Invalid Battlefield map");
+        const requestedMode = settingToken("battlefield-1942-anthology", ctx, "gameMode", "GPM_CQ");
+        const mode = requestedMode === "GPM_COOP" ? "GPM_COOP" : "GPM_CQ";
+        fs.writeFileSync(path.join(settings, "maplist.con"), `game.addLevel ${map} ${mode} bf1942\ngame.setCurrentLevel ${map} ${mode} bf1942\n`, { mode: 0o600 });
         const values = {
           "game.serverName": `"${serverName(ctx, "PlayBound Dedicated")}"`,
           "game.serverDedicated": "1",
@@ -128,6 +133,7 @@ export function createDedicatedRecipes(deps) {
           "game.gameSpyPort": "0",
           "game.ASEPort": "0",
           "game.serverPunkBuster": "0",
+          "game.serverCoopAiSkill": String(settingNumber("battlefield-1942-anthology", ctx, "botSkill", 75, 1, 100)),
         };
         const lines = original.split(/\r?\n/).filter((line) => !Object.keys(values).some((key) => line.startsWith(`${key} `)));
         fs.writeFileSync(config, `${lines.join("\n").trimEnd()}\n${Object.entries(values).map(([key, value]) => `${key} ${value}`).join("\n")}\n`, { mode: 0o600 });
