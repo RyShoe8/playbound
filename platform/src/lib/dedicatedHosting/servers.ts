@@ -14,6 +14,7 @@ import CommunityServer from "@/lib/models/CommunityServer";
 import CommunityServerProfile from "@/lib/models/CommunityServerProfile";
 import DedicatedSubscription from "@/lib/models/DedicatedSubscription";
 import CatalogGame from "@/lib/models/CatalogGame";
+import Edition from "@/lib/models/Edition";
 import { listManagedHostRooms, requestManagedHostRoom, stopManagedHostRoom } from "@/lib/gameHost/client";
 import { allocateSlots, releaseSlots, RUNNABLE_STATUSES } from "./entitlement";
 import { authorizeServer, recordActivity } from "./access";
@@ -79,7 +80,10 @@ export async function offeredGames(tier: HostingTier, regionKey: string, purchas
     .lean();
   const byKey = new Map(profiles.map((p) => [p.key, p]));
   const catalog = await CatalogGame.find({ slug: { $in: games.map((g) => g.profileKey.split(":")[0]) } })
-    .select("slug maxPlayers").lean() as Array<{ slug: string; maxPlayers?: number | null }>;
+    .select("slug title maxPlayers").lean() as Array<{ slug: string; title?: string; maxPlayers?: number | null }>;
+  const editions = await Edition.find({ gameSlug: { $in: catalog.map(g => g.slug) } }).select("gameSlug slug name").lean();
+  const editionNames = new Map(editions.map(e => [`${e.gameSlug}:${e.slug}`, e.name]));
+  const gameNames = new Map(catalog.map(g => [g.slug, g.title]));
   const gameCaps = new Map(catalog.map((row) => [row.slug, row.maxPlayers]));
   return games.map((g) => {
     const [gameSlug, edition] = g.profileKey.split(":");
@@ -88,13 +92,14 @@ export async function offeredGames(tier: HostingTier, regionKey: string, purchas
     return {
       profileKey: g.profileKey,
       gameSlug: slug,
-      gameTitle: getHostableGame(slug)?.title || slug,
+      gameTitle: gameNames.get(slug) || getHostableGame(slug)?.title || slug.replace(/-/g, " "),
+      editionTitle: editionNames.get(`${slug}:${profile?.editionSlug ?? edition}`) || (edition === "base" ? null : edition?.replace(/-/g, " ")),
       editionSlug: profile?.editionSlug ?? (edition === "base" ? null : edition),
       capEnforced: slotCapEnforced(profile?.recipeSlug || slug),
-      sizes: allowedSlotSizes(tier, g, purchasedSlots, gameCaps.get(slug)),
+      sizes: allowedSlotSizes(tier, g, purchasedSlots, gameCaps.get(slug)).filter(n => n >= 2),
       blocked: profile?.verification === "blocked",
     };
-  }).filter((g) => g.sizes.length && !g.blocked);
+  }).filter((g) => g.sizes.length && !g.blocked).sort((a, b) => a.gameTitle.localeCompare(b.gameTitle, undefined, { sensitivity: "base" }) || (a.editionTitle || "").localeCompare(b.editionTitle || ""));
 }
 
 export async function createServer(

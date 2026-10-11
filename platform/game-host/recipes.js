@@ -203,6 +203,7 @@ function typesOf(values) {
  * is why its list is one key long despite the game declaring five settings.
  */
 const RECIPE_SETTING_TYPES = {
+  "battlefield-1942-anthology": { map: "string", gameMode: "string", botSkill: "number" },
   "counter-strike-2": { maxPlayers: "number" },
   hypersomnia: { maxPlayers: "number" },
   luanti: { maxPlayers: "number" },

@@ -1574,6 +1574,16 @@ const TES3MP: ServerSettingProfile = {
 };
 
 export const SERVER_SETTING_PROFILES: Readonly<Record<string, ServerSettingProfile>> = {
+  "battlefield-1942-anthology": {
+    slug: "battlefield-1942-anthology",
+    settings: [
+      { key: "map", label: "Starting map", feature: "map", type: "enum", default: "berlin", apply: "restart", backend: "config-file", options: [
+        ["battle_of_the_bulge", "Battle of the Bulge"], ["battleaxe", "Battleaxe"], ["berlin", "Berlin"], ["bocage", "Bocage"], ["el_alamein", "El Alamein"], ["gazala", "Gazala"], ["guadalcanal", "Guadalcanal"], ["iwo_jima", "Iwo Jima"], ["kharkov", "Kharkov"], ["kursk", "Kursk"], ["market_garden", "Market Garden"], ["midway", "Midway"], ["omaha_beach", "Omaha Beach"], ["stalingrad", "Stalingrad"], ["tobruk", "Tobruk"], ["wake", "Wake Island"],
+      ].map(([value, label]) => ({ value, label })) },
+      { key: "gameMode", label: "Bots", feature: "bots", type: "enum", default: "GPM_CQ", apply: "restart", backend: "config-file", options: [{ value: "GPM_CQ", label: "Off — Conquest" }, { value: "GPM_COOP", label: "On — Cooperative" }], help: "Battlefield bots require Cooperative mode. Changing this restarts a running server; this is not a live bot-fill control." },
+      { key: "botSkill", label: "Bot skill", feature: "bots", type: "number", default: 75, min: 1, max: 100, apply: "restart", backend: "config-file", help: "Applies in Cooperative mode." },
+    ],
+  },
   morrowind: TES3MP,
   tes3mp: TES3MP,
   "warzone-2100": WARZONE_2100,

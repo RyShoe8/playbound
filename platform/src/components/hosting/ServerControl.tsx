@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { pageHref } from "@/lib/designPreview";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Copy, RotateCw, TriangleAlert } from "lucide-react";
 import { SettingControl } from "@/components/friends/PartyServerSettings";
@@ -147,8 +148,8 @@ export function ServerControl({ serverId }: { serverId: string }) {
   const running = control.status.status === "running";
   const tabs = [
     "Overview",
-    control.capabilities.settings && control.definitions.some((d) => !control.maps || d.feature !== "map") &&
-      (may("server:configure") || may("server:change_map")) ? "Settings" : null,
+    may("server:configure") || may("server:delete") ? "Settings" : null,
+    control.definitions.some((d) => d.feature === "bots") && may("server:configure") ? "Bots" : null,
     control.maps ? "Maps" : null,
     control.capabilities.players ? "Players" : null,
     control.capabilities.console && may("server:console") ? "Console" : null,
@@ -212,9 +213,10 @@ export function ServerControl({ serverId }: { serverId: string }) {
       {notice ? <p className="rounded-lg border border-border bg-secondary/50 p-3 text-sm" role="status">{notice}</p> : null}
 
       {tab === "Overview" ? <Overview server={server} control={control} /> : null}
-      {tab === "Settings" ? (
+      {tab === "Settings" || tab === "Bots" ? (
         <SettingsTab
-          key={`${server.name}|${server.visibility}|${JSON.stringify(control.values)}`}
+          key={`${tab}|${server.name}|${server.visibility}|${JSON.stringify(control.values)}`}
+          botsOnly={tab === "Bots"}
           base={base}
           server={server}
           control={control}
@@ -282,6 +284,7 @@ function Overview({ server, control }: { server: Server; control: Control }) {
 }
 
 function SettingsTab({
+  botsOnly = false,
   base,
   server,
   control,
@@ -289,6 +292,7 @@ function SettingsTab({
   run,
   may,
 }: {
+  botsOnly?: boolean;
   base: string;
   server: Server;
   control: Control;
@@ -302,14 +306,14 @@ function SettingsTab({
   const [visibility, setVisibility] = useState(server.visibility);
   const running = control.status.status === "running";
   const configure = may("server:configure");
-  const editableDefs = control.definitions.filter((d) => !control.maps || d.feature !== "map").filter((d) => configure || (d.feature === "map" && may("server:change_map")));
+  const editableDefs = control.definitions.filter((d) => botsOnly ? d.feature === "bots" : d.feature !== "bots" && (!control.maps || d.feature !== "map")).filter((d) => configure || (d.feature === "map" && may("server:change_map")));
   const changed = editableDefs.map((d) => d.key).filter((k) => draft[k] !== undefined && draft[k] !== control.values[k]);
   const modeOf = (d: ServerSettingDefinition) => (!running ? null : control.capabilities.liveApply ? d.apply : "restart");
   const restartNeeded = running && changed.some((k) => modeOf(control.definitions.find((d) => d.key === k)!) === "restart");
 
   return (
     <div className="space-y-6">
-      {configure ? (
+      {configure && !botsOnly ? (
         <section className="space-y-3 rounded-xl border border-border bg-card p-4">
           <h2 className="font-semibold">Server</h2>
           <label className="block text-sm">
@@ -342,20 +346,21 @@ function SettingsTab({
             >
               Save
             </button>
-            {may("server:delete") && !server.online ? (
+            {may("server:delete") ? (
               <button
                 type="button"
-                disabled={busy}
+                disabled={busy || server.online}
+                title={server.online ? "Stop the server before deleting it" : undefined}
                 className="rounded-lg border border-destructive/50 px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10"
                 onClick={() => {
                   if (!window.confirm(`Delete ${server.name}? Its settings and saved world are removed.`)) return;
                   void run(async () => {
                     await api(base, { method: "DELETE" });
-                    window.location.href = "/hosting/servers";
+                    window.location.href = pageHref("/hosting/servers");
                   });
                 }}
               >
-                Delete server
+                {server.online ? "Stop server to delete" : "Delete server"}
               </button>
             ) : null}
           </div>
