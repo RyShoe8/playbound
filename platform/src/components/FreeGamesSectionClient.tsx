@@ -9,7 +9,7 @@ import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { isGameCompatible } from "@/lib/compatibility/compatibility";
 import { offerToGameLike } from "@/lib/freeOffers/compatibility";
 
-export function FreeGamesSectionClient({ offers }: { offers: FreeOfferRecord[] }) {
+export function FreeGamesSectionClient({ offers, diversifyStores = false }: { offers: FreeOfferRecord[]; diversifyStores?: boolean }) {
   const { mode, device } = useCompatibilityFilter();
 
   const filteredOffers = useMemo(() => {
@@ -23,6 +23,7 @@ export function FreeGamesSectionClient({ offers }: { offers: FreeOfferRecord[] }
     return null;
   }
 
+  const displayed = diversifyStores ? interleaveStores(filteredOffers) : filteredOffers;
   return (
     <section id="free-games-this-week">
       <div className="mb-4 flex items-end justify-between gap-4">
@@ -47,7 +48,7 @@ export function FreeGamesSectionClient({ offers }: { offers: FreeOfferRecord[] }
 
       {/* Single unified row for all stores */}
       <FreeGameCardRow>
-        {filteredOffers.map((offer) => (
+        {displayed.map((offer) => (
           <FreeGameCard
             key={`${offer.store}-${offer.externalId}`}
             offer={offer}
@@ -56,4 +57,15 @@ export function FreeGamesSectionClient({ offers }: { offers: FreeOfferRecord[] }
       </FreeGameCardRow>
     </section>
   );
+}
+
+/** Round-robin active stores so a large giveaway feed cannot bury the others. */
+function interleaveStores(offers: FreeOfferRecord[]): FreeOfferRecord[] {
+  const groups = new Map<string, FreeOfferRecord[]>();
+  for (const offer of offers) groups.set(offer.store, [...(groups.get(offer.store) || []), offer]);
+  const result: FreeOfferRecord[] = [];
+  for (let i = 0; result.length < offers.length; i++) {
+    for (const group of groups.values()) if (group[i]) result.push(group[i]);
+  }
+  return result;
 }

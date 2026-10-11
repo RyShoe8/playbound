@@ -64,6 +64,7 @@ export type CatalogModPublic = {
   hardwareRequirements?: ModHardwareRequirements | null;
   installSteps?: InstallStep[];
   faq?: GameFaq[];
+  createdAt?: string;
   updatedAt?: string;
   classificationIds?: string[];
   tags?: string[];
@@ -162,6 +163,7 @@ function toMod(doc: LeanMod): CatalogModPublic {
       ? (doc.installSteps as InstallStep[])
       : undefined,
     faq: (doc.faq as GameFaq[])?.length ? (doc.faq as GameFaq[]) : undefined,
+    createdAt: doc.createdAt ? new Date(doc.createdAt as Date).toISOString() : undefined,
     updatedAt: (doc as { updatedAt?: Date }).updatedAt
       ? new Date((doc as { updatedAt: Date }).updatedAt).toISOString()
       : undefined,

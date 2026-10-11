@@ -889,15 +889,15 @@ function compareNewestFirst(a: Game, b: Game): number {
  * Cached briefly so the homepage does not re-aggregate telemetry every request.
  * Falls back to installCount when playtime data is thin.
  */
-export async function mostPopularGames(limit = 12): Promise<Game[]> {
+export async function mostPopularGames(limit = 12, days?: number): Promise<Game[]> {
   return unstable_cache(
-    () => computeMostPopularGames(limit),
-    ["catalog-most-popular-playtime", String(limit)],
+    () => computeMostPopularGames(limit, days),
+    ["catalog-most-popular-playtime", String(limit), String(days ?? "all")],
     { revalidate: 900, tags: ["catalog", "live-activity"] }
   )();
 }
 
-async function computeMostPopularGames(limit: number): Promise<Game[]> {
+async function computeMostPopularGames(limit: number, days?: number): Promise<Game[]> {
   const published = await listGames();
   if (!published.length) return [];
   const bySlug = new Map(published.map((g) => [g.slug, g]));
@@ -918,6 +918,7 @@ async function computeMostPopularGames(limit: number): Promise<Game[]> {
       {
         $match: {
           event: "game_finished",
+          ...(days ? { createdAt: { $gte: new Date(Date.now() - days * 86400000) }, isBot: { $ne: true } } : {}),
           "properties.durationMs": { $exists: true, $gt: 0 },
           "properties.gameSlug": { $type: "string", $ne: "" },
         },
@@ -937,6 +938,8 @@ async function computeMostPopularGames(limit: number): Promise<Game[]> {
       if (ordered.length >= limit) return ordered.slice(0, limit);
     }
 
+    if (days) return ordered.slice(0, limit);
+
     // Fill remaining slots from catalog install counts when playtime is sparse.
     const installDocs = await CatalogGame.find(mongoVisibleFilter({ includeTesting: false }))
       .select("slug installCount")
@@ -949,7 +952,7 @@ async function computeMostPopularGames(limit: number): Promise<Game[]> {
     }
   } catch (err) {
     console.error("[catalog] mostPopularGames failed:", err);
-    return published.slice(0, limit);
+    return days ? [] : published.slice(0, limit);
   }
 
   if (ordered.length < limit) {

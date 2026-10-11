@@ -39,6 +39,16 @@ export async function hasLauncherConnection(userId: string, legacyTokenHash?: st
   return Boolean(await LauncherCredential.exists({ userId }));
 }
 
+/** Account-level launcher link; excludes game-only credentials and disconnected launchers. */
+export async function hasLinkedLauncher(userId: string): Promise<boolean> {
+  await dbConnect();
+  const [credential, legacy] = await Promise.all([
+    LauncherCredential.exists({ userId, client: null, revokedAt: null }),
+    User.exists({ _id: userId, launcherTokenHash: { $type: "string", $ne: "" } }),
+  ]);
+  return Boolean(credential || legacy);
+}
+
 /** Revoke exactly one launcher, including an older single-token bearer. */
 export async function revokeLauncherToken(token: string): Promise<boolean> {
   await dbConnect();

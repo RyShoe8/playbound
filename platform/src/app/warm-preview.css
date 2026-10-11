@@ -153,3 +153,5 @@ html[data-warm-preview] .new-event-attendance strong{color:var(--primary)}
 @media(max-width:1250px){html[data-warm-preview] .new-event-row{grid-template-columns:115px minmax(0,1fr);gap:12px}html[data-warm-preview] .new-event-thumb{display:none}html[data-warm-preview] .new-event-attendance{grid-column:2;flex-direction:row;text-align:left}}
 @media(max-width:850px){html[data-warm-preview] .new-events-layout{grid-template-columns:minmax(0,1fr)}html[data-warm-preview] .new-events-rail{padding-top:0}}
 @media(max-width:500px){html[data-warm-preview] .new-event-row{grid-template-columns:minmax(0,1fr);padding:18px}html[data-warm-preview] .new-event-attendance{grid-column:1}html[data-warm-preview] .new-event-time{font-size:12px}}
+html[data-warm-preview] .new-mod-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:14px}
+html[data-warm-preview] .new-mod-grid .preview-mod-strip{width:100%;min-width:0}
