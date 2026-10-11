@@ -8,8 +8,9 @@ import {
   resolveMobileOutbound,
   shouldOfferLauncher,
 } from "@/lib/mobilePlay";
-import { LauncherInstallButton } from "@/components/LauncherInstallButton";
+import { PlayCta } from "@/components/GameCard";
 import { MobileOutboundCta } from "@/components/MobileOutboundCta";
+import { directPurchaseRequired } from "@/lib/access/resolver";
 
 /** Launcher on desktop; store/website on mobile — for Install tab + similar. */
 export function DeviceAwareInstallCta({
@@ -68,15 +69,14 @@ export function DeviceAwareInstallCta({
 
   return (
     <div className="rounded-xl border border-border bg-card p-5">
-      <p className="font-bold">One-click install</p>
+      <p className="font-bold">Choose how to install</p>
       <p className="mt-1 text-sm text-muted-foreground">
-        PlayBound fetches the official release — no third-party mirrors.
+        {directPurchaseRequired(game.access)
+          ? "Install your purchased copy with the PlayBound Launcher."
+          : "Install with PlayBound or download from the official source without the launcher."}
       </p>
       <div className="mt-4">
-        <LauncherInstallButton
-          slug={game.slug}
-          label={`Install ${game.title} with PlayBound Launcher`}
-        />
+        <PlayCta game={game} />
       </div>
     </div>
   );
