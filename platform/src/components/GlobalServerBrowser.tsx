@@ -544,7 +544,7 @@ export function GlobalServerBrowser({
      * counts are dropped too: a server that does not report its population is
      * not evidence of anyone being on it.
      */
-    if (withPlayersOnly && effectiveGameSlug) {
+    if (withPlayersOnly) {
       list = list.filter((s) => Number(s.players) > 0);
     }
     if (q) {
@@ -784,8 +784,8 @@ export function GlobalServerBrowser({
         <EmptyHint icon={Server}>
           {data?.error
             ? "No servers returned (see error above)."
-            : withPlayersOnly && effectiveGameSlug
-              ? "Every listed server is empty right now. Turn off Servers With Players to see them all."
+            : withPlayersOnly
+              ? "No servers report active players right now. Turn off Servers With Players to see all servers."
               : effectiveEditionSlug
                 ? `No servers for ${editionNameBySlug.get(effectiveEditionSlug) || effectiveEditionSlug}.`
                 : "No servers match."}
