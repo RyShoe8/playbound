@@ -22,6 +22,8 @@ describe("programmatic preview navigation", () => {
     vi.stubGlobal("window", { location: { pathname: "/new/search", origin: "https://playbound.club" } });
     expect(pageHref("/search?q=openra&genre=RTS")).toBe("/new/search?q=openra&genre=RTS");
     expect(pageHref("/multiplayer?startParty=1")).toBe("/new/multiplayer?startParty=1");
+    expect(pageHref("/party/123")).toBe("/new/party/123");
+    expect(pageHref("/friends?party=123")).toBe("/new/friends?party=123");
     expect(pageHref("/api/library")).toBe("/api/library");
     expect(pageHref("/login?callbackUrl=/new")).toBe("/login?callbackUrl=/new");
   });

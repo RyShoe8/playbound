@@ -112,7 +112,7 @@ export function PlayWithFriends({
           ) : null}
         </div>
         {compact ? (
-          <Link href="/friends" className="text-sm font-semibold text-primary hover:underline">
+          <Link href="/friends" className="shrink-0 whitespace-nowrap text-sm font-semibold text-primary hover:underline">
             See all
           </Link>
         ) : null}

@@ -73,7 +73,7 @@ export function MultiplayerOpenParties({
 
   if (displayedParties.length === 0) {
     return (
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-dashed border-border/70 bg-secondary/10 p-5">
+      <div className="new-empty-parties flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-dashed border-border/70 bg-secondary/10 p-5">
         <div>
           <h3 className="text-sm font-bold text-foreground">
             {installedOnly ? "No Open Parties for Installed Games" : "No Open Parties Active"}

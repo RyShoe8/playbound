@@ -49,7 +49,9 @@ export async function middleware(req: NextRequest) {
     if (previewPath === null) return NextResponse.next();
     const destination = req.nextUrl.clone();
     destination.pathname = previewPath;
-    const response = previewPath === "/" ? NextResponse.next() : NextResponse.rewrite(destination);
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set("x-playbound-design-preview", "1");
+    const response = previewPath === "/" ? NextResponse.next({ request: { headers: requestHeaders } }) : NextResponse.rewrite(destination, { request: { headers: requestHeaders } });
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
     return response;
   };

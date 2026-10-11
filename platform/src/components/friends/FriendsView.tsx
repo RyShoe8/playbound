@@ -649,7 +649,7 @@ export function FriendsView({
   }
 
   return (
-    <div className="space-y-5">
+    <div className="new-friends-layout space-y-5">
       <FriendInviteClaim />
 
       <div className="space-y-3">
@@ -727,7 +727,7 @@ export function FriendsView({
         </p>
       ) : null}
 
-      <div className="rounded-xl border border-border bg-card/40 px-3 py-2">
+      <div className="new-friends-privacy rounded-xl border border-border bg-card/40 px-3 py-2">
         <button
           type="button"
           className="flex w-full items-center justify-between gap-2 text-left text-sm font-semibold"
@@ -789,14 +789,14 @@ export function FriendsView({
       ) : null}
 
       {activeParty && (
-        <div className="space-y-3">
+        <div className="new-friends-active-party space-y-3">
           <PartyView party={activeParty} games={games} />
         </div>
       )}
       
-      {!activeParty && <PartyDiscovery />}
+      {!activeParty && <div className="new-friends-party"><PartyDiscovery /></div>}
 
-      <div className="space-y-8">
+      <div className="new-friends-list space-y-8">
         {!hasFriends && !hasPending ? (
           <div className="rounded-lg border border-dashed border-border px-4 py-10 text-center">
             <p className="text-sm text-muted-foreground">
