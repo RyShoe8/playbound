@@ -14,13 +14,13 @@ beforeAll(async () => {
   await mongoose.connect(mongo.getUri(), { dbName: "analytics-summary-test" });
   await TelemetryEvent.collection.insertMany([
     // Repeated events count separately; repeated identities count only once.
-    { event: "page_view", sessionId: "s1", userId: "u1", createdAt: daysAgo(0), isBot: false },
-    { event: "page_view", sessionId: "s1", userId: "u1", createdAt: daysAgo(0), isBot: false },
+    { event: "page_view", sessionId: "s1", userId: "u1", createdAt: new Date(), isBot: false },
+    { event: "page_view", sessionId: "s1", userId: "u1", createdAt: new Date(), isBot: false },
     // Older records without isBot must remain visible. Anonymous users are excluded.
-    { event: "login", sessionId: "s2", userId: null, createdAt: daysAgo(0) },
+    { event: "login", sessionId: "s2", userId: null, createdAt: new Date() },
     { event: "page_view", sessionId: "s1", userId: "u1", createdAt: daysAgo(8), isBot: false },
     { event: "page_view", sessionId: "s3", userId: "u3", createdAt: daysAgo(40), isBot: false },
-    { event: "page_view", sessionId: "bot", userId: "bot", createdAt: daysAgo(0), isBot: true },
+    { event: "page_view", sessionId: "bot", userId: "bot", createdAt: new Date(), isBot: true },
     { event: "page_view", sessionId: "bot", userId: "bot", createdAt: daysAgo(8), isBot: true },
     { event: "page_view", sessionId: "bot", userId: "bot", createdAt: daysAgo(40), isBot: true },
   ]);
