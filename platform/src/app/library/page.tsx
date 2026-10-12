@@ -9,7 +9,7 @@ import dbConnect from "@/lib/db";
 import LibraryEntry from "@/lib/models/LibraryEntry";
 import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import { gamesFor, listGames } from "@/lib/catalog";
-import { listPublicEditionsForGame } from "@/lib/editions";
+import { listEditionsForGames } from "@/lib/editions";
 import { isLauncherInstallable } from "@/lib/launcher";
 import { listMods } from "@/lib/mods";
 import { LibraryGrid } from "@/components/LibraryGrid";
@@ -140,25 +140,22 @@ export default async function LibraryPage() {
     shortDescription?: string;
     description?: string;
   }[]> = {};
-  await Promise.all(
-    games.map(async (game) => {
-      try {
-        const eds = await listPublicEditionsForGame(game);
-        editionsByGame[game.slug] = eds.map((e) => ({
-          slug: e.slug,
-          name: e.name,
-          type: e.type,
-          isDefault: Boolean(e.isDefault),
-          features: e.features || [],
-          tags: e.tags || [],
-          shortDescription: e.shortDescription,
-          description: e.description,
-        }));
-      } catch {
-        editionsByGame[game.slug] = [];
-      }
-    })
-  );
+  const editionGroups = await listEditionsForGames(games);
+  for (const game of games) {
+    const all = editionGroups.get(game.slug) || [];
+    const publicOnly = all.filter(edition => edition.visibility === "public");
+    const editions = publicOnly.length ? publicOnly : all.slice(0, 1);
+    editionsByGame[game.slug] = editions.map(e => ({
+      slug: e.slug,
+      name: e.name,
+      type: e.type,
+      isDefault: Boolean(e.isDefault),
+      features: e.features || [],
+      tags: e.tags || [],
+      shortDescription: e.shortDescription,
+      description: e.description,
+    }));
+  }
 
   const knownSlugs = new Set(games.map((g) => g.slug));
   const orphanEntries = entries.filter((e) => !knownSlugs.has(e.gameSlug));
