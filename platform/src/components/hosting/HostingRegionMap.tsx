@@ -10,7 +10,7 @@ export function regionMapPoint(latitude: number, longitude: number) {
 
 export function HostingRegionMap({ regions }: { regions: Region[] }) {
   const active = regions.filter((region) => region.salesEnabled);
-  return <div className="mt-6">
+  return <div className="hosting-region-map mt-6">
     <svg viewBox="0 0 800 430" role="img" aria-label={active.length ? `US hosting regions: ${active.map((region) => region.label).join(", ")}` : "Map of the contiguous United States"} className="w-full rounded-2xl border border-border bg-secondary/30">
       <defs>
         <radialGradient id="hosting-map-glow"><stop stopColor="currentColor" stopOpacity="0.12" /><stop offset="1" stopColor="currentColor" stopOpacity="0" /></radialGradient>
