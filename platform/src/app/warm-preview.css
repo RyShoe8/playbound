@@ -170,3 +170,9 @@ html[data-warm-preview] .design-preview-bar{align-items:center;flex-wrap:wrap}
 .preview-color-picker>button[aria-pressed=true]{outline:2px solid #f1eee9;outline-offset:2px}
 .preview-custom-color{display:flex;align-items:center;gap:6px;cursor:pointer}
 .preview-custom-color input{width:28px;height:26px;padding:0;border:0;background:transparent;cursor:pointer}
+/* Keep the region overview compact on the full-width hosting page. */
+html[data-warm-preview] .hosting-region-map {
+  width: 100%;
+  max-width: 600px;
+  margin-inline: auto;
+}
