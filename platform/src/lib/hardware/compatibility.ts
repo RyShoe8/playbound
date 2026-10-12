@@ -327,7 +327,10 @@ export function evaluateCompatibility(
 
   const minEval = min ? evaluateSpec(user, min, "minimum") : null;
   const recEval = rec ? evaluateSpec(user, rec, "recommended") : null;
-  if (minEval) allReasons.push(...minEval.reasons);
+  // A recommended pass already conveys the same component's minimum pass.
+  // Keep minimum passes when recommended fails, so the distinction stays visible.
+  const recommendedPasses = new Set(recEval?.reasons.filter(r => r.code.endsWith("_ok")).map(r => r.code));
+  if (minEval) allReasons.push(...minEval.reasons.filter(r => !recommendedPasses.has(r.code)));
   if (recEval) allReasons.push(...recEval.reasons);
 
   if (minEval?.hardFail || recEval?.hardFail) {

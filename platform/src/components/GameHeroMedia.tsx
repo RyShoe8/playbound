@@ -90,7 +90,10 @@ export function GameHeroMedia({
       aria-roledescription="carousel"
       aria-label={`${title} media`}
     >
-      <Slide item={item} title={title} poster={poster} position={index + 1} count={count} playing={playingEmbed === index} onPlay={() => setPlayingEmbed(index)} />
+      {/* Media must not contribute its intrinsic dimensions to the preview grid row. */}
+      <div className="absolute inset-0 overflow-hidden">
+        <Slide item={item} title={title} poster={poster} position={index + 1} count={count} playing={playingEmbed === index} onPlay={() => setPlayingEmbed(index)} />
+      </div>
 
       {count > 1 ? (
         <>
