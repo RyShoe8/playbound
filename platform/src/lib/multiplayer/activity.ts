@@ -8,6 +8,8 @@ import { getLookingToPartyCounts } from "@/lib/playTogether/lookingToParty";
 import { countActivePlatformPlayersByGame } from "@/lib/liveActivity";
 import { getPlayerCountForGame } from "@/lib/servers/registry";
 import { supportsMultiplayer, supportsLauncherParty } from "@/lib/multiplayer/support";
+import { OPEN_PARTY_STATUSES } from "@/lib/playTogether/party/serialize";
+import { PARTY_MAX_SIZE } from "@/lib/playTogether/types";
 
 export type GameMultiplayerActivity = {
   gameSlug: string;
@@ -72,8 +74,9 @@ async function computeMultiplayerActivitySnapshot(): Promise<MultiplayerActivity
           {
             $match: {
               visibility: "public",
-              status: { $in: ["waiting", "preparing", "ready", "playing"] },
+              status: { $in: [...OPEN_PARTY_STATUSES] },
               gameSlug: { $nin: [null, ""] },
+              $expr: { $lt: [{ $size: { $ifNull: ["$members", []] } }, { $ifNull: ["$maxSize", PARTY_MAX_SIZE] }] },
             },
           },
           {
@@ -184,7 +187,7 @@ async function computeMultiplayerActivitySnapshot(): Promise<MultiplayerActivity
 }
 
 export function getMultiplayerActivitySnapshot(): Promise<MultiplayerActivityResponse> {
-  return unstable_cache(computeMultiplayerActivitySnapshot, ["multiplayer-activity-snapshot-v2"], {
+  return unstable_cache(computeMultiplayerActivitySnapshot, ["multiplayer-activity-snapshot-v3"], {
     revalidate: CACHE_SECONDS,
     tags: ["multiplayer-activity"],
   })();
