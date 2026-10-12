@@ -16,6 +16,7 @@ import {
 import { usePartyStore } from "@/stores/partyStore";
 import { CreatePartyPanel } from "@/components/friends/CreatePartyPanel";
 import { MultiplayerFriendsSection } from "@/components/MultiplayerFriendsSection";
+import { PlayAvailabilityPanel } from "@/components/friends/PlayAvailabilityPanel";
 import { MultiplayerOpenParties } from "@/components/MultiplayerOpenParties";
 import { MultiplayerEvents, type PlatformEvent } from "@/components/MultiplayerEvents";
 import { GlobalServerBrowser } from "@/components/GlobalServerBrowser";
@@ -514,7 +515,7 @@ export function MultiplayerHome({
           </label>
         </div>
 
-        <aside className="new-multiplayer-friends"><MultiplayerFriendsSection
+        <aside className="new-multiplayer-friends space-y-4"><MultiplayerFriendsSection
           signedIn={signedIn}
           onJoinLtpWithFriend={(friendSlugs) => {
             setLtpSelectedSlugs(friendSlugs);
@@ -522,6 +523,7 @@ export function MultiplayerHome({
           }}
         />
 
+        {signedIn && <PlayAvailabilityPanel compact />}
         </aside>
         <div className="new-multiplayer-parties"><MultiplayerOpenParties
           signedIn={signedIn}

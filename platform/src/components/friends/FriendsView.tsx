@@ -18,6 +18,7 @@ import { PartyConfigSync } from "@/components/friends/PartyConfigSync";
 import { CreatePartyPanel } from "@/components/friends/CreatePartyPanel";
 import { PopoutButton } from "@/components/friends/PopoutButton";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { PlayAvailabilityPanel } from "@/components/friends/PlayAvailabilityPanel";
 
 /** Signed-out pitch on /friends. Mirrored in launcher/renderer/views/friends.js. */
 const ANON_FRIENDS_BENEFITS = [
@@ -727,6 +728,7 @@ export function FriendsView({
         </p>
       ) : null}
 
+      <PlayAvailabilityPanel games={games} />
       <div className="new-friends-privacy rounded-xl border border-border bg-card/40 px-3 py-2">
         <button
           type="button"

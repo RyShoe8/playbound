@@ -124,8 +124,8 @@ html[data-warm-preview] .new-empty-parties>div { min-width:0; width:100%; }
 html[data-warm-preview] .new-empty-parties button { align-self:flex-start; white-space:normal; }
 html[data-warm-preview] .new-friends-layout { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:24px; align-items:start; }
 html[data-warm-preview] .new-friends-layout>* { min-width:0; margin-top:0; grid-column:1/-1; }
-html[data-warm-preview] .new-friends-layout>.new-friends-list { grid-column:1; grid-row:2 / span 4; border:1px solid var(--border); border-radius:12px; background:var(--card); padding:20px; }
-html[data-warm-preview] .new-friends-layout>.new-friends-privacy { grid-column:2; grid-row:2; padding:18px; }
+html[data-warm-preview] .new-friends-layout>.new-friends-list { grid-column:1; grid-row:3 / span 4; border:1px solid var(--border); border-radius:12px; background:var(--card); padding:20px; }
+html[data-warm-preview] .new-friends-layout>.new-friends-privacy { grid-column:2; grid-row:3; padding:18px; }
 html[data-warm-preview] .new-friends-layout>.new-friends-party { grid-column:2; }
 @media(max-width:900px) { html[data-warm-preview] .new-friends-layout { grid-template-columns:minmax(0,1fr); } html[data-warm-preview] .new-friends-layout>:is(.new-friends-list,.new-friends-privacy,.new-friends-party) { grid-column:1; grid-row:auto; } }
 html[data-warm-preview] .new-friends-list>section>.grid { grid-template-columns:minmax(0,1fr); }
@@ -176,3 +176,5 @@ html[data-warm-preview] .hosting-region-map {
   max-width: 600px;
   margin-inline: auto;
 }
+
+html[data-warm-preview] .new-friends-layout > .play-availability-panel { grid-column: 1 / -1; grid-row: 2; }
