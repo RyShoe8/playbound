@@ -1,7 +1,9 @@
 import { expect, it, vi } from "vitest";
 vi.mock("next/cache", () => ({ unstable_cache: (fn: () => unknown) => fn, revalidateTag: vi.fn() }));
 vi.mock("@/lib/db", () => ({ default: async () => undefined }));
-vi.mock("@/lib/models/Party", () => ({ default: { aggregate: async () => [{ _id: "openra", count: 2 }] } }));
+const party = vi.hoisted(() => ({ aggregate: vi.fn(async () => [{ _id: "openra", count: 2 }]) }));
+vi.mock("@/lib/models/Party", () => ({ default: party }));
+vi.mock("@/lib/playTogether/party/serialize", () => ({ OPEN_PARTY_STATUSES: ["forming", "ready", "playing"] }));
 const games = [{ slug: "openra", title: "OpenRA", features: ["Online Multiplayer"], tags: [], genres: ["Strategy"], launchMethods: ["server"] }];
 vi.mock("@/lib/catalog", () => ({ listGames: async () => games }));
 vi.mock("@/lib/access/discover", () => ({ listDiscoverableGames: async () => games }));
@@ -15,5 +17,8 @@ it("keeps server totals when presence fails and aggregates parties and LFG indep
     const { getMultiplayerActivitySnapshot } = await import("./activity");
     const snapshot = await getMultiplayerActivitySnapshot();
     expect(snapshot.summary).toEqual({ totalServerPlayers: 17, totalServersOnline: 4, totalOpenParties: 2, totalUsersLooking: 3 });
+    expect(party.aggregate).toHaveBeenCalledWith(expect.arrayContaining([
+      { $match: expect.objectContaining({ status: { $in: ["forming", "ready", "playing"] }, $expr: expect.any(Object) }) },
+    ]));
   } finally { vi.unstubAllEnvs(); }
 });

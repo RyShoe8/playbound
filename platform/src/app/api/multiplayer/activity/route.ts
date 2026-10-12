@@ -6,6 +6,8 @@ import { gameRequiresPurchase } from "@/lib/access/resolver";
 import { countLookingToPartyByGame } from "@/lib/playTogether/lookingToParty";
 import { getGameLiveStats } from "@/lib/liveActivity";
 import { supportsLauncherParty } from "@/lib/multiplayer/support";
+import { OPEN_PARTY_STATUSES } from "@/lib/playTogether/party/serialize";
+import { PARTY_MAX_SIZE } from "@/lib/playTogether/types";
 import {
   getMultiplayerActivitySnapshot,
   type GameMultiplayerActivity,
@@ -54,8 +56,9 @@ export async function GET(req: Request) {
         hasDb
           ? Party.countDocuments({
               visibility: "public",
-              status: { $in: ["waiting", "preparing", "ready", "playing"] },
+              status: { $in: [...OPEN_PARTY_STATUSES] },
               gameSlug: requestedSlug,
+              $expr: { $lt: [{ $size: { $ifNull: ["$members", []] } }, { $ifNull: ["$maxSize", PARTY_MAX_SIZE] }] },
             }).catch(() => 0)
           : Promise.resolve(0),
       ]);
