@@ -71,7 +71,22 @@ function getTrayIcon() {
     const targetSize = process.platform === "win32" ? 16 : process.platform === "darwin" ? 18 : 24;
     return icon.resize({ width: targetSize, height: targetSize });
   }
-  return assetPath;
+  // Never hand Tray an undecodable path: Electron throws synchronously.
+  for (const filename of ["icon.png", "icon.ico"]) {
+    try {
+      icon = nativeImage.createFromBuffer(fs.readFileSync(resolveAssetPath(filename)));
+      if (!icon.isEmpty()) return icon.resize({ width: 16, height: 16 });
+    } catch { /* try the next packaged image */ }
+  }
+  // A built-in bitmap keeps the launcher reachable even if its assets are damaged.
+  const pixels = Buffer.alloc(16 * 16 * 4);
+  for (let i = 0; i < pixels.length; i += 4) {
+    pixels[i] = 7;
+    pixels[i + 1] = 1;
+    pixels[i + 2] = 239;
+    pixels[i + 3] = 255;
+  }
+  return nativeImage.createFromBitmap(pixels, { width: 16, height: 16 });
 }
 
 /* ── headless self-test: deep link parsing ───────────────────────────── */

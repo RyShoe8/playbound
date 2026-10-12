@@ -39,7 +39,7 @@ import { getLastSpawnTests, recordSpawnTest } from "./spawnTests.js";
 import { getCachedGameVersions } from "./gameVersions.js";
 import { createStartCoordinator } from "./startLock.js";
 import { httpsGetStream } from "./downloadStream.js";
-import { createManagedRegistry, createPartyRegistry, isSameProcess, processIdentity, processGroupMembers, rehydrateManagedRoom, recoveredManagedRoomExited } from "./managedRegistry.js";
+import { createManagedRegistry, createManagedJobs, createPartyRegistry, isSameProcess, processIdentity, processGroupMembers, rehydrateManagedRoom, recoveredManagedRoomExited } from "./managedRegistry.js";
 import { processMetrics } from "./processMetrics.js";
 import { isLinuxPortBound } from "./portReadiness.js";
 import { queryRoomOccupancy } from "./playerQueries.js";
@@ -74,7 +74,7 @@ const rooms = new Map();
 const byParty = new Map();
 /** communityServerId → roomId; independent of Party. */
 const byManaged = new Map();
-const managedJobs = new Map();
+const managedJobs = createManagedJobs();
 let shuttingDown = false;
 const managedRegistry = createManagedRegistry();
 const partyRegistry = createPartyRegistry();
@@ -1477,7 +1477,8 @@ const server = http.createServer(async (req, res) => {
           return;
         }
       }
-      managedJobs.delete(communityServerId);
+      // Retain the explicit stop result for the next control-plane reconcile.
+      managedJobs.set(communityServerId, { status: "stopped", at: Date.now() });
       json(res, 200, { ok: true });
       return;
     }

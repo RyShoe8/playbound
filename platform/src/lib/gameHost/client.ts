@@ -72,7 +72,11 @@ export async function listManagedHostRooms(): Promise<
     if (!res) return { ok: false, error: "Game host is not configured" };
     const data = (await res.json()) as { rooms?: GameHostRoom[]; jobs?: Record<string, ManagedHostStatus>; error?: string };
     if (!res.ok) return { ok: false, error: data.error || `Game host returned ${res.status}` };
-    return { ok: true, rooms: data.rooms || [], jobs: data.jobs || {} };
+    // An incomplete response is not evidence that every runtime disappeared.
+    if (!Array.isArray(data.rooms) || !data.jobs || typeof data.jobs !== "object" || Array.isArray(data.jobs)) {
+      return { ok: false, error: "Game host returned an incomplete managed-runtime snapshot" };
+    }
+    return { ok: true, rooms: data.rooms, jobs: data.jobs };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "Game host unreachable" };
   }

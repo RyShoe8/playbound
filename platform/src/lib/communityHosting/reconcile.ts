@@ -349,7 +349,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
           server.playerCount = null;
           server.decisionReason = job?.error || (job?.status === "failed" ? "Failed to start" : "Stopped");
           await server.save();
-          if (job?.status === "failed" || prevRuntime === "running") {
+          if (job?.status === "failed" || (prevRuntime === "running" && job?.status !== "stopped")) {
             await recordHostingAction("community_server_failed", server, job?.error || "Managed runtime missing from game-host agent; exit cause unknown");
           }
         }
