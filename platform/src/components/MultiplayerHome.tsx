@@ -93,7 +93,7 @@ export function MultiplayerHome({
 
   // The server-side snapshot is the page's data; no background polling.
   useEffect(() => {
-    if (initialActivity) return;
+    if (initialActivity?.games.length) return;
     const initialTimer = setTimeout(() => void loadActivity(), 0);
     return () => clearTimeout(initialTimer);
   }, [loadActivity, initialActivity]);
@@ -265,7 +265,7 @@ export function MultiplayerHome({
               <span>Tracked Server Players</span>
             </div>
             <div className="mt-1 text-xl font-black text-foreground">
-              {summary.totalServerPlayers.toLocaleString()}
+              {activityData?.games.length ? summary.totalServerPlayers.toLocaleString() : "—"}
             </div>
           </div>
 
@@ -275,7 +275,7 @@ export function MultiplayerHome({
               <span>Open Parties</span>
             </div>
             <div className="mt-1 text-xl font-black text-primary">
-              {summary.totalOpenParties}
+              {activityData?.games.length ? summary.totalOpenParties : "—"}
             </div>
           </div>
 
@@ -285,7 +285,7 @@ export function MultiplayerHome({
               <span>Users Looking to Party</span>
             </div>
             <div className="mt-1 text-xl font-black text-amber-400">
-              {summary.totalUsersLooking}
+              {activityData?.games.length ? summary.totalUsersLooking : "—"}
             </div>
           </div>
 
@@ -295,7 +295,7 @@ export function MultiplayerHome({
               <span>Servers Online</span>
             </div>
             <div className="mt-1 text-xl font-black text-muted-foreground">
-              {summary.totalServersOnline.toLocaleString()}
+              {activityData?.games.length ? summary.totalServersOnline.toLocaleString() : "—"}
             </div>
           </div>
         </div>

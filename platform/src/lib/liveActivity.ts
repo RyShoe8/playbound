@@ -267,7 +267,7 @@ async function countActivePlatformPlayers(scope: Scope = {}): Promise<number> {
 }
 
 /** Active platform players in the window, keyed by properties.gameSlug. */
-async function countActivePlatformPlayersByGame(): Promise<Map<string, number>> {
+export async function countActivePlatformPlayersByGame(): Promise<Map<string, number>> {
   await dbConnect();
   const since = new Date(Date.now() - ACTIVE_WINDOW_MS);
   const counts = new Map<string, number>();
