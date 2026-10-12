@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Users, Radio, Gamepad2, ArrowRight, UserPlus, LogIn, ExternalLink } from "lucide-react";
 import { Avatar } from "@/components/ui/bits";
 import { usePartyStore } from "@/stores/partyStore";
+import { pageHref } from "@/lib/designPreview";
 
 type FriendItem = {
   id: string;
@@ -93,8 +94,8 @@ export function MultiplayerFriendsSection({ signedIn, onJoinLtpWithFriend }: Pro
           </div>
         </div>
         <Link
-          href="/login?callbackUrl=/multiplayer"
-          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground hover:brightness-110"
+          href={`/login?callbackUrl=${encodeURIComponent(pageHref("/multiplayer"))}`}
+          className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground hover:brightness-110"
         >
           <LogIn className="size-3.5" />
           Sign In

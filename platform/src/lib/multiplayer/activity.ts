@@ -5,7 +5,8 @@ import { listGames } from "@/lib/catalog";
 import { listDiscoverableGames } from "@/lib/access/discover";
 import { gameRequiresPurchase } from "@/lib/access/resolver";
 import { getLookingToPartyCounts } from "@/lib/playTogether/lookingToParty";
-import { getGameLiveStats } from "@/lib/liveActivity";
+import { countActivePlatformPlayersByGame } from "@/lib/liveActivity";
+import { getPlayerCountForGame } from "@/lib/servers/registry";
 import { supportsMultiplayer, supportsLauncherParty } from "@/lib/multiplayer/support";
 
 export type GameMultiplayerActivity = {
@@ -96,10 +97,14 @@ async function computeMultiplayerActivitySnapshot(): Promise<MultiplayerActivity
   );
 
   // Load stats for multiplayer games
+  // Public server counts must not depend on install-history queries succeeding.
+  // Read presence once instead of launching several DB queries for every game.
+  const platformByGame = hasDb ? await countActivePlatformPlayersByGame().catch(() => new Map<string, number>()) : new Map<string, number>();
   const statsResults = await Promise.all(
     multiplayerGames.map(async (g) => {
       try {
-        const stats = await getGameLiveStats(g.slug);
+        const counts = await getPlayerCountForGame(g.slug);
+        const stats = { multiplayerPlayers: counts.players, serverCount: counts.servers, platformPlayers: platformByGame.get(g.slug) ?? 0 };
         return { slug: g.slug, stats };
       } catch {
         return {
@@ -179,7 +184,7 @@ async function computeMultiplayerActivitySnapshot(): Promise<MultiplayerActivity
 }
 
 export function getMultiplayerActivitySnapshot(): Promise<MultiplayerActivityResponse> {
-  return unstable_cache(computeMultiplayerActivitySnapshot, ["multiplayer-activity-snapshot-v1"], {
+  return unstable_cache(computeMultiplayerActivitySnapshot, ["multiplayer-activity-snapshot-v2"], {
     revalidate: CACHE_SECONDS,
     tags: ["multiplayer-activity"],
   })();

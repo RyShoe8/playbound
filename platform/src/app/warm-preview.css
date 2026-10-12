@@ -158,6 +158,7 @@ html[data-warm-preview] .new-event-attendance strong{color:var(--primary)}
 @media(max-width:500px){html[data-warm-preview] .new-event-row{grid-template-columns:minmax(0,1fr);padding:18px}html[data-warm-preview] .new-event-attendance{grid-column:1}html[data-warm-preview] .new-event-time{font-size:12px}}
 html[data-warm-preview] .new-mod-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:14px}
 html[data-warm-preview] .new-mod-grid .preview-mod-strip{width:100%;min-width:0}
+html[data-warm-preview][data-preview-page="discover"] .new-game-card{width:287.5px;max-width:calc(100vw - 40px)}
 
 /* Accent text stays readable on charcoal across the preview palettes. */
 html[data-warm-preview] .text-primary{color:var(--accent-text)}
