@@ -10,6 +10,7 @@ import { DiscoveryModeToggle } from "@/components/DiscoveryModeToggle";
 import { GameCompatibilityToggle } from "@/components/GameCompatibilityToggle";
 import { openDiscordInvite } from "@/lib/openPlayboundDeepLink";
 import { SITE_DISCORD_INVITE } from "@/lib/site";
+import { NewWordmark } from "./NewWordmark";
 const links = [["/", "Home", Home], ["/discover", "Games", Gamepad2], ["/mods", "Mods", Puzzle], ["/multiplayer", "Multiplayer", Swords], ["/events", "Events", CalendarDays], ["/friends", "Friends", Users], ["/library", "Library", LibraryBig], ["/deals", "Game deals", BadgePercent], ["/feedback", "Feedback", MessageSquare]] as const;
 export function NewSiteShell() {
  const pathname = usePathname().replace(/^\/new(?=\/|$)/, "") || "/";
@@ -19,7 +20,7 @@ export function NewSiteShell() {
  const nav=(href:string,label:string,Icon:typeof Home)=><Link key={href} href={`/new${href==="/"?"":href}`} aria-current={(href==="/"?pathname==="/":pathname.startsWith(href))?"page":undefined}><Icon size={17}/><span>{label}</span></Link>;
  return <div className="new-site-shell">
  <aside className="new-sidebar">
- <Link className="new-wordmark" href="/new"><span><i>▶</i>play<b>bound.</b></span><small>Discover. Play. Connect.</small></Link>
+ <NewWordmark />
  <nav aria-label="Main navigation">{links.map(([href,label,Icon])=>nav(href,label,Icon))}</nav>
  <p className="new-nav-label">Your workspace</p><nav aria-label="Workspace">{nav("/hosting/servers","My servers",Server)}{nav("/developer","Developer tools",Code)}{canViewAdmin(session?.user?.role)&&nav("/admin","Administration",Shield)}</nav>
  <details className="new-sidebar-preferences"><summary>Discovery & compatibility</summary><DiscoveryModeToggle variant="sidebar"/><GameCompatibilityToggle variant="sidebar"/></details>

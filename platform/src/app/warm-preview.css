@@ -106,6 +106,8 @@ html[data-warm-preview] .new-site-shell{display:block}
 html[data-warm-preview] :is(.shell-sidebar,.shell-topbar){display:none}
 .new-sidebar{position:fixed;inset:0 auto 0 0;width:206px;z-index:45;background:#111217;border-right:1px solid #ffffff12;display:flex;flex-direction:column;padding:24px 14px 14px;overflow-y:auto}
 .new-wordmark{display:flex;flex-direction:column;align-items:center;margin-bottom:28px;color:#f1eee9}
+.new-footer-wordmark{display:none}
+html[data-warm-preview] .new-footer-wordmark{display:flex;width:max-content;margin-bottom:16px}
 .new-wordmark>span{font-size:26px;letter-spacing:-1.3px;white-space:nowrap}.new-wordmark i{font-style:normal;color:var(--preview-color,#EF0107);font-size:18px;margin-right:5px}.new-wordmark b{color:var(--preview-color,#EF0107)}.new-wordmark small{font-size:11px;letter-spacing:.1px;margin-top:4px}
 .new-sidebar nav{display:flex;flex-direction:column;gap:3px}.new-sidebar nav a{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:5px;color:#b1adb7;font-size:12px}.new-sidebar nav a:hover,.new-sidebar nav a[aria-current]{background:var(--accent);color:var(--accent-text)}
 .new-nav-label{font-size:9px;letter-spacing:1.4px;text-transform:uppercase;color:#827e89;margin:25px 12px 10px}
