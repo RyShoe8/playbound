@@ -3,7 +3,22 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { createManagedRegistry, isSameProcess, processIdentity, rehydrateManagedRoom, recoveredManagedRoomExited } from "./managedRegistry.js";
+import { createManagedRegistry, createManagedJobs, isSameProcess, processIdentity, rehydrateManagedRoom, recoveredManagedRoomExited } from "./managedRegistry.js";
+
+test("stop and failure evidence survives restart without saving room credentials", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "playbound-jobs-"));
+  try {
+    const jobs = createManagedJobs(dir);
+    jobs.set("stopped", { status: "stopped", at: 1 });
+    jobs.set("failed", { status: "failed", error: "Exited 1", at: 2, room: { rconPassword: "secret" } });
+    jobs.set("pending", { status: "pending", startedAt: 3 });
+    const recovered = createManagedJobs(dir);
+    assert.equal(recovered.get("stopped").status, "stopped");
+    assert.equal(recovered.get("failed").error, "Exited 1");
+    assert.equal(recovered.get("pending").status, "failed");
+    assert.equal(fs.readFileSync(path.join(dir, "managed-jobs.json"), "utf8").includes("secret"), false);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
 
 test("managed manifest survives a new registry instance", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "playbound-managed-"));

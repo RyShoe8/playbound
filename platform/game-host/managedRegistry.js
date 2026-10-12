@@ -84,3 +84,19 @@ export function createManagedRegistry(stateDir) {
 export function createPartyRegistry(stateDir) {
   return createRoomRegistry("party-rooms.json", (r) => r && typeof r.partyId === "string", stateDir);
 }
+
+/** Keep stop/failure evidence across agent restarts, without runtime credentials. */
+export function createManagedJobs(stateDir) {
+  const registry = createRoomRegistry("managed-jobs.json", (r) => r && typeof r.communityServerId === "string", stateDir);
+  const jobs = new Map(registry.read().map(({ communityServerId, ...job }) => [communityServerId,
+    job.status === "pending" ? { status: "failed", error: "Provisioning interrupted by agent restart", at: Date.now() } : job]));
+  jobs.set = function (id, job) {
+    Map.prototype.set.call(this, id, job);
+    registry.write([...this].map(([communityServerId, value]) => ({
+      communityServerId, status: value.status, error: value.error, at: value.at,
+      gameSlug: value.gameSlug, startedAt: value.startedAt,
+    })));
+    return this;
+  };
+  return jobs;
+}
