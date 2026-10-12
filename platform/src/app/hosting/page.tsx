@@ -25,7 +25,7 @@ const BASIC_FEATURES = [
   "Manage maps and players from PlayBound",
   "List public servers on PlayBound.club",
 ];
-const PLAN_NAMES = ["Basic", "Pro", "Extreme"] as const;
+const PLAN_NAMES = ["Basic"] as const;
 
 const HOSTING_HERO_GAMES: Record<string, string> = {
   openra: "OpenRA",
@@ -39,12 +39,12 @@ const HOSTING_HERO_GAMES: Record<string, string> = {
 };
 
 export default async function HostingPage() {
-  const [[basic, pro, extreme], inventory, popular] = await Promise.all([
-    Promise.all([loadPublicTier("basic"), loadPublicTier("pro"), loadPublicTier("extreme")]),
+  const [basic, inventory, popular] = await Promise.all([
+    loadPublicTier("basic"),
     loadHostingInventory(),
     mostPopularGames(1000).catch(() => []),
   ]);
-  const tiers = [basic, pro, extreme];
+  const tiers = [basic];
   const popularSlugs = popular.map((game) => game.slug);
   const ranked = tiers.map(({ tier }) => rankedHostingGames(publicGames(tier), inventory, popularSlugs));
   const artBySlug = await hostingGameArt([...new Set(ranked.flatMap((games) => games.slice(0, 10).map((game) => game.gameSlug)))]);
@@ -70,8 +70,8 @@ export default async function HostingPage() {
     </section>
 
     <section id="plans" className="space-y-6">
-      <div><h2 className="text-3xl font-bold">Choose how you host</h2><p className="text-muted-foreground">Start with Basic. Pro and Extreme are on the way.</p></div>
-      <div className="grid items-stretch gap-5 lg:grid-cols-3">
+      <div><h2 className="text-3xl font-bold">Choose how you host</h2><p className="text-muted-foreground">Flexible slots for the games your group loves.</p></div>
+      <div className="grid items-stretch gap-5">
         {PLAN_NAMES.map((name, index) => {
           const games = ranked[index];
           const comingSoon = index > 0;

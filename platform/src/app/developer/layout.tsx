@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { Code2, Gamepad2, Building2, ShieldAlert, ArrowLeft } from "lucide-react";
@@ -14,7 +13,7 @@ export const metadata: Metadata = {
 export default async function DeveloperLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
-    redirect("/login?next=/developer");
+    return <main className="w-full px-4 py-10 sm:px-8">{children}</main>;
   }
 
   return (

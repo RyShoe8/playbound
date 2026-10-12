@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DeveloperPromo } from "@/components/developer/DeveloperPromo";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { listManageableGames, listManageableDevelopers } from "@/lib/developerAccess";
@@ -7,7 +8,8 @@ import Image from "next/image";
 
 export default async function DeveloperDashboard() {
   const session = await getServerSession(authOptions);
-  const userId = session?.user?.id || "";
+  if (!session?.user?.id) return <DeveloperPromo />;
+  const userId = session.user.id;
 
   const [games, developers] = await Promise.all([
     listManageableGames(userId),
