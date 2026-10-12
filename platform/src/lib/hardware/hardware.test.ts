@@ -87,6 +87,25 @@ describe("effectiveHardwareRequirements", () => {
 });
 
 describe("evaluateCompatibility", () => {
+  it("shows one storage success when minimum and recommended are both met", () => {
+    const result = evaluateCompatibility(
+      { storageMB: 14 * 1024, ramMB: 16 * 1024, gpuTier: "mid" },
+      { min: { storageMB: 200 }, recommended: { storageMB: 200, ramMB: 4096, gpuTier: "mid" } }
+    );
+    expect(result.reasons.filter(r => r.code === "storage_ok")).toEqual([
+      expect.objectContaining({ message: "Your 14 GB free storage meets the recommended 200 MB requirement." }),
+    ]);
+  });
+
+  it("keeps the minimum storage pass when recommended storage is not met", () => {
+    const result = evaluateCompatibility(
+      { storageMB: 1024 },
+      { min: { storageMB: 200 }, recommended: { storageMB: 2048 } }
+    );
+    expect(result.reasons.filter(r => r.code.startsWith("storage_")).map(r => r.code)).toEqual(["storage_ok", "storage_below"]);
+    expect(result.verdict).toBe("playable");
+  });
+
   it("returns unknown without structured requirements", () => {
     const r = evaluateCompatibility(
       { cpuTier: "high", gpuTier: "high", ramMB: 16000, osFamily: "windows" },
