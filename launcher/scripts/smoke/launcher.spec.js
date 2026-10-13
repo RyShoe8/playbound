@@ -20,6 +20,10 @@ test('signed-out launcher keeps discovery usable and exposes account entry', asy
     await page.locator('#sidebar .site-wordmark').click();
     await expect(page.getByRole('heading',{name:'Find your next good game.'})).toBeVisible();
     await page.screenshot({path:testInfo.outputPath('signed-out-home.png')});
+    await page.setViewportSize({width:900,height:700});
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await expect(page.locator('#site-account')).toBeVisible();
+    await page.screenshot({path:testInfo.outputPath('compact-home.png')});
   } finally {
     if (application) await application.close();
     fs.rmSync(root,{recursive:true,force:true,maxRetries:5,retryDelay:200});
