@@ -129,7 +129,7 @@ export default async function EventsPage() {
         <NewEventsSchedule events={[...events].sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))} titles={Object.fromEntries(titles)} />
         <aside className="new-events-rail">
           <section className="new-panel new-pad"><p className="new-eyebrow">Your week</p><h2>Make room for a game night</h2><p>Times are shown in your local timezone. Open an event to see its edition, RSVP, and available Join options.</p><Link href="/new/multiplayer" className="new-button primary">Play now</Link></section>
-          <section className="new-panel new-pad"><PlayWithFriends surface="new_events" compact /></section>
+          <PlayWithFriends surface="new_events" compact className="new-panel new-pad" />
           <Suspense fallback={<p role="status">Loading open parties…</p>}><LiveOpenParties /></Suspense>
         </aside>
       </div>
