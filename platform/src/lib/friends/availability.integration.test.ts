@@ -8,10 +8,13 @@ import { availabilityForFriends } from "./availabilityService";
 import { createPlatformEvent } from "@/lib/events/service";
 import PlatformEvent from "@/lib/models/PlatformEvent";
 import Presence from "@/lib/models/Presence";
-import { getLookingToPartyCounts } from "@/lib/playTogether/lookingToParty";
+import { getLookingToPartyCounts, listLookingToParty } from "@/lib/playTogether/lookingToParty";
+import { POST as stopLooking } from "@/app/api/presence/lfg/route";
 vi.mock("@/lib/db", () => ({ default: async () => undefined }));
 vi.mock("@/lib/playTogether/sharedGames", () => ({ listSharedLibraryByFriend: async () => ({}) }));
-vi.mock("@/lib/catalog", () => ({ getGame: async () => ({ slug: "openra", features: ["Multiplayer"] }) }));
+vi.mock("@/lib/catalog", () => ({ getGame: async () => ({ slug: "openra", features: ["Multiplayer"] }), listGames: async () => [{ slug: "openra", title: "OpenRA" }] }));
+vi.mock("@/lib/friendsAuth", () => ({ getFriendsUserId: async () => owner }));
+vi.mock("@/lib/multiplayer/activity", () => ({ revalidateMultiplayerActivity: vi.fn() }));
 let mongo: MongoMemoryServer;
 let owner: string;
 beforeAll(async () => {
@@ -66,6 +69,16 @@ it("lists only opted-in active windows, deduplicates manual LFG, and removes exp
   await PlayAvailability.collection.insertMany(ids.map((userId, index) => ({ userId, timezone: "UTC", publishLooking: index !== 1, weekly: [], window: { startsAt: new Date(index === 4 ? now + 3600_000 : now - 3600_000), endsAt: new Date(index === 3 ? now - 1 : now + 7200_000) } })));
   await Presence.collection.insertOne({ userId: ids[2], lookingForPlayersUntil: new Date(now + 3600_000), lookingForPlayersGameIds: ["openra"] });
   expect(await getLookingToPartyCounts()).toEqual({ total: 2, byGame: { openra: 1 } });
+  expect((await listLookingToParty()).map(player => player.username).sort()).toEqual(["dual", "scheduled"]);
   await PlayAvailability.updateOne({ userId: ids[0] }, { $set: { "window.endsAt": new Date(now - 1) } });
   expect(await getLookingToPartyCounts()).toEqual({ total: 1, byGame: { openra: 1 } });
+});
+it("Stop Looking disables automatic listing without deleting the saved window", async () => {
+  const startsAt = new Date(Date.now() - 60_000), endsAt = new Date(Date.now() + 3600_000);
+  await PlayAvailability.updateOne({ userId: owner }, { $set: { publishLooking: true, window: { startsAt, endsAt } } });
+  const response = await stopLooking(new Request("https://test/api/presence/lfg", { method: "POST", body: JSON.stringify({ enabled: false }) }));
+  expect(response.status).toBe(200);
+  const saved = await PlayAvailability.findOne({ userId: owner }).lean();
+  expect(saved?.publishLooking).toBe(false);
+  expect(new Date(saved!.window.endsAt).getTime()).toBe(endsAt.getTime());
 });
