@@ -61,7 +61,7 @@ async function loadHome() {
     const catalog = filterCatalogGames(Array.isArray(raw) ? raw : raw?.games || []);
     const selected = homepageSelections(catalog, null);
     paintFeature(selected.released[0]);
-    document.getElementById('home-popular-grid').replaceChildren(...selected.popular.map(game => createGameCard(game)));
+    document.getElementById('home-popular-grid').innerHTML = '<p class="view-sub">Loading this week’s most popular games…</p>';
   }).catch(() => {});
   const results = await Promise.allSettled([
     catalogRequest,
@@ -81,13 +81,13 @@ async function loadHome() {
   if (!feed) cacheInvalidate('siteHome');
   const selected = homepageSelections(catalog, feed);
   paintFeature(selected.released[0]);
-  document.querySelector('#home-popular-grid').previousElementSibling.querySelector('h2').textContent = feed ? 'Most Popular this week' : 'Discover games';
-  const paint = (id, cards) => { const grid = document.getElementById(`${id}-grid`); grid.replaceChildren(...cards); if (!cards.length) { const message = document.createElement('p'); message.className = 'view-sub'; message.textContent = !feed && ['home-mods', 'home-editions'].includes(id) ? 'Could not load this section.' : 'Nothing available right now. Check back soon.'; grid.append(message);
-    if (!feed && ['home-mods', 'home-editions'].includes(id)) {
+  document.querySelector('#home-popular-grid').previousElementSibling.querySelector('h2').textContent = 'Most Popular this week';
+  const paint = (id, cards) => { const grid = document.getElementById(`${id}-grid`); grid.replaceChildren(...cards); if (!cards.length) { const message = document.createElement('p'); message.className = 'view-sub'; message.textContent = !feed && ['home-popular', 'home-mods', 'home-editions'].includes(id) ? 'Could not load this section.' : 'Nothing available right now. Check back soon.'; grid.append(message);
+    if (!feed && ['home-popular', 'home-mods', 'home-editions'].includes(id)) {
       const retry = document.createElement('button'); retry.className = 'btn-secondary btn-sm'; retry.textContent = 'Try again';
       retry.addEventListener('click', () => { cacheInvalidate('siteHome'); void loadHome(); }); grid.append(retry);
     } } };
-  paint('home-popular', selected.popular.map(game => createGameCard(game)));
+  paint('home-popular', feed ? selected.popular.map(game => createGameCard(game)) : []);
   paintNight(value(2, {}).events || []);
   paint('home-free', diversifyOffers(value(3, {}).offers || [], 8).map(createFreeOfferCard));
   paint('home-mods', selected.mods.map(createModCard));
