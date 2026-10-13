@@ -7,19 +7,24 @@ export function runningReservationEnvelope(input: {
   observed?: { available: boolean; cpuCores?: number | null; rssBytes?: number } | null;
 }): ResourceEnvelope {
   const { baseline, players, observed } = input;
-  if (players !== 0 || !observed?.available || observed.cpuCores == null ||
+  if (!observed?.available || observed.cpuCores == null ||
       !Number.isFinite(observed.cpuCores) || !Number.isFinite(observed.rssBytes) ||
       observed.cpuCores < 0 || (observed.rssBytes ?? 0) <= 0) return baseline;
+  const currentFloor = { cpuCores: observed.cpuCores * 1.25, ramBytes: observed.rssBytes! * 1.25 };
+  if (players !== 0) return {
+    cpuCores: Math.max(baseline.cpuCores, currentFloor.cpuCores),
+    ramBytes: Math.max(baseline.ramBytes, currentFloor.ramBytes),
+  };
   /*
    * A confirmed-empty server is charged twice what it actually uses, never
-   * more than its normal envelope. The old floors (0.5 cores / 768 MB each)
+   * more than its normal envelope unless current usage exceeds it. The old floors (0.5 cores / 768 MB each)
    * meant eight idle servers "filled" a 4-core budget on a VPS at 7% CPU.
    * Occupied or unknown servers still pay the full baseline above, and the
    * live CPU/RAM safety limits gate every start regardless.
    */
   return {
-    cpuCores: Math.min(baseline.cpuCores, Math.max(0.1, observed.cpuCores * 2)),
-    ramBytes: Math.min(baseline.ramBytes, Math.max(128 * 1024 ** 2, observed.rssBytes! * 1.5)),
+    cpuCores: Math.max(currentFloor.cpuCores, Math.min(baseline.cpuCores, Math.max(0.1, observed.cpuCores * 2))),
+    ramBytes: Math.max(currentFloor.ramBytes, Math.min(baseline.ramBytes, Math.max(128 * 1024 ** 2, observed.rssBytes! * 1.5))),
   };
 }
 

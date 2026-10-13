@@ -41,6 +41,13 @@ describe("community hosting placement", () => {
     expect(runningReservationEnvelope({ baseline, players: 2, observed })).toEqual(baseline);
     expect(runningReservationEnvelope({ baseline, players: 0, observed: null })).toEqual(baseline);
   });
+  it("never discounts higher observed usage below its current resource cost", () => {
+    const baseline = {cpuCores:1.85,ramBytes:GIB};
+    const observed = {available:true,cpuCores:2.1,rssBytes:2*GIB};
+    for (const players of [0,1,null]) {
+      expect(runningReservationEnvelope({baseline,players,observed})).toEqual({cpuCores:2.625,ramBytes:2.5*GIB});
+    }
+  });
   it("never stops a server on an unknown or stale player count", () => {
     const now = base.now;
     expect(canScaleDownEmptyServer({ players: 0, checkedAt: now, protectedUntil: null }, now)).toBe(true);
