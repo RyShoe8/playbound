@@ -15,8 +15,15 @@ const ServerResourceSampleSchema = new Schema({
   sampleIntervalMs: { type: Number, default: null },
   processCount: { type: Number, default: null },
   scope: { type: String, default: null },
+  runtimeAgeMs: { type: Number, default: null },
+  nodeCpuCores: { type: Number, default: null },
+  measurementVersion: { type: Number, default: 1 },
+  baselineVersion: { type: Number, default: 1 },
+  sampleKey: { type: String },
 }, { timestamps: false });
 
 ServerResourceSampleSchema.index({ profileKey: 1, observedAt: -1 });
+ServerResourceSampleSchema.index({ sampleKey: 1 }, { unique: true, sparse: true });
+ServerResourceSampleSchema.index({ observedAt: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 });
 
 export default models.ServerResourceSample || model("ServerResourceSample", ServerResourceSampleSchema);

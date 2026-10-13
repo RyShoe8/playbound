@@ -33,7 +33,7 @@ describe("persisting spawn-test readings", () => {
       }),
     }, { upsert: true, runValidators: true, setDefaultsOnInsert: true });
     expect(mocks.record).toHaveBeenCalledWith(expect.objectContaining({
-      profileKey: "factorio:base", players: 0, phase: "idle", source: "audit",
+      profileKey: "factorio:base", players: 0, phase: "startup", source: "audit",
       cpuCores: 0.4, ramBytes: 100_000_000,
     }));
   });

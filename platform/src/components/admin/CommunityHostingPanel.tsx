@@ -25,6 +25,7 @@ type Data = {
 const GIB = 1024 ** 3;
 
 function usageLabel(p: Profile): string {
+  if ((p.sampleCount || 0) < 3) return `calibrating · ${p.sampleCount || 0}/3 settled samples`;
   const cores = p.envelope?.cpuCores || 0;
   const gb = (p.envelope?.ramBytes || 0) / GIB;
   if (!cores && !gb) return "not measured";
@@ -114,6 +115,7 @@ export function CommunityHostingPanel() {
   const [config, setConfig] = useState<HostingSettings | null>(null);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [calibrating, setCalibrating] = useState(false);
   const load = useCallback(async () => {
     const response = await fetch("/api/admin/connect/game-servers/community-hosting", { cache: "no-store" });
     if (!response.ok) throw new Error("Could not load Community Hosting settings");
@@ -126,6 +128,30 @@ export function CommunityHostingPanel() {
     const refresh = setInterval(() => void load().catch((error) => setMessage(error.message)), 60_000);
     return () => { clearTimeout(timer); clearInterval(refresh); };
   }, [load]);
+
+  async function recalibrate() {
+    setCalibrating(true); setMessage("Archiving previous resource estimates…");
+    const call = async (body: object) => {
+      const response = await fetch("/api/admin/connect/game-servers/community-hosting/calibration", {
+        method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Could not recalibrate");
+      return result;
+    };
+    try {
+      const reset = await call({ action: "reset", requestId: crypto.randomUUID() });
+      await load();
+      for (let i = 0; i < 3; i++) {
+        setMessage(`Previous estimates archived for ${reset.profiles} profiles. Sampling running servers ${i + 1}/3…`);
+        await new Promise((resolve) => setTimeout(resolve, 11_000));
+        await call({ action: "sample" });
+      }
+      await load();
+      setMessage(`Reset ${reset.profiles} profiles and removed ${reset.removedSamples || 0} obsolete readings. Running servers were sampled; other games calibrate as they run. After three initial readings, sampling is limited to once per day. No game servers were changed by this action.`);
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Could not recalibrate"); }
+    finally { setCalibrating(false); }
+  }
 
   function section<K extends keyof HostingSettings>(key: K, value: HostingSettings[K]) {
     setConfig((current) => current ? { ...current, [key]: value } : current);
@@ -243,7 +269,9 @@ export function CommunityHostingPanel() {
       <button type="button" disabled={saving} onClick={save} className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">Save hosting settings</button>
     </>}
     {message && <p role="status" className="text-sm">{message}</p>}
-    <div><h3 className="font-semibold">Games for automatic hosting</h3><p className="text-xs text-muted-foreground">Tick the games and editions available for community hosting. Usage is measured CPU and RAM per server.</p>
+    <div><h3 className="font-semibold">Games for automatic hosting</h3><p className="text-xs text-muted-foreground">Usage includes headroom from settled process measurements after a five-minute warmup. Three samples are required; startup tests and unknown player counts do not establish normal usage. Unobserved player loads remain unverified.</p>
+      <button type="button" disabled={calibrating} onClick={() => void recalibrate()} className="my-2 rounded-full border border-border px-3 py-1.5 text-sm disabled:opacity-50">{calibrating ? "Recalibrating…" : "Recalibrate resource estimates"}</button>
+      <p className="text-xs text-muted-foreground">Archives previous estimates, removes obsolete readings, and samples existing runtimes. After calibration: at most one reading per game/edition per day, retained for 30 days. Game selections, settings, reservations, and tier limits stay intact.</p>
       <div className="text-sm">{data?.profiles.length ? <ProfileChecklist profiles={data.profiles} titles={data.titles || {}} editionNames={data.editionNames || {}} onSaved={load} /> : <p className="text-muted-foreground">No published catalog games with ready dedicated-server files yet.</p>}</div>
     </div>
     <div><h3 className="font-semibold">Community servers</h3><div className="mt-2 space-y-1 text-sm">{data?.servers.length ? data.servers.map((s) => {

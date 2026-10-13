@@ -24,7 +24,7 @@ export type GameHostRoom = {
   status?: "pending" | "running";
   join?: { kind: "steam"; serverId: string | null };
   pid?: number | null;
-  resources?: { available: boolean; rssBytes?: number; cpuCores?: number | null };
+  resources?: { available: boolean; rssBytes?: number; cpuCores?: number | null; sampleIntervalMs?: number; scope?: string; collectedAt?: string };
   host: string;
   port: number;
   gameSlug: string;

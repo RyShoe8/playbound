@@ -29,7 +29,7 @@ export function idleSamplesFromSpawnTest(result: SpawnTestResult, requestedSlug?
     return [{
       profileKey: `${slug}:base`, observedAt: new Date(), players: 0,
       cpuCores: resources.cpuCores!, ramBytes: resources.rssBytes!,
-      phase: "idle" as const, source: "audit" as const,
+      phase: "startup" as const, source: "audit" as const,
       ...(Number.isFinite(resources.sampleIntervalMs) && (resources.sampleIntervalMs ?? 0) > 0
         ? { sampleIntervalMs: resources.sampleIntervalMs } : {}),
       ...(Number.isInteger(resources.processCount) && (resources.processCount ?? 0) > 0

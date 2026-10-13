@@ -425,10 +425,13 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
       await server.save();
       if (profile && (server.gameSlug !== "aneurism-iv" || players !== null) && room.resources?.available && room.resources.cpuCores != null && room.resources.rssBytes) {
         await recordResourceSample({
-          profileKey: profile.key, communityServerId: String(server._id), observedAt: now,
+          profileKey: profile.key, communityServerId: String(server._id), observedAt: new Date(room.resources.collectedAt || now),
           players, cpuCores: room.resources.cpuCores, ramBytes: room.resources.rssBytes,
           nodeCpuPercent: metrics.cpu?.usagePercent, nodeRamPercent: metrics.memory?.usedPercent,
           phase: players === null || players === 0 ? "idle" : "occupied", source: "live",
+          sampleIntervalMs: room.resources.sampleIntervalMs, scope: room.resources.scope,
+          nodeCpuCores: metrics.cpu?.cores,
+          runtimeAgeMs: room.processStartedAt ? now.getTime() - room.processStartedAt : undefined,
         });
       }
 

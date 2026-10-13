@@ -758,6 +758,12 @@ function roomMetrics(room) {
     ? processMetrics(status.gamePid) : {available:false};
 }
 
+// Keep CPU deltas local and short. A first read after a 15-minute gap mixes
+// startup and live play into one misleading "idle" observation.
+setInterval(() => {
+  for (const room of rooms.values()) if (room.communityServerId) roomMetrics(room);
+}, 10_000).unref();
+
 function persistPartyRooms() {
   partyRegistry.write([...rooms.values()].filter((r) => !r.communityServerId).map((r) => ({
     roomId: r.roomId, partyId: r.partyId, pid: r.pid, identity: r.processIdentity,
