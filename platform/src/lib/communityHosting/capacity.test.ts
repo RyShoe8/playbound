@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canScaleDownEmptyServer, paidScaleDownRank, placementDecision, runningReservationEnvelope, type PlacementInput } from "./capacity";
+import { canRetireEmptyServer, canScaleDownEmptyServer, paidScaleDownRank, placementDecision, runningReservationEnvelope, type PlacementInput } from "./capacity";
 
 const GIB = 1024 ** 3;
 const base: PlacementInput = {
@@ -12,6 +12,27 @@ const base: PlacementInput = {
 };
 
 describe("community hosting placement", () => {
+  it("does not retire a long-running server immediately after its last player leaves", () => {
+    const now = base.now;
+    const server = { players: 0, checkedAt: now, protectedUntil: null,
+      onlineSince: new Date(now.getTime() - 10 * 3_600_000),
+      lastOccupiedAt: new Date(now.getTime() - 30_000),
+      minimumOnlineMinutes: 120, idleMinutes: 60 };
+    expect(canRetireEmptyServer(server, now)).toBe(false);
+    expect(canRetireEmptyServer({ ...server, lastOccupiedAt: new Date(now.getTime() - 61 * 60_000) }, now)).toBe(true);
+  });
+  it("preserves new, protected, occupied, unknown, and stale runtimes during ordinary budget downsizing", () => {
+    const now = base.now;
+    const server = { players: 0, checkedAt: now, protectedUntil: null,
+      onlineSince: new Date(now.getTime() - 10 * 3_600_000), lastOccupiedAt: null,
+      minimumOnlineMinutes: 120, idleMinutes: 60 };
+    expect(canRetireEmptyServer({ ...server, onlineSince: new Date(now.getTime() - 30 * 60_000) }, now)).toBe(false);
+    expect(canRetireEmptyServer({ ...server, protectedUntil: new Date(now.getTime() + 60_000) }, now)).toBe(false);
+    expect(canRetireEmptyServer({ ...server, players: 1 }, now)).toBe(false);
+    expect(canRetireEmptyServer({ ...server, players: null }, now)).toBe(false);
+    expect(canRetireEmptyServer({ ...server, checkedAt: new Date(now.getTime() - 180_000) }, now)).toBe(false);
+    expect(canRetireEmptyServer({ ...server, onlineSince: null }, now)).toBe(false);
+  });
   it("reserves observed idle usage with headroom but keeps full budget for occupied or unknown servers", () => {
     const baseline = { cpuCores: 2, ramBytes: 3 * GIB };
     const observed = { available: true, cpuCores: 0.08, rssBytes: 800 * 1024 ** 2 };
