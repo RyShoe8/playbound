@@ -126,6 +126,8 @@ function createTelemetry({
       const anonymousId = getAnonymousId();
       try {
         const settings = loadSettings();
+        // A per-run fallback cannot identify an installation across updates.
+        if (String(settings.analyticsId || "") !== anonymousId) return { ok: false };
         if (settings.launcherInstallTrackedId === anonymousId) {
           return { ok: true, alreadyTracked: true };
         }
@@ -138,7 +140,8 @@ function createTelemetry({
         }
         saveSettings({ ...settings, launcherInstallPendingId: anonymousId });
       } catch {
-        // Tracking is still best-effort when settings cannot be read.
+        // Avoid treating every launch as a new install when settings fail.
+        return { ok: false };
       }
 
       const result = await track("launcher_install", { firstSeen: true });
