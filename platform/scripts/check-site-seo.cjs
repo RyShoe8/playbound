@@ -2,6 +2,7 @@
 const assert = require('node:assert/strict');
 const origin = new URL(process.argv[2] || 'https://playbound.club').origin;
 const pages = ['/', '/discover', '/games/openra', '/games/openra/editions/official', '/mods', '/multiplayer', '/events', '/hosting', '/developer', '/developers', '/launcher', '/controls', '/connect', '/weekly', '/guides', '/blog', '/collections', '/standards', '/about', '/friends', '/library'];
+let eventDetailPath;
 const privatePages = new Set(['/developer', '/friends', '/library']);
 const requiredTypes = { '/discover': ['ItemList', 'BreadcrumbList'], '/games/openra': ['VideoGame', 'Review', 'FAQPage'], '/events': ['CollectionPage', 'BreadcrumbList'], '/launcher': ['SoftwareApplication'], '/weekly': ['CollectionPage', 'ItemList'], '/standards': ['FAQPage'], '/about': ['AboutPage'] };
 function attributes(html) {
@@ -17,6 +18,7 @@ async function check(path) {
   assert.equal(new URL(legacy.headers.get('location'), origin).href, origin + path, `${path}: redirect destination`);
   assert.equal(page.headers.get('x-robots-tag'), null, `${path}: preview noindex header must be gone`);
   const html = await page.text();
+  if (path === "/events") eventDetailPath = html.match(/href="(\/events\/[a-f0-9]{24})"/)?.[1];
   assert.match(html, /<title>[^<]+<\/title>/, `${path}: missing title`);
   const tags = attributes(html);
   const robots = tags.find(t => t.name === 'robots')?.content || '';
@@ -43,5 +45,14 @@ async function check(path) {
   assert.ok(!llms.includes('/new/'), 'AI citation links must remain canonical');
   const sitemap = await (await fetch(origin + '/sitemap.xml')).text();
   assert.ok(!sitemap.includes('/new/'), 'Sitemap must not contain retired preview URLs');
+  assert.doesNotMatch(sitemap, /<loc>[^<]*\/events\//, 'Individual events must never enter the sitemap');
+  assert.doesNotMatch(sitemap, /<loc>[^<]*\/admin(?:\/|<)/, 'Private event creation/admin must stay out of the sitemap');
+  if (eventDetailPath) {
+    const detail = await fetch(origin + eventDetailPath, { signal: AbortSignal.timeout(90000) });
+    assert.equal(detail.status, 200, 'Linked event page must remain shareable');
+    const detailTags = attributes(await detail.text());
+    assert.match(detailTags.find(t => t.name === 'robots')?.content || '', /noindex/, 'Individual event must stay noindex');
+    console.log('PASS individual event noindex');
+  }
   console.log('PASS AI discovery and canonical sitemap');
 })().catch(error => { console.error(error.message); process.exitCode = 1; });

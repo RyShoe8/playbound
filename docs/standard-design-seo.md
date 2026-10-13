@@ -15,3 +15,5 @@ The read-only smoke check verifies public page metadata, parseable server-render
 The root layout remains the single owner of Organization, WebSite and editor Person entities. Game pages continue to own their VideoGame, Review, FAQ and breadcrumb graphs. Events now also publishes its visible calendar as Event/CollectionPage schema. Newsletter discovery copy describes new games, free games and PlayBound updates; historical issues retain their existing identities.
 
 These checks protect discoverability and machine-readable attribution. They cannot guarantee rankings or inclusion in AI answers.
+
+Individual `/events/[id]` pages must remain noindex and absent from the sitemap. Only `/events` is currently public and indexable. Event creation lives at `/admin/events/new`, behind admin authorization; it inherits admin noindex and is not in the sitemap. A future public creation page may be indexed, but the private admin form must not be exposed.
