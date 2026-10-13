@@ -503,17 +503,7 @@ export function MultiplayerHome({
       <MultiplayerEvents initialEvents={initialEvents} />
 
       <div className="new-multiplayer-layout space-y-8">
-        <div className="new-multiplayer-filter flex justify-end">
-          <label className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer select-none px-2 py-1 rounded-lg hover:bg-secondary/50 transition-colors">
-            <input
-              type="checkbox"
-              checked={installedOnly}
-              onChange={(e) => setInstalledOnly(e.target.checked)}
-              className="size-3.5 rounded border-border text-primary accent-primary focus:ring-primary/20 cursor-pointer"
-            />
-            <span>Installed only</span>
-          </label>
-        </div>
+
 
         <aside className="new-multiplayer-friends space-y-4"><MultiplayerFriendsSection
           signedIn={signedIn}
@@ -550,6 +540,18 @@ export function MultiplayerHome({
               Real-time query data from official master lists and community game servers.
             </p>
           </div>
+
+        <div className="new-multiplayer-filter flex items-center">
+          <label className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer select-none px-2 py-1 rounded-lg hover:bg-secondary/50 transition-colors">
+            <input
+              type="checkbox"
+              checked={installedOnly}
+              onChange={(e) => setInstalledOnly(e.target.checked)}
+              className="size-3.5 rounded border-border text-primary accent-primary focus:ring-primary/20 cursor-pointer"
+            />
+            <span>Installed only</span>
+          </label>
+        </div>
 
           <GlobalServerBrowser
             installedGameSlugs={installedGameSlugs}

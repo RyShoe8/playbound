@@ -8,6 +8,9 @@ import Presence from "@/lib/models/Presence";
 import { listGames } from "@/lib/catalog";
 import { applyPresenceFreshness, maskPresenceForOthers } from "@/lib/friends/presenceMask";
 import { resolveJoinCapability } from "@/lib/playTogether/joinCapability";
+import PlayAvailability from "@/lib/models/PlayAvailability";
+import { serializeAvailability } from "@/lib/friends/availabilityService";
+import { scheduledLookingEnd } from "@/lib/friends/availability";
 
 type PopulatedFriendUser = {
   _id: unknown;
@@ -55,13 +58,14 @@ export async function GET(req: Request) {
       .filter((f) => f.id !== userId);
 
     const ids = friendUsers.map((f) => f.id);
-    const [presences, games, sharedGames, mePresence, activeParties, discoverableParties] = await Promise.all([
+    const [presences, games, sharedGames, mePresence, activeParties, discoverableParties, myAvailability] = await Promise.all([
       Presence.find({ userId: { $in: ids } }).lean(),
       listGames({ includeTesting: true }),
       listSharedPlayGames(userId, 8),
       Presence.findOne({ userId }).lean(),
       listPartiesForUser(userId),
       listDiscoverableParties(userId),
+      PlayAvailability.findOne({ userId }).lean(),
     ]);
 
     const gameBySlug = new Map(games.map((g) => [g.slug, g]));
@@ -130,6 +134,7 @@ export async function GET(req: Request) {
     const meLfgUntil = mePresence?.lookingForPlayersUntil
       ? new Date(mePresence.lookingForPlayersUntil).getTime()
       : 0;
+    const scheduledEnd = scheduledLookingEnd(serializeAvailability(myAvailability), now);
     const myLfg =
       meLfgUntil > now
         ? {
@@ -144,6 +149,8 @@ export async function GET(req: Request) {
               : [],
             expiresAt: mePresence?.lookingForPlayersUntil,
           }
+        : scheduledEnd
+        ? { active: true, gameSlug: null, gameSlugs: [], expiresAt: new Date(scheduledEnd), source: "availability" }
         : { active: false, gameSlug: null, gameSlugs: [], expiresAt: null };
 
     return NextResponse.json({

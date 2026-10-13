@@ -1,6 +1,15 @@
-export type Availability = { timezone: string; window: { startsAt: string; endsAt: string } | null; weekly: { day: number; startMinute: number; endMinute: number }[] };
+export type Availability = { timezone: string; window: { startsAt: string; endsAt: string } | null; weekly: { day: number; startMinute: number; endMinute: number }[]; publishLooking?: boolean };
 export const emptyAvailability = (timezone = "UTC"): Availability => ({ timezone, window: null, weekly: [] });
 const formatters = new Map<string, Intl.DateTimeFormat>();
+export function scheduledLookingEnd(availability: Availability, now = Date.now()): number | null {
+  if (!availability.publishLooking || !availableAt(availability, now)) return null;
+  if (!availability.weekly.length && availability.window) return Date.parse(availability.window.endsAt);
+  let end = Math.floor(now / 60_000) * 60_000 + 15 * 60_000;
+  while (end < now + 48 * 3600_000 && availableAt(availability, end)) end += 15 * 60_000;
+  let boundary = Math.max(now, end - 15 * 60_000);
+  while (boundary < end && availableAt(availability, boundary)) boundary += 60_000;
+  return boundary;
+}
 
 export function availableAt(availability: Availability, time: number): boolean {
   if (availability.window && Date.parse(availability.window.startsAt) <= time && time < Date.parse(availability.window.endsAt)) return true;

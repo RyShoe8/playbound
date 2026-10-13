@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { availableAt, commonAvailability, emptyAvailability } from "./availability";
+import { availableAt, commonAvailability, emptyAvailability, scheduledLookingEnd } from "./availability";
 import { availabilitySchema } from "./availabilitySchema";
 import { serializeAvailability } from "./availabilityService";
 it("expires one-time availability at its end", () => {
@@ -32,4 +32,11 @@ it("validates timezone, duration, weekly limits and reversed windows", () => {
 it("preserves overlaps that start between quarter-hour boundaries", () => {
   const person = { ...emptyAvailability(), window: { startsAt: "2026-10-12T18:07:00Z", endsAt: "2026-10-12T19:07:00Z" } };
   expect(commonAvailability([person], Date.parse("2026-10-12T18:00:00Z"), 60)[0]).toEqual({ startsAt: "2026-10-12T18:07:00.000Z", endsAt: "2026-10-12T19:07:00.000Z" });
+});
+it("only auto-lists with explicit consent and respects a DST weekly boundary", () => {
+  const person = { ...emptyAvailability("America/Chicago"), weekly: [{ day: 0, startMinute: 60, endMinute: 120 }] };
+  const now = Date.parse("2026-11-01T06:30:00Z");
+  expect(scheduledLookingEnd(person, now)).toBe(null);
+  expect(scheduledLookingEnd({ ...person, publishLooking: true }, now)).toBe(Date.parse("2026-11-01T08:00:00Z"));
+  expect(scheduledLookingEnd({ ...person, publishLooking: true }, Date.parse("2026-11-01T08:00:00Z"))).toBe(null);
 });

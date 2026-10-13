@@ -187,7 +187,7 @@ async function computeMultiplayerActivitySnapshot(): Promise<MultiplayerActivity
 }
 
 export function getMultiplayerActivitySnapshot(): Promise<MultiplayerActivityResponse> {
-  return unstable_cache(computeMultiplayerActivitySnapshot, ["multiplayer-activity-snapshot-v3"], {
+  return unstable_cache(computeMultiplayerActivitySnapshot, ["multiplayer-activity-snapshot-v4"], {
     revalidate: CACHE_SECONDS,
     tags: ["multiplayer-activity"],
   })();

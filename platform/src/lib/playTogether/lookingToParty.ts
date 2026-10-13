@@ -3,6 +3,9 @@ import Presence from "@/lib/models/Presence";
 import LibraryEntry from "@/lib/models/LibraryEntry";
 import User from "@/lib/models/User";
 import { listGames } from "@/lib/catalog";
+import PlayAvailability from "@/lib/models/PlayAvailability";
+import { scheduledLookingEnd } from "@/lib/friends/availability";
+import { serializeAvailability } from "@/lib/friends/availabilityService";
 
 /**
  * "Looking to party" — people who have raised their hand for a game right now.
@@ -28,13 +31,24 @@ export type LookingToPartyEntry = {
 /** Users whose looking-to-party flag has not expired and who are visible. */
 async function visibleLookingPresences() {
   await dbConnect();
-  const presences = await Presence.find({
-    lookingForPlayersUntil: { $gt: new Date() },
+  const now = Date.now();
+  const [manual, scheduled] = await Promise.all([Presence.find({
+    lookingForPlayersUntil: { $gt: new Date(now) },
   })
     .select(
       "userId lookingForPlayersUntil lookingForPlayersGameId lookingForPlayersGameIds currentGameId"
     )
-    .lean();
+    .lean(), PlayAvailability.find({ publishLooking: true, $or: [{ "window.endsAt": { $gt: new Date(now) } }, { "weekly.0": { $exists: true } }] }).lean()]);
+  const presences = [...manual];
+  const seen = new Set(manual.map(p => String(p.userId)));
+  for (const record of scheduled) {
+    if (seen.has(String(record.userId))) continue;
+    const availability = serializeAvailability(record, now);
+    const end = scheduledLookingEnd(availability, now);
+    if (end === null) continue;
+    presences.push({ userId: record.userId, lookingForPlayersUntil: new Date(end), lookingForPlayersGameIds: [], lookingForPlayersGameId: null, currentGameId: null });
+    seen.add(String(record.userId));
+  }
 
   if (presences.length === 0) return { presences: [], users: [] };
 

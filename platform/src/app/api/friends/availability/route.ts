@@ -4,6 +4,7 @@ import { availabilitySchema } from "@/lib/friends/availabilitySchema";
 import { availabilityForFriends } from "@/lib/friends/availabilityService";
 import PlayAvailability from "@/lib/models/PlayAvailability";
 import dbConnect from "@/lib/db";
+import { revalidateMultiplayerActivity } from "@/lib/multiplayer/activity";
 const headers = { "Cache-Control": "private, no-store" };
 export async function GET(req: Request) {
   const id = await getFriendsUserId(req);
@@ -17,5 +18,6 @@ export async function PUT(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400, headers });
   await dbConnect();
   await PlayAvailability.updateOne({ userId: id }, { $set: parsed.data }, { upsert: true, runValidators: true });
+  revalidateMultiplayerActivity();
   return NextResponse.json({ success: true, availability: parsed.data }, { headers });
 }

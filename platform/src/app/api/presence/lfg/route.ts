@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Presence from "@/lib/models/Presence";
+import PlayAvailability from "@/lib/models/PlayAvailability";
 import Friend from "@/lib/models/Friend";
 import User from "@/lib/models/User";
 import { getFriendsUserId } from "@/lib/friendsAuth";
@@ -25,6 +26,7 @@ export async function POST(req: Request) {
     await dbConnect();
 
     if (!enabled) {
+      await PlayAvailability.updateOne({ userId }, { $set: { publishLooking: false } });
       await Presence.findOneAndUpdate(
         { userId },
         {
