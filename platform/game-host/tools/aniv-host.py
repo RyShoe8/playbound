@@ -41,6 +41,12 @@ def settings(raw):
     game_map = raw.get('map', 'aneurismiv')
     if not isinstance(name, str) or not 1 <= len(name) <= 64 or re.search(r'[\x00-\x1f\x7f]', name):
         raise ValueError('Invalid server name')
+    # The game's CommunityHostingSettings rejects names resembling a network
+    # route, including our usual PlayBound.Club branding. Keep the display
+    # words while removing URL/address punctuation from the in-game name.
+    name = re.sub(r'\s+', ' ', re.sub(r'[.:/\\]', ' ', name)).strip()
+    if not name:
+        raise ValueError('Server name must contain display text')
     if type(slots) is not int or not 2 <= slots <= 32:
         raise ValueError('Player limit must be 2–32')
     if game_map not in ('aneurismiv', 'misery'):

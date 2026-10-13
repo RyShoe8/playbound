@@ -21,6 +21,8 @@ class Boundaries(unittest.TestCase):
 
     def test_server_settings_cannot_be_shell_commands_or_unbounded(self):
         self.assertEqual(module.settings({'name':'A & B', 'maxPlayers':4})['map'], 'aneurismiv')
+        self.assertEqual(module.settings({'name':'PlayBound.Club Community Server'})['name'], 'PlayBound Club Community Server')
+        with self.assertRaises(ValueError): module.settings({'name':'...///'})
         for value in ({'maxPlayers':True}, {'maxPlayers':100}, {'map':'../other'}, {'name':'hello\nquit'}):
             with self.assertRaises(ValueError): module.settings(value)
         with self.assertRaises(ValueError): module.identity('../arbitrary')
