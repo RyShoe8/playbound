@@ -14,6 +14,7 @@ const CommunityServerSchema = new Schema({
   runtimeState: { type: String, enum: ["stopped", "pending", "running", "failed", "unknown"], default: "stopped" },
   health: { type: String, enum: ["unknown", "healthy", "unhealthy"], default: "unknown" },
   runtimeId: { type: String, default: null },
+  steamServerId: { type: String, default: null },
   host: { type: String, default: null },
   port: { type: Number, default: null },
   playerCount: { type: Number, default: null, min: 0 },

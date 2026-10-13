@@ -21,6 +21,8 @@ export type GameHostRoom = {
   roomId: string;
   partyId: string;
   communityServerId?: string | null;
+  status?: "pending" | "running";
+  join?: { kind: "steam"; serverId: string | null };
   pid?: number | null;
   resources?: { available: boolean; rssBytes?: number; cpuCores?: number | null };
   host: string;
@@ -39,7 +41,7 @@ export type GameHostRoom = {
 };
 
 export type ManagedHostStatus = {
-  status: "pending" | "running" | "failed" | "stopped";
+  status: "pending" | "recovering" | "running" | "failed" | "stopped";
   error?: string;
   room?: GameHostRoom;
   at?: number;

@@ -114,7 +114,7 @@ export async function GET() {
     const game = HOSTABLE_GAMES[slug] ?? DEDICATED_ONLY_GAMES[slug];
     const agentAlias = Object.keys(HOSTABLE_SLUG_ALIASES).find((alias) => HOSTABLE_SLUG_ALIASES[alias] === slug && gameStatus[alias]);
     const status = gameStatus[slug] ?? (agentAlias ? gameStatus[agentAlias] : undefined);
-    const hasRecipe = Boolean(game);
+    const hasRecipe = Boolean(game) || (slug === "aneurism-iv" && Boolean(status?.ready));
     const installed = hasRecipe && (status?.installed ?? health?.games?.[slug] ?? false);
     const ready = hasRecipe && (status?.ready ?? installed);
     const versions = versionBySlug[slug];
