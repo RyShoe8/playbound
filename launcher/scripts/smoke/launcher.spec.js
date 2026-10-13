@@ -14,6 +14,10 @@ test('signed-out launcher keeps discovery usable and exposes account entry', asy
     application = await _electron.launch({args,env});
     const page = await application.firstWindow();
     await expect(page.locator('#site-account-name')).toHaveText('Sign in to PlayBound');
+    await expect(page.locator('#home-editions-grid')).toContainText('Could not load this section');
+    await page.locator('#home-editions-grid').getByRole('button',{name:'Try again'}).click();
+    await expect(page.locator('#home-editions-grid')).toContainText('Fixture Edition');
+    await expect(page.locator('#home-mods-grid')).toContainText('Fixture Mod');
     await expect(page.locator('#home-people').getByRole('button',{name:'Sign in',exact:true})).toBeVisible();
     await page.locator('[data-view="games"]').click();
     await expect(page.locator('#games-grid .card-title-text').filter({hasText:'Smoke Fixture Game'})).toBeVisible();

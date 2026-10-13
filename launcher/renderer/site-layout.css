@@ -108,7 +108,7 @@ h1.view-title { font-size:clamp(2rem,3.2vw,3rem); }
 .pb-event-card,.friends-card,.party-card,.detail-section { background:var(--bg-card); border-color:var(--border); border-radius:12px; }
 .detail-hero { border-radius:12px; min-height:320px; }
 .detail-tab.active { color:var(--accent-light); border-color:var(--accent); }
-.site-main-stack .game-grid { grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+.site-main-stack .game-grid { grid-template-columns:repeat(auto-fill,minmax(min(210px,100%),1fr)); gap:12px; }
 .site-main-stack .card-body { padding:12px; }
 .site-main-stack .card-title { font-size:14px; }
 .site-events-layout { display:grid; grid-template-columns:minmax(0,1fr) 290px; gap:24px; margin-top:24px; align-items:start; }
@@ -161,9 +161,9 @@ h1.view-title { font-size:clamp(2rem,3.2vw,3rem); }
 .site-media-stage>:is(img,video,iframe) { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; border:0; }
 .site-media-picker { display:flex; gap:6px; overflow-x:auto; padding:10px; }
 .site-media-picker button { white-space:nowrap; font-size:11px; }
-@media(max-width:1250px) { .site-event-row { grid-template-columns:115px minmax(0,1fr); gap:12px; } .site-event-thumb { display:none; } .site-event-attendance { grid-column:2; flex-direction:row; text-align:left; } .site-main-stack .game-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media(max-width:1250px) { .site-event-row { grid-template-columns:115px minmax(0,1fr); gap:12px; } .site-event-thumb { display:none; } .site-event-attendance { grid-column:2; flex-direction:row; text-align:left; } }
 @media(max-width:1000px) { .site-events-layout { grid-template-columns:minmax(0,1fr); } .site-events-rail { grid-template-columns:repeat(2,minmax(0,1fr)); padding-top:0; } .detail-hero { grid-template-columns:minmax(0,1fr); } }
-@media(max-width:900px) { #view-friends { grid-template-columns:minmax(0,1fr); } #view-friends :is(#friends-content-area,#friends-privacy,#friends-party-area) { grid-column:1; grid-row:auto; } .site-main-stack .game-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .mp-tab-content-area { grid-template-columns:minmax(0,1fr); } .site-multiplayer-rail,#mp-overview-servers-sec { grid-column:1; grid-row:auto; } }
+@media(max-width:900px) { #view-friends { grid-template-columns:minmax(0,1fr); } #view-friends :is(#friends-content-area,#friends-privacy,#friends-party-area) { grid-column:1; grid-row:auto; } .mp-tab-content-area { grid-template-columns:minmax(0,1fr); } .site-multiplayer-rail,#mp-overview-servers-sec { grid-column:1; grid-row:auto; } }
 @media(max-width:1100px) { .site-home-layout { grid-template-columns:minmax(0,1fr) 240px; gap:20px; } .site-feature-copy { padding:20px; padding-top:70px; } }
 @media(max-width:900px) { .site-home-layout { grid-template-columns:minmax(0,1fr); } .site-home-rail { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); } .view { padding:24px; } .launcher-topbar { margin:0 24px; } }
 @media(prefers-reduced-motion:reduce) { .game-card { transition:none; } }

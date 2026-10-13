@@ -108,6 +108,8 @@ export async function GET(req: Request) {
                 browserPlayable: Boolean(g.browserPlayable),
                 steamDeck: Boolean(g.steamDeck),
                 createdAt: g.createdAt || null,
+                publishedAt: g.publishedAt || null,
+                releaseYear: g.releaseYear,
                 editions: displayEditions,
                 ...accessFieldsForLauncher(tierFor(tiers, g.slug)),
               }
@@ -139,6 +141,8 @@ export async function GET(req: Request) {
           browserPlayable: Boolean(g.browserPlayable),
           steamDeck: Boolean(g.steamDeck),
           createdAt: g.createdAt || null,
+                publishedAt: g.publishedAt || null,
+                releaseYear: g.releaseYear,
           editions: displayEditions,
           ...(cover ? { coverImage: cover } : {}),
           ...accessFieldsForLauncher(tierFor(tiers, g.slug)),

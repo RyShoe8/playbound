@@ -31,8 +31,8 @@ export default async function NewHomePage() {
     .filter(edition => edition.createdAt && !edition.id.startsWith("seed:"))
     .map(edition => ({ game: toHomeCardGame(game), edition })))
     .sort((a, b) => Date.parse(b.edition.createdAt!) - Date.parse(a.edition.createdAt!)).slice(0, 24);
-  const released = [...games].filter(game => game.releaseYear <= new Date().getFullYear())
-    .sort((a, b) => b.releaseYear - a.releaseYear);
+  // Keep publication order: latest released on PlayBound, not original release year.
+  const released = games.filter(game => game.releaseYear <= new Date().getFullYear());
   const nextNight = events.find(event => event.eventType === "game_night");
   const modCandidates = [...mods].sort((a, b) => (Date.parse(b.createdAt || "") || 0) - (Date.parse(a.createdAt || "") || 0)).slice(0, 24).map(mod => {
     const base = bySlug.get(mod.baseGameSlug);

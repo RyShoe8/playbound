@@ -15,7 +15,7 @@ test('unavailable or incompatible games do not create broken edition or mod targ
   assert.equal(result.mods.length, 1);
 });
 test('offline home still provides usable games without a made-up weekly ranking', () => {
-  const games = [{slug:'a',releaseYear:2000},{slug:'b',releaseYear:2026}];
+  const games = [{slug:'a',title:'Future',releaseYear:2026,createdAt:'2026-01-01'},{slug:'b',title:'Newly published',releaseYear:2017,publishedAt:'2026-10-13'}];
   assert.equal(homepageSelections(games, null).released[0].slug, 'b');
 });
 test('free offers use each store before filling additional cards', () => {
