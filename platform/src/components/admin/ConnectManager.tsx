@@ -600,7 +600,7 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
                         const bots = occ?.bots ?? (settings?.botFill || null);
                         if (players == null && maxPlayers == null) return <span className="text-muted-foreground">—</span>;
                         const botsLabel = bots ? ` (${bots} bot${bots === 1 ? "" : "s"})` : "";
-                        return `${players ?? 0} / ${maxPlayers ?? "?"}${botsLabel}`;
+                        return `${players ?? "unknown"} / ${maxPlayers ?? "?"}${botsLabel}`;
                       })()}
                     </td>
                     <td className="py-2 text-xs text-muted-foreground">
