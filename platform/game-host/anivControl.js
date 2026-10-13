@@ -1,10 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
-import { spawn } from "node:child_process";
+import { spawn, execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 
 export const ANIV_HELPER = "/usr/local/libexec/playbound-aniv-host";
+const runFile = promisify(execFile);
 export function anivDirectory(id, root = "/var/lib/playbound-host/aneurism-iv-servers") {
   if (!/^[A-Za-z0-9_-]{6,80}$/.test(id)) throw new Error("Invalid ANEURISM server identity");
   return path.join(root, `pb-${createHash("sha256").update(id).digest("hex").slice(0, 24)}`);
@@ -25,6 +27,15 @@ export async function waitForAniv(room, child, timeoutMs = 210000) {
     await new Promise(resolve => setTimeout(resolve, 200));
   }
   return false;
+}
+export async function queryAnivOccupancy(room) {
+  if (anivStatus(room)?.ready !== true || !room.communityServerId || !Number.isInteger(room.port)) return null;
+  try {
+    const { stdout } = await runFile("/usr/bin/sudo", ["-n", ANIV_HELPER, "query", String(room.port), room.communityServerId], {timeout:6500,maxBuffer:4096});
+    const count = JSON.parse(stdout);
+    if (!count || !Number.isInteger(count.players) || count.players < 0 || !Number.isInteger(count.maxPlayers) || count.maxPlayers < 2 || count.maxPlayers > 60 || count.players > count.maxPlayers || !Number.isInteger(count.bots) || count.bots < 0 || count.players + count.bots > count.maxPlayers) return null;
+    return {players:count.players,maxPlayers:count.maxPlayers,bots:count.bots};
+  } catch { return null; }
 }
 export function spawnAniv(port, ctx, options) {
   const child = spawn(process.execPath, [fileURLToPath(import.meta.url), "run", String(port), ctx.partyId], {

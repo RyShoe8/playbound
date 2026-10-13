@@ -13,6 +13,12 @@ spec.loader.exec_module(module)
 
 
 class Boundaries(unittest.TestCase):
+    def test_query_counts_humans_and_never_guesses_on_malformed_replies(self):
+        header=b'\xff\xff\xff\xffI\x11Server\0aneurismiv\0aniv\0ANEURISM IV\0\x00\x00'
+        self.assertEqual(module.parse_occupancy(header+bytes([5,16,2])), {'players':3,'maxPlayers':16,'bots':2})
+        self.assertEqual(module.parse_occupancy(header+bytes([0,16,0])), {'players':0,'maxPlayers':16,'bots':0})
+        for packet in (b'', header, header+bytes([1,16,2]), header+bytes([17,16,0]), header+bytes([0,0,0])):
+            self.assertIsNone(module.parse_occupancy(packet))
     def test_only_scoped_namespace_slots_are_accepted(self):
         self.assertEqual(module.placement(27700)[0], 'pb-aniv-27700')
         self.assertNotEqual(module.placement(27700)[4], module.placement(27701)[4])

@@ -11,6 +11,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { queryA2sOccupancy } from "./a2sQuery.js";
 import { rimworldSnapshot } from "./rimworldControl.js";
+import { queryAnivOccupancy } from "./anivControl.js";
 
 const TIMEOUT_MS = 2500;
 
@@ -619,6 +620,7 @@ export const LOCAL_QUERY_GAMES = new Set([
 export async function queryRoomOccupancy(room) {
   if (!room || !Number.isInteger(room.port)) return null;
   const slug = room.gameSlug;
+  if (slug === "aneurism-iv") return queryAnivOccupancy(room);
   if (slug === "rimworld-together") {
     const snapshot = rimworldSnapshot(room);
     return snapshot ? { players: snapshot.players.length, maxPlayers: snapshot.maxPlayers, bots: 0 } : null;

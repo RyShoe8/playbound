@@ -155,10 +155,10 @@ const LEASE_MS = 2 * 60_000;
 
 export function isAutomaticHostingCandidate(profile: { key: string; gameSlug: string; enabled: boolean; queryVerified?: boolean; queryKind?: string }) {
   if (!profile.enabled) return false;
-  // Explicit admin enrollment allows one ANEURISM live test. Occupancy stays
-  // unknown, so normal empty-server retirement and public listing stay closed.
-  return (profile.key === "aneurism-iv:base" && profile.gameSlug === "aneurism-iv") ||
-    Boolean((profile.queryVerified && profile.queryKind && profile.queryKind !== "none") || QUERY_BY_GAME[profile.gameSlug]);
+  // One base-game identity shares the operator's Steam token. The normal real
+  // player query now applies; no query-free enrollment exception is needed.
+  if (profile.gameSlug === "aneurism-iv" && profile.key !== "aneurism-iv:base") return false;
+  return Boolean((profile.queryVerified && profile.queryKind && profile.queryKind !== "none") || QUERY_BY_GAME[profile.gameSlug]);
 }
 
 // These methods are selected by the actual hosted game, then recorded on the

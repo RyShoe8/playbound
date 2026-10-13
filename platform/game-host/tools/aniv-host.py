@@ -9,6 +9,7 @@ import pwd
 import re
 import select
 import signal
+import socket
 import stat
 import subprocess
 import sys
@@ -79,6 +80,55 @@ def private_value(file, owner):
         return os.read(fd, 257).decode().strip()
     finally:
         os.close(fd)
+
+
+def parse_occupancy(packet):
+    if len(packet) < 18 or packet[:5] != b'\xff\xff\xff\xffI':
+        return None
+    offset = 6
+    for _ in range(4):
+        end = packet.find(b'\0', offset)
+        if end == -1:
+            return None
+        offset = end + 1
+    if offset + 5 > len(packet):
+        return None
+    total, maximum, bots = packet[offset+2:offset+5]
+    if not 2 <= maximum <= 60 or total > maximum or bots > total:
+        return None
+    return {'players':total-bots, 'maxPlayers':maximum, 'bots':bots}
+
+
+def query_occupancy(slot, server_id):
+    namespace = placement(slot)[0]
+    manifest = CONTROL / f'slot-{slot}.json'
+    if not manifest.exists():
+        return None
+    saved = json.loads(manifest.read_text())
+    if saved.get('serverId') != server_id or saved.get('namespace') != namespace:
+        return None
+    if not saved.get('identity') or process_identity(saved.get('pid')) != saved.get('identity'):
+        return None
+    # Only this fixed server namespace is reachable; callers cannot supply a
+    # namespace, query address, port, command or executable.
+    fd = os.open('/var/run/netns/' + namespace, os.O_RDONLY | os.O_NOFOLLOW)
+    try:
+        os.setns(fd, 0)
+    finally:
+        os.close(fd)
+    request = b'\xff\xff\xff\xffTSource Engine Query\0'
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as query:
+        query.settimeout(2.5)
+        query.connect(('127.0.0.1', 27016))
+        try:
+            query.send(request)
+            packet = query.recv(65536)
+            if len(packet) == 9 and packet[:5] == b'\xff\xff\xff\xffA':
+                query.send(request + packet[5:9])
+                packet = query.recv(65536)
+            return parse_occupancy(packet)
+        except (TimeoutError, ConnectionError, OSError):
+            return None
 
 
 def supervise(slot, server_id, config):
@@ -214,11 +264,14 @@ def main():
     if CONTROL.stat().st_uid != 0 or CONTROL.is_symlink():
         raise ValueError('Invalid control directory ownership')
     os.chmod(CONTROL, 0o700)
-    if len(sys.argv) != 4 or sys.argv[1] not in ('run', 'stop'):
-        raise ValueError('Expected run|stop, isolation slot, server identity')
+    if len(sys.argv) != 4 or sys.argv[1] not in ('run', 'stop', 'query'):
+        raise ValueError('Expected run|stop|query, isolation slot, server identity')
     action, slot, server_id = sys.argv[1], int(sys.argv[2]), sys.argv[3]
     identity(server_id)
     placement(slot)
+    if action == 'query':
+        emit(query_occupancy(slot, server_id))
+        return
     # Serialize setup/stop for each slot without waiting indefinitely on callers.
     if action == 'stop':
         manifest = CONTROL / f'slot-{slot}.json'

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { anivDirectory, anivStatus, waitForAniv } from "./anivControl.js";
+import { anivDirectory, anivStatus, waitForAniv, queryAnivOccupancy } from "./anivControl.js";
 
 test("ANEURISM identities are stable and never become caller-supplied paths", () => {
   assert.equal(anivDirectory("server-one"), anivDirectory("server-one"));
@@ -18,7 +18,9 @@ test("ANEURISM readiness requires fresh status owned by the same supervisor", as
   write({}); assert.equal(anivStatus(room).ready,true);
   assert.equal(await waitForAniv(room,{exitCode:null,signalCode:null},20),true);
   write({pid:124}); assert.equal(anivStatus(room),null);
+  assert.equal(await queryAnivOccupancy(room),null);
   write({updatedAt:Date.now()-9000}); assert.equal(anivStatus(room),null);
+  assert.equal(await queryAnivOccupancy(room),null);
   write({error:"Token already assigned"}); assert.equal(await waitForAniv(room,{exitCode:null,signalCode:null},20),false);
   assert.equal(await waitForAniv(room,{exitCode:1,signalCode:null},20),false);
 });
