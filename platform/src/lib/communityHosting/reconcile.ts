@@ -12,7 +12,7 @@ import Edition from "@/lib/models/Edition";
 import { fetchGameHostHealth, fetchGameHostMetrics, listManagedHostRooms, requestManagedHostRoom, stopManagedHostRoom } from "@/lib/gameHost/client";
 import { readyPublishedHostableCatalog } from "@/lib/dedicatedHosting/hostableProfiles";
 import { canRetireEmptyServer, canScaleDownEmptyServer, paidScaleDownRank, placementDecision, runningReservationEnvelope, type ResourceEnvelope } from "./capacity";
-import { managedQueryKind, QUERY_BY_GAME, queryManagedPlayerCount, queryManagedOccupancy } from "./playerQuery";
+import { managedQueryKind, QUERY_BY_GAME, queryManagedOccupancy } from "./playerQuery";
 import { recordResourceSample } from "./samples";
 import { recordPopulationReading } from "./population";
 import { rotationPriority } from "./rotation";
@@ -130,14 +130,15 @@ export function botFillIssue(
 export function getEffectiveEnvelope(
   envelope?: { cpuCores?: number; ramBytes?: number } | null,
   gameSlug?: string,
-  _sampleCount?: number
+  sampleCount?: number,
+  phase: "startup" | "running" = "startup"
 ): ResourceEnvelope {
   const heavy = gameSlug ? HEAVY_GAME_ENVELOPES[gameSlug] : undefined;
   const fallback = heavy || DEFAULT_COMMUNITY_SERVER_ENVELOPE;
   const cpu = Number(envelope?.cpuCores);
   const ram = Number(envelope?.ramBytes);
-  // An unknown population cannot establish an idle baseline for this live test.
-  if (gameSlug === "aneurism-iv") return {
+  // New or occupied ANEURISM runtimes retain their measured startup peak.
+  if (gameSlug === "aneurism-iv" && (phase === "startup" || (sampleCount || 0) < 3)) return {
     cpuCores: Math.max(fallback.cpuCores, Number.isFinite(cpu) ? cpu : 0),
     ramBytes: Math.max(fallback.ramBytes, Number.isFinite(ram) ? ram : 0),
   };
@@ -149,6 +150,19 @@ export function getEffectiveEnvelope(
     cpuCores: Math.max(cpu, heavy ? heavy.cpuCores / 2 : 0.25),
     ramBytes: Math.max(ram, 256 * 1024 * 1024),
   };
+}
+
+/** Startup peaks reserve placement capacity, not a permanent idle allowance. */
+export function communityRuntimeReservation(
+  profile: { envelope?: { cpuCores?: number; ramBytes?: number }; sampleCount?: number } | null | undefined,
+  room: { gameSlug: string; processStartedAt?: number; resources?: { available: boolean; cpuCores?: number | null; rssBytes?: number } },
+  players: number | null,
+  now: Date
+): ResourceEnvelope {
+  const settled = room.processStartedAt != null && now.getTime() - room.processStartedAt >= 5 * 60_000;
+  const baseline = getEffectiveEnvelope(profile?.envelope, room.gameSlug, profile?.sampleCount,
+    settled && players === 0 ? "running" : "startup");
+  return settled ? runningReservationEnvelope({ baseline, players, observed: room.resources }) : baseline;
 }
 
 const LEASE_MS = 2 * 60_000;
@@ -345,6 +359,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
     });
     const managedById = new Map(agent.rooms.filter((r) => r.communityServerId).map((r) => [r.communityServerId!, r]));
     const lost: typeof active = [];
+    let settingsRestarts = 0;
     for (const server of active) {
       const room = managedById.get(String(server._id));
       const profile = profileByKey.get(server.profileKey);
@@ -463,7 +478,10 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         if (restarted.status === "failed") server.desiredState = "stopped";
         await server.save();
         await recordHostingAction(restarted.status === "failed" ? "community_server_failed" : "community_server_start", server, server.decisionReason);
-        return { action: restarted.status === "failed" ? "failed" : "starting", reason: server.decisionReason || undefined };
+        if (restarted.status !== "failed") settingsRestarts++;
+        // Keep accounting this restart at its full startup allowance, but do
+        // not postpone the rest of the fleet for another 15 minutes.
+        continue;
       }
     }
 
@@ -478,9 +496,11 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
     });
     const runningManaged: ResourceEnvelope[] = runningServers.map((s) => {
       const p = profileByKey.get(s.profileKey);
-      const envelope = getEffectiveEnvelope(p?.envelope, s.gameSlug, p?.sampleCount);
-      return runningReservationEnvelope({ baseline: envelope, players: s.playerCount, observed: managedById.get(String(s._id))?.resources });
+      return communityRuntimeReservation(p, managedById.get(String(s._id))!, s.playerCount, now);
     });
+    // Accepted asynchronous starts consume capacity before a room appears.
+    const pendingEnvelopes = active.filter((s) => !alreadyRunning.has(String(s._id)) && s.runtimeState === "pending")
+      .map((s) => getEffectiveEnvelope(profileByKey.get(s.profileKey)?.envelope, s.gameSlug));
     const plannedReservations = reservations.filter((r) => !r.communityServerId || !alreadyRunning.has(String(r.communityServerId)));
 
     // Paid capacity has already been removed from this budget. Empty community
@@ -585,7 +605,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         profileVerified: true,
         metrics: nodePlacementMetrics(metrics),
         safety: config.safety, budget: config.budget,
-        runningManaged, plannedReservations: plannedReservations.filter((r) => r.sourceKey !== due.sourceKey).map((r) => ({ cpuCores: r.cpuCores, ramBytes: r.ramBytes })),
+        runningManaged: [...runningManaged, ...pendingEnvelopes], plannedReservations: plannedReservations.filter((r) => r.sourceKey !== due.sourceKey).map((r) => ({ cpuCores: r.cpuCores, ramBytes: r.ramBytes })),
         requested: { cpuCores: envelope.cpuCores, ramBytes: envelope.ramBytes },
       });
       if (!decision.allowed) {
@@ -673,7 +693,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         profileVerified: true,
         metrics: nodePlacementMetrics(metrics),
         safety: config.safety, budget: config.budget,
-        runningManaged,
+        runningManaged: [...runningManaged, ...pendingEnvelopes],
         plannedReservations: plannedReservations.map((r) => ({ cpuCores: r.cpuCores, ramBytes: r.ramBytes })),
         requested: { cpuCores: envelope.cpuCores, ramBytes: envelope.ramBytes },
       });
@@ -752,7 +772,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         requestedRegion: server.regionKey, nodeRegion: config.node.regionKey,
         profileVerified: true,
         metrics: nodePlacementMetrics(metrics),
-        safety: config.safety, budget: config.budget, runningManaged,
+        safety: config.safety, budget: config.budget, runningManaged: [...runningManaged, ...pendingEnvelopes],
         plannedReservations: plannedReservations.filter((r) => String(r.communityServerId || "") !== String(server._id)).map((r) => ({ cpuCores: r.cpuCores, ramBytes: r.ramBytes })),
         requested: { cpuCores: recoveryEnvelope.cpuCores, ramBytes: recoveryEnvelope.ramBytes },
       });
@@ -817,6 +837,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         return { action: "rotated" };
       }
     }
+    if (settingsRestarts) return { action: "starting", reason: `Applying settings to ${settingsRestarts} servers` };
     if (candidateServers.length > 0 && lastBlockedReason) {
       return { action: "waiting", reason: lastBlockedReason };
     }

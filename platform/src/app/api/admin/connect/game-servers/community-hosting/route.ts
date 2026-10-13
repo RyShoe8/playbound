@@ -10,9 +10,8 @@ import { fetchGameHostHealth, fetchGameHostMetrics, listManagedHostRooms } from 
 import CatalogGame from "@/lib/models/CatalogGame";
 import Edition from "@/lib/models/Edition";
 import { HOSTABLE_SLUG_ALIASES } from "@/lib/gameHost/catalog";
-import { getEffectiveEnvelope, managedRoomSettings } from "@/lib/communityHosting/reconcile";
+import { communityRuntimeReservation, getEffectiveEnvelope, managedRoomSettings } from "@/lib/communityHosting/reconcile";
 import { populationPeriods, populationReading } from "@/lib/communityHosting/population";
-import { runningReservationEnvelope } from "@/lib/communityHosting/capacity";
 import { managedQueryKind, queryManagedOccupancy, type ManagedOccupancy } from "@/lib/communityHosting/playerQuery";
 import { readyGameHostSlugs, readyPublishedHostableCatalog } from "@/lib/dedicatedHosting/hostableProfiles";
 
@@ -56,6 +55,7 @@ export async function GET() {
     }));
   }
   const visibleServers = servers.map((server) => {
+    const room = agent.ok ? agent.rooms.find((room) => room.communityServerId === String(server._id)) : undefined;
     const occupancy = liveCounts.get(String(server._id));
     const profile = profileByKey.get(server.profileKey);
     const players = occupancy?.players;
@@ -68,6 +68,12 @@ export async function GET() {
     const fallbackBots = roomSettings?.botFill ?? null;
     return {
       ...server,
+      // Reconciliation runs every 15 minutes. An already-restarted process
+      // must not remain displayed as pending until the next scheduled pass.
+      runtimeState: room ? room.status === "pending" ? "pending" : "running" : server.runtimeState,
+      decisionReason: room && room.status !== "pending" && server.runtimeState === "pending" ? "RUNNING" : server.decisionReason,
+      resources: room?.resources || null,
+      reservedEnvelope: room ? communityRuntimeReservation(profile, room, players ?? null, asOf) : null,
       playerCount: players ?? null,
       maxPlayers: occupancy?.maxPlayers ?? fallbackMax,
       bots: occupancy?.bots ?? fallbackBots,
@@ -79,11 +85,7 @@ export async function GET() {
   const runningReservations = agent.ok ? agent.rooms.map((room) => {
     const server = serverById.get(String(room.communityServerId || ""));
     const profile = server ? profileByKey.get(server.profileKey) : null;
-    return runningReservationEnvelope({
-      baseline: getEffectiveEnvelope(profile?.envelope, room.gameSlug, profile?.sampleCount),
-      players: liveCounts.get(String(room.communityServerId || ""))?.players ?? null,
-      observed: room.resources,
-    });
+    return communityRuntimeReservation(profile, room, liveCounts.get(String(room.communityServerId || ""))?.players ?? null, asOf);
   }) : [];
   const budgetUsage = {
     cpuCores: runningReservations.reduce((sum, envelope) => sum + envelope.cpuCores, 0),
