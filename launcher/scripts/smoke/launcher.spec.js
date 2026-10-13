@@ -29,7 +29,7 @@ test('signed-out launcher keeps discovery usable and exposes account entry', asy
     await expect(page.locator('#deals-genre-chips [data-genre="strategy"]')).toHaveClass(/active/);
     await expect(page.locator('#deals-discount-grid')).toContainText('Fixture Deal');
     await page.locator('#sidebar .site-wordmark').click();
-    await expect(page.getByRole('heading',{name:'Find your next good game.'})).toBeVisible();
+    await expect(page.getByRole('heading',{name:'Find your next game night.'})).toBeVisible();
     await page.screenshot({path:testInfo.outputPath('signed-out-home.png')});
     await page.setViewportSize({width:900,height:700});
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -61,7 +61,7 @@ test('real launcher boots, navigates, and installs/removes a mock game', async (
     await application.context().tracing.start({ screenshots: true, snapshots: true });
     try {
       await expect(page.locator('[data-view="home"]')).toHaveClass(/active/);
-      await expect(page.getByRole('heading', { name: 'Find your next good game.' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Good to see you, Smoke User.' })).toBeVisible();
       await expect(page.locator('.site-wordmark small')).toHaveText('Discover. Play. Connect.');
       await expect(page.locator('#site-account-name')).toHaveText('Smoke User');
       expect(await page.locator('#sidebar').evaluate(element => Math.round(element.getBoundingClientRect().width))).toBe(206);
