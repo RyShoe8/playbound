@@ -17,6 +17,7 @@ import { usePartyStore } from "@/stores/partyStore";
 import { CreatePartyPanel } from "@/components/friends/CreatePartyPanel";
 import { MultiplayerFriendsSection } from "@/components/MultiplayerFriendsSection";
 import { PlayAvailabilityPanel } from "@/components/friends/PlayAvailabilityPanel";
+import { LookingToPartyCount } from "@/components/LookingToPartyCount";
 import { MultiplayerOpenParties } from "@/components/MultiplayerOpenParties";
 import { MultiplayerEvents, type PlatformEvent } from "@/components/MultiplayerEvents";
 import { GlobalServerBrowser } from "@/components/GlobalServerBrowser";
@@ -286,7 +287,7 @@ export function MultiplayerHome({
               <span>Users Looking to Party</span>
             </div>
             <div className="mt-1 text-xl font-black text-amber-400">
-              {activityData?.games.length ? summary.totalUsersLooking : "—"}
+              <Link href="/looking-to-party" className="hover:underline" aria-label="View users looking to party"><LookingToPartyCount initialCount={activityData?.games.length ? summary.totalUsersLooking : undefined} /></Link>
             </div>
           </div>
 
