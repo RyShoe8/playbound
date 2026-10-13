@@ -34,7 +34,10 @@ for (const signedOut of [false,true]) {
                 scrollable:getComputedStyle(wrapper).overflowX === 'auto'};
             });
             expect(bounds,{width,view}).toEqual({overlap:false,contained:true,scrollable:true});
-            if (!signedOut) await page.screenshot({path:testInfo.outputPath(`multiplayer-${width}.png`)});
+            if (!signedOut) {
+              await page.locator('#view-multiplayer #servers-table-wrap').scrollIntoViewIfNeeded();
+              await page.screenshot({path:testInfo.outputPath(`multiplayer-${width}.png`)});
+            }
           }
           // This catches overflow inside the scrolling content, even when the
           // outer window clips it and document.scrollWidth looks correct.

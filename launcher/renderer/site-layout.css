@@ -220,7 +220,8 @@ h1.view-title { font-size:clamp(2rem,3.2vw,3rem); }
 
 @container launcher-content (max-width:1040px) {
   .mp-tab-content-area { grid-template-columns:minmax(0,1fr); }
-  .site-multiplayer-rail,#mp-overview-servers-sec { grid-column:1; grid-row:auto; }
+  #mp-overview-servers-sec { grid-column:1; grid-row:1; }
+  .site-multiplayer-rail { grid-column:1; grid-row:2; }
 }
 @container launcher-content (max-width:900px) {
   .site-events-layout { grid-template-columns:minmax(0,1fr); }
