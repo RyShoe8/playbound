@@ -169,7 +169,7 @@ export function LookingToPartyView() {
                 className="flex h-full flex-col gap-4 rounded-2xl border border-border bg-card p-5"
               >
                 <div className="flex min-w-0 items-center gap-4">
-                  <Avatar name={player.username} hue={265} size="lg" />
+                  <Avatar name={player.username} size="lg" />
                   <div className="min-w-0">
                     <Link
                       href={`/users/${encodeURIComponent(player.username)}`}

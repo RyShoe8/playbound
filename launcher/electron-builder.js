@@ -105,6 +105,11 @@ module.exports = {
    */
   extraResources: [
     {
+      // A new path per release avoids Windows reusing a cached shortcut icon.
+      from: "assets/icon.ico",
+      to: `icons/playbound-${require("./package.json").version}.ico`,
+    },
+    {
       from: "resources/vigem",
       to: "vigem",
       filter: ["**/*"],

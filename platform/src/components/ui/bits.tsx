@@ -38,7 +38,7 @@ export function Avatar({
   className,
 }: {
   name: string;
-  hue: number;
+    hue?: number;
   size?: "sm" | "md" | "lg" | "xl";
   className?: string;
 }) {
@@ -51,7 +51,10 @@ export function Avatar({
         className
       )}
       style={{
-        background: `linear-gradient(135deg, oklch(0.55 0.18 ${hue}), oklch(0.4 0.16 ${hue + 40}))`,
+        background: hue == null
+          ? "linear-gradient(135deg, #0ea5e9, #38bdf8)"
+          : `linear-gradient(135deg, oklch(0.55 0.18 ${hue}), oklch(0.4 0.16 ${hue + 40}))`,
+        color: hue == null ? "#082f49" : undefined,
       }}
     >
       {name.charAt(0).toUpperCase()}

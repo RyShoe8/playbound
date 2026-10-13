@@ -4,6 +4,22 @@
 ; NetBird auto-installs at runtime on first party join if skipped here.
 
 !macro customInstall
+  ; Refresh existing shortcuts even when electron-builder keeps them on update.
+  ; A versioned icon path prevents Explorer from reusing the previous brand mark.
+  IfFileExists "$INSTDIR\resources\icons\playbound-${VERSION}.ico" 0 brand_icon_done
+    IfFileExists "$newStartMenuLink" 0 brand_desktop_icon
+      CreateShortCut "$newStartMenuLink" "$appExe" "" "$INSTDIR\resources\icons\playbound-${VERSION}.ico" 0 "" "" "${APP_DESCRIPTION}"
+      WinShell::SetLnkAUMI "$newStartMenuLink" "${APP_ID}"
+      System::Call 'shell32::SHChangeNotify(i 0x2000, i 0x1005, w "$newStartMenuLink", p 0)'
+    brand_desktop_icon:
+    IfFileExists "$newDesktopLink" 0 brand_icon_refresh
+      CreateShortCut "$newDesktopLink" "$appExe" "" "$INSTDIR\resources\icons\playbound-${VERSION}.ico" 0 "" "" "${APP_DESCRIPTION}"
+      WinShell::SetLnkAUMI "$newDesktopLink" "${APP_ID}"
+      System::Call 'shell32::SHChangeNotify(i 0x2000, i 0x1005, w "$newDesktopLink", p 0)'
+    brand_icon_refresh:
+      System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, p 0, p 0)'
+    brand_icon_done:
+
   ; Bundled under $INSTDIR\resources\vigem\ by electron-builder extraResources.
   IfFileExists "$INSTDIR\resources\vigem\ViGEmBus_Setup.exe" 0 vigem_skip
     DetailPrint "Enabling PlayBound controllers…"
