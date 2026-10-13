@@ -55,7 +55,7 @@ export function PlayAvailabilityPanel({ games = [], compact = false }: { games?:
       const response = await fetch("/api/friends/availability", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(next) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Could not save availability");
-      setAvailability(data.availability); setDraft(data.availability); setNotice("Availability saved. Only your friends can see it."); setNow(Date.now());
+      setAvailability(data.availability); setDraft(data.availability); setNotice(data.availability.publishLooking ? "Saved. You’ll appear in Looking to Party during your play windows." : "Availability saved. Only your friends can see it."); setNow(Date.now());
     } catch (err) { setError(err instanceof Error ? err.message : "Could not save availability"); }
     finally { setBusy(false); }
   }
@@ -101,12 +101,13 @@ export function PlayAvailabilityPanel({ games = [], compact = false }: { games?:
     {availability.window && Date.parse(availability.window.endsAt) > now && <p className="text-sm">Your next window: {format(availability.window.startsAt)} – {format(availability.window.endsAt)}</p>}
     <div className="flex flex-wrap gap-2"><button className={button} disabled={busy} onClick={() => preset(false)}>Free now · 2 hours</button><button className={button} disabled={busy} onClick={() => preset(true)}>Free tonight · 2 hours</button>{!compact && <button className={button} disabled={busy} onClick={() => void save(emptyAvailability(availability.timezone))}>Stop sharing availability</button>}</div>
     {!compact && editOpen && <div className="space-y-4 rounded-xl bg-secondary/25 p-4">
-      <p className="text-sm text-muted-foreground">Friends only. One-time windows expire automatically. Your usual week stays saved until you change it. Appear offline and Hide activity also hide availability from friends.</p>
+      <p className="text-sm text-muted-foreground">Your full schedule stays friends-only. One-time windows expire automatically. Your usual week stays saved until you change it. Appear offline and Hide activity also hide availability and automatic Looking to Party listings.</p>
       <form className="flex flex-wrap items-end gap-3" onSubmit={event => { event.preventDefault(); if (!start || !end) return; void save({ ...draft, window: { startsAt: new Date(start).toISOString(), endsAt: new Date(end).toISOString() } }); }}>
         <label className="grid gap-1 text-sm">From · your device time<input type="datetime-local" className={field} value={start} onChange={event => setStart(event.target.value)} required /></label><label className="grid gap-1 text-sm">Until<input type="datetime-local" className={field} value={end} onChange={event => setEnd(event.target.value)} required /></label><button className={button} disabled={busy}>Save this window</button>
       </form>
       <label className="grid max-w-sm gap-1 text-sm">Weekly timezone<input className={field} value={draft.timezone} onChange={event => setDraft({ ...draft, timezone: event.target.value })} placeholder="America/Chicago" /></label>
       <h3 className="font-semibold">My usual week</h3>
+      <label className="flex items-start gap-3 text-sm"><input type="checkbox" className="mt-1 size-4 shrink-0 accent-primary" checked={!!draft.publishLooking} onChange={event => setDraft({ ...draft, publishLooking: event.target.checked })} /><span>Show me in Looking to Party during my play windows<small className="mt-1 block text-muted-foreground">Signed-in players can see your name and installed games while you’re available. Your full schedule stays friends-only. Save below to apply.</small></span></label>
       <p className="text-xs text-muted-foreground">Choose daytime or evening windows. For overnight availability, use a window on each day.</p>
       <div className="grid gap-2">{[1, 2, 3, 4, 5, 6, 0].map(day => {
         const slot = draft.weekly.find(item => item.day === day);

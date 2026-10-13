@@ -79,10 +79,10 @@ html[data-warm-preview] .new-game-intro>div{flex-direction:column;align-items:fl
 html[data-warm-preview] .new-game-tabs{margin-top:22px}
 html[data-warm-preview] .new-game-overview{gap:24px}
 html[data-warm-preview] .new-multiplayer-heading{padding:20px;border-radius:12px;background:var(--card);box-shadow:none}
-html[data-warm-preview] .new-multiplayer-layout{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:20px;align-items:start}
+html[data-warm-preview] .new-multiplayer-layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;align-items:start}
 html[data-warm-preview] .new-multiplayer-layout>*{margin-top:0;min-width:0}
 html[data-warm-preview] .new-multiplayer-filter{grid-column:1/-1}
-html[data-warm-preview] .new-multiplayer-servers{grid-column:1;grid-row:2/4}
+html[data-warm-preview] .new-multiplayer-servers{grid-column:1;grid-row:1 / span 3}
 html[data-warm-preview] :is(.new-multiplayer-friends,.new-multiplayer-parties){grid-column:2}
 @media(max-width:1200px){html[data-warm-preview] .new-card-grid{grid-template-columns:repeat(2,minmax(0,1fr))}html[data-warm-preview] .new-home-layout{grid-template-columns:minmax(0,1fr) 240px;gap:18px}}
 @media(max-width:800px){html[data-warm-preview] :is(.new-home-layout,.new-game-hero,.new-multiplayer-layout){grid-template-columns:minmax(0,1fr)}html[data-warm-preview] .new-multiplayer-layout>*{grid-column:1;grid-row:auto}html[data-warm-preview] .new-page-heading{align-items:flex-start;flex-direction:column}html[data-warm-preview] .new-feature-copy{padding:20px}html[data-warm-preview] .new-game-hero>:first-child{min-height:220px}}
@@ -178,3 +178,19 @@ html[data-warm-preview] .hosting-region-map {
 }
 
 html[data-warm-preview] .new-friends-layout > .play-availability-panel { grid-column: 1 / -1; grid-row: 2; }
+
+/* Keep Multiplayer controls with their content and give sidebar cards room. */
+html[data-warm-preview] .new-multiplayer-filter { justify-content: flex-start; }
+html[data-warm-preview] .new-multiplayer-friends { grid-row: 1; }
+html[data-warm-preview] .new-multiplayer-parties { grid-row: 2; }
+html[data-warm-preview] .new-multiplayer-servers { border-top: 0; padding-top: 0; }
+html[data-warm-preview] .new-multiplayer-friends .grid { grid-template-columns: minmax(0, 1fr); }
+html[data-warm-preview] :is(.new-multiplayer-friends,.new-multiplayer-parties) > div.flex { flex-direction: column; align-items: stretch; text-align: left; }
+html[data-warm-preview] .new-empty-parties { flex-direction: column; align-items: stretch; text-align: left; }
+html[data-warm-preview] .new-empty-parties button { justify-content: center; white-space: nowrap; }
+html[data-warm-preview] input[type="checkbox"] { appearance: auto; width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--primary); color-scheme: dark; outline: 1px solid #a0a3b1; outline-offset: -1px; }
+html[data-warm-preview] input[type="checkbox"]:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+@media(max-width:1100px) {
+  html[data-warm-preview] .new-multiplayer-layout { grid-template-columns: minmax(0, 1fr); }
+  html[data-warm-preview] .new-multiplayer-layout > * { grid-column: 1; grid-row: auto; }
+}

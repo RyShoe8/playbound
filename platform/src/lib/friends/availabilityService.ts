@@ -5,9 +5,9 @@ import PlayAvailability from "@/lib/models/PlayAvailability";
 import { type Availability, emptyAvailability } from "./availability";
 import { listSharedLibraryByFriend } from "@/lib/playTogether/sharedGames";
 
-export function serializeAvailability(doc: { timezone?: string; window?: { startsAt: Date; endsAt: Date } | null; weekly?: Availability["weekly"] } | null, now = Date.now()): Availability {
+export function serializeAvailability(doc: { timezone?: string; window?: { startsAt: Date; endsAt: Date } | null; weekly?: Availability["weekly"]; publishLooking?: boolean } | null, now = Date.now()): Availability {
   if (!doc) return emptyAvailability();
-  return { timezone: doc.timezone || "UTC", window: doc.window && new Date(doc.window.endsAt).getTime() > now ? { startsAt: new Date(doc.window.startsAt).toISOString(), endsAt: new Date(doc.window.endsAt).toISOString() } : null, weekly: (doc.weekly || []).map(({ day, startMinute, endMinute }) => ({ day, startMinute, endMinute })) };
+  return { timezone: doc.timezone || "UTC", publishLooking: Boolean(doc.publishLooking), window: doc.window && new Date(doc.window.endsAt).getTime() > now ? { startsAt: new Date(doc.window.startsAt).toISOString(), endsAt: new Date(doc.window.endsAt).toISOString() } : null, weekly: (doc.weekly || []).map(({ day, startMinute, endMinute }) => ({ day, startMinute, endMinute })) };
 }
 
 export async function availabilityForFriends(userId: string) {

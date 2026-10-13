@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const availabilitySchema = z.object({
+  publishLooking: z.boolean().default(false),
   timezone: z.string().max(80).refine(value => {
     try { new Intl.DateTimeFormat("en", { timeZone: value }); return true; } catch { return false; }
   }, "Choose a valid timezone"),

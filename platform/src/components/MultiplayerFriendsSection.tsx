@@ -123,6 +123,7 @@ export function MultiplayerFriendsSection({ signedIn, onJoinLtpWithFriend }: Pro
   if (uniqueFriends.length === 0) {
     return (
       <div className="rounded-2xl border border-border/50 bg-secondary/10 p-4 text-center">
+        <h2 className="mb-2 text-base font-bold">Play with Friends</h2>
         <p className="text-xs text-muted-foreground">
           None of your friends are playing or looking right now. Start an open party or raise your hand to find players!
         </p>

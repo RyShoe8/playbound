@@ -7,6 +7,8 @@ import PlayAvailability from "@/lib/models/PlayAvailability";
 import { availabilityForFriends } from "./availabilityService";
 import { createPlatformEvent } from "@/lib/events/service";
 import PlatformEvent from "@/lib/models/PlatformEvent";
+import Presence from "@/lib/models/Presence";
+import { getLookingToPartyCounts } from "@/lib/playTogether/lookingToParty";
 vi.mock("@/lib/db", () => ({ default: async () => undefined }));
 vi.mock("@/lib/playTogether/sharedGames", () => ({ listSharedLibraryByFriend: async () => ({}) }));
 vi.mock("@/lib/catalog", () => ({ getGame: async () => ({ slug: "openra", features: ["Multiplayer"] }) }));
@@ -49,4 +51,21 @@ it("creates a normal unlisted event without publishing a public listing", async 
   expect(event.generatedBy).toBe(null);
   expect(await PlatformEvent.countDocuments({ visibility: { $ne: "unlisted" } })).toBe(0);
   expect(await User.countDocuments()).toBe(7);
+});
+it("lists only opted-in active windows, deduplicates manual LFG, and removes expired users", async () => {
+  const now = Date.now();
+  const users = await User.collection.insertMany([
+    { username: "scheduled", email: "scheduled@example.test" },
+    { username: "private", email: "private@example.test" },
+    { username: "dual", email: "dual@example.test" },
+    { username: "expired", email: "expired@example.test" },
+    { username: "future", email: "future@example.test" },
+    { username: "hidden-scheduled", email: "hidden-scheduled@example.test", preferences: { appearOffline: true } },
+  ]);
+  const ids = Object.values(users.insertedIds);
+  await PlayAvailability.collection.insertMany(ids.map((userId, index) => ({ userId, timezone: "UTC", publishLooking: index !== 1, weekly: [], window: { startsAt: new Date(index === 4 ? now + 3600_000 : now - 3600_000), endsAt: new Date(index === 3 ? now - 1 : now + 7200_000) } })));
+  await Presence.collection.insertOne({ userId: ids[2], lookingForPlayersUntil: new Date(now + 3600_000), lookingForPlayersGameIds: ["openra"] });
+  expect(await getLookingToPartyCounts()).toEqual({ total: 2, byGame: { openra: 1 } });
+  await PlayAvailability.updateOne({ userId: ids[0] }, { $set: { "window.endsAt": new Date(now - 1) } });
+  expect(await getLookingToPartyCounts()).toEqual({ total: 1, byGame: { openra: 1 } });
 });
