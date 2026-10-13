@@ -11016,7 +11016,7 @@ ipcMain.handle("get-home-feed", async () => {
   try {
     const res = await apiFetch(`${getApiBase()}/api/launcher/home`, {
       headers: launcherApiHeaders({ accept: "application/json" }),
-    });
+    }, 20_000);
     return res.ok ? await res.json() : null;
   } catch {
     return null;

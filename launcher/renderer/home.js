@@ -1,5 +1,5 @@
 import { createFreeOfferCard, createGameCard, createModCard } from './cards.js';
-import { api, CACHE_TTL, cacheInvoke, escapeHtml, filterCatalogGames, markViewReady, state, views } from './shared.js';
+import { api, CACHE_TTL, cacheInvoke, cacheInvalidate, escapeHtml, filterCatalogGames, markViewReady, state, views } from './shared.js';
 import { diversifyOffers, homepageSelections } from './siteLayout.js';
 
 const section = (id, title, view) => `<section><div class="section-header"><h2>${title}</h2><button class="site-text-link" data-home-view="${view}">See all →</button></div><div class="game-grid" id="${id}-grid"></div></section>`;
@@ -65,7 +65,11 @@ async function loadHome() {
   }).catch(() => {});
   const results = await Promise.allSettled([
     catalogRequest,
-    cacheInvoke('siteHome', 300000, () => window.playbound.getHomeFeed?.()),
+    cacheInvoke('siteHome', 300000, async () => {
+      const feed = await window.playbound.getHomeFeed?.();
+      if (!feed || !Array.isArray(feed.released)) throw new Error('Homepage feed unavailable');
+      return feed;
+    }),
     cacheInvoke('events', CACHE_TTL.events, () => window.playbound.getEvents?.()),
     cacheInvoke('freeOffers', CACHE_TTL.freeOffers, () => window.playbound.getFreeOffers?.()),
     window.playbound.getFriends?.(),
@@ -73,10 +77,16 @@ async function loadHome() {
   if (current !== generation || !views.home.querySelector('.site-home-layout')) return;
   const value = (index, fallback) => results[index].status === 'fulfilled' ? results[index].value ?? fallback : fallback;
   const raw = value(0, {}); const catalog = filterCatalogGames(Array.isArray(raw) ? raw : raw.games || []);
-  const feed = value(1, null); const selected = homepageSelections(catalog, feed);
+  const feed = value(1, null);
+  if (!feed) cacheInvalidate('siteHome');
+  const selected = homepageSelections(catalog, feed);
   paintFeature(selected.released[0]);
   document.querySelector('#home-popular-grid').previousElementSibling.querySelector('h2').textContent = feed ? 'Most Popular this week' : 'Discover games';
-  const paint = (id, cards) => { const grid = document.getElementById(`${id}-grid`); grid.replaceChildren(...cards); if (!cards.length) { const message = document.createElement('p'); message.className = 'view-sub'; message.textContent = 'Nothing available right now. Check back soon.'; grid.append(message); } };
+  const paint = (id, cards) => { const grid = document.getElementById(`${id}-grid`); grid.replaceChildren(...cards); if (!cards.length) { const message = document.createElement('p'); message.className = 'view-sub'; message.textContent = !feed && ['home-mods', 'home-editions'].includes(id) ? 'Could not load this section.' : 'Nothing available right now. Check back soon.'; grid.append(message);
+    if (!feed && ['home-mods', 'home-editions'].includes(id)) {
+      const retry = document.createElement('button'); retry.className = 'btn-secondary btn-sm'; retry.textContent = 'Try again';
+      retry.addEventListener('click', () => { cacheInvalidate('siteHome'); void loadHome(); }); grid.append(retry);
+    } } };
   paint('home-popular', selected.popular.map(game => createGameCard(game)));
   paintNight(value(2, {}).events || []);
   paint('home-free', diversifyOffers(value(3, {}).offers || [], 8).map(createFreeOfferCard));

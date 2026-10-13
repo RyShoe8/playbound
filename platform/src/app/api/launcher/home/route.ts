@@ -13,8 +13,8 @@ export async function GET() {
     .filter(edition => edition.createdAt && !edition.id.startsWith("seed:"))
     .map(edition => ({ gameSlug: game.slug, edition })))
     .sort((a, b) => Date.parse(b.edition.createdAt!) - Date.parse(a.edition.createdAt!)).slice(0, 24);
-  const released = [...games].filter(game => game.releaseYear <= new Date().getFullYear())
-    .sort((a, b) => b.releaseYear - a.releaseYear);
+  // Keep publication order: latest released on PlayBound, not original release year.
+  const released = games.filter(game => game.releaseYear <= new Date().getFullYear());
   return NextResponse.json({
     released: released.map(game => game.slug),
     popular: popular.map(game => game.slug),

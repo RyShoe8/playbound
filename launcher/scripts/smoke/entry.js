@@ -46,6 +46,7 @@ dialog.showMessageBox = async (...args) => {
   return { response: opts.title === 'Uninstall game' ? 0 : (opts.cancelId ?? 1) };
 };
 let dealsRequests = 0;
+let homeRequests = 0;
 const handlers = {
   'workspace-request': (_event,input) => input.path === '/api/hosting/me' ? {subscription:null,servers:[],shared:[]} : input.path === '/api/developer/games' ? {games:[]} : {developers:[]},
   'get-deals': () => process.env.PLAYBOUND_SMOKE_SIGNED_OUT === '1' && dealsRequests++ === 0 ? {ok:false,freeOffers:[],discounted:[]} : ({ok:true,freeOffers:[],discounted:[{title:'Fixture Deal',genres:['Strategy'],storeKey:'steam',storeName:'Steam',currentPriceCents:100,regularPriceCents:1000,discountPercent:90}]}),
@@ -59,7 +60,7 @@ const handlers = {
   'get-controller-support': () => ({ supported: false }),
   'get-recently-played': () => [],
   'get-catalog': () => [detail()],
-  'get-home-feed': () => ({released:['smoke-fixture'],popular:['smoke-fixture'],editions:[],mods:[]}),
+  'get-home-feed': () => process.env.PLAYBOUND_SMOKE_SIGNED_OUT === '1' && homeRequests++ === 0 ? null : ({released:['smoke-fixture'],popular:['smoke-fixture'],editions:[{gameSlug:'smoke-fixture',edition:{slug:'fixture-edition',name:'Fixture Edition'}}],mods:[{slug:'fixture-mod',title:'Fixture Mod',baseGameSlug:'smoke-fixture'}]}),
   'get-game-detail': () => detail(),
   'get-editions': () => ({ editions: [] }),
   'get-account': () => account,
