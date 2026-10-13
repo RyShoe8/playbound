@@ -1,14 +1,10 @@
-import { PremiumSelect } from "@/components/ui/PremiumSelect";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "./warm-preview.css";
-import { OriginalChrome } from "@/components/new/PreviewMode";
-import { DesignPreview } from "@/components/DesignPreview";
-import { Sidebar } from "@/components/shell/Sidebar";
-import { TopBar } from "@/components/shell/TopBar";
+import { SiteChrome } from "@/components/SiteChrome";
 import { MobileNav } from "@/components/shell/MobileNav";
 import { Footer } from "@/components/shell/Footer";
 import { SessionProvider } from "@/components/SessionProvider";
@@ -120,11 +116,11 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
+      data-warm-preview=""
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: 'if(location.pathname==="/new"||location.pathname.startsWith("/new/"))document.documentElement.setAttribute("data-warm-preview","")' }} />
         {/* Impact.com partner verification. Uses value= per their spec, not the
             usual content= — do not "fix" this to match other meta tags.
             React treats `value` as a controlled DOM property (the same
@@ -184,18 +180,8 @@ export default async function RootLayout({
             <PopoutDetector />
             <EditionChipsProvider chips={editionChips}>
             <CompatibilityShell accessTiers={accessTiers}>
-              <div className="shell-sidebar">
-                <Suspense fallback={null}>
-                  <OriginalChrome><Sidebar /></OriginalChrome>
-                </Suspense>
-              </div>
               <div className="shell-main flex min-h-screen min-w-0 max-w-full flex-col pb-16 lg:pb-0 lg:pl-60">
-                <div className="shell-topbar w-full max-w-full">
-                  <Suspense fallback={null}>
-                    <OriginalChrome><TopBar /></OriginalChrome>
-                  </Suspense>
-                </div>
-                <Suspense fallback={null}><DesignPreview /></Suspense>
+                <Suspense fallback={null}><SiteChrome /></Suspense>
                 <main className="flex-1 min-w-0 max-w-full">{children}</main>
                 <div className="shell-footer w-full max-w-full"><Footer /></div>
               </div>

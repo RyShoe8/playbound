@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { headers } from "next/headers";
 import { redirect, notFound } from "next/navigation";
 import { Types } from "mongoose";
 import dbConnect from "@/lib/db";
@@ -17,7 +16,7 @@ export default async function PartyLinkPage({ params }: { params: Promise<{ id: 
   const party = await Party.findById(id).select("visibility status").lean();
   if (!party || party.status === "ended") notFound();
 
-  const prefix = (await headers()).get("x-playbound-design-preview") === "1" ? "/new" : "";
+  const prefix = "";
   const destination = `${prefix}/friends?party=${encodeURIComponent(id)}`;
   if (await getFriendsUserId()) redirect(destination);
 

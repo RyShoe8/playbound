@@ -4,19 +4,20 @@ vi.mock("next-auth/jwt", () => ({ getToken: vi.fn() }));
 import { getToken } from "next-auth/jwt";
 import { middleware } from "./middleware";
 
-describe("preview rewrite and username gate", () => {
-  it("retains the page, query, and a preview-only noindex header", async () => {
+describe("retired preview redirects and username gate", () => {
+  it("permanently redirects retired preview pages and preserves filters", async () => {
     const response = await middleware(new NextRequest("https://playbound.club/new/games/openra?tab=media"));
-    expect(response.headers.get("x-middleware-rewrite")).toBe("https://playbound.club/games/openra?tab=media");
-    expect(response.headers.get("x-robots-tag")).toBe("noindex, nofollow");
+    expect(response.status).toBe(308);
+    expect(response.headers.get("location")).toBe("https://playbound.club/games/openra?tab=media");
+    expect(response.headers.get("x-robots-tag")).toBeNull();
     const normal = await middleware(new NextRequest("https://playbound.club/games/openra"));
     expect(normal.headers.get("x-robots-tag")).toBeNull();
     expect(normal.headers.get("x-middleware-rewrite")).toBeNull();
   });
-  it("serves the distinct preview homepage without rewriting to the old home", async () => {
+  it("redirects the retired preview homepage to the canonical homepage", async () => {
     const response = await middleware(new NextRequest("https://playbound.club/new"));
-    expect(response.headers.get("x-middleware-rewrite")).toBeNull();
-    expect(response.headers.get("x-robots-tag")).toBe("noindex, nofollow");
+    expect(response.status).toBe(308);
+    expect(response.headers.get("location")).toBe("https://playbound.club/");
   });
   it("does not bypass username completion via /new", async () => {
     vi.mocked(getToken).mockResolvedValue({ needsUsername: true });

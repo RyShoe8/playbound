@@ -19,9 +19,9 @@ export function NewEventsSchedule({ events, titles }: {
       )}
     </div>
     <div className="new-panel new-event-schedule">
-      {visible.length ? visible.map(event => <Link className="new-event-row" href={`/new/events/${event.id}`} key={event.id}>
+      {visible.length ? visible.map(event => <Link className="new-event-row" href={`/events/${event.id}`} key={event.id}>
         <div className="new-event-time"><EventLocalWhen startsAt={event.startsAt} endsAt={event.endsAt} /></div>
-        {event.coverImage ? <img src={event.coverImage} alt="" className="new-event-thumb" loading="lazy" /> : <div className="new-event-thumb new-event-placeholder" aria-hidden="true">▶</div>}
+        {event.coverImage ? <img src={event.coverImage} alt={`${event.title} event artwork`} className="new-event-thumb" loading="lazy" /> : <div className="new-event-thumb new-event-placeholder" aria-hidden="true">▶</div>}
         <div className="new-event-summary">
           <p className="new-eyebrow">{event.status === "live" ? "● Live now · " : ""}{eventTypeLabel(String(event.eventType))}{event.featured ? " · Featured" : ""}</p>
           <h2>{event.title}</h2>
@@ -29,7 +29,7 @@ export function NewEventsSchedule({ events, titles }: {
           {event.description && <p className="new-event-description">{event.description}</p>}
         </div>
         <div className="new-event-attendance"><span>{event.counts?.going ?? 0} going{event.maxParticipants ? ` / ${event.maxParticipants}` : ""}</span><strong>View event →</strong></div>
-      </Link>) : <div className="new-pad"><h2>No events scheduled here yet</h2><p>Try another category, or start a party and play now.</p><Link href="/new/multiplayer?startParty=1" className="new-button">Start a party</Link></div>}
+      </Link>) : <div className="new-pad"><h2>No events scheduled here yet</h2><p>Try another category, or start a party and play now.</p><Link href="/multiplayer?startParty=1" className="new-button">Start a party</Link></div>}
     </div>
   </section>;
 }
