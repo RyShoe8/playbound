@@ -2610,6 +2610,7 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
  * lookup has to answer to it even though the catalog does not.
  */
 const ADAPTER_SLUG_ALIASES: Record<string, string> = {
+  rimworld: "rimworld-together",
   "0-ad": "0ad",
   openmohaa: "medal-of-honor-allied-assault",
   opentyrian: "opentyrian-2000",

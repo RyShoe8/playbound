@@ -9,6 +9,7 @@ import type { ServerSettingDefinition, ServerSettingValue, ServerSettingValues }
 import type { ServerControlCapabilities, ServerRuntimeState } from "@/lib/serverControl/adapter";
 
 type Server = {
+  gameSlug: string;
   id: string;
   name: string;
   description: string;
@@ -227,7 +228,7 @@ export function ServerControl({ serverId }: { serverId: string }) {
       ) : null}
       {tab === "Maps" ? <MapsTab base={base} canChange={may("server:change_map")} run={run} /> : null}
       {tab === "Players" ? <PlayersTab base={base} running={running} canKick={may("server:kick_players")} canBan={may("server:ban_players")} run={run} /> : null}
-      {tab === "Console" ? <ConsoleTab base={base} running={running} /> : null}
+      {tab === "Console" ? <ConsoleTab base={base} running={running} rimworld={server.gameSlug === "rimworld" || server.gameSlug === "rimworld-together"} /> : null}
       {tab === "Backups" ? (
         <BackupsTab base={base} status={control.status.status} canCreate={may("server:create_backup")} canRestore={may("server:restore_backup")} canExport={may("server:configure")} run={run} />
       ) : null}
@@ -850,7 +851,7 @@ function WorldDataSection({
   );
 }
 
-function ConsoleTab({ base, running }: { base: string; running: boolean }) {
+function ConsoleTab({ base, running, rimworld }: { base: string; running: boolean; rimworld: boolean }) {
   const [lines, setLines] = useState<{ kind: "in" | "out" | "err"; text: string }[]>([]);
   const [command, setCommand] = useState("");
   const [sending, setSending] = useState(false);
@@ -877,6 +878,17 @@ function ConsoleTab({ base, running }: { base: string; running: boolean }) {
       <p className="text-xs text-muted-foreground">
         Game console commands, sent to the server&apos;s own control channel. Everything you run is recorded in Activity.
       </p>
+      {rimworld ? <div className="rounded-xl border border-border p-3 text-sm space-y-2">
+        <p>Select a command below, then press Send. The first joining player creates the world in RimWorld Together.</p>
+        <div className="flex flex-wrap gap-2">{[
+          ["Online players", "list"], ["All accounts", "deeplist"], ["Backup world", "backup"],
+          ["Server version", "getversion"], ["Mods", "modlist"], ["Bans", "banlist"], ["Available events", "eventlist"],
+          ["Announce", "broadcast Your message"], ["Chat", "chat Your message"], ["Force save", "forcesave username"],
+          ["Backup player", "backupuser username"], ["Grant admin", "op username"], ["Remove admin", "deop username"],
+          ["Ban account", "ban username"], ["Unban account", "pardon username"], ["Set password", "setpassword password"], ["Clear password", "clearpassword"],
+        ].map(([label, value]) => <button key={value} type="button" onClick={() => setCommand(value)} className="rounded-lg border border-border px-2 py-1 hover:bg-accent">{label}</button>)}</div>
+        <p className="text-xs text-muted-foreground">Replace username, password, or message placeholders before sending. Use Players for kicks and IP bans. Server-wide resets are deliberately unavailable.</p>
+      </div> : null}
       <div className="h-80 overflow-y-auto rounded-xl border border-border bg-black/80 p-3 font-mono text-xs text-zinc-100">
         {lines.map((l, i) => (
           <pre key={i} className={`whitespace-pre-wrap ${l.kind === "in" ? "text-sky-300" : l.kind === "err" ? "text-red-400" : ""}`}>{l.text}</pre>
@@ -894,7 +906,7 @@ function ConsoleTab({ base, running }: { base: string; running: boolean }) {
           className="flex-1 rounded border border-border bg-background px-2 py-1.5 font-mono text-sm"
           value={command}
           maxLength={200}
-          placeholder="status"
+          placeholder={rimworld ? "list" : "status"}
           onChange={(e) => setCommand(e.target.value)}
           aria-label="Console command"
         />

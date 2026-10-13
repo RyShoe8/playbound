@@ -20,6 +20,7 @@ import { HX_BASE, hxReady, hxRoomDir, prepareHxRoom } from "./deusExHx.js";
 
 const execFileAsync = promisify(execFile);
 const require = createRequire(import.meta.url);
+const rimworldDifficulty = require("./rimworldDifficulty.json");
 const { injectPlayboundAdmin } = require("./tes3mp/injectPlayboundAdmin.cjs");
 
 const GAMES_ROOT = process.env.GAME_HOST_GAMES_DIR || "/opt/playbound-host/games";
@@ -225,6 +226,14 @@ const RECIPE_SETTING_TYPES = {
 };
 
 // A managed room uses one fleet-wide key, translated into each engine's own
+RECIPE_SETTING_TYPES["rimworld-together"] = {
+  description: "string", discordUrl: "string", useClientSave: "boolean",
+  displayChat: "boolean", automaticBackups: "boolean", backupIntervalHours: "number", backupCount: "number",
+  messageOfTheDay: "string", loginNotifications: "boolean", disconnectNotifications: "boolean",
+  allowAllMods: "boolean", enforceModSettings: "boolean", storyteller: "string",
+};
+RECIPE_SETTING_TYPES.unturned = { map: "string", pve: "boolean", perspective: "string", cheats: "boolean" };
+for (const field of rimworldDifficulty) RECIPE_SETTING_TYPES["rimworld-together"][`difficulty.${field.key}`] = typeof field.default;
 // slot setting below. Party-room settings remain independent.
 for (const slug of [
   "morrowind", "teeworlds", "openttd", "assaultcube", "medal-of-honor-allied-assault", "mindustry", "hurry-curry", "deus-ex-goty-edition",

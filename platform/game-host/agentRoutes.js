@@ -1,5 +1,5 @@
 /** Exact agent GET routes that would otherwise look like mirror file paths. */
-const AGENT_GET_ROUTES = new Set(["/metrics", "/rooms", "/managed"]);
+const AGENT_GET_ROUTES = new Set(["/metrics", "/rooms", "/managed", "/server-browser/rimworld"]);
 
 /**
  * True for agent API paths, which must never fall through to the public

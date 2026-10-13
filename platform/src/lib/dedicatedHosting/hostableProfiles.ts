@@ -12,13 +12,13 @@
 import dbConnect from "@/lib/db";
 import Edition from "@/lib/models/Edition";
 import CatalogGame from "@/lib/models/CatalogGame";
-import { DEDICATED_ONLY_GAMES, HOSTABLE_SLUGS, HOSTABLE_SLUG_ALIASES } from "@/lib/gameHost/catalog";
+import { DEDICATED_ONLY_GAMES, HOSTABLE_SLUGS, HOSTABLE_SLUG_ALIASES, getPartyHostableGame } from "@/lib/gameHost/catalog";
 import { isNonDedicatedCatalogGame } from "@/lib/gameHost/nonDedicatedCatalog";
 import { normalizeStatus } from "@/lib/catalogStatus";
 
 /** Every game the admin can put on a tier: hostable everywhere, plus the paid-plan-only games. */
 function tierSlugs(): string[] {
-  return [...HOSTABLE_SLUGS.filter((slug) => !HOSTABLE_SLUG_ALIASES[slug]), ...Object.keys(DEDICATED_ONLY_GAMES)];
+  return [...HOSTABLE_SLUGS.filter((slug) => !HOSTABLE_SLUG_ALIASES[slug]), ...Object.keys(DEDICATED_ONLY_GAMES).filter(slug => slug !== "rimworld-together"), "rimworld"];
 }
 
 export type EditionRef = { gameSlug: string; slug: string; name?: string; features?: string[]; isDefault?: boolean };
@@ -42,12 +42,12 @@ export function readyGameHostSlugs(
 export function readyPublishedHostableCatalog(
   games: CatalogGameRef[], editions: EditionRef[], stored: StoredProfileRef[], readySlugs: ReadonlySet<string>
 ): { games: CatalogGameRef[]; editions: EditionRef[] } {
-  const eligibleGames = games.filter((game) => !isNonDedicatedCatalogGame(game.slug, game.title) && normalizeStatus(game) === "published" && readySlugs.has(game.slug));
+  const eligibleGames = games.filter((game) => !isNonDedicatedCatalogGame(game.slug, game.title) && normalizeStatus(game) === "published" && (readySlugs.has(game.slug) || editions.some(e => e.gameSlug === game.slug && readySlugs.has(getPartyHostableGame(game.slug, e.slug)?.slug || ""))));
   const allowed = new Set(eligibleGames.map((game) => game.slug));
   const storedKeys = new Set(stored.map((profile) => profile.key));
   const eligibleEditions = editions.filter((edition) => allowed.has(edition.gameSlug) &&
     !edition.isDefault && edition.slug !== "official" && edition.slug !== "base" &&
-    (edition.features?.includes("Dedicated Servers") || storedKeys.has(`${edition.gameSlug}:${edition.slug}`)));
+    (edition.features?.includes("Dedicated Servers") || storedKeys.has(`${edition.gameSlug}:${edition.slug}`) || (edition.gameSlug === "rimworld" && edition.slug === "rimworld-together")));
   return { games: eligibleGames, editions: eligibleEditions };
 }
 export type ProfileStub = {
@@ -66,10 +66,10 @@ export function hostableProfileStubs(stored: StoredProfileRef[], editions: Editi
     const key = `${gameSlug}:${editionSlug || "base"}`;
     if (storedKeys.has(key) || storedPairs.has(`${gameSlug}:${editionSlug || ""}`)) return;
     storedKeys.add(key);
-    stubs.push({ key, gameSlug, editionSlug, recipeSlug: gameSlug });
+    stubs.push({ key, gameSlug, editionSlug, recipeSlug: getPartyHostableGame(gameSlug, editionSlug)?.slug || gameSlug });
   };
   for (const slug of slugs) {
-    add(slug, null);
+    if (slug !== "rimworld") add(slug, null);
     for (const edition of editions) if (edition.gameSlug === slug) add(slug, edition.slug);
   }
   return stubs;

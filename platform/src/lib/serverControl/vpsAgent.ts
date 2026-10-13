@@ -105,7 +105,7 @@ function capabilitiesFor(gameSlug: string): ServerControlCapabilities {
     restart: true,
     players: channel !== null,
     console: channel !== null,
-    liveApply: channel !== null,
+    liveApply: channel !== null && channel !== "console-rimworld",
   };
 }
 

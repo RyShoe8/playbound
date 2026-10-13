@@ -47,7 +47,7 @@ export async function joinPartyGame(
       return { error: "Everyone must ready up before starting", status: 400 };
     }
   }
-  const hostMode = resolvedHostMode(String(doc.gameSlug), doc.hostMode, doc.hosted);
+  const hostMode = resolvedHostMode(String(doc.gameSlug), doc.hostMode, doc.hosted, doc.editionSlug);
   const isLeader = String(doc.leaderId) === userId;
   /*
    * `selfHostReady` means a listen server answered a probe. A virtual-LAN game

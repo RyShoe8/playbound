@@ -76,6 +76,13 @@ test("config-file games write the cap into the server's own config", async () =>
   assert.equal(rwt.MaxPlayers, 6);
   assert.equal(rwt.Port, 25590);
   assert.equal(rwt.EnableServerBrowser, false);
+  const rwtCtx = ctxFor("rimworld-together");
+  rwtCtx.settings = acceptedSettingsFor("rimworld-together", { maxPlayers: 4, description: "Our colony", storyteller: "Randy", messageOfTheDay: "Welcome", "difficulty.IsDifficultyEnforced": true, "difficulty.ThreatScale": 1.5 });
+  await recipes["rimworld-together"].prepareSpawn(25590, rwtCtx);
+  assert.equal(read("rimworld-together-servers", `pb-${ID_A}`, "Configs", "ServerConfig.json").Description, "Our colony");
+  assert.equal(read("rimworld-together-servers", `pb-${ID_A}`, "Configs", "StorytellerConfig.json").DefName, "Randy");
+  assert.equal(read("rimworld-together-servers", `pb-${ID_A}`, "Configs", "ChatConfig.json").MessageOfTheDay, "Welcome");
+  assert.equal(read("rimworld-together-servers", `pb-${ID_A}`, "Configs", "DifficultyConfig.json").ThreatScale, 1.5);
 
   await recipes["core-keeper"].prepareSpawn(1300, ctxFor("core-keeper", ID_A, 8));
   assert.equal(read("core-keeper-servers", `pb-${ID_A}`, "data", "ServerConfig.json").maxNumberPlayers, 8);

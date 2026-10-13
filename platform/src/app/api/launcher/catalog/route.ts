@@ -100,7 +100,8 @@ export async function GET(req: Request) {
                  * nothing.
                  */
                 hostLaunch: getMultiplayerAdapter(g.slug)?.host ?? null,
-                partyLaunchable: supportsLauncherParty({ ...g, launcherInstall: recipe }),
+                partyLaunchable: g.slug === "rimworld" ? publicActiveEditions.some(e => e.slug === "rimworld-together") : supportsLauncherParty({ ...g, launcherInstall: recipe }),
+                ...(g.slug === "rimworld" && publicActiveEditions.some(e => e.slug === "rimworld-together") ? { isMultiplayer: true, multiplayer: true, hasServerBrowser: true } : {}),
                 status: g.status || "published",
                 testing: g.status === "testing" || g.status === "ready",
                 maxPlayers: typeof g.maxPlayers === "number" ? g.maxPlayers : null,

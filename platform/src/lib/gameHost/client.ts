@@ -9,6 +9,14 @@ const CREATE_ROOM_TIMEOUT_MS = 5 * 60 * 1000;
 const ENSURE_TIMEOUT_MS = 10 * 60 * 1000;
 const TEST_SPAWN_TIMEOUT_MS = 15 * 60 * 1000;
 
+export async function fetchRimworldBrowser(): Promise<unknown[]> {
+  const response = await hostFetch("/server-browser/rimworld", { method: "GET" }, 20_000);
+  if (!response?.ok) throw new Error("RimWorld server browser is unavailable");
+  const data = await response.json() as { servers?: unknown[] };
+  if (!Array.isArray(data.servers)) throw new Error("Invalid RimWorld server listing");
+  return data.servers;
+}
+
 export type GameHostRoom = {
   roomId: string;
   partyId: string;

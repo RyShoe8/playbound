@@ -8,6 +8,7 @@ import { fetchGameHostHealth } from "@/lib/gameHost/client";
 import { profileSettingsSchema, validateProfileReadiness } from "@/lib/communityHosting/profileSettings";
 import { getEffectiveEnvelope } from "@/lib/communityHosting/reconcile";
 import { normalizeStatus } from "@/lib/catalogStatus";
+import { getPartyHostableGame } from "@/lib/gameHost/catalog";
 
 export async function PUT(req: Request, context: { params: Promise<{ key: string }> }) {
   const { session, error } = await requireAdminSession();
@@ -22,14 +23,16 @@ export async function PUT(req: Request, context: { params: Promise<{ key: string
 
   const [gameSlug, editionPart] = normalizedKey.split(":");
   const editionSlug = editionPart === "base" ? null : editionPart;
+  const recipeSlug = getPartyHostableGame(gameSlug, editionSlug)?.slug || gameSlug;
+  if (gameSlug === "rimworld" && editionSlug !== "rimworld-together") return NextResponse.json({ error: "Choose the RimWorld Together multiplayer edition" }, { status: 400 });
   if (parsed.data.enabled) {
     const [catalogGame, edition, health] = await Promise.all([
       CatalogGame.findOne({ slug: gameSlug }).select("slug status published").lean(),
       editionSlug ? Edition.findOne({ gameSlug, slug: editionSlug, status: { $ne: "archived" }, visibility: { $ne: "hidden" }, suppressesSeed: { $ne: true } }).select("features isDefault").lean() : Promise.resolve(null),
       fetchGameHostHealth(),
     ]);
-    if (!catalogGame || normalizeStatus(catalogGame) !== "published" || !health.configured || !health.health.gameStatus?.[gameSlug]?.ready ||
-      (editionSlug && (!edition || edition.isDefault || (!edition.features?.includes("Dedicated Servers") && !current)))) {
+    if (!catalogGame || normalizeStatus(catalogGame) !== "published" || !health.configured || !health.health.gameStatus?.[recipeSlug]?.ready ||
+      (editionSlug && (!edition || edition.isDefault || (!edition.features?.includes("Dedicated Servers") && !current && recipeSlug === gameSlug)))) {
       return NextResponse.json({ error: "Publish the game and verify its dedicated-server files before enabling community hosting" }, { status: 409 });
     }
   }
@@ -64,6 +67,7 @@ export async function PUT(req: Request, context: { params: Promise<{ key: string
     {
       $set: {
         ...parsed.data,
+        recipeSlug,
         updatedBy: session!.user.id,
         ...(needsEnvelope ? { envelope } : {}),
       },
@@ -71,7 +75,6 @@ export async function PUT(req: Request, context: { params: Promise<{ key: string
         key: normalizedKey,
         gameSlug,
         editionSlug,
-        recipeSlug: base?.recipeSlug || gameSlug,
         sampleCount,
       },
     },

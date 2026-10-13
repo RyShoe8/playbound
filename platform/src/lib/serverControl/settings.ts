@@ -11,6 +11,8 @@
  */
 
 /** When a change takes effect, and therefore what it costs the people playing. */
+import rimworldDifficulty from "../../../game-host/rimworldDifficulty.json";
+
 export type ApplyMode =
   /** Takes effect immediately on the running server. */
   | "live"
@@ -94,7 +96,7 @@ export type ServerSettingDefinition =
  * concerned: it decides command syntax and how replies are read. The agent
  * holds the transport (and the password) for each.
  */
-export type ControlChannel = "rcon-quake3" | "rcon-darkplaces" | "rcon-source";
+export type ControlChannel = "rcon-quake3" | "rcon-darkplaces" | "rcon-source" | "console-rimworld";
 
 export type ServerSettingValue = string | number | boolean;
 export type ServerSettingValues = Record<string, ServerSettingValue>;
@@ -1574,6 +1576,45 @@ const TES3MP: ServerSettingProfile = {
 };
 
 export const SERVER_SETTING_PROFILES: Readonly<Record<string, ServerSettingProfile>> = {
+  unturned: {
+    slug: "unturned",
+    unavailable: { bots: "Unturned has zombies and animals, but no native player bots or bot-fill quota." },
+    settings: [
+      { key: "map", label: "Map", feature: "map", type: "enum", default: "PEI", options: ["PEI", "Washington", "Yukon", "Russia", "Germany"].map(value => ({value,label:value})), apply: "restart", backend: "config-file" },
+      { key: "maxPlayers", label: "Max players", feature: "slots", type: "number", default: 8, min: 2, max: 24, apply: "restart", backend: "config-file" },
+      { key: "pve", label: "PvE (disable player combat)", type: "boolean", default: false, apply: "restart", backend: "config-file" },
+      { key: "perspective", label: "Camera perspective", type: "enum", default: "Both", options: ["Both", "First", "Third", "Vehicle"].map(value => ({value,label:value})), apply: "restart", backend: "config-file" },
+      { key: "cheats", label: "Allow admin cheat commands", type: "boolean", default: false, apply: "restart", backend: "config-file" },
+    ],
+  },
+  "rimworld-together": {
+    slug: "rimworld-together", controlChannel: "console-rimworld",
+    unavailable: {
+      map: "The first joining client creates the world. Existing colonies are preserved across server restarts.",
+      bots: "RimWorld Together has no player bots; colonists are controlled by each player's simulation.",
+    },
+    settings: [
+      { key: "description", label: "Description", type: "string", default: "", maxLength: 500, apply: "restart", backend: "config-file" },
+      { key: "maxPlayers", label: "Max players", feature: "slots", type: "number", default: 8, min: 2, max: 64, apply: "restart", backend: "config-file" },
+      { key: "discordUrl", label: "Discord invite URL", type: "string", default: "", maxLength: 200, apply: "restart", backend: "config-file" },
+      { key: "useClientSave", label: "Use client saves", type: "boolean", default: true, apply: "restart", backend: "config-file", help: "Allow players to use their client-side colony saves." },
+      { key: "displayChat", label: "Show chat in console", type: "boolean", default: false, apply: "restart", backend: "config-file" },
+      { key: "automaticBackups", label: "Automatic world backups", type: "boolean", default: true, apply: "restart", backend: "config-file" },
+      { key: "backupIntervalHours", label: "Backup interval (hours)", type: "number", default: 1, min: 1, max: 168, apply: "restart", backend: "config-file" },
+      { key: "backupCount", label: "Backups to keep", type: "number", default: 6, min: 1, max: 100, apply: "restart", backend: "config-file" },
+      { key: "messageOfTheDay", label: "Message of the day", type: "string", default: "", maxLength: 500, apply: "restart", backend: "config-file" },
+      { key: "loginNotifications", label: "Announce player logins", type: "boolean", default: false, apply: "restart", backend: "config-file" },
+      { key: "disconnectNotifications", label: "Announce player departures", type: "boolean", default: false, apply: "restart", backend: "config-file" },
+      { key: "allowAllMods", label: "Allow all client mods", type: "boolean", default: false, apply: "restart", backend: "config-file", help: "Off keeps the server's existing required/optional mod list. Some mods are incompatible with multiplayer." },
+      { key: "enforceModSettings", label: "Enforce mod settings", type: "boolean", default: false, apply: "restart", backend: "config-file" },
+      { key: "storyteller", label: "Storyteller", type: "enum", default: "player-choice", options: [{value:"player-choice",label:"Player's choice"},{value:"Cassandra",label:"Cassandra Classic"},{value:"Phoebe",label:"Phoebe Chillax"},{value:"Randy",label:"Randy Random"}], apply: "restart", backend: "config-file" },
+      ...rimworldDifficulty.map((field): ServerSettingDefinition => typeof field.default === "boolean" ? {
+        key: `difficulty.${field.key}`, label: `Difficulty: ${field.label}`, type: "boolean", default: field.default, apply: "restart", backend: "config-file",
+      } : {
+        key: `difficulty.${field.key}`, label: `Difficulty: ${field.label}`, type: "number", default: field.default, min: field.min, max: field.max, apply: "restart", backend: "config-file",
+      }),
+    ],
+  },
   "battlefield-1942-anthology": {
     slug: "battlefield-1942-anthology",
     settings: [
@@ -1625,6 +1666,7 @@ export function getServerSettingProfile(
   slug: string | null | undefined
 ): ServerSettingProfile | null {
   if (!slug) return null;
+  if (slug === "rimworld") return SERVER_SETTING_PROFILES["rimworld-together"];
   return SERVER_SETTING_PROFILES[slug] ?? null;
 }
 

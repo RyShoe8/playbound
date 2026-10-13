@@ -51,7 +51,7 @@ export function createManagedVpsAdapter(ref: ManagedRef): ServerControlAdapter {
     restart: true,
     players: live,
     console: live,
-    liveApply: live,
+    liveApply: live && profile?.controlChannel !== "console-rimworld",
   };
 
   const down = (status: ServerRuntimeState["status"], error: string | null = null): ServerRuntimeState => ({

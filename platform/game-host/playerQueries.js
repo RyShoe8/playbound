@@ -10,6 +10,7 @@ import net from "node:net";
 import fs from "node:fs";
 import path from "node:path";
 import { queryA2sOccupancy } from "./a2sQuery.js";
+import { rimworldSnapshot } from "./rimworldControl.js";
 
 const TIMEOUT_MS = 2500;
 
@@ -612,11 +613,16 @@ export const LOCAL_QUERY_GAMES = new Set([
   ...QUAKE3_GAMES, ...A2S_GAMES, "mindustry", "assaultcube", "space-station-14", "morrowind",
   "openttd", "bzflag", "teeworlds", "veloren", "supertuxkart", "flightgear", "freedoom", "bombsquad",
   ...TCP_CLIENT_GAMES,
+  "rimworld-together",
 ]);
 
 export async function queryRoomOccupancy(room) {
   if (!room || !Number.isInteger(room.port)) return null;
   const slug = room.gameSlug;
+  if (slug === "rimworld-together") {
+    const snapshot = rimworldSnapshot(room);
+    return snapshot ? { players: snapshot.players.length, maxPlayers: snapshot.maxPlayers, bots: 0 } : null;
+  }
   if (A2S_GAMES.has(slug)) {
     const anyApp = slug !== "counter-strike-2";
     return (await queryA2sOccupancy(room.port, { anyApp })) ||

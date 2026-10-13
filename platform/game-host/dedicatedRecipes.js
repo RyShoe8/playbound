@@ -25,6 +25,8 @@
  * client-join checks.
  */
 import { randomBytes } from "node:crypto";
+import { createRequire } from "node:module";
+const rimworldDifficulty = createRequire(import.meta.url)("./rimworldDifficulty.json");
 
 /**
  * @param {{
@@ -279,8 +281,12 @@ export function createDedicatedRecipes(deps) {
         if (token !== null && !/^[A-Fa-f0-9]{20,64}$/.test(token)) throw new Error("Invalid Unturned game-server login token");
         const configDir = path.join(data, "Server");
         fs.mkdirSync(configDir, { recursive: true, mode: 0o700 });
+        const requestedMap = settingToken("unturned", ctx, "map", "PEI");
+        const map = ["PEI", "Washington", "Yukon", "Russia", "Germany"].includes(requestedMap) ? requestedMap : "PEI";
+        const requestedPerspective = settingToken("unturned", ctx, "perspective", "Both");
+        const perspective = ["Both", "First", "Third", "Vehicle"].includes(requestedPerspective) ? requestedPerspective : "Both";
         fs.writeFileSync(path.join(configDir, "Commands.dat"),
-          `Name ${serverName(ctx, "PlayBound Dedicated")}\nMap PEI\nMaxPlayers ${managedPlayerLimit(ctx)}\nPort ${_port}\n${token ? `GSLT ${token}\n` : ""}`,
+          `Name ${serverName(ctx, "PlayBound Dedicated")}\nMap ${map}\nMaxPlayers ${managedPlayerLimit(ctx)}\nPort ${_port}\nPerspective ${perspective}\n${ctx.settings?.pve === true ? "PvE\n" : ""}${ctx.settings?.cheats === true ? "Cheats\n" : ""}${token ? `GSLT ${token}\n` : ""}`,
           { mode: 0o600 });
       },
       args: (_port, ctx) => [
@@ -307,7 +313,36 @@ export function createDedicatedRecipes(deps) {
           EnableServerBrowser: false,
           EnableServerTelemetry: false,
           UseUPnP: false,
+          Description: String(ctx.settings?.description || ""),
+          DiscordURL: String(ctx.settings?.discordUrl || ""),
+          UseClientSave: ctx.settings?.useClientSave !== false,
+          DisplayChatInConsole: ctx.settings?.displayChat === true,
         });
+        mergeJsonConfig(path.join(serverDir("rimworld-together-servers", ctx), "Configs", "BackupConfig.json"), {
+          AutomaticBackups: ctx.settings?.automaticBackups !== false,
+          IntervalHours: settingNumber("rimworld-together", ctx, "backupIntervalHours", 1, 1, 168),
+          Amount: settingNumber("rimworld-together", ctx, "backupCount", 6, 1, 100),
+          AutomaticDeletion: true,
+        });
+        mergeJsonConfig(path.join(serverDir("rimworld-together-servers", ctx), "Configs", "ChatConfig.json"), {
+          EnableMoTD: Boolean(ctx.settings?.messageOfTheDay), MessageOfTheDay: String(ctx.settings?.messageOfTheDay || ""),
+          LoginNotifications: ctx.settings?.loginNotifications === true, DisconnectNotifications: ctx.settings?.disconnectNotifications === true,
+        });
+        mergeJsonConfig(path.join(serverDir("rimworld-together-servers", ctx), "Configs", "ModConfig.json"), {
+          AllowAllMods: ctx.settings?.allowAllMods === true, EnforceSettings: ctx.settings?.enforceModSettings === true,
+        });
+        const storyteller = settingToken("rimworld-together", ctx, "storyteller", "player-choice");
+        mergeJsonConfig(path.join(serverDir("rimworld-together-servers", ctx), "Configs", "StorytellerConfig.json"), {
+          IsEnforced: storyteller !== "player-choice", DefName: storyteller === "player-choice" ? "" : storyteller,
+        });
+        // Leave an existing world's custom difficulty intact unless the owner
+        // explicitly changes one of these fields in PlayBound.
+        const difficulty = {};
+        for (const field of rimworldDifficulty) {
+          const value = ctx.settings?.[`difficulty.${field.key}`];
+          if (typeof value === typeof field.default && (typeof value !== "number" || (Number.isFinite(value) && value >= field.min && value <= field.max))) difficulty[field.key] = value;
+        }
+        if (Object.keys(difficulty).length) mergeJsonConfig(path.join(serverDir("rimworld-together-servers", ctx), "Configs", "DifficultyConfig.json"), difficulty);
       },
       args: () => [],
     },

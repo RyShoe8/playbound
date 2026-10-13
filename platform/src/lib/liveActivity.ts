@@ -110,7 +110,7 @@ async function multiplayerForEdition(
 ): Promise<{ players: number; servers: number }> {
   try {
     const result = await listServersForGame(gameSlug);
-    const servers = (result.servers ?? []).filter((s) => s.gameType === editionSlug);
+    const servers = (result.servers ?? []).filter((s) => s.editionSlug === editionSlug || s.gameType === editionSlug);
     return {
       players: servers.reduce((sum, s) => sum + (Number(s.players) || 0), 0),
       servers: servers.length,
