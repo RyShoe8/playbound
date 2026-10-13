@@ -14,7 +14,7 @@ async function check(path) {
   ]);
   assert.equal(page.status, 200, `${path}: page status`);
   assert.equal(legacy.status, 308, `${path}: retired preview must redirect permanently`);
-  assert.equal(legacy.headers.get('location'), origin + path, `${path}: redirect destination`);
+  assert.equal(new URL(legacy.headers.get('location'), origin).href, origin + path, `${path}: redirect destination`);
   assert.equal(page.headers.get('x-robots-tag'), null, `${path}: preview noindex header must be gone`);
   const html = await page.text();
   assert.match(html, /<title>[^<]+<\/title>/, `${path}: missing title`);
@@ -25,7 +25,7 @@ async function check(path) {
     assert.doesNotMatch(robots, /noindex/, `${path}: public page blocked`);
     const canonical = tags.find(t => t.rel === 'canonical')?.href;
     assert.ok(canonical, `${path}: missing canonical`);
-    assert.equal(canonical, origin + path, `${path}: canonical changed`);
+    assert.equal(new URL(canonical).href, origin + path, `${path}: canonical changed`);
     assert.ok(tags.find(t => t.name === 'description')?.content, `${path}: missing description`);
     assert.ok(tags.find(t => t.property === 'og:title')?.content, `${path}: missing social metadata`);
   }
