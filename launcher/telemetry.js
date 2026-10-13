@@ -121,12 +121,22 @@ function createTelemetry({
   function launcherInstalled() {
     if (launcherInstallInFlight) return launcherInstallInFlight;
     launcherInstallInFlight = (async () => {
+      let existingIdentity = "";
+      try { existingIdentity = String(loadSettings().analyticsId || ""); } catch { /* best effort */ }
       const anonymousId = getAnonymousId();
       try {
         const settings = loadSettings();
         if (settings.launcherInstallTrackedId === anonymousId) {
           return { ok: true, alreadyTracked: true };
         }
+        // Older launchers already created an analytics identity before install
+        // receipts existed. Upgrading one must not become a new installation.
+        // A fresh install keeps a pending receipt so offline first runs retry.
+        if (existingIdentity.length >= MIN_ID_LENGTH && settings.launcherInstallPendingId !== anonymousId) {
+          saveSettings({ ...settings, launcherInstallTrackedId: anonymousId });
+          return { ok: true, alreadyTracked: true, migrated: true };
+        }
+        saveSettings({ ...settings, launcherInstallPendingId: anonymousId });
       } catch {
         // Tracking is still best-effort when settings cannot be read.
       }
@@ -135,7 +145,7 @@ function createTelemetry({
       if (result.ok) {
         try {
           const settings = loadSettings();
-          saveSettings({ ...settings, launcherInstallTrackedId: anonymousId });
+          saveSettings({ ...settings, launcherInstallTrackedId: anonymousId, launcherInstallPendingId: null });
         } catch {
           // The event arrived; a failed receipt only means a possible retry.
         }
