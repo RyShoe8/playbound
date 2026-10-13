@@ -11,7 +11,7 @@ import CatalogGame from "@/lib/models/CatalogGame";
 import Edition from "@/lib/models/Edition";
 import { fetchGameHostHealth, fetchGameHostMetrics, listManagedHostRooms, requestManagedHostRoom, stopManagedHostRoom } from "@/lib/gameHost/client";
 import { readyPublishedHostableCatalog } from "@/lib/dedicatedHosting/hostableProfiles";
-import { canScaleDownEmptyServer, paidScaleDownRank, placementDecision, runningReservationEnvelope, type ResourceEnvelope } from "./capacity";
+import { canRetireEmptyServer, canScaleDownEmptyServer, paidScaleDownRank, placementDecision, runningReservationEnvelope, type ResourceEnvelope } from "./capacity";
 import { managedQueryKind, QUERY_BY_GAME, queryManagedPlayerCount, queryManagedOccupancy } from "./playerQuery";
 import { recordResourceSample } from "./samples";
 import { recordPopulationReading } from "./population";
@@ -488,10 +488,21 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
     let totalRunningRam = runningManaged.reduce((sum, e) => sum + e.ramBytes, 0);
     const previous = await CommunityServer.find({ regionKey: config.node.regionKey, ownerType: { $ne: "user" } }).select({ profileKey: 1, cooldownUntil: 1, manualPause: 1, onlineSince: 1 }).lean();
 
+    const canRetire = (server: typeof active[number]) => {
+      const profile = profileByKey.get(server.profileKey);
+      return canRetireEmptyServer({
+        players: server.playerCount, checkedAt: server.playerCountCheckedAt,
+        protectedUntil: server.protectedUntil, onlineSince: server.onlineSince,
+        lastOccupiedAt: server.lastOccupiedAt,
+        minimumOnlineMinutes: profile?.minimumOnlineMinutes ?? config.rotation.minimumOnlineMinutes,
+        idleMinutes: profile?.idleMinutes ?? config.rotation.idleMinutes,
+      }, now);
+    };
+
     if (totalRunningCpu > config.budget.cpuCores || totalRunningRam > config.budget.ramBytes) {
       const paidNeedsCapacity = paid.cpuCores > 0 || paid.ramBytes > 0;
       const candidatesToScaleDown = runningServers
-        .filter((s) => paidNeedsCapacity || canScaleDownEmptyServer({ players: s.playerCount, checkedAt: s.playerCountCheckedAt, protectedUntil: s.protectedUntil }, now))
+        .filter((s) => paidNeedsCapacity || canRetire(s))
         .sort((a, b) => {
           if (paidNeedsCapacity) {
             const rankA = paidScaleDownRank({ players: a.playerCount, protectedUntil: a.protectedUntil }, now);
@@ -786,12 +797,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
     if (waiting) {
       for (const server of active) {
         const profileForServer = profileByKey.get(server.profileKey);
-        const minOnline = (profileForServer?.minimumOnlineMinutes ?? config.rotation.minimumOnlineMinutes) * 60_000;
-        const idle = (profileForServer?.idleMinutes ?? config.rotation.idleMinutes) * 60_000;
-        const lastActivity = server.lastOccupiedAt || server.onlineSince;
-        if (server.playerCount !== 0 || !server.playerCountCheckedAt || now.getTime() - new Date(server.playerCountCheckedAt).getTime() > 2 * 60_000) continue;
-        if (!server.onlineSince || now.getTime() - new Date(server.onlineSince).getTime() < minOnline || !lastActivity || now.getTime() - new Date(lastActivity).getTime() < idle) continue;
-        if (server.protectedUntil && new Date(server.protectedUntil) > now) continue;
+        if (!canRetire(server)) continue;
         const stopped = await stopManagedHostRoom(String(server._id));
         if (!stopped.ok) {
           await recordHostingAction("community_server_stop_failed", server, stopped.error);

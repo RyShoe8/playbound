@@ -34,6 +34,26 @@ export function canScaleDownEmptyServer(input: {
     (!input.protectedUntil || new Date(input.protectedUntil) <= now);
 }
 
+/** Ordinary fleet retirement must honour both timers, including after a player leaves. */
+export function canRetireEmptyServer(input: {
+  players: number | null;
+  checkedAt: Date | null;
+  protectedUntil: Date | null;
+  onlineSince: Date | null;
+  lastOccupiedAt: Date | null;
+  minimumOnlineMinutes: number;
+  idleMinutes: number;
+}, now: Date): boolean {
+  if (!canScaleDownEmptyServer(input, now) || !input.onlineSince) return false;
+  const onlineSince = new Date(input.onlineSince).getTime();
+  const lastActivity = Math.max(onlineSince, input.lastOccupiedAt ? new Date(input.lastOccupiedAt).getTime() : onlineSince);
+  if (!Number.isFinite(onlineSince) || !Number.isFinite(lastActivity) ||
+      !Number.isFinite(input.minimumOnlineMinutes) || input.minimumOnlineMinutes < 0 ||
+      !Number.isFinite(input.idleMinutes) || input.idleMinutes < 0) return false;
+  return now.getTime() - onlineSince >= input.minimumOnlineMinutes * 60_000 &&
+    now.getTime() - lastActivity >= input.idleMinutes * 60_000;
+}
+
 /** Paid capacity preempts idle free rooms before occupied ones. Event-protected
  * rooms are the last to yield, but cannot block a paid subscription. */
 export function paidScaleDownRank(input: { players: number | null; protectedUntil: Date | null }, now: Date): number {
