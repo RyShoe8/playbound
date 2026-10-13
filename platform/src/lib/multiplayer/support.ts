@@ -51,7 +51,6 @@ const MULTIPLAYER_PATTERNS: readonly RegExp[] = [
 ];
 
 import { PARTY_ADAPTER_SLUGS } from "./partyAdapterSlugs";
-import { hasServerBrowser as registeredServerBrowser } from "@/lib/servers/browserGames";
 
 type MultiplayerInput = {
   slug?: string;
@@ -78,8 +77,8 @@ export function supportsOnlineMultiplayer(game: MultiplayerInput | null | undefi
 }
 
 /** A game with a server list is multiplayer whatever its features say. */
-export function hasServerBrowser(game: { slug?: string; launchMethods?: string[] } | null | undefined): boolean {
-  return Boolean(game && (game.launchMethods?.includes("server") || (game.slug && registeredServerBrowser(game.slug))));
+export function hasServerBrowser(game: { launchMethods?: string[] } | null | undefined): boolean {
+  return Boolean(game?.launchMethods?.includes("server"));
 }
 
 /**
