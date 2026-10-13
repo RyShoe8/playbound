@@ -1,6 +1,6 @@
 "use client";
 import { pageHref } from "@/lib/designPreview";
-import { compareServerRows, serverLocationLabel as formatLocation } from "@/lib/servers/sort";
+import { compareRecommendedServers, compareServerRows, serverLocationLabel as formatLocation } from "@/lib/servers/sort";
 import { matchesServerSearch } from "@/lib/servers/search";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -167,6 +167,7 @@ export function GlobalServerBrowser({
   const [filterNote, setFilterNote] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("players");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [recommendedOrder, setRecommendedOrder] = useState(true);
   const { mode, device } = useCompatibilityFilter();
   const { activeParty, createParty, setPublicServer } = usePartyStore();
   const [partyTargeting, setPartyTargeting] = useState<string | null>(null);
@@ -208,7 +209,8 @@ export function GlobalServerBrowser({
   }
 
   function setSort(key: SortKey) {
-    if (key === sortKey) {
+    setRecommendedOrder(false);
+    if (!recommendedOrder && key === sortKey) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
       setSortKey(key);
@@ -542,9 +544,11 @@ export function GlobalServerBrowser({
         return matchesServerSearch(s, q, editionLabel);
       });
     }
-    const sorted = list.slice().sort((a, b) => compareServerRows(a, b, sortKey, sortDir, estFor));
+    const sorted = list.slice().sort((a, b) => recommendedOrder
+      ? compareRecommendedServers(a, b, estFor)
+      : compareServerRows(a, b, sortKey, sortDir, estFor));
     return sorted;
-  }, [data, search, withPlayersOnly, sortKey, sortDir, estFor, editionNameBySlug]);
+  }, [data, search, withPlayersOnly, sortKey, sortDir, recommendedOrder, estFor, editionNameBySlug]);
 
   const totalPlayers = useMemo(
     () => rows.reduce((sum, s) => sum + (Number(s.players) || 0), 0),
@@ -554,7 +558,7 @@ export function GlobalServerBrowser({
   const selectedTitle = games.find((g) => g.slug === effectiveGameSlug)?.title || effectiveGameSlug;
 
   function sortLabel(key: SortKey, label: string, title?: string) {
-    const active = sortKey === key;
+    const active = !recommendedOrder && sortKey === key;
     const arrow = active ? (sortDir === "asc" ? " ↑" : " ↓") : "";
     return (
       <th className="px-3 py-2.5 font-semibold" title={title}
@@ -576,6 +580,7 @@ export function GlobalServerBrowser({
   }
 
   function selectGame(next: string) {
+    setRecommendedOrder(true);
     setGameSlug(next);
     setModSlug("");
     setEditionSlug("");
@@ -608,6 +613,7 @@ export function GlobalServerBrowser({
             <PremiumSelect
               value={effectiveEditionSlug}
               onChange={(e) => {
+                setRecommendedOrder(true);
                 setEditionSlug(e.target.value);
                 setModSlug("");
               }}
@@ -628,6 +634,7 @@ export function GlobalServerBrowser({
             <PremiumSelect
               value={effectiveModSlug}
               onChange={(e) => {
+                setRecommendedOrder(true);
                 setModSlug(e.target.value);
                 setEditionSlug("");
               }}
@@ -711,6 +718,7 @@ export function GlobalServerBrowser({
           {editionMode ? "" : " and mods"}.
         </p>
       )}
+      {recommendedOrder && <p className="text-xs text-muted-foreground">Populated servers first, then lowest estimated ping. Click a column to change the order.</p>}
       {filterNote && <p className="text-xs text-muted-foreground">{filterNote}</p>}
       {data?.error && (
         <p className="text-xs font-semibold text-destructive">
