@@ -40,6 +40,12 @@ The VPS UFW rules for the draft recipe port ranges are installed. Contabo's sepa
 
 ## Customer data and secrets
 
+### ANEURISM version compatibility
+
+On October 13, the installed Linux server was `20a`, while the operator's Steam client was `20d`; client Join failed with a version mismatch. The public SteamCMD server app `2832030` now supplies `20d` (`aiv-20d-linuxdedicatedserver-tc12527-gddfb112a`, Steam build `25818134`). It was downloaded to a separate staging directory, inspected through `build-metadata.json`, and swapped in only after a successful zero-player query and complete shutdown. The world directory was preserved and backed up separately; the old binaries remain in `/opt/playbound-host/rollback/aniv-20a-20261013-204106`.
+
+The updated live instance authenticated, loaded the map, retained Steam server identity `85568392936848198`, and answered the namespace-local query with `0 / 16` humans and zero bots. Website reconciliation records that real result as `RUNNING`. A positive count and client Join still require the operator's retest. For future updates, compare the client's version with the staged server's `productVersion`; do not assume an old preview-branch example matches the current public client, update running binaries in place, or infer client compatibility from successful startup.
+
 Every paid recipe uses a server ID scoped folder beneath `/var/lib/playbound-host/<game>-servers/pb-<server-id>`. Unturned's `Servers/<id>` path is a symlink to that private folder. Barotrauma and Trackmania use a private runtime copy because their settings sit beside the executable. The world-backup allowlist includes the newly isolated world directories; verify each save format and restore with a real client before promotion. Unturned is excluded from automated backups until its save-only path is confirmed; backing up its entire directory would include the private login token. Customer tokens and account passwords belong in `0600` files under their own server folder, never in a catalog row or command line.
 
 The new recipes are present in the live agent health response. This confirms binary detection, not client compatibility or readiness for sale. Keep the catalog games unpublished and the hosting profiles in draft until the client-join, stop/restart, slot-cap, and backup checks above pass.
