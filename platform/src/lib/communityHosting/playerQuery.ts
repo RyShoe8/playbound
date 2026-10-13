@@ -9,6 +9,7 @@ import { queryManagedHostOccupancy } from "@/lib/gameHost/client";
  * query, so they are never rotated automatically.
  */
 export const QUERY_BY_GAME: Record<string, string> = {
+  "aneurism-iv": "agent-local",
   unturned: "agent-local",
   rimworld: "agent-local",
   "rimworld-together": "agent-local",

@@ -8,7 +8,7 @@ describe("getEffectiveEnvelope", () => {
     expect(getEffectiveEnvelope({ cpuCores: 1, ramBytes: 1536 * MB }, "aneurism-iv")).toEqual({cpuCores: 3, ramBytes: 2048 * MB});
     expect(getEffectiveEnvelope({ cpuCores: 4, ramBytes: 4096 * MB }, "aneurism-iv")).toEqual({cpuCores: 4, ramBytes: 4096 * MB});
   });
-  it("permits only explicit ANEURISM base enrollment without a query", () => {
+  it("permits only enabled ANEURISM base enrollment with its registered live query", () => {
     const profile = {key:"aneurism-iv:base",gameSlug:"aneurism-iv",enabled:true,queryKind:"none",queryVerified:false};
     expect(isAutomaticHostingCandidate(profile)).toBe(true);
     expect(isAutomaticHostingCandidate({...profile,enabled:false})).toBe(false);
