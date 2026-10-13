@@ -65,6 +65,9 @@ test('real launcher boots, navigates, and installs/removes a mock game', async (
       await expect(page.locator('#home-next-night .site-night-title')).toHaveText('Fixture Game Night');
       await expect(page.locator('#home-next-night .site-night-game')).toHaveText('Smoke Fixture Game');
       await expect(page.locator('#home-next-night .site-night-details')).toHaveText('View details →');
+      await expect(page.locator('#home-next-night .site-night-footer')).toContainText('2 going / 8');
+      await expect(page.locator('#home-next-night .site-night-description')).toContainText('Bring your friends');
+      await page.locator('#home-next-night .site-night-card').screenshot({path:testInfo.outputPath('home-game-night.png')});
       await expect(page.locator('#home-mods-grid')).toContainText('For Smoke Fixture Game');
       await expect(page.locator('.site-wordmark small')).toHaveText('Discover. Play. Connect.');
       await expect(page.locator('#site-account-name')).toHaveText('Smoke User');
