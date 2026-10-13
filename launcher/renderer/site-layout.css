@@ -41,7 +41,7 @@
 .sidebar-footer .site-account { flex:1; }
 #content { background:var(--bg-dark); }
 #content>.view,.mp-hub-container { width:100%; max-width:none; min-width:0; }
-.view>:is(.event-detail-wrap,.friends-view-wrap,.events-list),.gear-detail-wrap { width:100%; max-width:none; }
+.view>:is(.event-detail-wrap,.friends-view-wrap,.events-list),.gear-detail-wrap,.couch-hero,.couch-session { width:100%; max-width:none; }
 .workspace-body { display:grid; gap:20px; }
 .workspace-server-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr)); gap:20px; }
 .workspace-form,.workspace-settings { display:grid; gap:16px; }
