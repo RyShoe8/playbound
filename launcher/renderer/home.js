@@ -6,7 +6,7 @@ const section = (id, title, view) => `<section><div class="section-header"><h2>$
 let generation = 0;
 function ensureHomeShell() {
   if (views.home.querySelector('.site-home-layout')) return;
-  views.home.innerHTML = `<div class="site-page-heading"><p class="site-eyebrow">Discover. Play. Connect.</p><h1 class="view-title">Find your next good game.</h1><p class="view-sub">Great games. Good company. One place to play.</p></div>
+  views.home.innerHTML = `<div class="site-page-heading"><p class="site-eyebrow">Your Clubhouse</p><h1 class="view-title">Find your next game night.</h1><p class="view-sub">Great games, Good Company. One place to play.</p></div>
     <div class="site-home-layout"><div class="site-main-stack">
     <section id="home-feature" class="site-home-feature" aria-label="Latest released game">Loading your next game…</section>
     ${section('home-popular', 'Most Popular this week', 'games')}
@@ -54,6 +54,9 @@ function paintPeople(result) {
 }
 async function loadHome() {
   const current = ++generation;
+  const username = state.accountState?.connected ? state.accountState.username : null;
+  const heading = views.home.querySelector('.site-page-heading h1');
+  if (heading) heading.textContent = username ? `Good to see you, ${username}.` : 'Find your next game night.';
   const catalogRequest = cacheInvoke('catalog', 60000, () => window.playbound.getCatalog());
   // Paint native catalog immediately; slower editorial/network sections fill in later.
   void catalogRequest.then(raw => {

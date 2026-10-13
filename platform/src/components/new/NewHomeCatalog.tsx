@@ -9,7 +9,7 @@ import { GameArt } from "@/components/GameArt";
 
 export function NewHomeHeading() {
   const { data: session } = useSession();
-  return <header className="new-page-heading"><div><p className="new-eyebrow">Your clubhouse</p><h1>{session?.user?.name ? `Good to see you, ${session.user.name}.` : "Find your next game night."}</h1><p>Your people, your games, and what’s happening next.</p></div><Link className="new-button primary" href="/multiplayer?startParty=1">Start a party</Link></header>;
+  return <header className="new-page-heading"><div><p className="new-eyebrow">Your Clubhouse</p><h1>{session?.user?.name ? `Good to see you, ${session.user.name}.` : "Find your next game night."}</h1><p>Great games, Good Company. One place to play.</p></div><Link className="new-button primary" href="/multiplayer?startParty=1">Start a party</Link></header>;
 }
 
 export function NewHomeFeature({ games }: { games: HomeCardGame[] }) {
