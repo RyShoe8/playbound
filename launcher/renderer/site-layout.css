@@ -1,6 +1,9 @@
 /* Site visual system, applied to native views without changing their actions. */
+@font-face { font-family:SiteSans; src:url('fonts/dm-sans.ttf') format('truetype'); font-weight:400; font-display:swap; }
+@font-face { font-family:SiteSans; src:url('fonts/dm-sans-bold.ttf') format('truetype'); font-weight:600 900; font-display:swap; }
+@font-face { font-family:SiteHeading; src:url('fonts/barlow-condensed.ttf') format('truetype'); font-weight:700; font-display:swap; }
 :root {
-  --font-sans: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-sans: SiteSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --bg-dark: #15161c;
   --bg-card: #202129;
   --bg-card-hover: #292a32;
@@ -55,6 +58,9 @@
 .global-search-input:focus { background:transparent; box-shadow:none; }
 .view { padding:28px 32px 36px; }
 .view-title { font-size:32px; letter-spacing:-1px; font-weight:800; }
+h1,.site-feature-copy h2 { font-family:SiteHeading,system-ui,sans-serif; font-weight:700; }
+h1.view-title { font-size:clamp(2rem,3.2vw,3rem); }
+.site-feature-copy h2 { font-size:40px; line-height:1.1; }
 .view-sub { font-size:13px; line-height:1.65; }
 .section-header { font-size:18px; margin:24px 0 14px; gap:12px; }
 .section-header h2 { font-size:18px; font-weight:700; }
@@ -86,7 +92,7 @@
 .site-home-feature { position:relative; overflow:hidden; border:1px solid var(--border); border-radius:12px; min-height:320px; display:flex; align-items:end; background:var(--bg-card); }
 .site-feature-art { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 .site-feature-copy { position:relative; width:100%; padding:28px; padding-top:70px; background:linear-gradient(transparent,#15161cee 40%); }
-.site-feature-copy h2 { font-size:32px; letter-spacing:-.8px; }
+.site-feature-copy h2 { font-size:40px; letter-spacing:-.8px; }
 .site-feature-copy p:not(.site-eyebrow) { max-width:540px; font-size:13px; line-height:1.6; margin:10px 0 18px; }
 .site-person { display:flex; align-items:center; gap:10px; border:0; background:none; color:var(--text-main); padding:10px 0; width:100%; text-align:left; cursor:pointer; }
 .site-person small { display:block; color:var(--text-muted); margin-top:4px; }
