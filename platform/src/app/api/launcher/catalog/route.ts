@@ -100,6 +100,7 @@ export async function GET(req: Request) {
                  * nothing.
                  */
                 hostLaunch: getMultiplayerAdapter(g.slug)?.host ?? null,
+                ...(g.slug === "unturned" ? { multiplayer: true, hasServerBrowser: true } : {}),
                 partyLaunchable: g.slug === "rimworld" ? publicActiveEditions.some(e => e.slug === "rimworld-together") : supportsLauncherParty({ ...g, launcherInstall: recipe }),
                 ...(g.slug === "rimworld" && publicActiveEditions.some(e => e.slug === "rimworld-together") ? { isMultiplayer: true, multiplayer: true, hasServerBrowser: true } : {}),
                 status: g.status || "published",
@@ -131,8 +132,8 @@ export async function GET(req: Request) {
           tags: Array.isArray(g.tags) ? g.tags : [],
           launchMethods: Array.isArray(g.launchMethods) ? g.launchMethods : [],
           features: Array.isArray(g.features) ? g.features : [],
-          multiplayer: hasServerBrowser(g),
-          hasServerBrowser: hasServerBrowser(g),
+          multiplayer: g.slug === "unturned" || hasServerBrowser(g),
+          hasServerBrowser: g.slug === "unturned" || hasServerBrowser(g),
           isMultiplayer: supportsMultiplayer(g),
           partyLaunchable: false,
           status: g.status || "published",
