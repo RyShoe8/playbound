@@ -9,8 +9,8 @@ export async function GameUpcomingEvents({ gameSlug }: { gameSlug: string }) {
     <section className="preview-only rounded-xl border border-border bg-card p-4 space-y-3">
       <h2 className="font-bold">Make the next game night happen</h2>
       <p className="text-sm text-muted-foreground">Nothing scheduled yet. Bring your friends together for a game night.</p>
-      <Link href={`/admin/events/new?game=${encodeURIComponent(gameSlug)}`} className="inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">Create event</Link>
-      <p className="text-xs text-muted-foreground">Event publishing requires an event administrator. Everyone can start a party.</p>
+      <Link href={`/events/create?game=${encodeURIComponent(gameSlug)}`} className="inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">Create event</Link>
+      <p className="text-xs text-muted-foreground">Sign in to publish a community event, or start a party and play now.</p>
       <Link href={`/friends?game=${encodeURIComponent(gameSlug)}`} className="block text-sm font-semibold text-primary">Start a party →</Link>
     </section>
   );

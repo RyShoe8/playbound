@@ -7,8 +7,10 @@ import { Upload, X, Image as ImageIcon } from "lucide-react";
 export function NewEventForm({
   gameOptions,
   initialGameSlug = "",
+  community = false,
 }: {
   initialGameSlug?: string;
+  community?: boolean;
   gameOptions: { slug: string; title: string; coverImage?: string | null }[];
 }) {
   const router = useRouter();
@@ -59,6 +61,11 @@ export function NewEventForm({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (endsAt && new Date(endsAt).getTime() <= new Date(startsAt).getTime()) {
+      setState("error");
+      setMessage("The end time must be after the start time.");
+      return;
+    }
     setState("busy");
     try {
       const timezone =
@@ -70,6 +77,7 @@ export function NewEventForm({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           title,
+          hostType: community ? "community" : "playbound",
           description: description.trim(),
           eventType,
           gameSlug: gameSlug || null,
@@ -127,6 +135,8 @@ export function NewEventForm({
         <span className="font-semibold">Title</span>
         <input
           required
+          minLength={3}
+          maxLength={150}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="e.g. TF2 Classic Friday Night"
@@ -139,6 +149,7 @@ export function NewEventForm({
         </span>
         <textarea
           rows={4}
+          maxLength={4000}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Match details, rules, voice chat channels, or schedule…"
@@ -197,7 +208,7 @@ export function NewEventForm({
           </div>
         ) : null}
 
-        <div className="flex items-center gap-3">
+        {!community && <div className="flex items-center gap-3">
           <button
             type="button"
             disabled={uploadingCover}
@@ -223,7 +234,8 @@ export function NewEventForm({
               Defaults to game cover if not provided.
             </span>
           )}
-        </div>
+        </div>}
+        {community && <p className="text-xs text-muted-foreground">Your event uses the selected game’s cover artwork.</p>}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -300,7 +312,7 @@ export function NewEventForm({
         </div>
       ) : null}
       {state === "error" || message ? (
-        <p className="text-sm text-destructive">{message}</p>
+        <p role="alert" className="text-sm text-destructive">{message}</p>
       ) : null}
       <button
         type="submit"

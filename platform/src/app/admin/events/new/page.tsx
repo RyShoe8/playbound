@@ -5,7 +5,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { listGames } from "@/lib/catalog";
 import { eventGameOptions } from "@/lib/events/gameOptions";
-import { NewEventForm } from "./NewEventForm";
+import { NewEventForm } from "@/components/events/NewEventForm";
 
 export default async function NewEventPage({ searchParams }: { searchParams: Promise<{ game?: string }> }) {
   // Never prerendered — see the layout. Each segment prerenders

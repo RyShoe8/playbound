@@ -101,6 +101,7 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/developers`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE_URL}/community`, changeFrequency: "weekly", priority: 0.5 },
     { url: `${SITE_URL}/events`, changeFrequency: "weekly", priority: 0.5 },
+    { url: `${SITE_URL}/events/create`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE_URL}/submit-game`, changeFrequency: "monthly", priority: 0.4 },
     { url: `${SITE_URL}/about`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE_URL}/privacy`, changeFrequency: "yearly", priority: 0.2 },

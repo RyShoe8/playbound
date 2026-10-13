@@ -1,10 +1,10 @@
 /** Read-only release guard: canonical URLs, schema, private-page robots and retired preview redirects. */
 const assert = require('node:assert/strict');
 const origin = new URL(process.argv[2] || 'https://playbound.club').origin;
-const pages = ['/', '/discover', '/games/openra', '/games/openra/editions/official', '/mods', '/multiplayer', '/events', '/hosting', '/developer', '/developers', '/launcher', '/controls', '/connect', '/weekly', '/guides', '/blog', '/collections', '/standards', '/about', '/friends', '/library'];
+const pages = ['/', '/discover', '/games/openra', '/games/openra/editions/official', '/mods', '/multiplayer', '/events', '/events/create', '/hosting', '/developer', '/developers', '/launcher', '/controls', '/connect', '/weekly', '/guides', '/blog', '/collections', '/standards', '/about', '/friends', '/library'];
 let eventDetailPath;
 const privatePages = new Set(['/developer', '/friends', '/library']);
-const requiredTypes = { '/discover': ['ItemList', 'BreadcrumbList'], '/games/openra': ['VideoGame', 'Review', 'FAQPage'], '/events': ['CollectionPage', 'BreadcrumbList'], '/launcher': ['SoftwareApplication'], '/weekly': ['CollectionPage', 'ItemList'], '/standards': ['FAQPage'], '/about': ['AboutPage'] };
+const requiredTypes = { '/discover': ['ItemList', 'BreadcrumbList'], '/games/openra': ['VideoGame', 'Review', 'FAQPage'], '/events': ['CollectionPage', 'BreadcrumbList'], '/events/create': ['WebPage', 'BreadcrumbList'], '/launcher': ['SoftwareApplication'], '/weekly': ['CollectionPage', 'ItemList'], '/standards': ['FAQPage'], '/about': ['AboutPage'] };
 function attributes(html) {
   return [...html.matchAll(/<(?:meta|link)\b[^>]*>/g)].map(m => Object.fromEntries([...m[0].matchAll(/([\w:-]+)="([^"]*)"/g)].map(a => [a[1], a[2]])));
 }
@@ -45,7 +45,8 @@ async function check(path) {
   assert.ok(!llms.includes('/new/'), 'AI citation links must remain canonical');
   const sitemap = await (await fetch(origin + '/sitemap.xml')).text();
   assert.ok(!sitemap.includes('/new/'), 'Sitemap must not contain retired preview URLs');
-  assert.doesNotMatch(sitemap, /<loc>[^<]*\/events\//, 'Individual events must never enter the sitemap');
+  const eventUrls = [...sitemap.matchAll(/<loc>([^<]*)<\/loc>/g)].map(match => new URL(match[1]).pathname).filter(path => path.startsWith('/events/'));
+  assert.deepEqual(eventUrls, ['/events/create'], 'Only public creation may accompany the Events listing in the sitemap');
   assert.doesNotMatch(sitemap, /<loc>[^<]*\/admin(?:\/|<)/, 'Private event creation/admin must stay out of the sitemap');
   if (eventDetailPath) {
     const detail = await fetch(origin + eventDetailPath, { signal: AbortSignal.timeout(90000) });
