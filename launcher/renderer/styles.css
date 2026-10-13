@@ -259,6 +259,7 @@ body {
 /* Main Content Area */
 #content {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -435,7 +436,7 @@ body {
 /* Cards & Grids */
 .game-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
   gap: 20px;
 }
 
@@ -2235,7 +2236,7 @@ body {
 
 .fit-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   gap: 16px;
 }
 
@@ -2384,7 +2385,7 @@ body {
   padding: 0;
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
   gap: 10px;
 }
 
@@ -2498,7 +2499,7 @@ body {
 
 .req-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   gap: 14px;
 }
 
@@ -2746,7 +2747,7 @@ body {
 /* Available Editions Grid */
 .detail-editions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
   gap: 16px;
   margin-top: 12px;
 }
@@ -2826,7 +2827,7 @@ body {
 /* Who it's for (Fit Cards) */
 .fit-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
   gap: 16px;
   margin-top: 12px;
 }
@@ -2977,7 +2978,7 @@ body {
 /* ── Mods Grid ─────────────────────────────────────────────── */
 .mod-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr));
   gap: 18px;
   margin-top: 14px;
 }
@@ -3050,7 +3051,7 @@ body {
 /* ── Guides Grid ───────────────────────────────────────────── */
 .guide-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
   gap: 18px;
 }
 
@@ -3103,7 +3104,7 @@ body {
 
 .achievements-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
   gap: 14px;
 }
 
@@ -5047,7 +5048,7 @@ textarea.input-text {
 /* Editions Grid & Cards */
 .editions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
   gap: 20px;
   margin-top: 16px;
 }
@@ -5415,7 +5416,7 @@ textarea.input-text {
  */
 .friends-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
   gap: 16px;
 }
 .friends-grid .friend-card {
@@ -6317,7 +6318,7 @@ textarea.input-text {
   color: var(--accent-light);
 }
 .party-discovery-header h3 { margin: 0; font-size: 16px; }
-.party-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.party-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 12px; }
 .party-card {
   display: flex;
   flex-direction: column;
@@ -6737,7 +6738,7 @@ textarea.input-text {
 /* Free Offers Grid & Cards */
 .free-offers-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
   gap: 18px;
   margin-bottom: 24px;
 }
@@ -6870,7 +6871,7 @@ textarea.input-text {
 
 .media-grid-videos {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr));
   gap: 18px;
   padding: 18px;
 }
@@ -7246,7 +7247,7 @@ textarea.input-text {
 
 .events-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
   gap: 16px;
   margin-top: 16px;
 }
@@ -7535,7 +7536,7 @@ textarea.input-text {
 
 .event-roster-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr));
   gap: 10px;
 }
 
@@ -7647,7 +7648,7 @@ textarea.input-text {
 
 .friends-card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr));
   gap: 16px;
 }
 
@@ -8181,7 +8182,7 @@ textarea.input-text {
 
 .gear-card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
   gap: 18px;
 }
 
@@ -8685,7 +8686,7 @@ textarea.input-text {
 
 .gear-videos-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
   gap: 16px;
   margin-top: 12px;
 }
@@ -8804,7 +8805,7 @@ textarea.input-text {
   #home-newest-grid,
   #home-popular-grid,
   #home-free-offers-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
+    grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr)) !important;
     gap: 12px !important;
   }
 
@@ -8929,7 +8930,7 @@ textarea.input-text {
   #home-newest-grid,
   #home-popular-grid,
   #home-free-offers-grid {
-    grid-template-columns: repeat(auto-fill, minmax(125px, 1fr)) !important;
+    grid-template-columns: repeat(auto-fill, minmax(min(125px, 100%), 1fr)) !important;
     gap: 8px !important;
   }
 
@@ -9009,7 +9010,7 @@ textarea.input-text {
   #home-newest-grid,
   #home-popular-grid,
   #home-free-offers-grid {
-    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)) !important;
+    grid-template-columns: repeat(auto-fill, minmax(min(110px, 100%), 1fr)) !important;
     gap: 6px !important;
   }
   .card-art-title {
@@ -9129,7 +9130,7 @@ textarea.input-text {
   #home-newest-grid,
   #home-popular-grid,
   #home-free-offers-grid {
-    grid-template-columns: repeat(auto-fill, minmax(125px, 1fr)) !important;
+    grid-template-columns: repeat(auto-fill, minmax(min(125px, 100%), 1fr)) !important;
     gap: 8px !important;
   }
 
@@ -9209,7 +9210,7 @@ textarea.input-text {
   #home-newest-grid,
   #home-popular-grid,
   #home-free-offers-grid {
-    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)) !important;
+    grid-template-columns: repeat(auto-fill, minmax(min(110px, 100%), 1fr)) !important;
     gap: 6px !important;
   }
 }
@@ -11016,7 +11017,7 @@ textarea.input-text {
 
 .mp-stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(112px, 100%), 1fr));
   gap: 10px 18px;
   margin: 0;
 }
@@ -11651,7 +11652,7 @@ textarea.input-text {
 
 .mp-games-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr));
   gap: 16px;
   margin-top: 14px;
 }
@@ -11784,7 +11785,7 @@ textarea.input-text {
 
 .mp-parties-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
   gap: 14px;
   margin-top: 14px;
 }
@@ -11851,7 +11852,7 @@ textarea.input-text {
 
 .mp-events-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
   gap: 16px;
   margin-top: 14px;
 }

@@ -87,7 +87,7 @@ export function buildServersBrowserHtml(hintText = "Pick a game to see who&apos;
       </div>
       <p class="view-sub" id="servers-note" style="margin-top: 8px"></p>
       <p class="servers-stats" id="servers-stats"></p>
-      <div id="servers-table-wrap"></div>
+      <div id="servers-table-wrap" role="region" aria-label="Server list" tabindex="0"></div>
     </div>
   `;
 }
