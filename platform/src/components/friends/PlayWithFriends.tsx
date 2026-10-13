@@ -45,6 +45,7 @@ export function PlayWithFriends({
   const [activeParties, setActiveParties] = useState<PartyPayload[]>([]);
   const [discoverableParties, setDiscoverableParties] = useState<PublicPartyPayload[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     if (status !== "authenticated") return;
@@ -52,7 +53,7 @@ export function PlayWithFriends({
     (async () => {
       try {
         const res = await fetch("/api/play-together");
-        if (!res.ok) return;
+        if (!res.ok) throw new Error("Friends activity unavailable");
         const data = await res.json();
         if (cancelled) return;
         setPlaying(data.friendsPlaying || []);
@@ -69,7 +70,7 @@ export function PlayWithFriends({
           surface,
         });
       } catch {
-        /* ignore */
+        if (!cancelled) setFailed(true);
       }
     })();
     return () => {
@@ -78,9 +79,12 @@ export function PlayWithFriends({
   }, [status, surface]);
 
   if (status !== "authenticated") return null;
+  if (failed) {
+    return <section className={`rounded-xl border border-border bg-card p-4 ${className}`}><h2 className="text-lg font-bold">Play With Friends</h2><p className="mt-2 text-sm text-muted-foreground">Friends activity is temporarily unavailable. <Link href="/friends" className="font-semibold text-primary hover:underline">Open Friends</Link></p></section>;
+  }
   if (!loaded) {
     return (
-      <div role="status" aria-label="Loading friends activity" className={`h-24 animate-pulse rounded-xl border border-border bg-card/60 ${className}`} />
+      <div role="status" className={`rounded-xl border border-border bg-card/60 p-4 text-sm text-muted-foreground ${className}`}>Loading friends activity…</div>
     );
   }
 
