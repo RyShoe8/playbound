@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Home, Gamepad2, Puzzle, Swords, CalendarDays, Users, LibraryBig, BadgePercent, MessageSquare, Server, Code, Shield, Search } from "lucide-react";
+import { Home, Gamepad2, Puzzle, Swords, CalendarDays, Users, LibraryBig, BadgePercent, MessageSquare, Server, Code, Shield, Search, Menu } from "lucide-react";
 import { canViewAdmin } from "@/lib/adminAccess";
 import { NotificationBell } from "@/components/shell/NotificationBell";
 import { SignOutButton } from "@/components/SignOutButton";
@@ -27,6 +27,14 @@ export function NewSiteShell() {
  <button className="new-discord" onClick={()=>openDiscordInvite(SITE_DISCORD_INVITE)}>Join Discord ↗</button>
  <div className="new-account">{session?.user?<><Link href="/new/profile" className="new-account-profile"><span className="new-avatar">{initials}</span><span>{name}<small>Profile & PC</small></span></Link><details><summary aria-label="Account menu">•••</summary><div><Link href="/new/profile">Account settings</Link><SignOutButton/></div></details></>:<Link href="/login?callbackUrl=/new">Sign in to PlayBound →</Link>}</div>
  </aside>
- <header className="new-topbar"><form action="/new/search" role="search"><Search size={17}/><input name="q" type="search" aria-label="Search games and developers" placeholder="Find your next game"/></form><div>{session?.user?<><NotificationBell/><Link href="/new/profile" className="new-avatar" aria-label="Your profile">{initials}</Link></>:<Link href="/login?callbackUrl=/new">Sign in</Link>}</div></header>
+ <header className="new-topbar">
+ <details key={pathname} className="new-mobile-menu">
+ <summary aria-label="Open navigation menu"><Menu size={22}/></summary>
+ <div className="new-mobile-menu-panel">
+ <nav aria-label="Mobile navigation">{links.map(([href,label,Icon])=>nav(href,label,Icon))}{nav("/hosting/servers","My servers",Server)}{nav("/developer","Developer tools",Code)}{canViewAdmin(session?.user?.role)&&nav("/admin","Administration",Shield)}</nav>
+ {session?.user?<><Link href="/new/profile">Account settings</Link><SignOutButton/></>:<Link href="/login?callbackUrl=/new">Sign in</Link>}
+ </div>
+ </details>
+ <form action="/new/search" role="search"><Search size={17}/><input name="q" type="search" aria-label="Search games and developers" placeholder="Find your next game"/></form><div>{session?.user?<><NotificationBell/><Link href="/new/profile" className="new-avatar" aria-label="Your profile">{initials}</Link></>:<Link href="/login?callbackUrl=/new">Sign in</Link>}</div></header>
  </div>;
 }

@@ -10,7 +10,6 @@ import LibraryEntry from "@/lib/models/LibraryEntry";
 import { collectionsFeaturing, listGames } from "@/lib/catalog";
 import { getDiscoveryContext } from "@/lib/access/discover";
 import { filterGamesByMode } from "@/lib/access/discoveryMode";
-import { launcherPlayUrl } from "@/lib/launcher";
 import { getDiscordPresence } from "@/lib/discordPresence";
 import {
   getGameLiveStats,
@@ -126,13 +125,7 @@ export async function GameHeroActions({
   return (
     <>
       {initiallyInLibrary ? (
-        <a
-          href={launcherPlayUrl(game.slug)}
-          className="inline-flex h-12 items-center gap-2 rounded-full bg-play px-7 text-base font-bold text-play-foreground shadow-[0_0_24px_-6px_var(--play)] transition-all hover:brightness-110 active:translate-y-px"
-        >
-          <Play className="size-5 fill-current" />
-          Play {game.title}
-        </a>
+        <PlayCta game={game} installed size="lg" />
       ) : choosable ? (
         <Link
           href="#editions"

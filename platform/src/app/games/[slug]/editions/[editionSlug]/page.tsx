@@ -27,7 +27,7 @@ import GuidePost from "@/lib/models/GuidePost";
 import DiscussionTopic from "@/lib/models/DiscussionTopic";
 import LibraryEntry from "@/lib/models/LibraryEntry";
 import LibraryModEntry from "@/lib/models/LibraryModEntry";
-import { launcherPlayUrl } from "@/lib/launcher";
+import { PlayCta } from "@/components/GameCard";
 import { ReviewList, type ReviewItem } from "@/components/reviews/ReviewList";
 import { ContentForm } from "@/components/ContentForm";
 import { DiscussionBoard } from "@/components/discussion/DiscussionBoard";
@@ -314,12 +314,7 @@ export default async function EditionPage({
           </div>
           <div className="flex flex-wrap items-center gap-3 pt-2">
             {isInstalled ? (
-              <a
-                href={launcherPlayUrl(game.slug)}
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-play px-7 text-base font-bold text-play-foreground shadow-[0_0_24px_-6px_var(--play)] transition-all hover:brightness-110 active:translate-y-px"
-              >
-                <Play className="size-5 fill-current" /> Play {edition.name}
-              </a>
+              <PlayCta game={game} installed editionSlug={edition.slug} size="lg" />
             ) : (
               <>
                 <EditionInstallButton action={action} telemetryProps={telemetryProps} size="lg" />
