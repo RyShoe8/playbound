@@ -54,7 +54,7 @@ const handlers = {
   'get-lfg': () => ({ users: [] }),
   'get-live-stats': () => ({ ok: false }),
   'get-free-offers': () => ({ offers: [] }),
-  'get-events': () => ({events:[{id:'smoke-event',title:'Fixture Game Night',gameSlug:'smoke-fixture',eventType:'game_night',status:'scheduled',startsAt:'2030-01-01T20:00:00Z',counts:{going:0}}]}),
+  'get-events': () => ({events:[{id:'smoke-event',title:'Fixture Game Night',gameSlug:'smoke-fixture',eventType:'game_night',status:'scheduled',startsAt:'2030-01-01T20:00:00Z',endsAt:'2030-01-01T22:00:00Z',description:'Bring your friends for a relaxed evening of multiplayer.',maxParticipants:8,counts:{going:2},coverImage:process.env.PLAYBOUND_SMOKE_SIGNED_OUT === '1' ? null : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect width="400" height="300" fill="%23123456"/%3E%3C/svg%3E'}]}),
   'get-mods-catalog': () => ({mods:[]}),
   'get-multiplayer-activity': () => ({summary:{totalServerPlayers:0,totalOpenParties:0,totalUsersLooking:0,totalServersOnline:0},games:[]}),
   'get-controller-support': () => ({ supported: false }),
