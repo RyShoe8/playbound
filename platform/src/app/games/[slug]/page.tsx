@@ -24,6 +24,7 @@ import { hasControls } from "@/lib/controls/types";
 import { EditionsSection } from "@/components/editions/EditionsSection";
 import type { Game, Developer } from "@/lib/data/types";
 import { GameArt } from "@/components/GameArt";
+import { GameFeatureIcon } from "@/components/GameFeatureIcon";
 import { LaunchBadge } from "@/components/GameCard";
 import { CompatibleGearList } from "@/components/gear/CompatibleGearList";
 import { GameHardwareCompatibility } from "@/components/hardware/GameHardwareCompatibility";
@@ -736,7 +737,7 @@ async function OverviewTab({
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             {game.features.map((f) => (
               <div key={f} className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm">
-                <Gamepad2 className="size-4 text-primary" /> {f}
+                <GameFeatureIcon feature={f} /> {f}
               </div>
             ))}
           </div>
