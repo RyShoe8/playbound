@@ -84,7 +84,7 @@ export function PlayWithFriends({
     );
   }
 
-  if (playing.length === 0 && shared.length === 0 && activeParties.length === 0 && discoverableParties.length === 0) {
+  if (playing.length === 0 && (compact || shared.length === 0) && activeParties.length === 0 && discoverableParties.length === 0) {
     return (
       <section className={`rounded-xl border border-dashed border-border bg-card/40 p-4 ${className}`}>
         <h2 className="text-lg font-bold">Play With Friends</h2>
