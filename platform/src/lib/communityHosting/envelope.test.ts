@@ -1,9 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_COMMUNITY_SERVER_ENVELOPE, getEffectiveEnvelope } from "./reconcile";
+import { DEFAULT_COMMUNITY_SERVER_ENVELOPE, getEffectiveEnvelope, isAutomaticHostingCandidate } from "./reconcile";
 
 const MB = 1024 * 1024;
 
 describe("getEffectiveEnvelope", () => {
+  it("reserves startup headroom for ANEURISM even with a smaller idle reading", () => {
+    expect(getEffectiveEnvelope({ cpuCores: 1, ramBytes: 1536 * MB }, "aneurism-iv")).toEqual({cpuCores: 3, ramBytes: 2048 * MB});
+    expect(getEffectiveEnvelope({ cpuCores: 4, ramBytes: 4096 * MB }, "aneurism-iv")).toEqual({cpuCores: 4, ramBytes: 4096 * MB});
+  });
+  it("permits only explicit ANEURISM base enrollment without a query", () => {
+    const profile = {key:"aneurism-iv:base",gameSlug:"aneurism-iv",enabled:true,queryKind:"none",queryVerified:false};
+    expect(isAutomaticHostingCandidate(profile)).toBe(true);
+    expect(isAutomaticHostingCandidate({...profile,enabled:false})).toBe(false);
+    expect(isAutomaticHostingCandidate({...profile,key:"aneurism-iv:other"})).toBe(false);
+    expect(isAutomaticHostingCandidate({...profile,key:"unknown:base",gameSlug:"unknown"})).toBe(false);
+  });
   it("uses measured (already padded) envelopes instead of the fallback", () => {
     expect(getEffectiveEnvelope({ cpuCores: 0.25, ramBytes: 53 * MB }, "luanti")).toEqual({ cpuCores: 0.25, ramBytes: 256 * MB });
     expect(getEffectiveEnvelope({ cpuCores: 1.47, ramBytes: 308 * MB }, "xonotic")).toEqual({ cpuCores: 1.47, ramBytes: 308 * MB });

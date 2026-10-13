@@ -20,6 +20,8 @@ describe("community hosting bot fill", () => {
     expect(botFillFor(16, 0)).toBe(0);
     expect(managedRoomSettings("counter-strike-2", { maxPlayersPerServer: 16, botFillPercent: 25 })).toEqual({ maxPlayers: 16, botFill: 4 });
     expect(managedRoomSettings("luanti", { maxPlayersPerServer: 16, botFillPercent: 25 })).toEqual({ maxPlayers: 16 });
+    expect(managedRoomSettings("aneurism-iv", { maxPlayersPerServer: 64, botFillPercent: 50 })).toEqual({ maxPlayers: 32 });
+    expect(managedRoomSettings("aneurism-iv", { maxPlayersPerServer: 16 })).toEqual({ maxPlayers: 16 });
     const config = new CommunityHostingConfig({ key: "global" }).toObject();
     expect(config.botFillPercent).toBe(50);
     expect(hostingSettingsSchema.parse(config).botFillPercent).toBe(50);

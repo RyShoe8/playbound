@@ -84,6 +84,7 @@ type OverviewData = {
     roomId: string;
     partyId: string | null;
     communityServerId?: string | null;
+    join?: { kind: "steam"; serverId: string | null };
     gameSlug: string;
     name?: string;
     host: string;
@@ -585,7 +586,7 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
                     </td>
                     <td className="py-2 pr-4 font-mono text-xs">{room.gameSlug}</td>
                     <td className="py-2 pr-4 font-mono text-xs">
-                      {room.host}:{room.port}
+                      {room.join?.kind === "steam" ? <><span>Steam Community browser</span><br /><span>{room.join.serverId || "Authenticating…"}</span></> : `${room.host}:${room.port}`}
                     </td>
                     <td className="py-2 pr-4 font-mono text-xs text-muted-foreground">
                       {room.communityServerId ? "Community" : room.partyId ? `Party ${room.partyId.slice(-8)}` : "—"}
@@ -755,7 +756,8 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
                     <button
                       type="button"
                       onClick={() => void runTestSpawn(game.slug)}
-                      disabled={testBusy || testAllBusy || !game.hasRecipe || !game.installed || isTesting}
+                      title={game.slug === "aneurism-iv" ? "Test through its persistent community server; this game uses a private Steam token" : undefined}
+                      disabled={testBusy || testAllBusy || !game.hasRecipe || !game.installed || isTesting || game.slug === "aneurism-iv"}
                       className="shrink-0 rounded-md border border-border px-2 py-1 text-xs font-medium hover:bg-secondary disabled:opacity-50"
                     >
                       {isTesting ? (

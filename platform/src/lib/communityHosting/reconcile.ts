@@ -25,6 +25,8 @@ export const DEFAULT_COMMUNITY_SERVER_ENVELOPE: ResourceEnvelope = {
 };
 
 const HEAVY_GAME_ENVELOPES: Record<string, ResourceEnvelope> = {
+  // Live-test reservation, including the observed Unity startup peak and headroom.
+  "aneurism-iv": { cpuCores: 3, ramBytes: 2048 * 1024 * 1024 },
   "counter-strike-2": { cpuCores: 2.0, ramBytes: 2560 * 1024 * 1024 },
   "morrowind": { cpuCores: 1.5, ramBytes: 2048 * 1024 * 1024 },
   "veloren": { cpuCores: 1.5, ramBytes: 2048 * 1024 * 1024 },
@@ -34,6 +36,7 @@ const HEAVY_GAME_ENVELOPES: Record<string, ResourceEnvelope> = {
 // Only recipes with a server-enforced admission limit belong here. Reporting a
 // cap for another engine without enforcing it would mislead hosts and players.
 export const PLAYER_LIMIT_RECIPES = new Set([
+  "aneurism-iv",
   "counter-strike-2", "hypersomnia", "luanti", "morrowind", "teeworlds", "openttd",
   "assaultcube", "medal-of-honor-allied-assault", "warzone-2100", "bzflag", "mindustry", "hurry-curry", "deus-ex-goty-edition",
   "supertuxkart", "xonotic", "openarena", "0-ad", "0ad", "bombsquad",
@@ -61,7 +64,7 @@ export function managedRoomSettings(
   config: { maxPlayersPerServer?: number; botFillPercent?: number }
 ): { maxPlayers: number; botFill?: number } | undefined {
   if (!PLAYER_LIMIT_RECIPES.has(recipeSlug)) return undefined;
-  const maxPlayers = config.maxPlayersPerServer ?? 16;
+  const maxPlayers = Math.min(recipeSlug === "aneurism-iv" ? 32 : Infinity, config.maxPlayersPerServer ?? 16);
   const botPercent = config.botFillPercent !== undefined ? config.botFillPercent : 50;
   return BOT_FILL_RECIPES.has(recipeSlug)
     ? { maxPlayers, botFill: botFillFor(maxPlayers, botPercent) }
@@ -133,6 +136,11 @@ export function getEffectiveEnvelope(
   const fallback = heavy || DEFAULT_COMMUNITY_SERVER_ENVELOPE;
   const cpu = Number(envelope?.cpuCores);
   const ram = Number(envelope?.ramBytes);
+  // An unknown population cannot establish an idle baseline for this live test.
+  if (gameSlug === "aneurism-iv") return {
+    cpuCores: Math.max(fallback.cpuCores, Number.isFinite(cpu) ? cpu : 0),
+    ramBytes: Math.max(fallback.ramBytes, Number.isFinite(ram) ? ram : 0),
+  };
   const legacyPlaceholder = cpu === 0.25 && ram === 512 * 1024 * 1024;
   if (!Number.isFinite(cpu) || cpu <= 0 || !Number.isFinite(ram) || ram <= 0 || legacyPlaceholder) {
     return fallback;
@@ -144,6 +152,14 @@ export function getEffectiveEnvelope(
 }
 
 const LEASE_MS = 2 * 60_000;
+
+export function isAutomaticHostingCandidate(profile: { key: string; gameSlug: string; enabled: boolean; queryVerified?: boolean; queryKind?: string }) {
+  if (!profile.enabled) return false;
+  // Explicit admin enrollment allows one ANEURISM live test. Occupancy stays
+  // unknown, so normal empty-server retirement and public listing stay closed.
+  return (profile.key === "aneurism-iv:base" && profile.gameSlug === "aneurism-iv") ||
+    Boolean((profile.queryVerified && profile.queryKind && profile.queryKind !== "none") || QUERY_BY_GAME[profile.gameSlug]);
+}
 
 // These methods are selected by the actual hosted game, then recorded on the
 // profile only after a live response. A running process alone is not proof.
@@ -376,7 +392,8 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
       server.host = room.host;
       server.port = room.port;
       server.desiredState = "running";
-      server.runtimeState = "running";
+      server.runtimeState = room.status === "pending" ? "pending" : "running";
+      server.steamServerId = room.join?.kind === "steam" ? room.join.serverId : null;
       server.health = players === null ? "unknown" : "healthy";
       server.playerCount = players;
       server.bots = bots;
@@ -402,11 +419,11 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
       }
 
       server.lastReconciledAt = now;
-      server.decisionReason = botIssue || (players === null ? "PLAYER_QUERY_UNKNOWN" : "RUNNING");
+      server.decisionReason = botIssue || (room.status === "pending" ? "STARTING_PENDING" : players === null ? "PLAYER_QUERY_UNKNOWN" : "RUNNING");
       server.recoveryAttempts = 0;
       server.nextRecoveryAt = null;
       await server.save();
-      if (profile && room.resources?.available && room.resources.cpuCores != null && room.resources.rssBytes) {
+      if (profile && (server.gameSlug !== "aneurism-iv" || players !== null) && room.resources?.available && room.resources.cpuCores != null && room.resources.rssBytes) {
         await recordResourceSample({
           profileKey: profile.key, communityServerId: String(server._id), observedAt: now,
           players, cpuCores: room.resources.cpuCores, ramBytes: room.resources.rssBytes,
@@ -509,7 +526,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
     }
     const verified = profiles.filter((p) => p.enabled);
     const due = reservations.find((r) => r.warmupAt <= now && (!r.communityServerId || !alreadyRunning.has(String(r.communityServerId))));
-    const rotationCandidates = verified.filter((p) => (p.queryVerified && p.queryKind !== "none") || Boolean(QUERY_BY_GAME[p.gameSlug]))
+    const rotationCandidates = verified.filter(isAutomaticHostingCandidate)
       .sort((a, b) => rotationPriority(now, b, previous) - rotationPriority(now, a, previous) || a.key.localeCompare(b.key));
     const bound = due?.communityServerId ? active.find((s) => String(s._id) === String(due.communityServerId)) : null;
     if (due) {
@@ -686,7 +703,8 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
         }
       } else {
         if (started.room) {
-          server.runtimeState = "running";
+          server.runtimeState = started.room.status === "pending" ? "pending" : "running";
+          server.steamServerId = started.room.join?.kind === "steam" ? started.room.join.serverId : null;
           server.runtimeId = started.room.roomId;
           server.host = started.room.host;
           server.port = started.room.port;
