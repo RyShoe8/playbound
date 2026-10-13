@@ -3,6 +3,7 @@ import {
   api,
   CACHE_TTL,
   cacheInvoke,
+  cacheInvalidate,
   escapeHtml,
   markViewReady,
   state,
@@ -297,7 +298,8 @@ async function renderDealsView() {
 
   const res = (await cacheInvoke("deals", CACHE_TTL.deals, () =>
     window.playbound.getDeals?.()
-  )) || {};
+  ).catch(() => ({ok:false}))) || {ok:false};
+  if (res.ok === false) cacheInvalidate("deals");
 
   current = {
     // Filters reset on open; see the note on `current` above.
@@ -310,6 +312,11 @@ async function renderDealsView() {
 
   syncFilterChips();
   paintDeals();
+  const retry = document.createElement('button');
+  retry.className = 'btn-secondary btn-sm';
+  retry.textContent = 'Refresh deals';
+  retry.addEventListener('click', () => { cacheInvalidate('deals'); void renderDealsView(); });
+  container.querySelector('.gear-header-row').append(retry);
 }
 
 api.renderDealsView = renderDealsView;

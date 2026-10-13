@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
 import Developer from "@/lib/models/Developer";
+import { userFromLauncherBearer } from "@/lib/library";
 
 export type SessionUser = {
   id: string;
@@ -16,8 +17,9 @@ export type SessionUser = {
  * Ensures the session is logged in as a developer or an admin.
  * If not authenticated, returns a 401 response.
  */
-export async function requireDeveloperOrAdminSession() {
-  const session = await getServerSession(authOptions);
+export async function requireDeveloperOrAdminSession(req?: Request) {
+  const launcherUser = req ? await userFromLauncherBearer(req) : null;
+  const session = launcherUser ? { user: { id: String(launcherUser._id), username: launcherUser.username || "", role: launcherUser.role, tester: launcherUser.tester } } : await getServerSession(authOptions);
   const user = session?.user as SessionUser | undefined;
 
   if (!user?.id) {

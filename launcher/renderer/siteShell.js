@@ -13,8 +13,8 @@ export function mountSiteShell() {
   const workspace = document.createElement('div'); workspace.className = 'site-workspace';
   workspace.innerHTML = '<p class="site-workspace-label">Your workspace</p><button class="nav-btn" id="site-my-servers"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><path d="M6 6h.01M6 18h.01"/></svg><span>My servers</span></button><button class="nav-btn" id="site-developer"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg><span>Developer tools</span></button>';
   sidebar.querySelector('.sidebar-scroll').append(workspace);
-  workspace.querySelector('#site-my-servers').addEventListener('click', () => window.playbound.openExternal('https://playbound.club/hosting/servers'));
-  workspace.querySelector('#site-developer').addEventListener('click', () => window.playbound.openExternal('https://playbound.club/developer'));
+  workspace.querySelector('#site-my-servers').dataset.view = 'myServers';
+  workspace.querySelector('#site-developer').dataset.view = 'developer';
   workspace.append(nav.querySelector('[data-view="couch"]'));
   const preferences = document.createElement('details'); preferences.className = 'site-preferences'; preferences.innerHTML = '<summary>Discovery & compatibility</summary>';
   preferences.append(document.getElementById('sidebar-discovery'), document.getElementById('sidebar-compat'));

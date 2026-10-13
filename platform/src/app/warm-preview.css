@@ -95,6 +95,7 @@ html[data-warm-preview] .new-page{max-width:1440px;margin:0 auto;padding:28px}
 
 /* Page shells fill the viewport beside navigation; copy and dialogs keep their own measure. */
 html[data-warm-preview] .new-page,
+html[data-warm-preview] .shell-main main > :is(div,section,article),
 html[data-warm-preview] .shell-main main > [class*="max-w-"],
 html[data-warm-preview] .shell-main main :is(div,section,article)[class~="mx-auto"][class*="max-w-"]:not([role="dialog"]):not(.prose) {
   width:100%;

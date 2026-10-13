@@ -17,6 +17,10 @@ test('signed-out launcher keeps discovery usable and exposes account entry', asy
     await expect(page.locator('#home-people').getByRole('button',{name:'Sign in',exact:true})).toBeVisible();
     await page.locator('[data-view="games"]').click();
     await expect(page.locator('#games-grid .card-title-text').filter({hasText:'Smoke Fixture Game'})).toBeVisible();
+    await page.locator('[data-view="deals"]').click();
+    await expect(page.locator('#deals-status')).toContainText('Could not reach PlayBound');
+    await page.getByRole('button',{name:'Refresh deals',exact:true}).click();
+    await expect(page.locator('#deals-discount-grid')).toContainText('Fixture Deal');
     await page.locator('#sidebar .site-wordmark').click();
     await expect(page.getByRole('heading',{name:'Find your next good game.'})).toBeVisible();
     await page.screenshot({path:testInfo.outputPath('signed-out-home.png')});
@@ -72,7 +76,17 @@ test('real launcher boots, navigates, and installs/removes a mock game', async (
       await page.locator('[data-view="multiplayer"]').click();
       await expect(page.getByRole('heading',{name:'Multiplayer',exact:true})).toBeVisible();
       await expect(page.locator('#mp-hub-stat-grid')).toBeVisible();
+      expect(await page.locator('.mp-hub-container').evaluate(element => element.getBoundingClientRect().width > element.parentElement.clientWidth - 80)).toBe(true);
       await page.screenshot({ path: testInfo.outputPath('multiplayer-layout.png') });
+      await page.locator('#site-my-servers').click();
+      await expect(page.getByRole('heading',{name:'My servers',exact:true})).toBeVisible();
+      await expect(page.getByText('No saved servers yet.',{exact:true})).toBeVisible();
+      await page.locator('#site-developer').click();
+      await expect(page.getByRole('heading',{name:'Developer tools',exact:true})).toBeVisible();
+      await expect(page.getByRole('heading',{name:'Your developer workspace',exact:true})).toBeVisible();
+      await page.locator('[data-view="deals"]').click();
+      await expect(page.locator('#deals-discount-grid')).toContainText('Fixture Deal');
+      await expect(page.getByRole('button',{name:'Refresh deals',exact:true})).toBeVisible();
       await page.locator('[data-view="games"]').click();
       await page.screenshot({ path: testInfo.outputPath('games-layout.png') });
       await page.locator('#view-games .card-title-text').filter({ hasText: 'Smoke Fixture Game' }).first().click();

@@ -11010,6 +11010,8 @@ ipcMain.handle("tournament-action", async (_event, eventId, action, payload) => 
     return { ok: false, error: err?.message || "Network error while performing tournament action" };
   }
 });
+require("./services/workspaceApi").registerWorkspaceApi({ ipcMain, apiFetch, getApiBase, launcherApiHeaders });
+
 ipcMain.handle("get-home-feed", async () => {
   try {
     const res = await apiFetch(`${getApiBase()}/api/launcher/home`, {

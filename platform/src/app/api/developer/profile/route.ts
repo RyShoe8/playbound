@@ -17,8 +17,8 @@ const developerProfileUpdateSchema = z.object({
   artHue: z.number().min(0).max(360).optional().default(210),
 });
 
-export async function GET() {
-  const { user, error } = await requireDeveloperOrAdminSession();
+export async function GET(req: Request) {
+  const { user, error } = await requireDeveloperOrAdminSession(req);
   if (error) return error;
 
   try {
@@ -31,7 +31,7 @@ export async function GET() {
 }
 
 export async function PATCH(req: Request) {
-  const { user, error } = await requireDeveloperOrAdminSession();
+  const { user, error } = await requireDeveloperOrAdminSession(req);
   if (error) return error;
 
   try {

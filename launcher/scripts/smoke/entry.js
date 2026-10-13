@@ -45,7 +45,10 @@ dialog.showMessageBox = async (...args) => {
   const opts = args.find(a => a && typeof a === 'object' && 'buttons' in a) || {};
   return { response: opts.title === 'Uninstall game' ? 0 : (opts.cancelId ?? 1) };
 };
+let dealsRequests = 0;
 const handlers = {
+  'workspace-request': (_event,input) => input.path === '/api/hosting/me' ? {subscription:null,servers:[],shared:[]} : input.path === '/api/developer/games' ? {games:[]} : {developers:[]},
+  'get-deals': () => process.env.PLAYBOUND_SMOKE_SIGNED_OUT === '1' && dealsRequests++ === 0 ? {ok:false,freeOffers:[],discounted:[]} : ({ok:true,freeOffers:[],discounted:[{title:'Fixture Deal',storeKey:'steam',storeName:'Steam',currentPriceCents:100,regularPriceCents:1000,discountPercent:90}]}),
   'get-server-index': () => ({ games: [] }),
   'get-lfg': () => ({ users: [] }),
   'get-live-stats': () => ({ ok: false }),
