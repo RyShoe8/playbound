@@ -203,7 +203,14 @@ h1.view-title { font-size:clamp(2rem,3.2vw,3rem); }
 :is(.view-sub,.site-panel,.site-event-summary,.mp-hub-banner-text,.home-community-server-main) { overflow-wrap:anywhere; }
 .servers-browser-embedded { min-width:0; max-width:100%; }
 #servers-table-wrap { width:100%; min-width:0; overflow-x:auto; border-radius:12px; }
-.server-table { min-width:640px; }
+.server-table { min-width:820px; table-layout:fixed; }
+.server-table th { white-space:nowrap; }
+.server-table th:first-child { width:33%; }
+.server-table th:nth-child(2) { width:10%; }
+.server-table th:nth-child(3) { width:20%; }
+.server-table th:nth-child(4) { width:14%; }
+.server-table th:nth-child(5) { width:9%; }
+.server-table th:last-child { width:14%; }
 .server-table :is(th,td) { overflow-wrap:anywhere; }
 .server-table td:first-child { min-width:190px; }
 .server-table :is(td:nth-child(2),td:nth-child(5),td:last-child) { white-space:nowrap; }
