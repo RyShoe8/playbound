@@ -62,3 +62,17 @@ Install `platform/game-host/tools/install-aniv-helper.sh` as root before deployi
 
 Linux boundary tests: `python3 platform/game-host/tools/aniv_host_test.py`. The root-only `tools/smoke-aniv-agent.mjs` harness requires an isolated agent tree at `/var/lib/playbound-host/aniv-agent-staging`, an installed helper and game, and privately provisioned credentials. It uses localhost port 8743 and private test data, not the production agent or database. Do not run it concurrently with another ANEURISM test using the same token. Native startup logs stay root-only under `/var/lib/playbound-aniv-control`; the agent receives only bounded readiness metadata. Never print native process arguments, which contain the Steam credential required by the upstream executable.
 The October 13 agent deployment passed live health checks and reattached both pre-existing managed runtimes with their original PIDs. No party rooms were present during the restart. Prior agent modules are in /opt/playbound-host/rollback/aniv-20261013-200124. No catalog or database records were changed.
+
+### Database availability during reconciliation
+
+The hosting cron checks Mongo with a read-only, two-second ping before any
+server operations. It retries the readiness check once after a one-second
+backoff. Paid recovery then runs before the community pass, sequentially, so
+the two passes do not compete for the same connection pool. A database
+availability failure returns HTTP 503 with `DATABASE_UNAVAILABLE`; it does
+not replay a partially completed pass or try to write telemetry to the
+same unavailable database. Vercel and VPS service logs retain the failure,
+and the next 15-minute tick reconciles again. Unexpected application errors
+continue to use the existing telemetry path. TLS alerts alone do not identify
+the root cause; correlate recurring failures with Atlas connection and
+cluster-health measurements.

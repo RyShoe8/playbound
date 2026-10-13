@@ -4,16 +4,23 @@ import { cronAuthorized } from "@/lib/cronAuth";
 import { reconcileCommunityHosting } from "@/lib/communityHosting/reconcile";
 import { reconcileDedicatedServers } from "@/lib/dedicatedHosting/reconcile";
 
-/**
- * Both passes, independently: customer (PlayBound Dedicated) servers must be
- * kept online even when automatic Community hosting is switched off, and a
- * failure in one pass must not skip the other.
- */
+import { ensureHostingDatabaseReady, isDatabaseAvailabilityError } from "@/lib/db";
+
+/** Paid recovery goes first; serial passes avoid competing for the same pool. */
 async function runReconcile() {
-  const [community, dedicated] = await Promise.allSettled([reconcileCommunityHosting(), reconcileDedicatedServers()]);
-  if (dedicated.status === "rejected") console.error("[dedicated-hosting] reconcile failed", dedicated.reason);
-  if (community.status === "rejected") throw community.reason;
-  return { ...community.value, dedicated: dedicated.status === "fulfilled" ? dedicated.value : { action: "failed" } };
+  await ensureHostingDatabaseReady();
+  let dedicated;
+  try {
+    dedicated = await reconcileDedicatedServers();
+  } catch (error) {
+    console.error("[dedicated-hosting] reconcile failed", error);
+    // A database outage is shared by both passes. Do not start more work or
+    // replay the already-attempted pass, which may have dispatched operations.
+    if (isDatabaseAvailabilityError(error)) throw error;
+    dedicated = { action: "failed" };
+  }
+  const community = await reconcileCommunityHosting();
+  return { ...community, dedicated };
 }
 
 import { saveEvent } from "@/lib/telemetry/server/saveEvent";
@@ -35,6 +42,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, ...(await runReconcile()) });
   } catch (error) {
     console.error("[community-hosting] reconcile failed", error);
+    if (isDatabaseAvailabilityError(error)) {
+      // Telemetry uses the same database; another write would prolong the outage.
+      // The VPS scheduler logs this response and retries on its next tick.
+      return NextResponse.json({ ok: false, error: "Database temporarily unavailable", code: "DATABASE_UNAVAILABLE" }, { status: 503 });
+    }
     try {
       await saveEvent({
         event: "community_server_reconcile_failed",
@@ -53,14 +65,5 @@ export async function POST(req: Request) {
   }
 }
 
-/** Vercel crons fire GET; the VPS systemd timer fires POST. */
-export async function GET(req: Request) {
-  if (!authorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  try {
-    return NextResponse.json({ ok: true, ...(await runReconcile()) });
-  } catch (error) {
-    console.error("[community-hosting] reconcile failed", error);
-    return NextResponse.json({ error: "Reconciliation failed" }, { status: 500 });
-  }
-}
-
+/** Both authenticated entry points share failure handling. */
+export const GET = POST;

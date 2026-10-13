@@ -27,22 +27,9 @@ async function connectOnce() {
   }
 
   if (!cached.promise) {
-    /*
-     * Sized for serverless, where the default is actively harmful.
-     *
-     * Mongoose defaults maxPoolSize to 100. That is a sensible number for one
-     * long-lived server and a disaster across lambdas: every instance opens its
-     * own pool, so a handful of concurrent instances — or a build generating
-     * pages across three workers — asks Atlas for several hundred connections
-     * at once. The cluster answers by completing the TLS handshake and then
-     * sending an internal-error alert, which surfaces as MongoNetworkError
-     * labelled SystemOverloadedError. It reads like an outage and is really
-     * connection exhaustion we caused.
-     *
-     * A small pool per instance is the standard fix: each one needs very few
-     * concurrent queries, and instances scale horizontally rather than each
-     * needing depth.
-     */
+    // Keep per-instance pools small: serverless instances each own a pool.
+    // A TLS alert can also reflect a transient server/network failure; it does
+    // not, by itself, establish that the database exhausted its connections.
     const opts = {
       bufferCommands: false,
       maxPoolSize: 10,
@@ -69,18 +56,7 @@ async function connectOnce() {
   return cached.conn;
 }
 
-/**
- * How many times a refused connection is worth retrying, and how long to wait.
- *
- * Atlas answers a saturated cluster by completing the TLS handshake and then
- * sending an internal-error alert. The driver labels that `RetryableError` and
- * `SystemOverloadedError` — it is explicitly telling us to come back — but
- * every caller gave up on the first refusal, so a moment of pressure during a
- * build became a failed deploy.
- *
- * Backoff matters more than attempt count here: retrying immediately just adds
- * to the load that caused the refusal.
- */
+// Build-only connection retries are bounded and back off between attempts.
 const CONNECT_RETRIES = 3;
 const CONNECT_BACKOFF_MS = [250, 1000, 2500];
 
@@ -90,8 +66,33 @@ export function isRetryableConnectionError(err: unknown): boolean {
     if (labels.has("RetryableError") || labels.has("SystemOverloadedError")) return true;
   }
   const message = err instanceof Error ? err.message : String(err);
-  // The TLS alert the cluster sends when it is out of connections.
+  // Retry transient transport failures without assuming their root cause.
   return /tlsv1 alert internal error|ECONNRESET|ETIMEDOUT/i.test(message);
+}
+
+/** Availability errors can occur during checkout/queries, after connect succeeds. */
+export function isDatabaseAvailabilityError(error: unknown): boolean {
+  const labels = (error as { errorLabelSet?: Set<string> })?.errorLabelSet;
+  if (labels instanceof Set && (labels.has("RetryableError") || labels.has("SystemOverloadedError"))) return true;
+  const name = error instanceof Error ? error.name : "";
+  const message = error instanceof Error ? error.message : String(error);
+  return /^(Mongo|Mongoose)(ServerSelectionError|NetworkError|NetworkTimeoutError|WaitQueueTimeoutError|PoolClearedError|OperationTimeoutError)$/.test(name)
+    || /tlsv1 alert internal error|server selection timed out|timed out while checking out a connection from connection pool/i.test(message);
+}
+
+/** Retry only this read-only probe, never a reconciliation with side effects. */
+export async function ensureHostingDatabaseReady(): Promise<void> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      const connection = await dbConnect();
+      if (!connection.connection.db) throw new Error("Database connection unavailable");
+      await connection.connection.db.command({ ping: 1 }, { timeoutMS: 2_000 });
+      return;
+    } catch (error) {
+      if (attempt === 1 || !isDatabaseAvailabilityError(error)) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 1_000));
+    }
+  }
 }
 
 /**
