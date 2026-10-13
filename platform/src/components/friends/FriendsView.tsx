@@ -119,7 +119,7 @@ function FriendCard({
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-4">
           <div className="relative shrink-0">
-            <Avatar name={friend.username} hue={265} size="lg" />
+            <Avatar name={friend.username} size="lg" />
             {playing || away || !offline ? (
               <span className="absolute -right-0.5 -bottom-0.5 flex size-4 items-center justify-center rounded-full bg-card">
                 <span
@@ -892,7 +892,7 @@ export function FriendsView({
                 className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-5"
               >
                 <div className="flex min-w-0 items-center gap-4">
-                  <Avatar name={req.user.username} hue={265} size="lg" />
+                  <Avatar name={req.user.username} size="lg" />
                   <div className="min-w-0">
                     <Link
                       href={`/users/${encodeURIComponent(req.user.username)}`}
@@ -932,7 +932,7 @@ export function FriendsView({
                 className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-5"
               >
                 <div className="flex min-w-0 items-center gap-4">
-                  <Avatar name={req.user.username} hue={265} size="lg" />
+                  <Avatar name={req.user.username} size="lg" />
                   <div className="min-w-0">
                     <Link
                       href={`/users/${encodeURIComponent(req.user.username)}`}

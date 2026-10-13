@@ -158,7 +158,7 @@ export function MultiplayerFriendsSection({ signedIn, onJoinLtpWithFriend }: Pro
               className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-card/60 p-3 hover:border-primary/40 hover:bg-card/90 transition-all"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <Avatar name={friend.username} hue={265} size="md" />
+                <Avatar name={friend.username} size="md" />
                 <div className="min-w-0">
                   <div className="font-bold text-sm text-foreground truncate">{friend.username}</div>
                   {friend.currentGameTitle ? (

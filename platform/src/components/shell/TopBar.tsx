@@ -87,7 +87,7 @@ export function TopBar() {
               <NotificationBell />
               <MobileFriendsButton />
               <Link href="/profile" title="Profile" className="shrink-0 rounded-full">
-                <Avatar name={session.user.username ?? "?"} hue={265} size="sm" />
+                <Avatar name={session.user.username ?? "?"} size="sm" />
               </Link>
               <SignOutButton className="hidden sm:inline" />
             </>

@@ -123,7 +123,7 @@ export function GameFriendsWidget({ gameSlug }: { gameSlug: string }) {
             {friendsPlaying.map((f) => (
               <div key={f.id} className="flex items-center justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-2">
-                  <Avatar name={f.username} hue={265} size="sm" />
+                  <Avatar name={f.username} size="sm" />
                   <span className="truncate text-sm font-semibold">{f.username}</span>
                 </div>
                 {f.join?.href && f.join.capability !== "unsupported" ? (
@@ -156,7 +156,7 @@ export function GameFriendsWidget({ gameSlug }: { gameSlug: string }) {
           <div className="flex flex-col gap-2">
             {friendsLooking.map((f) => (
               <div key={f.id} className="flex items-center gap-2">
-                <Avatar name={f.username} hue={265} size="sm" />
+                <Avatar name={f.username} size="sm" />
                 <span className="truncate text-sm font-semibold">{f.username}</span>
               </div>
             ))}
@@ -172,7 +172,7 @@ export function GameFriendsWidget({ gameSlug }: { gameSlug: string }) {
           <div className="flex flex-col gap-2">
             {friendsViewing.map((f) => (
               <div key={f.id} className="flex items-center gap-2 opacity-80">
-                <Avatar name={f.username} hue={265} size="sm" />
+                <Avatar name={f.username} size="sm" />
                 <span className="truncate text-sm font-semibold">{f.username}</span>
               </div>
             ))}

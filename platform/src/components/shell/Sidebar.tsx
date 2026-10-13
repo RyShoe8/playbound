@@ -156,7 +156,7 @@ export function Sidebar() {
               href="/profile"
               className="flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-sidebar-accent/60"
             >
-              <Avatar name={session.user.username ?? session.user.email ?? "?"} hue={265} />
+              <Avatar name={session.user.username ?? session.user.email ?? "?"} />
               <div className="min-w-0">
                 <p className="truncate text-sm font-bold">{session.user.username}</p>
                 <p className="truncate text-xs text-muted-foreground">Profile &amp; PC</p>
