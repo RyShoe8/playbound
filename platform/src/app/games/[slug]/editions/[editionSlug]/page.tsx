@@ -44,6 +44,7 @@ import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { pageMetadata, privateMetadata, editionTitleOptions, editionDescription } from "@/lib/seo";
 import { withOutboundUtm } from "@/lib/utm";
 import { GameArt } from "@/components/GameArt";
+import { GameFeatureIcon } from "@/components/GameFeatureIcon";
 import { SectionHeader } from "@/components/ui/bits";
 import { Badge, EmptyHint } from "@/components/ui/bits";
 import { JsonLd, graph, breadcrumbSchema, faqSchema } from "@/components/JsonLd";
@@ -562,7 +563,7 @@ function OverviewTab({
                   key={feature}
                   className="flex items-start gap-2.5 rounded-xl border border-border bg-card p-3.5 text-sm leading-relaxed"
                 >
-                  <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" />
+                  <GameFeatureIcon feature={feature} className="mt-0.5 size-4 shrink-0 text-primary" />
                   <span className="font-medium text-foreground/90">{feature}</span>
                 </li>
               ))}
