@@ -127,7 +127,7 @@ export default function SignupPage() {
             ? "Finish signing up to connect with your friend on PlayBound."
             : fromCta === "party"
               ? "Accounts are free. You need one to start a party and play with friends."
-              : "Free forever. Just like every game on PlayBound."}
+              : "Your account is free. Discover games and connect with friends."}
         </p>
       </div>
 
