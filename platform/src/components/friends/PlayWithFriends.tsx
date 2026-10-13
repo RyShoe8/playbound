@@ -33,9 +33,11 @@ import { PartyCard } from "./PartyCard";
 export function PlayWithFriends({
   surface = "friends",
   compact = false,
+  className = "",
 }: {
   surface?: string;
   compact?: boolean;
+  className?: string;
 }) {
   const { status } = useSession();
   const [playing, setPlaying] = useState<PlayingFriend[]>([]);
@@ -78,13 +80,13 @@ export function PlayWithFriends({
   if (status !== "authenticated") return null;
   if (!loaded) {
     return (
-      <div className="h-24 animate-pulse rounded-xl border border-border bg-card/60" />
+      <div role="status" aria-label="Loading friends activity" className={`h-24 animate-pulse rounded-xl border border-border bg-card/60 ${className}`} />
     );
   }
 
   if (playing.length === 0 && shared.length === 0 && activeParties.length === 0 && discoverableParties.length === 0) {
     return (
-      <section className="rounded-xl border border-dashed border-border bg-card/40 p-4">
+      <section className={`rounded-xl border border-dashed border-border bg-card/40 p-4 ${className}`}>
         <h2 className="text-lg font-bold">Play With Friends</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           No friends are playing right now. See what they&apos;ve been into on{" "}
@@ -98,7 +100,7 @@ export function PlayWithFriends({
   }
 
   return (
-    <section className="space-y-4">
+    <section className={`space-y-4 ${className}`}>
       <div className="flex items-end justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold">
