@@ -1,4 +1,5 @@
 import { renderHomeView } from "./home.js";
+import { mountSiteShell } from "./siteShell.js";
 import { setSystemIdle } from "./pollGate.js";
 import { enablePlayBoundControlsBridge, disablePlayBoundControlsBridge } from "./gamepadBridge.js";
 import {
@@ -333,6 +334,7 @@ api.prefetchGameDetail = prefetchGameDetail;
 
 function wireShell() {
   bindViews();
+  mountSiteShell();
   wireEnhanceSelect();
 
   document.querySelectorAll(".nav-btn").forEach((btn) => {

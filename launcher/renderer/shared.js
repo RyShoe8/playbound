@@ -1054,6 +1054,14 @@ export function toggleQueuePopover() {
 
 export function applyAccountToSidebar(acc) {
   state.accountState = acc || { connected: false };
+  const accountName = document.getElementById("site-account-name");
+  const accountAvatar = document.getElementById("site-account-avatar");
+  const accountDescription = document.getElementById("site-account-description");
+  if (accountName) accountName.textContent = acc?.connected ? acc.username || "Your account" : "Sign in to PlayBound";
+  if (accountAvatar) accountAvatar.textContent = acc?.connected ? (acc.username || "PB").slice(0, 2).toUpperCase() : "PB";
+  if (accountDescription) accountDescription.textContent = acc?.connected ? "Profile & PC" : "Your account";
+  const signOut = document.getElementById("site-signout");
+  if (signOut) signOut.hidden = !acc?.connected;
   partyStore.setAccount(acc?.connected ? acc.userId || acc.username : null);
   const connectionDot = document.getElementById("connection-dot");
   const connectionLabel = document.getElementById("connection-label");

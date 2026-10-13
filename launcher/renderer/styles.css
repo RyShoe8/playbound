@@ -15,14 +15,14 @@
    */
   --bg-secondary: rgba(35, 30, 50, 0.8);
   --bg-sidebar: #120f1a;
-  --accent: #7c5cf0;
-  --accent-light: #9b7bff;
-  --accent-glow: rgba(124, 92, 240, 0.35);
+  --accent: #38bdf8;
+  --accent-light: #88d7fb;
+  --accent-glow: rgba(56, 189, 248, 0.35);
   --text-main: #f1eff6;
   --text-muted: #8b8699;
   --text-dim: #6f6a7d;
   --border: rgba(255, 255, 255, 0.08);
-  --border-focus: rgba(155, 123, 255, 0.4);
+  --border-focus: rgba(56, 189, 248, 0.4);
   --success: #34d27b;
   --danger: #f07178;
 }
@@ -69,7 +69,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 92, 246, 0.5);
+  background: rgba(56, 189, 248, 0.5);
   background-clip: content-box;
 }
 
@@ -277,7 +277,7 @@ body {
    * costs nothing; a button that cannot be pressed costs the feature.
    */
   padding-bottom: calc(32px + 10rem);
-  background: radial-gradient(circle at top right, rgba(124, 92, 240, 0.08), transparent 40%);
+  background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.08), transparent 40%);
   -webkit-overflow-scrolling: touch;
   will-change: scroll-position;
   transform: translateZ(0);
@@ -1549,7 +1549,7 @@ body {
   margin-left: 2px;
   padding: 1px 6px;
   border-radius: 999px;
-  background: var(--accent, #7c5cf0);
+  background: var(--accent, #38bdf8);
   color: #fff;
   font-size: 10px;
   font-variant-numeric: tabular-nums;
@@ -1579,8 +1579,8 @@ body {
   color: var(--text-main);
 }
 .games-tag-chip.selected {
-  border-color: var(--accent, #7c5cf0);
-  background: var(--accent, #7c5cf0);
+  border-color: var(--accent, #38bdf8);
+  background: var(--accent, #38bdf8);
   color: #fff;
 }
 .games-tag-count {
@@ -1591,7 +1591,7 @@ body {
   padding: 8px 12px;
   border: none;
   background: none;
-  color: var(--accent, #7c5cf0);
+  color: var(--accent, #38bdf8);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -1678,8 +1678,8 @@ body {
 }
 
 .servers-filter-toggle:has(input:checked) {
-  border-color: rgba(124, 92, 240, 0.7);
-  background: rgba(124, 92, 240, 0.15);
+  border-color: rgba(56, 189, 248, 0.7);
+  background: rgba(56, 189, 248, 0.15);
   color: var(--text-main);
 }
 
@@ -1788,7 +1788,7 @@ body {
   stroke-width: 3;
 }
 .pb-check:hover .pb-check-box {
-  border-color: rgba(124, 92, 240, 0.5);
+  border-color: rgba(56, 189, 248, 0.5);
 }
 .pb-check-input:checked + .pb-check-box {
   border-color: var(--accent);
@@ -2903,7 +2903,7 @@ body {
   width: 30px;
   height: 30px;
   border-radius: 999px;
-  background: rgba(124, 92, 240, 0.15);
+  background: rgba(56, 189, 248, 0.15);
   color: var(--accent-light);
   font-weight: 800;
   font-size: 13px;
@@ -2911,7 +2911,7 @@ body {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border: 1px solid rgba(124, 92, 240, 0.3);
+  border: 1px solid rgba(56, 189, 248, 0.3);
 }
 
 .install-step-content {
@@ -3672,7 +3672,7 @@ body {
 }
 
 .library-game-block.is-pending .library-card-sub {
-  color: var(--accent-light, #9b7bff);
+  color: var(--accent-light, #88d7fb);
 }
 
 /* Mods-only rows have no game to open, so nothing here invites a click. */
@@ -4544,8 +4544,8 @@ textarea.input-text {
   width: 100%;
   padding: 8px 12px;
   border-radius: 10px;
-  border: 1px solid rgba(124, 92, 240, 0.35);
-  background: rgba(124, 92, 240, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  background: rgba(56, 189, 248, 0.12);
   text-decoration: none;
   color: var(--text-muted);
   font-size: 14px;
@@ -4555,8 +4555,8 @@ textarea.input-text {
   flex-shrink: 0;
 }
 .sidebar-discord:hover {
-  border-color: rgba(124, 92, 240, 0.55);
-  background: rgba(124, 92, 240, 0.18);
+  border-color: rgba(56, 189, 248, 0.55);
+  background: rgba(56, 189, 248, 0.18);
   color: var(--text-main);
 }
 .sidebar-compat {
@@ -4813,7 +4813,7 @@ textarea.input-text {
   font-weight: 700;
   padding: 2px 7px;
   border-radius: 999px;
-  background: rgba(124, 92, 240, 0.2);
+  background: rgba(56, 189, 248, 0.2);
   color: var(--accent-light);
 }
 
@@ -5662,7 +5662,7 @@ textarea.input-text {
 
 .create-party-submit-btn:hover {
   background: var(--accent-light);
-  box-shadow: 0 6px 20px rgba(124, 92, 240, 0.5);
+  box-shadow: 0 6px 20px rgba(56, 189, 248, 0.5);
   transform: translateY(-1px);
 }
 
@@ -6149,7 +6149,7 @@ textarea.input-text {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  background: rgba(124, 92, 240, 0.16);
+  background: rgba(56, 189, 248, 0.16);
   color: var(--accent-light);
 }
 .party-couch { width: 100%; align-self: flex-start; }
@@ -6162,7 +6162,7 @@ textarea.input-text {
   border-radius: 6px;
   font-size: 13px;
   font-weight: 700;
-  background: rgba(124, 92, 240, 0.2);
+  background: rgba(56, 189, 248, 0.2);
   color: var(--accent-light);
 }
 .party-voice-error { width: 100%; margin: 0; font-size: 12px; color: var(--danger); }
@@ -6327,7 +6327,7 @@ textarea.input-text {
   background: var(--bg-card);
   padding: 16px;
 }
-.party-card:hover { border-color: rgba(155, 123, 255, 0.3); }
+.party-card:hover { border-color: rgba(56, 189, 248, 0.3); }
 .party-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .party-card-title { margin: 0; font-weight: 700; }
 .party-card-server { margin: 2px 0 0; font-size: 12px; font-weight: 600; color: var(--accent-light); }
@@ -6584,7 +6584,7 @@ textarea.input-text {
 .premium-select.open .premium-select-btn,
 .premium-select-btn:focus-visible {
   border-color: #8b5cf6;
-  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.35);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.35);
   background: rgba(255, 255, 255, 0.08);
 }
 
@@ -6674,7 +6674,7 @@ textarea.input-text {
 }
 
 .premium-select-dropdown::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 92, 246, 0.6);
+  background: rgba(56, 189, 248, 0.6);
   background-clip: content-box;
 }
 
@@ -6700,12 +6700,12 @@ textarea.input-text {
 }
 
 .premium-select-item:hover {
-  background: rgba(139, 92, 246, 0.2);
+  background: rgba(56, 189, 248, 0.2);
   color: #c4b5fd;
 }
 
 .premium-select-item.selected {
-  background: rgba(139, 92, 246, 0.18);
+  background: rgba(56, 189, 248, 0.18);
   color: #c4b5fd;
   font-weight: 600;
 }
@@ -6845,7 +6845,7 @@ textarea.input-text {
 .media-details-summary-title svg {
   width: 16px;
   height: 16px;
-  color: var(--accent-light, #9b7bff);
+  color: var(--accent-light, #88d7fb);
 }
 
 .media-details-count-badge {
@@ -7185,7 +7185,7 @@ textarea.input-text {
 }
 
 .library-edition-select:focus-visible {
-  outline: 2px solid var(--border-focus, rgba(155, 123, 255, 0.4));
+  outline: 2px solid var(--border-focus, rgba(56, 189, 248, 0.4));
   outline-offset: 1px;
 }
 
@@ -10946,8 +10946,8 @@ textarea.input-text {
 
 .home-pad-verified {
   color: var(--accent-light);
-  background: rgba(124, 92, 240, 0.14);
-  border-color: rgba(124, 92, 240, 0.34);
+  background: rgba(56, 189, 248, 0.14);
+  border-color: rgba(56, 189, 248, 0.34);
 }
 
 .home-pad-config {
@@ -11214,7 +11214,7 @@ textarea.input-text {
 }
 
 .mp-hub-banner {
-  background: linear-gradient(135deg, rgba(23, 20, 33, 0.85) 0%, rgba(35, 30, 50, 0.7) 60%, rgba(124, 92, 240, 0.12) 100%);
+  background: linear-gradient(135deg, rgba(23, 20, 33, 0.85) 0%, rgba(35, 30, 50, 0.7) 60%, rgba(56, 189, 248, 0.12) 100%);
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 24px 28px;
@@ -11240,8 +11240,8 @@ textarea.input-text {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(124, 92, 240, 0.18);
-  border: 1px solid rgba(124, 92, 240, 0.35);
+  background: rgba(56, 189, 248, 0.18);
+  border: 1px solid rgba(56, 189, 248, 0.35);
   color: var(--accent-light);
   font-size: 11px;
   font-weight: 800;
@@ -11337,8 +11337,8 @@ textarea.input-text {
 .text-amber { color: #fbbf24 !important; }
 
 .mp-active-party-bar {
-  background: rgba(124, 92, 240, 0.12);
-  border: 1px solid rgba(124, 92, 240, 0.45);
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.45);
   border-radius: 14px;
   padding: 14px 18px;
   display: flex;
@@ -11669,7 +11669,7 @@ textarea.input-text {
 
 .mp-game-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(124, 92, 240, 0.4);
+  border-color: rgba(56, 189, 248, 0.4);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
@@ -11759,9 +11759,9 @@ textarea.input-text {
 }
 
 .mp-metric-pill.purple {
-  background: rgba(124, 92, 240, 0.18);
+  background: rgba(56, 189, 248, 0.18);
   color: var(--accent-light);
-  border: 1px solid rgba(124, 92, 240, 0.35);
+  border: 1px solid rgba(56, 189, 248, 0.35);
 }
 
 .mp-metric-pill.amber {

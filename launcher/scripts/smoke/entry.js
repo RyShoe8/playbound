@@ -31,7 +31,7 @@ const fixture = {
   art: ['#123456', '#654321'], standalone: true, multiplayer: true, features: ['Controller Support'],
   installType: 'zip', downloadUrl: 'http://localhost:1/fixture.zip',
 };
-const account = { connected: true, userId: 'smoke-user', username: 'Smoke User' };
+const account = process.env.PLAYBOUND_SMOKE_SIGNED_OUT === '1' ? {connected:false} : { connected: true, userId: 'smoke-user', username: 'Smoke User' };
 // Install is simulated (no download), but it leaves a real game on disk and a
 // real record in installed.json, so Uninstall runs the launcher's own removal
 // code against it.
@@ -50,9 +50,13 @@ const handlers = {
   'get-lfg': () => ({ users: [] }),
   'get-live-stats': () => ({ ok: false }),
   'get-free-offers': () => ({ offers: [] }),
+  'get-events': () => ({events:[{id:'smoke-event',title:'Fixture Game Night',gameSlug:'smoke-fixture',eventType:'game_night',status:'scheduled',startsAt:'2030-01-01T20:00:00Z',counts:{going:0}}]}),
+  'get-mods-catalog': () => ({mods:[]}),
+  'get-multiplayer-activity': () => ({summary:{totalServerPlayers:0,totalOpenParties:0,totalUsersLooking:0,totalServersOnline:0},games:[]}),
   'get-controller-support': () => ({ supported: false }),
   'get-recently-played': () => [],
   'get-catalog': () => [detail()],
+  'get-home-feed': () => ({released:['smoke-fixture'],popular:['smoke-fixture'],editions:[],mods:[]}),
   'get-game-detail': () => detail(),
   'get-editions': () => ({ editions: [] }),
   'get-account': () => account,

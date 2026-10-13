@@ -551,7 +551,9 @@ function paintOverviewTab(container) {
 
   container.innerHTML = `
     <!-- Open Parties Section -->
-    <div class="mp-section">
+    <aside class="site-multiplayer-rail">
+    <section class="site-panel site-pad"><h2>Play with friends</h2><p>See who’s online, invite your people, and pick up your party.</p><button class="btn-secondary" id="mp-open-friends">Friends →</button></section>
+    <div class="mp-section site-panel site-pad">
       <div class="section-header">
         <div>
           <h2 class="view-title" style="font-size: 1.25rem; margin:0">Open Parties (${openParties.length})</h2>
@@ -569,6 +571,7 @@ function paintOverviewTab(container) {
       }
     </div>
 
+    </aside>
     <!-- Live Server Browser Teaser / Embed -->
     <div class="mp-section" style="margin-top: 32px;" id="mp-overview-servers-sec">
       ${buildServersBrowserHtml("Pick a game to see who&apos;s playing.")}
@@ -576,6 +579,7 @@ function paintOverviewTab(container) {
   `;
 
   bindPartyCardActions(container);
+  document.getElementById("mp-open-friends")?.addEventListener("click", () => api.navigateTo("friends"));
 
   document.getElementById("mp-start-party-sec-btn")?.addEventListener("click", () => {
     state.multiplayerState.createPartyOpen = true;
