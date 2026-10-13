@@ -26,9 +26,13 @@ export async function GET() {
   const [config, profiles, servers, reservations, metrics, agent, health] = await Promise.all([
     CommunityHostingConfig.findOne({ key: "global" }).lean(),
     CommunityServerProfile.find({ gameSlug: { $nin: aliasSlugs } }).sort({ gameSlug: 1 }).lean(),
+    // Keep stopped/failed fleet identities visible so an admin can resume a
+    // paused server. Customer-owned stopped servers belong in My Servers.
     CommunityServer.find({
-      desiredState: "running",
-      runtimeState: { $in: ["running", "pending", "starting"] },
+      $or: [
+        { desiredState: "running", runtimeState: { $in: ["running", "pending", "starting"] } },
+        { ownerType: { $ne: "user" }, runtimeState: { $in: ["stopped", "failed"] } },
+      ],
     }).sort({ updatedAt: -1 }).limit(50).lean(),
     CapacityReservation.find({ state: { $in: ["planned", "active", "missed"] } }).sort({ warmupAt: 1 }).limit(100).lean(),
     fetchGameHostMetrics(), listManagedHostRooms(), fetchGameHostHealth(),
