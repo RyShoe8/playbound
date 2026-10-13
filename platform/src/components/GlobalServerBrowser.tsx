@@ -1,5 +1,6 @@
 "use client";
 import { pageHref } from "@/lib/designPreview";
+import { compareServerRows, serverLocationLabel as formatLocation } from "@/lib/servers/sort";
 import { matchesServerSearch } from "@/lib/servers/search";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -98,24 +99,8 @@ const SORT_DEFAULT_DIR: Record<SortKey, SortDir> = {
   players: "desc",
   map: "asc",
   location: "asc",
-  est: "desc",
+  est: "asc",
 };
-
-function cmpNullLast(a: number | null, b: number | null, dir: SortDir): number {
-  if (a == null && b == null) return 0;
-  if (a == null) return 1;
-  if (b == null) return -1;
-  return dir === "asc" ? a - b : b - a;
-}
-
-function formatLocation(server: GameServer): string {
-  const loc = server.location;
-  if (!loc) return "—";
-  if (loc.region && loc.region.length > 2) return loc.region;
-  const code = loc.countryCode?.toUpperCase();
-  if (code && code !== "ZZ" && code !== "XX") return code;
-  return "—";
-}
 
 function formatEstMs(ms: number | null): string {
   if (ms == null) return "—";
@@ -557,28 +542,7 @@ export function GlobalServerBrowser({
         return matchesServerSearch(s, q, editionLabel);
       });
     }
-    const sorted = list.slice().sort((a, b) => {
-      if (sortKey === "players") {
-        return cmpNullLast(Number(a.players) || 0, Number(b.players) || 0, sortDir);
-      }
-      if (sortKey === "est") {
-        return cmpNullLast(estFor(a), estFor(b), sortDir);
-      }
-      let av = "";
-      let bv = "";
-      if (sortKey === "name") {
-        av = a.name || "";
-        bv = b.name || "";
-      } else if (sortKey === "map") {
-        av = a.map || a.gameType || "";
-        bv = b.map || b.gameType || "";
-      } else {
-        av = formatLocation(a);
-        bv = formatLocation(b);
-      }
-      const cmp = av.localeCompare(bv, undefined, { sensitivity: "base" });
-      return sortDir === "asc" ? cmp : -cmp;
-    });
+    const sorted = list.slice().sort((a, b) => compareServerRows(a, b, sortKey, sortDir, estFor));
     return sorted;
   }, [data, search, withPlayersOnly, sortKey, sortDir, estFor, editionNameBySlug]);
 
@@ -593,7 +557,8 @@ export function GlobalServerBrowser({
     const active = sortKey === key;
     const arrow = active ? (sortDir === "asc" ? " ↑" : " ↓") : "";
     return (
-      <th className="px-3 py-2.5 font-semibold" title={title}>
+      <th className="px-3 py-2.5 font-semibold" title={title}
+        aria-sort={active ? (sortDir === "asc" ? "ascending" : "descending") : "none"}>
         <button
           type="button"
           onClick={() => setSort(key)}
@@ -602,7 +567,6 @@ export function GlobalServerBrowser({
             "inline-flex items-center gap-0.5 uppercase tracking-wide transition-colors",
             active ? "text-foreground" : "hover:text-foreground"
           )}
-          aria-sort={active ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
         >
           {label}
           {arrow}
@@ -799,7 +763,7 @@ export function GlobalServerBrowser({
                 {sortLabel("players", "Server Players")}
                 {sortLabel("map", "Map / Mode")}
                 {sortLabel("location", "Location")}
-                {sortLabel("est", "Est.", "GeoIP estimate, not a real ping")}
+                {sortLabel("est", "Ping", "Estimated ping based on location; not a measured connection ping")}
                 <th className="px-3 py-2.5 font-semibold">Action</th>
               </tr>
             </thead>
