@@ -4,6 +4,25 @@ export type ServerSortKey = "name" | "players" | "map" | "location" | "est";
 export type ServerSortDirection = "asc" | "desc";
 const collator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
 
+/** Prefer active servers, then nearby servers; unknown occupancy never implies empty. */
+export function compareRecommendedServers(a: GameServer, b: GameServer,
+  latency: (server: GameServer) => number | null): number {
+  const population = (s: GameServer) => s.players != null && Number.isFinite(s.players)
+    ? s.players > 0 ? 0 : 1 : 2;
+  const group = population(a) - population(b);
+  if (group) return group;
+  const ap = latency(a), bp = latency(b);
+  const av = ap != null && Number.isFinite(ap) ? ap : null;
+  const bv = bp != null && Number.isFinite(bp) ? bp : null;
+  if (av !== bv) {
+    if (av === null) return 1;
+    if (bv === null) return -1;
+    return av - bv;
+  }
+  const players = (b.players ?? 0) - (a.players ?? 0);
+  return players || compareServerRows(a, b, "name", "asc", latency);
+}
+
 export function serverLocationLabel(server: GameServer): string {
   const loc = server.location;
   if (loc?.region && loc.region.length > 2) return loc.region;
