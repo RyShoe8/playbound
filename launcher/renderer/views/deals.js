@@ -1,3 +1,4 @@
+import { dealGenres, matchesDealFilters } from "../dealFilters.js";
 import { createFreeOfferCard, storeDisplayName } from "../cards.js";
 import {
   api,
@@ -134,7 +135,7 @@ function createDiscountCard(game) {
  * filters, nobody expects a deals filter to persist across a session, and a
  * remembered "Steam only" would quietly hide a new Epic giveaway next launch.
  */
-let current = { kind: "all", store: "all", freeOffers: [], discounted: [] };
+let current = { kind: "all", store: "all", genre: "all", freeOffers: [], discounted: [] };
 
 /**
  * Stores present in the data, for the filter row.
@@ -168,14 +169,14 @@ function chipsHtml(options, activeValue, attr) {
 }
 
 function paintDeals() {
-  const { kind, store, freeOffers, discounted } = current;
+  const { kind, store, genre, freeOffers, discounted } = current;
 
   const visibleFree =
     kind === "discounted"
       ? []
-      : freeOffers.filter((o) => store === "all" || o.store === store);
+      : freeOffers.filter((o) => matchesDealFilters(o, store, genre));
   const visibleDiscounted =
-    kind === "free" ? [] : discounted.filter((g) => store === "all" || g.storeKey === store);
+    kind === "free" ? [] : discounted.filter((g) => matchesDealFilters(g, store, genre));
 
   const discountSection = document.getElementById("deals-discount-section");
   const freeSection = document.getElementById("deals-free-section");
@@ -208,7 +209,7 @@ function paintDeals() {
         ? "Could not reach PlayBound to load deals. Check your connection and try again."
         : "No free giveaways or discounts right now. Check back soon.";
   } else {
-    status.textContent = "Nothing matches those filters. Try All deals and All stores.";
+    status.textContent = "Nothing matches those filters. Try All deals, All stores, and All genres.";
   }
 }
 
@@ -237,6 +238,22 @@ function syncFilterChips() {
     current.store,
     "store"
   );
+
+  const genreHost = document.getElementById("deals-genre-chips");
+  if (genreHost) {
+    genreHost.innerHTML = chipsHtml(
+      [{ key: "all", label: "All genres" }, ...dealGenres([...freeOffers, ...discounted])],
+      current.genre,
+      "genre"
+    );
+    genreHost.querySelectorAll("[data-genre]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        current.genre = btn.dataset.genre;
+        syncFilterChips();
+        paintDeals();
+      });
+    });
+  }
 
   kindHost.querySelectorAll("[data-kind]").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -279,6 +296,12 @@ async function renderDealsView() {
         <div class="search-chips-wrap" id="deals-store-chips"></div>
       </div>
     </div>
+    <div class="games-filter-card">
+      <div class="games-filter-row">
+        <span class="games-filter-label">Genre:</span>
+        <div class="search-chips-wrap" id="deals-genre-chips"></div>
+      </div>
+    </div>
     <div id="deals-status" class="view-sub" style="padding: 24px 0;">Loading deals…</div>
     <section id="deals-discount-section" class="hidden">
       <div class="section-header"><span>🏷️ On sale now</span></div>
@@ -305,6 +328,7 @@ async function renderDealsView() {
     // Filters reset on open; see the note on `current` above.
     kind: "all",
     store: "all",
+    genre: "all",
     ok: res.ok,
     freeOffers: Array.isArray(res.freeOffers) ? res.freeOffers : [],
     discounted: Array.isArray(res.discounted) ? res.discounted : [],
