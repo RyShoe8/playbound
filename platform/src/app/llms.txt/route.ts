@@ -40,9 +40,9 @@ async function buildLlmsTxt(): Promise<string> {
     "> Free games are not scarce; good ones are. Every title listed here has been"
   );
   lines.push(
-    "> tested, played, and assessed against four published criteria (the PlayBound Bar). One editor's"
+    "> tested, played, and assessed against four published criteria (the PlayBound Bar). Our weekly newsletter features new games,"
   );
-  lines.push("> pick is published every Wednesday.");
+  lines.push("> awesome free games, and PlayBound updates.");
   lines.push("");
   lines.push(`Canonical domain: ${SITE_URL}`);
   lines.push(`Publisher: The Media Shop (https://themediashop.co)`);
@@ -92,7 +92,7 @@ async function buildLlmsTxt(): Promise<string> {
   lines.push("");
 
   if (issues.length) {
-    lines.push("## PlayBound Weekly (editor's picks, dated)");
+    lines.push("## PlayBound Weekly newsletter archive");
     lines.push("");
     for (const issue of issues) {
       const game = games.find((g) => g.slug === issue.gameSlug);
@@ -101,7 +101,7 @@ async function buildLlmsTxt(): Promise<string> {
       );
     }
     lines.push("");
-    lines.push(`Full archive: ${SITE_URL}/weekly`);
+    lines.push(`Weekly newsletter and archive: ${SITE_URL}/weekly`);
     lines.push("");
   }
 

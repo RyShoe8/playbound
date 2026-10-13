@@ -1,7 +1,4 @@
 import { Suspense } from "react";
-import { headers } from "next/headers";
-import { NewEventsSchedule } from "@/components/new/NewEventsSchedule";
-import { PlayWithFriends } from "@/components/friends/PlayWithFriends";
 import Link from "next/link";
 import { connection } from "next/server";
 import type { Metadata } from "next";
@@ -12,9 +9,11 @@ import { filterDiscoverableBySlug } from "@/lib/access/discover";
 import { getGame } from "@/lib/catalog";
 import { listPublicEvents } from "@/lib/events/service";
 import { listOpenPublicParties } from "@/lib/playTogether/party";
-import { EmptyHint } from "@/components/ui/bits";
-import { EventCard } from "@/components/events/EventCard";
+import { NewEventsSchedule } from "@/components/new/NewEventsSchedule";
+import { PlayWithFriends } from "@/components/friends/PlayWithFriends";
 import { OpenPartiesSection } from "@/components/events/OpenPartiesSection";
+import { JsonLd, graph, breadcrumbSchema, eventSchema } from "@/components/JsonLd";
+import { absoluteUrl } from "@/lib/site";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
@@ -23,45 +22,6 @@ export const metadata: Metadata = pageMetadata({
     "Find PlayBound Game Nights, tournaments, and open parties — see who's going, join Discord, and play together.",
   path: "/events",
 });
-
-type ListedEvent = Awaited<ReturnType<typeof listPublicEvents>>[number];
-
-/** Pull matching events into one exclusive bucket so a card never repeats. */
-function takeExclusive(
-  pool: ListedEvent[],
-  claimed: Set<string>,
-  predicate: (e: ListedEvent) => boolean
-): ListedEvent[] {
-  const items = pool.filter((e) => !claimed.has(e.id) && predicate(e));
-  for (const e of items) claimed.add(e.id);
-  return items;
-}
-
-function Section({
-  title,
-  items,
-  titles,
-}: {
-  title: string;
-  items: ListedEvent[];
-  titles: Map<string, string>;
-}) {
-  if (!items.length) return null;
-  return (
-    <section className="space-y-3">
-      <h2 className="text-lg font-bold">{title}</h2>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {items.map((e) => (
-          <EventCard
-            key={e.id}
-            event={e}
-            gameTitle={e.gameSlug ? titles.get(e.gameSlug) : null}
-          />
-        ))}
-      </div>
-    </section>
-  );
-}
 
 async function LiveOpenParties() {
   const parties = await listOpenPublicParties(100);
@@ -81,29 +41,6 @@ export default async function EventsPage() {
   const events = await filterDiscoverableBySlug(eventsRaw, (e) => e.gameSlug);
   const isAdmin = session?.user?.role === "admin";
 
-  // Event grouping is intentionally based on the current request time.
-  // eslint-disable-next-line react-hooks/purity
-  const now = Date.now();
-
-  /*
-   * One card, one section. Priority: imminent/live → featured → type → leftover.
-   * Without exclusivity a featured live Game Night landed in three sections.
-   */
-  const claimed = new Set<string>();
-  const soon = takeExclusive(
-    events,
-    claimed,
-    (e) => {
-      const t = new Date(e.startsAt).getTime();
-      return e.status === "live" || (t >= now && t - now < 48 * 3600_000);
-    }
-  );
-  const featured = takeExclusive(events, claimed, (e) => Boolean(e.featured));
-  const gameNights = takeExclusive(events, claimed, (e) => e.eventType === "game_night");
-  const tournaments = takeExclusive(events, claimed, (e) => e.eventType === "tournament");
-  const scheduledParties = takeExclusive(events, claimed, (e) => e.eventType === "party");
-  const upcoming = events.filter((e) => !claimed.has(e.id));
-
   const titles = new Map<string, string>();
   await Promise.all(
     [
@@ -118,56 +55,22 @@ export default async function EventsPage() {
     })
   );
 
-  const hasActive = events.length > 0;
-
-  if ((await headers()).get("x-playbound-design-preview") === "1") {
-    return <div className="new-page new-events-page">
+  return <div className="new-page new-events-page">
+      <JsonLd data={graph(
+        { "@type": "CollectionPage", name: "PlayBound Events & Game Nights", url: absoluteUrl("/events"), description: "Upcoming PlayBound Game Nights, tournaments, and community events." },
+        breadcrumbSchema([{ name: "Events", path: "/events" }]),
+        events.map(event => eventSchema({ id: event.id, title: event.title, description: event.description, startsAt: event.startsAt, endsAt: event.endsAt, coverImage: event.coverImage, gameSlug: event.gameSlug, gameTitle: event.gameSlug ? titles.get(event.gameSlug) : null }))
+      )} />
       <header className="new-page-heading"><div><p className="new-eyebrow">Your next game night</p><h1>Events & game nights</h1><p>A week of reasons to get the group together.</p></div>
-        {isAdmin && <Link href="/new/admin/events/new" className="new-button primary"><Plus className="size-4" /> Create event</Link>}
+        {isAdmin && <Link href="/admin/events/new" className="new-button primary"><Plus className="size-4" /> Create event</Link>}
       </header>
       <div className="new-events-layout">
         <NewEventsSchedule events={[...events].sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))} titles={Object.fromEntries(titles)} />
         <aside className="new-events-rail">
-          <section className="new-panel new-pad"><p className="new-eyebrow">Your week</p><h2>Make room for a game night</h2><p>Times are shown in your local timezone. Open an event to see its edition, RSVP, and available Join options.</p><Link href="/new/multiplayer" className="new-button primary">Play now</Link></section>
+          <section className="new-panel new-pad"><p className="new-eyebrow">Your week</p><h2>Make room for a game night</h2><p>Times are shown in your local timezone. Open an event to see its edition, RSVP, and available Join options.</p><Link href="/multiplayer" className="new-button primary">Play now</Link></section>
           <PlayWithFriends surface="new_events" compact className="new-panel new-pad" />
           <Suspense fallback={<p role="status">Loading open parties…</p>}><LiveOpenParties /></Suspense>
         </aside>
       </div>
     </div>;
-  }
-
-  return (
-    <div className="space-y-10 px-4 py-6 sm:px-6 lg:px-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Events</h1>
-        </div>
-        {isAdmin && (
-          <Link
-            href="/admin/events/new"
-            className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-all hover:brightness-110"
-          >
-            <Plus className="size-4" /> Create event
-          </Link>
-        )}
-      </div>
-
-      <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Loading open parties…</p>}><LiveOpenParties /></Suspense>
-
-      {!hasActive ? (
-        <EmptyHint>No upcoming scheduled events yet. Check back soon.</EmptyHint>
-      ) : null}
-
-      {hasActive ? (
-        <>
-          <Section title="Happening soon" items={soon} titles={titles} />
-          <Section title="Featured" items={featured} titles={titles} />
-          <Section title="Game Nights" items={gameNights} titles={titles} />
-          <Section title="Tournaments" items={tournaments} titles={titles} />
-          <Section title="Parties" items={scheduledParties} titles={titles} />
-          <Section title="Upcoming" items={upcoming} titles={titles} />
-        </>
-      ) : null}
-    </div>
-  );
 }

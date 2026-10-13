@@ -45,15 +45,12 @@ export async function middleware(req: NextRequest) {
   const { pathname: incomingPath, search } = req.nextUrl;
   const previewPath = previewPagePath(incomingPath);
   const pathname = previewPath ?? incomingPath;
+  // Preserve established canonical URLs when retiring the design preview.
   const proceed = () => {
     if (previewPath === null) return NextResponse.next();
     const destination = req.nextUrl.clone();
     destination.pathname = previewPath;
-    const requestHeaders = new Headers(req.headers);
-    requestHeaders.set("x-playbound-design-preview", "1");
-    const response = previewPath === "/" ? NextResponse.next({ request: { headers: requestHeaders } }) : NextResponse.rewrite(destination, { request: { headers: requestHeaders } });
-    response.headers.set("X-Robots-Tag", "noindex, nofollow");
-    return response;
+    return NextResponse.redirect(destination, 308);
   };
 
   if (ALLOWED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
