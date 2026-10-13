@@ -28,5 +28,8 @@ test('launcher upgrades retain install identity and never report another install
     const result = await start().launcherInstalled();
     assert.equal(result.migrated,true);
     assert.equal(sent.length,1,'legacy upgrades without a receipt are not new installs');
+    const unwritable = createTelemetry({getApiBase:()=> 'https://example.test',loadSettings:()=>({}),saveSettings:()=>{throw new Error('read-only settings');},getAppVersion:()=>version});
+    assert.equal((await unwritable.launcherInstalled()).ok,false);
+    assert.equal(sent.length,1,'an ephemeral session ID must not count as another install');
   } finally { global.fetch = fetchBefore; }
 });
