@@ -6,11 +6,13 @@ import { hasServerBrowser } from "../browserGames";
 import { managedQueryKind } from "@/lib/communityHosting/playerQuery";
 import { hostModesFor } from "@/lib/multiplayer/hostModes";
 import { coerceSettingValues } from "@/lib/serverControl/settings";
+import { hasServerBrowser as launcherServerBrowser } from "@/lib/multiplayer/support";
 
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 describe("Unturned integration", () => {
   it("offers public and dedicated party modes with a local occupancy query", () => {
     expect(hasServerBrowser("unturned")).toBe(true);
+    expect(launcherServerBrowser({slug:"unturned",launchMethods:["install"]})).toBe(true);
     expect(hostModesFor("unturned")).toEqual(expect.arrayContaining(["public", "dedicated"]));
     expect(managedQueryKind("unturned", {queryKind:"none"})).toBe("agent-local");
     expect(coerceSettingValues("unturned", {map:"Russia", pve:true, perspective:"First", maxPlayers:8}).rejected).toEqual([]);
