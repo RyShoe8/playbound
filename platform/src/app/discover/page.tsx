@@ -4,6 +4,7 @@ import { listGames } from "@/lib/catalog";
 import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { DiscoverFilters } from "@/components/DiscoverFilters";
 import DiscoverLoading from "./loading";
+import { CatalogDirectory } from "@/components/CatalogDirectory";
 import { pageMetadata } from "@/lib/seo";
 import { toDiscoverListingGame } from "@/lib/discoverListing";
 import { JsonLd, graph, itemListSchema, breadcrumbSchema } from "@/components/JsonLd";
@@ -54,16 +55,9 @@ export default async function DiscoverPage() {
         <DiscoverFilters games={games.map(toDiscoverListingGame)} />
       </Suspense>
 
-      {/* SEO fallback: ensure crawlers see links to all games even without JS */}
-      <noscript>
-        <ul style={{ display: "none" }}>
-          {games.map((game) => (
-            <li key={game.slug}>
-              <a href={`/games/${game.slug}`}>{game.title}</a>
-            </li>
-          ))}
-        </ul>
-      </noscript>
+      <CatalogDirectory title="All games by name" entries={games.map((game) => ({
+        title: game.title, href: `/games/${game.slug}`,
+      }))} />
     </div>
   );
 }

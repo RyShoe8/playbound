@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { HTML_LIMITED_BOT_UA_RE } from "next/dist/shared/lib/router/utils/html-bots";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -91,6 +92,12 @@ const sharpTracingIncludes = Object.fromEntries(
 );
 
 const nextConfig: NextConfig = {
+  // Keep Next's preview/crawler coverage and give search crawlers complete
+  // metadata without requiring them to execute the hydration payload.
+  htmlLimitedBots: new RegExp(
+    `${HTML_LIMITED_BOT_UA_RE.source}|Googlebot|OAI-SearchBot|GPTBot|ClaudeBot|Claude-SearchBot|PerplexityBot`,
+    "i"
+  ),
   /*
    * Partial Prerendering. Each route prerenders a static shell and streams the
    * parts that genuinely depend on the request.
@@ -111,6 +118,12 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
+      {
+        source: "/sitemap.xml",
+        // Cache public XML at the edge while retaining request-time generation
+        // and tagged catalog invalidation. Changes reach the edge within 5 min.
+        headers: [{ key: "Vercel-CDN-Cache-Control", value: "public, s-maxage=300" }],
+      },
       // The launcher reads these cross-origin from a desktop app.
       {
         source: "/api/launcher/:path*",
