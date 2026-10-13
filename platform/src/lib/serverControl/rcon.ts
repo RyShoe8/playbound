@@ -107,13 +107,17 @@ const PROTECTED_CVARS = [
 const SET_COMMANDS = new Set(["set", "seta", "sets", "setu", "reset", "unset", "toggle", "cvarlist_set"]);
 
 /** Why a customer console command is refused, or null if it may be sent. */
-export function consoleCommandProblem(raw: string): string | null {
+export function consoleCommandProblem(raw: string, channel?: ControlChannel): string | null {
   const command = String(raw ?? "").trim();
   if (!command) return "Type a command.";
   if (command.length > 200) return "Commands are limited to 200 characters.";
   if (/[;\r\n]/.test(command) || /[\u0000-\u001f\u007f]/.test(command)) return "Send one command at a time.";
   const [first = "", second = ""] = command.split(/\s+/);
   const verb = first.toLowerCase().replace(/^[\/]/, "");
+  if (channel === "console-rimworld") {
+    const allowed = new Set(["help", "list", "deeplist", "getversion", "modlist", "banlist", "kick", "pbkick", "ban", "pardon", "banip", "pardonip", "op", "deop", "chat", "broadcast", "backup", "backupuser", "forcesave", "event", "eventall", "eventlist", "setpassword", "clearpassword"]);
+    return allowed.has(verb) ? null : `"${verb}" isn't available from the PlayBound console. Use Settings for configuration changes.`;
+  }
   if (BLOCKED_COMMANDS.has(verb)) return `"${verb}" isn't available from the PlayBound console.`;
   const cvar = SET_COMMANDS.has(verb) ? second.toLowerCase() : verb;
   if (PROTECTED_CVARS.some((re) => re.test(cvar))) {
@@ -150,6 +154,13 @@ const clean = (name: string) => name.replace(/\^./g, "").trim();
  * lists players after a `---players---` rule.
  */
 export function parseStatus(channel: ControlChannel | undefined, text: string): StatusPlayer[] {
+  if (channel === "console-rimworld") {
+    const rows: unknown = JSON.parse(text);
+    if (!Array.isArray(rows)) throw new Error("Invalid RimWorld player status");
+    return rows.filter((p) => p && typeof p.id === "string" && typeof p.name === "string").map((p) => ({
+      id: p.id, name: p.name, score: null, pingMs: null, bot: false, address: typeof p.address === "string" ? p.address : null,
+    }));
+  }
   const lines = String(text || "").split(/\r?\n/);
   const out: StatusPlayer[] = [];
   if (channel === "rcon-darkplaces") {
@@ -210,6 +221,10 @@ const CLIENT_ID = /^\d{1,4}$/;
 const IPV4 = /^\d{1,3}(\.\d{1,3}){3}$/;
 
 export function kickCommand(channel: ControlChannel | undefined, id: string): string {
+  if (channel === "console-rimworld") {
+    if (!/^[A-Za-z0-9+/]{1,256}={0,2}$/.test(id)) throw new UnsafeSettingValue("player");
+    return `pbkick ${id}`;
+  }
   if (!CLIENT_ID.test(id)) throw new UnsafeSettingValue("player");
   if (channel === "rcon-darkplaces") return `kick # ${id}`;
   if (channel === "rcon-source") return `kickid ${id}`;
@@ -219,6 +234,7 @@ export function kickCommand(channel: ControlChannel | undefined, id: string): st
 /** Commands that ban an IP for as long as the server runs (PlayBound re-applies them on every start). */
 export function banCommands(channel: ControlChannel | undefined, ip: string): string[] {
   if (!IPV4.test(ip)) throw new UnsafeSettingValue("address");
+  if (channel === "console-rimworld") return [`banip ${ip}`];
   if (channel === "rcon-darkplaces") return [`ban ${ip} 315360000 PlayBound`];
   if (channel === "rcon-source") return [`addip 0 ${ip}`];
   return [`addip ${ip}`];
@@ -231,6 +247,7 @@ export function banCommands(channel: ControlChannel | undefined, ip: string): st
  */
 export function unbanCommands(channel: ControlChannel | undefined, ip: string): string[] | null {
   if (!IPV4.test(ip)) throw new UnsafeSettingValue("address");
+  if (channel === "console-rimworld") return [`pardonip ${ip}`];
   if (channel === "rcon-darkplaces") return null;
   return [`removeip ${ip}`];
 }

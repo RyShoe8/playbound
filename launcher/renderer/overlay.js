@@ -163,7 +163,7 @@ function controlHtml(def, value) {
   }
   if (def.type === "number") {
     return `<label class="row">${label}
-      <input type="number" data-key="${escapeHtml(def.key)}" value="${escapeHtml(value)}"
+      <input type="number" step="${def.key.startsWith("difficulty.") ? "any" : "1"}" data-key="${escapeHtml(def.key)}" value="${escapeHtml(value)}"
         ${def.min !== undefined ? `min="${escapeHtml(def.min)}"` : ""}
         ${def.max !== undefined ? `max="${escapeHtml(def.max)}"` : ""} />
     </label>`;
@@ -445,10 +445,10 @@ function renderServerTab() {
 }
 
 function renderHostedControls() {
-  if (!isHostedTarget()) return "";
+  if (!isHostedTarget() && !isRimworldParty()) return "";
   const data = state.data || {};
   const permissions = data.permissions || [];
-  const may = (permission) => permissions.includes(permission);
+  const may = (permission) => permissions.includes(permission) || (isRimworldParty() && data.canEdit && permission === "server:console");
   const running = data.status?.status === "running";
   const lifecycle = running
     ? `${may("server:restart") ? `<button class="apply" data-hosted-action="restart" ${state.hostedBusy ? "disabled" : ""}>Restart</button>` : ""}
@@ -473,7 +473,7 @@ function renderHostedControls() {
 }
 
 function wireHostedControls() {
-  if (!isHostedTarget()) return;
+  if (!isHostedTarget() && !isRimworldParty()) return;
   root.querySelectorAll("[data-hosted-action]").forEach((button) => {
     button.addEventListener("click", () => void runHostedAction(button.dataset.hostedAction));
   });
@@ -513,7 +513,7 @@ async function runHostedAction(action) {
 
 async function sendHostedConsole() {
   const command = state.hostedConsoleDraft.trim();
-  if (!isHostedTarget() || state.hostedBusy || !command || !window.playbound?.hostedServerConsole) return;
+  if ((!isHostedTarget() && !isRimworldParty()) || state.hostedBusy || !command || !window.playbound?.hostedServerConsole) return;
   state.hostedBusy = true;
   state.error = null;
   render();
@@ -855,6 +855,7 @@ function render() {
 
 /** A PlayBound Dedicated server rather than a party's: party-only tools (TES3MP) do not apply. */
 const isHostedTarget = () => String(state.partyId || "").startsWith("hosted:");
+const isRimworldParty = () => !isHostedTarget() && state.data?.gameSlug === "rimworld" && state.data?.supported === true;
 
 async function loadTes3mpClaim() {
   if (!state.partyId || !window.playbound?.getTes3mpClaimAdmin) {
@@ -962,7 +963,7 @@ async function load() {
 
   const data = await window.playbound.getServerSettings(state.partyId);
   state.data = data || { error: "Could not reach PlayBound" };
-  state.hostedPlayers = isHostedTarget() && data?.capabilities?.players && data?.status?.status === "running" && window.playbound.getHostedServerPlayers
+  state.hostedPlayers = (isHostedTarget() || isRimworldParty()) && data?.capabilities?.players && data?.status?.status === "running" && window.playbound.getHostedServerPlayers
     ? await window.playbound.getHostedServerPlayers(state.partyId)
     : null;
   state.maps = data?.maps && window.playbound.getServerMaps ? await window.playbound.getServerMaps(state.partyId) : null;

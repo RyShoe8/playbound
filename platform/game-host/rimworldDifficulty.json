@@ -1,0 +1,276 @@
+[
+  {
+    "key": "IsDifficultyEnforced",
+    "label": "Enforce server difficulty",
+    "default": false
+  },
+  {
+    "key": "ThreatScale",
+    "label": "Threat Scale",
+    "default": 1,
+    "min": 0,
+    "max": 10
+  },
+  {
+    "key": "AllowBigThreats",
+    "label": "Allow Big Threats",
+    "default": true
+  },
+  {
+    "key": "AllowViolentQuests",
+    "label": "Allow Violent Quests",
+    "default": true
+  },
+  {
+    "key": "AllowIntroThreats",
+    "label": "Allow Intro Threats",
+    "default": true
+  },
+  {
+    "key": "PredatorsHuntHumanlikes",
+    "label": "Predators Hunt Humanlikes",
+    "default": true
+  },
+  {
+    "key": "AllowExtremeWeatherIncidents",
+    "label": "Allow Extreme Weather Incidents",
+    "default": true
+  },
+  {
+    "key": "CropYieldFactor",
+    "label": "Crop Yield Factor",
+    "default": 1,
+    "min": 0,
+    "max": 10
+  },
+  {
+    "key": "MineYieldFactor",
+    "label": "Mine Yield Factor",
+    "default": 1,
+    "min": 0,
+    "max": 10
+  },
+  {
+    "key": "ButcherYieldFactor",
+    "label": "Butcher Yield Factor",
+    "default": 1,
+    "min": 0,
+    "max": 10
+  },
+  {
+    "key": "ResearchSpeedFactor",
+    "label": "Research Speed Factor",
+    "default": 1,
+    "min": 0,
+    "max": 10
+  },
+  {
+    "key": "QuestRewardValueFactor",
+    "label": "Quest Reward Value Factor",
+    "default": 1,
+    "min": 0,
+    "max": 10
+  },
+  {
+    "key": "RaidLootPointsFactor",
+    "label": "Raid Loot Points Factor",
+    "default": 1,
+    "min": 0,
+    "max": 10
+  },
+  {
+    "key": "TradePriceFactorLoss",
+    "label": "Trade Price Factor Loss",
+    "default": 0,
+    "min": 0,
+    "max": 1
+  },
+  {
+    "key": "MaintenanceCostFactor",
+    "label": "Maintenance Cost Factor",
+    "default": 1,
+    "min": 0,
+    "max": 10
+  },
+  {
+    "key": "ScariaRotChance",
+    "label": "Scaria Rot Chance",
+    "default": 0.6,
+    "min": 0,
+    "max": 1
+  },
+  {
+    "key": "EnemyDeathOnDownedChanceFactor",
+    "label": "Enemy Death On Downed Chance Factor",
+    "default": 1,
+    "min": 0,
+    "max": 1
+  },
+  {
+    "key": "ColonistMoodOffset",
+    "label": "Colonist Mood Offset",
+    "default": 0,
+    "min": -100,
+    "max": 100
+  },
+  {
+    "key": "FoodPoisonChanceFactor",
+    "label": "Food Poison Chance Factor",
+    "default": 1,
+    "min": 0,
+    "max": 1
+  },
+  {
+    "key": "ManhunterChanceOnDamageFactor",
+    "label": "Manhunter Chance On Damage Factor",
+    "default": 1,
+    "min": 0,
+    "max": 1
+  },
+  {
+    "key": "PlayerPawnInfectionChanceFactor",
+    "label": "Player Pawn Infection Chance Factor",
+    "default": 1,
+    "min": 0,
+    "max": 1
+  },
+  {
+    "key": "DiseaseIntervalFactor",
+    "label": "Disease Interval Factor",
+    "default": 1,
+    "min": 0,
+    "max": 10
+  },
+  {
+    "key": "EnemyReproductionRateFactor",
+    "label": "Enemy Reproduction Rate Factor",
+    "default": 1,
+    "min": 0,
+    "max": 10
+  },
+  {
+    "key": "DeepDrillInfestationChanceFactor",
+    "label": "Deep Drill Infestation Chance Factor",
+    "default": 1,
+    "min": 0,
+    "max": 1
+  },
+  {
+    "key": "FriendlyFireChanceFactor",
+    "label": "Friendly Fire Chance Factor",
+    "default": 0.4,
+    "min": 0,
+    "max": 1
+  },
+  {
+    "key": "AllowInstantKillChance",
+    "label": "Allow Instant Kill Chance",
+    "default": 1,
+    "min": 0,
+    "max": 1
+  },
+  {
+    "key": "PeacefulTemples",
+    "label": "Peaceful Temples",
+    "default": false
+  },
+  {
+    "key": "AllowCaveHives",
+    "label": "Allow Cave Hives",
+    "default": true
+  },
+  {
+    "key": "UnwaveringPrisoners",
+    "label": "Unwavering Prisoners",
+    "default": true
+  },
+  {
+    "key": "AllowTraps",
+    "label": "Allow Traps",
+    "default": true
+  },
+  {
+    "key": "AllowTurrets",
+    "label": "Allow Turrets",
+    "default": true
+  },
+  {
+    "key": "AllowMortars",
+    "label": "Allow Mortars",
+    "default": true
+  },
+  {
+    "key": "ClassicMortars",
+    "label": "Classic Mortars",
+    "default": false
+  },
+  {
+    "key": "AdaptationEffectFactor",
+    "label": "Adaptation Effect Factor",
+    "default": 0.9,
+    "min": 0,
+    "max": 1
+  },
+  {
+    "key": "AdaptationGrowthRateFactorOverZero",
+    "label": "Adaptation Growth Rate Factor Over Zero",
+    "default": 1,
+    "min": 0,
+    "max": 10
+  },
+  {
+    "key": "FixedWealthMode",
+    "label": "Fixed Wealth Mode",
+    "default": false
+  },
+  {
+    "key": "LowPopConversionBoost",
+    "label": "Low Pop Conversion Boost",
+    "default": 3,
+    "min": 0,
+    "max": 10
+  },
+  {
+    "key": "NoBabiesOrChildren",
+    "label": "No Babies Or Children",
+    "default": false
+  },
+  {
+    "key": "BabiesAreHealthy",
+    "label": "Babies Are Healthy",
+    "default": false
+  },
+  {
+    "key": "ChildRaidersAllowed",
+    "label": "Child Raiders Allowed",
+    "default": false
+  },
+  {
+    "key": "ChildAgingRate",
+    "label": "Child Aging Rate",
+    "default": 4,
+    "min": 0,
+    "max": 10
+  },
+  {
+    "key": "AdultAgingRate",
+    "label": "Adult Aging Rate",
+    "default": 1,
+    "min": 0,
+    "max": 10
+  },
+  {
+    "key": "WastepackInfestationChanceFactor",
+    "label": "Wastepack Infestation Chance Factor",
+    "default": 1,
+    "min": 0,
+    "max": 1
+  },
+  {
+    "key": "NomadicMineableResourcesFactor",
+    "label": "Nomadic Mineable Resources Factor",
+    "default": 1,
+    "min": 0,
+    "max": 10
+  }
+]

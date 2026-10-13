@@ -135,13 +135,13 @@ export async function kickPlayer(userId: string, serverId: string, playerId: str
 export async function runConsole(userId: string, serverId: string, command: string) {
   const auth = await authorizeServer(userId, serverId, "server:console");
   if ("error" in auth) return auth;
-  const problem = consoleCommandProblem(command);
+  const problem = consoleCommandProblem(command, getServerSettingProfile(auth.server.gameSlug)?.controlChannel);
   if (problem) return { error: problem, status: 400 } satisfies Fail;
   const adapter = await adapterFor(auth.server);
   if (!adapter.capabilities.console) return { error: "This game has no console PlayBound can reach.", status: 400 } satisfies Fail;
   try {
     const output = await adapter.sendCommand(command.trim());
-    await recordActivity(serverId, { id: userId }, "console_command", command.trim());
+    await recordActivity(serverId, { id: userId }, "console_command", /^\s*\/?setpassword\b/i.test(command) ? "setpassword [redacted]" : command.trim());
     return { output: output.replace(/\^[0-9a-z]/gi, "").slice(0, 20_000), status: 200 as const };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "The server didn't answer.", status: 503 } satisfies Fail;

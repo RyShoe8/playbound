@@ -90,8 +90,9 @@ export function mapSteamServerListRows(
       name: (row.name && String(row.name).trim()) || id,
       host: endpoint.host,
       port: endpoint.port,
-      players: row.players != null ? Number(row.players) : 0,
-      maxPlayers: row.max_players != null ? Number(row.max_players) : null,
+      players: typeof row.players === "number" && Number.isInteger(row.players) && row.players >= 0 ? row.players : null,
+      maxPlayers: typeof row.max_players === "number" && Number.isInteger(row.max_players) && row.max_players > 0 ? row.max_players : null,
+      bots: typeof row.bots === "number" && Number.isInteger(row.bots) && row.bots >= 0 ? row.bots : null,
       map: row.map ? String(row.map) : null,
       gameType: row.gamedir || defaultGameDir,
       location: null,
@@ -123,13 +124,18 @@ export async function fetchSteamServerList(opts: {
    * at MAX_SERVERS, so we never see every community server to subtract.
    */
   includeConcurrentTotal?: boolean;
+  /** Keep server discovery separate from Steam concurrency for games such as Unturned. */
+  serverListOnly?: boolean;
 }): Promise<GameServer[]> {
-  const { appId, label, defaultGameDir, includeConcurrentTotal } = opts;
+  const { appId, label, defaultGameDir, includeConcurrentTotal, serverListOnly } = opts;
   const concurrent = () => fetchSteamConcurrentPlayers(appId, { label });
 
-  const concurrentPromise = concurrent();
+  const concurrentPromise = serverListOnly ? Promise.resolve([]) : concurrent();
   const key = steamApiKey();
-  if (!key) return concurrentPromise;
+  if (!key) {
+    if (serverListOnly) throw new Error(`${label} public server discovery requires STEAM_WEB_API_KEY`);
+    return concurrentPromise;
+  }
 
   const url = new URL(STEAM_LIST_URL);
   url.searchParams.set("key", key);
@@ -152,6 +158,7 @@ export async function fetchSteamServerList(opts: {
       response?: { servers?: SteamServerListRow[] };
     };
     const rows = Array.isArray(data?.response?.servers) ? data.response.servers : [];
+    if (serverListOnly && !Array.isArray(data?.response?.servers)) throw new Error("Invalid Steam server-list response");
     if (rows.length === 0) return concurrentPromise;
 
     const servers = await attachGeo(mapSteamServerListRows(rows, defaultGameDir));
@@ -160,6 +167,7 @@ export async function fetchSteamServerList(opts: {
     const concurrentTotal = await concurrentPromise;
     return [...concurrentTotal, ...servers];
   } catch (err) {
+    if (serverListOnly) throw new Error(`${label} public server list unavailable`, { cause: err });
     // A busy Steam list endpoint is expected occasionally, and the concurrent
     // count is a valid fallback. Preserve warnings for credentials, response,
     // parsing, and other failures that may need intervention.

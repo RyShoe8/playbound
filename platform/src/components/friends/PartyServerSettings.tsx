@@ -1,4 +1,5 @@
 "use client";
+import { RimworldPartyRuntime } from "./RimworldPartyRuntime";
 
 import { useEffect, useState } from "react";
 import { RotateCw, TriangleAlert } from "lucide-react";
@@ -229,6 +230,7 @@ export function PartyServerSettings({ partyId }: { partyId: string }) {
           <Tes3mpSetHour partyId={partyId} />
         </>
       ) : null}
+      {data.gameSlug === "rimworld" && !preLaunch ? <RimworldPartyRuntime partyId={partyId} canEdit={data.canEdit} /> : null}
 
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
       {notice ? <p className="text-xs text-muted-foreground">{notice}</p> : null}
@@ -506,6 +508,7 @@ export function SettingControl({
         {label}
         <input
           type="number"
+            step={def.key.startsWith("difficulty.") ? "any" : undefined}
           value={Number(value)}
           min={def.min}
           max={def.max}

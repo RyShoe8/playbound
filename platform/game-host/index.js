@@ -43,6 +43,7 @@ import { createManagedRegistry, createManagedJobs, createPartyRegistry, isSamePr
 import { processMetrics } from "./processMetrics.js";
 import { isLinuxPortBound } from "./portReadiness.js";
 import { queryRoomOccupancy } from "./playerQueries.js";
+import { spawnRimworld, sendRimworldCommand, queryRimworldBrowser } from "./rimworldControl.js";
 import { isWorldBackupGame } from "./dedicatedDataBackups.js";
 import { runWorldBackup } from "./worldBackupRunner.js";
 import { captureRvglLobby, sendRvglLobbyInput } from "./rvglDisplay.js";
@@ -998,6 +999,7 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
       return { error: "Agent is shutting down" };
     }
     const spawnGame = () => {
+      if (gameSlug === "rimworld-together") return spawnRimworld(binary, args, { cwd, env: spawnEnv });
       // Give every room its own process group so wrappers and their children
       // stop together. Without this, an AppImage can orphan a live server.
       if (!communityServerId) return spawn(binary, args, { cwd, env: spawnEnv, stdio: ["pipe", "pipe", "pipe"], detached: true });
@@ -1613,6 +1615,14 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (req.method === "GET" && url.pathname === "/server-browser/rimworld") {
+      try {
+        const binary = resolveRecipe("rimworld-together", {})?.binary;
+        if (!binary) throw new Error("RimWorld Together is not installed");
+        json(res, 200, { servers: await queryRimworldBrowser(binary) });
+      } catch (error) { json(res, 502, { error: error.message }); }
+      return;
+    }
     const rconMatch = url.pathname.match(/^\/rooms\/([^/]+)\/rcon$/);
     if (req.method === "POST" && rconMatch) {
       const room = rooms.get(rconMatch[1]);
@@ -1620,7 +1630,7 @@ const server = http.createServer(async (req, res) => {
         json(res, 404, { error: "No such room" });
         return;
       }
-      if (!room.rcon || !room.rconPassword) {
+      if (room.gameSlug !== "rimworld-together" && (!room.rcon || !room.rconPassword)) {
         json(res, 409, { error: `${room.gameSlug} rooms do not take live commands` });
         return;
       }
@@ -1632,7 +1642,8 @@ const server = http.createServer(async (req, res) => {
       }
       try {
         room.lastActivityAt = Date.now();
-        const response = await sendRoomRcon(room, command);
+        if (room.gameSlug === "rimworld-together" && !isSameProcess(room.pid, room.processIdentity)) throw new Error("RimWorld runtime is no longer running");
+        const response = room.gameSlug === "rimworld-together" ? await sendRimworldCommand(room, command) : await sendRoomRcon(room, command);
         if (isRconAuthFailure(response)) {
           // A wrong password answers with an ordinary print, so a caller
           // checking only for a thrown error would record this as success.

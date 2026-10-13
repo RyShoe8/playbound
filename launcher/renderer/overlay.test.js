@@ -8,6 +8,29 @@ const { test } = require("node:test");
 
 const source = readFileSync(join(__dirname, "overlay.js"), "utf8");
 
+test("RimWorld party controls show players and console without granting hosted lifecycle actions", async () => {
+  const overlay = await renderOverlay(
+    {party:{id:"0123456789abcdef01234567",gameTitle:"RimWorld Together"}},
+    {supported:true,canEdit:true,phase:"live",gameSlug:"rimworld",definitions:[],values:{},capabilities:{players:true,console:true},status:{status:"running"}},
+    {getHostedServerPlayers:async()=>({players:[{id:"SmFja3k=",name:"Jacky"}]})}
+  );
+  assert.match(overlay.root.innerHTML, /Jacky/);
+  assert.match(overlay.root.innerHTML, /console/i);
+  assert.doesNotMatch(overlay.root.innerHTML, /data-hosted-action="(?:start|stop|restart)"/);
+});
+
+test("A public RimWorld server never gains party console controls", async () => {
+  let reads = 0;
+  const overlay = await renderOverlay(
+    {party:{id:"0123456789abcdef01234567",gameTitle:"RimWorld Together"}},
+    {supported:false,canEdit:false,gameSlug:"rimworld",reason:"Managed centrally"},
+    {getHostedServerPlayers:async()=>{reads++;return {players:[]};}}
+  );
+  assert.match(overlay.root.innerHTML, /Managed centrally/);
+  assert.equal(reads,0);
+  assert.doesNotMatch(overlay.root.innerHTML, /id="hosted-console/);
+});
+
 async function renderOverlay(context, serverSettings, extraPlaybound = {}) {
   const root = { innerHTML: "", querySelectorAll: () => [], querySelector: () => null };
   const subject = { textContent: "" };

@@ -5,6 +5,7 @@ import { deriveInstallSteps } from "@/lib/enrich";
 import { absoluteMediaUrl, sizeLabelFromMB, hasServerBrowser, supportsMultiplayer } from "@/lib/launcherInstall";
 import { listMods } from "@/lib/mods";
 import { listDevelopers } from "@/lib/developers";
+import { listEditionsForGame } from "@/lib/editions";
 import { listUnlockedByMaster, toLauncherUnlocks } from "@/lib/masterCopy";
 import { requestIncludesTesting } from "@/lib/requestIncludesTesting";
 import { gameAccessTiers, tierFor } from "@/lib/access/tiers";
@@ -31,6 +32,7 @@ export async function GET(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
     const gameTier = tierFor(tiers, slug);
+    const together = game.slug === "rimworld" && (await listEditionsForGame(game)).some(e => e.slug === "rimworld-together" && e.visibility === "public");
 
     const baseCover = absoluteMediaUrl(game.coverImage, origin);
     const mods = gameMods.map((m) => ({
@@ -120,9 +122,9 @@ export async function GET(
         whyWePickedIt: game.whyWePickedIt || null,
         thatOneThing: game.thatOneThing || null,
         qualityBar: game.qualityBar || null,
-        multiplayer: hasServerBrowser(game),
-        hasServerBrowser: hasServerBrowser(game),
-        isMultiplayer: supportsMultiplayer(game),
+        multiplayer: together || hasServerBrowser(game),
+        hasServerBrowser: together || hasServerBrowser(game),
+        isMultiplayer: together || supportsMultiplayer(game),
         website: game.website || null,
         githubRepo: game.githubRepo || null,
         platforms: Array.isArray(game.platforms) ? game.platforms : [],

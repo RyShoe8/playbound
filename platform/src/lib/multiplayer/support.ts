@@ -57,6 +57,7 @@ type MultiplayerInput = {
   features?: string[];
   tags?: string[];
   launchMethods?: string[];
+  editions?: EditionMultiplayerInput[];
   /** Explicit override, when a curator has answered this directly. */
   multiplayer?: boolean;
 };
@@ -64,6 +65,7 @@ type MultiplayerInput = {
 /** Card CTA: local-only play must not be advertised as an online party. */
 export function supportsOnlineMultiplayer(game: MultiplayerInput | null | undefined): boolean {
   if (!game) return false;
+  if (game.slug === "rimworld" && game.editions?.some(editionSupportsPartyPlay)) return true;
   if ((game as { isMultiplayer?: boolean }).isMultiplayer === false || game.multiplayer === false) return false;
   // A Connect adapter (virtual LAN, direct IP, managed server) is proof enough.
   if (game.slug && PARTY_ADAPTER_SLUGS.has(game.slug.toLowerCase())) return true;
@@ -88,6 +90,7 @@ export function hasServerBrowser(game: { launchMethods?: string[] } | null | und
  */
 export function supportsMultiplayer(game: MultiplayerInput | null | undefined): boolean {
   if (!game) return false;
+  if (game.slug === "rimworld" && game.editions?.some(editionSupportsPartyPlay)) return true;
   if (typeof (game as { isMultiplayer?: boolean })?.isMultiplayer === "boolean") {
     return Boolean((game as { isMultiplayer?: boolean }).isMultiplayer);
   }
@@ -123,6 +126,7 @@ export function supportsLauncherParty(game: LauncherPartyInput | null | undefine
   const install = game.launcherInstall;
   if (!install?.enabled) return false;
   if (install.kind === "external") {
+    if (game.slug === "rimworld" && game.editions?.some(editionSupportsPartyPlay) && install.knownExePaths?.length) return true;
     if (install.url?.startsWith("steam://")) return true;
     // GOG Galaxy is only the acquisition step for these ROMs. Once owned,
     // PlayBound locates the ZIP and runs RetroArch netplay for the party.

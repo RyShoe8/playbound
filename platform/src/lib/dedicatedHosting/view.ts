@@ -11,7 +11,7 @@ export function customerServerView(s: Record<string, unknown>) {
     description: String(s.description || ""),
     visibility: String(s.visibility || "public"),
     gameSlug: String(s.gameSlug),
-    gameTitle: getHostableGame(String(s.gameSlug))?.title || String(s.gameSlug),
+    gameTitle: s.gameSlug === "rimworld" ? "RimWorld Together" : getHostableGame(String(s.gameSlug))?.title || String(s.gameSlug),
     editionSlug: (s.editionSlug as string | null) || null,
     profileKey: String(s.profileKey),
     slots: Number(s.allocatedSlots) || 0,

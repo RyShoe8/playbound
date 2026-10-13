@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { hostableProfileStubs, readyGameHostSlugs, readyPublishedHostableCatalog } from "./hostableProfiles";
 
 describe("hostable profile stubs", () => {
+  it("maps Together to its recipe without offering vanilla RimWorld hosting", () => {
+    const edition = { gameSlug: "rimworld", slug: "rimworld-together", features: ["Multiplayer"] };
+    expect(hostableProfileStubs([], [edition], ["rimworld"])).toEqual([{ key: "rimworld:rimworld-together", gameSlug: "rimworld", editionSlug: "rimworld-together", recipeSlug: "rimworld-together" }]);
+    expect(readyPublishedHostableCatalog([{slug:"rimworld",title:"RimWorld",status:"published"}],[edition],[],new Set(["rimworld-together"])).editions).toEqual([edition]);
+  });
   it("offers every hostable game's base profile when nothing is stored", () => {
     const keys = hostableProfileStubs([], []).map((s) => s.key);
     for (const key of ["openttd:base", "luanti:base", "freeciv:base", "ysoccer:base", "battle-for-wesnoth:base", "re-volt-rvgl:base"]) {

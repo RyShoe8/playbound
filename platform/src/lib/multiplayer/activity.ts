@@ -2,6 +2,7 @@ import { unstable_cache, revalidateTag } from "next/cache";
 import dbConnect from "@/lib/db";
 import Party from "@/lib/models/Party";
 import { listGames } from "@/lib/catalog";
+import { listEditionsForGames } from "@/lib/editions";
 import { listDiscoverableGames } from "@/lib/access/discover";
 import { gameRequiresPurchase } from "@/lib/access/resolver";
 import { getLookingToPartyCounts } from "@/lib/playTogether/lookingToParty";
@@ -95,7 +96,8 @@ async function computeMultiplayerActivitySnapshot(): Promise<MultiplayerActivity
 
   // Filter to multiplayer games
   const discoverableSlugs = new Set(discoverable.map((g) => g.slug));
-  const multiplayerGames = allGames.filter(
+  const editionsByGame = await listEditionsForGames(allGames, { includeInactive: false });
+  const multiplayerGames = allGames.map(g => ({ ...g, editions: editionsByGame.get(g.slug) || [] })).filter(
     (g) => supportsMultiplayer(g) && (discoverableSlugs.size === 0 || discoverableSlugs.has(g.slug))
   );
 
@@ -165,7 +167,7 @@ async function computeMultiplayerActivitySnapshot(): Promise<MultiplayerActivity
       serverPlayerCount: srvPlayers,
       platformPlayerCount: stats.platformPlayers || 0,
       isMmo,
-      supportsDirectJoin: game.launchMethods.includes("server"),
+      supportsDirectJoin: game.slug === "rimworld" ? game.editions.some(e => e.slug === "rimworld-together") : game.launchMethods.includes("server"),
       supportsParty: supportsLauncherParty(game),
       score,
       updatedAt: new Date().toISOString(),
@@ -187,7 +189,7 @@ async function computeMultiplayerActivitySnapshot(): Promise<MultiplayerActivity
 }
 
 export function getMultiplayerActivitySnapshot(): Promise<MultiplayerActivityResponse> {
-  return unstable_cache(computeMultiplayerActivitySnapshot, ["multiplayer-activity-snapshot-v4"], {
+  return unstable_cache(computeMultiplayerActivitySnapshot, ["multiplayer-activity-snapshot-v5"], {
     revalidate: CACHE_SECONDS,
     tags: ["multiplayer-activity"],
   })();

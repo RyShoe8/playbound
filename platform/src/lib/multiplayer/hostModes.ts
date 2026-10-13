@@ -270,6 +270,7 @@ export function canUsePublicServer(gameSlug: string): boolean {
  * the alternative.
  */
 export function hostModesFor(gameSlug: string, editionSlug?: string | null): PartyHostMode[] {
+  if (gameSlug === "rimworld" && editionSlug !== "rimworld-together") return [];
   // The Deus Ex adapter describes HX. Vanilla and GMDX do not have that
   // network protocol, even though they share the parent catalog slug.
   if (gameSlug === "deus-ex-goty-edition" && editionSlug !== "playbound-hx-coop") return [];

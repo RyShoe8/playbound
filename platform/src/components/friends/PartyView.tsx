@@ -43,6 +43,7 @@ import { PartyServerSettings } from "@/components/friends/PartyServerSettings";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 export type PartyGameOption = {
+  editions?: import("@/lib/multiplayer/support").EditionMultiplayerInput[];
   slug: string;
   title: string;
   website?: string;

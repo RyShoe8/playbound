@@ -13581,6 +13581,7 @@ function serverMapsPath(target) {
 
 function hostedControlPath(target, suffix) {
   const id = String(target || "");
+  if (/^[a-f0-9]{24}$/i.test(id) && ["players", "console"].includes(suffix)) return `/api/parties/${id}/server-runtime`;
   if (!/^hosted:[a-f0-9]{24}$/i.test(id)) return null;
   return `/api/hosting/servers/${encodeURIComponent(id.slice(7))}/${suffix}`;
 }

@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { FriendsView } from "@/components/friends/FriendsView";
 import { listGames } from "@/lib/catalog";
+import { listEditionsForGames } from "@/lib/editions";
 import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { GENRES } from "@/lib/gamePayload";
 import { privateMetadata } from "@/lib/seo";
@@ -28,11 +29,13 @@ export default async function FriendsPage() {
    * and unindexed, so no cached copy can leak a testing entry to the public.
    */
   const games = await listGames({ includeTesting: await viewerCanSeeTesting() });
+  const editions = await listEditionsForGames(games, { includeInactive: false });
   return (
     <div className="w-full space-y-4 px-4 py-8 sm:px-6 lg:px-8">
       <FriendsView
         games={games.map((g) => ({
           slug: g.slug,
+          editions: editions.get(g.slug) || [],
           title: g.title,
           website: g.website,
           launchMethods: g.launchMethods,

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Party from "@/lib/models/Party";
 import { getGame } from "@/lib/catalog";
+import { listEditionsForGame } from "@/lib/editions";
 import { gameRequiresPurchase } from "@/lib/access/resolver";
 import { countLookingToPartyByGame } from "@/lib/playTogether/lookingToParty";
 import { getGameLiveStats } from "@/lib/liveActivity";
@@ -80,7 +81,7 @@ export async function GET(req: Request) {
         platformPlayerCount: stats.platformPlayers || 0,
         isMmo,
         supportsDirectJoin: game.launchMethods.includes("server"),
-        supportsParty: supportsLauncherParty(game),
+        supportsParty: supportsLauncherParty({ ...game, editions: game.slug === "rimworld" ? await listEditionsForGame(game) : [] }),
         score: openPartyCount * 20 + usersLooking * 10 + (stats.multiplayerPlayers || 0),
         updatedAt: new Date().toISOString(),
       };

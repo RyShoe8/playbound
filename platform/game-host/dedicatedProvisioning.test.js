@@ -116,6 +116,16 @@ test("Unturned permits a token-free admin smoke test but requires a token for In
   await recipes.unturned.prepareSpawn(27075, ctx);
   assert.match(fs.readFileSync(config, "utf8"), /GSLT a{32}/);
   assert.match(recipes.unturned.args(27075, ctx)[0], /^\+InternetServer\//);
+  ctx.settings = { ...ctx.settings, map: "Russia", pve: true, perspective: "First", cheats: true };
+  await recipes.unturned.prepareSpawn(27075, ctx);
+  assert.match(fs.readFileSync(config, "utf8"), /Map Russia\n/);
+  assert.match(fs.readFileSync(config, "utf8"), /Perspective First\nPvE\nCheats\n/);
+  ctx.settings.map = "PEI\nShutdown";
+  ctx.settings.pve = false;
+  ctx.settings.cheats = false;
+  await recipes.unturned.prepareSpawn(27075, ctx);
+  assert.match(fs.readFileSync(config, "utf8"), /Map PEI\n/);
+  assert.doesNotMatch(fs.readFileSync(config, "utf8"), /Shutdown|PvE|Cheats/);
 });
 
 test("Barotrauma gets a separate executable and capped XML per customer", async () => {

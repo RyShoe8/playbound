@@ -77,6 +77,8 @@ import { fetchLeagueOfLegendsServers } from "./providers/league-of-legends";
 import { fetchGenshinImpactServers } from "./providers/genshin-impact";
 import { fetchTripleAServers } from "./providers/triplea";
 import { hasServerBrowser } from "./browserGames";
+import { fetchRimworldServers } from "./providers/rimworld";
+import { fetchUnturnedServers, fetchUnturnedPlayerCount } from "./providers/unturned";
 import { isUpstreamTimeout } from "./errors";
 import type { GameServer, ServerListResult, ServerProvider } from "./types";
 
@@ -89,6 +91,8 @@ async function fetchRemoteWithLobbyAuth(slug: string): Promise<GameServer[]> {
 }
 
 const providers: Record<string, ServerProvider> = {
+  unturned: { slug: "unturned", fetchServers: fetchUnturnedServers, fetchPlayerCount: fetchUnturnedPlayerCount },
+  rimworld: { slug: "rimworld", fetchServers: fetchRimworldServers },
   openra: { slug: "openra", fetchServers: fetchOpenRaServers, fetchPlayerCount: fetchOpenRaPlayerCount },
   luanti: { slug: "luanti", fetchServers: fetchLuantiServers },
   // First-party registry; servers opt in with the server's --register flag.

@@ -69,7 +69,8 @@ export async function fetchSteamConcurrentPlayers(
   if (data.response?.result !== 1) {
     return [];
   }
-  const players = Number(data.response.player_count ?? 0);
+  if (typeof data.response.player_count !== "number") return [];
+  const players = data.response.player_count;
   if (!Number.isFinite(players) || players < 0) return [];
 
   /*
