@@ -5,6 +5,7 @@ import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { pageMetadata } from "@/lib/seo";
 import { JsonLd, graph, breadcrumbSchema, ORGANIZATION_ID } from "@/components/JsonLd";
 import { ModsFilters } from "@/components/ModsFilters";
+import { CatalogDirectory } from "@/components/CatalogDirectory";
 
 import { absoluteUrl } from "@/lib/site";
 
@@ -104,16 +105,9 @@ export default async function ModsIndexPage() {
       ) : (
         <>
           <ModsFilters mods={liveMods} gamesBySlug={gamesBySlug} />
-          {/* SEO fallback: ensure crawlers see links to all mods even without JS */}
-          <noscript>
-            <ul style={{ display: "none" }}>
-              {liveMods.map((m) => (
-                <li key={m.slug}>
-                  <a href={`/mods/${m.slug}`}>{m.title}</a>
-                </li>
-              ))}
-            </ul>
-          </noscript>
+          <CatalogDirectory title="All mods by name" entries={liveMods.map((mod) => ({
+            title: mod.title, href: `/mods/${mod.slug}`,
+          }))} />
         </>
       )}
     </div>

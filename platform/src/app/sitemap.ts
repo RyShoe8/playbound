@@ -44,8 +44,7 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
   cacheTag("mods");
   cacheTag("gear");
   cacheTag(HOSTING_TIER_TAG);
-  const hostingGames = publicGames((await loadPublicTier()).tier);
-  const [games, mods, weekly, editions, gear, collections, blogPosts] = await Promise.all([
+  const [games, mods, weekly, editions, gear, collections, blogPosts, hosting] = await Promise.all([
     listGames(),
     listMods({ view: "card" }),
     listWeeklyIssues(),
@@ -62,7 +61,9 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
      */
     listCollections(),
     listPublishedBlogPosts(),
+    loadPublicTier(),
   ]);
+  const hostingGames = publicGames(hosting.tier);
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: SITE_URL, changeFrequency: "weekly", priority: 1.0 },
