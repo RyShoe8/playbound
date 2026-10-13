@@ -43,6 +43,7 @@ export default function SignupPage() {
     // A game's sign-in code page (/link?code=ABCD-EFGH), so a new account
     // comes back to approve the code the game is showing.
     || /^\/link(\?code=[A-Z0-9-]{8,12})?$/i.test(requestedNext)
+    || /^\/events\/create(\?game=[a-z0-9-]+)?$/i.test(requestedNext)
     ? requestedNext
     : null;
   /*

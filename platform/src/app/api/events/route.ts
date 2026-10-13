@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { unstable_rethrow } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { z } from "zod";
+import dbConnect from "@/lib/db";
+import { canWriteAdmin } from "@/lib/adminAccess";
+import { checkRateLimit } from "@/lib/discussion/rateLimit";
+import { eventCreationPolicy } from "@/lib/events/creationPolicy";
 import { authOptions } from "@/lib/auth";
 import { userFromLauncherBearer } from "@/lib/library";
 import {
@@ -45,12 +49,14 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   let userId: string | null = null;
   const session = await getServerSession(authOptions);
+  let role = session?.user?.role;
   if (session?.user?.id) {
     userId = session.user.id;
   } else {
     const launcherUser = await userFromLauncherBearer(req);
     if (launcherUser?._id) {
       userId = launcherUser._id.toString();
+      role = launcherUser.role;
     }
   }
 
@@ -60,7 +66,12 @@ export async function POST(req: Request) {
 
   try {
     const body = eventCreateSchema.parse(await req.json());
-    const doc = await createPlatformEvent(body, userId);
+    if (!canWriteAdmin(role)) {
+      await dbConnect();
+      const quota = await checkRateLimit(`event-create:${userId}`, { max: 8, windowMs: 60 * 60 * 1000 });
+      if (!quota.ok) return NextResponse.json({ error: "Too many events created. Please try again later." }, { status: 429, headers: { "Retry-After": String(quota.retryAfterSec) } });
+    }
+    const doc = await createPlatformEvent(eventCreationPolicy(body, role), userId);
 
     const counts = await getRsvpCounts(doc._id);
     return NextResponse.json(

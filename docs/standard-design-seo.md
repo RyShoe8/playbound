@@ -16,4 +16,4 @@ The root layout remains the single owner of Organization, WebSite and editor Per
 
 These checks protect discoverability and machine-readable attribution. They cannot guarantee rankings or inclusion in AI answers.
 
-Individual `/events/[id]` pages must remain noindex and absent from the sitemap. Only `/events` is currently public and indexable. Event creation lives at `/admin/events/new`, behind admin authorization; it inherits admin noindex and is not in the sitemap. A future public creation page may be indexed, but the private admin form must not be exposed.
+Individual `/events/[id]` pages remain noindex and absent from the sitemap. `/events` and the public `/events/create` page are indexable and included. The public creation page presents an introduction while signed out and the existing form while signed in. `/admin/events/new` remains private and noindex. Public user-created events are community-owned and cannot self-promote to featured or official PlayBound events.
