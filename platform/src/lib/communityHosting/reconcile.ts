@@ -162,7 +162,7 @@ export function communityRuntimeReservation(
   const settled = room.processStartedAt != null && now.getTime() - room.processStartedAt >= 5 * 60_000;
   const baseline = getEffectiveEnvelope(profile?.envelope, room.gameSlug, profile?.sampleCount,
     settled && players === 0 ? "running" : "startup");
-  return settled ? runningReservationEnvelope({ baseline, players, observed: room.resources }) : baseline;
+  return runningReservationEnvelope({ baseline, players: settled ? players : null, observed: room.resources });
 }
 
 const LEASE_MS = 2 * 60_000;
