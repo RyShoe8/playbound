@@ -584,7 +584,7 @@ export function FriendsView({
    */
   if (status !== "authenticated") {
     return (
-      <div className="mt-5 rounded-xl border border-border bg-card px-5 py-8 text-center sm:px-8">
+      <div className="new-friends-promo mt-5 rounded-xl border border-border bg-card px-5 py-8 text-center sm:px-8">
         <PartyPopper className="mx-auto size-8 text-primary" />
         <h2 className="mt-3 text-xl font-extrabold tracking-tight">Play together on PlayBound</h2>
         <p className="mx-auto mt-1.5 max-w-md text-sm text-muted-foreground">

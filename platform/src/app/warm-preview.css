@@ -217,3 +217,12 @@ html[data-warm-preview] input[type="checkbox"]:focus-visible { outline: 2px soli
   html[data-warm-preview] .new-multiplayer-layout { grid-template-columns: minmax(0, 1fr); }
   html[data-warm-preview] .new-multiplayer-layout > * { grid-column: 1; grid-row: auto; }
 }
+
+/* Match Library's generous signed-out welcome while retaining Friends benefits. */
+html[data-warm-preview] .new-friends-promo { min-height:60vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:48px 24px; }
+html[data-warm-preview] .new-friends-promo > svg { width:40px; height:40px; }
+html[data-warm-preview] .new-friends-promo > h2 { font-size:clamp(24px,3vw,36px); }
+html[data-warm-preview] .new-friends-promo > p { max-width:560px; font-size:16px; line-height:1.6; }
+html[data-warm-preview] .new-friends-promo > ul { width:100%; max-width:800px; gap:16px; margin-top:28px; }
+html[data-warm-preview] .new-friends-promo > ul > li { padding:20px; }
+html[data-warm-preview] .new-friends-promo > ul > li > p:last-child { font-size:14px; line-height:1.5; }
