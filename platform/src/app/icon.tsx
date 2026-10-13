@@ -14,11 +14,11 @@ export default function Icon() {
           alignItems: "center",
           justifyContent: "center",
           borderRadius: 8,
-          background: "#8b5cf6",
+          background: "#15161c",
         }}
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="#faf8ff">
-          <path d="M8 5v14l11-7z" />
+        <svg width="32" height="32" viewBox="0 0 1024 1024" fill="#38BDF8">
+          <path d="M342 182 L809 512 L342 842 Z" />
         </svg>
       </div>
     ),
