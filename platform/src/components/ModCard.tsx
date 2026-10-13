@@ -5,9 +5,6 @@ import Link from "next/link";
 import type { ModCardMod } from "@/lib/mods";
 import { cn } from "@/lib/utils";
 import { ModArt } from "@/components/ModArt";
-import { CardCategoryTags } from "@/components/CardCategoryTags";
-import { useGameTier } from "@/components/AccessTiersProvider";
-import { requiresGamePriceLine } from "@/lib/access/discoveryMode";
 
 type BaseGameInfo = {
   slug?: string;
@@ -19,7 +16,7 @@ type Props = {
   mod: ModCardMod;
   baseGame?: BaseGameInfo;
   className?: string;
-  /** Extra footer line (e.g. license · size) — defaults to base game + size. */
+  /** Optional custom footer — defaults to the base game's name. */
   meta?: string;
   /** Optional action row under the body (install buttons, etc.). */
   actions?: ReactNode;
@@ -40,25 +37,8 @@ export function ModCard({
   href,
 }: Props) {
   const link = href ?? `/mods/${mod.slug}`;
-  const requireLine = requiresGamePriceLine(
-    baseGame?.title || mod.baseGameSlug,
-    useGameTier(mod.baseGameSlug).fromPriceCents
-  );
-  const footer =
-    meta ??
-    [
-      requireLine,
-      requireLine
-        ? null
-        : baseGame?.title
-          ? `For ${baseGame.title}`
-          : mod.baseGameSlug
-            ? `For ${mod.baseGameSlug}`
-            : null,
-      mod.sizeMB ? `~${mod.sizeMB} MB` : null,
-    ]
-      .filter(Boolean)
-      .join(" · ");
+  const gameName = baseGame?.title || mod.baseGameSlug?.replace(/-/g, " ").replace(/\b\w/g, letter => letter.toUpperCase());
+  const footer = meta ?? (gameName ? `For ${gameName}` : "");
 
   const body = (
     <>
@@ -68,14 +48,6 @@ export function ModCard({
         <p className="mt-1 flex-1 text-[14px] leading-relaxed text-muted-foreground line-clamp-2">
           {mod.tagline}
         </p>
-        <CardCategoryTags
-          genres={mod.license ? [mod.license] : []}
-          tags={mod.tags}
-          variant="mod"
-          className="mt-2"
-          max={3}
-          size="md"
-        />
         <div className="mt-3.5 flex items-center justify-between gap-2">
           <span className="min-w-0 truncate text-xs text-muted-foreground/70">
             {footer || "\u00a0"}
