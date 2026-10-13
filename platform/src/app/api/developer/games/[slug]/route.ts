@@ -8,10 +8,10 @@ import { developerGamePayloadSchema } from "@/lib/developerGamePayload";
 import { firstZodErrorMessage } from "@/lib/zodError";
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  const { user, error } = await requireDeveloperOrAdminSession();
+  const { user, error } = await requireDeveloperOrAdminSession(req);
   if (error) return error;
 
   const { slug } = await params;
@@ -37,7 +37,7 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  const { user, error } = await requireDeveloperOrAdminSession();
+  const { user, error } = await requireDeveloperOrAdminSession(req);
   if (error) return error;
 
   const { slug } = await params;

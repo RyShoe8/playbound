@@ -40,6 +40,13 @@
 .sidebar-footer .site-account-menu { flex-shrink:0; }
 .sidebar-footer .site-account { flex:1; }
 #content { background:var(--bg-dark); }
+#content>.view,.mp-hub-container { width:100%; max-width:none; min-width:0; }
+.view>:is(.event-detail-wrap,.friends-view-wrap,.events-list),.gear-detail-wrap { width:100%; max-width:none; }
+.workspace-body { display:grid; gap:20px; }
+.workspace-server-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr)); gap:20px; }
+.workspace-form,.workspace-settings { display:grid; gap:16px; }
+.workspace-field { display:flex; flex-direction:column; gap:8px; font-size:13px; }
+.workspace-actions { display:flex; flex-wrap:wrap; gap:12px; }
 .edition-feature-icon,.detail-section-count { background:#38bdf820; border-color:#38bdf840; color:var(--accent-light); }
 #sidebar-feedback { text-decoration:none; }
 .sidebar-status { font-size:11px; }

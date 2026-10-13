@@ -192,6 +192,7 @@ contextBridge.exposeInMainWorld("playbound", {
   // Catalog / servers / mods
   getCatalog: (opts) => ipcRenderer.invoke("get-catalog", opts || {}),
   getHomeFeed: () => ipcRenderer.invoke("get-home-feed"),
+  workspaceRequest: (input) => ipcRenderer.invoke("workspace-request", input),
   refreshCatalog: () => ipcRenderer.invoke("get-catalog", { refresh: true }),
   getServers: (slug) => ipcRenderer.invoke("get-servers", slug),
   getCommunityServers: () => ipcRenderer.invoke("get-community-servers"),

@@ -87,6 +87,8 @@ function isSameDeepLinkContext(a, b) {
 }
 
 const viewLoaders = {
+  myServers: () => import("./views/workspace.js"),
+  developer: () => import("./views/workspace.js"),
   games: () => import("./views/games.js"),
   search: () => import("./views/search.js"),
   library: () => import("./views/library.js"),
@@ -270,6 +272,8 @@ export async function navigateTo(viewName, params = {}) {
     return api.renderGearDetailView?.(params.slug);
   }
   if (viewName === "settings") return api.renderSettingsView?.();
+  if (viewName === "myServers") return api.renderMyServersView?.();
+  if (viewName === "developer") return api.renderDeveloperView?.();
   if (viewName === "gameDetail") {
     if (!force && isViewReady(views.gameDetail, params.slug)) return;
     return api.renderGameDetailView?.(params.slug);

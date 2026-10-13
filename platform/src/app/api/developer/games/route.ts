@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireDeveloperOrAdminSession, listManageableGames } from "@/lib/developerAccess";
 
-export async function GET() {
-  const { user, error } = await requireDeveloperOrAdminSession();
+export async function GET(req: Request) {
+  const { user, error } = await requireDeveloperOrAdminSession(req);
   if (error) return error;
 
   try {
