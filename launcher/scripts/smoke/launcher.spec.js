@@ -62,6 +62,10 @@ test('real launcher boots, navigates, and installs/removes a mock game', async (
     try {
       await expect(page.locator('[data-view="home"]')).toHaveClass(/active/);
       await expect(page.getByRole('heading', { name: 'Good to see you, Smoke User.' })).toBeVisible();
+      await expect(page.locator('#home-next-night .site-night-title')).toHaveText('Fixture Game Night');
+      await expect(page.locator('#home-next-night .site-night-game')).toHaveText('Smoke Fixture Game');
+      await expect(page.locator('#home-next-night .site-night-details')).toHaveText('View details →');
+      await expect(page.locator('#home-mods-grid')).toContainText('For Smoke Fixture Game');
       await expect(page.locator('.site-wordmark small')).toHaveText('Discover. Play. Connect.');
       await expect(page.locator('#site-account-name')).toHaveText('Smoke User');
       expect(await page.locator('#sidebar').evaluate(element => Math.round(element.getBoundingClientRect().width))).toBe(206);

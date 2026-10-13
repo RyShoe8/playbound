@@ -30,15 +30,36 @@ function paintFeature(game) {
   copy.innerHTML = `<p class="site-eyebrow">Latest release</p><h2>${escapeHtml(game.title)}</h2><p>${escapeHtml(game.tagline || game.blurb || game.description || '')}</p><button class="btn-primary">Explore game →</button>`;
   copy.querySelector('button').addEventListener('click', () => api.openGameDetail?.(game.slug, 'home')); host.append(copy);
 }
-function paintNight(events) {
+const eventIcon = paths => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+const calendarIcon = eventIcon('<path d="M8 2v4m8-4v4M3 10h18"/><rect x="3" y="4" width="18" height="18" rx="2"/>');
+const playersIcon = eventIcon('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/><circle cx="9" cy="7" r="4"/>');
+const gamepadIcon = eventIcon('<path d="M6 12h4m-2-2v4m7-1h.01m2-2h.01M6 8h12a4 4 0 0 1 3.9 3.1l1.1 5.8a3 3 0 0 1-5 2.8l-2-1.7H8l-2 1.7a3 3 0 0 1-5-2.8l1.1-5.8A4 4 0 0 1 6 8Z"/>');
+function paintNight(events, catalog) {
   const night = events.find(event => event.eventType === 'game_night' && !['cancelled', 'completed'].includes(event.status));
   const host = document.getElementById('home-next-night');
+  host.className = night ? '' : 'site-panel site-pad';
   if (!night) {
     host.innerHTML = '<h3>Make the next game night happen</h3><p>Gather your friends around a game you love.</p><button class="btn-primary">Create event</button>';
     host.querySelector('button').addEventListener('click', () => window.playbound.openExternal('https://playbound.club/events/create')); return;
   }
-  host.innerHTML = `${night.coverImage ? `<img class="site-night-cover" src="${escapeHtml(night.coverImage)}" alt="" loading="lazy">` : ''}<div><p class="site-eyebrow">Game Night</p><h3>${escapeHtml(night.title)}</h3><p>${escapeHtml(new Date(night.startsAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }))}</p><p>${Number(night.counts?.going || 0)} going</p><button class="btn-primary">View event →</button></div>`;
-  host.querySelector('button').addEventListener('click', () => api.openEventDetail?.(night.id, 'home'));
+  const start = new Date(night.startsAt);
+  const end = night.endsAt ? new Date(night.endsAt) : null;
+  const date = start.toLocaleDateString(undefined, {weekday:'long',month:'long',day:'numeric'});
+  const timeOptions = {hour:'numeric',minute:'2-digit'};
+  const when = end && !Number.isNaN(end.getTime())
+    ? `${date} · ${start.toLocaleTimeString(undefined,timeOptions)} – ${end.toLocaleTimeString(undefined,{...timeOptions,timeZoneName:'short'})}`
+    : `${date} · ${start.toLocaleTimeString(undefined,{...timeOptions,timeZoneName:'short'})}`;
+  const gameTitle = catalog.find(game => game.slug === night.gameSlug)?.title || night.gameSlug;
+  const badges = `${night.status === 'live' ? '<span class="site-night-live">● Live now</span>' : ''}<span class="site-night-type">${gamepadIcon} Game Night</span>${night.featured ? '<span class="site-night-featured">Featured</span>' : ''}`;
+  host.innerHTML = `<a class="site-night-card" href="#event-${escapeHtml(night.id)}">
+    ${night.coverImage ? `<div class="site-night-art"><img src="${escapeHtml(night.coverImage)}" alt="${escapeHtml(night.title)} event cover image" loading="lazy"><div class="site-night-gradient"></div><div class="site-night-badges">${badges}</div></div>` : `<div class="site-night-no-cover"><div class="site-night-badges">${badges}</div></div>`}
+    <div class="site-night-body"><p class="site-night-title">${escapeHtml(night.title)}</p>
+      ${gameTitle ? `<p class="site-night-game">${escapeHtml(gameTitle)}</p>` : ''}
+      <p class="site-night-when">${calendarIcon}<span>${escapeHtml(when)}</span></p>
+      <p class="site-night-description">${escapeHtml(night.description || '')}</p>
+      <div class="site-night-footer"><span>${playersIcon}${Number(night.counts?.going || 0)} going${night.maxParticipants ? ` / ${Number(night.maxParticipants)}` : ''}</span><span class="site-night-details">View details →</span></div>
+    </div></a>`;
+  host.querySelector('a').addEventListener('click', event => { event.preventDefault(); api.openEventDetail?.(night.id, 'home'); });
 }
 function paintPeople(result) {
   const host = document.getElementById('home-people');
@@ -91,9 +112,12 @@ async function loadHome() {
       retry.addEventListener('click', () => { cacheInvalidate('siteHome'); void loadHome(); }); grid.append(retry);
     } } };
   paint('home-popular', feed ? selected.popular.map(game => createGameCard(game)) : []);
-  paintNight(value(2, {}).events || []);
+  paintNight(value(2, {}).events || [], catalog);
   paint('home-free', diversifyOffers(value(3, {}).offers || [], 8).map(createFreeOfferCard));
-  paint('home-mods', selected.mods.map(createModCard));
+  paint('home-mods', selected.mods.map(mod => createModCard({
+    ...mod,
+    baseGameTitle: catalog.find(game => game.slug === mod.baseGameSlug)?.title || mod.baseGameTitle,
+  })));
   paint('home-editions', selected.editions.map(({game, edition}) => {
     const card = createGameCard({...game, title: edition.name || game.title, coverImage: edition.coverImage || game.coverImage, editions: []});
     card.addEventListener('click', event => { event.stopImmediatePropagation(); api.openEditionDetail?.(game.slug, edition.slug); }, { capture: true }); return card;

@@ -50,7 +50,9 @@ function syncModGameOptions(mods) {
   const gameOptions = new Map();
   for (const m of mods) {
     if (m.baseGameSlug && !gameOptions.has(m.baseGameSlug)) {
-      gameOptions.set(m.baseGameSlug, m.baseGameTitle || m.baseGameSlug);
+      gameOptions.set(m.baseGameSlug, m.baseGameTitle
+        || state.catalogCache.find(game => game.slug === m.baseGameSlug)?.title
+        || m.baseGameSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '));
     }
   }
   gameSelect.innerHTML =

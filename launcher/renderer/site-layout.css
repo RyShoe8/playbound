@@ -103,8 +103,35 @@ h1.view-title { font-size:clamp(2rem,3.2vw,3rem); }
 .site-feature-copy p:not(.site-eyebrow) { max-width:540px; font-size:13px; line-height:1.6; margin:10px 0 18px; }
 .site-person { display:flex; align-items:center; gap:10px; border:0; background:none; color:var(--text-main); padding:10px 0; width:100%; text-align:left; cursor:pointer; }
 .site-person small { display:block; color:var(--text-muted); margin-top:4px; }
-#home-next-night { display:flex; gap:20px; align-items:center; flex-wrap:wrap; }
-.site-night-cover { width:160px; aspect-ratio:16/9; object-fit:cover; border-radius:8px; }
+.site-night-card { display:grid; grid-template-columns:200px minmax(0,1fr); overflow:hidden; border:1px solid var(--border); border-radius:16px; background:var(--bg-card); color:var(--text-main); text-decoration:none; transition:transform .2s,border-color .2s,box-shadow .2s; }
+.site-night-card:hover { transform:translateY(-2px); border-color:rgba(56,189,248,.4); box-shadow:0 10px 20px rgba(56,189,248,.05); }
+.site-night-card:focus-visible { outline:2px solid var(--accent-light); outline-offset:3px; }
+.site-night-art { position:relative; min-height:180px; overflow:hidden; background:var(--bg-surface); }
+.site-night-art img { position:absolute; width:100%; height:100%; object-fit:cover; transition:transform .3s; }
+.site-night-card:hover .site-night-art img { transform:scale(1.05); }
+.site-night-gradient { position:absolute; inset:0; background:linear-gradient(to top,var(--bg-card),rgba(32,33,41,.2),transparent); }
+.site-night-badges { display:flex; flex-wrap:wrap; gap:6px; align-items:center; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+.site-night-art .site-night-badges { position:absolute; top:12px; left:12px; right:12px; color:white; }
+.site-night-badges span { display:inline-flex; align-items:center; gap:4px; border-radius:6px; padding:2px 8px; }
+.site-night-type { background:rgba(0,0,0,.6); }
+.site-night-live { background:rgba(220,38,38,.9); color:white; }
+.site-night-featured { background:var(--accent-light); color:var(--bg-card); }
+.site-night-no-cover { min-height:180px; padding:20px 20px 0; }
+.site-night-no-cover .site-night-type { background:transparent; color:var(--text-muted); padding:0; }
+.site-night-body { display:flex; flex-direction:column; min-width:0; padding:20px; }
+.site-night-body p { margin:0; }
+.site-night-title { font-size:18px; font-weight:700; line-height:1.375; }
+.site-night-card:hover .site-night-title { color:var(--accent-light); }
+.site-night-body .site-night-game { margin-top:4px; font-size:14px; font-weight:600; color:var(--text-muted); }
+.site-night-body .site-night-when { display:flex; align-items:center; gap:6px; margin-top:8px; font-size:12px; color:var(--text-muted); }
+.site-night-body .site-night-description { flex:1; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; margin-top:10px; font-size:14px; color:var(--text-muted); }
+.site-night-footer { display:flex; justify-content:space-between; gap:12px; margin-top:16px; padding-top:12px; border-top:1px solid var(--border); font-size:12px; font-weight:600; }
+.site-night-footer>span { display:inline-flex; align-items:center; gap:6px; }
+.site-night-details,.site-night-when svg,.site-night-footer svg { color:var(--accent-light); }
+.site-night-card:hover .site-night-details { text-decoration:underline; }
+.site-night-card svg { width:14px; height:14px; flex-shrink:0; }
+.site-night-type svg { width:12px; height:12px; }
+@media(max-width:600px) { .site-night-card { grid-template-columns:1fr; } .site-night-art { min-height:0; height:160px; } .site-night-no-cover { min-height:0; } }
 .pb-event-card,.friends-card,.party-card,.detail-section { background:var(--bg-card); border-color:var(--border); border-radius:12px; }
 .detail-hero { border-radius:12px; min-height:320px; }
 .detail-tab.active { color:var(--accent-light); border-color:var(--accent); }

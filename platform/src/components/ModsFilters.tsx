@@ -112,9 +112,6 @@ export function ModsFilters({
                         ? { slug: game.slug, title: game.title, coverImage: game.coverImage }
                         : null
                     }
-                    meta={[mod.license, mod.sizeMB ? `~${mod.sizeMB} MB` : null]
-                      .filter(Boolean)
-                      .join(" · ")}
                   />
                 </li>
               );

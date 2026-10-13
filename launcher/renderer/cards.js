@@ -1,12 +1,10 @@
 import {
   accessPriceLabel,
   api,
-  catalogPriceBySlug,
   escapeHtml,
   isGameDesktopCompatible,
   prefetchGameDetail,
   prefetchModDetail,
-  requiresGamePriceLine,
   state,
   resizedImageUrl,
 } from "./shared.js";
@@ -297,15 +295,10 @@ export function createModCard(mod) {
 
   const footer = document.createElement("div");
   footer.className = "card-meta";
-  const baseTitle = mod.baseGameTitle || mod.baseGameSlug || "";
-  const requireLine = requiresGamePriceLine(
-    baseTitle,
-    catalogPriceBySlug().get(mod.baseGameSlug)
-  );
-  const tags = [
-    mod.license,
-    requireLine || (baseTitle ? `For ${baseTitle}` : null),
-  ].filter(Boolean);
+  const baseTitle = mod.baseGameTitle
+    || state.catalogCache.find(game => game.slug === mod.baseGameSlug)?.title
+    || (mod.baseGameSlug || '').split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  const tags = baseTitle ? [`For ${baseTitle}`] : [];
   footer.innerHTML = `
     <div class="card-tags">${tags.map((t) => `<span class="chip">${escapeHtml(t)}</span>`).join("")}</div>
   `;
