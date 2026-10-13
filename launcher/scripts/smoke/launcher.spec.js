@@ -21,6 +21,9 @@ test('signed-out launcher keeps discovery usable and exposes account entry', asy
     await expect(page.locator('#deals-status')).toContainText('Could not reach PlayBound');
     await page.getByRole('button',{name:'Refresh deals',exact:true}).click();
     await expect(page.locator('#deals-discount-grid')).toContainText('Fixture Deal');
+    await page.locator('#deals-genre-chips').getByRole('button', {name:'Strategy',exact:true}).click();
+    await expect(page.locator('#deals-genre-chips [data-genre="strategy"]')).toHaveClass(/active/);
+    await expect(page.locator('#deals-discount-grid')).toContainText('Fixture Deal');
     await page.locator('#sidebar .site-wordmark').click();
     await expect(page.getByRole('heading',{name:'Find your next good game.'})).toBeVisible();
     await page.screenshot({path:testInfo.outputPath('signed-out-home.png')});
