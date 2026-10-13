@@ -34,6 +34,7 @@ for (const signedOut of [false,true]) {
                 scrollable:getComputedStyle(wrapper).overflowX === 'auto'};
             });
             expect(bounds,{width,view}).toEqual({overlap:false,contained:true,scrollable:true});
+            expect(await page.locator('#view-multiplayer .server-table thead').evaluate(el => el.getBoundingClientRect().height)).toBeLessThan(55);
             if (!signedOut) {
               await page.locator('#view-multiplayer #servers-table-wrap').scrollIntoViewIfNeeded();
               await page.screenshot({path:testInfo.outputPath(`multiplayer-${width}.png`)});
