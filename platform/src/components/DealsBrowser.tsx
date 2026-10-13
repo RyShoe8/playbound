@@ -160,7 +160,9 @@ export function DealsBrowser({
         </FilterRow>
 
         {storeOptions.length > 1 && (
-          <FilterRow label="Store">
+          <>
+          <label className="new-mobile-genre"><span>Store</span><select value={store} onChange={event => setStore(event.target.value)}><option value={ALL_STORES}>All stores</option>{storeOptions.map(option => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>
+          <div className="new-desktop-genres"><FilterRow label="Store">
             <Chip
               label="All stores"
               active={store === ALL_STORES}
@@ -175,11 +177,14 @@ export function DealsBrowser({
                 onClick={() => setStore(opt.key)}
               />
             ))}
-          </FilterRow>
+          </FilterRow></div>
+          </>
         )}
 
         {genreOptions.length > 1 && (
-          <FilterRow label="Genre">
+          <>
+          <label className="new-mobile-genre"><span>Genre</span><select value={genre} onChange={event => setGenre(event.target.value)}><option value={ALL_GENRES}>All genres</option>{genreOptions.map(option => <option key={option} value={option}>{option}</option>)}</select></label>
+          <div className="new-desktop-genres"><FilterRow label="Genre">
             <Chip
               label="All genres"
               active={genre === ALL_GENRES}
@@ -195,8 +200,10 @@ export function DealsBrowser({
                 }
               />
             ))}
-          </FilterRow>
+          </FilterRow></div>
+          </>
         )}
+        {(kind !== "all" || store !== ALL_STORES || genre !== ALL_GENRES) && <button type="button" className="text-sm font-semibold text-primary hover:underline" onClick={() => {setKind("all");setStore(ALL_STORES);setGenre(ALL_GENRES);}}>Clear filters</button>}
       </div>
 
       {nothingAtAll && (

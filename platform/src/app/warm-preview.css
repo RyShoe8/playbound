@@ -115,6 +115,35 @@ html[data-warm-preview] .new-footer-wordmark{display:flex;width:max-content;marg
 .new-discord{border:1px solid color-mix(in srgb,var(--primary) 40%,transparent);color:var(--accent-text);border-radius:5px;padding:9px;font-size:12px;margin:6px 8px 20px}
 .new-account{margin-top:auto;padding:16px 0 0;border-top:1px solid #ffffff12;display:flex;align-items:center;gap:6px}.new-account-profile{display:flex;align-items:center;gap:9px;min-width:0;font-size:11px;flex:1}.new-account-profile>span:last-child{overflow:hidden;text-overflow:ellipsis}.new-account small{display:block;font-size:10px;color:#aaa3af;margin-top:3px}.new-avatar{display:inline-flex;align-items:center;justify-content:center;width:33px;height:33px;border-radius:50%;background:var(--accent);color:color-mix(in srgb,var(--primary) 30%,white);font-size:11px;font-weight:700;flex-shrink:0}.new-account details summary{cursor:pointer;list-style:none}.new-account details>div{position:absolute;bottom:66px;left:12px;right:12px;padding:12px;background:#25262e;border:1px solid #ffffff22;border-radius:6px;display:flex;flex-direction:column;gap:10px;font-size:12px}
 .new-topbar{height:72px;margin:0 32px;border-bottom:1px solid #ffffff12;display:flex;align-items:center;justify-content:space-between;gap:18px}.new-topbar form{display:flex;align-items:center;gap:12px;flex:1;color:#aaa3af}.new-topbar input{background:transparent;border:0;padding:12px 0;font-size:13px;width:100%;outline-offset:4px}.new-topbar>div{display:flex;align-items:center;gap:18px}
+.new-mobile-menu { display:none; }
+.new-mobile-genre { display:none; }
+@media(max-width:639px) {
+  html[data-warm-preview] .premium-select-button { display:none; }
+  html[data-warm-preview] .premium-select-native { position:static; width:100%; height:44px; padding:8px 12px; margin:0; overflow:visible; clip:auto; clip-path:none; white-space:normal; border:1px solid var(--input); border-radius:8px; background:var(--secondary); color:var(--foreground); }
+  html[data-warm-preview] .new-desktop-genres { display:none; }
+  html[data-warm-preview] .new-mobile-genre { display:flex; flex-direction:column; gap:8px; font-weight:700; }
+  html[data-warm-preview] .new-mobile-genre select { width:100%; min-height:44px; border:1px solid var(--input); background:var(--secondary); color:var(--foreground); border-radius:10px; padding:8px 12px; }
+}
+@media(max-width:1023px) {
+  .new-topbar { position:relative; gap:8px; }
+  .new-topbar form { min-width:0; gap:8px; }
+  .new-topbar form svg, .new-topbar>div { flex-shrink:0; }
+  .new-topbar input { min-width:0; font-size:16px; }
+  .new-topbar>div { gap:8px; }
+  .new-mobile-menu { display:block; flex-shrink:0; }
+  .new-mobile-menu summary { display:flex; align-items:center; justify-content:center; width:44px; height:44px; cursor:pointer; list-style:none; }
+  .new-mobile-menu summary::-webkit-details-marker { display:none; }
+  .new-mobile-menu-panel { position:absolute; top:100%; left:0; right:0; z-index:60; max-height:calc(100dvh - 140px); overflow-y:auto; background:var(--popover); border:1px solid var(--border); border-radius:12px; padding:12px; box-shadow:0 12px 30px #0008; }
+  .new-mobile-menu-panel nav { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px; }
+  .new-mobile-menu-panel a, .new-mobile-menu-panel button { display:flex; align-items:center; gap:8px; min-height:44px; padding:10px; font-size:14px; border-radius:6px; }
+  .new-mobile-menu-panel a[aria-current] { background:var(--accent); color:var(--accent-text); }
+  html[data-warm-preview] :is(.new-button,.new-actions>a,.new-actions>button) { min-height:44px; }
+  html[data-warm-preview] main button:not([aria-label^="Show video"]):not([aria-label^="Show screenshot"]),
+  html[data-warm-preview] [role="dialog"] button { min-height:44px; }
+  html[data-warm-preview] main label:has(>input[type="checkbox"]) { min-height:44px; align-items:center; }
+  html[data-warm-preview] .preview-color-picker>button { width:32px; height:32px; }
+  html[data-warm-preview] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),select,textarea) { font-size:16px; }
+}
 @media(min-width:1024px){html[data-warm-preview] .shell-main{padding-left:206px}}
 @media(max-width:1023px){.new-sidebar{display:none}.new-topbar{margin:0 16px;height:60px}}
 

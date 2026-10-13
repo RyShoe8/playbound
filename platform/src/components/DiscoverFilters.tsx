@@ -251,7 +251,7 @@ export function DiscoverFilters({
     excludeLibrary,
     librarySlugs,
     libraryError,
-    session?.user,
+    session,
     selectedTags,
     selectedFeatures,
     multiplayerOnly,
@@ -501,7 +501,14 @@ export function DiscoverFilters({
   return (
     <div className="space-y-5">
       {/* ── 1. Genre Quick-Select Buttons (Pills with count below) ──── */}
-      <div className="-mx-1 flex flex-wrap items-center gap-2 px-1 py-1">
+      <label className="new-mobile-genre">
+        <span>Genre</span>
+        <select value={selectedGenre} onChange={(event) => handleSelectGenre(event.target.value)}>
+          <option value="">All genres ({baseFiltered.length})</option>
+          {allGenresWithCounts.map(({name,count}) => <option key={name} value={name}>{name} ({count})</option>)}
+        </select>
+      </label>
+      <div className="new-desktop-genres -mx-1 flex flex-wrap items-center gap-2 px-1 py-1">
         <button
           type="button"
           onClick={() => handleSelectGenre("")}

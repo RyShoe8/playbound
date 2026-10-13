@@ -3,14 +3,20 @@
 import { useState } from "react";
 import { Plus, Search, X } from "lucide-react";
 import { launcherLocateUrl } from "@/lib/launcher";
+import Link from "next/link";
+import { useDevice } from "@/hooks/useDevice";
+import { shouldOfferLauncher } from "@/lib/mobilePlay";
 
 export function AddGameButton({ games }: { games: { slug: string; title: string }[] }) {
+  const device = useDevice();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
 
   const filtered = games.filter((g) =>
     g.title.toLowerCase().includes(search.toLowerCase())
   );
+
+  if (!shouldOfferLauncher(device.type)) return <Link href="/discover" className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground"><Plus className="size-4" />Add Game</Link>;
 
   return (
     <>
@@ -23,11 +29,12 @@ export function AddGameButton({ games }: { games: { slug: string; title: string 
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+        <div role="dialog" aria-modal="true" aria-label="Add Existing Install" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
             <div className="flex items-center justify-between border-b border-border p-4">
               <h2 className="text-xl font-bold">Add Existing Install</h2>
               <button
+                aria-label="Close add-game dialog"
                 onClick={() => setOpen(false)}
                 className="rounded-full p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
               >

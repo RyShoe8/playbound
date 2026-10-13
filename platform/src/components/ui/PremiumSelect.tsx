@@ -141,14 +141,14 @@ export function PremiumSelect({
 
   return (
     <div
-      className={`relative min-w-[120px] w-full ${wrapperClass}`}
+      className={`premium-select relative min-w-[120px] w-full ${wrapperClass}`}
       ref={containerRef}
     >
       <select
         value={value}
         onChange={onChange}
         disabled={disabled}
-        className="sr-only"
+        className="premium-select-native sr-only"
         tabIndex={-1}
         {...props}
       >
@@ -165,7 +165,7 @@ export function PremiumSelect({
           if (!open) setSearchQuery("");
           setOpen(!open);
         }}
-        className="flex h-10 w-full items-center justify-between rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground shadow-sm backdrop-blur transition-all duration-200 hover:bg-secondary/70 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50"
+        className="premium-select-button flex h-10 w-full items-center justify-between rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground shadow-sm backdrop-blur transition-all duration-200 hover:bg-secondary/70 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50"
       >
         <span className="truncate">{displayLabel}</span>
         <ChevronDown

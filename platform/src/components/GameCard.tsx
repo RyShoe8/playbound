@@ -61,11 +61,13 @@ export function PlayCta({
   size = "md",
   emphasis = "primary",
   installed,
+  editionSlug,
 }: {
   game: PlayCtaGame;
   size?: "sm" | "md" | "lg";
   emphasis?: "primary" | "secondary";
   installed?: boolean;
+  editionSlug?: string;
 }) {
   const { device } = useCompatibilityFilter();
   const { track } = useTelemetry();
@@ -150,7 +152,7 @@ export function PlayCta({
 
   const downloadUrl = launcherDownloadUrlForOs(os);
   const osLabel = launcherOsLabel(os);
-  const deepLink = isInstalled ? launcherPlayUrl(game.slug) : launcherInstallUrl(game.slug);
+  const deepLink = isInstalled ? launcherPlayUrl(game.slug, editionSlug) : launcherInstallUrl(game.slug, editionSlug);
 
   function handleInstall(e: React.MouseEvent) {
     e.preventDefault();
