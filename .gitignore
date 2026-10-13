@@ -45,3 +45,4 @@ signing.env
 .tmp/
 launcher/test-results/
 launcher/playwright-report/
+__pycache__/
