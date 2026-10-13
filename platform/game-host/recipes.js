@@ -233,6 +233,7 @@ RECIPE_SETTING_TYPES["rimworld-together"] = {
   allowAllMods: "boolean", enforceModSettings: "boolean", storyteller: "string",
 };
 RECIPE_SETTING_TYPES.unturned = { map: "string", pve: "boolean", perspective: "string", cheats: "boolean" };
+RECIPE_SETTING_TYPES["aneurism-iv"] = {maxPlayers:"number",map:"string"};
 for (const field of rimworldDifficulty) RECIPE_SETTING_TYPES["rimworld-together"][`difficulty.${field.key}`] = typeof field.default;
 // slot setting below. Party-room settings remain independent.
 for (const slug of [

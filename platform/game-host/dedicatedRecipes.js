@@ -26,6 +26,7 @@
  */
 import { randomBytes } from "node:crypto";
 import { createRequire } from "node:module";
+import { ANIV_HELPER, anivDirectory } from "./anivControl.js";
 const rimworldDifficulty = createRequire(import.meta.url)("./rimworldDifficulty.json");
 
 /**
@@ -94,6 +95,22 @@ export function createDedicatedRecipes(deps) {
   const keepStdinOpen = () => "";
 
   return {
+    "aneurism-iv": {
+      // These are namespace slots, never client-connect ports.
+      portStart: 27700, portEnd: 27715, protocol: "udp",
+      binaries: gameBin("aneurism-iv", ["aniv_server.x86_64"]),
+      resolveBinary: (candidates) => fs.existsSync(ANIV_HELPER) ? firstExisting(candidates) : null,
+      cwd: (_port, ctx) => anivDirectory(ctx.partyId),
+      args: () => [],
+      shutdownSignalGraceMs: 130000,
+      prepareSpawn: async (_port, ctx) => {
+        if (!ctx.managed) throw new Error("ANEURISM requires a persistent managed server identity");
+        if (ctx.customerOwned) throw new Error("ANEURISM paid hosting awaits client Join and save/restore verification");
+        const directory = anivDirectory(ctx.partyId);
+        fs.mkdirSync(directory, {recursive:true,mode:0o700});
+        for (const name of ["home", "data"]) fs.mkdirSync(path.join(directory,name), {recursive:true,mode:0o700});
+      },
+    },
     "battlefield-1942-anthology": {
       portStart: 14567,
       portEnd: 14586,

@@ -44,6 +44,7 @@ import { processMetrics } from "./processMetrics.js";
 import { isLinuxPortBound } from "./portReadiness.js";
 import { queryRoomOccupancy } from "./playerQueries.js";
 import { spawnRimworld, sendRimworldCommand, queryRimworldBrowser } from "./rimworldControl.js";
+import { spawnAniv, waitForAniv, anivStatus } from "./anivControl.js";
 import { isWorldBackupGame } from "./dedicatedDataBackups.js";
 import { runWorldBackup } from "./worldBackupRunner.js";
 import { captureRvglLobby, sendRvglLobbyInput } from "./rvglDisplay.js";
@@ -719,7 +720,7 @@ function stopRoom(room) {
     }
 
     // Bound a console save/quit, or force a non-console process down quickly.
-    shutdownWaitMs = graceful ? (Number(shutdownRecipe.shutdownGraceMs) || 20_000) : 500;
+    shutdownWaitMs = graceful ? (Number(shutdownRecipe.shutdownGraceMs) || 20_000) : (Number(shutdownRecipe?.shutdownSignalGraceMs) || 500);
     setTimeout(() => {
       for (const member of members.length ? members : [{ pid, identity: room.processIdentity }]) {
         if (!isSameProcess(member.pid, member.identity)) continue;
@@ -731,7 +732,7 @@ function stopRoom(room) {
   rooms.delete(room.roomId);
   if (room.communityServerId) {
     if (byManaged.get(room.communityServerId) === room.roomId) byManaged.delete(room.communityServerId);
-    managedJobs.set(room.communityServerId, { status: "stopped", at: Date.now() });
+    managedJobs.set(room.communityServerId, { status: "stopped", at: Date.now(), ...(managedJobs.get(room.communityServerId)?.canceled ? {canceled:true} : {}) });
     persistManagedRooms();
   } else {
     if (byParty.get(room.partyId) === room.roomId) byParty.delete(room.partyId);
@@ -748,6 +749,13 @@ async function waitForStoppedRoom(pid, identity, timeoutMs = 650) {
     await new Promise((resolve) => setTimeout(resolve, 100));
   } while (Date.now() < deadline);
   return !isSameProcess(pid, identity);
+}
+
+function roomMetrics(room) {
+  if (room.gameSlug !== "aneurism-iv") return processMetrics(room.pid);
+  const status = anivStatus(room);
+  return status && isSameProcess(status.gamePid, status.gameIdentity)
+    ? processMetrics(status.gamePid) : {available:false};
 }
 
 function persistPartyRooms() {
@@ -784,6 +792,9 @@ async function recoverManagedRooms() {
   for (const saved of managedRegistry.read()) {
     const failure = !isSameProcess(saved.pid, saved.identity)
       ? "Managed runtime was no longer running when the game-host agent restarted"
+      // The verified supervisor owns a namespace, not a host game port.
+      // Preserve it during startup or temporary Steam outages as well.
+      : saved.gameSlug === "aneurism-iv" ? null
       : await isOsPortFree(saved.port, recipes[saved.gameSlug]?.protocol)
         ? "Managed runtime was running but its game port was not bound when the game-host agent restarted"
         : null;
@@ -803,6 +814,12 @@ async function recoverManagedRooms() {
     }
     rooms.set(room.roomId, room);
     byManaged.set(room.communityServerId, room.roomId);
+    if (room.gameSlug === "aneurism-iv") {
+      managedJobs.set(room.communityServerId, {
+        status: anivStatus(room)?.ready === true ? "running" : "recovering",
+        gameSlug: room.gameSlug, at: Date.now(),
+      });
+    }
     usedPorts.add(`${room.gameSlug}:${room.port}`);
   }
   persistManagedRooms();
@@ -965,6 +982,7 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
   const maxAttempts = Math.min(5, recipe.portEnd - recipe.portStart + 1);
   let lastError = `No free ports for ${gameSlug}`;
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    if (gameSlug === "aneurism-iv" && communityServerId && managedJobs.get(communityServerId)?.status === "stopped") return {error:"ANEURISM startup was canceled"};
     const port = await allocPort(recipe, gameSlug);
     if (!port) return { error: lastError };
 
@@ -994,11 +1012,12 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
       typeof recipe.cwd === "function"
         ? recipe.cwd(port, ctx)
         : recipe.cwd || path.dirname(binary);
-    if (shuttingDown) {
+    if (shuttingDown || (gameSlug === "aneurism-iv" && managedJobs.get(communityServerId)?.canceled)) {
       freePort(gameSlug, port);
-      return { error: "Agent is shutting down" };
+      return { error: "Agent is shutting down or startup was canceled" };
     }
     const spawnGame = () => {
+      if (gameSlug === "aneurism-iv") return spawnAniv(port, ctx, {cwd,env:spawnEnv});
       if (gameSlug === "rimworld-together") return spawnRimworld(binary, args, { cwd, env: spawnEnv });
       // Give every room its own process group so wrappers and their children
       // stop together. Without this, an AppImage can orphan a live server.
@@ -1149,11 +1168,16 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
     rooms.set(roomId, room);
     if (communityServerId) byManaged.set(communityServerId, roomId);
     else byParty.set(partyId, roomId);
+    // Long Steam/map startup must survive an agent restart, too.
+    if (communityServerId && gameSlug === "aneurism-iv") persistManagedRooms();
 
     const readyTimeoutMs = Number(recipe.startupReadyTimeoutMs) || 10_000;
-    const portReady = await waitForServerPort(port, recipe.protocol, child, readyTimeoutMs);
+    const portReady = gameSlug === "aneurism-iv"
+      ? await waitForAniv(room, child)
+      : await waitForServerPort(port, recipe.protocol, child, readyTimeoutMs);
+    if (gameSlug === "aneurism-iv" && rooms.get(roomId) !== room) return {error:managedJobs.get(communityServerId)?.error || "ANEURISM startup was canceled"};
     if (shuttingDown) {
-      stopRoom(room);
+      if (!(communityServerId && gameSlug === "aneurism-iv")) stopRoom(room);
       return { error: "Agent is shutting down" };
     }
     if (!portReady) {
@@ -1163,6 +1187,7 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
       const exitDetail = child.exitCode !== null ? ` (code ${child.exitCode})` : "";
       lastError = `${gameSlug} dedicated server did not bind port ${port} within ${readyTimeoutMs}ms${exitDetail}${detail}`;
       console.warn(`[${gameSlug}:${port}] ${lastError} — trying another port`);
+      if (gameSlug === "aneurism-iv") return {error:lastError};
       continue;
     }
 
@@ -1254,9 +1279,9 @@ async function runTestSpawn(gameSlug) {
   const childPid = result.room?.child?.pid;
   // Collect two samples while the server is idle; the first establishes the
   // CPU delta baseline. This is an audit observation, not Join verification.
-  const first = childPid ? processMetrics(childPid) : { available: false };
+  const first = childPid ? roomMetrics(result.room) : { available: false };
   await new Promise((resolve) => setTimeout(resolve, 1500));
-  const second = childPid ? processMetrics(childPid) : { available: false };
+  const second = childPid ? roomMetrics(result.room) : { available: false };
   const resources = second.available ? {
     rssBytes: second.rssBytes,
     cpuCores: second.cpuCores,
@@ -1290,14 +1315,16 @@ async function runTestSpawnAll() {
 }
 
 function publicRoom(room) {
+  const steamStatus = room.gameSlug === "aneurism-iv" ? anivStatus(room) : null;
   return {
     roomId: room.roomId,
     partyId: room.partyId,
     communityServerId: room.communityServerId || null,
     gameSlug: room.gameSlug,
     name: room.name,
-    host: room.host || PUBLIC_IP,
-    port: room.port,
+    host: room.gameSlug === "aneurism-iv" ? null : room.host || PUBLIC_IP,
+    port: room.gameSlug === "aneurism-iv" ? null : room.port,
+    ...(room.gameSlug === "aneurism-iv" ? {status:steamStatus?.ready === true ? "running" : "pending",join:{kind:"steam",serverId:steamStatus?.ready === true ? steamStatus.steamServerId : null}} : {}),
     createdAt: room.createdAt,
     processStartedAt: room.processStartedAt,
     settings: room.settings || {},
@@ -1355,9 +1382,14 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === "GET" && url.pathname === "/managed") {
       reapExitedManagedRooms();
+      for (const room of rooms.values()) {
+        if (room.gameSlug === "aneurism-iv" && room.communityServerId && managedJobs.get(room.communityServerId)?.status === "recovering" && anivStatus(room)?.ready === true) {
+          managedJobs.set(room.communityServerId, { status: "running", gameSlug: room.gameSlug, at: Date.now() });
+        }
+      }
       json(res, 200, {
         rooms: [...rooms.values()].filter((r) => r.communityServerId).map((r) => ({
-          ...publicRoom(r), resources: processMetrics(r.pid),
+          ...publicRoom(r), resources: roomMetrics(r),
         })),
         jobs: Object.fromEntries(managedJobs),
       });
@@ -1395,7 +1427,8 @@ const server = http.createServer(async (req, res) => {
           json(res, 409, { error: "Managed identity is already bound to another game" });
           return;
         }
-        json(res, 200, { status: "running", room: publicRoom(room) });
+        const status = room.gameSlug === "aneurism-iv" && anivStatus(room)?.ready !== true ? "pending" : "running";
+        json(res, status === "pending" ? 202 : 200, { status, room: publicRoom(room) });
         return;
       }
       const current = managedJobs.get(communityServerId);
@@ -1411,10 +1444,12 @@ const server = http.createServer(async (req, res) => {
         editionSlug: body.editionSlug, mod: body.mod, settings: body.settings,
         customerOwned: body.customerOwned === true,
       }).then((result) => {
+        if (gameSlug === "aneurism-iv" && managedJobs.get(communityServerId)?.canceled) return;
         managedJobs.set(communityServerId, result.error
           ? { status: "failed", error: result.error, at: Date.now() }
           : { status: "running", room: publicRoom(result.room), at: Date.now() });
       }).catch((error) => {
+        if (gameSlug === "aneurism-iv" && managedJobs.get(communityServerId)?.canceled) return;
         managedJobs.set(communityServerId, { status: "failed", error: String(error?.message || error), at: Date.now() });
       });
       json(res, 202, job);
@@ -1464,10 +1499,12 @@ const server = http.createServer(async (req, res) => {
     const managedMatch = url.pathname.match(/^\/managed\/([a-zA-Z0-9_-]{6,80})$/);
     if (req.method === "DELETE" && managedMatch) {
       const communityServerId = managedMatch[1];
-      if (managedJobs.get(communityServerId)?.status === "pending") {
+      const pending = managedJobs.get(communityServerId);
+      if (pending?.status === "pending" && pending.gameSlug !== "aneurism-iv") {
         json(res, 409, { error: "Provisioning is still in progress" });
         return;
       }
+      if (pending?.gameSlug === "aneurism-iv") managedJobs.set(communityServerId,{...pending,status:"stopped",canceled:true});
       const roomId = byManaged.get(communityServerId);
       const room = roomId ? rooms.get(roomId) : null;
       if (room) {
@@ -1842,7 +1879,9 @@ setInterval(() => {
 function shutdown() {
   shuttingDown = true;
   for (const room of [...rooms.values()]) {
-    if (!room.communityServerId || managedJobs.get(room.communityServerId)?.status === "pending") stopRoom(room);
+    // ANEURISM startup is already persisted and owned by its detached supervisor.
+    // Reattach it after restart just as we do an established managed runtime.
+    if (!room.communityServerId || (room.gameSlug !== "aneurism-iv" && managedJobs.get(room.communityServerId)?.status === "pending")) stopRoom(room);
   }
   // Let stopRoom's delayed SIGKILL run before the agent exits. Managed rooms
   // are untouched and remain available for reattachment on restart.
