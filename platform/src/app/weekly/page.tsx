@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { Mail } from "lucide-react";
+import { Mail, Sparkles, Gift, Rocket } from "lucide-react";
 import { gamesFor } from "@/lib/catalog";
 import { listWeeklyIssues } from "@/lib/weekly";
-import { pageMetadata, sizeLabel } from "@/lib/seo";
+import { pageMetadata } from "@/lib/seo";
 import { NewsletterForm } from "@/components/NewsletterForm";
 import { RecaptchaNotice } from "@/components/RecaptchaNotice";
 import { JsonLd, graph, breadcrumbSchema, ORGANIZATION_ID } from "@/components/JsonLd";
@@ -14,26 +14,14 @@ import { absoluteUrl } from "@/lib/site";
  */
 
 export const metadata = pageMetadata({
-  title: "PlayBound Weekly — Every Pick, Archived",
+  title: "PlayBound Weekly — Games, Free Finds & Updates",
   description:
-    "One high-value game every Wednesday. Browse every free or affordable PlayBound Weekly pick — dated and permanently archived.",
+    "Your weekly PlayBound newsletter: new games to discover, awesome free games to play, and the latest PlayBound updates.",
   path: "/weekly",
 });
 
 export default async function WeeklyIndexPage() {
-  /*
-   * The complete archive. Discovery mode is not applied here.
-   *
-   * Weekly is a publication, and this is its back catalogue — filtering it
-   * removed whole past issues from the archive index rather than hiding a
-   * card, which is not what a browsing preference should do to editorial. The
-   * section's own description ("one high-value free or affordable game per
-   * week") says outright that some picks are paid, so dropping those in FREE
-   * mode contradicted the thing it was describing.
-   *
-   * It also cost the route its prerendering: resolving the mode means reading
-   * a cookie, and that one read makes the whole page render per request.
-   */
+  // Keep every published issue in the archive, independent of discovery filters.
   const visibleIssues = await listWeeklyIssues();
   const games = await gamesFor(visibleIssues.map((i) => i.gameSlug));
   const bySlug = new Map(games.map((g) => [g.slug, g]));
@@ -47,12 +35,12 @@ export default async function WeeklyIndexPage() {
             name: "PlayBound Weekly",
             url: absoluteUrl("/weekly"),
             description:
-              "Archive of every PlayBound Weekly pick — one high-value free or affordable game per week.",
+              "The PlayBound weekly newsletter: new games, awesome free games, and PlayBound updates.",
             publisher: { "@id": ORGANIZATION_ID },
           },
           {
             "@type": "ItemList",
-            name: "PlayBound Weekly picks",
+            name: "PlayBound Weekly newsletter archive",
             numberOfItems: visibleIssues.length,
             itemListElement: visibleIssues.map((issue, i) => ({
               "@type": "ListItem",
@@ -72,22 +60,31 @@ export default async function WeeklyIndexPage() {
         <Mail className="size-4" /> The PlayBound Weekly
       </div>
       <h1 className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">
-        One budget-friendly game worth playing, every Wednesday
+        Your next great game. Your weekly PlayBound update.
       </h1>
       <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-        Every pick has cleared the{" "}
-        <Link href="/standards" className="font-semibold text-primary hover:underline">
-          PlayBound Bar
-        </Link>{" "}
-        — worth the cost, ready to play, tested by PlayBound, and built around That One Thing. Every pick is
-        tested and played before it is added.
-        Here is every issue.
+        New games to discover, awesome free games worth your time, and the latest
+        from PlayBound — together in one weekly newsletter.
       </p>
+      <div className="mt-8 grid gap-4 sm:grid-cols-3">
+        {[
+          { icon: Sparkles, title: "New games", text: "Fresh arrivals, new editions, and multiplayer discoveries to put on your radar.", href: "/discover", action: "Discover games" },
+          { icon: Gift, title: "Awesome free games", text: "Standout free-to-play games and limited-time giveaways worth checking out.", href: "/deals", action: "Find free games" },
+          { icon: Rocket, title: "PlayBound updates", text: "Launcher improvements, new features, community news, and upcoming Game Nights.", href: "/events", action: "See Game Nights" },
+        ].map(({ icon: Icon, title, text, href, action }) => (
+          <section key={title} className="rounded-xl border border-border bg-card p-5">
+            <Icon className="size-6 text-primary" aria-hidden="true" />
+            <h2 className="mt-3 text-lg font-bold">{title}</h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{text}</p>
+            <Link href={href} className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">{action} →</Link>
+          </section>
+        ))}
+      </div>
 
       <div className="mt-8 rounded-xl border border-border bg-card p-5">
-        <p className="font-bold">Get it in your inbox</p>
+        <p className="font-bold">Get PlayBound Weekly in your inbox</p>
         <p className="mt-1 text-sm text-muted-foreground">
-          One email every Wednesday. No spam, unsubscribe any time.
+          One weekly email with new games, free finds, and PlayBound news. No spam. Unsubscribe any time.
         </p>
         <div className="mt-4">
           <NewsletterForm />
@@ -95,49 +92,24 @@ export default async function WeeklyIndexPage() {
         <RecaptchaNotice className="mt-3" />
       </div>
 
-      {visibleIssues.length === 0 ? (
-        <p className="mt-10 text-sm text-muted-foreground">The first issue lands this Wednesday.</p>
-      ) : (
-        <div className="mt-10 overflow-x-auto rounded-xl border border-border">
-          <table className="w-full min-w-[520px] text-left text-sm">
-            <thead className="border-b border-border bg-secondary/50 text-xs uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 font-semibold">Week</th>
-                <th className="px-4 py-3 font-semibold">Game</th>
-                <th className="px-4 py-3 font-semibold">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visibleIssues.map((issue) => {
-                const game = bySlug.get(issue.gameSlug);
-                return (
-                  <tr key={issue.slug} className="border-b border-border last:border-0">
-                    <td className="px-4 py-3 font-semibold">
-                      <Link href={`/weekly/${issue.slug}`} className="hover:text-primary">
-                        {issue.year} W{issue.week}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Link href={`/weekly/${issue.slug}`} className="font-semibold hover:text-primary">
-                        {game?.title ?? issue.gameSlug}
-                      </Link>
-                      {game?.tagline && (
-                        <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{game.tagline}</p>
-                      )}
-                      {game && (
-                        <p className="mt-0.5 text-[11px] text-muted-foreground">
-                          {game.genres.join(" · ")} · {sizeLabel(game.sizeMB)}
-                        </p>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">{issue.publishedAt}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <section className="mt-10" aria-labelledby="weekly-archive">
+        <h2 id="weekly-archive" className="text-2xl font-bold">Previous issues</h2>
+        <p className="mt-2 text-sm text-muted-foreground">Catch up on past editions, including our original featured-game picks.</p>
+        {visibleIssues.length === 0 ? (
+          <p className="mt-6 text-sm text-muted-foreground">Our next issue is on its way. Subscribe to get it in your inbox.</p>
+        ) : (
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            {visibleIssues.map((issue) => (
+              <Link key={issue.slug} href={`/weekly/${issue.slug}`} className="rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary">
+                <p className="text-xs font-semibold text-primary">{issue.year} · Week {issue.week}</p>
+                <h3 className="mt-2 font-bold">PlayBound Weekly</h3>
+                <p className="mt-1 text-sm text-muted-foreground">Featured game: {bySlug.get(issue.gameSlug)?.title ?? issue.gameSlug}</p>
+                <p className="mt-3 text-xs text-muted-foreground">{issue.publishedAt} · Read issue →</p>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }
