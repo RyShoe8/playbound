@@ -47,68 +47,18 @@ function eventTypeDisplay(type) {
  * One event card, shared by each section. The catalog map supplies the human
  * game title because event records intentionally store only the stable slug.
  */
-function createEventCard(ev, gameCatalogMap = new Map()) {
-  const card = document.createElement("div");
-  card.className = "pb-event-card";
-
-  const isLive = ev.status === "live";
-  const going = ev.counts?.going ?? 0;
-  const whenStr = ev.when?.dateLine
-    ? `${ev.when.dateLine} · ${ev.when.timeLine || ""}`
-    : formatEventDate(ev.startsAt);
-  const catalogGame = ev.gameSlug ? gameCatalogMap.get(ev.gameSlug) : null;
-  const coverUrl = ev.coverImage || catalogGame?.coverImage || null;
-  const gameName = ev.gameTitle || catalogGame?.title || ev.gameSlug || "";
-
-  const badges = `
-    ${isLive ? `<span class="pb-badge-live">● Live now</span>` : ""}
-    <span class="pb-badge-type">${escapeHtml(eventTypeDisplay(ev.eventType))}</span>
-    ${ev.featured ? `<span class="pb-badge-featured">Featured</span>` : ""}
-  `;
-
-  card.innerHTML = `
-    ${
-      coverUrl
-        ? `<div class="pb-event-card-cover-wrap">
-             <img src="${escapeHtml(coverUrl)}" class="pb-event-card-cover-img" alt="${escapeHtml(ev.title)}" />
-             <div class="pb-event-card-cover-overlay"></div>
-             <div class="pb-event-badges" style="position: absolute; top: 10px; left: 10px; z-index: 2;">${badges}</div>
-           </div>`
-        : `<div class="pb-event-badges" style="padding: 16px 16px 0;">${badges}</div>`
-    }
-    <div class="pb-event-card-body">
-      <h3 class="pb-event-title">${escapeHtml(ev.title)}</h3>
-      ${gameName ? `<p class="pb-event-game">${escapeHtml(gameName)}</p>` : ""}
-      <p class="pb-event-time">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        ${escapeHtml(whenStr)}
-      </p>
-      ${ev.description ? `<p class="pb-event-desc">${escapeHtml(ev.description)}</p>` : ""}
-      <div class="pb-event-footer">
-        <span class="pb-event-going">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          ${going} going${ev.maxParticipants ? ` / ${ev.maxParticipants}` : ""}
-        </span>
-        <div class="pb-event-actions">
-          ${ev.discordInviteUrl ? `<button class="btn-secondary btn-sm btn-ev-discord" type="button">Discord</button>` : ""}
-          <button class="btn-primary btn-sm btn-ev-view" type="button">View Event</button>
-        </div>
-      </div>
-    </div>
-  `;
-
-  card.querySelector(".btn-ev-view")?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    api.openEventDetail(ev.id, "events");
-  });
-  card.querySelector(".btn-ev-discord")?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    if (ev.discordInviteUrl) window.playbound.openDiscordInvite(ev.discordInviteUrl);
-  });
-  card.addEventListener("pointerenter", () => prefetchEventDetail(ev.id), { once: true });
-  card.addEventListener("click", () => api.openEventDetail(ev.id, "events"));
-
-  return card;
+function createEventRow(ev, gameCatalogMap) {
+  const row = document.createElement('button');
+  row.type = 'button'; row.className = 'site-event-row';
+  const game = gameCatalogMap.get(ev.gameSlug);
+  const artwork = ev.coverImage || game?.coverImage;
+  row.innerHTML = `<span class="site-event-time">${escapeHtml(formatEventDate(ev.startsAt))}</span>
+    ${artwork ? `<img class="site-event-thumb" src="${escapeHtml(artwork)}" alt="" loading="lazy">` : '<span class="site-event-thumb site-event-placeholder">▶</span>'}
+    <span class="site-event-summary"><span class="site-eyebrow">${ev.status === 'live' ? '● Live now · ' : ''}${escapeHtml(eventTypeDisplay(ev.eventType))}</span><strong>${escapeHtml(ev.title)}</strong><span>${escapeHtml(game?.title || ev.gameTitle || 'PlayBound community')}</span>${ev.description ? `<span class="site-event-description">${escapeHtml(ev.description)}</span>` : ''}</span>
+    <span class="site-event-attendance"><span>${Number(ev.counts?.going || 0)} going</span><strong>View event →</strong></span>`;
+  row.addEventListener('click', () => api.openEventDetail(ev.id, 'events'));
+  row.addEventListener('pointerenter', () => prefetchEventDetail(ev.id), {once:true});
+  return row;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -122,8 +72,8 @@ async function renderEventsView() {
   container.innerHTML = `
     <div class="events-header-row" style="margin-top: 0">
       <div>
-        <h1 class="view-title" style="margin: 0">Events</h1>
-        <p class="view-sub" style="margin: 4px 0 0 0">Game Nights, tournaments, and open parties so you can actually play together.</p>
+        <p class="site-eyebrow">Your next game night</p><h1 class="view-title" style="margin: 0">Events &amp; game nights</h1>
+        <p class="view-sub" style="margin: 4px 0 0 0">A week of reasons to get the group together.</p>
       </div>
       <div style="display:flex; gap:8px; align-items:center;">
         <button class="btn-primary btn-sm" id="btn-create-event" type="button">+ Create Event</button>
@@ -137,7 +87,10 @@ async function renderEventsView() {
       thing as a "Happening soon" section plus the live badge already on each
       card, so a banner would be a third place saying it.
     -->
-    <div id="events-sections" style="margin-top: 20px"></div>
+    <div class="site-events-layout"><section aria-label="Event schedule"><div class="site-events-filters" role="group" aria-label="Filter events">
+      <button type="button" data-event-filter="all" aria-pressed="true">All events</button><button type="button" data-event-filter="game_night" aria-pressed="false">Game nights</button><button type="button" data-event-filter="tournament" aria-pressed="false">Tournaments</button><button type="button" data-event-filter="party" aria-pressed="false">Parties</button>
+    </div><div id="events-sections" class="site-panel"></div></section>
+    <aside class="site-events-rail"><section class="site-panel site-pad"><p class="site-eyebrow">Your week</p><h2>Make room for a game night</h2><p>Times are shown in your local timezone. Open an event to see its edition, RSVP, and available Join options.</p><button class="btn-primary" id="events-play-now">Play now</button></section><section class="site-panel site-pad"><h2>Play with friends</h2><p>Pick up your party or invite your people.</p><button class="btn-secondary" id="events-friends">Friends →</button></section></aside></div>
 
     <!-- Create Event Modal -->
     <div class="modal-overlay" id="modal-create-event">
@@ -454,88 +407,17 @@ async function renderEventsView() {
   const events = filterRelatedByDiscovery(res.events || [], (ev) => ev.gameSlug);
   const sectionsHost = document.getElementById("events-sections");
 
-  const pastRes =
-    (await cacheInvoke("events-past", CACHE_TTL.events, () =>
-      window.playbound.getEvents?.({ past: true })
-    )) || { events: [] };
-  const pastAll = filterRelatedByDiscovery(pastRes.events || [], (ev) => ev.gameSlug);
-
-  /*
-   * Same exclusive groupings as the website. One card per section — without
-   * that a featured live Game Night showed up three times.
-   */
-  const now = Date.now();
-  const startOf = (ev) => (ev.startsAt ? new Date(ev.startsAt).getTime() : 0);
-  const claimed = new Set();
-  const take = (predicate) => {
-    const items = events.filter((ev) => !claimed.has(ev.id) && predicate(ev));
-    for (const ev of items) claimed.add(ev.id);
-    return items;
+  const sorted = [...events].sort((a,b) => Date.parse(a.startsAt) - Date.parse(b.startsAt));
+  const paintSchedule = filter => {
+    const visible = sorted.filter(event => filter === 'all' || event.eventType === filter);
+    sectionsHost.replaceChildren(...visible.map(event => createEventRow(event, gameCatalogMap)));
+    if (!visible.length) sectionsHost.innerHTML = '<div class="site-pad"><h2>No events scheduled here yet</h2><p>Try another category, or create an event above.</p></div>';
+    container.querySelectorAll('[data-event-filter]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.eventFilter === filter)));
   };
-  const activeIds = new Set(events.map((ev) => ev.id));
-  const pastOnly = pastAll
-    .filter(
-      (ev) =>
-        !activeIds.has(ev.id) &&
-        (ev.status === "completed" ||
-          ev.status === "cancelled" ||
-          (ev.endsAt && new Date(ev.endsAt).getTime() < now))
-    )
-    .sort(
-      (a, b) =>
-        new Date(b.endsAt || b.startsAt).getTime() -
-        new Date(a.endsAt || a.startsAt).getTime()
-    )
-    .slice(0, 6);
-
-  const groups = [
-    [
-      "Happening soon",
-      take(
-        (ev) =>
-          ev.status === "live" ||
-          (startOf(ev) >= now && startOf(ev) - now < 48 * 3600_000)
-      ),
-    ],
-    ["Featured", take((ev) => Boolean(ev.featured))],
-    ["Game Nights", take((ev) => ev.eventType === "game_night")],
-    ["Tournaments", take((ev) => ev.eventType === "tournament")],
-    ["Parties", take((ev) => ev.eventType === "party")],
-    ["Upcoming", events.filter((ev) => !claimed.has(ev.id))],
-    ["Past events", pastOnly],
-  ];
-
-  if (sectionsHost) {
-    sectionsHost.replaceChildren();
-    if (!events.length && !pastOnly.length) {
-      sectionsHost.innerHTML = `<p class="view-sub">No upcoming events. Host one with + Create Event above!</p>`;
-    } else {
-      if (!events.length) {
-        const empty = document.createElement("p");
-        empty.className = "view-sub";
-        empty.textContent = "No upcoming events. Host one with + Create Event above!";
-        sectionsHost.appendChild(empty);
-      }
-      for (const [title, items] of groups) {
-        if (!items.length) continue;
-
-        const section = document.createElement("section");
-        section.className = "events-section";
-
-        const heading = document.createElement("h2");
-        heading.className = "events-section-title";
-        heading.textContent = title;
-        section.appendChild(heading);
-
-        const grid = document.createElement("div");
-        grid.className = "events-grid";
-        for (const ev of items) grid.appendChild(createEventCard(ev, gameCatalogMap));
-        section.appendChild(grid);
-
-        sectionsHost.appendChild(section);
-      }
-    }
-  }
+  container.querySelectorAll('[data-event-filter]').forEach(button => button.addEventListener('click', () => paintSchedule(button.dataset.eventFilter)));
+  document.getElementById('events-play-now').addEventListener('click', () => api.navigateTo('multiplayer'));
+  document.getElementById('events-friends').addEventListener('click', () => api.navigateTo('friends'));
+  paintSchedule('all');
 
   markViewReady(container);
 }

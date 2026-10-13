@@ -5,6 +5,7 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https: http:; media-src 'self' data: blob: https: http:; frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com https://player.vimeo.com https://*.steamstatic.com https://*.akamai.steamstatic.com; connect-src 'self' https: http: ws: wss:;" />
     <title>PlayBound</title>
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="site-layout.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -18,10 +19,10 @@
     <div id="app">
       <!-- Sidebar -->
       <nav id="sidebar">
-        <div class="sidebar-brand">
-          <span class="logo-mark">▶</span>
-          <span class="brand-text">Play<em>Bound</em></span>
-        </div>
+        <button class="sidebar-brand site-wordmark" aria-label="PlayBound home">
+          <span><i>▶</i>play<b>bound.</b></span>
+          <small>Discover. Play. Connect.</small>
+        </button>
         <div class="sidebar-scroll">
           <div class="sidebar-nav">
             <button class="nav-btn active" data-view="home">
@@ -160,7 +161,8 @@
                 type="text"
                 id="global-search-input"
                 class="global-search-input"
-                placeholder="Search games, developers, collections…"
+                placeholder="Find your next game"
+                aria-label="Search games and developers"
                 autocomplete="off"
               />
               <button type="button" id="global-search-clear" class="global-search-clear hidden" aria-label="Clear search">

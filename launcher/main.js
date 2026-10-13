@@ -11010,6 +11010,17 @@ ipcMain.handle("tournament-action", async (_event, eventId, action, payload) => 
     return { ok: false, error: err?.message || "Network error while performing tournament action" };
   }
 });
+ipcMain.handle("get-home-feed", async () => {
+  try {
+    const res = await apiFetch(`${getApiBase()}/api/launcher/home`, {
+      headers: launcherApiHeaders({ accept: "application/json" }),
+    });
+    return res.ok ? await res.json() : null;
+  } catch {
+    return null;
+  }
+});
+
 ipcMain.handle("get-free-offers", async () => {
   try {
     const res = await apiFetch(`${getApiBase()}/api/free-offers`, {

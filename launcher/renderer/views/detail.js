@@ -1,4 +1,5 @@
 import { createFreeOfferCard, createGameCard, createModCard } from "../cards.js";
+import { mountHeroMedia } from "../heroMedia.js";
 import { maybeShowLaunchGuidance } from "../guidanceModal.js";
 import {
   api,
@@ -1163,6 +1164,7 @@ async function renderGameDetailView(slug, opts = {}) {
   `;
 
   const editionsList = document.getElementById("detail-editions-list");
+  mountHeroMedia(container, detail, classifyMediaUrl, isPlayableVideo);
   if (editionsList && editions.length > 0) {
     for (const ed of editions) {
       const card = document.createElement("div");
@@ -2427,6 +2429,7 @@ async function renderModDetailView(slug) {
   `;
 
   const guidesSec = document.getElementById("mod-detail-guides-sec");
+  mountHeroMedia(container, detail, classifyMediaUrl, isPlayableVideo);
   void (async () => {
     const guidesRes =
       (await window.playbound.getModGuides?.(slug)) || { guides: [] };
@@ -3015,6 +3018,7 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
   `;
 
   // ── Tab Switching ────────────────────────────────────────────────────────
+  mountHeroMedia(container, { ...edition, title: edition.editionName }, classifyMediaUrl, isPlayableVideo);
   document.getElementById("edition-detail-tabs")?.addEventListener("click", (e) => {
     const btn = e.target.closest(".detail-tab");
     if (!btn) return;
