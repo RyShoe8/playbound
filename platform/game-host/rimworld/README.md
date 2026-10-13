@@ -40,6 +40,11 @@ agent, adopted the same server PID, issued another command through the restored
 FIFO, stopped the runtime, and confirmed its PID was gone. No catalog rows or
 unrelated worlds were modified.
 
+A real TCP probe also verified the snapshot changes from 0 to 1 and back to 0
+when the connection closes. An unhandshaken connection remains counted until
+the upstream listener's keepalive timeout expires; it is never optimistically
+treated as an empty server while the engine still considers it connected.
+
 The upstream browser at 66.29.129.72:7778 accepts TCP but did not return its
 handshake/listing within the bounded timeout. This is reported as unavailable,
 never an empty successful list; healthy PlayBound-owned discovery remains
