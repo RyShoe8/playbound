@@ -50,7 +50,10 @@ let homeRequests = 0;
 const handlers = {
   'workspace-request': (_event,input) => input.path === '/api/hosting/me' ? {subscription:null,servers:[],shared:[]} : input.path === '/api/developer/games' ? {games:[]} : {developers:[]},
   'get-deals': () => process.env.PLAYBOUND_SMOKE_SIGNED_OUT === '1' && dealsRequests++ === 0 ? {ok:false,freeOffers:[],discounted:[]} : ({ok:true,freeOffers:[],discounted:[{title:'Fixture Deal',genres:['Strategy'],storeKey:'steam',storeName:'Steam',currentPriceCents:100,regularPriceCents:1000,discountPercent:90}]}),
-  'get-server-index': () => ({ games: [] }),
+  'get-server-index': () => ({ games: [{...fixture,supported:true}] }),
+  'get-community-servers': () => ({servers:[{name:'A community server with a deliberately long name for compact windows',gameSlug:fixture.slug,gameTitle:fixture.title,host:'2001:db8:1234:5678:abcd:1234:5678:abcd',port:1234,players:8,maxPlayers:16,bots:4,map:'A_very_long_map_name_that_must_stay_inside_the_server_browser',location:'United States'}]}),
+  'get-servers': () => ({supported:true,servers:[{name:'Fixture Server',gameSlug:fixture.slug,host:'127.0.0.1',port:1234,players:2,maxPlayers:16,map:'Fixture Map',location:'United States'}]}),
+  'ping-hosts': () => ({}),
   'get-lfg': () => ({ users: [] }),
   'get-live-stats': () => ({ ok: false }),
   'get-free-offers': () => ({ offers: [] }),

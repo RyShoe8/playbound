@@ -11,3 +11,5 @@ Each run creates its own temporary Electron profile and games directory. Backgro
 `test-results/` contains a screenshot, trace and logs; inspect traces with `npx playwright show-trace <path-to-trace.zip>`. Repository checks upload these on failure. Windows build orchestration and macOS/Linux build preparation run this test before packaging, and fail the build if it fails.
 
 Party state lives in `renderer/partyStore.js`. Reads carry a token from the start of the request (including prefetches); only the store accepts responses. Local actions invalidate older reads, preserve unknown/temporarily empty responses and settle optimistic updates without rolling back later changes. `renderer/partyStore.test.mjs` covers response ordering, rollback, leave, account changes and install-return behavior.
+
+Resizing smoke coverage opens the main screens signed in and signed out at 1440, 1200, 1024 and 900 pixels wide. It checks the scrolling content itself for overflow, and uses a populated server list with long names, map names and IPv6 addresses to catch overlap with the multiplayer sidebar. Wide tables remain keyboard-focusable and scroll inside their own panel.
