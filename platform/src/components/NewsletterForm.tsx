@@ -29,7 +29,7 @@ export function NewsletterForm() {
       if (res.ok) {
         void track("newsletter_signup", { source: "form" });
         setState("done");
-        setMessage("You're in! First issue lands this Wednesday.");
+        setMessage("You're in! Watch your inbox for the next PlayBound Weekly newsletter.");
       } else {
         const data = await res.json().catch(() => null);
         setState("error");
@@ -48,10 +48,12 @@ export function NewsletterForm() {
   return (
     <div className="relative w-full max-w-md">
     <form onSubmit={subscribe} className="flex w-full gap-2">
-      <div className="relative flex-1">
+      <div className="relative min-w-0 flex-1">
         <Mail className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
         <input
           type="email"
+          aria-label="Email address"
+          autoComplete="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
