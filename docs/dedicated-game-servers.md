@@ -76,3 +76,29 @@ and the next 15-minute tick reconciles again. Unexpected application errors
 continue to use the existing telemetry path. TLS alerts alone do not identify
 the root cause; correlate recurring failures with Atlas connection and
 cluster-health measurements.
+
+### Resource recalibration and retention
+
+The admin Game Servers panel can recalibrate operational resource estimates.
+The reset transaction archives profile measurement summaries in
+`ServerResourceCalibration`, clears only profile measurement fields, increments
+their baseline versions, and deletes obsolete `ServerResourceSample` rows for
+those profile keys. Catalog content, servers, reservations, eligibility, query
+verification, tier allowances and customer settings are untouched. Request IDs
+make a repeated reset harmless. Old raw readings are deleted; archived summaries
+retain the previous envelope and counters for recovery.
+
+Spawn tests are startup audit observations, not idle baselines. Managed process
+monitoring uses short CPU windows, rejects CPU readings above the node's physical
+core count, and stores settled measurements only after five minutes of runtime,
+a successful player query and a 1–60-second sampling window. Three initial
+readings are required before publishing a padded envelope. Thereafter database
+sampling is limited to one reading per profile per UTC day; repeated spawn tests
+also produce at most one startup audit row per profile per day. A 30-day TTL
+limits raw history. CPU/RAM headroom remains conservative, and future automatic
+updates only increase an envelope; lowering requires an explicit admin reset.
+Idle calibration does not establish resource use at unobserved player counts.
+
+The hosting tier's resource-fit display shows the number of tier units required
+by a measured server. A 256 MB displayed estimate is a floor, not an enforced
+256 MB memory limit; a tier unit is likewise not the full server allocation.

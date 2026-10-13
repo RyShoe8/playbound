@@ -118,8 +118,10 @@ export async function GET(_req: Request, ctx: Ctx) {
       idleTest,
       cpuCores: env.cpuCores,
       ramBytes: env.ramBytes,
+      requiredUnits: Math.max(1, Math.ceil(worst)),
+      requiredSlots: Math.max(1, Math.ceil(worst)) * rc.slotsPerUnit,
       // Measured envelopes are padded peaks across all observed player counts.
-      fit: !p.sampleCount ? "unknown" : worst <= 0.8 ? "safe" : worst <= 1 ? "warning" : "exceeds",
+      fit: (p.sampleCount || 0) < 3 || !p.envelope?.cpuCores || !p.envelope?.ramBytes ? "unknown" : worst <= 0.8 ? "safe" : worst <= 1 ? "warning" : "exceeds",
     };
   });
   return NextResponse.json({ tier, profiles: profileInfo });

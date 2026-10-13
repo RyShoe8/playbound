@@ -22,7 +22,7 @@ describe("spawn-test resource samples", () => {
   it("records only a successful single base-game test for the requested slug", () => {
     expect(idleSamplesFromSpawnTest({ ...measured, gameSlug: "factorio" }, "factorio"))
       .toMatchObject([{ profileKey: "factorio:base", ramBytes: measured.resources.rssBytes,
-        cpuCores: 0.12, players: 0, phase: "idle", source: "audit",
+        cpuCores: 0.12, players: 0, phase: "startup", source: "audit",
         sampleIntervalMs: 1500, processCount: 2, scope: "process-group" }]);
     expect(idleSamplesFromSpawnTest({ ...measured, gameSlug: "factorio" }, "barotrauma")).toEqual([]);
   });

@@ -735,7 +735,7 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
                       </p>
                       {spawnEntry?.ok && Number.isFinite(spawnEntry.resources?.rssBytes) && (spawnEntry.resources?.rssBytes ?? 0) > 0 &&
                         Number.isFinite(spawnEntry.resources?.cpuCores) && (
-                        <p className="text-xs text-muted-foreground" title="Last spawn-test idle reading; player-load usage can be higher">
+                        <p className="text-xs text-muted-foreground" title="Short startup observation; not a settled resource baseline">
                           Idle test · {spawnEntry.resources!.cpuCores!.toFixed(2)} CPU / {Math.round(spawnEntry.resources!.rssBytes! / 1024 / 1024)} MB RAM
                         </p>
                       )}

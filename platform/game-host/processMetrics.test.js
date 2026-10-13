@@ -42,3 +42,12 @@ test('PID reuse and process exit invalidate cached readings',()=>{
   state.alive=false;
   assert.deepEqual(measure(123),{available:false});
 });
+
+test('impossible process-group tick deltas are unknown instead of inflated CPU',()=>{
+  const {state,measure}=fixture();
+  measure(123);
+  Object.assign(state,{time:1000,node:1600,ticks:1500});
+  assert.equal(measure(123).cpuCores,null);
+  Object.assign(state,{time:2000,node:2200,ticks:1600});
+  assert.equal(measure(123).cpuCores,1);
+});

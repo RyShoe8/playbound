@@ -50,6 +50,8 @@ type ProfileInfo = {
   idleTest: { cpuCores: number; ramBytes: number; at: string } | null;
   cpuCores: number;
   ramBytes: number;
+  requiredUnits: number;
+  requiredSlots: number;
   fit: "unknown" | "safe" | "warning" | "exceeds";
 };
 type Sub = {
@@ -419,7 +421,7 @@ function CapacityStatus({ regionKey }: { regionKey: string }) {
   </div>;
 }
 
-const FIT_TONE = { safe: "text-emerald-500", warning: "text-amber-500", exceeds: "text-red-500", unknown: "text-muted-foreground" } as const;
+const FIT_TONE = { safe: "text-emerald-500", warning: "text-amber-500", exceeds: "text-amber-500", unknown: "text-muted-foreground" } as const;
 
 function GamesTab({ tier, tierKey, profiles, inheritedFrom, onSave }: { tier: Tier; tierKey: HostingTierKey; profiles: ProfileInfo[]; inheritedFrom: Map<string, string>; onSave: (t: Tier) => void }) {
   const [games, setGames] = useState<TierGame[]>(tier.games);
@@ -438,7 +440,7 @@ function GamesTab({ tier, tierKey, profiles, inheritedFrom, onSave }: { tier: Ti
       <p className="text-sm">{catalogGameCount} ready, published dedicated-server games · {catalogEditionCount} supported editions · {games.length} selected for {tierKey[0].toUpperCase() + tierKey.slice(1)}</p>
       <p className="text-xs text-muted-foreground">
         Basic selections also appear on Pro and Extreme; Pro selections also appear on Extreme. New server creation stays off until you enable it. Removing a game from new servers does not touch existing customer servers; &ldquo;Existing starts&rdquo; controls whether theirs can still start.
-        Resource fit compares each profile&apos;s measured envelope with one unit ({rc.cpuPerUnit} CPU / {rc.memoryMbPerUnit} MB).
+        Resource fit compares settled usage including headroom with one tier unit ({rc.cpuPerUnit} CPU / {rc.memoryMbPerUnit} MB). The displayed RAM estimate is not a hard memory limit. Larger games may need several units; a short startup test is not an idle baseline.
       </p>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[900px] text-sm">
@@ -474,14 +476,14 @@ function GamesTab({ tier, tierKey, profiles, inheritedFrom, onSave }: { tier: Ti
                     )}
                   </td>
                   <td className={`text-xs ${FIT_TONE[p?.fit || "unknown"]}`}>
-                    {p?.fit === "unknown" || !p ? "No saved samples yet" : `${p.fit.toUpperCase()} · ${p.cpuCores.toFixed(2)} CPU / ${Math.round(p.ramBytes / 1024 / 1024)} MB · ${p.samples} samples`}
-                    {p?.idleTest ? <span className="block text-muted-foreground" title={`Last VPS idle spawn test ${new Date(p.idleTest.at).toLocaleString()}; player-load usage can be higher`}>
+                    {p?.fit === "unknown" || !p ? `Calibrating · ${p?.samples || 0}/3 settled samples` : `${p.cpuCores.toFixed(2)} CPU / ${Math.round(p.ramBytes / 1024 / 1024)} MB · ${p.samples} samples`}
+                    {p?.idleTest ? <span className="block text-muted-foreground" title={`Last VPS startup snapshot ${new Date(p.idleTest.at).toLocaleString()}; player-load usage can be higher`}>
                       Idle test · {p.idleTest.cpuCores.toFixed(2)} CPU / {Math.round(p.idleTest.ramBytes / 1024 / 1024)} MB RAM
                     </span> : null}
                     {p ? <span className="block text-muted-foreground" title={p.lastVerifiedAt ? `Last verified ${new Date(p.lastVerifiedAt).toLocaleString()}` : "No profile verification date"}>
                       Community: {p.verification} · query {p.queryVerified ? "yes" : "no"} · join {p.joinVerified ? "yes" : "no"} · measured through {p.measuredThroughPlayers} players
                     </span> : null}
-                    {p?.fit === "exceeds" ? <span className="block">Consider Pro</span> : null}
+                    {p && p.fit !== "unknown" ? <span className="block">Needs {p.requiredUnits} unit{p.requiredUnits === 1 ? "" : "s"} ({p.requiredSlots} slots of resource allowance)</span> : null}
                   </td>
                   <td>{!sourceTier ? <button type="button" className="text-xs text-red-500" onClick={() => setGames((x) => x.filter((_, j) => j !== i))}>Remove</button> : null}</td>
                 </tr>

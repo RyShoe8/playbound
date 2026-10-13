@@ -48,7 +48,7 @@ export function createProcessMetrics({ fileSystem = fs, coreCount = () => os.cpu
       const cpuCores = previous && nodeTotal > previous.nodeTotal && processTotal >= previous.processTotal
         ? Math.max(0, (processTotal - previous.processTotal) / (nodeTotal - previous.nodeTotal) * coreCount())
         : null;
-      const result = { available: true, rssBytes, cpuCores, processCount, scope: "process-group", sampleIntervalMs: previous ? sampledAt - previous.sampledAt : 0 };
+      const result = { available: true, rssBytes, cpuCores: cpuCores != null && cpuCores <= coreCount() ? cpuCores : null, processCount, scope: "process-group", sampleIntervalMs: previous ? sampledAt - previous.sampledAt : 0, collectedAt: new Date().toISOString() };
       cpuBaselines.set(pid, { processTotal, nodeTotal, sampledAt, started: leader.started, group: leader.group, result });
       return result;
     } catch {

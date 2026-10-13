@@ -17,6 +17,9 @@ const CommunityServerProfileSchema = new Schema({
   clientVersion: { type: String, default: null },
   serverVersion: { type: String, default: null },
   baselineVersion: { type: Number, default: 1, min: 1 },
+  measurementResetAt: { type: Date, default: null },
+  measurementResetBy: { type: String, default: null },
+  candidateEnvelope: { cpuCores: { type: Number, default: 0 }, ramBytes: { type: Number, default: 0 }, measuredThroughPlayers: { type: Number, default: 0 } },
   envelope: {
     cpuCores: { type: Number, default: 0, min: 0 },
     ramBytes: { type: Number, default: 0, min: 0 },
