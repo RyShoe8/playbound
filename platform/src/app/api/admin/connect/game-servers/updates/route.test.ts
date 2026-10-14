@@ -3,6 +3,7 @@ const mock = vi.hoisted(() => ({ read: vi.fn(), write: vi.fn(), host: vi.fn() })
 vi.mock("@/lib/requireAdmin", () => ({ requireAdminSession: mock.write, requireAdminViewSession: mock.read }));
 vi.mock("@/lib/gameHost/client", () => ({ installationUpdatesOnHost: mock.host }));
 import { GET, POST } from "./route";
+import { INSTALLATION_UPDATE_KEYS } from "@/lib/gameHost/installationKeys";
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -27,6 +28,10 @@ it("reads uncached update status", async () => {
 it("takes the actor from the authorized session", async () => {
   expect((await POST(request({ action: "update", key: "unturned" }))).status).toBe(202);
   expect(mock.host).toHaveBeenCalledWith({ action: "update", key: "unturned", actor: "admin-id" });
+});
+it.each(INSTALLATION_UPDATE_KEYS)("accepts the fixed update action for %s", async (key) => {
+  expect((await POST(request({ action: "update", key }))).status).toBe(202);
+  expect(mock.host).toHaveBeenCalledWith({ action: "update", key, actor: "admin-id" });
 });
 it.each([
   { action: "update", key: "../other" },

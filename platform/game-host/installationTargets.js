@@ -6,6 +6,11 @@ export const INSTALLATION_TARGETS = Object.freeze({
   "counter-strike-2": { name: "Counter-Strike 2", appId: 730, binaries: ["game/bin/linuxsteamrt64/cs2"] },
   "team-fortress-2": { name: "Team Fortress 2", appId: 232250, binaries: ["srcds_linux64"] },
   unturned: { name: "Unturned", appId: 1110390, binaries: ["Unturned_Headless.x86_64"] },
+  "counter-strike-source": { name: "Counter-Strike: Source", appId: 232330, binaries: ["srcds_linux"] },
+  "core-keeper": { name: "Core Keeper", appId: 1963720, binaries: ["CoreKeeperServer"] },
+  "dont-starve-together": { name: "Don't Starve Together", appId: 343050, binaries: ["bin64/dontstarve_dedicated_server_nullrenderer_x64"] },
+  barotrauma: { name: "Barotrauma", appId: 1026340, binaries: ["DedicatedServer"] },
+  necesse: { name: "Necesse", appId: 1169370, binaries: ["jre/bin/java"], files: ["Server.jar"] },
 });
 
 export function installationKey(slug) {
@@ -27,12 +32,12 @@ export function verifyInstallation(directory, key) {
   if (value("appid") !== String(target.appId) || value("StateFlags") !== "4" || !/^\d+$/.test(value("buildid") || "")) {
     throw new Error("Steam installation is incomplete or belongs to another app");
   }
-  for (const binary of target.binaries) {
+  for (const binary of [...target.binaries, ...(target.files || [])]) {
     const filename = path.join(directory, binary);
     if (!fs.statSync(filename).isFile() || !fs.realpathSync(filename).startsWith(`${fs.realpathSync(directory)}${path.sep}`)) {
       throw new Error("Required server executable is missing");
     }
-    fs.accessSync(filename, fs.constants.X_OK);
+    if (target.binaries.includes(binary)) fs.accessSync(filename, fs.constants.X_OK);
   }
   return { buildId: value("buildid") };
 }

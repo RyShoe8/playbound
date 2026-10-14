@@ -7,8 +7,8 @@
  * restart. `reportSelfHostWhenListening` waits half an hour for a human to
  * click Start Network Game precisely because of that.
  *
- * Here the launcher spawns the dedicated server itself, which makes every
- * declared setting deliverable (they all go on the command line) and makes a
+ * Here the launcher spawns the dedicated server itself, which makes declared
+ * settings deliverable through each engine's own arguments/config and makes a
  * restart a real control rather than killing the game the host is playing.
  *
  * Arg composition is pulled out and exported so it can be tested without
@@ -22,6 +22,7 @@ const { spawn } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 const { injectPlayboundAdmin } = require("./tes3mp/injectPlayboundAdmin.cjs");
+const { buildLocalSettingsArgs } = require("./localServerSettings");
 
 function iniValue(value) {
   return String(value ?? "").replace(/[\r\n]/g, " ").trim();
@@ -91,6 +92,7 @@ function prepareTes3mpAdmin(cwd, hostLaunch, adminNames) {
 function cvarArgs(settings) {
   const args = [];
   for (const [key, value] of Object.entries(settings || {})) {
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) continue;
     const text = typeof value === "boolean" ? (value ? "1" : "0") : String(value);
     /*
      * The same rule as the platform's rcon builder: a value carrying a quote,
@@ -118,7 +120,7 @@ function buildServerArgs({ hostLaunch, port, settings, serverName }) {
   const resolved = template.map((arg) =>
     String(arg).replace("{port}", String(port)).replace("{name}", name)
   );
-  return [...resolved, ...cvarArgs(settings)];
+  return buildLocalSettingsArgs({ hostLaunch, args: resolved, settings, serverName }) ?? [...resolved, ...cvarArgs(settings)];
 }
 
 /**
@@ -154,7 +156,9 @@ function createLocalServers({ onExit, spawnProcess = spawn } = {}) {
    * take a different one, so the process is the unit of change.
    */
   function start(partyId, { exe, cwd, hostLaunch, port, settings, revision, serverName, adminNames }) {
-    const args = buildServerArgs({ hostLaunch, port, settings, serverName });
+    let args;
+    try { args = buildServerArgs({ hostLaunch, port, settings, serverName }); }
+    catch { return { error: "This game's chosen settings cannot be delivered safely to the local server." }; }
     if (!args) return { error: "This game has no dedicated server PlayBound can start." };
     if (!exe) return { error: "The game is not installed." };
 

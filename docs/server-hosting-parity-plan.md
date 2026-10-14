@@ -12,7 +12,7 @@ New games must complete `docs/dedicated-server-game-checklist.md`.
 Assess each feature per engine: applicable and verified, not yet implemented,
 or unavailable with a concrete engine/transport reason. The universal scope is
 a release requirement, not a claim that every engine supports bots or plugins.
-Keep current three-game update support and thirteen-game file support explicit
+Keep current eight-game update support and thirteen-game file support explicit
 until the additional handlers pass their gates. No placeholder controls.
 
 ## Implementation order and gates
@@ -27,7 +27,7 @@ until the additional handlers pass their gates. No placeholder controls.
    moderation, lifecycle, and compatibility. Expand local live controls through
    constrained typed operations; never add a cloud shell into a user's PC.
 3. **Updates for the entire inventory.** Extend installation-family handling
-   beyond CS2/TF2/Unturned. Add separate verified strategies for official archives,
+   beyond the eight delivered Steam installations. Add separate verified strategies for official archives,
    GitHub/AppImage packages, Java/.NET, Wine/source builds, and OS-managed packages.
    OS packages may require a narrowly scoped root-owned installer; never grant
    the game agent general package-manager/shell sudo. Every handler needs offline
@@ -57,6 +57,17 @@ until the additional handlers pass their gates. No placeholder controls.
   where declared, restore points, supported saved-file roots, daily maintenance.
 - Admin-coordinated staged updates for CS2, TF2 and Unturned, with rollback,
   shared-installation start gates, read-only process checks and persisted jobs.
+- The same staged Steam update path now covers Counter-Strike: Source, Core Keeper,
+  Don't Starve Together, Barotrauma and Necesse. Installed manifests/executables
+  were inspected on the VPS; isolated per-depot update/rollback fixtures cover
+  fixed app IDs and required files. No production binary update is implied by
+  that fixture verification, and a real client Join remains a separate check.
+- Local settings delivery now uses native OpenRA/OpenHV key/value arguments,
+  Teeworlds/DDNet console arguments, BZFlag flags, DarkPlaces commands, Quake
+  cvars/map commands and TES3MP config-only settings. Cross-layer tests cover
+  every declared setting and enum option for nine existing profiles. Other
+  engines still need their native delivery audit; argument tests are not a
+  live Join/occupancy test.
 - The all-game update handlers and executable plugin isolation above remain
-  pending. Expand with verified adapters rather than treating those first three
+  pending. Expand with verified adapters rather than treating the eight supported
   Steam distributions as a universal installer.

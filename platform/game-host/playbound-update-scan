@@ -8,6 +8,11 @@ targets = {
     "counter-strike-2": ["counter-strike-2", "cs2"],
     "team-fortress-2": ["team-fortress-2"],
     "unturned": ["unturned"],
+    "counter-strike-source": ["counter-strike-source"],
+    "core-keeper": ["core-keeper"],
+    "dont-starve-together": ["dont-starve-together"],
+    "barotrauma": ["barotrauma"],
+    "necesse": ["necesse"],
 }
 if len(sys.argv) != 2 or sys.argv[1] not in targets:
     sys.exit(2)
