@@ -12,7 +12,7 @@ New games must complete `docs/dedicated-server-game-checklist.md`.
 Assess each feature per engine: applicable and verified, not yet implemented,
 or unavailable with a concrete engine/transport reason. The universal scope is
 a release requirement, not a claim that every engine supports bots or plugins.
-Keep current eight-game update support and thirteen-game file support explicit
+Keep current nine-game update support and thirteen-game file support explicit
 until the additional handlers pass their gates. No placeholder controls.
 
 ## Implementation order and gates
@@ -89,5 +89,14 @@ until the additional handlers pass their gates. No placeholder controls.
   OS account and filesystem access still require the isolation work in step 4;
   environment filtering alone does not make executable plugins safe.
 - The all-game update handlers and executable plugin isolation above remain
-  pending. Expand with verified adapters rather than treating the eight supported
-  Steam distributions as a universal installer.
+  pending. Expand with verified handlers rather than treating the supported
+  distributions as a universal installer.
+- Mindustry is the first non-Steam update handler: official stable GitHub server
+  JAR, required release SHA-256 digest, bounded trusted HTTPS redirects/download,
+  ZIP integrity, dedicated entry point/version and installed Java checks. The
+  existing queue, start gates, staged activation and rollback remain shared.
+  VPS check (2026-10-14): isolated 159.7 -> 160.7 -> 159.7 update/rollback;
+  the actual 160.7 executable answered a game query with zero players/two slots.
+  Production JAR and customer data stayed unchanged. A real client Join remains
+  separate. Custom wrappers/alternate JARs require review; unclassified JVMs
+  conservatively hold the queue without stopping other servers.

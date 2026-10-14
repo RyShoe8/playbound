@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { INSTALLATION_TARGETS, verifyInstallation, prepareInstallationLinks, restoreInstallationLinks } from "./installationTargets.js";
 import { createInstallationStore, scanInstallation } from "./installationJobs.js";
 import { baselineBarotraumaHomes } from "./barotraumaRuntime.js";
+import { stageMindustryRelease } from "./mindustryUpdates.js";
 
 const GIB = 1024 ** 3;
 
@@ -50,7 +51,7 @@ export function runCommand(command, args, { root, timeout = 90 * 60_000 } = {}) 
 }
 
 // Injection is only for isolated tests, never an HTTP input or downloaded script.
-export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run = runCommand, scan = scanInstallation, disk = diskAvailable, hostHome = process.env.HOME } = {}) {
+export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run = runCommand, scan = scanInstallation, disk = diskAvailable, hostHome = process.env.HOME, stageRelease = stageMindustryRelease } = {}) {
   const store = createInstallationStore(stateDir);
   let job = store.read(id);
   const target = INSTALLATION_TARGETS[job.key];
@@ -81,14 +82,22 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
       if (fs.existsSync(stage) || fs.existsSync(backup)) throw new Error("Update directory already exists; operator inspection required");
       await run("/usr/bin/cp", ["-a", "--reflink=auto", "--sparse=always", "--", current, stage], { root: gamesRoot });
       const detachedLinks = prepareInstallationLinks(stage, current, true);
-      phase("downloading", "SteamCMD is updating the staged installation");
-      const output = await run("/usr/games/steamcmd", ["+force_install_dir", stage, "+login", "anonymous", "+app_update", String(target.appId), "+quit"], { root: gamesRoot });
-      if (!output.includes(`Success! App '${target.appId}' fully installed.`)) throw new Error("SteamCMD did not confirm a complete installation");
+      if (target.strategy === "github-jar") {
+        phase("downloading", "Downloading the official Mindustry server and verifying its release digest");
+        await stageRelease(stage, { diskCheck: () => {
+          const available = disk(gamesRoot);
+          if (available.free < available.reserve + 256 * 1024 ** 2) throw new Error("Update stopped to preserve free disk space");
+        } });
+      } else {
+        phase("downloading", "SteamCMD is updating the staged installation");
+        const output = await run("/usr/games/steamcmd", ["+force_install_dir", stage, "+login", "anonymous", "+app_update", String(target.appId), "+quit"], { root: gamesRoot });
+        if (!output.includes(`Success! App '${target.appId}' fully installed.`)) throw new Error("SteamCMD did not confirm a complete installation");
+      }
       restoreInstallationLinks(detachedLinks);
     } else {
       if (!previous) throw new Error("Rollback installation is unavailable");
     }
-    phase("validating", "Checking Steam manifest and required executables");
+    phase("validating", target.strategy === "github-jar" ? "Checking JAR integrity, server version and Java compatibility" : "Checking Steam manifest and required executables");
     const prepared = job.action === "update" ? stage : previous;
     const verified = verifyInstallation(prepared, job.key);
     if (await scan(job.key, gamesRoot)) throw new Error("An affected process appeared; activation was refused");
@@ -112,7 +121,7 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
     const uncertain = activated || (job.status === "activating" && !fs.existsSync(current));
     phase(uncertain ? "interrupted" : "failed", uncertain
       ? "Activation needs operator inspection. New starts remain blocked; the rollback copy is retained."
-      : error instanceof Error && /^(Not enough|An affected|SteamCMD|Update command|Update stopped|Cannot verify|Barotrauma|Unexpected Barotrauma|Invalid Barotrauma)/.test(error.message)
+      : error instanceof Error && /^(Not enough|An affected|SteamCMD|Mindustry|Update command|Update stopped|Cannot verify|Barotrauma|Unexpected Barotrauma|Invalid Barotrauma)/.test(error.message)
         ? error.message : "Update failed before activation; the previous installation was preserved");
     // Retain partial staging files for diagnosis. Never recurse into customer save links.
   }

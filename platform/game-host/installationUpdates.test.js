@@ -232,6 +232,7 @@ test("real detached worker completes IPC startup on Node 20 and records a fail-c
 });
 
 for (const [game, target] of Object.entries(INSTALLATION_TARGETS)) {
+  if (target.strategy === "github-jar") continue; // JAR fixtures exercise its distinct verifier and release path.
   if (target.blockedReason) {
     test(`${game}: refuses updates when runtime migration is unimplemented`, (t) => {
       const f = fixture(t);
