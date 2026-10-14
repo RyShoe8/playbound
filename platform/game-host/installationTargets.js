@@ -11,7 +11,6 @@ export const INSTALLATION_TARGETS = Object.freeze({
   "dont-starve-together": { name: "Don't Starve Together", appId: 343050, binaries: ["bin64/dontstarve_dedicated_server_nullrenderer_x64"] },
   barotrauma: {
     name: "Barotrauma", appId: 1026340, binaries: ["DedicatedServer"],
-    blockedReason: "Customer servers use private runtime copies. Updating the shared depot would not update those copies; safe save-preserving runtime migration is still required.",
   },
   necesse: { name: "Necesse", appId: 1169370, binaries: ["jre/bin/java"], files: ["Server.jar"] },
 });

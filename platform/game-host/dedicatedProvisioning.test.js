@@ -128,11 +128,14 @@ test("Unturned permits a token-free admin smoke test but requires a token for In
   assert.doesNotMatch(fs.readFileSync(config, "utf8"), /Shutdown|PvE|Cheats/);
 });
 
-test("Barotrauma gets a separate executable and capped XML per customer", async () => {
+test("Barotrauma gets a separate executable and capped XML per customer", async (t) => {
+  t.mock.method(fs, "statfsSync", () => ({ bavail: 100 * 1024 ** 3, bsize: 1, blocks: 200 * 1024 ** 3 }));
   assert.equal(recipes.barotrauma.resolveBinary(recipes.barotrauma.binaries), null);
   const source = path.join(games, "barotrauma");
   fs.mkdirSync(source);
-  fs.writeFileSync(path.join(source, "DedicatedServer"), "executable");
+  fs.mkdirSync(path.join(source, "steamapps"));
+  fs.writeFileSync(path.join(source, "steamapps/appmanifest_1026340.acf"), '"appid" "1026340" "StateFlags" "4" "buildid" "100"');
+  fs.writeFileSync(path.join(source, "DedicatedServer"), "executable", { mode: 0o755 });
   fs.writeFileSync(path.join(source, "asset.txt"), "shared asset");
   const a = context("three", 6);
   const b = context("four", 9);

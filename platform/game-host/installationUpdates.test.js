@@ -7,6 +7,7 @@ import { createInstallationCoordinator, createInstallationStore } from "./instal
 import { INSTALLATION_TARGETS, verifyInstallation, prepareInstallationLinks, restoreInstallationLinks } from "./installationTargets.js";
 import { runInstallationUpdate, runCommand } from "./installationUpdateWorker.js";
 import { isAgentGetPath } from "./agentRoutes.js";
+import { prepareBarotraumaRuntime } from "./barotraumaRuntime.js";
 
 const key = "team-fortress-2";
 function installation(directory, build = "100") {
@@ -43,6 +44,34 @@ function fakeCommands({ failDownload = false } = {}) {
   };
 }
 const disk = () => ({ free: 100 * 1024 ** 3, reserve: 8 * 1024 ** 3 });
+
+test("Barotrauma worker inventories legacy copies before any depot mutation", async (t) => {
+  const f = fixture(t);
+  const current = path.join(f.gamesRoot, "barotrauma");
+  fs.mkdirSync(path.join(current, "steamapps"), { recursive: true });
+  fs.writeFileSync(path.join(current, "steamapps/appmanifest_1026340.acf"), '"appid" "1026340" "StateFlags" "4" "buildid" "100"');
+  fs.writeFileSync(path.join(current, "DedicatedServer"), "old binary", { mode: 0o755 });
+  const hostHome = path.join(path.dirname(f.gamesRoot), "home");
+  const home = path.join(hostHome, "barotrauma-servers/pb-legacy");
+  fs.mkdirSync(home, { recursive: true });
+  fs.cpSync(current, path.join(home, "runtime"), { recursive: true });
+  fs.writeFileSync(path.join(home, "runtime/serversettings.xml"), "private settings");
+  const job = f.coordinator.queue("barotrauma", "update", "admin");
+  f.store.write({ ...job, status: "launching" });
+  await runInstallationUpdate({ ...f, id: job.id }, { hostHome, scan: async () => 0, disk, run: async (command, args) => {
+    assert.ok(fs.existsSync(path.join(home, "runtime/.pb-runtime.json")));
+    if (command.endsWith("du")) return "1024 fixture";
+    if (command.endsWith("cp")) { fs.cpSync(args.at(-2), args.at(-1), { recursive: true }); return ""; }
+    fs.writeFileSync(path.join(args[1], "steamapps/appmanifest_1026340.acf"), '"appid" "1026340" "StateFlags" "4" "buildid" "200"');
+    fs.writeFileSync(path.join(args[1], "DedicatedServer"), "new binary", { mode: 0o755 });
+    return "Success! App '1026340' fully installed.";
+  } });
+  assert.equal(f.store.read(job.id).status, "completed");
+  assert.equal(fs.readFileSync(path.join(home, "runtime/DedicatedServer"), "utf8"), "old binary");
+  prepareBarotraumaRuntime(current, home, { disk: () => ({ bavail: 100 * 1024 ** 3, bsize: 1, blocks: 200 * 1024 ** 3 }) });
+  assert.equal(fs.readFileSync(path.join(home, "runtime/DedicatedServer"), "utf8"), "new binary");
+  assert.equal(fs.readFileSync(path.join(home, "runtime/serversettings.xml"), "utf8"), "private settings");
+});
 
 test("queued update gates new starts, preserves occupied rooms and is idempotent", async (t) => {
   const f = fixture(t);
@@ -230,7 +259,7 @@ for (const [game, target] of Object.entries(INSTALLATION_TARGETS)) {
     const coordinator = createInstallationCoordinator({ gamesRoot, stateDir, rooms: () => [], scan: async () => 0 });
     const update = coordinator.queue(game, "update", "fixture-admin");
     store.write({ ...update, status: "launching" });
-    await runInstallationUpdate({ id: update.id, gamesRoot, stateDir }, { disk, scan: async () => 0, run: async (command, args) => {
+    await runInstallationUpdate({ id: update.id, gamesRoot, stateDir }, { hostHome: root, disk, scan: async () => 0, run: async (command, args) => {
       if (command.endsWith("du")) return "1024 fixture";
       if (command.endsWith("cp")) { fs.cpSync(args.at(-2), args.at(-1), { recursive: true }); return ""; }
       assert.equal(command, "/usr/games/steamcmd");
@@ -243,7 +272,7 @@ for (const [game, target] of Object.entries(INSTALLATION_TARGETS)) {
     assert.equal(verifyInstallation(current, game).buildId, "200");
     const rollback = coordinator.queue(game, "rollback", "fixture-admin");
     store.write({ ...rollback, status: "launching" });
-    await runInstallationUpdate({ id: rollback.id, gamesRoot, stateDir }, { scan: async () => 0 });
+    await runInstallationUpdate({ id: rollback.id, gamesRoot, stateDir }, { hostHome: root, scan: async () => 0 });
     assert.equal(store.read(rollback.id).status, "completed", store.read(rollback.id).message);
     assert.equal(verifyInstallation(current, game).buildId, "100");
   });

@@ -98,12 +98,30 @@ not grant permission to modify shared game installations.
 The existing game-servers admin panel has an operator-owned update queue for
 CS2 (Steam app 730), Team Fortress 2 (232250), Unturned (1110390),
 Counter-Strike: Source (232330), Core Keeper (1963720), Don't Starve Together
-(343050), and Necesse (1169370). These
+(343050), Necesse (1169370), and Barotrauma (1026340). These
 are the installed anonymous-SteamCMD distributions currently supported.
-Barotrauma (1026340) is inventoried with an explicit blocked reason: customer
-servers use private runtime copies, which require safe migration before a depot
-update can take effect. The agent rejects queueing it even through a direct API
-request; its presence is not a claim of completed update support.
+Barotrauma uses private runtime copies. Before updating the shared installation,
+the worker inventories stopped copies against their saved baseline (or the
+current depot for legacy copies). Unknown modifications block the update.
+At the next start, each copy receives the new binaries through a staged swap,
+preserving server settings, campaigns, bans, permissions and logs. Shared
+identity/settings files, bans, permissions and worlds are never seeded into a
+new customer copy; fresh copies receive default karma/campaign tuning only.
+Complete previous
+runtime copies stay in that server's home; after three retained copies an
+operator must archive them before further migrations. Linked files, insufficient
+disk and uncertain crash recovery fail closed. A crash between swaps restores
+the prior runtime and retains staging for inspection. The read-only process
+scanner covers both shared and private Barotrauma paths.
+
+Rolling back binaries preserves the current save data; it does not rewind a
+campaign or guarantee that an older engine can read a newer save format. Use
+world backups deliberately when such a restore is needed. Migration fixtures
+cover updates/rollback, legacy copies, interrupted swaps and save isolation;
+a real game/client compatibility check remains separate.
+
+The state paths follow the [official configuration reference](https://barotraumagame.com/wiki/List_of_Config_Files)
+and [custom permission preset guidance](https://github.com/FakeFishGames/Barotrauma/blob/master/Barotrauma/BarotraumaShared/Data/permissionpresets.xml).
 Customer owners and moderators cannot update shared binaries. Admin Viewer
 can read the queue; writes recheck the administrator's current database role.
 
@@ -197,7 +215,7 @@ This is not complete feature parity with those platforms. FTP/SFTP,
 process-log streaming, a general task scheduler,
 plugin/Workshop installation, database administration, and customer-triggered
 binary updates are not implemented by these changes. Shared binary updates
-are deliberately admin-only and limited to the seven ready installations above. None
+are deliberately admin-only and limited to the eight ready installations above. None
 of these features is represented by a nonfunctional button.
 
 No hosting backend is replaced or installed. Existing recipes, measured

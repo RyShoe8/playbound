@@ -27,6 +27,7 @@
 import { randomBytes } from "node:crypto";
 import { createRequire } from "node:module";
 import { ANIV_HELPER, anivDirectory } from "./anivControl.js";
+import { prepareBarotraumaRuntime } from "./barotraumaRuntime.js";
 const rimworldDifficulty = createRequire(import.meta.url)("./rimworldDifficulty.json");
 
 /**
@@ -545,12 +546,7 @@ export function createDedicatedRecipes(deps) {
       prepareSpawn: async (port, ctx) => {
         const home = serverDir("barotrauma-servers", ctx);
         const runtime = path.join(home, "runtime");
-        if (!fs.existsSync(path.join(runtime, "DedicatedServer"))) {
-          const stage = path.join(home, `.runtime-${process.pid}`);
-          if (fs.existsSync(stage)) fs.rmSync(stage, { recursive: true });
-          fs.cpSync(path.join(GAMES_ROOT, "barotrauma"), stage, { recursive: true });
-          fs.renameSync(stage, runtime);
-        }
+        prepareBarotraumaRuntime(path.join(GAMES_ROOT, "barotrauma"), home);
         const steamClient = firstExisting(gameBin("barotrauma", ["linux64/steamclient.so", "steamclient.so"]));
         if (steamClient) {
           const sdk = path.join(home, ".steam", "sdk64");
