@@ -1,8 +1,11 @@
+import {renderServerFiles} from './serverFiles.js';
+
 /** Native hosting workspace. All writes use the existing server-scoped API. */
 export async function renderServerManager(host, id, { request, escapeHtml: e, back }) {
   const base = `/api/hosting/servers/${encodeURIComponent(id)}`;
   let server, control, busy = false, selected = 'Overview', revision = 0, disposed = false;
   const consoleLines = [];
+  let filePanel = null;
   const may = permission => control.permissions.includes(`server:${permission}`);
   const button = (label, action, data = '', disabled = false) => `<button type="button" class="btn-secondary" data-action="${action}" ${data} ${disabled ? 'disabled' : ''}>${e(label)}</button>`;
   const field = (label, name, value = '') => `<label class="workspace-field">${e(label)}<input class="input-text" name="${name}" value="${e(String(value ?? ''))}" required></label>`;
@@ -13,7 +16,7 @@ export async function renderServerManager(host, id, { request, escapeHtml: e, ba
     ({ server, control } = await request(base));
   }
   function tabs() {
-    return ['Overview', may('configure') && 'Settings', control.maps && 'Maps',
+    return ['Overview', may('configure') && 'Settings', control.files && may('read_files') && 'Files', control.maps && 'Maps',
       may('configure') && control.definitions.some(d => d.feature === 'bots') && 'Bots',
       control.capabilities.players && 'Players',
       (may('create_backup') || may('restore_backup')) && 'Backups', may('configure') && may('restart') && 'Maintenance',
@@ -53,6 +56,7 @@ export async function renderServerManager(host, id, { request, escapeHtml: e, ba
       }).join('')}${definitions.length ? '<button class="btn-primary">Apply changes</button>' : '<p>No additional game settings.</p>'}</form>`;
   }
   async function content(tab) {
+    if (tab === 'Files') return '<div data-file-manager></div>';
     if (tab === 'Maintenance') {
       const data = await request(`${base}/maintenance`);
       return `<h2>Daily maintenance</h2><p>Optional empty-server restart. A configuration restore point is saved first; this does not update game files or back up the world.</p><form class="workspace-form" data-form="maintenance"><label class="workspace-field"><input type="checkbox" name="enabled" ${data.enabled ? 'checked' : ''}> Restart only when the server is empty</label><label class="workspace-field">Daily window (UTC)<select class="input-text" name="hourUTC">${Array.from({length:24},(_,hour) => `<option value="${hour}" ${hour === data.hourUTC ? 'selected' : ''}>${String(hour).padStart(2,'0')}:00–${String(hour).padStart(2,'0')}:59 UTC</option>`).join('')}</select></label><p>Checked every 15 minutes. Occupied or unreachable servers stay running. Missed windows wait until the next day.</p>${data.lastDay ? `<p>Last attempt: ${e(data.lastDay)} · ${e(data.result || 'Preparing maintenance')}</p>` : ''}<button class="btn-primary">Save maintenance</button></form>`;
@@ -97,12 +101,15 @@ export async function renderServerManager(host, id, { request, escapeHtml: e, ba
     try {
       const html = await content(selected);
       if (token === revision && host.isConnected) host.querySelector('[data-content]').innerHTML = html;
+      if (token === revision && host.isConnected && selected === 'Files') filePanel = await renderServerFiles(host.querySelector('[data-file-manager]'), {request,base,escapeHtml:e,canWrite:may('write_files'),stopped:control.status.status === 'stopped' && !server.online});
     } catch (error) { if (token === revision && host.isConnected) { host.querySelector('[data-content]').textContent = 'This section is unavailable. Use Refresh to retry.'; message(error.message, true); } }
     host.querySelectorAll('button').forEach(node => { node.dataset.disabled = String(node.disabled); });
   }
   host.onclick = event => {
     const target = event.target.closest('button');
     if (!target || busy || target.disabled) return;
+    if (filePanel?.hasUnsavedChanges() && !confirm('Discard your unsaved file edits?')) return;
+    filePanel = null;
     if (target.dataset.tab) { selected = target.dataset.tab; void render(); return; }
     const name = target.dataset.action, key = target.dataset.id;
     if (name === 'back') { disposed = true; revision++; host.onclick = host.onsubmit = null; back(); return; }

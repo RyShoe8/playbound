@@ -13,6 +13,7 @@ const ROUTES = [
   ['GET|POST|DELETE', /^\/api\/hosting\/servers\/[a-f0-9]{24}\/access$/],
   ['GET', /^\/api\/hosting\/servers\/[a-f0-9]{24}\/activity$/],
   ['GET|PUT', /^\/api\/hosting\/servers\/[a-f0-9]{24}\/maintenance$/],
+  ['POST', /^\/api\/hosting\/servers\/[a-f0-9]{24}\/files$/],
   ['GET', /^\/api\/developer\/games$/],
   ['GET|PATCH', /^\/api\/developer\/games\/[a-z0-9-]+$/],
   ['GET|PATCH', /^\/api\/developer\/profile$/],

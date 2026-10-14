@@ -138,6 +138,16 @@ export async function stopManagedHostRoom(communityServerId: string): Promise<{ 
 
 export type WorldBackupInfo = { id: string; createdAt: string; bytes: number; files: number; kind: "manual" | "before-restore" };
 
+export async function filesOnHost(communityServerId: string, body: Record<string, unknown>): Promise<{ ok: true; data: Record<string, unknown> } | { ok: false; error: string }> {
+  if (!/^[a-fA-F0-9]{24}$/.test(communityServerId)) return { ok: false, error: "Invalid server" };
+  try {
+    const response = await hostFetch(`/managed/${communityServerId}/files`, { method: "POST", body: JSON.stringify(body) }, 20_000);
+    if (!response) return { ok: false, error: "Game host unavailable" };
+    const data = await response.json() as Record<string, unknown>;
+    return response.ok ? { ok: true, data } : { ok: false, error: typeof data.error === "string" ? data.error : "File management is unavailable on the host" };
+  } catch { return { ok: false, error: "Could not reach the file manager. Please retry." }; }
+}
+
 /** One world-data backup operation for a paid server, run by the agent on the host. */
 export async function worldBackupOnHost(
   communityServerId: string,

@@ -17,6 +17,7 @@ import { getServerSettingProfile, type ServerSettingValues } from "@/lib/serverC
 import { ServerControlUnsupported } from "@/lib/serverControl/adapter";
 import { authorizeServer, recordActivity, ROLE_PERMISSIONS, type Fail } from "./access";
 import { customerServerView } from "./view";
+import { hasWorldBackups } from "./worldBackups";
 
 
 /** Keys PlayBound owns on a customer server: the game's slot setting. */
@@ -36,7 +37,7 @@ async function adapterFor(server: {
 }) {
   const profile = await CommunityServerProfile.findOne({ key: server.profileKey }).select({ recipeSlug: 1 }).lean();
   const saved = stripLocked(server, server.settings || {}) as ServerSettingValues;
-  return createManagedVpsAdapter({
+  return { ...createManagedVpsAdapter({
     id: String(server._id),
     gameSlug: server.gameSlug,
     recipeSlug: profile?.recipeSlug || server.gameSlug,
@@ -48,7 +49,7 @@ async function adapterFor(server: {
     onChanged: async (values) => {
       await CommunityServer.updateOne({ _id: server._id }, { $set: { settings: stripLocked(server, values) } });
     },
-  });
+  }), files: hasWorldBackups(profile?.recipeSlug || server.gameSlug) };
 }
 
 /** Everything the Server Control page renders, for the caller's role. */
@@ -66,6 +67,7 @@ export async function getControl(userId: string, serverId: string) {
     role,
     permissions: [...ROLE_PERMISSIONS[role]],
     capabilities: adapter.capabilities,
+    files: adapter.files && ROLE_PERMISSIONS[role].includes("server:read_files"),
     /** A Maps tab: the game declares its maps and can change them over its live channel. */
     maps: Boolean(getServerSettingProfile(server.gameSlug)?.maps && adapter.capabilities.liveApply) ||
       Boolean(getServerSettingProfile(server.gameSlug)?.settings.some((d) => d.feature === "map")),

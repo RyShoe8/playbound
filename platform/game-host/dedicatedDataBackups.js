@@ -47,6 +47,11 @@ function paths(serverId, gameSlug, home) {
   return { source, backupRoot };
 }
 
+/** Shared directory contract for customer world backups and file management. */
+export function worldDataDirectory(serverId, gameSlug, home = process.env.HOME || "/var/lib/playbound-host") {
+  return paths(serverId, gameSlug, home).source;
+}
+
 function measure(dir) {
   let bytes = 0;
   let files = 0;

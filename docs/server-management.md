@@ -32,6 +32,38 @@ help. Stop and Restart explicitly warn about disconnections. Starting is
 disabled when the runtime is pending or unreachable. Billing, team management,
 and destructive world restoration belong in My Servers rather than over a game.
 
+## Saved-file management
+
+The Files tab is available to owners/administrators for the 13 recipes with
+an explicitly isolated saved-data directory. Moderators cannot access it.
+The web and native launcher support folders, download, upload, text edits,
+file deletion, and restoring previous file versions. File writes require a
+fully stopped server on both the control plane and agent. The agent uses the
+same per-server lock as process startup and executes its small file operation
+synchronously, preventing a start from racing the stopped check.
+
+The service chooses the recipe from the server's profile. Clients cannot name
+host directories or recipes. Traversal, hidden paths, symlinks, hard links,
+special files, executable extensions, plugin/script directories, and sensitive
+filenames are rejected. Host environment/configuration and shared binaries are
+outside the accessible roots. Readable content is trusted only as data.
+
+Browser transfers are limited to 3 MB (fits the control plane's request/response
+limits); text editing is limited to 256 KB. Larger saves are visible but cannot
+be transferred through this browser interface. The server must have been
+started once to initialize its saved-data folder. Every overwrite/delete
+retains the previous file, with at most 50 revisions per server. Updates require
+the opened file's SHA-256 version, so stale editors fail rather than overwrite
+other changes. Writes reserve at least 2 GB and 10% of host disk and enforce a
+5 GB saved-data/history ceiling. File history is not a world backup.
+
+Arbitrary executable plugins need isolation beyond the current shared OS
+account before customer installation is enabled. Shared binary updates also
+need an operator-owned queue, coordination with pending starts, verification
+that all dependent runtimes are offline (including party/unmanaged processes),
+and a version/rollback policy. Customer file access does not grant either of
+those capabilities.
+
 ## Daily maintenance
 
 Daily maintenance is off by default. Owners/administrators may select a UTC
@@ -64,8 +96,8 @@ The reference platforms' common management features informed these controls:
 [PufferPanel](https://docs.pufferpanel.com/en/2.x/featuretour.html), and
 [AMP](https://cubecoders.com/AMP).
 
-This is not complete feature parity with those platforms. Arbitrary file
-editing/uploads, FTP/SFTP, process-log streaming, a general task scheduler,
+This is not complete feature parity with those platforms. FTP/SFTP,
+process-log streaming, a general task scheduler,
 plugin/Workshop installation, database administration, and customer-triggered
 binary updates are not implemented by these changes. Several PlayBound
 recipes share installed binaries, so a per-server Update button must first
