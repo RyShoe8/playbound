@@ -1,0 +1,33 @@
+#!/usr/bin/python3
+"""Root-owned read-only scan. Never inspect command lines or environments."""
+import json
+import os
+import sys
+
+targets = {
+    "counter-strike-2": ["counter-strike-2", "cs2"],
+    "team-fortress-2": ["team-fortress-2"],
+    "unturned": ["unturned"],
+}
+if len(sys.argv) != 2 or sys.argv[1] not in targets:
+    sys.exit(2)
+roots = [os.path.realpath("/opt/playbound-host/games/" + folder) for folder in targets[sys.argv[1]]]
+count = 0
+try:
+    for entry in os.listdir("/proc"):
+        if not entry.isdigit():
+            continue
+        matched = False
+        for field in ("exe", "cwd"):
+            try:
+                value = os.readlink("/proc/" + entry + "/" + field).removesuffix(" (deleted)")
+            except (FileNotFoundError, ProcessLookupError):
+                continue
+            if any(value == root or value.startswith(root + "/") for root in roots):
+                matched = True
+        if matched:
+            count += 1
+    print(json.dumps({"ok": True, "count": count}))
+except OSError:
+    print(json.dumps({"ok": False}))
+    sys.exit(1)

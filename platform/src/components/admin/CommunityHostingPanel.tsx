@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { HostingSettings } from "@/lib/communityHosting/settings";
 import type { ProfileSettings } from "@/lib/communityHosting/profileSettings";
+import InstallationUpdates from "./InstallationUpdates";
 
 type Profile = ProfileSettings & { key: string; gameSlug: string; editionSlug?: string | null; recipeSlug?: string | null; sampleCount?: number; envelope?: { cpuCores?: number; ramBytes?: number; measuredThroughPlayers?: number }; lastSampleAt?: string | null };
 type Server = { _id: string; name: string; gameSlug: string; editionSlug?: string | null; desiredState: string; runtimeState: string; playerCount?: number | null; maxPlayers?: number | null; bots?: number | null; playerCountCheckedAt?: string | null; decisionReason?: string | null; resources?: { available: boolean; cpuCores?: number | null; rssBytes?: number }; reservedEnvelope?: { cpuCores: number; ramBytes: number } | null };
@@ -220,6 +221,7 @@ export function CommunityHostingPanel() {
   }
 
   return <section className="space-y-4 rounded-xl border border-border bg-card p-5" aria-label="Community Hosting">
+    <InstallationUpdates />
     <div><h2 className="text-lg font-semibold">Community Hosting</h2><p className="text-sm text-muted-foreground">Automatic hosting is off until the node and verified game profiles are ready. Changes here do not edit the game catalog.</p></div>
     {config && <>
       <div className="flex flex-wrap items-center gap-4 text-sm">

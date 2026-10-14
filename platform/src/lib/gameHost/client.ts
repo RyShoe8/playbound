@@ -9,6 +9,17 @@ const CREATE_ROOM_TIMEOUT_MS = 5 * 60 * 1000;
 const ENSURE_TIMEOUT_MS = 10 * 60 * 1000;
 const TEST_SPAWN_TIMEOUT_MS = 15 * 60 * 1000;
 
+export async function installationUpdatesOnHost(input?: {
+  action: import("./installationTypes").InstallationUpdateAction; key?: string; id?: string; actor: string;
+}): Promise<import("./installationTypes").InstallationUpdateSnapshot> {
+  const response = await hostFetch("/updates", input ? { method: "POST", body: JSON.stringify(input) } : { method: "GET" }, 12_000);
+  if (!response) throw new Error("Game host is not configured");
+  const data = await response.json();
+  if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Installation updates unavailable");
+  if (!Array.isArray(data.targets) || !Array.isArray(data.jobs)) throw new Error("Incomplete installation update snapshot");
+  return data;
+}
+
 export async function fetchRimworldBrowser(): Promise<unknown[]> {
   const response = await hostFetch("/server-browser/rimworld", { method: "GET" }, 20_000);
   if (!response?.ok) throw new Error("RimWorld server browser is unavailable");

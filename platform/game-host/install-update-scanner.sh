@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Install only the read-only process scanner, not the agent or game binaries.
+set -euo pipefail
+[[ "$(id -u)" -eq 0 ]] || { echo 'Run as root'; exit 1; }
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+install -o root -g root -m 755 "$SCRIPT_DIR/playbound-update-scan" /usr/local/sbin/playbound-update-scan
+SCANNER_RULE="$(mktemp)"
+trap 'rm -f -- "$SCANNER_RULE"' EXIT
+printf '%s\n' 'playbound ALL=(root) NOPASSWD: /usr/local/sbin/playbound-update-scan counter-strike-2, /usr/local/sbin/playbound-update-scan team-fortress-2, /usr/local/sbin/playbound-update-scan unturned' > "$SCANNER_RULE"
+visudo -cf "$SCANNER_RULE"
+install -o root -g root -m 440 "$SCANNER_RULE" /etc/sudoers.d/playbound-update-scan

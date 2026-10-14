@@ -23,6 +23,7 @@
 
 # Shell scripts must stay LF even when checked out on Windows.
 *.sh    text eol=lf
+platform/game-host/playbound-update-scan text eol=lf
 
 # Binary — never touch these.
 *.png   binary

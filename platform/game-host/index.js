@@ -48,6 +48,7 @@ import { spawnAniv, waitForAniv, anivStatus } from "./anivControl.js";
 import { isWorldBackupGame } from "./dedicatedDataBackups.js";
 import { runWorldBackup } from "./worldBackupRunner.js";
 import { manageDedicatedFiles } from "./dedicatedFiles.js";
+import { createInstallationCoordinator } from "./installationJobs.js";
 import { captureRvglLobby, sendRvglLobbyInput } from "./rvglDisplay.js";
 
 const require = createRequire(import.meta.url);
@@ -85,6 +86,11 @@ const partyRegistry = createPartyRegistry();
 const usedPorts = new Set();
 const startCoordinator = createStartCoordinator({
   occupiedCount: () => rooms.size,
+});
+const installationUpdates = createInstallationCoordinator({
+  stateDir: process.env.GAME_HOST_STATE_DIR || "/var/lib/playbound-host/state",
+  gamesRoot: GAMES_ROOT,
+  rooms: () => rooms.values(),
 });
 /** relative archive path → in-flight/completed transfer state for this agent lifetime. */
 const archiveJobs = new Map();
@@ -861,6 +867,8 @@ async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, e
   if (existingId && rooms.has(existingId)) {
     return { room: rooms.get(existingId) };
   }
+  const updateBlock = installationUpdates.blockedReason(gameSlug);
+  if (updateBlock) return { error: updateBlock };
 
   // Two live rooms on one persistent world would overwrite each other's saves.
   const cleanSaveKey = sanitizeSaveKey(saveKey);
@@ -876,6 +884,7 @@ async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, e
     return { error: `Host is at capacity` };
   }
   lookup.set(ownerId, existingId || "pending");
+  const releaseInstallation = installationUpdates.beginStart(gameSlug);
 
   try {
     return await startRoomReserved({
@@ -892,6 +901,7 @@ async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, e
       testSpawn,
     });
   } finally {
+    releaseInstallation();
     startCoordinator.releaseCapacity();
     if (lookup.get(ownerId) === "pending") lookup.delete(ownerId);
   }
@@ -1108,6 +1118,15 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
         console.log(`[${gameSlug}:${port}] exited ${code}`);
         // A deliberate stop removes the room first, so this is the check for it.
         if (rooms.get(roomId) !== room) return;
+
+        const updateBlock = installationUpdates.blockedReason(gameSlug);
+        if (updateBlock) {
+          stopRoom(room);
+          if (communityServerId) managedJobs.set(communityServerId, {
+            status: "stopped", error: updateBlock, gameSlug, at: Date.now(),
+          });
+          return;
+        }
 
         const decision = shouldRestartRoom({
           restarts: room.restarts || 0,
@@ -1376,6 +1395,21 @@ const server = http.createServer(async (req, res) => {
   }
 
   try {
+    if (req.method === "GET" && url.pathname === "/updates") {
+      json(res, 200, installationUpdates.snapshot());
+      return;
+    }
+    if (req.method === "POST" && url.pathname === "/updates") {
+      const body = await readBody(req);
+      try {
+        if (body.action === "cancel") installationUpdates.cancel(body.id);
+        else installationUpdates.queue(body.key, body.action, body.actor);
+        json(res, 202, installationUpdates.snapshot());
+      } catch (error) {
+        json(res, 409, { error: error instanceof Error ? error.message : "Could not queue installation update" });
+      }
+      return;
+    }
     if (req.method === "GET" && url.pathname === "/metrics") {
       const metrics = await collectMetrics(PUBLIC_IP);
       json(res, 200, metrics);
@@ -1921,6 +1955,11 @@ process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
 
 Promise.resolve().then(() => stopOrphanedPartyRooms()).then(() => recoverManagedRooms()).then(() => {
+  const checkUpdates = () => {
+    if (!shuttingDown) void installationUpdates.tick().catch(() => console.error("Installation update coordinator needs inspection"));
+  };
+  checkUpdates();
+  setInterval(checkUpdates, 15_000).unref();
   server.listen(PORT, BIND_ADDRESS, () => {
     console.log(`PlayBound game-host listening on :${PORT} ip=${PUBLIC_IP || "unset"}`);
     console.log("installed:", listInstalled());
