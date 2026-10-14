@@ -58,11 +58,70 @@ other changes. Writes reserve at least 2 GB and 10% of host disk and enforce a
 5 GB saved-data/history ceiling. File history is not a world backup.
 
 Arbitrary executable plugins need isolation beyond the current shared OS
-account before customer installation is enabled. Shared binary updates also
-need an operator-owned queue, coordination with pending starts, verification
-that all dependent runtimes are offline (including party/unmanaged processes),
-and a version/rollback policy. Customer file access does not grant either of
-those capabilities.
+account before customer installation is enabled. Customer file access does
+not grant permission to modify shared game installations.
+
+## Coordinated installation updates
+
+The existing game-servers admin panel has an operator-owned update queue for
+CS2 (Steam app 730), Team Fortress 2 (232250), and Unturned (1110390). These
+are the installed anonymous-SteamCMD distributions currently supported.
+Customer owners and moderators cannot update shared binaries. Admin Viewer
+can read the queue; writes recheck the administrator's current database role.
+
+Queueing an update immediately pauses new starts for that installation,
+including party servers, community servers, customer servers, and aliases.
+Already-running servers are never stopped by the queue. Stop them deliberately
+when players are finished. A 15-second agent check waits for affected rooms
+and in-flight starts, then uses a root-owned **read-only** process scanner to
+check for unmanaged processes too. Unknown scan results fail closed. The
+scanner inspects executable/cwd paths only, never command lines or environments.
+Only one installation worker runs at a time.
+
+The detached worker copies the installation to a sibling staging directory
+without following customer-save symlinks. SteamCMD updates that copy with
+fixed anonymous app IDs; no customer URL, command, token, or path is accepted.
+Copy and download commands run at low CPU/I/O priority with a 90-minute bound.
+Before copying, free disk must cover 125% of the current installation's size
+plus the larger of 8 GB or 10% of the disk. During commands, reaching that disk
+reserve stops the operation. SteamCMD success, a complete matching manifest,
+and required executable files are checked before activation; processes are
+checked again immediately before swapping directories.
+
+Activation renames the old installation into a retained rollback directory,
+then renames the verified staging directory into place. Rollback is queued
+with the same offline checks and start gate. No servers are automatically
+restarted. A completed update confirms installation files, not client Join
+compatibility. Current desired-state reconcilers can resume servers normally.
+Root operators must also honor this maintenance window when starting binaries
+manually; no control-plane lock can prevent an unrelated root shell's exec.
+
+Job state, actor ID, build IDs, and worker process identity are persisted under
+the agent state directory. An agent restart adopts a still-running worker.
+If the worker disappears or activation becomes uncertain, starts stay blocked
+and the admin panel reports `interrupted`. Operator recovery requires checking
+the manifest, affected processes, and generated `.pb-update-*`/`.pb-rollback-*`
+directories before repairing the installation and resolving that job. Do not
+blindly retry or clear an interrupted job. A waiting job can be cancelled.
+
+Retained rollback and partial staging copies are intentionally not pruned
+automatically. An operator must archive/remove unneeded generated copies after
+inspection; only paths directly under the configured games root may be removed,
+and customer save symlinks must never be followed. New jobs fail on insufficient
+space; at 500 history rows further jobs require operator archival. The scanner
+currently supports `/opt/playbound-host/games` only; other roots fail closed
+until a root-owned scanner is explicitly configured for them.
+
+Install the scanner separately with
+`platform/game-host/install-update-scanner.sh` as root. It installs a root-owned
+helper and a sudoers rule permitting only its three fixed read-only scans.
+Workers and SteamCMD continue running as the agent service user. No game
+installation or privileged shell is run by that helper.
+
+Executable plugin/Workshop support remains blocked on per-customer OS/container
+isolation: current recipes share the `playbound` account and host installations.
+Restricting upload extensions alone cannot isolate a plugin's filesystem,
+process, network, or secret access. This queue does not enable arbitrary plugins.
 
 ## Daily maintenance
 
@@ -99,9 +158,8 @@ The reference platforms' common management features informed these controls:
 This is not complete feature parity with those platforms. FTP/SFTP,
 process-log streaming, a general task scheduler,
 plugin/Workshop installation, database administration, and customer-triggered
-binary updates are not implemented by these changes. Several PlayBound
-recipes share installed binaries, so a per-server Update button must first
-have coordinated versioning and protection for other running servers. None
+binary updates are not implemented by these changes. Shared binary updates
+are deliberately admin-only and limited to the three installations above. None
 of these features is represented by a nonfunctional button.
 
 No hosting backend is replaced or installed. Existing recipes, measured
