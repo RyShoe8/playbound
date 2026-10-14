@@ -102,3 +102,8 @@ Automated maintenance is expected to keep writing:
 > **Games must ONLY be entered via a browser and the PlayBound Admin Panel (`/admin/games`).**
 > Never add games as bare unverified code rows. Work through all six steps for every game added in the same session.
 
+For dedicated-server hosting, also complete
+`../docs/dedicated-server-game-checklist.md` before adding, enabling, or materially
+changing any game/edition. The all-game parity scope and remaining rollout gates
+are in `../docs/server-hosting-parity-plan.md`, including self-hosted party controls.
+

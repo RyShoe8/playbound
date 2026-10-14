@@ -115,6 +115,7 @@ export async function GET(req: Request, ctx: RouteContext) {
       phase: "live",
       canEdit: isLeader,
       capabilities: adapter.capabilities,
+      controlKind: adapter.kind,
       maps: Boolean(getServerSettingProfile(view.gameSlug)?.maps && adapter.capabilities.liveApply),
       gameSlug: view.gameSlug,
       definitions: view.definitions,

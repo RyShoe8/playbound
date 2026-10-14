@@ -33,6 +33,8 @@ let state = {
   hostedBusy: false,
   hostedConsoleDraft: "",
   hostedConsoleLines: [],
+  localDiagnostics: null,
+  diagnosticsBusy: false,
   partyId: null,
   busy: false,
   error: null,
@@ -293,7 +295,8 @@ function renderServerTab() {
    * a button that says what it does.
    */
   const preLaunch = data.phase === "pre-launch";
-  const mode = preLaunch ? null : strongestApply(data.definitions, changed);
+  const schemaMode = strongestApply(data.definitions, changed);
+  const mode = preLaunch ? null : schemaMode && data.capabilities?.liveApply === false ? "restart" : schemaMode;
   const controls = data.definitions.filter((def) => !state.maps || def.feature !== "map")
     .map((def) => controlHtml(def, state.draft[def.key] ?? data.values[def.key] ?? def.default))
     .join("");
@@ -301,7 +304,7 @@ function renderServerTab() {
   const statusLine = preLaunch
     ? "Not started yet — these are what it will start with"
     : data.status?.status === "running"
-      ? `${data.status.host}:${data.status.port}`
+      ? data.controlKind === "local" ? `On your PC · port ${data.status.port}` : `${data.status.host}:${data.status.port}`
       : data.status?.status === "unknown"
         ? "Status unavailable"
         : data.status?.status || "";
@@ -388,6 +391,8 @@ function renderServerTab() {
     ${tes3mpHtml}
     ${renderHostedControls()}
     ${renderMapControls()}
+    ${renderLocalDiagnostics()}
+    ${data.controlKind === "local" && data.canEdit && data.capabilities?.restart && window.playbound?.restartLocalPartyServer ? `<button class="apply" id="local-restart" ${state.busy || data.status?.status !== "running" ? "disabled" : ""}>Restart local server</button>` : ""}
     ${controls}
     ${warning}
     ${state.error ? `<p class="error">${escapeHtml(state.error)}</p>` : ""}
@@ -398,6 +403,8 @@ function renderServerTab() {
 
   wireHostedControls();
   wireMapControls();
+  root.querySelector("#local-diagnostics-refresh")?.addEventListener("click", () => void refreshLocalDiagnostics());
+  root.querySelector("#local-restart")?.addEventListener("click", () => void restartLocalPartyServer());
 
   root.querySelectorAll("[data-key]").forEach((el) => {
     if (el.tagName === "LABEL") return;
@@ -442,6 +449,50 @@ function renderServerTab() {
   }
   const setHourBtn = document.getElementById("tes3mp-set-hour");
   if (setHourBtn) setHourBtn.addEventListener("click", () => void setTes3mpHour());
+}
+
+function renderLocalDiagnostics() {
+  if (state.data?.controlKind !== "local" || !state.data.canEdit || !window.playbound?.getLocalServerDiagnostics) return "";
+  const diagnostics = state.localDiagnostics;
+  return `<details><summary>Local server diagnostics</summary>
+    <p class="note">Recent output from the dedicated process on this PC. Only the host can read it; it is not uploaded to PlayBound.</p>
+    <button class="apply" id="local-diagnostics-refresh" ${state.diagnosticsBusy ? "disabled" : ""}>${state.diagnosticsBusy ? "Reading…" : "Refresh diagnostics"}</button>
+    <p class="note">${escapeHtml(diagnostics?.error || (diagnostics ? diagnostics.running ? "Local server process is running" : "No launcher-managed server is running on this PC" : "Select Refresh diagnostics to read recent output."))}</p>
+    ${diagnostics?.lines?.length ? `<pre style="max-height:180px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px">${escapeHtml(diagnostics.lines.join("\n"))}</pre>` : ""}
+  </details>`;
+}
+
+async function refreshLocalDiagnostics() {
+  if (state.diagnosticsBusy || state.data?.controlKind !== "local" || !state.data.canEdit) return;
+  const partyId = state.partyId;
+  state.diagnosticsBusy = true;
+  render();
+  const panel = root.querySelector("#local-diagnostics-refresh")?.closest("details");
+  if (panel) panel.open = true;
+  try {
+    const result = await window.playbound.getLocalServerDiagnostics(partyId);
+    if (state.partyId === partyId && state.data?.controlKind === "local" && state.data.canEdit) state.localDiagnostics = result;
+  } catch { if (state.partyId === partyId) state.localDiagnostics = { error: "Could not read local diagnostics" }; }
+  finally {
+    state.diagnosticsBusy = false;
+    render();
+    const details = root.querySelector("#local-diagnostics-refresh")?.closest("details");
+    if (details) details.open = true;
+  }
+}
+
+async function restartLocalPartyServer() {
+  if (state.busy || !state.data?.canEdit || state.data.controlKind !== "local") return;
+  if (!window.confirm("Restart the local dedicated server? Everyone on this server will be disconnected.")) return;
+  state.busy = true;
+  state.error = null;
+  render();
+  try {
+    const result = await window.playbound.restartLocalPartyServer(state.partyId);
+    if (result?.error) state.error = result.error;
+    else state.notice = "Restart queued for the host launcher. Players will be disconnected when it applies.";
+  } catch { state.error = "Could not queue the restart"; }
+  finally { state.busy = false; render(); }
 }
 
 function renderHostedControls() {
@@ -965,6 +1016,7 @@ async function load() {
   }
   const context = await window.playbound.getOverlayContext();
   const party = context?.party || null;
+  if (state.partyId !== (party?.id || null)) state.localDiagnostics = null;
   state.partyId = party?.id || null;
   state.rvglEnabled = Boolean(party?.rvglLobby);
   if (!state.rvglEnabled) {
@@ -1045,6 +1097,8 @@ async function apply() {
         state.notice = "Server restarted with the new settings.";
       } else if (result.outcome === "applied-live") {
         state.notice = "Applied. Nobody was disconnected.";
+      } else if (result.outcome === "queued") {
+        state.notice = "Queued for the host launcher. Applying this restarts the dedicated server and disconnects its players.";
       }
     }
     const applyError = state.error;
