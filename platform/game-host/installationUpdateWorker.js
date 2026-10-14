@@ -116,7 +116,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   process.once("disconnect", () => { if (!started) process.exit(1); });
   process.once("message", async (input) => {
     started = true;
-    process.disconnect();
+    // Node 20 still processes its pending IPC messages after this callback.
+    // Disconnecting synchronously here can null its channel before that step.
+    setImmediate(() => { if (process.connected) process.disconnect(); });
     try { await runInstallationUpdate(input); process.exit(0); }
     catch { process.exit(1); }
   });

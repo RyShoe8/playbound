@@ -187,3 +187,17 @@ test("Linux staging uses real low-priority copy commands without touching produc
   assert.equal(f.store.read(job.id).status, "completed");
   assert.equal(verifyInstallation(f.current, key).buildId, "200");
 });
+
+test("real detached worker completes IPC startup on Node 20 and records a fail-closed result", { skip: process.platform === "win32" }, async (t) => {
+  const f = fixture(t, { launch: undefined });
+  const job = f.coordinator.queue(key, "update", "fixture-admin");
+  await f.coordinator.tick();
+  // A temporary games root cannot pass the production scanner. No Steam
+  // command or real installation is reached, but the real worker must run.
+  const deadline = Date.now() + 5000;
+  while (f.store.read(job.id).status === "launching" && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  assert.equal(f.store.read(job.id).status, "failed");
+  assert.equal(verifyInstallation(f.current, key).buildId, "100");
+});
