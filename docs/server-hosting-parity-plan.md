@@ -72,6 +72,11 @@ until the additional handlers pass their gates. No placeholder controls.
   every declared setting and enum option for nine existing profiles. Other
   engines still need their native delivery audit; argument tests are not a
   live Join/occupancy test.
+- Targeted VPS engine check (2026-10-14): an isolated Teeworlds process received
+  the native console arguments for CTF, map `ctf1`, and six slots. Its real
+  game query reported zero humans and six maximum players. The temporary
+  process/home were removed; no community server or database data was changed.
+  This verifies argument delivery and query response, not a client Join.
 - The all-game update handlers and executable plugin isolation above remain
   pending. Expand with verified adapters rather than treating the seven supported
   Steam distributions as a universal installer.
