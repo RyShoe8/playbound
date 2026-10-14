@@ -9,6 +9,7 @@ const fs = require("fs");
 const path = require("path");
 const { createLocalServers } = require("../localServer");
 const { launcherJson, probeServerLatency } = require("./core");
+const { createLocalDiagnosticsHandler, createLocalRestartHandler } = require("../localServerDiagnostics");
 
 /* ── local dedicated servers ───────────────────────────────── */
 
@@ -72,6 +73,9 @@ const localServers = createLocalServers({
     void reportSelfHostState(partyId, { ready: false, error });
   },
 });
+
+require("electron").ipcMain.handle("local-server-diagnostics", createLocalDiagnosticsHandler({ launcherJson, localServers }));
+require("electron").ipcMain.handle("restart-local-party-server", createLocalRestartHandler({ launcherJson }));
 
 /**
  * Which parties this launcher is hosting a server for.

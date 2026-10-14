@@ -20,6 +20,7 @@ type SettingsResponse =
       /** "pre-launch" means the room has not been asked for yet. */
       phase: "live" | "pre-launch";
       canEdit: boolean;
+      controlKind?: "local" | "vps-agent";
       capabilities: ServerControlCapabilities;
       gameSlug: string;
       definitions: ServerSettingDefinition[];
@@ -162,6 +163,24 @@ export function PartyServerSettings({ partyId }: { partyId: string }) {
     }
   }
 
+  async function restartLocal() {
+    if (!data?.supported || data.controlKind !== "local" || !data.canEdit) return;
+    if (!window.confirm("Restart the local dedicated server? Everyone on this server will be disconnected.")) return;
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const response = await fetch(`/api/parties/${encodeURIComponent(partyId)}/server-action`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "restart" }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Could not queue restart");
+      setNotice("Restart queued for the host launcher. Connected players will be disconnected.");
+      setReloadKey((key) => key + 1);
+    } catch (error) { setError(error instanceof Error ? error.message : "Could not queue restart"); }
+    finally { setBusy(false); }
+  }
+
   return (
     <div className="space-y-3 rounded-lg border border-border bg-background p-4">
       <div className="flex items-center justify-between gap-3">
@@ -170,7 +189,7 @@ export function PartyServerSettings({ partyId }: { partyId: string }) {
           {preLaunch
             ? "Not started yet"
             : data.status.status === "running"
-              ? `${data.status.host}:${data.status.port}`
+              ? data.controlKind === "local" ? `On the host’s PC · port ${data.status.port}` : `${data.status.host}:${data.status.port}`
               : data.status.status === "unknown"
                 ? "Status unavailable"
                 : data.status.status}
@@ -234,6 +253,14 @@ export function PartyServerSettings({ partyId }: { partyId: string }) {
 
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
       {notice ? <p className="text-xs text-muted-foreground">{notice}</p> : null}
+
+      {data.controlKind === "local" && data.canEdit && data.capabilities.restart ? (
+        <div className="flex flex-wrap gap-2"><button type="button" disabled={busy || data.status.status !== "running"} onClick={() => void restartLocal()}
+          className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm font-semibold disabled:opacity-60">
+          Restart local server
+        </button><button type="button" disabled={busy || changed.length > 0} onClick={() => setReloadKey((key) => key + 1)}
+          className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm disabled:opacity-60">Refresh status</button></div>
+      ) : null}
 
       {data.canEdit ? (
         <button

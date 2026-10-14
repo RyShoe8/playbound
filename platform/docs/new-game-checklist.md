@@ -15,6 +15,11 @@ Do this per game, not per batch. A session that adds three games and defers
 editorial/multiplayer/mods "for later" has added three unfinished rows, not
 three games.
 
+For dedicated-server games/editions, additionally complete
+[`dedicated-server-game-checklist.md`](../../docs/dedicated-server-game-checklist.md).
+It covers hosting, queries, Join, controls, self-hosted party parity, updates,
+save safety, capacity, and release verification for every offered server game.
+
 ## 0. Entry Method — Browser & Admin Panel Only
 
 - Always create and manage new games through the **PlayBound Admin Panel** (`/admin/games` or `/admin/games/[slug]`) via the browser subagent or active admin session.

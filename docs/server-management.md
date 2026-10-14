@@ -1,5 +1,10 @@
 # PlayBound server management
 
+The full-inventory rollout is tracked in
+[server-hosting-parity-plan.md](server-hosting-parity-plan.md). New hosting games
+and editions must follow
+[dedicated-server-game-checklist.md](dedicated-server-game-checklist.md).
+
 The website's My Servers detail and the launcher's native My Servers workspace
 use `/api/hosting/servers/:id`. The Ctrl+P helper uses the same permissions and
 game settings through the hosted overlay endpoint. Community servers remain
@@ -25,6 +30,20 @@ existing administration pages.
 
 The launcher's workspace bridge allows exact endpoint/method pairs only.
 It does not grant permissions: the API authorizes every operation again.
+
+Self-hosted party leaders also have a typed Restart local server action on the
+web and in Ctrl+P. It increments the desired revision atomically without
+overwriting settings, then the host launcher reconciles it. Only ready local
+servers qualify; public/community/VPS servers do not use this action. Refresh
+status reads the acknowledged state without adding continuous polling.
+
+Launcher source includes host-only local diagnostics in the existing Server
+tab. Both server output pipes are drained; the preview retains at most 100 lines,
+omits lines over 4 KB, and redacts known secret settings/credential labels.
+No output is uploaded. The IPC handler rechecks party leadership and local
+ownership before reading. Replaced/stopped child exits cannot mark successors
+offline, and asynchronous spawn errors are handled without an uncaught crash.
+These launcher additions require the next distributed launcher build.
 
 Ctrl+P keeps quick in-game settings, maps, bots, player refresh/moderation,
 permitted lifecycle actions, and game console together with game/controller

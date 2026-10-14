@@ -1,0 +1,21 @@
+---
+description: Mandatory onboarding and parity checks for dedicated-server games and editions
+globs: platform/game-host/**,platform/src/lib/gameHost/**,platform/src/lib/serverControl/**,platform/src/lib/dedicatedHosting/**,launcher/services/localServer*,launcher/services/main/localServers.js
+alwaysApply: false
+---
+
+# Dedicated hosting onboarding
+
+Before adding, enabling, or materially changing dedicated hosting, read
+`docs/dedicated-server-game-checklist.md` and `docs/server-hosting-parity-plan.md`.
+
+Apply the checklist to community, customer-owned, party-dedicated and self-hosted
+games, including editions and shared-installation aliases. Do not claim all-game
+support because a feature works on one Steam game or one operating system.
+
+Use existing recipes, ServerControlAdapter, typed settings, public Join flow,
+party permissions, and the single Ctrl+P helper. Record verified controls and
+explicit engine limitations. Never treat an unknown player count as empty.
+
+Catalog edits still follow `platform/AGENTS.md` and the browser/admin workflow.
+Do not pull secrets, edit environment files, or overwrite unrelated database data.

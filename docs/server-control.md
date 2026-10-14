@@ -10,9 +10,11 @@ All six slices are built (see the bottom of this file). Slice 5 changed what
 self-hosting means along the way — the launcher now owns a dedicated server rather than
 waiting for a player to host from a game's menus.
 
-Nothing has yet run against a live party. Every seam is unit-tested and the overlay's
-three apply modes have been driven in a browser against the real schema, but no room has
-ever been changed by any of it.
+This document includes historical implementation notes and original catalog
+counts. Use [server-management.md](server-management.md) for delivered scope and
+[server-hosting-parity-plan.md](server-hosting-parity-plan.md) for the current
+all-game rollout. New games follow
+[dedicated-server-game-checklist.md](dedicated-server-game-checklist.md).
 
 ## What already exists — do not rebuild it
 

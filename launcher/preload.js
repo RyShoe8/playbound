@@ -212,6 +212,8 @@ contextBridge.exposeInMainWorld("playbound", {
   setOverlayShortcut: (accelerator) => ipcRenderer.invoke("set-overlay-shortcut", accelerator),
   onOverlayOpened: (cb) => ipcRenderer.on("overlay-opened", () => cb()),
   getServerSettings: (partyId) => ipcRenderer.invoke("get-server-settings", partyId),
+  getLocalServerDiagnostics: (partyId) => ipcRenderer.invoke("local-server-diagnostics", partyId),
+  restartLocalPartyServer: (partyId) => ipcRenderer.invoke("restart-local-party-server", partyId),
   getServerMaps: (target) => ipcRenderer.invoke("get-server-maps", target),
   serverMapAction: (target, action) => ipcRenderer.invoke("server-map-action", target, action),
   getHostedServerPlayers: (target) => ipcRenderer.invoke("hosted-server-players", target),
