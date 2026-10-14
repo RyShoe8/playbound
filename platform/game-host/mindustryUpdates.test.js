@@ -118,6 +118,13 @@ test("Linux JAR update and rollback use the existing queue without invoking Stea
     " z.writestr('mindustry/server/ServerLauncher.class', struct.pack('>IHH',0xcafebabe,0,61))",
   ].join("\n"), path.join(directory, "server-release.jar"), build]);
   jar(current, "159.7");
+  assert.equal(verifyMindustryInstallation(current).buildId, "159.7");
+  assert.equal(verifyMindustryInstallation(current).buildId, "159.7");
+  const originalStat = fs.statSync(path.join(current, "server-release.jar"));
+  fs.writeFileSync(path.join(current, "server-release.jar"), Buffer.alloc(originalStat.size));
+  fs.utimesSync(path.join(current, "server-release.jar"), originalStat.atime, originalStat.mtime);
+  assert.throws(() => verifyMindustryInstallation(current)); // Same-size edits must invalidate the cache too.
+  jar(current, "159.7");
   const world = path.join(root, "world.save");fs.writeFileSync(world, "customer progress");
   const coordinator = createInstallationCoordinator({ gamesRoot, stateDir, rooms: () => [], scan: async () => 0 });
   const store = createInstallationStore(stateDir);
