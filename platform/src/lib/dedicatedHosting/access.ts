@@ -23,6 +23,8 @@ export const PERMISSIONS = [
   "server:ban_players",
   "server:console",
   "server:manage_mods",
+  "server:read_files",
+  "server:write_files",
   "server:create_backup",
   "server:restore_backup",
   "server:manage_access",

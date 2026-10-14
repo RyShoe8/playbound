@@ -5,6 +5,7 @@ import { pageHref } from "@/lib/designPreview";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Copy, RotateCw, TriangleAlert } from "lucide-react";
 import { SettingControl } from "@/components/friends/PartyServerSettings";
+import { ServerFiles } from "./ServerFiles";
 import type { ServerSettingDefinition, ServerSettingValue, ServerSettingValues } from "@/lib/serverControl/settings";
 import type { ServerControlCapabilities, ServerRuntimeState } from "@/lib/serverControl/adapter";
 
@@ -26,6 +27,7 @@ type Server = {
   statusReason: string | null;
 };
 type Control = {
+  files?: boolean;
   role: "owner" | "administrator" | "moderator";
   permissions: string[];
   capabilities: ServerControlCapabilities;
@@ -90,6 +92,11 @@ export function ServerControl({ serverId }: { serverId: string }) {
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState("Overview");
+  const [fileDirty, setFileDirty] = useState(false);
+  function chooseTab(next: string) {
+    if (next !== tab && fileDirty && !window.confirm("Discard your unsaved file edits?")) return;
+    setTab(next);
+  }
   const [loadedAt, setLoadedAt] = useState(0);
   const operation = useRef(false);
   const base = `/api/hosting/servers/${encodeURIComponent(serverId)}`;
@@ -158,6 +165,7 @@ export function ServerControl({ serverId }: { serverId: string }) {
   const running = control.status.status === "running";
   const tabs = [
     "Overview",
+    control.files && may("server:read_files") ? "Files" : null,
     may("server:configure") || may("server:delete") ? "Settings" : null,
     control.definitions.some((d) => d.feature === "bots") && may("server:configure") ? "Bots" : null,
     control.maps ? "Maps" : null,
@@ -217,12 +225,12 @@ export function ServerControl({ serverId }: { serverId: string }) {
             aria-controls="server-tab-panel"
             tabIndex={tab === t ? 0 : -1}
             aria-selected={tab === t}
-            onClick={() => setTab(t)}
+            onClick={() => chooseTab(t)}
             onKeyDown={(event) => {
               if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
               event.preventDefault();
               const index = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (tabs.indexOf(t) + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
-              setTab(tabs[index]);
+              chooseTab(tabs[index]);
               document.getElementById(`server-tab-${tabs[index]}`)?.focus();
             }}
             className={`-mb-px border-b-2 px-3 py-2 text-sm ${tab === t ? "border-primary font-semibold" : "border-transparent text-muted-foreground hover:text-foreground"}`}
@@ -236,7 +244,7 @@ export function ServerControl({ serverId }: { serverId: string }) {
       {notice ? <p className="rounded-lg border border-border bg-secondary/50 p-3 text-sm" role="status">{notice}</p> : null}
 
       <div id="server-tab-panel" role="tabpanel" aria-labelledby={`server-tab-${tab}`}>
-      {tab === "Overview" ? <><Overview server={server} control={control} loadedAt={loadedAt} /><div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{tabs.filter((name) => name !== "Overview").map((name) => <button key={name} type="button" className="rounded-xl border border-border bg-card p-4 text-left hover:bg-secondary" onClick={() => setTab(name)}><strong className="block">{name}</strong><span className="text-sm text-muted-foreground">{({ Settings: "Name, visibility, and game rules", Maps: "Starting map and rotation", Bots: "Fill empty slots with AI players", Players: "See and moderate connected players", Console: "Run advanced game commands", Backups: "Protect your setup and saved world", Access: "Share management with your team", Maintenance: "Schedule an empty-server restart", Activity: "See who changed what" } as Record<string, string>)[name]}</span></button>)}</div></> : null}
+      {tab === "Overview" ? <><Overview server={server} control={control} loadedAt={loadedAt} /><div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{tabs.filter((name) => name !== "Overview").map((name) => <button key={name} type="button" className="rounded-xl border border-border bg-card p-4 text-left hover:bg-secondary" onClick={() => chooseTab(name)}><strong className="block">{name}</strong><span className="text-sm text-muted-foreground">{({ Settings: "Name, visibility, and game rules", Files: "Saved worlds, downloads, and file history", Maps: "Starting map and rotation", Bots: "Fill empty slots with AI players", Players: "See and moderate connected players", Console: "Run advanced game commands", Backups: "Protect your setup and saved world", Access: "Share management with your team", Maintenance: "Schedule an empty-server restart", Activity: "See who changed what" } as Record<string, string>)[name]}</span></button>)}</div></> : null}
       {tab === "Settings" || tab === "Bots" ? (
         <SettingsTab
           key={`${serverId}|${tab}`}
@@ -257,6 +265,7 @@ export function ServerControl({ serverId }: { serverId: string }) {
       ) : null}
       {tab === "Access" ? <AccessTab base={base} canManage={may("server:manage_access")} run={run} /> : null}
       {tab === "Activity" ? <ActivityTab base={base} /> : null}
+      {tab === "Files" ? <ServerFiles base={base} stopped={!server.online && control.status.status === "stopped"} canWrite={may("server:write_files")} onDirtyChange={setFileDirty} /> : null}
       {tab === "Maintenance" ? <MaintenanceTab base={base} run={run} busy={busy} /> : null}
       </div>
     </div>

@@ -47,6 +47,7 @@ import { spawnRimworld, sendRimworldCommand, queryRimworldBrowser } from "./rimw
 import { spawnAniv, waitForAniv, anivStatus } from "./anivControl.js";
 import { isWorldBackupGame } from "./dedicatedDataBackups.js";
 import { runWorldBackup } from "./worldBackupRunner.js";
+import { manageDedicatedFiles } from "./dedicatedFiles.js";
 import { captureRvglLobby, sendRvglLobbyInput } from "./rvglDisplay.js";
 
 const require = createRequire(import.meta.url);
@@ -137,13 +138,13 @@ function authorized(req) {
   return crypto.timingSafeEqual(Buffer.from(token), Buffer.from(SECRET));
 }
 
-function readBody(req) {
+function readBody(req, maxBytes = 64_000) {
   return new Promise((resolve, reject) => {
     const chunks = [];
     let size = 0;
     req.on("data", (c) => {
       size += c.length;
-      if (size > 64_000) {
+      if (size > maxBytes) {
         reject(new Error("body too large"));
         req.destroy();
         return;
@@ -1469,6 +1470,28 @@ const server = http.createServer(async (req, res) => {
      * never supplies a path. A restore replaces the world on disk, so it is
      * refused while the server runs or is starting.
      */
+    const filesMatch = url.pathname.match(/^\/managed\/([a-fA-F0-9]{24})\/files$/);
+    if (req.method === "POST" && filesMatch) {
+      const serverId = filesMatch[1].toLowerCase();
+      const body = await readBody(req, 4 * 1024 ** 2 + 4096);
+      const gameSlug = String(body.gameSlug || "");
+      if (!isWorldBackupGame(gameSlug)) { json(res, 400, { error: "No isolated saved-data folder is available for this game" }); return; }
+      try {
+        const result = await startCoordinator.withPartyLock(`managed:${serverId}`, () => {
+          const activeId = byManaged.get(serverId);
+          const active = activeId ? rooms.get(activeId) : null;
+          if (active && active.customerOwned !== true) throw new Error("Only customer-owned server files can be managed");
+          if (["write", "delete", "restore", "mkdir"].includes(body.action) && (active || managedJobs.get(serverId)?.status === "pending")) throw new Error("Stop the server before changing its files");
+          return manageDedicatedFiles(serverId, gameSlug, body);
+        });
+        json(res, 200, result);
+      } catch (error) {
+        // Filesystem errors contain absolute paths. Never send those to clients.
+        json(res, 409, { error: error?.code ? error.code === "ENOENT" ? "No saved files exist at this location yet" : "The file operation could not complete" : String(error?.message || "The file operation failed") });
+      }
+      return;
+    }
+
     const worldBackupMatch = url.pathname.match(/^\/managed\/([a-fA-F0-9]{24})\/world-backups$/);
     if (req.method === "POST" && worldBackupMatch) {
       // Lower-cased: the room registry is keyed by the platform's lower-case id.
