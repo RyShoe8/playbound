@@ -49,6 +49,7 @@ import { isWorldBackupGame } from "./dedicatedDataBackups.js";
 import { runWorldBackup } from "./worldBackupRunner.js";
 import { manageDedicatedFiles } from "./dedicatedFiles.js";
 import { createInstallationCoordinator } from "./installationJobs.js";
+import { gameEnvironment } from "./gameEnvironment.js";
 import { captureRvglLobby, sendRvglLobbyInput } from "./rvglDisplay.js";
 
 const require = createRequire(import.meta.url);
@@ -1020,11 +1021,10 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
 
     const args = recipe.args(port, ctx, binary);
     const hostHome = process.env.HOME || "/var/lib/playbound-host";
-    const spawnEnv = {
-      ...process.env,
+    const spawnEnv = gameEnvironment(process.env, {
       HOME: hostHome,
       ...(typeof recipe.spawnEnv === "function" ? recipe.spawnEnv(port, ctx) : {}),
-    };
+    });
     const cwd =
       typeof recipe.cwd === "function"
         ? recipe.cwd(port, ctx)

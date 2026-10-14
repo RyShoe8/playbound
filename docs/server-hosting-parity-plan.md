@@ -77,6 +77,12 @@ until the additional handlers pass their gates. No placeholder controls.
   game query reported zero humans and six maximum players. The temporary
   process/home were removed; no community server or database data was changed.
   This verifies argument delivery and query response, not a client Join.
+- Shared process-launch safeguard: all new agent-started games now receive an
+  allowlist of runtime environment variables after recipe overrides. Agent/API,
+  database and deployment credentials and undeclared variables are not inherited.
+  Existing processes are not restarted to retrofit that environment. The shared
+  OS account and filesystem access still require the isolation work in step 4;
+  environment filtering alone does not make executable plugins safe.
 - The all-game update handlers and executable plugin isolation above remain
   pending. Expand with verified adapters rather than treating the seven supported
   Steam distributions as a universal installer.
