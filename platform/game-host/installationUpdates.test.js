@@ -203,6 +203,14 @@ test("real detached worker completes IPC startup on Node 20 and records a fail-c
 });
 
 for (const [game, target] of Object.entries(INSTALLATION_TARGETS)) {
+  if (target.blockedReason) {
+    test(`${game}: refuses updates when runtime migration is unimplemented`, (t) => {
+      const f = fixture(t);
+      assert.throws(() => f.coordinator.queue(game, "update", "admin"), /private runtime copies/);
+      assert.match(f.coordinator.snapshot().targets.find((row) => row.key === game).blockedReason, /private runtime copies/);
+    });
+    continue;
+  }
   test(`${game}: fixed depot, required files, staged update and rollback`, async (t) => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "pb-depot-"));
     t.after(() => fs.rmSync(root, { recursive: true, force: true }));

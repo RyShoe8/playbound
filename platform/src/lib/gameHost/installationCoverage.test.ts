@@ -9,7 +9,7 @@ it("every admin update target is wired to the agent, root scanner, and exact sud
   const scanner = source("../../../game-host/playbound-update-scan");
   const sudo = source("../../../game-host/install-update-scanner.sh");
   for (const key of INSTALLATION_UPDATE_KEYS) {
-    expect(targets).toMatch(new RegExp(`(?:"${key}"|${key}): \\{ name:`));
+    expect(targets).toMatch(new RegExp(`(?:"${key}"|${key}): \\{\\s*name:`));
     expect(scanner).toContain(`"${key}":`);
     expect(sudo).toContain(`/usr/local/sbin/playbound-update-scan ${key}`);
   }
