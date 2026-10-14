@@ -55,7 +55,7 @@ export function GenreGameRow({
   return (
     <section
       id={`genre-${genre.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
-      className={cn("space-y-3.5", className)}
+      className={cn("genre-game-row min-w-0 space-y-3.5", className)}
     >
       {/* Row Header */}
       <div className="flex items-center justify-between gap-4">
@@ -98,7 +98,7 @@ export function GenreGameRow({
       </div>
 
       {layout === "grid" ? (
-        <div className="flex flex-wrap items-stretch gap-4">
+        <div className="genre-game-grid flex flex-wrap items-stretch gap-4">
           {games.map((g) => (
             <GameCard key={g.slug} game={g} playingNow={playingNowBySlug[g.slug] ?? 0} />
           ))}
@@ -113,10 +113,10 @@ export function GenreGameRow({
         <div
           ref={scrollRef}
           onScroll={checkScroll}
-          className="no-scrollbar -mx-1 flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto px-1 pt-1 pb-2 scroll-smooth"
+          className="genre-game-carousel no-scrollbar -mx-1 flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto px-1 pt-1 pb-2 scroll-smooth"
         >
           {games.map((g) => (
-            <div key={g.slug} className="flex h-full shrink-0 snap-start">
+            <div key={g.slug} className="genre-game-slide flex h-full shrink-0 snap-start">
               <GameCard game={g} playingNow={playingNowBySlug[g.slug] ?? 0} />
             </div>
           ))}
