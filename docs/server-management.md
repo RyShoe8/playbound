@@ -98,8 +98,12 @@ not grant permission to modify shared game installations.
 The existing game-servers admin panel has an operator-owned update queue for
 CS2 (Steam app 730), Team Fortress 2 (232250), Unturned (1110390),
 Counter-Strike: Source (232330), Core Keeper (1963720), Don't Starve Together
-(343050), Barotrauma (1026340), and Necesse (1169370). These
+(343050), and Necesse (1169370). These
 are the installed anonymous-SteamCMD distributions currently supported.
+Barotrauma (1026340) is inventoried with an explicit blocked reason: customer
+servers use private runtime copies, which require safe migration before a depot
+update can take effect. The agent rejects queueing it even through a direct API
+request; its presence is not a claim of completed update support.
 Customer owners and moderators cannot update shared binaries. Admin Viewer
 can read the queue; writes recheck the administrator's current database role.
 
@@ -193,7 +197,7 @@ This is not complete feature parity with those platforms. FTP/SFTP,
 process-log streaming, a general task scheduler,
 plugin/Workshop installation, database administration, and customer-triggered
 binary updates are not implemented by these changes. Shared binary updates
-are deliberately admin-only and limited to the eight installations above. None
+are deliberately admin-only and limited to the seven ready installations above. None
 of these features is represented by a nonfunctional button.
 
 No hosting backend is replaced or installed. Existing recipes, measured

@@ -55,10 +55,10 @@ export default function InstallationUpdates() {
     {data?.targets.map((target) => {
       const active = data.jobs.find((job) => job.key === target.key && !FINISHED.has(job.status));
       return <div key={target.key} className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-lg bg-muted/40 p-3">
-        <div className="min-w-0"><p className="font-medium">{target.name}</p><p className="text-xs text-muted-foreground">{target.installed ? `Installed build ${target.buildId}` : "Installation missing or incomplete"}{active ? ` · ${active.status}` : ""}</p></div>
+        <div className="min-w-0"><p className="font-medium">{target.name}</p><p className="text-xs text-muted-foreground">{target.installed ? `Installed build ${target.buildId}` : "Installation missing or incomplete"}{active ? ` · ${active.status}` : ""}</p>{target.blockedReason && <p className="max-w-xl text-xs text-muted-foreground">{target.blockedReason}</p>}</div>
         <div className="flex flex-wrap gap-2 text-sm">
-          <button type="button" className="rounded border px-3 py-1 disabled:opacity-50" disabled={busy || !data.canWrite || !target.installed || Boolean(active)} onClick={() => void act("update", target.key, target.name)}>Queue update</button>
-          {target.rollbackAvailable && <button type="button" className="rounded border px-3 py-1 disabled:opacity-50" disabled={busy || !data.canWrite || Boolean(active)} onClick={() => void act("rollback", target.key, target.name)}>Roll back</button>}
+          <button type="button" className="rounded border px-3 py-1 disabled:opacity-50" disabled={busy || !data.canWrite || !target.installed || Boolean(active) || Boolean(target.blockedReason)} onClick={() => void act("update", target.key, target.name)}>Queue update</button>
+          {target.rollbackAvailable && <button type="button" className="rounded border px-3 py-1 disabled:opacity-50" disabled={busy || !data.canWrite || Boolean(active) || Boolean(target.blockedReason)} onClick={() => void act("rollback", target.key, target.name)}>Roll back</button>}
           {active?.status === "waiting" && <button type="button" className="rounded border px-3 py-1 disabled:opacity-50" disabled={busy || !data.canWrite} onClick={() => void act("cancel", active.id, target.name)}>Cancel update</button>}
         </div>
       </div>;

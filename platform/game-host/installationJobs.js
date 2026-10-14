@@ -64,6 +64,7 @@ export function createInstallationCoordinator({ stateDir, gamesRoot, rooms, scan
   }
   function queue(key, action, actor) {
     if (!INSTALLATION_TARGETS[key] || !["update", "rollback"].includes(action)) throw new Error("Unsupported installation action");
+    if (INSTALLATION_TARGETS[key].blockedReason) throw new Error(INSTALLATION_TARGETS[key].blockedReason);
     const existing = active(key);
     if (existing) return existing; // Duplicate requests never dispatch a second worker.
     if (store.all().length >= 500) throw new Error("Update history needs operator archival before adding more jobs");
@@ -137,7 +138,7 @@ export function createInstallationCoordinator({ stateDir, gamesRoot, rooms, scan
         let installed;
         try { installed = verifyInstallation(path.join(gamesRoot, key), key); } catch { /* Not installed or incomplete. */ }
         const rollback = jobs.find((job) => job.key === key && job.status === "completed" && job.action === "update" && !job.rollbackConsumed);
-        return { key, name: target.name, installed: Boolean(installed), buildId: installed?.buildId, rollbackAvailable: Boolean(rollback) };
+        return { key, name: target.name, installed: Boolean(installed), buildId: installed?.buildId, rollbackAvailable: Boolean(rollback), blockedReason: target.blockedReason };
       }),
       jobs: [...jobs.filter((job) => !TERMINAL.has(job.status)), ...jobs.filter((job) => TERMINAL.has(job.status)).slice(0, 30)]
         .map(({ pid: _pid, identity: _identity, ...job }) => job),

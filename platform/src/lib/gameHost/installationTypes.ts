@@ -12,6 +12,6 @@ export type InstallationUpdateJob = {
   afterBuild?: string;
 };
 export type InstallationUpdateSnapshot = {
-  targets: { key: string; name: string; installed: boolean; buildId?: string; rollbackAvailable: boolean }[];
+  targets: { key: string; name: string; installed: boolean; buildId?: string; rollbackAvailable: boolean; blockedReason?: string }[];
   jobs: InstallationUpdateJob[];
 };
