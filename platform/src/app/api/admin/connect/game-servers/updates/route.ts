@@ -3,10 +3,11 @@ import { z } from "zod";
 import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 import { canWriteAdmin } from "@/lib/adminAccess";
 import { installationUpdatesOnHost } from "@/lib/gameHost/client";
+import { INSTALLATION_UPDATE_KEYS } from "@/lib/gameHost/installationKeys";
 
 const schema = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("update"), key: z.enum(["counter-strike-2", "team-fortress-2", "unturned"]) }).strict(),
-  z.object({ action: z.literal("rollback"), key: z.enum(["counter-strike-2", "team-fortress-2", "unturned"]) }).strict(),
+  z.object({ action: z.literal("update"), key: z.enum(INSTALLATION_UPDATE_KEYS) }).strict(),
+  z.object({ action: z.literal("rollback"), key: z.enum(INSTALLATION_UPDATE_KEYS) }).strict(),
   z.object({ action: z.literal("cancel"), id: z.string().uuid() }).strict(),
 ]);
 

@@ -49,7 +49,7 @@ export default function InstallationUpdates() {
       <button type="button" disabled={busy} className="rounded border px-3 py-1 text-sm disabled:opacity-50" onClick={() => void load().catch((error) => setMessage(error.message))}>Refresh updates</button>
     </div>
     <p className="text-sm text-muted-foreground">Queue an update, then stop affected servers when players are finished. Updates wait for every affected party and hosted server to stop. They run on the VPS, preserve saves, and retain the previous installation for rollback. Servers are not automatically restarted.</p>
-    <p className="text-xs text-muted-foreground">Initial support: CS2, Team Fortress 2 (including editions sharing its files), and Unturned. Other game installations are not changed. Retained and partial copies consume disk space; insufficient space blocks the update.</p>
+    <p className="text-xs text-muted-foreground">Supported installations appear below, including editions sharing their files. Other game installations are not changed. Retained and partial copies consume disk space; insufficient space blocks the update.</p>
     {message && <p role="alert" className="text-sm text-destructive">{message}</p>}
     {!data && !message && <p className="text-sm">Loading installations…</p>}
     {data?.targets.map((target) => {

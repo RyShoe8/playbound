@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createInstallationCoordinator, createInstallationStore } from "./installationJobs.js";
-import { verifyInstallation, prepareInstallationLinks, restoreInstallationLinks } from "./installationTargets.js";
+import { INSTALLATION_TARGETS, verifyInstallation, prepareInstallationLinks, restoreInstallationLinks } from "./installationTargets.js";
 import { runInstallationUpdate, runCommand } from "./installationUpdateWorker.js";
 import { isAgentGetPath } from "./agentRoutes.js";
 
@@ -201,3 +201,42 @@ test("real detached worker completes IPC startup on Node 20 and records a fail-c
   assert.equal(f.store.read(job.id).status, "failed");
   assert.equal(verifyInstallation(f.current, key).buildId, "100");
 });
+
+for (const [game, target] of Object.entries(INSTALLATION_TARGETS)) {
+  test(`${game}: fixed depot, required files, staged update and rollback`, async (t) => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "pb-depot-"));
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+    const gamesRoot = path.join(root, "games"), stateDir = path.join(root, "state");
+    function installed(directory, build) {
+      fs.mkdirSync(path.join(directory, "steamapps"), { recursive: true });
+      fs.writeFileSync(path.join(directory, "steamapps", `appmanifest_${target.appId}.acf`), `"appid" "${target.appId}" "StateFlags" "4" "buildid" "${build}"`);
+      for (const file of [...target.binaries, ...(target.files || [])]) {
+        const filename = path.join(directory, file);
+        fs.mkdirSync(path.dirname(filename), { recursive: true });
+        fs.writeFileSync(filename, "fixture", { mode: target.binaries.includes(file) ? 0o755 : 0o644 });
+      }
+    }
+    const current = path.join(gamesRoot, game);
+    installed(current, "100");
+    const store = createInstallationStore(stateDir);
+    const coordinator = createInstallationCoordinator({ gamesRoot, stateDir, rooms: () => [], scan: async () => 0 });
+    const update = coordinator.queue(game, "update", "fixture-admin");
+    store.write({ ...update, status: "launching" });
+    await runInstallationUpdate({ id: update.id, gamesRoot, stateDir }, { disk, scan: async () => 0, run: async (command, args) => {
+      if (command.endsWith("du")) return "1024 fixture";
+      if (command.endsWith("cp")) { fs.cpSync(args.at(-2), args.at(-1), { recursive: true }); return ""; }
+      assert.equal(command, "/usr/games/steamcmd");
+      assert.deepEqual(args.slice(-3), ["+app_update", String(target.appId), "+quit"]);
+      assert.equal(args[3], "anonymous");
+      installed(args[1], "200");
+      return `Success! App '${target.appId}' fully installed.`;
+    } });
+    assert.equal(store.read(update.id).status, "completed");
+    assert.equal(verifyInstallation(current, game).buildId, "200");
+    const rollback = coordinator.queue(game, "rollback", "fixture-admin");
+    store.write({ ...rollback, status: "launching" });
+    await runInstallationUpdate({ id: rollback.id, gamesRoot, stateDir }, { scan: async () => 0 });
+    assert.equal(store.read(rollback.id).status, "completed", store.read(rollback.id).message);
+    assert.equal(verifyInstallation(current, game).buildId, "100");
+  });
+}

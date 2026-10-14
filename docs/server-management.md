@@ -45,6 +45,19 @@ ownership before reading. Replaced/stopped child exits cannot mark successors
 offline, and asynchronous spawn errors are handled without an uncaught crash.
 These launcher additions require the next distributed launcher build.
 
+Local argument builders now distinguish OpenRA/OpenHV `key=value`, Teeworlds/DDNet
+console arguments, BZFlag flags, DarkPlaces commands, Quake cvars plus map
+commands, and TES3MP config-only settings. The cross-layer local-delivery suite
+exercises all declared defaults and enum options for nine existing profiles.
+OpenE2140 retains its explicit `Game.Mod=e2140`; this does not enable its still
+unassessed management profile. Unassessed local engines retain the legacy path
+until their own native delivery is implemented and verified.
+
+Protocol references: [OpenRA's dedicated launch script](https://github.com/OpenRA/OpenRA/blob/bleed/launch-dedicated.sh),
+[Teeworlds server setup](https://www.teeworlds.com/?page=docs&wiki=server_setup),
+[Teeworlds console argument parser](https://github.com/teeworlds/teeworlds/blob/master/src/engine/shared/console.cpp),
+and [BZFlag server setup](https://wiki.bzflag.org/Creating_a_server).
+
 Ctrl+P keeps quick in-game settings, maps, bots, player refresh/moderation,
 permitted lifecycle actions, and game console together with game/controller
 help. Stop and Restart explicitly warn about disconnections. Starting is
@@ -83,7 +96,9 @@ not grant permission to modify shared game installations.
 ## Coordinated installation updates
 
 The existing game-servers admin panel has an operator-owned update queue for
-CS2 (Steam app 730), Team Fortress 2 (232250), and Unturned (1110390). These
+CS2 (Steam app 730), Team Fortress 2 (232250), Unturned (1110390),
+Counter-Strike: Source (232330), Core Keeper (1963720), Don't Starve Together
+(343050), Barotrauma (1026340), and Necesse (1169370). These
 are the installed anonymous-SteamCMD distributions currently supported.
 Customer owners and moderators cannot update shared binaries. Admin Viewer
 can read the queue; writes recheck the administrator's current database role.
@@ -133,7 +148,7 @@ until a root-owned scanner is explicitly configured for them.
 
 Install the scanner separately with
 `platform/game-host/install-update-scanner.sh` as root. It installs a root-owned
-helper and a sudoers rule permitting only its three fixed read-only scans.
+helper and a sudoers rule permitting only its eight fixed read-only scans.
 Workers and SteamCMD continue running as the agent service user. No game
 installation or privileged shell is run by that helper.
 
@@ -178,7 +193,7 @@ This is not complete feature parity with those platforms. FTP/SFTP,
 process-log streaming, a general task scheduler,
 plugin/Workshop installation, database administration, and customer-triggered
 binary updates are not implemented by these changes. Shared binary updates
-are deliberately admin-only and limited to the three installations above. None
+are deliberately admin-only and limited to the eight installations above. None
 of these features is represented by a nonfunctional button.
 
 No hosting backend is replaced or installed. Existing recipes, measured
