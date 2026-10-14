@@ -925,7 +925,7 @@ function ConsoleTab({ base, running, rimworld }: { base: string; running: boolea
   const [command, setCommand] = useState("");
   const [sending, setSending] = useState(false);
   const endRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => endRef.current?.scrollIntoView({ block: "nearest" }), [lines]);
+  useEffect(() => { endRef.current?.scrollIntoView({ block: "nearest" }); }, [lines]);
   if (!running) return <p className="text-sm text-muted-foreground">Start the server to use its console.</p>;
   async function send() {
     const c = command.trim();
@@ -972,7 +972,7 @@ function ConsoleTab({ base, running, rimworld }: { base: string; running: boolea
         }}
       >
         <input
-          className="flex-1 rounded border border-border bg-background px-2 py-1.5 font-mono text-sm"
+          className="min-w-0 flex-1 rounded border border-border bg-background px-2 py-1.5 font-mono text-sm"
           value={command}
           maxLength={200}
           placeholder={rimworld ? "list" : "status"}
