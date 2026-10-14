@@ -7,6 +7,8 @@ const API = "https://api.github.com/repos/Anuken/Mindustry/releases/latest";
 const LIMIT = 256 * 1024 ** 2;
 const HEADERS = { "User-Agent": "PlayBound-game-host", Accept: "application/vnd.github+json" };
 const ASSET_HOSTS = new Set(["github.com", "release-assets.githubusercontent.com", "objects.githubusercontent.com"]);
+const validationCache = new Map();
+const fingerprint = (stat) => [stat.dev, stat.ino, stat.size, stat.mtimeMs, stat.ctimeMs, stat.mode].join(":");
 
 export function verifyMindustryInstallation(directory, { command = execFileSync } = {}) {
   const jar = path.join(directory, "server-release.jar");
@@ -17,6 +19,11 @@ export function verifyMindustryInstallation(directory, { command = execFileSync 
   if (fs.existsSync(path.join(directory, "run-server")) || fs.existsSync(path.join(directory, "Mindustry.jar"))) {
     throw new Error("Mindustry custom launchers require operator review before updates");
   }
+  // Snapshot polling must not repeatedly start Java and scan a 20MB ZIP.
+  // Renames, writes, permission changes and dependency replacements invalidate it.
+  const cacheKey = command === execFileSync ? [jar, fingerprint(stat),
+    fingerprint(fs.statSync("/usr/bin/java")), fingerprint(fs.statSync("/usr/bin/unzip"))].join("|") : null;
+  if (cacheKey && validationCache.has(cacheKey)) return { ...validationCache.get(cacheKey) };
   const options = { timeout: 30_000, maxBuffer: 1024 * 1024, stdio: ["ignore", "pipe", "pipe"] };
   command("/usr/bin/unzip", ["-tqq", jar], options);
   const properties = command("/usr/bin/unzip", ["-p", jar, "version.properties"], options).toString();
@@ -30,7 +37,12 @@ export function verifyMindustryInstallation(directory, { command = execFileSync 
   const java = command("/usr/bin/java", ["--version"], options).toString();
   const installedJava = Number(java.match(/^(?:openjdk|java) (\d+)/m)?.[1]);
   if (requiredJava < 8 || !installedJava || installedJava < requiredJava) throw new Error("Mindustry requires a newer installed Java runtime");
-  return { buildId: build };
+  const result = { buildId: build };
+  if (cacheKey) {
+    if (validationCache.size >= 64) validationCache.delete(validationCache.keys().next().value);
+    validationCache.set(cacheKey, result);
+  }
+  return { ...result };
 }
 
 function safeAssetURL(value) {
