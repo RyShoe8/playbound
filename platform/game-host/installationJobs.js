@@ -114,7 +114,7 @@ export function createInstallationCoordinator({ stateDir, gamesRoot, rooms, scan
           if (launch) await launch(job, store);
           else {
             const child = fork(fileURLToPath(new URL("./installationUpdateWorker.js", import.meta.url)), [], {
-              detached: true, stdio: ["ignore", "ignore", "ignore", "ipc"],
+              detached: true, execArgv: [], stdio: ["ignore", "ignore", "ignore", "ipc"],
               env: { PATH: "/usr/local/bin:/usr/bin:/bin:/usr/games", HOME: process.env.HOME || "/var/lib/playbound-host", LANG: "C.UTF-8" },
             });
             const identity = processIdentity(child.pid);
