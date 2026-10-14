@@ -17,6 +17,9 @@ targets = {
 if len(sys.argv) != 2 or sys.argv[1] not in targets:
     sys.exit(2)
 roots = [os.path.realpath("/opt/playbound-host/games/" + folder) for folder in targets[sys.argv[1]]]
+if sys.argv[1] == "barotrauma":
+    # The executable and cwd live in private copies, outside the shared depot.
+    roots.extend(["/var/lib/playbound-host/barotrauma-servers", "/var/lib/playbound-host/barotrauma-servers-rooms"])
 count = 0
 try:
     for entry in os.listdir("/proc"):

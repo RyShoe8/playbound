@@ -84,14 +84,19 @@ describe("every hostable game is declared all the way down", () => {
  * down on the next install.
  */
 describe("the agent deploy carries every file the agent imports", () => {
-  it("lists each of index.js's local imports in install.sh", () => {
-    const agent = source("../../../game-host/index.js");
+  it("lists transitive agent module imports in install.sh", () => {
     const installer = source("../../../game-host/install.sh");
-    const imports = [
-      ...new Set([...agent.matchAll(/from "\.\/([a-zA-Z0-9_.-]+)"/g)].map((m) => m[1])),
-    ];
-    expect(imports.length, "no local imports found — the regex has drifted").toBeGreaterThan(3);
-    const missing = imports.filter((f) => !installer.includes(`AGENT_SRC/${f}`));
+    const imports = new Set<string>();
+    const visit = (file: string) => {
+      for (const match of source(`../../../game-host/${file}`).matchAll(/from "\.\/([a-zA-Z0-9_.-]+)"/g)) {
+        if (imports.has(match[1])) continue;
+        imports.add(match[1]);
+        if (match[1].endsWith(".js")) visit(match[1]);
+      }
+    };
+    visit("index.js");
+    expect(imports.size, "no local imports found — the regex has drifted").toBeGreaterThan(3);
+    const missing = [...imports].filter((f) => !installer.includes(`AGENT_SRC/${f}`));
     expect(
       missing,
       `imported by the agent but never copied to the VPS: ${missing.join(", ")}`

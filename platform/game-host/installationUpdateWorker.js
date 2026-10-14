@@ -4,6 +4,7 @@ import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { INSTALLATION_TARGETS, verifyInstallation, prepareInstallationLinks, restoreInstallationLinks } from "./installationTargets.js";
 import { createInstallationStore, scanInstallation } from "./installationJobs.js";
+import { baselineBarotraumaHomes } from "./barotraumaRuntime.js";
 
 const GIB = 1024 ** 3;
 
@@ -49,7 +50,7 @@ export function runCommand(command, args, { root, timeout = 90 * 60_000 } = {}) 
 }
 
 // Injection is only for isolated tests, never an HTTP input or downloaded script.
-export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run = runCommand, scan = scanInstallation, disk = diskAvailable } = {}) {
+export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run = runCommand, scan = scanInstallation, disk = diskAvailable, hostHome = process.env.HOME } = {}) {
   const store = createInstallationStore(stateDir);
   let job = store.read(id);
   const target = INSTALLATION_TARGETS[job.key];
@@ -66,6 +67,10 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
   try {
     verifyInstallation(current, job.key);
     if (await scan(job.key, gamesRoot)) throw new Error("An affected process is still running; no files were changed");
+    if (job.key === "barotrauma") {
+      if (!hostHome) throw new Error("Barotrauma host home is unavailable");
+      baselineBarotraumaHomes(current, hostHome);
+    }
     if (job.action === "update") {
       phase("staging", "Copying installation; current files remain untouched");
       const size = Number((await run("/usr/bin/du", ["-sb", "--", current], { root: gamesRoot, timeout: 60_000 })).split(/\s/)[0]);
@@ -99,13 +104,15 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
       const source = store.read(job.rollbackId);
       store.write({ ...source, rollbackConsumed: true });
     }
-    phase("completed", "Installation ready. Servers may be started normally; no game was stopped by this update.");
+    phase("completed", job.key === "barotrauma"
+      ? "Installation ready. Private runtimes refresh on their next start, retaining current saves and the previous runtime. Binary rollback does not restore or guarantee compatibility with older save formats."
+      : "Installation ready. Servers may be started normally; no game was stopped by this update.");
   } catch (error) {
     // Once activation began, uncertainty must keep starts blocked for inspection.
     const uncertain = activated || (job.status === "activating" && !fs.existsSync(current));
     phase(uncertain ? "interrupted" : "failed", uncertain
       ? "Activation needs operator inspection. New starts remain blocked; the rollback copy is retained."
-      : error instanceof Error && /^(Not enough|An affected|SteamCMD|Update command|Update stopped|Cannot verify)/.test(error.message)
+      : error instanceof Error && /^(Not enough|An affected|SteamCMD|Update command|Update stopped|Cannot verify|Barotrauma|Unexpected Barotrauma|Invalid Barotrauma)/.test(error.message)
         ? error.message : "Update failed before activation; the previous installation was preserved");
     // Retain partial staging files for diagnosis. Never recurse into customer save links.
   }
