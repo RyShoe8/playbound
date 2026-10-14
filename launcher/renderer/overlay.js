@@ -450,16 +450,19 @@ function renderHostedControls() {
   const permissions = data.permissions || [];
   const may = (permission) => permissions.includes(permission) || (isRimworldParty() && data.canEdit && permission === "server:console");
   const running = data.status?.status === "running";
+  const starting = data.status?.status === "pending";
+  const unavailable = data.status?.status === "unknown";
   const lifecycle = running
     ? `${may("server:restart") ? `<button class="apply" data-hosted-action="restart" ${state.hostedBusy ? "disabled" : ""}>Restart</button>` : ""}
        ${may("server:stop") ? `<button class="apply" data-hosted-action="stop" ${state.hostedBusy ? "disabled" : ""}>Stop</button>` : ""}`
-    : may("server:start") ? `<button class="apply" data-hosted-action="start" ${state.hostedBusy ? "disabled" : ""}>Start</button>` : "";
+    : may("server:start") ? `<button class="apply" data-hosted-action="start" ${state.hostedBusy || starting || unavailable ? "disabled" : ""}>${starting ? "Starting…" : "Start"}</button>` : "";
   const players = state.hostedPlayers?.players;
   const playersHtml = data.capabilities?.players && running
     ? `<p class="guide-section">Players</p>${state.hostedPlayers?.error
       ? `<p class="note">${escapeHtml(state.hostedPlayers.error)}</p>`
       : Array.isArray(players) && players.length
-        ? players.map((player) => `<div class="binding"><span>${escapeHtml(player.name)}</span><span>${player.pingMs != null ? `${escapeHtml(player.pingMs)} ms` : ""}</span></div>`).join("")
+        ? players.map((player) => `<div class="binding"><span>${escapeHtml(player.name)}</span><span>${player.pingMs != null ? `${escapeHtml(player.pingMs)} ms` : ""}
+            ${isHostedTarget() && player.id != null && window.playbound?.workspaceRequest ? `${may("server:kick_players") ? `<button class="tab" data-player-action="kick" data-player-id="${escapeHtml(player.id)}" ${state.hostedBusy ? "disabled" : ""}>Kick</button>` : ""}${may("server:ban_players") ? `<button class="tab" data-player-action="ban" data-player-id="${escapeHtml(player.id)}" ${state.hostedBusy ? "disabled" : ""}>Ban</button>` : ""}` : ""}</span></div>`).join("")
         : `<p class="note">No players reported.</p>`}`
     : "";
   const consoleHtml = data.capabilities?.console && may("server:console") && running
@@ -469,7 +472,7 @@ function renderHostedControls() {
        <label class="row"><span>Command</span><input id="hosted-console-command" maxlength="200" value="${escapeHtml(state.hostedConsoleDraft)}"></label>
        <button class="apply" id="hosted-console-send" ${state.hostedBusy ? "disabled" : ""}>Send command</button>`
     : "";
-  return `${lifecycle ? `<p class="guide-section">Server</p>${lifecycle}` : ""}${playersHtml}${consoleHtml}`;
+  return `${lifecycle ? `<p class="guide-section">Server</p>${lifecycle}<p class="note">Stop and Restart disconnect everyone. Saved worlds are kept.</p>` : ""}${playersHtml}${data.capabilities?.players && running ? `<button class="tab" id="hosted-refresh-players" ${state.hostedBusy ? "disabled" : ""}>Refresh players</button>` : ""}${consoleHtml}`;
 }
 
 function wireHostedControls() {
@@ -481,10 +484,49 @@ function wireHostedControls() {
     state.hostedConsoleDraft = event.target.value;
   });
   root.querySelector("#hosted-console-send")?.addEventListener("click", () => void sendHostedConsole());
+  root.querySelector("#hosted-console-command")?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") { event.preventDefault(); void sendHostedConsole(); }
+  });
+  root.querySelector("#hosted-refresh-players")?.addEventListener("click", () => void refreshHostedPlayers());
+  root.querySelectorAll("[data-player-action]").forEach((button) => {
+    button.addEventListener("click", () => void moderateHostedPlayer(button.dataset.playerAction, button.dataset.playerId));
+  });
+}
+
+async function refreshHostedPlayers() {
+  if (state.hostedBusy || !window.playbound?.getHostedServerPlayers) return;
+  state.hostedBusy = true;
+  render();
+  try { state.hostedPlayers = await window.playbound.getHostedServerPlayers(state.partyId); }
+  catch (error) { state.hostedPlayers = { error: error.message || "Could not load players" }; }
+  finally { state.hostedBusy = false; render(); }
+}
+
+async function moderateHostedPlayer(action, playerId) {
+  if (!isHostedTarget() || state.hostedBusy || !["kick", "ban"].includes(action) || !window.playbound?.workspaceRequest) return;
+  const permission = action === "kick" ? "server:kick_players" : "server:ban_players";
+  if (!state.data?.permissions?.includes(permission)) return;
+  const player = state.hostedPlayers?.players?.find((entry) => String(entry.id) === playerId);
+  if (!player || !window.confirm(`${action === "kick" ? "Kick" : "Ban"} ${player.name}?`)) return;
+  state.hostedBusy = true;
+  state.error = null;
+  render();
+  try {
+    const result = await window.playbound.workspaceRequest({
+      path: `/api/hosting/servers/${state.partyId.slice(7)}/${action === "kick" ? "players" : "bans"}`,
+      method: "POST", body: action === "kick" ? { action, playerId, playerName: player.name } : { playerId },
+    });
+    if (result?.error) throw new Error(result.error);
+    state.notice = action === "kick" ? "Player kicked." : "Player banned.";
+    state.hostedPlayers = await window.playbound.getHostedServerPlayers(state.partyId);
+  } catch (error) { state.error = error.message || "Could not moderate player"; }
+  finally { state.hostedBusy = false; render(); }
 }
 
 async function runHostedAction(action) {
   if (!isHostedTarget() || state.hostedBusy || !window.playbound?.hostedServerAction) return;
+  if (!state.data?.permissions?.includes(`server:${action}`)) return;
+  if (action !== "start" && !window.confirm(`${action === "stop" ? "Stop" : "Restart"} this server? Everyone connected will be disconnected. Saved worlds are kept.`)) return;
   state.hostedBusy = true;
   state.error = null;
   render();
@@ -594,17 +636,14 @@ async function runMapAction(action) {
   state.mapBusy = true;
   state.error = null;
   render();
-  const result = await window.playbound.serverMapAction(state.partyId, action);
-  state.mapBusy = false;
-  if (!result || result.error) {
-    state.error = result?.error || "Could not change the map";
-    render();
-    return;
-  }
-  state.mapRotationDraft = null;
-  state.maps = await window.playbound.getServerMaps(state.partyId);
-  state.notice = action.action === "rotation" ? "Rotation saved." : action.action === "next" ? "Next map set." : state.maps?.mode === "restart" ? "Starting map saved. The server is restarting if it was online." : "Map changed.";
-  render();
+  try {
+    const result = await window.playbound.serverMapAction(state.partyId, action);
+    if (!result || result.error) throw new Error(result?.error || "Could not change the map");
+    state.mapRotationDraft = null;
+    state.maps = await window.playbound.getServerMaps(state.partyId);
+    state.notice = action.action === "rotation" ? "Rotation saved." : action.action === "next" ? "Next map set." : state.maps?.mode === "restart" ? "Starting map saved. The server is restarting if it was online." : "Map changed.";
+  } catch (error) { state.error = error.message || "Could not change the map"; }
+  finally { state.mapBusy = false; render(); }
 }
 
 /** One decimal is plenty for a slider readout; more just looks noisy. */
@@ -989,26 +1028,32 @@ async function apply() {
 
   const settings = {};
   for (const key of changed) settings[key] = state.draft[key];
-  const result = await window.playbound.applyServerSettings(state.partyId, settings);
+  try {
+    const result = await window.playbound.applyServerSettings(state.partyId, settings);
 
-  state.busy = false;
-  if (!result || result.error) {
-    state.error = result?.error || "Could not change the server";
-  } else {
-    if (result.rejected?.length) {
-      state.error = result.rejected.map((r) => `${r.key}: ${r.reason}`).join(", ");
+    if (!result || result.error) {
+      state.error = result?.error || "Could not change the server";
+    } else {
+      if (result.rejected?.length) {
+        state.error = result.rejected.map((r) => `${r.key}: ${r.reason}`).join(", ");
+      }
+      if (result.status?.status === "failed") {
+        state.error = result.status.error || "The server did not come back up";
+      } else if (result.outcome === "planned") {
+        state.notice = "Saved. The server starts with these.";
+      } else if (result.outcome === "restarted") {
+        state.notice = "Server restarted with the new settings.";
+      } else if (result.outcome === "applied-live") {
+        state.notice = "Applied. Nobody was disconnected.";
+      }
     }
-    if (result.status?.status === "failed") {
-      state.error = result.status.error || "The server did not come back up";
-    } else if (result.outcome === "planned") {
-      state.notice = "Saved. The server starts with these.";
-    } else if (result.outcome === "restarted") {
-      state.notice = "Server restarted with the new settings.";
-    } else if (result.outcome === "applied-live") {
-      state.notice = "Applied. Nobody was disconnected.";
-    }
-  }
-  await load();
+    const applyError = state.error;
+    const notice = state.notice;
+    await load();
+    state.error = applyError;
+    state.notice = notice;
+  } catch (error) { state.error = error.message || "Could not change the server"; }
+  finally { state.busy = false; render(); }
 }
 
 document.getElementById("close").addEventListener("click", () => {

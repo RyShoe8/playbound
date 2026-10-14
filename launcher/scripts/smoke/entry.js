@@ -85,6 +85,7 @@ const handlers = {
   },
   // No 'uninstall' entry: the real handler in main.js runs.
 };
+if (process.env.PLAYBOUND_SMOKE_HOSTING) handlers['workspace-request'] = require('./hosting-fixture').createHostingFixture(root);
 const handle = ipcMain.handle.bind(ipcMain);
 ipcMain.handle = (name, listener) => handle(name, name === 'get-bootstrap-state'
   ? async (...args) => ({ ...await listener(...args), catalog: [detail()], account, recent: [] })

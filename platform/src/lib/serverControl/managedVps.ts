@@ -70,7 +70,17 @@ export function createManagedVpsAdapter(ref: ManagedRef): ServerControlAdapter {
     if (!found.ok) return down("unknown", found.error);
     const { room, job } = found;
     if (room) {
-      return { status: "running", gameSlug: ref.gameSlug, host: room.host, port: room.port, name: room.name || ref.name, startedAt: room.createdAt ? new Date(room.createdAt) : null, error: null };
+      const resources = room.resources;
+      return {
+        status: room.status === "pending" ? "pending" : "running",
+        gameSlug: ref.gameSlug, host: room.host, port: room.port, name: room.name || ref.name,
+        startedAt: room.processStartedAt || room.createdAt ? new Date(room.processStartedAt || room.createdAt!) : null, error: null,
+        ...(resources?.available ? { resources: {
+          cpuCores: typeof resources.cpuCores === "number" && Number.isFinite(resources.cpuCores) ? resources.cpuCores : null,
+          rssBytes: typeof resources.rssBytes === "number" && Number.isFinite(resources.rssBytes) ? resources.rssBytes : null,
+          collectedAt: resources.collectedAt || null,
+        } } : {}),
+      };
     }
     return down(job?.status === "pending" ? "pending" : job?.status === "failed" ? "failed" : "stopped", job?.error || null);
   }

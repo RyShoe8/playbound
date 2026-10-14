@@ -197,6 +197,15 @@ h1.view-title { font-size:clamp(2rem,3.2vw,3rem); }
 
 /* Break on the space left after navigation, rather than the window width. */
 #content { container: launcher-content / inline-size; }
+.workspace-manager-tabs { margin-block:16px; gap:8px; }
+.workspace-manager-content { min-width:0; }
+.workspace-manager-content .workspace-form { margin-bottom:24px; }
+.workspace-manager-content :is(input,select,textarea) { max-width:100%; min-width:0; }
+.workspace-manager-content small { display:block; color:var(--text-muted); font-size:12px; }
+.workspace-manager-row { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; padding-block:12px; border-bottom:1px solid var(--border); }
+.workspace-manager-row > span { min-width:0; overflow-wrap:anywhere; }
+.workspace-console { white-space:pre-wrap; overflow-wrap:anywhere; max-height:320px; overflow:auto; padding:16px; background:var(--bg-secondary); border-radius:12px; }
+.workspace-shortcut { cursor:pointer; text-align:left; font-weight:600; }
 .view > *, :is(.site-events-layout,.site-home-layout,.mp-tab-content-area,.detail-hero,.workspace-body) > * { min-width:0; }
 :is(.section-header,.workspace-actions,.detail-actions,.mp-hub-actions,.home-community-server-row) { flex-wrap:wrap; }
 .section-header > div { min-width:0; }

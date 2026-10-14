@@ -39,6 +39,8 @@ export interface ServerRuntimeState {
   name: string | null;
   startedAt: Date | null;
   error: string | null;
+  /** This runtime's process tree, never the node's total usage. */
+  resources?: { cpuCores: number | null; rssBytes: number | null; collectedAt: string | null };
 }
 
 export interface ServerPlayer {

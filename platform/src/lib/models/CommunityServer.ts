@@ -47,6 +47,15 @@ const CommunityServerSchema = new Schema({
   slotsHeld: { type: Boolean, default: false },
   visibility: { type: String, enum: ["public", "unlisted", "private"], default: "public" },
   description: { type: String, default: "" },
+  /** Opt-in daily UTC restart window. Unknown or occupied servers are never restarted. */
+  maintenance: {
+    enabled: { type: Boolean, default: false },
+    hourUTC: { type: Number, default: 6, min: 0, max: 23 },
+    lastDay: { type: String, default: null },
+    result: { type: String, default: null },
+    changedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+    changedAt: { type: Date, default: null },
+  },
   /**
    * Bans PlayBound keeps for this server. Game servers forget their ban lists
    * when they restart, so these are re-applied to every new room (see

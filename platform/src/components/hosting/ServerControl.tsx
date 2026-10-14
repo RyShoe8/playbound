@@ -45,6 +45,8 @@ const ACTION_LABELS: Record<string, string> = {
   server_recovered: "recovered the server",
   server_updated: "changed the server",
   settings_changed: "changed settings",
+  maintenance_changed: "changed daily maintenance",
+  maintenance_ran: "ran daily maintenance",
   map_changed: "changed the map",
   next_map_set: "set the next map",
   rotation_set: "set the map rotation",
@@ -88,6 +90,8 @@ export function ServerControl({ serverId }: { serverId: string }) {
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState("Overview");
+  const [loadedAt, setLoadedAt] = useState(0);
+  const operation = useRef(false);
   const base = `/api/hosting/servers/${encodeURIComponent(serverId)}`;
 
   const load = useCallback(async () => {
@@ -95,6 +99,7 @@ export function ServerControl({ serverId }: { serverId: string }) {
       const data = await api(base);
       setServer(data.server);
       setControl(data.control);
+      setLoadedAt(Date.now());
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't load this server");
@@ -111,16 +116,20 @@ export function ServerControl({ serverId }: { serverId: string }) {
   }, [load]);
 
   async function run(work: () => Promise<unknown>, done?: string) {
+    if (operation.current) return;
+    operation.current = true;
     setBusy(true);
     setNotice(null);
     setError(null);
     try {
-      await work();
-      if (done) setNotice(done);
+      const result = await work();
+      if (typeof result === "string") setNotice(result);
+      else if (done) setNotice(done);
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
+      operation.current = false;
       setBusy(false);
     }
   }
@@ -155,11 +164,14 @@ export function ServerControl({ serverId }: { serverId: string }) {
     control.capabilities.players ? "Players" : null,
     control.capabilities.console && may("server:console") ? "Console" : null,
     may("server:create_backup") || may("server:restore_backup") ? "Backups" : null,
+    may("server:configure") && may("server:restart") ? "Maintenance" : null,
     "Access",
     "Activity",
   ].filter(Boolean) as string[];
-  const lifecycle = (action: "start" | "stop" | "restart", done: string) =>
-    run(() => api(`${base}/action`, { method: "POST", body: JSON.stringify({ action }) }), done);
+  const lifecycle = (action: "start" | "stop" | "restart", done: string) => {
+    if (action !== "start" && !window.confirm(`${action === "stop" ? "Stop" : "Restart"} ${server.name}? ${server.players === null ? "Player count is unknown. Anyone connected will be disconnected." : `${server.players} connected player(s) will be disconnected.`} Saved worlds are kept.`)) return;
+    return run(() => api(`${base}/action`, { method: "POST", body: JSON.stringify({ action }) }), done);
+  };
 
   return (
     <div className="space-y-6">
@@ -174,7 +186,7 @@ export function ServerControl({ serverId }: { serverId: string }) {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            {server.online ? (
+            {running ? (
               <>
                 {may("server:restart") ? (
                   <button type="button" disabled={busy} className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50" onClick={() => void lifecycle("restart", "Restarting…")}>
@@ -188,21 +200,31 @@ export function ServerControl({ serverId }: { serverId: string }) {
                 ) : null}
               </>
             ) : may("server:start") ? (
-              <button type="button" disabled={busy} className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground disabled:opacity-50" onClick={() => void lifecycle("start", "Starting…")}>
-                Start
+              <button type="button" disabled={busy || control.status.status === "pending" || control.status.status === "unknown"} className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground disabled:opacity-50" onClick={() => void lifecycle("start", "Starting…")}>
+                {control.status.status === "pending" ? "Starting…" : "Start"}
               </button>
             ) : null}
           </div>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2 border-b border-border" role="tablist">
+      <div className="flex flex-wrap gap-2 border-b border-border" role="tablist" aria-label="Server management">
         {tabs.map((t) => (
           <button
             key={t}
             role="tab"
+            id={`server-tab-${t}`}
+            aria-controls="server-tab-panel"
+            tabIndex={tab === t ? 0 : -1}
             aria-selected={tab === t}
             onClick={() => setTab(t)}
+            onKeyDown={(event) => {
+              if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+              event.preventDefault();
+              const index = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (tabs.indexOf(t) + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+              setTab(tabs[index]);
+              document.getElementById(`server-tab-${tabs[index]}`)?.focus();
+            }}
             className={`-mb-px border-b-2 px-3 py-2 text-sm ${tab === t ? "border-primary font-semibold" : "border-transparent text-muted-foreground hover:text-foreground"}`}
           >
             {t}
@@ -213,10 +235,11 @@ export function ServerControl({ serverId }: { serverId: string }) {
       {error ? <p className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm" role="alert">{error}</p> : null}
       {notice ? <p className="rounded-lg border border-border bg-secondary/50 p-3 text-sm" role="status">{notice}</p> : null}
 
-      {tab === "Overview" ? <Overview server={server} control={control} /> : null}
+      <div id="server-tab-panel" role="tabpanel" aria-labelledby={`server-tab-${tab}`}>
+      {tab === "Overview" ? <><Overview server={server} control={control} loadedAt={loadedAt} /><div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{tabs.filter((name) => name !== "Overview").map((name) => <button key={name} type="button" className="rounded-xl border border-border bg-card p-4 text-left hover:bg-secondary" onClick={() => setTab(name)}><strong className="block">{name}</strong><span className="text-sm text-muted-foreground">{({ Settings: "Name, visibility, and game rules", Maps: "Starting map and rotation", Bots: "Fill empty slots with AI players", Players: "See and moderate connected players", Console: "Run advanced game commands", Backups: "Protect your setup and saved world", Access: "Share management with your team", Maintenance: "Schedule an empty-server restart", Activity: "See who changed what" } as Record<string, string>)[name]}</span></button>)}</div></> : null}
       {tab === "Settings" || tab === "Bots" ? (
         <SettingsTab
-          key={`${tab}|${server.name}|${server.visibility}|${JSON.stringify(control.values)}`}
+          key={`${serverId}|${tab}`}
           botsOnly={tab === "Bots"}
           base={base}
           server={server}
@@ -234,12 +257,38 @@ export function ServerControl({ serverId }: { serverId: string }) {
       ) : null}
       {tab === "Access" ? <AccessTab base={base} canManage={may("server:manage_access")} run={run} /> : null}
       {tab === "Activity" ? <ActivityTab base={base} /> : null}
+      {tab === "Maintenance" ? <MaintenanceTab base={base} run={run} busy={busy} /> : null}
+      </div>
     </div>
   );
 }
 
-function Overview({ server, control }: { server: Server; control: Control }) {
+function MaintenanceTab({ base, run, busy }: { base: string; run: (work: () => Promise<unknown>, done?: string) => Promise<void>; busy: boolean }) {
+  const [data, setData] = useState<{ enabled: boolean; hourUTC: number; lastDay: string | null; result: string | null } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const load = useCallback(async () => {
+    try { setData(await api(`${base}/maintenance`)); setError(null); }
+    catch (error) { setError(error instanceof Error ? error.message : "Could not load maintenance"); }
+  }, [base]);
+  useEffect(() => { const timer = setTimeout(() => void load(), 0); return () => clearTimeout(timer); }, [load]);
+  if (!data) return <div><p role={error ? "alert" : "status"}>{error || "Loading maintenance…"}</p>{error ? <button type="button" onClick={() => void load()}>Retry</button> : null}</div>;
+  return <form className="max-w-xl space-y-4 rounded-xl border border-border bg-card p-4" onSubmit={(event) => {
+    event.preventDefault();
+    void run(async () => { await api(`${base}/maintenance`, { method: "PUT", body: JSON.stringify({ enabled: data.enabled, hourUTC: data.hourUTC }) }); }, "Maintenance saved.");
+  }}>
+    <h2 className="font-semibold">Daily maintenance</h2>
+    <p className="text-sm text-muted-foreground">Optional daily restart during a quiet hour. PlayBound saves a configuration restore point first. This does not update game files or back up the saved world.</p>
+    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={data.enabled} disabled={busy} onChange={event => setData({ ...data, enabled: event.target.checked })} />Restart only when the server is empty</label>
+    <label className="block text-sm">Daily window (UTC)<select className="mt-1 w-full rounded border border-border bg-background p-2" value={data.hourUTC} disabled={busy} onChange={event => setData({ ...data, hourUTC: Number(event.target.value) })}>{Array.from({ length: 24 }, (_, hour) => <option key={hour} value={hour}>{String(hour).padStart(2, "0")}:00–{String(hour).padStart(2, "0")}:59 UTC</option>)}</select></label>
+    <p className="text-xs text-muted-foreground">Checked every 15 minutes within this hour. Occupied servers and failed player queries are skipped. If the entire window is missed, the next attempt is the following day. Your browser&apos;s timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone}.</p>
+    {data.lastDay ? <p className="text-sm">Last attempt: {data.lastDay} · {data.result || "Preparing maintenance"}</p> : null}
+    <button className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50" disabled={busy}>Save maintenance</button>
+  </form>;
+}
+
+function Overview({ server, control, loadedAt }: { server: Server; control: Control; loadedAt: number }) {
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
   const st = control.status;
   const address = st.status === "running" && st.host && st.port ? `${st.host}:${st.port}` : null;
   const label =
@@ -260,16 +309,21 @@ function Overview({ server, control }: { server: Server; control: Control }) {
           <button
             type="button"
             className="inline-flex items-center gap-2 rounded border border-border px-2 py-1 font-mono text-sm hover:bg-secondary"
-            onClick={() => {
-              void navigator.clipboard?.writeText(address);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 1500);
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(address);
+                setCopyError(false);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1500);
+              } catch { setCopyError(true); }
             }}
           >
             {address} <Copy className="size-3.5" aria-hidden /> {copied ? <span className="font-sans text-xs">Copied</span> : null}
           </button>
         ) : null}
+        {copyError ? <p className="text-xs text-destructive">Couldn&apos;t copy. Select the address and copy it manually.</p> : null}
       </section>
+
       <section className="space-y-1 rounded-xl border border-border bg-card p-4 text-sm">
         <p><span className="text-muted-foreground">Visibility:</span> {server.visibility === "public" ? "Public — listed in Multiplayer" : server.visibility === "unlisted" ? "Unlisted — join by link or invite" : "Hidden — not password protected"}</p>
         <p><span className="text-muted-foreground">Size:</span> {server.slots} slots</p>
@@ -279,6 +333,13 @@ function Overview({ server, control }: { server: Server; control: Control }) {
         ) : (
           <p className="text-xs text-muted-foreground">Changes to this game apply when the server restarts.</p>
         )}
+      </section>
+      <section className="rounded-xl border border-border bg-card p-4 sm:col-span-2">
+        <h2 className="font-semibold">Resource usage</h2>
+        {st.resources?.collectedAt && loadedAt - new Date(st.resources.collectedAt).getTime() < 120_000 ? <>
+          <div className="mt-3 flex flex-wrap gap-8"><p><strong>{st.resources.cpuCores?.toFixed(2) ?? "—"}</strong> CPU cores</p><p><strong>{st.resources.rssBytes != null ? `${Math.round(st.resources.rssBytes / 1024 ** 2)} MB` : "—"}</strong> memory</p></div>
+          <p className="mt-2 text-xs text-muted-foreground">This server only · measured {new Date(st.resources.collectedAt).toLocaleTimeString()}. One CPU core equals 100% of a single core.</p>
+        </> : <p className="mt-2 text-sm text-muted-foreground">{st.status === "stopped" ? "Start the server to see its CPU and memory usage." : "Waiting for a fresh resource measurement."}</p>}
       </section>
     </div>
   );
@@ -302,13 +363,15 @@ function SettingsTab({
   may: (p: string) => boolean;
 }) {
   const [draft, setDraft] = useState<ServerSettingValues>(control.values);
+  const [dirtyKeys, setDirtyKeys] = useState<string[]>([]);
+  const [identityDirty, setIdentityDirty] = useState<string[]>([]);
   const [name, setName] = useState(server.name);
   const [description, setDescription] = useState(server.description);
   const [visibility, setVisibility] = useState(server.visibility);
   const running = control.status.status === "running";
   const configure = may("server:configure");
   const editableDefs = control.definitions.filter((d) => botsOnly ? d.feature === "bots" : d.feature !== "bots" && (!control.maps || d.feature !== "map")).filter((d) => configure || (d.feature === "map" && may("server:change_map")));
-  const changed = editableDefs.map((d) => d.key).filter((k) => draft[k] !== undefined && draft[k] !== control.values[k]);
+  const changed = editableDefs.map((d) => d.key).filter((k) => dirtyKeys.includes(k) && draft[k] !== undefined && draft[k] !== control.values[k]);
   const modeOf = (d: ServerSettingDefinition) => (!running ? null : control.capabilities.liveApply ? d.apply : "restart");
   const restartNeeded = running && changed.some((k) => modeOf(control.definitions.find((d) => d.key === k)!) === "restart");
 
@@ -319,15 +382,15 @@ function SettingsTab({
           <h2 className="font-semibold">Server</h2>
           <label className="block text-sm">
             Server name
-            <input className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5" maxLength={60} value={name} onChange={(e) => setName(e.target.value)} />
+            <input className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5" maxLength={60} value={identityDirty.includes("name") ? name : server.name} onChange={(e) => { setName(e.target.value); setIdentityDirty(keys => [...new Set([...keys, "name"])]); }} />
           </label>
           <label className="block text-sm">
             Description
-            <input className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5" maxLength={300} value={description} onChange={(e) => setDescription(e.target.value)} />
+            <input className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5" maxLength={300} value={identityDirty.includes("description") ? description : server.description} onChange={(e) => { setDescription(e.target.value); setIdentityDirty(keys => [...new Set([...keys, "description"])]); }} />
           </label>
           <label className="block text-sm">
             Visibility
-            <select className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5" value={visibility} onChange={(e) => setVisibility(e.target.value as Server["visibility"])}>
+            <select className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5" value={identityDirty.includes("visibility") ? visibility : server.visibility} onChange={(e) => { setVisibility(e.target.value as Server["visibility"]); setIdentityDirty(keys => [...new Set([...keys, "visibility"])]); }}>
               <option value="public">Public — listed in Multiplayer</option>
               <option value="unlisted">Unlisted — join by link or invite</option>
               <option value="private">Hidden — no public page (not password protected)</option>
@@ -336,12 +399,13 @@ function SettingsTab({
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              disabled={busy || (name === server.name && description === server.description && visibility === server.visibility)}
+              disabled={busy || !identityDirty.length}
               className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
               onClick={() =>
                 void run(async () => {
-                  const r = await api(base, { method: "PATCH", body: JSON.stringify({ name, description, visibility }) });
-                  if (r.restartNeeded) throw new Error("Saved. Restart the server to show the new name in-game.");
+                  const r = await api(base, { method: "PATCH", body: JSON.stringify(Object.fromEntries(Object.entries({ name, description, visibility }).filter(([key]) => identityDirty.includes(key)))) });
+                  setIdentityDirty([]);
+                  return r.restartNeeded ? "Saved. Restart the server to show the new name in-game." : "Saved.";
                 }, "Saved.")
               }
             >
@@ -377,9 +441,9 @@ function SettingsTab({
               <div key={d.key} className="space-y-1">
                 <SettingControl
                   def={d}
-                  value={(draft[d.key] ?? d.default) as ServerSettingValue}
+                  value={((dirtyKeys.includes(d.key) ? draft[d.key] : control.values[d.key]) ?? d.default) as ServerSettingValue}
                   disabled={busy}
-                  onChange={(v) => setDraft((x) => ({ ...x, [d.key]: v }))}
+                  onChange={(v) => { setDraft((x) => ({ ...x, [d.key]: v })); setDirtyKeys(keys => [...new Set([...keys, d.key])]); }}
                 />
                 {mode ? <p className="text-[11px] tracking-wide text-muted-foreground uppercase">{MODE_LABEL[mode]}</p> : null}
               </div>
@@ -401,6 +465,7 @@ function SettingsTab({
                 const settings: ServerSettingValues = {};
                 for (const k of changed) settings[k] = draft[k];
                 const r = await api(`${base}/settings`, { method: "PATCH", body: JSON.stringify({ settings }) });
+                setDirtyKeys(keys => keys.filter(key => !(key in (r.applied || {}))));
                 if (r.rejected?.length) throw new Error(r.rejected.map((x: { key: string; reason: string }) => `${x.key}: ${x.reason}`).join(", "));
               }, running ? (restartNeeded ? "Server restarted with the new settings." : "Applied. Nobody was disconnected.") : "Saved for the next start.")
             }
@@ -425,9 +490,10 @@ function PlayersTab({ base, running, canKick, canBan, run }: { base: string; run
 
 function BanList({ base, canBan, run }: { base: string; canBan: boolean; run: (w: () => Promise<unknown>, done?: string) => Promise<void> }) {
   const [bans, setBans] = useState<{ id: string; name: string; at: string }[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const load = useCallback(async () => {
-    const d = await api(`${base}/bans`).catch(() => null);
-    if (d) setBans(d.bans);
+    try { const data = await api(`${base}/bans`); setBans(data.bans); setLoadError(null); }
+    catch (error) { setLoadError(error instanceof Error ? error.message : "Could not load bans"); }
   }, [base]);
   useEffect(() => {
     const first = setTimeout(() => void load(), 0);
@@ -437,6 +503,7 @@ function BanList({ base, canBan, run }: { base: string; canBan: boolean; run: (w
       clearInterval(t);
     };
   }, [load]);
+  if (loadError) return <div className="space-y-2"><p role="alert" className="text-sm text-destructive">{loadError}</p><button type="button" className="text-sm text-primary" onClick={() => void load()}>Retry</button></div>;
   if (!bans?.length) return null;
   return (
     <section className="space-y-2">
@@ -455,7 +522,7 @@ function BanList({ base, canBan, run }: { base: string; canBan: boolean; run: (w
                   void run(async () => {
                     const r = await api(`${base}/bans`, { method: "DELETE", body: JSON.stringify({ banId: b.id }) });
                     await load();
-                    if (!r.liftedNow) throw new Error(`${b.name}'s ban lifts at the next restart (this game can't unban while running).`);
+                    if (!r.liftedNow) return `${b.name}'s ban lifts at the next restart (this game can't unban while running).`;
                   }, `${b.name} is no longer banned.`)
                 }
               >
@@ -675,14 +742,16 @@ function BackupsTab({
 }) {
   const [data, setData] = useState<{ backups: BackupRow[]; retention: number } | null>(null);
   const [label, setLabel] = useState("");
+  const [loadError, setLoadError] = useState<string | null>(null);
   const load = useCallback(async () => {
-    const d = await api(`${base}/backups`).catch(() => null);
-    if (d) setData(d);
+    try { const data = await api(`${base}/backups`); setData(data); setLoadError(null); }
+    catch (error) { setLoadError(error instanceof Error ? error.message : "Could not load backups"); }
   }, [base]);
   useEffect(() => {
     const first = setTimeout(() => void load(), 0);
     return () => clearTimeout(first);
   }, [load]);
+  if (loadError) return <div className="space-y-2"><p role="alert" className="text-sm text-destructive">{loadError}</p><button type="button" className="text-sm text-primary" onClick={() => void load()}>Retry</button></div>;
   if (!data) return <p className="text-sm text-muted-foreground">Loading…</p>;
   return (
     <div className="space-y-4">
@@ -922,14 +991,16 @@ function AccessTab({ base, canManage, run }: { base: string; canManage: boolean;
   const [people, setPeople] = useState<Person[] | null>(null);
   const [username, setUsername] = useState("");
   const [role, setRole] = useState("moderator");
+  const [loadError, setLoadError] = useState<string | null>(null);
   const load = useCallback(async () => {
-    const data = await api(`${base}/access`).catch(() => null);
-    if (data) setPeople(data.people);
+    try { const data = await api(`${base}/access`); setPeople(data.people); setLoadError(null); }
+    catch (error) { setLoadError(error instanceof Error ? error.message : "Could not load access"); }
   }, [base]);
   useEffect(() => {
     const first = setTimeout(() => void load(), 0);
     return () => clearTimeout(first);
   }, [load]);
+  if (loadError) return <div className="space-y-2"><p role="alert" className="text-sm text-destructive">{loadError}</p><button type="button" className="text-sm text-primary" onClick={() => void load()}>Retry</button></div>;
   return (
     <div className="space-y-4">
       <p className="text-xs text-muted-foreground">
