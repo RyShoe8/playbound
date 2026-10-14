@@ -100,6 +100,26 @@ CS2 (Steam app 730), Team Fortress 2 (232250), Unturned (1110390),
 Counter-Strike: Source (232330), Core Keeper (1963720), Don't Starve Together
 (343050), Necesse (1169370), and Barotrauma (1026340). These
 are the installed anonymous-SteamCMD distributions currently supported.
+Mindustry adds a separate official GitHub JAR handler to the same queue. It
+requires a stable `Anuken/Mindustry` release, the exact `server-release.jar`
+asset and its published SHA-256 digest. HTTPS redirects stay on GitHub artifact
+hosts; download size/time and free disk are bounded. Before activation, ZIP CRC,
+dedicated-server entry point, matching release version, and installed Java are
+checked without executing the downloaded JAR. Java and unzip must already be
+installed; the updater never installs OS packages. Existing custom wrappers or
+alternate `Mindustry.jar` installs require operator review.
+
+Mindustry saves/configuration remain in their existing per-server homes outside
+the installation. Its scanner covers these homes and conservatively waits for
+unclassified Java processes, since a JVM can open a JAR from any working
+directory. This can delay an update while another Java server is running;
+the queue never stops that server or inspects its arguments/environment.
+VPS fixtures verified 159.7 -> 160.7 -> 159.7, retaining the production JAR;
+a temporary 160.7 server answered the real zero-player/two-slot query. Client
+Join and save-format compatibility are separate checks.
+The package and launch method follow the [official server documentation](https://github.com/MindustryGame/wiki/blob/master/docs/servers.md)
+and [upstream releases](https://github.com/Anuken/Mindustry/releases).
+
 Barotrauma uses private runtime copies. Before updating the shared installation,
 the worker inventories stopped copies against their saved baseline (or the
 current depot for legacy copies). Unknown modifications block the update.
@@ -170,7 +190,7 @@ until a root-owned scanner is explicitly configured for them.
 
 Install the scanner separately with
 `platform/game-host/install-update-scanner.sh` as root. It installs a root-owned
-helper and a sudoers rule permitting only its eight fixed read-only scans.
+helper and a sudoers rule permitting only its nine fixed read-only scans.
 Workers and SteamCMD continue running as the agent service user. No game
 installation or privileged shell is run by that helper.
 
@@ -215,7 +235,7 @@ This is not complete feature parity with those platforms. FTP/SFTP,
 process-log streaming, a general task scheduler,
 plugin/Workshop installation, database administration, and customer-triggered
 binary updates are not implemented by these changes. Shared binary updates
-are deliberately admin-only and limited to the eight ready installations above. None
+are deliberately admin-only and limited to the nine ready installations above. None
 of these features is represented by a nonfunctional button.
 
 No hosting backend is replaced or installed. Existing recipes, measured

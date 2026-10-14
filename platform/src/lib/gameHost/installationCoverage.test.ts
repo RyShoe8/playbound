@@ -14,6 +14,7 @@ it("every admin update target is wired to the agent, root scanner, and exact sud
     expect(sudo).toContain(`/usr/local/sbin/playbound-update-scan ${key}`);
   }
   const appIds = [...targets.matchAll(/appId: (\d+)/g)].map((match) => match[1]);
-  expect(appIds).toHaveLength(INSTALLATION_UPDATE_KEYS.length);
+  const jarTargets = [...targets.matchAll(/strategy: "github-jar"/g)];
+  expect(appIds.length + jarTargets.length).toBe(INSTALLATION_UPDATE_KEYS.length);
   expect(new Set(appIds).size).toBe(appIds.length);
 });

@@ -99,7 +99,7 @@ export function createInstallationCoordinator({ stateDir, gamesRoot, rooms, scan
         let message;
         if (count) message = `Waiting for ${count} affected server(s) or starts to stop. Existing games are preserved.`;
         else {
-          try { if (await scan(job.key, gamesRoot)) message = "Waiting for an unmanaged process using this installation to stop"; }
+          try { if (await scan(job.key, gamesRoot)) message = "Waiting for an affected or unclassified process to stop; no running game will be interrupted"; }
           catch (error) { message = error.message; }
         }
         // Cancellation may have happened while the process scan was running.
