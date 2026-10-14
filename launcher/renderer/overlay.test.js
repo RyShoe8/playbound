@@ -113,6 +113,28 @@ test("Hosted server overlay exposes permitted lifecycle, players, and game conso
   assert.doesNotMatch(overlay.root.innerHTML, /data-hosted-action="start"/);
 });
 
+test("Hosted moderators get player actions without lifecycle or console permissions", async () => {
+  const overlay = await renderOverlay(
+    {party:{id:"hosted:0123456789abcdef01234567",gameTitle:"Example"}},
+    {supported:false,canEdit:false,phase:"live",definitions:[],values:{},status:{status:"running"},permissions:["server:view","server:kick_players"],capabilities:{players:true,console:true}},
+    {getHostedServerPlayers:async()=>({players:[{id:"7",name:"<Jacky>"}]}),workspaceRequest:async()=>({ok:true})}
+  );
+  assert.match(overlay.root.innerHTML,/data-player-action="kick"/);
+  assert.match(overlay.root.innerHTML,/Refresh players/);
+  assert.match(overlay.root.innerHTML,/&lt;Jacky&gt;/);
+  assert.doesNotMatch(overlay.root.innerHTML,/data-player-action="ban"|data-hosted-action|hosted-console-command/);
+});
+
+test("Pending and unreachable hosted servers cannot be started again", async () => {
+  for (const status of ["pending","unknown"]) {
+    const overlay = await renderOverlay(
+      {party:{id:"hosted:0123456789abcdef01234567",gameTitle:"Example"}},
+      {supported:false,canEdit:false,phase:"pre-launch",definitions:[],values:{},status:{status},permissions:["server:start"],capabilities:{players:false}}
+    );
+    assert.match(overlay.root.innerHTML,/data-hosted-action="start" disabled/);
+  }
+});
+
 test("Re-Volt leader sees the VPS host lobby in the existing Server tab", async () => {
   let reads = 0;
   const overlay = await renderOverlay(

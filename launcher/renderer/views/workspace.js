@@ -1,4 +1,5 @@
 import {api, escapeHtml, state, views, setStatus} from '../shared.js';
+import {renderServerManager} from './serverManager.js';
 
 const request = async (path, method = 'GET', body) => {
   const result = await window.playbound.workspaceRequest({path,method,body});
@@ -52,53 +53,9 @@ async function renderMyServersView() {
 }
 
 async function renderServer(id) {
-  const host = heading(views.myServers, 'Server management', 'Changes use the same permissions and controls as your website account.');
-  const base = `/api/hosting/servers/${id}`;
+  const host = heading(views.myServers, 'Server management', 'Your server, players, maps, and saved worlds in one place.');
   try {
-    const {server,control} = await request(base);
-    host.innerHTML = `<button class="btn-secondary" id="workspace-back">← My servers</button><section class="site-panel site-pad"><h2>${escapeHtml(server.name)}</h2><p>${escapeHtml(server.gameTitle)} · ${escapeHtml(server.runtimeState)} · ${server.players ?? 'Unknown'} players</p><p>${escapeHtml(server.host || '')}${server.port ? `:${server.port}` : ''}</p><div class="workspace-actions"></div></section>`;
-    host.querySelector('#workspace-back').onclick = renderMyServersView;
-    const permitted = new Set(control.permissions || []);
-    for (const name of ['start','stop','restart']) {
-      if (!permitted.has(`server:${name}`)) continue;
-      const button = document.createElement('button'); button.className = 'btn-secondary'; button.textContent = name[0].toUpperCase()+name.slice(1);
-      button.onclick = () => action(button, async () => { await request(`${base}/action`,'POST',{action:name}); await renderServer(id); }); host.querySelector('.workspace-actions').append(button);
-    }
-    if (permitted.has('server:configure')) {
-      const form = document.createElement('form'); form.className = 'site-panel site-pad workspace-form';
-      form.innerHTML = `<h2>Server settings</h2>${input('Name','name',server.name)}<div class="workspace-settings"></div><button class="btn-primary">Save settings</button>`;
-      for (const definition of control.definitions || []) {
-        const label = document.createElement('label'); label.className = 'workspace-field'; label.textContent = definition.label;
-        const field = document.createElement(definition.type === 'enum' ? 'select' : 'input'); field.className = 'input-text'; field.name = definition.key;
-        field.dataset.setting = definition.key; field.dataset.type = definition.type;
-        if (definition.type === 'enum') {
-          for (const option of definition.options || []) { const item = document.createElement('option'); item.value = option.value; item.textContent = option.label; field.append(item); }
-        } else { field.type = definition.type === 'boolean' ? 'checkbox' : definition.type === 'number' ? 'number' : 'text'; if (definition.min != null) field.min = definition.min; if (definition.max != null) field.max = definition.max; }
-        if (definition.type === 'boolean') field.checked = Boolean(control.values?.[definition.key]); else field.value = control.values?.[definition.key] ?? definition.default ?? '';
-        label.append(field); form.querySelector('.workspace-settings').append(label);
-      }
-      form.onsubmit = event => { event.preventDefault(); void action(form.querySelector('button'),async () => {
-        await request(base,'PATCH',{name:form.elements.name.value});
-        const settings = {}; form.querySelectorAll('[data-setting]').forEach(field => {
-          const value = field.dataset.type === 'boolean' ? field.checked : field.dataset.type === 'number' || typeof control.values?.[field.dataset.setting] === 'number' ? Number(field.value) : field.value;
-          if (value !== control.values?.[field.dataset.setting]) settings[field.dataset.setting] = value;
-        });
-        if (Object.keys(settings).length) await request(`${base}/settings`,'PATCH',{settings});
-        setStatus('Server settings saved.'); await renderServer(id);
-      }); }; host.append(form);
-    }
-    if (control.maps && permitted.has('server:change_map')) {
-      const maps = await request(`${base}/maps`);
-      const form = document.createElement('form'); form.className = 'site-panel site-pad workspace-form';
-      form.innerHTML = '<h2>Maps</h2><label class="workspace-field">Map<select name="map" class="input-text"></select></label><button class="btn-primary">Change map</button>';
-      for (const map of maps.options || []) { const option = document.createElement('option'); option.value = typeof map === 'string' ? map : map.value; option.textContent = typeof map === 'string' ? map : map.label; form.elements.map.append(option); }
-      if (maps.freeText) form.querySelector('select').outerHTML = '<input name="map" class="input-text" required>';
-      form.onsubmit = event => { event.preventDefault(); void action(form.querySelector('button'),async () => { await request(`${base}/maps`,'POST',{action:'change',map:form.elements.map.value}); setStatus('Map change requested.'); }); }; host.append(form);
-    }
-    if (control.role === 'owner' && !server.online) {
-      const button = document.createElement('button'); button.className = 'btn-danger'; button.textContent = 'Delete saved server';
-      button.onclick = () => { if (confirm('Delete this stopped saved server?')) void action(button,async () => { await request(base,'DELETE'); await renderMyServersView(); }); }; host.append(button);
-    }
+    await renderServerManager(host, id, {request, escapeHtml, back: renderMyServersView});
   } catch(error) { failure(host,error,() => renderServer(id)); }
 }
 

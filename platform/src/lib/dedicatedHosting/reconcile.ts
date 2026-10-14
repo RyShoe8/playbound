@@ -21,6 +21,7 @@ import { launchRoom } from "./servers";
 import { recordActivity } from "./access";
 import { applyLiveState } from "./liveControl";
 import { automaticBackups } from "./backups";
+import { runMaintenance } from "./maintenance";
 import { parseCurrentMap } from "@/lib/serverControl/rcon";
 import { getServerSettingProfile } from "@/lib/serverControl/settings";
 import { getTier, slotCapEnforced } from "./tier";
@@ -153,6 +154,9 @@ export async function reconcileDedicatedServers(now = new Date()) {
         server.liveStateRoomId = room.roomId;
       }
       await server.save();
+      if (server.maintenance?.enabled) await runMaintenance(id, now).catch((error) => {
+        console.warn("[dedicated-hosting] maintenance failed:", error instanceof Error ? error.message : error);
+      });
       continue;
     }
 
