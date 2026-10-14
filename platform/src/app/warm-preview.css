@@ -192,7 +192,7 @@ html[data-warm-preview][data-preview-page="discover"] .new-game-card{width:287.5
 @media(max-width:767px) {
   html[data-warm-preview][data-preview-page="discover"] .genre-game-grid { display:grid; grid-template-columns:minmax(0,1fr); }
   html[data-warm-preview][data-preview-page="discover"] .genre-game-carousel { margin-inline:0; padding-inline:0; }
-  html[data-warm-preview][data-preview-page="discover"] .genre-game-slide { flex:0 0 100%; min-width:0; }
+  html[data-warm-preview][data-preview-page="discover"] .genre-game-slide { display:contents; }
   html[data-warm-preview][data-preview-page="discover"] :is(.genre-game-grid,.genre-game-slide) .new-game-card { width:100%; max-width:100%; min-width:0; }
 }
 
