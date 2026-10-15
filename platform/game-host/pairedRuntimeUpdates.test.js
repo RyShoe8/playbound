@@ -83,3 +83,15 @@ test("an absent OpenRA edition never starts a different installed game's engine"
       assert.equal(recipes.openra.resolveBinary([],{editionSlug,mod}),null,editionSlug);
   assert.equal(recipes.openra.resolveBinary([],{editionSlug:"official"}),path.join(root,"openra/OpenRA.Server"));
 });
+
+test("Freedoom never launches Zandronum for an incompatible explicit client edition", async t => {
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),"pb-doom-edition-")),previous=process.env.GAME_HOST_GAMES_DIR;
+  process.env.GAME_HOST_GAMES_DIR=root;
+  t.after(()=>{fs.rmSync(root,{recursive:true,force:true});if(previous===undefined)delete process.env.GAME_HOST_GAMES_DIR;else process.env.GAME_HOST_GAMES_DIR=previous;});
+  fs.mkdirSync(path.join(root,"freedoom"));fs.writeFileSync(path.join(root,"freedoom/zandronum-server"),"engine");
+  const {recipes}=await import(new URL(`./recipes.js?doom-edition-test=${randomUUID()}`,import.meta.url));
+  for(const editionSlug of ["gzdoom","dsda-doom","ashes-2063","unknown"])
+    assert.equal(recipes.freedoom.resolveBinary([],{editionSlug}),null);
+  for(const editionSlug of [undefined,"zandronum"])
+    assert.equal(recipes.freedoom.resolveBinary([],{editionSlug}),path.join(root,"freedoom/zandronum-server"));
+});

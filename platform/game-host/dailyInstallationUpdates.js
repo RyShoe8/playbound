@@ -117,6 +117,18 @@ export async function latestInstallationBuild(key, { request = fetch, run = runC
     if (!response.ok || !/^"[a-f0-9]{32}(?:-\d{1,6})?"$/.test(etag || "")) throw new Error("Trackmania official package metadata is unavailable");
     return "etag-" + etag.slice(1,-1);
   }
+  if (key === "space-station-14") {
+    const manifest = JSON.parse(await boundedText("https://wizards.cdn.spacestation14.com/fork/wizards/manifest", request, 2 * 1024 ** 2));
+    if (!manifest.builds || typeof manifest.builds !== "object" || Array.isArray(manifest.builds) || Object.keys(manifest.builds).length > 5000) throw new Error("SS14 official build manifest is invalid");
+    const builds = Object.entries(manifest.builds).filter(([id, build]) => {
+      const asset = build?.server?.["linux-x64"];
+      return /^[a-f0-9]{40}$/.test(id) && Number.isFinite(Date.parse(build?.time))
+        && asset?.url === `https://wizards.cdn.spacestation14.com/fork/wizards/version/${id}/file/SS14.Server_linux-x64.zip`
+        && /^[a-f0-9]{64}$/i.test(asset.sha256 || "") && Number.isSafeInteger(asset.size) && asset.size > 0 && asset.size < 128 * 1024 ** 2;
+    }).sort((a,b) => Date.parse(a[1].time) - Date.parse(b[1].time) || a[0].localeCompare(b[0]));
+    if (!builds.length) throw new Error("SS14 official Linux server build is unavailable");
+    return builds.at(-1)[0];
+  }
   if (key === "hurry-curry") {
     const commits = JSON.parse(await boundedText("https://codeberg.org/api/v1/repos/hurrycurry/hurrycurry/commits?limit=1", request, 128 * 1024));
     const commit = Array.isArray(commits) && commits[0]?.sha;

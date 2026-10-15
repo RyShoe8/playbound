@@ -118,6 +118,12 @@ pull credentials, edit environment files, or alter unrelated database records.
   Keep compiler/toolchain setup operator-only. Update workers must remain
   unprivileged and must not gain Docker, package-manager or general shell sudo.
   Record native protocol/synthetic-client checks separately from human Join.
+- For engines that migrate databases on startup, test old → new → old using an
+  isolated database with retained fixture data and integrity checks. Record the
+  exact migration history and engine/content pair. Keep databases/configuration
+  outside binary swaps; binary rollback must never silently restore an older
+  database. Unknown releases require migration/compatibility review. SS14's
+  Wizard's Den manifest handler is an example of a paired engine/content update.
 - Wait for affected runtimes and pending starts to finish; block new starts
   while queued/active/interrupted. Preserve live games, saves, and credentials.
   Verify artifacts/executables before activation, retain rollback, and recover

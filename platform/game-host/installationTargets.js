@@ -43,6 +43,7 @@ export const INSTALLATION_TARGETS = Object.freeze({
   bombsquad: { name: "BombSquad (paired controller and game distribution)", strategy: "paired-runtime", component: "runtime" },
   trackmania: { name: "Trackmania (paired dedicated engine and Packs)", strategy: "paired-runtime", component: "runtime" },
   freeciv: { name: "Freeciv (matching reviewed engine, library and rulesets)", strategy: "paired-runtime", component: "runtime" },
+  "space-station-14": { name: "Space Station 14 (paired Robust engine and content)", strategy: "paired-runtime", component: "runtime" },
   "hurry-curry": { name: "Hurry Curry (reviewed patched Rust source)", strategy: "reviewed-rust-source", component: "hurrycurry-server" },
   "warzone-2100": { name: "Warzone 2100 (paired official engine and game data)", strategy: "paired-runtime", component: "runtime" },
   veloren: { name: "Veloren (paired weekly engine and assets)", strategy: "paired-runtime", component: "runtime" },

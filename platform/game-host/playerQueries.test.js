@@ -14,7 +14,8 @@ test("Chocolate Doom counts native players and rejects truncated or unrelated re
 });
 
 test("an unsupported Odamex query remains unknown instead of querying a different engine", async () => {
-  assert.equal(await queryRoomOccupancy({gameSlug:'freedoom',editionSlug:'odamex',port:29988}),null);
+  for (const editionSlug of ['odamex','gzdoom','dsda-doom','ashes-2063','unknown'])
+    assert.equal(await queryRoomOccupancy({gameSlug:'freedoom',editionSlug,port:29988}),null);
 });
 
 test("Quake 3 status counts players with a ping and ignores bots (ping 0)", () => {

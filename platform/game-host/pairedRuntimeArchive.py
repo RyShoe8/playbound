@@ -8,6 +8,7 @@ def selected(key,name):
     if key=='veloren':return name=='veloren-server-cli' or name.startswith('assets/')
     if key=='warzone-2100':return name in ('warzone2100','crashpad_handler_warzone2100') or name.startswith('data/')
     if key=='trackmania':return name=='TrackmaniaServer' or name.startswith('Packs/')
+    if key=='space-station-14':return name not in ('server_config.toml','run_server.bat') and not name.startswith(('data/','logs/'))
     raise ValueError('unsupported paired game')
 
 def extract(archive,destination,key,profile):
@@ -56,7 +57,7 @@ def extract(archive,destination,key,profile):
                 if not selected(key,name) or entry.is_dir():continue
                 mode=entry.external_attr>>16
                 if stat.S_IFMT(mode) not in (0,stat.S_IFREG) or mode&0o7000:raise ValueError('special file')
-                with bundle.open(entry) as source:write(name,entry.file_size,bool(mode&0o111),source)
+                with bundle.open(entry) as source:write(name,entry.file_size,bool(mode&0o111) or (key=='space-station-14' and name=='Robust.Server'),source)
     elif profile['format']=='tar':
         with (tarfile.open(fileobj=archive) if hasattr(archive,'read') else tarfile.open(archive)) as bundle:
             for i,entry in enumerate(bundle):

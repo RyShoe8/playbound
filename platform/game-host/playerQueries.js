@@ -670,6 +670,7 @@ export async function queryRoomOccupancy(room) {
     const edition = String(room.editionSlug || "").toLowerCase();
     if (edition.includes("odamex")) return null; // Requires its own protocol adapter.
     if (edition.includes("chocolate") || edition.includes("crispy")) return queryChocolateDoom(room.port);
+    if (edition && edition !== "zandronum") return null;
     return queryZandronum(room.port);
   }
   if (slug === "bombsquad") return queryBombSquad(room.port);

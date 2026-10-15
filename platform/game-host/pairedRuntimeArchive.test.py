@@ -1,7 +1,16 @@
-import hashlib,io,tarfile,tempfile,unittest
+import hashlib,io,tarfile,tempfile,unittest,zipfile
 from pathlib import Path
 from pairedRuntimeArchive import extract
 class Tests(unittest.TestCase):
+ def test_ss14_keeps_private_config_and_databases_outside_runtime(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);p=root/'pkg.zip';data=b'engine';digest=hashlib.sha256(('Robust.Server\0'+hashlib.sha256(data).hexdigest()+'\n').encode()).hexdigest()
+   profile={'format':'zip','treeSha256':digest,'fileCount':1,'totalBytes':len(data)}
+   with zipfile.ZipFile(p,'w') as writer:
+    for name,contents in [('Robust.Server',data),('server_config.toml',b'private'),('data/preferences.db',b'database'),('logs/server.log',b'log')]:writer.writestr(name,contents)
+   extract(p,root/'fresh','space-station-14',profile)
+   self.assertEqual([f.name for f in (root/'fresh').iterdir()],['Robust.Server'])
+   self.assertTrue((root/'fresh/Robust.Server').stat().st_mode & 0o100)
  def test_warzone_native_package_selects_engine_and_data_without_saves(self):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d);p=root/'pkg.tar';rows={'warzone2100':b'engine','data/base.wz':b'data'};digest=hashlib.sha256()

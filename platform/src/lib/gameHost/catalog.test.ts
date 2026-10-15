@@ -6,10 +6,19 @@ import {
   partyDedicatedPlayerLimit,
   emptyHostedPayload,
   getHostableGame,
+  getPartyHostableGame,
   isHostableGame,
 } from "./catalog";
 
 describe("game host catalog", () => {
+  it("offers Freedoom hosting for Zandronum, not unrelated client editions", () => {
+    expect(getPartyHostableGame("freedoom", "zandronum")?.title).toBe("Freedoom + Zandronum");
+    expect(getPartyHostableGame("freedoom", null)?.slug).toBe("freedoom");
+    for (const edition of ["gzdoom", "dsda-doom", "ashes-2063", "odamex", "unknown"]) {
+      expect(getPartyHostableGame("freedoom", edition)).toBeNull();
+      expect(getPartyHostableGame("doom", edition)).toBeNull();
+    }
+  });
   it("offers party rooms only for reviewed dedicated recipes, without community rotation", async () => {
     const { recipes } = await import("../../../game-host/recipes.js");
     const bySlug = recipes as Record<string, { portStart: number; portEnd: number; protocol: string } | undefined>;

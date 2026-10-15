@@ -27,6 +27,7 @@ targets = {
     "warzone-2100": ["warzone-2100"],
     "trackmania": ["trackmania"],
     "freeciv": ["freeciv"],
+    "space-station-14": ["space-station-14"],
     "hurry-curry": ["hurry-curry"],
     "mindustry": ["mindustry"],
     "openra": ["openra"],

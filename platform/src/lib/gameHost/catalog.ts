@@ -252,7 +252,7 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
   },
   freedoom: {
     slug: "freedoom",
-    title: "Freedoom",
+    title: "Freedoom + Zandronum",
     defaultPort: 10666,
     portEnd: 10686,
     protocol: "udp",
@@ -262,7 +262,7 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     title: "Space Station 14",
     defaultPort: 1212,
     portEnd: 1222,
-    protocol: "udp",
+    protocol: "both",
   },
   /*
    * Zero-K is deliberately absent.
@@ -389,6 +389,9 @@ export function getHostableGame(slug: string): HostableGame | null {
 
 /** A few server recipes belong to a multiplayer edition, not its single-player parent. */
 export function getPartyHostableGame(gameSlug: string, editionSlug?: string | null): HostableGame | null {
+  // Old parties omitted the default edition. That remains Zandronum, not a
+  // standalone Freedoom server or a compatible host for every Doom engine.
+  if ((gameSlug === "freedoom" || gameSlug === "doom") && editionSlug && editionSlug !== "zandronum") return null;
   if (gameSlug === "rimworld") {
     return editionSlug === "rimworld-together" ? getHostableGame("rimworld-together") : null;
   }
