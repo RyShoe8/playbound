@@ -1013,3 +1013,69 @@ skips), six platform coverage tests, TypeScript, affected-file lint and Linux
 archive/native/source safeguards, including 39 affected Linux tests. Transient
 Windows rename failures in parallel runs passed when run sequentially;
 production runs on Linux.
+
+## SS14 runtime and HX save follow-up (2026-10-15)
+
+Space Station 14 now has a separate paired-runtime updater for the official
+Wizard's Den Linux x64 engine/content package. Publisher archive hashes and all
+owned-file checksums are validated; build.json, engine version and the installed
+system .NET 10 runtime must agree. The ZIP omits execute permission, so extraction
+sets it only on the fixed reviewed Robust.Server binary. Private configuration,
+logs and databases are excluded from the package swap. Customer instances have
+separate data/config paths, validated against links, and the recipe declares both
+UDP gameplay and TCP status listeners. The legacy shared instance keeps its
+existing configuration/data paths rather than silently moving its database.
+
+Daily discovery selects the newest timestamped Linux x64 entry from the official
+manifest and validates its URL, checksum and size shape. An unknown build stays
+review-required; it cannot silently migrate databases. Real isolated old/new/old
+startup tests retained a SQLite fixture, passed integrity checks, answered real
+zero-player status queries and stopped cleanly. These two builds have the same
+58 migrations; that is evidence for this exact pair, not a guarantee for future
+database formats. The actual update worker also passed update/query/rollback
+with database/config retention. Production enrollment preserved all twelve
+managed process identities and the production update completed to content build
+94087a918a2fae4571f5a529fe14ef7f5dce29a3 / engine 289.0.3. No production game
+database was opened by the isolated fixtures and no catalog/eligibility changed.
+
+The next engine review found that HX rooms symlinked the shared Save directory.
+New rooms now create private Save folders; an old shared link fails with an
+explicit migration reason. Private System/configuration links are rejected.
+The two existing operator test rooms were migrated while the agent was stopped,
+copying and verifying the original saved file before replacing their known
+links. Original shared saves and the prior links were retained. All twelve
+managed processes survived agent restart. Regression tests verify that one
+room's saved game cannot appear in another room or change the installed saves.
+HX's reviewed Wine/mod update handler remains separate unfinished work.
+
+Coverage is 45 installation families and 30 daily release-discovery sources.
+Remaining update entries: Freedoom's hosted Zandronum engine, Deus Ex HX, GoldenEye:
+Source, OpenRA RA2 and Open Fortress; Vintage Story remains owner-deferred.
+Runtime isolation/plugin support, human Join acceptance and a packaged launcher
+release remain full-plan gates. SS14 validation: six platform coverage tests,
+TypeScript and affected-file lint, 340 agent tests (295 passed, 45 platform skips),
+23 affected Linux JS tests and four archive-boundary cases; HX's three Linux
+tests also pass. The final HX validation and safe-error diagnostics are deployed;
+all twelve managed process identities were preserved again.
+
+### Freedoom scope correction and latest native checks
+
+Freedoom provides IWAD game content, not a standalone dedicated-server engine.
+The offered hosting path is Freedoom + Zandronum. An omitted edition in legacy
+parties still means that default engine; it must not be interpreted as a separate
+base-game server. The party capability check now rejects explicit GZDoom,
+DSDA-Doom, Ashes and other client editions, and the agent refuses to silently
+substitute Zandronum for an unknown edition. The host inventory labels the default
+path Freedoom + Zandronum. Existing engine-specific low-level compatibility code
+does not enable another public hosting edition. Odamex source review was stopped
+without installing anything; optional engines are outside this completion gate
+unless deliberately offered and verified. No catalog or operational profile was
+changed. See https://freedoom.github.io/about.html.
+
+GoldenEye's isolated private Wine runtime did not answer a native A2S query
+within the bounded startup check; the fixture was stopped. It remains blocked,
+not verified by installation or a port bind. No production GoldenEye files were
+replaced. The final SS14 name/status-port and Freedoom compatibility guards passed
+35 Linux agent tests plus four archive-boundary cases, and 60 affected platform
+tests passed with TypeScript and affected-file lint. The agent deployment retained
+all twelve managed process identities and left catalog/database records untouched.

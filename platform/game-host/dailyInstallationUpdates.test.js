@@ -17,6 +17,14 @@ test("source discovery retains Hurry Curry's newer branch and Freeciv's stable c
   assert.equal(await latestInstallationBuild("freeciv",{request:async()=>new Response('<a href="freeciv-3.2.5.tar.xz">stable</a><a href="freeciv-3.2.11.tar.xz">stable</a><a href="freeciv-4.0.0-beta.tar.xz">beta</a>')}),"3.2.11");
 });
 
+test("SS14 chooses official Linux build by timestamp and rejects untrusted packages",async()=>{
+  const build=(id,time,url)=>({time,server:{'linux-x64':{url:url||`https://wizards.cdn.spacestation14.com/fork/wizards/version/${id}/file/SS14.Server_linux-x64.zip`,sha256:'a'.repeat(64),size:100}}});
+  const older='b'.repeat(40),newer='a'.repeat(40),invalid='c'.repeat(40);
+  const request=async()=>Response.json({builds:{[older]:build(older,'2026-09-01T00:00:00Z'),[newer]:build(newer,'2026-10-01T00:00:00Z'),[invalid]:build(invalid,'2026-11-01T00:00:00Z','https://untrusted.test/server.zip')}});
+  assert.equal(await latestInstallationBuild('space-station-14',{request}),newer);
+  await assert.rejects(latestInstallationBuild('space-station-14',{request:async()=>Response.json({builds:{[invalid]:build(invalid,'2026-11-01T00:00:00Z','https://untrusted.test/server.zip')}})}),/unavailable/);
+});
+
 test("Java discovery uses the dedicated asset and tracks a mutable tag by digest", async () => {
   for (const key of ["ysoccer", "triplea"]) {
     const profile = REVIEWED_JAVA[key], tag = key === "ysoccer" ? "ysoccer-online-latest" : profile.latest;

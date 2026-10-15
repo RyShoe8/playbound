@@ -17,6 +17,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { verifyEtLegacyReady } from "./etLegacyInstall.js";
 import { HX_BASE, hxReady, hxRoomDir, prepareHxRoom } from "./deusExHx.js";
+import { spaceStation14Paths, prepareSpaceStation14Data } from "./spaceStation14Runtime.js";
 
 const execFileAsync = promisify(execFile);
 const require = createRequire(import.meta.url);
@@ -1810,7 +1811,9 @@ export const recipes = {
           gameBin("freedoom", ["chocolate-server", "chocolate-doom-server", "crispy-server"])
         );
       }
-      // Zandronum is the default edition, so it is also the default server.
+      // An omitted edition is the legacy Zandronum default. Explicit client
+      // engines must never silently connect to an incompatible server.
+      if (edition && edition !== "zandronum") return null;
       return firstExisting(gameBin("freedoom", ["zandronum-server"]));
     },
     spawnEnv: () => ({
@@ -1869,13 +1872,23 @@ export const recipes = {
   "space-station-14": {
     portStart: 1212,
     portEnd: 1222,
-    protocol: "udp",
+    protocol: "both",
     binaries: gameBin("space-station-14", ["Robust.Server", "SS14.Server"]),
+    startupReadyTimeoutMs: 180_000,
+    resolveBinary: (candidates, ctx) => fs.existsSync(path.join(GAMES_ROOT,"space-station-14/runtime"))
+      ? firstExisting([path.join(spaceStation14Paths(GAMES_ROOT,HOST_HOME,ctx).runtime,"Robust.Server")]) : firstExisting(candidates),
+    cwd: (_port,ctx) => spaceStation14Paths(GAMES_ROOT,HOST_HOME,ctx).runtime,
+    prepareSpawn: async (_port,ctx) => prepareSpaceStation14Data(spaceStation14Paths(GAMES_ROOT,HOST_HOME,ctx),HOST_HOME,ctx?.customerOwned),
+    spawnEnv: (_port,ctx) => ({DOTNET_ROOT:"/usr/lib/dotnet",...(ctx?.customerOwned?{HOME:spaceStation14Paths(GAMES_ROOT,HOST_HOME,ctx).home}:{})}),
     // RobustToolbox takes any CVar as --cvar name=value, overriding both its
     // defaults and the config file, so nothing has to be written to disk.
     args: (port, ctx) => [
       "--port",
       String(port),
+      "--data-dir", spaceStation14Paths(GAMES_ROOT,HOST_HOME,ctx).data,
+      "--config-file", spaceStation14Paths(GAMES_ROOT,HOST_HOME,ctx).config,
+      "--cvar", `log.path=${path.join(spaceStation14Paths(GAMES_ROOT,HOST_HOME,ctx).data,"logs")}`,
+      "--cvar", `game.hostname=${String(ctx?.name || "PlayBound Community Server").replace(/[\r\n\0]/g," ").slice(0,80)}`,
       /*
        * The HTTP status/info endpoint defaults to *:1212 whatever the game
        * port is, and the SS14 launcher connects through it. Bind it to the

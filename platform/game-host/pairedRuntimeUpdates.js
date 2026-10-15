@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { verifySpaceStation14Metadata } from "./spaceStation14Runtime.js";
 import { createHash, randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { httpsGetStream } from "./downloadStream.js";
@@ -42,6 +43,7 @@ export function verifyPairedTree(root, key, { profile = PAIRED_RUNTIMES[key] } =
   }
   const release = profile.versions.find(version => version.treeSha256 === tree.treeSha256 && version.fileCount === tree.fileCount && version.totalBytes === tree.totalBytes);
   if (!release) throw new Error("Paired runtime engine and assets do not match a reviewed package");
+  if (key === "space-station-14") verifySpaceStation14Metadata(root, release);
   for (const binary of (release.binaries || profile.binaries)) {
     if (!safeRelative(binary)) throw new Error("Paired runtime binary path is invalid");
     const filename = path.join(root, binary);fs.accessSync(filename, fs.constants.X_OK);
@@ -72,8 +74,9 @@ export function enrollPairedRuntime(root, key, { profile = PAIRED_RUNTIMES[key] 
     fs.mkdirSync(fresh, { mode: 0o700 });
     const legacy = key === "warzone-2100"
       ? [["warzone2100", "/usr/bin/warzone2100"], ["crashpad_handler_warzone2100", "/usr/bin/crashpad_handler_warzone2100"], ["data", "/usr/share/warzone2100"]]
-      : (key === "bombsquad" ? ["bombsquad_server", "dist"] : key === "trackmania" ? ["TrackmaniaServer", "Packs"] : key === "freeciv" ? ["bin", "lib", "share"] : ["veloren-server-cli", "assets"]).map(name => [name, path.join(root, name)]);
+      : (key === "space-station-14" ? profile.legacyRoots : key === "bombsquad" ? ["bombsquad_server", "dist"] : key === "trackmania" ? ["TrackmaniaServer", "Packs"] : key === "freeciv" ? ["bin", "lib", "share"] : ["veloren-server-cli", "assets"]).map(name => [name, path.join(root, name)]);
     for (const [name, original] of legacy) {
+      if (!safeRelative(name)) throw new Error("Paired runtime legacy root is invalid");
       if (fs.lstatSync(original).isSymbolicLink()) throw new Error("Paired runtime legacy files require review");
       fs.cpSync(original, path.join(fresh, name), { recursive: true, dereference: false, filter: file => !path.relative(root,file).split(path.sep).includes("__pycache__") });
     }
@@ -95,7 +98,7 @@ export function enrollPairedRuntime(root, key, { profile = PAIRED_RUNTIMES[key] 
   } finally { fs.closeSync(fd); fs.unlinkSync(lock); }
 }
 
-const HOSTS = new Set(["files.ballistica.net", "github.com", "release-assets.githubusercontent.com", "objects.githubusercontent.com", "nadeo-download.cdn.ubi.com"]);
+const HOSTS = new Set(["files.ballistica.net", "github.com", "release-assets.githubusercontent.com", "objects.githubusercontent.com", "nadeo-download.cdn.ubi.com", "wizards.cdn.spacestation14.com"]);
 function trusted(value) {
   const url = new URL(value);
   if (url.protocol !== "https:" || !HOSTS.has(url.hostname) || url.port || url.username || url.password) throw new Error("Paired runtime redirect is untrusted");

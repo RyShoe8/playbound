@@ -223,7 +223,7 @@ cp -f "$AGENT_SRC/index.js" "$AGENT_SRC/agentRoutes.js" "$AGENT_SRC/recipes.js" 
   "$AGENT_SRC/gameEnvironment.js" \
   "$AGENT_SRC/reviewedJavaUpdates.js" "$AGENT_SRC/reviewedJavaProfiles.json" "$AGENT_SRC/reviewedJavaArchive.py" \
   "$AGENT_SRC/hurryUpdates.js" "$AGENT_SRC/sourceRuntimeBuilds.json" "$AGENT_SRC/reviewedHostedSourceBuild.py" "$AGENT_SRC/reproducibleFreeciv.py" \
-  "$AGENT_SRC/trackmaniaRuntime.js" "$AGENT_SRC/combinedArmsUpdates.js" \
+  "$AGENT_SRC/trackmaniaRuntime.js" "$AGENT_SRC/combinedArmsUpdates.js" "$AGENT_SRC/spaceStation14Runtime.js" \
   "$AGENT_SRC/pairedRuntimeUpdates.js" "$AGENT_SRC/pairedRuntimeArchive.py" "$AGENT_SRC/pairedRuntimeProfiles.json" "$AGENT_SRC/pairedRuntimeEnroll.js" \
   "$AGENT_SRC/reviewedComponentUpdates.js" "$AGENT_SRC/reviewedComponentProfiles.json" "$AGENT_SRC/reviewedComponentArchive.py" \
   "$AGENT_SRC/dedicatedRecipes.js" "$AGENT_SRC/barotraumaRuntime.js" "$AGENT_SRC/rimworldControl.js" "$AGENT_SRC/rimworldDifficulty.json" "$AGENT_SRC/anivControl.js" \

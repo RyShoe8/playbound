@@ -254,7 +254,7 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
     const uncertain = activated || (job.status === "activating" && !fs.existsSync(activePath));
     phase(uncertain ? "interrupted" : "failed", uncertain
       ? "Activation needs operator inspection. New starts remain blocked; the rollback copy is retained."
-      : error instanceof Error && /^(Paired runtime|Reviewed component|Not enough|An affected|Unvanquished|OpenMoHAA|ET Legacy|FlightGear|RimWorld|Xonotic|Native package|Legacy|SteamCMD|Mindustry|OpenRA|OpenHV|OpenE2140|Hypersomnia|AssaultCube|Factorio|Terraria|Update command|Update stopped|Cannot verify|Barotrauma|Unexpected Barotrauma|Invalid Barotrauma)/.test(error.message)
+      : error instanceof Error && /^(Paired runtime|Reviewed component|Not enough|An affected|SS14|Unvanquished|OpenMoHAA|ET Legacy|FlightGear|RimWorld|Xonotic|Native package|Legacy|SteamCMD|Mindustry|OpenRA|OpenHV|OpenE2140|Hypersomnia|AssaultCube|Factorio|Terraria|Update command|Update stopped|Cannot verify|Barotrauma|Unexpected Barotrauma|Invalid Barotrauma)/.test(error.message)
         ? error.message : "Update failed before activation; the previous installation was preserved");
     // Retain partial staging files for diagnosis. Never recurse into customer save links.
   }
