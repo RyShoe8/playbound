@@ -111,6 +111,11 @@ pull credentials, edit environment files, or alter unrelated database records.
 - Executable plugins/Workshop packages require verified per-customer isolation,
   explicit privileges, trusted sources, compatibility, backup and rollback.
   A save-file upload extension allowlist is not executable-plugin isolation.
+- Review a `customerIsolation.js` profile for the engine: trusted executable,
+  read-only dependencies/configuration, only its writable data, clean environment,
+  process recovery/query/stop/metrics and cross-customer denial. Teeworlds is
+  currently the first namespace profile; do not copy its mounts to other engines
+  or mistake namespaces alone for completed UID/network/cgroup isolation.
 
 ## 7. Capacity and programming
 
