@@ -1110,6 +1110,7 @@ export const recipes = {
       String(port),
       String(port),
     ],
+    cwd: () => path.join(GAMES_ROOT, "ysoccer"),
   },
   hedgewars: {
     portStart: 46631,
@@ -1298,9 +1299,9 @@ export const recipes = {
     portEnd: 3323,
     protocol: "tcp",
     startupGraceMs: 5000,
-    binaries: gameBin("triplea", ["run-server"]),
-    resolveBinary: () => firstExisting([path.join(GAMES_ROOT, "triplea", "run-server")]),
-    args: (port) => [String(port)],
+    binaries: ["/opt/playbound-host/jre/temurin-25/bin/java"],
+    resolveBinary: () => fs.existsSync(path.join(GAMES_ROOT, "triplea/bin/game-headless.jar")) ? firstExisting(["/opt/playbound-host/jre/temurin-25/bin/java"]) : null,
+    args: () => ["-server", "-Xmx512M", "-Djava.awt.headless=true", "-jar", path.join(GAMES_ROOT, "triplea/bin/game-headless.jar"), "-Ptriplea.server=true", "-Ptriplea.server.password="],
     cwd: () => path.join(GAMES_ROOT, "triplea"),
     prepareSpawn: async () => {
       fs.mkdirSync(path.join(GAMES_ROOT, "triplea", "downloadedMaps"), { recursive: true });

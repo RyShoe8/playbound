@@ -17,6 +17,7 @@ import { verifyOpenMohaaInstallation } from "./openmohaaUpdates.js";
 import { verifyUnvanquishedInstallation } from "./unvanquishedUpdates.js";
 import { verifyReviewedComponent } from "./reviewedComponentUpdates.js";
 import { verifyPairedInstallation } from "./pairedRuntimeUpdates.js";
+import { verifyReviewedJava } from "./reviewedJavaUpdates.js";
 
 // These are shared installations, not per-customer save directories.
 export const INSTALLATION_TARGETS = Object.freeze({
@@ -39,6 +40,8 @@ export const INSTALLATION_TARGETS = Object.freeze({
   morrowind: { name: "Morrowind (reviewed TES3MP engine)", strategy: "reviewed-component", component: "tes3mp-server.x86_64" },
   bombsquad: { name: "BombSquad (paired controller and game distribution)", strategy: "paired-runtime", component: "runtime" },
   veloren: { name: "Veloren (paired weekly engine and assets)", strategy: "paired-runtime", component: "runtime" },
+  ysoccer: { name: "YSoccer (PlayBound dedicated Java server)", strategy: "reviewed-java", component: "ysoccer-server.jar" },
+  triplea: { name: "TripleA (reviewed Java 25 headless server)", strategy: "reviewed-java", component: "bin" },
   mindustry: { name: "Mindustry", strategy: "github-jar" },
   openra: { name: "OpenRA (Red Alert, Tiberian Dawn, Dune 2000)", strategy: "github-appimage" },
   openhv: { name: "OpenHV", strategy: "github-appimage" },
@@ -96,6 +99,7 @@ export function verifyInstallation(directory, key) {
   if (key === "unvanquished") return verifyUnvanquishedInstallation(directory);
   if (target.strategy === "reviewed-component") return verifyReviewedComponent(directory, key);
   if (target.strategy === "paired-runtime") return verifyPairedInstallation(directory, key);
+  if (target.strategy === "reviewed-java") return verifyReviewedJava(directory, key);
   if (target.strategy === "reviewed-distro-native") return verifyNativePackageInstallation(directory, key);
   if (target.strategy === "reviewed-dotnet-source") return verifyRimworldInstallation(directory);
   if (target.strategy === "reviewed-cmake-source") return verifyFgmsInstallation(directory);

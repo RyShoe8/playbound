@@ -14,6 +14,13 @@ function fixture(t) {
   store.write({ id, key: "team-fortress-2", action: "update", status: "failed", createdAt: 1, message: "Steam download failed" });
   return { stateDir, store, id };
 }
+
+test("cancelled maintenance is never reported as an update failure", async t => {
+  const f = fixture(t); f.store.write({ ...f.store.read(f.id), status: "cancelled" });
+  let calls = 0;
+  await createInstallationFailureReporter({ ...f, secret: "fixture-secret", request: async () => { calls++; } }).tick();
+  assert.equal(calls, 0);
+});
 test("delivery survives network failure and agent restart without losing failures", async (t) => {
   const f = fixture(t);
   const broken = createInstallationFailureReporter({ ...f, secret: "fixture-secret", request: async () => { throw new Error("offline"); } });

@@ -8,6 +8,7 @@ import { OPENMOHAA_RELEASE } from "./openmohaaUpdates.js";
 import { UNVANQUISHED_RELEASES } from "./unvanquishedUpdates.js";
 import { REVIEWED_COMPONENTS } from "./reviewedComponentUpdates.js";
 import { PAIRED_RUNTIMES } from "./pairedRuntimeUpdates.js";
+import { REVIEWED_JAVA } from "./reviewedJavaUpdates.js";
 
 const DAY = 24 * 60 * 60_000;
 const RELEASES = {
@@ -19,7 +20,7 @@ const RELEASES = {
   unvanquished: ["Unvanquished/Unvanquished", /^v\d+\.\d+\.\d+$/],
   morrowind: ["TES3MP/TES3MP", /^tes3mp-\d+\.\d+\.\d+$/],
 };
-export const automaticInstallationUpdate = (key) => Boolean(INSTALLATION_TARGETS[key]?.appId || RELEASES[key] || PAIRED_RUNTIMES[key] || ["factorio", "hypersomnia", "wolfenstein-enemy-territory", "re-volt-rvgl"].includes(key));
+export const automaticInstallationUpdate = (key) => Boolean(INSTALLATION_TARGETS[key]?.appId || RELEASES[key] || PAIRED_RUNTIMES[key] || REVIEWED_JAVA[key] || ["factorio", "hypersomnia", "wolfenstein-enemy-territory", "re-volt-rvgl"].includes(key));
 
 // Parse only quoted VDF keys/values and braces. Never confuse a beta/depot's
 // build with depots.branches.public.buildid, even when it appears first.
@@ -71,6 +72,17 @@ export async function latestInstallationBuild(key, { request = fetch, run = runC
     const release = await readRelease(repository, { request, signal: AbortSignal.timeout(30_000), label: target.name });
     if (release.draft !== false || release.prerelease !== false || !tag.test(release.tag_name || "")) throw new Error("Official release is not a stable supported build");
     return key === "morrowind" ? release.tag_name.slice(7) : ["mindustry", "openmohaa", "unvanquished"].includes(key) ? release.tag_name.slice(1) : release.tag_name;
+  }
+  if (REVIEWED_JAVA[key]) {
+    const profile = REVIEWED_JAVA[key];
+    const release = await readRelease(profile.repository, { request, signal: AbortSignal.timeout(30_000), label: target.name });
+    const validTag = key === "ysoccer" ? release.tag_name === "ysoccer-online-latest" : /^\d{4}-\d{2}\.\d+\.\d+$/.test(release.tag_name || "");
+    const assets = release.assets?.filter(row => row.name === (key === "ysoccer" ? "ysoccer-server.jar" : "game-headless.zip"));
+    const asset = assets?.length === 1 ? assets[0] : null;
+    if (release.draft !== false || release.prerelease !== false || !validTag || !asset || !/^sha256:[a-f0-9]{64}$/.test(asset.digest || "")
+      || !Number.isSafeInteger(asset.size) || asset.size < 1 || asset.size > 128 * 1024 ** 2
+      || asset.browser_download_url !== `https://github.com/${profile.repository}/releases/download/${release.tag_name}/${asset.name}`) throw new Error("Java dedicated release metadata is invalid");
+    return key === "ysoccer" ? asset.digest.replace(":", "-") : release.tag_name;
   }
   if (key === "factorio") {
     const version = JSON.parse(await boundedText("https://factorio.com/api/latest-releases", request)).stable?.headless;
@@ -154,6 +166,7 @@ export function createDailyInstallationUpdates({ stateDir, coordinator, latest =
       await coordinator.withMetadataCheck(async () => {
         const inventory = coordinator.snapshot();
         for (const target of inventory.targets) {
+          const reviewedPackage = REVIEWED_JAVA[target.key] || PAIRED_RUNTIMES[target.key];
           const old = previous.targets[target.key];
           const row = { checkedAt: now(), installedBuild: target.buildId,
             lastAttemptBuild: old?.lastAttemptBuild, jobId: old?.jobId };
@@ -173,10 +186,10 @@ export function createDailyInstallationUpdates({ stateDir, coordinator, latest =
               if (REVIEWED_COMPONENTS[target.key]) {
                 row.status = row.availableBuild === target.buildId ? "up_to_date" : "review_required";
                 if (row.status === "review_required") row.message = "New engine release requires matching game data, scripts, dependencies and a reviewed checksum profile. Existing files remain unchanged.";
-              } else if (PAIRED_RUNTIMES[target.key] && row.availableBuild === target.buildId) row.status = "up_to_date";
-              else if (PAIRED_RUNTIMES[target.key] && row.availableBuild !== PAIRED_RUNTIMES[target.key].latest) {
-                row.status = "review_required"; row.message = "New paired package needs reviewed controller/engine/assets compatibility and checksums; the installed runtime is unchanged.";
-              } else if (!PAIRED_RUNTIMES[target.key] && !newer(row.availableBuild, target.buildId)) row.status = "up_to_date";
+              } else if (reviewedPackage && row.availableBuild === target.buildId) row.status = "up_to_date";
+              else if (reviewedPackage && row.availableBuild !== reviewedPackage.latest) {
+                row.status = "review_required"; row.message = PAIRED_RUNTIMES[target.key] ? "New paired package needs reviewed controller/engine/assets compatibility and checksums; the installed runtime is unchanged." : "New Java server package needs reviewed runtime/client compatibility and checksums; the installation is unchanged.";
+              } else if (!reviewedPackage && !newer(row.availableBuild, target.buildId)) row.status = "up_to_date";
               else if (target.key === "unvanquished" && row.availableBuild !== UNVANQUISHED_RELEASES.latest) {
                 row.status = "review_required"; row.message = "New Unvanquished version needs reviewed engine/sandbox/game package compatibility and checksums.";
               } else if (target.key === "openmohaa" && row.availableBuild !== OPENMOHAA_RELEASE.version) {

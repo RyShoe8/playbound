@@ -5,6 +5,19 @@ import os from "node:os";
 import path from "node:path";
 import { createDailyInstallationUpdates, latestInstallationBuild, steamPublicBuild } from "./dailyInstallationUpdates.js";
 import { createInstallationCoordinator, createInstallationStore } from "./installationJobs.js";
+import { REVIEWED_JAVA } from "./reviewedJavaUpdates.js";
+
+test("Java discovery uses the dedicated asset and tracks a mutable tag by digest", async () => {
+  for (const key of ["ysoccer", "triplea"]) {
+    const profile = REVIEWED_JAVA[key], tag = key === "ysoccer" ? "ysoccer-online-latest" : profile.latest;
+    const asset = key === "ysoccer" ? "ysoccer-server.jar" : "game-headless.zip";
+    const request = async url => {
+      assert.ok(url.endsWith(key === "ysoccer" ? "/releases/tags/ysoccer-online-latest" : "/releases/latest"));
+      return new Response(JSON.stringify({ tag_name: tag, draft: false, prerelease: false, assets: [{ name: asset, size: 100, digest: `sha256:${"a".repeat(64)}`, browser_download_url: `https://github.com/${profile.repository}/releases/download/${tag}/${asset}` }] }));
+    };
+    assert.equal(await latestInstallationBuild(key, { request }), key === "ysoccer" ? `sha256-${"a".repeat(64)}` : tag);
+  }
+});
 
 function fixture(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "pb-daily-"));

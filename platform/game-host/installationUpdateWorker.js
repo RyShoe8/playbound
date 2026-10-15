@@ -22,6 +22,7 @@ import { stageOpenMohaaRelease } from "./openmohaaUpdates.js";
 import { stageUnvanquishedRelease, validateUnvanquishedOverrides } from "./unvanquishedUpdates.js";
 import { stageReviewedComponent, validInstallationComponent } from "./reviewedComponentUpdates.js";
 import { stagePairedRuntime } from "./pairedRuntimeUpdates.js";
+import { stageReviewedJava } from "./reviewedJavaUpdates.js";
 
 const GIB = 1024 ** 3;
 
@@ -119,7 +120,13 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
       // their bytes, then the fixed promotion helper restores trusted ownership.
       await run("/usr/bin/cp", ["-a", ...(["reviewed-distro-native", "reviewed-native-zip"].includes(target.strategy) ? ["--no-preserve=ownership"] : []), "--reflink=auto", "--sparse=always", "--", activePath, stagedPath], { root: gamesRoot });
       const detachedLinks = prepareInstallationLinks(stage, current, true);
-      if (target.strategy === "paired-runtime") {
+      if (target.strategy === "reviewed-java") {
+        phase("downloading", "Verifying the reviewed dedicated JAR and installed Java; maps, configuration and saves remain outside the swap");
+        await stageReviewedJava(stage, job.key, { run, diskCheck: () => {
+          const available = disk(gamesRoot);
+          if (available.free < available.reserve + 256 * 1024 ** 2) throw new Error("Update stopped to preserve free disk space");
+        } });
+      } else if (target.strategy === "paired-runtime") {
         phase("downloading", "Verifying the paired runtime package; mutable settings and saved worlds remain outside the swap");
         await stagePairedRuntime(stage, job.key, { run, diskCheck: () => {
           const available = disk(gamesRoot);
