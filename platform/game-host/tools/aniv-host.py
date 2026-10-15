@@ -19,6 +19,86 @@ CONTROL = Path('/var/lib/playbound-aniv-control')
 DATA = Path('/var/lib/playbound-host/aneurism-iv-servers')
 CREDENTIALS = Path('/var/lib/playbound-host/credentials/aneurism-iv')
 BINARY = Path('/opt/playbound-host/games/aneurism-iv/aniv_server.x86_64')
+LOG_READ_BYTES = 65536
+LOG_RETAIN_BYTES = 8 * 1024 * 1024
+
+
+def redact_log_line(line):
+    line = re.sub(r'\x1b\[[0-?]*[ -/]*[@-~]', '', line)
+    line = re.sub(r'[\x00-\x08\x0b-\x1f\x7f]', '', line)
+    if re.search(r'password|passwd|passphrase|rcon[_ -]?pass|token|gslt|secret|authorization|api[_ -]?key|private[_ -]?key|BEGIN .*KEY', line, re.I):
+        return '[credential-bearing line omitted]'
+    line = re.sub(r'\b[a-f0-9]{32,}\b', '[redacted]', line, flags=re.I)
+    line = re.sub(r'[A-Za-z0-9+/=_-]{64,}', '[redacted]', line)
+    return re.sub(r'(?:https?|wss?)://\S+', '[URL omitted]', line, flags=re.I)
+
+
+def read_logs(server_id):
+    # CONTROL is root-owned and mode 0700; no caller supplies a filename.
+    filename = CONTROL / ('startup-' + identity(server_id) + '.log')
+    try:
+        fd = os.open(filename, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    except FileNotFoundError:
+        return {'available': False, 'lines': [], 'truncated': False}
+    try:
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_uid != 0 or info.st_mode & 0o077:
+            raise ValueError('Unsafe private server log')
+        start = max(0, info.st_size - LOG_READ_BYTES)
+        os.lseek(fd, start, os.SEEK_SET)
+        text = os.read(fd, LOG_READ_BYTES).decode(errors='replace')
+        if start:
+            text = text.partition('\n')[2]
+        text = text.rpartition('\n')[0]
+        lines = text.split('\n') if text else []
+        return {'available': True, 'lines': [redact_log_line(line) for line in lines[-200:]], 'truncated': bool(start or len(lines) > 200)}
+    finally:
+        os.close(fd)
+
+
+def write_bounded_log(log, chunk):
+    # This helper owns the only writer. Rollover retains a small tail and resets
+    # its own offset; never externally truncate a legacy non-O_APPEND writer.
+    size = log.seek(0, os.SEEK_END)
+    if size + len(chunk) > LOG_RETAIN_BYTES:
+        log.seek(max(0, size - LOG_READ_BYTES))
+        tail = log.read(LOG_READ_BYTES)
+        tail = tail.partition(b'\n')[2]
+        log.seek(0)
+        log.truncate(0)
+        log.write(tail)
+    log.write(chunk)
+
+
+def retain_stopped_logs():
+    # An old live helper writes without O_APPEND. Never change its file offset
+    # externally; apply its new bounded writer on the next natural startup.
+    active = set()
+    for manifest in CONTROL.glob('slot-*.json'):
+        saved = json.loads(manifest.read_text())
+        if saved.get('identity') and process_identity(saved.get('pid')) == saved['identity']:
+            active.add(identity(saved['serverId']))
+    trimmed = 0
+    for filename in CONTROL.glob('startup-*.log'):
+        match = re.fullmatch(r'startup-([a-f0-9]{24})\.log', filename.name)
+        if not match or match[1] in active:
+            continue
+        fd = os.open(filename, os.O_RDWR | os.O_NOFOLLOW | os.O_NONBLOCK)
+        try:
+            info = os.fstat(fd)
+            if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_uid != 0 or info.st_mode & 0o077:
+                raise ValueError('Unsafe private server log')
+            if info.st_size <= LOG_RETAIN_BYTES:
+                continue
+            os.lseek(fd, info.st_size - LOG_READ_BYTES, os.SEEK_SET)
+            tail = os.read(fd, LOG_READ_BYTES).partition(b'\n')[2]
+            os.lseek(fd, 0, os.SEEK_SET)
+            os.ftruncate(fd, 0)
+            os.write(fd, tail)
+            trimmed += 1
+        finally:
+            os.close(fd)
+    return {'trimmed': trimmed}
 
 
 def identity(value):
@@ -183,6 +263,8 @@ def supervise(slot, server_id, config):
 
     signal.signal(signal.SIGTERM, request_stop)
     signal.signal(signal.SIGINT, request_stop)
+    log_guard = open(CONTROL / 'log-retention.lock', 'a')
+    fcntl.flock(log_guard, fcntl.LOCK_SH)
     try:
         manifest.write_text(json.dumps({'pid':os.getpid(), 'identity':process_identity(os.getpid()), 'serverId':server_id, 'namespace':ns, 'tokenHash':token_hash}))
         if stopping:
@@ -209,13 +291,14 @@ def supervise(slot, server_id, config):
                                  env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, start_new_session=True)
         state = {'ready':False, 'steamServerId':None, 'gamePid':child.pid, 'gameIdentity':process_identity(child.pid), 'namespace':ns, 'maxPlayers':config['maxPlayers']}
         authenticated, loaded, started, pending, last = False, False, False, '', 0
-        logfd = os.open(CONTROL / ('startup-'+digest+'.log'), os.O_WRONLY|os.O_CREAT|os.O_TRUNC, 0o600)
-        with os.fdopen(logfd, 'wb') as log:
+        logfd = os.open(CONTROL / ('startup-'+digest+'.log'), os.O_RDWR|os.O_CREAT|os.O_TRUNC|os.O_NOFOLLOW, 0o600)
+        log_guard.close()
+        with os.fdopen(logfd, 'w+b', buffering=0) as log:
             while not stopping and child.poll() is None:
                 readable, _, _ = select.select([child.stdout], [], [], 0.25)
                 if readable:
                     chunk = os.read(child.stdout.fileno(), 65536)
-                    log.write(chunk)
+                    write_bounded_log(log, chunk)
                     pending += chunk.decode(errors='replace')
                     lines = pending.split('\n')
                     pending = lines.pop()[-65536:]
@@ -236,6 +319,7 @@ def supervise(slot, server_id, config):
             if not stopping:
                 emit({'ready':False, 'error':f'ANEURISM process exited (code {child.poll()})'})
     finally:
+        log_guard.close()
         if child and child.poll() is None:
             os.killpg(child.pid, signal.SIGINT)
             try:
@@ -264,11 +348,21 @@ def main():
     if CONTROL.stat().st_uid != 0 or CONTROL.is_symlink():
         raise ValueError('Invalid control directory ownership')
     os.chmod(CONTROL, 0o700)
-    if len(sys.argv) != 4 or sys.argv[1] not in ('run', 'stop', 'query'):
-        raise ValueError('Expected run|stop|query, isolation slot, server identity')
+    if len(sys.argv) != 4 or sys.argv[1] not in ('run', 'stop', 'query', 'logs', 'retain-logs'):
+        raise ValueError('Expected run|stop|query|logs|retain-logs, isolation slot, server identity')
     action, slot, server_id = sys.argv[1], int(sys.argv[2]), sys.argv[3]
     identity(server_id)
     placement(slot)
+    if action == 'retain-logs':
+        # Serialize with starts and other maintenance. Supervisors hold this
+        # lock only for setup; do not hold it over the lifetime of a game.
+        with open(CONTROL / 'log-retention.lock', 'a') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            emit(retain_stopped_logs())
+        return
+    if action == 'logs':
+        emit(read_logs(server_id))
+        return
     if action == 'query':
         emit(query_occupancy(slot, server_id))
         return

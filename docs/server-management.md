@@ -13,6 +13,14 @@ existing administration pages.
 
 ## Everyday controls
 
+- Logs: owner/administrator access to the latest captured output, up to 200
+  complete lines. Refresh manually; credential-bearing lines and token-shaped
+  values are redacted. Managed stdout/stderr, RimWorld's console capture and
+  ANEURISM's privileged capture share the same view. Retention runs every five
+  minutes, rolling logs over 8 MiB to a private 64 KiB tail. Active legacy
+  ANEURISM writers adopt their bounded retention on the next natural restart.
+  Diagnostic output can be lost at rollover; use Activity for management audit.
+
 - Overview: connection address, players, runtime status, and per-process CPU
   cores and memory. Unknown and stale measurements are not shown as zero.
 - Settings: name, description, visibility, and validated game rules. Private

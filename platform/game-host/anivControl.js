@@ -37,6 +37,22 @@ export async function queryAnivOccupancy(room) {
     return {players:count.players,maxPlayers:count.maxPlayers,bots:count.bots};
   } catch { return null; }
 }
+
+export async function queryAnivLogs(id) {
+  if (!/^[a-f0-9]{24}$/i.test(id)) throw new Error("Invalid server identity");
+  // Log identity is its fixed hash, independent of the current network slot.
+  const { stdout } = await runFile("/usr/bin/sudo", ["-n", ANIV_HELPER, "logs", "27700", id], { timeout: 3500, maxBuffer: 512 * 1024 });
+  const data = JSON.parse(stdout);
+  if (typeof data?.available !== "boolean" || typeof data.truncated !== "boolean" || !Array.isArray(data.lines) || data.lines.length > 200 || data.lines.some(line => typeof line !== "string") || data.lines.join("\n").length > 80_000) throw new Error("Invalid ANEURISM log snapshot");
+  return { available: data.available, truncated: data.truncated, lines: data.lines };
+}
+
+export async function retainAnivLogs() {
+  const { stdout } = await runFile("/usr/bin/sudo", ["-n", ANIV_HELPER, "retain-logs", "27700", "maintenance"], { timeout: 3500, maxBuffer: 4096 });
+  const data = JSON.parse(stdout);
+  if (!Number.isInteger(data?.trimmed) || data.trimmed < 0) throw new Error("Invalid ANEURISM log retention response");
+  return data.trimmed;
+}
 export function spawnAniv(port, ctx, options) {
   const child = spawn(process.execPath, [fileURLToPath(import.meta.url), "run", String(port), ctx.partyId], {
     ...options, detached: true, stdio: ["pipe", "pipe", "pipe"],

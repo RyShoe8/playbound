@@ -3,6 +3,7 @@ import path from "node:path";
 import { execFileSync, spawn } from "node:child_process";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { withLogLock } from "./managedLogs.js";
 
 let browserCache = null;
 let browserRequest = null;
@@ -58,7 +59,7 @@ export async function sendRimworldCommand(room, command) {
     return JSON.stringify(doc.players);
   }
   const previous = queues.get(room.roomId) || Promise.resolve();
-  const next = previous.catch(() => {}).then(async () => {
+  const next = previous.catch(() => {}).then(() => withLogLock(path.join(room.cwd, "playbound-console.log"), async () => {
     const log = path.join(room.cwd, "playbound-console.log");
     const offset = fs.statSync(log).size;
     const fifo = path.join(room.cwd, "playbound-console.fifo");
@@ -78,7 +79,7 @@ export async function sendRimworldCommand(room, command) {
       lastSize = size;
     }
     throw new Error("Command sent, but no response was confirmed; check the server log before retrying");
-  });
+  }));
   queues.set(room.roomId, next);
   try { return await next; } finally { if (queues.get(room.roomId) === next) queues.delete(room.roomId); }
 }
