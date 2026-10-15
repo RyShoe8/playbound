@@ -50,7 +50,7 @@ import { runWorldBackup } from "./worldBackupRunner.js";
 import { manageDedicatedFiles } from "./dedicatedFiles.js";
 import { createInstallationCoordinator } from "./installationJobs.js";
 import { gameEnvironment } from "./gameEnvironment.js";
-import { customerIsolationLaunch } from "./customerIsolation.js";
+import { customerIsolationLaunch, validateCustomerPreparation } from "./customerIsolation.js";
 import { readCapturedLogFile, managedLogFiles, retainManagedLogs, logSecretValues, redactLogLine } from "./managedLogs.js";
 import { captureRvglLobby, sendRvglLobbyInput } from "./rvglDisplay.js";
 
@@ -1007,6 +1007,13 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
     if (gameSlug === "aneurism-iv" && communityServerId && managedJobs.get(communityServerId)?.status === "stopped") return {error:"ANEURISM startup was canceled"};
     const port = await allocPort(recipe, gameSlug);
     if (!port) return { error: lastError };
+
+    try {
+      validateCustomerPreparation({ gameSlug, customerOwned: ctx.customerOwned, communityServerId, home: process.env.HOME || "/var/lib/playbound-host" });
+    } catch {
+      freePort(gameSlug, port);
+      return { error: "Customer runtime data paths could not be validated. The server was not prepared or launched." };
+    }
 
     if (recipe.prepareSpawn) {
       try {
