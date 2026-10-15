@@ -148,10 +148,11 @@ def verify_scope(resources, server_id, pid, identity, cpu, memory):
     return scope
 
 
-def command(data, fd, port, memory):
+def command(data, fd, port, memory, engine_fd=None):
     return ['/usr/bin/prlimit', '--as=' + str(max(1024 ** 3, memory * 2 * 1024 ** 2)), '--nofile=1024', '--core=0', '--', '/usr/bin/bwrap',
             '--unshare-user', '--unshare-pid', '--unshare-ipc', '--unshare-uts', '--unshare-cgroup', '--disable-userns', '--cap-drop', 'ALL', '--die-with-parent',
             '--ro-bind', '/usr', '/usr', '--symlink', 'usr/lib', '/lib', '--symlink', 'usr/lib64', '/lib64', '--symlink', 'usr/bin', '/bin',
+            *(['--perms', '0555', '--ro-bind-data', str(engine_fd), '/usr/games/teeworlds-server'] if engine_fd is not None else []),
             '--proc', '/proc', '--dev', '/dev', '--size', '67108864', '--tmpfs', '/tmp', '--bind', str(data), '/server', '--ro-bind-data', str(fd), '/server/server.cfg',
             '--clearenv', '--setenv', 'PATH', '/usr/bin:/usr/games', '--setenv', 'HOME', '/server', '--setenv', 'XDG_DATA_HOME', '/server', '--setenv', 'XDG_CONFIG_HOME', '/server', '--setenv', 'LANG', 'C.UTF-8', '--chdir', '/server',
             '--', '/usr/games/teeworlds-server', '-f', 'server.cfg', 'sv_port ' + str(port)]
@@ -267,6 +268,7 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
         migration_ready(server_id, account['uid'])
         fd = os.memfd_create('pb-server-config', os.MFD_CLOEXEC | os.MFD_ALLOW_SEALING)
         child = None
+        engine_fd = None
         try:
             os.write(fd, config)
             os.lseek(fd, 0, os.SEEK_SET)
@@ -280,7 +282,10 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
             for binary in ['/usr/bin/prlimit', '/usr/bin/bwrap', '/usr/games/teeworlds-server']:
                 info = Path(binary).stat()
                 if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_mode & 0o022: raise ValueError('Untrusted runtime executable')
-            child = subprocess.Popen(command(root / 'data', fd, port, memory), user=account['uid'], group=account['gid'], extra_groups=[], env=ENV, cwd='/', stdin=subprocess.DEVNULL, pass_fds=(fd,))
+            engines = trusted_module('pb_native_engine', 'playbound-customer-native-engine')
+            engine_fd = engines.sealed_engine()
+            inherited = (fd,) if engine_fd is None else (fd, engine_fd)
+            child = subprocess.Popen(command(root / 'data', fd, port, memory, engine_fd), user=account['uid'], group=account['gid'], extra_groups=[], env=ENV, cwd='/', stdin=subprocess.DEVNULL, pass_fds=inherited)
             binding_write(root, {'profile': PROFILE, 'serverId': server_id, 'gatePid': pid, 'gateIdentity': identity, 'uid': account['uid'], 'gid': account['gid'], 'gamePid': child.pid, 'gameIdentity': game_identity(child.pid), 'networkProfile': network_profile})
             while child.poll() is None:
                 try:
@@ -294,6 +299,7 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
             return child.returncode if child.returncode >= 0 else 1
         finally:
             os.close(fd)
+            if engine_fd is not None: os.close(engine_fd)
             if child is not None and child.poll() is None:
                 (scope / 'cgroup.kill').write_text('1')
     finally:

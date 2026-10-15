@@ -592,3 +592,38 @@ until the additional handlers pass their gates. No placeholder controls.
   saves and DB rows were unchanged; deployment preserved all 11 then-running
   managed identities. Coverage is 23 installation families and 28 remaining
   game/edition entries.
+
+- Teeworlds now uses the reviewed native-package handler in community servers,
+  regular customer sandboxes and the opt-in Unix-UID supervisor. The supervisor
+  independently checks root-owned package pins and copies the verified engine
+  into a sealed descriptor before dropping privileges. Bubblewrap mounts those
+  bytes read-only with executable permissions; changing an agent-owned pathname
+  after verification cannot switch the executable. Missing managed installations
+  retain the system-package fallback; partial, linked or modified copies fail
+  closed. The scanner conservatively holds updates for every Teeworlds engine at
+  its fixed namespace path, including an untouched system-package runtime.
+  VPS acceptance (2026-10-15) passed the pinned package download, queued update
+  and rollback, zero-player query, sandbox boundaries, saved fixture preservation,
+  UID 40000 launch, update held while running, agent restart with the same gate
+  and game identities, and whole-scope shutdown. Fixture directories/processes
+  were removed. No human Join was certified, no customer identity was enrolled
+  in production and no DB rows changed. Deployment preserved all 11 managed
+  identities. Coverage is now 24 installation families and 27 remaining entries.
+
+- SuperTuxKart and OpenArena now have reviewed native-package handlers. Both
+  update only the executable, retaining the installation parent and any settings
+  files. SuperTuxKart uses the existing 1.4 distro assets. OpenArena pins the
+  installed ioquake3 dedicated engine and explicitly preserves its original
+  wrapper's baseoa path, home directory, protocol 71 and MOTD settings when
+  launching the managed native copy. It does not substitute vanilla Quake data.
+  VPS acceptance (2026-10-15) passed fixed package downloads, real queued update/
+  rollback, process detection, running rollback held, clean shutdown and parent/
+  settings preservation. OpenArena answered a real 0/4-player query. A current
+  SuperTuxKart instance already owns the host's shared UDP 2757 discovery socket;
+  the fixture therefore returned unknown on that host and was separately queried
+  in a private network namespace, where it correctly answered 0/4. Multiple STK
+  instances sharing one discovery port remain a tracking limitation; this test
+  does not certify that setup or human Join. Fixture processes/directories were
+  removed. No OS binaries, customer worlds, eligibility or DB rows changed.
+  Deployment preserved all 12 then-running managed identities. Coverage is now
+  26 installation families and 25 remaining game/edition entries.

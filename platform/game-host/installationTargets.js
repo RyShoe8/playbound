@@ -38,6 +38,9 @@ export const INSTALLATION_TARGETS = Object.freeze({
   luanti: { name: "Luanti (reviewed Minetest native server)", strategy: "reviewed-distro-native" },
   "battle-for-wesnoth": { name: "Battle for Wesnoth (reviewed 1.18 server)", strategy: "reviewed-distro-native", component: "wesnothd" },
   "rimworld-together": { name: "RimWorld Together (reviewed PlayBound source build)", strategy: "reviewed-dotnet-source" },
+  supertuxkart: { name: "SuperTuxKart (reviewed Ubuntu native server)", strategy: "reviewed-distro-native", component: "supertuxkart" },
+  openarena: { name: "OpenArena (reviewed ioquake3 dedicated engine)", strategy: "reviewed-distro-native", component: "openarena-server" },
+  teeworlds: { name: "Teeworlds (reviewed Ubuntu native server)", strategy: "reviewed-distro-native" },
   flightgear: { name: "FlightGear (reviewed fgms relay)", strategy: "reviewed-cmake-source", component: "fgms" },
 });
 

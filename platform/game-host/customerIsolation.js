@@ -72,7 +72,14 @@ export function customerIsolationLaunch({ gameSlug, customerOwned, communityServ
   if (!Array.isArray(args) || args.some(value => typeof value !== "string" || value.includes("\0"))) throw new Error("Invalid isolation arguments");
   if (gameSlug !== "teeworlds") return nativeIsolationLaunch({ gameSlug, communityServerId, binary, args, home, resourceLimits: limits });
   // Alternate/custom executables need their own reviewed dependency profile.
-  if (binary !== "/usr/games/teeworlds-server") throw new Error("Customer isolation requires the reviewed system Teeworlds server");
+  const systemBinary = "/usr/games/teeworlds-server";
+  let engineMount;
+  if (binary !== systemBinary) {
+    const root = "/opt/playbound-host/games/teeworlds";
+    if (binary !== path.join(root, NATIVE_PACKAGE_PROFILES.teeworlds.binary)) throw new Error("Customer isolation requires the reviewed Teeworlds server");
+    verifyNativePackageInstallation(root, "teeworlds");
+    engineMount = binary;
+  }
   const expectedConfig = path.join(home, "teeworlds", `pb-${communityServerId}.cfg`);
   if (!Array.isArray(args) || args.length !== 3 || args[0] !== "-f" || args[1] !== expectedConfig || !/^sv_port (?:83\d{2})$/.test(args[2])) throw new Error("Unexpected Teeworlds isolation arguments");
   trustedExecutables(binary);
@@ -85,7 +92,7 @@ export function customerIsolationLaunch({ gameSlug, customerOwned, communityServ
   privateDirectory(root);
   const data = path.join(root, `pb-${communityServerId}`);
   privateDirectory(data);
-  const plan = sandboxPlan({ gameSlug, binary, gameArgs: ["-f", "server.cfg", args[2]], data, mounts: [[expectedConfig, "/server/server.cfg"]], resourceLimits: limits });
+  const plan = sandboxPlan({ gameSlug, binary: systemBinary, engineMount, gameArgs: ["-f", "server.cfg", args[2]], data, mounts: [[expectedConfig, "/server/server.cfg"]], resourceLimits: limits });
   if (identityProfile) {
     // No implicit migration or empty replacement of a customer's existing data.
     let needsMigration = false;

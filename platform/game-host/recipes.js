@@ -1261,6 +1261,14 @@ export const recipes = {
     protocol: "udp",
     binaries: gameBin("openarena", ["openarena-server"]),
     args: (port, ctx) => [
+      // Preserve the distro wrapper's OpenArena data/protocol contract when
+      // the reviewed managed installation executes ioq3ded directly.
+      "+set", "com_basegame", "baseoa",
+      "+set", "fs_basepath", "/usr/lib/openarena-server",
+      "+set", "com_homepath", ".openarena",
+      "+set", "com_legacyprotocol", "71",
+      "+set", "com_protocol", "71",
+      "+set", "cl_motd", "0",
       "+set",
       "dedicated",
       "1",

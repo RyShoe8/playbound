@@ -28,6 +28,9 @@ targets = {
     "battle-for-wesnoth": ["battle-for-wesnoth"],
     "rimworld-together": ["rimworld-together"],
     "flightgear": ["flightgear"],
+    "teeworlds": ["teeworlds"],
+    "supertuxkart": ["supertuxkart"],
+    "openarena": ["openarena"],
 }
 if len(sys.argv) != 2 or sys.argv[1] not in targets:
     sys.exit(2)
@@ -37,7 +40,7 @@ roots = [os.path.realpath("/opt/playbound-host/games/" + folder) for folder in t
 # incorrectly blocking on a separate, untouched system-package process.
 native_identity = None
 native_path = None
-native_paths = {"bzflag": ("bzfs", "/usr/games/bzfs"), "hedgewars": ("hedgewars-server", "/usr/lib/hedgewars/bin/hedgewars-server"), "openttd": ("openttd", "/usr/games/openttd"), "luanti": ("minetestserver", "/usr/lib/minetest/minetestserver")}
+native_paths = {"bzflag": ("bzfs", "/usr/games/bzfs"), "hedgewars": ("hedgewars-server", "/usr/lib/hedgewars/bin/hedgewars-server"), "openttd": ("openttd", "/usr/games/openttd"), "luanti": ("minetestserver", "/usr/lib/minetest/minetestserver"), "teeworlds": ("teeworlds-server", "/usr/games/teeworlds-server")}
 if sys.argv[1] in native_paths:
     binary, native_path = native_paths[sys.argv[1]]
     try:
@@ -64,10 +67,16 @@ try:
                 value = os.readlink("/proc/" + entry + "/" + field).removesuffix(" (deleted)")
             except (FileNotFoundError, ProcessLookupError):
                 continue
+            # UID runtimes bind a sealed, copied engine over the system path.
+            # Its inode differs from the shared installation. Hold every engine
+            # at this fixed namespace path, including untouched system-package
+            # servers, rather than miss an enrolled runtime during rollback.
+            if sys.argv[1] == "teeworlds" and field == "exe" and value == "/usr/games/teeworlds-server":
+                matched = True
             if field == "exe" and native_identity and value == native_path:
                 try:
                     info = os.stat("/proc/" + entry + "/exe")
-                    matched = (info.st_dev, info.st_ino) == native_identity
+                    matched = matched or (info.st_dev, info.st_ino) == native_identity
                 except (FileNotFoundError, ProcessLookupError):
                     continue
             if field == "exe" and os.path.basename(value) == "java":

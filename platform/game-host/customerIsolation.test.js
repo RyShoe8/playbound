@@ -16,6 +16,11 @@ for (const [gameSlug, profile] of Object.entries(NATIVE_PACKAGE_PROFILES)) {
     const home = fs.mkdtempSync(path.join(os.tmpdir(), "pb-managed-native-sandbox-"));
     try {
       let args = gameSlug === "bzflag" ? ["-p", "5174", "-offa", "-q", "-j", "+r", "+s", "3", "-mp", "4"] : ["-p", "46650"];
+      if (gameSlug === "teeworlds") {
+        const config = path.join(home, "teeworlds", `pb-${id}.cfg`);
+        fs.mkdirSync(path.dirname(config)); fs.writeFileSync(config, "sv_port 8322\nsv_register 0\nsv_max_clients 4\n");
+        args = ["-f", config, "sv_port 8322"];
+      }
       if (gameSlug === "openttd") {
         const config = path.join(home, "openttd", `pb-${id.slice(-16)}.cfg`);
         fs.mkdirSync(path.dirname(config)); fs.writeFileSync(config, "[network]\nmax_clients = 4\n");

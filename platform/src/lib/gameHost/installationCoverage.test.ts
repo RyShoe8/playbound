@@ -26,7 +26,8 @@ it("every admin update target is wired to the agent, root scanner, and exact sud
   for (const file of ["nativePackageProfiles.json", "packageNativeArchive.py"]) expect(source("../../../game-host/install.sh")).toContain(`"$AGENT_SRC/${file}"`);
   expect(source("../../../game-host/install.sh")).toContain('bash "$AGENT_SRC/install-package-native.sh"');
   const promotion = source("../../../game-host/install-package-native.sh");
-  for (const key of ["bzflag", "hedgewars", "openttd", "luanti", "battle-for-wesnoth"]) expect(promotion).toContain(`promote-package-native.py ${key} *`);
+  for (const key of ["bzflag", "hedgewars", "openttd", "luanti", "battle-for-wesnoth", "teeworlds", "supertuxkart", "openarena"]) expect(promotion).toContain(`promote-package-native.py ${key} *`);
+  expect(source("../../../game-host/tools/install-customer-runtime.sh")).toContain('"$source_dir/customer-native-engine.py"');
   expect(promotion).not.toMatch(/NOPASSWD:.*(?:apt|dpkg|bash|sh )/);
   for (const file of ["rimworldSourceBuild.py", "rimworldBuild.json", "rimworldPackages.lock.json", "reviewedSourceArchive.py", "fgmsSourceBuild.py", "fgmsBuild.json"]) expect(source("../../../game-host/install.sh")).toContain(`"$AGENT_SRC/${file}"`);
   expect(source("../../../game-host/install.sh")).toContain('"$AGENT_SRC/rimworld/PlayBoundBridge.cs"');
