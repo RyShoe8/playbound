@@ -4,6 +4,7 @@ import { spawn, execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { processIdentity } from "./managedRegistry.js";
+import { customerResourceLimits } from "./customerResourceLimits.js";
 
 const runFile = promisify(execFile);
 export const CUSTOMER_RESOURCE_HELPER = "/usr/local/libexec/playbound-customer-resources";
@@ -25,15 +26,16 @@ export function spawnCustomerRuntime(plan, id, gameSlug, outputFd) {
   return child;
 }
 
-export async function enterCustomerResources(id, gameSlug, pid = process.pid) {
+export async function enterCustomerResources(id, gameSlug, pid = process.pid, allocation) {
   const identity = processIdentity(pid);
   if (!identity || !GAMES.includes(gameSlug)) throw new Error("Unsupported resource placement");
   const scope = resourceScope(id, pid);
-  const { stdout } = await runFile("/usr/bin/sudo", ["-n", CUSTOMER_RESOURCE_HELPER, "attach", id, gameSlug, String(pid), identity], {
+  const limits = customerResourceLimits(gameSlug, allocation);
+  const { stdout } = await runFile("/usr/bin/sudo", ["-n", CUSTOMER_RESOURCE_HELPER, "attach", id, gameSlug, String(pid), identity, String(limits.cpuMillis), String(limits.memoryMiB)], {
     timeout: 8000, maxBuffer: 4096, env: { PATH: "/usr/bin:/bin", LANG: "C.UTF-8" },
   });
   const result = JSON.parse(stdout);
-  if (result.scope !== scope || result.attached !== true) throw new Error("Resource placement was not confirmed");
+  if (result.scope !== scope || result.attached !== true || result.cpuCores * 1000 !== limits.cpuMillis || result.ramBytes !== limits.memoryMiB * 1024 ** 2) throw new Error("Resource placement was not confirmed");
   return result;
 }
 
@@ -45,7 +47,8 @@ export async function runCustomerGate(input, { place = enterCustomerResources, l
   const stop = () => { stopping = true; if (child) child.kill("SIGTERM"); };
   onSignal("SIGTERM", stop);
   onSignal("SIGINT", stop);
-  await place(id, gameSlug, pid);
+  const limits = customerResourceLimits(gameSlug, plan.resourceLimits);
+  await place(id, gameSlug, pid, limits);
   if (stopping) return 143;
   child = launch(plan.binary, plan.args, { cwd: plan.cwd, env: plan.env, stdio: ["ignore", "inherit", "inherit"] });
   return new Promise((resolve, reject) => {

@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
 import { resourceScope, runCustomerGate } from "./customerRuntime.js";
+import { customerResourceLimits } from "./customerResourceLimits.js";
 
 const id = "0123456789abcdef01234567";
 const input = { id, gameSlug: "teeworlds", plan: { binary: "/usr/bin/prlimit", args: ["--core=0"], cwd: "/fixture", env: { PATH: "/usr/bin" } } };
@@ -41,4 +42,19 @@ test("malformed or unreviewed plans are rejected before privileged placement", a
     await assert.rejects(runCustomerGate(invalid, { pid: 42, place: async () => { calls++; } }));
   }
   assert.equal(calls, 0);
+});
+
+test("explicit allocations reach placement unchanged and cannot relax task/swap policy", async () => {
+  const limits = { cpuMillis: 500, memoryMiB: 1536 };
+  let placed;
+  assert.equal(await runCustomerGate({ ...input, plan: { ...input.plan, resourceLimits: limits } }, {
+    pid: 42, onSignal: () => {}, place: async (...args) => { placed = args; }, launch: () => {
+      const child = new EventEmitter(); setImmediate(() => child.emit("exit", 0)); return child;
+    },
+  }), 0);
+  assert.deepEqual(placed, [id, "teeworlds", 42, limits]);
+  for (const bad of [null, [], { ...limits, cpuMillis: 249 }, { ...limits, cpuMillis: 6001 }, { ...limits, memoryMiB: 8193 }, { ...limits, memoryMiB: 255 }, { ...limits, cpuMillis: "500" }, { ...limits, tasks: 1000 }, { ...limits, swap: 1 }]) {
+    await assert.rejects(runCustomerGate({ ...input, plan: { ...input.plan, resourceLimits: bad } }, { pid: 42, place: async () => assert.fail("invalid allocation reached helper") }));
+  }
+  assert.deepEqual(customerResourceLimits("luanti"), { cpuMillis: 2000, memoryMiB: 2048 });
 });

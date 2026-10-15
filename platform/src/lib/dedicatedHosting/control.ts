@@ -18,6 +18,7 @@ import { ServerControlUnsupported } from "@/lib/serverControl/adapter";
 import { authorizeServer, recordActivity, ROLE_PERMISSIONS, type Fail } from "./access";
 import { customerServerView } from "./view";
 import { hasWorldBackups } from "./worldBackups";
+import { customerRuntimeAllocation } from "./runtimeAllocation";
 
 
 /** Keys PlayBound owns on a customer server: the game's slot setting. */
@@ -33,7 +34,7 @@ function stripLocked(server: { gameSlug: string }, values: Record<string, unknow
 
 async function adapterFor(server: {
   _id: unknown; gameSlug: string; profileKey: string; editionSlug?: string | null; mod?: string | null;
-  name: string; allocatedSlots: number; settings?: Record<string, unknown> | null;
+  name: string; allocatedSlots: number; dedicatedSubscriptionId?: unknown; settings?: Record<string, unknown> | null;
 }) {
   const profile = await CommunityServerProfile.findOne({ key: server.profileKey }).select({ recipeSlug: 1 }).lean();
   const saved = stripLocked(server, server.settings || {}) as ServerSettingValues;
@@ -45,6 +46,7 @@ async function adapterFor(server: {
     mod: server.mod || null,
     name: server.name,
     customerOwned: true,
+    resourceLimits: () => customerRuntimeAllocation(server, profile?.recipeSlug || server.gameSlug),
     settings: { ...saved, maxPlayers: server.allocatedSlots },
     onChanged: async (values) => {
       await CommunityServer.updateOne({ _id: server._id }, { $set: { settings: stripLocked(server, values) } });

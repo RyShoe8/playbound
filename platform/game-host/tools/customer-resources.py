@@ -1,8 +1,8 @@
 #!/usr/bin/python3 -I
 """Root-owned scope placement only. No executable, shell, path or unit property
 is accepted from the caller. Never changes the shared hosting service's limits.
-These first five engine limits are conservative rollout defaults, not measured
-resource baselines or full tenant isolation.
+These first five engine defaults are used only by older control planes. Explicit
+allocations have fixed bounds; neither is a measured baseline or full isolation.
 """
 import json
 import os
@@ -23,14 +23,29 @@ PROFILES = {
 
 
 def request(arguments):
-    if len(arguments) != 5 or arguments[0] != 'attach':
+    if len(arguments) not in (5, 7) or arguments[0] != 'attach':
         raise ValueError('Expected a customer resource placement')
-    _, server_id, game, raw_pid, identity = arguments
+    _, server_id, game, raw_pid, identity = arguments[:5]
     if not re.fullmatch(r'[a-f0-9]{24}', server_id, re.I) or game not in PROFILES or not re.fullmatch(r'[1-9][0-9]{0,9}', raw_pid):
         raise ValueError('Invalid customer resource identity')
     if int(raw_pid) <= 1 or not re.fullmatch(r'[a-f0-9-]{36}:[0-9]+', identity):
         raise ValueError('Invalid process identity')
-    return server_id.lower(), game, int(raw_pid), identity
+    limits = None
+    if len(arguments) == 7:
+        if not all(re.fullmatch(r'[1-9][0-9]{0,4}', value) for value in arguments[5:]):
+            raise ValueError('Invalid resource allocation')
+        limits = tuple(map(int, arguments[5:]))
+        allocation(game, limits)
+    return server_id.lower(), game, int(raw_pid), identity, limits
+
+
+def allocation(game, limits=None):
+    if limits is None:
+        return PROFILES[game]
+    cpu_millis, memory_mib = limits
+    if not 250 <= cpu_millis <= 6000 or not 256 <= memory_mib <= 8192:
+        raise ValueError('Resource allocation exceeds rollout bounds')
+    return cpu_millis / 1000, memory_mib * 1024 ** 2, 128
 
 
 def verify_process(pid, identity, uid):
@@ -62,15 +77,15 @@ def verify_caller(pid, uid):
     raise ValueError('Only the requesting runtime may enter a resource scope')
 
 
-def scope_command(server_id, game, pid):
-    cores, memory, tasks = PROFILES[game]
+def scope_command(server_id, game, pid, limits=None):
+    cores, memory, tasks = allocation(game, limits)
     scope = f'playbound-customer-{server_id}-{pid}.scope'
     properties = [
         ('Description', 's', ['PlayBound customer runtime ' + server_id]),
         ('PIDs', 'au', ['1', str(pid)]),
         ('CPUAccounting', 'b', ['true']), ('MemoryAccounting', 'b', ['true']),
         ('TasksAccounting', 'b', ['true']),
-        ('CPUQuotaPerSecUSec', 't', [str(cores * 1000000)]),
+        ('CPUQuotaPerSecUSec', 't', [str(round(cores * 1000000))]),
         ('MemoryMax', 't', [str(memory)]), ('MemorySwapMax', 't', ['0']),
         ('TasksMax', 't', [str(tasks)]),
         ('CollectMode', 's', ['inactive-or-failed']),
@@ -84,13 +99,13 @@ def scope_command(server_id, game, pid):
     return scope, command
 
 
-def attach(server_id, game, pid, identity):
+def attach(server_id, game, pid, identity, limits=None):
     account = pwd.getpwnam('playbound')
     verify_caller(pid, account.pw_uid)
     verify_process(pid, identity, account.pw_uid)
     # The unit name, profile and properties are fixed here. Existing units fail
     # rather than being replaced or having their limits relaxed.
-    scope, command = scope_command(server_id, game, pid)
+    scope, command = scope_command(server_id, game, pid, limits)
     subprocess.run(command, check=True, capture_output=True, timeout=6)
     expected = '/system.slice/' + scope
     deadline = time.monotonic() + 1.5
@@ -106,7 +121,7 @@ def attach(server_id, game, pid, identity):
     # systemd 255 does not expose memory.oom.group as a transient scope
     # property. Set this one fixed cgroup control after identity/path checks.
     (directory / 'memory.oom.group').write_text('1')
-    cores, memory, tasks = PROFILES[game]
+    cores, memory, tasks = allocation(game, limits)
     cpu = (directory / 'cpu.max').read_text().split()
     if cpu[0] == 'max' or int(cpu[0]) > cores * int(cpu[1]) or (directory / 'memory.max').read_text().strip() != str(memory) or (directory / 'memory.swap.max').read_text().strip() != '0' or (directory / 'pids.max').read_text().strip() != str(tasks) or (directory / 'memory.oom.group').read_text().strip() != '1':
         raise ValueError('Resource scope limits were not confirmed')

@@ -53,6 +53,28 @@ until the additional handlers pass their gates. No placeholder controls.
 
 ## Current delivered scope
 
+- Resource sizing for the five namespace profiles now comes from the dedicated
+  tier's existing CPU/RAM-per-slot-block configuration. Initial starts, automatic
+  recovery and settings-backed restarts use the same inventory envelope, carried
+  separately from customer-editable game settings. The agent and root helper
+  independently validate integer millicores/MiB within 0.25–6 cores and
+  256–8192 MiB; invalid sizing fails closed. Task limit 128, zero swap and
+  whole-scope OOM policy remain fixed. Per-process virtual-address limits scale
+  with allocated memory rather than retaining the old fixed ceiling. Saved
+  runtime limits survive recovery; a process replacement gets a new scope name.
+  Changes apply on next start, without resizing populated servers. Older control
+  planes retain the original defaults; other engines do not claim enforcement.
+  This wires existing admin tier sizing, not measured community envelopes or
+  live resizing, and does not complete customer UID/network/plugin isolation.
+  VPS acceptance (2026-10-15 UTC) enforced 0.75 cores/1536 MiB on four fixtures
+  and 0.75 cores/3072 MiB on Luanti. All five retained their PIDs, descendant
+  scopes, process metrics and prior query/bind results through an agent restart;
+  fixtures were then stopped and removed. Nine existing managed runtimes kept
+  their identities/PIDs; two others received explicit stop requests after the
+  scheduled reconcile tick, rather than recovery-failure records. No customer
+  data or database rows were altered. Luanti player query and human Join remain
+  unverified. Six helper tests and nine Linux namespace checks passed.
+
 - The same five customer profiles now pass through an unprivileged start gate
   before executing their game. A root-owned, fixed-operation helper validates
   runtime identity, all process UIDs and the sudo caller's process ancestry,
@@ -63,8 +85,8 @@ until the additional handlers pass their gates. No placeholder controls.
   Rollout limits are one CPU core/1 GiB for Teeworlds, BZFlag, Hedgewars and
   OpenTTD; Luanti gets two cores/2 GiB. Each scope caps tasks at 128, disables
   swap and enables whole-scope OOM killing. These are conservative fixed
-  enforcement defaults, separate from measured capacity baselines; profile-
-  driven/admin-editable sizing remains to be integrated before broad rollout.
+  enforcement defaults for older control planes, separate from measured capacity
+  baselines; the tier-driven allocation path above supersedes them on new starts.
   Wrapper identity, scope name and process-group metrics survive agent recovery.
   New scoped runtimes inherit limits across their complete process tree; existing
   live runtimes are not moved, restarted or retroactively capped. Distinct host

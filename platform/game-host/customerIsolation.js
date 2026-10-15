@@ -5,6 +5,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { customerResourceLimits } from "./customerResourceLimits.js";
 
 export const TEEWORLDS_ISOLATION = "teeworlds-bwrap-v1";
 export const CUSTOMER_ISOLATION_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti"]);
@@ -59,12 +60,13 @@ function privateDirectory(directory) {
       (process.getuid && (stat.uid !== process.getuid() || (stat.mode & 0o077)))) throw new Error("Isolation data directory must be private and service-owned");
 }
 
-export function customerIsolationLaunch({ gameSlug, customerOwned, communityServerId, binary, args, home }) {
+export function customerIsolationLaunch({ gameSlug, customerOwned, communityServerId, binary, args, home, resourceLimits }) {
   if (!customerOwned || !CUSTOMER_ISOLATION_GAMES.includes(gameSlug)) return null;
+  const limits = customerResourceLimits(gameSlug, resourceLimits);
   validateCustomerPreparation({ gameSlug, customerOwned, communityServerId, home });
   if (!/^[a-f0-9]{24}$/i.test(communityServerId || "") || !path.isAbsolute(home)) throw new Error("Invalid isolation identity");
   if (!Array.isArray(args) || args.some(value => typeof value !== "string" || value.includes("\0"))) throw new Error("Invalid isolation arguments");
-  if (gameSlug !== "teeworlds") return nativeIsolationLaunch({ gameSlug, communityServerId, binary, args, home });
+  if (gameSlug !== "teeworlds") return nativeIsolationLaunch({ gameSlug, communityServerId, binary, args, home, resourceLimits: limits });
   // Alternate/custom executables need their own reviewed dependency profile.
   if (binary !== "/usr/games/teeworlds-server") throw new Error("Customer isolation requires the reviewed system Teeworlds server");
   const expectedConfig = path.join(home, "teeworlds", `pb-${communityServerId}.cfg`);
@@ -75,7 +77,7 @@ export function customerIsolationLaunch({ gameSlug, customerOwned, communityServ
   privateDirectory(root);
   const data = path.join(root, `pb-${communityServerId}`);
   privateDirectory(data);
-  return sandboxPlan({ gameSlug, binary, gameArgs: ["-f", "server.cfg", args[2]], data, mounts: [[expectedConfig, "/server/server.cfg"]] });
+  return sandboxPlan({ gameSlug, binary, gameArgs: ["-f", "server.cfg", args[2]], data, mounts: [[expectedConfig, "/server/server.cfg"]], resourceLimits: limits });
 }
 
 function trustedExecutables(binary) {
@@ -85,7 +87,7 @@ function trustedExecutables(binary) {
   }
 }
 
-function sandboxPlan({ gameSlug, binary, gameArgs, data, mounts = [], addressSpace = 1073741824 }) {
+function sandboxPlan({ gameSlug, binary, gameArgs, data, mounts = [], resourceLimits }) {
   for (const [, target] of mounts) {
     const relative = path.posix.relative("/server", target);
     if (relative.startsWith("..") || path.posix.isAbsolute(relative)) throw new Error("Invalid isolation mount");
@@ -94,10 +96,11 @@ function sandboxPlan({ gameSlug, binary, gameArgs, data, mounts = [], addressSpa
   }
   return {
     profile: `${gameSlug}-bwrap-v1`,
+    resourceLimits,
     binary: "/usr/bin/prlimit",
     // Address space, descriptors and core dumps are bounded per process.
     // Aggregate CPU/RSS/task/swap controls are applied by customerRuntime.
-    args: [`--as=${addressSpace}`, "--nofile=1024", "--core=0", "--", "/usr/bin/bwrap",
+    args: [`--as=${Math.max(1073741824, resourceLimits.memoryMiB * 2 * 1024 ** 2)}`, "--nofile=1024", "--core=0", "--", "/usr/bin/bwrap",
       "--unshare-user", "--unshare-pid", "--unshare-ipc", "--unshare-uts", "--unshare-cgroup",
       "--disable-userns", "--cap-drop", "ALL",
       "--ro-bind", "/usr", "/usr", "--symlink", "usr/lib", "/lib", "--symlink", "usr/lib64", "/lib64", "--symlink", "usr/bin", "/bin",
@@ -114,7 +117,7 @@ function sandboxPlan({ gameSlug, binary, gameArgs, data, mounts = [], addressSpa
   };
 }
 
-function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, home }) {
+function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, home, resourceLimits }) {
   const supported = {
     bzflag: ["/usr/games/bzfs", "bzflag-servers"],
     hedgewars: ["/usr/lib/hedgewars/bin/hedgewars-server", "hedgewars-servers"],
@@ -148,5 +151,5 @@ function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, 
     mounts.push([config, "/server/world/playbound.conf"]);
     gameArgs = ["--port", args[1], "--world", "/server/world", "--gameid", "minetest", "--config", "/server/world/playbound.conf", "--logfile", "/server/minetest.log"];
   }
-  return sandboxPlan({ gameSlug, binary, gameArgs, data, mounts, addressSpace: gameSlug === "luanti" ? 2147483648 : 1073741824 });
+  return sandboxPlan({ gameSlug, binary, gameArgs, data, mounts, resourceLimits });
 }
