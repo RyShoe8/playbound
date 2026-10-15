@@ -670,3 +670,9 @@ last per-installation check, available build and reason. No-op checks create no
 update jobs, samples or database writes. Cancelled/failed/applied builds and
 rollbacks are not retried silently. Running servers are preserved; updates wait
 for their installation to become unused.
+
+Live deployment preserved all twelve managed PID/boot identities. The first
+check completed with six newer builds queued, eight up to date and fourteen
+review-required profiles. Mindustry's automatic staged update completed on the
+VPS; the remaining builds use the same serial maintenance queue. Agent and
+targeted platform checks passed, with zero catalog/database writes.

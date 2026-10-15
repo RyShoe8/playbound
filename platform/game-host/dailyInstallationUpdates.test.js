@@ -100,3 +100,15 @@ test("Steam discovery uses its own home and read-only app metadata commands", as
   } });
   assert.equal(build, "200");
 });
+
+test("a stale interrupted daily check catches up after restart instead of waiting another day", async (t) => {
+  const f = fixture(t);
+  fs.writeFileSync(path.join(f.stateDir, "daily-installation-updates.json"), JSON.stringify({ version: 1, enabled: true, startedAt: 1, nextCheckAt: 100_000_000, targets: {} }));
+  f.advance(); await f.daily().tick();
+  assert.equal(f.calls(), 1); assert.equal(f.store.all().length, 1);
+});
+
+test("official GitHub discovery rejects prereleases before they can be queued", async () => {
+  await assert.rejects(latestInstallationBuild("mindustry", { request: async () => new Response(JSON.stringify({ draft: false, prerelease: true, tag_name: "v999" })) }), /stable/);
+  assert.equal(await latestInstallationBuild("mindustry", { request: async () => new Response(JSON.stringify({ draft: false, prerelease: false, tag_name: "v160.7" })) }), "160.7");
+});
