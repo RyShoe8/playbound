@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     try {
       await saveEvent({ event: UPDATE_FAILURE_EVENT, properties: {
         source: "website", area: "hosting", code: failure.status === "interrupted" ? "UPDATE_INTERRUPTED" : "UPDATE_FAILED",
-        gameSlug: failure.key === "0ad" ? "0-ad" : failure.key, profileKey: failure.key,
+        gameSlug: failure.key === "0ad" ? "0-ad" : failure.key === "openmohaa" ? "medal-of-honor-allied-assault" : failure.key, profileKey: failure.key,
         phase: `installation_${failure.action}`, message: failure.message,
         installationUpdateJobId: failure.id, version: failure.beforeBuild,
       } });

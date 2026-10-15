@@ -18,6 +18,7 @@ import { stageRimworldRelease } from "./rimworldUpdates.js";
 import { stageXonoticRelease } from "./xonoticUpdates.js";
 import { stageFgmsRelease } from "./fgmsUpdates.js";
 import { stageEtlegacyRelease } from "./etlegacyUpdates.js";
+import { stageOpenMohaaRelease } from "./openmohaaUpdates.js";
 
 const GIB = 1024 ** 3;
 
@@ -114,7 +115,13 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
       // their bytes, then the fixed promotion helper restores trusted ownership.
       await run("/usr/bin/cp", ["-a", ...(["reviewed-distro-native", "reviewed-native-zip"].includes(target.strategy) ? ["--no-preserve=ownership"] : []), "--reflink=auto", "--sparse=always", "--", activePath, stagedPath], { root: gamesRoot });
       const detachedLinks = prepareInstallationLinks(stage, current, true);
-      if (target.strategy === "reviewed-etlegacy-package") {
+      if (target.strategy === "reviewed-openmohaa-package") {
+        phase("downloading", "Verifying the reviewed OpenMoHAA engine, server module and libraries together");
+        await stageOpenMohaaRelease(stage, { run, diskCheck: () => {
+          const available = disk(gamesRoot);
+          if (available.free < available.reserve + 256 * 1024 ** 2) throw new Error("Update stopped to preserve free disk space");
+        } });
+      } else if (target.strategy === "reviewed-etlegacy-package") {
         phase("downloading", "Verifying the reviewed ET Legacy engine, server mod and bot assets together");
         await stageEtlegacyRelease(stage, { run, diskCheck: () => {
           const available = disk(gamesRoot);
@@ -213,7 +220,7 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
     const uncertain = activated || (job.status === "activating" && !fs.existsSync(activePath));
     phase(uncertain ? "interrupted" : "failed", uncertain
       ? "Activation needs operator inspection. New starts remain blocked; the rollback copy is retained."
-      : error instanceof Error && /^(Not enough|An affected|ET Legacy|FlightGear|RimWorld|Xonotic|Native package|Legacy|SteamCMD|Mindustry|OpenRA|OpenHV|OpenE2140|Hypersomnia|AssaultCube|Factorio|Terraria|Update command|Update stopped|Cannot verify|Barotrauma|Unexpected Barotrauma|Invalid Barotrauma)/.test(error.message)
+      : error instanceof Error && /^(Not enough|An affected|OpenMoHAA|ET Legacy|FlightGear|RimWorld|Xonotic|Native package|Legacy|SteamCMD|Mindustry|OpenRA|OpenHV|OpenE2140|Hypersomnia|AssaultCube|Factorio|Terraria|Update command|Update stopped|Cannot verify|Barotrauma|Unexpected Barotrauma|Invalid Barotrauma)/.test(error.message)
         ? error.message : "Update failed before activation; the previous installation was preserved");
     // Retain partial staging files for diagnosis. Never recurse into customer save links.
   }

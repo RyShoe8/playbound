@@ -7,7 +7,6 @@ const ARCHIVE: Gap = { category: "archive", reason: "Needs a verified archive ha
 const GAPS: Record<string, Gap> = {
   "warzone-2100": { category: "custom-build", reason: "The VPS uses a custom Warzone 4.7 build and launch wrapper. Stage a matching source/asset update; do not replace it with Ubuntu's older 4.4.2 native package." },
   freeciv: { category: "custom-build", reason: "Uses a custom Freeciv 3.2.5 server/data/library build matching the client. Ubuntu's 3.1 binary is incompatible; stage and verify the complete matching build while preserving saves." },
-  "medal-of-honor-allied-assault": ARCHIVE,
   "battlefield-1942-anthology": ARCHIVE, "vintage-story": ARCHIVE,
   "re-volt-rvgl": ARCHIVE, unvanquished: ARCHIVE,
   "deus-ex-goty-edition": { category: "custom-build", reason: "Needs a Wine/HX package handler that preserves the game assets and PlayBound co-op integration." },
@@ -37,10 +36,11 @@ export function buildInstallationCoverage(snapshot: InstallationUpdateSnapshot):
   const slugs = new Set([...Object.keys(games), ...(snapshot.gameSlugs || []), ...snapshot.targets.map((target) => target.key)].map(normalize));
   const keys = new Set<string>(INSTALLATION_UPDATE_KEYS);
   return [...slugs].map((slug): InstallationCoverageRow => {
-    const target = snapshot.targets.find((entry) => entry.key === slug);
+    const key = slug === "medal-of-honor-allied-assault" ? "openmohaa" : slug;
+    const target = snapshot.targets.find((entry) => entry.key === key);
     const name = (Object.hasOwn(games, slug) ? games[slug].title : undefined) || target?.name || title(slug);
-    if (keys.has(slug) && target) return { id: slug, name, category: "supported", installationKey: slug, reason: target.blockedReason || (target.installed ? "Coordinated update and rollback handler available." : "Handler available; installation missing, modified or incomplete. Verify the installation before queueing an update.") };
-    if (keys.has(slug)) return { id: slug, name, category: "review", reason: "The current agent does not expose this update handler. Check agent deployment before queueing an update." };
+    if (keys.has(key) && target) return { id: slug, name, category: "supported", installationKey: key, reason: target.blockedReason || (target.installed ? "Coordinated update and rollback handler available." : "Handler available; installation missing, modified or incomplete. Verify the installation before queueing an update.") };
+    if (keys.has(key)) return { id: slug, name, category: "review", reason: "The current agent does not expose this update handler. Check agent deployment before queueing an update." };
     return { id: slug, name, ...(Object.hasOwn(GAPS, slug) ? GAPS[slug] : { category: "review", reason: "No reviewed update handler is declared for this recipe. Review its distribution, runtime dependencies, saves and rollback before enabling updates." }) };
   }).concat(EDITIONS).sort((left, right) => left.name.localeCompare(right.name));
 }
