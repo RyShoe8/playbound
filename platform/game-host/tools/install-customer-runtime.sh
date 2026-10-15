@@ -6,7 +6,10 @@ source_dir="$(cd "$(dirname "$0")" && pwd)"
 test -x /usr/local/libexec/playbound-customer-identities
 test -x /usr/local/libexec/playbound-customer-resources
 python3 -m py_compile "$source_dir/customer-runtime.py"
+python3 -m py_compile "$source_dir/customer-data-migration.py"
 install -o root -g root -m 755 "$source_dir/customer-runtime.py" /usr/local/libexec/playbound-customer-runtime
+# Operator-only checkpoint preparation: intentionally absent from sudoers.
+install -o root -g root -m 755 "$source_dir/customer-data-migration.py" /usr/local/libexec/playbound-customer-data-migration
 rule="$(mktemp)"
 trap 'rm -f "$rule"' EXIT
 printf '%s\n' \
