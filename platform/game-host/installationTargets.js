@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { verifyMindustryInstallation } from "./mindustryUpdates.js";
 import { verifyOpenRAInstallation } from "./openraUpdates.js";
+import { verifyOpenHVInstallation } from "./openhvUpdates.js";
 
 // These are shared installations, not per-customer save directories.
 export const INSTALLATION_TARGETS = Object.freeze({
@@ -17,6 +18,7 @@ export const INSTALLATION_TARGETS = Object.freeze({
   necesse: { name: "Necesse", appId: 1169370, binaries: ["jre/bin/java"], files: ["Server.jar"] },
   mindustry: { name: "Mindustry", strategy: "github-jar" },
   openra: { name: "OpenRA (Red Alert, Tiberian Dawn, Dune 2000)", strategy: "github-appimage" },
+  openhv: { name: "OpenHV", strategy: "github-appimage" },
 });
 
 export function installationKey(slug) {
@@ -25,12 +27,21 @@ export function installationKey(slug) {
   return Object.hasOwn(INSTALLATION_TARGETS, slug) ? slug : null;
 }
 
+// OpenRA editions can select (or fall back to) the shared OpenHV binary.
+// Hold both installations conservatively, including while a start is pending.
+export function installationDependencies(slug) {
+  if (slug === "openra") return ["openra", "openhv"];
+  const key = installationKey(slug);
+  return key ? [key] : [];
+}
+
 export function verifyInstallation(directory, key) {
   const target = INSTALLATION_TARGETS[key];
   if (!target) throw new Error("Unsupported installation");
   const root = fs.lstatSync(directory);
   if (!root.isDirectory() || root.isSymbolicLink()) throw new Error("Installation must be a real directory");
   if (target.strategy === "github-jar") return verifyMindustryInstallation(directory);
+  if (key === "openhv") return verifyOpenHVInstallation(directory);
   if (target.strategy === "github-appimage") return verifyOpenRAInstallation(directory);
   const manifestPath = path.join(directory, "steamapps", `appmanifest_${target.appId}.acf`);
   if (fs.realpathSync(path.dirname(manifestPath)) !== path.join(fs.realpathSync(directory), "steamapps")) throw new Error("Steam metadata must stay inside the installation");

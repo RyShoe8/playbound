@@ -12,7 +12,7 @@ New games must complete `docs/dedicated-server-game-checklist.md`.
 Assess each feature per engine: applicable and verified, not yet implemented,
 or unavailable with a concrete engine/transport reason. The universal scope is
 a release requirement, not a claim that every engine supports bots or plugins.
-Keep current ten-game update support and thirteen-game file support explicit
+Keep current eleven-game update support and thirteen-game file support explicit
 until the additional handlers pass their gates. No placeholder controls.
 
 ## Implementation order and gates
@@ -110,3 +110,15 @@ until the additional handlers pass their gates. No placeholder controls.
   VPS fixtures (2026-10-14) covered real archives, activation/rollback, and all
   three modes' startup/protocol handshake. This does not establish client Join
   or player-count tracking. Other OpenRA-based games keep their own installs.
+
+- OpenHV now shares the coordinated update queue with fixed official AppImage
+  selection, required published SHA-256, bounded embedded engine/mod metadata
+  checks, and cached installation integrity checks. It retains the existing
+  AppImage launch format and support data outside the installation swap.
+  Custom installation files or an unrecognized legacy binary block updates.
+  OpenRA starts/rooms conservatively hold the OpenHV maintenance lock because
+  that recipe can select the shared OpenHV binary; unclassified AppImage mount
+  processes also hold the queue. VPS acceptance (2026-10-14) downloaded official
+  20250725, activated and rolled back an isolated installation, then verified
+  protocol 7/client ID 0 from its dedicated server. The live game binary stayed
+  unchanged. This is not a human Join or occupancy verification.

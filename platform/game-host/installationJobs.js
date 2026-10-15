@@ -4,7 +4,7 @@ import crypto from "node:crypto";
 import { fork, execFile } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
-import { INSTALLATION_TARGETS, installationKey, verifyInstallation } from "./installationTargets.js";
+import { INSTALLATION_TARGETS, installationDependencies, verifyInstallation } from "./installationTargets.js";
 import { isSameProcess, processIdentity } from "./managedRegistry.js";
 
 const exec = promisify(execFile);
@@ -52,15 +52,19 @@ export function createInstallationCoordinator({ stateDir, gamesRoot, rooms, scan
   let ticking = false;
   const active = (key) => store.all().find((job) => job.key === key && !TERMINAL.has(job.status));
   function blockedReason(slug) {
-    const key = installationKey(slug);
-    return key && active(key) ? "Shared installation maintenance is queued or running; new starts are paused" : null;
+    return installationDependencies(slug).some((key) => active(key)) ? "Shared installation maintenance is queued or running; new starts are paused" : null;
   }
   function beginStart(slug) {
     const reason = blockedReason(slug);
     if (reason) throw new Error(reason);
-    const key = installationKey(slug);
-    if (key) pending.set(key, (pending.get(key) || 0) + 1);
-    return () => { if (key) pending.set(key, Math.max(0, (pending.get(key) || 0) - 1)); };
+    const keys = installationDependencies(slug);
+    for (const key of keys) pending.set(key, (pending.get(key) || 0) + 1);
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      for (const key of keys) pending.set(key, Math.max(0, (pending.get(key) || 0) - 1));
+    };
   }
   function queue(key, action, actor) {
     if (!INSTALLATION_TARGETS[key] || !["update", "rollback"].includes(action)) throw new Error("Unsupported installation action");
@@ -95,7 +99,7 @@ export function createInstallationCoordinator({ stateDir, gamesRoot, rooms, scan
           }
           continue;
         }
-        const count = [...rooms()].filter((room) => installationKey(room.gameSlug) === job.key).length + (pending.get(job.key) || 0);
+        const count = [...rooms()].filter((room) => installationDependencies(room.gameSlug).includes(job.key)).length + (pending.get(job.key) || 0);
         let message;
         if (count) message = `Waiting for ${count} affected server(s) or starts to stop. Existing games are preserved.`;
         else {
