@@ -17,6 +17,7 @@ import { stageNativePackageRelease } from "./nativePackageUpdates.js";
 import { stageRimworldRelease } from "./rimworldUpdates.js";
 import { stageXonoticRelease } from "./xonoticUpdates.js";
 import { stageFgmsRelease } from "./fgmsUpdates.js";
+import { stageEtlegacyRelease } from "./etlegacyUpdates.js";
 
 const GIB = 1024 ** 3;
 
@@ -113,7 +114,13 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
       // their bytes, then the fixed promotion helper restores trusted ownership.
       await run("/usr/bin/cp", ["-a", ...(["reviewed-distro-native", "reviewed-native-zip"].includes(target.strategy) ? ["--no-preserve=ownership"] : []), "--reflink=auto", "--sparse=always", "--", activePath, stagedPath], { root: gamesRoot });
       const detachedLinks = prepareInstallationLinks(stage, current, true);
-      if (target.strategy === "reviewed-cmake-source") {
+      if (target.strategy === "reviewed-etlegacy-package") {
+        phase("downloading", "Verifying the reviewed ET Legacy engine, server mod and bot assets together");
+        await stageEtlegacyRelease(stage, { run, diskCheck: () => {
+          const available = disk(gamesRoot);
+          if (available.free < available.reserve + 512 * 1024 ** 2) throw new Error("Update stopped to preserve free disk space");
+        } });
+      } else if (target.strategy === "reviewed-cmake-source") {
         phase("downloading", "Building the reviewed fgms relay; logs and server configuration stay outside the binary swap");
         await stageFgmsRelease(stage, { run });
       } else if (target.strategy === "reviewed-dotnet-source") {
@@ -165,7 +172,7 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
       } else {
         phase("downloading", "SteamCMD is updating the staged installation");
         const output = await run("/usr/games/steamcmd", ["+force_install_dir", stage, "+login", "anonymous", "+app_update", String(target.appId), ...(original.branch && original.branch !== "public" ? ["-beta", original.branch] : []), "+quit"], { root: gamesRoot });
-        if (!output.includes(`Success! App '${target.appId}' fully installed.`)) throw new Error("SteamCMD did not confirm a complete installation");
+        if (!output.includes(`Success! App '${target.appId}' fully installed.`) && !output.includes(`Success! App '${target.appId}' already up to date.`)) throw new Error("SteamCMD did not confirm a complete installation");
       }
       restoreInstallationLinks(detachedLinks);
     } else {
@@ -193,7 +200,7 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
       const source = store.read(job.rollbackId);
       store.write({ ...source, rollbackConsumed: true });
     }
-    phase("completed", job.key === "xonotic" ? "Reviewed Xonotic 0.8.6 engine ready. Existing data, maps and server configuration were retained; new engine/data versions require compatibility review." : target.strategy === "reviewed-cmake-source" ? "Reviewed fgms relay ready. Existing configuration and logs were retained; new source/compiler versions require compatibility review."
+    phase("completed", job.key === "wolfenstein-enemy-territory" ? "Reviewed ET Legacy engine, server mod and bot assets ready. Original assets, maps, generated bot configuration and per-server data were retained. New releases require a reviewed package profile." : job.key === "xonotic" ? "Reviewed Xonotic 0.8.6 engine ready. Existing data, maps and server configuration were retained; new engine/data versions require compatibility review." : target.strategy === "reviewed-cmake-source" ? "Reviewed fgms relay ready. Existing configuration and logs were retained; new source/compiler versions require compatibility review."
       : target.strategy === "reviewed-dotnet-source" ? "Reviewed RimWorld Together build ready. PlayBound management/tracking and per-server data were retained. New source, SDK, dependencies or client versions require review; binary rollback does not reverse colony migrations."
       : target.strategy === "reviewed-distro-native" ? "Reviewed native server ready. Operating-system packages and saved data were not changed. New package versions require compatibility review."
       : job.key === "terraria" ? "Reviewed Terraria Linux installation ready. Saved worlds were not changed. New server versions require a new reviewed package and matching client/world compatibility checks."
@@ -206,7 +213,7 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
     const uncertain = activated || (job.status === "activating" && !fs.existsSync(activePath));
     phase(uncertain ? "interrupted" : "failed", uncertain
       ? "Activation needs operator inspection. New starts remain blocked; the rollback copy is retained."
-      : error instanceof Error && /^(Not enough|An affected|FlightGear|RimWorld|Xonotic|Native package|Legacy|SteamCMD|Mindustry|OpenRA|OpenHV|OpenE2140|Hypersomnia|AssaultCube|Factorio|Terraria|Update command|Update stopped|Cannot verify|Barotrauma|Unexpected Barotrauma|Invalid Barotrauma)/.test(error.message)
+      : error instanceof Error && /^(Not enough|An affected|ET Legacy|FlightGear|RimWorld|Xonotic|Native package|Legacy|SteamCMD|Mindustry|OpenRA|OpenHV|OpenE2140|Hypersomnia|AssaultCube|Factorio|Terraria|Update command|Update stopped|Cannot verify|Barotrauma|Unexpected Barotrauma|Invalid Barotrauma)/.test(error.message)
         ? error.message : "Update failed before activation; the previous installation was preserved");
     // Retain partial staging files for diagnosis. Never recurse into customer save links.
   }

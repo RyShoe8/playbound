@@ -3,6 +3,7 @@ import path from "node:path";
 import { INSTALLATION_TARGETS } from "./installationTargets.js";
 import { readRelease } from "./githubReleaseAssets.js";
 import { runCommand } from "./installationUpdateWorker.js";
+import { ETLEGACY_RELEASES } from "./etlegacyUpdates.js";
 
 const DAY = 24 * 60 * 60_000;
 const RELEASES = {
@@ -11,7 +12,7 @@ const RELEASES = {
   openhv: ["OpenHV/OpenHV", /^\d{8}$/],
   "earth-2140-trilogy": ["OpenE2140/OpenE2140", /^release-\d{8}$/],
 };
-export const automaticInstallationUpdate = (key) => Boolean(INSTALLATION_TARGETS[key]?.appId || RELEASES[key] || ["factorio", "hypersomnia"].includes(key));
+export const automaticInstallationUpdate = (key) => Boolean(INSTALLATION_TARGETS[key]?.appId || RELEASES[key] || ["factorio", "hypersomnia", "wolfenstein-enemy-territory"].includes(key));
 
 // Parse only quoted VDF keys/values and braces. Never confuse a beta/depot's
 // build with depots.branches.public.buildid, even when it appears first.
@@ -39,12 +40,12 @@ export function steamPublicBuild(output, appId) {
   return build;
 }
 
-async function boundedText(url, request) {
+async function boundedText(url, request, limit = 16_384) {
   const response = await request(url, { redirect: "error", signal: AbortSignal.timeout(30_000) });
   if (!response.ok || !response.body) throw new Error("Official release feed is unavailable");
   const chunks = []; let size = 0;
   for await (const chunk of response.body) {
-    if ((size += chunk.length) > 16_384) throw new Error("Official release metadata is too large");
+    if ((size += chunk.length) > limit) throw new Error("Official release metadata is too large");
     chunks.push(chunk);
   }
   return Buffer.concat(chunks).toString();
@@ -67,6 +68,12 @@ export async function latestInstallationBuild(key, { request = fetch, run = runC
   if (key === "factorio") {
     const version = JSON.parse(await boundedText("https://factorio.com/api/latest-releases", request)).stable?.headless;
     if (!/^\d+\.\d+\.\d+$/.test(version || "")) throw new Error("Factorio stable version is invalid");
+    return version;
+  }
+  if (key === "wolfenstein-enemy-territory") {
+    const page = await boundedText("https://www.etlegacy.com/download", request, 128 * 1024);
+    const version = page.match(/ET: Legacy stable release (\d+\.\d+\.\d+)\s*-/)?.[1];
+    if (!version) throw new Error("ET Legacy stable release metadata is unavailable");
     return version;
   }
   if (key === "hypersomnia") {
@@ -138,7 +145,9 @@ export function createDailyInstallationUpdates({ stateDir, coordinator, latest =
             } else {
               row.availableBuild = await latest(target.key);
               if (!newer(row.availableBuild, target.buildId)) row.status = "up_to_date";
-              else if (target.key === "factorio" && row.availableBuild.split(".")[0] !== target.buildId.split(".")[0]) {
+              else if (target.key === "wolfenstein-enemy-territory" && row.availableBuild !== ETLEGACY_RELEASES.latest) {
+                row.status = "review_required"; row.message = "New ET Legacy package needs a reviewed engine/mod/bot compatibility profile.";
+              } else if (target.key === "factorio" && row.availableBuild.split(".")[0] !== target.buildId.split(".")[0]) {
                 row.status = "review_required"; row.message = "Major Factorio upgrade requires world compatibility review.";
               } else {
                 const job = old?.jobId && coordinator.snapshot().jobs.find((job) => job.id === old.jobId);

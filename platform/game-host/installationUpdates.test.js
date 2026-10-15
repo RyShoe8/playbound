@@ -306,7 +306,7 @@ for (const [game, target] of Object.entries(INSTALLATION_TARGETS)) {
       assert.deepEqual(args.slice(-3), ["+app_update", String(target.appId), "+quit"]);
       assert.equal(args[3], "anonymous");
       installed(args[1], "200");
-      return `Success! App '${target.appId}' fully installed.`;
+      return game === "aneurism-iv" ? `Success! App '${target.appId}' already up to date.` : `Success! App '${target.appId}' fully installed.`;
     } });
     assert.equal(store.read(update.id).status, "completed");
     assert.equal(verifyInstallation(current, game).buildId, "200");

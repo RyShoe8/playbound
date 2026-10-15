@@ -12,6 +12,7 @@ import { verifyNativePackageInstallation } from "./nativePackageUpdates.js";
 import { verifyRimworldInstallation } from "./rimworldUpdates.js";
 import { verifyXonoticInstallation } from "./xonoticUpdates.js";
 import { verifyFgmsInstallation } from "./fgmsUpdates.js";
+import { verifyEtlegacyInstallation } from "./etlegacyUpdates.js";
 
 // These are shared installations, not per-customer save directories.
 export const INSTALLATION_TARGETS = Object.freeze({
@@ -26,6 +27,7 @@ export const INSTALLATION_TARGETS = Object.freeze({
   },
   necesse: { name: "Necesse", appId: 1169370, binaries: ["jre/bin/java"], files: ["Server.jar"] },
   "aneurism-iv": { name: "ANEURISM IV", appId: 2832030, binaries: ["aniv_server.x86_64"], files: ["UnityPlayer.so", "aniv_server_Data/boot.config"] },
+  "wolfenstein-enemy-territory": { name: "Wolfenstein: Enemy Territory (ET: Legacy)", strategy: "reviewed-etlegacy-package" },
   mindustry: { name: "Mindustry", strategy: "github-jar" },
   openra: { name: "OpenRA (Red Alert, Tiberian Dawn, Dune 2000)", strategy: "github-appimage" },
   openhv: { name: "OpenHV", strategy: "github-appimage" },
@@ -77,6 +79,7 @@ export function verifyInstallation(directory, key) {
   if (key === "factorio") return verifyFactorioInstallation(directory);
   if (key === "terraria") return verifyTerrariaInstallation(directory);
   if (key === "xonotic") return verifyXonoticInstallation(directory);
+  if (key === "wolfenstein-enemy-territory") return verifyEtlegacyInstallation(directory);
   if (target.strategy === "reviewed-distro-native") return verifyNativePackageInstallation(directory, key);
   if (target.strategy === "reviewed-dotnet-source") return verifyRimworldInstallation(directory);
   if (target.strategy === "reviewed-cmake-source") return verifyFgmsInstallation(directory);
