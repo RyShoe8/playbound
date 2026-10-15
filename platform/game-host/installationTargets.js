@@ -3,6 +3,7 @@ import path from "node:path";
 import { verifyMindustryInstallation } from "./mindustryUpdates.js";
 import { verifyOpenRAInstallation } from "./openraUpdates.js";
 import { verifyOpenHVInstallation } from "./openhvUpdates.js";
+import { verifyOpenE2140Installation } from "./openE2140Updates.js";
 
 // These are shared installations, not per-customer save directories.
 export const INSTALLATION_TARGETS = Object.freeze({
@@ -19,18 +20,20 @@ export const INSTALLATION_TARGETS = Object.freeze({
   mindustry: { name: "Mindustry", strategy: "github-jar" },
   openra: { name: "OpenRA (Red Alert, Tiberian Dawn, Dune 2000)", strategy: "github-appimage" },
   openhv: { name: "OpenHV", strategy: "github-appimage" },
+  "earth-2140-trilogy": { name: "Earth 2140 Trilogy (OpenE2140)", strategy: "github-appimage" },
 });
 
 export function installationKey(slug) {
   if (slug === "cs2") return "counter-strike-2";
   if (slug === "tf2" || slug === "open-fortress") return "team-fortress-2";
+  if (slug === "opene2140") return "earth-2140-trilogy";
   return Object.hasOwn(INSTALLATION_TARGETS, slug) ? slug : null;
 }
 
-// OpenRA editions can select (or fall back to) the shared OpenHV binary.
-// Hold both installations conservatively, including while a start is pending.
+// OpenRA editions can select (or fall back to) the shared variant binaries.
+// Hold these installations conservatively, including while a start is pending.
 export function installationDependencies(slug) {
-  if (slug === "openra") return ["openra", "openhv"];
+  if (slug === "openra") return ["openra", "openhv", "earth-2140-trilogy"];
   const key = installationKey(slug);
   return key ? [key] : [];
 }
@@ -42,6 +45,7 @@ export function verifyInstallation(directory, key) {
   if (!root.isDirectory() || root.isSymbolicLink()) throw new Error("Installation must be a real directory");
   if (target.strategy === "github-jar") return verifyMindustryInstallation(directory);
   if (key === "openhv") return verifyOpenHVInstallation(directory);
+  if (key === "earth-2140-trilogy") return verifyOpenE2140Installation(directory);
   if (target.strategy === "github-appimage") return verifyOpenRAInstallation(directory);
   const manifestPath = path.join(directory, "steamapps", `appmanifest_${target.appId}.acf`);
   if (fs.realpathSync(path.dirname(manifestPath)) !== path.join(fs.realpathSync(directory), "steamapps")) throw new Error("Steam metadata must stay inside the installation");

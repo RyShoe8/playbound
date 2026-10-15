@@ -217,7 +217,7 @@ until a root-owned scanner is explicitly configured for them.
 
 Install the scanner separately with
 `platform/game-host/install-update-scanner.sh` as root. It installs a root-owned
-helper and a sudoers rule permitting only its eleven fixed read-only scans.
+helper and a sudoers rule permitting only its twelve fixed read-only scans.
 Workers and SteamCMD continue running as the agent service user. No game
 installation or privileged shell is run by that helper.
 
@@ -262,7 +262,7 @@ This is not complete feature parity with those platforms. FTP/SFTP,
 process-log streaming, a general task scheduler,
 plugin/Workshop installation, database administration, and customer-triggered
 binary updates are not implemented by these changes. Shared binary updates
-are deliberately admin-only and limited to the eleven ready installations above. None
+are deliberately admin-only and limited to the twelve ready installations above. None
 of these features is represented by a nonfunctional button.
 
 No hosting backend is replaced or installed. Existing recipes, measured
@@ -300,3 +300,20 @@ and rollback reuse the existing persisted worker and retained previous copies.
 The isolated VPS check downloaded 20250725, exercised same-version update and
 rollback and received the dedicated protocol handshake. A real player Join is
 still separate. See the [official OpenHV server documentation](https://github.com/OpenHV/OpenHV/wiki/Server).
+
+### Earth 2140 Trilogy / OpenE2140 updates
+
+The OpenE2140 official AppImage shares OpenHV's bounded, checksum-verified
+implementation with a separate fixed source profile. Its mod version must
+match the `release-YYYYMMDD` GitHub release; its separate
+`opene2140-engine-YYYYMMDD` engine identifier is validated independently.
+The current 20260920 official digest was matched against the VPS image.
+Unknown installation files or modified binaries refuse replacement. Existing
+per-server/support data and proprietary game assets are outside this swap.
+
+OpenRA editions and `opene2140` aliases hold the canonical installation lock.
+Unclassified AppImage mounts conservatively delay updates. The VPS acceptance
+check exercised an isolated same-version download/update/rollback and actual
+dedicated protocol handshake, without updating production game files. This
+does not verify a human Join or redistribute original Earth 2140 assets.
+Upstream packaging and asset requirements: [OpenE2140](https://github.com/OpenE2140/OpenE2140).

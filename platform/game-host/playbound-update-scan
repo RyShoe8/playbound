@@ -16,6 +16,7 @@ targets = {
     "mindustry": ["mindustry"],
     "openra": ["openra"],
     "openhv": ["openhv"],
+    "earth-2140-trilogy": ["earth-2140-trilogy", "opene2140"],
 }
 if len(sys.argv) != 2 or sys.argv[1] not in targets:
     sys.exit(2)
@@ -44,7 +45,7 @@ try:
             # AppImage child executables run from a temporary FUSE mount rather
             # than the installation directory. Unclassified mounts hold the
             # queue conservatively; never inspect argv or interrupt a process.
-            if sys.argv[1] == "openhv" and value.startswith("/tmp/.mount_"):
+            if sys.argv[1] in ("openhv", "earth-2140-trilogy") and value.startswith("/tmp/.mount_"):
                 matched = True
         if sys.argv[1] == "mindustry" and java_process and not matched:
             # A JVM can load this JAR from any cwd and then close its descriptor.

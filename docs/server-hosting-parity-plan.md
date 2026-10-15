@@ -12,7 +12,7 @@ New games must complete `docs/dedicated-server-game-checklist.md`.
 Assess each feature per engine: applicable and verified, not yet implemented,
 or unavailable with a concrete engine/transport reason. The universal scope is
 a release requirement, not a claim that every engine supports bots or plugins.
-Keep current eleven-game update support and thirteen-game file support explicit
+Keep current twelve-game update support and thirteen-game file support explicit
 until the additional handlers pass their gates. No placeholder controls.
 
 ## Implementation order and gates
@@ -122,3 +122,13 @@ until the additional handlers pass their gates. No placeholder controls.
   20250725, activated and rolled back an isolated installation, then verified
   protocol 7/client ID 0 from its dedicated server. The live game binary stayed
   unchanged. This is not a human Join or occupancy verification.
+
+- Earth 2140 Trilogy / OpenE2140 now has a fixed official GitHub AppImage
+  handler using the same verified-image implementation as OpenHV. Profiles
+  keep separate repositories, tags, engine/mod metadata paths and legacy pins;
+  no HTTP caller selects those values. OpenRA rooms and starts hold this
+  installation lock, and the `opene2140` alias uses the canonical lock.
+  VPS acceptance (2026-10-14) downloaded release-20260920, performed isolated
+  same-version activation/rollback and received protocol 7/client ID 0.
+  Production binaries and support data were not changed. A real player Join
+  and original-client asset compatibility remain separate release checks.
