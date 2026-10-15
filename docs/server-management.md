@@ -120,6 +120,33 @@ Join and save-format compatibility are separate checks.
 The package and launch method follow the [official server documentation](https://github.com/MindustryGame/wiki/blob/master/docs/servers.md)
 and [upstream releases](https://github.com/Anuken/Mindustry/releases).
 
+OpenRA's official Red Alert, Tiberian Dawn and Dune 2000 installation is updated
+as one family. All three Linux x86_64 AppImages must belong to the same stable
+release. Packages need a published GitHub SHA-256 digest or an explicitly
+reviewed historical pin. The 20250330 pins were checked against official assets
+and upstream zsync checksums on 2026-10-14. Unknown releases without a digest
+fail closed; no checksum is silently invented at download time.
+
+The handler uses installed `unsquashfs`, never executes the AppImage, and limits
+paths, file types, extracted size, CPU workers, buffers, output and disk use.
+It uses Dune 2000's complete engine plus all official mod data: the historical
+RA-first installer omitted `OpenRA.Mods.D2k.dll`. Fresh installs now choose the
+complete engine first; existing installs are repaired through the queue.
+Engine and mod release versions and runtime declarations must agree. Combined
+Arms, OpenHV and Earth 2140 distributions are not updated by this handler.
+
+An initial `.pb-openra-manifest.json` must be adopted with
+`seedOpenRABaseline(current, reference)` against an exact independently rebuilt
+official reference. For historical installs, `buildOpenRARelease` can produce
+the old RA-first reference with `createLegacyReference: true`. Never generate
+a baseline merely by trusting the installed files. Every later update/rollback
+checks the full baseline; extra/modified files or links require operator review.
+The current installation remains intact until the normal guarded swap, and
+the complete previous copy remains available. Support data is not rewritten.
+Isolated VPS checks exercised real archives, activation/rollback, and the TCP
+protocol handshake for all three modes. A handshake is not a full client Join
+or a player-count query.
+
 Barotrauma uses private runtime copies. Before updating the shared installation,
 the worker inventories stopped copies against their saved baseline (or the
 current depot for legacy copies). Unknown modifications block the update.
@@ -190,7 +217,7 @@ until a root-owned scanner is explicitly configured for them.
 
 Install the scanner separately with
 `platform/game-host/install-update-scanner.sh` as root. It installs a root-owned
-helper and a sudoers rule permitting only its nine fixed read-only scans.
+helper and a sudoers rule permitting only its ten fixed read-only scans.
 Workers and SteamCMD continue running as the agent service user. No game
 installation or privileged shell is run by that helper.
 
@@ -235,7 +262,7 @@ This is not complete feature parity with those platforms. FTP/SFTP,
 process-log streaming, a general task scheduler,
 plugin/Workshop installation, database administration, and customer-triggered
 binary updates are not implemented by these changes. Shared binary updates
-are deliberately admin-only and limited to the nine ready installations above. None
+are deliberately admin-only and limited to the ten ready installations above. None
 of these features is represented by a nonfunctional button.
 
 No hosting backend is replaced or installed. Existing recipes, measured

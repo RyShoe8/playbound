@@ -14,6 +14,7 @@ targets = {
     "barotrauma": ["barotrauma"],
     "necesse": ["necesse"],
     "mindustry": ["mindustry"],
+    "openra": ["openra"],
 }
 if len(sys.argv) != 2 or sys.argv[1] not in targets:
     sys.exit(2)

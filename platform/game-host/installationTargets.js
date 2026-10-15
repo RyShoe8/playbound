@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { verifyMindustryInstallation } from "./mindustryUpdates.js";
+import { verifyOpenRAInstallation } from "./openraUpdates.js";
 
 // These are shared installations, not per-customer save directories.
 export const INSTALLATION_TARGETS = Object.freeze({
@@ -15,6 +16,7 @@ export const INSTALLATION_TARGETS = Object.freeze({
   },
   necesse: { name: "Necesse", appId: 1169370, binaries: ["jre/bin/java"], files: ["Server.jar"] },
   mindustry: { name: "Mindustry", strategy: "github-jar" },
+  openra: { name: "OpenRA (Red Alert, Tiberian Dawn, Dune 2000)", strategy: "github-appimage" },
 });
 
 export function installationKey(slug) {
@@ -29,6 +31,7 @@ export function verifyInstallation(directory, key) {
   const root = fs.lstatSync(directory);
   if (!root.isDirectory() || root.isSymbolicLink()) throw new Error("Installation must be a real directory");
   if (target.strategy === "github-jar") return verifyMindustryInstallation(directory);
+  if (target.strategy === "github-appimage") return verifyOpenRAInstallation(directory);
   const manifestPath = path.join(directory, "steamapps", `appmanifest_${target.appId}.acf`);
   if (fs.realpathSync(path.dirname(manifestPath)) !== path.join(fs.realpathSync(directory), "steamapps")) throw new Error("Steam metadata must stay inside the installation");
   if (!fs.lstatSync(manifestPath).isFile() || fs.lstatSync(manifestPath).isSymbolicLink()) throw new Error("Invalid installation manifest");
