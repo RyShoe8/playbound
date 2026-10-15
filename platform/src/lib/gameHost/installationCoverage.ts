@@ -10,8 +10,6 @@ const GAPS: Record<string, Gap> = {
   "vintage-story": ARCHIVE,
   "deus-ex-goty-edition": { category: "custom-build", reason: "Needs a Wine/HX package handler that preserves the game assets and PlayBound co-op integration." },
   "hurry-curry": { category: "custom-build", reason: "Needs a source/binary update handler that retains PlayBound's player-limit patch and matching data files." },
-  ysoccer: { category: "custom-build", reason: "Needs a handler for the PlayBound dedicated JAR build, including Java compatibility and rollback." },
-  triplea: { category: "custom-build", reason: "Needs coordinated updates for the dedicated wrapper, server package and required Java runtime." },
   freedoom: { category: "edition", reason: "Zandronum, Odamex and Chocolate Doom require separate engine update handlers; preserve IWADs, maps and per-server configuration." },
   "space-station-14": { category: "private-runtime", reason: "Needs a handler for the server distribution/bootstrap, .NET dependencies and per-server content/database compatibility." },
   "goldeneye-source": { category: "private-runtime", reason: "Needs coordinated Source SDK base and GoldenEye mod updates, including private runtime refresh and retained settings." },

@@ -27,6 +27,8 @@ const os = require("os");
 const bundledCatalog = require("./catalog");
 const { localCoopPlayerCapacity } = require("./services/couch/localCoop");
 const { createTelemetry } = require("./telemetry");
+const { checkWithHandledDownload, safeUpdateError } = require("./services/main/updateDownload");
+const { createRemotePlayHealth, confirmRemotePlaySession } = require("./services/main/remotePlayHealth");
 const { resolveGmdxDownload, verifyGmdxInstaller } = require("./services/gmdxInstaller");
 const Platform = require("./platform");
 const GameLauncher = require("./services/GameLauncher");
@@ -10237,19 +10239,22 @@ ipcMain.handle("open-couch-game-view", async (_event, rawUrl) => {
 let remotePlayPollTimer = null;
 let remotePlayRegisterTimer = null;
 const remotePlayInFlight = new Set();
+const remotePlayHealth = createRemotePlayHealth({ report: (phase, message) => {
+  reportCouchOps("failed", { phase, code: phase === "registration" ? "DEVICE_REGISTRATION_FAILED" : "HOST_POLL_FAILED", message }, "remote_play");
+} });
+let remotePlayRegisterInFlight = false;
 
-async function handleRemotePlayUnauthorized() {
-  const token = loadSettings().launcherToken;
-  if (!token) return;
-  const check = await validateLauncherToken(token);
-  if (check.valid) return; // A route-specific 401 is not permission to sign out.
-  stopRemotePlayLoop();
-  clearLocalToken("PlayBound session expired — sign in again from Settings to use Remote Play.");
+async function handleRemotePlayUnauthorized(token) {
+  return confirmRemotePlaySession({ token, currentToken: () => loadSettings().launcherToken, validate: validateLauncherToken, expired: () => {
+    stopRemotePlayLoop();
+    clearLocalToken("PlayBound session expired — sign in again from Settings to use Remote Play.");
+  } });
 }
 
 async function registerRemotePlayDevice() {
   const settings = loadSettings();
-  if (!settings.launcherToken) return;
+  if (!settings.launcherToken || remotePlayRegisterInFlight || !remotePlayHealth.ready("registration")) return;
+  remotePlayRegisterInFlight = true;
   try {
     const res = await apiFetch(`${getApiBase()}/api/devices`, {
       method: "POST",
@@ -10261,17 +10266,18 @@ async function registerRemotePlayDevice() {
       }),
     });
     if (res.status === 401) {
-      await handleRemotePlayUnauthorized();
-      if (!loadSettings().launcherToken) return;
+      const session = await handleRemotePlayUnauthorized(settings.launcherToken);
+      if (session !== "valid") {
+        if (session === "unknown") remotePlayHealth.failed("registration", "Could not verify the linked session while reconnecting");
+        return;
+      }
     }
-    if (!res.ok) reportCouchOps("failed", { phase: "registration", code: "DEVICE_REGISTRATION_FAILED", message: `HTTP ${res.status}` }, "remote_play");
+    if (!res.ok) remotePlayHealth.failed("registration", `HTTP ${res.status}`);
+    else remotePlayHealth.recovered("registration");
   } catch (err) {
     console.warn("[remote-play] device registration failed:", err?.message || err);
-    const isTimeout = /aborted|timeout/i.test(err?.message || "");
-    if (!isTimeout) {
-      reportCouchOps("failed", { phase: "registration", code: "DEVICE_REGISTRATION_FAILED", message: err?.message }, "remote_play");
-    }
-  }
+    remotePlayHealth.failed("registration", err?.message || "Device registration connection failed");
+  } finally { remotePlayRegisterInFlight = false; }
 }
 
 /** Ends this device's own active Remote-Play-marked couch session, if any. Never touches a party or solo-phone session — see sendGameExited's gate. */
@@ -10416,7 +10422,7 @@ async function pollRemotePlayRequests() {
 
 async function pollRemotePlayRequestsOnce() {
   const settings = loadSettings();
-  if (!settings.launcherToken) return;
+  if (!settings.launcherToken || !remotePlayHealth.ready("host_poll")) return;
   try {
     const res = await apiFetch(
       `${getApiBase()}/api/remote-play/requests?forDevice=${encodeURIComponent(getRemoteDeviceId())}`,
@@ -10424,22 +10430,23 @@ async function pollRemotePlayRequestsOnce() {
     );
     if (!res.ok) {
       if (res.status === 401) {
-        await handleRemotePlayUnauthorized();
+        const session = await handleRemotePlayUnauthorized(settings.launcherToken);
+        if (session === "valid") remotePlayHealth.failed("host_poll", "HTTP 401 with a valid linked session");
+        else if (session === "unknown") remotePlayHealth.failed("host_poll", "Could not verify the linked session while reconnecting");
         return;
       }
-      reportCouchOps("failed", { phase: "host_poll", code: "HOST_POLL_FAILED", message: `HTTP ${res.status}` }, "remote_play");
+      remotePlayHealth.failed("host_poll", `HTTP ${res.status}`);
       return;
     }
-    const data = await res.json().catch(() => null);
+    const data = await res.json();
+    if (!Array.isArray(data?.requests)) throw new Error("Invalid Remote Play request response");
+    remotePlayHealth.recovered("host_poll");
     for (const reqRow of data?.requests || []) {
       void handleRemotePlayHostRequest(reqRow);
     }
   } catch (err) {
     console.warn("[remote-play] poll failed:", err?.message || err);
-    const isTimeout = /aborted|timeout/i.test(err?.message || "");
-    if (!isTimeout) {
-      reportCouchOps("failed", { phase: "host_poll", code: "HOST_POLL_FAILED", message: err?.message }, "remote_play");
-    }
+    remotePlayHealth.failed("host_poll", err?.message || "Host polling connection failed");
   }
 
   /*
@@ -11534,7 +11541,7 @@ ipcMain.handle("check-for-updates", async () => {
       return { ok: false, reason: "error", message: "electron-updater unavailable" };
     }
     const channel = getEffectiveUpdateChannel();
-    const result = await autoUpdater.checkForUpdates();
+    const result = await checkWithHandledDownload(autoUpdater);
     const info = result?.updateInfo || null;
     const current = app.getVersion();
     const offered = info?.version || null;
@@ -11594,7 +11601,7 @@ ipcMain.handle("check-for-updates", async () => {
 
     return { ok: true, updateAvailable: false, version: current, channel };
   } catch (err) {
-    return { ok: false, reason: "error", message: err?.message || String(err) };
+    return { ok: false, reason: "error", message: safeUpdateError(err) };
   }
 });
 ipcMain.handle("install-update", () => {
@@ -13078,6 +13085,7 @@ function setupAutoUpdater() {
   const emit = (payload) => {
     if (win && !win.isDestroyed()) win.webContents.send("update-status", payload);
   };
+  let reportedUpdateError = null;
 
   autoUpdater.on("checking-for-update", () => emit({ phase: "checking" }));
   autoUpdater.on("update-available", (info) => {
@@ -13124,6 +13132,7 @@ function setupAutoUpdater() {
   );
   autoUpdater.on("update-downloaded", (info) => {
     pendingUpdate = info;
+    reportedUpdateError = null;
     // A download that verified is the definition of recovery — forget the past.
     clearUpdateFailures();
     emit({
@@ -13133,7 +13142,12 @@ function setupAutoUpdater() {
     });
   });
   autoUpdater.on("error", (err) => {
-    const message = err?.message || String(err);
+    const message = safeUpdateError(err);
+    const errorKey = `${pendingUpdate?.version || "check"}:${message}`;
+    if (reportedUpdateError !== errorKey) {
+      reportedUpdateError = errorKey;
+      void telemetry.error({ code: "LAUNCHER_UPDATE_FAILED", phase: "launcher_update", message });
+    }
     if (!isCacheCorruptionError(message)) {
       emit({ phase: "error", message });
       return;
@@ -13164,9 +13178,9 @@ function setupAutoUpdater() {
     void (async () => {
       try {
         await refreshAdminUpdateChannel();
-        await autoUpdater.checkForUpdatesAndNotify();
+        await checkWithHandledDownload(autoUpdater);
       } catch (err) {
-        console.warn("update check failed:", err?.message || err);
+        console.warn("update check failed:", safeUpdateError(err));
       }
     })();
   }, 4000);

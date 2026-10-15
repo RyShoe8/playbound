@@ -880,3 +880,47 @@ its live query reports zero of eight players. Saved-data backups were retained
 before either upgrade. No catalog, hosting eligibility or unrelated database
 records were changed. Coverage is 37 installation families, 22 official daily
 release-discovery sources and 14 remaining game/edition entries.
+
+## Reviewed Java updates and failure-report follow-up (2026-10-15)
+
+YSoccer and TripleA now use the existing update queue with separate, reviewed
+JAR components. YSoccer tracks the dedicated PlayBound release by SHA-256:
+its `ysoccer-online-latest` tag is mutable and cannot identify installed bytes.
+TripleA tracks the official headless release and retains its installed Java 25
+runtime, downloaded maps and configuration. Both validate the dedicated main
+class, class-file Java requirement, installed Java, publisher/archive checksum
+and exact server JAR. Unknown releases require compatibility review.
+
+TripleA launches the exact `bin/game-headless.jar` through its recipe rather
+than letting a wrapper search for the first JAR (which could select a retained
+rollback). YSoccer has an explicit installation working directory. The root
+scanner includes both games and conservatively holds unclassified JVMs without
+reading arguments or credentials. Daily checks retain the existing once-daily
+cadence, retry suppression and single saved report.
+
+Both candidates passed isolated VPS startup and real zero-player queries,
+cross-version installation update, rollback, and retention of saves written
+after updating. Production jobs completed; agent deployment preserved all 12
+managed process identities. No catalog or database records changed. Coverage
+is 39 installation families, 24 release-discovery sources and 12 remaining
+game/edition entries. Vintage Story is explicitly deferred by the owner and
+remains uninstalled. Hurry Curry's patched source, Freedoom's edition-specific
+engines and Freeciv's matching custom data/libraries still need handlers.
+
+The manually cancelled CS2 browser smoke job was precisely corrected from
+`failed` to `cancelled`; the historical bug report is not evidence of damaged
+CS2 files. The failure reporter has a regression test excluding cancelled jobs.
+TF2's genuine SteamCMD Access Denied report remains actionable and its installed
+files remain unchanged; no authentication or licensing bypass was attempted.
+
+Launcher source now owns automatic-download rejections (including the separate
+promise returned after an update check). Temporary download failures retry at
+15 and 30 seconds through fresh checks, then stop; signed URLs are omitted from
+diagnostics. Remote Play serializes device registration, backs off background
+connection failures and reports a sustained outage once until recovery. A 401
+revalidates the exact token used by the request: transient validation keeps the
+account linked, and an old request cannot clear a newly linked account. These
+launcher changes require a new packaged launcher release to reach users.
+
+Validation: 552 launcher tests passed; 305 agent tests (266 passed, 39 platform
+skips); five platform coverage tests, TypeScript and affected-file lint passed.
