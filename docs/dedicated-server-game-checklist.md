@@ -118,6 +118,11 @@ pull credentials, edit environment files, or alter unrelated database records.
   or mistake namespaces alone for completed UID/network/cgroup isolation.
   Validate links/hardlinks in host-side generated configuration and directory
   ancestors before recipe preparation, not only before spawning the sandbox.
+- Customer namespace profiles must launch through `customerRuntime.js`, with
+  confirmed CPU/RAM/swap/task limits before executing the game. Declare a
+  bounded resource profile in the root-owned placement helper, verify inherited
+  limits, fail-closed placement/cancellation, restart recovery, whole-tree stop
+  and independent resource metrics. No general systemd/shell sudo is permitted.
 
 ## 7. Capacity and programming
 

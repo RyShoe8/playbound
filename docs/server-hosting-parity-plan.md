@@ -53,6 +53,34 @@ until the additional handlers pass their gates. No placeholder controls.
 
 ## Current delivered scope
 
+- The same five customer profiles now pass through an unprivileged start gate
+  before executing their game. A root-owned, fixed-operation helper validates
+  runtime identity, all process UIDs and the sudo caller's process ancestry,
+  then creates a new systemd scope. It accepts no shell, executable, arbitrary
+  filesystem path or unit property. The helper waits for asynchronous systemd
+  placement and confirms the actual kernel controls before returning success;
+  denied placement or cancellation launches no unrestricted fallback.
+  Rollout limits are one CPU core/1 GiB for Teeworlds, BZFlag, Hedgewars and
+  OpenTTD; Luanti gets two cores/2 GiB. Each scope caps tasks at 128, disables
+  swap and enables whole-scope OOM killing. These are conservative fixed
+  enforcement defaults, separate from measured capacity baselines; profile-
+  driven/admin-editable sizing remains to be integrated before broad rollout.
+  Wrapper identity, scope name and process-group metrics survive agent recovery.
+  New scoped runtimes inherit limits across their complete process tree; existing
+  live runtimes are not moved, restarted or retroactively capped. Distinct host
+  UIDs, network policy, remaining engines and executable plugin support are still
+  outstanding, so this is not a complete cross-tenant isolation claim.
+  VPS acceptance (2026-10-15 UTC) confirmed all five fixtures retained their
+  PIDs, working process metrics and kernel limits across an agent restart.
+  Every descendant remained in its assigned scope. Teeworlds, BZFlag and
+  OpenTTD returned zero players/four slots; Hedgewars returned zero connections;
+  Luanti retained its UDP bind without a verified player query. All eleven
+  existing managed runtimes retained their identities/PIDs. The five fixture
+  groups stopped cleanly and their temporary data was removed. Five runtime-gate
+  and five privileged-helper tests passed; the local serial agent suite passed
+  198 tests with 15 platform-dependent skips. No database records or customer
+  worlds were changed. Human Join and profile-driven sizing remain separate.
+
 - The namespace rollout now covers five reviewed system-native engines:
   Teeworlds, BZFlag, Hedgewars, OpenTTD and Luanti. Each profile validates the
   expected executable and native arguments, mounts only its private writable
@@ -67,8 +95,9 @@ until the additional handlers pass their gates. No placeholder controls.
   host-side preparation gap outside the namespace. Live acceptance distinguishes
   a real query (BZFlag/OpenTTD report four slots; Hedgewars reports connections
   but not a slot cap) from Luanti's confirmed UDP bind with no local player-count
-  verification. Network isolation, distinct host identities, cgroup quotas,
-  executable plugins and other engines remain unfinished.
+  verification. At that stage, cgroup quotas were still pending; the resource
+  gate above now covers those same five profiles. Network isolation, distinct
+  host identities, executable plugins and other engines remain unfinished.
   VPS acceptance (2026-10-15 UTC) confirmed all four added wrappers survived an
   agent restart with working process metrics and the same query/bind results.
   All ten pre-deployment managed runtimes retained their identities/PIDs.

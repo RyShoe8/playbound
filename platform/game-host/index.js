@@ -51,6 +51,7 @@ import { manageDedicatedFiles } from "./dedicatedFiles.js";
 import { createInstallationCoordinator } from "./installationJobs.js";
 import { gameEnvironment } from "./gameEnvironment.js";
 import { customerIsolationLaunch, validateCustomerPreparation } from "./customerIsolation.js";
+import { spawnCustomerRuntime, resourceScope } from "./customerRuntime.js";
 import { readCapturedLogFile, managedLogFiles, retainManagedLogs, logSecretValues, redactLogLine } from "./managedLogs.js";
 import { captureRvglLobby, sendRvglLobbyInput } from "./rvglDisplay.js";
 
@@ -802,6 +803,7 @@ function persistManagedRooms() {
     processStartedAt: r.processStartedAt, settings: r.settings,
     customerOwned: Boolean(r.customerOwned),
     isolationProfile: r.isolationProfile || null,
+    resourceScope: r.resourceScope || null,
     rcon: r.rcon, rconPassword: r.rconPassword, cwd: r.cwd || null,
   })));
 }
@@ -1061,7 +1063,8 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
       const fd = fs.openSync(path.join(MANAGED_LOG_DIR, `${communityServerId}.log`), "a", 0o600);
       try {
         const stdinMode = recipe.stdin ? "pipe" : "ignore";
-        return spawn(isolated?.binary || binary, isolated?.args || args, { cwd: isolated?.cwd || cwd, env: isolated?.env || spawnEnv, stdio: [stdinMode, fd, fd], detached: true });
+        return isolated ? spawnCustomerRuntime(isolated, communityServerId, gameSlug, fd)
+          : spawn(binary, args, { cwd, env: spawnEnv, stdio: [stdinMode, fd, fd], detached: true });
       } finally {
         fs.closeSync(fd);
       }
@@ -1075,6 +1078,7 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
       communityServerId: communityServerId || null,
       customerOwned: ctx.customerOwned,
       isolationProfile: isolated?.profile || null,
+      resourceScope: isolated && child.pid ? resourceScope(communityServerId, child.pid) : null,
       editionSlug: editionSlug || null,
       gameSlug,
       saveKey: ctx.saveKey || null,
@@ -1366,6 +1370,7 @@ function publicRoom(room) {
     partyId: room.partyId,
     communityServerId: room.communityServerId || null,
     isolationProfile: room.isolationProfile || null,
+    resourceScope: room.resourceScope || null,
     gameSlug: room.gameSlug,
     name: room.name,
     host: room.gameSlug === "aneurism-iv" ? null : room.host || PUBLIC_IP,
