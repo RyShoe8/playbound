@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 if os.name == 'nt':
     raise unittest.SkipTest('Linux namespace helper runs and is tested on the VPS')
@@ -13,6 +14,53 @@ spec.loader.exec_module(module)
 
 
 class Boundaries(unittest.TestCase):
+    def test_log_reads_are_bounded_and_redacted(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(module, 'CONTROL', Path(directory)):
+            filename = Path(directory) / ('startup-' + module.identity('server-one') + '.log')
+            filename.write_text('discard\n' + 'x' * 70000 + '\npass\x1b[31mword=several words\n' + 'a' * 32 + '\nReady\nunfinished')
+            filename.chmod(0o600)
+            result = module.read_logs('server-one')
+            self.assertTrue(result['truncated'])
+            self.assertEqual(result['lines'], ['[credential-bearing line omitted]', '[redacted]', 'Ready'])
+            self.assertFalse(module.read_logs('missing-server')['available'])
+
+    def test_bounded_writer_resets_its_offset_and_preserves_recent_tail(self):
+        with tempfile.TemporaryFile('w+b') as log:
+            log.write(b'old\n' * (module.LOG_RETAIN_BYTES // 4) + b'recent\n')
+            module.write_bounded_log(log, b'new\n')
+            self.assertLessEqual(log.tell(), module.LOG_READ_BYTES + 4)
+            log.seek(0)
+            self.assertTrue(log.read().endswith(b'recent\nnew\n'))
+
+    def test_retention_leaves_live_legacy_writer_alone(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(module, 'CONTROL', Path(directory)), patch.object(module, 'process_identity', return_value='live'):
+            active = module.identity('active-server')
+            stopped = module.identity('stopped-server')
+            for digest in (active, stopped):
+                filename = Path(directory) / ('startup-' + digest + '.log')
+                filename.write_bytes(b'old\n' * (module.LOG_RETAIN_BYTES // 4) + b'recent\n')
+                filename.chmod(0o600)
+            (Path(directory) / 'slot-27700.json').write_text(module.json.dumps({'pid':1,'identity':'live','serverId':'active-server'}))
+            self.assertEqual(module.retain_stopped_logs(), {'trimmed':1})
+            self.assertGreater((Path(directory) / ('startup-' + active + '.log')).stat().st_size, module.LOG_RETAIN_BYTES)
+            self.assertLessEqual((Path(directory) / ('startup-' + stopped + '.log')).stat().st_size, module.LOG_READ_BYTES)
+
+    def test_log_reader_refuses_links_and_nonprivate_files(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(module, 'CONTROL', Path(directory)):
+            filename = Path(directory) / ('startup-' + module.identity('server-one') + '.log')
+            other = Path(directory) / 'private'
+            other.write_text('private\n')
+            other.chmod(0o600)
+            filename.symlink_to(other)
+            with self.assertRaises(OSError): module.read_logs('server-one')
+            filename.unlink()
+            os.link(other, filename)
+            with self.assertRaises(ValueError): module.read_logs('server-one')
+            filename.unlink()
+            filename.write_text('private\n')
+            filename.chmod(0o644)
+            with self.assertRaises(ValueError): module.read_logs('server-one')
+
     def test_query_counts_humans_and_never_guesses_on_malformed_replies(self):
         header=b'\xff\xff\xff\xffI\x11Server\0aneurismiv\0aniv\0ANEURISM IV\0\x00\x00'
         self.assertEqual(module.parse_occupancy(header+bytes([5,16,2])), {'players':3,'maxPlayers':16,'bots':2})

@@ -60,11 +60,19 @@ until the additional handlers pass their gates. No placeholder controls.
   scrubbed before output reaches the control plane. My Servers web/native and
   the existing Ctrl+P Server tab refresh only on request, with no background
   log polling. Moderators and public-server party leaders have no log access.
-  This covers existing managed stdout/stderr files; ANEURISM and RimWorld's
-  separate transports do not yet expose captured output through this endpoint.
-  On-disk log rotation, engine-specific captures and OS isolation remain work;
+  RimWorld's fixed private console files are included, including stopped
+  servers. ANEURISM reads a bounded sanitized snapshot through its root-owned
+  helper, never exposing the private control directory or Steam credentials.
+  Every five minutes, managed/RimWorld logs over 8 MiB roll over in place,
+  retaining one private tail of at most 64 KiB. Existing append-mode writers
+  keep their inode; RimWorld console commands hold the same lock as retention.
+  Copytruncate can lose concurrent diagnostic output at rollover and is not an
+  audit log. Stopped ANEURISM logs are trimmed; new ANEURISM supervisors bound
+  their own writer. A currently running legacy ANEURISM supervisor keeps its
+  log untouched until its next natural restart. No game is restarted for this.
+  OS isolation and remaining engine-specific native log files remain work;
   redaction is defense in depth, not permission to log credentials. Launcher
-  changes require the next binary release.
+  UI changes require the next binary release.
 
 - Existing web/native/overlay management, role checks, map/bot/player controls
   where declared, restore points, supported saved-file roots, daily maintenance.

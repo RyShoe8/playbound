@@ -44,13 +44,13 @@ import { processMetrics } from "./processMetrics.js";
 import { isLinuxPortBound } from "./portReadiness.js";
 import { queryRoomOccupancy } from "./playerQueries.js";
 import { spawnRimworld, sendRimworldCommand, queryRimworldBrowser } from "./rimworldControl.js";
-import { spawnAniv, waitForAniv, anivStatus } from "./anivControl.js";
+import { spawnAniv, waitForAniv, anivStatus, queryAnivLogs, retainAnivLogs } from "./anivControl.js";
 import { isWorldBackupGame } from "./dedicatedDataBackups.js";
 import { runWorldBackup } from "./worldBackupRunner.js";
 import { manageDedicatedFiles } from "./dedicatedFiles.js";
 import { createInstallationCoordinator } from "./installationJobs.js";
 import { gameEnvironment } from "./gameEnvironment.js";
-import { readManagedLog, logSecretValues } from "./managedLogs.js";
+import { readCapturedLogFile, managedLogFiles, retainManagedLogs, logSecretValues, redactLogLine } from "./managedLogs.js";
 import { captureRvglLobby, sendRvglLobbyInput } from "./rvglDisplay.js";
 
 const require = createRequire(import.meta.url);
@@ -1444,9 +1444,18 @@ const server = http.createServer(async (req, res) => {
       const id = logsMatch[1];
       const room = rooms.get(byManaged.get(id));
       try {
-        const result = await readManagedLog(MANAGED_LOG_DIR, id, [
+        const secrets = [
           ...logSecretValues(process.env), ...logSecretValues(room?.settings), room?.rconPassword,
-        ]);
+        ];
+        let result = { available: false, lines: [], truncated: false };
+        for (const filename of managedLogFiles(MANAGED_LOG_DIR, process.env.HOME || "/var/lib/playbound-host", id)) {
+          result = await readCapturedLogFile(filename, secrets);
+          if (result.available) break;
+        }
+        if (!result.available) {
+          result = await queryAnivLogs(id);
+          result.lines = result.lines.map(line => redactLogLine(line, secrets));
+        }
         res.setHeader("Cache-Control", "no-store");
         json(res, 200, result);
       } catch { json(res, 503, { error: "Server output is unavailable" }); }
@@ -1954,6 +1963,19 @@ setInterval(() => {
     }
   }
 }, 60_000).unref();
+
+let retainingLogs = false;
+const retainLogs = async () => {
+  if (shuttingDown || retainingLogs) return;
+  retainingLogs = true;
+  try {
+    const result = await retainManagedLogs(MANAGED_LOG_DIR, process.env.HOME || "/var/lib/playbound-host");
+    await retainAnivLogs();
+    if (result.failed) console.warn("Managed log retention could not access one or more private log files");
+  } catch { console.warn("Managed log retention unavailable"); }
+  finally { retainingLogs = false; }
+};
+setInterval(() => void retainLogs(), 5 * 60_000).unref();
 
 function shutdown() {
   shuttingDown = true;
