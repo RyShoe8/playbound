@@ -6,6 +6,7 @@ import { runCommand } from "./installationUpdateWorker.js";
 import { ETLEGACY_RELEASES } from "./etlegacyUpdates.js";
 import { OPENMOHAA_RELEASE } from "./openmohaaUpdates.js";
 import { UNVANQUISHED_RELEASES } from "./unvanquishedUpdates.js";
+import { REVIEWED_COMPONENTS } from "./reviewedComponentUpdates.js";
 
 const DAY = 24 * 60 * 60_000;
 const RELEASES = {
@@ -15,8 +16,9 @@ const RELEASES = {
   "earth-2140-trilogy": ["OpenE2140/OpenE2140", /^release-\d{8}$/],
   openmohaa: ["openmoh/openmohaa", /^v\d+\.\d+\.\d+$/],
   unvanquished: ["Unvanquished/Unvanquished", /^v\d+\.\d+\.\d+$/],
+  morrowind: ["TES3MP/TES3MP", /^tes3mp-\d+\.\d+\.\d+$/],
 };
-export const automaticInstallationUpdate = (key) => Boolean(INSTALLATION_TARGETS[key]?.appId || RELEASES[key] || ["factorio", "hypersomnia", "wolfenstein-enemy-territory"].includes(key));
+export const automaticInstallationUpdate = (key) => Boolean(INSTALLATION_TARGETS[key]?.appId || RELEASES[key] || ["factorio", "hypersomnia", "wolfenstein-enemy-territory", "re-volt-rvgl"].includes(key));
 
 // Parse only quoted VDF keys/values and braces. Never confuse a beta/depot's
 // build with depots.branches.public.buildid, even when it appears first.
@@ -67,11 +69,17 @@ export async function latestInstallationBuild(key, { request = fetch, run = runC
     const [repository, tag] = RELEASES[key];
     const release = await readRelease(repository, { request, signal: AbortSignal.timeout(30_000), label: target.name });
     if (release.draft !== false || release.prerelease !== false || !tag.test(release.tag_name || "")) throw new Error("Official release is not a stable supported build");
-    return ["mindustry", "openmohaa", "unvanquished"].includes(key) ? release.tag_name.slice(1) : release.tag_name;
+    return key === "morrowind" ? release.tag_name.slice(7) : ["mindustry", "openmohaa", "unvanquished"].includes(key) ? release.tag_name.slice(1) : release.tag_name;
   }
   if (key === "factorio") {
     const version = JSON.parse(await boundedText("https://factorio.com/api/latest-releases", request)).stable?.headless;
     if (!/^\d+\.\d+\.\d+$/.test(version || "")) throw new Error("Factorio stable version is invalid");
+    return version;
+  }
+  if (key === "re-volt-rvgl") {
+    const page = await boundedText("https://rvgl.org/", request, 128 * 1024);
+    const version = page.match(/Current version:\s*(?:<[^>]+>\s*)*(\d{2}\.\d{4}[a-z]\d+)\b/)?.[1];
+    if (!version) throw new Error("RVGL official version metadata is unavailable");
     return version;
   }
   if (key === "wolfenstein-enemy-territory") {
@@ -148,7 +156,10 @@ export function createDailyInstallationUpdates({ stateDir, coordinator, latest =
               row.message = target.blockedReason || "Installation missing or incomplete; automatic installation is paused.";
             } else {
               row.availableBuild = await latest(target.key);
-              if (!newer(row.availableBuild, target.buildId)) row.status = "up_to_date";
+              if (REVIEWED_COMPONENTS[target.key]) {
+                row.status = row.availableBuild === target.buildId ? "up_to_date" : "review_required";
+                if (row.status === "review_required") row.message = "New engine release requires matching game data, scripts, dependencies and a reviewed checksum profile. Existing files remain unchanged.";
+              } else if (!newer(row.availableBuild, target.buildId)) row.status = "up_to_date";
               else if (target.key === "unvanquished" && row.availableBuild !== UNVANQUISHED_RELEASES.latest) {
                 row.status = "review_required"; row.message = "New Unvanquished version needs reviewed engine/sandbox/game package compatibility and checksums.";
               } else if (target.key === "openmohaa" && row.availableBuild !== OPENMOHAA_RELEASE.version) {

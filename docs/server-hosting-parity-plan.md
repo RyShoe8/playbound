@@ -767,3 +767,53 @@ deployment. Download regression coverage includes manually validated official
 GitHub redirects; existing download callers retain their prior redirect behavior.
 Coverage is now 32 installation families, 18 release-discovery sources and 19
 remaining game/edition entries.
+
+## Five-game update batch: TES3MP, Battlefield 1942, RVGL, BombSquad, Veloren (2026-10-15)
+
+Three installation families now have checksum-pinned, engine-only update and
+rollback handlers: TES3MP 0.8.1, Battlefield 1942 1.61 static Linux server and
+RVGL 23.1030a1 amd64. The publisher/mirror archive engines exactly match the VPS
+baseline. The Battlefield archive also matches the existing installer checksum.
+The bounded archive reader selects only the reviewed engine, never extracts
+archive paths, rejects missing/duplicate/special selected members, and verifies
+both archive and engine checksums. The existing worker swaps only that engine;
+Lua, account data, worlds, profiles, libraries and game assets stay in place.
+Battlefield's launch alias must resolve to the reviewed static engine.
+
+Daily official release discovery was added for TES3MP and RVGL. These are
+single-version profiles: new engine/data/script combinations require review,
+and RVGL's lettered versions are compared for equality rather than misparsed as
+numeric versions. Battlefield's fixed community-mirror archive has no declared
+stable release feed and stays review-required. These handlers support verified
+reinstallation/rollback, not unrestricted future-version upgrades.
+TES3MP discovery filters the release list for standard-server tags: GitHub's
+`latest` points to the VR variant, which must never replace a normal server.
+
+One real isolated VPS acceptance cycle per game passed download, component
+update, startup on an unused port, holding rollback while its process ran,
+SIGTERM stop without forced termination, rollback and preservation of a save
+written after the update. TES3MP's actual PlayBound Lua tracking reported zero
+players and four slots. Battlefield and RVGL checks verified UDP listeners,
+not a player query or human Join. Production installations were unchanged.
+
+The other two games remain explicit blockers, not certified handlers:
+
+- **BombSquad:** the live official download page now publishes 1.8.2; the stale
+  1.8.0a116 URL returns 404. The downloaded 1.8.2 archive is 6,961,641 bytes with
+  SHA-256 `86a51408d50dd92c37318c9f933325d16d3240f7f38e310ba6c59c17e9b846fd`.
+  Both the Python controller and game distribution differ from the installation.
+  Next work must stage the matching controller/distribution together, retain
+  PlayBound's typing patch and private Python 3.14, and put mutable `state`,
+  wrapper and configuration outside the rollback unit. Do not overwrite the
+  live tree or certify an engine-only update.
+- **Veloren:** the installed ZIP is dated August 24, 2026 and its server hash
+  differs from official stable 0.18.0. The official stable artifact was retrieved
+  successfully, but that does not establish the installed channel or authorize
+  a downgrade. Identify and pin that build/channel and its matching assets,
+  then stage engine/assets together with `userdata` outside the rollback unit.
+
+Automated regression checks: 305 agent tests (267 passed, 38 platform skips),
+19 targeted tests passed on Linux (including two archive boundary cases), nine
+platform integration/coverage tests, TypeScript and affected-file lint passed.
+Coverage is 35 installation families, 20 release-discovery sources and 16
+remaining game/edition entries, including the two blockers above.

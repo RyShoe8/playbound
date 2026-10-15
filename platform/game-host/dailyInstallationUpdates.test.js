@@ -117,3 +117,27 @@ test("ET Legacy discovers the stable publisher version and refuses malformed met
   assert.equal(await latestInstallationBuild("wolfenstein-enemy-territory", { request: async () => new Response("<h2>ET: Legacy stable release 2.86.2 - Taking Fire!!!</h2>") }), "2.86.2");
   await assert.rejects(latestInstallationBuild("wolfenstein-enemy-territory", { request: async () => new Response("<html>upstream unavailable</html>") }), /metadata is unavailable/);
 });
+
+test("TES3MP and RVGL discover official versions without confusing game and engine versions", async () => {
+  assert.equal(await latestInstallationBuild("morrowind", { request: async (url) => {
+    assert.ok(url.endsWith("/releases?per_page=30"));
+    return new Response(JSON.stringify([
+      { draft: false, prerelease: false, tag_name: "tes3mp-9.0.0-vr" },
+      { draft: false, prerelease: true, tag_name: "tes3mp-10.0.0" },
+      { draft: false, prerelease: false, tag_name: "tes3mp-0.7.0" },
+      { draft: false, prerelease: false, tag_name: "tes3mp-0.8.1" },
+    ]));
+  } }), "0.8.1");
+  await assert.rejects(latestInstallationBuild("morrowind", { request: async () => new Response(JSON.stringify([{ draft: false, prerelease: false, tag_name: "tes3mp-0.8.1-vr" }])) }), /standard release is unavailable/);
+  assert.equal(await latestInstallationBuild("re-volt-rvgl", { request: async () => new Response('<div>Current version: <b>23.1030a1</b></div>') }), "23.1030a1");
+  await assert.rejects(latestInstallationBuild("re-volt-rvgl", { request: async () => new Response("No stable version available") }), /metadata is unavailable/);
+});
+
+test("new pinned component releases require review, while unchanged lettered RVGL versions do not queue", async (t) => {
+  const f = fixture(t); let current = "23.1030a1";
+  const coordinator = { snapshot: () => ({ targets: [{ key: "re-volt-rvgl", installed: true, buildId: "23.1030a1" }] }), withMetadataCheck: (fn) => fn(), queue: () => { throw new Error("must not queue"); } };
+  const daily = () => createDailyInstallationUpdates({ stateDir: f.stateDir, coordinator, latest: async () => current, now: () => Date.now() });
+  await daily().tick(); assert.equal(daily().snapshot().targets["re-volt-rvgl"].status, "up_to_date");
+  fs.unlinkSync(path.join(f.stateDir,"daily-installation-updates.json")); current = "24.0101a1";
+  await daily().tick(); assert.equal(daily().snapshot().targets["re-volt-rvgl"].status, "review_required");
+});
