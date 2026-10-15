@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 
 const HOSTS = new Set(["github.com", "release-assets.githubusercontent.com", "objects.githubusercontent.com"]);
 export async function readRelease(repository, { request = fetch, signal, label }) {
-  if (!["Anuken/Mindustry", "OpenRA/OpenRA", "OpenHV/OpenHV", "OpenE2140/OpenE2140", "assaultcube/AC", "openmoh/openmohaa", "Unvanquished/Unvanquished", "TES3MP/TES3MP", "triplea-game/triplea", "RyShoe8/playbound"].includes(repository)) throw new Error("Unsupported release source");
+  if (!["Anuken/Mindustry", "OpenRA/OpenRA", "OpenHV/OpenHV", "OpenE2140/OpenE2140", "assaultcube/AC", "openmoh/openmohaa", "Unvanquished/Unvanquished", "TES3MP/TES3MP", "triplea-game/triplea", "RyShoe8/playbound", "Warzone2100/warzone2100", "Inq8/CAmod"].includes(repository)) throw new Error("Unsupported release source");
   // TES3MP marks its VR channel as GitHub's latest stable release. Select the
   // highest standard-server tag explicitly; never switch a normal world to VR.
   const endpoint = repository === "TES3MP/TES3MP" ? "releases?per_page=30" : repository === "RyShoe8/playbound" ? "releases/tags/ysoccer-online-latest" : "releases/latest";

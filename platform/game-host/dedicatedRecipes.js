@@ -28,6 +28,7 @@ import { randomBytes } from "node:crypto";
 import { createRequire } from "node:module";
 import { ANIV_HELPER, anivDirectory } from "./anivControl.js";
 import { prepareBarotraumaRuntime } from "./barotraumaRuntime.js";
+import { prepareTrackmaniaPackage } from "./trackmaniaRuntime.js";
 const rimworldDifficulty = createRequire(import.meta.url)("./rimworldDifficulty.json");
 
 /**
@@ -576,10 +577,13 @@ export function createDedicatedRecipes(deps) {
       protocol: "both",
       binaries: gameBin("trackmania", ["TrackmaniaServer"]),
       resolveBinary: (candidates, ctx) => {
-        if (!ctx) return firstExisting(candidates);
-        const runtime = path.join(serverDir("trackmania-servers", ctx), "runtime", "TrackmaniaServer");
+        const shared = path.join(GAMES_ROOT, "trackmania/runtime/TrackmaniaServer");
+        if (!ctx) return fs.existsSync(path.join(GAMES_ROOT, "trackmania/runtime")) ? firstExisting([shared]) : firstExisting(candidates);
+        const directory = path.join(serverDir("trackmania-servers", ctx), "runtime");
+        if (fs.existsSync(path.join(directory,"package"))) return firstExisting([path.join(directory,"package/TrackmaniaServer")]);
+        const runtime = path.join(directory, "TrackmaniaServer");
         if (fs.existsSync(runtime)) return runtime;
-        return firstExisting(candidates);
+        return fs.existsSync(path.join(GAMES_ROOT,"trackmania/runtime")) ? firstExisting([shared]) : firstExisting(candidates);
       },
       cwd: (_port, ctx) => path.join(serverDir("trackmania-servers", ctx), "runtime"),
       startupReadyTimeoutMs: 120_000,
@@ -593,12 +597,17 @@ export function createDedicatedRecipes(deps) {
           throw new Error("The Trackmania dedicated server account needs a login and password");
         }
         const runtime = path.join(home, "runtime");
-        if (!fs.existsSync(path.join(runtime, "TrackmaniaServer"))) {
+        if (!fs.existsSync(runtime)) {
           const stage = path.join(home, `.runtime-${process.pid}`);
           if (fs.existsSync(stage)) fs.rmSync(stage, { recursive: true });
-          fs.cpSync(path.join(GAMES_ROOT, "trackmania"), stage, { recursive: true });
+          if (fs.existsSync(path.join(GAMES_ROOT, "trackmania/runtime"))) {
+            fs.mkdirSync(stage, {mode:0o700});
+            fs.cpSync(path.join(GAMES_ROOT,"trackmania/UserData"),path.join(stage,"UserData"),{recursive:true});
+            prepareTrackmaniaPackage(path.join(GAMES_ROOT,"trackmania"),stage);
+          } else fs.cpSync(path.join(GAMES_ROOT, "trackmania"), stage, { recursive: true });
           fs.renameSync(stage, runtime);
         }
+        if (fs.existsSync(path.join(GAMES_ROOT,"trackmania/runtime"))) prepareTrackmaniaPackage(path.join(GAMES_ROOT,"trackmania"),runtime);
         const template = path.join(runtime, "UserData", "Config", "dedicated_cfg.default.txt");
         let xml = fs.readFileSync(template, "utf8");
         const replaceTag = (section, tag, value) => {

@@ -1,9 +1,21 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { parseQuake3Status, openMohaaBotCount, parseMindustryPing, parseAssaultCubeInfo, LOCAL_QUERY_GAMES } from "./playerQueries.js";
+import { parseQuake3Status, openMohaaBotCount, parseMindustryPing, parseAssaultCubeInfo, parseChocolateDoomStatus, queryRoomOccupancy, LOCAL_QUERY_GAMES } from "./playerQueries.js";
 import { parseA2sOccupancy } from "./a2sQuery.js";
 
 const ff = Buffer.from([0xff, 0xff, 0xff, 0xff]);
+
+test("Chocolate Doom counts native players and rejects truncated or unrelated replies", () => {
+  const packet = Buffer.concat([Buffer.from([0,14]),Buffer.from('Chocolate Doom 3.0.1\0'),Buffer.from([0,2,4,2,0]),Buffer.from('Server\0')]);
+  assert.deepEqual(parseChocolateDoomStatus(packet),{players:2,maxPlayers:4,bots:0});
+  for (let length=0;length<packet.length;length++) assert.equal(parseChocolateDoomStatus(packet.subarray(0,length)),null);
+  const bad=Buffer.from(packet);bad[1]=13;assert.equal(parseChocolateDoomStatus(bad),null);
+  const counts=Buffer.from(packet);counts[counts.indexOf(0,2)+2]=5;assert.equal(parseChocolateDoomStatus(counts),null);
+});
+
+test("an unsupported Odamex query remains unknown instead of querying a different engine", async () => {
+  assert.equal(await queryRoomOccupancy({gameSlug:'freedoom',editionSlug:'odamex',port:29988}),null);
+});
 
 test("Quake 3 status counts players with a ping and ignores bots (ping 0)", () => {
   const body = 'statusResponse\n\\sv_hostname\\PB\\sv_maxclients\\16\n12 48 "Alice"\n3 0 "Bot"\n0 71 "Bob"\n';

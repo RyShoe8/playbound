@@ -9,18 +9,21 @@ import { UNVANQUISHED_RELEASES } from "./unvanquishedUpdates.js";
 import { REVIEWED_COMPONENTS } from "./reviewedComponentUpdates.js";
 import { PAIRED_RUNTIMES } from "./pairedRuntimeUpdates.js";
 import { REVIEWED_JAVA } from "./reviewedJavaUpdates.js";
+import { HURRY_BUILD } from "./hurryUpdates.js";
 
 const DAY = 24 * 60 * 60_000;
 const RELEASES = {
   mindustry: ["Anuken/Mindustry", /^v\d+(?:\.\d+)*$/],
   openra: ["OpenRA/OpenRA", /^release-\d{8}$/],
   openhv: ["OpenHV/OpenHV", /^\d{8}$/],
+  "combined-arms": ["Inq8/CAmod", /^\d+\.\d+(?:\.\d+)?$/],
   "earth-2140-trilogy": ["OpenE2140/OpenE2140", /^release-\d{8}$/],
   openmohaa: ["openmoh/openmohaa", /^v\d+\.\d+\.\d+$/],
   unvanquished: ["Unvanquished/Unvanquished", /^v\d+\.\d+\.\d+$/],
+  "warzone-2100": ["Warzone2100/warzone2100", /^\d+\.\d+\.\d+$/],
   morrowind: ["TES3MP/TES3MP", /^tes3mp-\d+\.\d+\.\d+$/],
 };
-export const automaticInstallationUpdate = (key) => Boolean(INSTALLATION_TARGETS[key]?.appId || RELEASES[key] || PAIRED_RUNTIMES[key] || REVIEWED_JAVA[key] || ["factorio", "hypersomnia", "wolfenstein-enemy-territory", "re-volt-rvgl"].includes(key));
+export const automaticInstallationUpdate = (key) => Boolean(INSTALLATION_TARGETS[key]?.appId || RELEASES[key] || PAIRED_RUNTIMES[key] || REVIEWED_JAVA[key] || ["factorio", "hypersomnia", "wolfenstein-enemy-territory", "re-volt-rvgl", "hurry-curry"].includes(key));
 
 // Parse only quoted VDF keys/values and braces. Never confuse a beta/depot's
 // build with depots.branches.public.buildid, even when it appears first.
@@ -108,6 +111,25 @@ export async function latestInstallationBuild(key, { request = fetch, run = runC
     if (!names.length) throw new Error("Veloren weekly Linux package is unavailable");
     return names.at(-1);
   }
+  if (key === "trackmania") {
+    const response = await request("https://nadeo-download.cdn.ubi.com/trackmania/TrackmaniaServer_Latest.zip", { method: "HEAD", redirect: "error", signal: AbortSignal.timeout(30_000) });
+    const etag = response.headers.get("etag");
+    if (!response.ok || !/^"[a-f0-9]{32}(?:-\d{1,6})?"$/.test(etag || "")) throw new Error("Trackmania official package metadata is unavailable");
+    return "etag-" + etag.slice(1,-1);
+  }
+  if (key === "hurry-curry") {
+    const commits = JSON.parse(await boundedText("https://codeberg.org/api/v1/repos/hurrycurry/hurrycurry/commits?limit=1", request, 128 * 1024));
+    const commit = Array.isArray(commits) && commits[0]?.sha;
+    if (!/^[a-f0-9]{40}$/.test(commit || "")) throw new Error("Hurry Curry declared source channel is unavailable");
+    return "commit-" + commit;
+  }
+  if (key === "freeciv") {
+    const page = await boundedText("https://files.freeciv.org/stable/",request,1024*1024);
+    const versions = [...page.matchAll(/href="freeciv-(\d+\.\d+\.\d+)\.tar\.xz"/g)].map(match=>match[1]);
+    versions.sort((a,b)=>a.localeCompare(b,"en",{numeric:true}));
+    if (!versions.length) throw new Error("Freeciv stable source releases are unavailable");
+    return versions.at(-1);
+  }
   if (key === "wolfenstein-enemy-territory") {
     const page = await boundedText("https://www.etlegacy.com/download", request, 128 * 1024);
     const version = page.match(/ET: Legacy stable release (\d+\.\d+\.\d+)\s*-/)?.[1];
@@ -166,7 +188,7 @@ export function createDailyInstallationUpdates({ stateDir, coordinator, latest =
       await coordinator.withMetadataCheck(async () => {
         const inventory = coordinator.snapshot();
         for (const target of inventory.targets) {
-          const reviewedPackage = REVIEWED_JAVA[target.key] || PAIRED_RUNTIMES[target.key];
+          const reviewedPackage = REVIEWED_JAVA[target.key] || PAIRED_RUNTIMES[target.key] || (target.key === "hurry-curry" ? HURRY_BUILD : null);
           const old = previous.targets[target.key];
           const row = { checkedAt: now(), installedBuild: target.buildId,
             lastAttemptBuild: old?.lastAttemptBuild, jobId: old?.jobId };
@@ -188,7 +210,7 @@ export function createDailyInstallationUpdates({ stateDir, coordinator, latest =
                 if (row.status === "review_required") row.message = "New engine release requires matching game data, scripts, dependencies and a reviewed checksum profile. Existing files remain unchanged.";
               } else if (reviewedPackage && row.availableBuild === target.buildId) row.status = "up_to_date";
               else if (reviewedPackage && row.availableBuild !== reviewedPackage.latest) {
-                row.status = "review_required"; row.message = PAIRED_RUNTIMES[target.key] ? "New paired package needs reviewed controller/engine/assets compatibility and checksums; the installed runtime is unchanged." : "New Java server package needs reviewed runtime/client compatibility and checksums; the installation is unchanged.";
+                row.status = "review_required"; row.message = PAIRED_RUNTIMES[target.key] ? "New paired package needs reviewed controller/engine/assets compatibility and checksums; the installed runtime is unchanged." : target.key === "hurry-curry" ? "New source build needs reviewed client protocol, player-limit patch, toolchain and compiled checksums; the installation is unchanged." : "New Java server package needs reviewed runtime/client compatibility and checksums; the installation is unchanged.";
               } else if (!reviewedPackage && !newer(row.availableBuild, target.buildId)) row.status = "up_to_date";
               else if (target.key === "unvanquished" && row.availableBuild !== UNVANQUISHED_RELEASES.latest) {
                 row.status = "review_required"; row.message = "New Unvanquished version needs reviewed engine/sandbox/game package compatibility and checksums.";

@@ -31,6 +31,10 @@ pull credentials, edit environment files, or alter unrelated database records.
 - Pin trusted artifacts or use a declared official update channel. Validate
   checksums/manifests, architecture, executable permissions, and dependencies.
   Do not offer arbitrary download URLs, shell fragments, or client-selected paths.
+  Combined Arms first enrollment uses the operator-only
+  `platform/game-host/tools/install-combined-arms.sh`; later changes use its
+  separate `combined-arms` installation key. Its AppImage is not the official
+  RA/CNC/D2K engine. Follow this separation for other standalone editions.
 - Declare TCP/UDP and query/status ports, spans, startup deadlines, graceful
   shutdown, child-process supervision, recovery/backoff, and port release.
   Reserve auxiliary TCP and UDP listeners as well as gameplay ports. Verify
@@ -107,6 +111,13 @@ pull credentials, edit environment files, or alter unrelated database records.
   Wire `installationTargets.js`, worker strategy, and the root-owned read-only
   process scanner/sudoers allowlist where applicable. The current Steam-only
   strategy must not be applied to archives, OS packages, Wine, or source builds.
+- Source-build handlers must pin the source checksum/commit, dependency lock,
+  PlayBound patches, compiler/toolchain and build flags. Compare compiled
+  checksums from independent fresh paths before trusting a binary baseline;
+  remove nondeterministic generator ordering and timestamps at their source.
+  Keep compiler/toolchain setup operator-only. Update workers must remain
+  unprivileged and must not gain Docker, package-manager or general shell sudo.
+  Record native protocol/synthetic-client checks separately from human Join.
 - Wait for affected runtimes and pending starts to finish; block new starts
   while queued/active/interrupted. Preserve live games, saves, and credentials.
   Verify artifacts/executables before activation, retain rollback, and recover

@@ -37,7 +37,7 @@ export DEBIAN_FRONTEND=noninteractive
 echo "==> packages"
 apt-get update -y
 apt-get install -y --no-install-recommends \
-  ca-certificates curl wget unzip tar xz-utils 7zip python3 xvfb xauth xdotool imagemagick bubblewrap util-linux \
+  ca-certificates curl wget unzip tar xz-utils 7zip python3 binutils xvfb xauth xdotool imagemagick bubblewrap util-linux \
   ufw jq coturn git \
   openjdk-17-jre-headless \
   openttd \
@@ -222,6 +222,8 @@ cp -f "$AGENT_SRC/index.js" "$AGENT_SRC/agentRoutes.js" "$AGENT_SRC/recipes.js" 
   "$AGENT_SRC/installationTargets.js" "$AGENT_SRC/installationJobs.js" "$AGENT_SRC/dailyInstallationUpdates.js" "$AGENT_SRC/installationFailureReports.js" "$AGENT_SRC/etlegacyUpdates.js" "$AGENT_SRC/etlegacyArchive.py" "$AGENT_SRC/etlegacyReleases.json" "$AGENT_SRC/etlegacyManagedFiles.txt" "$AGENT_SRC/openmohaaUpdates.js" "$AGENT_SRC/openmohaaArchive.py" "$AGENT_SRC/openmohaaRelease.json" "$AGENT_SRC/unvanquishedUpdates.js" "$AGENT_SRC/unvanquishedArchive.py" "$AGENT_SRC/unvanquishedReleases.json" "$AGENT_SRC/installationUpdateWorker.js" "$AGENT_SRC/mindustryUpdates.js" "$AGENT_SRC/githubReleaseAssets.js" "$AGENT_SRC/openraUpdates.js" "$AGENT_SRC/openhvUpdates.js" "$AGENT_SRC/openRaAppImageUpdates.js" "$AGENT_SRC/openE2140Updates.js" "$AGENT_SRC/appImageInstallation.js" "$AGENT_SRC/sshArtifactSignature.js" "$AGENT_SRC/hypersomniaUpdates.js" "$AGENT_SRC/assaultcubeUpdates.js" "$AGENT_SRC/nativeArchive.py" "$AGENT_SRC/factorioUpdates.js" "$AGENT_SRC/factorioArchive.py" "$AGENT_SRC/terrariaUpdates.js" "$AGENT_SRC/terrariaArchive.py" "$AGENT_SRC/terraria1458.json" "$AGENT_SRC/nativePackageUpdates.js" "$AGENT_SRC/nativePackageProfiles.json" "$AGENT_SRC/packageNativeArchive.py" "$AGENT_SRC/rimworldUpdates.js" "$AGENT_SRC/rimworldSourceBuild.py" "$AGENT_SRC/rimworldBuild.json" "$AGENT_SRC/rimworldPackages.lock.json" "$AGENT_SRC/reviewedSourceArchive.py" "$AGENT_SRC/fgmsUpdates.js" "$AGENT_SRC/fgmsSourceBuild.py" "$AGENT_SRC/fgmsBuild.json" "$AGENT_SRC/xonoticUpdates.js" "$AGENT_SRC/xonoticArchive.py" "$AGENT_SRC/xonotic086.json" \
   "$AGENT_SRC/gameEnvironment.js" \
   "$AGENT_SRC/reviewedJavaUpdates.js" "$AGENT_SRC/reviewedJavaProfiles.json" "$AGENT_SRC/reviewedJavaArchive.py" \
+  "$AGENT_SRC/hurryUpdates.js" "$AGENT_SRC/sourceRuntimeBuilds.json" "$AGENT_SRC/reviewedHostedSourceBuild.py" "$AGENT_SRC/reproducibleFreeciv.py" \
+  "$AGENT_SRC/trackmaniaRuntime.js" "$AGENT_SRC/combinedArmsUpdates.js" \
   "$AGENT_SRC/pairedRuntimeUpdates.js" "$AGENT_SRC/pairedRuntimeArchive.py" "$AGENT_SRC/pairedRuntimeProfiles.json" "$AGENT_SRC/pairedRuntimeEnroll.js" \
   "$AGENT_SRC/reviewedComponentUpdates.js" "$AGENT_SRC/reviewedComponentProfiles.json" "$AGENT_SRC/reviewedComponentArchive.py" \
   "$AGENT_SRC/dedicatedRecipes.js" "$AGENT_SRC/barotraumaRuntime.js" "$AGENT_SRC/rimworldControl.js" "$AGENT_SRC/rimworldDifficulty.json" "$AGENT_SRC/anivControl.js" \
@@ -334,6 +336,9 @@ if [[ ! -f "$MIN_DIR/server-release.jar" ]]; then
 fi
 
 echo "==> Freeciv dedicated (match PlayBound client ${FREECIV_VERSION:-3.2.5})"
+if command -v docker >/dev/null 2>&1 && systemctl is-active --quiet docker; then
+  python3 "$AGENT_SRC/installReviewedRust.py" || echo "  Reviewed Rust setup needs operator attention; existing games retained" >&2
+fi
 FREECIV_VERSION="${FREECIV_VERSION:-3.2.5}"
 FREECIV_DIR="$GAMES_DIR/freeciv"
 mkdir -p "$FREECIV_DIR"
@@ -762,6 +767,11 @@ else
 fi
 
 echo "==> Warzone 2100 autohost config"
+if [[ -n "$WZ_REAL" ]]; then
+  chown playbound:playbound "$WZ_DIR"
+  runuser -u playbound -- env GAME_HOST_GAMES_DIR="$GAMES_DIR" node "$AGENT_DIR/pairedRuntimeEnroll.js" warzone-2100 || \
+    echo "  Warzone runtime needs package review; existing installation and data retained" >&2
+fi
 WZ_CONFIG="$HOME_DIR/warzone"
 mkdir -p "$WZ_CONFIG/autohost"
 cat > "$WZ_CONFIG/config" <<'EOF'
