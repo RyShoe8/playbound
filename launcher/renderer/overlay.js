@@ -33,6 +33,8 @@ let state = {
   hostedBusy: false,
   hostedConsoleDraft: "",
   hostedConsoleLines: [],
+  hostedLogs: null,
+  hostedLogsBusy: false,
   localDiagnostics: null,
   diagnosticsBusy: false,
   partyId: null,
@@ -523,7 +525,9 @@ function renderHostedControls() {
        <label class="row"><span>Command</span><input id="hosted-console-command" maxlength="200" value="${escapeHtml(state.hostedConsoleDraft)}"></label>
        <button class="apply" id="hosted-console-send" ${state.hostedBusy ? "disabled" : ""}>Send command</button>`
     : "";
-  return `${lifecycle ? `<p class="guide-section">Server</p>${lifecycle}<p class="note">Stop and Restart disconnect everyone. Saved worlds are kept.</p>` : ""}${playersHtml}${data.capabilities?.players && running ? `<button class="tab" id="hosted-refresh-players" ${state.hostedBusy ? "disabled" : ""}>Refresh players</button>` : ""}${consoleHtml}`;
+  const logsHtml = isHostedTarget() && may("server:read_logs") && window.playbound?.workspaceRequest
+    ? `<p class="guide-section">Server output</p><p class="note">Up to 200 captured lines. Credential-bearing lines are omitted.</p><button class="tab" id="hosted-refresh-logs" ${state.hostedLogsBusy ? "disabled" : ""}>${state.hostedLogsBusy ? "Loading…" : "Refresh output"}</button>${state.hostedLogs ? `<pre class="note" style="max-width:100%;max-height:16rem;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere">${escapeHtml(state.hostedLogs.error || (state.hostedLogs.available ? state.hostedLogs.lines.join("\n") || "No complete output lines yet." : "No captured output is available for this server yet."))}</pre>` : ""}` : "";
+  return `${lifecycle ? `<p class="guide-section">Server</p>${lifecycle}<p class="note">Stop and Restart disconnect everyone. Saved worlds are kept.</p>` : ""}${playersHtml}${data.capabilities?.players && running ? `<button class="tab" id="hosted-refresh-players" ${state.hostedBusy ? "disabled" : ""}>Refresh players</button>` : ""}${consoleHtml}${logsHtml}`;
 }
 
 function wireHostedControls() {
@@ -539,9 +543,22 @@ function wireHostedControls() {
     if (event.key === "Enter") { event.preventDefault(); void sendHostedConsole(); }
   });
   root.querySelector("#hosted-refresh-players")?.addEventListener("click", () => void refreshHostedPlayers());
+  root.querySelector("#hosted-refresh-logs")?.addEventListener("click", () => void refreshHostedLogs());
   root.querySelectorAll("[data-player-action]").forEach((button) => {
     button.addEventListener("click", () => void moderateHostedPlayer(button.dataset.playerAction, button.dataset.playerId));
   });
+}
+
+async function refreshHostedLogs() {
+  if (!isHostedTarget() || state.hostedLogsBusy || !state.data?.permissions?.includes("server:read_logs") || !window.playbound?.workspaceRequest) return;
+  const target = state.partyId;
+  state.hostedLogsBusy = true;
+  render();
+  try {
+    const result = await window.playbound.workspaceRequest({ path: `/api/hosting/servers/${target.slice(7)}/logs`, method: "GET" });
+    if (state.partyId === target) state.hostedLogs = result;
+  } catch { if (state.partyId === target) state.hostedLogs = { error: "Could not load server output. Please retry." }; }
+  finally { if (state.partyId === target) { state.hostedLogsBusy = false; render(); } }
 }
 
 async function refreshHostedPlayers() {
@@ -1016,7 +1033,11 @@ async function load() {
   }
   const context = await window.playbound.getOverlayContext();
   const party = context?.party || null;
-  if (state.partyId !== (party?.id || null)) state.localDiagnostics = null;
+  if (state.partyId !== (party?.id || null)) {
+    state.localDiagnostics = null;
+    state.hostedLogs = null;
+    state.hostedLogsBusy = false;
+  }
   state.partyId = party?.id || null;
   state.rvglEnabled = Boolean(party?.rvglLobby);
   if (!state.rvglEnabled) {

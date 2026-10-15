@@ -53,6 +53,19 @@ until the additional handlers pass their gates. No placeholder controls.
 
 ## Current delivered scope
 
+- Owner/administrator log viewing uses a fixed-ID, read-only agent endpoint.
+  Each request reads at most 64 KiB and returns at most 200 complete lines;
+  cut edges, links and non-regular files are rejected or omitted. Credential
+  labels, known agent/runtime secret values, URLs and token-shaped values are
+  scrubbed before output reaches the control plane. My Servers web/native and
+  the existing Ctrl+P Server tab refresh only on request, with no background
+  log polling. Moderators and public-server party leaders have no log access.
+  This covers existing managed stdout/stderr files; ANEURISM and RimWorld's
+  separate transports do not yet expose captured output through this endpoint.
+  On-disk log rotation, engine-specific captures and OS isolation remain work;
+  redaction is defense in depth, not permission to log credentials. Launcher
+  changes require the next binary release.
+
 - Existing web/native/overlay management, role checks, map/bot/player controls
   where declared, restore points, supported saved-file roots, daily maintenance.
 - Admin-coordinated staged updates for CS2, TF2 and Unturned, with rollback,

@@ -50,6 +50,7 @@ import { runWorldBackup } from "./worldBackupRunner.js";
 import { manageDedicatedFiles } from "./dedicatedFiles.js";
 import { createInstallationCoordinator } from "./installationJobs.js";
 import { gameEnvironment } from "./gameEnvironment.js";
+import { readManagedLog, logSecretValues } from "./managedLogs.js";
 import { captureRvglLobby, sendRvglLobbyInput } from "./rvglDisplay.js";
 
 const require = createRequire(import.meta.url);
@@ -1435,6 +1436,20 @@ const server = http.createServer(async (req, res) => {
         })),
         jobs: Object.fromEntries(managedJobs),
       });
+      return;
+    }
+
+    const logsMatch = url.pathname.match(/^\/managed\/([a-fA-F0-9]{24})\/logs$/);
+    if (req.method === "GET" && logsMatch) {
+      const id = logsMatch[1];
+      const room = rooms.get(byManaged.get(id));
+      try {
+        const result = await readManagedLog(MANAGED_LOG_DIR, id, [
+          ...logSecretValues(process.env), ...logSecretValues(room?.settings), room?.rconPassword,
+        ]);
+        res.setHeader("Cache-Control", "no-store");
+        json(res, 200, result);
+      } catch { json(res, 503, { error: "Server output is unavailable" }); }
       return;
     }
 

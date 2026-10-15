@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Copy, RotateCw, TriangleAlert } from "lucide-react";
 import { SettingControl } from "@/components/friends/PartyServerSettings";
 import { ServerFiles } from "./ServerFiles";
+import { ServerLogs } from "./ServerLogs";
 import type { ServerSettingDefinition, ServerSettingValue, ServerSettingValues } from "@/lib/serverControl/settings";
 import type { ServerControlCapabilities, ServerRuntimeState } from "@/lib/serverControl/adapter";
 
@@ -171,6 +172,7 @@ export function ServerControl({ serverId }: { serverId: string }) {
     control.maps ? "Maps" : null,
     control.capabilities.players ? "Players" : null,
     control.capabilities.console && may("server:console") ? "Console" : null,
+    may("server:read_logs") ? "Logs" : null,
     may("server:create_backup") || may("server:restore_backup") ? "Backups" : null,
     may("server:configure") && may("server:restart") ? "Maintenance" : null,
     "Access",
@@ -260,6 +262,7 @@ export function ServerControl({ serverId }: { serverId: string }) {
       {tab === "Maps" ? <MapsTab base={base} canChange={may("server:change_map")} run={run} /> : null}
       {tab === "Players" ? <PlayersTab base={base} running={running} canKick={may("server:kick_players")} canBan={may("server:ban_players")} run={run} /> : null}
       {tab === "Console" ? <ConsoleTab base={base} running={running} rimworld={server.gameSlug === "rimworld" || server.gameSlug === "rimworld-together"} /> : null}
+      {tab === "Logs" ? <ServerLogs key={base} base={base} /> : null}
       {tab === "Backups" ? (
         <BackupsTab base={base} status={control.status.status} canCreate={may("server:create_backup")} canRestore={may("server:restore_backup")} canExport={may("server:configure")} run={run} />
       ) : null}

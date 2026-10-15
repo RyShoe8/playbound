@@ -131,6 +131,8 @@ describe("customer Server Control", () => {
   });
 
   it("gives moderators players and maps only", async () => {
+    expect(await authorizeServer(ids.mod, serverId, "server:read_logs")).toMatchObject({ status: 403 });
+    expect(await authorizeServer(ids.stranger, serverId, "server:read_logs")).toMatchObject({ status: 404 });
     await startServer(ids.owner, serverId);
     expect(await startServer(ids.mod, serverId)).toMatchObject({ status: 403 });
     expect(await stopServer(ids.mod, serverId)).toMatchObject({ status: 403 });
@@ -143,6 +145,8 @@ describe("customer Server Control", () => {
   });
 
   it("lets administrators run the server but not manage access or delete it", async () => {
+    expect(await authorizeServer(ids.admin, serverId, "server:read_logs")).toMatchObject({ role: "administrator" });
+    expect(await authorizeServer(ids.owner, serverId, "server:read_logs")).toMatchObject({ role: "owner" });
     expect(await startServer(ids.admin, serverId)).toMatchObject({ ok: true });
     expect(await runConsole(ids.admin, serverId, "status")).toMatchObject({ status: 200 });
     expect(await grantAccess(serverId, ids.admin, "Stranger", "moderator")).toMatchObject({ status: 403 });

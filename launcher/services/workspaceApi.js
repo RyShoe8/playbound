@@ -8,6 +8,7 @@ const ROUTES = [
   ['GET|POST', /^\/api\/hosting\/servers\/[a-f0-9]{24}\/players$/],
   ['GET|POST|DELETE', /^\/api\/hosting\/servers\/[a-f0-9]{24}\/bans$/],
   ['POST', /^\/api\/hosting\/servers\/[a-f0-9]{24}\/console$/],
+  ['GET', /^\/api\/hosting\/servers\/[a-f0-9]{24}\/logs$/],
   ['GET|POST|DELETE', /^\/api\/hosting\/servers\/[a-f0-9]{24}\/backups$/],
   ['GET|POST', /^\/api\/hosting\/servers\/[a-f0-9]{24}\/world-backups$/],
   ['GET|POST|DELETE', /^\/api\/hosting\/servers\/[a-f0-9]{24}\/access$/],
