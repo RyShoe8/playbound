@@ -40,6 +40,7 @@ export const INSTALLATION_TARGETS = Object.freeze({
   "battlefield-1942-anthology": { name: "Battlefield 1942 (reviewed static engine)", strategy: "reviewed-component", component: "bf1942_lnxded.static" },
   "re-volt-rvgl": { name: "RVGL (reviewed Linux engine)", strategy: "reviewed-component", component: "rvgl.64" },
   morrowind: { name: "Morrowind (reviewed TES3MP engine)", strategy: "reviewed-component", component: "tes3mp-server.x86_64" },
+  freedoom: { name: "Freedoom + Zandronum (reviewed dedicated engine)", strategy: "reviewed-component", component: "zandronum-server" },
   bombsquad: { name: "BombSquad (paired controller and game distribution)", strategy: "paired-runtime", component: "runtime" },
   trackmania: { name: "Trackmania (paired dedicated engine and Packs)", strategy: "paired-runtime", component: "runtime" },
   freeciv: { name: "Freeciv (matching reviewed engine, library and rulesets)", strategy: "paired-runtime", component: "runtime" },

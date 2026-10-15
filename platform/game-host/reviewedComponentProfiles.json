@@ -37,5 +37,37 @@
     "bytes": 2935448,
     "sha256": "9d1e25ed7435346cf150a01f6ef045d8d7ea9fe20b1e4440bdbc780b833185d1",
     "elfClass": 2
+  },
+  "freedoom": {
+    "name": "Freedoom + Zandronum",
+    "version": "3.2.1-1",
+    "component": "zandronum-server",
+    "url": "https://debian.drdteam.org/pool/multiverse/z/zandronum-server/zandronum-server_3.2.1-1_amd64.deb",
+    "format": "deb",
+    "member": "./usr/games/zandronum/zandronum-server",
+    "archiveBytes": 3245244,
+    "archiveSha256": "9877f51263f5fd5f9b8e41fae1c0d3cd2c43136ad04975857a7e5921a040445c",
+    "bytes": 9578416,
+    "sha256": "bd965cd2bcb663a2b96a91dac5550c013e2f1061993bbef6324574347f0aa9a9",
+    "elfClass": 2,
+    "baselines": [
+      {
+        "version": "3.2.1",
+        "bytes": 9743800,
+        "sha256": "41c1d3d9656dece8dbb7544b380acea6524b2f65aa9a89442899a556f86bd9fa"
+      }
+    ],
+    "requiredFiles": [
+      {
+        "name": "zandronum.pk3",
+        "bytes": 894778,
+        "sha256": "b7065624305ee960d4a7683ab916b7de826abfe3e7b871001179057b9123a280"
+      },
+      {
+        "name": "skulltag_actors.pk3",
+        "bytes": 57280,
+        "sha256": "3f270becdb0e2df670e93dd4acd6fbc2a57e82a1244915672bc386b034b44e99"
+      }
+    ]
   }
 }

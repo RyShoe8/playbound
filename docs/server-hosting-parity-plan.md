@@ -1079,3 +1079,78 @@ replaced. The final SS14 name/status-port and Freedoom compatibility guards pass
 35 Linux agent tests plus four archive-boundary cases, and 60 affected platform
 tests passed with TypeScript and affected-file lint. The agent deployment retained
 all twelve managed process identities and left catalog/database records untouched.
+
+## Zandronum updates, GoldenEye and HX occupancy (2026-10-15)
+
+Freedoom's hosted Zandronum engine now has a reviewed component updater. The main
+download site still returns an HTML challenge, but DRD Team's maintained Debian
+repository supplies the native amd64 server. Its signed repository metadata was
+verified against key `0D8F900AB77BB504F2C69E7A392203ABAF88540B`; the package
+SHA-256 matches that signed index. Required Zandronum and Skulltag PK3 hashes
+exactly match the installed distribution. Only the native engine is swapped;
+IWADs, maps, private settings and saved data stay untouched. The Debian wrapper
+and maintainer scripts are never installed or executed. Fixed-member extraction
+rejects missing/duplicate/special or changed members.
+
+The actual isolated maintenance worker passed native queries before update,
+after update and after rollback; the original binary checksum and newer saved
+fixture survived rollback. The installed upstream archive remains a reviewed
+baseline. Daily discovery retains Debian revisions, queues the approved 3.2.1-1
+package once, waits for affected servers to stop, and requires review for unknown
+revisions. Failed/cancelled or rolled-back builds are not silently retried daily.
+The process scanner and exact sudo allowlist include Freedoom. This covers the
+Zandronum hosting edition, not a standalone Freedoom engine or other source ports.
+Coverage is now 46 installation families and 31 daily discovery sources.
+
+GoldenEye's failed loopback check was traced to Source's address behavior. An
+isolated server bound to all interfaces and answered its real A2S query through
+the VPS address: zero humans, four slots and zero bots. The existing private
+Wine runtime was stopped and its large temporary copy removed after checking
+that no process referenced it; acceptance evidence was retained. The recipe now
+binds explicitly and the agent/platform occupancy mapping uses the existing A2S
+public-address fallback. Its coordinated SDK/mod/private-runtime updater and
+human Join acceptance remain unfinished; this query does not enable its profile.
+
+HX's published Ports.txt specifies its native query socket at gameplay + 1. A
+private Wine fixture returned a complete HXGameInfo reply with its exact gameplay
+port, zero humans and four slots. The new bounded parser/query adapter passed a
+second real fixture check and rejects incomplete replies, wrong ports/game types,
+duplicate keys and impossible counts. It never interprets failure as an empty
+server. Private HX rules now survive restarts while managed ports, slots and
+download/uplink safety settings are reapplied. Its Wine/mod update handler is
+still separate work; no retail game assets were downloaded or redistributed.
+
+Open Fortress review confirmed that its official alpha requires the Source SDK
+2013 Multiplayer `previous2021` branch. Steam app 244310 exposes that branch at
+build 6982827, and an isolated anonymous install succeeded after an initial
+failed attempt. The publisher-linked 2,617,348,367-byte mod archive was downloaded
+with SHA-256 `4ac3451e099e8057af5e5ebe765c3b90fb5e6afdaeedaeb9d7a0ea47eb609b1e`.
+All 27,193 archive entries were checked for safe relative paths, duplicates,
+regular-file/directory attributes and bounded expanded size before extraction.
+Its server.so is 32-bit. The production TF2 engine is now 64-bit, and its recipe
+always selected the ordinary `tf` game even for the Open Fortress edition.
+That invalid fallback now fails closed; an ordinary TF2 server must not be
+advertised as Open Fortress. The staging packages do not enable that edition or
+replace any existing TF2 files. Coordinated SDK/mod updates, private runtime
+refresh, native acceptance and human Join remain its gates.
+
+The subsequent native staging check passed: Open Fortress loaded dm_2fort,
+returned zero humans/four slots/zero bots through the existing Source query,
+and registered an anonymous Steam game-server ID. Initial failures were traced
+with an unprivileged debugger to missing dedicated module aliases, followed by
+invalid TF2 resource paths. Fixed local `_srv.so` bindings and explicit Linux
+paths to the existing TF2 assets resolved startup. Only the isolated SDK/mod
+tree was changed; the production TF2 installation was never modified. The
+working staging tree remains at
+`/var/lib/playbound-host/state/openfortress-package-review-zx6nOA` for the
+coordinated updater/private-runtime implementation. It is not a production
+installation or proof of human Join. Original publisher archives/checksums and
+native acceptance evidence were retained. No test server remains running.
+
+All twelve production managed identities survived each guarded deployment.
+Validation includes the final full agent suite (348 cases: 303 passed, 45 platform
+skips), targeted Linux cases and the real HX adapter fixture. The affected platform coverage/query tests,
+TypeScript and lint passed. No catalog/profile or production database changes
+were made by this batch. Remaining update handlers are HX, GoldenEye, Open
+Fortress and RA2; Vintage Story stays owner-deferred. General isolation/plugin,
+human Join and packaged-launcher gates still apply.

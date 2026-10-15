@@ -83,8 +83,9 @@ it("keeps separate edition updates pending instead of inheriting base-depot supp
   const rows = buildInstallationCoverage({ targets: INSTALLATION_UPDATE_KEYS.map((key) => ({ key, name: key, installed: true, rollbackAvailable: false })), jobs: [] });
   expect(rows.filter((row) => row.category === "supported")).toHaveLength(INSTALLATION_UPDATE_KEYS.length);
   expect(rows.find((row) => row.id === "team-fortress-2:open-fortress")).toMatchObject({ category: "edition" });
+  expect(rows.find((row) => row.id === "team-fortress-2:open-fortress")?.installationKey).toBeUndefined();
   expect(rows.find((row) => row.id === "openra:combined-arms")).toMatchObject({ category: "supported", installationKey: "combined-arms" });
-  expect(rows.find((row) => row.id === "freedoom")?.reason).toContain("separate engine");
+  expect(rows.find((row) => row.id === "freedoom")).toMatchObject({category: "supported", installationKey: "freedoom"});
   expect(rows.find((row) => row.id === "rimworld-together")).toMatchObject({ category: "supported", installationKey: "rimworld-together" });
   expect(rows.find((row) => row.id === "freeciv")).toMatchObject({ category: "supported", installationKey: "freeciv" });
   expect(rows.find((row) => row.id === "flightgear")).toMatchObject({ category: "supported", installationKey: "flightgear" });

@@ -15,6 +15,8 @@ export const QUERY_BY_GAME: Record<string, string> = {
   "rimworld-together": "agent-local",
   "counter-strike-2": "agent-local",
   "counter-strike-source": "agent-local",
+  "goldeneye-source": "agent-local",
+  "deus-ex-goty-edition": "agent-local",
   "team-fortress-2": "agent-local",
   xonotic: "agent-local",
   openarena: "agent-local",

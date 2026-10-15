@@ -89,12 +89,16 @@ export function prepareHxRoom(port, ctx, base = HX_BASE, home = HOST_HOME) {
     const target = path.join(room, entry.name);
     if (!fs.existsSync(target)) fs.symlinkSync(source, target, entry.isDirectory() ? "dir" : "file");
   }
-  const ini = buildHxIni(fs.readFileSync(path.join(base, "System", "HXDefault.ini"), "utf8"), port, ctx.maxPlayers);
   const config = path.join(system, "HX.ini");
+  let source = path.join(base, "System", "HXDefault.ini");
   try {
     const info=fs.lstatSync(config);
-    if (!info.isFile() || info.isSymbolicLink() || info.nlink !== 1) throw new Error("HX private configuration requires review");
+    if (!info.isFile() || info.isSymbolicLink() || info.nlink !== 1 || info.size > 1024 * 1024) throw new Error("HX private configuration requires review");
+    source = config;
   } catch(error) { if(error.code!=="ENOENT") throw error; }
+  // Keep private rules across restarts. Only managed port/slots and the two
+  // download/uplink safety settings are reapplied to an existing configuration.
+  const ini = buildHxIni(fs.readFileSync(source, "utf8"), port, ctx.maxPlayers);
   fs.writeFileSync(config, ini, "utf8");
   return room;
 }

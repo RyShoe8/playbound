@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { createDailyInstallationUpdates, latestInstallationBuild, steamPublicBuild } from "./dailyInstallationUpdates.js";
+import { createDailyInstallationUpdates, latestInstallationBuild, steamPublicBuild, automaticInstallationUpdate } from "./dailyInstallationUpdates.js";
 import { createInstallationCoordinator, createInstallationStore } from "./installationJobs.js";
 import { REVIEWED_JAVA } from "./reviewedJavaUpdates.js";
 
@@ -162,6 +162,23 @@ test("TES3MP and RVGL discover official versions without confusing game and engi
   await assert.rejects(latestInstallationBuild("morrowind", { request: async () => new Response(JSON.stringify([{ draft: false, prerelease: false, tag_name: "tes3mp-0.8.1-vr" }])) }), /standard release is unavailable/);
   assert.equal(await latestInstallationBuild("re-volt-rvgl", { request: async () => new Response('<div>Current version: <b>23.1030a1</b></div>') }), "23.1030a1");
   await assert.rejects(latestInstallationBuild("re-volt-rvgl", { request: async () => new Response("No stable version available") }), /metadata is unavailable/);
+});
+
+test("Zandronum discovery reads the dedicated amd64 package and rejects ambiguity", async () => {
+  const entry='Package: zandronum-server\nVersion: 3.2.1-1\nArchitecture: amd64\n';
+  assert.equal(automaticInstallationUpdate('freedoom'),true);
+  assert.equal(await latestInstallationBuild('freedoom',{request:async()=>new Response(entry)}),'3.2.1-1');
+  for(const body of [entry+'\n'+entry,entry.replace('amd64','arm64'),'<html>challenge</html>'])
+    await assert.rejects(latestInstallationBuild('freedoom',{request:async()=>new Response(body)}),/missing or ambiguous/);
+});
+
+test("Zandronum queues the reviewed package revision once and never installs an unknown revision", async t => {
+  const f=fixture(t),jobs=[];let available='3.2.1-1',clock=100000;
+  const coordinator={withMetadataCheck:fn=>fn(),snapshot:()=>({targets:[{key:'freedoom',installed:true,buildId:'3.2.1'}],jobs}),queue:()=>{const job={id:'zandro-one',status:'completed'};jobs.push(job);return job;}};
+  const daily=()=>createDailyInstallationUpdates({stateDir:f.stateDir,coordinator,latest:async()=>available,now:()=>clock});
+  await daily().tick();assert.equal(jobs.length,1);assert.equal(daily().snapshot().targets.freedoom.status,'queued');
+  clock+=86400000;await daily().tick();assert.equal(jobs.length,1);assert.equal(daily().snapshot().targets.freedoom.status,'review_required');
+  available='3.2.1-2';clock+=86400000;await daily().tick();assert.equal(jobs.length,1);assert.equal(daily().snapshot().targets.freedoom.status,'review_required');
 });
 
 test("new pinned component releases require review, while unchanged lettered RVGL versions do not queue", async (t) => {

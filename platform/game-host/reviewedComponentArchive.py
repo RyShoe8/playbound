@@ -8,16 +8,27 @@ import resource
 import subprocess
 import sys
 import tarfile
+import tempfile
 
 
 def extract(archive, destination, profile):
+    if profile['format'] == 'deb':
+        members=subprocess.check_output(['/usr/bin/ar','t',str(archive)],timeout=10).decode().splitlines()
+        payloads=[name for name in members if name in ('data.tar.xz','data.tar.zst','data.tar.gz')]
+        if len(payloads)!=1: raise ValueError('ambiguous Debian payload')
+        with tempfile.TemporaryFile(dir=Path(archive).parent) as payload:
+            subprocess.run(['/usr/bin/ar','p',str(archive),payloads[0]],stdout=payload,check=True,timeout=30)
+            if payload.tell()>32*1024**2: raise ValueError('oversized Debian payload')
+            payload.seek(0)
+            return extract(payload,destination,{**profile,'format':'tar'})
     if Path(destination).exists() or Path(destination).is_symlink():
         raise ValueError('output must be new')
     member = profile['member']
-    if member.startswith('/') or '\\' in member or any(p in ('', '.', '..') for p in member.split('/')):
+    checked_member = member[2:] if member.startswith('./') else member
+    if checked_member.startswith('/') or '\\' in checked_member or any(p in ('', '.', '..') for p in checked_member.split('/')):
         raise ValueError('invalid reviewed member')
     if profile['format'] == 'tar':
-        with tarfile.open(archive) as bundle:
+        with (tarfile.open(fileobj=archive) if hasattr(archive,'read') else tarfile.open(archive)) as bundle:
             matches = []
             for i, entry in enumerate(bundle):
                 if i > 10000: raise ValueError('too many archive entries')

@@ -23,7 +23,7 @@ const RELEASES = {
   "warzone-2100": ["Warzone2100/warzone2100", /^\d+\.\d+\.\d+$/],
   morrowind: ["TES3MP/TES3MP", /^tes3mp-\d+\.\d+\.\d+$/],
 };
-export const automaticInstallationUpdate = (key) => Boolean(INSTALLATION_TARGETS[key]?.appId || RELEASES[key] || PAIRED_RUNTIMES[key] || REVIEWED_JAVA[key] || ["factorio", "hypersomnia", "wolfenstein-enemy-territory", "re-volt-rvgl", "hurry-curry"].includes(key));
+export const automaticInstallationUpdate = (key) => Boolean(INSTALLATION_TARGETS[key]?.appId || RELEASES[key] || PAIRED_RUNTIMES[key] || REVIEWED_JAVA[key] || ["factorio", "hypersomnia", "wolfenstein-enemy-territory", "re-volt-rvgl", "hurry-curry", "freedoom"].includes(key));
 
 // Parse only quoted VDF keys/values and braces. Never confuse a beta/depot's
 // build with depots.branches.public.buildid, even when it appears first.
@@ -96,6 +96,15 @@ export async function latestInstallationBuild(key, { request = fetch, run = runC
     const page = await boundedText("https://rvgl.org/", request, 128 * 1024);
     const version = page.match(/Current version:\s*(?:<[^>]+>\s*)*(\d{2}\.\d{4}[a-z]\d+)\b/)?.[1];
     if (!version) throw new Error("RVGL official version metadata is unavailable");
+    return version;
+  }
+  if (key === "freedoom") {
+    // Discovery is advisory. Only a checksum-reviewed engine plus matching PK3s
+    // can be installed; a new repository version always requires review.
+    const index = await boundedText("https://debian.drdteam.org/dists/stable/multiverse/binary-amd64/Packages", request, 1024 * 1024);
+    const entries = index.split(/\r?\n\r?\n/).filter(entry => /^Package: zandronum-server\r?$/m.test(entry));
+    const version = entries.length === 1 && entries[0].match(/^Version: (\d+\.\d+\.\d+(?:-\d+)?)\r?$/m)?.[1];
+    if (!version || !/^Architecture: amd64\r?$/m.test(entries[0])) throw new Error("Zandronum repository version is missing or ambiguous");
     return version;
   }
   if (key === "bombsquad") {
@@ -200,7 +209,7 @@ export function createDailyInstallationUpdates({ stateDir, coordinator, latest =
       await coordinator.withMetadataCheck(async () => {
         const inventory = coordinator.snapshot();
         for (const target of inventory.targets) {
-          const reviewedPackage = REVIEWED_JAVA[target.key] || PAIRED_RUNTIMES[target.key] || (target.key === "hurry-curry" ? HURRY_BUILD : null);
+          const reviewedPackage = REVIEWED_JAVA[target.key] || PAIRED_RUNTIMES[target.key] || (target.key === "hurry-curry" ? HURRY_BUILD : target.key === "freedoom" ? {latest: REVIEWED_COMPONENTS.freedoom.version} : null);
           const old = previous.targets[target.key];
           const row = { checkedAt: now(), installedBuild: target.buildId,
             lastAttemptBuild: old?.lastAttemptBuild, jobId: old?.jobId };
@@ -217,12 +226,12 @@ export function createDailyInstallationUpdates({ stateDir, coordinator, latest =
               row.message = target.blockedReason || "Installation missing or incomplete; automatic installation is paused.";
             } else {
               row.availableBuild = await latest(target.key);
-              if (REVIEWED_COMPONENTS[target.key]) {
+              if (REVIEWED_COMPONENTS[target.key] && target.key !== "freedoom") {
                 row.status = row.availableBuild === target.buildId ? "up_to_date" : "review_required";
                 if (row.status === "review_required") row.message = "New engine release requires matching game data, scripts, dependencies and a reviewed checksum profile. Existing files remain unchanged.";
               } else if (reviewedPackage && row.availableBuild === target.buildId) row.status = "up_to_date";
               else if (reviewedPackage && row.availableBuild !== reviewedPackage.latest) {
-                row.status = "review_required"; row.message = PAIRED_RUNTIMES[target.key] ? "New paired package needs reviewed controller/engine/assets compatibility and checksums; the installed runtime is unchanged." : target.key === "hurry-curry" ? "New source build needs reviewed client protocol, player-limit patch, toolchain and compiled checksums; the installation is unchanged." : "New Java server package needs reviewed runtime/client compatibility and checksums; the installation is unchanged.";
+                row.status = "review_required"; row.message = target.key === "freedoom" ? "New Zandronum package revision needs reviewed engine/data compatibility, dependencies and checksums; the installed runtime is unchanged." : PAIRED_RUNTIMES[target.key] ? "New paired package needs reviewed controller/engine/assets compatibility and checksums; the installed runtime is unchanged." : target.key === "hurry-curry" ? "New source build needs reviewed client protocol, player-limit patch, toolchain and compiled checksums; the installation is unchanged." : "New Java server package needs reviewed runtime/client compatibility and checksums; the installation is unchanged.";
               } else if (!reviewedPackage && !newer(row.availableBuild, target.buildId)) row.status = "up_to_date";
               else if (target.key === "unvanquished" && row.availableBuild !== UNVANQUISHED_RELEASES.latest) {
                 row.status = "review_required"; row.message = "New Unvanquished version needs reviewed engine/sandbox/game package compatibility and checksums.";
