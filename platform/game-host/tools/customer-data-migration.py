@@ -1,5 +1,5 @@
 #!/usr/bin/python3 -I
-"""Root-only, offline Teeworlds migration preparation. Never activates data.
+"""Root-only, offline Teeworlds migration with retained originals and progress.
 
 The agent has no sudo permission for this tool. Sources and destinations are
 derived from a server ID; no caller-selected path or executable is accepted.
@@ -15,9 +15,12 @@ import re
 import stat
 import sys
 import tempfile
+import ctypes
+import fcntl
 
 SOURCE = Path('/var/lib/playbound-host/customer-sandboxes')
 ROOT = Path('/var/lib/playbound-customer-runtime')
+STATE = Path('/var/lib/playbound-host/state')
 MAX_ENTRIES = 8192
 MAX_BYTES = 2 * 1024 ** 3
 MAX_FILE_BYTES = 256 * 1024 ** 2
@@ -25,8 +28,8 @@ MAX_DEPTH = 16
 
 
 def arguments(args):
-    if len(args) != 2 or args[0] not in ('prepare', 'verify') or not re.fullmatch(r'[a-f0-9]{24}', args[1]):
-        raise ValueError('Expected prepare|verify and a lowercase server ID')
+    if len(args) != 2 or args[0] not in ('prepare', 'verify', 'activate', 'rollback', 'recover', 'enroll', 'complete-rollback') or not re.fullmatch(r'[a-f0-9]{24}', args[1]):
+        raise ValueError('Invalid offline migration operation or server ID')
     return args
 
 
@@ -178,8 +181,7 @@ def prepare(server_id, owner):
     try:
         quiescent(owner)
         check_directory(source_fd, owner)
-        # This trusted runtime helper creates only root-owned traversal/control
-        # dirs and an empty UID home. The checkpoint lives under control/.
+        # The checkpoint uses only root-owned traversal/control directories.
         helper = Path('/usr/local/libexec/playbound-customer-runtime')
         info = helper.lstat()
         if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_mode & 0o022 or info.st_nlink != 1:
@@ -244,13 +246,319 @@ def verify(server_id):
     return value
 
 
+def tree(path, owner, destination=None):
+    fd = open_directory(path)
+    try:
+        return walk(fd, owner, destination)
+    finally:
+        os.close(fd)
+
+
+def inode(path):
+    try:
+        info = path.lstat()
+    except FileNotFoundError:
+        return None
+    if not stat.S_ISDIR(info.st_mode):
+        raise ValueError('Migration location must be an unlinked directory')
+    return [info.st_dev, info.st_ino]
+
+
+def journal_read(control, server_id):
+    fd = os.open(control / 'migration.json', os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    with os.fdopen(fd) as handle:
+        info = os.fstat(handle.fileno())
+        if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_nlink != 1 or info.st_mode & 0o077 or info.st_size > 4096:
+            raise ValueError('Unsafe migration journal')
+        value = json.load(handle)
+    if value.get('serverId') != server_id or value.get('version') != 1 or value.get('phase') not in ('activating', 'active', 'rolling-back', 'rolled-back'):
+        raise ValueError('Migration journal identity mismatch')
+    return value
+
+
+def journal_write(control, value):
+    fd, name = tempfile.mkstemp(prefix='journal-incomplete-', dir=control)
+    with os.fdopen(fd, 'w') as handle:
+        json.dump(value, handle)
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(name, control / 'migration.json')
+    sync_directory(control)
+
+
+def exchange(left, right):
+    """Linux atomic directory exchange, with pinned no-follow parent FDs."""
+    libc = ctypes.CDLL(None, use_errno=True)
+    function = libc.renameat2
+    function.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_uint]
+    function.restype = ctypes.c_int
+    left_fd, right_fd = open_directory(left.parent), open_directory(right.parent)
+    try:
+        if function(left_fd, os.fsencode(left.name), right_fd, os.fsencode(right.name), 2) != 0:
+            raise OSError(ctypes.get_errno(), 'Atomic migration exchange failed')
+        os.fsync(left_fd)
+        os.fsync(right_fd)
+    finally:
+        os.close(left_fd)
+        os.close(right_fd)
+
+
+def change_copy_owner(path, owner):
+    """Only a just-created copy below root-private control/ is reassigned."""
+    fd = open_directory(path)
+    try:
+        check_directory(fd, 0)
+        for name in os.listdir(fd):
+            info = os.stat(name, dir_fd=fd, follow_symlinks=False)
+            if stat.S_ISDIR(info.st_mode):
+                change_copy_owner(path / name, owner)
+            elif stat.S_ISREG(info.st_mode) and info.st_uid == 0 and info.st_nlink == 1:
+                child = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=fd)
+                try:
+                    if fingerprint(info) != fingerprint(os.fstat(child)):
+                        raise ValueError('Private migration copy changed')
+                    os.fchown(child, owner, owner)
+                    os.fsync(child)
+                finally:
+                    os.close(child)
+            else:
+                raise ValueError('Unsafe private migration copy')
+        os.fchown(fd, owner, owner)
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def finish_transaction(server_id, control, value):
+    root = ROOT / server_id
+    rollback = value['phase'] in ('rolling-back', 'rolled-back')
+    stage = control / ('rollback-copy-v1' if rollback else 'activation-copy-v1')
+    target = SOURCE / ('pb-' + server_id) if rollback else root / 'data'
+    expected = value['rollbackInode'] if rollback else value['activationInode']
+    previous = value['sealedSourceInode'] if rollback else value['previousDataInode']
+    if inode(target) != expected:
+        if value['phase'] in ('active', 'rolled-back'):
+            raise ValueError('Completed migration data identity changed')
+        if inode(stage / 'data') != expected or inode(target) != previous:
+            raise ValueError('Ambiguous migration requires operator review')
+        # Resume only if the original source still matches its checkpoint. A
+        # legacy process started after interruption may have written more saves.
+        if not rollback and tree(SOURCE / ('pb-' + server_id), value['legacyUid']) != verify(server_id)['entries']:
+            raise ValueError('Legacy progress changed during interrupted migration')
+        if not rollback and previous is not None:
+            entries = tree(target, value['uid'])
+            if any(entry['path'] != 'server.cfg' or entry['type'] != 'file' or entry['bytes'] != 0 for entry in entries):
+                raise ValueError('UID progress appeared during interrupted activation')
+        if previous is None:
+            os.rename(stage / 'data', target)
+            sync_directory(stage)
+            sync_directory(target.parent)
+        else:
+            exchange(stage / 'data', target)
+    if not rollback:
+        source = SOURCE / ('pb-' + server_id)
+        retained = control / 'legacy-source-retained-v1'
+        if inode(source) != value['sealedSourceInode']:
+            if inode(source) != value['sourceInode'] or inode(retained) != value['sealedSourceInode']:
+                raise ValueError('Ambiguous legacy seal requires operator review')
+            if tree(source, value['legacyUid']) != verify(server_id)['entries']:
+                raise ValueError('Legacy progress changed during interrupted migration')
+            exchange(retained, source)
+        # The root-owned empty placeholder rejects the service-user legacy
+        # launch path. Original files are retained inside private control/.
+        fd = open_directory(source)
+        try:
+            check_directory(fd, 0)
+            if os.listdir(fd):
+                raise ValueError('Legacy migration seal was modified')
+        finally:
+            os.close(fd)
+    # An interruption after exchange is recognized by directory inode, never
+    # inferred from an empty directory or a possibly stale completion flag.
+    value['phase'] = 'rolled-back' if rollback else 'active'
+    journal_write(control, value)
+    return value
+
+
+def transaction(action, server_id, legacy_uid, runtime, identities):
+    quiescent(legacy_uid)
+    original = verify(server_id)
+    account = identities.ensure_identity(server_id)
+    uid = account['uid']
+    quiescent(uid)
+    root = ROOT / server_id
+    # Preparation is a prerequisite. Do not create an empty checkpoint or data
+    # home when the operator named an unprepared server.
+    for directory, mode in [(ROOT, 0o711), (root, 0o711), (root / 'control', 0o700)]:
+        runtime.directory(directory, mode=mode)
+    control = root / 'control'
+    lock = os.open(control / 'runtime.lock', os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+    try:
+        identities.secure_stat(os.fstat(lock))
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        source = SOURCE / ('pb-' + server_id)
+        try:
+            value = journal_read(control, server_id)
+        except FileNotFoundError:
+            value = None
+        if value is not None:
+            if value.get('uid') != uid or value.get('legacyUid') != legacy_uid:
+                raise ValueError('Migration account changed')
+            if action == 'recover' or value['phase'] in ('activating', 'rolling-back'):
+                return finish_transaction(server_id, control, value)
+            if action == 'activate':
+                if value['phase'] != 'active':
+                    raise ValueError('Rolled-back migrations cannot be implicitly reactivated')
+                return finish_transaction(server_id, control, value)
+            if value['phase'] == 'rolled-back':
+                return finish_transaction(server_id, control, value)
+        elif action != 'activate':
+            raise ValueError('No activation transaction to recover or roll back')
+        if action == 'activate':
+            if tree(source, legacy_uid) != original['entries']:
+                raise ValueError('Legacy source changed; both versions require operator review')
+            previous = inode(root / 'data')
+            if previous is not None:
+                entries = tree(root / 'data', uid)
+                if any(entry['path'] != 'server.cfg' or entry['type'] != 'file' or entry['bytes'] != 0 for entry in entries):
+                    raise ValueError('Existing UID game progress must not be replaced')
+            stage = control / 'activation-copy-v1'
+            origin, owner, target_uid = control / 'legacy-checkpoint-v1' / 'data', 0, uid
+            value = {'version': 1, 'serverId': server_id, 'phase': 'activating', 'uid': uid, 'legacyUid': legacy_uid, 'previousDataInode': previous, 'sourceInode': inode(source)}
+            seal = control / 'legacy-source-retained-v1'
+            seal.mkdir(mode=0o700)
+            value['sealedSourceInode'] = inode(seal)
+        else:
+            if value is None or value['phase'] != 'active' or inode(root / 'data') != value['activationInode']:
+                raise ValueError('No active migration to roll back')
+            if inode(source) != value['sealedSourceInode'] or tree(source, 0):
+                raise ValueError('Legacy source changed; both versions require operator review')
+            if tree(control / 'legacy-source-retained-v1', legacy_uid) != original['entries']:
+                raise ValueError('Retained original data changed')
+            stage = control / 'rollback-copy-v1'
+            origin, owner, target_uid = root / 'data', uid, legacy_uid
+            value = {**value, 'phase': 'rolling-back'}
+        # Do not erase incomplete copies or retry by overwriting saved files.
+        stage.mkdir(mode=0o700)
+        data = stage / 'data'
+        data.mkdir(mode=0o700)
+        entries = tree(origin, owner, data)
+        if entries != tree(origin, owner) or entries != tree(data, 0):
+            raise ValueError('Migration copy verification failed')
+        change_copy_owner(data, target_uid)
+        if entries != tree(data, target_uid):
+            raise ValueError('Reassigned migration copy differs')
+        sync_directory(stage)
+        sync_directory(control)
+        value['rollbackInode' if action == 'rollback' else 'activationInode'] = inode(data)
+        quiescent(legacy_uid)
+        quiescent(uid)
+        journal_write(control, value)
+        return finish_transaction(server_id, control, value)
+    finally:
+        os.close(lock)
+
+
+def registry_read(name, uid):
+    directory = open_directory(STATE)
+    try:
+        check_directory(directory, uid)
+        fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory)
+        with os.fdopen(fd) as handle:
+            info = os.fstat(handle.fileno())
+            if not stat.S_ISREG(info.st_mode) or info.st_uid != uid or info.st_nlink != 1 or info.st_mode & 0o077 or info.st_size > 16 * 1024 ** 2:
+                raise ValueError('Unsafe managed registry')
+            value = json.load(handle)
+        if not isinstance(value, list) or not all(isinstance(row, dict) for row in value):
+            raise ValueError('Invalid managed registry')
+        return value
+    finally:
+        os.close(directory)
+
+
+def transition_profile(action, server_id, legacy_uid, runtime, identities):
+    """Explicit offline operator bridge; ordinary job writes remain sticky."""
+    if action not in ('enroll', 'complete-rollback'):
+        raise ValueError('Invalid profile transition')
+    quiescent(legacy_uid)
+    account = identities.ensure_identity(server_id)
+    quiescent(account['uid'])
+    control = ROOT / server_id / 'control'
+    # Validate the private parent before opening a root lock or journal.
+    for path, mode in [(ROOT, 0o711), (ROOT / server_id, 0o711), (control, 0o700)]:
+        info = path.lstat()
+        if not stat.S_ISDIR(info.st_mode) or info.st_uid != 0 or stat.S_IMODE(info.st_mode) != mode:
+            raise ValueError('Unsafe migration control')
+    lock = os.open(control / 'runtime.lock', os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+    try:
+        identities.secure_stat(os.fstat(lock))
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        value = journal_read(control, server_id)
+        if value.get('uid') != account['uid'] or value.get('legacyUid') != legacy_uid:
+            raise ValueError('Migration account changed')
+        if action == 'enroll':
+            if value['phase'] != 'active' or not runtime.migration_ready(server_id, account['uid'], allow_pending=True):
+                raise ValueError('Data activation must complete before enrollment')
+        elif value['phase'] != 'rolled-back' or inode(SOURCE / ('pb-' + server_id)) != value.get('rollbackInode'):
+            raise ValueError('Data rollback must complete before profile rollback')
+        rooms = registry_read('managed-rooms.json', legacy_uid)
+        if any(row.get('communityServerId') == server_id for row in rooms):
+            raise ValueError('Stop the managed runtime through the agent before migration')
+        jobs = registry_read('managed-jobs.json', legacy_uid)
+        selected = [row for row in jobs if row.get('communityServerId') == server_id]
+        if len(selected) != 1 or selected[0].get('gameSlug') != 'teeworlds' or selected[0].get('status') not in ('stopped', 'failed'):
+            raise ValueError('Expected one stopped Teeworlds managed job')
+        if selected[0].get('identityProfile') not in (None, 'teeworlds-unix-v1'):
+            raise ValueError('Unexpected existing identity profile')
+        row = selected[0]
+        if action == 'enroll':
+            row['identityProfile'] = 'teeworlds-unix-v1'
+        else:
+            row.pop('identityProfile', None)
+        target = 'uid' if action == 'enroll' else 'legacy'
+        import datetime
+        value['profileTransition'] = {'target': target, 'state': 'pending', 'actorUid': 0, 'at': datetime.datetime.now(datetime.timezone.utc).isoformat()}
+        journal_write(control, value)
+        fd, name = tempfile.mkstemp(prefix='migration-jobs-', dir=STATE)
+        with os.fdopen(fd, 'w') as handle:
+            os.fchown(handle.fileno(), legacy_uid, legacy_uid)
+            json.dump(jobs, handle)
+            handle.flush()
+            os.fsync(handle.fileno())
+        quiescent(legacy_uid)
+        quiescent(account['uid'])
+        os.replace(name, STATE / 'managed-jobs.json')
+        sync_directory(STATE)
+        value['profileTransition']['state'] = 'complete'
+        journal_write(control, value)
+        return value
+    finally:
+        os.close(lock)
+
+
 if __name__ == '__main__':
     try:
         if os.getuid() != 0 or os.geteuid() != 0 or os.environ.get('SUDO_USER'):
             raise ValueError('Direct root operator required')
         action, server_id = arguments(sys.argv[1:])
-        value = prepare(server_id, pwd.getpwnam('playbound').pw_uid) if action == 'prepare' else verify(server_id)
-        print(json.dumps({'serverId': server_id, 'checkpointVerified': True, 'entries': len(value['entries']), 'activated': False}))
+        if action in ('prepare', 'verify'):
+            value = prepare(server_id, pwd.getpwnam('playbound').pw_uid) if action == 'prepare' else verify(server_id)
+            result = {'serverId': server_id, 'checkpointVerified': True, 'entries': len(value['entries']), 'activated': False}
+        else:
+            # Fixed, root-owned module loader already used by the runtime itself.
+            helper = Path('/usr/local/libexec/playbound-customer-runtime')
+            info = helper.lstat()
+            if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_mode & 0o022 or info.st_nlink != 1:
+                raise ValueError('Untrusted runtime helper')
+            loader = importlib.machinery.SourceFileLoader('pb_runtime', str(helper))
+            spec = importlib.util.spec_from_loader('pb_runtime', loader)
+            runtime = importlib.util.module_from_spec(spec)
+            loader.exec_module(runtime)
+            identities = runtime.trusted_module('pb_identities', 'playbound-customer-identities')
+            operation = transition_profile if action in ('enroll', 'complete-rollback') else transaction
+            value = operation(action, server_id, pwd.getpwnam('playbound').pw_uid, runtime, identities)
+            result = {'serverId': server_id, 'phase': value['phase'], 'activated': value['phase'] == 'active', 'enrollment': value.get('profileTransition', {}).get('target')}
+        print(json.dumps(result))
     except Exception:
-        print('Offline migration checkpoint failed; source and active data unchanged', file=sys.stderr)
+        print('Offline migration failed; retain all copies and inspect/recover the journal before restarting', file=sys.stderr)
         sys.exit(1)

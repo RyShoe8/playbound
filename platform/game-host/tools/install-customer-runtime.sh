@@ -16,6 +16,7 @@ printf '%s\n' \
   'playbound ALL=(root) NOPASSWD: /usr/local/libexec/playbound-customer-runtime run *' \
   'playbound ALL=(root) NOPASSWD: /usr/local/libexec/playbound-customer-runtime stop *' \
   'playbound ALL=(root) NOPASSWD: /usr/local/libexec/playbound-customer-runtime status *' > "$rule"
+printf '%s\n' 'playbound ALL=(root) NOPASSWD: /usr/local/libexec/playbound-customer-runtime migration *' >> "$rule"
 visudo -cf "$rule"
 install -o root -g root -m 440 "$rule" /etc/sudoers.d/playbound-customer-runtime
 echo 'Installed opt-in customer runtime handoff; live process users unchanged'

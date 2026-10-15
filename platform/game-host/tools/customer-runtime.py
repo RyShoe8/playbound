@@ -16,6 +16,7 @@ import sys
 import time
 
 ROOT = Path('/var/lib/playbound-customer-runtime')
+LEGACY_ROOT = Path('/var/lib/playbound-host/customer-sandboxes')
 ENV = {'PATH': '/usr/bin:/usr/games', 'LANG': 'C.UTF-8'}
 PROFILE = 'teeworlds-unix-v1'
 
@@ -33,6 +34,8 @@ def trusted_module(name, filename):
 
 
 def request(args):
+    if len(args) == 2 and args[0] == 'migration' and re.fullmatch(r'[a-f0-9]{24}', args[1]):
+        return 'migration', args[1], None, None, None
     if len(args) not in (4, 7) or args[0] not in ('run', 'stop', 'status') or not re.fullmatch(r'[a-f0-9]{24}', args[1]) or not re.fullmatch(r'[1-9][0-9]{0,9}', args[2]) or int(args[2]) <= 1 or not re.fullmatch(r'[a-f0-9-]{36}:[0-9]+', args[3]):
         raise ValueError('Invalid runtime identity')
     action, server_id, raw_pid, identity = args[:4]
@@ -199,17 +202,51 @@ def runtime_status(resources, server_id, pid, identity):
     return value
 
 
+def migration_ready(server_id, uid, allow_pending=False):
+    """Incomplete or rolled-back data transactions must never launch a game."""
+    root = ROOT / server_id
+    for directory, mode in [(ROOT, 0o711), (root, 0o711), (root / 'control', 0o700)]:
+        try:
+            info = directory.lstat()
+        except FileNotFoundError:
+            return False
+        if not stat.S_ISDIR(info.st_mode) or info.st_uid != 0 or stat.S_IMODE(info.st_mode) != mode:
+            raise ValueError('Unsafe migration parent')
+    file = root / 'control' / 'migration.json'
+    try:
+        fd = os.open(file, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    except FileNotFoundError:
+        return False
+    with os.fdopen(fd) as handle:
+        info = os.fstat(handle.fileno())
+        if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_nlink != 1 or info.st_mode & 0o077 or info.st_size > 4096:
+            raise ValueError('Unsafe migration journal')
+        value = json.load(handle)
+    if not allow_pending and value.get('profileTransition', {}).get('state') == 'pending':
+        raise ValueError('Runtime enrollment transition is incomplete')
+    data = (root / 'data').lstat()
+    if value.get('version') != 1 or value.get('serverId') != server_id or value.get('phase') != 'active' or value.get('uid') != uid or not stat.S_ISDIR(data.st_mode) or data.st_uid != uid or value.get('activationInode') != [data.st_dev, data.st_ino]:
+        raise ValueError('Customer migration is not ready')
+    source = LEGACY_ROOT / ('pb-' + server_id)
+    seal = source.lstat()
+    if not stat.S_ISDIR(seal.st_mode) or seal.st_uid != 0 or stat.S_IMODE(seal.st_mode) != 0o700 or value.get('sealedSourceInode') != [seal.st_dev, seal.st_ino]:
+        raise ValueError('Legacy migration seal changed')
+    return True
+
+
 def run_runtime(identities, resources, server_id, pid, identity, extra, text):
     port, cpu, memory = extra
     config = config_bytes(text, port)
     resources.verify_caller(pid, pwd.getpwnam('playbound').pw_uid)
     scope = verify_scope(resources, server_id, pid, identity, cpu, memory)
     account = identities.ensure_identity(server_id)
+    migration_ready(server_id, account['uid'])
     root = workspace(server_id, account['uid'])
     lock = os.open(root / 'control' / 'runtime.lock', os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
     try:
         identities.secure_stat(os.fstat(lock))
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        migration_ready(server_id, account['uid'])
         fd = os.memfd_create('pb-server-config', os.MFD_CLOEXEC | os.MFD_ALLOW_SEALING)
         child = None
         try:
@@ -251,6 +288,9 @@ if __name__ == '__main__':
             if len(text) > 16384: raise ValueError('Configuration exceeds limit')
             resources = trusted_module('pb_resources', 'playbound-customer-resources')
             sys.exit(run_runtime(identities, resources, server_id, pid, identity, extra, text.decode('utf-8')))
+        elif action == 'migration':
+            account = identities.ensure_identity(server_id)
+            print(json.dumps({'serverId': server_id, 'migrationReady': migration_ready(server_id, account['uid'])}))
         elif action == 'stop':
             print(json.dumps(stop_runtime(server_id, pid, identity)))
         else:

@@ -53,8 +53,10 @@ until the additional handlers pass their gates. No placeholder controls.
 
 ## Current delivered scope
 
-- Legacy Teeworlds migration now has an operator-only **checkpoint preparation**
-  step, not an activation path. `customer-data-migration.py prepare <serverId>`
+- Legacy Teeworlds migration has operator-only checkpoint preparation, atomic
+  data activation/rollback, journal recovery and explicit offline runtime-profile
+  enrollment/rollback completion. General production migration stays off.
+  `customer-data-migration.py prepare <serverId>`
   requires a direct root operator and refuses while any process uses the old
   service UID. No agent sudo rule, API or automatic enrollment invokes it.
   It derives fixed paths, walks with no-follow directory/file descriptors,
@@ -63,22 +65,43 @@ until the additional handlers pass their gates. No placeholder controls.
   verify the private, fsynced checkpoint before publication. Repetition verifies
   the existing checkpoint; changed source data requires operator review rather
   than overwriting it. Failed stages remain private and are never activated.
-  Original files and active UID data are untouched. Atomic activation, recovery
-  after activation interruption, and rollback preserving subsequent game progress
-  remain required before the nonempty-data enrollment guard can be lifted.
-  Eleven Linux fixture tests passed, including binary/maps preservation, mutation
+  Preparation leaves original files and active UID data untouched. Activation
+  copies verified data into the reserved UID home and privately retains originals,
+  leaving a root-owned placeholder that rejects legacy launches. Data rollback
+  copies the latest UID progress back while retaining originals and the UID copy.
+  Inode-bound journals distinguish interruptions before/after swaps; unknown
+  locations or changed legacy progress fail closed. UID starts reject incomplete
+  or rolled-back journals. Nonempty-data enrollment needs root-verified activation,
+  never an agent-owned flag. Normal creation keeps identity mode off.
+  Twenty-six Linux fixture tests passed, including binary/maps preservation, mutation
   and link rejection, limits, idempotency, source drift and checkpoint tampering.
   The installed VPS tool refused a fixture preparation while the real agent was
   active, preserved the fixture bytes and created no runtime workspace. The
-  fixture was removed; no live service was restarted or customer migrated.
+  fixture was removed without restarting live services. An isolated managed-agent
+  acceptance then started migrated fixture data, queried zero humans/four slots,
+  retained the same game PID through restart, stopped its full scope and rolled
+  back subsequent writes made as the reserved game UID. That fixture used another
+  reserved legacy UID to avoid stopping real games; actual CLI always requires the
+  old service UID offline. All fixtures were removed. Guarded agent deployment
+  preserved eleven production managed process identities; no customer was migrated.
+  Explicit `enroll`/`complete-rollback` commands change only the selected stopped
+  Teeworlds job after verifying data phase/identity, both UIDs offline, no retained
+  room and the runtime lock. Journaled actor/time and pending/completed status make
+  retries safe; UID launch refuses an unfinished enrollment. A separate VPS fixture
+  used the real agent registry reader to verify both profile changes, unchanged
+  neighboring job and preserved newer progress. Actual CLI fixes all paths and the
+  legacy UID; fixtures never changed the production registry. Twelve root-helper
+  boundary tests and the full local agent suite (204 passed, 16 platform skips)
+  passed, as did four platform deployment-chain checks and all twenty Linux
+  namespace/gate/migration-proof tests run as the real service account.
   Operator procedure: [customer-identity-migration.md](customer-identity-migration.md).
 
 - Teeworlds has an explicitly opted-in managed UID handoff (`teeworlds-unix-v1`).
   Normal website/customer creation leaves it off. Once selected, enrollment is
   retained in managed jobs across stop, failure and agent restart, so a later
   client omitting the flag cannot silently revert to the service user or the old
-  data directory. Existing nonempty service-owned data blocks this profile until
-  an explicit migration is implemented; no empty replacement or fallback occurs.
+  data directory. Existing nonempty service-owned data blocks this profile without
+  root-verified completed migration; no empty replacement or fallback occurs.
   A fixed root-owned supervisor validates the placed gate and actual limits,
   including its own inherited cgroup, and drops to the reserved UID/GID with no
   supplementary groups before executing the reviewed engine through Bubblewrap.
@@ -89,7 +112,7 @@ until the additional handlers pass their gates. No placeholder controls.
   waits for the whole cgroup to empty; a reused PID or another server's binding
   cannot authorize it. Gate loss also fences the supervisor and game tree.
   Teeworlds has no declared browser world-file/backup support to redirect; those
-  permission bridges and legacy data migration remain gates for other engines.
+  permission bridges and migration remain gates for other engines.
   VPS acceptance used an isolated loopback agent and fixture identity, covering
   concurrent/idempotent starts, real zero-player/four-slot queries, metrics,
   unchanged gate/game PIDs across agent restart, stop acknowledgment only after
@@ -101,7 +124,7 @@ until the additional handlers pass their gates. No placeholder controls.
   Cancellation terminates the unprivileged gate without waiting for privileged
   children, so fencing does not depend on an agent-side delayed cleanup timer.
   Live checks covered both SIGTERM cancellation and forced SIGKILL gate loss.
-  Human Join, legacy migration, network restrictions, other engine handoffs and
+  Human Join, maintenance rollout, network restrictions, other engine handoffs and
   executable plugins are not covered, and production identity mode stays off.
   Final controlled deployment of the guarded agent path preserved all eleven existing
   production runtime identities/PIDs; no production server was enrolled.
