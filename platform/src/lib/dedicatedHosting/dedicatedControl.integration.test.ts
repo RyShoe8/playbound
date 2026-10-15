@@ -45,6 +45,7 @@ import { createServer, startServer, stopServer, deleteServer, updateServer } fro
 import { applyControlSettings, getControl, kickPlayer, listPlayers, runConsole } from "./control";
 import { grantAccess, revokeAccess } from "./access";
 import { authorizeServer } from "./access";
+import { getMaintenance, saveMaintenance } from "./maintenance";
 import { sharedServers } from "./servers";
 import { addHostingAdmin, redeemHostingAdminInvites, removeHostingAdmin } from "./admins";
 import { getTier, saveTier } from "./tier";
@@ -92,6 +93,20 @@ beforeEach(async () => {
 });
 
 describe("customer Server Control", () => {
+  it("persists maintenance weekdays without migrating legacy records or resetting them from older clients", async () => {
+    const original = await CommunityServer.findById(serverId).lean();
+    expect(original?.maintenance?.daysUTC).toBeUndefined();
+    expect(await getMaintenance(ids.owner, serverId)).toMatchObject({ enabled: false, daysUTC: [0, 1, 2, 3, 4, 5, 6], nextWindow: null });
+    expect((await CommunityServer.findById(serverId).lean())?.maintenance?.daysUTC).toBeUndefined();
+    expect(await saveMaintenance(ids.owner, serverId, { enabled: true, hourUTC: 6, daysUTC: [5, 1] })).toMatchObject({ ok: true });
+    expect(await saveMaintenance(ids.admin, serverId, { enabled: true, hourUTC: 7 })).toMatchObject({ ok: true });
+    const saved = await CommunityServer.findById(serverId).lean();
+    expect(saved?.maintenance?.daysUTC).toEqual([1, 5]);
+    expect(saved?.maintenance?.hourUTC).toBe(7);
+    expect(saved?.name).toBe(original?.name);
+    expect(await saveMaintenance(ids.mod, serverId, { enabled: true, hourUTC: 8, daysUTC: [2] })).toMatchObject({ status: 403 });
+    expect((await CommunityServer.findById(serverId).lean())?.maintenance?.daysUTC).toEqual([1, 5]);
+  });
   it("gives a subscription administrator access to existing and future servers, then revokes it", async () => {
     await grantAccess(serverId, ids.owner, "Stranger", "moderator");
     await DedicatedSubscription.updateOne({ userId: ids.owner }, {

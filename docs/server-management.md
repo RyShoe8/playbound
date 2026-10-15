@@ -33,6 +33,11 @@ existing administration pages.
   backups. World support depends on an isolated, declared data directory.
 - Access: owner, administrator, and moderator roles, checked on every request.
 - Activity: recorded changes with actor and time.
+- Maintenance: choose UTC weekdays and an hour for optional empty-server
+  restarts. The next saved window is shown in your local time. Player-count
+  failures and occupied servers wait safely; the last check explains why.
+  Only one check snapshot is retained, with one restart claim per calendar day.
+  Existing daily schedules remain unchanged until their owner edits them.
 - Console: advanced game commands and responses, restricted by the existing
   customer console guard. This is not a shell or a stream of process logs.
 

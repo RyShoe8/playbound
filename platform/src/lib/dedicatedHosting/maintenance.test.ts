@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { maintenanceDue, maintenanceSettings } from "./maintenancePolicy";
+import { maintenanceDue, maintenanceSettings, nextMaintenanceWindow } from "./maintenancePolicy";
 
 const mocks = vi.hoisted(() => ({ find: vi.fn(), claim: vi.fn(), current: vi.fn(), update: vi.fn(), profile: vi.fn(), agent: vi.fn(), query: vi.fn(), authorize: vi.fn(), activity: vi.fn(), backup: vi.fn(), restart: vi.fn() }));
 vi.mock("@/lib/models/CommunityServer", () => ({ default: { findOne: mocks.find, findOneAndUpdate: mocks.claim, findById: () => ({ lean: mocks.current }), updateOne: mocks.update } }));
@@ -25,7 +25,35 @@ beforeEach(() => {
   mocks.restart.mockResolvedValue({ ok: true });
   mocks.authorize.mockResolvedValue({ server });
 });
-describe("daily maintenance", () => {
+describe("scheduled maintenance", () => {
+  it("preserves legacy daily schedules and respects selected UTC weekdays", async () => {
+    expect(maintenanceDue(server.maintenance, now)).toBe(true);
+    expect(maintenanceDue({ ...server.maintenance, daysUTC: [1, 3, 5] }, now)).toBe(true);
+    mocks.find.mockResolvedValue({ ...server, maintenance: { ...server.maintenance, daysUTC: [1] } });
+    await runMaintenance("server", now);
+    expect(mocks.agent).not.toHaveBeenCalled();
+    expect(mocks.claim).not.toHaveBeenCalled();
+    expect(maintenanceDue({ ...server.maintenance, daysUTC: [] }, now)).toBe(false);
+  });
+  it.each([[], [0, 0], [7], [-1], [1.5], [true], null, "Monday"])("rejects invalid days %j", daysUTC => {
+    expect(maintenanceSettings({ enabled: true, hourUTC: 6, daysUTC })).toBeNull();
+  });
+  it("does not reset selected weekdays when an older launcher omits them", async () => {
+    await saveMaintenance("owner", "server", { enabled: true, hourUTC: 7 });
+    expect(mocks.update.mock.calls[0][1].$set).not.toHaveProperty("maintenance.daysUTC");
+    expect(maintenanceSettings({ enabled: true, hourUTC: 6, daysUTC: [5, 1] })?.daysUTC).toEqual([1, 5]);
+  });
+  it("finds the next selected window, including current and already-claimed days", () => {
+    expect(nextMaintenanceWindow({ ...server.maintenance, daysUTC: [3] }, now)).toEqual({ start: "2026-10-14T06:00:00.000Z", end: "2026-10-14T07:00:00.000Z" });
+    expect(nextMaintenanceWindow({ ...server.maintenance, daysUTC: [3], lastDay: "2026-10-14" }, now)?.start).toBe("2026-10-21T06:00:00.000Z");
+    expect(nextMaintenanceWindow({ ...server.maintenance, daysUTC: [1] }, new Date("2026-10-16T07:00:00Z"))?.start).toBe("2026-10-19T06:00:00.000Z");
+    expect(nextMaintenanceWindow({ enabled: false, hourUTC: 6 }, now)).toBeNull();
+  });
+  it.each(["2026-03-07T07:00:00Z", "2026-10-31T07:00:00Z"])("UTC schedules retain their hour across DST near %s", value => {
+    const window = nextMaintenanceWindow({ enabled: true, hourUTC: 6, daysUTC: [0] }, new Date(value));
+    expect(new Date(window!.start).getUTCHours()).toBe(6);
+    expect(new Date(window!.end).getTime() - new Date(window!.start).getTime()).toBe(3600_000);
+  });
   it("only runs within the selected UTC hour, once a day", () => {
     expect(maintenanceDue(server.maintenance, now)).toBe(true);
     expect(maintenanceDue({ ...server.maintenance, lastDay: "2026-10-14" }, now)).toBe(false);
@@ -40,6 +68,8 @@ describe("daily maintenance", () => {
     await runMaintenance("server", now);
     expect(mocks.claim).not.toHaveBeenCalled();
     expect(mocks.restart).not.toHaveBeenCalled();
+    expect(mocks.update.mock.calls[0][1].$set["maintenance.lastCheckResult"]).toContain(occupancy ? "players are online" : "player count is unknown");
+    expect(mocks.activity).not.toHaveBeenCalled();
   });
   it("two workers dispatch only once after the atomic claim", async () => {
     mocks.claim.mockResolvedValueOnce(server).mockResolvedValue(null);
@@ -47,11 +77,20 @@ describe("daily maintenance", () => {
     expect(mocks.backup).toHaveBeenCalledTimes(1);
     expect(mocks.restart).toHaveBeenCalledTimes(1);
     expect(mocks.claim.mock.calls[0][0]).toMatchObject({ ownerType: "user", runtimeId: "room", "maintenance.lastDay": { $ne: "2026-10-14" } });
+    expect(mocks.claim.mock.calls[0][0].$or).toContainEqual({ "maintenance.daysUTC": 3 });
   });
   it("does not restart if a player joins during backup", async () => {
     mocks.query.mockResolvedValueOnce({ players: 0 }).mockResolvedValueOnce({ players: 1 });
     await runMaintenance("server", now);
     expect(mocks.backup).toHaveBeenCalledTimes(1);
+    expect(mocks.restart).not.toHaveBeenCalled();
+  });
+  it("rechecks a changed weekday or hour after backup", async () => {
+    mocks.current.mockResolvedValueOnce({ ...server, maintenance: { ...server.maintenance, daysUTC: [1] } });
+    await runMaintenance("server", now);
+    expect(mocks.restart).not.toHaveBeenCalled();
+    mocks.current.mockResolvedValueOnce({ ...server, maintenance: { ...server.maintenance, hourUTC: 7 } });
+    await runMaintenance("server", now);
     expect(mocks.restart).not.toHaveBeenCalled();
   });
   it("does not restart if backup fails or maintenance is disabled during preparation", async () => {

@@ -7,7 +7,7 @@ function createHostingFixture(root) {
   const permissions = (moderator ? ['view','change_map','kick_players','ban_players'] : ['view','configure','start','stop','restart','change_map','kick_players','ban_players','console','read_logs','create_backup','restore_backup','manage_access','delete','read_files','write_files']).map(p => `server:${p}`);
   const server = { id:ID,name:'Fixture Clubhouse',gameTitle:'Xonotic',description:'A server for friends',visibility:'unlisted',slots:16,players:2,online:true,host:'127.0.0.1',port:26000,runtimeState:'running' };
   const control = { role:moderator ? 'moderator' : 'owner',permissions,maps:true,capabilities:{players:true,console:true,liveApply:true},status:{status:'running',host:server.host,port:server.port,resources:{cpuCores:0.1,rssBytes:256*1024**2,collectedAt:new Date().toISOString()}},definitions:[{key:'bots',label:'Bot fill target',feature:'bots',type:'number',min:0,max:16,default:0,apply:'live'}],values:{bots:0} };
-  const maintenance = {enabled:false,hourUTC:6,lastDay:null,result:null};
+  const maintenance = {enabled:false,hourUTC:6,daysUTC:[0,1,2,3,4,5,6],lastDay:null,result:null};
   if (process.env.PLAYBOUND_SMOKE_FILES === '1') { server.online = false; server.runtimeState = 'stopped'; control.status.status = 'stopped'; control.files = !moderator; }
   let saved = '{"day":1}', etag = 'original';
   const history = [];
