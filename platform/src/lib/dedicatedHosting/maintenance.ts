@@ -12,7 +12,7 @@ export async function getMaintenance(userId: string, serverId: string) {
   if ("error" in auth) return auth;
   const value = auth.server.maintenance;
   return {
-    enabled: value?.enabled === true, hourUTC: value?.hourUTC ?? 6,
+    enabled: value?.enabled === true, hourUTC: value?.hourUTC ?? 6, action: value?.action || "restart",
     daysUTC: value?.daysUTC ?? [0, 1, 2, 3, 4, 5, 6],
     lastDay: value?.lastDay || null, result: value?.result || null,
     lastCheckedAt: value?.lastCheckedAt?.toISOString() || null, lastCheckResult: value?.lastCheckResult || null,
@@ -23,25 +23,47 @@ export async function getMaintenance(userId: string, serverId: string) {
 export async function saveMaintenance(userId: string, serverId: string, input: unknown) {
   const auth = await authorizeServer(userId, serverId, "server:configure");
   if ("error" in auth) return auth;
-  const restartAuth = await authorizeServer(userId, serverId, "server:restart");
-  if ("error" in restartAuth) return restartAuth;
   const settings = maintenanceSettings(input);
   if (!settings) return { error: "Choose an hour from 0 to 23 UTC and at least one day, with no duplicates.", status: 400 };
+  const action = settings.action ?? auth.server.maintenance?.action ?? "restart";
+  const actionAuth = await authorizeServer(userId, serverId, action === "configuration-backup" ? "server:create_backup" : "server:restart");
+  if ("error" in actionAuth) return actionAuth;
   await CommunityServer.updateOne({ _id: serverId, ownerType: "user" }, { $set: {
     "maintenance.enabled": settings.enabled, "maintenance.hourUTC": settings.hourUTC,
+    ...(settings.action === undefined ? {} : { "maintenance.action": settings.action }),
     "maintenance.changedBy": userId, "maintenance.changedAt": new Date(),
     "maintenance.lastCheckedAt": null, "maintenance.lastCheckResult": null,
     ...(settings.daysUTC === undefined ? {} : { "maintenance.daysUTC": settings.daysUTC }),
   } });
-  await recordActivity(serverId, { id: userId }, "maintenance_changed", settings.enabled ? `Empty-server restart at ${settings.hourUTC}:00 UTC; days ${settings.daysUTC?.join(",") ?? "unchanged"}` : "Scheduled restart disabled");
+  await recordActivity(serverId, { id: userId }, "maintenance_changed", settings.enabled ? `${action === "configuration-backup" ? "Configuration backup" : "Empty-server restart"} at ${settings.hourUTC}:00 UTC; days ${settings.daysUTC?.join(",") ?? "unchanged"}` : "Scheduled maintenance disabled");
   return { ok: true };
 }
 
 /** Called after recovery. Claim the day's operation before any external side effect. */
 export async function runMaintenance(serverId: string, now: Date) {
-  const server = await CommunityServer.findOne({ _id: serverId, ownerType: "user", desiredState: "running" });
+  const server = await CommunityServer.findOne({ _id: serverId, ownerType: "user" });
   if (!server || !maintenanceDue(server.maintenance, now)) return;
   const dayFilter = { $or: [{ "maintenance.daysUTC": { $exists: false } }, { "maintenance.daysUTC": now.getUTCDay() }] };
+  if (server.maintenance?.action === "configuration-backup") {
+    const day = now.toISOString().slice(0, 10);
+    const claimed = await CommunityServer.findOneAndUpdate({
+      _id: serverId, ownerType: "user", "maintenance.enabled": true,
+      "maintenance.action": "configuration-backup", "maintenance.hourUTC": now.getUTCHours(),
+      "maintenance.lastDay": { $ne: day }, ...dayFilter,
+    }, { $set: { "maintenance.lastDay": day, "maintenance.result": "Preparing configuration backup", "maintenance.lastCheckedAt": now } }, { new: true });
+    if (!claimed) return;
+    let result = "Configuration backup failed. See Activity.";
+    try {
+      const backup = await createBackup(String(claimed.ownerId), serverId, "Scheduled configuration backup");
+      if ("error" in backup) throw new Error(backup.error);
+      result = "Configuration restore point saved. Server state unchanged.";
+    } catch (error) { result = error instanceof Error ? error.message : result; }
+    await CommunityServer.updateOne({ _id: serverId, "maintenance.lastDay": day }, { $set: { "maintenance.result": result, "maintenance.lastCheckResult": result } });
+    await recordActivity(serverId, { kind: "system" }, "maintenance_ran", result);
+    return;
+  }
+  if (server.desiredState !== "running" || (server.maintenance?.action && server.maintenance.action !== "restart")) return;
+  const actionFilter = { $or: [{ "maintenance.action": "restart" }, { "maintenance.action": { $exists: false } }] };
   const noteCheck = async (message: string) => CommunityServer.updateOne({
     _id: serverId, ownerType: "user", desiredState: "running", "maintenance.enabled": true,
     "maintenance.hourUTC": now.getUTCHours(), "maintenance.lastDay": { $ne: now.toISOString().slice(0, 10) }, ...dayFilter,
@@ -63,7 +85,7 @@ export async function runMaintenance(serverId: string, now: Date) {
   const claimed = await CommunityServer.findOneAndUpdate({
     _id: serverId, ownerType: "user", desiredState: "running", runtimeId: room.roomId,
     "maintenance.enabled": true, "maintenance.hourUTC": now.getUTCHours(), "maintenance.lastDay": { $ne: day },
-    ...dayFilter,
+    $and: [dayFilter, actionFilter],
   }, { $set: { "maintenance.lastDay": day, "maintenance.result": "Preparing configuration backup", "maintenance.lastCheckedAt": now, "maintenance.lastCheckResult": "Preparing configuration backup" } }, { new: true });
   if (!claimed) return;
   let result = "Maintenance failed. See Activity.";
@@ -73,7 +95,7 @@ export async function runMaintenance(serverId: string, now: Date) {
     // Backup work may take time: query again immediately before the restart.
     const latest = await queryManagedOccupancy({ queryKind, host: room.host, port: room.port, communityServerId: serverId }).catch(() => null);
     const current = await CommunityServer.findById(serverId).lean();
-    if (latest?.players !== 0 || !maintenanceWindowMatches(current?.maintenance, now) || current?.desiredState !== "running" || current.runtimeId !== room.roomId) {
+    if (latest?.players !== 0 || !maintenanceWindowMatches(current?.maintenance, now) || (current?.maintenance?.action && current.maintenance.action !== "restart") || current?.desiredState !== "running" || current.runtimeId !== room.roomId) {
       result = "Skipped: players joined, state changed, or query unavailable.";
     } else {
       const restarted = await restartServer(String(claimed.ownerId), serverId);
