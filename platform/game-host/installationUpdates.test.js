@@ -5,11 +5,16 @@ import os from "node:os";
 import path from "node:path";
 import { createInstallationCoordinator, createInstallationStore } from "./installationJobs.js";
 import { INSTALLATION_TARGETS, verifyInstallation, prepareInstallationLinks, restoreInstallationLinks, installationKey, installationDependencies } from "./installationTargets.js";
-import { runInstallationUpdate, runCommand } from "./installationUpdateWorker.js";
+import { runInstallationUpdate, runCommand, steamCommandFailure } from "./installationUpdateWorker.js";
 import { isAgentGetPath } from "./agentRoutes.js";
 import { prepareBarotraumaRuntime } from "./barotraumaRuntime.js";
 
 const key = "team-fortress-2";
+test("Steam update errors retain actionable categories without exposing raw command output", () => {
+  assert.match(steamCommandFailure("secret=hidden Access Denied"), /authorization was denied/);
+  assert.match(steamCommandFailure("No connection https://private.example"), /could not connect/);
+  assert.doesNotMatch(steamCommandFailure("secret=hidden unknown failure"), /hidden|secret/);
+});
 function installation(directory, build = "100") {
   fs.mkdirSync(path.join(directory, "steamapps"), { recursive: true });
   fs.writeFileSync(path.join(directory, "steamapps/appmanifest_232250.acf"), `"appid" "232250"\n"StateFlags" "4"\n"buildid" "${build}"`);
@@ -45,6 +50,26 @@ function fakeCommands({ failDownload = false } = {}) {
 }
 const disk = () => ({ free: 100 * 1024 ** 3, reserve: 8 * 1024 ** 3 });
 
+test("Steam updates preserve the installed beta channel and reject a branch switch", async (t) => {
+  for (const preserve of [true, false]) {
+    const f = fixture(t);
+    fs.appendFileSync(path.join(f.current, "steamapps/appmanifest_232250.acf"), '\n"BetaKey" "preview"');
+    const job = f.coordinator.queue(key, "update", "fixture-admin"); f.store.write({ ...job, status: "launching" });
+    const commands = fakeCommands();
+    await runInstallationUpdate({ ...f, id: job.id }, { scan: async () => 0, disk, run: async (command, args, options) => {
+      if (command === "/usr/games/steamcmd") {
+        assert.deepEqual(args.slice(-3), ["-beta", "preview", "+quit"]);
+        installation(args[1], "200");
+        if (preserve) fs.appendFileSync(path.join(args[1], "steamapps/appmanifest_232250.acf"), '\n"BetaKey" "preview"');
+        return "Success! App '232250' fully installed.";
+      }
+      return commands(command, args, options);
+    } });
+    assert.equal(f.store.read(job.id).status, preserve ? "completed" : "failed");
+    assert.equal(verifyInstallation(f.current, key).buildId, preserve ? "200" : "100");
+  }
+});
+
 test("both 0 A.D. recipe aliases hold the same managed installation", () => {
   for (const slug of ["0ad", "0-ad"]) {
     assert.equal(installationKey(slug), "0ad");
@@ -55,8 +80,8 @@ test("both 0 A.D. recipe aliases hold the same managed installation", () => {
 test("update inventory contains recipe slugs only, not runtime data or duplicate aliases", (t) => {
   const f = fixture(t, { gameSlugs: () => ["unturned", "aneurism-iv", "unturned", "../private", { secret: "never returned" }] });
   assert.deepEqual(f.coordinator.snapshot().gameSlugs, ["aneurism-iv", "unturned"]);
-  assert.equal(f.coordinator.blockedReason("aneurism-iv"), null);
-  assert.throws(() => f.coordinator.queue("aneurism-iv", "update", "admin"), /Unsupported/);
+  assert.equal(f.coordinator.blockedReason("future-game"), null);
+  assert.throws(() => f.coordinator.queue("future-game", "update", "admin"), /Unsupported/);
 });
 
 test("Barotrauma worker inventories legacy copies before any depot mutation", async (t) => {

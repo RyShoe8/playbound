@@ -25,6 +25,7 @@ export const INSTALLATION_TARGETS = Object.freeze({
     name: "Barotrauma", appId: 1026340, binaries: ["DedicatedServer"],
   },
   necesse: { name: "Necesse", appId: 1169370, binaries: ["jre/bin/java"], files: ["Server.jar"] },
+  "aneurism-iv": { name: "ANEURISM IV", appId: 2832030, binaries: ["aniv_server.x86_64"], files: ["UnityPlayer.so", "aniv_server_Data/boot.config"] },
   mindustry: { name: "Mindustry", strategy: "github-jar" },
   openra: { name: "OpenRA (Red Alert, Tiberian Dawn, Dune 2000)", strategy: "github-appimage" },
   openhv: { name: "OpenHV", strategy: "github-appimage" },

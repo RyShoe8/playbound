@@ -20,6 +20,13 @@ import { stageFgmsRelease } from "./fgmsUpdates.js";
 
 const GIB = 1024 ** 3;
 
+export function steamCommandFailure(output) {
+  if (/access denied|no subscription|no license/i.test(output)) return "SteamCMD download authorization was denied; the current installation was preserved";
+  if (/disk write failure|not enough disk|insufficient disk/i.test(output)) return "SteamCMD could not write the staged download; the current installation was preserved";
+  if (/no connection|failed to connect|connection timeout/i.test(output)) return "SteamCMD could not connect to Steam; the current installation was preserved";
+  return "SteamCMD download failed; the current installation was preserved";
+}
+
 export function diskAvailable(root) {
   const disk = fs.statfsSync(root);
   return { free: disk.bavail * disk.bsize, reserve: Math.max(8 * GIB, disk.blocks * disk.bsize * 0.1) };
@@ -59,7 +66,7 @@ export function runCommand(command, args, { root, timeout = 90 * 60_000, maxOutp
     child.on("error", () => { cleanup(); reject(new Error("Update command could not be started")); });
     child.on("close", (code) => {
       cleanup();
-      if (failure || code !== 0) reject(failure || new Error("Update command failed; current installation was preserved"));
+      if (failure || code !== 0) reject(failure || new Error(command === "/usr/games/steamcmd" ? steamCommandFailure(output) : "Update command failed; current installation was preserved"));
       else resolve(output);
     });
   });
@@ -85,7 +92,8 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
     store.write(job);
   };
   try {
-    verifyInstallation(current, job.key);
+    const original = verifyInstallation(current, job.key);
+    if (original.branch && !/^[a-zA-Z0-9_-]{1,64}$/.test(original.branch)) throw new Error("SteamCMD installed branch requires operator review");
     if (await scan(job.key, gamesRoot)) throw new Error("An affected process is still running; no files were changed");
     if (job.key === "openra") validateOpenRABaseline(current);
     if (job.key === "barotrauma") {
@@ -156,7 +164,7 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
         } });
       } else {
         phase("downloading", "SteamCMD is updating the staged installation");
-        const output = await run("/usr/games/steamcmd", ["+force_install_dir", stage, "+login", "anonymous", "+app_update", String(target.appId), "+quit"], { root: gamesRoot });
+        const output = await run("/usr/games/steamcmd", ["+force_install_dir", stage, "+login", "anonymous", "+app_update", String(target.appId), ...(original.branch && original.branch !== "public" ? ["-beta", original.branch] : []), "+quit"], { root: gamesRoot });
         if (!output.includes(`Success! App '${target.appId}' fully installed.`)) throw new Error("SteamCMD did not confirm a complete installation");
       }
       restoreInstallationLinks(detachedLinks);
@@ -166,6 +174,9 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
     phase("validating", job.key === "xonotic" ? "Checking reviewed Xonotic native bytes and host libraries" : target.strategy === "reviewed-cmake-source" ? "Checking reviewed fgms relay and host libraries" : target.strategy === "reviewed-dotnet-source" ? "Checking reviewed patched RimWorld binary, upstream license and host libraries" : target.strategy === "reviewed-distro-native" ? "Checking reviewed native package, root ownership and host libraries" : job.key === "terraria" ? "Checking reviewed Terraria Linux package and runtime dependencies" : job.key === "factorio" ? "Checking Factorio headless executable, base data and package integrity" : target.strategy === "github-native-binaries" ? "Checking reviewed native executables without replacing server data" : ["github-appimage", "signed-appimage"].includes(target.strategy) ? "Checking official AppImage installation integrity and version" : target.strategy === "github-jar" ? "Checking JAR integrity, server version and Java compatibility" : "Checking Steam manifest and required executables");
     const prepared = job.action === "update" ? stage : previous;
     const verified = verifyInstallation(prepared, job.key);
+    if (job.action === "update" && target.appId && (original.branch || "public") !== (verified.branch || "public")) {
+      throw new Error("SteamCMD changed the installed branch; activation was refused");
+    }
     if (job.key === "openra") validateOpenRABaseline(prepared);
     if (await scan(job.key, gamesRoot)) throw new Error("An affected process appeared; activation was refused");
     if (fs.existsSync(backup)) throw new Error("Rollback destination already exists");
