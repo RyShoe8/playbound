@@ -53,6 +53,24 @@ until the additional handlers pass their gates. No placeholder controls.
 
 ## Current delivered scope
 
+- Network isolation now has a manual root-only kernel preflight and a verified
+  Teeworlds query transport foundation. A unique transient scope actually denied
+  IPv4/IPv6 loopback control connections as an unprivileged UID while retaining
+  public IPv4 connectivity. Candidate CIDRs are fixed; other private CIDRs and
+  public IPv6 were not individually exercised. No production filter is enabled.
+  Teeworlds queries can explicitly target a literal IPv4 address, reject invalid
+  endpoints as unknown and ignore another peer's replies. An existing server
+  returned the same zero-player/eight-slot result locally and via the public IP.
+  A separate UID/namespace/resource-limited filtered fixture returned unknown on
+  loopback and zero players/four slots over the public interface, then was removed.
+  Managed-profile application/recovery, public Join/occupied counts, other engines,
+  administration-port/tenant protections and plugin isolation remain gates.
+  All four endpoint/peer/handshake checks passed on the VPS. The full local agent
+  suite passed 207 tests with 17 platform skips. Query code/operator helper are
+  deployed; eleven existing managed process identities were preserved and no
+  production network profile or UID enrollment was enabled.
+  See [customer-network-isolation.md](customer-network-isolation.md).
+
 - Legacy Teeworlds migration has operator-only checkpoint preparation, atomic
   data activation/rollback, journal recovery and explicit offline runtime-profile
   enrollment/rollback completion. General production migration stays off.

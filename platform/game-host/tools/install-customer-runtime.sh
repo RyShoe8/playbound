@@ -7,9 +7,11 @@ test -x /usr/local/libexec/playbound-customer-identities
 test -x /usr/local/libexec/playbound-customer-resources
 python3 -m py_compile "$source_dir/customer-runtime.py"
 python3 -m py_compile "$source_dir/customer-data-migration.py"
+python3 -m py_compile "$source_dir/customer-network-check.py"
 install -o root -g root -m 755 "$source_dir/customer-runtime.py" /usr/local/libexec/playbound-customer-runtime
 # Operator-only checkpoint preparation: intentionally absent from sudoers.
 install -o root -g root -m 755 "$source_dir/customer-data-migration.py" /usr/local/libexec/playbound-customer-data-migration
+install -o root -g root -m 755 "$source_dir/customer-network-check.py" /usr/local/libexec/playbound-customer-network-check
 rule="$(mktemp)"
 trap 'rm -f "$rule"' EXIT
 printf '%s\n' \

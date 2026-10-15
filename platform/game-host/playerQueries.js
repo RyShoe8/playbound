@@ -298,8 +298,8 @@ export function parseTeeworldsInfo(data) {
   }
 }
 
-export async function queryTeeworlds(port) {
-  if (!Number.isInteger(port)) return null;
+export async function queryTeeworlds(port, { host = "127.0.0.1" } = {}) {
+  if (!Number.isInteger(port) || port < 1 || port > 65535 || typeof host !== "string" || !net.isIPv4(host)) return null;
   const myToken = Buffer.from([0x13, 0x37, 0x42, 0x24]);
   return new Promise((resolve) => {
     const socket = dgram.createSocket("udp4");
@@ -307,7 +307,8 @@ export async function queryTeeworlds(port) {
     const finish = (v) => { if (settled) return; settled = true; clearTimeout(timer); try { socket.close(); } catch { /* closed */ } resolve(v); };
     const timer = setTimeout(() => finish(null), TIMEOUT_MS * 2);
     socket.on("error", () => finish(null));
-    socket.on("message", (m) => {
+    socket.on("message", (m, peer) => {
+      if (peer.address !== host || peer.port !== port) return;
       // Control packet carrying the server's token: flags, ack, chunks, token(4), ctrl=5, token(4).
       if ((m[0] & 0x04) && m.length >= 12 && m[7] === 5) {
         const serverToken = m.subarray(8, 12);
@@ -315,7 +316,7 @@ export async function queryTeeworlds(port) {
           Buffer.from([0x21]), serverToken, myToken,
           Buffer.from([0xff, 0xff, 0xff, 0xff]), Buffer.from("gie3"), Buffer.from([0x01]),
         ]);
-        socket.send(req, port, "127.0.0.1");
+        socket.send(req, port, host);
         return;
       }
       const parsed = parseTeeworldsInfo(m);
@@ -325,7 +326,7 @@ export async function queryTeeworlds(port) {
     const tokenRequest = Buffer.alloc(7 + 1 + 4 + 507);
     Buffer.from([0x04, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0x05]).copy(tokenRequest, 0);
     myToken.copy(tokenRequest, 8);
-    socket.send(tokenRequest, port, "127.0.0.1");
+    socket.send(tokenRequest, port, host);
   });
 }
 
