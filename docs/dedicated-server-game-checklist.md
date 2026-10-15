@@ -33,6 +33,9 @@ pull credentials, edit environment files, or alter unrelated database records.
   Do not offer arbitrary download URLs, shell fragments, or client-selected paths.
 - Declare TCP/UDP and query/status ports, spans, startup deadlines, graceful
   shutdown, child-process supervision, recovery/backoff, and port release.
+  Reserve auxiliary TCP and UDP listeners as well as gameplay ports. Verify
+  the supervised PID remains in the foreground; disable unused native admin
+  listeners rather than leaving an undocumented management port open.
 - Drain stdout/stderr. Bound retained logs and redact known credentials.
   A replaced process exiting must not mark its replacement offline.
 - Use stable server identity and isolated per-server data. Managed runtimes

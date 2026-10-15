@@ -8,8 +8,8 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
-import tarfile
 import urllib.request
+from reviewedSourceArchive import extract_reviewed_source
 
 HERE = Path(__file__).resolve().parent
 
@@ -25,26 +25,7 @@ def patch_program(text, commit, version):
     return text.replace('static void Main()', 'static void Main(string[] args)').replace('ServerPrinter.CreateLogger();', info + browser + 'ServerPrinter.CreateLogger();').replace('ServerNetwork.StartFeature();', 'ServerNetwork.StartFeature();\n            RTServer.PlayBound.Bridge.StartSnapshots();')
 
 def extract(archive, target, commit):
-    target.mkdir()
-    count = total = 0
-    seen = set()
-    with tarfile.open(archive, 'r:gz') as reader:
-        for item in reader:
-            count += 1; total += item.size
-            parts = Path(item.name).parts
-            if count > 50000 or item.size < 0 or item.size > 128 * 1024**2 or total > 512 * 1024**2 or not parts or parts[0] != 'Rimworld-Together-' + commit or any(p in ['..', ''] for p in parts) or item.name.startswith('/'):
-                raise ValueError('RimWorld unsafe source inventory')
-            relative = Path(*parts[1:]) if len(parts) > 1 else Path('.')
-            if relative in seen or item.mode & 0o7000:
-                raise ValueError('RimWorld duplicate or privileged source')
-            seen.add(relative)
-            destination = target / relative
-            if item.isdir(): destination.mkdir(parents=True, exist_ok=True)
-            elif item.isfile():
-                destination.parent.mkdir(parents=True, exist_ok=True)
-                with destination.open('xb') as output:
-                    shutil.copyfileobj(reader.extractfile(item), output, length=1024 * 1024)
-            else: raise ValueError('RimWorld source links and special files refused')
+    extract_reviewed_source(archive, target, 'Rimworld-Together-' + commit)
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, *_args, **_kwargs):

@@ -1853,9 +1853,13 @@ export const recipes = {
   flightgear: {
     portStart: 5000,
     portEnd: 5010,
-    protocol: "udp",
-    binaries: gameBin("flightgear", ["fgms", "fgfs", "flightgear"]),
-    args: (port) => ["-p", String(port)],
+    portStride: 2,
+    portSpan: 2,
+    protocol: "both", // UDP gameplay and TCP status must both be reserved.
+    binaries: gameBin("flightgear", ["fgms"]),
+    // Keep the supervised PID alive, reserve the read-only query port, and
+    // disable fgms's separate unused native administration listener.
+    args: (port) => ["-p", String(port), "-a", String(port + 1), "-b", "0", "-d"],
   },
   openhv: {
     portStart: 1255,

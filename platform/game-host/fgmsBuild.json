@@ -1,0 +1,12 @@
+{
+  "commit": "26e3dbd4124a10ea825806b77d32e046527cfe9d",
+  "version": "0.13.10",
+  "sourceDateEpoch": 1736172522,
+  "sourceBytes": 542941,
+  "sourceSha256": "3e16751b1394cdeaf297d727111ff72afae38a008b959275a933104a8cbea26a",
+  "compiler": "13.3.0",
+  "cmake": "3.28.3",
+  "licenseSha256": "32b1062f7da84967e7019d01ab805935caa7ab7321a7ced0e30ebe75e5df1670",
+  "legacyBinary": { "bytes": 823696, "sha256": "2056c3b532819ced005ef63ce600341b2f0bd58d24b5a88d8546c49d0e3e6865" },
+  "binary": { "bytes": 545296, "sha256": "58e0f3567840a89852c4e530620608dee870592627399eb51aebf2a48c5fd0e7" }
+}

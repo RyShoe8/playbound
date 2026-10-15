@@ -11,7 +11,6 @@ const GAPS: Record<string, Gap> = {
   teeworlds: { ...PACKAGE, reason: "Needs a native-package handler coordinated with the root-owned Teeworlds UID supervisor, which currently runs the fixed system executable. Updating a separate binary alone would leave enrolled servers on the old engine." },
   supertuxkart: PACKAGE,
   openarena: PACKAGE, "0ad": PACKAGE,
-  flightgear: { category: "custom-build", reason: "Uses the fgms multiplayer relay, not the ordinary FlightGear client. Needs a reviewed fgms source/binary handler retaining its server configuration and administration/query behavior." },
   xonotic: ARCHIVE, "medal-of-honor-allied-assault": ARCHIVE,
   "wolfenstein-enemy-territory": { category: "archive", reason: "Needs an ET: Legacy archive handler that preserves compatible etmain assets and validates the dedicated engine/data combination." },
   "battlefield-1942-anthology": ARCHIVE, "vintage-story": ARCHIVE,

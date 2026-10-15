@@ -243,7 +243,7 @@ until a root-owned scanner is explicitly configured for them.
 
 Install the scanner separately with
 `platform/game-host/install-update-scanner.sh` as root. It installs a root-owned
-helper and a sudoers rule permitting only its twenty-two fixed read-only scans.
+helper and a sudoers rule permitting only its twenty-three fixed read-only scans.
 Workers and SteamCMD continue running as the agent service user. No game
 installation or privileged shell is run by that helper.
 
@@ -293,7 +293,7 @@ This is not complete feature parity with those platforms. FTP/SFTP,
 process-log streaming, a general task scheduler,
 plugin/Workshop installation, database administration, and customer-triggered
 binary updates are not implemented by these changes. Shared binary updates
-are deliberately admin-only and limited to the twenty-two declared installation handlers. None
+are deliberately admin-only and limited to the twenty-three declared installation handlers. None
 of these features is represented by a nonfunctional button.
 
 No hosting backend is replaced or installed. Existing recipes, measured
@@ -531,3 +531,28 @@ update/rollback, console, connecting-client snapshots 0 -> 1 -> 0, running
 rollback held, full stop and fixture data preservation. These are not licensed
 human Join or actual colony-migration tests. The live agent exposes both
 handlers; production RimWorld binaries and all saves were unchanged.
+
+### FlightGear fgms relay updates
+
+FlightGear hosting uses fgms 0.13.10. The reviewed CMake source handler pins the
+source archive/commit, compiler/CMake versions, source-date epoch, license and
+native output in `game-host/fgmsBuild.json`. Source extraction rejects links,
+traversal, duplicate/special files and oversized trees. Builds run unprivileged,
+serially, with a clean environment and isolated home. Missing toolchains,
+libraries or changed output fail closed; no compiler/package installer runs.
+
+Only the `fgms` native file is staged and swapped. Logs and configuration remain
+in their current parent across update/rollback; a custom launch wrapper blocks
+the handler for review. The recipe explicitly stays in the foreground and
+reserves both UDP gameplay and TCP status in a two-port bundle. It disables
+the separate unused native admin listener and never falls back to launching
+the graphical FlightGear client as a dedicated server.
+
+VPS acceptance (2026-10-15) passed queued source update/rollback, deterministic
+output, unchanged config/log/root, foreground startup, real zero-player query,
+running rollback protection and complete port release. The original installed
+binary also passed the new launch arguments. Aircraft Join/occupied-player
+verification and customer sandbox expansion remain separate. Production relay
+bytes and DB rows were unchanged.
+Sources: [official fgms mirror](https://github.com/FlightGear/fgms),
+[official multiplayer-server documentation](https://wiki.flightgear.org/Howto%3ASet_up_a_multiplayer_server).

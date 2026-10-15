@@ -47,6 +47,8 @@ test("single-file native targets retain configuration outside the executable", {
   assert.equal(verifyNativePackageInstallation(root, "fixture", { profile: { ...profile, component: profile.binary }, requireRoot: false, command }).buildId, "fixture");
   assert.equal(fs.readFileSync(config, "utf8"), "versions_accepted=1.18.*");
   assert.throws(() => verifyNativePackageInstallation(root, "fixture", { profile: { ...profile, component: "other" }, requireRoot: false, command }), /component/);
+  fs.writeFileSync(path.join(root, "run-server"), "custom engine wrapper");
+  assert.throws(() => verifyNativePackageInstallation(root, "fixture", { profile: { ...profile, component: profile.binary }, requireRoot: false, command }), /wrapper/);
 });
 test("both fixed downloads reject unreviewed packages before extraction or promotion", async t => {
   for (const game of Object.keys(NATIVE_PACKAGE_PROFILES)) {
