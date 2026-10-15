@@ -4,7 +4,7 @@ function createHostingFixture(root) {
   const fs = require('node:fs');
   const path = require('node:path');
   const moderator = process.env.PLAYBOUND_SMOKE_HOSTING === 'moderator';
-  const permissions = (moderator ? ['view','change_map','kick_players','ban_players'] : ['view','configure','start','stop','restart','change_map','kick_players','ban_players','console','create_backup','restore_backup','manage_access','delete','read_files','write_files']).map(p => `server:${p}`);
+  const permissions = (moderator ? ['view','change_map','kick_players','ban_players'] : ['view','configure','start','stop','restart','change_map','kick_players','ban_players','console','read_logs','create_backup','restore_backup','manage_access','delete','read_files','write_files']).map(p => `server:${p}`);
   const server = { id:ID,name:'Fixture Clubhouse',gameTitle:'Xonotic',description:'A server for friends',visibility:'unlisted',slots:16,players:2,online:true,host:'127.0.0.1',port:26000,runtimeState:'running' };
   const control = { role:moderator ? 'moderator' : 'owner',permissions,maps:true,capabilities:{players:true,console:true,liveApply:true},status:{status:'running',host:server.host,port:server.port,resources:{cpuCores:0.1,rssBytes:256*1024**2,collectedAt:new Date().toISOString()}},definitions:[{key:'bots',label:'Bot fill target',feature:'bots',type:'number',min:0,max:16,default:0,apply:'live'}],values:{bots:0} };
   const maintenance = {enabled:false,hourUTC:6,lastDay:null,result:null};
@@ -31,6 +31,7 @@ function createHostingFixture(root) {
     if (route === `${BASE}/maintenance`) { if (method === 'PUT') Object.assign(maintenance,input.body); return maintenance; }
     if (route === `${BASE}/settings`) { Object.assign(control.values,input.body.settings); return {outcome:'applied-live',rejected:[]}; }
     if (route === `${BASE}/console`) return input.body.command === 'fail' ? {error:'Fixture command rejected'} : {output:'<script>Never execute output</script>'};
+    if (route === `${BASE}/logs`) return {available:true,truncated:true,lines:['<script>Never execute captured output</script>','Ready']};
     if (route === `${BASE}/players`) return {players:[{id:'7',name:'Fixture Player',pingMs:42}]};
     if (route === `${BASE}/bans`) return {bans:[]};
     if (route === `${BASE}/maps`) return {options:[{value:'stormkeep',label:'Stormkeep'}],current:'stormkeep',mode:'live',canNext:true,canRotate:true,rotation:['stormkeep']};

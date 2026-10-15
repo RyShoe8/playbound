@@ -18,7 +18,7 @@ for (const role of ['owner','moderator']) test(`native hosting workspace (${role
     await expect(host.getByRole('heading',{name:'Fixture Clubhouse'})).toBeVisible();
     await expect(host.getByText('0.10 CPU cores')).toBeVisible();
     const tabs = host.locator('.workspace-manager-tabs');
-    for (const name of role === 'owner' ? ['Settings','Maps','Bots','Players','Backups','Maintenance','Access','Activity','Console'] : ['Maps','Players','Access','Activity']) {
+    for (const name of role === 'owner' ? ['Settings','Maps','Bots','Players','Backups','Maintenance','Access','Activity','Console','Logs'] : ['Maps','Players','Access','Activity']) {
       await tabs.getByRole('button',{name,exact:true}).click();
       await expect(host.locator('[data-content]')).not.toContainText('Loading…');
       await expect(host.locator('[data-message]')).toBeEmpty();
@@ -27,6 +27,10 @@ for (const role of ['owner','moderator']) test(`native hosting workspace (${role
         await expect(host.getByRole('button',{name:'Restore setup'})).toBeDisabled();
       }
       if (name === 'Players') await expect(host.getByText('Fixture Player',{exact:false})).toBeVisible();
+      if (name === 'Logs') {
+        await expect(host.locator('.workspace-console')).toContainText('<script>Never execute captured output</script>');
+        await expect(host.locator('.workspace-console script')).toHaveCount(0);
+      }
       await page.setViewportSize({width:900,height:700});
       expect(await page.locator('#content').evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
     }
@@ -54,6 +58,7 @@ for (const role of ['owner','moderator']) test(`native hosting workspace (${role
       await page.screenshot({path:testInfo.outputPath('hosting-overview.png')});
     } else {
       await expect(tabs.getByRole('button',{name:'Console',exact:true})).toHaveCount(0);
+      await expect(tabs.getByRole('button',{name:'Logs',exact:true})).toHaveCount(0);
       await expect(tabs.getByRole('button',{name:'Settings',exact:true})).toHaveCount(0);
       await expect(host.getByRole('button',{name:'Restart',exact:true})).toHaveCount(0);
       expect(fs.existsSync(path.join(root,'hosting-writes.jsonl'))).toBe(false);
