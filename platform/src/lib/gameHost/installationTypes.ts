@@ -18,7 +18,7 @@ export type InstallationUpdateSnapshot = {
     completedAt?: number;
     nextCheckAt: number;
     message?: string;
-    targets: Record<string, { checkedAt: number; installedBuild?: string; availableBuild?: string; status: string; message?: string }>;
+    targets: Record<string, { checkedAt: number; installedBuild?: string; availableBuild?: string; jobId?: string; status: string; message?: string }>;
   };
   /** Agent recipe inventory, including dedicated-only games and aliases. */
   gameSlugs?: string[];
