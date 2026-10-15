@@ -12,7 +12,7 @@ const GAPS: Record<string, Gap> = {
   xonotic: ARCHIVE, "medal-of-honor-allied-assault": ARCHIVE,
   "wolfenstein-enemy-territory": { category: "archive", reason: "Needs an ET: Legacy archive handler that preserves compatible etmain assets and validates the dedicated engine/data combination." },
   "battlefield-1942-anthology": ARCHIVE, terraria: ARCHIVE, "vintage-story": ARCHIVE,
-  factorio: ARCHIVE, "re-volt-rvgl": ARCHIVE, unvanquished: ARCHIVE,
+  "re-volt-rvgl": ARCHIVE, unvanquished: ARCHIVE,
   "deus-ex-goty-edition": { category: "custom-build", reason: "Needs a Wine/HX package handler that preserves the game assets and PlayBound co-op integration." },
   morrowind: { category: "archive", reason: "Needs a TES3MP-compatible archive handler that preserves Lua scripts, account data and saved worlds." },
   "hurry-curry": { category: "custom-build", reason: "Needs a source/binary update handler that retains PlayBound's player-limit patch and matching data files." },

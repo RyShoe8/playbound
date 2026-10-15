@@ -243,7 +243,7 @@ until a root-owned scanner is explicitly configured for them.
 
 Install the scanner separately with
 `platform/game-host/install-update-scanner.sh` as root. It installs a root-owned
-helper and a sudoers rule permitting only its fourteen fixed read-only scans.
+helper and a sudoers rule permitting only its fifteen fixed read-only scans.
 Workers and SteamCMD continue running as the agent service user. No game
 installation or privileged shell is run by that helper.
 
@@ -293,7 +293,7 @@ This is not complete feature parity with those platforms. FTP/SFTP,
 process-log streaming, a general task scheduler,
 plugin/Workshop installation, database administration, and customer-triggered
 binary updates are not implemented by these changes. Shared binary updates
-are deliberately admin-only and limited to the fourteen ready installations above. None
+are deliberately admin-only and limited to the fifteen declared installation handlers. None
 of these features is represented by a nonfunctional button.
 
 No hosting backend is replaced or installed. Existing recipes, measured
@@ -418,3 +418,34 @@ An isolated VPS acceptance test covered download, activation/rollback,
 preservation of post-update configuration and the stable data-root inode, and
 a real game query (zero players, two slots). It did not perform a human Join.
 Package source: [official AssaultCube release](https://github.com/assaultcube/AC/releases/tag/v1.3.0.2).
+
+### Factorio stable headless updates
+
+Factorio uses the publisher's stable headless channel and official SHA-256
+checksum list. Metadata, downloads, redirects and expanded archives are bounded;
+only fixed HTTPS publisher/CDN hosts are allowed. The unprivileged extractor
+rejects traversal, links, duplicate entries and special files. No executable runs
+until the downloaded archive passes its published checksum. Installation checks
+then verify the entire package manifest, x86_64 headless binary, base-data version
+and installed runtime using `--version` with no service credentials in its environment.
+
+Existing installations need an offline comparison against that verified official
+package before an integrity marker is added; custom/missing/modified files block
+updates. This comparison does not replace binaries or saved worlds. The current
+VPS 2.0.77 installation matched its official package. The admin update inventory
+shows a specific baseline requirement when verification has not passed.
+
+Updates and rollback use the existing shared-installation queue and fixed root
+process scan. Saves, per-server configuration and player progress remain in
+`factorio-servers/pb-<id>` outside the installation swap. Stable-channel downgrades
+and major-version upgrades are refused. Explicit binary rollback retains the
+previous verified installation, but **does not undo saved-world format changes**.
+Take a world backup before starting a newer engine; restore a compatible world
+separately if necessary. This updater does not install mods or change eligibility.
+
+VPS acceptance (2026-10-15) verified the actual official 2.0.77 download, same-version
+queued update/rollback, save preservation, world creation, loopback UDP startup
+and clean stop. This is not a human client Join or occupied-player query test.
+Sources: [official download API](https://wiki.factorio.com/Download_API),
+[publisher checksums](https://factorio.com/download/sha256sums/),
+[official multiplayer documentation](https://wiki.factorio.com/Multiplayer).
