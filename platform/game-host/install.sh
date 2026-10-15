@@ -219,7 +219,7 @@ cp -f "$AGENT_SRC/index.js" "$AGENT_SRC/agentRoutes.js" "$AGENT_SRC/recipes.js" 
   "$AGENT_SRC/managedRegistry.js" "$AGENT_SRC/portReadiness.js" "$AGENT_SRC/processMetrics.js" "$AGENT_SRC/a2sQuery.js" "$AGENT_SRC/playerQueries.js" \
   "$AGENT_SRC/communityHostingTick.js" "$AGENT_SRC/rvglDisplay.js" \
   "$AGENT_SRC/dedicatedDataBackups.js" "$AGENT_SRC/worldBackupRunner.js" "$AGENT_SRC/dedicatedDataBackupsWorker.js" "$AGENT_SRC/dedicatedFiles.js" \
-  "$AGENT_SRC/installationTargets.js" "$AGENT_SRC/installationJobs.js" "$AGENT_SRC/installationUpdateWorker.js" "$AGENT_SRC/mindustryUpdates.js" \
+  "$AGENT_SRC/installationTargets.js" "$AGENT_SRC/installationJobs.js" "$AGENT_SRC/installationUpdateWorker.js" "$AGENT_SRC/mindustryUpdates.js" "$AGENT_SRC/githubReleaseAssets.js" "$AGENT_SRC/openraUpdates.js" \
   "$AGENT_SRC/gameEnvironment.js" \
   "$AGENT_SRC/dedicatedRecipes.js" "$AGENT_SRC/barotraumaRuntime.js" "$AGENT_SRC/rimworldControl.js" "$AGENT_SRC/rimworldDifficulty.json" "$AGENT_SRC/anivControl.js" \
   "$AGENT_SRC/package.json" "$AGENT_DIR/"
@@ -278,7 +278,8 @@ if [[ ! -x "$OPENRA_DIR/OpenRA.Server" || ! -d "$OPENRA_DIR/mods/cnc" || ! -d "$
     TAG="release-20250330"
   fi
 
-  for mod_img in "OpenRA-Red-Alert-x86_64.AppImage" "OpenRA-Tiberian-Dawn-x86_64.AppImage" "OpenRA-Dune-2000-x86_64.AppImage"; do
+  # Dune 2000 carries the extra D2k assembly needed by a combined install.
+  for mod_img in "OpenRA-Dune-2000-x86_64.AppImage" "OpenRA-Red-Alert-x86_64.AppImage" "OpenRA-Tiberian-Dawn-x86_64.AppImage"; do
     URL="https://github.com/OpenRA/OpenRA/releases/download/${TAG}/${mod_img}"
     echo "Fetching $mod_img..."
     if curl -fL --retry 3 -o /tmp/openra.AppImage "$URL"; then
@@ -307,6 +308,9 @@ cd "$(dirname "$0")"
 exec ./OpenRA.Server "$@"
 EOF
   chmod +x "$OPENRA_DIR/run-server"
+fi
+if [[ -x "$OPENRA_DIR/OpenRA.Server" && ! -f "$OPENRA_DIR/OpenRA.Mods.D2k.dll" ]]; then
+  echo "WARN: Existing OpenRA lacks its Dune 2000 assembly. Use the coordinated update queue; do not overwrite a running installation."
 fi
 
 echo "==> Mindustry dedicated"

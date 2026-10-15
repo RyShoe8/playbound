@@ -12,7 +12,7 @@ New games must complete `docs/dedicated-server-game-checklist.md`.
 Assess each feature per engine: applicable and verified, not yet implemented,
 or unavailable with a concrete engine/transport reason. The universal scope is
 a release requirement, not a claim that every engine supports bots or plugins.
-Keep current nine-game update support and thirteen-game file support explicit
+Keep current ten-game update support and thirteen-game file support explicit
 until the additional handlers pass their gates. No placeholder controls.
 
 ## Implementation order and gates
@@ -100,3 +100,13 @@ until the additional handlers pass their gates. No placeholder controls.
   Production JAR and customer data stayed unchanged. A real client Join remains
   separate. Custom wrappers/alternate JARs require review; unclassified JVMs
   conservatively hold the queue without stopping other servers.
+- OpenRA adds coordinated official AppImage updates for Red Alert, Tiberian
+  Dawn and Dune 2000 together. Packages require published SHA-256 or reviewed
+  historical pins; extraction uses bounded unsquashfs without executing them.
+  A complete Dune 2000 engine supplies the D2k assembly omitted by the old
+  combined installer. A hash-checked installation baseline refuses custom-file
+  loss; support directories stay outside the installation swap. Bootstrap
+  requires an exact reviewed reference, never a blind snapshot of unknown files.
+  VPS fixtures (2026-10-14) covered real archives, activation/rollback, and all
+  three modes' startup/protocol handshake. This does not establish client Join
+  or player-count tracking. Other OpenRA-based games keep their own installs.
