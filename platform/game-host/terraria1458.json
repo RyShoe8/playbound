@@ -1,0 +1,132 @@
+{
+  "version": "1.4.5.8",
+  "directory": "1458",
+  "archiveBytes": 46415317,
+  "archiveSha256": "f513a4ac9789d34af766291ae217c9cd7d9472e13782a0e2b17512f70d7a8334",
+  "files": {
+    "changelog.txt": {
+      "size": 695347,
+      "sha256": "b64e507c68e4b33e53568c40ad1c472986babc885f426272fe16249709f94e00"
+    },
+    "FNA.dll": {
+      "size": 1090560,
+      "sha256": "46d201f59ce6c3827414b2c2c5141c218acabda605b02e564d73ca2efb2a3171"
+    },
+    "FNA.dll.config": {
+      "size": 1049,
+      "sha256": "c935003d1bb00b56935a136562bc91333b0629eff1adaf1aef118a5da778a3f9"
+    },
+    "I18N.dll": {
+      "size": 39936,
+      "sha256": "d87308179b69ca7879f890278bd2c54d429fc32126fb83dd1d1fecf9847e5172"
+    },
+    "I18N.West.dll": {
+      "size": 71680,
+      "sha256": "e9054516fe6d75f376f7091b406001404b2ef54d2e52941431ecf54888c68e6c"
+    },
+    "lib64/libFAudio.so.0": {
+      "size": 302728,
+      "sha256": "7e2f405fa612d34db9f5531d9fdfd5ff65a84da39700d6040bf326e63a9c1cdf"
+    },
+    "lib64/libFNA3D.so.0": {
+      "size": 728968,
+      "sha256": "a3df551e838ad8a5c148c225962346949950474e7615170103c340d203d314e3"
+    },
+    "lib64/libSDL3.so.0": {
+      "size": 4082768,
+      "sha256": "c7c192a674ce1baf39283614b62a1c414100f6c0ae4a9760c520ac88a630f4da"
+    },
+    "Mono.Posix.dll": {
+      "size": 212992,
+      "sha256": "27efd3467eb9cd8f1736969a386521cdde7c562292dfc3660e5e17af84e0658d"
+    },
+    "Mono.Security.dll": {
+      "size": 241152,
+      "sha256": "816a336c0e8c4f49292e7e81d630e4018f1034ccf5ce4e3c7e55e6bc420cf585"
+    },
+    "monoconfig": {
+      "size": 4048,
+      "sha256": "f2f24b821dc39d7f7385c33091f07640448fa3e5fe78930aa80d19378243d960"
+    },
+    "monomachineconfig": {
+      "size": 34366,
+      "sha256": "886e0013595a43c089ed1a9bf4c4ab46ba5e926dfd99d57a2fde0a117b57ab96"
+    },
+    "mscorlib.dll": {
+      "size": 4641792,
+      "sha256": "f3c572c4368aab5bab4ca6bd83d0eecf4027ff153b0149b6b3c3571a59a17984"
+    },
+    "open-folder": {
+      "size": 63,
+      "sha256": "58a10065707e95dc62a3526adc4c26c9e1a5830ffe4de748a8bc679452240d11"
+    },
+    "System.Configuration.dll": {
+      "size": 122880,
+      "sha256": "d4b87c89820a983a9d7a1203ad659da3cc97fc307f5e0802e8217a3b4ba0dfb3"
+    },
+    "System.Core.dll": {
+      "size": 1087488,
+      "sha256": "1c8ecd6347d8cbd7b2426a6d70fa13801cba46f1a1ac1060565b633caa56af46"
+    },
+    "System.Data.dll": {
+      "size": 2103296,
+      "sha256": "a7bafac3416fee9ff71040105a7f7daefd929b9b25db58c94495e5590676d051"
+    },
+    "System.dll": {
+      "size": 2615808,
+      "sha256": "b186cc07d7dc6dbabf1bf2c268d72223d57ee5228400e3e2acbd428fc03e8cdf"
+    },
+    "System.Drawing.dll": {
+      "size": 491008,
+      "sha256": "ac8a0902494a1fed2911032d7cca37d8d37954d3b551933d38ad30333c7d05d8"
+    },
+    "System.Numerics.dll": {
+      "size": 119808,
+      "sha256": "9d7feded918a419a44ba265f7434fb43a2560db3763c10479b34155e8aa30d77"
+    },
+    "System.Runtime.Serialization.dll": {
+      "size": 939008,
+      "sha256": "109de79302a2d2a32fba7fa04fc912ed7d0e4e941c813f091d6b505e490eef89"
+    },
+    "System.Security.dll": {
+      "size": 316416,
+      "sha256": "b44a83de4277a22d9f18ba2114ae1c6fbf698a606ba8dfc2bee3d604218be33f"
+    },
+    "System.Windows.Forms.dll": {
+      "size": 3051008,
+      "sha256": "0c850cd1d5343599a1c3cb2751e280903fb3668c29ef0aed93e3d84c453beecf"
+    },
+    "System.Windows.Forms.dll.config": {
+      "size": 543,
+      "sha256": "1536fb20d79c218611d7019f2c79cc23c62f353f3858b2ee69732ccabb39b10c"
+    },
+    "System.Xml.dll": {
+      "size": 3176448,
+      "sha256": "3cc6358058255df27898684cef88a527f86b471bc4d79e03e0f8dc25ecdf5e39"
+    },
+    "System.Xml.Linq.dll": {
+      "size": 137728,
+      "sha256": "291f5a1e50a73682ecf2ea40747422840c10c8974cd81575b5821acceaf73d52"
+    },
+    "Terraria.png": {
+      "size": 5631,
+      "sha256": "01f3a5049d72efcc23a55df97e54fd219bcaa983ee18f9b6f7d063894029a48b"
+    },
+    "TerrariaServer": {
+      "size": 410,
+      "sha256": "efa73e6a5c2468859f37a99dcb9cedfe16bf1b102991e6abae060489f1f05722"
+    },
+    "TerrariaServer.bin.x86_64": {
+      "size": 6021208,
+      "sha256": "0e69e1b66b01f2e9308324a538e850a4bd3987b8da362cd0acab2e9fbcae0811"
+    },
+    "TerrariaServer.exe": {
+      "size": 26027520,
+      "sha256": "4b87890ac53d40f61db5f928693a379acf4ccbd8ed3b47eb32fb096f145df034"
+    },
+    "WindowsBase.dll": {
+      "size": 164864,
+      "sha256": "d4db491de06752ee77e2d2090a086bd4b79c7987efdcd9373ed4272df85edbbf"
+    }
+  }
+}

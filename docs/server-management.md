@@ -243,7 +243,7 @@ until a root-owned scanner is explicitly configured for them.
 
 Install the scanner separately with
 `platform/game-host/install-update-scanner.sh` as root. It installs a root-owned
-helper and a sudoers rule permitting only its fifteen fixed read-only scans.
+helper and a sudoers rule permitting only its sixteen fixed read-only scans.
 Workers and SteamCMD continue running as the agent service user. No game
 installation or privileged shell is run by that helper.
 
@@ -293,7 +293,7 @@ This is not complete feature parity with those platforms. FTP/SFTP,
 process-log streaming, a general task scheduler,
 plugin/Workshop installation, database administration, and customer-triggered
 binary updates are not implemented by these changes. Shared binary updates
-are deliberately admin-only and limited to the fifteen declared installation handlers. None
+are deliberately admin-only and limited to the sixteen declared installation handlers. None
 of these features is represented by a nonfunctional button.
 
 No hosting backend is replaced or installed. Existing recipes, measured
@@ -449,3 +449,26 @@ and clean stop. This is not a human client Join or occupied-player query test.
 Sources: [official download API](https://wiki.factorio.com/Download_API),
 [publisher checksums](https://factorio.com/download/sha256sums/),
 [official multiplayer documentation](https://wiki.factorio.com/Multiplayer).
+
+### Terraria reviewed Linux package updates
+
+Terraria has a reviewed 1.4.5.8 Linux-server handler. Its fixed official ZIP is
+pinned by size and SHA-256; all 31 Linux files have reviewed sizes and hashes in
+`game-host/terraria1458.json`. These were measured from the official HTTPS
+package and matched against the installed VPS files on 2026-10-15. The publisher
+does not provide a separate checksum feed. Changed packages/new versions require
+an explicit pin, matching recipe paths and client/world compatibility review;
+this is not an automatic latest-version updater.
+
+The bounded unprivileged ZIP reader extracts only `1458/Linux`, rejecting
+traversal, links, duplicates, special files and oversized entries. Package hashes
+are checked before native dependency validation. Custom Linux files and modified
+assemblies block updates. The version-folder component swap retains other
+platform files; root-level configuration and customer worlds remain outside it.
+Updates and rollback reuse the existing queue, start gate and read-only scanner.
+
+VPS acceptance covered official download, queued update/rollback, generated-world
+TCP startup, graceful console shutdown, unchanged world bytes after rollback and
+preservation of newer configuration outside the component. Human Join remains
+separate. Source: [official server download](https://terraria.org/api/download/pc-dedicated-server/terraria-server-1458.zip)
+and [official server documentation](https://terraria.wiki.gg/wiki/Servers).

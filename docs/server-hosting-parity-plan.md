@@ -12,7 +12,7 @@ New games must complete `docs/dedicated-server-game-checklist.md`.
 Assess each feature per engine: applicable and verified, not yet implemented,
 or unavailable with a concrete engine/transport reason. The universal scope is
 a release requirement, not a claim that every engine supports bots or plugins.
-Keep current fifteen-game update support and thirteen-game file support explicit
+Keep current sixteen-game update support and thirteen-game file support explicit
 until the additional handlers pass their gates. No placeholder controls.
 
 ## Implementation order and gates
@@ -501,3 +501,16 @@ until the additional handlers pass their gates. No placeholder controls.
   marker only; no live binary, saved world or database row was replaced.
   Human Join/occupied queries remain separate. Coverage is now 15 handled
   installation families and 36 remaining game/edition entries.
+
+- Terraria adds a reviewed 1.4.5.8 Linux-package handler. Its official HTTPS ZIP
+  is pinned by size/SHA-256, with per-file hashes for all 31 Linux files. The
+  installed VPS tree matched those bytes. Missing libraries, custom files,
+  modified assemblies and unsafe ZIP entries fail closed. Version-folder
+  component swaps retain other platform files; root-level configuration and
+  customer worlds stay outside the swap. New versions require reviewed pins,
+  matching recipe paths and client/world compatibility checks. VPS acceptance
+  (2026-10-15) completed actual download, queued update, world creation/TCP
+  startup, graceful console shutdown and rollback with world bytes and newer
+  configuration preserved. Production binaries/worlds and DB rows were not
+  changed by acceptance. Human Join remains separate. Implemented coverage is
+  now 16 installation families with 35 remaining game/edition entries.

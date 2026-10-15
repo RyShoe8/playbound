@@ -16,11 +16,13 @@ it("every admin update target is wired to the agent, root scanner, and exact sud
     expect(sudo).toContain(`/usr/local/sbin/playbound-update-scan ${key}`);
   }
   const appIds = [...targets.matchAll(/appId: (\d+)/g)].map((match) => match[1]);
-  const archiveTargets = [...targets.matchAll(/strategy: "(?:github-(?:jar|appimage|native-binaries)|signed-appimage|official-headless-archive)"/g)];
+  const archiveTargets = [...targets.matchAll(/strategy: "(?:github-(?:jar|appimage|native-binaries)|signed-appimage|official-headless-archive|official-linux-zip)"/g)];
   expect(appIds.length + archiveTargets.length).toBe(INSTALLATION_UPDATE_KEYS.length);
   expect(new Set(appIds).size).toBe(appIds.length);
   expect(source("../../../game-host/install.sh")).toContain('"$AGENT_SRC/nativeArchive.py"');
   expect(source("../../../game-host/install.sh")).toContain('"$AGENT_SRC/factorioArchive.py"');
+  expect(source("../../../game-host/install.sh")).toContain('"$AGENT_SRC/terrariaArchive.py"');
+  expect(source("../../../game-host/install.sh")).toContain('"$AGENT_SRC/terraria1458.json"');
 });
 
 it("covers every offered base recipe and fails closed when an agent lacks a handler", () => {
@@ -62,4 +64,6 @@ it("keeps separate edition updates pending instead of inheriting base-depot supp
   expect(rows.find((row) => row.id === "team-fortress-2:open-fortress")).toMatchObject({ category: "edition" });
   expect(rows.find((row) => row.id === "openra:combined-arms")).toMatchObject({ category: "edition" });
   expect(rows.find((row) => row.id === "freedoom")?.reason).toContain("separate engine");
+  expect(rows.find((row) => row.id === "rimworld-together")).toMatchObject({ category: "custom-build" });
+  expect(rows.find((row) => row.id === "rimworld-together")?.reason).toContain("unmodified upstream package");
 });

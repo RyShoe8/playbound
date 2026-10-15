@@ -11,7 +11,7 @@ const GAPS: Record<string, Gap> = {
   openarena: PACKAGE, "0ad": PACKAGE, "battle-for-wesnoth": PACKAGE, flightgear: PACKAGE,
   xonotic: ARCHIVE, "medal-of-honor-allied-assault": ARCHIVE,
   "wolfenstein-enemy-territory": { category: "archive", reason: "Needs an ET: Legacy archive handler that preserves compatible etmain assets and validates the dedicated engine/data combination." },
-  "battlefield-1942-anthology": ARCHIVE, terraria: ARCHIVE, "vintage-story": ARCHIVE,
+  "battlefield-1942-anthology": ARCHIVE, "vintage-story": ARCHIVE,
   "re-volt-rvgl": ARCHIVE, unvanquished: ARCHIVE,
   "deus-ex-goty-edition": { category: "custom-build", reason: "Needs a Wine/HX package handler that preserves the game assets and PlayBound co-op integration." },
   morrowind: { category: "archive", reason: "Needs a TES3MP-compatible archive handler that preserves Lua scripts, account data and saved worlds." },
@@ -23,7 +23,7 @@ const GAPS: Record<string, Gap> = {
   freedoom: { category: "edition", reason: "Zandronum, Odamex and Chocolate Doom require separate engine update handlers; preserve IWADs, maps and per-server configuration." },
   "space-station-14": { category: "private-runtime", reason: "Needs a handler for the server distribution/bootstrap, .NET dependencies and per-server content/database compatibility." },
   "goldeneye-source": { category: "private-runtime", reason: "Needs coordinated Source SDK base and GoldenEye mod updates, including private runtime refresh and retained settings." },
-  "rimworld-together": { category: "private-runtime", reason: "Needs a RimWorld Together package/.NET handler that preserves colony, player and permission data." },
+  "rimworld-together": { category: "custom-build", reason: "Requires a reproducible build retaining PlayBound's browser-query, player-snapshot and console integration. Replacing RTServer with the unmodified upstream package would break management/tracking. Preserve colony, player and permission data while verifying a patched update and rollback." },
   trackmania: { category: "private-runtime", reason: "Needs a dedicated package handler that preserves account configuration, maps and match settings." },
   "aneurism-iv": { category: "private-runtime", reason: "Needs coordinated Steam depot and namespace-supervisor updates that preserve private token files, stable identity and world data." },
 };

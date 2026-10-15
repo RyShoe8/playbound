@@ -12,6 +12,7 @@ import { stageOpenE2140Release } from "./openE2140Updates.js";
 import { stageHypersomniaRelease } from "./hypersomniaUpdates.js";
 import { stageAssaultCubeRelease } from "./assaultcubeUpdates.js";
 import { stageFactorioRelease } from "./factorioUpdates.js";
+import { stageTerrariaRelease } from "./terrariaUpdates.js";
 
 const GIB = 1024 ** 3;
 
@@ -61,7 +62,7 @@ export function runCommand(command, args, { root, timeout = 90 * 60_000, maxOutp
 }
 
 // Injection is only for isolated tests, never an HTTP input or downloaded script.
-export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run = runCommand, scan = scanInstallation, disk = diskAvailable, hostHome = process.env.HOME, stageRelease = stageMindustryRelease, stageArchive = stageOpenRARelease, stageOpenHV = stageOpenHVRelease, stageOpenE2140 = stageOpenE2140Release, stageHypersomnia = stageHypersomniaRelease, stageAssaultCube = stageAssaultCubeRelease, stageFactorio = stageFactorioRelease } = {}) {
+export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run = runCommand, scan = scanInstallation, disk = diskAvailable, hostHome = process.env.HOME, stageRelease = stageMindustryRelease, stageArchive = stageOpenRARelease, stageOpenHV = stageOpenHVRelease, stageOpenE2140 = stageOpenE2140Release, stageHypersomnia = stageHypersomniaRelease, stageAssaultCube = stageAssaultCubeRelease, stageFactorio = stageFactorioRelease, stageTerraria = stageTerrariaRelease } = {}) {
   const store = createInstallationStore(stateDir);
   let job = store.read(id);
   const target = INSTALLATION_TARGETS[job.key];
@@ -98,7 +99,13 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
       if (target.component) fs.mkdirSync(stage, { mode: 0o700 });
       await run("/usr/bin/cp", ["-a", "--reflink=auto", "--sparse=always", "--", activePath, stagedPath], { root: gamesRoot });
       const detachedLinks = prepareInstallationLinks(stage, current, true);
-      if (job.key === "factorio") {
+      if (job.key === "terraria") {
+        phase("downloading", "Verifying the reviewed Terraria Linux package; saved worlds stay outside the installation");
+        await stageTerraria(stage, { run, diskCheck: () => {
+          const available = disk(gamesRoot);
+          if (available.free < available.reserve + 512 * 1024 ** 2) throw new Error("Update stopped to preserve free disk space");
+        } });
+      } else if (job.key === "factorio") {
         phase("downloading", "Verifying the official stable Factorio headless package; saved worlds stay outside the installation");
         await stageFactorio(stage, { run, diskCheck: () => {
           const available = disk(gamesRoot);
@@ -151,7 +158,8 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
       const source = store.read(job.rollbackId);
       store.write({ ...source, rollbackConsumed: true });
     }
-    phase("completed", job.key === "factorio"
+    phase("completed", job.key === "terraria" ? "Reviewed Terraria Linux installation ready. Saved worlds were not changed. New server versions require a new reviewed package and matching client/world compatibility checks."
+      : job.key === "factorio"
       ? "Factorio installation ready. Saved worlds were not changed. Back up the world before starting a newer version: binary rollback does not restore or guarantee compatibility with older save formats."
       : job.key === "barotrauma" ? "Installation ready. Private runtimes refresh on their next start, retaining current saves and the previous runtime. Binary rollback does not restore or guarantee compatibility with older save formats."
       : "Installation ready. Servers may be started normally; no game was stopped by this update.");
@@ -160,7 +168,7 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
     const uncertain = activated || (job.status === "activating" && !fs.existsSync(activePath));
     phase(uncertain ? "interrupted" : "failed", uncertain
       ? "Activation needs operator inspection. New starts remain blocked; the rollback copy is retained."
-      : error instanceof Error && /^(Not enough|An affected|SteamCMD|Mindustry|OpenRA|OpenHV|OpenE2140|Hypersomnia|AssaultCube|Factorio|Update command|Update stopped|Cannot verify|Barotrauma|Unexpected Barotrauma|Invalid Barotrauma)/.test(error.message)
+      : error instanceof Error && /^(Not enough|An affected|SteamCMD|Mindustry|OpenRA|OpenHV|OpenE2140|Hypersomnia|AssaultCube|Factorio|Terraria|Update command|Update stopped|Cannot verify|Barotrauma|Unexpected Barotrauma|Invalid Barotrauma)/.test(error.message)
         ? error.message : "Update failed before activation; the previous installation was preserved");
     // Retain partial staging files for diagnosis. Never recurse into customer save links.
   }
