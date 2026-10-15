@@ -7,6 +7,23 @@ import { spawn, execFileSync } from "node:child_process";
 import { customerIsolationLaunch, validateCustomerPreparation, CUSTOMER_ISOLATION_GAMES } from "./customerIsolation.js";
 
 const id = "0123456789abcdef01234567";
+test("UID handoff is opt-in and never replaces an existing data folder with an empty server", { skip: process.platform !== "linux" || !fs.existsSync("/usr/games/teeworlds-server") }, () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "pb-uid-plan-"));
+  try {
+    fs.mkdirSync(path.join(home, "teeworlds"));
+    const config = path.join(home, "teeworlds", `pb-${id}.cfg`);
+    fs.writeFileSync(config, "sv_port 8322\nsv_register 0\nsv_max_clients 4\n");
+    const opts = { gameSlug: "teeworlds", customerOwned: true, communityServerId: id, binary: "/usr/games/teeworlds-server", args: ["-f", config, "sv_port 8322"], home };
+    assert.equal(customerIsolationLaunch(opts).identityProfile, undefined);
+    const plan = customerIsolationLaunch({ ...opts, identityProfile: "teeworlds-unix-v1" });
+    assert.equal(plan.identityRuntime.port, 8322);
+    assert.match(plan.identityRuntime.config, /sv_register 0/);
+    const saved = path.join(plan.cwd, "saved.map");
+    fs.writeFileSync(saved, "preserve fixture data");
+    assert.throws(() => customerIsolationLaunch({ ...opts, identityProfile: "teeworlds-unix-v1" }), /migration/);
+    assert.equal(fs.readFileSync(saved, "utf8"), "preserve fixture data");
+  } finally { fs.rmSync(home, { recursive: true, force: true }); }
+});
 test("community rooms and unreviewed engines keep their existing launch path", () => {
   for (const value of [{ gameSlug: "teeworlds", customerOwned: false }, { gameSlug: "openra", customerOwned: true }]) assert.equal(customerIsolationLaunch(value), null);
   assert.throws(() => customerIsolationLaunch({ gameSlug: "teeworlds", customerOwned: true, communityServerId: "../private", home: "/fixture" }), /identity/);

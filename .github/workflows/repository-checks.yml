@@ -64,3 +64,4 @@ jobs:
       - run: npm test
       - run: python3 tools/customer_resources_test.py
       - run: python3 tools/customer_identities_test.py
+      - run: python3 tools/customer_runtime_test.py

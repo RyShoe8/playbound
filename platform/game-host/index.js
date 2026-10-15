@@ -52,7 +52,7 @@ import { createInstallationCoordinator } from "./installationJobs.js";
 import { gameEnvironment } from "./gameEnvironment.js";
 import { customerIsolationLaunch, validateCustomerPreparation, CUSTOMER_ISOLATION_GAMES } from "./customerIsolation.js";
 import { customerResourceLimits } from "./customerResourceLimits.js";
-import { spawnCustomerRuntime, resourceScope } from "./customerRuntime.js";
+import { spawnCustomerRuntime, resourceScope, stopIdentityRuntime, identityRuntimeHealthy } from "./customerRuntime.js";
 import { readCapturedLogFile, managedLogFiles, retainManagedLogs, logSecretValues, redactLogLine } from "./managedLogs.js";
 import { captureRvglLobby, sendRvglLobbyInput } from "./rvglDisplay.js";
 
@@ -701,11 +701,14 @@ function freePort(slug, port) {
 function stopRoom(room) {
   if (!room) return 0;
   const pid = room.child?.pid || room.pid;
+  const unixIdentity = room.identityProfile === "teeworlds-unix-v1";
+  if (unixIdentity) room.stopPromise = stopIdentityRuntime({ ...room, pid });
   const shutdownRecipe = recipes[room.gameSlug];
   let graceful = Boolean(room.child?.stdin?.writable && shutdownRecipe?.shutdownCommand);
   let shutdownWaitMs = 0;
   // A recovered room has no ChildProcess handle. Never signal a reused PID.
   if (pid && room.processIdentity && isSameProcess(pid, room.processIdentity)) {
+    if (unixIdentity) try { process.kill(pid, "SIGTERM"); } catch { /* Root stop still confirms the whole scope. */ }
     const members = processGroupMembers(pid);
     try {
       if (graceful) room.child.stdin.write(shutdownRecipe.shutdownCommand);
@@ -713,7 +716,7 @@ function stopRoom(room) {
       // Fall back to the normal signal path if the console pipe has closed.
       graceful = false;
     }
-    if (!graceful) try {
+    if (!graceful && !unixIdentity) try {
       // Only signal a group when this room owns it. Legacy party processes
       // inherited the agent's group and must be stopped by PID alone.
       if (members.some((member) => member.pid === pid)) process.kill(-pid, "SIGTERM");
@@ -725,7 +728,7 @@ function stopRoom(room) {
         /* already dead */
       }
     }
-    if (!graceful) try {
+    if (!graceful && !unixIdentity) try {
       // Also send direct SIGTERM to child
       room.child?.kill("SIGTERM");
     } catch {
@@ -733,7 +736,7 @@ function stopRoom(room) {
     }
 
     // Bound a console save/quit, or force a non-console process down quickly.
-    shutdownWaitMs = graceful ? (Number(shutdownRecipe.shutdownGraceMs) || 20_000) : (Number(shutdownRecipe?.shutdownSignalGraceMs) || 500);
+    shutdownWaitMs = unixIdentity ? 3000 : graceful ? (Number(shutdownRecipe.shutdownGraceMs) || 20_000) : (Number(shutdownRecipe?.shutdownSignalGraceMs) || 500);
     setTimeout(() => {
       for (const member of members.length ? members : [{ pid, identity: room.processIdentity }]) {
         if (!isSameProcess(member.pid, member.identity)) continue;
@@ -806,13 +809,16 @@ function persistManagedRooms() {
     isolationProfile: r.isolationProfile || null,
     resourceScope: r.resourceScope || null,
     resourceLimits: r.resourceLimits || null,
+    identityProfile: r.identityProfile || null,
     rcon: r.rcon, rconPassword: r.rconPassword, cwd: r.cwd || null,
   })));
 }
 
 async function recoverManagedRooms() {
   for (const saved of managedRegistry.read()) {
-    const failure = !isSameProcess(saved.pid, saved.identity)
+    const failure = saved.identityProfile === "teeworlds-unix-v1" && !(await identityRuntimeHealthy({ ...saved, processIdentity: saved.identity }))
+      ? "Customer identity runtime could not be verified after agent restart"
+      : !isSameProcess(saved.pid, saved.identity)
       ? "Managed runtime was no longer running when the game-host agent restarted"
       // The verified supervisor owns a namespace, not a host game port.
       // Preserve it during startup or temporary Steam outages as well.
@@ -868,8 +874,9 @@ async function startRoom(opts) {
   return startCoordinator.withPartyLock(key, () => startRoomUnlocked(opts));
 }
 
-async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername, saveKey, customerOwned, resourceLimits, testSpawn = false }) {
+async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername, saveKey, customerOwned, resourceLimits, identityProfile, testSpawn = false }) {
   if (shuttingDown) return { error: "Agent is shutting down" };
+  if (identityProfile !== undefined && (identityProfile !== "teeworlds-unix-v1" || !customerOwned || !communityServerId || gameSlug !== "teeworlds")) return { error: "Unsupported customer identity handoff" };
   if (customerOwned && CUSTOMER_ISOLATION_GAMES.includes(gameSlug)) {
     try { resourceLimits = customerResourceLimits(gameSlug, resourceLimits); }
     catch (error) { return { error: error.message }; }
@@ -912,6 +919,7 @@ async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, e
       saveKey: cleanSaveKey,
       customerOwned: Boolean(customerOwned && communityServerId),
       resourceLimits,
+      identityProfile,
       testSpawn,
     });
   } finally {
@@ -921,7 +929,7 @@ async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, e
   }
 }
 
-async function startRoomReserved({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername, saveKey, customerOwned, resourceLimits, testSpawn = false }) {
+async function startRoomReserved({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername, saveKey, customerOwned, resourceLimits, identityProfile, testSpawn = false }) {
 
   // Recipes use partyId as a filesystem namespace; managed IDs serve that
   // internal purpose without creating a Party or entering byParty.
@@ -1055,7 +1063,7 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
     }
     let isolated;
     try {
-      isolated = customerIsolationLaunch({ gameSlug, customerOwned: ctx.customerOwned, communityServerId, binary, args, home: hostHome, resourceLimits });
+      isolated = customerIsolationLaunch({ gameSlug, customerOwned: ctx.customerOwned, communityServerId, binary, args, home: hostHome, resourceLimits, identityProfile });
     } catch {
       freePort(gameSlug, port);
       return { error: "Customer runtime isolation could not be prepared. The server was not launched." };
@@ -1087,6 +1095,7 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
       isolationProfile: isolated?.profile || null,
       resourceScope: isolated && child.pid ? resourceScope(communityServerId, child.pid) : null,
       resourceLimits: isolated?.resourceLimits || null,
+      identityProfile: isolated?.identityProfile || null,
       editionSlug: editionSlug || null,
       gameSlug,
       saveKey: ctx.saveKey || null,
@@ -1381,6 +1390,7 @@ function publicRoom(room) {
     isolationProfile: room.isolationProfile || null,
     resourceScope: room.resourceScope || null,
     resourceLimits: room.resourceLimits || null,
+    identityProfile: room.identityProfile || null,
     gameSlug: room.gameSlug,
     name: room.name,
     host: room.gameSlug === "aneurism-iv" ? null : room.host || PUBLIC_IP,
@@ -1519,6 +1529,14 @@ const server = http.createServer(async (req, res) => {
         json(res, 400, { error: "Valid communityServerId and hostable gameSlug required" });
         return;
       }
+      const retainedIdentity = managedJobs.get(communityServerId)?.identityProfile;
+      const identityProfile = body.identityProfile === undefined ? retainedIdentity : body.identityProfile;
+      if (retainedIdentity && retainedIdentity !== identityProfile) {
+        json(res, 409, { error: "Customer identity profile cannot be downgraded" }); return;
+      }
+      if (identityProfile !== undefined && (identityProfile !== "teeworlds-unix-v1" || body.customerOwned !== true || gameSlug !== "teeworlds" || !/^[a-f0-9]{24}$/.test(communityServerId))) {
+        json(res, 400, { error: "Unsupported customer identity handoff" }); return;
+      }
       const activeId = byManaged.get(communityServerId);
       if (activeId && rooms.has(activeId)) {
         const room = rooms.get(activeId);
@@ -1535,7 +1553,7 @@ const server = http.createServer(async (req, res) => {
         json(res, 202, current);
         return;
       }
-      const job = { status: "pending", gameSlug, startedAt: Date.now() };
+      const job = { status: "pending", gameSlug, startedAt: Date.now(), ...(identityProfile ? { identityProfile } : {}) };
       managedJobs.set(communityServerId, job);
       void startRoom({
         communityServerId, gameSlug, partyId: null,
@@ -1543,6 +1561,7 @@ const server = http.createServer(async (req, res) => {
         editionSlug: body.editionSlug, mod: body.mod, settings: body.settings,
         customerOwned: body.customerOwned === true,
         resourceLimits: body.resourceLimits,
+        identityProfile,
       }).then((result) => {
         if (gameSlug === "aneurism-iv" && managedJobs.get(communityServerId)?.canceled) return;
         managedJobs.set(communityServerId, result.error
@@ -1633,6 +1652,10 @@ const server = http.createServer(async (req, res) => {
         const pid = room.pid;
         const identity = room.processIdentity;
         const stopWaitMs = stopRoom(room);
+        if (room.stopPromise && !(await room.stopPromise)) {
+          json(res, 500, { error: "Customer runtime scope did not confirm shutdown" });
+          return;
+        }
         if (!(await waitForStoppedRoom(pid, identity, stopWaitMs + 750))) {
           json(res, 500, { error: "Managed process did not stop; inspect the host before retrying" });
           return;

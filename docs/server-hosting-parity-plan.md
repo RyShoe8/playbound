@@ -53,6 +53,39 @@ until the additional handlers pass their gates. No placeholder controls.
 
 ## Current delivered scope
 
+- Teeworlds has an explicitly opted-in managed UID handoff (`teeworlds-unix-v1`).
+  Normal website/customer creation leaves it off. Once selected, enrollment is
+  retained in managed jobs across stop, failure and agent restart, so a later
+  client omitting the flag cannot silently revert to the service user or the old
+  data directory. Existing nonempty service-owned data blocks this profile until
+  an explicit migration is implemented; no empty replacement or fallback occurs.
+  A fixed root-owned supervisor validates the placed gate and actual limits,
+  including its own inherited cgroup, and drops to the reserved UID/GID with no
+  supplementary groups before executing the reviewed engine through Bubblewrap.
+  Configuration is bounded/allowlisted and supplied through a sealed memory FD;
+  no caller executable, host path, environment or signal is accepted. Private
+  game data lives under a root-controlled per-server parent, outside agent data.
+  Root-owned bindings tie stop/status to the original gate identity. Scoped stop
+  waits for the whole cgroup to empty; a reused PID or another server's binding
+  cannot authorize it. Gate loss also fences the supervisor and game tree.
+  Teeworlds has no declared browser world-file/backup support to redirect; those
+  permission bridges and legacy data migration remain gates for other engines.
+  VPS acceptance used an isolated loopback agent and fixture identity, covering
+  concurrent/idempotent starts, real zero-player/four-slot queries, metrics,
+  unchanged gate/game PIDs across agent restart, stop acknowledgment only after
+  the scope emptied, resume without the opt-in flag, stable UID and private data,
+  denied wrong-identity/server stops and cleanup after forced gate loss. Test
+  processes, private homes/config and staging state were removed; identity
+  reservations remain. Eleven Python boundary tests and 18 Linux namespace/gate
+  tests passed; the local agent suite passed 202 tests with 16 platform skips.
+  Cancellation terminates the unprivileged gate without waiting for privileged
+  children, so fencing does not depend on an agent-side delayed cleanup timer.
+  Live checks covered both SIGTERM cancellation and forced SIGKILL gate loss.
+  Human Join, legacy migration, network restrictions, other engine handoffs and
+  executable plugins are not covered, and production identity mode stays off.
+  Final controlled deployment of the guarded agent path preserved all eleven existing
+  production runtime identities/PIDs; no production server was enrolled.
+
 - The Unix identity broker is installed as a separate foundation, **not enabled
   for production game launches**. Its only operation is `ensure <serverId>`;
   callers cannot choose a UID, path, command, group, login shell or deletion.
@@ -72,7 +105,8 @@ until the additional handlers pass their gates. No placeholder controls.
   Fifteen tests cover boundaries, partial creation, corrupt/linked state,
   exhausted pools and real cross-process locking. No production process user,
   world ownership, database row, launcher or service configuration was changed.
-  Remaining handoff gates are fixed-profile launch under the new UID, safe
+  The opt-in Teeworlds handoff above advances the launch/stop/recovery gate.
+  Remaining broader handoff gates include safe
   per-server save/config ownership and agent access, identity-checked whole-tree
   stop/recovery, backup/file permissions and metrics/query regression checks.
   Do not enable executable plugins or claim completed customer isolation from

@@ -230,6 +230,7 @@ chown -R playbound:playbound "$AGENT_DIR"
 bash "$AGENT_SRC/install-update-scanner.sh"
 bash "$AGENT_SRC/tools/install-customer-resources.sh"
 bash "$AGENT_SRC/tools/install-customer-identities.sh"
+bash "$AGENT_SRC/tools/install-customer-runtime.sh"
 
 # Battlefield 1942 is an archived DICE Linux dedicated distribution, not a
 # SteamCMD app. The installer checks a pinned SHA-256 and never replaces a

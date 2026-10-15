@@ -58,3 +58,29 @@ test("explicit allocations reach placement unchanged and cannot relax task/swap 
   }
   assert.deepEqual(customerResourceLimits("luanti"), { cpuMillis: 2000, memoryMiB: 2048 });
 });
+
+test("identity handoff is explicit, follows confirmed placement and cannot fall back", async () => {
+  const plan = { ...input.plan, identityProfile: "teeworlds-unix-v1", identityRuntime: { port: 8322, config: "fixture" } };
+  const events = [];
+  await assert.rejects(runCustomerGate({ ...input, plan }, { pid: 42, onSignal: () => {}, place: async () => events.push("placed"), identityLaunch: () => { events.push("identity"); throw Error("denied"); }, launch: () => assert.fail("unrestricted fallback") }), /denied/);
+  assert.deepEqual(events, ["placed", "identity"]);
+  await assert.rejects(runCustomerGate({ ...input, plan: { ...plan, identityProfile: "other" } }, { pid: 42, place: () => assert.fail("invalid profile reached placement") }), /identity profile/);
+});
+
+test("identity cancellation exits the unprivileged gate even when it cannot signal the root supervisor", async () => {
+  const handlers = {};
+  let unreferenced = false;
+  const plan = { ...input.plan, identityProfile: "teeworlds-unix-v1" };
+  const result = await runCustomerGate({ ...input, plan }, {
+    pid: 42, onSignal: (name, handler) => { handlers[name] = handler; }, place: async () => {},
+    identityLaunch: () => {
+      const child = new EventEmitter();
+      child.kill = () => { throw Error("EPERM"); };
+      child.unref = () => { unreferenced = true; };
+      setImmediate(() => handlers.SIGTERM());
+      return child;
+    },
+  });
+  assert.equal(result, 143);
+  assert.equal(unreferenced, true);
+});
