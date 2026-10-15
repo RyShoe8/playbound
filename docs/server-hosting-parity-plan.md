@@ -835,3 +835,48 @@ pipelines 2787088120 and 2786866078 identify that commit. The amd64 job
 unchanged; use a reviewed available matching build/source build and matching
 assets rather than silently replacing it with stable 0.18.0. These findings do
 not change the coverage counts or enable either blocked handler.
+
+## BombSquad and Veloren paired-runtime fixes (2026-10-15)
+
+Both previous blockers are resolved with reviewed packages in a `runtime`
+component. BombSquad 1.8.2 replaces its Python controller and entire distribution
+together, retaining the private Python 3.14 runtime, launcher, settings and
+`state` outside the swap. Its publisher SHA-256 was verified. The launcher is
+checksum-checked too, so a custom launcher cannot silently keep using the old
+distribution. The existing typing fix remains part of the reviewed package.
+
+Veloren uses the official October 14 weekly package (commit `f97be347`), newer
+than the installed August master build. The engine and 10,654 asset files move
+together; the complete reviewed tree and official GitHub archive checksum are
+verified. `VELOREN_USERDATA` explicitly retains the original userdata location:
+upstream otherwise saves beside its executable, which would put worlds inside
+the runtime/rollback unit. A missing managed engine fails closed rather than
+selecting a legacy engine with new assets. Console shutdown is declared and new
+CLI settings support bounded SIGTERM shutdown after process adoption; existing
+custom CLI settings are preserved.
+
+One-time enrollment copies only immutable legacy package files, normalizes
+permissions on the copies and verifies them before atomic directory promotion.
+Legacy files and saved data remain intact. Current and previous package trees
+have separate version pins. The existing installation worker, scanner, lease,
+maintenance queue, rollback and telemetry outbox remain the only update path.
+Daily checks discover BombSquad's official server build and Veloren's declared
+weekly channel. Reviewed upgrades can queue automatically; unreviewed future
+packages require compatibility/checksum review, and an attempted or rolled-back
+release is not silently reapplied.
+
+Real isolated VPS acceptance passed both cross-version updates, responding
+0/4-player game queries, verification of the new executable's process identity,
+running-process rollback holds, clean shutdown, binary rollback and retention
+of saves written after updating. Veloren's world/configuration stayed outside
+its runtime. This certifies package, startup and query behavior, not human Join
+or backwards-compatible save formats. The unsupported old BombSquad package is
+retained for file recovery; its fresh online asset resolution is not healthy.
+
+Production enrollment/deployment preserved all twelve managed process identities.
+Both production update jobs then completed. BombSquad was confirmed empty,
+stopped through the agent and restarted under its existing persistent server ID;
+its live query reports zero of eight players. Saved-data backups were retained
+before either upgrade. No catalog, hosting eligibility or unrelated database
+records were changed. Coverage is 37 installation families, 22 official daily
+release-discovery sources and 14 remaining game/edition entries.
