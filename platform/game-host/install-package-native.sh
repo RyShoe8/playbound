@@ -9,6 +9,6 @@ install -o root -g root -m 644 "$SOURCE/nativePackageProfiles.json" "$DEST/nativ
 RULE="$(mktemp)"
 trap 'rm -f -- "$RULE"' EXIT
 # Python validates both fixed game names and the UUID; there are no path inputs.
-printf '%s\n' 'playbound ALL=(root) NOPASSWD: /usr/local/libexec/playbound-package-native/promote-package-native.py bzflag *, /usr/local/libexec/playbound-package-native/promote-package-native.py hedgewars *, /usr/local/libexec/playbound-package-native/promote-package-native.py openttd *, /usr/local/libexec/playbound-package-native/promote-package-native.py luanti *' > "$RULE"
+printf '%s\n' 'playbound ALL=(root) NOPASSWD: /usr/local/libexec/playbound-package-native/promote-package-native.py bzflag *, /usr/local/libexec/playbound-package-native/promote-package-native.py hedgewars *, /usr/local/libexec/playbound-package-native/promote-package-native.py openttd *, /usr/local/libexec/playbound-package-native/promote-package-native.py luanti *, /usr/local/libexec/playbound-package-native/promote-package-native.py battle-for-wesnoth *' > "$RULE"
 visudo -cf "$RULE"
 install -o root -g root -m 440 "$RULE" /etc/sudoers.d/playbound-package-native

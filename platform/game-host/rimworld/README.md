@@ -10,6 +10,29 @@ commit `bbd981f3b01255198a66bd8fb6c57ed0595c8db4` (26.8.31.1) and compiles
 The client and network protocol are unchanged. Keep upstream LICENSE with the
 published binary; the reproducible patch and build instructions live here.
 
+## Reviewed update builds
+
+The Linux update queue uses `../rimworldSourceBuild.py`, not an unmodified
+upstream release or the manual PowerShell developer build. It pins the exact
+source archive, bridge, dependency lock, .NET SDK 8.0.131, runtime 8.0.30 and
+all 12 downloaded NuGet blobs in `../rimworldBuild.json`. The SDK must already
+be installed; no privileged package/SDK installer runs during an update.
+Only nuget.org is used, with locked restore, isolated caches/home/temp and a
+clean subprocess environment. Source traversal, links, duplicate files and
+changed bridge hooks fail closed. Compiler reuse is disabled, builds are
+serial, and the resulting executable must match its reviewed SHA-256.
+
+The patched entry point also supports `--playbound-runtime-info`: a bounded
+offline check before server folders, sockets or public browser work starts.
+The updater preserves the browser-query, snapshot and native console bridge.
+It swaps the shared installation only after process/start gates pass; per-server
+Configs, Assets, Backups and permissions remain outside that swap. Custom
+files/worlds in the shared binary folder require review. The original patched
+binary is a pinned rollback baseline. License text remains intact, accepting
+its original CRLF or LF line endings. Binary rollback does not reverse colony
+format changes. New upstream, SDK, bridge or dependency versions require a
+fresh review, matching client protocol and updated pins.
+
 The bridge writes a process-owned, timestamped player snapshot every second.
 The agent rejects samples older than ten seconds and samples from another PID.
 Counts include connecting clients, conservatively protecting a joining player.

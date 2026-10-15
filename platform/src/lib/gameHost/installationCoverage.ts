@@ -7,8 +7,11 @@ const PACKAGE: Gap = { category: "os-package", reason: "Needs a scoped package u
 const ARCHIVE: Gap = { category: "archive", reason: "Needs a verified archive handler, installation baseline and save-preserving staged update/rollback." };
 const GAPS: Record<string, Gap> = {
   "warzone-2100": PACKAGE,
-  freeciv: PACKAGE, teeworlds: PACKAGE, supertuxkart: PACKAGE,
-  openarena: PACKAGE, "0ad": PACKAGE, "battle-for-wesnoth": PACKAGE, flightgear: PACKAGE,
+  freeciv: { category: "custom-build", reason: "Uses a custom Freeciv 3.2.5 server/data/library build matching the client. Ubuntu's 3.1 binary is incompatible; stage and verify the complete matching build while preserving saves." },
+  teeworlds: { ...PACKAGE, reason: "Needs a native-package handler coordinated with the root-owned Teeworlds UID supervisor, which currently runs the fixed system executable. Updating a separate binary alone would leave enrolled servers on the old engine." },
+  supertuxkart: PACKAGE,
+  openarena: PACKAGE, "0ad": PACKAGE,
+  flightgear: { category: "custom-build", reason: "Uses the fgms multiplayer relay, not the ordinary FlightGear client. Needs a reviewed fgms source/binary handler retaining its server configuration and administration/query behavior." },
   xonotic: ARCHIVE, "medal-of-honor-allied-assault": ARCHIVE,
   "wolfenstein-enemy-territory": { category: "archive", reason: "Needs an ET: Legacy archive handler that preserves compatible etmain assets and validates the dedicated engine/data combination." },
   "battlefield-1942-anthology": ARCHIVE, "vintage-story": ARCHIVE,
@@ -23,7 +26,6 @@ const GAPS: Record<string, Gap> = {
   freedoom: { category: "edition", reason: "Zandronum, Odamex and Chocolate Doom require separate engine update handlers; preserve IWADs, maps and per-server configuration." },
   "space-station-14": { category: "private-runtime", reason: "Needs a handler for the server distribution/bootstrap, .NET dependencies and per-server content/database compatibility." },
   "goldeneye-source": { category: "private-runtime", reason: "Needs coordinated Source SDK base and GoldenEye mod updates, including private runtime refresh and retained settings." },
-  "rimworld-together": { category: "custom-build", reason: "Requires a reproducible build retaining PlayBound's browser-query, player-snapshot and console integration. Replacing RTServer with the unmodified upstream package would break management/tracking. Preserve colony, player and permission data while verifying a patched update and rollback." },
   trackmania: { category: "private-runtime", reason: "Needs a dedicated package handler that preserves account configuration, maps and match settings." },
   "aneurism-iv": { category: "private-runtime", reason: "Needs coordinated Steam depot and namespace-supervisor updates that preserve private token files, stable identity and world data." },
 };

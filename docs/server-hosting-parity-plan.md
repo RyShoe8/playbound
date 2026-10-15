@@ -12,7 +12,7 @@ New games must complete `docs/dedicated-server-game-checklist.md`.
 Assess each feature per engine: applicable and verified, not yet implemented,
 or unavailable with a concrete engine/transport reason. The universal scope is
 a release requirement, not a claim that every engine supports bots or plugins.
-Keep current twenty-game update support and thirteen-game file support explicit
+Keep current twenty-two-game update support and thirteen-game file support explicit
 until the additional handlers pass their gates. No placeholder controls.
 
 ## Implementation order and gates
@@ -543,3 +543,36 @@ until the additional handlers pass their gates. No placeholder controls.
   retained its world metadata through rollback; master-list/player-query and
   human Join verification remain separate. No production saves or database rows
   changed. Coverage is now 20 installation families and 31 remaining entries.
+
+- Battle for Wesnoth adds a reviewed Debian 1.18.5 dedicated binary handler,
+  matching the already-installed 1.18 server/client series. Its package checksum
+  comes from Debian's published download metadata; the native file also matches
+  both installed copies. Only `wesnothd` is staged and swapped; parent directory,
+  `wesnothd.cfg`, accepted-version policy and other data remain in place.
+  VPS acceptance passed actual package download, offline dependencies, queued
+  update/rollback, unchanged configuration/root inode, TCP startup, real zero-player
+  query, process detection and full stop. No production config/save or DB changed.
+  Human Join and customer sandbox expansion remain separate. Coverage is now
+  21 installation families and 30 remaining game/edition entries.
+  The remaining inventory also distinguishes the real custom Freeciv 3.2.5
+  package from Ubuntu's incompatible 3.1, and fgms from the FlightGear client;
+  Teeworlds still requires integration with its fixed root-owned UID supervisor.
+
+- RimWorld Together adds a pinned source-build handler preserving PlayBound's
+  browser query, player snapshots and console bridge. Source commit/archive,
+  bridge, NuGet lock, SDK 8.0.131, runtime 8.0.30 and all 12 NuGet package blobs
+  are reviewed; serial unprivileged builds use a clean environment and isolated
+  home/cache/temp. Source links/traversal, changed hooks/dependencies and an
+  unexpected output hash fail closed. Two distinct build directories produced
+  the same reviewed binary. Compiler/worker reuse is disabled and command time
+  and disk checks remain bounded. A new offline runtime-info flag validates the
+  binary without creating server data or opening sockets. The original patched
+  binary is a pinned rollback baseline; the upstream license is preserved.
+  VPS acceptance (2026-10-15) passed a real queued source update/rollback in an
+  isolated installation, startup, console response, snapshots 0 -> 1 -> 0 for a
+  connecting TCP probe, rollback held while running, full stop and preservation
+  of fixture colony/settings files. No licensed human Join or actual colony
+  migration was certified. Production binaries/saves and DB rows were unchanged;
+  the agent deployment preserved all 12 managed process identities. Test/build
+  directories and compiler processes were removed, with evidence retained.
+  Coverage is now 22 installation families and 29 remaining game/edition entries.

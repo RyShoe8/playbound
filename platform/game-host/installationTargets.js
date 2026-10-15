@@ -9,6 +9,7 @@ import { verifyAssaultCubeInstallation } from "./assaultcubeUpdates.js";
 import { verifyFactorioInstallation } from "./factorioUpdates.js";
 import { verifyTerrariaInstallation } from "./terrariaUpdates.js";
 import { verifyNativePackageInstallation } from "./nativePackageUpdates.js";
+import { verifyRimworldInstallation } from "./rimworldUpdates.js";
 
 // These are shared installations, not per-customer save directories.
 export const INSTALLATION_TARGETS = Object.freeze({
@@ -34,6 +35,8 @@ export const INSTALLATION_TARGETS = Object.freeze({
   hedgewars: { name: "Hedgewars (reviewed Ubuntu native server)", strategy: "reviewed-distro-native" },
   openttd: { name: "OpenTTD (reviewed Ubuntu native server)", strategy: "reviewed-distro-native" },
   luanti: { name: "Luanti (reviewed Minetest native server)", strategy: "reviewed-distro-native" },
+  "battle-for-wesnoth": { name: "Battle for Wesnoth (reviewed 1.18 server)", strategy: "reviewed-distro-native", component: "wesnothd" },
+  "rimworld-together": { name: "RimWorld Together (reviewed PlayBound source build)", strategy: "reviewed-dotnet-source" },
 });
 
 export function installationKey(slug) {
@@ -64,6 +67,7 @@ export function verifyInstallation(directory, key) {
   if (key === "factorio") return verifyFactorioInstallation(directory);
   if (key === "terraria") return verifyTerrariaInstallation(directory);
   if (target.strategy === "reviewed-distro-native") return verifyNativePackageInstallation(directory, key);
+  if (target.strategy === "reviewed-dotnet-source") return verifyRimworldInstallation(directory);
   if (target.strategy === "github-appimage") return verifyOpenRAInstallation(directory);
   const manifestPath = path.join(directory, "steamapps", `appmanifest_${target.appId}.acf`);
   if (fs.realpathSync(path.dirname(manifestPath)) !== path.join(fs.realpathSync(directory), "steamapps")) throw new Error("Steam metadata must stay inside the installation");
