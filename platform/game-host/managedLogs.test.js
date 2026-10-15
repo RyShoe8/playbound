@@ -22,6 +22,7 @@ test("bounded tail omits partial edges and retains only 200 complete lines", asy
 test("credentials, known secret values, URLs and terminal controls are scrubbed", () => {
   assert.equal(redactLogLine('rcon_password = "several secret words"'), "[credential-bearing line omitted]");
   assert.equal(redactLogLine("Steam login token abc"), "[credential-bearing line omitted]");
+  assert.equal(redactLogLine("pass\x1b[31mword=hidden"), "[credential-bearing line omitted]");
   assert.equal(redactLogLine("value hidden-value", ["hidden-value"]), "value [redacted]");
   assert.equal(redactLogLine("a".repeat(32)), "[redacted]");
   assert.equal(redactLogLine("https://host/path?auth=abc"), "[URL omitted]");
