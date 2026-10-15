@@ -1,0 +1,102 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { createDailyInstallationUpdates, latestInstallationBuild, steamPublicBuild } from "./dailyInstallationUpdates.js";
+import { createInstallationCoordinator, createInstallationStore } from "./installationJobs.js";
+
+function fixture(t) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "pb-daily-"));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const gamesRoot = path.join(root, "games"), stateDir = path.join(root, "state");
+  const current = path.join(gamesRoot, "team-fortress-2");
+  fs.mkdirSync(path.join(current, "steamapps"), { recursive: true });
+  const manifest = path.join(current, "steamapps/appmanifest_232250.acf");
+  const install = (build = "100", branch = "") => fs.writeFileSync(manifest, `"appid" "232250" "StateFlags" "4" "buildid" "${build}" ${branch ? `"BetaKey" "${branch}"` : ""}`);
+  install(); fs.writeFileSync(path.join(current, "srcds_linux64"), "fixture", { mode: 0o755 });
+  const running = [], launches = [];
+  const coordinator = createInstallationCoordinator({ stateDir, gamesRoot, rooms: () => running, scan: async () => 0, launch: async (job) => launches.push(job) });
+  let clock = 1_000_000, calls = 0, version = "200", fail = false;
+  const latest = async () => { calls++; if (fail) throw new Error("private error never exposed"); return version; };
+  const daily = () => createDailyInstallationUpdates({ stateDir, coordinator, latest, now: () => clock });
+  const store = createInstallationStore(stateDir);
+  return { stateDir, coordinator, running, launches, store, install, daily,
+    advance: () => { clock += 24 * 60 * 60_000; }, calls: () => calls,
+    version: (value) => { version = value; }, fail: (value) => { fail = value; } };
+}
+
+test("Steam public build ignores beta/depot build IDs and fails closed on missing/duplicate metadata", () => {
+  const info = 'Steam log "232250" { "depots" { "123" { "buildid" "999" } "branches" { "preview" { "buildid" "888" } "public" { "buildid" "200" } } } }';
+  assert.equal(steamPublicBuild(info, 232250), "200");
+  assert.throws(() => steamPublicBuild(info, 730));
+  assert.throws(() => steamPublicBuild(info.replace('"public"', '"private"'), 232250));
+  assert.throws(() => steamPublicBuild(info.replace('"buildid" "200"', '"buildid" "200" "buildid" "300"'), 232250));
+});
+
+test("daily release check queues once across repeated polls, concurrent calls and restart; never stops running games", async (t) => {
+  const f = fixture(t); f.running.push({ gameSlug: "tf2" });
+  const updater = f.daily();
+  await Promise.all([updater.tick(), updater.tick()]);
+  await f.daily().tick();
+  assert.equal(f.calls(), 1); assert.equal(f.store.all().length, 1);
+  await f.coordinator.tick(); assert.equal(f.launches.length, 0);
+  f.advance(); await f.daily().tick(); assert.equal(f.store.all().length, 1);
+  assert.equal(f.daily().snapshot().targets["team-fortress-2"].status, "queued");
+});
+
+test("unchanged or older releases create no jobs and pinned handlers are explicitly review required", async (t) => {
+  const f = fixture(t); f.version("100"); await f.daily().tick();
+  assert.equal(f.store.all().length, 0);
+  assert.equal(f.daily().snapshot().targets.xonotic.status, "review_required");
+  f.advance(); f.version("99"); await f.daily().tick(); assert.equal(f.store.all().length, 0);
+});
+
+test("failed discovery retries next day without exposing errors or changing installations", async (t) => {
+  const f = fixture(t); f.fail(true); await f.daily().tick();
+  assert.equal(f.store.all().length, 0);
+  const row = f.daily().snapshot().targets["team-fortress-2"];
+  assert.equal(row.status, "check_failed"); assert.doesNotMatch(row.message, /private/);
+  f.advance(); f.fail(false); await f.daily().tick(); assert.equal(f.store.all().length, 1);
+});
+
+test("cancelled or failed build is not requeued daily; a genuinely new build is eligible", async (t) => {
+  const f = fixture(t); await f.daily().tick();
+  f.coordinator.cancel(f.store.all()[0].id);
+  f.advance(); await f.daily().tick(); assert.equal(f.store.all().length, 1);
+  assert.equal(f.daily().snapshot().targets["team-fortress-2"].status, "review_required");
+  f.advance(); f.version("300"); await f.daily().tick(); assert.equal(f.store.all().length, 2);
+});
+
+test("completed update followed by rollback is not silently undone by the next daily check", async (t) => {
+  const f = fixture(t); await f.daily().tick();
+  f.store.write({ ...f.store.all()[0], status: "completed" }); f.install("200");
+  f.advance(); await f.daily().tick();
+  f.install("100"); f.advance(); await f.daily().tick();
+  assert.equal(f.store.all().length, 1);
+  assert.equal(f.daily().snapshot().targets["team-fortress-2"].status, "review_required");
+});
+
+test("non-public installed Steam branches are not switched automatically", async (t) => {
+  const f = fixture(t); f.install("100", "preview"); await f.daily().tick();
+  assert.equal(f.calls(), 0); assert.equal(f.store.all().length, 0);
+});
+
+test("maintenance worker and metadata probes never launch concurrently", async (t) => {
+  const f = fixture(t); f.coordinator.queue("team-fortress-2", "update", "admin");
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  const checking = f.coordinator.withMetadataCheck(() => gate);
+  await f.coordinator.tick(); assert.equal(f.launches.length, 0);
+  release(); await checking; await f.coordinator.tick(); assert.equal(f.launches.length, 1);
+});
+
+test("Steam discovery uses its own home and read-only app metadata commands", async (t) => {
+  const f = fixture(t);
+  const build = await latestInstallationBuild("team-fortress-2", { steamHome: path.join(f.stateDir, "metadata-home"), run: async (command, args) => {
+    assert.equal(command, "/usr/bin/env"); assert.equal(args[0], "-i"); assert.ok(args.some((arg) => arg.startsWith("HOME=")));
+    assert.ok(args.includes("+app_info_update")); assert.ok(!args.includes("+app_update"));
+    return '"232250" { "depots" { "branches" { "public" { "buildid" "200" } } } }';
+  } });
+  assert.equal(build, "200");
+});

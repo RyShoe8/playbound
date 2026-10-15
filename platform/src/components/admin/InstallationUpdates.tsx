@@ -53,12 +53,19 @@ export default function InstallationUpdates() {
     </div>
     <p className="text-sm text-muted-foreground">Queue an update, then stop affected servers when players are finished. Updates wait for every affected party and hosted server to stop. They run on the VPS, preserve saves, and retain the previous installation for rollback. Servers are not automatically restarted.</p>
     <p className="text-xs text-muted-foreground">Actions update the named installation. Separate edition and mod packages may still need their own handler; see Update coverage below. Retained and partial copies consume disk space; insufficient space blocks the update.</p>
+    {data?.daily && <div className="rounded-lg border p-3 text-sm">
+      <p className="font-medium">Daily release checks enabled</p>
+      <p className="text-xs text-muted-foreground">{data.daily.completedAt ? `Last completed ${new Date(data.daily.completedAt).toLocaleString()}. ` : "First check is running. "}Next check {new Date(data.daily.nextCheckAt).toLocaleString()}. New supported builds are queued automatically; running games are never interrupted. Pinned/custom builds require review.</p>
+      {data.daily.message && <p className="text-xs text-muted-foreground">{data.daily.message}</p>}
+    </div>}
     {message && <p role="alert" className="text-sm text-destructive">{message}</p>}
     {!data && !message && <p className="text-sm">Loading installations…</p>}
     {data?.targets.map((target) => {
       const active = data.jobs.find((job) => job.key === target.key && !FINISHED.has(job.status));
       return <div key={target.key} className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-lg bg-muted/40 p-3">
-        <div className="min-w-0"><p className="font-medium">{target.name}</p><p className="text-xs text-muted-foreground">{target.installed ? `Installed build ${target.buildId}` : "Installation missing or incomplete"}{active ? ` · ${active.status}` : ""}</p>{target.blockedReason && <p className="max-w-xl text-xs text-muted-foreground">{target.blockedReason}</p>}</div>
+        <div className="min-w-0"><p className="font-medium">{target.name}</p><p className="text-xs text-muted-foreground">{target.installed ? `Installed build ${target.buildId}` : "Installation missing or incomplete"}{active ? ` · ${active.status}` : ""}</p>{target.blockedReason && <p className="max-w-xl text-xs text-muted-foreground">{target.blockedReason}</p>}
+          {data.daily?.targets[target.key] && <p className="max-w-xl text-xs text-muted-foreground">Daily check: {data.daily.targets[target.key].status.replaceAll("_", " ")}{data.daily.targets[target.key].availableBuild ? ` · latest ${data.daily.targets[target.key].availableBuild}` : ""}. {data.daily.targets[target.key].message}</p>}
+        </div>
         <div className="flex flex-wrap gap-2 text-sm">
           <button type="button" className="rounded border px-3 py-1 disabled:opacity-50" disabled={busy || !data.canWrite || !target.installed || Boolean(active) || Boolean(target.blockedReason)} onClick={() => void act("update", target.key, target.name)}>Queue update</button>
           {target.rollbackAvailable && <button type="button" className="rounded border px-3 py-1 disabled:opacity-50" disabled={busy || !data.canWrite || Boolean(active) || Boolean(target.blockedReason)} onClick={() => void act("rollback", target.key, target.name)}>Roll back</button>}

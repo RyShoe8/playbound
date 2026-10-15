@@ -658,3 +658,15 @@ until the additional handlers pass their gates. No placeholder controls.
   1.24 GB review archive were removed; acceptance records retained. No database
   rows or automation eligibility changed. Coverage is now 28 installation
   families with 23 game/edition entries remaining.
+# Daily upstream release scheduling (2026-10-15)
+
+The agent now schedules a persistent daily release check and queues newer builds
+through the existing staged-update coordinator. Fourteen installation families
+have automatic metadata sources (eight Steam depots plus Mindustry, official
+OpenRA, OpenHV, OpenE2140, Hypersomnia and Factorio). Pinned/custom handlers and
+the remaining coverage gaps still need compatibility work; this scheduling step
+does not certify or enable them. The existing admin Updates section exposes the
+last per-installation check, available build and reason. No-op checks create no
+update jobs, samples or database writes. Cancelled/failed/applied builds and
+rollbacks are not retried silently. Running servers are preserved; updates wait
+for their installation to become unused.

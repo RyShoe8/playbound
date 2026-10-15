@@ -12,6 +12,14 @@ export type InstallationUpdateJob = {
   afterBuild?: string;
 };
 export type InstallationUpdateSnapshot = {
+  daily?: {
+    enabled: boolean;
+    startedAt?: number;
+    completedAt?: number;
+    nextCheckAt: number;
+    message?: string;
+    targets: Record<string, { checkedAt: number; installedBuild?: string; availableBuild?: string; status: string; message?: string }>;
+  };
   /** Agent recipe inventory, including dedicated-only games and aliases. */
   gameSlugs?: string[];
   targets: { key: string; name: string; installed: boolean; buildId?: string; rollbackAvailable: boolean; blockedReason?: string }[];
