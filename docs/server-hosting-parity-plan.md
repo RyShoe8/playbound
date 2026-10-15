@@ -451,3 +451,27 @@ until the additional handlers pass their gates. No placeholder controls.
   and a real dedicated query reporting zero players/two slots. Production
   native binaries and server data stayed unchanged. A human Join remains
   separate. Coverage is now 14 handled families and 37 remaining entries.
+
+- Saved-file transfers now use 1 MiB chunks with a 64 MiB per-file ceiling in
+  both the website and native launcher. The existing Files endpoint rechecks
+  permissions and stopped state for each mutation; upload sessions bind the
+  authenticated user, server, recipe and destination, expire after one hour,
+  and permit at most two pending sessions per server. Final commit checks
+  completeness and the destination SHA-256 before atomic replacement. Large
+  delete/restore operations preserve file history without whole-file buffers.
+  Downloads reject files changed between chunks; text editing remains 256 KiB.
+  VPS acceptance (2026-10-15) uploaded/downloaded a full 64 MiB fixture with
+  matching SHA-256 and exercised deletion/history restoration. No database
+  writes or existing saves changed. Electron acceptance uploaded more than the
+  former 3 MiB limit. The agent is deployed; native UI delivery still requires
+  a launcher release. This improves the 13 existing saved-data recipes; it does
+  not declare file access for the rest of the inventory or implement SFTP.
+
+- The existing Logs tab now offers opt-in live output on web and native launcher,
+  using bounded 200-line snapshots every five seconds while visible. Requests
+  do not overlap; navigation, pause, hidden windows and errors suspend or stop
+  following. Every request uses the existing authorization and credential
+  redaction. No new agent endpoint, persistent stream or transcript storage is
+  introduced. This delivers live following; true cursor-based streaming remains
+  a separate optimization if snapshot traffic warrants it.
+

@@ -30,6 +30,10 @@ for (const role of ['owner','moderator']) test(`native hosting workspace (${role
       if (name === 'Logs') {
         await expect(host.locator('.workspace-console')).toContainText('<script>Never execute captured output</script>');
         await expect(host.locator('.workspace-console script')).toHaveCount(0);
+        await host.getByRole('button',{name:'Follow live output',exact:true}).click();
+        await expect(host.getByRole('button',{name:'Pause live output',exact:true})).toHaveAttribute('aria-pressed','true');
+        await host.getByRole('button',{name:'Pause live output',exact:true}).click();
+        await expect(host.getByRole('button',{name:'Follow live output',exact:true})).toHaveAttribute('aria-pressed','false');
       }
       await page.setViewportSize({width:900,height:700});
       expect(await page.locator('#content').evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);

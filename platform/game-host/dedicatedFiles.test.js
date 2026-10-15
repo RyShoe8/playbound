@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { manageDedicatedFiles, MAX_FILE_BYTES } from "./dedicatedFiles.js";
+import { manageDedicatedFiles, MAX_FILE_BYTES, MAX_TRANSFER_BYTES, FILE_CHUNK_BYTES } from "./dedicatedFiles.js";
 const id = "0123456789abcdef01234567";
 function fixture(t) {
   t.mock.method(fs, "statfsSync", () => ({ bavail: 10_000_000, bsize: 4096, blocks: 20_000_000 }));
@@ -77,4 +77,70 @@ test("supports the full advertised transfer size without a large-input regex fai
   run({ action: "write", path: "largest.dat", expectedEtag: "", contentBase64: Buffer.alloc(MAX_FILE_BYTES, 42).toString("base64") });
   assert.equal(run({ action: "read", path: "largest.dat" }).bytes, MAX_FILE_BYTES);
   assert.throws(() => run({ action: "write", path: "large.dat", expectedEtag: "", contentBase64: "A".repeat(4 * 1024 ** 2 + 4) }), /oversized/);
+});
+
+test("chunked saves replace atomically, retry safely, download and restore beyond the old limit", t => {
+  const { run, root } = fixture(t);
+  const original = run({ action: "stat", path: "world.json" });
+  const bytes = Buffer.alloc(MAX_FILE_BYTES + 123, 42);
+  const session = run({ action: "upload-begin", path: "world.json", actor: "owner", expectedEtag: original.etag, bytes: bytes.length });
+  const request = { path: "world.json", actor: "owner", uploadId: session.uploadId };
+  assert.throws(() => run({ ...request, action: "upload-commit" }), /incomplete/);
+  for (let offset = 0; offset < bytes.length; offset += FILE_CHUNK_BYTES) {
+    const chunk = { ...request, action: "upload-chunk", offset, contentBase64: bytes.subarray(offset, offset + FILE_CHUNK_BYTES).toString("base64") };
+    run(chunk); run(chunk);
+    assert.equal(fs.readFileSync(path.join(root, "world.json"), "utf8"), original.text);
+  }
+  run({ ...request, action: "upload-commit" });
+  const info = run({ action: "stat", path: "world.json" });
+  assert.equal(info.bytes, bytes.length);
+  assert.equal(info.contentBase64, "");
+  const chunks = [];
+  for (let offset = 0; offset < info.bytes; offset += FILE_CHUNK_BYTES) chunks.push(Buffer.from(run({ action: "read-chunk", path: "world.json", offset, version: info.version }).contentBase64, "base64"));
+  assert.deepEqual(Buffer.concat(chunks), bytes);
+  run({ action: "delete", path: "world.json", expectedEtag: info.etag });
+  const revision = run({ action: "history" }).history.find(item => item.bytes === bytes.length);
+  run({ action: "restore", path: "world.json", revision: revision.id, expectedEtag: "" });
+  assert.deepEqual(fs.readFileSync(path.join(root, "world.json")), bytes);
+});
+
+test("upload sessions cannot cross users, files, or servers and reject bad offsets and changed files", t => {
+  const { run, home } = fixture(t);
+  const before = run({ action: "stat", path: "world.json" });
+  const session = run({ action: "upload-begin", path: "world.json", actor: "owner", expectedEtag: before.etag, bytes: 2 });
+  const request = { path: "world.json", actor: "owner", uploadId: session.uploadId, action: "upload-chunk", offset: 0, contentBase64: "e30=" };
+  assert.throws(() => run({ ...request, actor: "other" }), /another user/);
+  assert.throws(() => run({ ...request, path: "other.json" }), /another user/);
+  const other = "ffffffffffffffffffffffff";
+  fs.mkdirSync(path.join(home, "luanti-servers", `pb-${other}`));
+  assert.throws(() => manageDedicatedFiles(other, "luanti", request, home));
+  assert.throws(() => run({ ...request, offset: 1 }), /Invalid upload chunk/);
+  assert.throws(() => run({ ...request, offset: -1 }), /Invalid upload chunk/);
+  run(request);
+  assert.throws(() => run({ ...request, contentBase64: "W10=" }), /differs/);
+  run({ action: "write", path: "world.json", expectedEtag: before.etag, contentBase64: "MQ==" });
+  assert.throws(() => run({ ...request, action: "upload-commit" }), /changed/);
+  assert.throws(() => run({ action: "read-chunk", path: "world.json", offset: 0, version: before.version }), /changed/);
+  run({ ...request, action: "upload-cancel" });
+  assert.equal(run({ action: "read", path: "world.json" }).text, "1");
+});
+
+test("upload lifetime, pending count, quota and transfer bounds stay bounded", t => {
+  const { run, root } = fixture(t);
+  const input = { action: "upload-begin", path: "new.dat", actor: "owner", expectedEtag: "", bytes: 2 };
+  assert.throws(() => run({ ...input, bytes: MAX_TRANSFER_BYTES + 1 }), /maximum/);
+  const first = run(input);
+  const second = run(input);
+  assert.throws(() => run(input), /Two uploads/);
+  const folder = path.join(root, ".playbound-file-uploads", first.uploadId);
+  const old = new Date(Date.now() - 61 * 60 * 1000);
+  fs.utimesSync(folder, old, old);
+  run({ action: "list" });
+  assert.equal(fs.existsSync(folder), false);
+  assert.throws(() => run({ ...input, action: "upload-commit", uploadId: first.uploadId }));
+  run({ ...input, action: "upload-cancel", uploadId: second.uploadId });
+  const session = run(input);
+  t.mock.method(fs, "statfsSync", () => ({ bavail: 1, bsize: 4096, blocks: 1_000_000 }));
+  assert.throws(() => run({ ...input, action: "upload-chunk", uploadId: session.uploadId, offset: 0, contentBase64: "e30=" }), /disk space/);
+  assert.equal(fs.existsSync(path.join(root, "new.dat")), false);
 });
