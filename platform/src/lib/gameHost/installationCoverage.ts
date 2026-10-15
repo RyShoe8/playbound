@@ -1,0 +1,56 @@
+import { DEDICATED_ONLY_GAMES, HOSTABLE_GAMES, HOSTABLE_SLUG_ALIASES } from "./catalog";
+import { INSTALLATION_UPDATE_KEYS } from "./installationKeys";
+import type { InstallationCoverageRow, InstallationUpdateSnapshot } from "./installationTypes";
+
+type Gap = Pick<InstallationCoverageRow, "category" | "reason">;
+const PACKAGE: Gap = { category: "os-package", reason: "Needs a scoped package update handler with dependency checks and coordinated process draining. General apt access is not granted to the agent." };
+const ARCHIVE: Gap = { category: "archive", reason: "Needs a verified archive handler, installation baseline and save-preserving staged update/rollback." };
+const GAPS: Record<string, Gap> = {
+  openttd: PACKAGE, luanti: PACKAGE, hedgewars: PACKAGE, "warzone-2100": PACKAGE,
+  freeciv: PACKAGE, bzflag: PACKAGE, teeworlds: PACKAGE, supertuxkart: PACKAGE,
+  openarena: PACKAGE, "0ad": PACKAGE, "battle-for-wesnoth": PACKAGE, flightgear: PACKAGE,
+  xonotic: ARCHIVE, assaultcube: ARCHIVE, "medal-of-honor-allied-assault": ARCHIVE,
+  "wolfenstein-enemy-territory": { category: "archive", reason: "Needs an ET: Legacy archive handler that preserves compatible etmain assets and validates the dedicated engine/data combination." },
+  "battlefield-1942-anthology": ARCHIVE, terraria: ARCHIVE, "vintage-story": ARCHIVE,
+  factorio: ARCHIVE, "re-volt-rvgl": ARCHIVE, unvanquished: ARCHIVE,
+  "deus-ex-goty-edition": { category: "custom-build", reason: "Needs a Wine/HX package handler that preserves the game assets and PlayBound co-op integration." },
+  morrowind: { category: "archive", reason: "Needs a TES3MP-compatible archive handler that preserves Lua scripts, account data and saved worlds." },
+  "hurry-curry": { category: "custom-build", reason: "Needs a source/binary update handler that retains PlayBound's player-limit patch and matching data files." },
+  ysoccer: { category: "custom-build", reason: "Needs a handler for the PlayBound dedicated JAR build, including Java compatibility and rollback." },
+  triplea: { category: "custom-build", reason: "Needs coordinated updates for the dedicated wrapper, server package and required Java runtime." },
+  bombsquad: { category: "archive", reason: "Needs a coordinated server-package and Python runtime handler that preserves server scripts and configuration." },
+  hypersomnia: { category: "archive", reason: "Needs a verified rolling headless AppImage handler with trusted version/checksum metadata and preserved per-server appdata." },
+  veloren: { category: "archive", reason: "Needs a verified server build/channel handler with world compatibility and save-preserving rollback checks." },
+  freedoom: { category: "edition", reason: "Zandronum, Odamex and Chocolate Doom require separate engine update handlers; preserve IWADs, maps and per-server configuration." },
+  "space-station-14": { category: "private-runtime", reason: "Needs a handler for the server distribution/bootstrap, .NET dependencies and per-server content/database compatibility." },
+  "goldeneye-source": { category: "private-runtime", reason: "Needs coordinated Source SDK base and GoldenEye mod updates, including private runtime refresh and retained settings." },
+  "rimworld-together": { category: "private-runtime", reason: "Needs a RimWorld Together package/.NET handler that preserves colony, player and permission data." },
+  trackmania: { category: "private-runtime", reason: "Needs a dedicated package handler that preserves account configuration, maps and match settings." },
+  "aneurism-iv": { category: "private-runtime", reason: "Needs coordinated Steam depot and namespace-supervisor updates that preserve private token files, stable identity and world data." },
+};
+const EDITIONS: InstallationCoverageRow[] = [
+  { id: "openra:combined-arms", name: "OpenRA · Combined Arms", category: "edition", reason: "Uses its own Combined Arms distribution. OpenRA's official-package update does not update this edition; a separate handler and binary verification are required." },
+  { id: "openra:ra2", name: "OpenRA · Red Alert 2", category: "edition", reason: "Requires its own compatible mod/engine distribution and original assets; it is not covered by the official RA/CNC/D2K updater." },
+  { id: "team-fortress-2:open-fortress", name: "Team Fortress 2 · Open Fortress", category: "edition", installationKey: "team-fortress-2", reason: "The TF2 base depot has an update handler. The Open Fortress mod overlay still needs separate compatibility, update and rollback verification." },
+];
+
+const normalize = (slug: string) => Object.hasOwn(HOSTABLE_SLUG_ALIASES, slug) ? HOSTABLE_SLUG_ALIASES[slug] : slug === "open-fortress" ? "team-fortress-2" : slug;
+const title = (slug: string) => slug === "aneurism-iv" ? "ANEURISM IV" : slug.replace(/-/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+/** Read-only operational inventory. It never changes catalog content or eligibility. */
+export function buildInstallationCoverage(snapshot: InstallationUpdateSnapshot): InstallationCoverageRow[] {
+  const games = { ...HOSTABLE_GAMES, ...DEDICATED_ONLY_GAMES };
+  const slugs = new Set([...Object.keys(games), ...(snapshot.gameSlugs || []), ...snapshot.targets.map((target) => target.key)].map(normalize));
+  const keys = new Set<string>(INSTALLATION_UPDATE_KEYS);
+  return [...slugs].map((slug): InstallationCoverageRow => {
+    const target = snapshot.targets.find((entry) => entry.key === slug);
+    const name = (Object.hasOwn(games, slug) ? games[slug].title : undefined) || target?.name || title(slug);
+    if (keys.has(slug) && target) return { id: slug, name, category: "supported", installationKey: slug, reason: target.blockedReason || (target.installed ? "Coordinated update and rollback handler available." : "Handler available; installation missing, modified or incomplete. Verify the installation before queueing an update.") };
+    if (keys.has(slug)) return { id: slug, name, category: "review", reason: "The current agent does not expose this update handler. Check agent deployment before queueing an update." };
+    return { id: slug, name, ...(Object.hasOwn(GAPS, slug) ? GAPS[slug] : { category: "review", reason: "No reviewed update handler is declared for this recipe. Review its distribution, runtime dependencies, saves and rollback before enabling updates." }) };
+  }).concat(EDITIONS).sort((left, right) => left.name.localeCompare(right.name));
+}
+
+export function withInstallationCoverage(snapshot: InstallationUpdateSnapshot) {
+  return { ...snapshot, coverage: buildInstallationCoverage(snapshot) };
+}

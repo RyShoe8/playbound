@@ -92,6 +92,7 @@ const installationUpdates = createInstallationCoordinator({
   stateDir: process.env.GAME_HOST_STATE_DIR || "/var/lib/playbound-host/state",
   gamesRoot: GAMES_ROOT,
   rooms: () => rooms.values(),
+  gameSlugs: () => Object.keys(recipes),
 });
 /** relative archive path → in-flight/completed transfer state for this agent lifetime. */
 const archiveJobs = new Map();

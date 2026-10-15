@@ -132,3 +132,14 @@ until the additional handlers pass their gates. No placeholder controls.
   same-version activation/rollback and received protocol 7/client ID 0.
   Production binaries and support data were not changed. A real player Join
   and original-client asset compatibility remain separate release checks.
+
+- The existing installation-update panel now includes a read-only coverage
+  inventory for the union of platform hosting recipes and actual agent recipe
+  names, including dedicated-only games such as ANEURISM. Aliases are folded
+  into canonical recipes. Missing handlers show distribution-specific work
+  rather than disappearing; Combined Arms, Red Alert 2 and Open Fortress
+  retain explicit edition-package gaps instead of inheriting base-game claims.
+  A future unknown recipe appears as requiring review with no update action.
+  This inventory changes neither hosting eligibility nor curated catalog rows,
+  and adds no database queries, sampling or background tests. It identifies
+  remaining work; it does not complete those handlers or client Join checks.

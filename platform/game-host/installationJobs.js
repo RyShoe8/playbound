@@ -46,7 +46,7 @@ export async function scanInstallation(key, gamesRoot = "/opt/playbound-host/gam
   } catch { throw new Error("Cannot verify installation processes; update remains paused"); }
 }
 
-export function createInstallationCoordinator({ stateDir, gamesRoot, rooms, scan = scanInstallation, launch, sameProcess = isSameProcess }) {
+export function createInstallationCoordinator({ stateDir, gamesRoot, rooms, gameSlugs = () => [], scan = scanInstallation, launch, sameProcess = isSameProcess }) {
   const store = createInstallationStore(stateDir);
   const pending = new Map();
   let ticking = false;
@@ -138,6 +138,7 @@ export function createInstallationCoordinator({ stateDir, gamesRoot, rooms, scan
   function snapshot() {
     const jobs = store.all();
     return {
+      gameSlugs: [...new Set(gameSlugs())].filter((slug) => typeof slug === "string" && /^[a-z0-9][a-z0-9-]{0,127}$/.test(slug)).sort(),
       targets: Object.entries(INSTALLATION_TARGETS).map(([key, target]) => {
         let installed;
         try { installed = verifyInstallation(path.join(gamesRoot, key), key); } catch { /* Not installed or incomplete. */ }

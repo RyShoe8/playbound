@@ -317,3 +317,19 @@ check exercised an isolated same-version download/update/rollback and actual
 dedicated protocol handshake, without updating production game files. This
 does not verify a human Join or redistribute original Earth 2140 assets.
 Upstream packaging and asset requirements: [OpenE2140](https://github.com/OpenE2140/OpenE2140).
+
+### Update coverage inventory
+
+The Shared installation updates panel includes a collapsed coverage list for
+all declared hosting recipes and additional recipe names reported by the agent.
+Missing handlers explain whether they need package-manager coordination, archive
+validation, a custom build, private runtime handling or separate edition work.
+Alias names are deduplicated. The supported-family count refers to implemented
+handlers, not proof that every installation or edition is ready.
+
+The coverage response is read-only and uses the existing authenticated status
+request. It performs no catalog writes, extra database queries or resource
+sampling. Older agents remain compatible; unavailable handlers are labelled
+for deployment review. New unknown recipes remain visible with no queue action.
+Base TF2 updates do not certify Open Fortress overlay updates, and official
+OpenRA package updates do not certify Combined Arms or Red Alert 2.
