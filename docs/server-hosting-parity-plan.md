@@ -817,3 +817,21 @@ Automated regression checks: 305 agent tests (267 passed, 38 platform skips),
 platform integration/coverage tests, TypeScript and affected-file lint passed.
 Coverage is 35 installation families, 20 release-discovery sources and 16
 remaining game/edition entries, including the two blockers above.
+
+Follow-up investigation identified both installed builds. BombSquad is
+1.8.0a101 build 22998. Its archived upstream controller matches exactly and all
+529 distribution files match after the existing PlayBound typing fix. An
+isolated reinstallation succeeded, but real startup failed: the upstream asset
+service rejects this old build, and the game query returns no healthy result.
+The experimental same-version handler was therefore excluded from deployment.
+Next work must upgrade controller and distribution together to 1.8.2, preserving
+the separate private Python runtime and mutable state. Do not count a process
+or bound socket as a successful BombSquad server.
+
+Veloren's version-only `--version` probe identifies master commit
+`f0c97a4372b949239db5f45b3f5a60a882864533`, dated 2026-08-24. Official GitLab
+pipelines 2787088120 and 2786866078 identify that commit. The amd64 job
+16079391571 has no downloadable artifact remaining. The installed ZIP is retained
+unchanged; use a reviewed available matching build/source build and matching
+assets rather than silently replacing it with stable 0.18.0. These findings do
+not change the coverage counts or enable either blocked handler.
