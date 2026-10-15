@@ -643,7 +643,8 @@ export async function queryRoomOccupancy(room) {
   if (slug === "morrowind") return queryTes3mp(room);
   if (slug === "openttd") return queryOpenTtd(room.port);
   if (slug === "bzflag") return queryBzflag(room.port);
-  if (slug === "teeworlds") return queryTeeworlds(room.port);
+  if (slug === "teeworlds") return room.networkProfile === "public-game-v1"
+    ? queryTeeworlds(room.port, { host: room.host || "" }) : queryTeeworlds(room.port);
   if (slug === "supertuxkart") return querySuperTuxKart(room.port);
   if (slug === "flightgear") return queryFlightGear(room.port);
   if (slug === "freedoom") return queryZandronum(room.port);

@@ -7,7 +7,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { customerResourceLimits } from "./customerResourceLimits.js";
-import { verifiedIdentityMigration } from "./customerMigration.js";
+import { identityMigrationMetadata } from "./customerMigration.js";
 
 export const TEEWORLDS_ISOLATION = "teeworlds-bwrap-v1";
 export const CUSTOMER_ISOLATION_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti"]);
@@ -76,8 +76,9 @@ export function customerIsolationLaunch({ gameSlug, customerOwned, communityServ
   if (!Array.isArray(args) || args.length !== 3 || args[0] !== "-f" || args[1] !== expectedConfig || !/^sv_port (?:83\d{2})$/.test(args[2])) throw new Error("Unexpected Teeworlds isolation arguments");
   trustedExecutables(binary);
   regularFile(expectedConfig, 64 * 1024);
-  if (identityProfile && verifiedIdentityMigration(communityServerId, home)) {
-    return identityPlan(expectedConfig, identityProfile, limits, args[2]);
+  const migration = identityProfile ? identityMigrationMetadata(communityServerId, home) : null;
+  if (migration) {
+    return { ...identityPlan(expectedConfig, identityProfile, limits, args[2]), networkProfile: migration.networkProfile };
   }
   const root = path.join(home, "customer-sandboxes");
   privateDirectory(root);

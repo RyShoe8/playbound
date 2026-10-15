@@ -67,3 +67,4 @@ jobs:
       - run: sudo python3 tools/customer_runtime_test.py
       - run: sudo python3 tools/customer_data_migration_test.py
       - run: python3 -m py_compile tools/customer-network-check.py
+      - run: python3 tools/customer_network_test.py

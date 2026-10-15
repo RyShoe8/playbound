@@ -28,7 +28,7 @@ MAX_DEPTH = 16
 
 
 def arguments(args):
-    if len(args) != 2 or args[0] not in ('prepare', 'verify', 'activate', 'rollback', 'recover', 'enroll', 'complete-rollback') or not re.fullmatch(r'[a-f0-9]{24}', args[1]):
+    if len(args) != 2 or args[0] not in ('prepare', 'verify', 'activate', 'rollback', 'recover', 'enroll', 'complete-rollback', 'enable-network', 'disable-network') or not re.fullmatch(r'[a-f0-9]{24}', args[1]):
         raise ValueError('Invalid offline migration operation or server ID')
     return args
 
@@ -478,7 +478,7 @@ def registry_read(name, uid):
 
 def transition_profile(action, server_id, legacy_uid, runtime, identities):
     """Explicit offline operator bridge; ordinary job writes remain sticky."""
-    if action not in ('enroll', 'complete-rollback'):
+    if action not in ('enroll', 'complete-rollback', 'enable-network', 'disable-network'):
         raise ValueError('Invalid profile transition')
     quiescent(legacy_uid)
     account = identities.ensure_identity(server_id)
@@ -496,7 +496,7 @@ def transition_profile(action, server_id, legacy_uid, runtime, identities):
         value = journal_read(control, server_id)
         if value.get('uid') != account['uid'] or value.get('legacyUid') != legacy_uid:
             raise ValueError('Migration account changed')
-        if action == 'enroll':
+        if action in ('enroll', 'enable-network', 'disable-network'):
             if value['phase'] != 'active' or not runtime.migration_ready(server_id, account['uid'], allow_pending=True):
                 raise ValueError('Data activation must complete before enrollment')
         elif value['phase'] != 'rolled-back' or inode(SOURCE / ('pb-' + server_id)) != value.get('rollbackInode'):
@@ -511,6 +511,22 @@ def transition_profile(action, server_id, legacy_uid, runtime, identities):
         if selected[0].get('identityProfile') not in (None, 'teeworlds-unix-v1'):
             raise ValueError('Unexpected existing identity profile')
         row = selected[0]
+        if action in ('enable-network', 'disable-network'):
+            if row.get('identityProfile') != 'teeworlds-unix-v1' or value.get('profileTransition', {}).get('state') != 'complete' or value.get('profileTransition', {}).get('target') != 'uid':
+                raise ValueError('Complete UID enrollment before choosing network policy')
+            if action == 'enable-network':
+                network = runtime.trusted_module('pb_network', 'playbound-customer-network-check')
+                if network.probe().get('preflightPassed') is not True:
+                    raise ValueError('Kernel network preflight failed')
+                value['networkProfile'] = 'public-game-v1'
+            else:
+                value.pop('networkProfile', None)
+            quiescent(legacy_uid)
+            quiescent(account['uid'])
+            import datetime
+            value['networkChange'] = {'actorUid': 0, 'at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'profile': value.get('networkProfile')}
+            journal_write(control, value)
+            return value
         if action == 'enroll':
             row['identityProfile'] = 'teeworlds-unix-v1'
         else:
@@ -555,9 +571,9 @@ if __name__ == '__main__':
             runtime = importlib.util.module_from_spec(spec)
             loader.exec_module(runtime)
             identities = runtime.trusted_module('pb_identities', 'playbound-customer-identities')
-            operation = transition_profile if action in ('enroll', 'complete-rollback') else transaction
+            operation = transition_profile if action in ('enroll', 'complete-rollback', 'enable-network', 'disable-network') else transaction
             value = operation(action, server_id, pwd.getpwnam('playbound').pw_uid, runtime, identities)
-            result = {'serverId': server_id, 'phase': value['phase'], 'activated': value['phase'] == 'active', 'enrollment': value.get('profileTransition', {}).get('target')}
+            result = {'serverId': server_id, 'phase': value['phase'], 'activated': value['phase'] == 'active', 'enrollment': value.get('profileTransition', {}).get('target'), 'networkProfile': value.get('networkProfile')}
         print(json.dumps(result))
     except Exception:
         print('Offline migration failed; retain all copies and inspect/recover the journal before restarting', file=sys.stderr)

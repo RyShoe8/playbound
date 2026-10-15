@@ -810,6 +810,7 @@ function persistManagedRooms() {
     resourceScope: r.resourceScope || null,
     resourceLimits: r.resourceLimits || null,
     identityProfile: r.identityProfile || null,
+    networkProfile: r.networkProfile || null,
     rcon: r.rcon, rconPassword: r.rconPassword, cwd: r.cwd || null,
   })));
 }
@@ -1096,6 +1097,7 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
       resourceScope: isolated && child.pid ? resourceScope(communityServerId, child.pid) : null,
       resourceLimits: isolated?.resourceLimits || null,
       identityProfile: isolated?.identityProfile || null,
+      networkProfile: isolated?.networkProfile || null,
       editionSlug: editionSlug || null,
       gameSlug,
       saveKey: ctx.saveKey || null,
@@ -1391,6 +1393,7 @@ function publicRoom(room) {
     resourceScope: room.resourceScope || null,
     resourceLimits: room.resourceLimits || null,
     identityProfile: room.identityProfile || null,
+    networkProfile: room.networkProfile || null,
     gameSlug: room.gameSlug,
     name: room.name,
     host: room.gameSlug === "aneurism-iv" ? null : room.host || PUBLIC_IP,

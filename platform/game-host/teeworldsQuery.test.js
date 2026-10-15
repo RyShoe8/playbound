@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import dgram from "node:dgram";
-import { queryTeeworlds } from "./playerQueries.js";
+import { queryTeeworlds, queryRoomOccupancy } from "./playerQueries.js";
 
 const info = (players) => Buffer.concat([
   Buffer.from("inf3"), Buffer.from([1]),
@@ -42,6 +42,11 @@ test("Teeworlds can query an explicit IPv4 host and ignores a forged empty reply
 });
 test("Teeworlds sends both handshake steps to the selected IPv4 address", { skip: process.platform !== "linux" }, async t => {
   assert.deepEqual(await queryTeeworlds(await server(t, "127.0.0.2"), { host: "127.0.0.2" }), { players: 2, maxPlayers: 4 });
+});
+test("filtered managed rooms require their public host; absent configuration is unknown", async t => {
+  const port = await server(t, "127.0.0.1");
+  assert.deepEqual(await queryRoomOccupancy({ gameSlug: "teeworlds", port, networkProfile: "public-game-v1", host: "127.0.0.1" }), { players: 2, maxPlayers: 4 });
+  assert.equal(await queryRoomOccupancy({ gameSlug: "teeworlds", port, networkProfile: "public-game-v1" }), null);
 });
 test("Teeworlds rejects invalid endpoints as unknown rather than empty or an exception", async () => {
   for (const port of [0, -1, 65536, NaN, 1.5, "8303"]) assert.equal(await queryTeeworlds(port), null);
