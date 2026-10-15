@@ -53,6 +53,37 @@ until the additional handlers pass their gates. No placeholder controls.
 
 ## Current delivered scope
 
+- The Unix identity broker is installed as a separate foundation, **not enabled
+  for production game launches**. Its only operation is `ensure <serverId>`;
+  callers cannot choose a UID, path, command, group, login shell or deletion.
+  A private root-owned registry durably reserves IDs before host account changes,
+  uses a cross-process lock and atomic/fsynced writes, and never recycles a
+  reservation. The initial bounded pool is 40000–40255; existing host users and
+  groups are skipped. Each server gets its own UID/GID, locked-password non-login
+  account, no home creation, no subordinate-ID allocation and no supplementary
+  groups. Repeated requests preserve identity; partial account creation can
+  resume, while account drift, corrupt state and unregistered names fail closed.
+  The agent's sudo rule permits only this fixed helper operation, never general
+  account tools. Agent access cannot read or rewrite the registry.
+  VPS acceptance (2026-10-15 UTC) used two reserved fixture identities and proved
+  own-data access plus peer-data, agent-fixture-data, registry-read and peer-signal
+  denial. Temporary processes/data were removed; the two fixture account
+  reservations intentionally remain stable and are reused by manual retests.
+  Fifteen tests cover boundaries, partial creation, corrupt/linked state,
+  exhausted pools and real cross-process locking. No production process user,
+  world ownership, database row, launcher or service configuration was changed.
+  Remaining handoff gates are fixed-profile launch under the new UID, safe
+  per-server save/config ownership and agent access, identity-checked whole-tree
+  stop/recovery, backup/file permissions and metrics/query regression checks.
+  Do not enable executable plugins or claim completed customer isolation from
+  account readiness alone. Network restrictions and other engine profiles remain.
+  Two additional unlisted Teeworlds fixtures ran under those distinct UIDs,
+  retained the namespace filesystem boundary, and each returned zero players/
+  four slots. Every observed descendant used its assigned host UID; both whole
+  process trees and temporary homes were removed. These operator-run staging
+  launches did not use the production managed-runtime handoff or cgroup gate,
+  and do not establish customer start/stop permissions, restart adoption or Join.
+
 - Resource sizing for the five namespace profiles now comes from the dedicated
   tier's existing CPU/RAM-per-slot-block configuration. Initial starts, automatic
   recovery and settings-backed restarts use the same inventory envelope, carried
