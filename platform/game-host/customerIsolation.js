@@ -1,11 +1,13 @@
 /** Reviewed engine profiles only. This builds the filesystem/process namespace
  * boundary; customerRuntime applies cgroup limits before running the plan.
- * Per-customer host UIDs, network policy and plugin isolation remain unfinished.
+ * Teeworlds has an opt-in UID handoff. Other host UIDs, network policy and
+ * executable-plugin isolation remain unfinished.
  * There is deliberately no fallback to an unrestricted launch if setup fails.
  */
 import fs from "node:fs";
 import path from "node:path";
 import { customerResourceLimits } from "./customerResourceLimits.js";
+import { verifiedIdentityMigration } from "./customerMigration.js";
 
 export const TEEWORLDS_ISOLATION = "teeworlds-bwrap-v1";
 export const CUSTOMER_ISOLATION_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti"]);
@@ -74,6 +76,9 @@ export function customerIsolationLaunch({ gameSlug, customerOwned, communityServ
   if (!Array.isArray(args) || args.length !== 3 || args[0] !== "-f" || args[1] !== expectedConfig || !/^sv_port (?:83\d{2})$/.test(args[2])) throw new Error("Unexpected Teeworlds isolation arguments");
   trustedExecutables(binary);
   regularFile(expectedConfig, 64 * 1024);
+  if (identityProfile && verifiedIdentityMigration(communityServerId, home)) {
+    return identityPlan(expectedConfig, identityProfile, limits, args[2]);
+  }
   const root = path.join(home, "customer-sandboxes");
   privateDirectory(root);
   const data = path.join(root, `pb-${communityServerId}`);
@@ -81,19 +86,30 @@ export function customerIsolationLaunch({ gameSlug, customerOwned, communityServ
   const plan = sandboxPlan({ gameSlug, binary, gameArgs: ["-f", "server.cfg", args[2]], data, mounts: [[expectedConfig, "/server/server.cfg"]], resourceLimits: limits });
   if (identityProfile) {
     // No implicit migration or empty replacement of a customer's existing data.
+    let needsMigration = false;
     for (const name of fs.readdirSync(data)) {
       const info = fs.lstatSync(path.join(data, name));
-      if (name !== "server.cfg" || !info.isFile() || info.nlink !== 1 || info.size !== 0) throw new Error("Existing customer data requires an explicit identity migration");
+      if (name !== "server.cfg" || !info.isFile() || info.nlink !== 1 || info.size !== 0) needsMigration = true;
     }
-    const fd = fs.openSync(expectedConfig, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
-    try {
-      const info = fs.fstatSync(fd);
-      if (!info.isFile() || info.nlink !== 1 || info.size > 16384) throw new Error("Invalid identity configuration");
-      plan.identityProfile = identityProfile;
-      plan.identityRuntime = { port: Number(args[2].slice(8)), config: fs.readFileSync(fd, "utf8") };
-    } finally { fs.closeSync(fd); }
+    if (needsMigration) throw new Error("Existing customer data requires an explicit identity migration");
+    const identity = identityPlan(expectedConfig, identityProfile, limits, args[2]);
+    plan.identityProfile = identity.identityProfile;
+    plan.identityRuntime = identity.identityRuntime;
   }
   return plan;
+}
+
+function identityPlan(config, identityProfile, resourceLimits, portArgument) {
+  const fd = fs.openSync(config, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+  try {
+    const info = fs.fstatSync(fd);
+    if (!info.isFile() || info.nlink !== 1 || info.size > 16384) throw new Error("Invalid identity configuration");
+    return {
+      profile: TEEWORLDS_ISOLATION, resourceLimits, identityProfile,
+      identityRuntime: { port: Number(portArgument.slice(8)), config: fs.readFileSync(fd, "utf8") },
+      binary: "/usr/bin/prlimit", args: [], cwd: "/", env: { PATH: "/usr/bin:/usr/games", LANG: "C.UTF-8" },
+    };
+  } finally { fs.closeSync(fd); }
 }
 
 function trustedExecutables(binary) {

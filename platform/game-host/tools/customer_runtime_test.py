@@ -16,7 +16,50 @@ CONFIG = 'sv_name Fixture\nsv_port 8322\nsv_register 0\nsv_map dm1\nsv_gametype 
 
 
 class RuntimeBoundaries(unittest.TestCase):
+    @unittest.skipUnless(os.getuid() == 0, 'Root-owned migration journal fixture')
+    def test_migration_journal_gates_phase_directory_identity_and_legacy_seal(self):
+        import json
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / 'runtime'
+            root.mkdir(mode=0o711)
+            server = root / ID
+            server.mkdir(mode=0o711)
+            control = server / 'control'
+            control.mkdir(mode=0o700)
+            data = server / 'data'
+            data.mkdir(mode=0o700)
+            legacy = Path(temporary) / 'legacy'
+            legacy.mkdir(mode=0o700)
+            seal = legacy / ('pb-' + ID)
+            seal.mkdir(mode=0o700)
+            value = {'version': 1, 'serverId': ID, 'phase': 'active', 'uid': 0, 'activationInode': [data.stat().st_dev, data.stat().st_ino], 'sealedSourceInode': [seal.stat().st_dev, seal.stat().st_ino]}
+            journal = control / 'migration.json'
+            with patch.object(module, 'ROOT', root), patch.object(module, 'LEGACY_ROOT', legacy):
+                self.assertFalse(module.migration_ready(ID, 0))
+                journal.write_text(json.dumps(value))
+                journal.chmod(0o600)
+                self.assertTrue(module.migration_ready(ID, 0))
+                (data / 'new-game-progress').write_bytes(b'allowed after activation')
+                self.assertTrue(module.migration_ready(ID, 0))
+                journal.write_text(json.dumps({**value, 'profileTransition': {'state': 'pending', 'target': 'uid'}}))
+                with self.assertRaises(ValueError): module.migration_ready(ID, 0)
+                self.assertTrue(module.migration_ready(ID, 0, allow_pending=True))
+                for phase in ['activating', 'rolling-back', 'rolled-back']:
+                    journal.write_text(json.dumps({**value, 'phase': phase}))
+                    with self.assertRaises(ValueError): module.migration_ready(ID, 0)
+                journal.write_text(json.dumps(value))
+                with self.assertRaises(ValueError): module.migration_ready(ID, 40000)
+                data.rename(server / 'retained')
+                data.mkdir(mode=0o700)
+                with self.assertRaises(ValueError): module.migration_ready(ID, 0)
+                data.rmdir()
+                (server / 'retained').rename(data)
+                seal.rename(legacy / 'retained-seal')
+                seal.mkdir(mode=0o700)
+                with self.assertRaises(ValueError): module.migration_ready(ID, 0)
+
     def test_only_fixed_operations_and_bounded_arguments(self):
+        self.assertEqual(module.request(['migration', ID]), ('migration', ID, None, None, None))
         self.assertEqual(module.request(['run', ID, '42', IDENTITY, '8322', '750', '1536']), ('run', ID, 42, IDENTITY, (8322, 750, 1536)))
         for action in ['stop', 'status']:
             self.assertEqual(module.request([action, ID, '42', IDENTITY])[0], action)
@@ -77,7 +120,7 @@ class RuntimeBoundaries(unittest.TestCase):
             resources = SimpleNamespace(verify_caller=Mock())
             child = Mock(pid=52, returncode=0)
             child.poll.return_value = 0
-            with patch.object(module, 'verify_scope', return_value=Path('/fixture.scope')), patch.object(module, 'verify_supervisor_scope'), patch.object(module, 'workspace', return_value=root), patch.object(module.pwd, 'getpwnam', return_value=SimpleNamespace(pw_uid=1001)), patch.object(Path, 'stat', return_value=SimpleNamespace(st_mode=0o100755, st_uid=0)), patch.object(module.subprocess, 'Popen', return_value=child) as spawn, patch.object(module, 'binding_write') as binding, patch.object(module, 'game_identity', return_value=IDENTITY):
+            with patch.object(module, 'migration_ready'), patch.object(module, 'verify_scope', return_value=Path('/fixture.scope')), patch.object(module, 'verify_supervisor_scope'), patch.object(module, 'workspace', return_value=root), patch.object(module.pwd, 'getpwnam', return_value=SimpleNamespace(pw_uid=1001)), patch.object(Path, 'stat', return_value=SimpleNamespace(st_mode=0o100755, st_uid=0)), patch.object(module.subprocess, 'Popen', return_value=child) as spawn, patch.object(module, 'binding_write') as binding, patch.object(module, 'game_identity', return_value=IDENTITY):
                 self.assertEqual(module.run_runtime(identities, resources, ID, 42, IDENTITY, (8322, 750, 1536), CONFIG), 0)
                 options = spawn.call_args.kwargs
                 self.assertEqual((options['user'], options['group'], options['extra_groups']), (40000, 40000, []))

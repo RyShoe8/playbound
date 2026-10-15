@@ -33,7 +33,9 @@ class DataCheckpoint(unittest.TestCase):
 
     def test_only_fixed_actions_and_server_ids(self):
         self.assertEqual(module.arguments(['prepare', ID]), ['prepare', ID])
-        for args in [[], ['activate', ID], ['prepare', '../etc'], ['verify', ID.upper()], ['verify', ID, '/other']]:
+        for action in ['activate', 'rollback', 'recover', 'enroll', 'complete-rollback']:
+            self.assertEqual(module.arguments([action, ID]), [action, ID])
+        for args in [[], ['delete', ID], ['prepare', '../etc'], ['verify', ID.upper()], ['verify', ID, '/other']]:
             with self.assertRaises(ValueError):
                 module.arguments(args)
 
@@ -185,6 +187,237 @@ class DataCheckpoint(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'active process'):
                 module.prepare(ID, self.uid)
         self.assertFalse(root.exists())
+
+
+@unittest.skipUnless(os.getuid() == 0, 'Root-owned transaction integration fixtures')
+class MigrationTransactions(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        base = Path(self.temp.name)
+        self.source_root = base / 'legacy'
+        self.source_root.mkdir(mode=0o700)
+        self.source = self.source_root / ('pb-' + ID)
+        self.source.mkdir(mode=0o700)
+        (self.source / 'maps').mkdir(mode=0o700)
+        (self.source / 'maps' / 'saved.map').write_bytes(b'original save')
+        self.root = base / 'runtime'
+        self.root.mkdir(mode=0o711)
+        self.server = self.root / ID
+        self.server.mkdir(mode=0o711)
+        self.control = self.server / 'control'
+        self.control.mkdir(mode=0o700)
+        self.uid = 40000
+        self.addCleanup(patch.stopall)
+        patch.object(module, 'ROOT', self.root).start()
+        patch.object(module, 'SOURCE', self.source_root).start()
+        patch.object(module, 'quiescent').start()
+        checkpoint = self.control / 'legacy-checkpoint-v1'
+        checkpoint.mkdir(mode=0o700)
+        (checkpoint / 'data').mkdir(mode=0o700)
+        entries = module.tree(self.source, 0, checkpoint / 'data')
+        manifest = checkpoint / 'manifest.json'
+        manifest.write_text(json.dumps({'version': 1, 'serverId': ID, 'profile': 'teeworlds-unix-v1', 'entries': entries}))
+        manifest.chmod(0o600)
+
+        def directory(path, mode=0o711):
+            self.assertEqual(path.stat().st_uid, 0)
+            self.assertEqual(path.stat().st_mode & 0o777, mode)
+
+        self.runtime = SimpleNamespace(directory=directory)
+        self.identities = SimpleNamespace(ensure_identity=lambda server_id: {'uid': self.uid}, secure_stat=lambda info: self.assertEqual(info.st_uid, 0))
+
+    def execute(self, action):
+        return module.transaction(action, ID, 0, self.runtime, self.identities)
+
+    def test_activation_and_rollback_keep_post_activation_progress(self):
+        value = self.execute('activate')
+        self.assertEqual(value['phase'], 'active')
+        data = self.server / 'data'
+        self.assertEqual(data.stat().st_uid, self.uid)
+        self.assertEqual((data / 'maps' / 'saved.map').stat().st_uid, self.uid)
+        self.assertEqual((self.control / 'legacy-source-retained-v1' / 'maps' / 'saved.map').read_bytes(), b'original save')
+        self.assertEqual(list(self.source.iterdir()), [])
+        (data / 'maps' / 'saved.map').write_bytes(b'new progress after migration')
+        self.assertEqual(self.execute('activate')['phase'], 'active')
+        self.assertEqual(self.execute('rollback')['phase'], 'rolled-back')
+        self.assertEqual((self.source / 'maps' / 'saved.map').read_bytes(), b'new progress after migration')
+        self.assertEqual((data / 'maps' / 'saved.map').read_bytes(), b'new progress after migration')
+        self.assertEqual((self.control / 'legacy-source-retained-v1' / 'maps' / 'saved.map').read_bytes(), b'original save')
+        self.assertEqual(self.execute('rollback')['phase'], 'rolled-back')
+        with self.assertRaisesRegex(ValueError, 'implicitly reactivated'):
+            self.execute('activate')
+
+    def test_empty_uid_home_is_retained_during_atomic_exchange(self):
+        data = self.server / 'data'
+        data.mkdir(mode=0o700)
+        (data / 'server.cfg').touch(mode=0o600)
+        os.chown(data / 'server.cfg', self.uid, self.uid)
+        os.chown(data, self.uid, self.uid)
+        previous = module.inode(data)
+        self.execute('activate')
+        self.assertEqual(module.inode(self.control / 'activation-copy-v1' / 'data'), previous)
+        self.assertEqual((data / 'maps' / 'saved.map').read_bytes(), b'original save')
+
+    def test_nonempty_uid_home_is_never_overwritten(self):
+        data = self.server / 'data'
+        data.mkdir(mode=0o700)
+        (data / 'already-saved').write_bytes(b'existing progress')
+        os.chown(data / 'already-saved', self.uid, self.uid)
+        os.chown(data, self.uid, self.uid)
+        with self.assertRaisesRegex(ValueError, 'must not be replaced'):
+            self.execute('activate')
+        self.assertEqual((data / 'already-saved').read_bytes(), b'existing progress')
+
+    def test_changed_legacy_progress_blocks_activation_and_rollback(self):
+        (self.source / 'maps' / 'saved.map').write_bytes(b'changed original')
+        with self.assertRaisesRegex(ValueError, 'Legacy source changed'):
+            self.execute('activate')
+        (self.source / 'maps' / 'saved.map').write_bytes(b'original save')
+        self.execute('activate')
+        (self.source / 'maps').mkdir(mode=0o700)
+        (self.source / 'maps' / 'saved.map').write_bytes(b'independent legacy progress')
+        with self.assertRaisesRegex(ValueError, 'Legacy source changed'):
+            self.execute('rollback')
+        self.assertEqual((self.source / 'maps' / 'saved.map').read_bytes(), b'independent legacy progress')
+
+    def test_recovery_before_and_after_activation_rename(self):
+        original = module.finish_transaction
+        with patch.object(module, 'finish_transaction', side_effect=RuntimeError('power loss')):
+            with self.assertRaises(RuntimeError):
+                self.execute('activate')
+        self.assertFalse((self.server / 'data').exists())
+        with patch.object(module, 'journal_write', side_effect=RuntimeError('power loss after rename')):
+            with self.assertRaises(RuntimeError):
+                self.execute('recover')
+        self.assertTrue((self.server / 'data' / 'maps' / 'saved.map').exists())
+        self.assertEqual(self.execute('recover')['phase'], 'active')
+        self.assertEqual(module.inode(self.server / 'data'), module.journal_read(self.control, ID)['activationInode'])
+
+    def test_recovery_before_and_after_rollback_exchange(self):
+        self.execute('activate')
+        (self.server / 'data' / 'maps' / 'saved.map').write_bytes(b'new progress')
+        with patch.object(module, 'finish_transaction', side_effect=RuntimeError('power loss')):
+            with self.assertRaises(RuntimeError):
+                self.execute('rollback')
+        self.assertEqual(list(self.source.iterdir()), [])
+        with patch.object(module, 'journal_write', side_effect=RuntimeError('power loss after exchange')):
+            with self.assertRaises(RuntimeError):
+                self.execute('recover')
+        self.assertEqual((self.source / 'maps' / 'saved.map').read_bytes(), b'new progress')
+        self.assertEqual(self.execute('recover')['phase'], 'rolled-back')
+
+    def test_runtime_lock_blocks_concurrent_migration(self):
+        import fcntl
+        fd = os.open(self.control / 'runtime.lock', os.O_CREAT | os.O_RDWR, 0o600)
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            with self.assertRaises(BlockingIOError):
+                self.execute('activate')
+        finally:
+            os.close(fd)
+        self.assertFalse((self.server / 'data').exists())
+
+    def test_ambiguous_recovery_never_overwrites_unrelated_directory(self):
+        with patch.object(module, 'finish_transaction', side_effect=RuntimeError('power loss')):
+            with self.assertRaises(RuntimeError):
+                self.execute('activate')
+        (self.server / 'data').mkdir(mode=0o700)
+        (self.server / 'data' / 'unrelated').write_bytes(b'keep me')
+        with self.assertRaisesRegex(ValueError, 'Ambiguous migration'):
+            self.execute('recover')
+        self.assertEqual((self.server / 'data' / 'unrelated').read_bytes(), b'keep me')
+
+    def test_legacy_progress_after_interruption_blocks_recovery(self):
+        with patch.object(module, 'finish_transaction', side_effect=RuntimeError('power loss')):
+            with self.assertRaises(RuntimeError):
+                self.execute('activate')
+        (self.source / 'maps' / 'saved.map').write_bytes(b'played again after interruption')
+        with self.assertRaisesRegex(ValueError, 'Legacy progress changed'):
+            self.execute('recover')
+        self.assertFalse((self.server / 'data').exists())
+
+    def test_completed_directory_replacement_is_not_treated_as_migrated(self):
+        self.execute('activate')
+        (self.server / 'data').rename(self.server / 'retained-progress')
+        (self.server / 'data').mkdir(mode=0o700)
+        with self.assertRaisesRegex(ValueError, 'identity changed'):
+            self.execute('activate')
+        self.assertTrue((self.server / 'retained-progress' / 'maps' / 'saved.map').exists())
+
+
+@unittest.skipUnless(os.getuid() == 0, 'Root-owned enrollment transition fixtures')
+class ProfileTransitions(unittest.TestCase):
+    def setUp(self):
+        MigrationTransactions.setUp(self)
+        self.state = self.root.parent / 'state'
+        self.state.mkdir(mode=0o700)
+        patch.object(module, 'STATE', self.state).start()
+        self.runtime.migration_ready = lambda *args, **kwargs: True
+        self.other = {'communityServerId': 'fedcba987654321001234567', 'status': 'running', 'gameSlug': 'other', 'at': 12345, 'custom': {'preserve': True}}
+        self.write_registry('managed-rooms.json', [self.other])
+        self.write_registry('managed-jobs.json', [self.other, {'communityServerId': ID, 'gameSlug': 'teeworlds', 'status': 'stopped', 'at': 54321}])
+        self.execute('activate')
+
+    def execute(self, action):
+        return MigrationTransactions.execute(self, action)
+
+    def write_registry(self, name, value):
+        file = self.state / name
+        file.write_text(json.dumps(value))
+        file.chmod(0o600)
+
+    def transition(self, action):
+        return module.transition_profile(action, ID, 0, self.runtime, self.identities)
+
+    def test_profile_changes_are_explicit_scoped_and_retry_safe(self):
+        self.assertEqual(self.transition('enroll')['profileTransition']['state'], 'complete')
+        rows = module.registry_read('managed-jobs.json', 0)
+        self.assertEqual(rows[0], self.other)
+        self.assertEqual(rows[1]['identityProfile'], 'teeworlds-unix-v1')
+        self.assertEqual(rows[1]['at'], 54321)
+        self.transition('enroll')
+        with self.assertRaisesRegex(ValueError, 'Data rollback must complete'):
+            self.transition('complete-rollback')
+        self.execute('rollback')
+        self.assertEqual(self.transition('complete-rollback')['profileTransition']['target'], 'legacy')
+        rows = module.registry_read('managed-jobs.json', 0)
+        self.assertEqual(rows[0], self.other)
+        self.assertNotIn('identityProfile', rows[1])
+        self.transition('complete-rollback')
+
+    def test_live_job_duplicate_identity_or_wrong_game_never_changes_registry(self):
+        for entries in [[], [{'communityServerId': ID, 'gameSlug': 'teeworlds', 'status': 'running'}], [{'communityServerId': ID, 'gameSlug': 'other', 'status': 'stopped'}], [{'communityServerId': ID, 'gameSlug': 'teeworlds', 'status': 'stopped', 'identityProfile': 'other'}], [{'communityServerId': ID, 'gameSlug': 'teeworlds', 'status': 'stopped'}] * 2]:
+            self.write_registry('managed-jobs.json', entries)
+            before = (self.state / 'managed-jobs.json').read_bytes()
+            with self.assertRaises(ValueError):
+                self.transition('enroll')
+            self.assertEqual((self.state / 'managed-jobs.json').read_bytes(), before)
+
+    def test_retained_runtime_row_blocks_profile_transition(self):
+        self.write_registry('managed-rooms.json', [{'communityServerId': ID}])
+        with self.assertRaisesRegex(ValueError, 'Stop the managed runtime'):
+            self.transition('enroll')
+
+    def test_linked_registry_is_refused(self):
+        os.link(self.state / 'managed-jobs.json', self.state / 'linked-jobs')
+        with self.assertRaisesRegex(ValueError, 'Unsafe managed registry'):
+            self.transition('enroll')
+
+    def test_profile_transition_recovers_after_registry_swap_before_journal_completion(self):
+        original_write = module.journal_write
+
+        def fail_completion(control, value):
+            if value.get('profileTransition', {}).get('state') == 'complete':
+                raise RuntimeError('power loss')
+            original_write(control, value)
+
+        with patch.object(module, 'journal_write', side_effect=fail_completion):
+            with self.assertRaises(RuntimeError):
+                self.transition('enroll')
+        self.assertEqual(module.registry_read('managed-jobs.json', 0)[1]['identityProfile'], 'teeworlds-unix-v1')
+        self.assertEqual(module.journal_read(self.control, ID)['profileTransition']['state'], 'pending')
+        self.assertEqual(self.transition('enroll')['profileTransition']['state'], 'complete')
 
 
 if __name__ == '__main__':
