@@ -49,6 +49,7 @@ import { isWorldBackupGame } from "./dedicatedDataBackups.js";
 import { runWorldBackup } from "./worldBackupRunner.js";
 import { manageDedicatedFiles } from "./dedicatedFiles.js";
 import { createInstallationCoordinator } from "./installationJobs.js";
+import { createDailyInstallationUpdates } from "./dailyInstallationUpdates.js";
 import { gameEnvironment } from "./gameEnvironment.js";
 import { customerIsolationLaunch, validateCustomerPreparation, CUSTOMER_ISOLATION_GAMES } from "./customerIsolation.js";
 import { customerResourceLimits } from "./customerResourceLimits.js";
@@ -97,6 +98,10 @@ const installationUpdates = createInstallationCoordinator({
   gamesRoot: GAMES_ROOT,
   rooms: () => rooms.values(),
   gameSlugs: () => Object.keys(recipes),
+});
+const dailyInstallationUpdates = createDailyInstallationUpdates({
+  stateDir: process.env.GAME_HOST_STATE_DIR || "/var/lib/playbound-host/state",
+  coordinator: installationUpdates,
 });
 /** relative archive path → in-flight/completed transfer state for this agent lifetime. */
 const archiveJobs = new Map();
@@ -1444,7 +1449,7 @@ const server = http.createServer(async (req, res) => {
 
   try {
     if (req.method === "GET" && url.pathname === "/updates") {
-      json(res, 200, installationUpdates.snapshot());
+      json(res, 200, { ...installationUpdates.snapshot(), daily: dailyInstallationUpdates.snapshot() });
       return;
     }
     if (req.method === "POST" && url.pathname === "/updates") {
@@ -1452,7 +1457,7 @@ const server = http.createServer(async (req, res) => {
       try {
         if (body.action === "cancel") installationUpdates.cancel(body.id);
         else installationUpdates.queue(body.key, body.action, body.actor);
-        json(res, 202, installationUpdates.snapshot());
+        json(res, 202, { ...installationUpdates.snapshot(), daily: dailyInstallationUpdates.snapshot() });
       } catch (error) {
         json(res, 409, { error: error instanceof Error ? error.message : "Could not queue installation update" });
       }
@@ -2058,6 +2063,11 @@ Promise.resolve().then(() => stopOrphanedPartyRooms()).then(() => recoverManaged
   };
   checkUpdates();
   setInterval(checkUpdates, 15_000).unref();
+  const checkDailyReleases = () => {
+    if (!shuttingDown) void dailyInstallationUpdates.tick().catch(() => console.error("Daily installation update state needs inspection"));
+  };
+  checkDailyReleases();
+  setInterval(checkDailyReleases, 60_000).unref();
   server.listen(PORT, BIND_ADDRESS, () => {
     console.log(`PlayBound game-host listening on :${PORT} ip=${PUBLIC_IP || "unset"}`);
     console.log("installed:", listInstalled());

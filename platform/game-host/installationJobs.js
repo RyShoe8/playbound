@@ -50,6 +50,12 @@ export function createInstallationCoordinator({ stateDir, gamesRoot, rooms, game
   const store = createInstallationStore(stateDir);
   const pending = new Map();
   let ticking = false;
+  let metadataChecking = false;
+  async function withMetadataCheck(check) {
+    if (metadataChecking || ticking || store.all().some((job) => !TERMINAL.has(job.status) && job.status !== "waiting")) throw new Error("Installation maintenance is active");
+    metadataChecking = true;
+    try { return await check(); } finally { metadataChecking = false; }
+  }
   const active = (key) => store.all().find((job) => job.key === key && !TERMINAL.has(job.status));
   function blockedReason(slug) {
     return installationDependencies(slug).some((key) => active(key)) ? "Shared installation maintenance is queued or running; new starts are paused" : null;
@@ -89,7 +95,7 @@ export function createInstallationCoordinator({ stateDir, gamesRoot, rooms, game
     store.write({ ...job, status: "cancelled" });
   }
   async function tick() {
-    if (ticking) return;
+    if (ticking || metadataChecking) return;
     ticking = true;
     try {
       for (let job of store.all().filter((row) => !TERMINAL.has(row.status))) {
@@ -145,11 +151,11 @@ export function createInstallationCoordinator({ stateDir, gamesRoot, rooms, game
           if (key === "factorio") blocked = "Factorio requires an official-package integrity baseline and a compatible headless runtime before updates. Custom files require operator review.";
         }
         const rollback = jobs.find((job) => job.key === key && job.status === "completed" && job.action === "update" && !job.rollbackConsumed);
-        return { key, name: target.name, installed: Boolean(installed), buildId: installed?.buildId, rollbackAvailable: Boolean(rollback), blockedReason: blocked };
+        return { key, name: target.name, installed: Boolean(installed), buildId: installed?.buildId, branch: installed?.branch, rollbackAvailable: Boolean(rollback), blockedReason: blocked };
       }),
       jobs: [...jobs.filter((job) => !TERMINAL.has(job.status)), ...jobs.filter((job) => TERMINAL.has(job.status)).slice(0, 30)]
         .map(({ pid: _pid, identity: _identity, ...job }) => job),
     };
   }
-  return { blockedReason, beginStart, queue, cancel, tick, snapshot };
+  return { blockedReason, beginStart, queue, cancel, tick, snapshot, withMetadataCheck };
 }

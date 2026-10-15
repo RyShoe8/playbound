@@ -610,3 +610,34 @@ joint engine/data compatibility review. Downloads use bounded Node HTTPS streams
 and disk checks; only one fixed executable can activate. Fresh installation uses
 the same mirror/checksum. Staging passed query 0/4, zero bots, update/rollback,
 queue hold, clean stop and saved-file preservation. Human Join remains separate.
+# Daily server-file release checks
+
+The always-on game-host agent checks supported upstream release feeds every 24
+hours. Its one-minute scheduler only tests whether a daily check is due; it does
+not download games or create database/test records every minute. A single atomic
+`daily-installation-updates.json` report under the agent state directory retains
+the last result per installation, next check time and attempted build/job.
+Restart catches up a missed check; an interrupted check can retry after an hour.
+
+Automatic discovery and queueing currently cover the eight declared Steam depots,
+Mindustry, OpenRA's official packages, OpenHV, OpenE2140, Hypersomnia and stable
+Factorio. Steam reads the public branch using an isolated, credential-free
+SteamCMD metadata home. Non-public installed branches are left for review.
+GitHub sources require stable official tags; download workers still enforce
+their existing digest/signature, version, runtime, disk and compatibility checks.
+Major Factorio upgrades require review. Only a newer version queues an update;
+unchanged builds create no jobs or rollback copies.
+
+Queued updates pause new starts and wait for every affected process to exit.
+They do not disconnect players or automatically restart servers. Existing fleet
+retirement or an operator stopping the last affected runtime releases the queue.
+The previous installation remains available for rollback; binary rollback does
+not reverse save-format migrations. Failed/cancelled/applied builds are not
+automatically attempted again, including after a rollback. Use Queue update to
+retry deliberately, or wait for a genuinely newer upstream build.
+
+The existing admin hosting Updates section shows the daily report and queue.
+Reviewed/pinned distro packages, custom builds and games without an installation
+handler are explicitly review-required/coverage gaps. They are not silently
+upgraded to unreviewed binaries or repeatedly reinstalled. Extending an updater
+requires the dedicated-server checklist and compatibility/rollback validation.

@@ -178,3 +178,16 @@ pull credentials, edit environment files, or alter unrelated database records.
 - Start eligibility disabled, enable only the verified intended profile, and
   provide a rollback path. Record actor/time and leave unrelated catalog, worlds,
   manual events, hosting customers, and party rooms intact.
+# Daily updates for a new installation handler
+
+Declare whether the handler can follow an official stable release automatically
+or requires reviewed version pins. Extend `dailyInstallationUpdates.js` with a
+fixed official metadata source and comparable version only after staged
+verification and rollback work. Discovery must not run an installer, use account
+credentials, switch a beta channel, or queue unchanged/older versions. Test
+failed metadata, cancellation, agent restart, duplicate checks and rollback
+suppression. The daily checker reuses the installation coordinator and waits for
+all affected runtimes; never add a parallel updater that overwrites live files.
+Confirm the game appears in the existing admin Updates daily report and coverage
+inventory. Save-format or client/mod compatibility boundaries must remain
+explicit rather than hidden behind automatic engine updates.

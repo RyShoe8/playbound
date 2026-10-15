@@ -95,7 +95,7 @@ export function verifyInstallation(directory, key) {
     }
     if (target.binaries.includes(binary)) fs.accessSync(filename, fs.constants.X_OK);
   }
-  return { buildId: value("buildid") };
+  return { buildId: value("buildid"), ...(value("BetaKey") ? { branch: value("BetaKey") } : {}) };
 }
 
 // Absolute internal links must not point back at the live installation while
