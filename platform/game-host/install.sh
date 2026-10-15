@@ -229,6 +229,7 @@ cp -f "$AGENT_SRC/assets/hurry-curry-player-limit.patch" "$AGENT_DIR/assets/" 2>
 chown -R playbound:playbound "$AGENT_DIR"
 bash "$AGENT_SRC/install-update-scanner.sh"
 bash "$AGENT_SRC/tools/install-customer-resources.sh"
+bash "$AGENT_SRC/tools/install-customer-identities.sh"
 
 # Battlefield 1942 is an archived DICE Linux dedicated distribution, not a
 # SteamCMD app. The installer checks a pinned SHA-256 and never replaces a

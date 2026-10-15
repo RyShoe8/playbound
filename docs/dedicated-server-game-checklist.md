@@ -127,6 +127,13 @@ pull credentials, edit environment files, or alter unrelated database records.
   initial start, recovery and settings-backed restart; enforce the same envelope
   inventory reserves. Confirm non-default limits and increased memory actually
   reach the kernel, persist recovery metadata and reject unsupported allocations.
+- Per-server Unix identities use the root-owned identity broker; do not grant
+  general `useradd`, `chown`, `kill`, shell or systemd sudo. Account readiness is
+  not runtime isolation. Before switching a recipe, verify launch credentials,
+  dropped supplementary groups, saved-data/config access, identity-checked
+  shutdown after agent restart, backup/restore/file operations, query and metrics.
+  Preserve existing worlds and live process users until that handoff passes.
+  Never delete/reuse a UID reservation as part of deleting a saved server.
 
 ## 7. Capacity and programming
 
