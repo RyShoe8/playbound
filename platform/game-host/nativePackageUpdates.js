@@ -12,6 +12,7 @@ export function verifyNativePackageInstallation(root, game, { requireRoot = true
   const folder = fs.lstatSync(root);
   if (!folder.isDirectory() || folder.isSymbolicLink() || fs.realpathSync(root) !== path.resolve(root)) throw new Error("Native package requires a real isolated directory");
   if (profile.component && profile.component !== profile.binary) throw new Error("Native package component must match its reviewed executable");
+  if (profile.component && profile.binary !== "run-server" && fs.existsSync(path.join(root, "run-server"))) throw new Error("Native package custom launch wrapper requires review");
   // A single-file target leaves configuration/data in the existing parent.
   // Whole-directory targets still reject custom installation content.
   if (!profile.component && fs.readdirSync(root).some(name => name !== profile.binary)) throw new Error("Native package custom files require review");

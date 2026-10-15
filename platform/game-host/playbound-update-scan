@@ -27,6 +27,7 @@ targets = {
     "luanti": ["luanti"],
     "battle-for-wesnoth": ["battle-for-wesnoth"],
     "rimworld-together": ["rimworld-together"],
+    "flightgear": ["flightgear"],
 }
 if len(sys.argv) != 2 or sys.argv[1] not in targets:
     sys.exit(2)

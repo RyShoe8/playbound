@@ -12,7 +12,7 @@ New games must complete `docs/dedicated-server-game-checklist.md`.
 Assess each feature per engine: applicable and verified, not yet implemented,
 or unavailable with a concrete engine/transport reason. The universal scope is
 a release requirement, not a claim that every engine supports bots or plugins.
-Keep current twenty-two-game update support and thirteen-game file support explicit
+Keep current twenty-three-game update support and thirteen-game file support explicit
 until the additional handlers pass their gates. No placeholder controls.
 
 ## Implementation order and gates
@@ -576,3 +576,19 @@ until the additional handlers pass their gates. No placeholder controls.
   the agent deployment preserved all 12 managed process identities. Test/build
   directories and compiler processes were removed, with evidence retained.
   Coverage is now 22 installation families and 29 remaining game/edition entries.
+
+- FlightGear adds a reviewed fgms 0.13.10 source-build handler. Its fixed source
+  commit/archive, GCC/CMake versions, source-date epoch and compiled output are
+  pinned. Builds use one compiler job, an isolated home and a clean environment;
+  no package installation or FlightGear GUI client is launched. The same bounded
+  regular-file source extractor is shared with RimWorld. Only `fgms` is swapped,
+  retaining the parent, logs and configuration through rollback. The recipe now
+  stays in the foreground, reserves UDP gameplay/TCP status as a two-port bundle,
+  and disables the unused native admin listener. Both the existing VPS binary
+  and the rebuilt relay passed foreground startup, real zero-player status and
+  full port release on stop. Queued source update/rollback also passed, retaining
+  config/log bytes and root identity and holding rollback while running.
+  Human aircraft Join/occupied queries remain separate. Production relay bytes,
+  saves and DB rows were unchanged; deployment preserved all 11 then-running
+  managed identities. Coverage is 23 installation families and 28 remaining
+  game/edition entries.
