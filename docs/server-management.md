@@ -243,7 +243,7 @@ until a root-owned scanner is explicitly configured for them.
 
 Install the scanner separately with
 `platform/game-host/install-update-scanner.sh` as root. It installs a root-owned
-helper and a sudoers rule permitting only its twenty fixed read-only scans.
+helper and a sudoers rule permitting only its twenty-two fixed read-only scans.
 Workers and SteamCMD continue running as the agent service user. No game
 installation or privileged shell is run by that helper.
 
@@ -293,7 +293,7 @@ This is not complete feature parity with those platforms. FTP/SFTP,
 process-log streaming, a general task scheduler,
 plugin/Workshop installation, database administration, and customer-triggered
 binary updates are not implemented by these changes. Shared binary updates
-are deliberately admin-only and limited to the twenty declared installation handlers. None
+are deliberately admin-only and limited to the twenty-two declared installation handlers. None
 of these features is represented by a nonfunctional button.
 
 No hosting backend is replaced or installed. Existing recipes, measured
@@ -502,3 +502,32 @@ stop and saved-file preservation for all four. BZFlag, Hedgewars and OpenTTD
 answered zero-player queries. Luanti initialized and preserved world metadata;
 its master-list/player query was not certified by the isolated bind test.
 Human client Join remains a separate acceptance gate for all four.
+
+### Wesnoth and RimWorld Together updates
+
+Wesnoth pins Debian's 1:1.18.5-1 server package, matching both current VPS
+copies and the 1.18 client series. Its published package checksum is recorded
+in `nativePackageProfiles.json`. The single-file target swaps only `wesnothd`;
+`wesnothd.cfg`, accepted-version policy and the existing directory remain in
+place through update/rollback. No Ubuntu 1.16 downgrade or PPA change occurs.
+Source: [Debian package checksum](https://packages.debian.org/trixie/amd64/wesnoth-1.18-server/download).
+
+RimWorld Together uses its reviewed PlayBound source build rather than an
+unpatched upstream binary. `game-host/rimworldBuild.json` pins source, bridge,
+SDK, runtime, dependency lock, all downloaded NuGet blobs and compiled output.
+See `game-host/rimworld/README.md`. Builds run unprivileged with isolated
+home/cache/temp and a clean environment; compiler reuse is disabled. The
+existing queue and process/start gates stage, validate, activate and roll back
+the shared installation. Configs, Assets, Backups and permissions remain in
+each server's private directory. New source/SDK/dependency/client versions need
+review; binary rollback cannot reverse colony-format changes. Custom files in
+the shared installation fail closed. The original patched server remains a
+verified rollback baseline; its CRLF license is accepted without rewriting it.
+
+VPS acceptance (2026-10-15) verified Wesnoth download, queue update/rollback,
+unchanged config/root, dedicated startup, zero-player query and stop. RimWorld
+acceptance used an isolated copy: reproducible source output, real queue
+update/rollback, console, connecting-client snapshots 0 -> 1 -> 0, running
+rollback held, full stop and fixture data preservation. These are not licensed
+human Join or actual colony-migration tests. The live agent exposes both
+handlers; production RimWorld binaries and all saves were unchanged.

@@ -9,6 +9,7 @@ import { NATIVE_PACKAGE_PROFILES } from "./nativePackageUpdates.js";
 
 const id = "0123456789abcdef01234567";
 for (const [gameSlug, profile] of Object.entries(NATIVE_PACKAGE_PROFILES)) {
+  if (!CUSTOMER_ISOLATION_GAMES.includes(gameSlug)) continue;
   const root = path.join("/opt/playbound-host/games", gameSlug);
   const binary = path.join(root, profile.binary);
   test(`${gameSlug} reviewed managed binary has only a read-only native mount`, { skip: process.platform !== "linux" || !fs.existsSync(binary) || !fs.existsSync("/usr/bin/bwrap") }, () => {

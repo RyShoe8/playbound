@@ -41,6 +41,13 @@ test("native directories cannot be symlink aliases", t => {
   try { fs.symlinkSync(root, link, "junction"); } catch (error) { if (error.code === "EPERM") return; throw error; }
   assert.throws(() => verifyNativePackageInstallation(link, "bzflag", { profile, requireRoot: false, command }), /real isolated/);
 });
+test("single-file native targets retain configuration outside the executable", { skip: process.platform !== "linux" }, t => {
+  const { root, profile } = fixture(t);
+  const config = path.join(root, "server.cfg"); fs.writeFileSync(config, "versions_accepted=1.18.*");
+  assert.equal(verifyNativePackageInstallation(root, "fixture", { profile: { ...profile, component: profile.binary }, requireRoot: false, command }).buildId, "fixture");
+  assert.equal(fs.readFileSync(config, "utf8"), "versions_accepted=1.18.*");
+  assert.throws(() => verifyNativePackageInstallation(root, "fixture", { profile: { ...profile, component: "other" }, requireRoot: false, command }), /component/);
+});
 test("both fixed downloads reject unreviewed packages before extraction or promotion", async t => {
   for (const game of Object.keys(NATIVE_PACKAGE_PROFILES)) {
     const root = fixture(t).root + "-download"; t.after(() => fs.rmSync(root, { recursive: true, force: true }));

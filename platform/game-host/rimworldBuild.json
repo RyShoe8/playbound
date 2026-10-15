@@ -1,0 +1,33 @@
+{
+  "commit": "bbd981f3b01255198a66bd8fb6c57ed0595c8db4",
+  "version": "26.8.31.1",
+  "sdk": "8.0.131",
+  "runtime": "8.0.30",
+  "sourceBytes": 1724432,
+  "sourceSha256": "b4087f185fa55565c156da0b0356ee55f274d05f604d2c225cb80c6d2ee73f11",
+  "bridgeSha256": "0c97765ff064996c9b88569f8196138398c43e0e4ad35503f6be8237d3855661",
+  "lockSha256": "c1bb9d04291985c927165b8420c73cb31b28cf9159f3f2dce193447c5445391a",
+  "licenseSha256": "f7f28b8c7a1af76b9874ca6d040e8b1eb6768fd1043106c9d315090ea96754e7",
+  "legacyBinary": {
+    "bytes": 68362158,
+    "sha256": "47364d2cc4eb23c379d71535cec2566b35d84a8b53e95e1e6a0ee662f19253be"
+  },
+  "binary": {
+    "bytes": 68361376,
+    "sha256": "1123a94abd7b72f1cdd69c6ded8d0a46adb729244013d674794be065ab372fb8"
+  },
+  "packages": {
+    "microsoft.net.illink.tasks/8.0.30": "q8cwD52JNMGzYXGT3KLES6Aoi77QM8DfgGoDeHeJAhmsXcWxyMb0m4ultGeU0QeG7pO4meD9pr/M7ieUF7Il+w==",
+    "mono.nat/3.0.4": "spCXINxAzUWXQeStmvFs+Cid1D9f4fkKKPJpN9qNjsRiHTspYBmpS/5chx7xK0H0nchcQV5lbVN2o7H6SNY5cw==",
+    "messagepack.annotations/3.1.8": "ONyOl+mddCHFvZwsicJ2ubaK7a1O/wBo4KX178TsbLSW57m+P7WNPf8ZhXyCVCJuc/nqGBvuigeb0SP8Hzqssg==",
+    "system.windows.extensions/10.0.10": "ZLo7HJQtTWyFZh+R+tUprm4ehzwoO7kgO05PxMpF4aivf02tv15kic7W6ZGw7MLVN7BV2EB5syERA0WQs+o6Ag==",
+    "microsoft.aspnetcore.app.runtime.linux-x64/8.0.30": "EGbBpn5sIpYS78lxFdVJW69fhWF8VRPczAC2QwHgG8dUkYYKvdRQh3Z3LlbW3YH5Ll/ETxHCjmor8BvV7LYGIA==",
+    "messagepackanalyzer/3.1.8": "K//7kxEU35BqDkb6obsEKJreQyaN+56tnjddUHvMz9X+nNuurULHihWRjnCt8DsXEgRfFPwn7WYjtOOXSyYxzQ==",
+    "messagepack/3.1.8": "9s6k8RHuot/t6hcvQqYpLCpFY4NY52MApniE+eZsydkhoyvJQL/X1SxUR8Wrurms6xDtj+ZRHGlyfLfBZ9ni7Q==",
+    "microsoft.netcore.app.host.linux-x64/8.0.30": "08uT377n/CG6kt+mpIG9pDsP4wwWK/sVbh1AqS+ib58VBUBt1A+NBa98dy7Ux/CyH5aPAOUWy3qW4MKX5Kzwpw==",
+    "microsoft.netcore.app.runtime.linux-x64/8.0.30": "PJmkb5Cx3frq83VHon27yqjZ8izkQD26pdt1ERU3ZYjevU0qg3+COFFXPEDqkX7Fj4x3C6Am5NpRjc4B2XpjVA==",
+    "newtonsoft.json/13.0.4": "bR+v+E/yJ6g7GV2uXw2OrUSjYYfjLkOLC8JD4kCS23msLapnKtdJPBJA75fwHH++ErIffeIqzYITLxAur4KAXA==",
+    "microsoft.net.stringtools/17.11.4": "W1fm31oOWwsv1ebAbaClBh4fNhJUbnRPZ4YAbqKG8yLJ98llEzHXnbRaQKerIuj9txziKndYtm+/JSE1pLmYkg==",
+    "system.security.permissions/10.0.10": "oL9Savka8QP7bCUWSsMvhWPh3CzenIclX/z6kqoqFl1fwrSxAe1wUzmZvGP0qlKlqPLjPUcLanLcr7zvtoBmrg=="
+  }
+}

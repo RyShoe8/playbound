@@ -11,7 +11,10 @@ export function verifyNativePackageInstallation(root, game, { requireRoot = true
   if (!profile) throw new Error("Unsupported reviewed native package");
   const folder = fs.lstatSync(root);
   if (!folder.isDirectory() || folder.isSymbolicLink() || fs.realpathSync(root) !== path.resolve(root)) throw new Error("Native package requires a real isolated directory");
-  if (fs.readdirSync(root).some(name => name !== profile.binary)) throw new Error("Native package custom files require review");
+  if (profile.component && profile.component !== profile.binary) throw new Error("Native package component must match its reviewed executable");
+  // A single-file target leaves configuration/data in the existing parent.
+  // Whole-directory targets still reject custom installation content.
+  if (!profile.component && fs.readdirSync(root).some(name => name !== profile.binary)) throw new Error("Native package custom files require review");
   const binary = path.join(root, profile.binary), stat = fs.lstatSync(binary);
   if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 || stat.size !== profile.binaryBytes || stat.mode & 0o7022 || (requireRoot && stat.uid !== 0)) throw new Error("Native package requires a reviewed root-owned executable");
   const identity = JSON.stringify([stat.dev, stat.ino, stat.size, stat.mtimeMs, stat.ctimeMs, stat.mode, stat.uid, profile.binarySha256]);

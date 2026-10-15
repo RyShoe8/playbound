@@ -25,6 +25,13 @@
     "member": "usr/lib/minetest/minetestserver", "binary": "minetestserver", "binaryBytes": 4325584,
     "binarySha256": "034638e9c5826ae553f14943e3abb69083b6177fbced347a0111e5ab897b53a3", "systemBinary": "/usr/lib/minetest/minetestserver"
   },
+  "battle-for-wesnoth": {
+    "name": "Battle for Wesnoth 1.18", "version": "1:1.18.5-1",
+    "url": "https://deb.debian.org/debian/pool/main/w/wesnoth-1.18/wesnoth-1.18-server_1.18.5-1_amd64.deb",
+    "archiveBytes": 1109264, "archiveSha256": "151d8d96505dee303f6039df89bbcf8fb95ef807e627627935347776a1294e0b",
+    "member": "usr/games/wesnothd-1.18", "binary": "wesnothd", "component": "wesnothd", "binaryBytes": 2035512,
+    "binarySha256": "1c45a49f2522806b87a2b4cca6777fe130f2e6ff8ce26e4246631f247b58fd23", "systemBinary": "/usr/games/wesnothd-1.18"
+  },
   "hedgewars": {
     "name": "Hedgewars",
     "version": "1.0.2-9build5",
