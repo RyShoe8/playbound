@@ -1596,7 +1596,7 @@ const server = http.createServer(async (req, res) => {
           const activeId = byManaged.get(serverId);
           const active = activeId ? rooms.get(activeId) : null;
           if (active && active.customerOwned !== true) throw new Error("Only customer-owned server files can be managed");
-          if (["write", "delete", "restore", "mkdir"].includes(body.action) && (active || managedJobs.get(serverId)?.status === "pending")) throw new Error("Stop the server before changing its files");
+          if (["write", "delete", "restore", "mkdir", "upload-begin", "upload-chunk", "upload-commit"].includes(body.action) && (active || managedJobs.get(serverId)?.status === "pending")) throw new Error("Stop the server before changing its files");
           return manageDedicatedFiles(serverId, gameSlug, body);
         });
         json(res, 200, result);

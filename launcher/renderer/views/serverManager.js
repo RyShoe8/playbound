@@ -1,4 +1,5 @@
 import {renderServerFiles} from './serverFiles.js';
+import {createLogFollower} from './serverLogFollow.mjs';
 
 /** Native hosting workspace. All writes use the existing server-scoped API. */
 export async function renderServerManager(host, id, { request, escapeHtml: e, back }) {
@@ -6,6 +7,7 @@ export async function renderServerManager(host, id, { request, escapeHtml: e, ba
   let server, control, busy = false, selected = 'Overview', revision = 0, disposed = false;
   const consoleLines = [];
   let filePanel = null;
+  let disposeLogs = () => {};
   const may = permission => control.permissions.includes(`server:${permission}`);
   const button = (label, action, data = '', disabled = false) => `<button type="button" class="btn-secondary" data-action="${action}" ${data} ${disabled ? 'disabled' : ''}>${e(label)}</button>`;
   const field = (label, name, value = '') => `<label class="workspace-field">${e(label)}<input class="input-text" name="${name}" value="${e(String(value ?? ''))}" required></label>`;
@@ -83,7 +85,7 @@ export async function renderServerManager(host, id, { request, escapeHtml: e, ba
     if (tab === 'Console') return `<h2>Game console</h2><p>Advanced game commands only. This is not a system shell. Commands are recorded in Activity.</p><pre class="workspace-console" aria-live="polite">${e(consoleLines.join('\n') || 'Responses to your commands appear here.')}</pre><form class="workspace-form" data-form="console">${field('Command', 'command')}<button class="btn-primary" ${control.status.status !== 'running' ? 'disabled' : ''}>Send command</button></form>`;
     if (tab === 'Logs') {
       const data = await request(`${base}/logs`);
-      return `<h2>Server output</h2><p>Latest captured output, up to 200 lines. Credential-bearing lines are omitted. Use Refresh to check for new output.</p>${data.truncated ? '<p>Showing the newest portion of the log.</p>' : ''}<pre class="workspace-console" style="max-width:100%;max-height:24rem;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere">${e(data.available ? data.lines.join('\n') || 'No complete output lines yet.' : 'No captured output is available for this server yet. Some engines use a separate console transport.')}</pre>`;
+      return `<h2>Server output</h2><p>Latest captured output, up to 200 lines. Credential-bearing lines are omitted. Live output refreshes every five seconds while visible.</p><button class="btn-secondary" data-log-follow aria-pressed="false">Follow live output</button><p data-log-truncated>${data.truncated ? 'Showing the newest portion of the log.' : ''}</p><pre data-log-output class="workspace-console" style="max-width:100%;max-height:24rem;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere">${e(data.available ? data.lines.join('\n') || 'No complete output lines yet.' : 'No captured output is available for this server yet. Some engines use a separate console transport.')}</pre>`;
     }
     if (tab === 'Backups') {
       // A world-data failure must not hide configuration restore points.
@@ -100,6 +102,7 @@ export async function renderServerManager(host, id, { request, escapeHtml: e, ba
   }
   async function render() {
     if (disposed || !host.isConnected) return;
+    disposeLogs();
     const token = ++revision;
     if (!tabs().includes(selected)) selected = 'Overview';
     host.innerHTML = `${button('← My servers', 'back')}<section class="site-panel site-pad"><h2>${e(server.name)}</h2><p>${e(server.gameTitle)} · ${e(control.status.status)} · ${server.players ?? 'Unknown'} / ${server.slots} players · ${e(control.role)}</p>${control.status.error ? `<p role="alert">${e(control.status.error)}</p>` : ''}<div class="workspace-actions">${control.status.status === 'running' ? `${may('restart') ? button('Restart', 'restart') : ''}${may('stop') ? button('Stop', 'stop') : ''}` : may('start') ? button(control.status.status === 'pending' ? 'Starting…' : 'Start', 'start', '', ['pending', 'unknown'].includes(control.status.status)) : ''}${button('Refresh', 'refresh')}</div></section><nav class="workspace-actions workspace-manager-tabs" aria-label="Server management">${tabs().map(t => `<button class="${selected === t ? 'btn-primary' : 'btn-secondary'}" data-tab="${t}" aria-current="${selected === t ? 'page' : 'false'}">${t}</button>`).join('')}</nav><p data-message role="status"></p><section class="site-panel site-pad workspace-manager-content" data-content><p role="status">Loading…</p></section>`;
@@ -107,6 +110,21 @@ export async function renderServerManager(host, id, { request, escapeHtml: e, ba
       const html = await content(selected);
       if (token === revision && host.isConnected) host.querySelector('[data-content]').innerHTML = html;
       if (token === revision && host.isConnected && selected === 'Files') filePanel = await renderServerFiles(host.querySelector('[data-file-manager]'), {request,base,escapeHtml:e,canWrite:may('write_files'),stopped:control.status.status === 'stopped' && !server.online});
+      if (token === revision && host.isConnected && selected === 'Logs') {
+        const output = host.querySelector('[data-log-output]'), toggle = host.querySelector('[data-log-follow]');
+        const active = () => !disposed && token === revision && output.isConnected && host.getClientRects().length > 0;
+        const follower = createLogFollower({read:()=>request(`${base}/logs`),active,visible:()=>!document.hidden && output.getClientRects().length > 0,
+          show:data=>{ output.textContent=data.available ? data.lines.join('\n') || 'No complete output lines yet.' : 'No captured output available.'; host.querySelector('[data-log-truncated]').textContent=data.truncated ? 'Showing the newest portion of the log.' : ''; },
+          error:failure=>{ message(failure.message,true); updateToggle(); }});
+        const updateToggle = () => { toggle.textContent=follower.following ? 'Pause live output' : 'Follow live output'; toggle.setAttribute('aria-pressed',String(follower.following)); };
+        toggle.onclick = event => {event.stopPropagation();if(follower.following) follower.stop();else follower.start();updateToggle();};
+        const visibility = () => follower.visibilityChanged();
+        document.addEventListener('visibilitychange',visibility);
+        const observer = new MutationObserver(()=>{if(!active()) dispose();});
+        const dispose = () => { follower.stop(); document.removeEventListener('visibilitychange',visibility); observer.disconnect(); };
+        observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden']});
+        disposeLogs = dispose;
+      }
     } catch (error) { if (token === revision && host.isConnected) { host.querySelector('[data-content]').textContent = 'This section is unavailable. Use Refresh to retry.'; message(error.message, true); } }
     host.querySelectorAll('button').forEach(node => { node.dataset.disabled = String(node.disabled); });
   }

@@ -25,3 +25,23 @@ it("selects the recipe server-side and records mutations without file content", 
   expect(mock.host).toHaveBeenCalledWith("server", expect.objectContaining({ gameSlug: "luanti" }));
   expect(mock.activity).toHaveBeenCalledWith("server", { id: "owner" }, "file_write", "world.json");
 });
+
+it("authorizes every upload phase, binds the actor and audits only committed files", async () => {
+  for (const action of ["upload-begin", "upload-chunk", "upload-commit", "upload-cancel"]) {
+    await manageFiles("owner", "server", { action, path: "save.dat", actor: "forged", uploadId: "session", offset: 0, bytes: 2 });
+    expect(mock.auth).toHaveBeenLastCalledWith("owner", "server", "server:write_files");
+    expect(mock.host).toHaveBeenLastCalledWith("server", expect.objectContaining({ actor: "owner", action, uploadId: "session" }));
+  }
+  expect(mock.activity).toHaveBeenCalledTimes(1);
+  expect(mock.activity).toHaveBeenCalledWith("server", { id: "owner" }, "file_upload-commit", "save.dat");
+});
+
+it("blocks late chunks and commits after a server starts but allows cleanup", async () => {
+  mock.auth.mockResolvedValue({ server: { gameSlug: "luanti", desiredState: "running", runtimeState: "running" } });
+  for (const action of ["upload-begin", "upload-chunk", "upload-commit"]) {
+    expect(await manageFiles("owner", "server", { action })).toMatchObject({ status: 409 });
+  }
+  expect(mock.host).not.toHaveBeenCalled();
+  await manageFiles("owner", "server", { action: "upload-cancel", path: "save.dat", uploadId: "session" });
+  expect(mock.host).toHaveBeenCalledTimes(1);
+});

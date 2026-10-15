@@ -14,7 +14,12 @@ existing administration pages.
 ## Everyday controls
 
 - Logs: owner/administrator access to the latest captured output, up to 200
-  complete lines. Refresh manually; credential-bearing lines and token-shaped
+  complete lines. Refresh manually or opt into live output, which requests a
+  fresh bounded snapshot every five seconds while the Logs tab/window is visible.
+  Requests never overlap; pause, navigation and permission/host errors stop
+  following. Each request rechecks log access. This uses short authenticated
+  requests, not a permanent connection or unbounded retained transcript.
+  Credential-bearing lines and token-shaped
   values are redacted. Managed stdout/stderr, RimWorld's console capture and
   ANEURISM's privileged capture share the same view. Retention runs every five
   minutes, rolling logs over 8 MiB to a private 64 KiB tail. Active legacy
@@ -93,9 +98,15 @@ special files, executable extensions, plugin/script directories, and sensitive
 filenames are rejected. Host environment/configuration and shared binaries are
 outside the accessible roots. Readable content is trusted only as data.
 
-Browser transfers are limited to 3 MB (fits the control plane's request/response
-limits); text editing is limited to 256 KB. Larger saves are visible but cannot
-be transferred through this browser interface. The server must have been
+Web and native launcher transfers are limited to 64 MB per file, using 1 MB
+chunks with progress and cancellation. The agent hashes and copies large files
+in bounded memory; the browser assembles downloads up to the 64 MB limit.
+Uploads are scoped to the authenticated user, server, recipe and destination,
+expire after one hour and allow at most two pending sessions per server.
+Only a complete upload with an unchanged destination is atomically installed;
+interrupted uploads leave the original file intact. Downloads reject file
+changes between chunks. Text editing remains limited to 256 KB.
+The server must have been
 started once to initialize its saved-data folder. Every overwrite/delete
 retains the previous file, with at most 50 revisions per server. Updates require
 the opened file's SHA-256 version, so stale editors fail rather than overwrite

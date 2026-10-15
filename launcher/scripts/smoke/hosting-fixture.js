@@ -11,6 +11,7 @@ function createHostingFixture(root) {
   if (process.env.PLAYBOUND_SMOKE_FILES === '1') { server.online = false; server.runtimeState = 'stopped'; control.status.status = 'stopped'; control.files = !moderator; }
   let saved = '{"day":1}', etag = 'original';
   const history = [];
+  let upload = null;
   return (_event,input) => {
     const method = input.method || 'GET', route = input.path;
     if (method !== 'GET') fs.appendFileSync(path.join(root,'hosting-writes.jsonl'),JSON.stringify(input)+'\n');
@@ -22,7 +23,12 @@ function createHostingFixture(root) {
     if (route === `${BASE}/files`) {
       const body = input.body;
       if (body.action === 'list') return {entries:saved == null ? [] : [{name:'world.json',directory:false,bytes:Buffer.byteLength(saved)}]};
-      if (body.action === 'read') return {path:'world.json',text:saved,etag,contentBase64:Buffer.from(saved).toString('base64'),bytes:Buffer.byteLength(saved)};
+      if (body.action === 'read' || body.action === 'stat') return {path:'world.json',text:Buffer.byteLength(saved) <= 256*1024 ? saved : null,etag,version:etag,contentBase64:Buffer.byteLength(saved) <= 256*1024 ? Buffer.from(saved).toString('base64') : '',bytes:Buffer.byteLength(saved)};
+      if (body.action === 'read-chunk') return {contentBase64:Buffer.from(saved).subarray(body.offset,body.offset+1024**2).toString('base64')};
+      if (body.action === 'upload-begin') { upload = {chunks:[],bytes:body.bytes}; return {uploadId:'fixture-upload',chunkBytes:1024**2}; }
+      if (body.action === 'upload-chunk') { upload.chunks.push(Buffer.from(body.contentBase64,'base64')); return {received:body.offset+upload.chunks.at(-1).length}; }
+      if (body.action === 'upload-commit') { saved = Buffer.concat(upload.chunks).toString(); etag = 'uploaded'; upload = null; return {saved:true,etag}; }
+      if (body.action === 'upload-cancel') { upload = null; return {cancelled:true}; }
       if (body.action === 'history') return {history};
       if (body.action === 'write') { history.unshift({id:'revision',path:'world.json',at:new Date().toISOString()}); saved = Buffer.from(body.contentBase64,'base64').toString(); etag = 'updated'; return {etag}; }
       if (body.action === 'delete') { saved = null; return {deleted:true}; }

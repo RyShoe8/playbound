@@ -22,6 +22,13 @@ test('native file browser edits with a version check and shows recoverable histo
     expect(writes.find(item => item.body?.action === 'write').body).toMatchObject({path:'world.json',expectedEtag:'original',contentBase64:Buffer.from('{"day":2}').toString('base64')});
     await pane.getByRole('button',{name:'File history',exact:true}).click();
     await expect(pane.getByRole('button',{name:'Restore file',exact:true})).toBeVisible();
+    await pane.getByLabel('Upload saved file').setInputFiles({name:'large.dat',mimeType:'application/octet-stream',buffer:Buffer.alloc(4*1024**2+37,42)});
+    await expect(pane.getByRole('status')).toHaveText('File uploaded.');
+    const transfers = fs.readFileSync(path.join(root,'hosting-writes.jsonl'),'utf8').trim().split('\n').map(JSON.parse);
+    const chunks = transfers.filter(item => item.body?.action === 'upload-chunk');
+    expect(chunks).toHaveLength(5);
+    expect(chunks.every(item => item.body.contentBase64.length <= Math.ceil(1024**2/3)*4)).toBe(true);
+    expect(transfers.some(item => item.body?.action === 'upload-commit')).toBe(true);
     await page.setViewportSize({width:900,height:700});
     expect(await page.locator('#content').evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
     await page.screenshot({path:testInfo.outputPath('saved-files.png')});
