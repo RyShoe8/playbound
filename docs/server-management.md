@@ -38,8 +38,10 @@ existing administration pages.
   backups. World support depends on an isolated, declared data directory.
 - Access: owner, administrator, and moderator roles, checked on every request.
 - Activity: recorded changes with actor and time.
-- Maintenance: choose UTC weekdays and an hour for optional empty-server
-  restarts. The next saved window is shown in your local time. Player-count
+- Maintenance: choose UTC weekdays, an hour, and either configuration backup
+  only or backup followed by an empty-server restart. Backup-only tasks keep
+  running/stopped state unchanged and do not depend on a player query. The next
+  saved window is shown in your local time. For restarts, player-count
   failures and occupied servers wait safely; the last check explains why.
   Only one check snapshot is retained, with one restart claim per calendar day.
   Existing daily schedules remain unchanged until their owner edits them.
@@ -253,8 +255,13 @@ process, network, or secret access. This queue does not enable arbitrary plugins
 ## Daily maintenance
 
 Daily maintenance is off by default. Owners/administrators may select a UTC
-hour for an optional empty-server restart. The existing VPS hosting timer
-checks every 15 minutes. Maintenance:
+hour and weekdays for a configuration backup or an empty-server restart. The
+existing VPS hosting timer checks every 15 minutes. Configuration-only tasks
+also include stopped servers with active subscriptions, require backup permission,
+claim the UTC date before writing, respect existing retention, and never launch,
+stop or restart the game. These are configuration restore points, not world-save
+backups or software updates. Arbitrary scheduled console/shell commands are not
+accepted. Restart maintenance:
 
 1. Requires a running customer server and a successful zero-human-player query.
 2. Atomically claims the server's UTC date before dispatching side effects.

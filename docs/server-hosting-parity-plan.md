@@ -475,3 +475,14 @@ until the additional handlers pass their gates. No placeholder controls.
   introduced. This delivers live following; true cursor-based streaming remains
   a separate optimization if snapshot traffic warrants it.
 
+- Scheduled maintenance now has two typed actions: configuration backup only,
+  or configuration backup followed by an empty-server restart. Backup-only
+  tasks include stopped customer servers with active subscriptions and never
+  change runtime state or rely on player queries. Both reuse the existing UTC
+  weekday/hour window, atomic daily claim, retention and Activity surface.
+  Configuration and action-specific permissions are checked when saving;
+  execution uses the existing authorized backup operation. Restart claims and
+  the final recheck reject an action changed during preparation. Web/native
+  launcher use the same action contract; no shell/console scheduling is exposed.
+  World-save backups, scheduled updates and multiple independent schedules
+  remain separate coverage gaps. No production customer records were changed.

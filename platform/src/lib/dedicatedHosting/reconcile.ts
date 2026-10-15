@@ -53,7 +53,7 @@ export async function reconcileDedicatedServers(now = new Date()) {
 
   const servers = await CommunityServer.find({
     ownerType: "user",
-    $or: [{ desiredState: "running" }, { slotsHeld: true }, { runtimeState: { $in: ["running", "pending"] } }],
+    $or: [{ desiredState: "running" }, { slotsHeld: true }, { runtimeState: { $in: ["running", "pending"] } }, { "maintenance.enabled": true, "maintenance.action": "configuration-backup" }],
   });
   if (!servers.length) {
     await reconcileAllocations();
@@ -94,6 +94,9 @@ export async function reconcileDedicatedServers(now = new Date()) {
       server.onlineSince = null;
       await server.save();
       await releaseSlots(id);
+      if (runnable && server.maintenance?.enabled && server.maintenance.action === "configuration-backup") await runMaintenance(id, now).catch(error => {
+        console.warn("[dedicated-hosting] scheduled backup failed:", error instanceof Error ? error.message : error);
+      });
       if (forced) {
         await recordActivity(server._id, { kind: "system" }, "server_stopped", planned ? "This game is not ready for Dedicated hosting" : runnable ? "Server starts are paused" : "Hosting subscription is not active");
       }

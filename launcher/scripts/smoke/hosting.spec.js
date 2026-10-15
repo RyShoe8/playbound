@@ -53,6 +53,10 @@ for (const role of ['owner','moderator']) test(`native hosting workspace (${role
       for (const day of [1,2,3,4,5]) await host.locator(`[name="daysUTC"][value="${day}"]`).check();
       await host.getByRole('button',{name:'Save maintenance'}).click();
       await expect(host.locator('[data-message]')).toHaveText('Maintenance saved.');
+      await host.locator('.premium-select').filter({has:page.locator('select[name="action"]')}).locator('.premium-select-btn').click();
+      await host.getByRole('option',{name:'Back up configuration only (keep server state)',exact:true}).click();
+      await host.getByRole('button',{name:'Save maintenance'}).click();
+      await expect(host.locator('[data-message]')).toHaveText('Maintenance saved.');
       await tabs.getByRole('button',{name:'Console',exact:true}).click();
       await host.locator('[name="command"]').fill('status');
       await host.getByRole('button',{name:'Send command'}).click();
@@ -63,7 +67,8 @@ for (const role of ['owner','moderator']) test(`native hosting workspace (${role
       await expect(host.locator('[data-message]')).toHaveText('Fixture command rejected');
       const writes = fs.readFileSync(path.join(root,'hosting-writes.jsonl'),'utf8').trim().split('\n').map(JSON.parse);
       expect(writes.find(w => w.path.endsWith('/settings')).body).toEqual({settings:{bots:4}});
-      expect(writes.find(w => w.path.endsWith('/maintenance')).body).toEqual({enabled:true,hourUTC:6,daysUTC:[1,2,3,4,5]});
+      expect(writes.find(w => w.path.endsWith('/maintenance')).body).toEqual({enabled:true,action:'restart',hourUTC:6,daysUTC:[1,2,3,4,5]});
+      expect(writes.filter(w => w.path.endsWith('/maintenance')).at(-1).body.action).toBe('configuration-backup');
       await tabs.getByRole('button',{name:'Overview',exact:true}).click();
       await page.screenshot({path:testInfo.outputPath('hosting-overview.png')});
     } else {

@@ -50,6 +50,7 @@ const CommunityServerSchema = new Schema({
   /** Opt-in weekly UTC restart windows. Missing days preserves legacy daily schedules. */
   maintenance: {
     enabled: { type: Boolean, default: false },
+    action: { type: String, enum: ["restart", "configuration-backup"], default: "restart" },
     hourUTC: { type: Number, default: 6, min: 0, max: 23 },
     daysUTC: { type: [Number], default: undefined },
     lastCheckedAt: { type: Date, default: null },

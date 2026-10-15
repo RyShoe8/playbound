@@ -77,7 +77,7 @@ describe("scheduled maintenance", () => {
     expect(mocks.backup).toHaveBeenCalledTimes(1);
     expect(mocks.restart).toHaveBeenCalledTimes(1);
     expect(mocks.claim.mock.calls[0][0]).toMatchObject({ ownerType: "user", runtimeId: "room", "maintenance.lastDay": { $ne: "2026-10-14" } });
-    expect(mocks.claim.mock.calls[0][0].$or).toContainEqual({ "maintenance.daysUTC": 3 });
+    expect(mocks.claim.mock.calls[0][0].$and[0].$or).toContainEqual({ "maintenance.daysUTC": 3 });
   });
   it("does not restart if a player joins during backup", async () => {
     mocks.query.mockResolvedValueOnce({ players: 0 }).mockResolvedValueOnce({ players: 1 });
@@ -105,5 +105,39 @@ describe("scheduled maintenance", () => {
     mocks.authorize.mockResolvedValue({ error: "Forbidden", status: 403 });
     expect(await saveMaintenance("moderator", "server", { enabled: true, hourUTC: 6 })).toMatchObject({ status: 403 });
     expect(mocks.update).not.toHaveBeenCalled();
+  });
+  it.each(["stopped", "running"])("configuration-only tasks back up a %s server without querying or restarting it", async desiredState => {
+    const backupServer = { ...server, desiredState, maintenance: { ...server.maintenance, action: "configuration-backup" } };
+    mocks.find.mockResolvedValue(backupServer);
+    mocks.claim.mockResolvedValueOnce(backupServer).mockResolvedValue(null);
+    await Promise.all([runMaintenance("server", now), runMaintenance("server", now)]);
+    expect(mocks.backup).toHaveBeenCalledTimes(1);
+    expect(mocks.agent).not.toHaveBeenCalled();
+    expect(mocks.query).not.toHaveBeenCalled();
+    expect(mocks.restart).not.toHaveBeenCalled();
+    expect(mocks.claim.mock.calls[0][0]).toMatchObject({ "maintenance.action": "configuration-backup", "maintenance.lastDay": { $ne: "2026-10-14" } });
+    expect(mocks.activity).toHaveBeenCalledWith("server", { kind: "system" }, "maintenance_ran", expect.stringContaining("Server state unchanged"));
+  });
+  it("requires backup permission for backup-only schedules and rejects arbitrary commands", async () => {
+    expect(maintenanceSettings({ enabled: true, hourUTC: 6, action: "console" })).toBeNull();
+    await saveMaintenance("owner", "server", { enabled: true, hourUTC: 6, action: "configuration-backup" });
+    expect(mocks.authorize).toHaveBeenLastCalledWith("owner", "server", "server:create_backup");
+    expect(mocks.update.mock.calls[0][1].$set["maintenance.action"]).toBe("configuration-backup");
+  });
+  it("retains the selected task when an older client omits it", async () => {
+    mocks.authorize.mockResolvedValue({ server: { ...server, maintenance: { ...server.maintenance, action: "configuration-backup" } } });
+    await saveMaintenance("owner", "server", { enabled: true, hourUTC: 7 });
+    expect(mocks.authorize).toHaveBeenLastCalledWith("owner", "server", "server:create_backup");
+    expect(mocks.update.mock.calls[0][1].$set).not.toHaveProperty("maintenance.action");
+  });
+  it("does not save a backup schedule without backup permission", async () => {
+    mocks.authorize.mockResolvedValueOnce({ server }).mockResolvedValueOnce({ error: "Forbidden", status: 403 });
+    expect(await saveMaintenance("restricted", "server", { enabled: true, hourUTC: 6, action: "configuration-backup" })).toMatchObject({ status: 403 });
+    expect(mocks.update).not.toHaveBeenCalled();
+  });
+  it("does not restart when the selected task changes during backup", async () => {
+    mocks.current.mockResolvedValue({ ...server, maintenance: { ...server.maintenance, action: "configuration-backup" } });
+    await runMaintenance("server", now);
+    expect(mocks.restart).not.toHaveBeenCalled();
   });
 });
