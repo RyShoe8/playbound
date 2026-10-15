@@ -7,6 +7,7 @@ import { createInstallationStore, scanInstallation } from "./installationJobs.js
 import { baselineBarotraumaHomes } from "./barotraumaRuntime.js";
 import { stageMindustryRelease } from "./mindustryUpdates.js";
 import { stageOpenRARelease, validateOpenRABaseline } from "./openraUpdates.js";
+import { stageOpenHVRelease } from "./openhvUpdates.js";
 
 const GIB = 1024 ** 3;
 
@@ -56,7 +57,7 @@ export function runCommand(command, args, { root, timeout = 90 * 60_000, maxOutp
 }
 
 // Injection is only for isolated tests, never an HTTP input or downloaded script.
-export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run = runCommand, scan = scanInstallation, disk = diskAvailable, hostHome = process.env.HOME, stageRelease = stageMindustryRelease, stageArchive = stageOpenRARelease } = {}) {
+export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run = runCommand, scan = scanInstallation, disk = diskAvailable, hostHome = process.env.HOME, stageRelease = stageMindustryRelease, stageArchive = stageOpenRARelease, stageOpenHV = stageOpenHVRelease } = {}) {
   const store = createInstallationStore(stateDir);
   let job = store.read(id);
   const target = INSTALLATION_TARGETS[job.key];
@@ -89,8 +90,8 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
       await run("/usr/bin/cp", ["-a", "--reflink=auto", "--sparse=always", "--", current, stage], { root: gamesRoot });
       const detachedLinks = prepareInstallationLinks(stage, current, true);
       if (target.strategy === "github-appimage") {
-        phase("downloading", "Verifying and extracting the three official OpenRA packages");
-        await stageArchive(stage, { run, diskCheck: () => {
+        phase("downloading", job.key === "openhv" ? "Verifying the official OpenHV AppImage and embedded game version" : "Verifying and extracting the three official OpenRA packages");
+        await (job.key === "openhv" ? stageOpenHV : stageArchive)(stage, { run, diskCheck: () => {
           const available = disk(gamesRoot);
           if (available.free < available.reserve + 3 * GIB) throw new Error("Update stopped to preserve free disk space");
         } });
@@ -109,7 +110,7 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
     } else {
       if (!previous) throw new Error("Rollback installation is unavailable");
     }
-    phase("validating", target.strategy === "github-appimage" ? "Checking OpenRA engine and all official mod versions" : target.strategy === "github-jar" ? "Checking JAR integrity, server version and Java compatibility" : "Checking Steam manifest and required executables");
+    phase("validating", target.strategy === "github-appimage" ? "Checking official AppImage installation integrity and version" : target.strategy === "github-jar" ? "Checking JAR integrity, server version and Java compatibility" : "Checking Steam manifest and required executables");
     const prepared = job.action === "update" ? stage : previous;
     const verified = verifyInstallation(prepared, job.key);
     if (job.key === "openra") validateOpenRABaseline(prepared);
@@ -134,7 +135,7 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
     const uncertain = activated || (job.status === "activating" && !fs.existsSync(current));
     phase(uncertain ? "interrupted" : "failed", uncertain
       ? "Activation needs operator inspection. New starts remain blocked; the rollback copy is retained."
-      : error instanceof Error && /^(Not enough|An affected|SteamCMD|Mindustry|OpenRA|Update command|Update stopped|Cannot verify|Barotrauma|Unexpected Barotrauma|Invalid Barotrauma)/.test(error.message)
+      : error instanceof Error && /^(Not enough|An affected|SteamCMD|Mindustry|OpenRA|OpenHV|Update command|Update stopped|Cannot verify|Barotrauma|Unexpected Barotrauma|Invalid Barotrauma)/.test(error.message)
         ? error.message : "Update failed before activation; the previous installation was preserved");
     // Retain partial staging files for diagnosis. Never recurse into customer save links.
   }

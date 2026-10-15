@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 
 const HOSTS = new Set(["github.com", "release-assets.githubusercontent.com", "objects.githubusercontent.com"]);
 export async function readRelease(repository, { request = fetch, signal, label }) {
-  if (!["Anuken/Mindustry", "OpenRA/OpenRA"].includes(repository)) throw new Error("Unsupported release source");
+  if (!["Anuken/Mindustry", "OpenRA/OpenRA", "OpenHV/OpenHV"].includes(repository)) throw new Error("Unsupported release source");
   const response = await request(`https://api.github.com/repos/${repository}/releases/latest`, {
     redirect: "error", signal, headers: { "User-Agent": "PlayBound-game-host", Accept: "application/vnd.github+json" },
   });

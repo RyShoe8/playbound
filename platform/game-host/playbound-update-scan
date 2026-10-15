@@ -15,6 +15,7 @@ targets = {
     "necesse": ["necesse"],
     "mindustry": ["mindustry"],
     "openra": ["openra"],
+    "openhv": ["openhv"],
 }
 if len(sys.argv) != 2 or sys.argv[1] not in targets:
     sys.exit(2)
@@ -39,6 +40,11 @@ try:
             if field == "exe" and os.path.basename(value) == "java":
                 java_process = True
             if any(value == root or value.startswith(root + "/") for root in roots):
+                matched = True
+            # AppImage child executables run from a temporary FUSE mount rather
+            # than the installation directory. Unclassified mounts hold the
+            # queue conservatively; never inspect argv or interrupt a process.
+            if sys.argv[1] == "openhv" and value.startswith("/tmp/.mount_"):
                 matched = True
         if sys.argv[1] == "mindustry" and java_process and not matched:
             # A JVM can load this JAR from any cwd and then close its descriptor.

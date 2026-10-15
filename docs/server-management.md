@@ -217,7 +217,7 @@ until a root-owned scanner is explicitly configured for them.
 
 Install the scanner separately with
 `platform/game-host/install-update-scanner.sh` as root. It installs a root-owned
-helper and a sudoers rule permitting only its ten fixed read-only scans.
+helper and a sudoers rule permitting only its eleven fixed read-only scans.
 Workers and SteamCMD continue running as the agent service user. No game
 installation or privileged shell is run by that helper.
 
@@ -262,7 +262,7 @@ This is not complete feature parity with those platforms. FTP/SFTP,
 process-log streaming, a general task scheduler,
 plugin/Workshop installation, database administration, and customer-triggered
 binary updates are not implemented by these changes. Shared binary updates
-are deliberately admin-only and limited to the ten ready installations above. None
+are deliberately admin-only and limited to the eleven ready installations above. None
 of these features is represented by a nonfunctional button.
 
 No hosting backend is replaced or installed. Existing recipes, measured
@@ -280,3 +280,23 @@ with an isolated offline fixture. It checks owner/moderator navigation, typed
 bot settings, maintenance persistence, disabled restore controls while online,
 console escaping/error handling, and a compact window. No live game or database
 is changed by that test.
+
+### OpenHV installation updates
+
+OpenHV uses its official stable GitHub x86_64 AppImage, preserving the existing
+launch format. Updates require the release SHA-256, exact official asset URL,
+bounded ELF/SquashFS checks and matching embedded `mods/hv/mod.yaml` version.
+The engine VERSION is a separate OpenRA release identifier and is validated
+independently. AppImage code is not executed during download/validation.
+The installed image is hashed with a bounded buffer and cached by file identity,
+size, timestamps and permissions; custom files and unknown legacy images refuse
+replacement. The reviewed 20250725 digest supports the existing VPS installation
+without rewriting it. Settings/support data remain outside the binary swap.
+
+OpenRA rooms and pending starts also hold the OpenHV lock, since OpenRA editions
+can use its binary. Unclassified AppImage FUSE mounts conservatively delay the
+update; running servers are never terminated to clear the queue. Activation
+and rollback reuse the existing persisted worker and retained previous copies.
+The isolated VPS check downloaded 20250725, exercised same-version update and
+rollback and received the dedicated protocol handshake. A real player Join is
+still separate. See the [official OpenHV server documentation](https://github.com/OpenHV/OpenHV/wiki/Server).
