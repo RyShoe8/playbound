@@ -217,7 +217,7 @@ until a root-owned scanner is explicitly configured for them.
 
 Install the scanner separately with
 `platform/game-host/install-update-scanner.sh` as root. It installs a root-owned
-helper and a sudoers rule permitting only its twelve fixed read-only scans.
+helper and a sudoers rule permitting only its thirteen fixed read-only scans.
 Workers and SteamCMD continue running as the agent service user. No game
 installation or privileged shell is run by that helper.
 
@@ -262,7 +262,7 @@ This is not complete feature parity with those platforms. FTP/SFTP,
 process-log streaming, a general task scheduler,
 plugin/Workshop installation, database administration, and customer-triggered
 binary updates are not implemented by these changes. Shared binary updates
-are deliberately admin-only and limited to the twelve ready installations above. None
+are deliberately admin-only and limited to the thirteen ready installations above. None
 of these features is represented by a nonfunctional button.
 
 No hosting backend is replaced or installed. Existing recipes, measured
@@ -333,3 +333,29 @@ sampling. Older agents remain compatible; unavailable handlers are labelled
 for deployment review. New unknown recipes remain visible with no queue action.
 Base TF2 updates do not certify Open Fortress overlay updates, and official
 OpenRA package updates do not certify Combined Arms or Red Alert 2.
+
+### Hypersomnia signed rolling updates
+
+Hypersomnia's official headless channel supplies an OpenSSH artifact signature
+with its version metadata. The updater pins the upstream Ed25519 public key,
+requires the `self_updater` namespace and SHA-512 signing algorithm, bounds
+metadata/image size, disables redirects, and verifies the exact downloaded
+bytes before executing anything. Signed images then report their version in
+a temporary HOME/cwd with an empty environment. Lower-version rolling updates
+are refused; deliberate retained-copy rollback remains a separate queue action.
+
+The current VPS 3.0.0 image was independently matched to that signature, so
+known legacy bytes can be reviewed without rewriting the active installation.
+Other modifications/custom files block replacement. Installed-image hashing
+uses the same bounded/cached verification as OpenHV and OpenE2140.
+New Hypersomnia launches pass `--no-update-on-launch` and disable the startup
+updater in their configuration; daily updates remain off. Recovered processes
+are preserved, and subsequent agent starts use the current guarded recipe.
+Unclassified AppImage mounts/extraction directories conservatively hold updates
+regardless of their temporary-directory location. Per-server appdata is retained.
+
+The isolated VPS check covered signed download, same-version update/rollback
+and dedicated UDP binding without public listing. Player Join/query validation
+remains separate. Protocol/key sources: [upstream verification](https://github.com/TeamHypersomnia/Hypersomnia/blob/master/src/application/main/verify_signature.h),
+[public signer](https://github.com/TeamHypersomnia/Hypersomnia/blob/master/src/signing_keys.h),
+and [startup update control](https://github.com/TeamHypersomnia/Hypersomnia/blob/master/src/cmd_line_params.h).

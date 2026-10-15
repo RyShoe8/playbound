@@ -762,6 +762,9 @@ export const recipes = {
     ]),
     args: (port, ctx) => [
       "--appimage-extract-and-run",
+      // The installation queue owns updates; upstream otherwise replaces the
+      // shared AppImage before starting this room, outside our drain/rollback.
+      "--no-update-on-launch",
       "--dedicated-server",
       "--server-port",
       String(port),
@@ -777,6 +780,7 @@ export const recipes = {
         path.join(confDir, "50-playbound.json"),
         `${JSON.stringify(
           {
+            self_update: { update_on_launch: false },
             server_start: { port, slots: managedPlayerLimit(ctx) },
             server: {
               server_name: hypersomniaServerName(ctx.name),

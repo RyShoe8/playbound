@@ -19,7 +19,6 @@ const GAPS: Record<string, Gap> = {
   ysoccer: { category: "custom-build", reason: "Needs a handler for the PlayBound dedicated JAR build, including Java compatibility and rollback." },
   triplea: { category: "custom-build", reason: "Needs coordinated updates for the dedicated wrapper, server package and required Java runtime." },
   bombsquad: { category: "archive", reason: "Needs a coordinated server-package and Python runtime handler that preserves server scripts and configuration." },
-  hypersomnia: { category: "archive", reason: "Needs a verified rolling headless AppImage handler with trusted version/checksum metadata and preserved per-server appdata." },
   veloren: { category: "archive", reason: "Needs a verified server build/channel handler with world compatibility and save-preserving rollback checks." },
   freedoom: { category: "edition", reason: "Zandronum, Odamex and Chocolate Doom require separate engine update handlers; preserve IWADs, maps and per-server configuration." },
   "space-station-14": { category: "private-runtime", reason: "Needs a handler for the server distribution/bootstrap, .NET dependencies and per-server content/database compatibility." },

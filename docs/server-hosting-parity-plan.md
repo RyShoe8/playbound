@@ -12,7 +12,7 @@ New games must complete `docs/dedicated-server-game-checklist.md`.
 Assess each feature per engine: applicable and verified, not yet implemented,
 or unavailable with a concrete engine/transport reason. The universal scope is
 a release requirement, not a claim that every engine supports bots or plugins.
-Keep current twelve-game update support and thirteen-game file support explicit
+Keep current thirteen-game update support and thirteen-game file support explicit
 until the additional handlers pass their gates. No placeholder controls.
 
 ## Implementation order and gates
@@ -143,3 +143,18 @@ until the additional handlers pass their gates. No placeholder controls.
   This inventory changes neither hosting eligibility nor curated catalog rows,
   and adds no database queries, sampling or background tests. It identifies
   remaining work; it does not complete those handlers or client Join checks.
+
+- Hypersomnia now uses a signed rolling-headless-image handler. The upstream
+  Ed25519 public key and SSH `self_updater` namespace are pinned; malformed
+  signatures, wrong signers, tampering, oversized downloads, unexpected
+  redirects, version mismatch and update-channel downgrades fail closed.
+  Only after signature verification does `--version` run with an empty
+  environment and isolated HOME/cwd/temp directory. New server launches
+  explicitly disable upstream startup self-updates so they cannot bypass
+  the coordinated queue. Existing per-server appdata remains outside the swap.
+  VPS acceptance (2026-10-14) independently matched the current 3.0.0 image
+  using upstream SSH verification, then exercised same-version download,
+  activation/rollback and an isolated dedicated UDP bind with public listing
+  disabled. Production game files stayed unchanged; this is not a real player
+  Join or human/bot-query verification. Coverage now has 13 handled families
+  and 38 remaining game/edition entries.

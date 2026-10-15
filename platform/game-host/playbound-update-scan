@@ -17,6 +17,7 @@ targets = {
     "openra": ["openra"],
     "openhv": ["openhv"],
     "earth-2140-trilogy": ["earth-2140-trilogy", "opene2140"],
+    "hypersomnia": ["hypersomnia"],
 }
 if len(sys.argv) != 2 or sys.argv[1] not in targets:
     sys.exit(2)
@@ -26,6 +27,8 @@ if sys.argv[1] == "barotrauma":
     roots.extend(["/var/lib/playbound-host/barotrauma-servers", "/var/lib/playbound-host/barotrauma-servers-rooms"])
 if sys.argv[1] == "mindustry":
     roots.append("/var/lib/playbound-host/mindustry")
+if sys.argv[1] == "hypersomnia":
+    roots.append("/var/lib/playbound-host/hypersomnia")
 count = 0
 try:
     for entry in os.listdir("/proc"):
@@ -45,7 +48,9 @@ try:
             # AppImage child executables run from a temporary FUSE mount rather
             # than the installation directory. Unclassified mounts hold the
             # queue conservatively; never inspect argv or interrupt a process.
-            if sys.argv[1] in ("openhv", "earth-2140-trilogy") and value.startswith("/tmp/.mount_"):
+            if sys.argv[1] in ("openhv", "earth-2140-trilogy", "hypersomnia") and any(
+                part.startswith((".mount_", "appimage_extracted_")) for part in value.split("/")
+            ):
                 matched = True
         if sys.argv[1] == "mindustry" and java_process and not matched:
             # A JVM can load this JAR from any cwd and then close its descriptor.
