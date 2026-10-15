@@ -1,0 +1,22 @@
+{
+  "latest": "2.86.2",
+  "url": "https://www.etlegacy.com/download/file/785",
+  "versions": {
+    "2.85.0": {
+      "prefix": "etlegacy-v2.85.0-x86_64/",
+      "archiveBytes": 92477303,
+      "archiveSha256": "f69a2d482a6816ae31296bcefe38a1153c72f2b26bc7ac96d75f89931adc4272",
+      "treeSha256": "a9a91db56f47e735098e9c0e37fcc883d6ab20f96f9aed3fc16efaa63fcac1c2",
+      "fileCount": 3304,
+      "totalBytes": 150921610
+    },
+    "2.86.2": {
+      "prefix": "etlegacy-v2.86.2-x86_64/",
+      "archiveBytes": 92464590,
+      "archiveSha256": "7f0d5aa3f630cbe6574592d1f41b2feb5542c5e7decada30f84251b3f8908018",
+      "treeSha256": "986baaa1206613e06bab48c32dca124d8302799671364b5446792f874bfe382b",
+      "fileCount": 3304,
+      "totalBytes": 150948324
+    }
+  }
+}

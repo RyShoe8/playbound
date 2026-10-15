@@ -112,3 +112,8 @@ test("official GitHub discovery rejects prereleases before they can be queued", 
   await assert.rejects(latestInstallationBuild("mindustry", { request: async () => new Response(JSON.stringify({ draft: false, prerelease: true, tag_name: "v999" })) }), /stable/);
   assert.equal(await latestInstallationBuild("mindustry", { request: async () => new Response(JSON.stringify({ draft: false, prerelease: false, tag_name: "v160.7" })) }), "160.7");
 });
+
+test("ET Legacy discovers the stable publisher version and refuses malformed metadata", async () => {
+  assert.equal(await latestInstallationBuild("wolfenstein-enemy-territory", { request: async () => new Response("<h2>ET: Legacy stable release 2.86.2 - Taking Fire!!!</h2>") }), "2.86.2");
+  await assert.rejects(latestInstallationBuild("wolfenstein-enemy-territory", { request: async () => new Response("<html>upstream unavailable</html>") }), /metadata is unavailable/);
+});

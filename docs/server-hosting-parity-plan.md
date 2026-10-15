@@ -695,3 +695,25 @@ data stay outside its installation swap. Beta updates preserve their installed
 channel and refuse activation if Steam silently switches it. This extends
 coverage to 29 installation families (15 automatic release sources), with 22
 game/edition entries remaining. Existing running processes survived deployment.
+
+## ET: Legacy coordinated package updates (2026-10-15)
+
+ET: Legacy adds publisher-reviewed 2.85.0 and 2.86.2 package manifests covering
+the dedicated engine, matching Legacy server mod, Omni-bot files and licenses.
+The bounded extractor verifies the complete managed tree and exact archive
+SHA-256; paths, links, duplicate files and altered bytes fail closed. Only the
+publisher-owned file manifest is replaced. Generated Omni-bot user settings,
+original etmain assets, custom maps and per-server homes are retained. Unknown
+server-mod versions and modified managed files require review. Daily discovery
+reads the publisher's stable release page, automatically queues only the reviewed
+version, and shows future unreviewed versions as review-required.
+
+A VPS private-installation fixture passed the real 2.85.0 to 2.86.2 staged update,
+0/4-player game query with zero bots, running-process rollback hold, clean stop,
+rollback to 2.85.0 and byte-identical generated bot configuration preservation.
+Production game files and catalog data were not changed by this fixture. All
+twelve managed runtime identities survived the agent deployment. ANEURISM's
+separate fixture also passed staged update/rollback on its current Steam build;
+no human Join or save-format upgrade was certified by either check. Coverage is
+now 30 installation families, 16 release-discovery sources and 21 remaining
+game/edition entries.
