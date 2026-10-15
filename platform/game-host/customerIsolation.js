@@ -1,5 +1,6 @@
-/** Reviewed engine profiles only. This is a filesystem/process namespace boundary,
- * not the completed per-customer UID, cgroup, network or plugin isolation rollout.
+/** Reviewed engine profiles only. This builds the filesystem/process namespace
+ * boundary; customerRuntime applies cgroup limits before running the plan.
+ * Per-customer host UIDs, network policy and plugin isolation remain unfinished.
  * There is deliberately no fallback to an unrestricted launch if setup fails.
  */
 import fs from "node:fs";
@@ -95,7 +96,7 @@ function sandboxPlan({ gameSlug, binary, gameArgs, data, mounts = [], addressSpa
     profile: `${gameSlug}-bwrap-v1`,
     binary: "/usr/bin/prlimit",
     // Address space, descriptors and core dumps are bounded per process.
-    // CPU/RSS/process-count controls require the later cgroup rollout.
+    // Aggregate CPU/RSS/task/swap controls are applied by customerRuntime.
     args: [`--as=${addressSpace}`, "--nofile=1024", "--core=0", "--", "/usr/bin/bwrap",
       "--unshare-user", "--unshare-pid", "--unshare-ipc", "--unshare-uts", "--unshare-cgroup",
       "--disable-userns", "--cap-drop", "ALL",

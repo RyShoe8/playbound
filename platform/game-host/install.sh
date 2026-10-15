@@ -216,7 +216,7 @@ cp -f "$AGENT_SRC/index.js" "$AGENT_SRC/agentRoutes.js" "$AGENT_SRC/recipes.js" 
   "$AGENT_SRC/etLegacyInstall.js" "$AGENT_SRC/metrics.js" "$AGENT_SRC/spawnTests.js" \
   "$AGENT_SRC/gameVersions.js" "$AGENT_SRC/rcon.js" "$AGENT_SRC/roomRestart.js" \
   "$AGENT_SRC/startLock.js" "$AGENT_SRC/downloadStream.js" \
-  "$AGENT_SRC/managedRegistry.js" "$AGENT_SRC/managedLogs.js" "$AGENT_SRC/customerIsolation.js" "$AGENT_SRC/portReadiness.js" "$AGENT_SRC/processMetrics.js" "$AGENT_SRC/a2sQuery.js" "$AGENT_SRC/playerQueries.js" \
+  "$AGENT_SRC/managedRegistry.js" "$AGENT_SRC/managedLogs.js" "$AGENT_SRC/customerIsolation.js" "$AGENT_SRC/customerRuntime.js" "$AGENT_SRC/portReadiness.js" "$AGENT_SRC/processMetrics.js" "$AGENT_SRC/a2sQuery.js" "$AGENT_SRC/playerQueries.js" \
   "$AGENT_SRC/communityHostingTick.js" "$AGENT_SRC/rvglDisplay.js" \
   "$AGENT_SRC/dedicatedDataBackups.js" "$AGENT_SRC/worldBackupRunner.js" "$AGENT_SRC/dedicatedDataBackupsWorker.js" "$AGENT_SRC/dedicatedFiles.js" \
   "$AGENT_SRC/installationTargets.js" "$AGENT_SRC/installationJobs.js" "$AGENT_SRC/installationUpdateWorker.js" "$AGENT_SRC/mindustryUpdates.js" "$AGENT_SRC/githubReleaseAssets.js" "$AGENT_SRC/openraUpdates.js" "$AGENT_SRC/openhvUpdates.js" "$AGENT_SRC/openRaAppImageUpdates.js" "$AGENT_SRC/openE2140Updates.js" "$AGENT_SRC/appImageInstallation.js" "$AGENT_SRC/sshArtifactSignature.js" "$AGENT_SRC/hypersomniaUpdates.js" "$AGENT_SRC/assaultcubeUpdates.js" "$AGENT_SRC/nativeArchive.py" \
@@ -228,6 +228,7 @@ cp -f "$AGENT_SRC/assets/et-playbound.cfg" "$AGENT_DIR/assets/" 2>/dev/null || t
 cp -f "$AGENT_SRC/assets/hurry-curry-player-limit.patch" "$AGENT_DIR/assets/" 2>/dev/null || true
 chown -R playbound:playbound "$AGENT_DIR"
 bash "$AGENT_SRC/install-update-scanner.sh"
+bash "$AGENT_SRC/tools/install-customer-resources.sh"
 
 # Battlefield 1942 is an archived DICE Linux dedicated distribution, not a
 # SteamCMD app. The installer checks a pinned SHA-256 and never replaces a
