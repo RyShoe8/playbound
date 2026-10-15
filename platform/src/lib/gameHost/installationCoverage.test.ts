@@ -59,7 +59,7 @@ it("classifies all current agent recipes without mistaking inherited object keys
 
 it("never silently omits an agent-only recipe or creates an action for it", () => {
   const rows = buildInstallationCoverage({ targets: [], jobs: [], gameSlugs: ["aneurism-iv", "future-game", "cs2", "0-ad", "0ad"] });
-  expect(rows.find((row) => row.id === "aneurism-iv")).toMatchObject({ name: "ANEURISM IV", category: "private-runtime" });
+  expect(rows.find((row) => row.id === "aneurism-iv")).toMatchObject({ name: "ANEURISM IV", category: "review" });
   expect(rows.find((row) => row.id === "future-game")).toMatchObject({ category: "review" });
   expect(rows.find((row) => row.id === "future-game")?.installationKey).toBeUndefined();
   expect(rows.filter((row) => row.id === "0ad")).toHaveLength(1);

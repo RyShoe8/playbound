@@ -2,6 +2,7 @@ import dbConnect from "@/lib/db";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
 import { isBotUserAgent, launcherOsLabel, parseUserAgent } from "./parseUserAgent";
 import { maybeUpsertAutoBugFromTelemetry } from "@/lib/autoBugReport";
+import { UPDATE_FAILURE_EVENT, updateFailureReceipt } from "@/lib/gameHost/updateFailureReceipt";
 
 export interface SaveTelemetryEventInput {
   event: string;
@@ -133,7 +134,10 @@ export async function saveEvent(input: SaveTelemetryEventInput): Promise<void> {
     createdAt: time.createdAt,
   };
 
-  if (input.event === "mod_installed" && typeof props.installationId === "string" && props.installationId.length >= 16) {
+  const updateReceipt = input.event === UPDATE_FAILURE_EVENT ? updateFailureReceipt(props.installationUpdateJobId) : null;
+  if (updateReceipt) {
+    await TelemetryEvent.updateOne({ _id: updateReceipt }, { $setOnInsert: document }, { upsert: true });
+  } else if (input.event === "mod_installed" && typeof props.installationId === "string" && props.installationId.length >= 16) {
     const receipt = { event: "mod_installed", "properties.installationId": props.installationId };
     await TelemetryEvent.updateOne(
       receipt,
@@ -166,6 +170,8 @@ export async function saveEvent(input: SaveTelemetryEventInput): Promise<void> {
       userAgent: input.userAgent ?? null,
     });
   } catch (err) {
+    // The VPS must retain its receipt until BOTH telemetry and Bugs are saved.
+    if (updateReceipt) throw err;
     console.error("[telemetry] auto-bug upsert failed", err);
   }
 }

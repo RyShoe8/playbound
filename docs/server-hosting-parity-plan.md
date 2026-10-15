@@ -676,3 +676,22 @@ check completed with six newer builds queued, eight up to date and fourteen
 review-required profiles. Mindustry's automatic staged update completed on the
 VPS; the remaining builds use the same serial maintenance queue. Agent and
 targeted platform checks passed, with zero catalog/database writes.
+
+## Durable update failures and ANEURISM IV (2026-10-15)
+
+Persisted failed/interrupted installation jobs now form an acknowledgement-based
+outbox. The agent delivers up to ten failures every fifteen minutes through an
+authenticated short control-plane endpoint. Telemetry and Bugs use the same
+deterministic per-job receipt in their respective collections, so retries after
+network/database loss create no duplicate reports and do not reopen dismissed
+bugs. Acknowledgement requires both writes. Credential-bearing messages and
+URLs are redacted; no raw command output, tokens or account details are sent.
+Steam failures now retain safe authorization/network/disk categories.
+
+ANEURISM IV adds Steam depot 2832030 to installation updates, rollback, process
+scanning and daily public-branch discovery. The existing namespace supervisor
+continues to launch the shared engine; private credentials and per-server world
+data stay outside its installation swap. Beta updates preserve their installed
+channel and refuse activation if Steam silently switches it. This extends
+coverage to 29 installation families (15 automatic release sources), with 22
+game/edition entries remaining. Existing running processes survived deployment.

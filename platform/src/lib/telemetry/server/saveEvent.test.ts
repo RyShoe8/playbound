@@ -1,7 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { maybeUpsertAutoBugFromTelemetry } from "@/lib/autoBugReport";
 
 const updateOne = vi.fn();
 const create = vi.fn();
+
+it("server update receipts deduplicate telemetry and require successful bug persistence before acknowledgement", async () => {
+  updateOne.mockResolvedValue({ acknowledged: true });
+  const { saveEvent } = await import("./saveEvent");
+  const input = { event: "community_server_update_failed", properties: { installationUpdateJobId: "a508e5fc-e88f-47aa-8536-549613054818", message: "Steam access denied" } };
+  await saveEvent(input); await saveEvent(input);
+  const calls = updateOne.mock.calls.slice(-2);
+  expect(calls[0][0]._id).toMatch(/^[a-f0-9]{24}$/); expect(calls[0][0]).toEqual(calls[1][0]);
+  vi.mocked(maybeUpsertAutoBugFromTelemetry).mockRejectedValueOnce(new Error("Bugs unavailable"));
+  await expect(saveEvent(input)).rejects.toThrow("Bugs unavailable");
+});
 
 vi.mock("@/lib/db", () => ({ default: vi.fn(async () => undefined) }));
 vi.mock("@/lib/models/TelemetryEvent", () => ({

@@ -13,6 +13,7 @@ targets = {
     "dont-starve-together": ["dont-starve-together"],
     "barotrauma": ["barotrauma"],
     "necesse": ["necesse"],
+    "aneurism-iv": ["aneurism-iv"],
     "mindustry": ["mindustry"],
     "openra": ["openra"],
     "openhv": ["openhv"],
@@ -53,6 +54,8 @@ if sys.argv[1] in native_paths:
 if sys.argv[1] == "barotrauma":
     # The executable and cwd live in private copies, outside the shared depot.
     roots.extend(["/var/lib/playbound-host/barotrauma-servers", "/var/lib/playbound-host/barotrauma-servers-rooms"])
+if sys.argv[1] == "aneurism-iv":
+    roots.append("/var/lib/playbound-host/aneurism-iv-servers")
 if sys.argv[1] == "mindustry":
     roots.append("/var/lib/playbound-host/mindustry")
 if sys.argv[1] == "hypersomnia":

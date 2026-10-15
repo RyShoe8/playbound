@@ -619,7 +619,7 @@ not download games or create database/test records every minute. A single atomic
 the last result per installation, next check time and attempted build/job.
 Restart catches up a missed check; an interrupted check can retry after an hour.
 
-Automatic discovery and queueing currently cover the eight declared Steam depots,
+Automatic discovery and queueing currently cover the nine declared Steam depots,
 Mindustry, OpenRA's official packages, OpenHV, OpenE2140, Hypersomnia and stable
 Factorio. Steam reads the public branch using an isolated, credential-free
 SteamCMD metadata home. Non-public installed branches are left for review.

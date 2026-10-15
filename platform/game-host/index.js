@@ -50,6 +50,7 @@ import { runWorldBackup } from "./worldBackupRunner.js";
 import { manageDedicatedFiles } from "./dedicatedFiles.js";
 import { createInstallationCoordinator } from "./installationJobs.js";
 import { createDailyInstallationUpdates } from "./dailyInstallationUpdates.js";
+import { createInstallationFailureReporter } from "./installationFailureReports.js";
 import { gameEnvironment } from "./gameEnvironment.js";
 import { customerIsolationLaunch, validateCustomerPreparation, CUSTOMER_ISOLATION_GAMES } from "./customerIsolation.js";
 import { customerResourceLimits } from "./customerResourceLimits.js";
@@ -102,6 +103,10 @@ const installationUpdates = createInstallationCoordinator({
 const dailyInstallationUpdates = createDailyInstallationUpdates({
   stateDir: process.env.GAME_HOST_STATE_DIR || "/var/lib/playbound-host/state",
   coordinator: installationUpdates,
+});
+const installationFailureReporter = createInstallationFailureReporter({
+  stateDir: process.env.GAME_HOST_STATE_DIR || "/var/lib/playbound-host/state",
+  secret: SECRET, site: process.env.PLAYBOUND_SITE_URL || "https://playbound.club",
 });
 /** relative archive path → in-flight/completed transfer state for this agent lifetime. */
 const archiveJobs = new Map();
@@ -2065,6 +2070,7 @@ Promise.resolve().then(() => stopOrphanedPartyRooms()).then(() => recoverManaged
   setInterval(checkUpdates, 15_000).unref();
   const checkDailyReleases = () => {
     if (!shuttingDown) void dailyInstallationUpdates.tick().catch(() => console.error("Daily installation update state needs inspection"));
+    if (!shuttingDown) void installationFailureReporter.tick().catch(() => console.error("Installation failure telemetry delivery will retry"));
   };
   checkDailyReleases();
   setInterval(checkDailyReleases, 60_000).unref();

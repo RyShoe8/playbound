@@ -22,7 +22,6 @@ const GAPS: Record<string, Gap> = {
   "space-station-14": { category: "private-runtime", reason: "Needs a handler for the server distribution/bootstrap, .NET dependencies and per-server content/database compatibility." },
   "goldeneye-source": { category: "private-runtime", reason: "Needs coordinated Source SDK base and GoldenEye mod updates, including private runtime refresh and retained settings." },
   trackmania: { category: "private-runtime", reason: "Needs a dedicated package handler that preserves account configuration, maps and match settings." },
-  "aneurism-iv": { category: "private-runtime", reason: "Needs coordinated Steam depot and namespace-supervisor updates that preserve private token files, stable identity and world data." },
 };
 const EDITIONS: InstallationCoverageRow[] = [
   { id: "openra:combined-arms", name: "OpenRA · Combined Arms", category: "edition", reason: "Uses its own Combined Arms distribution. OpenRA's official-package update does not update this edition; a separate handler and binary verification are required." },
