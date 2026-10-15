@@ -12,7 +12,7 @@ New games must complete `docs/dedicated-server-game-checklist.md`.
 Assess each feature per engine: applicable and verified, not yet implemented,
 or unavailable with a concrete engine/transport reason. The universal scope is
 a release requirement, not a claim that every engine supports bots or plugins.
-Keep current fourteen-game update support and thirteen-game file support explicit
+Keep current fifteen-game update support and thirteen-game file support explicit
 until the additional handlers pass their gates. No placeholder controls.
 
 ## Implementation order and gates
@@ -486,3 +486,18 @@ until the additional handlers pass their gates. No placeholder controls.
   launcher use the same action contract; no shell/console scheduling is exposed.
   World-save backups, scheduled updates and multiple independent schedules
   remain separate coverage gaps. No production customer records were changed.
+
+- Factorio adds an official stable-headless archive handler with published SHA-256
+  verification, fixed publisher/CDN redirects, bounded unprivileged extraction,
+  whole-package integrity baseline and offline headless/data-version validation.
+  Existing custom files, downgrades and major-version upgrades block updates.
+  The existing queue, root scanner, start gate, staged activation and rollback
+  are reused; private saves/configuration stay outside the installation swap.
+  Binary rollback does not reverse save-format migrations. VPS acceptance
+  (2026-10-15) downloaded the actual 2.0.77 package, completed queued same-version
+  activation/rollback, created and started an isolated world over loopback UDP,
+  stopped it cleanly, and confirmed unchanged fixture progress. The production
+  2.0.77 installation matched the official package and received an integrity
+  marker only; no live binary, saved world or database row was replaced.
+  Human Join/occupied queries remain separate. Coverage is now 15 handled
+  installation families and 36 remaining game/edition entries.

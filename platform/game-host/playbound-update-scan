@@ -19,6 +19,7 @@ targets = {
     "earth-2140-trilogy": ["earth-2140-trilogy", "opene2140"],
     "hypersomnia": ["hypersomnia"],
     "assaultcube": ["assaultcube"],
+    "factorio": ["factorio"],
 }
 if len(sys.argv) != 2 or sys.argv[1] not in targets:
     sys.exit(2)

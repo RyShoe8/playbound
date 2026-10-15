@@ -140,10 +140,12 @@ export function createInstallationCoordinator({ stateDir, gamesRoot, rooms, game
     return {
       gameSlugs: [...new Set(gameSlugs())].filter((slug) => typeof slug === "string" && /^[a-z0-9][a-z0-9-]{0,127}$/.test(slug)).sort(),
       targets: Object.entries(INSTALLATION_TARGETS).map(([key, target]) => {
-        let installed;
-        try { installed = verifyInstallation(path.join(gamesRoot, key), key); } catch { /* Not installed or incomplete. */ }
+        let installed, blocked = target.blockedReason;
+        try { installed = verifyInstallation(path.join(gamesRoot, key), key); } catch {
+          if (key === "factorio") blocked = "Factorio requires an official-package integrity baseline and a compatible headless runtime before updates. Custom files require operator review.";
+        }
         const rollback = jobs.find((job) => job.key === key && job.status === "completed" && job.action === "update" && !job.rollbackConsumed);
-        return { key, name: target.name, installed: Boolean(installed), buildId: installed?.buildId, rollbackAvailable: Boolean(rollback), blockedReason: target.blockedReason };
+        return { key, name: target.name, installed: Boolean(installed), buildId: installed?.buildId, rollbackAvailable: Boolean(rollback), blockedReason: blocked };
       }),
       jobs: [...jobs.filter((job) => !TERMINAL.has(job.status)), ...jobs.filter((job) => TERMINAL.has(job.status)).slice(0, 30)]
         .map(({ pid: _pid, identity: _identity, ...job }) => job),

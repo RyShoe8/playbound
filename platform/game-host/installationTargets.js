@@ -6,6 +6,7 @@ import { verifyOpenHVInstallation } from "./openhvUpdates.js";
 import { verifyOpenE2140Installation } from "./openE2140Updates.js";
 import { verifyHypersomniaInstallation } from "./hypersomniaUpdates.js";
 import { verifyAssaultCubeInstallation } from "./assaultcubeUpdates.js";
+import { verifyFactorioInstallation } from "./factorioUpdates.js";
 
 // These are shared installations, not per-customer save directories.
 export const INSTALLATION_TARGETS = Object.freeze({
@@ -25,6 +26,7 @@ export const INSTALLATION_TARGETS = Object.freeze({
   "earth-2140-trilogy": { name: "Earth 2140 Trilogy (OpenE2140)", strategy: "github-appimage" },
   hypersomnia: { name: "Hypersomnia", strategy: "signed-appimage" },
   assaultcube: { name: "AssaultCube (native binaries)", strategy: "github-native-binaries", component: "bin_unix" },
+  factorio: { name: "Factorio (stable headless)", strategy: "official-headless-archive" },
 });
 
 export function installationKey(slug) {
@@ -52,6 +54,7 @@ export function verifyInstallation(directory, key) {
   if (key === "earth-2140-trilogy") return verifyOpenE2140Installation(directory);
   if (key === "hypersomnia") return verifyHypersomniaInstallation(directory);
   if (key === "assaultcube") return verifyAssaultCubeInstallation(directory);
+  if (key === "factorio") return verifyFactorioInstallation(directory);
   if (target.strategy === "github-appimage") return verifyOpenRAInstallation(directory);
   const manifestPath = path.join(directory, "steamapps", `appmanifest_${target.appId}.acf`);
   if (fs.realpathSync(path.dirname(manifestPath)) !== path.join(fs.realpathSync(directory), "steamapps")) throw new Error("Steam metadata must stay inside the installation");

@@ -16,10 +16,11 @@ it("every admin update target is wired to the agent, root scanner, and exact sud
     expect(sudo).toContain(`/usr/local/sbin/playbound-update-scan ${key}`);
   }
   const appIds = [...targets.matchAll(/appId: (\d+)/g)].map((match) => match[1]);
-  const archiveTargets = [...targets.matchAll(/strategy: "(?:github-(?:jar|appimage|native-binaries)|signed-appimage)"/g)];
+  const archiveTargets = [...targets.matchAll(/strategy: "(?:github-(?:jar|appimage|native-binaries)|signed-appimage|official-headless-archive)"/g)];
   expect(appIds.length + archiveTargets.length).toBe(INSTALLATION_UPDATE_KEYS.length);
   expect(new Set(appIds).size).toBe(appIds.length);
   expect(source("../../../game-host/install.sh")).toContain('"$AGENT_SRC/nativeArchive.py"');
+  expect(source("../../../game-host/install.sh")).toContain('"$AGENT_SRC/factorioArchive.py"');
 });
 
 it("covers every offered base recipe and fails closed when an agent lacks a handler", () => {
