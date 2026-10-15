@@ -8,6 +8,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { customerResourceLimits } from "./customerResourceLimits.js";
 import { identityMigrationMetadata } from "./customerMigration.js";
+import { NATIVE_PACKAGE_PROFILES, verifyNativePackageInstallation } from "./nativePackageUpdates.js";
 
 export const TEEWORLDS_ISOLATION = "teeworlds-bwrap-v1";
 export const CUSTOMER_ISOLATION_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti"]);
@@ -120,7 +121,7 @@ function trustedExecutables(binary) {
   }
 }
 
-function sandboxPlan({ gameSlug, binary, gameArgs, data, mounts = [], resourceLimits }) {
+function sandboxPlan({ gameSlug, binary, gameArgs, data, mounts = [], resourceLimits, engineMount }) {
   for (const [, target] of mounts) {
     const relative = path.posix.relative("/server", target);
     if (relative.startsWith("..") || path.posix.isAbsolute(relative)) throw new Error("Invalid isolation mount");
@@ -137,6 +138,7 @@ function sandboxPlan({ gameSlug, binary, gameArgs, data, mounts = [], resourceLi
       "--unshare-user", "--unshare-pid", "--unshare-ipc", "--unshare-uts", "--unshare-cgroup",
       "--disable-userns", "--cap-drop", "ALL",
       "--ro-bind", "/usr", "/usr", "--symlink", "usr/lib", "/lib", "--symlink", "usr/lib64", "/lib64", "--symlink", "usr/bin", "/bin",
+      ...(engineMount ? ["--ro-bind", engineMount, binary] : []),
       "--proc", "/proc", "--dev", "/dev", "--size", "67108864", "--tmpfs", "/tmp",
       "--bind", data, "/server", ...mounts.flatMap(([source, target]) => ["--ro-bind", source, target]),
       // Fixed system DNS/CA inputs only. Never bind the whole /etc tree.
@@ -158,7 +160,14 @@ function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, 
     luanti: ["/usr/games/minetestserver", "luanti-servers"],
   };
   const [expected, folder] = supported[gameSlug];
-  if (binary !== expected) throw new Error("Customer isolation requires the reviewed system server");
+  let engineMount;
+  if (binary !== expected) {
+    const profile = NATIVE_PACKAGE_PROFILES[gameSlug];
+    const root = path.join("/opt/playbound-host/games", gameSlug);
+    if (!profile || binary !== path.join(root, profile.binary)) throw new Error("Customer isolation requires the reviewed system server");
+    verifyNativePackageInstallation(root, gameSlug);
+    engineMount = binary;
+  }
   trustedExecutables(binary);
   const data = path.join(home, folder, `pb-${id}`);
   privateDirectory(path.dirname(data));
@@ -184,5 +193,5 @@ function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, 
     mounts.push([config, "/server/world/playbound.conf"]);
     gameArgs = ["--port", args[1], "--world", "/server/world", "--gameid", "minetest", "--config", "/server/world/playbound.conf", "--logfile", "/server/minetest.log"];
   }
-  return sandboxPlan({ gameSlug, binary, gameArgs, data, mounts, resourceLimits });
+  return sandboxPlan({ gameSlug, binary: engineMount ? NATIVE_PACKAGE_PROFILES[gameSlug].systemBinary : expected, gameArgs, data, mounts, resourceLimits, engineMount });
 }

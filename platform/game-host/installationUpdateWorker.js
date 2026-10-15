@@ -13,6 +13,7 @@ import { stageHypersomniaRelease } from "./hypersomniaUpdates.js";
 import { stageAssaultCubeRelease } from "./assaultcubeUpdates.js";
 import { stageFactorioRelease } from "./factorioUpdates.js";
 import { stageTerrariaRelease } from "./terrariaUpdates.js";
+import { stageNativePackageRelease } from "./nativePackageUpdates.js";
 
 const GIB = 1024 ** 3;
 
@@ -97,9 +98,17 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
       }
       if (fs.existsSync(stage) || fs.existsSync(backup)) throw new Error("Update directory already exists; operator inspection required");
       if (target.component) fs.mkdirSync(stage, { mode: 0o700 });
-      await run("/usr/bin/cp", ["-a", "--reflink=auto", "--sparse=always", "--", activePath, stagedPath], { root: gamesRoot });
+      // Reviewed native files are root-owned. The unprivileged worker copies
+      // their bytes, then the fixed promotion helper restores trusted ownership.
+      await run("/usr/bin/cp", ["-a", ...(target.strategy === "reviewed-distro-native" ? ["--no-preserve=ownership"] : []), "--reflink=auto", "--sparse=always", "--", activePath, stagedPath], { root: gamesRoot });
       const detachedLinks = prepareInstallationLinks(stage, current, true);
-      if (job.key === "terraria") {
+      if (target.strategy === "reviewed-distro-native") {
+        phase("downloading", "Verifying reviewed distro-native bytes; operating-system packages and saved data stay in place");
+        await stageNativePackageRelease(stage, job.key, { run, diskCheck: () => {
+          const available = disk(gamesRoot);
+          if (available.free < available.reserve + 256 * 1024 ** 2) throw new Error("Update stopped to preserve free disk space");
+        } });
+      } else if (job.key === "terraria") {
         phase("downloading", "Verifying the reviewed Terraria Linux package; saved worlds stay outside the installation");
         await stageTerraria(stage, { run, diskCheck: () => {
           const available = disk(gamesRoot);
@@ -139,7 +148,7 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
     } else {
       if (!previous) throw new Error("Rollback installation is unavailable");
     }
-    phase("validating", job.key === "factorio" ? "Checking Factorio headless executable, base data and package integrity" : target.strategy === "github-native-binaries" ? "Checking reviewed native executables without replacing server data" : ["github-appimage", "signed-appimage"].includes(target.strategy) ? "Checking official AppImage installation integrity and version" : target.strategy === "github-jar" ? "Checking JAR integrity, server version and Java compatibility" : "Checking Steam manifest and required executables");
+    phase("validating", target.strategy === "reviewed-distro-native" ? "Checking reviewed native package, root ownership and host libraries" : job.key === "terraria" ? "Checking reviewed Terraria Linux package and runtime dependencies" : job.key === "factorio" ? "Checking Factorio headless executable, base data and package integrity" : target.strategy === "github-native-binaries" ? "Checking reviewed native executables without replacing server data" : ["github-appimage", "signed-appimage"].includes(target.strategy) ? "Checking official AppImage installation integrity and version" : target.strategy === "github-jar" ? "Checking JAR integrity, server version and Java compatibility" : "Checking Steam manifest and required executables");
     const prepared = job.action === "update" ? stage : previous;
     const verified = verifyInstallation(prepared, job.key);
     if (job.key === "openra") validateOpenRABaseline(prepared);
@@ -158,7 +167,8 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
       const source = store.read(job.rollbackId);
       store.write({ ...source, rollbackConsumed: true });
     }
-    phase("completed", job.key === "terraria" ? "Reviewed Terraria Linux installation ready. Saved worlds were not changed. New server versions require a new reviewed package and matching client/world compatibility checks."
+    phase("completed", target.strategy === "reviewed-distro-native" ? "Reviewed native server ready. Operating-system packages and saved data were not changed. New package versions require compatibility review."
+      : job.key === "terraria" ? "Reviewed Terraria Linux installation ready. Saved worlds were not changed. New server versions require a new reviewed package and matching client/world compatibility checks."
       : job.key === "factorio"
       ? "Factorio installation ready. Saved worlds were not changed. Back up the world before starting a newer version: binary rollback does not restore or guarantee compatibility with older save formats."
       : job.key === "barotrauma" ? "Installation ready. Private runtimes refresh on their next start, retaining current saves and the previous runtime. Binary rollback does not restore or guarantee compatibility with older save formats."
@@ -168,7 +178,7 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
     const uncertain = activated || (job.status === "activating" && !fs.existsSync(activePath));
     phase(uncertain ? "interrupted" : "failed", uncertain
       ? "Activation needs operator inspection. New starts remain blocked; the rollback copy is retained."
-      : error instanceof Error && /^(Not enough|An affected|SteamCMD|Mindustry|OpenRA|OpenHV|OpenE2140|Hypersomnia|AssaultCube|Factorio|Terraria|Update command|Update stopped|Cannot verify|Barotrauma|Unexpected Barotrauma|Invalid Barotrauma)/.test(error.message)
+      : error instanceof Error && /^(Not enough|An affected|Native package|SteamCMD|Mindustry|OpenRA|OpenHV|OpenE2140|Hypersomnia|AssaultCube|Factorio|Terraria|Update command|Update stopped|Cannot verify|Barotrauma|Unexpected Barotrauma|Invalid Barotrauma)/.test(error.message)
         ? error.message : "Update failed before activation; the previous installation was preserved");
     // Retain partial staging files for diagnosis. Never recurse into customer save links.
   }

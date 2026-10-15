@@ -5,8 +5,35 @@ import os from "node:os";
 import path from "node:path";
 import { spawn, execFileSync } from "node:child_process";
 import { customerIsolationLaunch, validateCustomerPreparation, CUSTOMER_ISOLATION_GAMES } from "./customerIsolation.js";
+import { NATIVE_PACKAGE_PROFILES } from "./nativePackageUpdates.js";
 
 const id = "0123456789abcdef01234567";
+for (const [gameSlug, profile] of Object.entries(NATIVE_PACKAGE_PROFILES)) {
+  const root = path.join("/opt/playbound-host/games", gameSlug);
+  const binary = path.join(root, profile.binary);
+  test(`${gameSlug} reviewed managed binary has only a read-only native mount`, { skip: process.platform !== "linux" || !fs.existsSync(binary) || !fs.existsSync("/usr/bin/bwrap") }, () => {
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "pb-managed-native-sandbox-"));
+    try {
+      let args = gameSlug === "bzflag" ? ["-p", "5174", "-offa", "-q", "-j", "+r", "+s", "3", "-mp", "4"] : ["-p", "46650"];
+      if (gameSlug === "openttd") {
+        const config = path.join(home, "openttd", `pb-${id.slice(-16)}.cfg`);
+        fs.mkdirSync(path.dirname(config)); fs.writeFileSync(config, "[network]\nmax_clients = 4\n");
+        args = ["-D", "0.0.0.0:3999", "-c", config];
+      }
+      if (gameSlug === "luanti") {
+        const data = path.join(home, "luanti-servers", `pb-${id}`), config = path.join(data, "world", "playbound.conf");
+        fs.mkdirSync(path.dirname(config), { recursive: true, mode: 0o700 }); fs.writeFileSync(config, "server_announce = false\nmax_users = 4\n");
+        args = ["--port", "30020", "--world", path.dirname(config), "--gameid", "minetest", "--config", config, "--logfile", path.join(data, "minetest.log")];
+      }
+      const plan = customerIsolationLaunch({ gameSlug, customerOwned: true, communityServerId: id, binary, args, home });
+      const mount = plan.args.findIndex((arg, i) => arg === "--ro-bind" && plan.args[i + 1] === binary);
+      assert.ok(mount >= 0); assert.equal(plan.args[mount + 2], profile.systemBinary);
+      const delimiter = plan.args.lastIndexOf("--");
+      const result = execFileSync(plan.binary, [...plan.args.slice(0, delimiter + 1), "/usr/bin/sh", "-c", `test ! -e /opt/playbound-host/agent && test ! -e /etc/playbound-game-host.env && test ! -e /var/lib/playbound-host && test -z "$FIXTURE_SECRET" && ! touch '${profile.systemBinary}' && echo verified`], { env: { ...plan.env, FIXTURE_SECRET: "fixture-only" }, encoding: "utf8", timeout: 10000 });
+      assert.match(result, /verified/);
+    } finally { fs.rmSync(home, { recursive: true, force: true }); }
+  });
+}
 test("UID handoff is opt-in and never replaces an existing data folder with an empty server", { skip: process.platform !== "linux" || !fs.existsSync("/usr/games/teeworlds-server") }, () => {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), "pb-uid-plan-"));
   try {

@@ -1,0 +1,40 @@
+{
+  "bzflag": {
+    "name": "BZFlag",
+    "version": "2.4.26-1build3",
+    "url": "https://archive.ubuntu.com/ubuntu/pool/universe/b/bzflag/bzflag-server_2.4.26-1build3_amd64.deb",
+    "archiveBytes": 1016426,
+    "archiveSha256": "4f01cf9920f53cb14918c3dee03d2a548746ca935a5a176a4465105c74c6fcca",
+    "member": "usr/games/bzfs",
+    "binary": "bzfs",
+    "binaryBytes": 1983288,
+    "binarySha256": "339b4284b02a055dd74d3c9526e7a2f09c1b3b1e1486941fd57efaf28fca5dfd",
+    "systemBinary": "/usr/games/bzfs"
+  },
+  "openttd": {
+    "name": "OpenTTD", "version": "13.4-1build3",
+    "url": "https://archive.ubuntu.com/ubuntu/pool/universe/o/openttd/openttd_13.4-1build3_amd64.deb",
+    "archiveBytes": 3076022, "archiveSha256": "b17e0e610c7fc57418a2634ef894d4847040911d67f92411b034a96eb872792c",
+    "member": "usr/games/openttd", "binary": "openttd", "binaryBytes": 9496360,
+    "binarySha256": "0644520a99bfe85df3b7d6b4aff856c6e47f2491a7407b656e746d07d3d6e839", "systemBinary": "/usr/games/openttd"
+  },
+  "luanti": {
+    "name": "Luanti (Minetest)", "version": "5.6.1+dfsg+~1.9.0mt8+dfsg-4build3",
+    "url": "https://archive.ubuntu.com/ubuntu/pool/universe/m/minetest/minetest-server_5.6.1+dfsg+~1.9.0mt8+dfsg-4build3_amd64.deb",
+    "archiveBytes": 1761444, "archiveSha256": "93fc4037edc57dabcde79c2a06927cca0548486df9b8409b1319a1ebff698f3e",
+    "member": "usr/lib/minetest/minetestserver", "binary": "minetestserver", "binaryBytes": 4325584,
+    "binarySha256": "034638e9c5826ae553f14943e3abb69083b6177fbced347a0111e5ab897b53a3", "systemBinary": "/usr/lib/minetest/minetestserver"
+  },
+  "hedgewars": {
+    "name": "Hedgewars",
+    "version": "1.0.2-9build5",
+    "url": "https://archive.ubuntu.com/ubuntu/pool/universe/h/hedgewars/hedgewars_1.0.2-9build5_amd64.deb",
+    "archiveBytes": 6357872,
+    "archiveSha256": "ea694c60f430cad43a12eefeeb633175a89a71ebb5e1e330ff75f7d951d77d7a",
+    "member": "usr/lib/hedgewars/bin/hedgewars-server",
+    "binary": "hedgewars-server",
+    "binaryBytes": 21576136,
+    "binarySha256": "1a939d287e6ced7cd0d118452860b31c534dde837c9c99c97730a8ef4f28c950",
+    "systemBinary": "/usr/lib/hedgewars/bin/hedgewars-server"
+  }
+}
