@@ -12,7 +12,7 @@ New games must complete `docs/dedicated-server-game-checklist.md`.
 Assess each feature per engine: applicable and verified, not yet implemented,
 or unavailable with a concrete engine/transport reason. The universal scope is
 a release requirement, not a claim that every engine supports bots or plugins.
-Keep current sixteen-game update support and thirteen-game file support explicit
+Keep current twenty-game update support and thirteen-game file support explicit
 until the additional handlers pass their gates. No placeholder controls.
 
 ## Implementation order and gates
@@ -514,3 +514,32 @@ until the additional handlers pass their gates. No placeholder controls.
   configuration preserved. Production binaries/worlds and DB rows were not
   changed by acceptance. Human Join remains separate. Implemented coverage is
   now 16 installation families with 35 remaining game/edition entries.
+
+- BZFlag and Hedgewars add reviewed Ubuntu 24.04 x86_64 native-package updates
+  (2.4.26-1build3 and 1.0.2-9build5). Fixed HTTPS packages and native files are
+  pinned by size/SHA-256. Only the dedicated executable is extracted; no apt
+  installation, maintainer script or OS package replacement runs. Offline library
+  checks fail closed. A narrow root-owned helper promotes only the exact reviewed
+  bytes from a UUID-named worker directory; the agent receives no general root
+  command. Customer sandboxes mount that executable read-only over its system
+  path, without exposing the agent or host credentials. The root scanner detects
+  these mounts by inode while leaving untouched OS-binary processes independent.
+  VPS acceptance (2026-10-15) passed real downloads, queued update/rollback,
+  sandbox TCP startup, zero-player queries, full process-group stop, read-only
+  executable/secret boundaries and saved-file preservation for both games.
+  Existing OS binaries, running production games and DB rows were unchanged.
+  Human Join remains separate; new distro versions need pin/library/protocol
+  review rather than automatic OS upgrades. Coverage is now 18 installation
+  families with 33 remaining game/edition entries.
+
+- OpenTTD and Luanti use the same reviewed native-package mechanism, pinned to
+  Ubuntu's 13.4-1build3 and Minetest 5.6.1 package revision respectively. Luanti
+  extracts the underlying ELF server, not the OS shell wrapper; its customer
+  sandbox mounts it over the native path with explicit per-server config/logs.
+  Existing OS game data/libraries remain required and are not replaced by these
+  handlers. VPS acceptance passed download, root ownership, dependency checks,
+  queued update/rollback, sandbox/secret boundaries and engine startup for both.
+  OpenTTD answered the real zero-player query. Luanti initialized a world and
+  retained its world metadata through rollback; master-list/player-query and
+  human Join verification remain separate. No production saves or database rows
+  changed. Coverage is now 20 installation families and 31 remaining entries.

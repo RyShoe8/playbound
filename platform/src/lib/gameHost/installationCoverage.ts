@@ -6,8 +6,8 @@ type Gap = Pick<InstallationCoverageRow, "category" | "reason">;
 const PACKAGE: Gap = { category: "os-package", reason: "Needs a scoped package update handler with dependency checks and coordinated process draining. General apt access is not granted to the agent." };
 const ARCHIVE: Gap = { category: "archive", reason: "Needs a verified archive handler, installation baseline and save-preserving staged update/rollback." };
 const GAPS: Record<string, Gap> = {
-  openttd: PACKAGE, luanti: PACKAGE, hedgewars: PACKAGE, "warzone-2100": PACKAGE,
-  freeciv: PACKAGE, bzflag: PACKAGE, teeworlds: PACKAGE, supertuxkart: PACKAGE,
+  "warzone-2100": PACKAGE,
+  freeciv: PACKAGE, teeworlds: PACKAGE, supertuxkart: PACKAGE,
   openarena: PACKAGE, "0ad": PACKAGE, "battle-for-wesnoth": PACKAGE, flightgear: PACKAGE,
   xonotic: ARCHIVE, "medal-of-honor-allied-assault": ARCHIVE,
   "wolfenstein-enemy-territory": { category: "archive", reason: "Needs an ET: Legacy archive handler that preserves compatible etmain assets and validates the dedicated engine/data combination." },

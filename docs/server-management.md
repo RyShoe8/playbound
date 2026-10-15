@@ -243,7 +243,7 @@ until a root-owned scanner is explicitly configured for them.
 
 Install the scanner separately with
 `platform/game-host/install-update-scanner.sh` as root. It installs a root-owned
-helper and a sudoers rule permitting only its sixteen fixed read-only scans.
+helper and a sudoers rule permitting only its twenty fixed read-only scans.
 Workers and SteamCMD continue running as the agent service user. No game
 installation or privileged shell is run by that helper.
 
@@ -293,7 +293,7 @@ This is not complete feature parity with those platforms. FTP/SFTP,
 process-log streaming, a general task scheduler,
 plugin/Workshop installation, database administration, and customer-triggered
 binary updates are not implemented by these changes. Shared binary updates
-are deliberately admin-only and limited to the sixteen declared installation handlers. None
+are deliberately admin-only and limited to the twenty declared installation handlers. None
 of these features is represented by a nonfunctional button.
 
 No hosting backend is replaced or installed. Existing recipes, measured
@@ -472,3 +472,33 @@ TCP startup, graceful console shutdown, unchanged world bytes after rollback and
 preservation of newer configuration outside the component. Human Join remains
 separate. Source: [official server download](https://terraria.org/api/download/pc-dedicated-server/terraria-server-1458.zip)
 and [official server documentation](https://terraria.wiki.gg/wiki/Servers).
+
+### Reviewed Ubuntu native-server updates
+
+BZFlag, Hedgewars, OpenTTD and Luanti use fixed Ubuntu 24.04 amd64 packages in
+`game-host/nativePackageProfiles.json`. Package size/SHA-256 and the extracted
+native file's size/SHA-256 are reviewed against signed APT metadata and the
+installed VPS binary. New distro versions require explicit pin, library/data
+and client-protocol review. These are not automatic distribution upgrades.
+
+Only the selected ELF file is extracted by an unprivileged bounded reader.
+No package installation or maintainer script runs; OS libraries and game data
+stay in place. Missing libraries, changed bytes, extra custom files and unsafe
+links block staging. The root-owned promotion helper accepts only a fixed game
+and operation UUID and copies matching bytes into that worker directory. Install
+it as root with `game-host/install-package-native.sh`; full `install.sh` also
+installs it. Never grant apt/dpkg/shell sudo to the game service.
+
+Managed copies are root-owned. Customer sandboxes mount just that executable
+read-only over its expected system path. Luanti uses the underlying Minetest
+ELF rather than the wrapper that injects shared config/log paths. The root
+scanner checks the mounted executable inode; independent OS-binary processes
+are unchanged by these updates. Queue gating and binary rollback remain
+admin-only. Server settings, maps and worlds stay outside the native swap.
+
+VPS acceptance (2026-10-15) covered actual downloads, native-library validation,
+queued update/rollback, namespace-mounted process detection, sandbox startup,
+stop and saved-file preservation for all four. BZFlag, Hedgewars and OpenTTD
+answered zero-player queries. Luanti initialized and preserved world metadata;
+its master-list/player query was not certified by the isolated bind test.
+Human client Join remains a separate acceptance gate for all four.

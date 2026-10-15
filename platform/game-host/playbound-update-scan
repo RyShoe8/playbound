@@ -21,10 +21,27 @@ targets = {
     "assaultcube": ["assaultcube"],
     "factorio": ["factorio"],
     "terraria": ["terraria"],
+    "bzflag": ["bzflag"],
+    "hedgewars": ["hedgewars"],
+    "openttd": ["openttd"],
+    "luanti": ["luanti"],
 }
 if len(sys.argv) != 2 or sys.argv[1] not in targets:
     sys.exit(2)
 roots = [os.path.realpath("/opt/playbound-host/games/" + folder) for folder in targets[sys.argv[1]]]
+# The OS binary is not replaced by reviewed-native updates. A sandbox mounts
+# the managed file over its OS path, so match its actual inode rather than
+# incorrectly blocking on a separate, untouched system-package process.
+native_identity = None
+native_path = None
+native_paths = {"bzflag": ("bzfs", "/usr/games/bzfs"), "hedgewars": ("hedgewars-server", "/usr/lib/hedgewars/bin/hedgewars-server"), "openttd": ("openttd", "/usr/games/openttd"), "luanti": ("minetestserver", "/usr/lib/minetest/minetestserver")}
+if sys.argv[1] in native_paths:
+    binary, native_path = native_paths[sys.argv[1]]
+    try:
+        info = os.stat(roots[0] + "/" + binary)
+        native_identity = (info.st_dev, info.st_ino)
+    except FileNotFoundError:
+        pass
 if sys.argv[1] == "barotrauma":
     # The executable and cwd live in private copies, outside the shared depot.
     roots.extend(["/var/lib/playbound-host/barotrauma-servers", "/var/lib/playbound-host/barotrauma-servers-rooms"])
@@ -44,6 +61,12 @@ try:
                 value = os.readlink("/proc/" + entry + "/" + field).removesuffix(" (deleted)")
             except (FileNotFoundError, ProcessLookupError):
                 continue
+            if field == "exe" and native_identity and value == native_path:
+                try:
+                    info = os.stat("/proc/" + entry + "/exe")
+                    matched = (info.st_dev, info.st_ino) == native_identity
+                except (FileNotFoundError, ProcessLookupError):
+                    continue
             if field == "exe" and os.path.basename(value) == "java":
                 java_process = True
             if any(value == root or value.startswith(root + "/") for root in roots):

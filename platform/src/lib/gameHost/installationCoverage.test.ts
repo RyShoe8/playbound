@@ -16,13 +16,18 @@ it("every admin update target is wired to the agent, root scanner, and exact sud
     expect(sudo).toContain(`/usr/local/sbin/playbound-update-scan ${key}`);
   }
   const appIds = [...targets.matchAll(/appId: (\d+)/g)].map((match) => match[1]);
-  const archiveTargets = [...targets.matchAll(/strategy: "(?:github-(?:jar|appimage|native-binaries)|signed-appimage|official-headless-archive|official-linux-zip)"/g)];
+  const archiveTargets = [...targets.matchAll(/strategy: "(?:github-(?:jar|appimage|native-binaries)|signed-appimage|official-headless-archive|official-linux-zip|reviewed-distro-native)"/g)];
   expect(appIds.length + archiveTargets.length).toBe(INSTALLATION_UPDATE_KEYS.length);
   expect(new Set(appIds).size).toBe(appIds.length);
   expect(source("../../../game-host/install.sh")).toContain('"$AGENT_SRC/nativeArchive.py"');
   expect(source("../../../game-host/install.sh")).toContain('"$AGENT_SRC/factorioArchive.py"');
   expect(source("../../../game-host/install.sh")).toContain('"$AGENT_SRC/terrariaArchive.py"');
   expect(source("../../../game-host/install.sh")).toContain('"$AGENT_SRC/terraria1458.json"');
+  for (const file of ["nativePackageProfiles.json", "packageNativeArchive.py"]) expect(source("../../../game-host/install.sh")).toContain(`"$AGENT_SRC/${file}"`);
+  expect(source("../../../game-host/install.sh")).toContain('bash "$AGENT_SRC/install-package-native.sh"');
+  const promotion = source("../../../game-host/install-package-native.sh");
+  for (const key of ["bzflag", "hedgewars", "openttd", "luanti"]) expect(promotion).toContain(`promote-package-native.py ${key} *`);
+  expect(promotion).not.toMatch(/NOPASSWD:.*(?:apt|dpkg|bash|sh )/);
 });
 
 it("covers every offered base recipe and fails closed when an agent lacks a handler", () => {
