@@ -12,8 +12,9 @@ New games must complete `docs/dedicated-server-game-checklist.md`.
 Assess each feature per engine: applicable and verified, not yet implemented,
 or unavailable with a concrete engine/transport reason. The universal scope is
 a release requirement, not a claim that every engine supports bots or plugins.
-Keep current twenty-eight-family update support and thirteen-game file support explicit
-until the additional handlers pass their gates. No placeholder controls.
+Keep update-handler coverage, daily release-discovery coverage and per-game file
+support explicit until each additional handler passes its gates. No placeholder
+controls. The dated rollout entries below record acceptance and unresolved gaps.
 
 ## Implementation order and gates
 
@@ -27,7 +28,7 @@ until the additional handlers pass their gates. No placeholder controls.
    moderation, lifecycle, and compatibility. Expand local live controls through
    constrained typed operations; never add a cloud shell into a user's PC.
 3. **Updates for the entire inventory.** Extend installation-family handling
-   beyond the eight delivered Steam installations. Add separate verified strategies for official archives,
+   across Steam and non-Steam installations. Add separate verified strategies for official archives,
    GitHub/AppImage packages, Java/.NET, Wine/source builds, and OS-managed packages.
    OS packages may require a narrowly scoped root-owned installer; never grant
    the game agent general package-manager/shell sudo. Every handler needs offline
@@ -924,3 +925,91 @@ launcher changes require a new packaged launcher release to reach users.
 
 Validation: 552 launcher tests passed; 305 agent tests (266 passed, 39 platform
 skips); five platform coverage tests, TypeScript and affected-file lint passed.
+
+## Paired packages and reproducible source batch (2026-10-15)
+
+Warzone 2100, Trackmania, Freeciv and Hurry Curry now have separate maintenance
+handlers. Warzone owns the official Ubuntu package's engine, crash handler and
+data together without modifying OS packages. Trackmania owns only its engine
+and Packs; private UserData, logs, maps and account configuration stay outside
+package replacement. Its private package refresh and rollback preserve maps
+written after an update. Fixed sibling bindings support the engine's native
+write locations without allowing arbitrary package symlinks.
+
+Freeciv owns matching engine, library and rulesets. The legacy library's
+multiarch path remains valid on rollback. Tolua's random type-registration order
+and wall-clock comments are canonicalized in both the Lua source and the embedded
+C generator actually compiled by Meson. Two separate source trees now produce
+identical SHA-256 checksums across all 784 published files. Hurry Curry pins its
+declared source commit, Cargo.lock, admission-limit patch, compiler and Rust
+toolchain. Two unprivileged native builds produced the same executable hash.
+Workers have neither Docker access nor general root execution; the reviewed
+toolchain is installed once by an operator and is root-owned.
+
+Isolated VPS acceptance passed each game's update and rollback with saved-data
+retention. Freeciv started with its matching library/rulesets and returned zero
+players. Hurry Curry retained protocol 13, admitted two synthetic native clients,
+rejected a third at the configured cap, and reported the departure of a client.
+Trackmania answered its native LAN management handshake. Source swap/rollback
+fixtures reused the separately recorded real source builds; production jobs
+rebuild through the actual worker. These are not claims of human-client Join
+verification or occupied-load calibration.
+
+The next batch has also started: Combined Arms 1.09 passed an independently
+matched official AppImage checksum, embedded engine/mod checks, native dedicated
+TCP startup, queued update and rollback. It uses its own installation key, daily
+release discovery and conservative OpenRA start/update lock. Cold map indexing
+needs a longer startup deadline. OpenRA no longer falls back to a different
+edition's engine when the selected distribution is missing.
+
+Production agent deployment preserved all twelve managed PID/boot identities.
+Warzone's production job completed. Trackmania and legacy Freeciv were enrolled
+without moving saved data; Combined Arms' reviewed package was installed without
+changing catalog content or hosting eligibility. Freeciv and Hurry Curry
+production rebuilds completed and matched their reviewed hashes. Hurry Curry
+was confirmed empty through its native protocol, stopped for maintenance, and
+restarted under the same CommunityServer identity; its live native query reports
+zero players. The final query/edition update preserved the other eleven managed
+process identities. Coverage
+is 44 installation families and 29 daily discovery sources; seven game/edition
+entries remain, including the explicitly deferred Vintage Story.
+
+Remaining update work is concrete, not covered by another game's handler:
+
+- Freedoom: its official Zandronum download currently returns an HTML challenge,
+  not a server archive. Odamex is absent; its misleading Chocolate Doom alias
+  is now rejected. Separate Chocolate Doom/Zandronum/Odamex handlers are needed.
+  Chocolate Doom now has its own bounded native UDP occupancy query instead of
+  using Zandronum's incompatible protocol. A real isolated VPS relay returned
+  zero players/eight native slots and stopped cleanly; malformed replies and
+  unknown Odamex occupancy remain unknown. This does not certify human Join or
+  all Freedoom engine update handlers.
+- OpenRA RA2: the compatible mod/engine and original assets are absent on the
+  VPS. The ordinary OpenRA distribution must not impersonate it.
+- Open Fortress: its mod distribution is absent; the installed TF2 base remains
+  preserved while Valve's SteamCMD depot download returns Access Denied.
+- Deus Ex HX: the installed Wine game/HX integration requires a component-level
+  distribution review that preserves licensed game assets and private saves.
+- Space Station 14: review its official build manifest, paired Robust/content
+  runtime, .NET dependencies, private databases and schema compatibility.
+  The official Linux x64 package for build
+  `94087a918a2fae4571f5a529fe14ef7f5dce29a3` was downloaded and matched to the
+  publisher's SHA-256. Its engine 289.0.3 differs from installed engine 283.1.3;
+  both require .NET 10, which is installed. Shared data/configuration and
+  automatic SQLite migrations must be handled before activating an updater.
+  The installed distribution also matched its older official archive across
+  all 3,700 owned files. The newer package started with a separate data/config
+  directory and returned a real zero-player HTTP status, then stopped cleanly.
+  Existing databases were not opened or changed by that fixture. An old/new/old
+  database compatibility check and a coordinated handler remain to be done.
+- GoldenEye: Source: coordinate the Windows Source 2007 base, GE:S mod and private
+  Wine runtime rather than overwriting a running or customized private copy.
+- Vintage Story remains excluded at the owner's request.
+
+Full management parity still requires the isolation/plugin and human Join gates
+above and a packaged launcher release. The update coverage count does not close
+those gates. Validation for this batch: 335 agent tests (292 passed, 43 platform
+skips), six platform coverage tests, TypeScript, affected-file lint and Linux
+archive/native/source safeguards, including 39 affected Linux tests. Transient
+Windows rename failures in parallel runs passed when run sequentially;
+production runs on Linux.

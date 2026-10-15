@@ -48,3 +48,38 @@ test("Veloren keeps userdata outside its package and never falls back to a misma
   const cli=path.join(f.root,"veloren/userdata/server-cli/settings.ron");assert.match(fs.readFileSync(cli,"utf8"),/shutdown_signals:\[SIGTERM\]/);
   fs.writeFileSync(cli,"(web_address:\"127.0.0.1:14999\",)");await recipes.veloren.prepareSpawn(14004,{managed:true,settings:{maxPlayers:4}});assert.equal(fs.readFileSync(cli,"utf8"),'(web_address:"127.0.0.1:14999",)');
 });
+
+test("Warzone selects its paired data and refuses a missing managed engine", async t => {
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),"pb-warzone-recipe-")), previous=process.env.GAME_HOST_GAMES_DIR;process.env.GAME_HOST_GAMES_DIR=root;
+  t.after(()=>{fs.rmSync(root,{recursive:true,force:true});if(previous===undefined)delete process.env.GAME_HOST_GAMES_DIR;else process.env.GAME_HOST_GAMES_DIR=previous;});
+  fs.mkdirSync(path.join(root,"warzone-2100/runtime"),{recursive:true});fs.writeFileSync(path.join(root,"warzone-2100/run-server"),"legacy");
+  const {recipes,resolveRecipe}=await import(new URL(`./recipes.js?warzone-test=${randomUUID()}`,import.meta.url));
+  assert.equal(resolveRecipe("warzone-2100").binary,null);
+  const args=recipes["warzone-2100"].args(29980,{managed:true,settings:{}});assert.ok(args.includes(`--datadir=${path.join(root,"warzone-2100/runtime/data")}`));
+});
+
+test("Freedoom never passes an Odamex client to a Chocolate Doom alias", {skip:process.platform!=="linux"}, async t => {
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),"pb-doom-alias-")),previous=process.env.GAME_HOST_GAMES_DIR;process.env.GAME_HOST_GAMES_DIR=root;
+  t.after(()=>{fs.rmSync(root,{recursive:true,force:true});if(previous===undefined)delete process.env.GAME_HOST_GAMES_DIR;else process.env.GAME_HOST_GAMES_DIR=previous;});
+  fs.mkdirSync(path.join(root,"freedoom"));fs.writeFileSync(path.join(root,"freedoom/chocolate-server"),"wrong protocol",{mode:0o755});fs.symlinkSync("chocolate-server",path.join(root,"freedoom/odasrv"));
+  const {recipes}=await import(new URL(`./recipes.js?doom-alias-test=${randomUUID()}`,import.meta.url));
+  const selected=recipes.freedoom.resolveBinary([],{editionSlug:"odamex"});assert.notEqual(selected,path.join(root,"freedoom/odasrv"));
+});
+
+test("Trackmania permits only fixed bindings to isolated sibling mutable directories",{skip:process.platform!=="linux"},t=>{
+  const f=fixture(t);enrollPairedRuntime(f.root,"veloren",{profile:f.profile});const runtime=path.join(f.root,"runtime"),data=path.join(f.root,"UserData");fs.mkdirSync(data);fs.symlinkSync("../UserData",path.join(runtime,"UserData"));
+  assert.equal(verifyPairedTree(runtime,"trackmania",{profile:f.profile}).buildId,"old");
+  fs.unlinkSync(path.join(runtime,"UserData"));fs.symlinkSync("../../UserData",path.join(runtime,"UserData"));assert.throws(()=>verifyPairedTree(runtime,"trackmania",{profile:f.profile}),/unsafe/);
+});
+
+test("an absent OpenRA edition never starts a different installed game's engine", async t => {
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),"pb-openra-variant-")), previous=process.env.GAME_HOST_GAMES_DIR;
+  process.env.GAME_HOST_GAMES_DIR=root;
+  t.after(()=>{fs.rmSync(root,{recursive:true,force:true});if(previous===undefined)delete process.env.GAME_HOST_GAMES_DIR;else process.env.GAME_HOST_GAMES_DIR=previous;});
+  fs.mkdirSync(path.join(root,"openra"));fs.writeFileSync(path.join(root,"openra/OpenRA.Server"),"official engine");
+  const {recipes}=await import(new URL(`./recipes.js?variant-test=${randomUUID()}`,import.meta.url));
+  for(const editionSlug of ["combined-arms","openhv","e2140","ra2"])
+    for (const mod of [undefined,"ra","cnc"])
+      assert.equal(recipes.openra.resolveBinary([],{editionSlug,mod}),null,editionSlug);
+  assert.equal(recipes.openra.resolveBinary([],{editionSlug:"official"}),path.join(root,"openra/OpenRA.Server"));
+});

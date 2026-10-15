@@ -2,6 +2,16 @@ import hashlib,io,tarfile,tempfile,unittest
 from pathlib import Path
 from pairedRuntimeArchive import extract
 class Tests(unittest.TestCase):
+ def test_warzone_native_package_selects_engine_and_data_without_saves(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);p=root/'pkg.tar';rows={'warzone2100':b'engine','data/base.wz':b'data'};digest=hashlib.sha256()
+   for name,data in sorted(rows.items()):digest.update((name+'\0'+hashlib.sha256(data).hexdigest()+'\n').encode())
+   profile={'format':'tar','prefix':'./usr/','treeSha256':digest.hexdigest(),'fileCount':2,'totalBytes':10}
+   with tarfile.open(p,'w') as t:
+    for name,data in [('./usr/bin/warzone2100',b'engine'),('./usr/share/warzone2100/base.wz',b'data'),('./usr/share/doc/copyright',b'ignored'),('./var/lib/world',b'saved')]:
+     m=tarfile.TarInfo(name);m.size=len(data);t.addfile(m,io.BytesIO(data))
+   extract(p,root/'fresh','warzone-2100',profile)
+   self.assertEqual((root/'fresh/data/base.wz').read_bytes(),b'data');self.assertFalse((root/'fresh/var').exists())
  def test_package_selector_keeps_settings_and_saves_out(self):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d);p=root/'pkg.tar';data=b'controller';digest=hashlib.sha256(('bombsquad_server\0'+hashlib.sha256(data).hexdigest()+'\n').encode()).hexdigest()

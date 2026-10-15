@@ -17,6 +17,13 @@ export function verifyPairedTree(root, key, { profile = PAIRED_RUNTIMES[key] } =
     const parent = stack.pop();
     for (const name of fs.readdirSync(parent)) {
       const filename = path.join(parent, name), info = fs.lstatSync(filename), relative = path.relative(root, filename).split(path.sep).join("/");
+      // The native Trackmania engine writes beside its executable. These exact
+      // bindings keep private configuration, maps and logs outside binary swaps.
+      if (key === "trackmania" && parent === root && ["UserData", "Logs", "CommonData"].includes(name) && info.isSymbolicLink()) {
+        const target = path.resolve(root, "..", name), targetInfo = fs.lstatSync(target);
+        if (fs.readlinkSync(filename) !== "../" + name || !targetInfo.isDirectory() || targetInfo.isSymbolicLink() || fs.realpathSync(filename) !== target) throw new Error("Trackmania mutable-data binding is unsafe");
+        continue;
+      }
       if (++count > 60_000 || !safeRelative(relative) || info.isSymbolicLink()) throw new Error("Paired runtime contains an unsafe path or too many entries");
       if (info.isDirectory()) { stack.push(filename); continue; }
       if (!info.isFile() || info.nlink !== 1 || (process.platform === "linux" && info.mode & 0o7022)) throw new Error("Paired runtime contains a special or writable package file");
@@ -35,7 +42,7 @@ export function verifyPairedTree(root, key, { profile = PAIRED_RUNTIMES[key] } =
   }
   const release = profile.versions.find(version => version.treeSha256 === tree.treeSha256 && version.fileCount === tree.fileCount && version.totalBytes === tree.totalBytes);
   if (!release) throw new Error("Paired runtime engine and assets do not match a reviewed package");
-  for (const binary of profile.binaries) {
+  for (const binary of (release.binaries || profile.binaries)) {
     if (!safeRelative(binary)) throw new Error("Paired runtime binary path is invalid");
     const filename = path.join(root, binary);fs.accessSync(filename, fs.constants.X_OK);
     const fd = fs.openSync(filename, "r"), header = Buffer.alloc(20);
@@ -63,8 +70,10 @@ export function enrollPairedRuntime(root, key, { profile = PAIRED_RUNTIMES[key] 
   const fresh = path.join(root, ".pb-runtime-" + randomUUID());
   try {
     fs.mkdirSync(fresh, { mode: 0o700 });
-    for (const name of key === "bombsquad" ? ["bombsquad_server", "dist"] : ["veloren-server-cli", "assets"]) {
-      const original = path.join(root, name);
+    const legacy = key === "warzone-2100"
+      ? [["warzone2100", "/usr/bin/warzone2100"], ["crashpad_handler_warzone2100", "/usr/bin/crashpad_handler_warzone2100"], ["data", "/usr/share/warzone2100"]]
+      : (key === "bombsquad" ? ["bombsquad_server", "dist"] : key === "trackmania" ? ["TrackmaniaServer", "Packs"] : key === "freeciv" ? ["bin", "lib", "share"] : ["veloren-server-cli", "assets"]).map(name => [name, path.join(root, name)]);
+    for (const [name, original] of legacy) {
       if (fs.lstatSync(original).isSymbolicLink()) throw new Error("Paired runtime legacy files require review");
       fs.cpSync(original, path.join(fresh, name), { recursive: true, dereference: false, filter: file => !path.relative(root,file).split(path.sep).includes("__pycache__") });
     }
@@ -86,7 +95,7 @@ export function enrollPairedRuntime(root, key, { profile = PAIRED_RUNTIMES[key] 
   } finally { fs.closeSync(fd); fs.unlinkSync(lock); }
 }
 
-const HOSTS = new Set(["files.ballistica.net", "github.com", "release-assets.githubusercontent.com", "objects.githubusercontent.com"]);
+const HOSTS = new Set(["files.ballistica.net", "github.com", "release-assets.githubusercontent.com", "objects.githubusercontent.com", "nadeo-download.cdn.ubi.com"]);
 function trusted(value) {
   const url = new URL(value);
   if (url.protocol !== "https:" || !HOSTS.has(url.hostname) || url.port || url.username || url.password) throw new Error("Paired runtime redirect is untrusted");
@@ -96,6 +105,20 @@ export async function stagePairedRuntime(stage, key, { run, request = httpsGetSt
   if (!profile || !new RegExp(`^\\.pb-update-${key}-[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$`).test(path.basename(stage))) throw new Error("Paired runtime requires an isolated staging directory");
   verify(stage, key);
   const release = profile.versions.find(row => row.buildId === profile.latest);
+  if (key === "freeciv" && release?.format === "reviewed-source") {
+    const fresh = stage + "-source", previous = path.join(stage, ".paired-previous");
+    try {
+      await run("/usr/bin/python3", [fileURLToPath(new URL("./reviewedHostedSourceBuild.py", import.meta.url)), "freeciv", fresh], { timeout: 35 * 60_000, maxOutput: 8192, root: path.dirname(stage) });
+      const output = path.join(fresh, "publish/runtime");
+      if (verifyPairedTree(output, key, { profile }).buildId !== profile.latest) throw new Error("Freeciv compiled engine/libraries/data differ from review");
+      if (fs.existsSync(previous)) throw new Error("Freeciv staging needs inspection");
+      fs.renameSync(path.join(stage, "runtime"), previous);
+      try { fs.renameSync(output, path.join(stage, "runtime")); }
+      catch(error) { fs.renameSync(previous,path.join(stage,"runtime")); throw error; }
+      fs.rmSync(previous, {recursive:true});
+      return verify(stage,key);
+    } finally { if (fs.existsSync(fresh)) fs.rmSync(fresh,{recursive:true}); }
+  }
   if (!release || release.baselineOnly || !release.url) throw new Error("Paired runtime has no reviewed downloadable release");
   const archive = path.join(stage, ".paired-download"), fresh = path.join(stage, ".paired-fresh"), previous = path.join(stage, ".paired-previous");
   let response;

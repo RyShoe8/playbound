@@ -7,6 +7,16 @@ import { createDailyInstallationUpdates, latestInstallationBuild, steamPublicBui
 import { createInstallationCoordinator, createInstallationStore } from "./installationJobs.js";
 import { REVIEWED_JAVA } from "./reviewedJavaUpdates.js";
 
+test("Trackmania daily discovery uses HEAD, never downloads its large package", async () => {
+  const build=await latestInstallationBuild("trackmania",{request:async (url,input)=>{assert.equal(input.method,"HEAD");assert.equal(url,"https://nadeo-download.cdn.ubi.com/trackmania/TrackmaniaServer_Latest.zip");return new Response(null,{headers:{etag:'"017668822791cdcd01639bb436b6edee-31"'}});}});
+  assert.equal(build,"etag-017668822791cdcd01639bb436b6edee-31");
+});
+
+test("source discovery retains Hurry Curry's newer branch and Freeciv's stable channel",async()=>{
+  assert.equal(await latestInstallationBuild("hurry-curry",{request:async()=>new Response(JSON.stringify([{sha:"b".repeat(40)}]))}),"commit-"+"b".repeat(40));
+  assert.equal(await latestInstallationBuild("freeciv",{request:async()=>new Response('<a href="freeciv-3.2.5.tar.xz">stable</a><a href="freeciv-3.2.11.tar.xz">stable</a><a href="freeciv-4.0.0-beta.tar.xz">beta</a>')}),"3.2.11");
+});
+
 test("Java discovery uses the dedicated asset and tracks a mutable tag by digest", async () => {
   for (const key of ["ysoccer", "triplea"]) {
     const profile = REVIEWED_JAVA[key], tag = key === "ysoccer" ? "ysoccer-online-latest" : profile.latest;

@@ -24,9 +24,14 @@ targets = {
     "veloren": ["veloren"],
     "ysoccer": ["ysoccer"],
     "triplea": ["triplea"],
+    "warzone-2100": ["warzone-2100"],
+    "trackmania": ["trackmania"],
+    "freeciv": ["freeciv"],
+    "hurry-curry": ["hurry-curry"],
     "mindustry": ["mindustry"],
     "openra": ["openra"],
     "openhv": ["openhv"],
+    "combined-arms": ["combined-arms"],
     "earth-2140-trilogy": ["earth-2140-trilogy", "opene2140"],
     "hypersomnia": ["hypersomnia"],
     "assaultcube": ["assaultcube"],
@@ -66,6 +71,8 @@ if sys.argv[1] == "barotrauma":
     roots.extend(["/var/lib/playbound-host/barotrauma-servers", "/var/lib/playbound-host/barotrauma-servers-rooms"])
 if sys.argv[1] == "aneurism-iv":
     roots.append("/var/lib/playbound-host/aneurism-iv-servers")
+if sys.argv[1] == "trackmania":
+    roots.extend(["/var/lib/playbound-host/trackmania-servers", "/var/lib/playbound-host/trackmania-servers-rooms"])
 if sys.argv[1] == "mindustry":
     roots.append("/var/lib/playbound-host/mindustry")
 if sys.argv[1] == "hypersomnia":
@@ -94,6 +101,8 @@ try:
                     matched = matched or (info.st_dev, info.st_ino) == native_identity
                 except (FileNotFoundError, ProcessLookupError):
                     continue
+            if sys.argv[1] == "warzone-2100" and field == "exe" and value in ("/usr/bin/warzone2100", "/usr/bin/crashpad_handler_warzone2100"):
+                matched = True
             if field == "exe" and os.path.basename(value) == "java":
                 java_process = True
             if any(value == root or value.startswith(root + "/") for root in roots):

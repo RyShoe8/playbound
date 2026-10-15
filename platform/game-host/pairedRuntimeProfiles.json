@@ -54,5 +54,72 @@
         "archiveSha256": "5fdc9811885b8bba4b1cb4ed66afc71e2b52909a4f93f7823a0c94f33c3d00cb"
       }
     ]
+  },
+  "warzone-2100": {
+    "latest": "4.7.0",
+    "component": "runtime",
+    "binaries": [
+      "warzone2100",
+      "crashpad_handler_warzone2100"
+    ],
+    "versions": [
+      {
+        "buildId": "4.7.0",
+        "treeSha256": "9e00e304e18ce926be8e5d8cdb82d6de156eb313ae2d3d15a0ea611312ce512c",
+        "fileCount": 66,
+        "totalBytes": 453388886,
+        "format": "deb",
+        "url": "https://github.com/Warzone2100/warzone2100/releases/download/4.7.0/warzone2100_ubuntu24.04_amd64.deb",
+        "archiveBytes": 393126664,
+        "archiveSha256": "5c6ad94cb6753cd8cfec9b38a4c0686d04802eaf1aa55289eda40d1f1709cd72"
+      }
+    ]
+  },
+  "trackmania": {
+    "latest": "etag-017668822791cdcd01639bb436b6edee-31",
+    "component": "runtime",
+    "binaries": [
+      "TrackmaniaServer"
+    ],
+    "versions": [
+      {
+        "buildId": "etag-017668822791cdcd01639bb436b6edee-31",
+        "treeSha256": "7f47cdf20688574c60312fdc4d1c13dfc25e6b7308b72872cf9852d3b1ec3d4c",
+        "fileCount": 5,
+        "totalBytes": 369363688,
+        "format": "zip",
+        "url": "https://nadeo-download.cdn.ubi.com/trackmania/TrackmaniaServer_Latest.zip",
+        "archiveBytes": 253509378,
+        "archiveSha256": "5379519e729b882f67892b593c65bfe6ff11989e55f3ddd1ca6ab3029ca1df1a"
+      }
+    ]
+  },
+  "freeciv": {
+    "latest": "3.2.5",
+    "component": "runtime",
+    "binaries": [
+      "bin/freeciv-server",
+      "lib/libfreeciv.so"
+    ],
+    "versions": [
+      {
+        "buildId": "legacy-3.2.5",
+        "treeSha256": "1971d018e21c36daef408d914d2787eefe7f275607b151aa64c1800b59b15504",
+        "fileCount": 784,
+        "totalBytes": 25573423,
+        "baselineOnly": true,
+        "binaries": [
+          "bin/freeciv-server",
+          "lib/x86_64-linux-gnu/libfreeciv.so"
+        ]
+      },
+      {
+        "buildId": "3.2.5",
+        "treeSha256": "3623a2b4276c51cd13dd36d1da994c77c3e03235d80a5adfa7cd343760d65f80",
+        "fileCount": 784,
+        "totalBytes": 15840607,
+        "format": "reviewed-source"
+      }
+    ]
   }
 }

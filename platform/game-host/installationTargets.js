@@ -18,6 +18,8 @@ import { verifyUnvanquishedInstallation } from "./unvanquishedUpdates.js";
 import { verifyReviewedComponent } from "./reviewedComponentUpdates.js";
 import { verifyPairedInstallation } from "./pairedRuntimeUpdates.js";
 import { verifyReviewedJava } from "./reviewedJavaUpdates.js";
+import { verifyHurryInstallation } from "./hurryUpdates.js";
+import { verifyCombinedArmsInstallation } from "./combinedArmsUpdates.js";
 
 // These are shared installations, not per-customer save directories.
 export const INSTALLATION_TARGETS = Object.freeze({
@@ -39,12 +41,17 @@ export const INSTALLATION_TARGETS = Object.freeze({
   "re-volt-rvgl": { name: "RVGL (reviewed Linux engine)", strategy: "reviewed-component", component: "rvgl.64" },
   morrowind: { name: "Morrowind (reviewed TES3MP engine)", strategy: "reviewed-component", component: "tes3mp-server.x86_64" },
   bombsquad: { name: "BombSquad (paired controller and game distribution)", strategy: "paired-runtime", component: "runtime" },
+  trackmania: { name: "Trackmania (paired dedicated engine and Packs)", strategy: "paired-runtime", component: "runtime" },
+  freeciv: { name: "Freeciv (matching reviewed engine, library and rulesets)", strategy: "paired-runtime", component: "runtime" },
+  "hurry-curry": { name: "Hurry Curry (reviewed patched Rust source)", strategy: "reviewed-rust-source", component: "hurrycurry-server" },
+  "warzone-2100": { name: "Warzone 2100 (paired official engine and game data)", strategy: "paired-runtime", component: "runtime" },
   veloren: { name: "Veloren (paired weekly engine and assets)", strategy: "paired-runtime", component: "runtime" },
   ysoccer: { name: "YSoccer (PlayBound dedicated Java server)", strategy: "reviewed-java", component: "ysoccer-server.jar" },
   triplea: { name: "TripleA (reviewed Java 25 headless server)", strategy: "reviewed-java", component: "bin" },
   mindustry: { name: "Mindustry", strategy: "github-jar" },
   openra: { name: "OpenRA (Red Alert, Tiberian Dawn, Dune 2000)", strategy: "github-appimage" },
   openhv: { name: "OpenHV", strategy: "github-appimage" },
+  "combined-arms": { name: "OpenRA · Combined Arms", strategy: "github-appimage" },
   "earth-2140-trilogy": { name: "Earth 2140 Trilogy (OpenE2140)", strategy: "github-appimage" },
   hypersomnia: { name: "Hypersomnia", strategy: "signed-appimage" },
   assaultcube: { name: "AssaultCube (native binaries)", strategy: "github-native-binaries", component: "bin_unix" },
@@ -76,7 +83,7 @@ export function installationKey(slug) {
 // OpenRA editions can select (or fall back to) the shared variant binaries.
 // Hold these installations conservatively, including while a start is pending.
 export function installationDependencies(slug) {
-  if (slug === "openra") return ["openra", "openhv", "earth-2140-trilogy"];
+  if (slug === "openra") return ["openra", "openhv", "earth-2140-trilogy", "combined-arms"];
   const key = installationKey(slug);
   return key ? [key] : [];
 }
@@ -88,6 +95,7 @@ export function verifyInstallation(directory, key) {
   if (!root.isDirectory() || root.isSymbolicLink()) throw new Error("Installation must be a real directory");
   if (target.strategy === "github-jar") return verifyMindustryInstallation(directory);
   if (key === "openhv") return verifyOpenHVInstallation(directory);
+  if (key === "combined-arms") return verifyCombinedArmsInstallation(directory);
   if (key === "earth-2140-trilogy") return verifyOpenE2140Installation(directory);
   if (key === "hypersomnia") return verifyHypersomniaInstallation(directory);
   if (key === "assaultcube") return verifyAssaultCubeInstallation(directory);
@@ -100,6 +108,7 @@ export function verifyInstallation(directory, key) {
   if (target.strategy === "reviewed-component") return verifyReviewedComponent(directory, key);
   if (target.strategy === "paired-runtime") return verifyPairedInstallation(directory, key);
   if (target.strategy === "reviewed-java") return verifyReviewedJava(directory, key);
+  if (target.strategy === "reviewed-rust-source") return verifyHurryInstallation(directory);
   if (target.strategy === "reviewed-distro-native") return verifyNativePackageInstallation(directory, key);
   if (target.strategy === "reviewed-dotnet-source") return verifyRimworldInstallation(directory);
   if (target.strategy === "reviewed-cmake-source") return verifyFgmsInstallation(directory);

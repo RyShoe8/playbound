@@ -24,7 +24,7 @@ function validMax(n) {
 }
 
 /** Send one UDP datagram to 127.0.0.1:port and resolve with the first reply (or null). */
-function udpRequest(port, payload, { timeoutMs = TIMEOUT_MS, accept = () => true } = {}) {
+function udpRequest(port, payload, { timeoutMs = TIMEOUT_MS, accept = () => true, localReplyOnly = false } = {}) {
   if (!Number.isInteger(port) || port < 1 || port > 65535) return Promise.resolve(null);
   return new Promise((resolve) => {
     const socket = dgram.createSocket("udp4");
@@ -38,9 +38,28 @@ function udpRequest(port, payload, { timeoutMs = TIMEOUT_MS, accept = () => true
     };
     const timer = setTimeout(() => finish(null), timeoutMs);
     socket.on("error", () => finish(null));
-    socket.on("message", (packet) => { if (accept(packet)) finish(packet); });
+    socket.on("message", (packet, peer) => {
+      if (localReplyOnly && (peer.address !== "127.0.0.1" || peer.port !== port)) return;
+      if (accept(packet)) finish(packet);
+    });
     socket.send(payload, port, "127.0.0.1", (error) => { if (error) finish(null); });
   });
+}
+
+// Chocolate Doom net_defs.h / net_structrw.c: big-endian QUERY_RESPONSE,
+// NUL-terminated version, five one-byte fields, then a terminated description.
+export function parseChocolateDoomStatus(packet) {
+  if (!Buffer.isBuffer(packet) || packet.length < 9 || packet.length > 4096 || packet.readUInt16BE(0) !== 14) return null;
+  const versionEnd = packet.indexOf(0, 2);
+  if (versionEnd < 3 || versionEnd > 130 || versionEnd + 6 >= packet.length) return null;
+  const state = packet[versionEnd + 1], players = packet[versionEnd + 2], maximum = packet[versionEnd + 3];
+  if (state > 2 || players > 8 || maximum > 8 || (maximum > 0 && players > maximum) || packet.indexOf(0, versionEnd + 6) < 0) return null;
+  return { players, maxPlayers: validMax(maximum), bots: 0 };
+}
+
+export async function queryChocolateDoom(port) {
+  const reply = await udpRequest(port, Buffer.from([0, 13]), { localReplyOnly: true, accept: packet => parseChocolateDoomStatus(packet) !== null });
+  return reply ? parseChocolateDoomStatus(reply) : null;
 }
 
 /* ── Quake 3 family: getstatus ─────────────────────────────────────────── */
@@ -647,7 +666,12 @@ export async function queryRoomOccupancy(room) {
     ? queryTeeworlds(room.port, { host: room.host || "" }) : queryTeeworlds(room.port);
   if (slug === "supertuxkart") return querySuperTuxKart(room.port);
   if (slug === "flightgear") return queryFlightGear(room.port);
-  if (slug === "freedoom") return queryZandronum(room.port);
+  if (slug === "freedoom") {
+    const edition = String(room.editionSlug || "").toLowerCase();
+    if (edition.includes("odamex")) return null; // Requires its own protocol adapter.
+    if (edition.includes("chocolate") || edition.includes("crispy")) return queryChocolateDoom(room.port);
+    return queryZandronum(room.port);
+  }
   if (slug === "bombsquad") return queryBombSquad(room.port);
   if (TCP_CLIENT_GAMES.has(slug)) return queryTcpClients(room.port);
   if (slug === "veloren") {

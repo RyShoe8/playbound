@@ -23,6 +23,8 @@ import { stageUnvanquishedRelease, validateUnvanquishedOverrides } from "./unvan
 import { stageReviewedComponent, validInstallationComponent } from "./reviewedComponentUpdates.js";
 import { stagePairedRuntime } from "./pairedRuntimeUpdates.js";
 import { stageReviewedJava } from "./reviewedJavaUpdates.js";
+import { stageHurryRelease } from "./hurryUpdates.js";
+import { stageCombinedArmsRelease } from "./combinedArmsUpdates.js";
 
 const GIB = 1024 ** 3;
 
@@ -79,7 +81,7 @@ export function runCommand(command, args, { root, timeout = 90 * 60_000, maxOutp
 }
 
 // Injection is only for isolated tests, never an HTTP input or downloaded script.
-export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run = runCommand, scan = scanInstallation, disk = diskAvailable, hostHome = process.env.HOME, stageRelease = stageMindustryRelease, stageArchive = stageOpenRARelease, stageOpenHV = stageOpenHVRelease, stageOpenE2140 = stageOpenE2140Release, stageHypersomnia = stageHypersomniaRelease, stageAssaultCube = stageAssaultCubeRelease, stageFactorio = stageFactorioRelease, stageTerraria = stageTerrariaRelease, stageXonotic = stageXonoticRelease } = {}) {
+export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run = runCommand, scan = scanInstallation, disk = diskAvailable, hostHome = process.env.HOME, stageRelease = stageMindustryRelease, stageArchive = stageOpenRARelease, stageOpenHV = stageOpenHVRelease, stageCombinedArms = stageCombinedArmsRelease, stageOpenE2140 = stageOpenE2140Release, stageHypersomnia = stageHypersomniaRelease, stageAssaultCube = stageAssaultCubeRelease, stageFactorio = stageFactorioRelease, stageTerraria = stageTerrariaRelease, stageXonotic = stageXonoticRelease } = {}) {
   const store = createInstallationStore(stateDir);
   let job = store.read(id);
   const target = INSTALLATION_TARGETS[job.key];
@@ -120,7 +122,10 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
       // their bytes, then the fixed promotion helper restores trusted ownership.
       await run("/usr/bin/cp", ["-a", ...(["reviewed-distro-native", "reviewed-native-zip"].includes(target.strategy) ? ["--no-preserve=ownership"] : []), "--reflink=auto", "--sparse=always", "--", activePath, stagedPath], { root: gamesRoot });
       const detachedLinks = prepareInstallationLinks(stage, current, true);
-      if (target.strategy === "reviewed-java") {
+      if (target.strategy === "reviewed-rust-source") {
+        phase("downloading", "Building the locked, reviewed Hurry Curry source with the player-admission patch; game data and replays remain in place");
+        await stageHurryRelease(stage, {run});
+      } else if (target.strategy === "reviewed-java") {
         phase("downloading", "Verifying the reviewed dedicated JAR and installed Java; maps, configuration and saves remain outside the swap");
         await stageReviewedJava(stage, job.key, { run, diskCheck: () => {
           const available = disk(gamesRoot);
@@ -194,7 +199,7 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
         } });
       } else if (["github-appimage", "signed-appimage"].includes(target.strategy)) {
         phase("downloading", job.key === "openra" ? "Verifying and extracting the three official OpenRA packages" : `Verifying the official ${target.name} AppImage and embedded game version`);
-        const prepare = job.key === "hypersomnia" ? stageHypersomnia : job.key === "openhv" ? stageOpenHV : job.key === "earth-2140-trilogy" ? stageOpenE2140 : stageArchive;
+        const prepare = job.key === "hypersomnia" ? stageHypersomnia : job.key === "combined-arms" ? stageCombinedArms : job.key === "openhv" ? stageOpenHV : job.key === "earth-2140-trilogy" ? stageOpenE2140 : stageArchive;
         await prepare(stage, { run, diskCheck: () => {
           const available = disk(gamesRoot);
           if (available.free < available.reserve + 3 * GIB) throw new Error("Update stopped to preserve free disk space");

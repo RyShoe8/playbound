@@ -857,6 +857,8 @@ export const recipes = {
     portStart: 1234,
     portEnd: 1250,
     protocol: "tcp",
+    // Combined Arms indexes its bundled map catalog on a cold start.
+    startupReadyTimeoutMs: 120_000,
     binaries: [
       ...gameBin("openra", ["OpenRA.Server", "openra-server"]),
       ...gameBin("combined-arms", ["OpenRA.Server", "openra-server"]),
@@ -866,14 +868,12 @@ export const recipes = {
     ],
     resolveBinary: (candidates, ctx) => {
       const ed = String(ctx?.editionSlug || "").toLowerCase();
-      const mod = String(ctx?.mod || openRaMod(ctx?.editionSlug) || "").toLowerCase();
+      const mod = resolveOpenRaServerMod(ctx);
       if (ed.includes("combined") || ed === "ca" || mod === "ca") {
-        const caBin = firstExisting(gameBin("combined-arms", ["OpenRA.Server", "openra-server"]));
-        if (caBin) return caBin;
+        return firstExisting(gameBin("combined-arms", ["OpenRA.Server", "openra-server"]));
       }
       if (ed.includes("openhv") || ed === "hv" || mod === "hv") {
-        const hvBin = firstExisting(gameBin("openhv", ["OpenHV.Server", "openhv-server", "OpenRA.Server"]));
-        if (hvBin) return hvBin;
+        return firstExisting(gameBin("openhv", ["OpenHV.Server", "openhv-server", "OpenRA.Server"]));
       }
       if (
         ed.includes("e2140") ||
@@ -881,13 +881,13 @@ export const recipes = {
         ed.includes("earth-2140") ||
         mod === "e2140"
       ) {
-        const eBin = firstExisting([
+        return firstExisting([
           ...gameBin("earth-2140-trilogy", ["OpenRA.Server", "OpenE2140", "openra-server"]),
           ...gameBin("opene2140", ["OpenRA.Server", "OpenE2140", "openra-server"]),
         ]);
-        if (eBin) return eBin;
       }
-      return firstExisting(candidates);
+      if (mod === "ra2" || mod === "ts") return null; // No reviewed RA2/TS engine and assets exist.
+      return firstExisting(gameBin("openra", ["OpenRA.Server", "openra-server"]));
     },
     args: (port, ctx, binary) => [
       ...appImageServerArgs(binary),
@@ -1124,8 +1124,9 @@ export const recipes = {
     portEnd: 2120,
     protocol: "both",
     binaries: gameBin("warzone-2100", ["run-server", "warzone2100"]),
-    resolveBinary: () =>
-      firstExisting([
+    resolveBinary: () => fs.existsSync(path.join(GAMES_ROOT, "warzone-2100/runtime"))
+      ? firstExisting([path.join(GAMES_ROOT, "warzone-2100/runtime/warzone2100")])
+      : firstExisting([
         path.join(GAMES_ROOT, "warzone-2100", "run-server"),
         "/usr/games/warzone2100.real",
         "/usr/lib/warzone2100/warzone2100.real",
@@ -1144,6 +1145,7 @@ export const recipes = {
       );
     },
     args: (port, ctx) => [
+      ...(fs.existsSync(path.join(GAMES_ROOT, "warzone-2100/runtime")) ? [`--datadir=${path.join(GAMES_ROOT, "warzone-2100/runtime/data")}`] : []),
       `--configdir=${ctx?.customerOwned ? customerHomeDir("warzone-2100-servers", ctx) : WZ_CONFIG_DIR}`,
       // Warzone 4.7 resolves the name literally; without ".json" it reports
       // "Missing specified file: autohost/<id>" and exits.
@@ -1161,6 +1163,8 @@ export const recipes = {
     portEnd: 5576,
     protocol: "tcp",
     binaries: gameBin("freeciv", ["freeciv-server"]),
+    resolveBinary: () => fs.existsSync(path.join(GAMES_ROOT,"freeciv/runtime")) ? firstExisting([path.join(GAMES_ROOT,"freeciv/runtime/bin/freeciv-server")]) : firstExisting(gameBin("freeciv",["freeciv-server"])),
+    cwd: (_port,ctx) => ctx?.customerOwned ? customerHomeDir("freeciv-servers",ctx) : path.join(GAMES_ROOT,"freeciv"),
     args: (port, ctx) => [
       "-p", String(port),
       ...(ctx?.managed ? ["--read", freecivScriptPath(ctx)] : []),
@@ -1172,7 +1176,10 @@ export const recipes = {
       if (ctx.customerOwned) fs.mkdirSync(freecivSavesDir(ctx), { recursive: true, mode: 0o700 });
       fs.writeFileSync(freecivScriptPath(ctx), `set maxplayers ${managedPlayerLimit(ctx)}\n`, "utf8");
     },
-    spawnEnv: (port, ctx) => (ctx?.customerOwned ? isolatedHomeEnv("freeciv-servers")(port, ctx) : {}),
+    spawnEnv: (port, ctx) => ({
+      ...(ctx?.customerOwned ? isolatedHomeEnv("freeciv-servers")(port, ctx) : {}),
+      ...(fs.existsSync(path.join(GAMES_ROOT,"freeciv/runtime")) ? {LD_LIBRARY_PATH:["lib","lib/x86_64-linux-gnu"].map(name=>path.join(GAMES_ROOT,"freeciv/runtime",name)).join(path.delimiter),FREECIV_DATA_PATH:path.join(GAMES_ROOT,"freeciv/runtime/share/freeciv")} : {}),
+    }),
   },
   bzflag: {
     // Ubuntu's bzflag-server unit commonly owns/restarts on the default 5154.
@@ -1788,7 +1795,15 @@ export const recipes = {
     resolveBinary: (_candidates, ctx) => {
       const edition = String(ctx?.editionSlug || "").toLowerCase();
       if (edition.includes("odamex")) {
-        return firstExisting(gameBin("freedoom", ["odasrv", "odamex-server"]));
+        // Legacy installs can alias odasrv to chocolate-server. A filename
+        // alias does not make incompatible Doom network protocols compatible.
+        return gameBin("freedoom", ["odasrv", "odamex-server"]).find(filename => {
+          try {
+            fs.accessSync(filename, fs.constants.X_OK);
+            return fs.statSync(filename).isFile() && /^(?:odasrv|odamex-server)(?:\.exe)?$/i.test(path.basename(fs.realpathSync(filename)));
+          }
+          catch { return false; }
+        }) || null;
       }
       if (edition.includes("chocolate") || edition.includes("crispy")) {
         return firstExisting(

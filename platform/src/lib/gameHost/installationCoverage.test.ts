@@ -16,7 +16,7 @@ it("every admin update target is wired to the agent, root scanner, and exact sud
     expect(sudo).toContain(`/usr/local/sbin/playbound-update-scan ${key}`);
   }
   const appIds = [...targets.matchAll(/appId: (\d+)/g)].map((match) => match[1]);
-  const archiveTargets = [...targets.matchAll(/strategy: "(?:github-(?:jar|appimage|native-binaries)|signed-appimage|official-headless-archive|official-linux-zip|reviewed-distro-native|reviewed-dotnet-source|reviewed-cmake-source|reviewed-native-zip|reviewed-etlegacy-package|reviewed-openmohaa-package|reviewed-unvanquished-package|reviewed-component|paired-runtime|reviewed-java)"/g)];
+  const archiveTargets = [...targets.matchAll(/strategy: "(?:github-(?:jar|appimage|native-binaries)|signed-appimage|official-headless-archive|official-linux-zip|reviewed-distro-native|reviewed-dotnet-source|reviewed-cmake-source|reviewed-native-zip|reviewed-etlegacy-package|reviewed-openmohaa-package|reviewed-unvanquished-package|reviewed-component|paired-runtime|reviewed-java|reviewed-rust-source)"/g)];
   expect(appIds.length + archiveTargets.length).toBe(INSTALLATION_UPDATE_KEYS.length);
   expect(new Set(appIds).size).toBe(appIds.length);
   expect(source("../../../game-host/install.sh")).toContain('"$AGENT_SRC/nativeArchive.py"');
@@ -27,6 +27,7 @@ it("every admin update target is wired to the agent, root scanner, and exact sud
   for (const file of ["reviewedComponentProfiles.json", "reviewedComponentUpdates.js", "reviewedComponentArchive.py"]) expect(source("../../../game-host/install.sh")).toContain(`"$AGENT_SRC/${file}"`);
   for (const file of ["pairedRuntimeProfiles.json", "pairedRuntimeUpdates.js", "pairedRuntimeArchive.py", "pairedRuntimeEnroll.js"]) expect(source("../../../game-host/install.sh")).toContain(`"$AGENT_SRC/${file}"`);
   for (const file of ["reviewedJavaProfiles.json", "reviewedJavaUpdates.js", "reviewedJavaArchive.py"]) expect(source("../../../game-host/install.sh")).toContain(`"$AGENT_SRC/${file}"`);
+  for (const file of ["hurryUpdates.js", "sourceRuntimeBuilds.json", "reviewedHostedSourceBuild.py", "trackmaniaRuntime.js"]) expect(source("../../../game-host/install.sh")).toContain(`"$AGENT_SRC/${file}"`);
   expect(source("../../../game-host/install.sh")).toContain("7zip python3");
   expect(source("../../../game-host/install.sh")).toContain('bash "$AGENT_SRC/install-package-native.sh"');
   const promotion = source("../../../game-host/install-package-native.sh");
@@ -70,13 +71,21 @@ it("never silently omits an agent-only recipe or creates an action for it", () =
   expect(rows.some((row) => row.id === "cs2")).toBe(false);
 });
 
+it("shows Combined Arms once and never offers its action before the agent exposes it", () => {
+  const missing = buildInstallationCoverage({targets: [], jobs: []}).find((row) => row.id === "openra:combined-arms");
+  expect(missing).toMatchObject({category: "review", installationKey: undefined});
+  const rows = buildInstallationCoverage({targets: [{key: "combined-arms", name: "Combined Arms", installed: true, rollbackAvailable: false}], jobs: []});
+  expect(rows.filter((row) => row.installationKey === "combined-arms")).toHaveLength(1);
+  expect(rows.find((row) => row.id === "openra:combined-arms")).toMatchObject({category: "supported"});
+});
+
 it("keeps separate edition updates pending instead of inheriting base-depot support", () => {
   const rows = buildInstallationCoverage({ targets: INSTALLATION_UPDATE_KEYS.map((key) => ({ key, name: key, installed: true, rollbackAvailable: false })), jobs: [] });
   expect(rows.filter((row) => row.category === "supported")).toHaveLength(INSTALLATION_UPDATE_KEYS.length);
   expect(rows.find((row) => row.id === "team-fortress-2:open-fortress")).toMatchObject({ category: "edition" });
-  expect(rows.find((row) => row.id === "openra:combined-arms")).toMatchObject({ category: "edition" });
+  expect(rows.find((row) => row.id === "openra:combined-arms")).toMatchObject({ category: "supported", installationKey: "combined-arms" });
   expect(rows.find((row) => row.id === "freedoom")?.reason).toContain("separate engine");
   expect(rows.find((row) => row.id === "rimworld-together")).toMatchObject({ category: "supported", installationKey: "rimworld-together" });
-  expect(rows.find((row) => row.id === "freeciv")).toMatchObject({ category: "custom-build" });
+  expect(rows.find((row) => row.id === "freeciv")).toMatchObject({ category: "supported", installationKey: "freeciv" });
   expect(rows.find((row) => row.id === "flightgear")).toMatchObject({ category: "supported", installationKey: "flightgear" });
 });

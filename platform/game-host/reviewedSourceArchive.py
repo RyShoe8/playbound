@@ -7,7 +7,7 @@ def extract_reviewed_source(archive, target, prefix, *, max_files=50000, max_byt
     target.mkdir()
     count = total = 0
     seen = set()
-    with tarfile.open(archive, 'r:gz') as reader:
+    with tarfile.open(archive, 'r:*') as reader:
         for item in reader:
             count += 1; total += item.size
             parts = Path(item.name).parts
