@@ -138,7 +138,10 @@ pull credentials, edit environment files, or alter unrelated database records.
   Preserve existing worlds and live process users until that handoff passes.
   Never delete/reuse a UID reservation as part of deleting a saved server.
   Teeworlds's staged `teeworlds-unix-v1` path uses a fixed root supervisor, sealed
-  configuration FD and root-owned runtime binding. Enrollments must survive stop
+  configuration FD and root-owned runtime binding. Managed engine updates must
+  reach this path too: verify root-owned package pins, seal the engine before
+  dropping privileges and prove the process scanner holds updates for the
+  namespace-mounted copy. Do not merely update an unused shared binary. Enrollments must survive stop
   and client requests that omit the profile; do not downgrade into an empty old
   home. Refuse nonempty legacy data until migration is explicit. Verify whole-
   cgroup shutdown before acknowledging stop and cleanup when the gate is killed.

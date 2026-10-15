@@ -89,6 +89,13 @@ class RuntimeBoundaries(unittest.TestCase):
         self.assertNotIn('/etc', command)
         self.assertEqual(command[command.index('--ro-bind-data') + 1:command.index('--ro-bind-data') + 3], ['7', '/server/server.cfg'])
 
+    def test_reviewed_engine_bind_uses_only_inherited_sealed_descriptor(self):
+        command = module.command(Path('/fixture/data'), 7, 8322, 1536, 8)
+        index = command.index('--perms')
+        self.assertEqual(command[index:index + 5], ['--perms', '0555', '--ro-bind-data', '8', '/usr/games/teeworlds-server'])
+        self.assertLess(index, command.index('--proc'))
+        self.assertNotIn('/opt/playbound-host/games', ' '.join(command))
+
     def test_binding_mismatch_never_signals_or_opens_cgroup(self):
         with patch.object(module, 'binding_read', side_effect=ValueError('wrong identity')), patch.object(module, 'scope_path') as scope:
             with self.assertRaises(ValueError): module.stop_runtime(ID, 42, IDENTITY)
@@ -126,7 +133,7 @@ class RuntimeBoundaries(unittest.TestCase):
             resources = SimpleNamespace(verify_caller=Mock())
             child = Mock(pid=52, returncode=0)
             child.poll.return_value = 0
-            with patch.object(module, 'migration_ready', return_value=False), patch.object(module, 'verify_scope', return_value=Path('/fixture.scope')), patch.object(module, 'verify_supervisor_scope'), patch.object(module, 'workspace', return_value=root), patch.object(module.pwd, 'getpwnam', return_value=SimpleNamespace(pw_uid=1001)), patch.object(Path, 'stat', return_value=SimpleNamespace(st_mode=0o100755, st_uid=0)), patch.object(module.subprocess, 'Popen', return_value=child) as spawn, patch.object(module, 'binding_write') as binding, patch.object(module, 'game_identity', return_value=IDENTITY):
+            with patch.object(module, 'trusted_module', return_value=SimpleNamespace(sealed_engine=Mock(return_value=None))), patch.object(module, 'migration_ready', return_value=False), patch.object(module, 'verify_scope', return_value=Path('/fixture.scope')), patch.object(module, 'verify_supervisor_scope'), patch.object(module, 'workspace', return_value=root), patch.object(module.pwd, 'getpwnam', return_value=SimpleNamespace(pw_uid=1001)), patch.object(Path, 'stat', return_value=SimpleNamespace(st_mode=0o100755, st_uid=0)), patch.object(module.subprocess, 'Popen', return_value=child) as spawn, patch.object(module, 'binding_write') as binding, patch.object(module, 'game_identity', return_value=IDENTITY):
                 self.assertEqual(module.run_runtime(identities, resources, ID, 42, IDENTITY, (8322, 750, 1536), CONFIG), 0)
                 options = spawn.call_args.kwargs
                 self.assertEqual((options['user'], options['group'], options['extra_groups']), (40000, 40000, []))

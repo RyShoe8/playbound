@@ -475,7 +475,7 @@ and [official server documentation](https://terraria.wiki.gg/wiki/Servers).
 
 ### Reviewed Ubuntu native-server updates
 
-BZFlag, Hedgewars, OpenTTD and Luanti use fixed Ubuntu 24.04 amd64 packages in
+BZFlag, Hedgewars, OpenTTD, Luanti and Teeworlds use fixed Ubuntu 24.04 amd64 packages in
 `game-host/nativePackageProfiles.json`. Package size/SHA-256 and the extracted
 native file's size/SHA-256 are reviewed against signed APT metadata and the
 installed VPS binary. New distro versions require explicit pin, library/data
@@ -556,3 +556,37 @@ verification and customer sandbox expansion remain separate. Production relay
 bytes and DB rows were unchanged.
 Sources: [official fgms mirror](https://github.com/FlightGear/fgms),
 [official multiplayer-server documentation](https://wiki.flightgear.org/Howto%3ASet_up_a_multiplayer_server).
+
+### Teeworlds managed updates and isolated UID runtimes
+
+The reviewed native handler also covers Teeworlds 0.7.5-2. An enrolled
+`teeworlds-unix-v1` runtime no longer silently runs the OS engine after a managed
+update. Its fixed root supervisor opens the managed executable without following
+links, checks ownership/permissions/size/SHA-256 using the root-installed profile,
+then seals a private copy before dropping to the server UID. Bubblewrap copies
+and mounts that sealed engine read-only over its normal system path. Configuration
+and saved files remain separate. Unknown/partial managed engines fail closed.
+
+Install `tools/install-customer-runtime.sh` after `install-package-native.sh`;
+full `install.sh` handles that order. This does not enroll or restart customer
+servers. The process scanner holds Teeworlds updates conservatively while any
+server uses that namespace executable, since sealed copies have independent
+inodes. VPS acceptance covered real zero-player queries, queue holding, update/
+rollback, UID launch, same-process recovery and complete shutdown. Human Join
+remains a separate check. New package versions still require explicit review.
+
+### SuperTuxKart and OpenArena native updates
+
+SuperTuxKart 1.4 and OpenArena's installed ioquake3 engine are reviewed package
+profiles. Both swap only their native executable and retain configuration,
+parent directories and existing distro data. OpenArena's recipe explicitly
+preserves the distro wrapper's baseoa data path and protocol 71 when running the
+managed ELF directly. Package or matching asset changes require review.
+
+Real VPS fixtures passed update/rollback, running queue holds, stop and settings
+preservation. OpenArena returned 0/4 via getstatus. SuperTuxKart returned 0/4 in a
+private network namespace. Its shared host discovery port (UDP 2757) is owned by
+one listener; additional instances can return unknown because discovery reaches
+another server. Do not interpret that as zero players, and do not treat these
+fixtures as human Join or multi-instance tracking certification. No automatic
+hosting eligibility was changed by this deployment.

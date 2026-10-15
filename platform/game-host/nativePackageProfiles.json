@@ -12,25 +12,41 @@
     "systemBinary": "/usr/games/bzfs"
   },
   "openttd": {
-    "name": "OpenTTD", "version": "13.4-1build3",
+    "name": "OpenTTD",
+    "version": "13.4-1build3",
     "url": "https://archive.ubuntu.com/ubuntu/pool/universe/o/openttd/openttd_13.4-1build3_amd64.deb",
-    "archiveBytes": 3076022, "archiveSha256": "b17e0e610c7fc57418a2634ef894d4847040911d67f92411b034a96eb872792c",
-    "member": "usr/games/openttd", "binary": "openttd", "binaryBytes": 9496360,
-    "binarySha256": "0644520a99bfe85df3b7d6b4aff856c6e47f2491a7407b656e746d07d3d6e839", "systemBinary": "/usr/games/openttd"
+    "archiveBytes": 3076022,
+    "archiveSha256": "b17e0e610c7fc57418a2634ef894d4847040911d67f92411b034a96eb872792c",
+    "member": "usr/games/openttd",
+    "binary": "openttd",
+    "binaryBytes": 9496360,
+    "binarySha256": "0644520a99bfe85df3b7d6b4aff856c6e47f2491a7407b656e746d07d3d6e839",
+    "systemBinary": "/usr/games/openttd"
   },
   "luanti": {
-    "name": "Luanti (Minetest)", "version": "5.6.1+dfsg+~1.9.0mt8+dfsg-4build3",
+    "name": "Luanti (Minetest)",
+    "version": "5.6.1+dfsg+~1.9.0mt8+dfsg-4build3",
     "url": "https://archive.ubuntu.com/ubuntu/pool/universe/m/minetest/minetest-server_5.6.1+dfsg+~1.9.0mt8+dfsg-4build3_amd64.deb",
-    "archiveBytes": 1761444, "archiveSha256": "93fc4037edc57dabcde79c2a06927cca0548486df9b8409b1319a1ebff698f3e",
-    "member": "usr/lib/minetest/minetestserver", "binary": "minetestserver", "binaryBytes": 4325584,
-    "binarySha256": "034638e9c5826ae553f14943e3abb69083b6177fbced347a0111e5ab897b53a3", "systemBinary": "/usr/lib/minetest/minetestserver"
+    "archiveBytes": 1761444,
+    "archiveSha256": "93fc4037edc57dabcde79c2a06927cca0548486df9b8409b1319a1ebff698f3e",
+    "member": "usr/lib/minetest/minetestserver",
+    "binary": "minetestserver",
+    "binaryBytes": 4325584,
+    "binarySha256": "034638e9c5826ae553f14943e3abb69083b6177fbced347a0111e5ab897b53a3",
+    "systemBinary": "/usr/lib/minetest/minetestserver"
   },
   "battle-for-wesnoth": {
-    "name": "Battle for Wesnoth 1.18", "version": "1:1.18.5-1",
+    "name": "Battle for Wesnoth 1.18",
+    "version": "1:1.18.5-1",
     "url": "https://deb.debian.org/debian/pool/main/w/wesnoth-1.18/wesnoth-1.18-server_1.18.5-1_amd64.deb",
-    "archiveBytes": 1109264, "archiveSha256": "151d8d96505dee303f6039df89bbcf8fb95ef807e627627935347776a1294e0b",
-    "member": "usr/games/wesnothd-1.18", "binary": "wesnothd", "component": "wesnothd", "binaryBytes": 2035512,
-    "binarySha256": "1c45a49f2522806b87a2b4cca6777fe130f2e6ff8ce26e4246631f247b58fd23", "systemBinary": "/usr/games/wesnothd-1.18"
+    "archiveBytes": 1109264,
+    "archiveSha256": "151d8d96505dee303f6039df89bbcf8fb95ef807e627627935347776a1294e0b",
+    "member": "usr/games/wesnothd-1.18",
+    "binary": "wesnothd",
+    "component": "wesnothd",
+    "binaryBytes": 2035512,
+    "binarySha256": "1c45a49f2522806b87a2b4cca6777fe130f2e6ff8ce26e4246631f247b58fd23",
+    "systemBinary": "/usr/games/wesnothd-1.18"
   },
   "hedgewars": {
     "name": "Hedgewars",
@@ -43,5 +59,43 @@
     "binaryBytes": 21576136,
     "binarySha256": "1a939d287e6ced7cd0d118452860b31c534dde837c9c99c97730a8ef4f28c950",
     "systemBinary": "/usr/lib/hedgewars/bin/hedgewars-server"
+  },
+  "teeworlds": {
+    "name": "Teeworlds",
+    "version": "0.7.5-2",
+    "url": "https://archive.ubuntu.com/ubuntu/pool/universe/t/teeworlds/teeworlds-server_0.7.5-2_amd64.deb",
+    "archiveBytes": 170686,
+    "archiveSha256": "5cd5d91aca6a61256c2a97e72d86e1323a93d14a5c094f5a66e9e7d2b33ca909",
+    "member": "usr/games/teeworlds-server",
+    "binary": "teeworlds-server",
+    "binaryBytes": 395024,
+    "binarySha256": "d8a1c81c6bb7414210149a31d2553355c2e371137c2e4fbd458333ca3d5c9e25",
+    "systemBinary": "/usr/games/teeworlds-server"
+  },
+  "supertuxkart": {
+    "name": "SuperTuxKart",
+    "version": "1.4+dfsg-3ubuntu1",
+    "url": "https://archive.ubuntu.com/ubuntu/pool/universe/s/supertuxkart/supertuxkart_1.4+dfsg-3ubuntu1_amd64.deb",
+    "archiveBytes": 4915034,
+    "archiveSha256": "f2a202f020dbeac43330f9b8e3e4807221668e2d848349933c956f949f3041f2",
+    "member": "usr/games/supertuxkart",
+    "binary": "supertuxkart",
+    "component": "supertuxkart",
+    "binaryBytes": 13590768,
+    "binarySha256": "90dd7d38e46095b5c59b3c65f539693702ad1e0691526bfa3f2dc253c3719081",
+    "systemBinary": "/usr/games/supertuxkart"
+  },
+  "openarena": {
+    "name": "OpenArena (reviewed ioquake3 dedicated engine)",
+    "version": "1.36+u20240217.7d711f8+dfsg-1build2",
+    "url": "https://archive.ubuntu.com/ubuntu/pool/universe/i/ioquake3/ioquake3-server_1.36+u20240217.7d711f8+dfsg-1build2_amd64.deb",
+    "archiveBytes": 621608,
+    "archiveSha256": "b3c1ae50be0a3afa55ddb548a9f6cbc8940f2d15029eebf36ac3b20b7defa753",
+    "member": "usr/lib/ioquake3/ioq3ded",
+    "binary": "openarena-server",
+    "component": "openarena-server",
+    "binaryBytes": 691952,
+    "binarySha256": "df0af9f8532457c6c7d060444f606bdf5ea52a5534e5c4497bca9a6e82c9aac4",
+    "systemBinary": "/usr/lib/ioquake3/ioq3ded"
   }
 }
