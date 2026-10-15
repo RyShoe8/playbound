@@ -95,3 +95,13 @@ test("Freedoom never launches Zandronum for an incompatible explicit client edit
   for(const editionSlug of [undefined,"zandronum"])
     assert.equal(recipes.freedoom.resolveBinary([],{editionSlug}),path.join(root,"freedoom/zandronum-server"));
 });
+
+test("Open Fortress never silently starts the ordinary 64-bit TF2 server", async t => {
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),"pb-tf2-edition-")),previous=process.env.GAME_HOST_GAMES_DIR;
+  process.env.GAME_HOST_GAMES_DIR=root;
+  t.after(()=>{fs.rmSync(root,{recursive:true,force:true});if(previous===undefined)delete process.env.GAME_HOST_GAMES_DIR;else process.env.GAME_HOST_GAMES_DIR=previous;});
+  fs.mkdirSync(path.join(root,"team-fortress-2"));fs.writeFileSync(path.join(root,"team-fortress-2/srcds_linux64"),"TF2 engine");
+  const {recipes}=await import(new URL(`./recipes.js?tf2-edition-test=${randomUUID()}`,import.meta.url));
+  assert.equal(recipes['team-fortress-2'].resolveBinary([],{editionSlug:'open-fortress'}),null);
+  assert.equal(recipes['team-fortress-2'].resolveBinary([path.join(root,'team-fortress-2/srcds_linux64')],{}),path.join(root,'team-fortress-2/srcds_linux64'));
+});

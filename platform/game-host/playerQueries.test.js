@@ -1,9 +1,19 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { parseQuake3Status, openMohaaBotCount, parseMindustryPing, parseAssaultCubeInfo, parseChocolateDoomStatus, queryRoomOccupancy, LOCAL_QUERY_GAMES } from "./playerQueries.js";
+import { parseQuake3Status, openMohaaBotCount, parseMindustryPing, parseAssaultCubeInfo, parseChocolateDoomStatus, parseHxInfo, queryRoomOccupancy, LOCAL_QUERY_GAMES } from "./playerQueries.js";
 import { parseA2sOccupancy } from "./a2sQuery.js";
 
 const ff = Buffer.from([0xff, 0xff, 0xff, 0xff]);
+
+test("HX info requires complete matching native occupancy and rejects missing or impossible counts", async () => {
+  const source='\\hostname\\Private fixture\\hostport\\29980\\gametype\\HXGameInfo\\numplayers\\0\\maxplayers\\4\\queryid\\1.1\\final\\';
+  assert.deepEqual(parseHxInfo(Buffer.from(source),29980),{players:0,maxPlayers:4,bots:0});
+  assert.deepEqual(parseHxInfo(Buffer.from(source.replace('numplayers\\0','numplayers\\2')),29980),{players:2,maxPlayers:4,bots:0});
+  for (const malformed of [source.replace('HXGameInfo','DeusExGameInfo'),source.replace('29980','29981'),source.replace('numplayers\\0','numplayers\\5'),source.replace('maxplayers\\4','maxplayers\\0'),source.replace('queryid\\1.1','queryid\\1.2'),source.replace('numplayers\\0','numplayers\\0\\numplayers\\1')])
+    assert.equal(parseHxInfo(Buffer.from(malformed),29980),null);
+  for(let n=0;n<source.length;n++)assert.equal(parseHxInfo(Buffer.from(source.slice(0,n)),29980),null);
+  assert.equal(await queryRoomOccupancy({gameSlug:'deus-ex-goty-edition',editionSlug:'gmdx',port:29980}),null);
+});
 
 test("Chocolate Doom counts native players and rejects truncated or unrelated replies", () => {
   const packet = Buffer.concat([Buffer.from([0,14]),Buffer.from('Chocolate Doom 3.0.1\0'),Buffer.from([0,2,4,2,0]),Buffer.from('Server\0')]);
@@ -69,7 +79,7 @@ test("A2S accepts any app when asked (TF2 reports 440, not CS2's 730)", () => {
 
 test("every queryable game is declared", () => {
   for (const slug of ["counter-strike-2", "team-fortress-2", "xonotic", "openarena", "wolfenstein-enemy-territory",
-    "unvanquished", "medal-of-honor-allied-assault", "mindustry", "assaultcube", "space-station-14", "morrowind", "unturned"]) {
+    "unvanquished", "medal-of-honor-allied-assault", "mindustry", "assaultcube", "space-station-14", "morrowind", "unturned", "goldeneye-source"]) {
     assert.ok(LOCAL_QUERY_GAMES.has(slug), slug);
   }
 });

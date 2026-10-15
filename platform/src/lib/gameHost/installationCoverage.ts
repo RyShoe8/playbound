@@ -7,13 +7,12 @@ const ARCHIVE: Gap = { category: "archive", reason: "Needs a verified archive ha
 const GAPS: Record<string, Gap> = {
   "vintage-story": ARCHIVE,
   "deus-ex-goty-edition": { category: "custom-build", reason: "Needs a Wine/HX package handler that preserves the game assets and PlayBound co-op integration." },
-  freedoom: { category: "edition", reason: "Freedoom is game data. Its hosted Zandronum edition needs a separate engine update handler; preserve IWADs, maps and per-server configuration. Other engines require their own declared, verified hosting edition." },
   "goldeneye-source": { category: "private-runtime", reason: "Needs coordinated Source SDK base and GoldenEye mod updates, including private runtime refresh and retained settings." },
 };
 const EDITIONS: InstallationCoverageRow[] = [
   { id: "openra:combined-arms", name: "OpenRA · Combined Arms", category: "edition", installationKey: "combined-arms", reason: "Separate official Combined Arms package; verify agent deployment, installation and compatibility before queueing its update." },
   { id: "openra:ra2", name: "OpenRA · Red Alert 2", category: "edition", reason: "Requires its own compatible mod/engine distribution and original assets; it is not covered by the official RA/CNC/D2K updater." },
-  { id: "team-fortress-2:open-fortress", name: "Team Fortress 2 · Open Fortress", category: "edition", installationKey: "team-fortress-2", reason: "The TF2 base depot has an update handler. The Open Fortress mod overlay still needs separate compatibility, update and rollback verification." },
+  { id: "team-fortress-2:open-fortress", name: "Team Fortress 2 · Open Fortress", category: "edition", reason: "Requires its own Source SDK 2013 previous2021 engine and Open Fortress mod update/rollback handler. The current 64-bit TF2 handler does not update this edition." },
 ];
 
 const normalize = (slug: string) => Object.hasOwn(HOSTABLE_SLUG_ALIASES, slug) ? HOSTABLE_SLUG_ALIASES[slug] : slug === "open-fortress" ? "team-fortress-2" : slug;

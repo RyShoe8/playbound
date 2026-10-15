@@ -196,7 +196,7 @@ export function createDedicatedRecipes(deps) {
         fs.renameSync(stage, runtime);
       },
       args: (port, ctx) => [
-        "-console", "-game", "gesource", "-strictportbind", "-norestart",
+        "-console", "-game", "gesource", "-strictportbind", "-norestart", "-ip", "0.0.0.0",
         "-port", String(port), "+map", settingToken("goldeneye-source", ctx, "map", "ge_archives"),
         "-maxplayers", String(managedPlayerLimit(ctx)),
         "+mp_timelimit", String(settingNumber("goldeneye-source", ctx, "mp_timelimit", 0, 0, 600)),

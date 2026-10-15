@@ -62,6 +62,32 @@ export async function queryChocolateDoom(port) {
   return reply ? parseChocolateDoomStatus(reply) : null;
 }
 
+// HX's published Ports.txt declares its GameSpy-style query on gameplay + 1.
+// Require a complete info reply, the HX game type and the exact gameplay port;
+// an adjacent room or a partial response must never certify an empty server.
+export function parseHxInfo(packet, gamePort) {
+  if (!Number.isInteger(gamePort) || gamePort < 1 || gamePort >= 65535 || !Buffer.isBuffer(packet) || packet.length > 8192) return null;
+  const text = packet.toString('latin1');
+  if (!text.startsWith('\\') || !text.endsWith('\\final\\')) return null;
+  const parts = text.slice(1,-7).split('\\'), fields = Object.create(null);
+  if (parts.length % 2 || parts.length > 128) return null;
+  for (let i=0;i<parts.length;i+=2) {
+    const key=parts[i].toLowerCase();
+    if (!key || Object.hasOwn(fields,key)) return null;
+    fields[key]=parts[i+1];
+  }
+  if (fields.gametype !== 'HXGameInfo' || fields.hostport !== String(gamePort) || !/^\d{1,8}\.1$/.test(fields.queryid || '')
+    || !/^\d{1,2}$/.test(fields.numplayers || '') || !/^\d{1,2}$/.test(fields.maxplayers || '')) return null;
+  const players=Number(fields.numplayers), maxPlayers=Number(fields.maxplayers);
+  return maxPlayers>=2 && maxPlayers<=8 && players<=maxPlayers ? {players,maxPlayers,bots:0} : null;
+}
+
+export async function queryHxOccupancy(gamePort) {
+  if (!Number.isInteger(gamePort) || gamePort < 1 || gamePort >= 65535) return null;
+  const reply = await udpRequest(gamePort+1, Buffer.from('\\info\\'), {localReplyOnly:true,accept:packet=>parseHxInfo(packet,gamePort)!==null});
+  return reply ? parseHxInfo(reply,gamePort) : null;
+}
+
 /* ── Quake 3 family: getstatus ─────────────────────────────────────────── */
 
 const Q3_GETSTATUS = Buffer.concat([Buffer.from([0xff, 0xff, 0xff, 0xff]), Buffer.from("getstatus\n")]);
@@ -625,12 +651,13 @@ const QUAKE3_GAMES = new Set([
 ]);
 // Unturned's first UDP port is its server-list query port (the next port is
 // gameplay). It responds to Steam server queries despite not being a Source game.
-const A2S_GAMES = new Set(["counter-strike-2", "counter-strike-source", "team-fortress-2", "unturned"]);
+const A2S_GAMES = new Set(["counter-strike-2", "counter-strike-source", "team-fortress-2", "unturned", "goldeneye-source"]);
 // TCP games with no usable query protocol: counted by established connections.
 const TCP_CLIENT_GAMES = new Set(["freeciv", "battle-for-wesnoth", "triplea", "hedgewars", "warzone-2100", "ysoccer"]);
 
 /** Games this module can answer for, so the platform knows to ask. */
 export const LOCAL_QUERY_GAMES = new Set([
+  "deus-ex-goty-edition",
   ...QUAKE3_GAMES, ...A2S_GAMES, "mindustry", "assaultcube", "space-station-14", "morrowind",
   "openttd", "bzflag", "teeworlds", "veloren", "supertuxkart", "flightgear", "freedoom", "bombsquad",
   ...TCP_CLIENT_GAMES,
@@ -640,6 +667,7 @@ export const LOCAL_QUERY_GAMES = new Set([
 export async function queryRoomOccupancy(room) {
   if (!room || !Number.isInteger(room.port)) return null;
   const slug = room.gameSlug;
+  if (slug === "deus-ex-goty-edition") return !room.editionSlug || room.editionSlug === "playbound-hx-coop" ? queryHxOccupancy(room.port) : null;
   if (slug === "aneurism-iv") return queryAnivOccupancy(room);
   if (slug === "rimworld-together") {
     const snapshot = rimworldSnapshot(room);

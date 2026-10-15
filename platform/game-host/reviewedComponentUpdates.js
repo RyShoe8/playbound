@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { httpsGetStream } from "./downloadStream.js";
 
 export const REVIEWED_COMPONENTS = Object.freeze(JSON.parse(fs.readFileSync(new URL("./reviewedComponentProfiles.json", import.meta.url), "utf8")));
-const HOSTS = new Set(["github.com", "release-assets.githubusercontent.com", "objects.githubusercontent.com", "rvgl.org", "files.bf1942.online"]);
+const HOSTS = new Set(["github.com", "release-assets.githubusercontent.com", "objects.githubusercontent.com", "rvgl.org", "files.bf1942.online", "debian.drdteam.org"]);
 const digest = (data) => createHash("sha256").update(data).digest("hex");
 export function validInstallationComponent(value) {
   return typeof value === "string" && /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,79}$/.test(value);
@@ -17,15 +17,27 @@ export function verifyReviewedComponent(root, key, { profile = REVIEWED_COMPONEN
   if (!profile || !validInstallationComponent(profile.component)) throw new Error("Reviewed component profile is invalid");
   if (!fs.lstatSync(root).isDirectory() || fs.realpathSync(root) !== path.resolve(root)) throw new Error("Reviewed component requires a real directory");
   const filename = path.join(root, profile.component), info = fs.lstatSync(filename);
-  if (!info.isFile() || info.isSymbolicLink() || info.nlink !== 1 || info.size !== profile.bytes || (process.platform === "linux" && info.mode & 0o7022)) throw new Error("Reviewed component binary differs from the reviewed package");
+  const candidates = [profile, ...(profile.baselines || [])];
+  if (!info.isFile() || info.isSymbolicLink() || info.nlink !== 1 || !candidates.some(row => row.bytes === info.size) || (process.platform === "linux" && info.mode & 0o7022)) throw new Error("Reviewed component binary differs from the reviewed package");
   fs.accessSync(filename, fs.constants.X_OK);
   const data = fs.readFileSync(filename);
-  if (digest(data) !== profile.sha256 || data.length < 20 || data.readUInt32BE(0) !== 0x7f454c46 || data[4] !== profile.elfClass || data[5] !== 1 || data.readUInt16LE(18) !== (profile.elfClass === 1 ? 3 : 62)) throw new Error("Reviewed component checksum or architecture mismatch");
+  const matched = candidates.find(row => row.bytes === data.length && row.sha256 === digest(data));
+  if (!matched || data.length < 20 || data.readUInt32BE(0) !== 0x7f454c46 || data[4] !== profile.elfClass || data[5] !== 1 || data.readUInt16LE(18) !== (profile.elfClass === 1 ? 3 : 62)) throw new Error("Reviewed component checksum or architecture mismatch");
+  // Component stages/rollback copies contain only the engine. Their matching
+  // immutable data remains in the active sibling installation, never in backups.
+  const dataRoot = key === "freedoom" && /^\.pb-(?:update|rollback)-freedoom-[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/.test(path.basename(root))
+    ? path.join(path.dirname(root), "freedoom") : root;
+  if (profile.requiredFiles?.length && fs.realpathSync(dataRoot) !== path.resolve(dataRoot)) throw new Error("Reviewed component game data path requires review");
+  for (const required of profile.requiredFiles || []) {
+    if (!validInstallationComponent(required.name)) throw new Error("Reviewed component dependency path is invalid");
+    const file = path.join(dataRoot, required.name), stat = fs.lstatSync(file);
+    if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 || stat.size !== required.bytes || digest(fs.readFileSync(file)) !== required.sha256) throw new Error("Reviewed component game data differs from its compatible package");
+  }
   if (key === "battlefield-1942-anthology" && path.basename(root) === key) {
     const alias = path.join(root, "bf1942_lnxded");
     if (!fs.lstatSync(alias).isSymbolicLink() || fs.readlinkSync(alias) !== profile.component) throw new Error("Reviewed component Battlefield launch alias requires review");
   }
-  return { buildId: profile.version };
+  return { buildId: matched.version || profile.version };
 }
 
 function trustedURL(value) {

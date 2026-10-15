@@ -57,3 +57,23 @@ test("staging validates downloaded and extracted bytes without touching saved da
 test("archive reader rejects duplicate, special and changed members", { skip: process.platform !== "linux" }, () => {
   execFileSync("/usr/bin/python3", [fileURLToPath(new URL("./reviewedComponentArchive.test.py", import.meta.url))], { timeout: 30_000, maxBuffer: 8192 });
 });
+
+test("reviewed alternate engines require exact compatible data and never accept modified baselines", t => {
+  const f=fixture(t),alternate=Buffer.from(f.data);alternate[25]=1;
+  const profile={...f.profile,baselines:[{bytes:alternate.length,sha256:createHash('sha256').update(alternate).digest('hex')}],requiredFiles:[{name:'zandronum.pk3',bytes:4,sha256:createHash('sha256').update('data').digest('hex')}]};
+  fs.writeFileSync(path.join(f.stage,'tes3mp-server.x86_64'),alternate);fs.writeFileSync(path.join(f.stage,'zandronum.pk3'),'data');
+  assert.equal(verifyReviewedComponent(f.stage,'morrowind',{profile}).buildId,'0.8.1');
+  fs.writeFileSync(path.join(f.stage,'zandronum.pk3'),'oops');
+  assert.throws(()=>verifyReviewedComponent(f.stage,'morrowind',{profile}),/game data/);
+  fs.writeFileSync(path.join(f.stage,'zandronum.pk3'),'data');alternate[26]=2;fs.writeFileSync(path.join(f.stage,'tes3mp-server.x86_64'),alternate);
+  assert.throws(()=>verifyReviewedComponent(f.stage,'morrowind',{profile}),/checksum/);
+});
+
+test("a Zandronum component rollback validates retained data in the fixed active sibling", t => {
+  const f=fixture(t),active=path.join(f.root,'freedoom'),backup=path.join(f.root,`.pb-rollback-freedoom-${randomUUID()}`);fs.mkdirSync(active);fs.mkdirSync(backup);
+  const profile={...f.profile,requiredFiles:[{name:'zandronum.pk3',bytes:4,sha256:createHash('sha256').update('data').digest('hex')}]};
+  fs.writeFileSync(path.join(backup,profile.component),f.data,{mode:0o755});fs.writeFileSync(path.join(active,'zandronum.pk3'),'data');
+  assert.equal(verifyReviewedComponent(backup,'freedoom',{profile}).buildId,'0.8.1');
+  fs.writeFileSync(path.join(active,'zandronum.pk3'),'oops');
+  assert.throws(()=>verifyReviewedComponent(backup,'freedoom',{profile}),/game data/);
+});

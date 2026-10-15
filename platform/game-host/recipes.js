@@ -1471,6 +1471,9 @@ export const recipes = {
     // TF2's game libraries are 64-bit only now; the 32-bit srcds_run dies on
     // "Could not load: replay_srv.so".
     binaries: gameBin("team-fortress-2", ["srcds_run_64", "srcds_linux64"]),
+    // Open Fortress requires the older SDK's 32-bit engine and its own mod.
+    // The current 64-bit TF2 server is not a compatible fallback.
+    resolveBinary: (candidates, ctx) => ctx?.editionSlug === "open-fortress" ? null : firstExisting(candidates),
     // Without ~/.steam/sdk64/steamclient.so the server falls back to LAN-only
     // mode, which internet clients cannot join. The install doesn't ship a
     // 64-bit copy; copy steamcmd's linux64/steamclient.so into linux64/.

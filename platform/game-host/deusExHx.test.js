@@ -32,6 +32,9 @@ test("HX rooms have private saves and never change another room or installed sav
   for (const name of ['run-server','System/HCC.exe','System/HX.u','System/DeusEx.u','System/HXDefault.ini','Maps/01_NYC_UNATCOIsland.dx'])fs.writeFileSync(path.join(base,name),'fixture');
   fs.writeFileSync(path.join(base,'Save/shared'),'original save');
   const a=prepareHxRoom(7790,{communityServerId:'a'},base,home),b=prepareHxRoom(7793,{communityServerId:'b'},base,home);
+  fs.appendFileSync(path.join(a,'System/HX.ini'),'\r\n[PrivateRules]\r\nCustomValue=retained\r\n');
+  prepareHxRoom(7796,{communityServerId:'a',maxPlayers:3},base,home);
+  const retained=fs.readFileSync(path.join(a,'System/HX.ini'),'utf8');assert.match(retained,/CustomValue=retained/);assert.match(retained,/Port=7796/);assert.match(retained,/MaxPlayers=3/);
   fs.writeFileSync(path.join(a,'Save/private'),'a save');assert.deepEqual(fs.readdirSync(path.join(b,'Save')),[]);assert.equal(fs.readFileSync(path.join(base,'Save/shared'),'utf8'),'original save');
   fs.rmSync(path.join(b,'Save'),{recursive:true});fs.symlinkSync(path.join(base,'Save'),path.join(b,'Save'));
   assert.throws(()=>prepareHxRoom(7793,{communityServerId:'b'},base,home),/legacy shared saves/);

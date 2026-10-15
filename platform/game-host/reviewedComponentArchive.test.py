@@ -4,10 +4,22 @@ from pathlib import Path
 import tarfile
 import tempfile
 import unittest
+import subprocess
 from reviewedComponentArchive import extract
 
 
 class ArchiveTests(unittest.TestCase):
+    def test_deb_reads_only_the_pinned_native_member(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder); payload=root/'data.tar.xz'; data=b'engine'
+            profile={'format':'deb','member':'./usr/games/zandronum/zandronum-server','bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()}
+            with tarfile.open(payload,'w:xz') as bundle:
+                for name,contents in [(profile['member'],data),('../../outside',b'not extracted')]:
+                    info=tarfile.TarInfo(name);info.size=len(contents);bundle.addfile(info,io.BytesIO(contents))
+            (root/'debian-binary').write_text('2.0\n');archive=root/'engine.deb'
+            subprocess.run(['/usr/bin/ar','rc',str(archive),str(root/'debian-binary'),str(payload)],check=True)
+            extract(archive,root/'fresh',profile)
+            self.assertEqual((root/'fresh').read_bytes(),data)
     def test_engine_only_preserves_package_paths(self):
         with tempfile.TemporaryDirectory() as folder:
             root=Path(folder); archive=root/'game.tar'; data=b'engine'
