@@ -1,0 +1,48 @@
+{
+  "version": "0.82.1",
+  "url": "https://github.com/openmoh/openmohaa/releases/download/v0.82.1/openmohaa-v0.82.1-linux-amd64.zip",
+  "archiveBytes": 16999314,
+  "archiveSha256": "57692d057a684afb7f7e91a61fcd8c062b29ab1b639f27453830084a88cd653c",
+  "files": {
+    "game.so": {
+      "bytes": 17270072,
+      "sha256": "55be6f50b9f05d97147ed9743c00ce4f99be81465e02c03531f35140546a5f1f"
+    },
+    "launch_openmohaa_spearhead": {
+      "bytes": 202016,
+      "sha256": "1deab80d08e1601fc0881671963ea035bf8352637dcfd97c7e9b902b68dae740"
+    },
+    "libopenal.so.1": {
+      "bytes": 1712456,
+      "sha256": "4c1aedb3e067a614c3adb6cea4ed5d3247d63b32eb3893320bd9b12c97499044"
+    },
+    "launch_openmohaa_breakthrough": {
+      "bytes": 202016,
+      "sha256": "a733214c0f7639a57d7727ef1766154987950d422eca77ab4b50de34b747325d"
+    },
+    "libSDL2-2.0.so.0": {
+      "bytes": 1890744,
+      "sha256": "167f16f874c3c923c6510e6f15cb83aaf7ee0f5cd000a1b6bbc6aa68c2419454"
+    },
+    "openmohaa": {
+      "bytes": 11184216,
+      "sha256": "3d88977e3e8d6f6bd1e91d9c4dd314618ea6bc5acda6edabef9bdcc91c0c86a4"
+    },
+    "cgame.so": {
+      "bytes": 2840256,
+      "sha256": "3090f1a7aa2f1c9798e7462636eba2f6d613ee982e2655e74bf285413e2a3820"
+    },
+    "libcurl.so.4": {
+      "bytes": 2286912,
+      "sha256": "5a198068d46348b6f5e8bc7c57e1e1f68b7f282344bf96a980447596fe7477eb"
+    },
+    "omohaaded": {
+      "bytes": 4317504,
+      "sha256": "f9d4edef0813a9e454b0207ef989bb3e80a3a2b88385571f6236bbc196e96316"
+    },
+    "launch_openmohaa_base": {
+      "bytes": 202016,
+      "sha256": "3200fed60aa91b00a8edb609f8a0c1316b632522bcda6a92cb43bb9de55fabff"
+    }
+  }
+}

@@ -717,3 +717,26 @@ separate fixture also passed staged update/rollback on its current Steam build;
 no human Join or save-format upgrade was certified by either check. Coverage is
 now 30 installation families, 16 release-discovery sources and 21 remaining
 game/edition entries.
+
+## OpenMoHAA publisher package updates (2026-10-15)
+
+OpenMoHAA adds the official 0.82.1 Linux x86-64 ZIP handler for the shared
+`openmohaa` installation used by Medal of Honor: Allied Assault. The publisher's
+GitHub SHA-256 matches the archive and all ten installed native files. Engine,
+server module and matching libraries are verified/swapped together; retail
+main/mainta/maintt assets, maps and per-server homes remain separate. Bounded ZIP
+extraction rejects links, traversal, duplicates and changed native bytes. Native
+dependency checks use the installation's reviewed libraries. Only the dedicated
+engine requires executable permission; shipped libraries/unused launch helpers
+need not already have that permission. Both canonical game and recipe aliases
+hold the same installation queue; failure telemetry uses the canonical game.
+
+Daily discovery reads the stable official GitHub release. The reviewed package
+can queue automatically, while a future version requires updated compatibility
+review and checksums. An isolated real-VPS fixture passed staged download/update,
+a real 0/4-player query, a running-process rollback hold, clean stop, rollback,
+and private-configuration preservation. This exercised reinstallation/rollback
+of the current version, not a cross-version save migration or human Join. No
+production game files or catalog records were changed by the fixture. All twelve
+managed identities survived deployment. Coverage is 31 installation families,
+17 release-discovery sources and 20 remaining game/edition entries.

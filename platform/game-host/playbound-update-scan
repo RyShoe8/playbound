@@ -15,6 +15,7 @@ targets = {
     "necesse": ["necesse"],
     "aneurism-iv": ["aneurism-iv"],
     "wolfenstein-enemy-territory": ["wolfenstein-enemy-territory"],
+    "openmohaa": ["openmohaa"],
     "mindustry": ["mindustry"],
     "openra": ["openra"],
     "openhv": ["openhv"],
