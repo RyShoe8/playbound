@@ -1335,12 +1335,13 @@ export const recipes = {
     portStart: 43210,
     portEnd: 43230,
     protocol: "udp",
+    shutdownSignalGraceMs: 5000,
     binaries: gameBin("bombsquad", ["run-server", "bombsquad_server"]),
     prepareSpawn: async () => {
       const basePy = path.join(
         GAMES_ROOT,
         "bombsquad",
-        "dist",
+        ...(fs.existsSync(path.join(GAMES_ROOT, "bombsquad", "runtime")) ? ["runtime", "dist"] : ["dist"]),
         "ba_data",
         "python",
         "efro",
@@ -1696,13 +1697,27 @@ export const recipes = {
      */
     portEnd: 14004,
     protocol: "both",
-    binaries: gameBin("veloren", ["veloren-server-cli", "veloren-server"]),
+    shutdownCommand: "shutdown immediate\n",
+    shutdownGraceMs: 20_000,
+    shutdownSignalGraceMs: 20_000,
+    binaries: gameBin("veloren", ["runtime/veloren-server-cli", "veloren-server-cli", "veloren-server"]),
+    resolveBinary: () => {
+      const root = path.join(GAMES_ROOT, "veloren");
+      // A broken managed package must fail rather than mix its assets with a
+      // legacy engine. runtime is promoted as one complete directory.
+      return fs.existsSync(path.join(root, "runtime"))
+        ? firstExisting([path.join(root, "runtime", "veloren-server-cli")])
+        : firstExisting(gameBin("veloren", ["veloren-server-cli", "veloren-server"]));
+    },
     args: () => [],
     cwd: () => path.join(GAMES_ROOT, "veloren"),
     spawnEnv: () => ({
       SDL_VIDEODRIVER: "dummy",
       SDL_AUDIODRIVER: "dummy",
-      VELOREN_ASSETS: path.join(GAMES_ROOT, "veloren", "assets"),
+      // Upstream otherwise saves beside the executable, inside runtime. Keep
+      // worlds/configuration outside both update and rollback directories.
+      VELOREN_USERDATA: path.join(GAMES_ROOT, "veloren", "userdata"),
+      VELOREN_ASSETS: path.join(GAMES_ROOT, "veloren", ...(fs.existsSync(path.join(GAMES_ROOT, "veloren", "runtime")) ? ["runtime", "assets"] : ["assets"])),
     }),
     /*
      * Patch max_players in settings.ron for managed community servers.
@@ -1714,6 +1729,13 @@ export const recipes = {
      */
     prepareSpawn: async (_port, ctx) => {
       if (!ctx.managed) return;
+      const cliSettings = path.join(GAMES_ROOT, "veloren", "userdata", "server-cli", "settings.ron");
+      fs.mkdirSync(path.dirname(cliSettings), { recursive: true });
+      try {
+        // The recovered process has no stdin pipe. New default configurations
+        // must therefore also accept SIGTERM and finish within the agent grace.
+        fs.writeFileSync(cliSettings, "(shutdown_signals:[SIGTERM],update_shutdown_grace_period_secs:0,)\n", { flag: "wx", mode: 0o600 });
+      } catch (error) { if (error.code !== "EEXIST") throw error; }
       const limit = managedPlayerLimit(ctx, 16);
       const settingsPath = path.join(GAMES_ROOT, "veloren", "userdata", "server", "server_config", "settings.ron");
       try {

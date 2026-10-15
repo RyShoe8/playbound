@@ -221,6 +221,7 @@ cp -f "$AGENT_SRC/index.js" "$AGENT_SRC/agentRoutes.js" "$AGENT_SRC/recipes.js" 
   "$AGENT_SRC/dedicatedDataBackups.js" "$AGENT_SRC/worldBackupRunner.js" "$AGENT_SRC/dedicatedDataBackupsWorker.js" "$AGENT_SRC/dedicatedFiles.js" \
   "$AGENT_SRC/installationTargets.js" "$AGENT_SRC/installationJobs.js" "$AGENT_SRC/dailyInstallationUpdates.js" "$AGENT_SRC/installationFailureReports.js" "$AGENT_SRC/etlegacyUpdates.js" "$AGENT_SRC/etlegacyArchive.py" "$AGENT_SRC/etlegacyReleases.json" "$AGENT_SRC/etlegacyManagedFiles.txt" "$AGENT_SRC/openmohaaUpdates.js" "$AGENT_SRC/openmohaaArchive.py" "$AGENT_SRC/openmohaaRelease.json" "$AGENT_SRC/unvanquishedUpdates.js" "$AGENT_SRC/unvanquishedArchive.py" "$AGENT_SRC/unvanquishedReleases.json" "$AGENT_SRC/installationUpdateWorker.js" "$AGENT_SRC/mindustryUpdates.js" "$AGENT_SRC/githubReleaseAssets.js" "$AGENT_SRC/openraUpdates.js" "$AGENT_SRC/openhvUpdates.js" "$AGENT_SRC/openRaAppImageUpdates.js" "$AGENT_SRC/openE2140Updates.js" "$AGENT_SRC/appImageInstallation.js" "$AGENT_SRC/sshArtifactSignature.js" "$AGENT_SRC/hypersomniaUpdates.js" "$AGENT_SRC/assaultcubeUpdates.js" "$AGENT_SRC/nativeArchive.py" "$AGENT_SRC/factorioUpdates.js" "$AGENT_SRC/factorioArchive.py" "$AGENT_SRC/terrariaUpdates.js" "$AGENT_SRC/terrariaArchive.py" "$AGENT_SRC/terraria1458.json" "$AGENT_SRC/nativePackageUpdates.js" "$AGENT_SRC/nativePackageProfiles.json" "$AGENT_SRC/packageNativeArchive.py" "$AGENT_SRC/rimworldUpdates.js" "$AGENT_SRC/rimworldSourceBuild.py" "$AGENT_SRC/rimworldBuild.json" "$AGENT_SRC/rimworldPackages.lock.json" "$AGENT_SRC/reviewedSourceArchive.py" "$AGENT_SRC/fgmsUpdates.js" "$AGENT_SRC/fgmsSourceBuild.py" "$AGENT_SRC/fgmsBuild.json" "$AGENT_SRC/xonoticUpdates.js" "$AGENT_SRC/xonoticArchive.py" "$AGENT_SRC/xonotic086.json" \
   "$AGENT_SRC/gameEnvironment.js" \
+  "$AGENT_SRC/pairedRuntimeUpdates.js" "$AGENT_SRC/pairedRuntimeArchive.py" "$AGENT_SRC/pairedRuntimeProfiles.json" "$AGENT_SRC/pairedRuntimeEnroll.js" \
   "$AGENT_SRC/reviewedComponentUpdates.js" "$AGENT_SRC/reviewedComponentProfiles.json" "$AGENT_SRC/reviewedComponentArchive.py" \
   "$AGENT_SRC/dedicatedRecipes.js" "$AGENT_SRC/barotraumaRuntime.js" "$AGENT_SRC/rimworldControl.js" "$AGENT_SRC/rimworldDifficulty.json" "$AGENT_SRC/anivControl.js" \
   "$AGENT_SRC/package.json" "$AGENT_DIR/"
@@ -509,7 +510,7 @@ if [[ ! -f "$BOMBSQUAD_DIR/bombsquad_server" ]]; then
     BOMBSQUAD_TMP="$(mktemp -d)"
     if curl -fL --retry 3 "$BOMBSQUAD_URL" | tar -xz --strip-components=1 -C "$BOMBSQUAD_TMP"; then
       cp -a "$BOMBSQUAD_TMP/." "$BOMBSQUAD_DIR/"
-      sed -i '1s|^#!.*$|#!/usr/bin/env -S python3 -OB|' "$BOMBSQUAD_DIR/bombsquad_server"
+      # Keep publisher controller bytes; run-server explicitly selects Python 3.14.
       chmod +x "$BOMBSQUAD_DIR/bombsquad_server"
     else
       echo "WARN: BombSquad server download or extraction failed" >&2
@@ -543,7 +544,9 @@ cd "$BASE"
 # Ballistica 1.8 links libpython3.14 and uses 3.14 deferred annotations;
 # the distro python3 (3.12 on the VPS) fails with NameError: Self.
 export LD_LIBRARY_PATH=/opt/playbound-host/python314/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
-exec /opt/playbound-host/python314/bin/python3 -OB ./bombsquad_server \
+CONTROLLER="$BASE/bombsquad_server"
+if [[ -d "$BASE/runtime" ]]; then CONTROLLER="$BASE/runtime/bombsquad_server"; fi
+exec /opt/playbound-host/python314/bin/python3 -OB "$CONTROLLER" \
   --config "$CONFIG" --root "$STATE_DIR/root" --noninteractive
 EOF
   chmod +x "$BOMBSQUAD_DIR/run-server"
@@ -552,6 +555,12 @@ fi
 if [[ -f "$BOMBSQUAD_DIR/dist/ba_data/python/efro/dataclassio/_base.py" ]]; then
   sed -i 's/from typing import TYPE_CHECKING, get_args/from typing import TYPE_CHECKING, Any, get_args/' "$BOMBSQUAD_DIR/dist/ba_data/python/efro/dataclassio/_base.py"
 fi
+for paired in bombsquad veloren; do
+  if [[ -d "$GAMES_DIR/$paired" ]]; then
+    runuser -u playbound -- env GAME_HOST_GAMES_DIR="$GAMES_DIR" node "$AGENT_DIR/pairedRuntimeEnroll.js" "$paired" || \
+      echo "  $paired runtime enrollment needs review; existing data retained" >&2
+  fi
+done
 
 echo "==> Wolfenstein: Enemy Territory (ET: Legacy dedicated)"
 ET_DIR="$GAMES_DIR/wolfenstein-enemy-territory"

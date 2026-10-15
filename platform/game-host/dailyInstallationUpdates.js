@@ -7,6 +7,7 @@ import { ETLEGACY_RELEASES } from "./etlegacyUpdates.js";
 import { OPENMOHAA_RELEASE } from "./openmohaaUpdates.js";
 import { UNVANQUISHED_RELEASES } from "./unvanquishedUpdates.js";
 import { REVIEWED_COMPONENTS } from "./reviewedComponentUpdates.js";
+import { PAIRED_RUNTIMES } from "./pairedRuntimeUpdates.js";
 
 const DAY = 24 * 60 * 60_000;
 const RELEASES = {
@@ -18,7 +19,7 @@ const RELEASES = {
   unvanquished: ["Unvanquished/Unvanquished", /^v\d+\.\d+\.\d+$/],
   morrowind: ["TES3MP/TES3MP", /^tes3mp-\d+\.\d+\.\d+$/],
 };
-export const automaticInstallationUpdate = (key) => Boolean(INSTALLATION_TARGETS[key]?.appId || RELEASES[key] || ["factorio", "hypersomnia", "wolfenstein-enemy-territory", "re-volt-rvgl"].includes(key));
+export const automaticInstallationUpdate = (key) => Boolean(INSTALLATION_TARGETS[key]?.appId || RELEASES[key] || PAIRED_RUNTIMES[key] || ["factorio", "hypersomnia", "wolfenstein-enemy-territory", "re-volt-rvgl"].includes(key));
 
 // Parse only quoted VDF keys/values and braces. Never confuse a beta/depot's
 // build with depots.branches.public.buildid, even when it appears first.
@@ -47,7 +48,7 @@ export function steamPublicBuild(output, appId) {
 }
 
 async function boundedText(url, request, limit = 16_384) {
-  const response = await request(url, { redirect: "error", signal: AbortSignal.timeout(30_000) });
+  const response = await request(url, { redirect: "error", signal: AbortSignal.timeout(30_000), headers: { "User-Agent": "PlayBound-game-host" } });
   if (!response.ok || !response.body) throw new Error("Official release feed is unavailable");
   const chunks = []; let size = 0;
   for await (const chunk of response.body) {
@@ -81,6 +82,19 @@ export async function latestInstallationBuild(key, { request = fetch, run = runC
     const version = page.match(/Current version:\s*(?:<[^>]+>\s*)*(\d{2}\.\d{4}[a-z]\d+)\b/)?.[1];
     if (!version) throw new Error("RVGL official version metadata is unavailable");
     return version;
+  }
+  if (key === "bombsquad") {
+    const page = await boundedText("https://ballistica.net/downloads", request, 256 * 1024);
+    const versions = [...page.matchAll(/https:\/\/files\.ballistica\.net\/bombsquad\/builds\/BombSquad_Server_Linux_x86_64_(\d+\.\d+\.\d+(?:a\d+)?)\.tar\.gz/g)].map(match => match[1]);
+    if (new Set(versions).size !== 1) throw new Error("BombSquad official release metadata is ambiguous or missing");
+    return versions[0];
+  }
+  if (key === "veloren") {
+    const release = JSON.parse(await boundedText("https://api.github.com/repos/veloren/veloren/releases/tags/weekly", request, 4 * 1024 ** 2));
+    if (release.draft !== false || release.tag_name !== "weekly" || !Array.isArray(release.assets)) throw new Error("Veloren weekly channel metadata is invalid");
+    const names = release.assets.map(row => row.name).filter(name => /^weekly-linux-x86_64-\d{4}-\d{2}-\d{2}T\d{2}_\d{2}\.zip$/.test(name || "")).sort();
+    if (!names.length) throw new Error("Veloren weekly Linux package is unavailable");
+    return names.at(-1);
   }
   if (key === "wolfenstein-enemy-territory") {
     const page = await boundedText("https://www.etlegacy.com/download", request, 128 * 1024);
@@ -159,7 +173,10 @@ export function createDailyInstallationUpdates({ stateDir, coordinator, latest =
               if (REVIEWED_COMPONENTS[target.key]) {
                 row.status = row.availableBuild === target.buildId ? "up_to_date" : "review_required";
                 if (row.status === "review_required") row.message = "New engine release requires matching game data, scripts, dependencies and a reviewed checksum profile. Existing files remain unchanged.";
-              } else if (!newer(row.availableBuild, target.buildId)) row.status = "up_to_date";
+              } else if (PAIRED_RUNTIMES[target.key] && row.availableBuild === target.buildId) row.status = "up_to_date";
+              else if (PAIRED_RUNTIMES[target.key] && row.availableBuild !== PAIRED_RUNTIMES[target.key].latest) {
+                row.status = "review_required"; row.message = "New paired package needs reviewed controller/engine/assets compatibility and checksums; the installed runtime is unchanged.";
+              } else if (!PAIRED_RUNTIMES[target.key] && !newer(row.availableBuild, target.buildId)) row.status = "up_to_date";
               else if (target.key === "unvanquished" && row.availableBuild !== UNVANQUISHED_RELEASES.latest) {
                 row.status = "review_required"; row.message = "New Unvanquished version needs reviewed engine/sandbox/game package compatibility and checksums.";
               } else if (target.key === "openmohaa" && row.availableBuild !== OPENMOHAA_RELEASE.version) {

@@ -1,0 +1,58 @@
+{
+  "bombsquad": {
+    "latest": "1.8.2",
+    "component": "runtime",
+    "binaries": [
+      "dist/bombsquad_headless"
+    ],
+    "versions": [
+      {
+        "treeSha256": "3e5c3688a4b07aa69addd17b73c4311f37b55e226bde63cb6db5b6c217ca966a",
+        "fileCount": 530,
+        "totalBytes": 19120892,
+        "buildId": "1.8.0a101",
+        "baselineOnly": true
+      },
+      {
+        "treeSha256": "3fa7b552cbb5f603228647c2e0a203bb27094f1588bafc26e17f8293c66a58d7",
+        "fileCount": 605,
+        "totalBytes": 22068381,
+        "buildId": "1.8.2",
+        "format": "tar",
+        "prefix": "BombSquad_Server_Linux_x86_64_1.8.2/",
+        "url": "https://files.ballistica.net/bombsquad/builds/BombSquad_Server_Linux_x86_64_1.8.2.tar.gz",
+        "archiveBytes": 6961641,
+        "archiveSha256": "86a51408d50dd92c37318c9f933325d16d3240f7f38e310ba6c59c17e9b846fd"
+      }
+    ],
+    "launcherSha256": "36abd379cc0a163c8f4937cd1fe081cb5bfa5367c07523db2bea75c868bc6580"
+  },
+  "veloren": {
+    "latest": "weekly-linux-x86_64-2026-10-14T20_51.zip",
+    "component": "runtime",
+    "binaries": [
+      "veloren-server-cli"
+    ],
+    "versions": [
+      {
+        "treeSha256": "e952834f5eb09596e6d9875eac961cd5794679b8211891fd713322add61c24dc",
+        "fileCount": 10633,
+        "totalBytes": 515369464,
+        "buildId": "master-f0c97a43",
+        "baselineOnly": true
+      },
+      {
+        "treeSha256": "28c256c1555b251e81a3ce93e511494ea759149d5006593e9afd2ff6130cd6d4",
+        "fileCount": 10655,
+        "totalBytes": 519129508,
+        "buildId": "weekly-linux-x86_64-2026-10-14T20_51.zip",
+        "baselineOnly": false,
+        "format": "zip",
+        "prefix": "",
+        "url": "https://github.com/veloren/veloren/releases/download/weekly/weekly-linux-x86_64-2026-10-14T20_51.zip",
+        "archiveBytes": 471239502,
+        "archiveSha256": "5fdc9811885b8bba4b1cb4ed66afc71e2b52909a4f93f7823a0c94f33c3d00cb"
+      }
+    ]
+  }
+}

@@ -141,3 +141,16 @@ test("new pinned component releases require review, while unchanged lettered RVG
   fs.unlinkSync(path.join(f.stateDir,"daily-installation-updates.json")); current = "24.0101a1";
   await daily().tick(); assert.equal(daily().snapshot().targets["re-volt-rvgl"].status, "review_required");
 });
+
+test("paired releases discover server builds on their declared channels",async()=>{
+  assert.equal(await latestInstallationBuild("bombsquad",{request:async()=>new Response('https://files.ballistica.net/bombsquad/builds/BombSquad_Server_Linux_x86_64_1.8.2.tar.gz')}),"1.8.2");
+  const newest="weekly-linux-x86_64-2026-10-14T20_51.zip";
+  assert.equal(await latestInstallationBuild("veloren",{request:async()=>new Response(JSON.stringify({draft:false,tag_name:"weekly",assets:[{name:newest},{name:"weekly-linux-x86_64-2024-01-01T01_00.zip"},{name:"nightly-linux-x86_64-2027-01-01T01_00.zip"}]}))}),newest);
+});
+test("paired release checks queue the reviewed upgrade, flag future packages, and retain rollback suppression",async t=>{
+  const f=fixture(t);let available="1.8.2";const jobs=[];
+  const coordinator={withMetadataCheck:fn=>fn(),snapshot:()=>({targets:[{key:"bombsquad",installed:true,buildId:"1.8.0a101"}],jobs}),queue:()=>{const job={id:"one",status:"completed"};jobs.push(job);return job;}};
+  let clock=100000;const daily=()=>createDailyInstallationUpdates({stateDir:f.stateDir,coordinator,latest:async()=>available,now:()=>clock});
+  await daily().tick();assert.equal(jobs.length,1);clock+=86400000;await daily().tick();assert.equal(jobs.length,1);assert.equal(daily().snapshot().targets.bombsquad.status,"review_required");
+  available="1.8.3";clock+=86400000;await daily().tick();assert.equal(jobs.length,1);assert.match(daily().snapshot().targets.bombsquad.message,/paired package/);
+});
