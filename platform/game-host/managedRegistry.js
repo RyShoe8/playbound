@@ -89,12 +89,18 @@ export function createPartyRegistry(stateDir) {
 export function createManagedJobs(stateDir) {
   const registry = createRoomRegistry("managed-jobs.json", (r) => r && typeof r.communityServerId === "string", stateDir);
   const jobs = new Map(registry.read().map(({ communityServerId, ...job }) => [communityServerId,
-    job.status === "pending" ? { status: "failed", error: "Provisioning interrupted by agent restart", at: Date.now() } : job]));
+    job.status === "pending" ? { ...job, status: "failed", error: "Provisioning interrupted by agent restart", at: Date.now() } : job]));
   jobs.set = function (id, job) {
+    const identityProfile = this.get(id)?.identityProfile;
+    if (identityProfile) {
+      if (job.identityProfile !== undefined && job.identityProfile !== identityProfile) throw new Error("Customer identity profile cannot be downgraded");
+      job = { ...job, identityProfile };
+    }
     Map.prototype.set.call(this, id, job);
     registry.write([...this].map(([communityServerId, value]) => ({
       communityServerId, status: value.status, error: value.error, at: value.at,
       gameSlug: value.gameSlug, startedAt: value.startedAt,
+      identityProfile: value.identityProfile,
     })));
     return this;
   };

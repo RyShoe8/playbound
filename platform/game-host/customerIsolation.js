@@ -60,8 +60,9 @@ function privateDirectory(directory) {
       (process.getuid && (stat.uid !== process.getuid() || (stat.mode & 0o077)))) throw new Error("Isolation data directory must be private and service-owned");
 }
 
-export function customerIsolationLaunch({ gameSlug, customerOwned, communityServerId, binary, args, home, resourceLimits }) {
+export function customerIsolationLaunch({ gameSlug, customerOwned, communityServerId, binary, args, home, resourceLimits, identityProfile }) {
   if (!customerOwned || !CUSTOMER_ISOLATION_GAMES.includes(gameSlug)) return null;
+  if (identityProfile !== undefined && (identityProfile !== "teeworlds-unix-v1" || gameSlug !== "teeworlds")) throw new Error("Unsupported customer identity profile");
   const limits = customerResourceLimits(gameSlug, resourceLimits);
   validateCustomerPreparation({ gameSlug, customerOwned, communityServerId, home });
   if (!/^[a-f0-9]{24}$/i.test(communityServerId || "") || !path.isAbsolute(home)) throw new Error("Invalid isolation identity");
@@ -77,7 +78,22 @@ export function customerIsolationLaunch({ gameSlug, customerOwned, communityServ
   privateDirectory(root);
   const data = path.join(root, `pb-${communityServerId}`);
   privateDirectory(data);
-  return sandboxPlan({ gameSlug, binary, gameArgs: ["-f", "server.cfg", args[2]], data, mounts: [[expectedConfig, "/server/server.cfg"]], resourceLimits: limits });
+  const plan = sandboxPlan({ gameSlug, binary, gameArgs: ["-f", "server.cfg", args[2]], data, mounts: [[expectedConfig, "/server/server.cfg"]], resourceLimits: limits });
+  if (identityProfile) {
+    // No implicit migration or empty replacement of a customer's existing data.
+    for (const name of fs.readdirSync(data)) {
+      const info = fs.lstatSync(path.join(data, name));
+      if (name !== "server.cfg" || !info.isFile() || info.nlink !== 1 || info.size !== 0) throw new Error("Existing customer data requires an explicit identity migration");
+    }
+    const fd = fs.openSync(expectedConfig, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+    try {
+      const info = fs.fstatSync(fd);
+      if (!info.isFile() || info.nlink !== 1 || info.size > 16384) throw new Error("Invalid identity configuration");
+      plan.identityProfile = identityProfile;
+      plan.identityRuntime = { port: Number(args[2].slice(8)), config: fs.readFileSync(fd, "utf8") };
+    } finally { fs.closeSync(fd); }
+  }
+  return plan;
 }
 
 function trustedExecutables(binary) {

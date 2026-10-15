@@ -8,6 +8,7 @@ import { customerResourceLimits } from "./customerResourceLimits.js";
 
 const runFile = promisify(execFile);
 export const CUSTOMER_RESOURCE_HELPER = "/usr/local/libexec/playbound-customer-resources";
+const IDENTITY_HELPER = "/usr/local/libexec/playbound-customer-runtime";
 const GAMES = ["teeworlds", "bzflag", "hedgewars", "openttd", "luanti"];
 
 export function resourceScope(id, pid) {
@@ -39,21 +40,59 @@ export async function enterCustomerResources(id, gameSlug, pid = process.pid, al
   return result;
 }
 
-export async function runCustomerGate(input, { place = enterCustomerResources, launch = spawn, pid = process.pid, onSignal = (name, handler) => process.on(name, handler) } = {}) {
+export function launchIdentityRuntime(id, pid, plan) {
+  const identity = processIdentity(pid);
+  const limits = customerResourceLimits("teeworlds", plan.resourceLimits);
+  if (!identity || plan.identityProfile !== "teeworlds-unix-v1" || !Number.isInteger(plan.identityRuntime?.port) || plan.identityRuntime.port < 8303 || plan.identityRuntime.port > 8323 || typeof plan.identityRuntime.config !== "string" || Buffer.byteLength(plan.identityRuntime.config) > 16384) throw new Error("Invalid identity handoff");
+  const child = spawn("/usr/bin/sudo", ["-n", IDENTITY_HELPER, "run", id, String(pid), identity, String(plan.identityRuntime.port), String(limits.cpuMillis), String(limits.memoryMiB)], { cwd: "/", env: { PATH: "/usr/bin:/bin", LANG: "C.UTF-8" }, stdio: ["pipe", "inherit", "inherit"] });
+  child.stdin.on("error", () => {});
+  child.stdin.end(plan.identityRuntime.config);
+  return child;
+}
+
+async function identityOperation(action, room) {
+  resourceScope(room.communityServerId, room.pid);
+  if (!room.processIdentity || room.identityProfile !== "teeworlds-unix-v1") throw new Error("Invalid identity operation");
+  const { stdout } = await runFile("/usr/bin/sudo", ["-n", IDENTITY_HELPER, action, room.communityServerId, String(room.pid), room.processIdentity], { timeout: 4000, maxBuffer: 4096, env: { PATH: "/usr/bin:/bin", LANG: "C.UTF-8" } });
+  return JSON.parse(stdout);
+}
+export async function stopIdentityRuntime(room) {
+  try { return (await identityOperation("stop", room)).stopped === true; } catch { return false; }
+}
+export async function identityRuntimeHealthy(room) {
+  try { return (await identityOperation("status", room)).running === true; } catch { return false; }
+}
+
+export async function runCustomerGate(input, { place = enterCustomerResources, launch = spawn, identityLaunch = launchIdentityRuntime, pid = process.pid, onSignal = (name, handler) => process.on(name, handler) } = {}) {
   const { id, gameSlug, plan } = input || {};
   resourceScope(id, pid);
   if (!GAMES.includes(gameSlug) || plan?.binary !== "/usr/bin/prlimit" || !Array.isArray(plan.args) || plan.args.length > 128 || plan.args.some(value => typeof value !== "string" || value.includes("\0")) || typeof plan.cwd !== "string" || !plan.env || typeof plan.env !== "object") throw new Error("Invalid customer runtime plan");
-  let stopping = false, child;
-  const stop = () => { stopping = true; if (child) child.kill("SIGTERM"); };
+  if (plan.identityProfile !== undefined && (gameSlug !== "teeworlds" || plan.identityProfile !== "teeworlds-unix-v1")) throw new Error("Invalid identity profile");
+  let stopping = false, child, finish;
+  const stop = () => {
+    stopping = true;
+    if (child) {
+      try { child.kill("SIGTERM"); } catch { /* The scoped root stop owns privileged descendants. */ }
+      if (plan.identityProfile) {
+        // Do not keep the gate alive waiting for a privileged child it cannot
+        // signal. Gate exit independently fences that child, including when the
+        // agent exits before its delayed fallback or the binding is not ready.
+        child.unref();
+        finish?.(143);
+      }
+    }
+  };
   onSignal("SIGTERM", stop);
   onSignal("SIGINT", stop);
   const limits = customerResourceLimits(gameSlug, plan.resourceLimits);
   await place(id, gameSlug, pid, limits);
   if (stopping) return 143;
-  child = launch(plan.binary, plan.args, { cwd: plan.cwd, env: plan.env, stdio: ["ignore", "inherit", "inherit"] });
+  child = plan.identityProfile ? identityLaunch(id, pid, plan) : launch(plan.binary, plan.args, { cwd: plan.cwd, env: plan.env, stdio: ["ignore", "inherit", "inherit"] });
   return new Promise((resolve, reject) => {
+    finish = resolve;
     child.once("error", reject);
     child.once("exit", code => resolve(Number.isInteger(code) ? code : 1));
+    if (stopping) stop();
   });
 }
 

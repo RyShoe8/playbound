@@ -1,0 +1,112 @@
+import importlib.util
+import os
+import tempfile
+from pathlib import Path
+from types import SimpleNamespace
+import unittest
+from unittest.mock import patch, Mock
+
+if os.name == 'nt': raise unittest.SkipTest('Customer runtime helper is Linux-only')
+spec = importlib.util.spec_from_file_location('customer_runtime', Path(__file__).with_name('customer-runtime.py'))
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+ID = '0123456789abcdef01234567'
+IDENTITY = '01234567-0123-0123-0123-0123456789ab:100'
+CONFIG = 'sv_name Fixture\nsv_port 8322\nsv_register 0\nsv_map dm1\nsv_gametype dm\nsv_max_clients 4\n'
+
+
+class RuntimeBoundaries(unittest.TestCase):
+    def test_only_fixed_operations_and_bounded_arguments(self):
+        self.assertEqual(module.request(['run', ID, '42', IDENTITY, '8322', '750', '1536']), ('run', ID, 42, IDENTITY, (8322, 750, 1536)))
+        for action in ['stop', 'status']:
+            self.assertEqual(module.request([action, ID, '42', IDENTITY])[0], action)
+        for args in [[], ['exec', ID, '42', IDENTITY], ['stop', '../other', '42', IDENTITY], ['stop', ID, '1', IDENTITY], ['stop', ID, '42', '../identity'], ['run', ID, '42', IDENTITY, '9999', '750', '1536'], ['run', ID, '42', IDENTITY, '8322', '6001', '1536'], ['run', ID, '42', IDENTITY, '8322', '750', '8193'], ['run', ID, '42', IDENTITY, '8322', '750;id', '1536'], ['stop', ID, '42', IDENTITY, '8322', '750', '1536']]:
+            with self.assertRaises(ValueError): module.request(args)
+
+    def test_config_is_private_declared_and_has_no_commands_paths_or_registration(self):
+        self.assertEqual(module.config_bytes(CONFIG, 8322), CONFIG.encode())
+        for text in [CONFIG.replace('sv_register 0', 'sv_register 1'), CONFIG.replace('8322', '8321'), CONFIG + 'exec /etc/passwd\n', CONFIG + 'sv_map other\n', CONFIG.replace('dm1', '../world'), CONFIG + 'sv_name other; quit\n', CONFIG + 'sv_motd bad\x00\n', CONFIG.replace('sv_gametype dm', 'sv_gametype other'), CONFIG.replace('sv_max_clients 4', 'sv_max_clients 1000'), CONFIG + 'x' * 17000]:
+            with self.assertRaises(ValueError): module.config_bytes(text, 8322)
+
+    def test_game_exec_is_fixed_and_all_privileges_are_dropped_before_launch(self):
+        command = module.command(Path('/fixture/data'), 7, 8322, 1536)
+        self.assertEqual(command[0], '/usr/bin/prlimit')
+        self.assertIn('--as=3221225472', command)
+        self.assertIn('--die-with-parent', command)
+        self.assertIn('--disable-userns', command)
+        self.assertIn('--clearenv', command)
+        self.assertEqual(command[-5:], ['--', '/usr/games/teeworlds-server', '-f', 'server.cfg', 'sv_port 8322'])
+        self.assertNotIn('/var/lib/playbound-host', command)
+        self.assertNotIn('/etc', command)
+        self.assertEqual(command[command.index('--ro-bind-data') + 1:command.index('--ro-bind-data') + 3], ['7', '/server/server.cfg'])
+
+    def test_binding_mismatch_never_signals_or_opens_cgroup(self):
+        with patch.object(module, 'binding_read', side_effect=ValueError('wrong identity')), patch.object(module, 'scope_path') as scope:
+            with self.assertRaises(ValueError): module.stop_runtime(ID, 42, IDENTITY)
+            scope.assert_not_called()
+
+    def test_shutdown_waits_for_entire_cgroup_to_be_empty(self):
+        scope = module.scope_path(ID, 42)
+        reads = iter(['populated 1\nfrozen 0', 'populated 0\nfrozen 0'])
+        writes = []
+        with patch.object(module, 'binding_read'), patch.object(module, 'game_identity', return_value=IDENTITY), patch.object(Path, 'exists', return_value=True), patch.object(Path, 'read_text', lambda *args: next(reads)), patch.object(Path, 'write_text', lambda file, text: writes.append((file, text))), patch.object(module.time, 'sleep') as sleep:
+            self.assertEqual(module.stop_runtime(ID, 42, IDENTITY), {'stopped': True})
+            self.assertEqual(writes, [(scope / 'cgroup.kill', '1')])
+            sleep.assert_called_once()
+
+    def test_missing_scope_is_already_stopped_but_only_after_binding_validation(self):
+        with patch.object(module, 'binding_read') as binding, patch.object(module, 'game_identity', side_effect=FileNotFoundError), patch.object(Path, 'exists', return_value=False), patch.object(Path, 'write_text') as write:
+            self.assertEqual(module.stop_runtime(ID, 42, IDENTITY), {'stopped': True})
+            binding.assert_called_once_with(ID, 42, IDENTITY)
+            write.assert_not_called()
+
+    def test_stop_timeout_does_not_acknowledge_a_populated_scope(self):
+        with patch.object(module, 'binding_read'), patch.object(module, 'game_identity', return_value=IDENTITY), patch.object(Path, 'exists', return_value=True), patch.object(Path, 'read_text', return_value='populated 1\nfrozen 0'), patch.object(Path, 'write_text'), patch.object(module.time, 'monotonic', side_effect=[0, 3]):
+            with self.assertRaisesRegex(ValueError, 'did not empty'): module.stop_runtime(ID, 42, IDENTITY)
+
+    def test_reused_gate_pid_cannot_authorize_scope_shutdown(self):
+        with patch.object(module, 'binding_read'), patch.object(module, 'game_identity', return_value=IDENTITY + '1'), patch.object(Path, 'write_text') as write:
+            with self.assertRaises(ValueError): module.stop_runtime(ID, 42, IDENTITY)
+            write.assert_not_called()
+
+    def test_launch_uses_reserved_uid_gid_empty_groups_and_sealed_config_without_env_or_command_input(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / 'control').mkdir()
+            identities = SimpleNamespace(ensure_identity=Mock(return_value={'uid': 40000, 'gid': 40000}), secure_stat=Mock())
+            resources = SimpleNamespace(verify_caller=Mock())
+            child = Mock(pid=52, returncode=0)
+            child.poll.return_value = 0
+            with patch.object(module, 'verify_scope', return_value=Path('/fixture.scope')), patch.object(module, 'verify_supervisor_scope'), patch.object(module, 'workspace', return_value=root), patch.object(module.pwd, 'getpwnam', return_value=SimpleNamespace(pw_uid=1001)), patch.object(Path, 'stat', return_value=SimpleNamespace(st_mode=0o100755, st_uid=0)), patch.object(module.subprocess, 'Popen', return_value=child) as spawn, patch.object(module, 'binding_write') as binding, patch.object(module, 'game_identity', return_value=IDENTITY):
+                self.assertEqual(module.run_runtime(identities, resources, ID, 42, IDENTITY, (8322, 750, 1536), CONFIG), 0)
+                options = spawn.call_args.kwargs
+                self.assertEqual((options['user'], options['group'], options['extra_groups']), (40000, 40000, []))
+                self.assertEqual(options['env'], module.ENV)
+                self.assertNotIn('shell', options)
+                self.assertEqual(options['cwd'], '/')
+                self.assertEqual(binding.call_args.args[1]['gateIdentity'], IDENTITY)
+                self.assertEqual(binding.call_args.args[1]['uid'], 40000)
+
+    def test_sudo_or_pam_cannot_move_the_privileged_supervisor_outside_limits(self):
+        scope = module.scope_path(ID, 42)
+        with patch.object(Path, 'read_text', return_value='0::/system.slice/' + scope.name):
+            module.verify_supervisor_scope(scope)
+        with patch.object(Path, 'read_text', return_value='0::/system.slice/agent.service'):
+            with self.assertRaises(ValueError): module.verify_supervisor_scope(scope)
+
+    def test_parent_identity_and_actual_kernel_limits_are_required_before_execution(self):
+        scope = module.scope_path(ID, 42)
+        resources = SimpleNamespace(verify_process=lambda *args: None)
+        values = {'/proc/42/cgroup': '0::/system.slice/' + scope.name, str(scope / 'cpu.max'): '75000 100000', str(scope / 'memory.max'): str(1536 * 1024 ** 2), str(scope / 'memory.swap.max'): '0', str(scope / 'pids.max'): '128', str(scope / 'memory.oom.group'): '1'}
+        with patch.object(module.pwd, 'getpwnam', return_value=SimpleNamespace(pw_uid=1001)), patch.object(Path, 'read_text', lambda file: values[str(file)]):
+            self.assertEqual(module.verify_scope(resources, ID, 42, IDENTITY, 750, 1536), scope)
+            for file, wrong in [('cpu.max', 'max 100000'), ('memory.max', 'max'), ('pids.max', 'max'), ('memory.swap.max', 'max'), ('memory.oom.group', '0')]:
+                key = str(scope / file)
+                old, values[key] = values[key], wrong
+                with self.assertRaises(ValueError): module.verify_scope(resources, ID, 42, IDENTITY, 750, 1536)
+                values[key] = old
+            values['/proc/42/cgroup'] = '0::/other.scope'
+            with self.assertRaises(ValueError): module.verify_scope(resources, ID, 42, IDENTITY, 750, 1536)
+
+
+if __name__ == '__main__': unittest.main()

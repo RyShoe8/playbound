@@ -32,6 +32,20 @@ test("managed manifest survives a new registry instance", () => {
   }
 });
 
+test("UID enrollment survives stopped, failed and interrupted jobs without silently reverting to the agent user", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "playbound-uid-jobs-"));
+  try {
+    const jobs = createManagedJobs(dir);
+    jobs.set("customer", { status: "pending", identityProfile: "teeworlds-unix-v1" });
+    const recovered = createManagedJobs(dir);
+    assert.equal(recovered.get("customer").status, "failed");
+    assert.equal(recovered.get("customer").identityProfile, "teeworlds-unix-v1");
+    for (const status of ["running", "stopped", "pending", "failed"]) recovered.set("customer", { status });
+    assert.equal(createManagedJobs(dir).get("customer").identityProfile, "teeworlds-unix-v1");
+    assert.throws(() => recovered.set("customer", { status: "pending", identityProfile: null }), /downgraded/);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
 test("recovery requires the same Linux process, not just a reused PID", () => {
   const identity = processIdentity(process.pid);
   if (process.platform !== "linux") return;
