@@ -37,7 +37,7 @@ export DEBIAN_FRONTEND=noninteractive
 echo "==> packages"
 apt-get update -y
 apt-get install -y --no-install-recommends \
-  ca-certificates curl wget unzip tar xz-utils xvfb xauth xdotool imagemagick bubblewrap util-linux \
+  ca-certificates curl wget unzip tar xz-utils 7zip python3 xvfb xauth xdotool imagemagick bubblewrap util-linux \
   ufw jq coturn git \
   openjdk-17-jre-headless \
   openttd \
@@ -221,6 +221,7 @@ cp -f "$AGENT_SRC/index.js" "$AGENT_SRC/agentRoutes.js" "$AGENT_SRC/recipes.js" 
   "$AGENT_SRC/dedicatedDataBackups.js" "$AGENT_SRC/worldBackupRunner.js" "$AGENT_SRC/dedicatedDataBackupsWorker.js" "$AGENT_SRC/dedicatedFiles.js" \
   "$AGENT_SRC/installationTargets.js" "$AGENT_SRC/installationJobs.js" "$AGENT_SRC/dailyInstallationUpdates.js" "$AGENT_SRC/installationFailureReports.js" "$AGENT_SRC/etlegacyUpdates.js" "$AGENT_SRC/etlegacyArchive.py" "$AGENT_SRC/etlegacyReleases.json" "$AGENT_SRC/etlegacyManagedFiles.txt" "$AGENT_SRC/openmohaaUpdates.js" "$AGENT_SRC/openmohaaArchive.py" "$AGENT_SRC/openmohaaRelease.json" "$AGENT_SRC/unvanquishedUpdates.js" "$AGENT_SRC/unvanquishedArchive.py" "$AGENT_SRC/unvanquishedReleases.json" "$AGENT_SRC/installationUpdateWorker.js" "$AGENT_SRC/mindustryUpdates.js" "$AGENT_SRC/githubReleaseAssets.js" "$AGENT_SRC/openraUpdates.js" "$AGENT_SRC/openhvUpdates.js" "$AGENT_SRC/openRaAppImageUpdates.js" "$AGENT_SRC/openE2140Updates.js" "$AGENT_SRC/appImageInstallation.js" "$AGENT_SRC/sshArtifactSignature.js" "$AGENT_SRC/hypersomniaUpdates.js" "$AGENT_SRC/assaultcubeUpdates.js" "$AGENT_SRC/nativeArchive.py" "$AGENT_SRC/factorioUpdates.js" "$AGENT_SRC/factorioArchive.py" "$AGENT_SRC/terrariaUpdates.js" "$AGENT_SRC/terrariaArchive.py" "$AGENT_SRC/terraria1458.json" "$AGENT_SRC/nativePackageUpdates.js" "$AGENT_SRC/nativePackageProfiles.json" "$AGENT_SRC/packageNativeArchive.py" "$AGENT_SRC/rimworldUpdates.js" "$AGENT_SRC/rimworldSourceBuild.py" "$AGENT_SRC/rimworldBuild.json" "$AGENT_SRC/rimworldPackages.lock.json" "$AGENT_SRC/reviewedSourceArchive.py" "$AGENT_SRC/fgmsUpdates.js" "$AGENT_SRC/fgmsSourceBuild.py" "$AGENT_SRC/fgmsBuild.json" "$AGENT_SRC/xonoticUpdates.js" "$AGENT_SRC/xonoticArchive.py" "$AGENT_SRC/xonotic086.json" \
   "$AGENT_SRC/gameEnvironment.js" \
+  "$AGENT_SRC/reviewedComponentUpdates.js" "$AGENT_SRC/reviewedComponentProfiles.json" "$AGENT_SRC/reviewedComponentArchive.py" \
   "$AGENT_SRC/dedicatedRecipes.js" "$AGENT_SRC/barotraumaRuntime.js" "$AGENT_SRC/rimworldControl.js" "$AGENT_SRC/rimworldDifficulty.json" "$AGENT_SRC/anivControl.js" \
   "$AGENT_SRC/package.json" "$AGENT_DIR/"
 mkdir -p "$AGENT_DIR/assets" "$AGENT_DIR/rimworld"

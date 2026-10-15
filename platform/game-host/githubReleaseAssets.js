@@ -3,8 +3,11 @@ import { createHash } from "node:crypto";
 
 const HOSTS = new Set(["github.com", "release-assets.githubusercontent.com", "objects.githubusercontent.com"]);
 export async function readRelease(repository, { request = fetch, signal, label }) {
-  if (!["Anuken/Mindustry", "OpenRA/OpenRA", "OpenHV/OpenHV", "OpenE2140/OpenE2140", "assaultcube/AC", "openmoh/openmohaa", "Unvanquished/Unvanquished"].includes(repository)) throw new Error("Unsupported release source");
-  const response = await request(`https://api.github.com/repos/${repository}/releases/latest`, {
+  if (!["Anuken/Mindustry", "OpenRA/OpenRA", "OpenHV/OpenHV", "OpenE2140/OpenE2140", "assaultcube/AC", "openmoh/openmohaa", "Unvanquished/Unvanquished", "TES3MP/TES3MP"].includes(repository)) throw new Error("Unsupported release source");
+  // TES3MP marks its VR channel as GitHub's latest stable release. Select the
+  // highest standard-server tag explicitly; never switch a normal world to VR.
+  const endpoint = repository === "TES3MP/TES3MP" ? "releases?per_page=30" : "releases/latest";
+  const response = await request(`https://api.github.com/repos/${repository}/${endpoint}`, {
     redirect: "error", signal, headers: { "User-Agent": "PlayBound-game-host", Accept: "application/vnd.github+json" },
   });
   if (!response.ok || !response.body) throw new Error(`${label} release request failed`);
@@ -14,7 +17,13 @@ export async function readRelease(repository, { request = fetch, signal, label }
     if (size > 1024 * 1024) throw new Error(`${label} release response exceeds its size limit`);
     chunks.push(chunk);
   }
-  return JSON.parse(Buffer.concat(chunks).toString());
+  const result = JSON.parse(Buffer.concat(chunks).toString());
+  if (repository !== "TES3MP/TES3MP") return result;
+  if (!Array.isArray(result)) throw new Error("TES3MP standard release feed is invalid");
+  const releases = result.filter((row) => row.draft === false && row.prerelease === false && /^tes3mp-\d{1,4}\.\d{1,4}\.\d{1,4}$/.test(row.tag_name || ""));
+  releases.sort((a, b) => b.tag_name.localeCompare(a.tag_name, "en", { numeric: true }));
+  if (!releases.length) throw new Error("TES3MP standard release is unavailable");
+  return releases[0];
 }
 
 function trustedURL(value, label) {

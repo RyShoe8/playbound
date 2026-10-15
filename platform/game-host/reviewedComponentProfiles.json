@@ -1,0 +1,41 @@
+{
+  "morrowind": {
+    "name": "Morrowind (TES3MP)",
+    "version": "0.8.1",
+    "component": "tes3mp-server.x86_64",
+    "url": "https://github.com/TES3MP/TES3MP/releases/download/tes3mp-0.8.1/tes3mp-server-GNU%2BLinux-x86_64-release-0.8.1-68954091c5-6da3fdea59.tar.gz",
+    "format": "tar",
+    "member": "TES3MP-server/tes3mp-server.x86_64",
+    "archiveBytes": 11119060,
+    "archiveSha256": "106a56e32a00ff7a92b574fae0e25671e90a199f509b16d483a8d7da6fc3bcf0",
+    "bytes": 3594064,
+    "sha256": "961a688d23afe736eb2ef005b44eee2fedc61a8a1db201d3c56c0898e2f1c17a",
+    "elfClass": 2
+  },
+  "battlefield-1942-anthology": {
+    "name": "Battlefield 1942",
+    "version": "1.61",
+    "component": "bf1942_lnxded.static",
+    "url": "https://files.bf1942.online/server/linux/linux-bf1942-server.tar",
+    "format": "tar",
+    "member": "linux-bf1942-server/bf1942_lnxded.static",
+    "archiveBytes": 157514752,
+    "archiveSha256": "6b6a2fc293385636881474dff37f248b67df299431797d43050725c2f0938b8e",
+    "bytes": 15218900,
+    "sha256": "6b90d1cc7bf6036b882d57b245e413e19663fa1c4eecc0639a1115000ff02b7c",
+    "elfClass": 1
+  },
+  "re-volt-rvgl": {
+    "name": "RVGL",
+    "version": "23.1030a1",
+    "component": "rvgl.64",
+    "url": "https://rvgl.org/downloads/rvgl_23.1030a1_linux.7z",
+    "format": "7z",
+    "member": "rvgl.64",
+    "archiveBytes": 10615564,
+    "archiveSha256": "d15fd1a4cb2dd3bedb8394d1b11929badb281f56d7db7566637c2f4c142dca5e",
+    "bytes": 2935448,
+    "sha256": "9d1e25ed7435346cf150a01f6ef045d8d7ea9fe20b1e4440bdbc780b833185d1",
+    "elfClass": 2
+  }
+}
