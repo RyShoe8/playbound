@@ -53,6 +53,26 @@ until the additional handlers pass their gates. No placeholder controls.
 
 ## Current delivered scope
 
+- Legacy Teeworlds migration now has an operator-only **checkpoint preparation**
+  step, not an activation path. `customer-data-migration.py prepare <serverId>`
+  requires a direct root operator and refuses while any process uses the old
+  service UID. No agent sudo rule, API or automatic enrollment invokes it.
+  It derives fixed paths, walks with no-follow directory/file descriptors,
+  rejects links/special files/unsafe ownership, and bounds depth, entry count,
+  individual size and total bytes. A second source scan and SHA-256 manifest
+  verify the private, fsynced checkpoint before publication. Repetition verifies
+  the existing checkpoint; changed source data requires operator review rather
+  than overwriting it. Failed stages remain private and are never activated.
+  Original files and active UID data are untouched. Atomic activation, recovery
+  after activation interruption, and rollback preserving subsequent game progress
+  remain required before the nonempty-data enrollment guard can be lifted.
+  Eleven Linux fixture tests passed, including binary/maps preservation, mutation
+  and link rejection, limits, idempotency, source drift and checkpoint tampering.
+  The installed VPS tool refused a fixture preparation while the real agent was
+  active, preserved the fixture bytes and created no runtime workspace. The
+  fixture was removed; no live service was restarted or customer migrated.
+  Operator procedure: [customer-identity-migration.md](customer-identity-migration.md).
+
 - Teeworlds has an explicitly opted-in managed UID handoff (`teeworlds-unix-v1`).
   Normal website/customer creation leaves it off. Once selected, enrollment is
   retained in managed jobs across stop, failure and agent restart, so a later

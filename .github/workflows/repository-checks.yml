@@ -65,3 +65,4 @@ jobs:
       - run: python3 tools/customer_resources_test.py
       - run: python3 tools/customer_identities_test.py
       - run: python3 tools/customer_runtime_test.py
+      - run: sudo python3 tools/customer_data_migration_test.py
