@@ -53,6 +53,30 @@ until the additional handlers pass their gates. No placeholder controls.
 
 ## Current delivered scope
 
+- The namespace rollout now covers five reviewed system-native engines:
+  Teeworlds, BZFlag, Hedgewars, OpenTTD and Luanti. Each profile validates the
+  expected executable and native arguments, mounts only its private writable
+  home and fixed system dependencies, clears the environment and keeps host
+  processes/agent files/other customer data out of its filesystem view.
+  DNS, CA, hosts, protocol and service databases are individual read-only inputs;
+  no profile binds the complete host `/etc` or `/var` tree. OpenTTD and Luanti
+  keep existing per-server save locations. Game-specific launchers and custom
+  binaries fail closed for these profiles rather than bypassing the sandbox.
+  Before any recipe preparation, generated configuration and writable-root
+  ancestors are checked for links and configuration hardlinks, closing the
+  host-side preparation gap outside the namespace. Live acceptance distinguishes
+  a real query (BZFlag/OpenTTD report four slots; Hedgewars reports connections
+  but not a slot cap) from Luanti's confirmed UDP bind with no local player-count
+  verification. Network isolation, distinct host identities, cgroup quotas,
+  executable plugins and other engines remain unfinished.
+  VPS acceptance (2026-10-15 UTC) confirmed all four added wrappers survived an
+  agent restart with working process metrics and the same query/bind results.
+  All ten pre-deployment managed runtimes retained their identities/PIDs.
+  Each fixture's whole process group stopped and its temporary data was removed.
+  Nine Linux boundary tests passed; the local agent suite passed 193 tests with
+  15 platform-dependent skips. No customer world or database row was changed,
+  and no human Join or Luanti player-count validation is claimed.
+
 - First OS namespace profile: newly started customer-owned Teeworlds servers
   use the reviewed system executable through Bubblewrap, with private process,
   user, IPC, UTS and cgroup namespaces, dropped capabilities, disabled nested
