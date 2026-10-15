@@ -53,6 +53,17 @@ until the additional handlers pass their gates. No placeholder controls.
 
 ## Current delivered scope
 
+- Empty-server maintenance now accepts selected UTC weekdays instead of
+  requiring a daily restart. Legacy schedules remain daily without migration;
+  writes from older launchers preserve saved weekdays. The web/native workspace
+  shows the next saved window and the most recent check reason. Occupied or
+  unknown-player checks overwrite one status snapshot and retry within the
+  window, without generating repeated Activity rows. Atomic claims include the
+  weekday, and the schedule is checked again after backup before requesting a
+  restart. No schedule is enabled by deployment. This is the existing typed
+  restart task; arbitrary commands, task chains and additional task kinds remain
+  separate work. Native UI changes need the next launcher release.
+
 - Owner/administrator log viewing uses a fixed-ID, read-only agent endpoint.
   Each request reads at most 64 KiB and returns at most 200 complete lines;
   cut edges, links and non-regular files are rejected or omitted. Credential

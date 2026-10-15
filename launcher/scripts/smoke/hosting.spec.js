@@ -41,6 +41,12 @@ for (const role of ['owner','moderator']) test(`native hosting workspace (${role
       await expect(host.locator('[data-message]')).toHaveText('Changes applied.');
       await tabs.getByRole('button',{name:'Maintenance',exact:true}).click();
       await host.locator('[name="enabled"]').check();
+      await host.locator('[name="daysUTC"][value="0"]').uncheck();
+      await host.locator('[name="daysUTC"][value="6"]').uncheck();
+      for (const day of [1,2,3,4,5]) await host.locator(`[name="daysUTC"][value="${day}"]`).uncheck();
+      await host.getByRole('button',{name:'Save maintenance'}).click();
+      await expect(host.locator('[data-message]')).toHaveText('Select at least one day.');
+      for (const day of [1,2,3,4,5]) await host.locator(`[name="daysUTC"][value="${day}"]`).check();
       await host.getByRole('button',{name:'Save maintenance'}).click();
       await expect(host.locator('[data-message]')).toHaveText('Maintenance saved.');
       await tabs.getByRole('button',{name:'Console',exact:true}).click();
@@ -53,7 +59,7 @@ for (const role of ['owner','moderator']) test(`native hosting workspace (${role
       await expect(host.locator('[data-message]')).toHaveText('Fixture command rejected');
       const writes = fs.readFileSync(path.join(root,'hosting-writes.jsonl'),'utf8').trim().split('\n').map(JSON.parse);
       expect(writes.find(w => w.path.endsWith('/settings')).body).toEqual({settings:{bots:4}});
-      expect(writes.find(w => w.path.endsWith('/maintenance')).body).toEqual({enabled:true,hourUTC:6});
+      expect(writes.find(w => w.path.endsWith('/maintenance')).body).toEqual({enabled:true,hourUTC:6,daysUTC:[1,2,3,4,5]});
       await tabs.getByRole('button',{name:'Overview',exact:true}).click();
       await page.screenshot({path:testInfo.outputPath('hosting-overview.png')});
     } else {

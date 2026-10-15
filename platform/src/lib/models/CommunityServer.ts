@@ -47,10 +47,13 @@ const CommunityServerSchema = new Schema({
   slotsHeld: { type: Boolean, default: false },
   visibility: { type: String, enum: ["public", "unlisted", "private"], default: "public" },
   description: { type: String, default: "" },
-  /** Opt-in daily UTC restart window. Unknown or occupied servers are never restarted. */
+  /** Opt-in weekly UTC restart windows. Missing days preserves legacy daily schedules. */
   maintenance: {
     enabled: { type: Boolean, default: false },
     hourUTC: { type: Number, default: 6, min: 0, max: 23 },
+    daysUTC: { type: [Number], default: undefined },
+    lastCheckedAt: { type: Date, default: null },
+    lastCheckResult: { type: String, default: null },
     lastDay: { type: String, default: null },
     result: { type: String, default: null },
     changedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },

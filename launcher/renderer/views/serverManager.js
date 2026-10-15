@@ -59,7 +59,8 @@ export async function renderServerManager(host, id, { request, escapeHtml: e, ba
     if (tab === 'Files') return '<div data-file-manager></div>';
     if (tab === 'Maintenance') {
       const data = await request(`${base}/maintenance`);
-      return `<h2>Daily maintenance</h2><p>Optional empty-server restart. A configuration restore point is saved first; this does not update game files or back up the world.</p><form class="workspace-form" data-form="maintenance"><label class="workspace-field"><input type="checkbox" name="enabled" ${data.enabled ? 'checked' : ''}> Restart only when the server is empty</label><label class="workspace-field">Daily window (UTC)<select class="input-text" name="hourUTC">${Array.from({length:24},(_,hour) => `<option value="${hour}" ${hour === data.hourUTC ? 'selected' : ''}>${String(hour).padStart(2,'0')}:00–${String(hour).padStart(2,'0')}:59 UTC</option>`).join('')}</select></label><p>Checked every 15 minutes. Occupied or unreachable servers stay running. Missed windows wait until the next day.</p>${data.lastDay ? `<p>Last attempt: ${e(data.lastDay)} · ${e(data.result || 'Preparing maintenance')}</p>` : ''}<button class="btn-primary">Save maintenance</button></form>`;
+      const days = data.daysUTC || [0,1,2,3,4,5,6];
+      return `<h2>Scheduled maintenance</h2><p>Choose quiet days and an empty-server restart window. A configuration restore point is saved first; this does not update game files or back up the world.</p><form class="workspace-form" data-form="maintenance"><label class="workspace-field"><input type="checkbox" name="enabled" ${data.enabled ? 'checked' : ''}> Restart only when the server is empty</label><fieldset><legend>Days (UTC)</legend><div class="workspace-actions">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((label,day)=>`<label class="btn-secondary" style="display:flex;align-items:center;gap:.5rem;min-height:44px"><input type="checkbox" name="daysUTC" value="${day}" ${days.includes(day) ? 'checked' : ''}>${label}</label>`).join('')}</div></fieldset><label class="workspace-field">Restart window (UTC)<select class="input-text" name="hourUTC">${Array.from({length:24},(_,hour) => `<option value="${hour}" ${hour === data.hourUTC ? 'selected' : ''}>${String(hour).padStart(2,'0')}:00–${String(hour).padStart(2,'0')}:59 UTC</option>`).join('')}</select></label><p>Checked every 15 minutes within the selected UTC days and hour. Occupied or unknown-player servers stay running. Missed windows wait for the next selected day.</p>${data.nextWindow ? `<p>Next saved window (your time): ${e(when(data.nextWindow.start))} – ${e(new Date(data.nextWindow.end).toLocaleTimeString())}</p>` : ''}${data.lastCheckedAt ? `<p>Last check: ${e(when(data.lastCheckedAt))} · ${e(data.lastCheckResult || '')}</p>` : ''}${data.lastDay ? `<p>Last attempt: ${e(data.lastDay)} · ${e(data.result || 'Preparing maintenance')}</p>` : ''}<button class="btn-primary">Save maintenance</button></form>`;
     }
     if (tab === 'Overview') {
       const resources = control.status.resources;
@@ -147,7 +148,11 @@ export async function renderServerManager(host, id, { request, escapeHtml: e, ba
     if (busy) return;
     const data = Object.fromEntries(new window.FormData(form));
     const name = form.dataset.form;
-    if (name === 'maintenance') { void perform(() => request(`${base}/maintenance`, 'PUT', { enabled: form.elements.enabled.checked, hourUTC: Number(data.hourUTC) }), 'Maintenance saved.'); return; }
+    if (name === 'maintenance') {
+      const daysUTC = [...form.querySelectorAll('[name="daysUTC"]:checked')].map(input => Number(input.value));
+      if (!daysUTC.length) { message('Select at least one day.', true); return; }
+      void perform(() => request(`${base}/maintenance`, 'PUT', { enabled: form.elements.enabled.checked, hourUTC: Number(data.hourUTC), daysUTC }), 'Maintenance saved.'); return;
+    }
     if (name === 'identity') { void perform(() => request(base, 'PATCH', data), result => result.restartNeeded ? 'Saved. Restart to show the new name in-game.' : 'Saved.'); return; }
     if (name === 'settings') {
       const values = {};

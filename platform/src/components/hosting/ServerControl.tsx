@@ -7,6 +7,7 @@ import { Copy, RotateCw, TriangleAlert } from "lucide-react";
 import { SettingControl } from "@/components/friends/PartyServerSettings";
 import { ServerFiles } from "./ServerFiles";
 import { ServerLogs } from "./ServerLogs";
+import { MAINTENANCE_DAYS } from "@/lib/dedicatedHosting/maintenancePolicy";
 import type { ServerSettingDefinition, ServerSettingValue, ServerSettingValues } from "@/lib/serverControl/settings";
 import type { ServerControlCapabilities, ServerRuntimeState } from "@/lib/serverControl/adapter";
 
@@ -48,8 +49,8 @@ const ACTION_LABELS: Record<string, string> = {
   server_recovered: "recovered the server",
   server_updated: "changed the server",
   settings_changed: "changed settings",
-  maintenance_changed: "changed daily maintenance",
-  maintenance_ran: "ran daily maintenance",
+  maintenance_changed: "changed scheduled maintenance",
+  maintenance_ran: "ran scheduled maintenance",
   map_changed: "changed the map",
   next_map_set: "set the next map",
   rotation_set: "set the map rotation",
@@ -276,25 +277,29 @@ export function ServerControl({ serverId }: { serverId: string }) {
 }
 
 function MaintenanceTab({ base, run, busy }: { base: string; run: (work: () => Promise<unknown>, done?: string) => Promise<void>; busy: boolean }) {
-  const [data, setData] = useState<{ enabled: boolean; hourUTC: number; lastDay: string | null; result: string | null } | null>(null);
+  const [data, setData] = useState<{ enabled: boolean; hourUTC: number; daysUTC: number[]; lastDay: string | null; result: string | null; lastCheckedAt?: string | null; lastCheckResult?: string | null; nextWindow?: { start: string; end: string } | null } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const load = useCallback(async () => {
-    try { setData(await api(`${base}/maintenance`)); setError(null); }
+    try { setData({ daysUTC: [0, 1, 2, 3, 4, 5, 6], ...await api(`${base}/maintenance`) }); setError(null); }
     catch (error) { setError(error instanceof Error ? error.message : "Could not load maintenance"); }
   }, [base]);
   useEffect(() => { const timer = setTimeout(() => void load(), 0); return () => clearTimeout(timer); }, [load]);
   if (!data) return <div><p role={error ? "alert" : "status"}>{error || "Loading maintenance…"}</p>{error ? <button type="button" onClick={() => void load()}>Retry</button> : null}</div>;
   return <form className="max-w-xl space-y-4 rounded-xl border border-border bg-card p-4" onSubmit={(event) => {
     event.preventDefault();
-    void run(async () => { await api(`${base}/maintenance`, { method: "PUT", body: JSON.stringify({ enabled: data.enabled, hourUTC: data.hourUTC }) }); }, "Maintenance saved.");
+    void run(async () => { await api(`${base}/maintenance`, { method: "PUT", body: JSON.stringify({ enabled: data.enabled, hourUTC: data.hourUTC, daysUTC: data.daysUTC }) }); await load(); }, "Maintenance saved.");
   }}>
-    <h2 className="font-semibold">Daily maintenance</h2>
-    <p className="text-sm text-muted-foreground">Optional daily restart during a quiet hour. PlayBound saves a configuration restore point first. This does not update game files or back up the saved world.</p>
+    <h2 className="font-semibold">Scheduled maintenance</h2>
+    <p className="text-sm text-muted-foreground">Choose quiet days and a restart window. PlayBound saves a configuration restore point first. This does not update game files or back up the saved world.</p>
     <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={data.enabled} disabled={busy} onChange={event => setData({ ...data, enabled: event.target.checked })} />Restart only when the server is empty</label>
-    <label className="block text-sm">Daily window (UTC)<select className="mt-1 w-full rounded border border-border bg-background p-2" value={data.hourUTC} disabled={busy} onChange={event => setData({ ...data, hourUTC: Number(event.target.value) })}>{Array.from({ length: 24 }, (_, hour) => <option key={hour} value={hour}>{String(hour).padStart(2, "0")}:00–{String(hour).padStart(2, "0")}:59 UTC</option>)}</select></label>
-    <p className="text-xs text-muted-foreground">Checked every 15 minutes within this hour. Occupied servers and failed player queries are skipped. If the entire window is missed, the next attempt is the following day. Your browser&apos;s timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone}.</p>
+    <fieldset disabled={busy} className="space-y-2"><legend className="text-sm font-medium">Days (UTC)</legend><div className="flex flex-wrap gap-2">{MAINTENANCE_DAYS.map((label, day) => <label key={day} className="flex min-h-11 items-center gap-2 rounded-lg border border-border px-3 text-sm"><input type="checkbox" className="h-4 w-4 accent-primary" checked={data.daysUTC.includes(day)} onChange={event => setData({ ...data, daysUTC: event.target.checked ? [...data.daysUTC, day] : data.daysUTC.filter(value => value !== day) })} />{label}</label>)}</div></fieldset>
+    <label className="block text-sm">Restart window (UTC)<select className="mt-1 w-full rounded border border-border bg-background p-2" value={data.hourUTC} disabled={busy} onChange={event => setData({ ...data, hourUTC: Number(event.target.value) })}>{Array.from({ length: 24 }, (_, hour) => <option key={hour} value={hour}>{String(hour).padStart(2, "0")}:00–{String(hour).padStart(2, "0")}:59 UTC</option>)}</select></label>
+    <p className="text-xs text-muted-foreground">Checked every 15 minutes within the selected UTC days and hour. Occupied servers and failed queries are retried within the window. A missed window waits for the next selected day. Your browser&apos;s timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone}.</p>
+    {data.nextWindow ? <p className="text-sm">Next saved window (your time): {new Date(data.nextWindow.start).toLocaleString()} – {new Date(data.nextWindow.end).toLocaleTimeString()}</p> : null}
+    {data.lastCheckedAt ? <p className="text-sm">Last check: {new Date(data.lastCheckedAt).toLocaleString()} · {data.lastCheckResult}</p> : null}
     {data.lastDay ? <p className="text-sm">Last attempt: {data.lastDay} · {data.result || "Preparing maintenance"}</p> : null}
-    <button className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50" disabled={busy}>Save maintenance</button>
+    {!data.daysUTC.length ? <p role="alert" className="text-sm text-destructive">Select at least one day.</p> : null}
+    <button className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50" disabled={busy || !data.daysUTC.length}>Save maintenance</button>
   </form>;
 }
 
