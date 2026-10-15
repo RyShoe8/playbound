@@ -12,7 +12,7 @@ New games must complete `docs/dedicated-server-game-checklist.md`.
 Assess each feature per engine: applicable and verified, not yet implemented,
 or unavailable with a concrete engine/transport reason. The universal scope is
 a release requirement, not a claim that every engine supports bots or plugins.
-Keep current thirteen-game update support and thirteen-game file support explicit
+Keep current fourteen-game update support and thirteen-game file support explicit
 until the additional handlers pass their gates. No placeholder controls.
 
 ## Implementation order and gates
@@ -158,3 +158,21 @@ until the additional handlers pass their gates. No placeholder controls.
   disabled. Production game files stayed unchanged; this is not a real player
   Join or human/bot-query verification. Coverage now has 13 handled families
   and 38 remaining game/edition entries.
+
+- AssaultCube adds a native-component archive handler. Only `bin_unix` is
+  staged and swapped; configuration, maps, logs, demos, mods, private data and
+  the stable `ac_server` link remain in place, including across later rollback.
+  The historical official 1.3.0.2 archive has a reviewed SHA-256 pin (GitHub
+  supplies no historical digest), and extracted x86_64 executable hashes must
+  match the reviewed package. A bounded unprivileged Python reader writes only
+  the two expected regular native files; links, traversal, duplicates, special
+  permissions and oversized entries fail closed. New release versions require
+  explicit engine/protocol compatibility review rather than blindly replacing
+  data or assuming the current maps/configuration are compatible.
+  Component activation/restore failures retain the existing start gates;
+  ambiguous restore keeps the installation interrupted for operator recovery.
+  VPS acceptance (2026-10-14) exercised actual archive download, same-version
+  native update/rollback, preservation of newer configuration/data-root inode,
+  and a real dedicated query reporting zero players/two slots. Production
+  native binaries and server data stayed unchanged. A human Join remains
+  separate. Coverage is now 14 handled families and 37 remaining entries.
