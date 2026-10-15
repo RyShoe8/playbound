@@ -9,7 +9,7 @@ const GAPS: Record<string, Gap> = {
   openttd: PACKAGE, luanti: PACKAGE, hedgewars: PACKAGE, "warzone-2100": PACKAGE,
   freeciv: PACKAGE, bzflag: PACKAGE, teeworlds: PACKAGE, supertuxkart: PACKAGE,
   openarena: PACKAGE, "0ad": PACKAGE, "battle-for-wesnoth": PACKAGE, flightgear: PACKAGE,
-  xonotic: ARCHIVE, assaultcube: ARCHIVE, "medal-of-honor-allied-assault": ARCHIVE,
+  xonotic: ARCHIVE, "medal-of-honor-allied-assault": ARCHIVE,
   "wolfenstein-enemy-territory": { category: "archive", reason: "Needs an ET: Legacy archive handler that preserves compatible etmain assets and validates the dedicated engine/data combination." },
   "battlefield-1942-anthology": ARCHIVE, terraria: ARCHIVE, "vintage-story": ARCHIVE,
   factorio: ARCHIVE, "re-volt-rvgl": ARCHIVE, unvanquished: ARCHIVE,

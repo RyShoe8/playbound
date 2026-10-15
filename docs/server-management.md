@@ -217,7 +217,7 @@ until a root-owned scanner is explicitly configured for them.
 
 Install the scanner separately with
 `platform/game-host/install-update-scanner.sh` as root. It installs a root-owned
-helper and a sudoers rule permitting only its thirteen fixed read-only scans.
+helper and a sudoers rule permitting only its fourteen fixed read-only scans.
 Workers and SteamCMD continue running as the agent service user. No game
 installation or privileged shell is run by that helper.
 
@@ -262,7 +262,7 @@ This is not complete feature parity with those platforms. FTP/SFTP,
 process-log streaming, a general task scheduler,
 plugin/Workshop installation, database administration, and customer-triggered
 binary updates are not implemented by these changes. Shared binary updates
-are deliberately admin-only and limited to the thirteen ready installations above. None
+are deliberately admin-only and limited to the fourteen ready installations above. None
 of these features is represented by a nonfunctional button.
 
 No hosting backend is replaced or installed. Existing recipes, measured
@@ -359,3 +359,31 @@ and dedicated UDP binding without public listing. Player Join/query validation
 remains separate. Protocol/key sources: [upstream verification](https://github.com/TeamHypersomnia/Hypersomnia/blob/master/src/application/main/verify_signature.h),
 [public signer](https://github.com/TeamHypersomnia/Hypersomnia/blob/master/src/signing_keys.h),
 and [startup update control](https://github.com/TeamHypersomnia/Hypersomnia/blob/master/src/cmd_line_params.h).
+
+### AssaultCube native component updates
+
+AssaultCube's updater replaces only `bin_unix`. The installation root,
+`ac_server` link, configuration, maps/packages, private files, logs, demos and
+mods are neither copied into binary rollback nor restored from it. This avoids
+reverting settings changed after an update. The existing shared queue waits
+for affected rooms and unmanaged processes, blocks new starts, and retains
+the previous native directory. Failed activation restores it; ambiguous
+restoration remains interrupted and requires operator inspection.
+
+The reviewed 1.3.0.2 official archive is pinned by SHA-256 and both native
+executables must match their reviewed x86_64 hashes. GitHub provides no digest
+for this historical asset; the pin was computed from the fixed official URL
+and matched against the installed binaries. Unrecognized releases require
+compatibility review before this handler accepts them. This is a native-binary
+update, not automatic mod/map/configuration migration.
+
+The Python archive reader is unprivileged, memory/CPU/file-size limited and
+never extracts an arbitrary tree: it writes only the two expected regular
+executables into a new directory. Unsafe paths, links, duplicate names, special
+permissions, excessive counts/sizes and incomplete packages fail closed.
+`nativeArchive.py` must deploy with the imported JavaScript modules.
+
+An isolated VPS acceptance test covered download, activation/rollback,
+preservation of post-update configuration and the stable data-root inode, and
+a real game query (zero players, two slots). It did not perform a human Join.
+Package source: [official AssaultCube release](https://github.com/assaultcube/AC/releases/tag/v1.3.0.2).
