@@ -45,6 +45,13 @@ function fakeCommands({ failDownload = false } = {}) {
 }
 const disk = () => ({ free: 100 * 1024 ** 3, reserve: 8 * 1024 ** 3 });
 
+test("update inventory contains recipe slugs only, not runtime data or duplicate aliases", (t) => {
+  const f = fixture(t, { gameSlugs: () => ["unturned", "aneurism-iv", "unturned", "../private", { secret: "never returned" }] });
+  assert.deepEqual(f.coordinator.snapshot().gameSlugs, ["aneurism-iv", "unturned"]);
+  assert.equal(f.coordinator.blockedReason("aneurism-iv"), null);
+  assert.throws(() => f.coordinator.queue("aneurism-iv", "update", "admin"), /Unsupported/);
+});
+
 test("Barotrauma worker inventories legacy copies before any depot mutation", async (t) => {
   const f = fixture(t);
   const current = path.join(f.gamesRoot, "barotrauma");

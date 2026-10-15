@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { InstallationUpdateAction, InstallationUpdateSnapshot } from "@/lib/gameHost/installationTypes";
+import type { InstallationCoverageRow, InstallationUpdateAction, InstallationUpdateSnapshot } from "@/lib/gameHost/installationTypes";
 
 const ENDPOINT = "/api/admin/connect/game-servers/updates";
 const FINISHED = new Set(["completed", "failed", "cancelled"]);
+const CATEGORY = { "os-package": "OS packages", archive: "Archive / image", "custom-build": "Custom build", "private-runtime": "Private runtime", edition: "Edition", review: "Review needed", supported: "Handler available" };
 
 export default function InstallationUpdates() {
-  const [data, setData] = useState<(InstallationUpdateSnapshot & { canWrite: boolean }) | null>(null);
+  const [data, setData] = useState<(InstallationUpdateSnapshot & { canWrite: boolean; coverage?: InstallationCoverageRow[] }) | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const load = useCallback(async () => {
@@ -15,12 +16,14 @@ export default function InstallationUpdates() {
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "Could not load updates");
     setData(result);
+    setMessage("");
   }, []);
   useEffect(() => {
     const timer = setTimeout(() => void load().catch((error) => setMessage(error.message)), 0);
     return () => clearTimeout(timer);
   }, [load]);
   const hasActive = data?.jobs.some((job) => !FINISHED.has(job.status));
+  const gaps = data?.coverage?.filter((entry) => entry.category !== "supported") || [];
   useEffect(() => {
     if (!hasActive) return;
     const timer = setInterval(() => void load().catch((error) => setMessage(error.message)), 15_000);
@@ -49,7 +52,7 @@ export default function InstallationUpdates() {
       <button type="button" disabled={busy} className="rounded border px-3 py-1 text-sm disabled:opacity-50" onClick={() => void load().catch((error) => setMessage(error.message))}>Refresh updates</button>
     </div>
     <p className="text-sm text-muted-foreground">Queue an update, then stop affected servers when players are finished. Updates wait for every affected party and hosted server to stop. They run on the VPS, preserve saves, and retain the previous installation for rollback. Servers are not automatically restarted.</p>
-    <p className="text-xs text-muted-foreground">Supported installations appear below, including editions sharing their files. Other game installations are not changed. Retained and partial copies consume disk space; insufficient space blocks the update.</p>
+    <p className="text-xs text-muted-foreground">Actions update the named installation. Separate edition and mod packages may still need their own handler; see Update coverage below. Retained and partial copies consume disk space; insufficient space blocks the update.</p>
     {message && <p role="alert" className="text-sm text-destructive">{message}</p>}
     {!data && !message && <p className="text-sm">Loading installations…</p>}
     {data?.targets.map((target) => {
@@ -63,6 +66,14 @@ export default function InstallationUpdates() {
         </div>
       </div>;
     })}
+    {data?.coverage && <details className="min-w-0 rounded-lg border p-3">
+      <summary className="cursor-pointer text-sm font-medium">Update coverage · {data.coverage.filter((entry) => entry.category === "supported").length} families with handlers · {gaps.length} remaining games / editions</summary>
+      <p className="mt-2 text-xs text-muted-foreground">This covers dedicated recipes, including paid/party-only games and separate edition packages. It does not enable hosting or change the catalog. Games below have no update action until their handler is ready.</p>
+      <ul className="mt-3 space-y-2">{gaps.map((entry) => <li key={entry.id} className="min-w-0 rounded-lg bg-muted/40 p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-medium">{entry.name}</p><span className="rounded border px-2 py-0.5 text-xs text-muted-foreground">{CATEGORY[entry.category]}</span></div>
+        <p className="mt-1 break-words text-xs text-muted-foreground">{entry.reason}</p>
+      </li>)}</ul>
+    </details>}
     {data && data.jobs.length > 0 && <details><summary className="cursor-pointer text-sm font-medium">Update activity</summary>
       <div className="mt-3 space-y-2">{data.jobs.map((job) => <div key={job.id} className="min-w-0 rounded border p-3 text-sm">
         <p className="font-medium">{data.targets.find((target) => target.key === job.key)?.name || job.key} · {job.action} · {job.status}</p>
