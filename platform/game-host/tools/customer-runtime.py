@@ -196,6 +196,12 @@ def runtime_status(resources, server_id, pid, identity):
         resources.verify_process(value['gamePid'], value['gameIdentity'], value['uid'])
         expected = '0::/system.slice/' + scope_path(server_id, pid).name
         if (Path('/proc') / str(value['gamePid']) / 'cgroup').read_text().strip() != expected: raise ValueError('Game scope changed')
+        network_profile = migration_network_profile(server_id, value['uid'])
+        if value.get('networkProfile') != network_profile:
+            raise ValueError('Runtime network profile changed')
+        if network_profile:
+            network = trusted_module('pb_network', 'playbound-customer-network-check')
+            network.attached_filters(scope_path(server_id, pid))
         value['running'] = True
     except Exception:
         value['running'] = False
@@ -234,6 +240,18 @@ def migration_ready(server_id, uid, allow_pending=False):
     return True
 
 
+def migration_network_profile(server_id, uid):
+    if not migration_ready(server_id, uid):
+        return None
+    fd = os.open(ROOT / server_id / 'control' / 'migration.json', os.O_RDONLY | os.O_NOFOLLOW)
+    with os.fdopen(fd) as handle:
+        value = json.load(handle)
+    profile = value.get('networkProfile')
+    if profile not in (None, 'public-game-v1'):
+        raise ValueError('Unsupported customer network profile')
+    return profile
+
+
 def run_runtime(identities, resources, server_id, pid, identity, extra, text):
     port, cpu, memory = extra
     config = config_bytes(text, port)
@@ -255,11 +273,15 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
             fcntl.fcntl(fd, fcntl.F_ADD_SEALS, fcntl.F_SEAL_WRITE | fcntl.F_SEAL_GROW | fcntl.F_SEAL_SHRINK | fcntl.F_SEAL_SEAL)
             verify_scope(resources, server_id, pid, identity, cpu, memory)
             verify_supervisor_scope(scope)
+            network_profile = migration_network_profile(server_id, account['uid'])
+            if network_profile:
+                network = trusted_module('pb_network', 'playbound-customer-network-check')
+                network.apply_current_scope()
             for binary in ['/usr/bin/prlimit', '/usr/bin/bwrap', '/usr/games/teeworlds-server']:
                 info = Path(binary).stat()
                 if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_mode & 0o022: raise ValueError('Untrusted runtime executable')
             child = subprocess.Popen(command(root / 'data', fd, port, memory), user=account['uid'], group=account['gid'], extra_groups=[], env=ENV, cwd='/', stdin=subprocess.DEVNULL, pass_fds=(fd,))
-            binding_write(root, {'profile': PROFILE, 'serverId': server_id, 'gatePid': pid, 'gateIdentity': identity, 'uid': account['uid'], 'gid': account['gid'], 'gamePid': child.pid, 'gameIdentity': game_identity(child.pid)})
+            binding_write(root, {'profile': PROFILE, 'serverId': server_id, 'gatePid': pid, 'gateIdentity': identity, 'uid': account['uid'], 'gid': account['gid'], 'gamePid': child.pid, 'gameIdentity': game_identity(child.pid), 'networkProfile': network_profile})
             while child.poll() is None:
                 try:
                     resources.verify_process(pid, identity, pwd.getpwnam('playbound').pw_uid)
@@ -290,7 +312,7 @@ if __name__ == '__main__':
             sys.exit(run_runtime(identities, resources, server_id, pid, identity, extra, text.decode('utf-8')))
         elif action == 'migration':
             account = identities.ensure_identity(server_id)
-            print(json.dumps({'serverId': server_id, 'migrationReady': migration_ready(server_id, account['uid'])}))
+            print(json.dumps({'serverId': server_id, 'migrationReady': migration_ready(server_id, account['uid']), 'networkProfile': migration_network_profile(server_id, account['uid'])}))
         elif action == 'stop':
             print(json.dumps(stop_runtime(server_id, pid, identity)))
         else:

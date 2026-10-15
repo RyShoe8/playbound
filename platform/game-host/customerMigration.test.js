@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { verifiedIdentityMigration } from "./customerMigration.js";
+import { verifiedIdentityMigration, identityMigrationMetadata } from "./customerMigration.js";
 
 const id = "0123456789abcdef01234567";
 test("migration proof uses only the fixed helper, clean environment and matching root response", () => {
@@ -20,4 +20,8 @@ test("missing, failed, mismatched or untrusted migration proof never permits enr
   const forbidden = () => { assert.fail("invalid input must not invoke sudo"); };
   assert.equal(verifiedIdentityMigration("../id", "/var/lib/playbound-host", forbidden), false);
   assert.equal(verifiedIdentityMigration(id, "/tmp/other-home", forbidden), false);
+});
+test("network enrollment comes only from a validated root-owned migration response", () => {
+  assert.deepEqual(identityMigrationMetadata(id, "/var/lib/playbound-host", () => JSON.stringify({ serverId: id, migrationReady: true, networkProfile: "public-game-v1" })), { networkProfile: "public-game-v1" });
+  assert.equal(identityMigrationMetadata(id, "/var/lib/playbound-host", () => JSON.stringify({ serverId: id, migrationReady: true, networkProfile: "arbitrary" })), null);
 });

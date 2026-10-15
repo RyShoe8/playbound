@@ -53,8 +53,8 @@ until the additional handlers pass their gates. No placeholder controls.
 
 ## Current delivered scope
 
-- Network isolation now has a manual root-only kernel preflight and a verified
-  Teeworlds query transport foundation. A unique transient scope actually denied
+- Network isolation now has an operator-only opt-in Teeworlds managed profile,
+  a root-only kernel preflight and verified query transport. A transient scope denied
   IPv4/IPv6 loopback control connections as an unprivileged UID while retaining
   public IPv4 connectivity. Candidate CIDRs are fixed; other private CIDRs and
   public IPv6 were not individually exercised. No production filter is enabled.
@@ -63,12 +63,32 @@ until the additional handlers pass their gates. No placeholder controls.
   returned the same zero-player/eight-slot result locally and via the public IP.
   A separate UID/namespace/resource-limited filtered fixture returned unknown on
   loopback and zero players/four slots over the public interface, then was removed.
-  Managed-profile application/recovery, public Join/occupied counts, other engines,
-  administration-port/tenant protections and plugin isolation remain gates.
+  Public Join/occupied counts, other engines, administration-port/tenant protections
+  and executable-plugin isolation remain gates.
   All four endpoint/peer/handshake checks passed on the VPS. The full local agent
   suite passed 207 tests with 17 platform skips. Query code/operator helper are
   deployed; eleven existing managed process identities were preserved and no
   production network profile or UID enrollment was enabled.
+  The preflight also confirms actual BPF ingress/egress attachments on its exact
+  scope before probing (one of each on the VPS), rather than accepting inherited
+  parent policy or systemd configuration alone. The initial syscall ABI is
+  explicitly x86_64-only; unsupported kernels/architectures fail closed.
+  Completed UID migrations can explicitly select/clear `public-game-v1` through
+  offline root commands. They verify stopped jobs, no retained room, identity/data
+  phase, both UIDs offline and the runtime lock; enabling requires kernel preflight.
+  Only the root journal chooses policy. The supervisor applies fixed CIDRs to its
+  current scope before execution and verifies kernel hooks. Recovery checks the
+  root binding/journal and that exact scope's hooks; room metadata retains the
+  profile and public query address. Missing configuration/enforcement is unknown
+  or failed readiness, never an unprotected launch or a fake empty player count.
+  Managed VPS acceptance passed filtered public query, unchanged game PID through
+  agent restart, full scope stop, explicit disable without UID downgrade, and
+  successful unfiltered resume; saved fixture bytes survived. Test processes/homes
+  were removed. Production profile/UID enrollment remains zero. Twenty-seven data/
+  enrollment tests, fourteen root-runtime tests, seven network boundary tests,
+  TypeScript and the full agent suite (209 passed, 17 platform skips) passed.
+  Latest guarded deployment preserved all twelve then-running managed process
+  identities; no party rooms, UID enrollments or production filters were active.
   See [customer-network-isolation.md](customer-network-isolation.md).
 
 - Legacy Teeworlds migration has operator-only checkpoint preparation, atomic

@@ -39,6 +39,12 @@ class RuntimeBoundaries(unittest.TestCase):
                 journal.write_text(json.dumps(value))
                 journal.chmod(0o600)
                 self.assertTrue(module.migration_ready(ID, 0))
+                self.assertIsNone(module.migration_network_profile(ID, 0))
+                journal.write_text(json.dumps({**value, 'networkProfile': 'public-game-v1'}))
+                self.assertEqual(module.migration_network_profile(ID, 0), 'public-game-v1')
+                journal.write_text(json.dumps({**value, 'networkProfile': 'unknown'}))
+                with self.assertRaises(ValueError): module.migration_network_profile(ID, 0)
+                journal.write_text(json.dumps(value))
                 (data / 'new-game-progress').write_bytes(b'allowed after activation')
                 self.assertTrue(module.migration_ready(ID, 0))
                 journal.write_text(json.dumps({**value, 'profileTransition': {'state': 'pending', 'target': 'uid'}}))
@@ -120,7 +126,7 @@ class RuntimeBoundaries(unittest.TestCase):
             resources = SimpleNamespace(verify_caller=Mock())
             child = Mock(pid=52, returncode=0)
             child.poll.return_value = 0
-            with patch.object(module, 'migration_ready'), patch.object(module, 'verify_scope', return_value=Path('/fixture.scope')), patch.object(module, 'verify_supervisor_scope'), patch.object(module, 'workspace', return_value=root), patch.object(module.pwd, 'getpwnam', return_value=SimpleNamespace(pw_uid=1001)), patch.object(Path, 'stat', return_value=SimpleNamespace(st_mode=0o100755, st_uid=0)), patch.object(module.subprocess, 'Popen', return_value=child) as spawn, patch.object(module, 'binding_write') as binding, patch.object(module, 'game_identity', return_value=IDENTITY):
+            with patch.object(module, 'migration_ready', return_value=False), patch.object(module, 'verify_scope', return_value=Path('/fixture.scope')), patch.object(module, 'verify_supervisor_scope'), patch.object(module, 'workspace', return_value=root), patch.object(module.pwd, 'getpwnam', return_value=SimpleNamespace(pw_uid=1001)), patch.object(Path, 'stat', return_value=SimpleNamespace(st_mode=0o100755, st_uid=0)), patch.object(module.subprocess, 'Popen', return_value=child) as spawn, patch.object(module, 'binding_write') as binding, patch.object(module, 'game_identity', return_value=IDENTITY):
                 self.assertEqual(module.run_runtime(identities, resources, ID, 42, IDENTITY, (8322, 750, 1536), CONFIG), 0)
                 options = spawn.call_args.kwargs
                 self.assertEqual((options['user'], options['group'], options['extra_groups']), (40000, 40000, []))
@@ -136,6 +142,31 @@ class RuntimeBoundaries(unittest.TestCase):
             module.verify_supervisor_scope(scope)
         with patch.object(Path, 'read_text', return_value='0::/system.slice/agent.service'):
             with self.assertRaises(ValueError): module.verify_supervisor_scope(scope)
+
+    def test_missing_network_enforcement_blocks_engine_execution(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / 'control').mkdir()
+            identities = SimpleNamespace(ensure_identity=Mock(return_value={'uid': 40000, 'gid': 40000}), secure_stat=Mock())
+            resources = SimpleNamespace(verify_caller=Mock())
+            network = SimpleNamespace(apply_current_scope=Mock(side_effect=ValueError('missing hooks')))
+            with patch.object(module, 'migration_ready', return_value=True), patch.object(module, 'migration_network_profile', return_value='public-game-v1'), patch.object(module, 'verify_scope', return_value=Path('/fixture.scope')), patch.object(module, 'verify_supervisor_scope'), patch.object(module, 'workspace', return_value=root), patch.object(module.pwd, 'getpwnam', return_value=SimpleNamespace(pw_uid=1001)), patch.object(module, 'trusted_module', return_value=network) as trusted, patch.object(module.subprocess, 'Popen') as spawn:
+                with self.assertRaisesRegex(ValueError, 'missing hooks'):
+                    module.run_runtime(identities, resources, ID, 42, IDENTITY, (8322, 750, 1536), CONFIG)
+                spawn.assert_not_called()
+                trusted.assert_called_once_with('pb_network', 'playbound-customer-network-check')
+
+    def test_recovery_rechecks_network_enrollment_and_exact_scope_hooks(self):
+        value = {'uid': 40000, 'gamePid': 52, 'gameIdentity': IDENTITY, 'networkProfile': 'public-game-v1'}
+        resources = SimpleNamespace(verify_process=Mock())
+        network = SimpleNamespace(attached_filters=Mock(return_value={'kernelIngressPrograms': 1, 'kernelEgressPrograms': 1}))
+        with patch.object(module, 'binding_read', side_effect=lambda *args: dict(value)), patch.object(module, 'migration_network_profile', return_value='public-game-v1') as profile, patch.object(module.pwd, 'getpwnam', return_value=SimpleNamespace(pw_uid=1001)), patch.object(Path, 'read_text', return_value='0::/system.slice/' + module.scope_path(ID, 42).name), patch.object(module, 'trusted_module', return_value=network):
+            self.assertTrue(module.runtime_status(resources, ID, 42, IDENTITY)['running'])
+            network.attached_filters.assert_called_with(module.scope_path(ID, 42))
+            network.attached_filters.side_effect = ValueError('missing hooks')
+            self.assertFalse(module.runtime_status(resources, ID, 42, IDENTITY)['running'])
+            profile.return_value = None
+            self.assertFalse(module.runtime_status(resources, ID, 42, IDENTITY)['running'])
 
     def test_parent_identity_and_actual_kernel_limits_are_required_before_execution(self):
         scope = module.scope_path(ID, 42)

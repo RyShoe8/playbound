@@ -5,7 +5,7 @@ from pathlib import Path
 import tempfile
 from types import SimpleNamespace
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 if os.name == 'nt':
     raise unittest.SkipTest('Migration checkpoint uses Linux directory FDs')
@@ -33,7 +33,7 @@ class DataCheckpoint(unittest.TestCase):
 
     def test_only_fixed_actions_and_server_ids(self):
         self.assertEqual(module.arguments(['prepare', ID]), ['prepare', ID])
-        for action in ['activate', 'rollback', 'recover', 'enroll', 'complete-rollback']:
+        for action in ['activate', 'rollback', 'recover', 'enroll', 'complete-rollback', 'enable-network', 'disable-network']:
             self.assertEqual(module.arguments([action, ID]), [action, ID])
         for args in [[], ['delete', ID], ['prepare', '../etc'], ['verify', ID.upper()], ['verify', ID, '/other']]:
             with self.assertRaises(ValueError):
@@ -418,6 +418,22 @@ class ProfileTransitions(unittest.TestCase):
         self.assertEqual(module.registry_read('managed-jobs.json', 0)[1]['identityProfile'], 'teeworlds-unix-v1')
         self.assertEqual(module.journal_read(self.control, ID)['profileTransition']['state'], 'pending')
         self.assertEqual(self.transition('enroll')['profileTransition']['state'], 'complete')
+
+    def test_network_policy_requires_explicit_uid_enrollment_and_successful_preflight(self):
+        network = SimpleNamespace(probe=Mock(return_value={'preflightPassed': True}))
+        self.runtime.trusted_module = Mock(return_value=network)
+        with self.assertRaisesRegex(ValueError, 'Complete UID enrollment'):
+            self.transition('enable-network')
+        self.transition('enroll')
+        original_jobs = (self.state / 'managed-jobs.json').read_bytes()
+        self.assertEqual(self.transition('enable-network')['networkProfile'], 'public-game-v1')
+        self.assertEqual((self.state / 'managed-jobs.json').read_bytes(), original_jobs)
+        network.probe.assert_called_once()
+        self.assertNotIn('networkProfile', self.transition('disable-network'))
+        network.probe.return_value = {'preflightPassed': False}
+        with self.assertRaisesRegex(ValueError, 'preflight failed'):
+            self.transition('enable-network')
+        self.assertNotIn('networkProfile', module.journal_read(self.control, ID))
 
 
 if __name__ == '__main__':

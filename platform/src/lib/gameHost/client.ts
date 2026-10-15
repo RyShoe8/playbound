@@ -52,6 +52,7 @@ export type GameHostRoom = {
   resourceScope?: string | null;
   resourceLimits?: CustomerResourceLimits | null;
   identityProfile?: "teeworlds-unix-v1" | null;
+  networkProfile?: "public-game-v1" | null;
   host: string;
   port: number;
   gameSlug: string;

@@ -60,7 +60,10 @@ export async function stopIdentityRuntime(room) {
   try { return (await identityOperation("stop", room)).stopped === true; } catch { return false; }
 }
 export async function identityRuntimeHealthy(room) {
-  try { return (await identityOperation("status", room)).running === true; } catch { return false; }
+  try {
+    const result = await identityOperation("status", room);
+    return result.running === true && (result.networkProfile || null) === (room.networkProfile || null);
+  } catch { return false; }
 }
 
 export async function runCustomerGate(input, { place = enterCustomerResources, launch = spawn, identityLaunch = launchIdentityRuntime, pid = process.pid, onSignal = (name, handler) => process.on(name, handler) } = {}) {
