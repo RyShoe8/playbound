@@ -113,6 +113,19 @@ test("Hosted server overlay exposes permitted lifecycle, players, and game conso
   assert.doesNotMatch(overlay.root.innerHTML, /data-hosted-action="start"/);
 });
 
+test("hosted logs are owner/admin permission gated and never polled on opening", async () => {
+  for (const allowed of [false, true]) {
+    let reads = 0;
+    const overlay = await renderOverlay(
+      { party: { id: "hosted:0123456789abcdef01234567", gameTitle: "Server" } },
+      { supported: false, definitions: [], values: {}, status: { status: "stopped" }, permissions: allowed ? ["server:read_logs"] : [], capabilities: {} },
+      { workspaceRequest: async () => { reads++; return { available: true, lines: ["Ready"] }; } }
+    );
+    assert.equal(overlay.root.innerHTML.includes('id="hosted-refresh-logs"'), allowed);
+    assert.equal(reads, 0);
+  }
+});
+
 test("Hosted moderators get player actions without lifecycle or console permissions", async () => {
   const overlay = await renderOverlay(
     {party:{id:"hosted:0123456789abcdef01234567",gameTitle:"Example"}},

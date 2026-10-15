@@ -20,7 +20,7 @@ export async function renderServerManager(host, id, { request, escapeHtml: e, ba
       may('configure') && control.definitions.some(d => d.feature === 'bots') && 'Bots',
       control.capabilities.players && 'Players',
       (may('create_backup') || may('restore_backup')) && 'Backups', may('configure') && may('restart') && 'Maintenance',
-      'Access', 'Activity', control.capabilities.console && may('console') && 'Console'].filter(Boolean);
+      'Access', 'Activity', control.capabilities.console && may('console') && 'Console', may('read_logs') && 'Logs'].filter(Boolean);
   }
   function message(text, error = false) {
     const node = host.querySelector('[data-message]');
@@ -80,6 +80,10 @@ export async function renderServerManager(host, id, { request, escapeHtml: e, ba
       return `<h2>Players</h2><p>Refresh to see the latest connected players.</p>${data.players.length ? data.players.map(p => `<div class="workspace-manager-row"><span>${e(p.name)}${p.pingMs != null ? ` · ${p.pingMs} ms` : ''}</span><div class="workspace-actions">${p.id != null && may('kick_players') ? button('Kick', 'kick', `data-id="${e(String(p.id))}" data-name="${e(p.name)}"`) : ''}${p.id != null && may('ban_players') ? button('Ban', 'ban', `data-id="${e(String(p.id))}" data-name="${e(p.name)}"`) : ''}</div></div>`).join('') : `<p>${control.status.status === 'running' ? 'No players reported.' : 'Start the server to see connected players.'}</p>`}${may('ban_players') ? `<h3>Banned players</h3>${bans.bans.map(b => `<div class="workspace-manager-row"><span>${e(b.name)} · ${e(when(b.at))}</span>${button('Unban', 'unban', `data-id="${e(b.id)}"`)}</div>`).join('') || '<p>No bans.</p>'}` : ''}`;
     }
     if (tab === 'Console') return `<h2>Game console</h2><p>Advanced game commands only. This is not a system shell. Commands are recorded in Activity.</p><pre class="workspace-console" aria-live="polite">${e(consoleLines.join('\n') || 'Responses to your commands appear here.')}</pre><form class="workspace-form" data-form="console">${field('Command', 'command')}<button class="btn-primary" ${control.status.status !== 'running' ? 'disabled' : ''}>Send command</button></form>`;
+    if (tab === 'Logs') {
+      const data = await request(`${base}/logs`);
+      return `<h2>Server output</h2><p>Latest captured output, up to 200 lines. Credential-bearing lines are omitted. Use Refresh to check for new output.</p>${data.truncated ? '<p>Showing the newest portion of the log.</p>' : ''}<pre class="workspace-console" style="max-width:100%;max-height:24rem;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere">${e(data.available ? data.lines.join('\n') || 'No complete output lines yet.' : 'No captured output is available for this server yet. Some engines use a separate console transport.')}</pre>`;
+    }
     if (tab === 'Backups') {
       // A world-data failure must not hide configuration restore points.
       const [data, worldResult] = await Promise.all([request(`${base}/backups`), request(`${base}/world-backups`).catch(error => ({ error: error.message }))]);

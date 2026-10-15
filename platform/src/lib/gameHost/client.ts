@@ -9,6 +9,19 @@ const CREATE_ROOM_TIMEOUT_MS = 5 * 60 * 1000;
 const ENSURE_TIMEOUT_MS = 10 * 60 * 1000;
 const TEST_SPAWN_TIMEOUT_MS = 15 * 60 * 1000;
 
+export type ManagedLogSnapshot = { available: boolean; lines: string[]; truncated: boolean };
+
+export async function logsOnHost(id: string): Promise<ManagedLogSnapshot> {
+  if (!/^[a-f0-9]{24}$/i.test(id)) throw new Error("Invalid server");
+  const response = await hostFetch(`/managed/${id}/logs`, { method: "GET" }, 8_000);
+  if (!response?.ok) throw new Error("Server output is temporarily unavailable. Please retry.");
+  const data = await response.json() as ManagedLogSnapshot;
+  if (typeof data.available !== "boolean" || typeof data.truncated !== "boolean" || !Array.isArray(data.lines) || data.lines.length > 200 || data.lines.some((line) => typeof line !== "string") || data.lines.join("\n").length > 80_000) {
+    throw new Error("Invalid server output response");
+  }
+  return data;
+}
+
 export async function installationUpdatesOnHost(input?: {
   action: import("./installationTypes").InstallationUpdateAction; key?: string; id?: string; actor: string;
 }): Promise<import("./installationTypes").InstallationUpdateSnapshot> {
