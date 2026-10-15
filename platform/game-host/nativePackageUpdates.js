@@ -9,6 +9,10 @@ const digest = bytes => createHash("sha256").update(bytes).digest("hex");
 const cache = new Map();
 export function verifyNativePackageInstallation(root, game, { requireRoot = true, command = execFileSync, profile = NATIVE_PACKAGE_PROFILES[game] } = {}) {
   if (!profile) throw new Error("Unsupported reviewed native package");
+  for (const filename of profile.conflictingExecutables || []) {
+    try { fs.lstatSync(filename); throw new Error("Legacy/custom executable conflicts with the reviewed installation"); }
+    catch (error) { if (error.code !== "ENOENT") throw error; }
+  }
   const folder = fs.lstatSync(root);
   if (!folder.isDirectory() || folder.isSymbolicLink() || fs.realpathSync(root) !== path.resolve(root)) throw new Error("Native package requires a real isolated directory");
   if (profile.component && profile.component !== profile.binary) throw new Error("Native package component must match its reviewed executable");

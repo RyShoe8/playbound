@@ -16,17 +16,17 @@ it("every admin update target is wired to the agent, root scanner, and exact sud
     expect(sudo).toContain(`/usr/local/sbin/playbound-update-scan ${key}`);
   }
   const appIds = [...targets.matchAll(/appId: (\d+)/g)].map((match) => match[1]);
-  const archiveTargets = [...targets.matchAll(/strategy: "(?:github-(?:jar|appimage|native-binaries)|signed-appimage|official-headless-archive|official-linux-zip|reviewed-distro-native|reviewed-dotnet-source|reviewed-cmake-source)"/g)];
+  const archiveTargets = [...targets.matchAll(/strategy: "(?:github-(?:jar|appimage|native-binaries)|signed-appimage|official-headless-archive|official-linux-zip|reviewed-distro-native|reviewed-dotnet-source|reviewed-cmake-source|reviewed-native-zip)"/g)];
   expect(appIds.length + archiveTargets.length).toBe(INSTALLATION_UPDATE_KEYS.length);
   expect(new Set(appIds).size).toBe(appIds.length);
   expect(source("../../../game-host/install.sh")).toContain('"$AGENT_SRC/nativeArchive.py"');
   expect(source("../../../game-host/install.sh")).toContain('"$AGENT_SRC/factorioArchive.py"');
   expect(source("../../../game-host/install.sh")).toContain('"$AGENT_SRC/terrariaArchive.py"');
   expect(source("../../../game-host/install.sh")).toContain('"$AGENT_SRC/terraria1458.json"');
-  for (const file of ["nativePackageProfiles.json", "packageNativeArchive.py"]) expect(source("../../../game-host/install.sh")).toContain(`"$AGENT_SRC/${file}"`);
+  for (const file of ["nativePackageProfiles.json", "packageNativeArchive.py", "xonoticUpdates.js", "xonoticArchive.py", "xonotic086.json"]) expect(source("../../../game-host/install.sh")).toContain(`"$AGENT_SRC/${file}"`);
   expect(source("../../../game-host/install.sh")).toContain('bash "$AGENT_SRC/install-package-native.sh"');
   const promotion = source("../../../game-host/install-package-native.sh");
-  for (const key of ["bzflag", "hedgewars", "openttd", "luanti", "battle-for-wesnoth", "teeworlds", "supertuxkart", "openarena"]) expect(promotion).toContain(`promote-package-native.py ${key} *`);
+  for (const key of ["bzflag", "hedgewars", "openttd", "luanti", "battle-for-wesnoth", "teeworlds", "supertuxkart", "openarena", "0ad"]) expect(promotion).toContain(`promote-package-native.py ${key} *`);
   expect(source("../../../game-host/tools/install-customer-runtime.sh")).toContain('"$source_dir/customer-native-engine.py"');
   expect(promotion).not.toMatch(/NOPASSWD:.*(?:apt|dpkg|bash|sh )/);
   for (const file of ["rimworldSourceBuild.py", "rimworldBuild.json", "rimworldPackages.lock.json", "reviewedSourceArchive.py", "fgmsSourceBuild.py", "fgmsBuild.json"]) expect(source("../../../game-host/install.sh")).toContain(`"$AGENT_SRC/${file}"`);

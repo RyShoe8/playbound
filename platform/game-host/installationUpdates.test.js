@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createInstallationCoordinator, createInstallationStore } from "./installationJobs.js";
-import { INSTALLATION_TARGETS, verifyInstallation, prepareInstallationLinks, restoreInstallationLinks } from "./installationTargets.js";
+import { INSTALLATION_TARGETS, verifyInstallation, prepareInstallationLinks, restoreInstallationLinks, installationKey, installationDependencies } from "./installationTargets.js";
 import { runInstallationUpdate, runCommand } from "./installationUpdateWorker.js";
 import { isAgentGetPath } from "./agentRoutes.js";
 import { prepareBarotraumaRuntime } from "./barotraumaRuntime.js";
@@ -44,6 +44,13 @@ function fakeCommands({ failDownload = false } = {}) {
   };
 }
 const disk = () => ({ free: 100 * 1024 ** 3, reserve: 8 * 1024 ** 3 });
+
+test("both 0 A.D. recipe aliases hold the same managed installation", () => {
+  for (const slug of ["0ad", "0-ad"]) {
+    assert.equal(installationKey(slug), "0ad");
+    assert.deepEqual(installationDependencies(slug), ["0ad"]);
+  }
+});
 
 test("update inventory contains recipe slugs only, not runtime data or duplicate aliases", (t) => {
   const f = fixture(t, { gameSlugs: () => ["unturned", "aneurism-iv", "unturned", "../private", { secret: "never returned" }] });

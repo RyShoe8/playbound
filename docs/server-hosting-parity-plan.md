@@ -12,7 +12,7 @@ New games must complete `docs/dedicated-server-game-checklist.md`.
 Assess each feature per engine: applicable and verified, not yet implemented,
 or unavailable with a concrete engine/transport reason. The universal scope is
 a release requirement, not a claim that every engine supports bots or plugins.
-Keep current twenty-three-game update support and thirteen-game file support explicit
+Keep current twenty-eight-family update support and thirteen-game file support explicit
 until the additional handlers pass their gates. No placeholder controls.
 
 ## Implementation order and gates
@@ -627,3 +627,34 @@ until the additional handlers pass their gates. No placeholder controls.
   removed. No OS binaries, customer worlds, eligibility or DB rows changed.
   Deployment preserved all 12 then-running managed identities. Coverage is now
   26 installation families and 25 remaining game/edition entries.
+
+- 0 A.D. adds a reviewed Alpha 26 native-package handler, retaining its current
+  matching distro data/libraries. Only `pyrogenesis` is swapped. The `0ad` and
+  `0-ad` recipe aliases share one update dependency and canonical managed engine;
+  an alternate legacy executable blocks validation instead of updating an unused
+  binary. VPS acceptance (2026-10-15) passed package download, queued update and
+  rollback, headless UDP startup, both alias queue holds, process detection,
+  settings/root preservation and complete port release. No player-query adapter
+  or human Join was certified; eligibility was not changed by this handler.
+
+- Xonotic adds a publisher-pinned 0.8.6 dedicated-engine ZIP handler. The primary
+  download host failed TLS certificate validation; use only the fixed mirror
+  listed by the publisher and keep certificate checks enabled. Its full archive
+  matches the publisher SHA-512 and the installed native ELF matches the exact
+  reviewed SHA-256. Only that executable is extracted/swapped; current game data,
+  maps, keys and server configuration remain separate. Downloads use the existing
+  Node HTTPS stream with no redirects, bounded bytes/time/disk headroom. Bounded
+  ZIP reading rejects changed native bytes, links, traversal and duplicate native
+  entries. The first real network fixture stopped before activation because its
+  626 MB maps bundle exceeded the non-extracted inventory bound; that bound was
+  corrected while retaining the exact 13 MB extracted-engine cap. The successful
+  retry reused the publisher-verified archive through the same bounded stream
+  path rather than redownloading it. A private-installation fixture then passed
+  queued update/rollback, real 0/4-player query with zero bots, running queue hold,
+  clean stop and settings/saved-file/root preservation. Its process scan was
+  explicitly scoped to the fixture outside production roots. Production engine
+  bytes were unchanged; no human Join was certified. Fresh-install URLs now use
+  the same official mirror and SHA-512 check. Fixture code/processes and the
+  1.24 GB review archive were removed; acceptance records retained. No database
+  rows or automation eligibility changed. Coverage is now 28 installation
+  families with 23 game/edition entries remaining.

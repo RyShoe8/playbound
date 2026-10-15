@@ -3,13 +3,11 @@ import { INSTALLATION_UPDATE_KEYS } from "./installationKeys";
 import type { InstallationCoverageRow, InstallationUpdateSnapshot } from "./installationTypes";
 
 type Gap = Pick<InstallationCoverageRow, "category" | "reason">;
-const PACKAGE: Gap = { category: "os-package", reason: "Needs a scoped package update handler with dependency checks and coordinated process draining. General apt access is not granted to the agent." };
 const ARCHIVE: Gap = { category: "archive", reason: "Needs a verified archive handler, installation baseline and save-preserving staged update/rollback." };
 const GAPS: Record<string, Gap> = {
   "warzone-2100": { category: "custom-build", reason: "The VPS uses a custom Warzone 4.7 build and launch wrapper. Stage a matching source/asset update; do not replace it with Ubuntu's older 4.4.2 native package." },
   freeciv: { category: "custom-build", reason: "Uses a custom Freeciv 3.2.5 server/data/library build matching the client. Ubuntu's 3.1 binary is incompatible; stage and verify the complete matching build while preserving saves." },
-  "0ad": PACKAGE,
-  xonotic: ARCHIVE, "medal-of-honor-allied-assault": ARCHIVE,
+  "medal-of-honor-allied-assault": ARCHIVE,
   "wolfenstein-enemy-territory": { category: "archive", reason: "Needs an ET: Legacy archive handler that preserves compatible etmain assets and validates the dedicated engine/data combination." },
   "battlefield-1942-anthology": ARCHIVE, "vintage-story": ARCHIVE,
   "re-volt-rvgl": ARCHIVE, unvanquished: ARCHIVE,

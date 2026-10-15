@@ -1318,7 +1318,7 @@ export const recipes = {
     // Pyrogenesis exposes no supported CLI override for its host port.
     portEnd: 20595,
     protocol: "udp",
-    binaries: gameBin("0-ad", ["pyrogenesis", "0ad"]),
+    binaries: [path.join(GAMES_ROOT, "0ad", "pyrogenesis"), ...gameBin("0-ad", ["pyrogenesis", "0ad"])],
     args: (_port, ctx) => [
       `-autostart=${settingToken("0-ad", ctx, "map", "random/mainland")}`,
       "-autostart-host",

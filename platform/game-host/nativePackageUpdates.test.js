@@ -68,3 +68,10 @@ test("promotion never accepts caller-selected paths or unsupported games", async
 test("real Debian extraction and root promotion reject unsafe fixtures", { skip: process.platform !== "linux" }, () => {
   execFileSync("/usr/bin/python3", [fileURLToPath(new URL("./nativePackageBoundary.test.py", import.meta.url))], { timeout: 30000, stdio: "pipe" });
 });
+
+test("legacy alias engines block native validation before dependency execution", { skip: process.platform !== "linux" }, t => {
+  const { root, profile } = fixture(t);
+  const legacy = path.join(root, "old-engine");
+  fs.writeFileSync(legacy, "custom executable");
+  assert.throws(() => verifyNativePackageInstallation(root, "fixture", { requireRoot: false, profile: { ...profile, conflictingExecutables: [legacy] }, command: assert.fail }), /conflicts/);
+});
