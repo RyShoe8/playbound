@@ -590,3 +590,23 @@ one listener; additional instances can return unknown because discovery reaches
 another server. Do not interpret that as zero players, and do not treat these
 fixtures as human Join or multi-instance tracking certification. No automatic
 hosting eligibility was changed by this deployment.
+
+### 0 A.D. and Xonotic engine updates
+
+0 A.D. uses the reviewed Ubuntu Alpha 26 native engine, with the existing matching
+system libraries/data retained. Canonical `0ad` and recipe alias `0-ad` hold the
+same installation. A legacy alternate engine blocks validation. Only the native
+file is swapped, preserving settings and the parent directory. Headless startup,
+update/rollback, alias holds and clean shutdown passed VPS acceptance; player
+queries and human Join remain unverified.
+
+Xonotic updates only its reviewed 0.8.6 dedicated ELF. The fixed HTTPS mirror is
+listed on the [official download page](https://xonotic.org/download/); archive
+bytes match the [publisher SHA-512](https://dl.xonotic.org/xonotic-0.8.6.sha512),
+with a separately pinned native SHA-256. The primary host's expired certificate
+is not bypassed. The extractor never installs maps, configuration, scripts or a
+shell updater. Existing 0.8.6 assets stay in place, and new releases require a
+joint engine/data compatibility review. Downloads use bounded Node HTTPS streams
+and disk checks; only one fixed executable can activate. Fresh installation uses
+the same mirror/checksum. Staging passed query 0/4, zero bots, update/rollback,
+queue hold, clean stop and saved-file preservation. Human Join remains separate.

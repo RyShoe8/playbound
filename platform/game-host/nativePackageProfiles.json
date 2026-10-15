@@ -97,5 +97,23 @@
     "binaryBytes": 691952,
     "binarySha256": "df0af9f8532457c6c7d060444f606bdf5ea52a5534e5c4497bca9a6e82c9aac4",
     "systemBinary": "/usr/lib/ioquake3/ioq3ded"
+  },
+  "0ad": {
+    "name": "0 A.D. Alpha 26",
+    "version": "0.0.26-6ubuntu0.24.04.1",
+    "url": "https://archive.ubuntu.com/ubuntu/pool/universe/0/0ad/0ad_0.0.26-6ubuntu0.24.04.1_amd64.deb",
+    "archiveBytes": 7489458,
+    "archiveSha256": "3efa9eff8dc651be9c05f98e5be4a06562787bfb2c46159f7c7a8a858ca12e16",
+    "member": "usr/games/pyrogenesis",
+    "binary": "pyrogenesis",
+    "component": "pyrogenesis",
+    "binaryBytes": 6072840,
+    "binarySha256": "b425142616555682a645a56798865c121223513b1c923dfa9229482032e2f87e",
+    "systemBinary": "/usr/games/pyrogenesis",
+    "conflictingExecutables": [
+      "/opt/playbound-host/games/0-ad/run-server",
+      "/opt/playbound-host/games/0-ad/pyrogenesis",
+      "/opt/playbound-host/games/0-ad/0ad"
+    ]
   }
 }

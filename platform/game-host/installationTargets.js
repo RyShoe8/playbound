@@ -10,6 +10,7 @@ import { verifyFactorioInstallation } from "./factorioUpdates.js";
 import { verifyTerrariaInstallation } from "./terrariaUpdates.js";
 import { verifyNativePackageInstallation } from "./nativePackageUpdates.js";
 import { verifyRimworldInstallation } from "./rimworldUpdates.js";
+import { verifyXonoticInstallation } from "./xonoticUpdates.js";
 import { verifyFgmsInstallation } from "./fgmsUpdates.js";
 
 // These are shared installations, not per-customer save directories.
@@ -40,11 +41,14 @@ export const INSTALLATION_TARGETS = Object.freeze({
   "rimworld-together": { name: "RimWorld Together (reviewed PlayBound source build)", strategy: "reviewed-dotnet-source" },
   supertuxkart: { name: "SuperTuxKart (reviewed Ubuntu native server)", strategy: "reviewed-distro-native", component: "supertuxkart" },
   openarena: { name: "OpenArena (reviewed ioquake3 dedicated engine)", strategy: "reviewed-distro-native", component: "openarena-server" },
+  xonotic: { name: "Xonotic (reviewed 0.8.6 dedicated engine)", strategy: "reviewed-native-zip", component: "xonotic-linux64-dedicated" },
+  "0ad": { name: "0 A.D. (reviewed Alpha 26 engine)", strategy: "reviewed-distro-native", component: "pyrogenesis" },
   teeworlds: { name: "Teeworlds (reviewed Ubuntu native server)", strategy: "reviewed-distro-native" },
   flightgear: { name: "FlightGear (reviewed fgms relay)", strategy: "reviewed-cmake-source", component: "fgms" },
 });
 
 export function installationKey(slug) {
+  if (slug === "0-ad") return "0ad";
   if (slug === "cs2") return "counter-strike-2";
   if (slug === "tf2" || slug === "open-fortress") return "team-fortress-2";
   if (slug === "opene2140") return "earth-2140-trilogy";
@@ -71,6 +75,7 @@ export function verifyInstallation(directory, key) {
   if (key === "assaultcube") return verifyAssaultCubeInstallation(directory);
   if (key === "factorio") return verifyFactorioInstallation(directory);
   if (key === "terraria") return verifyTerrariaInstallation(directory);
+  if (key === "xonotic") return verifyXonoticInstallation(directory);
   if (target.strategy === "reviewed-distro-native") return verifyNativePackageInstallation(directory, key);
   if (target.strategy === "reviewed-dotnet-source") return verifyRimworldInstallation(directory);
   if (target.strategy === "reviewed-cmake-source") return verifyFgmsInstallation(directory);

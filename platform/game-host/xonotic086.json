@@ -1,0 +1,12 @@
+{
+  "name": "Xonotic",
+  "version": "0.8.6",
+  "url": "https://download.evil-ant-colony.org/xonotic/xonotic-0.8.6.zip",
+  "archiveBytes": 1238439495,
+  "archiveSha512": "cb39879e96f19abb2877588c2d50c5d3e64dd68153bec3dd1bebedf4d765e506afa419c28381d7005aed664cb1a042571c132b5b319e4308cab67745d996c2a6",
+  "member": "Xonotic/xonotic-linux64-dedicated",
+  "binary": "xonotic-linux64-dedicated",
+  "component": "xonotic-linux64-dedicated",
+  "binaryBytes": 13239000,
+  "binarySha256": "35b40b973d7e83d75bab026b2707bf80660840421b1e12fcfe0e9c85cb9633ea"
+}

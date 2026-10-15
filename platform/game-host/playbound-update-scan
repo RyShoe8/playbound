@@ -29,6 +29,8 @@ targets = {
     "rimworld-together": ["rimworld-together"],
     "flightgear": ["flightgear"],
     "teeworlds": ["teeworlds"],
+    "0ad": ["0ad", "0-ad"],
+    "xonotic": ["xonotic"],
     "supertuxkart": ["supertuxkart"],
     "openarena": ["openarena"],
 }
