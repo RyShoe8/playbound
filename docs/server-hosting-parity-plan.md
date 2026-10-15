@@ -53,6 +53,28 @@ until the additional handlers pass their gates. No placeholder controls.
 
 ## Current delivered scope
 
+- First OS namespace profile: newly started customer-owned Teeworlds servers
+  use the reviewed system executable through Bubblewrap, with private process,
+  user, IPC, UTS and cgroup namespaces, dropped capabilities, disabled nested
+  user namespaces, read-only system/configuration mounts and one writable
+  per-server home. Agent files, host `/proc`, other customers and credentials
+  are absent from the mount tree; the child receives a cleared environment.
+  Unsupported custom binaries or failed sandbox setup block launch rather than
+  falling back. Detached wrapper identity persists for agent recovery and normal
+  stop/metrics handling. Existing processes, community and party rooms are not
+  retrofitted. Teeworlds is the first profile, not universal isolation: the host
+  network remains shared, distinct host UIDs, cgroup resource/process limits,
+  seccomp and private network policy remain required before executable plugins.
+  The initial per-process address-space/descriptor/core limits do not provide
+  full tenant resource accounting. Additional engines need reviewed mounts and
+  compatibility checks before adopting this path.
+  VPS acceptance (2026-10-15 UTC) verified the namespace denials, a real
+  Teeworlds query with zero players/four configured slots, metrics, persistence
+  of the detached wrapper across agent restart, recovery metadata and whole
+  process-group shutdown. Eleven managed runtimes kept their original PIDs;
+  the isolated fixture was stopped and removed. This does not establish a
+  human Join or complete cross-tenant/network/resource isolation.
+
 - Empty-server maintenance now accepts selected UTC weekdays instead of
   requiring a daily restart. Legacy schedules remain daily without migration;
   writes from older launchers preserve saved weekdays. The web/native workspace

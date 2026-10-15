@@ -50,6 +50,7 @@ import { runWorldBackup } from "./worldBackupRunner.js";
 import { manageDedicatedFiles } from "./dedicatedFiles.js";
 import { createInstallationCoordinator } from "./installationJobs.js";
 import { gameEnvironment } from "./gameEnvironment.js";
+import { customerIsolationLaunch } from "./customerIsolation.js";
 import { readCapturedLogFile, managedLogFiles, retainManagedLogs, logSecretValues, redactLogLine } from "./managedLogs.js";
 import { captureRvglLobby, sendRvglLobbyInput } from "./rvglDisplay.js";
 
@@ -800,6 +801,7 @@ function persistManagedRooms() {
     pid: r.pid, identity: r.processIdentity, createdAt: r.createdAt,
     processStartedAt: r.processStartedAt, settings: r.settings,
     customerOwned: Boolean(r.customerOwned),
+    isolationProfile: r.isolationProfile || null,
     rcon: r.rcon, rconPassword: r.rconPassword, cwd: r.cwd || null,
   })));
 }
@@ -1035,6 +1037,13 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
       freePort(gameSlug, port);
       return { error: "Agent is shutting down or startup was canceled" };
     }
+    let isolated;
+    try {
+      isolated = customerIsolationLaunch({ gameSlug, customerOwned: ctx.customerOwned, communityServerId, binary, args, home: hostHome });
+    } catch {
+      freePort(gameSlug, port);
+      return { error: "Customer runtime isolation could not be prepared. The server was not launched." };
+    }
     const spawnGame = () => {
       if (gameSlug === "aneurism-iv") return spawnAniv(port, ctx, {cwd,env:spawnEnv});
       if (gameSlug === "rimworld-together") return spawnRimworld(binary, args, { cwd, env: spawnEnv });
@@ -1045,7 +1054,7 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
       const fd = fs.openSync(path.join(MANAGED_LOG_DIR, `${communityServerId}.log`), "a", 0o600);
       try {
         const stdinMode = recipe.stdin ? "pipe" : "ignore";
-        return spawn(binary, args, { cwd, env: spawnEnv, stdio: [stdinMode, fd, fd], detached: true });
+        return spawn(isolated?.binary || binary, isolated?.args || args, { cwd: isolated?.cwd || cwd, env: isolated?.env || spawnEnv, stdio: [stdinMode, fd, fd], detached: true });
       } finally {
         fs.closeSync(fd);
       }
@@ -1058,6 +1067,7 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
       partyId,
       communityServerId: communityServerId || null,
       customerOwned: ctx.customerOwned,
+      isolationProfile: isolated?.profile || null,
       editionSlug: editionSlug || null,
       gameSlug,
       saveKey: ctx.saveKey || null,
@@ -1348,6 +1358,7 @@ function publicRoom(room) {
     roomId: room.roomId,
     partyId: room.partyId,
     communityServerId: room.communityServerId || null,
+    isolationProfile: room.isolationProfile || null,
     gameSlug: room.gameSlug,
     name: room.name,
     host: room.gameSlug === "aneurism-iv" ? null : room.host || PUBLIC_IP,
