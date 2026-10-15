@@ -8,7 +8,7 @@ const GAPS: Record<string, Gap> = {
   "warzone-2100": { category: "custom-build", reason: "The VPS uses a custom Warzone 4.7 build and launch wrapper. Stage a matching source/asset update; do not replace it with Ubuntu's older 4.4.2 native package." },
   freeciv: { category: "custom-build", reason: "Uses a custom Freeciv 3.2.5 server/data/library build matching the client. Ubuntu's 3.1 binary is incompatible; stage and verify the complete matching build while preserving saves." },
   "battlefield-1942-anthology": ARCHIVE, "vintage-story": ARCHIVE,
-  "re-volt-rvgl": ARCHIVE, unvanquished: ARCHIVE,
+  "re-volt-rvgl": ARCHIVE,
   "deus-ex-goty-edition": { category: "custom-build", reason: "Needs a Wine/HX package handler that preserves the game assets and PlayBound co-op integration." },
   morrowind: { category: "archive", reason: "Needs a TES3MP-compatible archive handler that preserves Lua scripts, account data and saved worlds." },
   "hurry-curry": { category: "custom-build", reason: "Needs a source/binary update handler that retains PlayBound's player-limit patch and matching data files." },

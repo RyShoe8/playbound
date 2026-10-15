@@ -5,6 +5,7 @@ import { readRelease } from "./githubReleaseAssets.js";
 import { runCommand } from "./installationUpdateWorker.js";
 import { ETLEGACY_RELEASES } from "./etlegacyUpdates.js";
 import { OPENMOHAA_RELEASE } from "./openmohaaUpdates.js";
+import { UNVANQUISHED_RELEASES } from "./unvanquishedUpdates.js";
 
 const DAY = 24 * 60 * 60_000;
 const RELEASES = {
@@ -13,6 +14,7 @@ const RELEASES = {
   openhv: ["OpenHV/OpenHV", /^\d{8}$/],
   "earth-2140-trilogy": ["OpenE2140/OpenE2140", /^release-\d{8}$/],
   openmohaa: ["openmoh/openmohaa", /^v\d+\.\d+\.\d+$/],
+  unvanquished: ["Unvanquished/Unvanquished", /^v\d+\.\d+\.\d+$/],
 };
 export const automaticInstallationUpdate = (key) => Boolean(INSTALLATION_TARGETS[key]?.appId || RELEASES[key] || ["factorio", "hypersomnia", "wolfenstein-enemy-territory"].includes(key));
 
@@ -65,7 +67,7 @@ export async function latestInstallationBuild(key, { request = fetch, run = runC
     const [repository, tag] = RELEASES[key];
     const release = await readRelease(repository, { request, signal: AbortSignal.timeout(30_000), label: target.name });
     if (release.draft !== false || release.prerelease !== false || !tag.test(release.tag_name || "")) throw new Error("Official release is not a stable supported build");
-    return ["mindustry", "openmohaa"].includes(key) ? release.tag_name.slice(1) : release.tag_name;
+    return ["mindustry", "openmohaa", "unvanquished"].includes(key) ? release.tag_name.slice(1) : release.tag_name;
   }
   if (key === "factorio") {
     const version = JSON.parse(await boundedText("https://factorio.com/api/latest-releases", request)).stable?.headless;
@@ -147,7 +149,9 @@ export function createDailyInstallationUpdates({ stateDir, coordinator, latest =
             } else {
               row.availableBuild = await latest(target.key);
               if (!newer(row.availableBuild, target.buildId)) row.status = "up_to_date";
-              else if (target.key === "openmohaa" && row.availableBuild !== OPENMOHAA_RELEASE.version) {
+              else if (target.key === "unvanquished" && row.availableBuild !== UNVANQUISHED_RELEASES.latest) {
+                row.status = "review_required"; row.message = "New Unvanquished version needs reviewed engine/sandbox/game package compatibility and checksums.";
+              } else if (target.key === "openmohaa" && row.availableBuild !== OPENMOHAA_RELEASE.version) {
                 row.status = "review_required"; row.message = "New OpenMoHAA release needs reviewed engine/module compatibility and checksums.";
               } else if (target.key === "wolfenstein-enemy-territory" && row.availableBuild !== ETLEGACY_RELEASES.latest) {
                 row.status = "review_required"; row.message = "New ET Legacy package needs a reviewed engine/mod/bot compatibility profile.";

@@ -16,6 +16,7 @@ targets = {
     "aneurism-iv": ["aneurism-iv"],
     "wolfenstein-enemy-territory": ["wolfenstein-enemy-territory"],
     "openmohaa": ["openmohaa"],
+    "unvanquished": ["unvanquished"],
     "mindustry": ["mindustry"],
     "openra": ["openra"],
     "openhv": ["openhv"],
