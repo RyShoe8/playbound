@@ -9,17 +9,17 @@ const CREDENTIAL = /password|passwd|passphrase|rcon[_ -]?pass|token|gslt|secret|
 // Omit entire credential-bearing lines: quoted values and multi-word passwords
 // cannot safely be scrubbed by replacing just the next whitespace-delimited word.
 export function redactLogLine(line, secrets = []) {
-  if (CREDENTIAL.test(line)) return "[credential-bearing line omitted]";
-  let safe = line;
+  let safe = line
+    .replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, "")
+    .replace(/[\x00-\x08\x0b-\x1f\x7f]/g, "");
+  if (CREDENTIAL.test(safe)) return "[credential-bearing line omitted]";
   for (const value of secrets) {
     if (typeof value === "string" && value.length >= 4) safe = safe.split(value).join("[redacted]");
   }
   return safe
     .replace(/\b[a-f0-9]{32,}\b/gi, "[redacted]")
     .replace(/[A-Za-z0-9+/=_-]{64,}/g, "[redacted]")
-    .replace(/(?:https?|wss?):\/\/\S+/gi, "[URL omitted]")
-    .replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, "")
-    .replace(/[\x00-\x08\x0b-\x1f\x7f]/g, "");
+    .replace(/(?:https?|wss?):\/\/\S+/gi, "[URL omitted]");
 }
 
 /** Read a fixed-ID file only; no caller-controlled paths, offsets or sizes. */
