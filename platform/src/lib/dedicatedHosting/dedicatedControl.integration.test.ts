@@ -64,7 +64,7 @@ beforeAll(async () => {
   await mongoose.connect(mongo.getUri(), { dbName: "dedicated-control-test" });
   const tier = await getTier();
   await saveTier("basic", {
-    games: [...tier.games, { ...tier.games[0], profileKey: "openarena:base" }].map((g) => ({ ...g, enabled: true })),
+    games: [...tier.games, { ...tier.games[0], profileKey: "openarena:base" }, { ...tier.games[0], profileKey: "teeworlds:base" }].map((g) => ({ ...g, enabled: true })),
   });
   ids.owner = await user("Owner");
   ids.admin = await user("Admin");
@@ -93,6 +93,20 @@ beforeEach(async () => {
 });
 
 describe("customer Server Control", () => {
+  it("uses the plan allocation for initial start and a settings-triggered restart", async () => {
+    await CommunityServer.updateOne({ _id: serverId }, { $set: { gameSlug: "teeworlds", profileKey: "teeworlds:base", settings: { cpuMillis: 6000, memoryMiB: 8192 } } });
+    expect(await startServer(ids.owner, serverId)).toMatchObject({ ok: true });
+    expect(launches.at(-1)).toMatchObject({ customerOwned: true, resourceLimits: { cpuMillis: 1000, memoryMiB: 2048 } });
+    // The platform-owned allocation is outside game settings, including writes
+    // from older clients or an arbitrary saved settings field.
+    const profile = (await import("@/lib/serverControl/settings")).getServerSettingProfile("teeworlds")!;
+    const setting = profile.settings.find(s => s.type === "number" && s.feature !== "slots")!;
+    expect(setting).toBeDefined();
+    const value = Number(setting.default) + 1;
+    const changed = await applyControlSettings(ids.owner, serverId, { [setting.key]: value });
+    expect(changed).toMatchObject({ outcome: "restarted" });
+    expect(launches.at(-1)).toMatchObject({ resourceLimits: { cpuMillis: 1000, memoryMiB: 2048 } });
+  });
   it("persists maintenance weekdays without migrating legacy records or resetting them from older clients", async () => {
     const original = await CommunityServer.findById(serverId).lean();
     expect(original?.maintenance?.daysUTC).toBeUndefined();

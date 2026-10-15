@@ -50,7 +50,8 @@ import { runWorldBackup } from "./worldBackupRunner.js";
 import { manageDedicatedFiles } from "./dedicatedFiles.js";
 import { createInstallationCoordinator } from "./installationJobs.js";
 import { gameEnvironment } from "./gameEnvironment.js";
-import { customerIsolationLaunch, validateCustomerPreparation } from "./customerIsolation.js";
+import { customerIsolationLaunch, validateCustomerPreparation, CUSTOMER_ISOLATION_GAMES } from "./customerIsolation.js";
+import { customerResourceLimits } from "./customerResourceLimits.js";
 import { spawnCustomerRuntime, resourceScope } from "./customerRuntime.js";
 import { readCapturedLogFile, managedLogFiles, retainManagedLogs, logSecretValues, redactLogLine } from "./managedLogs.js";
 import { captureRvglLobby, sendRvglLobbyInput } from "./rvglDisplay.js";
@@ -804,6 +805,7 @@ function persistManagedRooms() {
     customerOwned: Boolean(r.customerOwned),
     isolationProfile: r.isolationProfile || null,
     resourceScope: r.resourceScope || null,
+    resourceLimits: r.resourceLimits || null,
     rcon: r.rcon, rconPassword: r.rconPassword, cwd: r.cwd || null,
   })));
 }
@@ -866,8 +868,12 @@ async function startRoom(opts) {
   return startCoordinator.withPartyLock(key, () => startRoomUnlocked(opts));
 }
 
-async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername, saveKey, customerOwned, testSpawn = false }) {
+async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername, saveKey, customerOwned, resourceLimits, testSpawn = false }) {
   if (shuttingDown) return { error: "Agent is shutting down" };
+  if (customerOwned && CUSTOMER_ISOLATION_GAMES.includes(gameSlug)) {
+    try { resourceLimits = customerResourceLimits(gameSlug, resourceLimits); }
+    catch (error) { return { error: error.message }; }
+  }
   const lookup = communityServerId ? byManaged : byParty;
   const ownerId = communityServerId || partyId;
   const existingId = lookup.get(ownerId);
@@ -905,6 +911,7 @@ async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, e
       leaderUsername,
       saveKey: cleanSaveKey,
       customerOwned: Boolean(customerOwned && communityServerId),
+      resourceLimits,
       testSpawn,
     });
   } finally {
@@ -914,7 +921,7 @@ async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, e
   }
 }
 
-async function startRoomReserved({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername, saveKey, customerOwned, testSpawn = false }) {
+async function startRoomReserved({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername, saveKey, customerOwned, resourceLimits, testSpawn = false }) {
 
   // Recipes use partyId as a filesystem namespace; managed IDs serve that
   // internal purpose without creating a Party or entering byParty.
@@ -1048,7 +1055,7 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
     }
     let isolated;
     try {
-      isolated = customerIsolationLaunch({ gameSlug, customerOwned: ctx.customerOwned, communityServerId, binary, args, home: hostHome });
+      isolated = customerIsolationLaunch({ gameSlug, customerOwned: ctx.customerOwned, communityServerId, binary, args, home: hostHome, resourceLimits });
     } catch {
       freePort(gameSlug, port);
       return { error: "Customer runtime isolation could not be prepared. The server was not launched." };
@@ -1079,6 +1086,7 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
       customerOwned: ctx.customerOwned,
       isolationProfile: isolated?.profile || null,
       resourceScope: isolated && child.pid ? resourceScope(communityServerId, child.pid) : null,
+      resourceLimits: isolated?.resourceLimits || null,
       editionSlug: editionSlug || null,
       gameSlug,
       saveKey: ctx.saveKey || null,
@@ -1177,6 +1185,7 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
           const next = spawnGame();
           room.child = next;
           room.pid = next.pid || null;
+          room.resourceScope = isolated && next.pid ? resourceScope(communityServerId, next.pid) : null;
           room.processIdentity = processIdentity(next.pid);
           room.processStartedAt = Date.now();
           if (communityServerId) persistManagedRooms();
@@ -1371,6 +1380,7 @@ function publicRoom(room) {
     communityServerId: room.communityServerId || null,
     isolationProfile: room.isolationProfile || null,
     resourceScope: room.resourceScope || null,
+    resourceLimits: room.resourceLimits || null,
     gameSlug: room.gameSlug,
     name: room.name,
     host: room.gameSlug === "aneurism-iv" ? null : room.host || PUBLIC_IP,
@@ -1532,6 +1542,7 @@ const server = http.createServer(async (req, res) => {
         name: String(body.name || "PlayBound.Club Community Server").slice(0, 40),
         editionSlug: body.editionSlug, mod: body.mod, settings: body.settings,
         customerOwned: body.customerOwned === true,
+        resourceLimits: body.resourceLimits,
       }).then((result) => {
         if (gameSlug === "aneurism-iv" && managedJobs.get(communityServerId)?.canceled) return;
         managedJobs.set(communityServerId, result.error

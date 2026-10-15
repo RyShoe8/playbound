@@ -18,10 +18,22 @@ BOOT = '01234567-0123-0123-0123-0123456789ab'
 class ResourceBoundaries(unittest.TestCase):
     def test_fixed_profiles_only_no_commands_paths_or_properties(self):
         for game in module.PROFILES:
-            self.assertEqual(module.request(['attach', ID, game, '42', BOOT + ':100']), (ID, game, 42, BOOT + ':100'))
+            self.assertEqual(module.request(['attach', ID, game, '42', BOOT + ':100']), (ID, game, 42, BOOT + ':100', None))
         for arguments in ([], ['shell', ID, 'teeworlds', '42', BOOT + ':100'], ['attach', '../other', 'teeworlds', '42', BOOT + ':100'], ['attach', ID, 'other', '42', BOOT + ':100'], ['attach', ID, 'teeworlds', '1', BOOT + ':100'], ['attach', ID, 'teeworlds', '42;reboot', BOOT + ':100'], ['attach', ID, 'teeworlds', '42', '../identity']):
             with self.assertRaises(ValueError):
                 module.request(arguments)
+
+    def test_explicit_allocations_are_numeric_bounded_and_keep_task_swap_policy(self):
+        for cpu, memory in [('250', '256'), ('500', '1024'), ('6000', '8192')]:
+            parsed = module.request(['attach', ID, 'teeworlds', '42', BOOT + ':100', cpu, memory])
+            self.assertEqual(parsed[-1], (int(cpu), int(memory)))
+            _, command = module.scope_command(ID, 'teeworlds', 42, parsed[-1])
+            self.assertIn(str(int(cpu) * 1000), command)
+            self.assertIn(str(int(memory) * 1024 ** 2), command)
+            self.assertEqual(module.allocation('teeworlds', parsed[-1])[2], 128)
+        for cpu, memory in [('0', '1024'), ('249', '1024'), ('6001', '1024'), ('500', '255'), ('500', '8193'), ('500.0', '1024'), ('500', 'max'), ('500;reboot', '1024')]:
+            with self.assertRaises(ValueError):
+                module.request(['attach', ID, 'teeworlds', '42', BOOT + ':100', cpu, memory])
 
     def test_scope_is_new_fail_mode_with_bounded_fixed_properties(self):
         for game, (cores, memory, tasks) in module.PROFILES.items():

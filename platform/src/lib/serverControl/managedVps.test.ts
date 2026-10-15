@@ -2,6 +2,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 const list = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/gameHost/client", () => ({ listManagedHostRooms: list, requestManagedHostRoom: vi.fn(), sendRoomCommand: vi.fn(), stopManagedHostRoom: vi.fn() }));
 import { createManagedVpsAdapter } from "./managedVps";
+import { requestManagedHostRoom } from "@/lib/gameHost/client";
 const adapter = () => createManagedVpsAdapter({ id: "customer", gameSlug: "xonotic", recipeSlug: "xonotic", editionSlug: null, mod: null, name: "Customer server", settings: {} });
 beforeEach(() => vi.resetAllMocks());
 it("preserves pending status and exposes only the matched runtime's safe metrics", async () => {
@@ -19,4 +20,19 @@ it("keeps unreachable state unknown rather than stopped with zero usage", async 
   list.mockResolvedValue({ ok: false, error: "Host unavailable" });
   expect(await adapter().getStatus()).toMatchObject({ status: "unknown", error: "Host unavailable" });
   expect((await adapter().getStatus()).resources).toBeUndefined();
+});
+it("resolves customer allocation only when starting and sends it outside game settings", async () => {
+  const allocation = vi.fn(async () => ({ cpuMillis: 750, memoryMiB: 1536 }));
+  const managed = createManagedVpsAdapter({ id: "customer", gameSlug: "teeworlds", recipeSlug: "teeworlds", editionSlug: null, mod: null, name: "Customer server", customerOwned: true, settings: {}, resourceLimits: allocation });
+  list.mockResolvedValue({ ok: true, rooms: [], jobs: {} });
+  vi.mocked(requestManagedHostRoom).mockResolvedValue({ status: "pending" });
+  await managed.getStatus();
+  expect(allocation).not.toHaveBeenCalled();
+  await managed.start();
+  expect(requestManagedHostRoom).toHaveBeenCalledWith(expect.objectContaining({ resourceLimits: { cpuMillis: 750, memoryMiB: 1536 }, settings: {} }));
+});
+it("rejects unavailable allocations without dispatching a start", async () => {
+  const managed = createManagedVpsAdapter({ id: "customer", gameSlug: "teeworlds", recipeSlug: "teeworlds", editionSlug: null, mod: null, name: "Customer server", customerOwned: true, settings: {}, resourceLimits: async () => { throw new Error("Unsupported allocation"); } });
+  expect(await managed.start()).toMatchObject({ status: "failed", error: "Unsupported allocation" });
+  expect(requestManagedHostRoom).not.toHaveBeenCalled();
 });

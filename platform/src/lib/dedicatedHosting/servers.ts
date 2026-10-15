@@ -22,6 +22,7 @@ import { applyLiveState } from "./liveControl";
 import { allowedSlotSizes, getTier, slotCapEnforced, tierGame, type HostingTier } from "./tier";
 import { getHostableGame } from "@/lib/gameHost/catalog";
 import { isPendingDedicatedProfile } from "./pendingGames";
+import { customerRuntimeAllocation } from "./runtimeAllocation";
 
 export type Fail = { error: string; status: 400 | 403 | 404 | 409 | 503 };
 const fail = (error: string, status: Fail["status"] = 400): Fail => ({ error, status });
@@ -245,7 +246,7 @@ async function applyLiveStateNow(server: { _id: unknown; gameSlug: string; bans?
 /** Ask the agent for this server's room, with its slot count as the enforced player cap. */
 export async function launchRoom(server: {
   _id: unknown; gameSlug: string; editionSlug?: string | null; mod?: string | null; name: string;
-  profileKey: string; allocatedSlots: number; settings?: Record<string, unknown> | null;
+  profileKey: string; allocatedSlots: number; dedicatedSubscriptionId?: unknown; settings?: Record<string, unknown> | null;
 }) {
   if (isPendingDedicatedProfile(server.profileKey)) {
     return { status: "failed" as const, error: "This game is planned for Dedicated Basic but is not ready to host yet." };
@@ -260,6 +261,9 @@ export async function launchRoom(server: {
     if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") settings[k] = v;
   }
   settings.maxPlayers = server.allocatedSlots;
+  let resourceLimits;
+  try { resourceLimits = await customerRuntimeAllocation(server, profile?.recipeSlug || server.gameSlug); }
+  catch (error) { return { status: "failed" as const, error: error instanceof Error ? error.message : "Invalid resource allocation" }; }
   return requestManagedHostRoom({
     communityServerId: String(server._id),
     gameSlug: profile?.recipeSlug || server.gameSlug,
@@ -268,6 +272,7 @@ export async function launchRoom(server: {
     name: server.name,
     settings,
     customerOwned: true,
+    ...(resourceLimits ? { resourceLimits } : {}),
   });
 }
 

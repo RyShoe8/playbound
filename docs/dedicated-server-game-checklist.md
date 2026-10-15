@@ -123,6 +123,10 @@ pull credentials, edit environment files, or alter unrelated database records.
   bounded resource profile in the root-owned placement helper, verify inherited
   limits, fail-closed placement/cancellation, restart recovery, whole-tree stop
   and independent resource metrics. No general systemd/shell sudo is permitted.
+  Carry validated tier/slot CPU and RAM allocations outside game settings on
+  initial start, recovery and settings-backed restart; enforce the same envelope
+  inventory reserves. Confirm non-default limits and increased memory actually
+  reach the kernel, persist recovery metadata and reject unsupported allocations.
 
 ## 7. Capacity and programming
 

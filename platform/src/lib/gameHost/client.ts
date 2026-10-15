@@ -49,6 +49,8 @@ export type GameHostRoom = {
   join?: { kind: "steam"; serverId: string | null };
   pid?: number | null;
   resources?: { available: boolean; rssBytes?: number; cpuCores?: number | null; sampleIntervalMs?: number; scope?: string; collectedAt?: string };
+  resourceScope?: string | null;
+  resourceLimits?: CustomerResourceLimits | null;
   host: string;
   port: number;
   gameSlug: string;
@@ -130,6 +132,8 @@ export async function queryManagedHostOccupancy(communityServerId: string): Prom
   } catch { return null; }
 }
 
+export type CustomerResourceLimits = { cpuMillis: number; memoryMiB: number };
+
 export async function requestManagedHostRoom(opts: {
   communityServerId: string;
   gameSlug: string;
@@ -138,6 +142,7 @@ export async function requestManagedHostRoom(opts: {
   name: string;
   settings?: Record<string, string | number | boolean>;
   customerOwned?: boolean;
+  resourceLimits?: CustomerResourceLimits;
 }): Promise<ManagedHostStatus | { status: "failed"; error: string }> {
   try {
     const res = await hostFetch("/managed", { method: "POST", body: JSON.stringify(opts) });

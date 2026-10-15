@@ -1,4 +1,5 @@
 import { listManagedHostRooms, requestManagedHostRoom, sendRoomCommand, stopManagedHostRoom } from "@/lib/gameHost/client";
+import type { CustomerResourceLimits } from "@/lib/gameHost/client";
 import {
   ServerControlUnsupported,
   type ApplySettingsResult,
@@ -24,6 +25,7 @@ type ManagedRef = {
   mod: string | null;
   name: string;
   customerOwned?: boolean;
+  resourceLimits?: () => Promise<CustomerResourceLimits | undefined>;
   /**
    * What the room is started with. For a customer server this includes
    * `maxPlayers` (its slot count), which the caller keeps out of the editable
@@ -86,7 +88,10 @@ export function createManagedVpsAdapter(ref: ManagedRef): ServerControlAdapter {
   }
 
   async function start(): Promise<ServerRuntimeState> {
-    const result = await requestManagedHostRoom({ communityServerId: ref.id, gameSlug: ref.recipeSlug, editionSlug: ref.editionSlug, mod: ref.mod, name: ref.name, settings: ref.settings, customerOwned: ref.customerOwned === true });
+    let resourceLimits: CustomerResourceLimits | undefined;
+    try { resourceLimits = ref.customerOwned ? await ref.resourceLimits?.() : undefined; }
+    catch (error) { return down("failed", error instanceof Error ? error.message : "Invalid resource allocation"); }
+    const result = await requestManagedHostRoom({ communityServerId: ref.id, gameSlug: ref.recipeSlug, editionSlug: ref.editionSlug, mod: ref.mod, name: ref.name, settings: ref.settings, customerOwned: ref.customerOwned === true, ...(resourceLimits ? { resourceLimits } : {}) });
     if (result.status === "failed") return down("failed", result.error || "Start failed");
     return state();
   }

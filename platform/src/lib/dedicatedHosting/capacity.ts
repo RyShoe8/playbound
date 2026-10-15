@@ -11,6 +11,8 @@ import DedicatedCapacityLease from "@/lib/models/DedicatedCapacityLease";
 import DedicatedSubscription from "@/lib/models/DedicatedSubscription";
 import { fetchGameHostMetrics, listManagedHostRooms, type GameHostMetrics } from "@/lib/gameHost/client";
 import { getTier, type HostingTier } from "./tier";
+import { unitEnvelope } from "./resourceEnvelope";
+export { unitEnvelope } from "./resourceEnvelope";
 
 export const HOLD_MINUTES = 15;
 // Stripe Checkout Sessions have a 30-minute minimum expiry. The pre-checkout
@@ -18,19 +20,9 @@ export const HOLD_MINUTES = 15;
 // plus webhook-delivery headroom. This cannot safely remain a 15-minute hold.
 export const CHECKOUT_WEBHOOK_GRACE_MINUTES = 5;
 const LEASE_MS = 120_000;
-const GIB = 1024 ** 3;
 
 type Envelope = { cpuCores: number; ramBytes: number; storageBytes: number };
 type Inventory = { availableUnits: number; availableSlots: number; reason: string | null };
-
-export function unitEnvelope(tier: HostingTier, slots: number): Envelope {
-  const units = Math.ceil(slots / tier.resourceClass.slotsPerUnit);
-  return {
-    cpuCores: units * tier.resourceClass.cpuPerUnit,
-    ramBytes: units * tier.resourceClass.memoryMbPerUnit * 1024 ** 2,
-    storageBytes: units * tier.resourceClass.storageGbPerUnit * GIB,
-  };
-}
 
 /** All figures are owed/reserved envelopes, not current utilization. */
 export function decideInventory(input: {
