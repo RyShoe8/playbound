@@ -1,0 +1,431 @@
+{
+  "latest": "0.56.2",
+  "versions": {
+    "0.55.3": {
+      "prefix": "unvanquished_0.55.3/",
+      "nativeZip": "linux-amd64.zip",
+      "archiveBytes": 588702942,
+      "archiveSha256": "d53afb3fa83e21a714f60d92a88b7566422a5089294c794f745e16b1ee4030b6",
+      "files": {
+        "crash_server": {
+          "bytes": 67728,
+          "sha256": "3ebc02ef0444296005ca41a3d816ac5ba92e4285393ba170800206a1edaebc55",
+          "executable": true
+        },
+        "daemon": {
+          "bytes": 9106640,
+          "sha256": "ca0e9f3f6b0d6dfa15a031a922a7c38ca16bc24b85f4cecb6762f1657600d3c7",
+          "executable": true
+        },
+        "daemonded": {
+          "bytes": 1388640,
+          "sha256": "0fab34085f3caa955aa70987caf0f3169dc6a71e7f9e2ebe51f77b6056489c17",
+          "executable": true
+        },
+        "daemon-tty": {
+          "bytes": 2015568,
+          "sha256": "241ad1af73e4c0f871b08c54034559c303cf0098af849dff35b3e37a6a19c738",
+          "executable": true
+        },
+        "irt_core-amd64.nexe": {
+          "bytes": 622952,
+          "sha256": "d5021316cdff1633d0d923201f77810bf09fd5812ea62622201531882fd75ad4",
+          "executable": false
+        },
+        "nacl_helper_bootstrap": {
+          "bytes": 9832,
+          "sha256": "fc13b6ee2502478e4ae3b6c5f4e94dc9710b20731118a627108f41894330295b",
+          "executable": true
+        },
+        "nacl_loader": {
+          "bytes": 2745992,
+          "sha256": "d0e16f2867e670d13e2f5913ef5055a22111be3145165f4166167253370aa528",
+          "executable": true
+        },
+        "pkg/map-antares_1.0.4.dpk": {
+          "bytes": 8630910,
+          "sha256": "40e588dd7264f97c642aefbf66f0522b0b71e441a9e1add5ae3879f23454c3d4",
+          "executable": false
+        },
+        "pkg/map-chasm_1.2.4.dpk": {
+          "bytes": 5827304,
+          "sha256": "efa286c6ba46f55f73db4fa7d337ee0e93a363cf0feafefa4fae81c3d88171cd",
+          "executable": false
+        },
+        "pkg/map-forlorn_0.15.4.dpk": {
+          "bytes": 9815676,
+          "sha256": "7237feeb25b8b761ee60c166e21f887fe145dbc32bc55c210535a36edaa2f244",
+          "executable": false
+        },
+        "pkg/map-parpax_2.7.5.dpk": {
+          "bytes": 8992156,
+          "sha256": "6bb22214ab2b241e622dcfa5a8cb17da8dc83bf6279bb23226483e72b7b1e429",
+          "executable": false
+        },
+        "pkg/map-perseus_1.0.5.dpk": {
+          "bytes": 16891723,
+          "sha256": "70ad1c078c720a96346ea737d468fcba96cf1304dec9104f7620edad63fdf39a",
+          "executable": false
+        },
+        "pkg/map-plat23_1.13.5.dpk": {
+          "bytes": 3471908,
+          "sha256": "788dae236c3b1463e672d89199d89f608dab003056193174d683d83a75fff338",
+          "executable": false
+        },
+        "pkg/map-spacetracks_1.1.4.dpk": {
+          "bytes": 12765845,
+          "sha256": "c01827d5188ef5139d5c206b1a034e356818db461867197e89893acd3f4758fe",
+          "executable": false
+        },
+        "pkg/map-station15_1.1.4.dpk": {
+          "bytes": 32391337,
+          "sha256": "2649de7e0e96532da86d1e9f6f8496226ba99e487626e5bec7a71e33795a64f3",
+          "executable": false
+        },
+        "pkg/map-thunder_1.3.6.dpk": {
+          "bytes": 17643716,
+          "sha256": "fdf849a488e4b454824fc33f699e980af945f3714861b288fd667612a12cd5bf",
+          "executable": false
+        },
+        "pkg/map-vega_1.4.4.dpk": {
+          "bytes": 18145350,
+          "sha256": "c9ae6113b3962ee75ce8308f3d660bbeed446d5237f2e5dcf61d3461f668dc44",
+          "executable": false
+        },
+        "pkg/map-yocto_1.0.5.dpk": {
+          "bytes": 18254706,
+          "sha256": "01697bcaa9d8fd3b0d6651db67ea5005c1564c537ffff007b011888adbac5694",
+          "executable": false
+        },
+        "pkg/md5sums": {
+          "bytes": 1811,
+          "sha256": "171740c5b496b6dca5d7ab75000c95610613f81c6025fc94be56aa81a3118985",
+          "executable": false
+        },
+        "pkg/res-ambient_0.55.dpk": {
+          "bytes": 1205184,
+          "sha256": "c1670609c8ebd1e432ebfe3bcb6eb44f5a2d05343089abc418d75f21d39616db",
+          "executable": false
+        },
+        "pkg/res-buildables_0.55.dpk": {
+          "bytes": 83066577,
+          "sha256": "199961ec822ab4ecd2fc8a9be6c249859a5f0f3d22f351d9c84c3c567383df34",
+          "executable": false
+        },
+        "pkg/res-legacy_0.55.dpk": {
+          "bytes": 2410327,
+          "sha256": "edfcaa222dbefaf44d1a0d9a8d8e568e28612965e4ea83cf902a6c0597b78bb4",
+          "executable": false
+        },
+        "pkg/res-leveleditor_0.54.dpk": {
+          "bytes": 868,
+          "sha256": "3a6c0b9d8b0c6489a9b84b890c00a13787f8e7968c9755351fce20618f7c198e",
+          "executable": false
+        },
+        "pkg/res-players_0.55.dpk": {
+          "bytes": 74719423,
+          "sha256": "385e45f5002b683473e805a9658ca5d9a18751347c67d26d2ed9e0f76d198637",
+          "executable": false
+        },
+        "pkg/res-soundtrack_0.54.dpk": {
+          "bytes": 10104205,
+          "sha256": "f957c74d49de2b0303cb990cc7643843cea41f26f3c53fe60afd3e00ea2eda8b",
+          "executable": false
+        },
+        "pkg/res-voices_0.54.dpk": {
+          "bytes": 1958937,
+          "sha256": "d519f1689a3d7becf6b37202e71b3c79fdbccfcd4aa4fb4a703e96e777f107a8",
+          "executable": false
+        },
+        "pkg/res-voices_0.55.3.dpk": {
+          "bytes": 1356,
+          "sha256": "c3af5a299fbce863d61d120b64a4bd61ca2fb09942336483e9ecc2ac81fe25e6",
+          "executable": false
+        },
+        "pkg/res-weapons_0.55.3.dpk": {
+          "bytes": 1681525,
+          "sha256": "fe2ae5c45d59c137e438e4a85538488169c9455092a00413623f62375ce83a7d",
+          "executable": false
+        },
+        "pkg/res-weapons_0.55.dpk": {
+          "bytes": 57520481,
+          "sha256": "5a89517a25648cc6fa9d1b913070c5b120d0ec7dbf0954dcbb648fe2c14705af",
+          "executable": false
+        },
+        "pkg/tex-all_2.3.dpk": {
+          "bytes": 519,
+          "sha256": "f98a2f1cef9b80784c85b48a1ac8830f5c7308d4fa3770b34097b0f3e0f2c3fb",
+          "executable": false
+        },
+        "pkg/tex-common_2.4.dpk": {
+          "bytes": 73580,
+          "sha256": "d3b9979627ebbaefa0f5cca13b6671c9b44671b1251b5e8fe01f0d99139c9fc6",
+          "executable": false
+        },
+        "pkg/tex-ej01_1.3.1.dpk": {
+          "bytes": 5481526,
+          "sha256": "fb2ca6b7afc49c763bfc2062118ae7b65ddd91a172543983a0d15e08ed936781",
+          "executable": false
+        },
+        "pkg/tex-ex_1.3.1.dpk": {
+          "bytes": 10928333,
+          "sha256": "a7ad3aef1cdb2827f9061c4391ae55d640cc83091a492685761a6801fc9dcfe1",
+          "executable": false
+        },
+        "pkg/tex-exm_1.3.2.dpk": {
+          "bytes": 1967799,
+          "sha256": "e1e76e2468bc4fcad3cf4dd0f7a1e7d4251f1f782acff1804047ce0626d76f0b",
+          "executable": false
+        },
+        "pkg/tex-pk01_1.3.1.dpk": {
+          "bytes": 4785909,
+          "sha256": "d8be3ae347f6b4924a7dfec99da1611fcf34572573feed14cd9f24678aa17952",
+          "executable": false
+        },
+        "pkg/tex-pk02_1.3.1.dpk": {
+          "bytes": 23621513,
+          "sha256": "5d8f87f70c59d3c44347a26de9fa30bfb42f9047df2eeb6af301a2736c0ea85e",
+          "executable": false
+        },
+        "pkg/tex-space_1.3.dpk": {
+          "bytes": 16388337,
+          "sha256": "92e599ae1ef653aff7a6512d6b9461a5fb4f62cb4bd8ebbe9ba5ca4629688958",
+          "executable": false
+        },
+        "pkg/tex-tech_1.3.1.dpk": {
+          "bytes": 18895689,
+          "sha256": "057b62570b22191f3bae73f9114941db2085aa886839ff28cb0111434e24073c",
+          "executable": false
+        },
+        "pkg/tex-trak5_1.3.1.dpk": {
+          "bytes": 10402111,
+          "sha256": "e468a06dc99ecd4799730a198b9a20121c2a361004956db5d9713f030e9cc22b",
+          "executable": false
+        },
+        "pkg/tex-vega_1.4.4.dpk": {
+          "bytes": 17639607,
+          "sha256": "ed41754d1f47c4447f01824da9634c7dd2389abea8101542af3daebe240b0402",
+          "executable": false
+        },
+        "pkg/unvanquished_0.55.3.dpk": {
+          "bytes": 18006984,
+          "sha256": "cde3833dad1da577cb150d74da842fb04522493c30c68eab90f44707a55a62fd",
+          "executable": false
+        }
+      }
+    },
+    "0.56.2": {
+      "prefix": "unvanquished_0.56.2/",
+      "nativeZip": "linux-amd64.zip",
+      "archiveBytes": 626828717,
+      "archiveSha256": "81a82712e774a9c11bbe4ad9e34fc6eca0ec92e69a72cb2a9f320fadf5db66ff",
+      "files": {
+        "crash_server": {
+          "bytes": 63640,
+          "sha256": "eb555cd0df1a6e1877cf0a491ab3e85e9aa9d8526da96c801038c7f2e459a367",
+          "executable": true
+        },
+        "daemon": {
+          "bytes": 16819784,
+          "sha256": "40df522e3222833f3585f3e1d706d6aa866545e862f289eeb401ae0f1f08ad09",
+          "executable": true
+        },
+        "daemonded": {
+          "bytes": 1503264,
+          "sha256": "98ce3b40a8b7161172d33ba011e920a428daabfd68a4204edbb9adfdcb037b09",
+          "executable": true
+        },
+        "daemon-tty": {
+          "bytes": 2385640,
+          "sha256": "3cfe76e0171d43c4f8de1840ec78a15059c261b3f24506f7eee3efafec3f47bf",
+          "executable": true
+        },
+        "irt_core-amd64.nexe": {
+          "bytes": 622952,
+          "sha256": "d5021316cdff1633d0d923201f77810bf09fd5812ea62622201531882fd75ad4",
+          "executable": false
+        },
+        "nacl_helper_bootstrap": {
+          "bytes": 9808,
+          "sha256": "16f8ff33ecdaf94abf7f742896f50473d29971503b8bac0313843c29acbbcf0f",
+          "executable": true
+        },
+        "nacl_loader": {
+          "bytes": 2770680,
+          "sha256": "0d42cffb00cb6bf406cce63943346611f1e1367247dd5124051c61b8c1ee51a8",
+          "executable": true
+        },
+        "pkg/map-antares_1.1.dpk": {
+          "bytes": 9399703,
+          "sha256": "244ae31eade151271788ea45753b665fcdf1a956d13f0241266d5580a71918ea",
+          "executable": false
+        },
+        "pkg/map-chasm_1.3.dpk": {
+          "bytes": 6146820,
+          "sha256": "134c273fe73356be06ec382af9ca9a4cb8bb71e41799cc52ecce6945f848e05f",
+          "executable": false
+        },
+        "pkg/map-forlorn_0.16.dpk": {
+          "bytes": 10380573,
+          "sha256": "195f4146a758e55456244427150bb3335ad314a2a27ed0c387ae1a69e955f93c",
+          "executable": false
+        },
+        "pkg/map-parpax_2.8.dpk": {
+          "bytes": 9636960,
+          "sha256": "2f6f35e3e0f2b0c26334ccafe07840300c2ed60da35096483b6a72cf2e57362e",
+          "executable": false
+        },
+        "pkg/map-perseus_1.1.dpk": {
+          "bytes": 18509934,
+          "sha256": "f24d1d09fb468cce4c3f0af82fe638219b2e25e9d520269dd48a072c7571d109",
+          "executable": false
+        },
+        "pkg/map-plat23_1.14.dpk": {
+          "bytes": 3808627,
+          "sha256": "97a2a5be4b41391ea950b0be39ed9a25ab0b8f98f9ae488f4e638af772ec28ea",
+          "executable": false
+        },
+        "pkg/map-spacetracks_1.2.dpk": {
+          "bytes": 14127052,
+          "sha256": "7b0e0ee6a9d350a539df48421e573a5a6a1204e60702fc7f999781d6baec5702",
+          "executable": false
+        },
+        "pkg/map-station15_1.2.dpk": {
+          "bytes": 33289771,
+          "sha256": "dc1d5d078ebb23d6137cd602d6e6d079aeb5ed380da8c4b8d7ea72c112e9716b",
+          "executable": false
+        },
+        "pkg/map-thunder_1.4.dpk": {
+          "bytes": 19551150,
+          "sha256": "d8a423acbad3720fbf3b62410ccff79bc7fc8e3f6e0da94944caf401ec00217e",
+          "executable": false
+        },
+        "pkg/map-vega_1.5.dpk": {
+          "bytes": 19425629,
+          "sha256": "0c9f1042de311ca3b8df7693f01ca26fb3ac8c4f7afc0a32425a87a2a860dda8",
+          "executable": false
+        },
+        "pkg/map-yocto_1.1.dpk": {
+          "bytes": 19103961,
+          "sha256": "254a7ac3830a37855e2bc2c68e4ef3382ecd6007af1dfbe0b89eb0d90469cb6b",
+          "executable": false
+        },
+        "pkg/md5sums": {
+          "bytes": 1788,
+          "sha256": "f1eeb86a9ba99d3236006f5bf4ef5c1a42a26aa7acec394220be7d7add95af82",
+          "executable": false
+        },
+        "pkg/res-ambient_0.55.dpk": {
+          "bytes": 1205184,
+          "sha256": "c1670609c8ebd1e432ebfe3bcb6eb44f5a2d05343089abc418d75f21d39616db",
+          "executable": false
+        },
+        "pkg/res-buildables_0.56.dpk": {
+          "bytes": 83013111,
+          "sha256": "dec6718fb06c203737e503c780fb88a0f1e649d4faf24294441613d96329ba39",
+          "executable": false
+        },
+        "pkg/res-legacy_0.55.dpk": {
+          "bytes": 2410327,
+          "sha256": "edfcaa222dbefaf44d1a0d9a8d8e568e28612965e4ea83cf902a6c0597b78bb4",
+          "executable": false
+        },
+        "pkg/res-leveleditor_0.54.dpk": {
+          "bytes": 868,
+          "sha256": "3a6c0b9d8b0c6489a9b84b890c00a13787f8e7968c9755351fce20618f7c198e",
+          "executable": false
+        },
+        "pkg/res-players_0.56.2.dpk": {
+          "bytes": 4131683,
+          "sha256": "cffa384730a8057a4c5d062f3f76d04ad9a6ffcd6dc72babf2c6b941bc36e9df",
+          "executable": false
+        },
+        "pkg/res-players_0.56.dpk": {
+          "bytes": 74442763,
+          "sha256": "d6b97f987396c1987e8ac78f0b2648714f7815f7ed02b368e526c7f2e3743e81",
+          "executable": false
+        },
+        "pkg/res-soundtrack_0.54.dpk": {
+          "bytes": 10104205,
+          "sha256": "f957c74d49de2b0303cb990cc7643843cea41f26f3c53fe60afd3e00ea2eda8b",
+          "executable": false
+        },
+        "pkg/res-voices_0.56.dpk": {
+          "bytes": 1959972,
+          "sha256": "a8b3f31c9670f151f2df97c483589b6ab63b3c514319ead5655b069397e0d685",
+          "executable": false
+        },
+        "pkg/res-weapons_0.56.2.dpk": {
+          "bytes": 131457,
+          "sha256": "57ecc985ed10a5068d7ab4a83081e717545834730d0f47e73509920f56a215f7",
+          "executable": false
+        },
+        "pkg/res-weapons_0.56.dpk": {
+          "bytes": 57118818,
+          "sha256": "2530314bc6b97d89c7085df67d77bfa0ac2d98ca0aae67d091bdeed573425da7",
+          "executable": false
+        },
+        "pkg/tex-all_2.3.dpk": {
+          "bytes": 519,
+          "sha256": "f98a2f1cef9b80784c85b48a1ac8830f5c7308d4fa3770b34097b0f3e0f2c3fb",
+          "executable": false
+        },
+        "pkg/tex-common_2.5.dpk": {
+          "bytes": 75195,
+          "sha256": "d85ffcf53866f0bd6843ab365bca1164d2057e0a0b95a85cfba2342b9a852fd9",
+          "executable": false
+        },
+        "pkg/tex-ej01_1.3.1.dpk": {
+          "bytes": 5481526,
+          "sha256": "fb2ca6b7afc49c763bfc2062118ae7b65ddd91a172543983a0d15e08ed936781",
+          "executable": false
+        },
+        "pkg/tex-ex_1.3.1.dpk": {
+          "bytes": 10928333,
+          "sha256": "a7ad3aef1cdb2827f9061c4391ae55d640cc83091a492685761a6801fc9dcfe1",
+          "executable": false
+        },
+        "pkg/tex-exm_1.3.3.dpk": {
+          "bytes": 1964231,
+          "sha256": "ef655bf821e4590f266d6fec0c4a39b01e9da48f772e05e440a9c48865c0d7be",
+          "executable": false
+        },
+        "pkg/tex-pk01_1.3.1.dpk": {
+          "bytes": 4785909,
+          "sha256": "d8be3ae347f6b4924a7dfec99da1611fcf34572573feed14cd9f24678aa17952",
+          "executable": false
+        },
+        "pkg/tex-pk02_1.3.2.dpk": {
+          "bytes": 23618489,
+          "sha256": "3d851034552f90650b15b90bb088843bf3a55ed86125cd2c9784ac2045f46576",
+          "executable": false
+        },
+        "pkg/tex-space_1.3.dpk": {
+          "bytes": 16388337,
+          "sha256": "92e599ae1ef653aff7a6512d6b9461a5fb4f62cb4bd8ebbe9ba5ca4629688958",
+          "executable": false
+        },
+        "pkg/tex-tech_1.3.1.dpk": {
+          "bytes": 18895689,
+          "sha256": "057b62570b22191f3bae73f9114941db2085aa886839ff28cb0111434e24073c",
+          "executable": false
+        },
+        "pkg/tex-trak5_1.3.2.dpk": {
+          "bytes": 10311721,
+          "sha256": "7dea233b374cd665c9ce0ff100f3c33db8952f7185639c022e1249f6cc12d64c",
+          "executable": false
+        },
+        "pkg/tex-vega_1.5.dpk": {
+          "bytes": 17669738,
+          "sha256": "d433a3c423f0606045214ed791b8c0a554cd8c5a59f5573febfbefcfdcbc0c00",
+          "executable": false
+        },
+        "pkg/unvanquished_0.56.2.dpk": {
+          "bytes": 18503967,
+          "sha256": "ffe4c28547c703dd2b457886269e5d98dadc7067befb4b582fd035d4f133b06c",
+          "executable": false
+        }
+      }
+    }
+  }
+}

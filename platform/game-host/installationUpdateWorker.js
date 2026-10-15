@@ -19,6 +19,7 @@ import { stageXonoticRelease } from "./xonoticUpdates.js";
 import { stageFgmsRelease } from "./fgmsUpdates.js";
 import { stageEtlegacyRelease } from "./etlegacyUpdates.js";
 import { stageOpenMohaaRelease } from "./openmohaaUpdates.js";
+import { stageUnvanquishedRelease, validateUnvanquishedOverrides } from "./unvanquishedUpdates.js";
 
 const GIB = 1024 ** 3;
 
@@ -95,6 +96,7 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
   };
   try {
     const original = verifyInstallation(current, job.key);
+    if (job.key === "unvanquished") validateUnvanquishedOverrides(hostHome);
     if (original.branch && !/^[a-zA-Z0-9_-]{1,64}$/.test(original.branch)) throw new Error("SteamCMD installed branch requires operator review");
     if (await scan(job.key, gamesRoot)) throw new Error("An affected process is still running; no files were changed");
     if (job.key === "openra") validateOpenRABaseline(current);
@@ -115,7 +117,13 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
       // their bytes, then the fixed promotion helper restores trusted ownership.
       await run("/usr/bin/cp", ["-a", ...(["reviewed-distro-native", "reviewed-native-zip"].includes(target.strategy) ? ["--no-preserve=ownership"] : []), "--reflink=auto", "--sparse=always", "--", activePath, stagedPath], { root: gamesRoot });
       const detachedLinks = prepareInstallationLinks(stage, current, true);
-      if (target.strategy === "reviewed-openmohaa-package") {
+      if (target.strategy === "reviewed-unvanquished-package") {
+        phase("downloading", "Verifying the reviewed Unvanquished engine, sandbox helpers and game packages together");
+        await stageUnvanquishedRelease(stage, { run, diskCheck: () => {
+          const available = disk(gamesRoot);
+          if (available.free < available.reserve + 2 * GIB) throw new Error("Update stopped to preserve free disk space");
+        } });
+      } else if (target.strategy === "reviewed-openmohaa-package") {
         phase("downloading", "Verifying the reviewed OpenMoHAA engine, server module and libraries together");
         await stageOpenMohaaRelease(stage, { run, diskCheck: () => {
           const available = disk(gamesRoot);
@@ -207,7 +215,7 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
       const source = store.read(job.rollbackId);
       store.write({ ...source, rollbackConsumed: true });
     }
-    phase("completed", job.key === "wolfenstein-enemy-territory" ? "Reviewed ET Legacy engine, server mod and bot assets ready. Original assets, maps, generated bot configuration and per-server data were retained. New releases require a reviewed package profile." : job.key === "xonotic" ? "Reviewed Xonotic 0.8.6 engine ready. Existing data, maps and server configuration were retained; new engine/data versions require compatibility review." : target.strategy === "reviewed-cmake-source" ? "Reviewed fgms relay ready. Existing configuration and logs were retained; new source/compiler versions require compatibility review."
+    phase("completed", job.key === "unvanquished" ? "Reviewed Unvanquished engine and game packages ready. Private settings, custom maps and per-server data were retained. Clients must use a compatible release; new package versions require review." : job.key === "wolfenstein-enemy-territory" ? "Reviewed ET Legacy engine, server mod and bot assets ready. Original assets, maps, generated bot configuration and per-server data were retained. New releases require a reviewed package profile." : job.key === "xonotic" ? "Reviewed Xonotic 0.8.6 engine ready. Existing data, maps and server configuration were retained; new engine/data versions require compatibility review." : target.strategy === "reviewed-cmake-source" ? "Reviewed fgms relay ready. Existing configuration and logs were retained; new source/compiler versions require compatibility review."
       : target.strategy === "reviewed-dotnet-source" ? "Reviewed RimWorld Together build ready. PlayBound management/tracking and per-server data were retained. New source, SDK, dependencies or client versions require review; binary rollback does not reverse colony migrations."
       : target.strategy === "reviewed-distro-native" ? "Reviewed native server ready. Operating-system packages and saved data were not changed. New package versions require compatibility review."
       : job.key === "terraria" ? "Reviewed Terraria Linux installation ready. Saved worlds were not changed. New server versions require a new reviewed package and matching client/world compatibility checks."
@@ -220,7 +228,7 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
     const uncertain = activated || (job.status === "activating" && !fs.existsSync(activePath));
     phase(uncertain ? "interrupted" : "failed", uncertain
       ? "Activation needs operator inspection. New starts remain blocked; the rollback copy is retained."
-      : error instanceof Error && /^(Not enough|An affected|OpenMoHAA|ET Legacy|FlightGear|RimWorld|Xonotic|Native package|Legacy|SteamCMD|Mindustry|OpenRA|OpenHV|OpenE2140|Hypersomnia|AssaultCube|Factorio|Terraria|Update command|Update stopped|Cannot verify|Barotrauma|Unexpected Barotrauma|Invalid Barotrauma)/.test(error.message)
+      : error instanceof Error && /^(Not enough|An affected|Unvanquished|OpenMoHAA|ET Legacy|FlightGear|RimWorld|Xonotic|Native package|Legacy|SteamCMD|Mindustry|OpenRA|OpenHV|OpenE2140|Hypersomnia|AssaultCube|Factorio|Terraria|Update command|Update stopped|Cannot verify|Barotrauma|Unexpected Barotrauma|Invalid Barotrauma)/.test(error.message)
         ? error.message : "Update failed before activation; the previous installation was preserved");
     // Retain partial staging files for diagnosis. Never recurse into customer save links.
   }

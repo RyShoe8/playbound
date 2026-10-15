@@ -191,3 +191,8 @@ all affected runtimes; never add a parallel updater that overwrites live files.
 Confirm the game appears in the existing admin Updates daily report and coverage
 inventory. Save-format or client/mod compatibility boundaries must remain
 explicit rather than hidden behind automatic engine updates.
+
+For live update acceptance fixtures, reserve an unused port before starting,
+query the fixture's unique server name/version (not just a plausible player
+count), and verify all fixture processes and listeners are gone before rollback
+or cleanup. A stale fixture answering the query does not verify the new runtime.

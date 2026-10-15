@@ -6,6 +6,20 @@ import { pipeline } from "node:stream/promises";
 import { setTimeout as delay } from "node:timers/promises";
 import { httpsGetStream } from "./downloadStream.js";
 
+test("manual redirect mode exposes Location without following an unchecked destination", { timeout: 5000 }, async () => {
+  let targetVisited = false;
+  const server = http.createServer((req, res) => {
+    if (req.url === "/target") targetVisited = true;
+    res.writeHead(302, { Location: "/target" });res.end();
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  try {
+    const response = await httpsGetStream(`http://127.0.0.1:${server.address().port}/redirect`, { followRedirects: false, maxRedirects: 0 });
+    assert.equal(response.statusCode, 302);assert.equal(response.headers.location, "/target");assert.equal(targetVisited, false);
+    response.stream.destroy();
+  } finally { server.closeAllConnections();await new Promise((resolve) => server.close(resolve)); }
+});
+
 test("preserves initial bytes while the archive consumer prepares its file", { timeout: 5000 }, async () => {
   const payload = Buffer.alloc(256 * 1024, 0x5a);
   const server = http.createServer((req, res) => {

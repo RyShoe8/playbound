@@ -621,7 +621,7 @@ Restart catches up a missed check; an interrupted check can retry after an hour.
 
 Automatic discovery and queueing currently cover the nine declared Steam depots,
 Mindustry, OpenRA's official packages, OpenHV, OpenE2140, Hypersomnia and stable
-Factorio. ET: Legacy and OpenMoHAA also check their official stable release feeds;
+Factorio. ET: Legacy, OpenMoHAA and Unvanquished also check their official release feeds;
 only reviewed engine/module packages can queue automatically. Future unreviewed
 versions are surfaced for compatibility review. Steam reads the public branch using an isolated, credential-free
 SteamCMD metadata home. Non-public installed branches are left for review.

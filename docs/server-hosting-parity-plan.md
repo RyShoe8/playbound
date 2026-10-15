@@ -740,3 +740,30 @@ of the current version, not a cross-version save migration or human Join. No
 production game files or catalog records were changed by the fixture. All twelve
 managed identities survived deployment. Coverage is 31 installation families,
 17 release-discovery sources and 20 remaining game/edition entries.
+
+## Unvanquished engine and game-data updates (2026-10-15)
+
+Unvanquished adds reviewed 0.55.3 and 0.56.2 universal-package profiles. The old
+archive matched its publisher SHA-512; the new archive matched the official
+GitHub SHA-256. The installed 0.55.3 baseline matches all 41 native/helper/DPK
+files. The bounded ZIP reader verifies the nested Linux-amd64 archive and game
+packages as a unit. All selected files have reviewed byte counts and SHA-256s;
+links, traversal, duplicates, extra managed files and mixed versions fail closed.
+Updates replace only package-owned files and remove obsolete package-owned
+versions, retaining custom maps, settings and per-runtime homes. Global home
+package overrides require review because the recipe searches them before the
+installation's packages. Daily discovery queues only the reviewed current
+release, showing future versions as review-required. File-update failures use
+the existing durable telemetry/Bugs outbox.
+
+A real VPS isolated installation passed update from 0.55.3 to 0.56.2, native
+sandbox game loading, a 0/4-player game query whose unique server identity and
+version were checked, running-process rollback hold, console quit without
+forced termination or remaining processes, rollback to 0.55.3, and byte-identical
+private configuration preservation. Production game files and catalog records
+were unchanged by the fixture. Human Join and cross-version client compatibility
+were not certified. All twelve managed runtime identities survived agent
+deployment. Download regression coverage includes manually validated official
+GitHub redirects; existing download callers retain their prior redirect behavior.
+Coverage is now 32 installation families, 18 release-discovery sources and 19
+remaining game/edition entries.

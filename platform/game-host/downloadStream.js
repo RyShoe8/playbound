@@ -14,7 +14,7 @@ import https from "node:https";
  * to https directly hands back a real Node Readable with no adapter in the
  * way, so backpressure and the write stream work the way they're supposed to.
  */
-export function httpsGetStream(targetUrl, { headers, signal, maxRedirects = 5 } = {}) {
+export function httpsGetStream(targetUrl, { headers, signal, maxRedirects = 5, followRedirects = true } = {}) {
   return new Promise((resolve, reject) => {
     const isSourceForge = /sourceforge\.net/i.test(String(targetUrl));
     const defaultHeaders = {
@@ -35,7 +35,7 @@ export function httpsGetStream(targetUrl, { headers, signal, maxRedirects = 5 } 
         // Socket inactivity timeouts reset on incoming data automatically.
         // A data listener here would consume bytes before the file pipeline attaches.
         const status = res.statusCode || 0;
-        if (status >= 300 && status < 400 && res.headers.location) {
+        if (followRedirects && status >= 300 && status < 400 && res.headers.location) {
           res.resume();
           if (redirectsLeft <= 0) {
             reject(new Error("Too many redirects"));
