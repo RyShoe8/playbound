@@ -45,7 +45,8 @@ import { createServer, startServer, stopServer, deleteServer, updateServer } fro
 import { applyControlSettings, getControl, kickPlayer, listPlayers, runConsole } from "./control";
 import { grantAccess, revokeAccess } from "./access";
 import { authorizeServer } from "./access";
-import { getMaintenance, saveMaintenance } from "./maintenance";
+import { getMaintenance, runMaintenance, saveMaintenance } from "./maintenance";
+import ServerBackup from "@/lib/models/ServerBackup";
 import { sharedServers } from "./servers";
 import { addHostingAdmin, redeemHostingAdminInvites, removeHostingAdmin } from "./admins";
 import { getTier, saveTier } from "./tier";
@@ -93,6 +94,20 @@ beforeEach(async () => {
 });
 
 describe("customer Server Control", () => {
+  it("claims a stopped server's scheduled configuration backup once across concurrent workers", async () => {
+    const now = new Date("2026-10-15T06:15:00Z");
+    expect(await saveMaintenance(ids.owner, serverId, { enabled: true, action: "configuration-backup", hourUTC: 6, daysUTC: [4] })).toMatchObject({ ok: true });
+    await Promise.all([runMaintenance(serverId, now), runMaintenance(serverId, now)]);
+    expect(await ServerBackup.countDocuments({ serverId, label: "Scheduled configuration backup" })).toBe(1);
+    const saved = await CommunityServer.findById(serverId).lean();
+    expect(saved?.desiredState).toBe("stopped");
+    expect(saved?.maintenance?.lastDay).toBe("2026-10-15");
+    expect(saved?.maintenance?.result).toContain("Server state unchanged");
+    expect(launches).toHaveLength(0);
+    expect(rooms.size).toBe(0);
+    await runMaintenance(serverId, now);
+    expect(await ServerBackup.countDocuments({ serverId, label: "Scheduled configuration backup" })).toBe(1);
+  });
   it("uses the plan allocation for initial start and a settings-triggered restart", async () => {
     await CommunityServer.updateOne({ _id: serverId }, { $set: { gameSlug: "teeworlds", profileKey: "teeworlds:base", settings: { cpuMillis: 6000, memoryMiB: 8192 } } });
     expect(await startServer(ids.owner, serverId)).toMatchObject({ ok: true });
