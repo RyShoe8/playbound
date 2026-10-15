@@ -286,7 +286,7 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     title: "FlightGear",
     defaultPort: 5000,
     portEnd: 5010,
-    protocol: "udp",
+    protocol: "both",
   },
   openhv: {
     slug: "openhv",
