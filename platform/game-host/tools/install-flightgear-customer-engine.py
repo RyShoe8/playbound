@@ -10,7 +10,7 @@ import tempfile
 
 
 def promote(source, destination, manifest, game='flightgear', binary_name='fgms'):
-    if (game,binary_name) not in [('flightgear','fgms'),('supertuxkart','supertuxkart'),('hurry-curry','hurrycurry-server'),('assaultcube','linux_64_server'),('xonotic','xonotic-linux64-dedicated'),('wolfenstein-enemy-territory','etlded.x86_64'),('medal-of-honor-allied-assault','omohaaded'),('freedoom','zandronum-server'),('freeciv','freeciv-server'),('warzone-2100','warzone2100'),('hypersomnia','Hypersomnia-Headless.AppImage')]:
+    if (game,binary_name) not in [('flightgear','fgms'),('supertuxkart','supertuxkart'),('hurry-curry','hurrycurry-server'),('assaultcube','linux_64_server'),('xonotic','xonotic-linux64-dedicated'),('wolfenstein-enemy-territory','etlded.x86_64'),('medal-of-honor-allied-assault','omohaaded'),('freedoom','zandronum-server'),('freeciv','freeciv-server'),('warzone-2100','warzone2100'),('hypersomnia','Hypersomnia-Headless.AppImage'),('bombsquad','python3.14')]:
         raise ValueError('Unknown reviewed engine promotion')
     info=source.lstat()
     if not stat.S_ISREG(info.st_mode) or info.st_nlink!=1 or info.st_mode&0o7022:
@@ -18,7 +18,7 @@ def promote(source, destination, manifest, game='flightgear', binary_name='fgms'
     descriptor=os.open(source,os.O_RDONLY|os.O_NOFOLLOW)
     with os.fdopen(descriptor,'rb') as file:
         actual=os.fstat(file.fileno())
-        if (info.st_dev,info.st_ino)!=(actual.st_dev,actual.st_ino) or actual.st_size>64*1024**2:
+        if (info.st_dev,info.st_ino)!=(actual.st_dev,actual.st_ino) or actual.st_size>(128 if game=='bombsquad' else 64)*1024**2:
             raise ValueError('Relay changed before promotion')
         data=file.read()
         after=os.fstat(file.fileno())

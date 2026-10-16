@@ -1,0 +1,3030 @@
+{
+  "version": "existing-reviewed-bombsquad-python314",
+  "files": [
+    {
+      "path": "bombsquad_server",
+      "bytes": 42367,
+      "sha256": "b510dc85797aa0888a67127db8bcdbb3efcad74720e286ca28c8d937f6ba45cd"
+    },
+    {
+      "path": "dist/ba_data/assets/00/c1192506965b56434a4ccfb8ee4c2d90e396987fa1d256782c7e8934ba8a27",
+      "bytes": 434,
+      "sha256": "00c1192506965b56434a4ccfb8ee4c2d90e396987fa1d256782c7e8934ba8a27"
+    },
+    {
+      "path": "dist/ba_data/assets/3f/4232124ba496370ddfe4f33567c02ccc3c835b9a0996c0c7cb91f8f371a8a1",
+      "bytes": 13309,
+      "sha256": "3f4232124ba496370ddfe4f33567c02ccc3c835b9a0996c0c7cb91f8f371a8a1"
+    },
+    {
+      "path": "dist/ba_data/assets/61/19cce59862c7e246de2f2d0879d86b55ae8619dd01394f39cb401d075b088b",
+      "bytes": 12,
+      "sha256": "6119cce59862c7e246de2f2d0879d86b55ae8619dd01394f39cb401d075b088b"
+    },
+    {
+      "path": "dist/ba_data/assets/94/59848ba42e372930292ac556480375546cc73ba33d9e2ed9cd00cf6e4d1e6c",
+      "bytes": 146,
+      "sha256": "9459848ba42e372930292ac556480375546cc73ba33d9e2ed9cd00cf6e4d1e6c"
+    },
+    {
+      "path": "dist/ba_data/assets/d5/1158d171b9d630caa88d0d0ae5eab369ac18d5f24eff7527837e38d88843d7",
+      "bytes": 89,
+      "sha256": "d51158d171b9d630caa88d0d0ae5eab369ac18d5f24eff7527837e38d88843d7"
+    },
+    {
+      "path": "dist/ba_data/assets/df/bf6c0af142a96b09b4eeb84cce1d290688d55a4082764d4537c67164d74876",
+      "bytes": 700,
+      "sha256": "dfbf6c0af142a96b09b4eeb84cce1d290688d55a4082764d4537c67164d74876"
+    },
+    {
+      "path": "dist/ba_data/assets/f5/4163e252b491c08a62f7a6d031000e2ca7248a4d249c38825a241df7f61df8",
+      "bytes": 19,
+      "sha256": "f54163e252b491c08a62f7a6d031000e2ca7248a4d249c38825a241df7f61df8"
+    },
+    {
+      "path": "dist/ba_data/manifest.json",
+      "bytes": 588,
+      "sha256": "9fd8212373376d93dc4f02f25b2db0439d27b7fe5b87f055ed9c636bce2de4c3"
+    },
+    {
+      "path": "dist/ba_data/python/babase/__init__.py",
+      "bytes": 14277,
+      "sha256": "905f8dc9c47b730326ed561af149ace7aad78ac7baecf39ddccb2a4f5d0b430a"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_accountv2.py",
+      "bytes": 26426,
+      "sha256": "93cc745a37924d6b95763b1bc9811ffeb452717e80b8e0c90b5a370f153b6a75"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_analytics.py",
+      "bytes": 2010,
+      "sha256": "dea8472f31a8b70a0ec863c596a69f89d435fc0420e65698634600992a6f7326"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_app.py",
+      "bytes": 69005,
+      "sha256": "98ed5caebee9fd85dd446ac595d83862be8f1089d9b9e189c969b7b24bad12f1"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_appcomponent.py",
+      "bytes": 3754,
+      "sha256": "23e644a295e56d08d1a23e7df1ad87b5e376a8e81be5b5e826ad28a4c4a0a4f9"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_appconfig.py",
+      "bytes": 10460,
+      "sha256": "61a9996f93629201d50b2eb61182fc4e2a860001e036b2d8ee6f4151a4b8059a"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_appintent.py",
+      "bytes": 488,
+      "sha256": "806d614c60c29f9f99bee238dec9f14817242922879b6cc620c4561e08c85bd9"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_appmode.py",
+      "bytes": 10827,
+      "sha256": "059b4d006b135443e38ec40e087f991507106b55a3ab38546f3ca6157d332138"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_appmodeselector.py",
+      "bytes": 1038,
+      "sha256": "942ccd088f4eadf3e78f1a0971f721870893e82774310553626e4bcdbf179c3a"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_appsubsystem.py",
+      "bytes": 3080,
+      "sha256": "8461875bdaa0e725ff0fe19f37a0638a96a3231aeefe6febc44d9fe4d65db012"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_apputils.py",
+      "bytes": 11504,
+      "sha256": "22adcbf2c1562ab601f936972bea674387f074aee732ea23c17e52f860186059"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_asset_packages.py",
+      "bytes": 16934,
+      "sha256": "0c948e8a56c4aee9c0669333ee55542439b18011eeaa1c4bfa033f1f62863556"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_assetref.py",
+      "bytes": 8536,
+      "sha256": "aba51138ca7ce89812bdf83a7489acd444463bdee73830423618b81aff58ce28"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_assetresolvetrace.py",
+      "bytes": 10997,
+      "sha256": "91347385f30408312dce1868666fc27d0b78a05d86ac9c236f6e44d1f64e8892"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_assetsubsystem.py",
+      "bytes": 167719,
+      "sha256": "8d41f86e28060662f3475d053983de29c3ea7838ecb15be00c7eaf175c209263"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_asyncio.py",
+      "bytes": 2597,
+      "sha256": "3400e2b29a44468d6eba652513c5715f3652e21ae0f2fe877cfa47272c11b53d"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_automation.py",
+      "bytes": 31412,
+      "sha256": "aaf6a47c202c00bb22aef589480939c09d926afdf131463e4855db10a78a0f38"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_baeventloop.py",
+      "bytes": 6502,
+      "sha256": "c4fabba143afa9b26ad26348dae4063ac74e294faf5eb21ecc9d6d82785a07bc"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_builtinassets.py",
+      "bytes": 57990,
+      "sha256": "670aeda7fcfdfb8b395933d0388c2461cb118c6324a3e04a73ba8f68a12c5ccd"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_cloud.py",
+      "bytes": 633,
+      "sha256": "bf67f0fddd7d948c6182ad1da3c517abc9bbf2449f34bedc4643f48d213913b7"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_cloudloggercontrol.py",
+      "bytes": 6170,
+      "sha256": "8ef899c77eb696c17cad189d18f2374fec991f7ce55668c1a51d3363b69e8a63"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_commonassets.py",
+      "bytes": 42259,
+      "sha256": "23fdceb70e3889018d13d6a212f6d22d123323528a3798fba6571394365a756e"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_constructmode.py",
+      "bytes": 32527,
+      "sha256": "0d47d0ee30580399c1b9bb141303dbc2bc98cb045a93b3f93fbe2360638b035c"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_devconsole.py",
+      "bytes": 8974,
+      "sha256": "00f35d6382bd816562085297010e4eaca00e4d8854f83370f258116b4d8a55ce"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_devconsoletabs.py",
+      "bytes": 25940,
+      "sha256": "294044919e29c97e574c149453f945d231f983477f0c19fcd49d52d59dc2f59b"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_devconsoletabui.py",
+      "bytes": 7925,
+      "sha256": "4cf3d4add69b18064f1f0e57a646025b18005ed83b64155e7ff8e90f102b4927"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_emptyappmode.py",
+      "bytes": 1329,
+      "sha256": "388003152fc12d38b7221024deff249e18726b09fbc1f3a9353d20604360813a"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_env.py",
+      "bytes": 27978,
+      "sha256": "7a7a5690211d04ebad069fd2a7c9f71b15e4831377bda8e68a17e1b3cc797260"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_error.py",
+      "bytes": 1780,
+      "sha256": "cc6da33e371e5114166d70b26d08dec3adc59e163e5c3d3d3a956dce38672558"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_gc.py",
+      "bytes": 24011,
+      "sha256": "4aef021192771575ba799cd9024b2b3ad8d0b5b8087c338c4eb2adaff85b8f02"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_general.py",
+      "bytes": 27641,
+      "sha256": "a5d0992bb9ae265c2d93ddf520ce23917feb5879b3a979de38e8760109a2b1a8"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_generated/__init__.py",
+      "bytes": 61,
+      "sha256": "8591472b111e29902dbc40af27082fc4d113aa642a496d45c8d84bb85d103a22"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_generated/base_asset_set.py",
+      "bytes": 7877,
+      "sha256": "0946f4e49ff95e7a9535c1def01c7fed8eb1b16b0d1576e6f83ea9cfa677da40"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_hooks.py",
+      "bytes": 19635,
+      "sha256": "e39a47d17c1b6297130d0c06c79c718e841ab4bd17e6f4357051e1e378c74e3b"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_language.py",
+      "bytes": 28886,
+      "sha256": "aa14c57b58cc69e01501664928eb3cf1b61c99dbb1ff09fbf0ee571a5c601b7f"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_locale.py",
+      "bytes": 16427,
+      "sha256": "20fff3f3699a3a31626ced40b2b1cb167a7669abdbe9d8cf07ca5f66571606b3"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_logging.py",
+      "bytes": 5991,
+      "sha256": "fa5497cc4a44f0a5c4c0777a9596ca62f6b1159881e6d210d78775fd3ad838a9"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_login.py",
+      "bytes": 17158,
+      "sha256": "50719f98f880a223269e0c1eecadcdec013d68cd490d385fe7b7507a7eab2185"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_logreporting.py",
+      "bytes": 22231,
+      "sha256": "d58a2655dea925abd21bc23e7b2de043e91f2c1b90217b5c1903bf13c5c3e1ee"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_math.py",
+      "bytes": 1779,
+      "sha256": "fb1a390c9ab47c998b4032b7ffc600f8ad8f552de6c64b046b5d8f73997fa31d"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_meta.py",
+      "bytes": 8545,
+      "sha256": "658717c32a67a20127f8e0fce1b42dd6428cf07b6aa75c1e4de0681958db06d8"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_net.py",
+      "bytes": 3365,
+      "sha256": "e4b94ff6597e98e1e1676453048c914530279755d51c0a97e5ecf0c16f3ec8e9"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_plugin.py",
+      "bytes": 15990,
+      "sha256": "cffaff6a6ea2b8d5e9aa9d5e852cdc2cbe83c7abfb53d5c46f3e2264936069ae"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_simpledialog.py",
+      "bytes": 6271,
+      "sha256": "d323eb3eb0156bbcec66080fd392d72356ab822fb3078fcafd0cc2d2ea4d9be0"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_stringedit.py",
+      "bytes": 7014,
+      "sha256": "3d88c638348eb469589a04cbfcc78021a4e6194efba71463ceb2d5ca97379254"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_text.py",
+      "bytes": 11376,
+      "sha256": "59002c2268d5d06a0b17797a6f9c578705381a9ad26a36f63281c5adb2c9e96b"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_ui.py",
+      "bytes": 1271,
+      "sha256": "58bd390177b602269e4f28751820e065af62e7d1cdebc116a7202a1ef8010426"
+    },
+    {
+      "path": "dist/ba_data/python/babase/_workspace.py",
+      "bytes": 8505,
+      "sha256": "f5bbe0bd839ba3ed46726cf9bdf1c0a7390cfb5a8c7092eefac98c85b26d0d09"
+    },
+    {
+      "path": "dist/ba_data/python/babase/modutils.py",
+      "bytes": 9109,
+      "sha256": "c4d17e682db2b531571c2ef81e5405fe78629837694af5dbc9694ce34fe21b2d"
+    },
+    {
+      "path": "dist/ba_data/python/baclassic/__init__.py",
+      "bytes": 2573,
+      "sha256": "bb6fda58767c6f3b59410b0e76cdb95c0f348c43d2d97d1043b1bbeefa81c48c"
+    },
+    {
+      "path": "dist/ba_data/python/baclassic/_accountv1.py",
+      "bytes": 12909,
+      "sha256": "9263c4c3f1edfd56442cc73cfc6139b684a0c827daa9cc2301316ffa2092a323"
+    },
+    {
+      "path": "dist/ba_data/python/baclassic/_achievement.py",
+      "bytes": 58838,
+      "sha256": "d7548ebe45a54f77e6f025460259965c955622b483d186e175ca6b508f144243"
+    },
+    {
+      "path": "dist/ba_data/python/baclassic/_achievementstrings.py",
+      "bytes": 18896,
+      "sha256": "e4ed536f3302d587e5a158ef1f020e7c80faa4626ad8dc22a0d0f138eee7780e"
+    },
+    {
+      "path": "dist/ba_data/python/baclassic/_analytics.py",
+      "bytes": 3177,
+      "sha256": "e6e6834df663aab8e64149203e3da1b9c1bb64310860f02df7f7d910ce97b51e"
+    },
+    {
+      "path": "dist/ba_data/python/baclassic/_appmode.py",
+      "bytes": 44333,
+      "sha256": "1f94a1b0b9520500b275e2c526e4922a8c2aa9fdee9c55ddf3772cbdd3c497fe"
+    },
+    {
+      "path": "dist/ba_data/python/baclassic/_appsubsystem.py",
+      "bytes": 41517,
+      "sha256": "eee3cf46a16d23334637ebb437716d8d2327229106a32cea740e94f86e027451"
+    },
+    {
+      "path": "dist/ba_data/python/baclassic/_baseassetdefaults.py",
+      "bytes": 2783,
+      "sha256": "4d88a856118e71a6b9279797d3bdd52054b3b817ede8eecde420599ceba67a4d"
+    },
+    {
+      "path": "dist/ba_data/python/baclassic/_benchmark.py",
+      "bytes": 6954,
+      "sha256": "eb0b094ea1b53199ab2b9e1e20b25acd7a95717642de2743d68bb6dd7cf94f67"
+    },
+    {
+      "path": "dist/ba_data/python/baclassic/_characterpreview.py",
+      "bytes": 11056,
+      "sha256": "6adc14c1f97250354b7c06ac38d8f3e829c73378d1d3dbeaaf0fab502be074ca"
+    },
+    {
+      "path": "dist/ba_data/python/baclassic/_chest.py",
+      "bytes": 5265,
+      "sha256": "5d971e77bc15ae53f9959f115cf0d8942b56c5e5ddf49c65350c62084e1547ee"
+    },
+    {
+      "path": "dist/ba_data/python/baclassic/_clienteffect.py",
+      "bytes": 18800,
+      "sha256": "32cfb74f1f5d8bafd532e65daed80a43aea52038beeb70b67078528dcca5ff61"
+    },
+    {
+      "path": "dist/ba_data/python/baclassic/_cloudprofiles.py",
+      "bytes": 24123,
+      "sha256": "d0b472796d05b4f81a7410773f366cf0a5f037ddfe8c0a84c33e6aa30f963182"
+    },
+    {
+      "path": "dist/ba_data/python/baclassic/_controlpermission.py",
+      "bytes": 4561,
+      "sha256": "efd8199ce9658d76fefb6705a2ebcde26ed9b7296016199dc6ce4c638d8e5592"
+    },
+    {
+      "path": "dist/ba_data/python/baclassic/_displayitem.py",
+      "bytes": 4350,
+      "sha256": "c938e86c21a29247765e86fa0e2b6dce18af7730734a2c33be1de6a9b1ca6ec2"
+    },
+    {
+      "path": "dist/ba_data/python/baclassic/_hooks.py",
+      "bytes": 1234,
+      "sha256": "8f151a64accb841ad0c0cffbe499055e47028db6eeb265ad128e0a48d8de4706"
+    },
+    {
+      "path": "dist/ba_data/python/baclassic/_input.py",
+      "bytes": 13027,
+      "sha256": "30c4d6ca6742389ad0dc495aa352fda94f2b42b68aa1d4dcbc439ec81f4b2850"
+    },
+    {
+      "path": "dist/ba_data/python/baclassic/_music.py",
+      "bytes": 24654,
+      "sha256": "24e951618883bee2a037de39ee6140d6548c341ef2ba2c88ab538011449065da"
+    },
+    {
+      "path": "dist/ba_data/python/baclassic/_net.py",
+      "bytes": 6775,
+      "sha256": "3fdc47511aa3883e95501e5804a4604b2276900d40eeba3eb23fea64ee3df47d"
+    },
+    {
+      "path": "dist/ba_data/python/baclassic/_servermode.py",
+      "bytes": 18142,
+      "sha256": "229cbc305cf49ec6b80977859e0a994cf687ca2984785a7017e83d30f1d73e5b"
+    },
+    {
+      "path": "dist/ba_data/python/baclassic/_store.py",
+      "bytes": 23617,
+      "sha256": "82deb85a1a1bd3f5e0d442618a87264c5975ce4e18a09d1c4df1d14872ba46db"
+    },
+    {
+      "path": "dist/ba_data/python/baclassic/_tips.py",
+      "bytes": 2445,
+      "sha256": "b7c2641454bb084d26f0962c208e2219185dcebcb5ce0057a87e1088e69ff110"
+    },
+    {
+      "path": "dist/ba_data/python/baclassic/_tournament.py",
+      "bytes": 4514,
+      "sha256": "be144ffef2a4e7785a99dfc202e0c94bd553b64cf4c6cd7ea32be6a0f5cfc64d"
+    },
+    {
+      "path": "dist/ba_data/python/baclassic/_uiassetdefaults.py",
+      "bytes": 2107,
+      "sha256": "e1d2a83116f94db500c0d6ddd2fb560348270eaf47dcecb0657d9b7c287d7754"
+    },
+    {
+      "path": "dist/ba_data/python/baclassic/macmusicapp.py",
+      "bytes": 9586,
+      "sha256": "49f475e6107afdf45bd955023c6c9f60463ad900bf862c0f3ece6fac63609419"
+    },
+    {
+      "path": "dist/ba_data/python/baclassic/osmusic.py",
+      "bytes": 5791,
+      "sha256": "340775d301926e4fc654bd74fc7c744d4476fdf3776f22479fa887fc3d3b4f21"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/__init__.py",
+      "bytes": 181,
+      "sha256": "8eee1320b03eb884370919a671b92a418ae6371f97fb7d27aaa8b57c4db25c96"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/analytics.py",
+      "bytes": 2124,
+      "sha256": "d21230a84d5f212382047a5fb8cc4266fea69edeb5ce74eee46a10f2eb4cebee"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/app.py",
+      "bytes": 5940,
+      "sha256": "ff61935c14a9a2cd2bd44bbe30e0e6b93872a2efd5353f383a3fb3e50c8cb508"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/assetcas.py",
+      "bytes": 9328,
+      "sha256": "db5d25036ca48dff2d201f53ad25cbd4f56e32b90e01c49ebe40773701197e4b"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/assetpackage.py",
+      "bytes": 3088,
+      "sha256": "7ad2c43a04053ae01b42820d8f7ed73adf80f6ef70f37023a0866230143b0e84"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/assetspec/__init__.py",
+      "bytes": 1924,
+      "sha256": "d9284a01b1a68fa7fb4e6e21d4ede91d5c9cdb6e565bede4ac8048976b5030b7"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/assetspec/_core.py",
+      "bytes": 5983,
+      "sha256": "254ca88357fcefa20f1bb683dc73697ec92330499ebe77afd9a48e5ae6572d0d"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/assetspec/_index.py",
+      "bytes": 14315,
+      "sha256": "6ae71c09c6e1195983b7d5730d39bc7af6e2fb9d6e2b1f0fcef653fc4583fc98"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/assetspec/_wrapper.py",
+      "bytes": 3020,
+      "sha256": "dc12863318d898779e7cf98bf900c85e66a4e82799c2586b5324ab6b8b112075"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/automationchannel.py",
+      "bytes": 12384,
+      "sha256": "6ea3c93f638feaaf3294b7ea7a96cbc897b7c33efd47f05b2400b1461bb9ee88"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/bacloud.py",
+      "bytes": 48236,
+      "sha256": "56851f2413ff3a42b833a670a88c9100960fe3bfff737424d487f6269325e50c"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/bob_v1.zstddict",
+      "bytes": 65536,
+      "sha256": "46675a0cac87c9c01b2ae940202c1309dbfbf1094241d963489ddadf218acf35"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/build.py",
+      "bytes": 976,
+      "sha256": "55d3df5ff5687cc76d00fc8518c1d22c8252c2a037aed43cf4a0190ffdc809b4"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/characterbuilder.py",
+      "bytes": 20724,
+      "sha256": "08f09b7b2e325bc3d261aa9659cf730a63e0992f2002fd7b33c6870713317e0b"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/characterranges.py",
+      "bytes": 2636,
+      "sha256": "17cdf9b015254fd8c7681c8c975975ab50fba92a60f39b3e23e701e9d5450345"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/characterrig.py",
+      "bytes": 10127,
+      "sha256": "09b40b40d00334fc0544a52d2a8155a96cdca9e32b4f435992fa1d5f272930cd"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/classic/__init__.py",
+      "bytes": 2240,
+      "sha256": "54b08ed0f0d0c538eaaca67908337edc23aaaaf5c2383822f8ee95bae2da82b5"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/classic/_account.py",
+      "bytes": 3612,
+      "sha256": "8c6681793d7cadb9f1547ea997ad1e3b03b204d70597fc4cc5e580500d2e69bd"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/classic/_chest.py",
+      "bytes": 3896,
+      "sha256": "9f946d4186d99d0dce086ab6a3b148744470bbe1b2e4a629aea12ed9a312d641"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/classic/_classic.py",
+      "bytes": 212,
+      "sha256": "455a96fd730c4db37273b87f49549e6fcd268b4d0183748fb87beca5e94b8f88"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/classic/_msg.py",
+      "bytes": 7244,
+      "sha256": "9966de49303bb30c8063460a42683e9a686eac8dfd05f73212914d4258eaaf2b"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/clienteffect.py",
+      "bytes": 15400,
+      "sha256": "b1bfe31b2728345416a70bd07a984d7dcf8d3c8a24967d9544a6974666d4c01f"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/cloud.py",
+      "bytes": 34467,
+      "sha256": "167e1071bd9e25a0000fd13489c0b42ba4409baa74ad4966782af9da47c8cdc2"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/clouddialog/__init__.py",
+      "bytes": 527,
+      "sha256": "0fe9aac67d4274c808aee8fa05f55fab7abcf73cae710975531ad31518de624a"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/clouddialog/_clouddialog.py",
+      "bytes": 4273,
+      "sha256": "cd2b222d1db7c9e720874f6e9aed0dec9ac8055dc4bbb2308b34972ec5cbcd24"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/clouddialog/basic.py",
+      "bytes": 6845,
+      "sha256": "e9f2b7a37b114d61504271b35bfa43015d0ff16a5eebedc66982c28861c2d080"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/cloudfilecodec.py",
+      "bytes": 7431,
+      "sha256": "b09ea859fb48b8407542d6b7325af25ac2d5df69fe6ce70c21a1bbc116c5f3df"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/consolechannel.py",
+      "bytes": 7802,
+      "sha256": "ba867cc059863cb3593e83082bed7af43bed1311598a49c7a47eaaa507d1ddea"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/depiction.py",
+      "bytes": 10325,
+      "sha256": "258081fa6c5edee57001e7b6820b806af305d2767012ba1a7641653a60955f4a"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/displayitem.py",
+      "bytes": 16117,
+      "sha256": "9cfc04f4b1e34d6f35956b6fd1fb8db87bd869f36e4290a88051c2c868324b85"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/docui/__init__.py",
+      "bytes": 783,
+      "sha256": "4c5c968a7a9161e092aab64b6351a27c4e7bd2fcdc2447f5b933a06015391b74"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/docui/_docui.py",
+      "bytes": 5010,
+      "sha256": "5dd0ea9496995d1d3441aa3ac988ff9b60aab8a6d0c1b8ef5d067ea95bd9e065"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/docui/presets.py",
+      "bytes": 3814,
+      "sha256": "7231613595d421770c111931e296623df2b14cfd0b289982c10d52ff1fa76c4d"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/docui/routes/__init__.py",
+      "bytes": 940,
+      "sha256": "f9a0417bc9e9fb1606dec439c6ea40c2f73280227a5154ae1b31a6075f046c9c"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/docui/routes/_base.py",
+      "bytes": 14190,
+      "sha256": "93b9f4540c085c6cf70f7b2ebe448807ec55277a733387eeb8cfe0c76d9fac78"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/docui/routes/_state.py",
+      "bytes": 28828,
+      "sha256": "e05f2221a60518303b28f30f8ea1afa751f2c37eac2207e9eeb07e2f7971850f"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/docui/routes/classiccharacterpreview.py",
+      "bytes": 2544,
+      "sha256": "5f4e51e9f300aa98f16d1b04c55499870633912eccf462a978910b1ce09c54ad"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/docui/routes/classicchest.py",
+      "bytes": 3477,
+      "sha256": "cd2aae000ac9de9313e2b61e67f2b6027eb90e7d70ff86f5f6bffc3886b5ac64"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/docui/routes/classicinbox.py",
+      "bytes": 2754,
+      "sha256": "c1d55e76f7f6711b29915de3ea2a4df2acfd2b9e0acfea7d3d012a30e0940e76"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/docui/routes/classicleaguepresidency.py",
+      "bytes": 2845,
+      "sha256": "8659f86cb6ff125dae7fe71e80e2747646c72ba98a6f462fea291f227174913e"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/docui/routes/classicstore.py",
+      "bytes": 10299,
+      "sha256": "24ca10159cf3d5b2dba86fea538c84afbc68b763c083b5abe3c46c6c5f4aedcf"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/docui/routes/docuitest.py",
+      "bytes": 11626,
+      "sha256": "5d2cf349056c3403479b0ce968d9f3f58232aec00f1ca9b3a1670015d8eba42a"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/docui/v1.py",
+      "bytes": 28883,
+      "sha256": "24896573843fc932657fd846be00a137dcaa85605fe41c513ac6af82bae83076"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/docui/v2.py",
+      "bytes": 103040,
+      "sha256": "35d3024c28cf085a7b90f7bdf00f2b6ed994f4a15d27acd3498c9297c9c82b1f"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/docui/walk.py",
+      "bytes": 14867,
+      "sha256": "76d6491a5cf7372046f247c7cdbd2bde56fe8304c35dee37e5d46ead8e5c2f82"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/langstr/__init__.py",
+      "bytes": 3717,
+      "sha256": "ca2e766eb2bbce2d9064d3798e2cc014bf5bba315884686007dcd33ae928efd4"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/langstr/_blob.py",
+      "bytes": 7768,
+      "sha256": "0ae6ac9fabac976acc147b7e8905a2f531ca19a0f88890034bd44614c2602d3a"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/langstr/_core.py",
+      "bytes": 38606,
+      "sha256": "0531ca8887f453e4a34a46d16bf8d4a25fefc645454fbd944adf91acd0d82960"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/langstr/_flatindex.py",
+      "bytes": 5931,
+      "sha256": "ec13b5ada8fac869b25036bfd8cbd4e5169f4efb51ecb0298e8617c4498dc94a"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/langstr/_format.py",
+      "bytes": 12948,
+      "sha256": "f0683e1da830b05e6f0ba7d370b3b93fa3abd86449db34861a2d00cbf999c3e9"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/langstr/_namedecode.py",
+      "bytes": 11376,
+      "sha256": "1bbaac893a33ecb2d05ffaa4e6a542a0e6b37e3d17a5d57e73244b150c85d4a6"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/langstr/_wrapper.py",
+      "bytes": 6155,
+      "sha256": "47506ce0496a0323fbfa949a6365a1656d32eddddae7f730922b1d087f014f69"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/legacydisplayitem.py",
+      "bytes": 5428,
+      "sha256": "ba2620e11987624e101c28b34e6ad43ec75fcdd1dd78f3c755970b55eafeaf13"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/locale.py",
+      "bytes": 47039,
+      "sha256": "d00afb19199defbb4d0adffc68a0c6480ae0f3cdbd336691cea09309576b224c"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/loctext.py",
+      "bytes": 16881,
+      "sha256": "eca08e596973a2dd56a5dbd30ab843b6dbf448265f5675cf6af3cf7597d386d4"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/loggercontrol.py",
+      "bytes": 7970,
+      "sha256": "bea90b3f2f229bcf5d89319a96f34e0cbc2d5b222de03f7c506543f20763a100"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/logging.py",
+      "bytes": 4489,
+      "sha256": "7afdbb26bd5113a84835a1d3c9a807f4427d73ef9d72485ee147060db1b57e51"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/login.py",
+      "bytes": 1500,
+      "sha256": "4adbf1280d2b28b83f70ec7a1474cbb7c054f67cec023a09197c68d43e673336"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/logreporting.py",
+      "bytes": 7193,
+      "sha256": "09bed0a5b9d1c9a4b7302a5e3aed49e6440af3e184834dadc486d4d9b0cecd3a"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/meshzstddict.py",
+      "bytes": 1265,
+      "sha256": "4e144ea3fa156b54c822e4834bea95b51cccc538d221a25c608cc9456571936d"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/metascan.py",
+      "bytes": 25825,
+      "sha256": "9d72f99a3cc2fdf7a9ae4e24718df89c4b007db92f4eee2c2096206cef82609b"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/msg/__init__.py",
+      "bytes": 301,
+      "sha256": "03bbec3edb7f1ca416e24c50118d746a8c44cda23a50bb02b5bd180cb3c493ff"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/msg/basntosandbox.py",
+      "bytes": 1165,
+      "sha256": "51251172ae4cedabf850ef2a718a1f2b2b181ba0224d473ce0098ce0f61b9b7a"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/msg/sandboxtobasn.py",
+      "bytes": 2866,
+      "sha256": "1175e31239e798fa9d2a1c872588584b3791a0df9a9a5ff82d9caf583ab98001"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/nativeenums.py",
+      "bytes": 3165,
+      "sha256": "04071d2dc6d914766a6fddf42431445ad50a85f3a356df38e88365226df3c49d"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/net.py",
+      "bytes": 7209,
+      "sha256": "1dc54014fec56fd1e8c9c24ce5ffb5a1ddf778d740888e83b6e88e63b4d5e6cf"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/packets_v1.zstddict",
+      "bytes": 65536,
+      "sha256": "c4e941267e033d4fb2e7852bae124ec1f1415570134d4d284fb4b2d2e8c893b9"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/packetzstddict.py",
+      "bytes": 1383,
+      "sha256": "e2f5099bbe7d1b07bb0f8888244702ecc4f7e238e51cc7d2100b121ce6c92651"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/restapi/__init__.py",
+      "bytes": 96,
+      "sha256": "96c844c4effb8357f16b17a4c39efd91a5109124ca414aa244ba04259ef66010"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/restapi/v1/__init__.py",
+      "bytes": 6736,
+      "sha256": "d50bc5aaaea425772c73093118e8d87dada649d4b2d1dce64aa819ccc0e73e4e"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/restapi/v1/accounts.py",
+      "bytes": 1123,
+      "sha256": "5925668f7db4b54f557ffd873319dad95751c4be0385fbebf99efacdc5ac179f"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/restapi/v1/prefabs.py",
+      "bytes": 1003,
+      "sha256": "b427b553b6da6cb30c10004b29ca72362998c3115e4a09f2f0c91c1c65a99098"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/restapi/v1/workspaces.py",
+      "bytes": 2668,
+      "sha256": "e06269e173a7c2d2a06dcc3979b6b58833f7a42c6bc355565153d0b28390c6b2"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/securedata.py",
+      "bytes": 14257,
+      "sha256": "1ae70a800c8867d18cbd5c78aa7b130e23353bc39a0ab3b9ae2d57e06b92ce45"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/servermanager.py",
+      "bytes": 10545,
+      "sha256": "6deb295c4082395cc97385713c33d48b91553d374199251d180f64fa708d5408"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/strbrief.py",
+      "bytes": 26698,
+      "sha256": "60f4dd4428520b0dbffae31788257523d46f7ec563a08363dda42ce0a59f4ab4"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/text.py",
+      "bytes": 8161,
+      "sha256": "1ac8fefb2660f147789d9761323b6c63fec5c29d1504dcdd6606493c0f55c9ba"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/transfer.py",
+      "bytes": 4723,
+      "sha256": "96385bd2340e1e446db7375363f76bef59f7becf9ffb2f0696f3f767101cf150"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/workspace/__init__.py",
+      "bytes": 119,
+      "sha256": "e168446a60a741513dbbaf5416dca76314740a7063bc780251fb705511861ef0"
+    },
+    {
+      "path": "dist/ba_data/python/bacommon/workspace/assetsv1.py",
+      "bytes": 63102,
+      "sha256": "2cbad7276669b87288681e992767fd6d276909db3c234702ced5b4c699817ef4"
+    },
+    {
+      "path": "dist/ba_data/python/bacommontools/__init__.py",
+      "bytes": 124,
+      "sha256": "3aaeb1fdeb293d6a36b82fc2f4addfa414d21d0122b5126ebff7757c1aa65028"
+    },
+    {
+      "path": "dist/ba_data/python/bacommontools/bacloud.py",
+      "bytes": 56990,
+      "sha256": "9049576ad41c8acd53b7ed78d1ee91e60e5c06442dd6ca1e6667fb0c1e4bd9f8"
+    },
+    {
+      "path": "dist/ba_data/python/bacommontools/bacloudsession.py",
+      "bytes": 25160,
+      "sha256": "50e493122c5c306f999d28121eff639bf1bd78840609e2fb31b87bf00174fdb2"
+    },
+    {
+      "path": "dist/ba_data/python/bacommontools/meshcompile.py",
+      "bytes": 29021,
+      "sha256": "840f69f33dab9d693f2d71a2a0f903a0fe0942d93821699cf01941440c834c5e"
+    },
+    {
+      "path": "dist/ba_data/python/bacommontools/pcommands.py",
+      "bytes": 3972,
+      "sha256": "370d974b8960aafd487cdf250fbe449daaa5d28f034e8af30b98bc300fbce445"
+    },
+    {
+      "path": "dist/ba_data/python/baenv.py",
+      "bytes": 32466,
+      "sha256": "aaeb8817f1b2a8d922ce038203faf40db4d798ba63e6c896b9ccdf45330b6165"
+    },
+    {
+      "path": "dist/ba_data/python/baplus/__init__.py",
+      "bytes": 1449,
+      "sha256": "9990b435cbdfc44e44d8752f3544740c792dcca1938445e5e4c595c6881c79da"
+    },
+    {
+      "path": "dist/ba_data/python/baplus/_ads.py",
+      "bytes": 8565,
+      "sha256": "0c8c6ac2c62b490a8dc97a8ecc1ee1fbf27c4ae7f06d1abe12be0dafe5965054"
+    },
+    {
+      "path": "dist/ba_data/python/baplus/_appsubsystem.py",
+      "bytes": 9141,
+      "sha256": "ba46d113d0271d90b5fc3e24af3a258a7fd6dd0ec9c10b89623fece83c7681aa"
+    },
+    {
+      "path": "dist/ba_data/python/baplus/_automationhelpers.py",
+      "bytes": 7844,
+      "sha256": "d3b3384b7aed8fd29c2cfe416d2ff44e3325a9bdd0cca645b093a38b755e8e1a"
+    },
+    {
+      "path": "dist/ba_data/python/baplus/_automationsession.py",
+      "bytes": 38647,
+      "sha256": "79d9ea9f22c25d607cf18633c9b5a8f43561d3ee00df1f829f6f90909cef1261"
+    },
+    {
+      "path": "dist/ba_data/python/baplus/_cloud.py",
+      "bytes": 27717,
+      "sha256": "7e21ec97612085f5f9cddd4d2d666cbe12238ff1c405d32dd532bb6611e98418"
+    },
+    {
+      "path": "dist/ba_data/python/baplus/_consolesession.py",
+      "bytes": 25462,
+      "sha256": "d77a740d781d839fd8566e25477364248386fe603164f602f4ad48999615d912"
+    },
+    {
+      "path": "dist/ba_data/python/baplus/_hooks.py",
+      "bytes": 402,
+      "sha256": "48416743b7c1ae5a7c8335b6a5190949e27037bc833bd0c4c0351c016ed68ec9"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/__init__.py",
+      "bytes": 14361,
+      "sha256": "547f1f66147884fbea118fd5858dc22cf30f75facac661feebe42e7142afd101"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_activity.py",
+      "bytes": 31176,
+      "sha256": "e4e7519da1518fa74698996bd573ff6c75ce3dc2d243973d630b62c190afd6ab"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_activitytypes.py",
+      "bytes": 8664,
+      "sha256": "532f3cede5bdd81260524aa03efe2d846a510b34789ea9b23eb4618c72adcc82"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_actor.py",
+      "bytes": 9126,
+      "sha256": "84df2b3b7a81662ac24706eb14756a8eeb90d05558f90199d16cc42b304ee12e"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_actorhost.py",
+      "bytes": 3441,
+      "sha256": "165e64131342e02412b445f86095712e071b7dbd03fcef5b33777b2b67a991ed"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_appsubsystem.py",
+      "bytes": 1108,
+      "sha256": "c759c4e7886f69c70a854d77060f5f929e52bf9a998eac5fb09d225fbc5dd727"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_assetref.py",
+      "bytes": 17329,
+      "sha256": "6c38285918081e4a901c5c54824cfdccde7f9695f9395061ef5b73c8dfb77b5b"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_builtinassets.py",
+      "bytes": 57959,
+      "sha256": "ce7aa783dca423e124ba3b0353781eb45013880b62136022c371961088b00af6"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_campaign.py",
+      "bytes": 15256,
+      "sha256": "7b178525e0d1aa128a040c35a1b06022a64d88df69f9f6f53810c09ce2132849"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_character.py",
+      "bytes": 2415,
+      "sha256": "35c1f6ff55a03773085ac7da4f87554e49185913ff812b87c1c5a986aa7f8a2b"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_classicassets.py",
+      "bytes": 328663,
+      "sha256": "3da893428da8d32d9491781a62ba6ee47fe8565fb7fdadc06b2ddda22c6598c3"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_classiccatalogassets.py",
+      "bytes": 31876,
+      "sha256": "e183e8625614f4590021f7470f50fa6c1435873a93dccb8917fdb038ab0f4814"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_classiccharacterassets.py",
+      "bytes": 87588,
+      "sha256": "e80aee68eb3d6c63aa79df8d65c857d3909e51534dc7236160154acacb955e7b"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_classiccharacterassets2.py",
+      "bytes": 6987,
+      "sha256": "86efb2dc7f1eddb09e240a2447fb317f995c8b179915ce0e271f44dbe17bbd3b"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_classicmapassets.py",
+      "bytes": 10381,
+      "sha256": "ba71ef5838652ace54efc5cdded2dfd226f5d6fc5c29ed29e1d8983f8858cc71"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_collision.py",
+      "bytes": 2034,
+      "sha256": "2aedc89a336b1a25220dc04aa05b75c6cfc7f91169c9e147792633cf05519556"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_commonassets.py",
+      "bytes": 42222,
+      "sha256": "04ae68e094a88e7b31680c2a3ebb4064bdb610e327507c15b8146feac6437f09"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_coopgame.py",
+      "bytes": 9080,
+      "sha256": "435b84bf08055beb55e24471fdf85558dc44948edb01db226c1a12a63d3ceea1"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_coopsession.py",
+      "bytes": 17628,
+      "sha256": "8940e3cb1613321f293edab8c3885a13f0837771c281adc8bc6168a378476eac"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_debug.py",
+      "bytes": 2037,
+      "sha256": "4f27ed9eaab25a47d581f048b86e583f3c7c132818a77eccbea38b93020e2a43"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_dualteamsession.py",
+      "bytes": 2105,
+      "sha256": "ee6e730aae4ad1ebf7fd6151b1c1eb5eb28095afe415458f1db3c4a04a34ed04"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_featureset.py",
+      "bytes": 383,
+      "sha256": "8a7bb3fd8291ce6abdb4528a1e96fa06433022bf7f2435d9a514cbd6a7b3bc98"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_freeforallsession.py",
+      "bytes": 3912,
+      "sha256": "177396f1d59001ded3f68db15bfc5382ac9fbe52c41fc06a41ea2f0d36d36a32"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_gameactivity.py",
+      "bytes": 59590,
+      "sha256": "00981c2e8ed4b391af61a4994eb2633154a502e95134c54b995d6c0b016244e5"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_gameresults.py",
+      "bytes": 8731,
+      "sha256": "87a57eff8994e3fdc0772d1d95413a17f8b2653869c159b70392cc1b94003eae"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_gameutils.py",
+      "bytes": 9838,
+      "sha256": "7f1f225653e0c365feae5a66d967efa0c552482d2b2fd202abad594d1d48c8ff"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_generated/__init__.py",
+      "bytes": 61,
+      "sha256": "8591472b111e29902dbc40af27082fc4d113aa642a496d45c8d84bb85d103a22"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_generated/scene_asset_set.py",
+      "bytes": 14473,
+      "sha256": "71bb6395850009a9bacdee0b48f91159f32f6c8c0814275b3c0ca86b51a47b80"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_healthbar.py",
+      "bytes": 769,
+      "sha256": "67f84d6e170d0069d3db4775e0e49b4078fd85020d346c10420909dcc64af63f"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_hooks.py",
+      "bytes": 1954,
+      "sha256": "5836249cd17d01bd28d14784237784300fe0bbc731922f5112869650512ca05e"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_level.py",
+      "bytes": 10524,
+      "sha256": "75764d547bc061fd0f4758145caad7784303a1b47c0e4a5195e6ea5aff3bcf59"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_lobby.py",
+      "bytes": 68442,
+      "sha256": "0f193773372506351d9988542327e690b7232af4a4bcd127c57dd5b63a8707b6"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_localdisplay.py",
+      "bytes": 14436,
+      "sha256": "e7b2ff89ec155f5ca2f88bb1d822356cfabba48dbc377ac422f4c07e2ecdb028"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_map.py",
+      "bytes": 16515,
+      "sha256": "32c0020100cef69eeec472782ad2b6a1ac236f206a900f760c7a1e195d4c64ad"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_messages.py",
+      "bytes": 7207,
+      "sha256": "6f6fd961c7a835291cba61f3a2fe83331ea0369b5e00da046642c4583eb08a52"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_multiteamsession.py",
+      "bytes": 14681,
+      "sha256": "2480fd4a6c282ade2bf86d4a7d22b3e43a82e064490e7ad7fdbb91aa3b52a275"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_music.py",
+      "bytes": 2061,
+      "sha256": "678f7bd486f414efc344b8f808880667d9ab729924e87908917046509f2b4462"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_net.py",
+      "bytes": 23218,
+      "sha256": "5fe3c6566aaa0a5c8ba899261162b1e9a55fb9a520f50866c4e11fdcd9797c71"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_nodeactor.py",
+      "bytes": 929,
+      "sha256": "b811ba80762703117e552ae58b79051c7b5751a3096de4fbc19e271fc3563da4"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_player.py",
+      "bytes": 13139,
+      "sha256": "31bb22440b0394bf4551a97ec528c68141ec8850c3ede0274b8654a18d25b209"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_playlist.py",
+      "bytes": 21589,
+      "sha256": "93ec8ee1e4d51a472362ec0dbf03174d7ae1a220d6effd3d70104b5a420e910c"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_powerup.py",
+      "bytes": 1516,
+      "sha256": "d1b803556b17455e4f50dab15d2fa0ec16e2b966e198e6ff8f242b729c4f1b54"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_profile.py",
+      "bytes": 3175,
+      "sha256": "3c6ce8718091e0502ac10714d50ec77c7fbd5d46d8cb45f900dd94ae136acd9f"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_replay.py",
+      "bytes": 3479,
+      "sha256": "ebc832cc8670043221be6c58a3ed2abb2493a512a48440410b6f6ce45614db99"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_scenev1assets.py",
+      "bytes": 4319,
+      "sha256": "3bee577a2f144e963d33c7d142921c2099fc58102a500e027b0807e7973a16aa"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_score.py",
+      "bytes": 1045,
+      "sha256": "05cc40a7d2410c52a92900ea4eff47003fa886cceec0d11978bc40d835eeb742"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_session.py",
+      "bytes": 33570,
+      "sha256": "b683cb44fedaacdffbbc6b176b862e6d04ff9813679278bff17455a03e30e497"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_settings.py",
+      "bytes": 1242,
+      "sha256": "0269539ea25153ab8a21fe6e1d354851b81e269941533b2db4887d1560d93d6f"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_stats.py",
+      "bytes": 20767,
+      "sha256": "b0c0d0371bfa9e0e16adb04d8ad14c391d2f5d49737bee28374ef2e3f10bc4e4"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_team.py",
+      "bytes": 7515,
+      "sha256": "f1330a45766ad3815ae02bbb54099116e7350781f120a8a43f7b186e1b30a844"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_teamgame.py",
+      "bytes": 6878,
+      "sha256": "539b86fe919ae83ac30da17d720098b60716525bd49cb9cbe8ade37ac2167b08"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1/_uiv1assets.py",
+      "bytes": 7711,
+      "sha256": "e9d3e19457f9b280ffc0a557701dad1a992238f14e57a9302e636ec74aa30e65"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/__init__.py",
+      "bytes": 154,
+      "sha256": "92adb3ca6ef92b817a1a80fab8ff3b7f06613bbf781d6795a9666de7acca39d5"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/activity/__init__.py",
+      "bytes": 116,
+      "sha256": "b2a423c78ace01bccb3737c05ba053e710a081e1a2ba9d0c3f30e365c4a559fa"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/activity/coopjoin.py",
+      "bytes": 4210,
+      "sha256": "11e251b672221d9a7f4b4aaf6bd53aa32803b1e0b7cd6a2eef9967b86b17a5d1"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/activity/coopscore.py",
+      "bytes": 73681,
+      "sha256": "83f4538dfb96d9aeb6bdf5da7e8a4170b3980b852613195eb2ad92aaaf36acd6"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/activity/drawscore.py",
+      "bytes": 1024,
+      "sha256": "9df26d6696e953c557dc43031ec068826b68e8de8d4fdce4d877d426e63b6fdc"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/activity/dualteamscore.py",
+      "bytes": 5184,
+      "sha256": "d82bdeb332988c6163dd52d902d2341bf7423af89df09bc73b43f41a1be2f5df"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/activity/freeforallvictory.py",
+      "bytes": 12214,
+      "sha256": "564df8a7e77d05c3e2201d67f492997d1dc6a2e7aba45ec6ae18e11094ed17ae"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/activity/multiteamjoin.py",
+      "bytes": 2868,
+      "sha256": "98f2fde3b74119b30a4490ed6128d697407ce97c1d8752d9de53e3053c0cdb2d"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/activity/multiteamscore.py",
+      "bytes": 9662,
+      "sha256": "ceca70fb2ee80de20d7db3e5e85f73323e218f11018ee2f925c0a8a79dc4f49a"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/activity/multiteamvictory.py",
+      "bytes": 17580,
+      "sha256": "512fb9faf09b701c570f1577ea7878b0c7efa87c41044146997ae59037fb98e0"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/actor/__init__.py",
+      "bytes": 113,
+      "sha256": "0a5bd66c2aa911cff59a228ef24c955e42a6b1d4a524c0d0a1237f0a034cb3dc"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/actor/background.py",
+      "bytes": 5613,
+      "sha256": "12fbbbfadf00633001a25966bedd38d6fd1de02a2d1678b2e6e4ee40fbec7d4d"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/actor/bomb.py",
+      "bytes": 40875,
+      "sha256": "94adbd30dffc6a71da05ca18a5af690463e2505b66342b4da988aa1b0465a0a9"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/actor/controlsguide.py",
+      "bytes": 22746,
+      "sha256": "840cd68badbb56751cae478af855868f0c5df5b0ac87acfb5682d10af9a3a4b4"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/actor/flag.py",
+      "bytes": 12180,
+      "sha256": "d12d93b29988df0217f2f41ce932b0edebc20ad1a77024b5476d719a8ffa77ae"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/actor/image.py",
+      "bytes": 9196,
+      "sha256": "6ce07d19a72a94c3b8d3a168ae78d7a58df5e30f4ce545c3e2317c376799ba22"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/actor/onscreencountdown.py",
+      "bytes": 3675,
+      "sha256": "dd0c47c625f788edfc8b4a4d13358d7b7c4007c9a2766f6752ea2fac6598f7ad"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/actor/onscreentimer.py",
+      "bytes": 2962,
+      "sha256": "8a1c0e19c0a77f79e8f69e61191040dfcbda5adc86041293501122d2bab7ebd3"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/actor/playerspaz.py",
+      "bytes": 19159,
+      "sha256": "3838f091793747a3b3a06a6edb780d693ba011e7388825011be0ecbecbffa706"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/actor/popuptext.py",
+      "bytes": 3605,
+      "sha256": "78f14ce29ac959ac01185fd880cb4f7e52dc7280244f49faabcab222f71014b1"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/actor/powerupbox.py",
+      "bytes": 10919,
+      "sha256": "d2f8bf043ad2d40cc87f6afdc4daef8443d2a3fdefad329822568dd226a9a9a0"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/actor/respawnicon.py",
+      "bytes": 8456,
+      "sha256": "8420b41d17d91eb510e7408f58fc0fbee789c81c67f4a620c674dfa2913e3d5a"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/actor/scoreboard.py",
+      "bytes": 16094,
+      "sha256": "7011b072611dc85906762e2698e0a28fd9f31029a95b2e98075eca3b490a8915"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/actor/spawner.py",
+      "bytes": 3350,
+      "sha256": "bba485b1d88a7a52618d70407a25b7f8a9d3aac31849f2d118bedc44290668f1"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/actor/spaz.py",
+      "bytes": 59229,
+      "sha256": "282e20776afcd58a321d3031c1d89e08d1f737ebd19ba0caa10870531e5522a0"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/actor/spazappearance.py",
+      "bytes": 16341,
+      "sha256": "b4275155aa755eb7ef273817ef15f251a26c2a4e6e0c63905a55d98697d2d0ff"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/actor/spazbot.py",
+      "bytes": 38406,
+      "sha256": "92dd34bd512a64739ac8f8fb0a86a729de280321ed29f950ac72009a4f235831"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/actor/spazfactory.py",
+      "bytes": 13113,
+      "sha256": "530edcfb1bfc29f93b1fea44877cdb49e2a7ff898e4029dbce104b9738427823"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/actor/text.py",
+      "bytes": 11410,
+      "sha256": "5668f83ce11836b74922225b7d11ac6a76b4bc8a157ef201d89f73b0c74006cb"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/actor/tipstext.py",
+      "bytes": 3002,
+      "sha256": "d752bcb0f230da325fbd7903915cd01ca6579b0505b078bfbec21aaa2420372c"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/actor/zoomtext.py",
+      "bytes": 7192,
+      "sha256": "2c6c0b65d8b8fc2469d5402f83bea775b0a45d263d9dca39df055d01e4f210bf"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/characterviewer.py",
+      "bytes": 14980,
+      "sha256": "c59cbd3f9879f1b8873e40997816106e3bd669d7ccfabf2333ef1ddddfed76b9"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/game/__init__.py",
+      "bytes": 112,
+      "sha256": "298bef257723b65fbea0ffda60487dd9e722522597fd7c242a25ee1d8299c4ef"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/game/assault.py",
+      "bytes": 10595,
+      "sha256": "48122a1c4517539649547f4fe11e641c0c10c5956b03dc315845004dd2fe07dc"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/game/capturetheflag.py",
+      "bytes": 24396,
+      "sha256": "ce7cfae2d48f24be7e27b8c18dab6144bfb4385848fd2e97dd03ea775c66fa3c"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/game/chosenone.py",
+      "bytes": 13469,
+      "sha256": "2607ec78f28f40f915b2f252d5693cb728967dc630d19c51431c97215261390b"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/game/conquest.py",
+      "bytes": 12003,
+      "sha256": "279572fc268e934a793c7c89c55323d0649141f772ec7ef929a1485d1611eec4"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/game/deathmatch.py",
+      "bytes": 7506,
+      "sha256": "cca294f7f75e9331f06ebebc4207b574281f488788f219860b1bf8a4c3e211b1"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/game/easteregghunt.py",
+      "bytes": 11013,
+      "sha256": "6d2bc193094656717b21941cf48ccb3824b438882b587bf1cb21f71a51c0375f"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/game/elimination.py",
+      "bytes": 23000,
+      "sha256": "965eb13a188ba995011daf70291a3176a2c9f21e90490eff08273d245a058168"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/game/football.py",
+      "bytes": 37447,
+      "sha256": "bb2dc08b8c7adaeee7904513b8ef4599d0b2c7b17490c2eee3426ecc783425e0"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/game/hockey.py",
+      "bytes": 14447,
+      "sha256": "c82c57832b706cad2260f8b55fd2621d341d520de02b56f66c4abdaa5e65c482"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/game/keepaway.py",
+      "bytes": 10368,
+      "sha256": "b49bbe2fabdbbf112bea5d3eb84884f90c9536748b5ddf9cf40bb0a37119b5ea"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/game/kingofthehill.py",
+      "bytes": 11402,
+      "sha256": "ae14586b4359340ae50cc9da4c9eb0fb16d617080208b37077e77df19522d270"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/game/meteorshower.py",
+      "bytes": 9898,
+      "sha256": "bb8111080a29f0c043a4f78ef752dde90eae55dfe591f3f4c06d0300598f75f2"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/game/ninjafight.py",
+      "bytes": 6705,
+      "sha256": "a56b56c7dfb816e12a881fb3c90f07f0a0e9e49d569efdf4ea60e92b7f8d88ab"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/game/onslaught.py",
+      "bytes": 60117,
+      "sha256": "926c345563f699362d19ae5e2e9cdd5a0a0a5dbad0c3c4b4d8c03f01281945c9"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/game/race.py",
+      "bytes": 29311,
+      "sha256": "daa18c70629704c9f2ca9a4b29d2e1fa22b47ca7400ae92a83b531958c7c93b2"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/game/runaround.py",
+      "bytes": 52479,
+      "sha256": "519493ab396e0b85230ee2311db790015b350d66689d7ba10dc7031821e5011b"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/game/targetpractice.py",
+      "bytes": 14081,
+      "sha256": "aa253bc53b1bec6b560f2efe0e0f9e6871f2ebefc14d0cb8201b13ba42d7ce33"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/game/thelaststand.py",
+      "bytes": 12464,
+      "sha256": "d1715f12ee84f200fc42eaca7d5597a5bf88bdd8a124c41cf9ed1060cc3ecd97"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/gameutils.py",
+      "bytes": 5729,
+      "sha256": "967de4915f91ae10a83e72f578ee067f615da6987b6b9fe2f9370ea35de2e1db"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/mainmenu.py",
+      "bytes": 26991,
+      "sha256": "6d2658158299db35cdd02588f2d189f7cf45f82b81b7ad17637971441dfb53f2"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/mapdata/__init__.py",
+      "bytes": 59,
+      "sha256": "91378a29b1a5ff9fc564f0ffc988fc30baad73e5d68bc78f030ccd96c77cbd33"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/mapdata/big_g.py",
+      "bytes": 4865,
+      "sha256": "a5b3124c19bb74fda178b59c54b46eac9188fde6b5b25c595f6ffb806a8ba0be"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/mapdata/bridgit.py",
+      "bytes": 1772,
+      "sha256": "e8caf363317be7293965a82522e9da95f84302a8bd4b0a1240fade64042cbef0"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/mapdata/courtyard.py",
+      "bytes": 4143,
+      "sha256": "03a1250ff0878e407d466f5f92fd2b649381e8db18a48b500fd99a0fcbc55534"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/mapdata/crag_castle.py",
+      "bytes": 2378,
+      "sha256": "44d3af3e83b84a8275fd93712591fb79cd355195c0c65f8eeb302091bf0766e3"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/mapdata/doom_shroom.py",
+      "bytes": 1856,
+      "sha256": "ccd493078b4faa55eb27b023f1d630e85b1d35814d330629770e74c420b8921a"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/mapdata/football_stadium.py",
+      "bytes": 1710,
+      "sha256": "8d74ba5d63a9b43affbd037a7f92e184cbcb28a7ca93af626bb6870077dbdb2b"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/mapdata/happy_thoughts.py",
+      "bytes": 2505,
+      "sha256": "39af61f04737f8bcaac58c15327151d08774acd35ff7ed26c79b2678abc746c8"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/mapdata/hockey_stadium.py",
+      "bytes": 1516,
+      "sha256": "967a6a046c0f843c8e5ac2a98eb2f2efa89b22af0d8aaf4a91c736c2e9e5cfe6"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/mapdata/lake_frigid.py",
+      "bytes": 4559,
+      "sha256": "992565c7563b08d24f50a343bab4f1f6bc65fd1cb2f85ca86fe431ddc586d7bc"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/mapdata/monkey_face.py",
+      "bytes": 1895,
+      "sha256": "5531050006abbb3f83eab3dafd3d9949932be6ace5696d5989d80c917a5fcbc9"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/mapdata/rampage.py",
+      "bytes": 1651,
+      "sha256": "fd1bb35933374a80c4e50580fa19d85ab67e3d4cba52925d78d11056c73de400"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/mapdata/roundabout.py",
+      "bytes": 1685,
+      "sha256": "5e7543a5f9a909e534f5bae94236aa33f73167d269ce5535d7db4d6e96366f48"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/mapdata/step_right_up.py",
+      "bytes": 2669,
+      "sha256": "5acf14f46d9049fc7babfb78d4d5ef617054bfac1678f0e3ac152dad547ec164"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/mapdata/the_pad.py",
+      "bytes": 1940,
+      "sha256": "d8de68361868d91536248d0f77ff0b29f3dc1e347f87c5be28d782132be7e96a"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/mapdata/tip_top.py",
+      "bytes": 2297,
+      "sha256": "0554461fe87724dc0f46d085f9b630cffdc99aeb0e6ecd692833982bf943ce6f"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/mapdata/tower_d.py",
+      "bytes": 3723,
+      "sha256": "6acfeb455ae7440deb6ea17131780cd1e378ef4a0904486246ce838f3d39ff0a"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/mapdata/zig_zag.py",
+      "bytes": 2523,
+      "sha256": "db29727496861bd35481b1b16f10c9d9f9df8e479fa204a55ff67c5000bcb5de"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/maps.py",
+      "bytes": 64164,
+      "sha256": "1633a4065b6021ea157e49e8671e6afef24c5ab23ef16b96f4d660ab4be05bef"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/session/__init__.py",
+      "bytes": 59,
+      "sha256": "91378a29b1a5ff9fc564f0ffc988fc30baad73e5d68bc78f030ccd96c77cbd33"
+    },
+    {
+      "path": "dist/ba_data/python/bascenev1lib/tutorial.py",
+      "bytes": 87286,
+      "sha256": "7ff37ee02c1dcfbdb1e17f36e677b11335d938916ebb384f9887738c945d9676"
+    },
+    {
+      "path": "dist/ba_data/python/batemplatefs/__init__.py",
+      "bytes": 427,
+      "sha256": "4ef550721b53b1c8e064b5a5a0f12856fd0a9488953717cbd7a7389b91fe7bc8"
+    },
+    {
+      "path": "dist/ba_data/python/batemplatefs/_appsubsystem.py",
+      "bytes": 494,
+      "sha256": "45c22934b623e6807e37240462fe4ed479664a97aeff437355906506ce754cc7"
+    },
+    {
+      "path": "dist/ba_data/python/batemplatefs/_hooks.py",
+      "bytes": 213,
+      "sha256": "6149b2d031a3c4b4cdbbd744b95fd1a465e7a994783b37a8136c9c9eb27ffa90"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1/__init__.py",
+      "bytes": 8817,
+      "sha256": "7ec6677e48e6ce9831edf42e5655327b8709e6e35144d245b8fff128e3b9e8af"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1/_appsubsystem.py",
+      "bytes": 39651,
+      "sha256": "cbbcad4475e2be533a711c06eca3712154fcc4b06263f7db58ff990f0d61204a"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1/_assetref.py",
+      "bytes": 10512,
+      "sha256": "cb69901300e6370eac54824695c1f771cec2a7824ff3ca66678dd67f63a1738f"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1/_automation.py",
+      "bytes": 20067,
+      "sha256": "9eb81c5a43bd14fe20a3e2b9f8835de20d09737d84d0a545c5b1ba6380e9f729"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1/_builtinassets.py",
+      "bytes": 57950,
+      "sha256": "73b71aab6caa21e9089b28a4b917dcfbf6d52d70f34ced2dc9c17722a8e28b05"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1/_classicassets.py",
+      "bytes": 327983,
+      "sha256": "e5594d0cccc2c0927ffbece1a9b721baeda5266bf1d6ac53d671a4c982fe922a"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1/_classiccatalogassets.py",
+      "bytes": 31867,
+      "sha256": "a637c6babfefa90cb219583f4543868d329de041a2dcc9c2c7452e6931259952"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1/_classiccharacterassets.py",
+      "bytes": 51431,
+      "sha256": "9edf50b92db1e6bd3bcde154677601ca050c6af085675a65c66d75f620943b0d"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1/_classiccharacterassets2.py",
+      "bytes": 5409,
+      "sha256": "0ad235afc5378a2cb7309d452076895174eef9ef3ca65c830fe2239f95a04aaf"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1/_classicuiassets.py",
+      "bytes": 18010,
+      "sha256": "67f3edb310d55ad56d024c503e38a7d282d68add3f5fed056d9ea0b366e7dd64"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1/_commonassets.py",
+      "bytes": 42213,
+      "sha256": "5214a4bf7a13e0c555a1b69a1f01d3504856921aa61e3a2ae48d9896856b4afe"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1/_docuiv2testassets.py",
+      "bytes": 18491,
+      "sha256": "9660b25b8b5bf48a6b71cdb51df25e9996e6d3bdc25af245a329086c8da63088"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1/_generated/__init__.py",
+      "bytes": 61,
+      "sha256": "8591472b111e29902dbc40af27082fc4d113aa642a496d45c8d84bb85d103a22"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1/_generated/ui_asset_set.py",
+      "bytes": 23809,
+      "sha256": "ec72b067826232fa6f430a28af94d3947ad4b3cec199afb13a538fe7c0a02f59"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1/_hooks.py",
+      "bytes": 5540,
+      "sha256": "28bd063517d9a0b0af4f421ffcd10d35d4616b97df3b3cbaedb3f6839f82419a"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1/_keyboard.py",
+      "bytes": 689,
+      "sha256": "b368f0ba19b0dc10e3a4c1f34ca957ae33bbfe5a99c692852d5c9f41b895d903"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1/_uitypes.py",
+      "bytes": 6665,
+      "sha256": "ac21b0ffbcde6f9235c8e2394a6aae5e8068e8d660c97139bd6489bb78aae4c8"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1/_uiv1assets.py",
+      "bytes": 7702,
+      "sha256": "0c2da05a2b4c2f035c7e80d5195357893455d76fd9c70d4ed9bc4ba618b574e1"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1/_viewer.py",
+      "bytes": 5797,
+      "sha256": "4e3e1e44f085c51537481760236be32edd8e4795d15a3c49c6ae030e1ce9186e"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1/_window.py",
+      "bytes": 27734,
+      "sha256": "c056f664c63f33607cfb627b9dbb0e1eafa28fb88ef5570e2913b0c688143d03"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1/onscreenkeyboard.py",
+      "bytes": 18092,
+      "sha256": "47a37514dabf5addc0de238be4cf4c990fba5218e6baee088d789de616b78a05"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/__init__.py",
+      "bytes": 162,
+      "sha256": "0349b5dfab9df77fa57610f29015bc2ff4e345a4e6c5bdc64a7432d9b22fd8a2"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/account/__init__.py",
+      "bytes": 105,
+      "sha256": "27dddf9f2f6d2d5f134c19ce094a61dae0d7f2e87fe9223d60abf1421a145ba6"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/account/settings.py",
+      "bytes": 58389,
+      "sha256": "8daf084bb6c84497f79925b11b28732e631d7efeb46d769f45cea03d5ba30b83"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/account/signin.py",
+      "bytes": 1741,
+      "sha256": "e19c3be7c75e58b1eace38585abf67062c493f7a83cc6ff384cd50dfa8758102"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/account/v2proxy.py",
+      "bytes": 13975,
+      "sha256": "79e3eb644d8db4be888b8256d27cdae7bb27eecee6f16783df0048e7100dbbd6"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/account/viewer.py",
+      "bytes": 23239,
+      "sha256": "64fa9de8dc1a66a361f9161ca43779bd97b08a1bbb9e7244fbe3450af2ff708c"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/achievements.py",
+      "bytes": 15866,
+      "sha256": "8fa715d603cc90dd27b4d5c2abfc9601aae66be50a89ea2509b684721da49ab5"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/appinvite.py",
+      "bytes": 7693,
+      "sha256": "9fe31b7ffcd68e65ef1143ba8410fe9f2d699924e13c98f02e7668f5e8334a6b"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/characterpicker.py",
+      "bytes": 7771,
+      "sha256": "b8e982f9f7f1681e1eed45c39d41cd8cbcef77df69f0db0e046e03b528b8c0cf"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/characterpreviewui.py",
+      "bytes": 3727,
+      "sha256": "596287fdbc2e8fff0591ae0591e83d2f103c98a2dfb53afc3453f8d49247a934"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/chestui.py",
+      "bytes": 5070,
+      "sha256": "da328b7b9fe3c2cb126ddc803d4de52b6366ac9c6e852d326cf7a8a7e7083a9d"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/colorpicker.py",
+      "bytes": 16195,
+      "sha256": "60dd4ec029dd9adca9aa9d9fb43bd73ae565a3e2d6c904f7059def133150d39e"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/config.py",
+      "bytes": 16199,
+      "sha256": "8ef132236b04abe0dc3675d23407e4d8d4cc0d92e26081a99e3859ab0858eee5"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/confirm.py",
+      "bytes": 7013,
+      "sha256": "d732a3c2559091639ff95c602556e3073906502ae517fea1ddd8a5a073da6a51"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/connect.py",
+      "bytes": 2607,
+      "sha256": "c8d81dc9713e92709deff3c46d52f6b7276572644898730b424d651503a2c258"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/connectivity.py",
+      "bytes": 4967,
+      "sha256": "69746dd916a49ee3529466b7e7fc4ee6c38560228ab3e0171a1d6f15cbd7ffdb"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/controlpermission.py",
+      "bytes": 4719,
+      "sha256": "4d77fe63139eddedbe9085410f73e64c5f95f9c45eb5f9d5276e3286b3ad12fd"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/coop/__init__.py",
+      "bytes": 59,
+      "sha256": "91378a29b1a5ff9fc564f0ffc988fc30baad73e5d68bc78f030ccd96c77cbd33"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/coop/browser.py",
+      "bytes": 48593,
+      "sha256": "918ec44c6a2d05c410257c6371925ebae657eaedd34f1277087104e17e1654fc"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/coop/gamebutton.py",
+      "bytes": 9123,
+      "sha256": "e336f3c039f2c9ff0356f2c850707005c438bcdf4e6598d3d82f6929f6c1644b"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/coop/level.py",
+      "bytes": 2453,
+      "sha256": "d16659c6cec1abdea553c0eead486cb2e4d395281abb3b7b1225a3a316e679bf"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/coop/tournamentbutton.py",
+      "bytes": 26036,
+      "sha256": "48b972485ed0c784d34bb5e57df0bd95ecf5cd1e72415ada803608384342f4f4"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/credits.py",
+      "bytes": 22376,
+      "sha256": "2cc75c659e339a23362769cb0e802e4a90f679d54996660e2cf87ff55acec66d"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/discord.py",
+      "bytes": 4628,
+      "sha256": "eeb883bcb5163fe8c09d86d3a6ffcecc1ee692289b6ad5046a8869fab7f5c1d3"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/__init__.py",
+      "bytes": 1784,
+      "sha256": "77807527bf375c748b4dfb11058342a2cd073a9606e1e884311a941a5ba31d77"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/_animtargets.py",
+      "bytes": 4887,
+      "sha256": "bba2c3152123db83ce7da93d51743c2c55d43a1b86b66d2de4d86cfcf138cd2f"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/_bgrunner.py",
+      "bytes": 4265,
+      "sha256": "9b290d71d0d93e7cbf9d2c68db47402bf2efe9550811eb1b51a94d973270105f"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/_cache.py",
+      "bytes": 6154,
+      "sha256": "a0f6b4fc12ef6b633ca070788091646979585e39b68773a217ea471f420f5500"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/_controller.py",
+      "bytes": 60803,
+      "sha256": "a5c887c0397d25a830c5089f2f8fddfd29c663291442013d2557295713f39d03"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/_debugdraw.py",
+      "bytes": 2520,
+      "sha256": "4b1e0e0baa7165dc0bf589a27e49b16c8d9fe5322c570c4d26b835b841624020"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/_layout.py",
+      "bytes": 25678,
+      "sha256": "cff9fa15da2d71edfc9e20334da25e84e66110b4005da104ec6309c78a1b6e93"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/_menu.py",
+      "bytes": 3972,
+      "sha256": "505a6705374adee968fd82bf6ae88f286234c57f46eddcd5f284b4288d046821"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/_pagestate.py",
+      "bytes": 2494,
+      "sha256": "8cbcac3993167ee53effbfcc22e957ee85f563079a148c9eafb1074144405f1a"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/_popuptext.py",
+      "bytes": 3005,
+      "sha256": "91a7f6f8f17bf46b874c0581d4760e1ab30d4159e131329050032c43bebcd862"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/_resolve.py",
+      "bytes": 20753,
+      "sha256": "9488348f2066cf358ee4a80ee74d4279c5777976e3621724c814f994ffe67908"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/_scrollrestore.py",
+      "bytes": 5513,
+      "sha256": "04e6c46fa670ffbd97f7df33bed25b60fb9624d9f6431c186da28f4cf7a0f61b"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/_timing.py",
+      "bytes": 5142,
+      "sha256": "4979b7c5278033cf98acec594ecb70893b36f2b86af7254e0e729403de9661a9"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/_typed.py",
+      "bytes": 5630,
+      "sha256": "776cc5f08e016347da9ee449330db8ad8ba9417bd74ef90e86a91ef4822a2ea4"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/_types.py",
+      "bytes": 1037,
+      "sha256": "c2341a4e3aaec868d4ad67fb1f61c3e520b4e507fc85c2443a76226eccf2c483"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/_window.py",
+      "bytes": 38156,
+      "sha256": "f6e5ad88b09d5fa4f3666ee7239dbf8703526785a9b49e1f0f4aac9d1afcd394"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/_windowparts.py",
+      "bytes": 6979,
+      "sha256": "cb6447f0df1b8293bad1fd3edc487278127303654a72df0ca2071407832cf650"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/_windowstate.py",
+      "bytes": 2454,
+      "sha256": "1ee246518c5fbb375b248d25fb52329fb7bbc2276e53620c57985613e1b85531"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/prep/__init__.py",
+      "bytes": 1620,
+      "sha256": "aa2f360ae0e900d78ac4128f4afae245602e7e1916fb35e97f7f882a760cfba4"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/prep/_button.py",
+      "bytes": 8459,
+      "sha256": "6e68cc6f2c21b4c28ba82d71fe97fb26f094f8472e4d2aea238891202c98269e"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/prep/_buttoncontrolrow.py",
+      "bytes": 6784,
+      "sha256": "c1fb2c783d3bfbaf0cc62e94049c779caefa9ad9acdb8e0e1dda2abc0d5a48f9"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/prep/_calls.py",
+      "bytes": 37509,
+      "sha256": "1e1ed0f8eaa99d5dc152eea05580e79c35393a661fbfd376fcbd9b998f3d6e6e"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/prep/_calls2.py",
+      "bytes": 26324,
+      "sha256": "cd577928a238809d728f31d2b9476332759539372490991a879a8861c9882101"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/prep/_controlrows.py",
+      "bytes": 32433,
+      "sha256": "378f7cf7467e3e64415e0ca19211cefa9ce64dbdf3151d103fc7f18bb3a6d381"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/prep/_decorations.py",
+      "bytes": 4524,
+      "sha256": "844e0e6137b97cbee6c7c62f16fe6301c8c6f0273cf17651a4892e28300e3ccc"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/prep/_depiction.py",
+      "bytes": 4407,
+      "sha256": "d48229e9dbd738ee10709b3877386dbbf5cf8133f4c167098e68f5acdd947ff1"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/prep/_instantiate.py",
+      "bytes": 6986,
+      "sha256": "141d4104ce77780460e245c08447327c826faa0b955e4d582f878d880d236513"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/prep/_numberrow.py",
+      "bytes": 10725,
+      "sha256": "78af9961e5dc16e579644e4a8fca17942c2a620c839ed642896df8ea7a730be6"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/prep/_rowbands.py",
+      "bytes": 4295,
+      "sha256": "919a9d3aa16887314714d3bdcdd322bd856c232844837dfaff5bb23186d13118"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/prep/_rowtext.py",
+      "bytes": 22233,
+      "sha256": "6ceb047cd7cfb0134555594409a626b77cf2bd0e0c48d57d22174f6c69fcd983"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/prep/_sections.py",
+      "bytes": 27876,
+      "sha256": "1f8f33f3827870d0101e24c3625d5d6d5a0484735f4795186771ec7f6cc2a669"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/prep/_sliderrow.py",
+      "bytes": 10117,
+      "sha256": "1aa8eb1fc549684e8dcd57485c71b6a22c557345aab5289feb3bbbc2b6d7a5c0"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/prep/_staticbuttonrow.py",
+      "bytes": 7532,
+      "sha256": "2f64917d770bef0c08a61e2694492bad12aec978d209067c3ec8d505e0c6c321"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docui/prep/_types.py",
+      "bytes": 12509,
+      "sha256": "c3caebacb2f30778e011fb8e1ee4c914e7d8779e26e9588676e7fa2135ed7afb"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docuitest.py",
+      "bytes": 38873,
+      "sha256": "c38cddaad1d2d02cb1d65c7262847b7ea263f13c38dd984baa430ccf4296c66d"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docuitestanimation.py",
+      "bytes": 3561,
+      "sha256": "411a0c9f41c684359d5af474ba7ad420ae0800696c03d70cb6e360f4ac0c5948"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docuitestdepictions.py",
+      "bytes": 21960,
+      "sha256": "7f87581b8a0cb7354ec5d83f139c9984fac55da92c71435371485ad1f1f4cdfe"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docuitestitems.py",
+      "bytes": 5519,
+      "sha256": "820143c8dabd38a452385ac1bb2488c010c6374956069a5cf4c22f6a9ddb11d1"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docuitestlayouts.py",
+      "bytes": 14858,
+      "sha256": "dc7ff46526eb4496da26433de64acbf2211446b274263e494a6ecefde98192ca"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docuitestlivetimes.py",
+      "bytes": 8095,
+      "sha256": "e2c0283bbe677935a1330911d780fdbcabcc439ecdbd8c8bb2e1e718834b8a6f"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docuitestnames.py",
+      "bytes": 33017,
+      "sha256": "2ff6c79be9e1bd7758bd298c402001734442eb9cd6bd577dcf02ee79acb42d12"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docuitestnav.py",
+      "bytes": 3242,
+      "sha256": "c3dc92b7f22db00e4ba9e6ed6257e8db3aa855ee56561dab88749eaeaef2ae1e"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docuitestninepatch.py",
+      "bytes": 8011,
+      "sha256": "c4773723162d261cc48bc4063f83daf5215b3f6e1459be6278fa6333af0bda81"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docuitestsections.py",
+      "bytes": 8705,
+      "sha256": "eaad04cb7b0931bb4c7033d7907a270131cc2669a99a85db7edca2274a295ce6"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docuitestsimple.py",
+      "bytes": 4560,
+      "sha256": "098e94d9785f9dddf87e30d5c647a24a0e0ebe784d3dd6bd07840b02e4979be4"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docuitesttextimages.py",
+      "bytes": 8494,
+      "sha256": "a82eb861b3acbf36408e120e83b7d59d3b4a5ff515908ed9a2851ec4658a0473"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docuitesttextwrap.py",
+      "bytes": 8097,
+      "sha256": "ef5d1a539c87d44ef882a3a0f6943f8424948f9a4351f386bfe77fca2ff1e444"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/docuitestwidgets.py",
+      "bytes": 41453,
+      "sha256": "eb50c65f5127430b94f0a3abdb3d20914543cbe6304b882d002b29010c1ff589"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/fileselector.py",
+      "bytes": 17600,
+      "sha256": "723703d293aab23ead2f03947128c11ede321c3466eaf01baf8595ca3292e04c"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/gather/__init__.py",
+      "bytes": 212,
+      "sha256": "e8d3de50c63b24a7061ead48b1e9d8f8b2ceb81288a1f795dbd2259114ada838"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/gather/_gather.py",
+      "bytes": 13794,
+      "sha256": "b2cf82f36dd9bf67e5544b7c03bda1ff08234744b9e9ee7a47ae212d536ede9f"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/gather/abouttab.py",
+      "bytes": 7973,
+      "sha256": "eb0654fb2c560957b3fe82a34d9dad79b8e0aa1eab9ae2f11e16b2e53d6ac611"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/gather/manualtab.py",
+      "bytes": 38674,
+      "sha256": "5af9f4cb8388feb8a6c056c198cd2e2f8278e9c9c860b1511ca6db90b73a9ff8"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/gather/nearbytab.py",
+      "bytes": 6736,
+      "sha256": "ef28b51eba78bc163214f2fecb109c00ef57b1ab11a7ef8eefb96129ec78438a"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/gather/privatetab.py",
+      "bytes": 40954,
+      "sha256": "537d76c8ca231c2410f62d3886f09e5b9a313ce3e4476a7a0e15906023e39b64"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/gather/publictab.py",
+      "bytes": 54849,
+      "sha256": "cbac4c21796809744aee24fcbbccfca19870c03dc1f16681e4e630e037016384"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/getremote.py",
+      "bytes": 2447,
+      "sha256": "0d150a66f77d8789dce6e5a283b1f59c00e7ae4be2bc93b661f42ec07abdaa12"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/gettokens.py",
+      "bytes": 31873,
+      "sha256": "8597453f9cb7d48065c7fec4d87e2a4a79f74921a278e69b68572d790326bf33"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/help.py",
+      "bytes": 26573,
+      "sha256": "28e002986a7e22f3ad18c0a653cfc2256e2cf8c544d6a95ecf03790e5d269e7f"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/iconpicker.py",
+      "bytes": 6703,
+      "sha256": "7725a1a31303fa9d2530f6df4d4b0c781707172d07d4bfa1fe125020798997c2"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/inboxui.py",
+      "bytes": 2873,
+      "sha256": "68d371413eb2c61f05443602ad17ce1eed3784de05fd8d914ce3eb6ea28d0ed7"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/ingamemenu.py",
+      "bytes": 22600,
+      "sha256": "675908be95e54d3d44ed9ea2bdaf6229dbaa680ef5cc1415571d4eb49eb0dbfb"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/inventory.py",
+      "bytes": 22627,
+      "sha256": "e07a1187b302b68f50e4b50a4346d41a121bbb688756c8bbbb6feab91e809f6a"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/keyboard/__init__.py",
+      "bytes": 59,
+      "sha256": "91378a29b1a5ff9fc564f0ffc988fc30baad73e5d68bc78f030ccd96c77cbd33"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/keyboard/englishkeyboard.py",
+      "bytes": 1927,
+      "sha256": "95392872722a7f01c77cbe20e870e2fe9bd3af11d7acf8daafce70adbe23b51d"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/kiosk.py",
+      "bytes": 19644,
+      "sha256": "8057e570f9d6016a467004ae83b8a5336331c1a1e3d661550fbd2b4510974fec"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/league/__init__.py",
+      "bytes": 790,
+      "sha256": "e9e1a13922f84504541409eef95abc87142f655002ae415810eef283592a0989"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/league/presidency.py",
+      "bytes": 2323,
+      "sha256": "8cf859af07923e9f4de3e2e3e255bb75819835b697e1962227ab45194a28b79e"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/league/rankwindow.py",
+      "bytes": 51285,
+      "sha256": "572a56bf76496391354330e07cad036e9c3f13ae75f73b162a986511a4883511"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/mainmenu.py",
+      "bytes": 20796,
+      "sha256": "fbf15f1d682118b3a10cbd9352f429ac6cc309e3afbd916d54838c6ff8aff5e4"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/party.py",
+      "bytes": 25283,
+      "sha256": "e8408fa72116f29db891df7e6a3dae24137b41b1b0345dd47838dfe5e6c9bfa0"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/partyqueue.py",
+      "bytes": 24645,
+      "sha256": "64c87ac5bb4e5ea12246ff517d7f65d12938a04a5ba0aacd7009e211398e8f7c"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/passwordprompt.py",
+      "bytes": 4052,
+      "sha256": "4defa7e34655a5d8a8a999964d39ed799bf456d1b61cf67d5ea6b36ff18ab8a5"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/playdocui.py",
+      "bytes": 17282,
+      "sha256": "0b2b398815668a5f55c2d87ec65608ffa75bab99f6b58393501bc58b5907ceda"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/playlist/__init__.py",
+      "bytes": 1939,
+      "sha256": "852c20aabc43c74c5df76a09eb260f45839c7e71ae1c76d551039f94e8d0891e"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/playlist/addgame.py",
+      "bytes": 11865,
+      "sha256": "66a762c34686bebf7a058ed315abb9c6ca6a2effacfeb62743d22487668877ef"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/playlist/browserdocui.py",
+      "bytes": 26540,
+      "sha256": "73bd08b46d8a577749293d0729b9e087decc7536e525cdd4d886a7e39d8cd080"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/playlist/customizebrowser.py",
+      "bytes": 23312,
+      "sha256": "496dadbfa6500f3a93f4d41880d2ba6ce0e6c1104603a0505e6ec6e1f87e234f"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/playlist/edit.py",
+      "bytes": 16314,
+      "sha256": "81b500ac0c647ccc1acd4c9a0eb5c2094dd5462bcef0ec69415063f3904e5e8c"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/playlist/editcontroller.py",
+      "bytes": 9217,
+      "sha256": "80fb1eba38069463eb5f15f78b513eb2b92ccbec2a9abba78af01491b4082f28"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/playlist/editgame.py",
+      "bytes": 25539,
+      "sha256": "43ab851dd06883423c56c3b97914b745f1f30d66ccb6b6973fec21af001473b4"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/playlist/mapselect.py",
+      "bytes": 12499,
+      "sha256": "8db569475c69976b2a61c468d1b173683ee8253277f36002f19145f1fc97086c"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/playlist/share.py",
+      "bytes": 5912,
+      "sha256": "3dd75faa0b362bd84c726a9b060454e3f413e862e90eacc6572651debaef4d48"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/playoptions.py",
+      "bytes": 20254,
+      "sha256": "e44c5bd461a3e3f01734bc64ac2b3cde84f3105064f06128d6eab3e158dd065a"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/popup.py",
+      "bytes": 19032,
+      "sha256": "a6b2ed1522bc9402c9ea87eff31c75f36aece0f36cb1ea7d3e63771dd1b50083"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/profile/__init__.py",
+      "bytes": 59,
+      "sha256": "91378a29b1a5ff9fc564f0ffc988fc30baad73e5d68bc78f030ccd96c77cbd33"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/profile/edit.py",
+      "bytes": 37525,
+      "sha256": "83ba24cde13f6c8de38b04a1458c1a46d11f6b6053df26b0e4ef7e38c10987c3"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/profile/upgrade.py",
+      "bytes": 10039,
+      "sha256": "b3f32f1f6674a1b6f2f933f796ca429a384a3d56f5c3bbbe74be3653d6e302fa"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/qrcode.py",
+      "bytes": 1961,
+      "sha256": "5a85dff0c6cc9c77eaba3d3c05f3b566cf735e8b5b1592d2c66a41ca2c5a0230"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/radiogroup.py",
+      "bytes": 1137,
+      "sha256": "ee895b8a756e762c40aa60594b4aefff4d5852c5c2f80facaa00bf06556a5a8f"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/report.py",
+      "bytes": 4016,
+      "sha256": "47899722e6a50879d7b67bc45ae08b241aa8c455bfad99fa551b1d6aa9ad700a"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/resourcetypeinfo.py",
+      "bytes": 4993,
+      "sha256": "dd1e6fa6eeefa6ae460ec28fa64ffe5384fff5b72a40e6d00c51f61a72680d87"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/sendinfo.py",
+      "bytes": 14393,
+      "sha256": "3089fc531eea18db36fbb6506023caf48b520467c61e0693590248396d9197ac"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/serverdialog.py",
+      "bytes": 5492,
+      "sha256": "2b8cd0f00abb2107c49aa82979752378dfebe64c28910f9c55bd37ef2244ea96"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/settings/__init__.py",
+      "bytes": 59,
+      "sha256": "91378a29b1a5ff9fc564f0ffc988fc30baad73e5d68bc78f030ccd96c77cbd33"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/settings/advanced.py",
+      "bytes": 19271,
+      "sha256": "3a6ad541cb6dfa4376473479989f0721e09ac17b035a5dd0ea2ef4ac3f8cc7a6"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/settings/allsettingsdocui.py",
+      "bytes": 9992,
+      "sha256": "468fa6b467f4d76cf25c0d5a60a3bce97eda5eae21a9823f108b882eabd206c1"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/settings/audio.py",
+      "bytes": 8637,
+      "sha256": "0e29719e9ee9de794781dbc41b2b1a2a6e22c60df5b05fbabf81e8a746fc6399"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/settings/benchmarks.py",
+      "bytes": 8120,
+      "sha256": "032b2c9f20b4172ba2c366e3ef7df2d5abb3c225c1695f6a94b14ca28ed80ae5"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/settings/controls.py",
+      "bytes": 9667,
+      "sha256": "dacfa8dbdfc965f4668c59a5531c1d306139f1a0af7dd03e210def6a27843b41"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/settings/devtools.py",
+      "bytes": 12254,
+      "sha256": "e84cbd17c104b824cbfab8b63081249f61d17d1c2aaf309d9092fe59b83fe927"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/settings/gamepad.py",
+      "bytes": 37032,
+      "sha256": "b3d977161d8f8e772a504c4a5422b08f656b118ac34ecb200deee9922af4d248"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/settings/gamepadadvanced.py",
+      "bytes": 19591,
+      "sha256": "9daaed5851d15afd3c65bd4429bc948af799ce3092b89d547ce63af2fe55584a"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/settings/gamepadselect.py",
+      "bytes": 9359,
+      "sha256": "d552999204f56ab79e94ca2c32a7c4ba9b5ea5230551c0002f9581ee426cefc8"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/settings/graphics.py",
+      "bytes": 26370,
+      "sha256": "e19dce4673fe2e23d257325367a7f9d97bb0817b941bdd7bba9eb7b61afbf2c5"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/settings/keyboard.py",
+      "bytes": 17775,
+      "sha256": "381c03916fe198801155c6cb76cf0b7e2d1cea9ed87603d2ee19a15bce03d27c"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/settings/nettesting.py",
+      "bytes": 20899,
+      "sha256": "2095e3e49bd98f929753271d716a92ccf9aeb027c6895103a0f00201d6953feb"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/settings/plugins.py",
+      "bytes": 19326,
+      "sha256": "4e3bf3216d3f839174bd944c78f5ce7f493a08a26d887575f719be9acaa2c1c6"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/settings/pluginsettings.py",
+      "bytes": 6922,
+      "sha256": "0268a8783e608252bf1b3cea1d26f62af1c079dc271898c5668add6924b3ee3b"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/settings/remoteapp.py",
+      "bytes": 5888,
+      "sha256": "1bfd3bd7a13712df9009b654ae27f49784582ffb2caff0bd21016ce2d8d0c7b5"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/settings/testing.py",
+      "bytes": 12173,
+      "sha256": "92009dd3eeeeee155c4bef3adffa701702414c4f3f006463b45f385f1e8e49ed"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/settings/touchscreen.py",
+      "bytes": 14051,
+      "sha256": "1d55307396f960bacff726d8da5cd1cf827473e8bb4a55d1a6a5535f57201f1e"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/settings/vrtesting.py",
+      "bytes": 2905,
+      "sha256": "2f6a23724ead1c8211f73fe05bd5bb193a07ab7926bf9ed25a5445404a51a39e"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/soundtrack/__init__.py",
+      "bytes": 59,
+      "sha256": "91378a29b1a5ff9fc564f0ffc988fc30baad73e5d68bc78f030ccd96c77cbd33"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/soundtrack/browser.py",
+      "bytes": 20100,
+      "sha256": "24895261b55aa4acc0572d3420481fb39b10faea640925400b86b71d232f934f"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/soundtrack/edit.py",
+      "bytes": 20176,
+      "sha256": "0b7e7e49d5ae5c925d0f01d99c1a734c39535939a9da03817a434960d180426e"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/soundtrack/entrytypeselect.py",
+      "bytes": 9442,
+      "sha256": "5f6e526665c200ba243593efbff35bc86b956d7ccfa92dba68c780d2b13366d2"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/soundtrack/macmusicapp.py",
+      "bytes": 5461,
+      "sha256": "05e5a8608082ca021ff4e85aedaa00e968eaaa6e5f41aec8b34ab01f074ae4c6"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/store.py",
+      "bytes": 2585,
+      "sha256": "31f51c643b22781b83bdbc5f7abb2f1bf73b9eab38fbb05341ca98b797b0da85"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/tabs.py",
+      "bytes": 2936,
+      "sha256": "3803624535606464052b5d58491db166baede00fba35d939a4b3811c96fae77e"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/teamnamescolors.py",
+      "bytes": 8714,
+      "sha256": "f386d480a0465941209999f8b9cd2d6dff69cdb9041813d02ce16b141ef14c34"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/template.py",
+      "bytes": 10037,
+      "sha256": "b277538f21b7715a9b73eeb1bc0dd79dea56d8cf536c5a82f5bc43a3fd5c40db"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/tournamententry.py",
+      "bytes": 30657,
+      "sha256": "a771ce5d587f59dc20f7f8ca8d2e38feba4f1cd299a8585b3023311faf90c4c5"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/tournamentscores.py",
+      "bytes": 7934,
+      "sha256": "9d178842f6e17f640a755f62e034fd12ac9c0885e731afc6dfba56b8446441b2"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/trophies.py",
+      "bytes": 6731,
+      "sha256": "042097987d3f8fdcfe71ed5be01e9d5d6745a52f89b3d0011d48a2601281e6f3"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/url.py",
+      "bytes": 3445,
+      "sha256": "93c1ab8e2a78e5fe3cb0566be15bfe103ae9d27104b07db38c2005fd5aec8c2b"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/utils.py",
+      "bytes": 4903,
+      "sha256": "ae4a1c224f69e756edb1e88fd67851cd6850d5460b5502ead092d3e38eb09207"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/v2upgrade.py",
+      "bytes": 4049,
+      "sha256": "fb34ce42910bfe652dd41dedaa20321f2def3ef60bfc1af8a68d4424a74e6d9b"
+    },
+    {
+      "path": "dist/ba_data/python/bauiv1lib/watch.py",
+      "bytes": 26249,
+      "sha256": "8e81c21c124d748115033554d1e2dc7f22ba095cea14bc81f29a12313c8893be"
+    },
+    {
+      "path": "dist/ba_data/python/efro/__init__.py",
+      "bytes": 277,
+      "sha256": "5262586785eeaeb0b08d7c7d89ddcfc5007e1661c41bcac36455bca6d67089d2"
+    },
+    {
+      "path": "dist/ba_data/python/efro/call.py",
+      "bytes": 3088,
+      "sha256": "f88794ec8ff923238077c49b48949cf03123f6bfe7e4acf2500b5a5972c28fe8"
+    },
+    {
+      "path": "dist/ba_data/python/efro/cloudshell.py",
+      "bytes": 4023,
+      "sha256": "84327fef9f07e888bf44de579167949e1b50bde40b516b179dc1ad9c7a5a1ba3"
+    },
+    {
+      "path": "dist/ba_data/python/efro/dataclassio/__init__.py",
+      "bytes": 1939,
+      "sha256": "1ff217310f593f09beded56bd51b6c579284f32c3fcf96b997acf300c3daeb0c"
+    },
+    {
+      "path": "dist/ba_data/python/efro/dataclassio/_api.py",
+      "bytes": 7063,
+      "sha256": "c802d32a1edd0a66a783f1cad91b6cf644268fa70ca6fd95476fea33eedd9369"
+    },
+    {
+      "path": "dist/ba_data/python/efro/dataclassio/_base.py",
+      "bytes": 30253,
+      "sha256": "6c74617ca19ddd6eba983c4b64e197e829c2d388926ef6711f6f114db756b4f8"
+    },
+    {
+      "path": "dist/ba_data/python/efro/dataclassio/_inputter.py",
+      "bytes": 34273,
+      "sha256": "c40c8012b24fbf5abb0798250d606982fcdb4901eb859c871fd74fb1fc5aa7a0"
+    },
+    {
+      "path": "dist/ba_data/python/efro/dataclassio/_outputter.py",
+      "bytes": 27817,
+      "sha256": "86cca9dc00a0b4164ea8e94e402055755fea780d8166c446a0bf3ce4dbbb070a"
+    },
+    {
+      "path": "dist/ba_data/python/efro/dataclassio/_pathcapture.py",
+      "bytes": 4060,
+      "sha256": "0c2352c35b500fe9908697b9c4ded6de70108c39c6b5cc67fe7166929fc65365"
+    },
+    {
+      "path": "dist/ba_data/python/efro/dataclassio/_prep.py",
+      "bytes": 24265,
+      "sha256": "7b98fd801e57705a4926fcff3039211cfab53dfb24adb5d3280af5959cd60cf5"
+    },
+    {
+      "path": "dist/ba_data/python/efro/dataclassio/extras.py",
+      "bytes": 2173,
+      "sha256": "634388547a7d9f1b0d31c08adad8e6814fd156bd958199a3a569019ac436d4bc"
+    },
+    {
+      "path": "dist/ba_data/python/efro/dataclassio/templatemultitype.py",
+      "bytes": 1551,
+      "sha256": "d1fe067508a3b1a1aa69549006e3f66e09fd960f6e6332560b47492a1b2adae9"
+    },
+    {
+      "path": "dist/ba_data/python/efro/debug.py",
+      "bytes": 34014,
+      "sha256": "f071830602f78451a0714943281b96bc8662d7873d9cde7ad490cf9ca2a023cf"
+    },
+    {
+      "path": "dist/ba_data/python/efro/error.py",
+      "bytes": 13347,
+      "sha256": "a4fd10d0a87e8a043324623cfd8ce57b02b6f0a597f77fc5189767c4fc46fbb2"
+    },
+    {
+      "path": "dist/ba_data/python/efro/logging.py",
+      "bytes": 39700,
+      "sha256": "fa41e6234670abc3ae1dd5b824842b717f69b31e2c7a16c80fe698aec3687487"
+    },
+    {
+      "path": "dist/ba_data/python/efro/message/__init__.py",
+      "bytes": 1024,
+      "sha256": "2763c5b6521700540a55fa3fbae7fa9e00b2a110427e93767747abba1b8cc8af"
+    },
+    {
+      "path": "dist/ba_data/python/efro/message/_message.py",
+      "bytes": 5394,
+      "sha256": "10651329b085ecf88b34c9d8e10be8b1fa5f02ec908fc917e8b13fa3687598ea"
+    },
+    {
+      "path": "dist/ba_data/python/efro/message/_module.py",
+      "bytes": 3686,
+      "sha256": "cc055f3ec6e68ac2a2c2f503fd3dc95e101a60d7a884ffadd59fefe636e28b0d"
+    },
+    {
+      "path": "dist/ba_data/python/efro/message/_protocol.py",
+      "bytes": 26754,
+      "sha256": "6a19f1b4407cb58121ae9e28459c10981e08325dd93230bf800f3b9641f7c6d3"
+    },
+    {
+      "path": "dist/ba_data/python/efro/message/_receiver.py",
+      "bytes": 16314,
+      "sha256": "f2080592ad923e1f2806e525d30007095a67555cbdf76d8403265fc0fbbc357a"
+    },
+    {
+      "path": "dist/ba_data/python/efro/message/_sender.py",
+      "bytes": 20671,
+      "sha256": "eee8385914ed894ec2e951b531beb527267d0eed03d4663151266924586dc980"
+    },
+    {
+      "path": "dist/ba_data/python/efro/rpc.py",
+      "bytes": 35200,
+      "sha256": "d5f55efc7d0062cc3bfccec74a16490cae0c125c8c66d8e4acf44ca8c844edfc"
+    },
+    {
+      "path": "dist/ba_data/python/efro/rpcws.py",
+      "bytes": 14594,
+      "sha256": "a6d52c91cc4d7ba23f2df656390111d03f232fe7ee3a6c4d88afa0b38b34d926"
+    },
+    {
+      "path": "dist/ba_data/python/efro/smartsocket.py",
+      "bytes": 63748,
+      "sha256": "d37131b92f6bb0487ac6ab3c332b6d6f5a2f14fd543952e98201d42e26c937a3"
+    },
+    {
+      "path": "dist/ba_data/python/efro/terminal.py",
+      "bytes": 8648,
+      "sha256": "462fa46c05ea61f3e2ea866e1660ee5ebbb0885eb900f89b9fbf09cde48afd89"
+    },
+    {
+      "path": "dist/ba_data/python/efro/threadpool.py",
+      "bytes": 29601,
+      "sha256": "eb7aa45df491c37858cfd564ccfe4998891c2834f2dd5c38c68d98c23ce55c85"
+    },
+    {
+      "path": "dist/ba_data/python/efro/util.py",
+      "bytes": 47093,
+      "sha256": "be9fcf9295238db729a213241f30ca600d14e045d9c732dcb73816bf42936be6"
+    },
+    {
+      "path": "dist/ba_data/python/efro/venvpatch.py",
+      "bytes": 8578,
+      "sha256": "94d13d850be1a0e49df1d553ebb43b6fd86ada62906f527fd4f9e2edfef727d9"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/certifi/__init__.py",
+      "bytes": 94,
+      "sha256": "7a52e5f4205f9b3d12a31898ceaa7e3f6837d19cc230700bcae1a9d91d1486c1"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/certifi/__main__.py",
+      "bytes": 243,
+      "sha256": "c410688fdd394d45812d118034e71fee88ba7beddd30fe1c1281bd3b232cd758"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/certifi/cacert.pem",
+      "bytes": 240216,
+      "sha256": "9cc2a774b5198dcff14d9be1e66091f538975d867ce029a96bce15a55dfd730f"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/certifi/core.py",
+      "bytes": 3394,
+      "sha256": "5c55f2727746e697f7edac9e17c377d8752e0da7ecca191531b3b80403d61dad"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/certifi/tests/__init__.py",
+      "bytes": 1,
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/certifi/tests/test_certify.py",
+      "bytes": 467,
+      "sha256": "7c179d1edf37f7e912b133663735fb46c6338d5d0e5f8915d11c3bc287d227b8"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/typing_extensions.py",
+      "bytes": 165012,
+      "sha256": "4040ca1a1ecbee00d1385c12a93084d1c5bd46f0b774f07e5ae7e91c4f55e696"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/__init__.py",
+      "bytes": 6979,
+      "sha256": "24ca35b60d67215d40789daf10d0bf4f17e5d1ee61e86ce5f43195935ad645ba"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/_base_connection.py",
+      "bytes": 5580,
+      "sha256": "1f37121077b1803ad152beb48cd9e20762908ddc3ded279d0f996e45f1ed0978"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/_collections.py",
+      "bytes": 17669,
+      "sha256": "1fac8ba8659d64d919d0b9bf7e72c4caaba59ce716eaab570a1daacf183bdf15"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/_request_methods.py",
+      "bytes": 9931,
+      "sha256": "802785f3948efd45385a83f0607228cffb70f9e33f1153a42c5a7c385b02ec30"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/_version.py",
+      "bytes": 520,
+      "sha256": "7b84320186a7a1805134fd8aeaa0d508e80116851aecbd23f7561042c5073bd4"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/connection.py",
+      "bytes": 47903,
+      "sha256": "8a59dab3d7b6a0e1b38a5fd6e565ef6a49381bb995729d015e4f6440ab8523e0"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/connectionpool.py",
+      "bytes": 45250,
+      "sha256": "6a147869216b94449a053e869d4311cba23294551c83ee20fe5d2f1eaff50a3e"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/contrib/__init__.py",
+      "bytes": 1,
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/contrib/emscripten/__init__.py",
+      "bytes": 836,
+      "sha256": "c325ef7bcae6a97eecd8aa91401c43e56978f23cd63e7e7ed6efd7a100442d57"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/contrib/emscripten/connection.py",
+      "bytes": 8960,
+      "sha256": "822125b01a14b0a55445b6736fc182ac99aa5b6dd79ef8f668dc90545e36b258"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/contrib/emscripten/fetch.py",
+      "bytes": 23520,
+      "sha256": "e7171dfbebe217165dda7072d1a2bbdddb49f53b21d7261953f4945f09f089b9"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/contrib/emscripten/request.py",
+      "bytes": 566,
+      "sha256": "98bdbcb33cb52af137349856a2be633666aba7c830a650d4fbb8301996398344"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/contrib/emscripten/response.py",
+      "bytes": 9719,
+      "sha256": "083a58d0616896e47723110290cda01f9b837d80ccd042f5156afb07beb0b603"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/contrib/pyopenssl.py",
+      "bytes": 21494,
+      "sha256": "5acf2f0ae6527e023a4031da552246600f6e753581f4a2f4c19ff4d7c88a8230"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/contrib/socks.py",
+      "bytes": 7566,
+      "sha256": "81141f708d6928e021e62238fd30c090a6803f737f1f620de49e660652990691"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/exceptions.py",
+      "bytes": 9945,
+      "sha256": "8503c7a2aa38cb0e3a7ac3525647225505d5520031580825b21e8c6f242d6be4"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/fields.py",
+      "bytes": 10801,
+      "sha256": "6862c5015669554f856c996596f7b8021834fa91fd659050d88cfb95fa648e43"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/filepost.py",
+      "bytes": 2388,
+      "sha256": "53c78d67e9a928a1e1ae56c7104893c7180ad7a21e8e111aeeecf8db2a80fdd2"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/http2/__init__.py",
+      "bytes": 1741,
+      "sha256": "c73ac0487ed1e4035190f24ea2de651a70133aadca2aec97cc8e36adc9f09aab"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/http2/connection.py",
+      "bytes": 12613,
+      "sha256": "9e3960af8c0b862009bed52ac44127e12f79be27db95346b9ab6911e809cbfad"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/http2/probe.py",
+      "bytes": 3014,
+      "sha256": "9e7024a9b8406a43a217be6bcfb5b4b9d677f047a1fee0fc7e357be0def71442"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/poolmanager.py",
+      "bytes": 25026,
+      "sha256": "46654506338ff9a0e79baeef8a409af7d37aad001633150384a1eb4a5d1ff4cb"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/response.py",
+      "bytes": 54628,
+      "sha256": "0e4559c737914d4f8f941dca9ecfaf6caec6792258302bffec7b8b41dae3c71a"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/util/__init__.py",
+      "bytes": 1001,
+      "sha256": "faa792d1071e8af6b3bc110a0cd142008fba00271d0ce1384ccbe8ed22cd9404"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/util/connection.py",
+      "bytes": 4444,
+      "sha256": "2633bbdb69731e5ccb5cf4e4afd65605d86c7979cc5633126f50c92d5ad74a74"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/util/proxy.py",
+      "bytes": 1148,
+      "sha256": "b1e3fcf90e41e9b07474cb703e3f98719650df4bc7b8ba91bbeb48d096767f3b"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/util/request.py",
+      "bytes": 10228,
+      "sha256": "d9af3b7ae5309e3ca50777f27994b3fd5b3aeb32c6aaa44a252ddba5366c89b0"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/util/response.py",
+      "bytes": 3374,
+      "sha256": "bd013adfdba81218f5be98c4771bb994d22124249466477ba6a965508d0164e0"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/util/retry.py",
+      "bytes": 20151,
+      "sha256": "0fdc26b67d1ecc42b0cab3972f20bb07284d783f4dc318394fe8b99098c42925"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/util/ssl_.py",
+      "bytes": 17856,
+      "sha256": "72c779c13f6e2afa22149d75f98a5fab0cdc886193515d9dae62e12354fd61c4"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/util/ssl_match_hostname.py",
+      "bytes": 5479,
+      "sha256": "16de38289cd3cc632629f7ff6573fdd658b65785a19af132d7a3ca05cbf8bd99"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/util/ssltransport.py",
+      "bytes": 8847,
+      "sha256": "133e0ef2947fbd3f1d6a7fc5bea0584ba7600df05710c7d57ebcdc754a167e2e"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/util/timeout.py",
+      "bytes": 10346,
+      "sha256": "e1e4f5155799654ee1ee6603d49ab639735ee1fc5e91d36f868594919bac4690"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/util/url.py",
+      "bytes": 19579,
+      "sha256": "6a2814d91987dd9728278d413a154ee5277b15cb262d9945425377f2a693311f"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/util/util.py",
+      "bytes": 1146,
+      "sha256": "8f795b64ad633f28b00f7e13f08809cdd5846554fee04fb4bd82098bd52378d0"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/urllib3/util/wait.py",
+      "bytes": 4423,
+      "sha256": "fe987c22b511deca8faa2d0ea29420254947e30ce419e3390a2c80ed7186b662"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/__init__.py",
+      "bytes": 7450,
+      "sha256": "ce6042263ec421ae99244403a787487739dfcc025403c756e35fa3ec49be4034"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/__main__.py",
+      "bytes": 62,
+      "sha256": "c2ee4ddb093c9af060cafaf68219907f8a6b7b301ed3f8bea75db7555adec987"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/asyncio/__init__.py",
+      "bytes": 1,
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/asyncio/client.py",
+      "bytes": 30554,
+      "sha256": "76cd6b1f39464325281925529b466d73640be5c2ce8942bdf79edb3b42baf8e6"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/asyncio/connection.py",
+      "bytes": 49740,
+      "sha256": "f2eb6ad56371fab33839a7ad2694e4b5610bea839bf92ae1f76e6d0a63f1e346"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/asyncio/messages.py",
+      "bytes": 11096,
+      "sha256": "bc13ddf7722e2f72c4d0e4b179a202223cefca886de7792687efd9868f9b1b35"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/asyncio/router.py",
+      "bytes": 7783,
+      "sha256": "2453543482e4001e4ff5fb7a3cba2035a66aea9f765b3d7dbc89717f1d434e58"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/asyncio/server.py",
+      "bytes": 34126,
+      "sha256": "df846da778379c058b0da052731b9ba1f73390da0320c33330f03074b14ac6fc"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/auth.py",
+      "bytes": 568,
+      "sha256": "53f2709a7e7d65143a11e7293af322cd0086fd96c0be051fd6293b85a6510b77"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/cli.py",
+      "bytes": 6892,
+      "sha256": "7d87f462aad6231fe224303e45675cce1e6f8cef69e99c59be613beb56d4420d"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/client.py",
+      "bytes": 16140,
+      "sha256": "eaf4e66220a92297bc794adc98494e63ea0aae21fa394c72a7e846a535af3cc7"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/connection.py",
+      "bytes": 323,
+      "sha256": "38b88c56435ddb9ffceac07c43b0ab0b00685f2f6703438281d80b440f16511f"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/datastructures.py",
+      "bytes": 7238,
+      "sha256": "5c64efbe015d6527af355fd3ebe2e8f83c66d951f125c80a9789750cd43a7d4f"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/exceptions.py",
+      "bytes": 14308,
+      "sha256": "b69d3f132a907ddec260d3879b102278e1fc11df4f49016dd7c7be0ae45e4ce6"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/extensions/__init__.py",
+      "bytes": 98,
+      "sha256": "42466cc5a255965552a75ba1743e6e3c689b75bc7fd3dd46ad555f4b92d7729c"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/extensions/base.py",
+      "bytes": 2903,
+      "sha256": "24d7f2939e370bb56e3c7d103a86e2a8aa06af38c920b8deeaccf920bbce3e5e"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/extensions/permessage_deflate.py",
+      "bytes": 25840,
+      "sha256": "2005dd08663ad337dd8dab4a77a7c37d3322cce79062c9e1d3306d2fdbcfbb30"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/frames.py",
+      "bytes": 16709,
+      "sha256": "4f08aa9ff6eebd089b94446e81c4fe3039a73d9ee4b7e14c5c449ed8384e4fda"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/headers.py",
+      "bytes": 16046,
+      "sha256": "c909cf963559c15d7f57ea4e49128d2c6feef36ef0142d61ef671c8a88dc43c3"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/http11.py",
+      "bytes": 18245,
+      "sha256": "b4b56e36f3400f0b7c775ba2e4a305299099313b49e82a9766f7a880b68f6dfd"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/imports.py",
+      "bytes": 2795,
+      "sha256": "4ff07d4d4987a1c78a310f8f36985d410007d97771031c1240d790120a882e41"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/legacy/__init__.py",
+      "bytes": 276,
+      "sha256": "c10e7344810d1944bfe5e28d017f42444ef1d53c0a6a92a29ab40515637d4b1b"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/legacy/auth.py",
+      "bytes": 6531,
+      "sha256": "0dc41c09279578ff7725c1fcbc5584d072092fe5fe7f6dcb6740ec2696afd52a"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/legacy/client.py",
+      "bytes": 27226,
+      "sha256": "e6826ead47333dd7578bc45d7b97c0da10f7578a67bfffd9eb8a514573fa1c1b"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/legacy/exceptions.py",
+      "bytes": 1924,
+      "sha256": "562123a684f4f5fcf1fd9a9fd1a3460d5b510cd8d768ec3481d0ad6b72e48c57"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/legacy/framing.py",
+      "bytes": 6374,
+      "sha256": "6f4c0cc7cdd74c85d56683bad299770226ca1db4250dbeeb040ca114491a3029"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/legacy/handshake.py",
+      "bytes": 5285,
+      "sha256": "d8dcebe40376c6f0c2e4474d3fe901de539cac069436562e8fffa1aff8efee93"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/legacy/http.py",
+      "bytes": 7061,
+      "sha256": "70e0909835a120a4269bc5161973d6ec20d9834df08e8802b1bd0b3fda1eb4d4"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/legacy/protocol.py",
+      "bytes": 63645,
+      "sha256": "dcc4e1d7ed24b564ad4425f4d252d5ebd80bcc5ffd8009fc60b144fdb664cd8c"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/legacy/server.py",
+      "bytes": 44835,
+      "sha256": "8529389c54ec23778c45bbb925c2388177a2f546f0d3b452ad28ed2f878cda07"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/protocol.py",
+      "bytes": 27204,
+      "sha256": "dc7b8204c2d324cc69f491dde49301aad4c5f384ac636f62b871f4cb39ee0ff4"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/proxy.py",
+      "bytes": 4969,
+      "sha256": "a05adb118b5ab185aff960dc9e239b0fd9c1479439aa41e9c8254b9e0c7b58c4"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/server.py",
+      "bytes": 24679,
+      "sha256": "ee41092f540414ef294c1f74c0fe1f51b9336060dc6e44daee34ef762499b509"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/streams.py",
+      "bytes": 4610,
+      "sha256": "ac9ac33522fd872dc42587353c51e3631e2b75dd6f10b0ae6b40b074588737ff"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/sync/__init__.py",
+      "bytes": 1,
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/sync/client.py",
+      "bytes": 39916,
+      "sha256": "5b20fde3794aee3e0d40b23b3eaa3158411d77d98c2098e96b4344c71d3c3e3e"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/sync/connection.py",
+      "bytes": 48680,
+      "sha256": "019a800cd64e13779c4e2a93ed636ad67b146eea23683169ccd89c10df702054"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/sync/messages.py",
+      "bytes": 12826,
+      "sha256": "abc2b5bf176ba959356ef9f7cd6d49c74f5395a908592c9870e1c2eee7854269"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/sync/router.py",
+      "bytes": 7212,
+      "sha256": "c0e180bc66cac17caa98d1050425993f77da1efcbfd8c28deced977842fc9c62"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/sync/server.py",
+      "bytes": 34422,
+      "sha256": "5534fa4ec47e27e352596e657bc51531334d14dccfa7ac1b656b9541487e8d89"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/sync/utils.py",
+      "bytes": 1107,
+      "sha256": "4ed5be9dc605bc99a2496da03bcea7804d8156c9e705d2fee07f3c91634361b8"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/trio/__init__.py",
+      "bytes": 1,
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/trio/client.py",
+      "bytes": 30197,
+      "sha256": "9b637921a141acf61c52da755423d4a3cb49d94162d9f4381bef793382423b15"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/trio/connection.py",
+      "bytes": 49248,
+      "sha256": "d571c39156caddefccf75a4e186798793d286b350ce4d8ea1cea30d0590dae06"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/trio/messages.py",
+      "bytes": 10476,
+      "sha256": "4a66c0d64fe58c41ae10764d2741cf0def3ea231ed313897191db41eb3c9b8a9"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/trio/router.py",
+      "bytes": 7196,
+      "sha256": "a992fdfb8e268bd48e393194dc22c13ee68237369f406a99f9f265f61569bfeb"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/trio/server.py",
+      "bytes": 25805,
+      "sha256": "8d1b6b7d97f7847a75690a3a7df34c37bb22696cef65586a0b58aad7f3e3d2c0"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/trio/utils.py",
+      "bytes": 956,
+      "sha256": "035d8d6143ce8d06a21aeb1a938de85b33c8702c618a429390024b5ed649bdc6"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/typing.py",
+      "bytes": 1840,
+      "sha256": "72ef3d9ff5d05e7a3f83da8fa459a12db6f39c4f8c2956b3500a30b36bb926a5"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/uri.py",
+      "bytes": 3125,
+      "sha256": "d9f14cc3e01b289e47547342bb0d51c7532790290d591a688315a184cdf4114e"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/utils.py",
+      "bytes": 2022,
+      "sha256": "59db6c876a908872eb5d40449e9dcb6ad30b253663076084adb78e16fadd5ef1"
+    },
+    {
+      "path": "dist/ba_data/python-site-packages/websockets/version.py",
+      "bytes": 3202,
+      "sha256": "fa82d6b7f153a88ea409283331194af48235ef365eece9cbc359d6d99bea5c4b"
+    },
+    {
+      "path": "dist/bombsquad_headless",
+      "bytes": 12476824,
+      "sha256": "6e6993602404d5993a2dc517be9c2ec20802df8ca633141f8eafdbbebf1f222d"
+    }
+  ]
+}

@@ -10,18 +10,22 @@ ROOT = Path('/usr/local/libexec/playbound-isolated-xonotic-data-086')
 
 
 def open_assets(root=None, game='xonotic'):
-    if game not in ('xonotic','wolfenstein-enemy-territory','medal-of-honor-allied-assault','freeciv','warzone-2100'):raise ValueError('Unsupported immutable asset family')
+    if game not in ('xonotic','wolfenstein-enemy-territory','medal-of-honor-allied-assault','freeciv','warzone-2100','bombsquad','bombsquad-python'):raise ValueError('Unsupported immutable asset family')
     if root is None:
         root=Path({'xonotic':str(ROOT),
                    'wolfenstein-enemy-territory':'/usr/local/libexec/playbound-isolated-etlegacy-data-285',
                    'medal-of-honor-allied-assault':'/usr/local/libexec/playbound-isolated-openmohaa-data-v1',
                    'freeciv':'/usr/local/libexec/playbound-isolated-freeciv-data-v1',
-                   'warzone-2100':'/usr/local/libexec/playbound-isolated-warzone-data-v1'}[game])
+                   'warzone-2100':'/usr/local/libexec/playbound-isolated-warzone-data-v1',
+                   'bombsquad':'/usr/local/libexec/playbound-isolated-bombsquad-data-v1',
+                   'bombsquad-python':'/usr/local/libexec/playbound-isolated-bombsquad-python-v1'}[game])
     pattern=r'[A-Za-z0-9_-]{1,100}\.pk3' if game=='xonotic' else r'(?:etmain|legacy)/[A-Za-z0-9_.-]{1,100}\.(?:pk3|so)' if game=='wolfenstein-enemy-territory' else r'(?:main/[A-Za-z0-9_.-]{1,100}\.pk3|game\.so)'
     if game=='freeciv':
         if root is None: raise ValueError('Missing fixed Freeciv asset root')
         pattern=r'(?:lib|share/freeciv)/(?:[A-Za-z0-9_+.,@ -]{1,100}/){0,15}[A-Za-z0-9_+.,@ -]{1,100}'
     if game=='warzone-2100':pattern=r'data/(?:[A-Za-z0-9_+.,@ -]{1,100}/){0,15}[A-Za-z0-9_+.,@ -]{1,100}'
+    if game=='bombsquad':pattern=r'(?:bombsquad_server|dist/(?:[A-Za-z0-9_+.,@ -]{1,100}/){0,15}[A-Za-z0-9_+.,@ -]{1,100})'
+    if game=='bombsquad-python':pattern=r'lib/(?:libpython3\.14\.so\.1\.0|python3\.14/(?:[A-Za-z0-9_+.,@ -]{1,100}/){0,15}[A-Za-z0-9_+.,@ -]{1,100})'
     parent=os.open('/',os.O_RDONLY|os.O_DIRECTORY)
     try:
         for component in root.parts[1:]:
@@ -55,9 +59,9 @@ def open_assets(root=None, game='xonotic'):
                 after=os.fstat(source.fileno())
                 if (before.st_size,before.st_mtime_ns,before.st_ctime_ns)!=(after.st_size,after.st_mtime_ns,after.st_ctime_ns):raise ValueError('Asset changed')
                 return before.st_size,digest.hexdigest(),content
-        _,_,content=read_file('profile.json',512*1024 if game in ('freeciv','warzone-2100') else 32768)
+        _,_,content=read_file('profile.json',512*1024 if game in ('freeciv','warzone-2100','bombsquad','bombsquad-python') else 32768)
         rows=json.loads(content)['files']
-        if not isinstance(rows,list) or not 1<=len(rows)<=(1024 if game in ('freeciv','warzone-2100') else 16):raise ValueError('Invalid immutable asset inventory')
+        if not isinstance(rows,list) or not 1<=len(rows)<=(2048 if game in ('bombsquad','bombsquad-python') else 1024 if game in ('freeciv','warzone-2100') else 16):raise ValueError('Invalid immutable asset inventory')
         seen={'profile.json'};total=0
         for row in rows:
             name=row.get('path')

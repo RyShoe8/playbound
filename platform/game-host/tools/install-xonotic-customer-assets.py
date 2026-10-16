@@ -12,19 +12,21 @@ import tempfile
 
 
 def promote(source, destination, manifest, game='xonotic'):
-    if game not in ('xonotic','wolfenstein-enemy-territory','medal-of-honor-allied-assault','freeciv','warzone-2100'): raise ValueError('Unsupported asset publication')
+    if game not in ('xonotic','wolfenstein-enemy-territory','medal-of-honor-allied-assault','freeciv','warzone-2100','bombsquad','bombsquad-python'): raise ValueError('Unsupported asset publication')
     pattern=r'[A-Za-z0-9_-]{1,100}\.pk3' if game=='xonotic' else r'(?:etmain|legacy)/[A-Za-z0-9_.-]{1,100}\.(?:pk3|so)' if game=='wolfenstein-enemy-territory' else r'(?:main/[A-Za-z0-9_.-]{1,100}\.pk3|game\.so)'
     if game=='freeciv': pattern=r'(?:lib|share/freeciv)/(?:[A-Za-z0-9_+.,@ -]{1,100}/){0,15}[A-Za-z0-9_+.,@ -]{1,100}'
     if game=='warzone-2100':pattern=r'data/(?:[A-Za-z0-9_+.,@ -]{1,100}/){0,15}[A-Za-z0-9_+.,@ -]{1,100}'
+    if game=='bombsquad':pattern=r'(?:bombsquad_server|dist/(?:[A-Za-z0-9_+.,@ -]{1,100}/){0,15}[A-Za-z0-9_+.,@ -]{1,100})'
+    if game=='bombsquad-python':pattern=r'lib/(?:libpython3\.14\.so\.1\.0|python3\.14/(?:[A-Za-z0-9_+.,@ -]{1,100}/){0,15}[A-Za-z0-9_+.,@ -]{1,100})'
     rows = manifest.get('files')
-    if not isinstance(rows,list) or not 1 <= len(rows) <= (1024 if game in ('freeciv','warzone-2100') else 16):
+    if not isinstance(rows,list) or not 1 <= len(rows) <= (2048 if game in ('bombsquad','bombsquad-python') else 1024 if game in ('freeciv','warzone-2100') else 16):
         raise ValueError('Invalid Xonotic asset inventory')
     seen,total = set(),0
     for row in rows:
         if not isinstance(row,dict) or not re.fullmatch(pattern,str(row.get('path'))) or row['path'] in seen or any(part in ('.','..') for part in row['path'].split('/')):
             raise ValueError('Invalid Xonotic asset path')
         seen.add(row['path'])
-        if type(row.get('bytes')) is not int or not 1 <= row['bytes'] <= 768*1024**2 or not re.fullmatch(r'[a-f0-9]{64}',str(row.get('sha256'))):
+        if type(row.get('bytes')) is not int or not (0 if game in ('bombsquad','bombsquad-python') else 1) <= row['bytes'] <= 768*1024**2 or not re.fullmatch(r'[a-f0-9]{64}',str(row.get('sha256'))):
             raise ValueError('Invalid Xonotic asset pin')
         total += row['bytes']
     if total > 2*1024**3: raise ValueError('Asset size limit exceeded')
@@ -60,13 +62,13 @@ def promote(source, destination, manifest, game='xonotic'):
                         block=original.read(min(1024**2,remaining))
                         if not block:raise ValueError('Incomplete Xonotic asset')
                         digest.update(block);output.write(block);remaining-=len(block)
-                    output.flush();os.fchmod(output.fileno(),0o444);os.fsync(output.fileno())
+                    output.flush();os.fchmod(output.fileno(),0o555 if game=='bombsquad' and row['path']=='dist/bombsquad_headless' else 0o444);os.fsync(output.fileno())
                 after=os.fstat(original.fileno())
                 if original.read(1) or (before.st_dev,before.st_ino,before.st_size,before.st_mtime_ns,before.st_ctime_ns)!=(after.st_dev,after.st_ino,after.st_size,after.st_mtime_ns,after.st_ctime_ns) or digest.hexdigest()!=row['sha256']:
                     raise ValueError('Xonotic assets differ from reviewed pins')
         record=temporary/'profile.json'
         with record.open('x') as output:
-            json.dump(manifest,output);output.flush();os.fchmod(output.fileno(),0o444);os.fsync(output.fileno())
+            json.dump(manifest,output);output.flush();os.fchmod(output.fileno(),0o555 if game=='bombsquad' and row['path']=='dist/bombsquad_headless' else 0o444);os.fsync(output.fileno())
         for directory,_,_ in os.walk(temporary,topdown=False):os.chmod(directory,0o555)
         os.rename(temporary,destination)
         directory=os.open(destination.parent,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW)

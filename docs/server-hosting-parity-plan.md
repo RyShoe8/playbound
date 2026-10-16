@@ -1877,9 +1877,10 @@ Protected files and UID-aware snapshots include its private app-data directory.
 Executable content installation remains disabled.
 
 
-Hypersomnia release checks: the first full agent suite found the backup allowlist
-regression's expected list had not included the newly supported private app data.
-The expectation was updated to retain the route/module parity check. The earlier
+Hypersomnia release checks: the first full agent suite found its staging copy of
+the backup allowlist regression was stale and omitted the supported private app
+data. Refreshing that test from the repository retained the route/module parity
+check without changing its assertions. The earlier
 133 Linux root-helper tests passed, including Hypersomnia configuration validation
 and reserved-UID snapshot restore.
 
@@ -1896,3 +1897,33 @@ and 15-minute scheduler are active. No catalog/database writes or automatic
 customer enrollment occurred. Local occupancy remains unknown. BombSquad's
 runtime audit counted 605 paired game files and 3,521 Python runtime files; its
 boundary remains pending, rather than expanding immutable-tree limits blindly.
+
+
+### BombSquad dependency preparation and blocked runtime gate (2026-10-16)
+
+Prepared two fixed root-owned immutable trees: 605 paired game files
+(22,068,381 bytes) and 1,195 Python dependency files (159,776,994 bytes).
+The game binary actually links libpython3.14.so.1.0, so that reviewed library
+is included; unrelated Python documentation/terminfo aliases are excluded.
+A separate sealed-interpreter candidate is pinned to 78,233,712 bytes.
+Group-writable installed inputs are copied into private root staging and
+hash-verified before read-only publication; source permissions/data are unchanged.
+Only the reviewed game binary receives executable mode in the game asset tree.
+Normalization rejects traversal, links, oversized inputs and changed bytes.
+Existing families retain their original file-count and empty-file restrictions.
+
+The reserved-UID candidate bound the gameplay port but never passed the native
+player query. Its fresh runtime failed required construct-mode asset bring-up
+with "No transport session within 5s" and later exited with code 10. An explicit
+system CA-bundle path did not fix it. This is observed inside the fenced runtime;
+it does not establish whether the cause is upstream or a missing runtime
+requirement. No firewall, syscall or TLS verification protection was weakened.
+
+The failed test was stopped, scoped processes removed, and rollback preserved
+old/new fixture data before cleanup. The deployed twenty-one-profile helper
+contracts were restored; no BombSquad identity is enabled or accepted. Production
+agent/scheduler remain active, without a production-agent restart or database
+writes for this attempt. Immutable dependency preparation is retained for the
+next fix. Baseline plus publication/normalization Linux tests: 136 passed.
+BombSquad remains one of the 31 pending installation families; executable
+Plugin/Workshop support remains unfinished.
