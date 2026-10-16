@@ -938,9 +938,9 @@ async function computeMostPopularGames(limit: number, days?: number): Promise<Ga
       if (ordered.length >= limit) return ordered.slice(0, limit);
     }
 
-    if (days) return ordered.slice(0, limit);
-
-    // Fill remaining slots from catalog install counts when playtime is sparse.
+    // Fill remaining slots from catalog install counts when playtime is sparse. A "this week"
+    // window used to stop here, so a quiet week left the homepage row with only the three or
+    // four games that happened to be played; played games still rank first.
     const installDocs = await CatalogGame.find(mongoVisibleFilter({ includeTesting: false }))
       .select("slug installCount")
       .sort({ installCount: -1, title: 1 })

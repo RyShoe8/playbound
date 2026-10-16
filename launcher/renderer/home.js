@@ -12,6 +12,7 @@ function ensureHomeShell() {
     ${section('home-popular', 'Most Popular this week', 'games')}
     <section><div class="section-header"><h2>Next game night</h2><button class="site-text-link" data-home-view="events">Full schedule →</button></div><div id="home-next-night" class="site-panel site-pad"></div></section>
     ${section('home-free', 'Free games this week', 'deals')}
+    ${section('home-newest', 'Newest Games', 'games')}
     ${section('home-editions', 'Newest Editions', 'games')}
     ${section('home-mods', 'Newest Mods', 'mods')}
     </div><aside class="site-home-rail">
@@ -106,8 +107,8 @@ async function loadHome() {
   const selected = homepageSelections(catalog, feed);
   paintFeature(selected.released[0]);
   document.querySelector('#home-popular-grid').previousElementSibling.querySelector('h2').textContent = 'Most Popular this week';
-  const paint = (id, cards) => { const grid = document.getElementById(`${id}-grid`); grid.replaceChildren(...cards); if (!cards.length) { const message = document.createElement('p'); message.className = 'view-sub'; message.textContent = !feed && ['home-popular', 'home-mods', 'home-editions'].includes(id) ? 'Could not load this section.' : 'Nothing available right now. Check back soon.'; grid.append(message);
-    if (!feed && ['home-popular', 'home-mods', 'home-editions'].includes(id)) {
+  const paint = (id, cards) => { const grid = document.getElementById(`${id}-grid`); grid.replaceChildren(...cards); if (!cards.length) { const message = document.createElement('p'); message.className = 'view-sub'; message.textContent = !feed && ['home-popular', 'home-newest', 'home-mods', 'home-editions'].includes(id) ? 'Could not load this section.' : 'Nothing available right now. Check back soon.'; grid.append(message);
+    if (!feed && ['home-popular', 'home-newest', 'home-mods', 'home-editions'].includes(id)) {
       const retry = document.createElement('button'); retry.className = 'btn-secondary btn-sm'; retry.textContent = 'Try again';
       retry.addEventListener('click', () => { cacheInvalidate('siteHome'); void loadHome(); }); grid.append(retry);
     } } };
@@ -118,6 +119,7 @@ async function loadHome() {
     ...mod,
     baseGameTitle: catalog.find(game => game.slug === mod.baseGameSlug)?.title || mod.baseGameTitle,
   })));
+  paint('home-newest', selected.newest.map(game => createGameCard(game)));
   paint('home-editions', selected.editions.map(({game, edition}) => {
     const card = createGameCard({...game, title: edition.name || game.title, coverImage: edition.coverImage || game.coverImage, editions: []});
     card.addEventListener('click', event => { event.stopImmediatePropagation(); api.openEditionDetail?.(game.slug, edition.slug); }, { capture: true }); return card;
