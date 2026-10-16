@@ -479,8 +479,9 @@ function paintServersTable() {
     const isInstalled = Boolean(state._installedGameSlugs?.has(slug));
     const actionLabel = isInstalled ? "Join" : "Install";
     const actionClass = isInstalled ? "btn-primary" : "btn-secondary";
-    const gameBadge = s.gameTitle ? `<span style="display: inline-block; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; background: rgba(168, 85, 247, 0.15); color: var(--color-primary, #a855f7); padding: 2px 6px; border-radius: 4px; margin-right: 6px;">${escapeHtml(s.gameTitle)}</span>` : "";
-    const botsBadge = s.bots ? `<span class="server-gametype-tag">· ${s.bots} bot${s.bots === 1 ? "" : "s"}</span>` : "";
+    const gameBadge = s.gameTitle ? `<span style="display: inline-block; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; background: rgba(56, 189, 248, 0.15); color: var(--accent-light); padding: 2px 6px; border-radius: 4px; margin-right: 6px;">${escapeHtml(s.gameTitle)}</span>` : "";
+    // Bots sit directly under the player count, not in the name column.
+    const botsLine = s.bots ? `<div class="server-bots-line">${s.bots} bot${s.bots === 1 ? "" : "s"}</div>` : "";
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>
@@ -493,10 +494,9 @@ function paintServersTable() {
             <span class="server-ip-copy-badge">Copy</span>
           </button>
           ${s.editionSlug ? `<span class="server-gametype-tag">· ${escapeHtml(s.editionSlug)}</span>` : (s.gameType ? `<span class="server-gametype-tag">· ${escapeHtml(s.gameType)}</span>` : "")}
-          ${botsBadge}
         </div>
       </td>
-      <td>${s.players == null ? "—" : `${s.players}/${s.maxPlayers ?? "—"}`}</td>
+      <td>${s.players == null ? "—" : `${s.players}/${s.maxPlayers ?? "—"}`}${botsLine}</td>
       <td>${escapeHtml(s.map || "—")}</td>
       <td>${escapeHtml(formatServerLocation(s))}</td>
       <td class="ping-cell" data-ping-id="${escapeHtml(id)}">${pingLabel}</td>

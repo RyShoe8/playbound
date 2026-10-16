@@ -6,7 +6,7 @@ export function homepageSelections(catalog, feed) {
       const date = game => Date.parse(game.publishedAt || game.createdAt || "") || 0;
       return date(b) - date(a) || a.title?.localeCompare(b.title || "") || 0;
     }),
-    popular: feed ? resolve(feed.popular).slice(0, 8) : catalog.slice(0, 8),
+    popular: feed ? resolve(feed.popular).slice(0, 12) : catalog.slice(0, 12),
     editions: (feed?.editions || []).filter(item => bySlug.has(item.gameSlug)).slice(0, 8).map(item => ({...item, game: bySlug.get(item.gameSlug)})),
     mods: (feed?.mods || []).filter(mod => bySlug.has(mod.baseGameSlug)).slice(0, 8),
   };

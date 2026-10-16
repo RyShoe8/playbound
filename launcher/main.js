@@ -11018,6 +11018,21 @@ ipcMain.handle("get-event-detail", async (_event, eventId) => {
     return null;
   }
 });
+/* Play availability: the same /api/friends/availability the website's Friends page uses. */
+ipcMain.handle("get-play-availability", async () => {
+  try {
+    return await launcherJson("/api/friends/availability");
+  } catch (err) {
+    return { error: err?.message || "Could not load availability" };
+  }
+});
+ipcMain.handle("save-play-availability", async (_event, availability) => {
+  try {
+    return await launcherJson("/api/friends/availability", { method: "PUT", body: availability });
+  } catch (err) {
+    return { error: err?.message || "Could not save availability" };
+  }
+});
 ipcMain.handle("create-event", async (_event, payload) => {
   try {
     const res = await apiFetch(`${getApiBase()}/api/events`, {

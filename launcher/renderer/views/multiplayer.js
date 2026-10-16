@@ -50,6 +50,10 @@ async function loadMultiplayerData() {
 
   if (actRes && !actRes.error) {
     _cachedActivity = actRes;
+  } else if (!_cachedActivity) {
+    // The feed failed and nothing is cached yet: one retry before the stat cards fall back to a dash.
+    const retry = await window.playbound.getMultiplayerActivity?.().catch(() => null);
+    if (retry && !retry.error) _cachedActivity = retry;
   }
   if (lfgRes && !lfgRes.error) {
     if (lfgRes.myLfg) {
@@ -103,12 +107,17 @@ export async function renderMultiplayerView(params = {}) {
 }
 
 function paintMultiplayerView(container) {
-  const summary = _cachedActivity?.summary || {
-    totalServerPlayers: 0,
-    totalServersOnline: 0,
-    totalOpenParties: 0,
-    totalUsersLooking: 0,
+  const activityGames = _cachedActivity?.games || [];
+  const hasActivity = Boolean(_cachedActivity && (_cachedActivity.summary || activityGames.length));
+  // Totals come from the summary; if a response ever lacks it, add up the per-game rows instead of showing zeros.
+  const summary = {
+    totalServerPlayers: activityGames.reduce((n, g) => n + (g.serverPlayerCount || 0), 0),
+    totalServersOnline: activityGames.reduce((n, g) => n + (g.serversOnline || 0), 0),
+    totalOpenParties: activityGames.reduce((n, g) => n + (g.openPartyCount || 0), 0),
+    totalUsersLooking: activityGames.reduce((n, g) => n + (g.usersLookingCount || 0), 0),
+    ..._cachedActivity?.summary,
   };
+  const stat = (n) => (hasActivity ? Number(n || 0).toLocaleString() : "—");
   const ltpActive = state.multiplayerState.ltpActive;
   const ltpDrawerOpen = state.multiplayerState.ltpDrawerOpen;
   const createPartyOpen = state.multiplayerState.createPartyOpen;
@@ -157,7 +166,7 @@ function paintMultiplayerView(container) {
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#22d3ee" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
               <span>Tracked Server Players</span>
             </div>
-            <div class="mp-hub-stat-val text-cyan">${(summary.totalServerPlayers || 0).toLocaleString()}</div>
+            <div class="mp-hub-stat-val text-cyan">${stat(summary.totalServerPlayers)}</div>
           </div>
 
           <div class="mp-hub-stat-card">
@@ -165,7 +174,7 @@ function paintMultiplayerView(container) {
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--accent-light)" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               <span>Open Parties</span>
             </div>
-            <div class="mp-hub-stat-val text-primary">${summary.totalOpenParties || 0}</div>
+            <div class="mp-hub-stat-val text-primary">${stat(summary.totalOpenParties)}</div>
           </div>
 
           <div class="mp-hub-stat-card">
@@ -173,7 +182,7 @@ function paintMultiplayerView(container) {
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fbbf24" stroke-width="2"><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49"></path></svg>
               <span>Users Looking to Party</span>
             </div>
-            <div class="mp-hub-stat-val text-amber">${summary.totalUsersLooking || 0}</div>
+            <div class="mp-hub-stat-val text-amber">${stat(summary.totalUsersLooking)}</div>
           </div>
 
           <div class="mp-hub-stat-card">
@@ -181,7 +190,7 @@ function paintMultiplayerView(container) {
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--text-muted)" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/></svg>
               <span>Servers Online</span>
             </div>
-            <div class="mp-hub-stat-val">${(summary.totalServersOnline || 0).toLocaleString()}</div>
+            <div class="mp-hub-stat-val">${stat(summary.totalServersOnline)}</div>
           </div>
         </div>
       </div>
