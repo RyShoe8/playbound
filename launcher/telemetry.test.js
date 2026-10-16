@@ -43,6 +43,40 @@ async function main() {
       ["launcher_install", "edition_launched", "game_ended"],
       "a play session has one start and one end event"
     );
+
+    // Offline events are queued and resent, oldest first, once the site answers.
+    const os = require("node:os");
+    const fs = require("node:fs");
+    const path = require("node:path");
+    const queueFile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "pb-telemetry-")), "queue.json");
+    let online = false;
+    const delivered = [];
+    global.fetch = async (_url, init) => {
+      if (!online) throw new Error("offline");
+      delivered.push(JSON.parse(init.body).event);
+      return { ok: true, status: 200 };
+    };
+    delete require.cache[require.resolve("./telemetry")];
+    const queued = require("./telemetry").createTelemetry({
+      getApiBase: () => "https://example.test",
+      loadSettings: () => ({ analyticsId: "analytics-id-123456" }),
+      saveSettings: () => {},
+      getAppVersion: () => "9.9.9",
+      queueFile,
+    });
+    await queued.track("edition_launched", {});
+    await queued.track("game_ended", {});
+    assert.equal(JSON.parse(fs.readFileSync(queueFile, "utf8")).length, 2, "failed sends are kept");
+    online = true;
+    const flushed = await queued.flushQueue();
+    assert.equal(flushed.sent, 2);
+    assert.deepEqual(delivered, ["edition_launched", "game_ended"], "resent in order");
+    assert.equal(fs.existsSync(queueFile), false, "an empty queue removes its file");
+
+    // A 4xx is the event's own fault: it is dropped, not retried forever.
+    global.fetch = async () => ({ ok: false, status: 400 });
+    await queued.track("bad_event", {});
+    assert.equal(fs.existsSync(queueFile), false, "4xx responses are not queued");
   } finally {
     global.fetch = originalFetch;
   }

@@ -128,6 +128,7 @@ const {
 const { createHostService } = require("./services/couch/hostService");
 const { ensureVigem, probeProvider } = require("./services/couch/ensureVigem");
 const openMwConfig = require("./services/openMwConfig");
+const daggerfallData = require("./services/daggerfallData");
 const gamepadBridge = require("./services/gamepadBridge");
 const { resolveControlsForGame, resolveQuitHint } = require("./services/gameControls");
 const { CATALOG_LIVE_STATS_TTL_MS, CATALOG_TTL_MS, DEFAULT_API_BASE, DEFAULT_EDITION_SLUG, DEFAULT_GAMES_DIR, INSTALLED_SLUG_ALIASES, PROTOCOL, UPDATER_FEED_URL, apiFetch, assertDownloadUrl, assertOpenExternalUrl, catalogEntryFromEdition, cloudSaves, collectHardwareProfile, configureYoutubeEmbedIdentity, editionInstallDir, ensureGameInstallRecord, ensureUnixExecutable, exeOnDisk, expandWinPath, extract7z, extractDmg, extractLinkHandoff, extractPkg, extractZip, fetchCatalogLiveStats, fetchControlProfile, fetchLauncherEditions, findExecutable, findInstallerInDir, findNamedPortableExe, findYSoccerOnlineJar, gamesRoot, getApiBase, getAvailableDiskSpace, getRemoteDeviceId, getRemoteDeviceName, httpStatusFromInstallError, installErrorCode, installQueue, isAllowedApiBase, launcherApiHeaders, launcherJson, listEditionEntries, listFixedDriveRoots, liveStatsDisk, loadCachedCatalog, loadCachedCatalogFile, loadSettings, loadState, normalizeFsPath, normalizeProcessImageName, parseDeepLink, pathUnderRoot, playableExePath, probeServerLatency, promoteStagingDir, pullCompatibilityPreference, pushCompatibilityPreference, pushDiscoveryPreference, registerCatalogEntryHosts, registerDownloadHostFromUrl, rememberLocatedRoot, repairUnixExtractedBinaries, reportInstall, resolveDownload, resolveEditionForInstall, resolveEventMedia, resolveMediaUrl, resolveModDownload, runLibrarySync, safeOpenExternal, saveCatalogCache, saveData, saveLiveStatsDiskCache, saveSettings, saveState, sevenZipBinary, shouldSkipScanDir, shouldSyncHardwareProfile, steamAppIdForEntry, stripRegQuotes, syncGameInstallSummary, uninstallExeCache, unpackNestedArchives, unwrapSingleRootDirectory, verifyChecksumMd5, verifyChecksumSha256, writeJarLauncher } = require("./services/main/core");
@@ -1594,6 +1595,8 @@ const telemetry = createTelemetry({
   loadSettings,
   saveSettings,
   getAppVersion: () => app.getVersion(),
+  // Events that fail while offline are kept here and resent on the next launch.
+  queueFile: path.join(app.getPath("userData"), "telemetry-queue.json"),
   getAuthHeaders: (extra = {}) => {
     const settings = loadSettings();
     const headers = { ...extra };
@@ -2454,7 +2457,7 @@ async function downloadResilientArtifact({ slug, artifactId: requestedArtifactId
   throw lastErr || new Error("All download sources failed.");
 }
 
-async function extractOverlayReplacing(archivePath, destDir) {
+async function extractOverlayReplacing(archivePath, destDir, { merge = false } = {}) {
   /*
    * Staged beside the destination rather than in the system temp dir: the swap
    * below is a rename, and a rename across volumes fails with EXDEV. A games
@@ -2471,8 +2474,15 @@ async function extractOverlayReplacing(archivePath, destDir) {
       if (!pathUnderRoot(target, destDir)) {
         throw new Error(`Overlay archive contains an unsafe path: ${item.name}`);
       }
+      const from = path.join(staging, item.name);
+      // A merge keeps the player's own files inside folders the overlay also ships
+      // (Quake II RTX's baseq2 next to the player's pak0.pak); the default replaces wholesale.
+      if (merge && item.isDirectory() && fs.existsSync(target) && fs.statSync(target).isDirectory()) {
+        await fsp.cp(from, target, { recursive: true, force: true });
+        continue;
+      }
       await fsp.rm(target, { recursive: true, force: true });
-      await fsp.rename(path.join(staging, item.name), target);
+      await fsp.rename(from, target);
     }
   } finally {
     await fsp.rm(staging, { recursive: true, force: true }).catch(() => {});
@@ -5245,7 +5255,7 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
       const overlayDir = resolveInsideGameDir(stagingDir, entry.overlayDest || "");
       if (!overlayDir) throw new Error("Game-assets archive has an unsafe destination path");
       await fsp.mkdir(overlayDir, { recursive: true });
-      await extractOverlayReplacing(overlayPath, overlayDir);
+      await extractOverlayReplacing(overlayPath, overlayDir, { merge: Boolean(entry.overlayMerge) });
       await removeFileWithRetries(overlayPath);
       await flattenWadFiles(stagingDir);
     }
@@ -5382,7 +5392,7 @@ async function applyOwnedCopySetup(slug, entry, gameDir, exe) {
       const overlayDir = resolveInsideGameDir(gameDir, entry.overlayDest || "");
       if (!overlayDir) throw new Error("Game-assets archive has an unsafe destination path");
       await fsp.mkdir(overlayDir, { recursive: true });
-      await extractOverlayReplacing(overlayPath, overlayDir);
+      await extractOverlayReplacing(overlayPath, overlayDir, { merge: Boolean(entry.overlayMerge) });
       await removeFileWithRetries(overlayPath);
       await flattenWadFiles(gameDir);
     }
@@ -5787,6 +5797,77 @@ async function maybeApplyEditionPostInstall(entry, gameDir) {
   if (entry?.slug === "daggerfall") {
     await maybeRepairDaggerfallUnityInstall(entry.slug, { dir: gameDir }, entry.editionSlug);
   }
+
+  if (entry?.postInstallDaggerfallData) {
+    await maybePrepareDaggerfallOnline();
+  }
+}
+
+/**
+ * DFO Online needs a complete Daggerfall ARENA2 folder and asks the player to
+ * find one on first run. Build it from Bethesda's freeware release into a
+ * PlayBound-managed folder, then record the path in the app's own config so it
+ * opens ready to play. An existing choice the player made is never overwritten.
+ */
+async function maybePrepareDaggerfallOnline() {
+  try {
+    const dataRoot = path.join(gamesRoot(), "Daggerfall Game Files");
+    const arena2 = path.join(dataRoot, "ARENA2");
+    await ensureDaggerfallFreewareData(arena2);
+
+    const configDir = path.join(app.getPath("appData"), "Daggerfall JavaScript");
+    const configFile = path.join(configDir, "config.json");
+    let config = {};
+    try {
+      config = JSON.parse(await fsp.readFile(configFile, "utf8")) || {};
+    } catch {
+      config = {};
+    }
+    const saved = typeof config.arena2Path === "string" ? config.arena2Path : "";
+    if (saved && daggerfallData.missingArena2(fs, saved)?.length === 0) return;
+    await fsp.mkdir(configDir, { recursive: true });
+    await fsp.writeFile(configFile, JSON.stringify({ ...config, arena2Path: arena2 }, null, 2), "utf8");
+  } catch (err) {
+    // The app still runs and will ask the player to point it at their own copy.
+    console.warn("[dfo] game data setup skipped:", err?.message || err);
+  }
+}
+
+/**
+ * Make `destDir` a complete Daggerfall ARENA2 folder from Bethesda's freeware
+ * release, fetched from Bethesda's own server. See services/daggerfallData.js.
+ */
+async function ensureDaggerfallFreewareData(destDir) {
+  if (daggerfallData.missingArena2(fs, destDir)?.length === 0) return destDir;
+  registerDownloadHostFromUrl(daggerfallData.BETHESDA_FREEWARE_URL);
+  await daggerfallData.installFreewareArena2(destDir, {
+    fs,
+    path,
+    tmpdir: app.getPath("temp"),
+    download: (url, to) => downloadTo(url, to),
+    extractArchive: (zip, to) => extract7z(zip, to),
+    // Bethesda's 1.07.213 update is a DOS program, so it runs in the managed DOSBox.
+    patch: async (dest, patchExe, fallExe) => {
+      let dosBoxBin = managedDosBox.findManagedDosBoxBinary();
+      if (!dosBoxBin) {
+        if (typeof sendProgress === "function") sendProgress({ phase: "dosbox", message: "Downloading DOSBox…" });
+        const outcome = await managedDosBox.ensureManagedDosBox();
+        dosBoxBin = outcome?.ok ? outcome.dosBoxBin : null;
+      }
+      if (!dosBoxBin) throw new Error("DOSBox is not available");
+      await daggerfallData.applyDaggerfallPatch(dest, patchExe, fallExe, {
+        fs,
+        path,
+        tmpdir: app.getPath("temp"),
+        dosBoxBinary: dosBoxBin,
+        spawn,
+      });
+    },
+    progress: (p) => {
+      if (typeof sendProgress === "function") sendProgress(p);
+    },
+  });
+  return destDir;
 }
 
 /**
@@ -5796,19 +5877,37 @@ async function maybeApplyEditionPostInstall(entry, gameDir) {
  * PortableAppdata/settings.ini points MyDaggerfallPath to the game directory.
  */
 async function maybeRepairDaggerfallUnityInstall(slug, info, edSlug) {
-  if (slug !== "daggerfall" || edSlug === "classic-dos") return;
+  // Only the Daggerfall Unity builds need this; DFO Online and the DOS edition manage their own data.
+  if (slug !== "daggerfall" || edSlug === "classic-dos" || edSlug === "daggerfall-online") return;
   const gameDir = info?.dir || (info?.exe ? path.dirname(info.exe) : null);
   if (!gameDir || !fs.existsSync(gameDir)) return;
 
   try {
     const arena2Dir = path.join(gameDir, "arena2");
-    const streamingArena2 = path.join(
+    const windowsStreamingArena2 = path.join(
       gameDir,
       "DaggerfallUnity_Data",
       "StreamingAssets",
       "GameFiles",
       "ARENA2"
     );
+    // The macOS build keeps the same folder inside the app bundle.
+    const macStreamingArena2 = (() => {
+      try {
+        for (const name of fs.readdirSync(gameDir)) {
+          if (!/\.app$/i.test(name)) continue;
+          const candidate = path.join(gameDir, name, "Contents", "Resources", "Data", "StreamingAssets", "GameFiles", "ARENA2");
+          if (fs.existsSync(path.dirname(candidate))) return candidate;
+        }
+      } catch {
+        /* no bundle */
+      }
+      return null;
+    })();
+    const streamingArena2 =
+      !fs.existsSync(path.join(gameDir, "DaggerfallUnity_Data")) && macStreamingArena2
+        ? macStreamingArena2
+        : windowsStreamingArena2;
 
     const hasCompleteArena2 = (dir) =>
       fs.existsSync(dir) &&
@@ -5816,6 +5915,7 @@ async function maybeRepairDaggerfallUnityInstall(slug, info, edSlug) {
       fs.existsSync(path.join(dir, "BLOCKS.BSA"));
 
     if (!hasCompleteArena2(arena2Dir) && !hasCompleteArena2(streamingArena2)) {
+      // First choice: the Daggerfall Unity project's own patched game-files zip.
       const url = "https://www.dropbox.com/s/rlkfnjknu32afe4/DaggerfallGameFiles.zip?dl=1";
       const tempZip = path.join(app.getPath("temp"), "df_files_" + Date.now() + ".zip");
       try {
@@ -5835,9 +5935,17 @@ async function maybeRepairDaggerfallUnityInstall(slug, info, edSlug) {
             }
           });
         }
+      } catch (err) {
+        console.warn("[dfu-repair] community game-files zip unavailable:", err?.message || err);
       } finally {
         await fsp.rm(tempZip, { force: true }).catch(() => {});
       }
+    }
+
+    // Fallback: build the data from Bethesda's own freeware download.
+    if (!hasCompleteArena2(arena2Dir) && !hasCompleteArena2(streamingArena2)) {
+      const target = fs.existsSync(path.dirname(streamingArena2)) ? streamingArena2 : arena2Dir;
+      await ensureDaggerfallFreewareData(target);
     }
 
     if (hasCompleteArena2(arena2Dir) && fs.existsSync(streamingArena2)) {
@@ -14548,6 +14656,7 @@ if (gotLock) {
     createWindow();
     registerOverlayShortcut();
     void telemetry.launcherInstalled();
+    void telemetry.flushQueue();
     void retryModInstallTelemetry();
     if (loadSettings().launcherToken) {
       startLauncherPresenceLoop();

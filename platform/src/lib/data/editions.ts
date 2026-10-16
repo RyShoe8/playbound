@@ -106,7 +106,7 @@ export const editions: EditionSeed[] = [
     name: "Daggerfall Unity",
     shortDescription: "Open-source Unity remaster of TES II with modern controls and mods.",
     description:
-      "Daggerfall Unity rebuilds The Elder Scrolls II: Daggerfall in Unity. You still need original Daggerfall game data (legal GOG/Steam/retail). Huge world, modern UI, and a thriving mod scene via DF Workshop.",
+      "Daggerfall Unity rebuilds The Elder Scrolls II: Daggerfall in Unity with modern controls, graphics options and an extensive mod scene. PlayBound installs the current release for your operating system and sets up Daggerfall's free game data from Bethesda's freeware release.",
     type: "remaster",
     isDefault: true,
     sortOrder: 10,
@@ -117,17 +117,18 @@ export const editions: EditionSeed[] = [
     installMethod: "playbound_installer",
     installConfig: {
       playbound_installer: {
-        kind: "direct-zip",
-        url: "https://mirror.playbound.club/launcher-packages/games/daggerfall/1787010604732-Daggerfall-Unity-PlayBound-v1.1.1.zip",
-        fileName: "Daggerfall-Unity-PlayBound-v1.1.1.zip",
-        versionLabel: "v1.1.1",
-        exeHint: "DaggerfallUnity.exe",
-        knownExePaths: ["DaggerfallUnity.exe"],
-        note: "PlayBound's verified Daggerfall Unity v1.1.1 package, including the free game data.",
+        kind: "github-zip",
+        repo: "Interkarma/daggerfall-unity",
+        assetPattern: "^dfu_windows_64bit-.*\\.zip$",
+        assetPatternMac: "^dfu_mac_universal-.*\\.zip$",
+        assetPatternLinux: "^dfu_linux_64bit-.*\\.zip$",
+        exeHint: "DaggerfallUnity",
+        knownExePaths: ["DaggerfallUnity.exe", "DaggerfallUnity.x86_64", "DaggerfallUnity.app"],
+        note: "Installs the current Daggerfall Unity release for your operating system, then sets up Daggerfall's free game data from Bethesda's freeware release.",
       },
     },
     requirements: {
-      notes: "Place Arena2 / DAGGER data from a legal Daggerfall install when first launching.",
+      notes: "Daggerfall's game data is set up for you from Bethesda's freeware release. If you own Daggerfall on Steam or GOG, Daggerfall Unity can use that copy instead.",
     },
     features: ["Singleplayer", "Mod Support", "Controller Support"],
     tags: ["Remaster", "Open Source", "RPG"],
@@ -168,54 +169,6 @@ export const editions: EditionSeed[] = [
     tags: ["Classic", "DOS", "Retro", "RPG"],
     aliases: ["Daggerfall DOS", "Vanilla Daggerfall"],
     verificationLevel: "official",
-  },
-  {
-    gameSlug: "daggerfall",
-    slug: "playbound-remastered",
-    name: "PlayBound Edition",
-    shortDescription:
-      "One-click Daggerfall Unity with Bethesda's freeware data. DREAM and Distant Terrain stay on the Mods tab.",
-    description:
-      "PlayBound Edition is the Daggerfall Unity client we already host — Unity remaster, freeware game data in the zip, DaggerfallUnity.exe ready to run. It is the same verified v1.1.1 package as the Daggerfall Unity edition, listed here as the PlayBound-flavoured install so you do not have to hunt the default remaster.\n\nIt does not pre-apply D.R.E.A.M. or Distant Terrain. Those packs live on Nexus, and Nexus forbids re-hosting them. After this edition installs, open the Mods tab: DREAM is the audiovisual overhaul, Distant Terrain pushes the Iliac Bay horizon. Both need a Nexus login.\n\nThe default Daggerfall Unity edition is unchanged. Classic DOS stays the 1996 freeware path.",
-    type: "community",
-    status: "active",
-    visibility: "public",
-    isDefault: false,
-    sortOrder: 15,
-    links: {
-      website: "https://www.dfworkshop.net",
-      github: "https://github.com/Interkarma/daggerfall-unity",
-    },
-    installMethod: "playbound_installer",
-    installConfig: {
-      playbound_installer: {
-        kind: "direct-zip",
-        url: "https://mirror.playbound.club/launcher-packages/games/daggerfall/1787010604732-Daggerfall-Unity-PlayBound-v1.1.1.zip",
-        fileName: "Daggerfall-Unity-PlayBound-v1.1.1.zip",
-        versionLabel: "v1.1.1",
-        exeHint: "DaggerfallUnity.exe",
-        knownExePaths: ["DaggerfallUnity.exe"],
-        note: "Same PlayBound Daggerfall Unity v1.1.1 zip as the default remaster, including freeware data. DREAM and Distant Terrain are separate Nexus mods.",
-      },
-    },
-    requirements: {
-      notes:
-        "One-click DFU plus freeware data. Install DREAM (Nexus mod 5) and Distant Terrain (Nexus mod 128) from the Mods tab — PlayBound cannot re-host those files.",
-    },
-    features: ["Singleplayer", "Mod Support", "Controller Support", "Freeware Data"],
-    tags: ["Remaster", "Open Source", "RPG", "PlayBound"],
-    aliases: ["PlayBound Daggerfall", "DFU PlayBound Edition", "Daggerfall Remastered"],
-    verificationLevel: "community_verified",
-    faq: [
-      {
-        q: "Is DREAM included?",
-        a: "No. Nexus forbids uploading DREAM to other sites. Install this edition, then grab DREAM from the Mods tab (Nexus login).",
-      },
-      {
-        q: "How is this different from Daggerfall Unity?",
-        a: "Same zip and same exe. This row is the PlayBound-labelled install path; the default Daggerfall Unity edition is unchanged.",
-      },
-    ],
   },
   {
     gameSlug: "morrowind",
