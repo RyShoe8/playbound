@@ -2111,6 +2111,15 @@ body {
   font-weight: 500;
 }
 
+.media-jump {
+  color: var(--accent-light);
+  font-weight: 600;
+  text-decoration: none;
+}
+.media-jump:hover {
+  text-decoration: underline;
+}
+
 /* The website's EmptyHint: dashed, centred, quiet. */
 .tab-empty {
   display: flex;

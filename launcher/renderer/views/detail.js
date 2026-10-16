@@ -1624,15 +1624,15 @@ async function renderGameDetailView(slug, opts = {}) {
         .map(classifyMediaUrl);
       const shots = (Array.isArray(detail.screenshots) ? detail.screenshots : []).filter(Boolean);
 
-      const countText = [
-        vids.length > 0 ? `${vids.length} ${vids.length === 1 ? "video" : "videos"}` : "",
-        shots.length > 0 ? `${shots.length} ${shots.length === 1 ? "screenshot" : "screenshots"}` : ""
+      const countLinks = [
+        vids.length > 0 ? `<a href="#" class="media-jump" data-jump="media-videos">${vids.length} ${vids.length === 1 ? "video" : "videos"}</a>` : "",
+        shots.length > 0 ? `<a href="#" class="media-jump" data-jump="media-screenshots">${shots.length} ${shots.length === 1 ? "screenshot" : "screenshots"}</a>` : ""
       ].filter(Boolean).join(" · ");
 
       let videosHtml = "";
       if (vids.length > 0) {
         videosHtml = `
-          <details open class="media-details-group">
+          <details open class="media-details-group" id="media-videos">
             <summary class="media-details-summary">
               <span class="media-details-summary-title">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="20" x="2" y="2" rx="2.18" ry="2.18"/><line x1="7" x2="7" y1="2" y2="22"/><line x1="17" x2="17" y1="2" y2="22"/><line x1="2" x2="22" y1="12" y2="12"/><line x1="2" x2="7" y1="7" y2="7"/><line x1="2" x2="7" y1="17" y2="17"/><line x1="17" x2="22" y1="17" y2="17"/><line x1="17" x2="22" y1="7" y2="7"/></svg>
@@ -1668,7 +1668,7 @@ async function renderGameDetailView(slug, opts = {}) {
       let screenshotsHtml = "";
       if (shots.length > 0) {
         screenshotsHtml = `
-          <details open class="media-details-group">
+          <details open class="media-details-group" id="media-screenshots">
             <summary class="media-details-summary">
               <span class="media-details-summary-title">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
@@ -1710,14 +1710,24 @@ async function renderGameDetailView(slug, opts = {}) {
       `;
 
       mediaSec.innerHTML = `
-        <div class="tab-panel-header">
+        <div class="tab-panel-header" style="justify-content:flex-start;flex-wrap:wrap;gap:6px 12px">
           <h2>Media</h2>
-          <span class="tab-panel-meta">${escapeHtml(countText)}</span>
+          <span class="tab-panel-meta">${countLinks}</span>
         </div>
         ${videosHtml}
         ${screenshotsHtml}
         ${footerHtml}
       `;
+
+      mediaSec.querySelectorAll("a.media-jump").forEach((a) => {
+        a.addEventListener("click", (e) => {
+          e.preventDefault();
+          const target = document.getElementById(a.dataset.jump);
+          if (!target) return;
+          target.open = true;
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      });
 
       document.getElementById("media-official-link")?.addEventListener("click", (e) => {
         e.preventDefault();
@@ -2882,10 +2892,6 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
                 <span class="detail-sidebar-val"><a href="#" id="sidebar-base-game-link" style="color:var(--accent-light);text-decoration:none;font-weight:600">${escapeHtml(gameDetail?.title || gameSlug)}</a></span>
               </div>
               <div class="detail-sidebar-row">
-                <span class="detail-sidebar-label">Type</span>
-                <span class="detail-sidebar-val">${escapeHtml(edition.editionType || "Community")}</span>
-              </div>
-              <div class="detail-sidebar-row">
                 <span class="detail-sidebar-label">Install Method</span>
                 <span class="detail-sidebar-val">${escapeHtml(edition.installMethod || "Direct Download")}</span>
               </div>
@@ -2893,19 +2899,41 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
                 <span class="detail-sidebar-label">Size</span>
                 <span class="detail-sidebar-val">${escapeHtml(sizeText)}</span>
               </div>
+              ${edition.developerName ? `<div class="detail-sidebar-row">
+                <span class="detail-sidebar-label">Developer</span>
+                <span class="detail-sidebar-val">${escapeHtml(edition.developerName)}</span>
+              </div>` : ""}
               <div class="detail-sidebar-row">
-                <span class="detail-sidebar-label">Release</span>
+                <span class="detail-sidebar-label">First Released</span>
                 <span class="detail-sidebar-val">${escapeHtml(String(edition.releaseYear || gameDetail?.releaseYear || "—"))}</span>
               </div>
               <div class="detail-sidebar-row">
                 <span class="detail-sidebar-label">License</span>
                 <span class="detail-sidebar-val">${escapeHtml(edition.license || gameDetail?.license || "Free")}</span>
               </div>
-              <div class="detail-sidebar-row">
-                <span class="detail-sidebar-label">Verification</span>
-                <span class="detail-sidebar-val">${escapeHtml((edition.verificationLevel || "verified").replace(/_/g, " "))}</span>
-              </div>
+              ${edition.version ? `<div class="detail-sidebar-row">
+                <span class="detail-sidebar-label">Version</span>
+                <span class="detail-sidebar-val">${escapeHtml(String(edition.version))}</span>
+              </div>` : ""}
             </div>
+
+            ${
+              Array.isArray(edition.credits) && edition.credits.length > 0
+                ? `<div class="detail-sidebar-card">
+                     <div class="detail-sidebar-title"><span>Credits</span></div>
+                     <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+                       ${edition.credits
+                         .map(
+                           (c) =>
+                             `<div><div style="font-weight:600;font-size:13px;color:var(--text-main);">${escapeHtml(c.name)}</div>${
+                               c.role ? `<div style="font-size:11px;color:var(--text-muted);">${escapeHtml(c.role)}</div>` : ""
+                             }</div>`
+                         )
+                         .join("")}
+                     </div>
+                   </div>`
+                : ""
+            }
 
             ${
               siblings.length > 0
