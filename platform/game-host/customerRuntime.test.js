@@ -84,3 +84,20 @@ test("identity cancellation exits the unprivileged gate even when it cannot sign
   assert.equal(result, 143);
   assert.equal(unreferenced, true);
 });
+
+
+test("native identity profiles cannot be mixed across games or fall back after denial", async () => {
+  for (const gameSlug of ["bzflag", "hedgewars"]) {
+    const events = [];
+    const plan = { ...input.plan, identityProfile: `${gameSlug}-unix-v1`, identityRuntime: { gameSlug } };
+    await assert.rejects(runCustomerGate({ ...input, gameSlug, plan }, {
+      pid: 42, onSignal: () => {}, place: async () => events.push("placed"),
+      identityLaunch: () => { events.push("identity"); throw Error("denied"); },
+      launch: () => assert.fail("unrestricted fallback"),
+    }), /denied/);
+    assert.deepEqual(events, ["placed", "identity"]);
+    await assert.rejects(runCustomerGate({ ...input, gameSlug, plan: { ...plan, identityRuntime: { gameSlug: "teeworlds" } } }, {
+      pid: 42, place: () => assert.fail("mixed engine reached placement"),
+    }), /identity profile/);
+  }
+});

@@ -1,4 +1,4 @@
-"""Fixed Teeworlds engine selection for the root UID supervisor.
+"""Fixed reviewed native engine selection for the root UID supervisor.
 
 Copy reviewed bytes into a sealed descriptor before dropping privileges.
 The agent cannot switch a pathname between verification and the namespace bind.
@@ -13,6 +13,20 @@ import stat
 
 ENGINE = Path('/opt/playbound-host/games/teeworlds/teeworlds-server')
 PROFILE = Path('/usr/local/libexec/playbound-package-native/nativePackageProfiles.json')
+ENGINES = {
+    'teeworlds': ('teeworlds-server', '/usr/games/teeworlds-server'),
+    'bzflag': ('bzfs', '/usr/games/bzfs'),
+    'hedgewars': ('hedgewars-server', '/usr/lib/hedgewars/bin/hedgewars-server'),
+    'openttd': ('openttd', '/usr/games/openttd'),
+    'luanti': ('minetestserver', '/usr/games/minetestserver'),
+}
+
+def sealed_engine_for(game):
+    if game not in ENGINES:
+        raise ValueError('Unsupported reviewed native engine')
+    binary, target = ENGINES[game]
+    return sealed_engine(Path('/opt/playbound-host/games') / game / binary, PROFILE, game), target
+
 
 
 def open_regular(path):
@@ -28,7 +42,9 @@ def open_regular(path):
         os.close(directory)
 
 
-def sealed_engine(engine=ENGINE, profile_path=PROFILE):
+def sealed_engine(engine=ENGINE, profile_path=PROFILE, game='teeworlds'):
+    if game not in ENGINES:
+        raise ValueError('Unsupported reviewed native engine')
     # Only an absent installation uses the unchanged system-package path.
     # A partial, linked or modified managed installation must fail closed.
     try:
@@ -40,14 +56,14 @@ def sealed_engine(engine=ENGINE, profile_path=PROFILE):
         info = os.fstat(source.fileno())
         if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_nlink != 1 or info.st_mode & 0o022 or info.st_size > 32768:
             raise ValueError('Untrusted engine profile')
-        profile = json.load(source)['teeworlds']
+        profile = json.load(source)[game]
     source_fd = open_regular(engine)
     destination = None
     try:
         before = os.fstat(source_fd)
         if not stat.S_ISREG(before.st_mode) or before.st_uid != 0 or before.st_nlink != 1 or before.st_mode & 0o7022 or not before.st_mode & 0o111 or before.st_size != profile['binaryBytes']:
             raise ValueError('Untrusted managed engine')
-        destination = os.memfd_create('playbound-teeworlds-reviewed', os.MFD_CLOEXEC | os.MFD_ALLOW_SEALING)
+        destination = os.memfd_create('playbound-' + game + '-reviewed', os.MFD_CLOEXEC | os.MFD_ALLOW_SEALING)
         digest = hashlib.sha256()
         remaining = before.st_size
         while remaining:

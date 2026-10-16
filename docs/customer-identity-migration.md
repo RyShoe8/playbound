@@ -50,3 +50,35 @@ Interrupted profile transitions are recovered by repeating `enroll` or `complete
 ## Acceptance scope
 
 The VPS fixture used two reserved test UIDs, avoiding interruption of the live service UID. It covered actual checkpoint/activation, managed start, a real zero-player/four-slot query, unchanged game PID across agent restart, full scoped shutdown, writes as the game UID and rollback preserving those writes. A separate fixture exercised explicit enrollment and completed profile rollback through the real agent registry reader, preserving the neighboring job and newer save progress. The actual operator CLI always fixes the legacy UID to `playbound` and requires maintenance. No production customer was migrated. Human Join and the maintenance rollout remain separate gates.
+
+## Additional native identity profiles (2026-10-16)
+
+The opt-in supervisor now also supports BZFlag and Hedgewars. These use exact
+profiles `bzflag-unix-v1` and `hedgewars-unix-v1`, fixed reviewed native engines,
+fixed port ranges and typed settings. Caller-supplied executables, paths,
+commands and hashes remain forbidden. The root-owned journal records the game
+and prevents a different engine from adopting the same activated data.
+
+The direct-root offline commands accept an explicit fixed game selection:
+
+```sh
+/usr/local/libexec/playbound-customer-data-migration --game bzflag prepare SERVER_ID
+/usr/local/libexec/playbound-customer-data-migration --game bzflag activate SERVER_ID
+/usr/local/libexec/playbound-customer-data-migration --game bzflag enroll SERVER_ID
+```
+
+Use `--game hedgewars` for Hedgewars. The same selection is required for verify,
+recover, rollback and complete-rollback. Existing Teeworlds commands remain
+unchanged. Preparation still requires the legacy service UID offline; do not
+chown live customer files or bypass the checkpoint/activation transaction.
+Network enable/disable is still Teeworlds-only until native transports pass
+separate acceptance. Executable plugins remain disabled.
+
+Both games passed VPS fixtures with checkpoint and UID activation, real player
+query, idempotent start, unchanged game PID across staging-agent restart,
+process metrics, complete scoped shutdown and rollback retaining original plus
+newer data. All fixture processes and homes were removed. Twelve production
+managed identities survived the narrow agent deployment. No production
+customer was enrolled and no Mongo records changed. Fifty-two Linux root-helper
+boundary tests and the full agent suite (329 passed, 49 platform skips) passed.
+Evidence: `/var/lib/playbound-host/state/native-identity-acceptance/`.

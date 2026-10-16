@@ -16,7 +16,16 @@ ID = '0123456789abcdef01234567'
 
 
 class DataCheckpoint(unittest.TestCase):
+    def test_native_migration_selects_only_fixed_data_roots(self):
+        for game, folder in [('bzflag','bzflag-servers'),('hedgewars','hedgewars-servers')]:
+            module.select_game(game)
+            self.assertEqual(module.SOURCE,Path('/var/lib/playbound-host')/folder)
+            self.assertEqual(module.PROFILE,game+'-unix-v1')
+        for game in ['../other','custom','luanti']:
+            with self.assertRaises(ValueError):module.select_game(game)
+
     def setUp(self):
+        module.select_game('teeworlds')
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.base = Path(self.temp.name)
@@ -154,7 +163,7 @@ class DataCheckpoint(unittest.TestCase):
         def directory(path, uid=0, mode=0o711):
             path.mkdir(mode=mode, exist_ok=True)
 
-        runtime = SimpleNamespace(directory=directory)
+        runtime = SimpleNamespace(directory=directory, select_game=Mock())
         trusted = SimpleNamespace(st_mode=0o100755, st_uid=0, st_nlink=1)
         actual_lstat = Path.lstat
 
@@ -224,7 +233,7 @@ class MigrationTransactions(unittest.TestCase):
             self.assertEqual(path.stat().st_uid, 0)
             self.assertEqual(path.stat().st_mode & 0o777, mode)
 
-        self.runtime = SimpleNamespace(directory=directory)
+        self.runtime = SimpleNamespace(directory=directory, select_game=Mock())
         self.identities = SimpleNamespace(ensure_identity=lambda server_id: {'uid': self.uid}, secure_stat=lambda info: self.assertEqual(info.st_uid, 0))
 
     def execute(self, action):
