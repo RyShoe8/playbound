@@ -46,3 +46,16 @@ test("local-only co-op does not advertise an online party", () => {
     isMultiplayer: true, features: ["Co-op"],
   }), true);
 });
+
+test("a singleplayer base game with a networked edition gets Start Party", () => {
+  const daggerfall = {
+    slug: "daggerfall", isMultiplayer: false, partyLaunchable: true, features: ["Singleplayer"],
+    editions: [{ features: ["Singleplayer"] }, { features: ["Online Multiplayer", "Singleplayer"] }],
+  };
+  assert.equal(catalogGameSupportsOnlineParty(daggerfall), true);
+  assert.equal(catalogGameSupportsOnlineParty({ ...daggerfall, partyLaunchable: false }), false);
+  assert.equal(catalogGameSupportsOnlineParty({
+    slug: "rimworld", isMultiplayer: true, partyLaunchable: true, features: ["Singleplayer"],
+    editions: [{ features: ["Singleplayer"] }, { features: ["Multiplayer", "Mod Support"] }],
+  }), true);
+});

@@ -11,6 +11,10 @@ export function catalogGameSupportsParty(game) {
 
 /** Match the website's card CTA for online play, including store-launched games. */
 export function catalogGameSupportsOnlineParty(game) {
+  // A singleplayer base game can ship a networked edition (RimWorld Together, Daggerfall Online).
+  // The base game's own multiplayer flag says no, so ask the editions, unless the server has said
+  // the game cannot be launched for a party at all.
+  if (game && game.partyLaunchable !== false && (game.editions || []).some((edition) => (edition.features || []).some((feature) => /^(multiplayer|online multiplayer|online co-op)$/i.test(String(feature).trim())))) return true;
   if (!game || game.isMultiplayer === false) return false;
   // In the launcher catalog `multiplayer` is the legacy server-browser flag,
   // not the broader isMultiplayer flag. Only use it for older catalog rows.

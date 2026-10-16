@@ -62,10 +62,20 @@ type MultiplayerInput = {
   multiplayer?: boolean;
 };
 
+/**
+ * Games whose base title is singleplayer but which ship a multiplayer edition
+ * a party can launch: RimWorld Together, and Daggerfall Online. The base
+ * game's own multiplayer flag says no, so the answer has to come from the
+ * editions or the Start Party button never appears for them.
+ */
+export function isEditionDrivenPartyGame(slug?: string | null): boolean {
+  return slug === "rimworld" || slug === "daggerfall";
+}
+
 /** Card CTA: local-only play must not be advertised as an online party. */
 export function supportsOnlineMultiplayer(game: MultiplayerInput | null | undefined): boolean {
   if (!game) return false;
-  if (game.slug === "rimworld" && game.editions?.some(editionSupportsPartyPlay)) return true;
+  if (isEditionDrivenPartyGame(game.slug) && game.editions?.some(editionSupportsPartyPlay)) return true;
   if ((game as { isMultiplayer?: boolean }).isMultiplayer === false || game.multiplayer === false) return false;
   // A Connect adapter (virtual LAN, direct IP, managed server) is proof enough.
   if (game.slug && PARTY_ADAPTER_SLUGS.has(game.slug.toLowerCase())) return true;
@@ -90,7 +100,7 @@ export function hasServerBrowser(game: { launchMethods?: string[] } | null | und
  */
 export function supportsMultiplayer(game: MultiplayerInput | null | undefined): boolean {
   if (!game) return false;
-  if (game.slug === "rimworld" && game.editions?.some(editionSupportsPartyPlay)) return true;
+  if (isEditionDrivenPartyGame(game.slug) && game.editions?.some(editionSupportsPartyPlay)) return true;
   if (typeof (game as { isMultiplayer?: boolean })?.isMultiplayer === "boolean") {
     return Boolean((game as { isMultiplayer?: boolean }).isMultiplayer);
   }
