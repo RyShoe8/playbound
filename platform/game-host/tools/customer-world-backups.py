@@ -114,7 +114,7 @@ def reserve_disk(folder, entries):
 
 def operation(action, server_id, backup_id, runtime, identities, migration, file_input=None):
     game = runtime.journal_game(server_id)
-    if game not in ('teeworlds', 'bzflag', 'hedgewars', 'openttd', 'luanti', 'openarena', 'battle-for-wesnoth', 'supertuxkart', '0-ad', 'ysoccer', 'flightgear', 'mindustry', 'hurry-curry', 'assaultcube', 'xonotic', 'wolfenstein-enemy-territory', 'medal-of-honor-allied-assault', 'freedoom', 'freeciv', 'warzone-2100'):
+    if game not in ('teeworlds', 'bzflag', 'hedgewars', 'openttd', 'luanti', 'openarena', 'battle-for-wesnoth', 'supertuxkart', '0-ad', 'ysoccer', 'flightgear', 'mindustry', 'hurry-curry', 'assaultcube', 'xonotic', 'wolfenstein-enemy-territory', 'medal-of-honor-allied-assault', 'freedoom', 'freeciv', 'warzone-2100', 'hypersomnia'):
         raise ValueError('This isolated engine has no world snapshot profile')
     runtime.select_game(game)
     migration.select_game(game)

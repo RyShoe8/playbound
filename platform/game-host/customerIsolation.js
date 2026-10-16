@@ -10,7 +10,7 @@ import { customerResourceLimits } from "./customerResourceLimits.js";
 import { identityMigrationMetadata } from "./customerMigration.js";
 import { NATIVE_PACKAGE_PROFILES, verifyNativePackageInstallation } from "./nativePackageUpdates.js";
 
-export const CUSTOMER_IDENTITY_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti", "openarena", "battle-for-wesnoth", "supertuxkart", "0-ad", "ysoccer", "flightgear", "mindustry", "hurry-curry", "assaultcube", "xonotic", "wolfenstein-enemy-territory", "medal-of-honor-allied-assault", "freedoom","freeciv","warzone-2100"]);
+export const CUSTOMER_IDENTITY_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti", "openarena", "battle-for-wesnoth", "supertuxkart", "0-ad", "ysoccer", "flightgear", "mindustry", "hurry-curry", "assaultcube", "xonotic", "wolfenstein-enemy-territory", "medal-of-honor-allied-assault", "freedoom","freeciv","warzone-2100","hypersomnia"]);
 export const TEEWORLDS_ISOLATION = "teeworlds-bwrap-v1";
 export const CUSTOMER_ISOLATION_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti"]);
 
@@ -33,7 +33,7 @@ function unlinkedAncestors(filename) {
 
 /** Runs before recipes write any generated configuration, not just at spawn. */
 export function validateCustomerPreparation({ gameSlug, customerOwned, communityServerId: id, home, identityProfile }) {
-  if (customerOwned && ["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault","freedoom","freeciv","warzone-2100"].includes(gameSlug) && identityProfile) {
+  if (customerOwned && ["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault","freedoom","freeciv","warzone-2100","hypersomnia"].includes(gameSlug) && identityProfile) {
     if (identityProfile !== `${gameSlug}-unix-v1` || identityMigrationMetadata(id,home)?.identityProfile !== identityProfile) throw new Error("Customer identity migration is not ready");
     return;
   }
@@ -74,7 +74,7 @@ function privateDirectory(directory) {
 }
 
 export function customerIsolationLaunch({ gameSlug, customerOwned, communityServerId, binary, args, home, resourceLimits, identityProfile, settings, startupPort, serverName }) {
-  if (!customerOwned || (!CUSTOMER_ISOLATION_GAMES.includes(gameSlug) && !(["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault","freedoom","freeciv","warzone-2100"].includes(gameSlug) && identityProfile))) return null;
+  if (!customerOwned || (!CUSTOMER_ISOLATION_GAMES.includes(gameSlug) && !(["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault","freedoom","freeciv","warzone-2100","hypersomnia"].includes(gameSlug) && identityProfile))) return null;
   if (identityProfile !== undefined && (!CUSTOMER_IDENTITY_GAMES.includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1`)) throw new Error("Unsupported customer identity profile");
   const limits = customerResourceLimits(gameSlug, resourceLimits);
   validateCustomerPreparation({ gameSlug, customerOwned, communityServerId, home, identityProfile });
@@ -208,6 +208,13 @@ export function zeroAdIdentityConfiguration(args) {
 }
 
 function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, home, resourceLimits, identityProfile, settings, startupPort, serverName }) {
+  if(gameSlug==="hypersomnia") {
+    const expected=["--appimage-extract-and-run","--no-update-on-launch","--dedicated-server","--server-port",String(startupPort),"--appdata-dir",path.join(home,"hypersomnia",`pb-${id}`)];
+    if(binary!=="/opt/playbound-host/games/hypersomnia/Hypersomnia-Headless.AppImage" || identityProfile!=="hypersomnia-unix-v1" || identityMigrationMetadata(id,home)?.identityProfile!==identityProfile || args.join("\0")!==expected.join("\0"))throw new Error("Unexpected Hypersomnia identity contract");
+    const configuration={name:String(serverName||"PlayBound Party").replace(/[\x00-\x1f\x7f]+/g," ").trim().slice(0,40),maxPlayers:settings?.maxPlayers??16};
+    if(!Number.isInteger(startupPort)||startupPort<8412||startupPort>8432||!configuration.name.length||!Number.isInteger(configuration.maxPlayers)||configuration.maxPlayers<2||configuration.maxPlayers>64)throw new Error("Invalid Hypersomnia typed setting");
+    return {profile:"hypersomnia-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify(configuration)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
   if(gameSlug==="warzone-2100") {
     const expected=["--datadir=/opt/playbound-host/games/warzone-2100/runtime/data",`--configdir=${path.join(home,"warzone-2100-servers",`pb-${id}`)}`,`--autohost=pb-${id.slice(-16)}.json`,`--gameport=${startupPort}`,"--startplayers=1","--headless","--nosound"];
     if(binary!=="/opt/playbound-host/games/warzone-2100/runtime/warzone2100" || identityProfile!=="warzone-2100-unix-v1" || identityMigrationMetadata(id,home)?.identityProfile!==identityProfile || args.join("\0")!==expected.join("\0"))throw new Error("Unexpected Warzone identity contract");

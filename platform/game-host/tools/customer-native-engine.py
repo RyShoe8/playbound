@@ -29,6 +29,7 @@ ENGINES = {
     'xonotic': ('xonotic-linux64-dedicated', '/engine-native'),
     'wolfenstein-enemy-territory': ('etlded.x86_64', '/engine-native'),
     'medal-of-honor-allied-assault': ('omohaaded', '/engine-native'),
+    'hypersomnia': ('Hypersomnia-Headless.AppImage','/engine-native'),
     'warzone-2100': ('warzone2100', '/engine-native'),
     'freeciv': ('freeciv-server', '/engine-native'),
     'freedoom': ('zandronum-server', '/game-data/zandronum-server'),
@@ -37,6 +38,11 @@ ENGINES = {
 def sealed_engine_for(game):
     if game in ('ysoccer','mindustry'):
         return sealed_java_engine(game=game), '/engine.jar'
+    if game == 'hypersomnia':
+        root=Path('/usr/local/libexec/playbound-isolated-hypersomnia')
+        descriptor=sealed_engine(root/'Hypersomnia-Headless.AppImage',root/'profile.json',game)
+        if descriptor is None:raise ValueError('Reviewed isolated Hypersomnia engine is not installed')
+        return descriptor, '/engine-native'
     if game == 'warzone-2100':
         root=Path('/usr/local/libexec/playbound-isolated-warzone')
         descriptor=sealed_engine(root/'warzone2100',root/'profile.json',game)

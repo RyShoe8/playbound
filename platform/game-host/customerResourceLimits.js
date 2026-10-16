@@ -1,6 +1,6 @@
 /** Wire units are integers; no caller selects cgroup properties or task/swap policy. */
 export function customerResourceLimits(game, input) {
-  if (!["teeworlds", "bzflag", "hedgewars", "openttd", "luanti", "openarena", "battle-for-wesnoth", "supertuxkart", "0-ad", "ysoccer", "flightgear", "mindustry", "hurry-curry", "assaultcube", "xonotic", "wolfenstein-enemy-territory", "medal-of-honor-allied-assault", "freedoom","freeciv","warzone-2100"].includes(game)) throw new Error("Unsupported resource profile");
+  if (!["teeworlds", "bzflag", "hedgewars", "openttd", "luanti", "openarena", "battle-for-wesnoth", "supertuxkart", "0-ad", "ysoccer", "flightgear", "mindustry", "hurry-curry", "assaultcube", "xonotic", "wolfenstein-enemy-territory", "medal-of-honor-allied-assault", "freedoom","freeciv","warzone-2100","hypersomnia"].includes(game)) throw new Error("Unsupported resource profile");
   if (input === undefined) return { cpuMillis: ["luanti","0-ad"].includes(game) ? 2000 : 1000, memoryMiB: ["luanti","0-ad"].includes(game) ? 2048 : 1024 };
   if (!input || typeof input !== "object" || Array.isArray(input) || Object.keys(input).some(key => !["cpuMillis", "memoryMiB"].includes(key)) ||
       !Number.isInteger(input.cpuMillis) || input.cpuMillis < 250 || input.cpuMillis > 6000 ||

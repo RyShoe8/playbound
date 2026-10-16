@@ -87,7 +87,7 @@ test("identity cancellation exits the unprivileged gate even when it cannot sign
 
 
 test("native identity profiles cannot be mixed across games or fall back after denial", async () => {
-  for (const gameSlug of ["bzflag", "hedgewars", "openttd", "luanti", "openarena", "battle-for-wesnoth", "supertuxkart", "0-ad", "ysoccer", "flightgear", "mindustry", "hurry-curry", "assaultcube", "xonotic", "wolfenstein-enemy-territory", "medal-of-honor-allied-assault", "freedoom","freeciv","warzone-2100"]) {
+  for (const gameSlug of ["bzflag", "hedgewars", "openttd", "luanti", "openarena", "battle-for-wesnoth", "supertuxkart", "0-ad", "ysoccer", "flightgear", "mindustry", "hurry-curry", "assaultcube", "xonotic", "wolfenstein-enemy-territory", "medal-of-honor-allied-assault", "freedoom","freeciv","warzone-2100","hypersomnia"]) {
     const events = [];
     const plan = { ...input.plan, identityProfile: `${gameSlug}-unix-v1`, identityRuntime: { gameSlug } };
     await assert.rejects(runCustomerGate({ ...input, gameSlug, plan }, {

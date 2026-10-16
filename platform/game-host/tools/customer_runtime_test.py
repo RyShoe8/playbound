@@ -428,4 +428,19 @@ class WarzoneTypedTests(unittest.TestCase):
             with self.assertRaises(ValueError):module.config_bytes(json.dumps(dict(value,script='unsafe')),2120)
         finally:module.select_game('teeworlds')
 
+class HypersomniaTypedTests(unittest.TestCase):
+    def test_updates_and_external_map_sync_cannot_escape_managed_updates(self):
+        import json
+        module.select_game('hypersomnia')
+        try:
+            value={'name':'Private fixture','maxPlayers':4}
+            result=json.loads(module.config_bytes(json.dumps(value),8432))
+            self.assertEqual(result['server_start'],{'port':8432,'slots':4})
+            self.assertFalse(result['self_update']['update_on_launch'])
+            self.assertFalse(result['server']['daily_autoupdate'])
+            self.assertFalse(result['server']['sync_all_external_arenas_on_startup'])
+            for bad in ({'name':'bad\nname','maxPlayers':4},{'name':'fixture','maxPlayers':True},dict(value,command='unsafe')):
+                with self.assertRaises(ValueError):module.config_bytes(json.dumps(bad),8432)
+        finally:module.select_game('teeworlds')
+
 if __name__ == '__main__': unittest.main()
