@@ -104,6 +104,14 @@ class WorldSnapshots(unittest.TestCase):
     def test_hedgewars_snapshot_restore(self): self.check_native_snapshot('hedgewars')
     def test_openarena_snapshot_restore(self): self.check_native_snapshot('openarena')
     def test_wesnoth_snapshot_restore(self): self.check_native_snapshot('battle-for-wesnoth')
+    def test_openttd_snapshot_restore(self): self.check_native_snapshot('openttd')
+    def test_supertuxkart_snapshot_restore(self): self.check_native_snapshot('supertuxkart')
+    def test_0_ad_snapshot_restore(self): self.check_native_snapshot('0-ad')
+    def test_ysoccer_snapshot_restore(self): self.check_native_snapshot('ysoccer')
+    def test_flightgear_snapshot_restore(self): self.check_native_snapshot('flightgear')
+    def test_mindustry_snapshot_restore(self): self.check_native_snapshot('mindustry')
+    def test_hurry_curry_snapshot_restore(self): self.check_native_snapshot('hurry-curry')
+    def test_assaultcube_snapshot_restore(self): self.check_native_snapshot('assaultcube')
 
     def test_interrupted_swap_recovers_without_replacing_progress_twice(self):
         value = self.run_operation('create')
