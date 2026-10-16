@@ -50,6 +50,13 @@ function joinList(items: string[]): string {
   return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
 }
 
+/** Co-op that only exists on one screen or one PC, with nothing online or on a LAN. */
+function isLocalOnly(features: string[]): boolean {
+  const online = features.some((f) => /^(multiplayer|lan support|cross-?play|dedicated servers|ranked ladder)$/i.test(f));
+  const local = features.some((f) => /^(split-screen co-?op|couch co-?op|hotseat)$/i.test(f));
+  return local && !online;
+}
+
 export function multiplayerFaqQuestion(title: string): string {
   return `Does ${title} have multiplayer?`;
 }
@@ -84,6 +91,10 @@ export function multiplayerFaqAnswer(game: MultiplayerFaqInput): string {
           (modes.includes("dedicated") ? ", with the dedicated server started for you if you choose one." : ".")
       );
     }
+  } else if (isLocalOnly(game.features ?? [])) {
+    parts.push(
+      `Multiplayer is local only, with players sharing one screen or one PC. There is no online play, and PlayBound Connect parties and PlayBound dedicated servers are not available for it.`
+    );
   } else {
     parts.push(
       `Its multiplayer runs through the game's own online service or menus, so PlayBound Connect parties and PlayBound dedicated servers are not available for it.`
