@@ -3,6 +3,7 @@ import { promisify } from "node:util";
 import { Worker } from "node:worker_threads";
 
 const FUNCTIONS = new Set(["createWorldBackup", "listWorldBackups", "restoreWorldBackup"]);
+const ISOLATED_DATA_GAMES = new Set(["teeworlds","bzflag","hedgewars","openttd","luanti","openarena","battle-for-wesnoth"]);
 
 /** Run one world-backup operation in a worker thread. Resolves to the result; rejects with a safe message. */
 export function runWorldBackup(fn, args) {
@@ -26,7 +27,7 @@ export function runWorldBackup(fn, args) {
 export async function runIsolatedWorldBackup(fn, args, execute = promisify(execFile)) {
   const actions = { createWorldBackup: "create", listWorldBackups: "list", restoreWorldBackup: "restore" };
   const [id, game, third, fourth] = args;
-  if (!Object.hasOwn(actions, fn) || !/^[a-f0-9]{24}$/.test(id || "") || !["openttd","luanti"].includes(game)) throw new Error("Invalid isolated snapshot request");
+  if (!Object.hasOwn(actions, fn) || !/^[a-f0-9]{24}$/.test(id || "") || !ISOLATED_DATA_GAMES.has(game)) throw new Error("Invalid isolated snapshot request");
   const action = actions[fn], parameters = [action,id];
   if (action === "restore") {
     if (!/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/.test(third || "")) throw new Error("Invalid isolated snapshot identity");
@@ -52,7 +53,7 @@ export async function runIsolatedWorldBackup(fn, args, execute = promisify(execF
 
 
 export async function runIsolatedFileOperation(id, game, input, execute = execFile) {
-  if (!/^[a-f0-9]{24}$/.test(id || "") || !["openttd","luanti"].includes(game) || !input || typeof input !== "object" || Array.isArray(input)) throw new Error("Invalid isolated file request");
+  if (!/^[a-f0-9]{24}$/.test(id || "") || !ISOLATED_DATA_GAMES.has(game) || !input || typeof input !== "object" || Array.isArray(input)) throw new Error("Invalid isolated file request");
   const body = JSON.stringify(input);
   if (Buffer.byteLength(body) > 4 * 1024 ** 2 + 4096) throw new Error("File request exceeds limit");
   return new Promise((resolve,reject) => {

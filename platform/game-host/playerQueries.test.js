@@ -108,6 +108,14 @@ test("SuperTuxKart discovery only counts when the port is this room's", () => {
   const m = Buffer.from("000000060d5042207175657279207465737408020ada0003000000", "hex");
   assert.deepEqual(parseStkDiscovery(m, 2778), { players: 2, maxPlayers: 8 });
   assert.equal(parseStkDiscovery(m, 2760), null);
+  for (let length=0;length<m.length;length++) assert.equal(parseStkDiscovery(m.subarray(0,length),2778),null);
+  assert.equal(parseStkDiscovery(m),null);
+  const offset=5+m[4];
+  for (const [index,value] of [[offset,0],[offset+1,9],[offset+4,4],[offset+6,2],[offset+7,2],[offset+8,1]]) {
+    const invalid=Buffer.from(m);invalid[index]=value;
+    assert.equal(parseStkDiscovery(invalid,2778),null);
+  }
+  assert.equal(parseStkDiscovery(Buffer.concat([m,Buffer.from([0])]),2778),null);
 });
 
 test("fgms telnet status", () => {

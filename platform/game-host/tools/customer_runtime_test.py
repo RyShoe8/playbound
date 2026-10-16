@@ -19,6 +19,28 @@ class RuntimeBoundaries(unittest.TestCase):
     def setUp(self):
         module.select_game('teeworlds')
 
+    def test_ysoccer_has_fixed_java_runtime_and_bounded_heap(self):
+        module.select_game('ysoccer')
+        self.assertEqual(module.config_bytes('{}',54575),b'{}')
+        with self.assertRaises(ValueError):module.config_bytes('{"jvm":"-agentlib:payload"}',54575)
+        command=module.command(Path('/fixture/data'),7,54575,1536,8,{})
+        self.assertIn('-Xmx512m',command)
+        self.assertIn('-XX:ActiveProcessorCount=1',command)
+        self.assertIn('/engine.jar',command)
+        self.assertEqual(command[-4:],['-jar','/engine.jar','54575','54575'])
+
+    def test_zero_ad_fixed_port_and_map_contract(self):
+        import json
+        module.select_game('0-ad')
+        values={'map':'random/mainland','maxPlayers':4}
+        self.assertEqual(json.loads(module.config_bytes(json.dumps(values),20595)),values)
+        for update in [{'map':'../../private'},{'map':'random/mainland;quit'},{'maxPlayers':9},{'maxPlayers':True},{'exec':'payload'}]:
+            with self.assertRaises(ValueError):module.config_bytes(json.dumps(dict(values,**update)),20595)
+        command=module.command(Path('/fixture/data'),7,20595,2048,8,values)
+        self.assertIn('-autostart-host-players=4',command)
+        self.assertIn('-autostart=random/mainland',command)
+        with self.assertRaises(ValueError):module.request(['run-native',ID,'42',IDENTITY,'0-ad','20596','750','2048'])
+
     def test_stk_settings_preserve_declared_modes_and_reject_extra_arguments(self):
         import json
         module.select_game('supertuxkart')

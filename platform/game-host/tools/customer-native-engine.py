@@ -22,13 +22,59 @@ ENGINES = {
     'openarena': ('openarena-server', '/usr/lib/ioquake3/ioq3ded'),
     'battle-for-wesnoth': ('wesnothd', '/usr/games/wesnothd-1.18'),
     'supertuxkart': ('supertuxkart', '/usr/games/supertuxkart'),
+    '0-ad': ('pyrogenesis', '/usr/games/pyrogenesis'),
 }
 
 def sealed_engine_for(game):
+    if game == 'ysoccer':
+        return sealed_java_engine(), '/engine.jar'
     if game not in ENGINES:
         raise ValueError('Unsupported reviewed native engine')
     binary, target = ENGINES[game]
-    return sealed_engine(Path('/opt/playbound-host/games') / game / binary, PROFILE, game), target
+    return sealed_engine(Path('/opt/playbound-host/games') / ('0ad' if game == '0-ad' else game) / binary, PROFILE, game), target
+
+
+def sealed_java_engine(engine=Path('/opt/playbound-host/games/ysoccer/ysoccer-server.jar'), profile_path=Path('/usr/local/libexec/playbound-customer-java-profiles.json')):
+    profile_fd = open_regular(profile_path)
+    with os.fdopen(profile_fd,'rb') as source:
+        info=os.fstat(source.fileno())
+        if not stat.S_ISREG(info.st_mode) or info.st_uid!=0 or info.st_nlink!=1 or info.st_mode&0o022 or info.st_size>32768:
+            raise ValueError('Untrusted Java engine profiles')
+        profile=json.load(source)['ysoccer']
+    if profile['jar']!='ysoccer-server.jar' or profile['java']!='/usr/bin/java':
+        raise ValueError('Java runtime contract changed')
+    source_fd=open_regular(engine)
+    destination=None
+    try:
+        before=os.fstat(source_fd)
+        if not stat.S_ISREG(before.st_mode) or before.st_nlink!=1 or before.st_mode&0o7022 or not 0<before.st_size<=128*1024**2:
+            raise ValueError('Unsafe Java engine file')
+        destination=os.memfd_create('playbound-ysoccer-reviewed',os.MFD_CLOEXEC|os.MFD_ALLOW_SEALING)
+        digest=hashlib.sha256()
+        remaining=before.st_size
+        while remaining:
+            block=os.read(source_fd,min(65536,remaining))
+            if not block: raise ValueError('Incomplete Java engine')
+            digest.update(block)
+            view=memoryview(block)
+            while view:
+                written=os.write(destination,view)
+                if not written: raise ValueError('Java engine copy failed')
+                view=view[written:]
+            remaining-=len(block)
+        after=os.fstat(source_fd)
+        if os.read(source_fd,1) or (before.st_dev,before.st_ino,before.st_size,before.st_mtime_ns,before.st_ctime_ns)!=(after.st_dev,after.st_ino,after.st_size,after.st_mtime_ns,after.st_ctime_ns) or not any(row['bytes']==before.st_size and row['sha256']==digest.hexdigest() for row in profile['versions']):
+            raise ValueError('Java engine differs from reviewed releases')
+        os.lseek(destination,0,os.SEEK_SET)
+        if os.read(destination,4)!=b'PK\x03\x04': raise ValueError('Invalid Java archive')
+        os.lseek(destination,0,os.SEEK_SET)
+        os.fchmod(destination,0o444)
+        fcntl.fcntl(destination,fcntl.F_ADD_SEALS,fcntl.F_SEAL_WRITE|fcntl.F_SEAL_GROW|fcntl.F_SEAL_SHRINK|fcntl.F_SEAL_SEAL)
+        result,destination=destination,None
+        return result
+    finally:
+        os.close(source_fd)
+        if destination is not None: os.close(destination)
 
 
 
@@ -59,7 +105,8 @@ def sealed_engine(engine=ENGINE, profile_path=PROFILE, game='teeworlds'):
         info = os.fstat(source.fileno())
         if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_nlink != 1 or info.st_mode & 0o022 or info.st_size > 32768:
             raise ValueError('Untrusted engine profile')
-        profile = json.load(source)[game]
+        profiles = json.load(source)
+        profile = profiles['0ad' if game == '0-ad' else game]
     source_fd = open_regular(engine)
     destination = None
     try:

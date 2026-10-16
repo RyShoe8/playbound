@@ -1506,3 +1506,61 @@ Latest validation: 336 agent tests passed, 49 platform skips; 74 Linux helper
 tests passed. The guarded live agent deployment retained all eleven managed
 process identities. Platform RCON tests and TypeScript passed earlier in this
 batch. Remaining games and content support still require engine-specific work.
+
+## Native data-management parity and STK diagnosis (2026-10-16)
+
+The protected snapshot/file helper now covers all seven verified native UID
+profiles: Teeworlds, BZFlag, Hedgewars, OpenTTD, Luanti, OpenArena and Wesnoth.
+The existing My Servers files/backups surfaces discover these through the shared
+capability list; no new page or general root filesystem API was added. Mutations
+remain stopped-only and execute under the reserved server UID. Snapshot/restore
+remains root-mediated, inode-bound and retains the pre-restore data.
+
+Thirteen Linux snapshot tests passed, including separate restore/UID checks for
+the newly covered engines. A real Teeworlds fixture passed busy-world rejection,
+atomic restore, reserved-UID file writes, traversal/executable rejection, restart
+after restore and save-preserving migration rollback. Fixture data/processes were
+removed. The narrow live agent deployment preserved all eleven running managed
+processes. Customer enrollment and production database writes remain zero.
+
+The STK discovery blocker is now traced to its upstream `initSystemIP` routine:
+it probes IPv4/IPv6 through temporary bind-zero sockets. The strict native bind
+policy rejects these, and the engine consequently misdetects protocol support.
+See [upstream NetworkConfig](https://github.com/supertuxkart/stk-code/blob/1.4/src/network/network_config.cpp).
+Do not loosen the whole fleet's bind policy or call the isolated profile ready.
+It needs a reviewed engine adaptation or isolated network allocation. Its
+discovery parser additionally requires the complete packet, matching game port,
+valid flags and plausible counts; truncated packets never certify emptiness.
+
+## Additional native and first Java identity profile (2026-10-16)
+
+0 A.D. has an explicit `0-ad-unix-v1` boundary using the reviewed `0ad` package.
+Typed maps/slot counts, its one fixed port and the existing nonvisual dedicated
+startup contract are enforced independently in the agent and root helper.
+Actual VPS acceptance passed bound-port startup, same process after agent
+restart, metrics, scoped stop and save-preserving rollback. Occupancy remains
+unknown: this is process-isolation acceptance, not a query/Join/rotation gate.
+
+YSoccer adds `ysoccer-unix-v1`, the first Java handoff. Its root-owned reviewed
+release manifest must match the installed JAR bytes; the helper copies those
+bytes into a sealed descriptor before dropping privileges. JVM path, heap,
+metadata/code-cache limits, processor count and game ports are fixed. The normal
+shared-service Java symlink resolves outside the sandbox through alternatives,
+so this profile uses the reviewed installed OpenJDK 21 path directly.
+Changed manifests, linked/changed JARs or undeclared runtime options fail closed.
+New upstream JARs also need the root manifest updated before isolated starts;
+the ordinary updater cannot silently bless an arbitrary executable digest.
+
+Java NIO requires connected Unix stream socket pairs. Those are permitted;
+ordinary AF_UNIX socket creation and datagram/seqpacket pairs remain denied.
+Every engine's namespace probe verifies private stream IPC, rejection of
+reconnectable pairs, and failure to connect an existing pair to a real host
+abstract listener. See [socketpair semantics](https://man7.org/linux/man-pages/man2/socketpair.2.html).
+This updates the earlier shorthand “Unix sockets denied”: private connected
+stream pairs are deliberately supported, host Unix service connections are not.
+
+YSoccer's VPS fixture passed zero established connections, same-process restart
+adoption, metrics, scoped stop and rollback preserving newer data. Maximum slots
+remain unknown because its occupancy adapter does not expose them. Both fixtures
+were removed. These remain operator-enrolled profiles; no customer/database
+records were changed. Broader isolation and executable-content support are open.

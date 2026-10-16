@@ -13,6 +13,7 @@ import { authorizeServer, recordActivity, type Fail } from "./access";
 import { retentionFor } from "./backups";
 
 export const WORLD_BACKUP_GAMES = [
+  "teeworlds", "bzflag", "hedgewars", "openarena", "battle-for-wesnoth",
   "mindustry", "openttd", "luanti", "freeciv", "morrowind",
   "terraria", "factorio", "core-keeper", "vintage-story", "rimworld-together",
   "barotrauma", "dont-starve-together", "necesse",

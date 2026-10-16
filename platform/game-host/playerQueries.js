@@ -415,14 +415,20 @@ export async function queryVeloren(gamePort, { settingsFile = null } = {}) {
  * on the host, so a reply only counts when its game port is this room's.
  */
 export function parseStkDiscovery(m, expectedPort) {
-  if (!Buffer.isBuffer(m) || m.length < 9) return null;
+  if (!Buffer.isBuffer(m) || m.length < 14 || m.length > 2048 ||
+      !Number.isInteger(expectedPort) || expectedPort < 1 || expectedPort > 65535) return null;
   const nameLen = m[4];
   const o = 5 + nameLen;
-  if (o + 4 > m.length) return null;
+  // Difficulty, mode, password/race flags and the trailing track string are
+  // part of the response too. A truncated packet cannot certify emptiness.
+  if (o + 9 > m.length) return null;
   const maxPlayers = m[o];
   const players = m[o + 1];
   const port = m.readUInt16BE(o + 2);
-  if (expectedPort && port !== expectedPort) return null;
+  const difficulty=m[o+4],mode=m[o+5],password=m[o+6],started=m[o+7],trackBytes=m[o+8];
+  if (port !== expectedPort || maxPlayers < 1 || players > maxPlayers ||
+      difficulty > 3 || ![0,1,2,3,4,5,6,7,8].includes(mode) || password > 1 || started > 1 ||
+      o + 9 + trackBytes !== m.length) return null;
   return { players, maxPlayers: validMax(maxPlayers) };
 }
 

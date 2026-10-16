@@ -10,7 +10,7 @@ import { customerResourceLimits } from "./customerResourceLimits.js";
 import { identityMigrationMetadata } from "./customerMigration.js";
 import { NATIVE_PACKAGE_PROFILES, verifyNativePackageInstallation } from "./nativePackageUpdates.js";
 
-export const CUSTOMER_IDENTITY_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti", "openarena", "battle-for-wesnoth", "supertuxkart"]);
+export const CUSTOMER_IDENTITY_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti", "openarena", "battle-for-wesnoth", "supertuxkart", "0-ad", "ysoccer"]);
 export const TEEWORLDS_ISOLATION = "teeworlds-bwrap-v1";
 export const CUSTOMER_ISOLATION_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti"]);
 
@@ -33,7 +33,7 @@ function unlinkedAncestors(filename) {
 
 /** Runs before recipes write any generated configuration, not just at spawn. */
 export function validateCustomerPreparation({ gameSlug, customerOwned, communityServerId: id, home, identityProfile }) {
-  if (customerOwned && ["openarena","battle-for-wesnoth","supertuxkart"].includes(gameSlug) && identityProfile) {
+  if (customerOwned && ["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer"].includes(gameSlug) && identityProfile) {
     if (identityProfile !== `${gameSlug}-unix-v1` || identityMigrationMetadata(id,home)?.identityProfile !== identityProfile) throw new Error("Customer identity migration is not ready");
     return;
   }
@@ -74,7 +74,7 @@ function privateDirectory(directory) {
 }
 
 export function customerIsolationLaunch({ gameSlug, customerOwned, communityServerId, binary, args, home, resourceLimits, identityProfile, settings }) {
-  if (!customerOwned || (!CUSTOMER_ISOLATION_GAMES.includes(gameSlug) && !(["openarena","battle-for-wesnoth","supertuxkart"].includes(gameSlug) && identityProfile))) return null;
+  if (!customerOwned || (!CUSTOMER_ISOLATION_GAMES.includes(gameSlug) && !(["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer"].includes(gameSlug) && identityProfile))) return null;
   if (identityProfile !== undefined && (!CUSTOMER_IDENTITY_GAMES.includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1`)) throw new Error("Unsupported customer identity profile");
   const limits = customerResourceLimits(gameSlug, resourceLimits);
   validateCustomerPreparation({ gameSlug, customerOwned, communityServerId, home, identityProfile });
@@ -199,7 +199,20 @@ export function superTuxKartIdentityConfiguration(args) {
   return {port:Number(values.port),config:JSON.stringify({name,maxPlayers,mode,difficulty})};
 }
 
+export function zeroAdIdentityConfiguration(args) {
+  if (!Array.isArray(args) || args.length!==8 || args[1]!=="-autostart-host" || args.slice(3).join("\0")!==["-autostart-playername=PlayBound Server","-autostart-seed=-1","-autostart-nonvisual","-quickstart","-nosound"].join("\0")) throw new Error("Unexpected 0 A.D. startup contract");
+  const map=/^-autostart=((?:random|scenarios|skirmishes)\/[A-Za-z0-9_-]{1,64})$/.exec(args[0])?.[1];
+  const slots=/^-autostart-host-players=([2-8])$/.exec(args[2])?.[1];
+  if (!map || !slots) throw new Error("Invalid 0 A.D. typed settings");
+  return {port:20595,config:JSON.stringify({map,maxPlayers:Number(slots)})};
+}
+
 function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, home, resourceLimits, identityProfile, settings }) {
+  if (gameSlug === "ysoccer") {
+    if (binary!=="/usr/bin/java" || args.length!==4 || args[0]!=="-jar" || args[1]!=="/opt/playbound-host/games/ysoccer/ysoccer-server.jar" || args[2]!==args[3] || !withinPort(args[2],54555,54575) || identityProfile!=="ysoccer-unix-v1" || identityMigrationMetadata(id,home)?.identityProfile!==identityProfile) throw new Error("Unexpected YSoccer identity contract");
+    trustedExecutables(binary);
+    return {profile:"ysoccer-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:Number(args[2]),config:"{}"},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
   const supported = {
     bzflag: ["/usr/games/bzfs", "bzflag-servers"],
     hedgewars: ["/usr/lib/hedgewars/bin/hedgewars-server", "hedgewars-servers"],
@@ -208,17 +221,23 @@ function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, 
     openarena: ["/usr/lib/ioquake3/ioq3ded", "openarena-servers"],
     "battle-for-wesnoth": ["/usr/games/wesnothd-1.18", "wesnoth-servers"],
     supertuxkart: ["/usr/games/supertuxkart", "supertuxkart-servers"],
+    "0-ad": ["/usr/games/pyrogenesis", "0ad-servers"],
   };
   const [expected, folder] = supported[gameSlug];
   let engineMount;
   if (binary !== expected) {
-    const profile = NATIVE_PACKAGE_PROFILES[gameSlug];
-    const root = path.join("/opt/playbound-host/games", gameSlug);
+    const packageKey=gameSlug === "0-ad" ? "0ad" : gameSlug;
+    const profile = NATIVE_PACKAGE_PROFILES[packageKey];
+    const root = path.join("/opt/playbound-host/games", packageKey);
     if (!profile || binary !== path.join(root, profile.binary)) throw new Error("Customer isolation requires the reviewed system server");
-    verifyNativePackageInstallation(root, gameSlug);
+    verifyNativePackageInstallation(root, packageKey);
     engineMount = binary;
   }
   trustedExecutables(binary);
+  if (gameSlug === "0-ad") {
+    if (identityProfile !== "0-ad-unix-v1" || identityMigrationMetadata(id,home)?.identityProfile !== identityProfile) throw new Error("Customer identity migration is not ready");
+    return {profile:"0-ad-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,...zeroAdIdentityConfiguration(args)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
   if (gameSlug === "supertuxkart") {
     if (identityProfile !== "supertuxkart-unix-v1" || identityMigrationMetadata(id,home)?.identityProfile !== identityProfile) throw new Error("Customer identity migration is not ready");
     return {profile:"supertuxkart-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,...superTuxKartIdentityConfiguration(args)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
