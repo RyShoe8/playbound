@@ -1,0 +1,15 @@
+{
+  "version": "existing-zandronum-freedoom2",
+  "files": [
+    {
+      "path": "zandronum.pk3",
+      "bytes": 894778,
+      "sha256": "b7065624305ee960d4a7683ab916b7de826abfe3e7b871001179057b9123a280"
+    },
+    {
+      "path": "freedoom2.wad",
+      "bytes": 28787752,
+      "sha256": "5a9315fb7dedac6d11b42034d15b7f6828826b94c84c14078087fa4c97d88474"
+    }
+  ]
+}

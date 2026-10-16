@@ -47,6 +47,18 @@ class PublicationTests(unittest.TestCase):
         self.destination.symlink_to(self.source)
         with self.assertRaises(ValueError):module.promote(self.source,self.destination,self.manifest)
 
+    def test_freeciv_publication_is_bounded_and_preserves_nested_rulesets(self):
+        folder=self.source/'share/freeciv/classic';folder.mkdir(parents=True)
+        file=folder/'units.ruleset';file.write_bytes(self.data)
+        row={'path':'share/freeciv/classic/units.ruleset','bytes':len(self.data),'sha256':hashlib.sha256(self.data).hexdigest()}
+        result=module.promote(self.source,self.destination,{'files':[row]},game='freeciv')
+        self.assertEqual(result['files'],1)
+        self.assertEqual((self.destination/row['path']).read_bytes(),self.data)
+        self.assertEqual((self.destination/'share/freeciv/classic').stat().st_mode&0o777,0o555)
+        for invalid in ('share/freeciv/../classic/units.ruleset','bin/freeciv-server','share/freeciv/./units.ruleset'):
+            with self.assertRaises(ValueError):module.promote(self.source,self.root/'rejected',{'files':[dict(row,path=invalid)]},game='freeciv')
+        with self.assertRaises(ValueError):module.promote(self.source,self.root/'rejected',{'files':[dict(row,path='lib/'+str(i)+'.so') for i in range(1025)]},game='freeciv')
+
 
 @unittest.skipUnless(os.getuid()==0,'Root immutable descriptor fixtures')
 class AssetDescriptorTests(unittest.TestCase):
@@ -90,6 +102,21 @@ class AssetDescriptorTests(unittest.TestCase):
         with self.assertRaises(ValueError):self.reader.open_assets(self.root,game='wolfenstein-enemy-territory')
         extra.unlink();folder.rename(self.root/'elsewhere');folder.symlink_to(self.root/'elsewhere')
         with self.assertRaises(OSError):self.reader.open_assets(self.root,game='wolfenstein-enemy-territory')
+
+    def test_deep_freeciv_tree_rejects_unlisted_descendants_and_traversal(self):
+        self.asset.unlink()
+        folder=self.root/'share/freeciv/classic';folder.mkdir(parents=True)
+        file=folder/'units.ruleset';file.write_bytes(self.data);file.chmod(0o444)
+        for directory in (folder,folder.parent,folder.parent.parent):directory.chmod(0o555)
+        row={'path':'share/freeciv/classic/units.ruleset','bytes':len(self.data),'sha256':hashlib.sha256(self.data).hexdigest()}
+        self.profile.write_text(json.dumps({'files':[row]}))
+        fd=self.reader.open_assets(self.root,game='freeciv');os.close(fd)
+        extra=folder/'unreviewed.lua';extra.write_bytes(b'extra')
+        with self.assertRaises(ValueError):self.reader.open_assets(self.root,game='freeciv')
+        extra.unlink()
+        row['path']='share/freeciv/classic/../classic/units.ruleset'
+        self.profile.write_text(json.dumps({'files':[row]}))
+        with self.assertRaises(ValueError):self.reader.open_assets(self.root,game='freeciv')
 
 
 if __name__=='__main__':unittest.main()

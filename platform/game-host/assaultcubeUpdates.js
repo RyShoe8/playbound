@@ -15,7 +15,6 @@ const RELEASE = {
   tag: "v1.3.0.2", name: "AssaultCube_v1.3.0.2_LockdownEdition_RC1.tar.bz2", size: 52071427,
   digest: "sha256:9b3118e7929253f0114fa06cad8310faab646d177b4660406011152f34086b55",
 };
-const cache = new Map();
 function component(root) {
   const directory = path.join(root, "bin_unix"), stat = fs.lstatSync(directory);
   if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error("AssaultCube native binaries require a real directory");
@@ -40,11 +39,10 @@ export function verifyAssaultCubeInstallation(root) {
     const { filename, stat } = regular(directory, name), expected = record.files[name];
     if (!Number.isSafeInteger(expected?.size) || expected.size < 64 || expected.size > 16 * 1024 ** 2 || !/^[a-f0-9]{64}$/.test(expected.sha256 || "") || stat.size !== expected.size) throw new Error("AssaultCube native size or digest record is invalid");
     fs.accessSync(filename, fs.constants.X_OK);
-    const identity = JSON.stringify([stat.dev, stat.ino, stat.size, stat.mtimeMs, stat.ctimeMs, stat.mode, expected.sha256]);
-    if (cache.get(filename) === identity) continue;
+    // Same-size rewrites can share the filesystem's timestamp resolution.
+    // These small native files must be hashed even when metadata is unchanged.
     const data = fs.readFileSync(filename);
     if (data.readUInt32BE(0) !== 0x7f454c46 || data[4] !== 2 || data[5] !== 1 || data.readUInt16LE(18) !== 62 || createHash("sha256").update(data).digest("hex") !== expected.sha256) throw new Error("AssaultCube native binary differs from its reviewed x86_64 build");
-    if (cache.size >= 32) cache.clear(); cache.set(filename, identity);
   }
   return { buildId: record.buildId };
 }

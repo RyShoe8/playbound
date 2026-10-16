@@ -29,11 +29,17 @@ ENGINES = {
     'xonotic': ('xonotic-linux64-dedicated', '/engine-native'),
     'wolfenstein-enemy-territory': ('etlded.x86_64', '/engine-native'),
     'medal-of-honor-allied-assault': ('omohaaded', '/engine-native'),
+    'freedoom': ('zandronum-server', '/game-data/zandronum-server'),
 }
 
 def sealed_engine_for(game):
     if game in ('ysoccer','mindustry'):
         return sealed_java_engine(game=game), '/engine.jar'
+    if game == 'freedoom':
+        root=Path('/usr/local/libexec/playbound-isolated-freedoom')
+        descriptor=sealed_engine(root/'zandronum-server',root/'profile.json',game)
+        if descriptor is None: raise ValueError('Reviewed isolated Zandronum engine is not installed')
+        return descriptor, '/game-data/zandronum-server'
     if game == 'medal-of-honor-allied-assault':
         root=Path('/usr/local/libexec/playbound-isolated-openmohaa')
         descriptor=sealed_engine(root/'omohaaded',root/'profile.json',game)

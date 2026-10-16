@@ -1,0 +1,3550 @@
+{
+  "version": "existing-reviewed-freeciv-runtime",
+  "files": [
+    {
+      "path": "lib/libfreeciv.so",
+      "bytes": 3233656,
+      "sha256": "c48a511b1c3676999e3a5fec5871697e9e8d492ee4ca87e0ec38b35e57b56c6b"
+    },
+    {
+      "path": "share/freeciv/alien/README.alien",
+      "bytes": 4034,
+      "sha256": "ac4905d8fa83a5740a7f4a82add2d1850d8151ccd8fa4c78c4ef20e52e53a260"
+    },
+    {
+      "path": "share/freeciv/alien/actions.ruleset",
+      "bytes": 37574,
+      "sha256": "ab48e1b6bf39766374d774bfe992d65586dabf85936ff6ec8cb48fd8d92b443c"
+    },
+    {
+      "path": "share/freeciv/alien/buildings.ruleset",
+      "bytes": 21458,
+      "sha256": "2faba6e7be2ea1d68b1c5a65956c694376e0a831c054b7e586f8d419bba658f0"
+    },
+    {
+      "path": "share/freeciv/alien/cities.ruleset",
+      "bytes": 5471,
+      "sha256": "d14ae999f9db57554244a87090e6e40a9f1ab08b1b729996096ab76639b1021e"
+    },
+    {
+      "path": "share/freeciv/alien/effects.ruleset",
+      "bytes": 26390,
+      "sha256": "cdf408fc3522a69163dd551241f102c19c8011498458785def0147530c2598f6"
+    },
+    {
+      "path": "share/freeciv/alien/game.ruleset",
+      "bytes": 27678,
+      "sha256": "bd4b0250a6c5a266474dea8267fae4392db6a8d873d423b302989149dc4c7647"
+    },
+    {
+      "path": "share/freeciv/alien/governments.ruleset",
+      "bytes": 7998,
+      "sha256": "8c0113597f0c3e37f22d2b6afaf460c277f5352ab5940f7352db79ef43607ea0"
+    },
+    {
+      "path": "share/freeciv/alien/nation/adventurers.ruleset",
+      "bytes": 837,
+      "sha256": "522be7b0d1d134425e64edbb9a951b43460dec5b73d0d25f2b7d90b8310f1d27"
+    },
+    {
+      "path": "share/freeciv/alien/nation/galacticsound.ruleset",
+      "bytes": 728,
+      "sha256": "af4e869c18e2c7488b356727b1cfd91cb9ce28cd7d4cd458d9a3b3e0ded40f6c"
+    },
+    {
+      "path": "share/freeciv/alien/nation/jw.ruleset",
+      "bytes": 878,
+      "sha256": "f0082f291e7586bdbaf85b7e48de12167a807c0cf00c97420c6a5ca025383762"
+    },
+    {
+      "path": "share/freeciv/alien/nation/kindergarden.ruleset",
+      "bytes": 900,
+      "sha256": "156606a13ddebf363197bceb38a5a9df692b1fde82b9767fe49c95ef832e22ca"
+    },
+    {
+      "path": "share/freeciv/alien/nation/lunatics.ruleset",
+      "bytes": 528,
+      "sha256": "844d71228a19c213a57c0cfb1edcb2a256c4991cdf9ef13904c6da978bcec566"
+    },
+    {
+      "path": "share/freeciv/alien/nation/madmen.ruleset",
+      "bytes": 504,
+      "sha256": "3915b883eb437da5bb7614c8d1bf9b132850a7839eab29c844168ef28a06e858"
+    },
+    {
+      "path": "share/freeciv/alien/nation/mathclub.ruleset",
+      "bytes": 818,
+      "sha256": "03531abe2a20385b5080391e38aaf753f9865ce9008fa16b735928e56c316718"
+    },
+    {
+      "path": "share/freeciv/alien/nation/secretsociety.ruleset",
+      "bytes": 896,
+      "sha256": "31899d8c9bd6c10d1bd7c62e218f3ae0aa2a9ddfc326da2ce33c4e1d2b73df3e"
+    },
+    {
+      "path": "share/freeciv/alien/nation/teamgladiators.ruleset",
+      "bytes": 1045,
+      "sha256": "5f2b6919c0c011aa2720f98267d5d261332d0191bdd5a1a186ee81fa1824dac8"
+    },
+    {
+      "path": "share/freeciv/alien/nation_effects.ruleset",
+      "bytes": 2613,
+      "sha256": "b9d32af6b27fd43a091b062afaecd4143f1c3e433231b92959238af6c9ac8173"
+    },
+    {
+      "path": "share/freeciv/alien/nations.ruleset",
+      "bytes": 4616,
+      "sha256": "2ed48369913f873b5f218b8166c70903ae6f7cc464874e3f030b6637a139953e"
+    },
+    {
+      "path": "share/freeciv/alien/parser.lua",
+      "bytes": 639,
+      "sha256": "3c95aa8716c9dd1e2a16cfa08775dc2e41ec81c6e1052165360c9619bb0bb837"
+    },
+    {
+      "path": "share/freeciv/alien/script.lua",
+      "bytes": 5353,
+      "sha256": "714f085b07d56fe0aa710b81e76879fde79072f2a802af14ea30de123d4f9eb3"
+    },
+    {
+      "path": "share/freeciv/alien/styles.ruleset",
+      "bytes": 3136,
+      "sha256": "fd3964248cd84d72fe23b1e622345e195f181ad7559b453dbeed0d34659f173e"
+    },
+    {
+      "path": "share/freeciv/alien/techs.ruleset",
+      "bytes": 26933,
+      "sha256": "ade5138e3d1e4cc14e7078eedcfd23d50a5633ab742a907317f1fbb85d74c3fe"
+    },
+    {
+      "path": "share/freeciv/alien/terrain.ruleset",
+      "bytes": 55491,
+      "sha256": "55715b7fcaa337d7993bdc6f2676de99073a96257f11020f68e353ff4b1465b0"
+    },
+    {
+      "path": "share/freeciv/alien/units.ruleset",
+      "bytes": 50125,
+      "sha256": "1e4a4b51ca08d02b62bbdb484c4c50c5a5c4fe81a02cc8203096efc889087e0c"
+    },
+    {
+      "path": "share/freeciv/alien.modpack",
+      "bytes": 442,
+      "sha256": "4148c75a9c28a71bef75739c0286150a8536c99f03f2512233f7fee1bfd47bb5"
+    },
+    {
+      "path": "share/freeciv/civ1/actions.ruleset",
+      "bytes": 30012,
+      "sha256": "b9bff678a893fd0f948fc0fbb6dbba34b73b702cbc0db8ef6dc90b166318b743"
+    },
+    {
+      "path": "share/freeciv/civ1/buildings.ruleset",
+      "bytes": 35573,
+      "sha256": "fb0e35929193bac571e90290574ad38995a5c5f03584295d2ec2fc7ec56cab61"
+    },
+    {
+      "path": "share/freeciv/civ1/cities.ruleset",
+      "bytes": 5307,
+      "sha256": "6076723f9f0afab882493ae360467e8d21fb689faa191b61b8997071516d4bd0"
+    },
+    {
+      "path": "share/freeciv/civ1/effects.ruleset",
+      "bytes": 35150,
+      "sha256": "3480b6e6764a2cbcc10b06b36ec7fcf538ff7dae07235aeb297d5ee831e79a86"
+    },
+    {
+      "path": "share/freeciv/civ1/game.ruleset",
+      "bytes": 28431,
+      "sha256": "b738d4f52a79305ae6b56cc38b00febd854736fcffa6ee477ca9c3eda98af6e8"
+    },
+    {
+      "path": "share/freeciv/civ1/governments.ruleset",
+      "bytes": 8981,
+      "sha256": "0feac883657902f70171e31159ab3f4668adb302765def8a59589f6c09dbf442"
+    },
+    {
+      "path": "share/freeciv/civ1/nations.ruleset",
+      "bytes": 39054,
+      "sha256": "27bd5185ff119c1428152f17bc1abc6d1c5b4a53bfa8564e044fb0aa0d709698"
+    },
+    {
+      "path": "share/freeciv/civ1/parser.lua",
+      "bytes": 639,
+      "sha256": "3c95aa8716c9dd1e2a16cfa08775dc2e41ec81c6e1052165360c9619bb0bb837"
+    },
+    {
+      "path": "share/freeciv/civ1/script.lua",
+      "bytes": 1092,
+      "sha256": "62e37cc205593774a411b9fb85bdf29be74a85d578c5631e6871613e1d905b10"
+    },
+    {
+      "path": "share/freeciv/civ1/styles.ruleset",
+      "bytes": 7017,
+      "sha256": "f80771ce7ae911926d264a5b1910e612b7c654cb848b68f2dab5c35ca16ae4e9"
+    },
+    {
+      "path": "share/freeciv/civ1/techs.ruleset",
+      "bytes": 16650,
+      "sha256": "39563d5a2d2552f8c220d618fa82b961907e179ed8807bcb5afd0a3bd6b90311"
+    },
+    {
+      "path": "share/freeciv/civ1/terrain.ruleset",
+      "bytes": 54098,
+      "sha256": "765390ea8ff5377aad784475c3137fd80feb52573c5a4d0ad9b44f22f90701db"
+    },
+    {
+      "path": "share/freeciv/civ1/units.ruleset",
+      "bytes": 51704,
+      "sha256": "02fca54b688ac8f38a7ac6e342aafd6e5ce745a0cd72861a952ccb81130df4c7"
+    },
+    {
+      "path": "share/freeciv/civ1.modpack",
+      "bytes": 440,
+      "sha256": "f4774b27f15d61bc917f477b326f14a4c33e768a7e248d162eb04979a34a038f"
+    },
+    {
+      "path": "share/freeciv/civ2/actions.ruleset",
+      "bytes": 41731,
+      "sha256": "28a5b13a23d9ec27a0cfc1918ca02ffbb8c6d3d469971e876e7bb78a17ebf169"
+    },
+    {
+      "path": "share/freeciv/civ2/buildings.ruleset",
+      "bytes": 49009,
+      "sha256": "1d6339c698657868d8f915e4a50381b84222cec3b16feab63839296652ab4840"
+    },
+    {
+      "path": "share/freeciv/civ2/cities.ruleset",
+      "bytes": 5307,
+      "sha256": "6076723f9f0afab882493ae360467e8d21fb689faa191b61b8997071516d4bd0"
+    },
+    {
+      "path": "share/freeciv/civ2/effects.ruleset",
+      "bytes": 61062,
+      "sha256": "84479971cdd4d9cb7d22f1e90ff59666383ce5a562fd3e7b7056c98baebaab56"
+    },
+    {
+      "path": "share/freeciv/civ2/game.ruleset",
+      "bytes": 26552,
+      "sha256": "42a8ea5bf7ad51d5c9c17f1334a0766a84c3687e5ebee0cbb3db1efdd290b7f0"
+    },
+    {
+      "path": "share/freeciv/civ2/governments.ruleset",
+      "bytes": 10039,
+      "sha256": "ac512744882f8fbf97e97c3d70d7a3871dfe095e5aa7868c2892790081c14ba5"
+    },
+    {
+      "path": "share/freeciv/civ2/nations.ruleset",
+      "bytes": 53552,
+      "sha256": "470e9fff36d06a69c9308a31adc745b4bc81a866d965c29947a56e0f2ccb6b8d"
+    },
+    {
+      "path": "share/freeciv/civ2/parser.lua",
+      "bytes": 639,
+      "sha256": "3c95aa8716c9dd1e2a16cfa08775dc2e41ec81c6e1052165360c9619bb0bb837"
+    },
+    {
+      "path": "share/freeciv/civ2/script.lua",
+      "bytes": 803,
+      "sha256": "af545713e76c40c368150c3aa3778fcd3cf27d3a2064ed50a25c0d7c708d5b86"
+    },
+    {
+      "path": "share/freeciv/civ2/styles.ruleset",
+      "bytes": 7017,
+      "sha256": "f80771ce7ae911926d264a5b1910e612b7c654cb848b68f2dab5c35ca16ae4e9"
+    },
+    {
+      "path": "share/freeciv/civ2/techs.ruleset",
+      "bytes": 20507,
+      "sha256": "6246ac08e68a56abfedb73d67b73e41dac7236324ce6f29b94e429800c63cdc7"
+    },
+    {
+      "path": "share/freeciv/civ2/terrain.ruleset",
+      "bytes": 61094,
+      "sha256": "93cad2271307b899b3ee9aae6d6c9629a08b4c23e5b6f573eec9015881abccbd"
+    },
+    {
+      "path": "share/freeciv/civ2/units.ruleset",
+      "bytes": 75250,
+      "sha256": "3030a3d5fdf9b1a7d6f7ed7a33521f9002f2f6d0a22d9a45b8cf02579260a7f0"
+    },
+    {
+      "path": "share/freeciv/civ2.modpack",
+      "bytes": 440,
+      "sha256": "5814a2982953b42572f7d3d5649e92aeb76b0bd7863242394a096ae98d50f2c0"
+    },
+    {
+      "path": "share/freeciv/civ2civ3/README.civ2civ3",
+      "bytes": 40864,
+      "sha256": "05b8364fccc0a4e50f9cc3e2f35d828d07ac04eaf9871937ec04a14b30ef02b4"
+    },
+    {
+      "path": "share/freeciv/civ2civ3/actions.ruleset",
+      "bytes": 55507,
+      "sha256": "01bb9ad942bdc7ba7e950dd668f075e2cf0a5bbc559e3e475a0ab7153a054b12"
+    },
+    {
+      "path": "share/freeciv/civ2civ3/buildings.ruleset",
+      "bytes": 62454,
+      "sha256": "e80e320b816be012239137580e4a62d2e39a8f223edf8bb67022488ba18b4476"
+    },
+    {
+      "path": "share/freeciv/civ2civ3/cities.ruleset",
+      "bytes": 5599,
+      "sha256": "e528089b2c38b3c66ccaaead4007cce4a99a869b5dde26a36793a785ae54287f"
+    },
+    {
+      "path": "share/freeciv/civ2civ3/effects.ruleset",
+      "bytes": 110685,
+      "sha256": "ecfc739c63efa42226094b1c8db6ab70ea41c1dd301d5f9fd860bffe91a36a06"
+    },
+    {
+      "path": "share/freeciv/civ2civ3/game.ruleset",
+      "bytes": 30750,
+      "sha256": "75f17a74e335a430c11bafdda11c9809a3c0a5fb2402119668e8115d396a26a8"
+    },
+    {
+      "path": "share/freeciv/civ2civ3/governments.ruleset",
+      "bytes": 18492,
+      "sha256": "886941ee9b3d8e48bea56ecff3fa3d283233c44f0ed13749a52bede6629dd8b0"
+    },
+    {
+      "path": "share/freeciv/civ2civ3/nations.ruleset",
+      "bytes": 2525,
+      "sha256": "4c511191390ca384039fcf09221ade29e8e552a260e578147c3aeca7169c9019"
+    },
+    {
+      "path": "share/freeciv/civ2civ3/parser.lua",
+      "bytes": 639,
+      "sha256": "3c95aa8716c9dd1e2a16cfa08775dc2e41ec81c6e1052165360c9619bb0bb837"
+    },
+    {
+      "path": "share/freeciv/civ2civ3/script.lua",
+      "bytes": 11519,
+      "sha256": "76168807f42950105abae3db7bdab566e17b6ce1122914b9238336479dd5caac"
+    },
+    {
+      "path": "share/freeciv/civ2civ3/styles.ruleset",
+      "bytes": 7023,
+      "sha256": "e6e1b61c64ee62a14f7f02d5b95dd92f924a76efd5cb036246234aad7e23b670"
+    },
+    {
+      "path": "share/freeciv/civ2civ3/techs.ruleset",
+      "bytes": 21450,
+      "sha256": "45cd775adf9d61ecbfd93ad35a137ef59b5c3f5c0baca5f0249def0a4c925bd4"
+    },
+    {
+      "path": "share/freeciv/civ2civ3/terrain.ruleset",
+      "bytes": 78793,
+      "sha256": "80800ac4e9d3f009d3d2d8ec3b6ff2a5f5ba73477a1c233a00c945233f375553"
+    },
+    {
+      "path": "share/freeciv/civ2civ3/units.ruleset",
+      "bytes": 90442,
+      "sha256": "0884174c09389bf5f0a6de7550e6eec03d791b6250bca1d85f92256f51557636"
+    },
+    {
+      "path": "share/freeciv/civ2civ3.modpack",
+      "bytes": 448,
+      "sha256": "60c417644a308dfb1e9b0a5148540fa413651666a5084f2dd6056cc0921e4f13"
+    },
+    {
+      "path": "share/freeciv/classic/README.classic",
+      "bytes": 1466,
+      "sha256": "5d0b6dacc1fe1a32a96e304b44bd40651f6c37e842deabdad2efc4a6f37c77ba"
+    },
+    {
+      "path": "share/freeciv/classic/actions.ruleset",
+      "bytes": 50037,
+      "sha256": "c9ddc77abc230ec8c9c6dc6a0ed36cbdeb5fd63991e6f5a5104e42f66d75ad5e"
+    },
+    {
+      "path": "share/freeciv/classic/buildings.ruleset",
+      "bytes": 51912,
+      "sha256": "73f5654ef0eb16aaed9f64313de2a03a4827b1b7bfaa0dda9847b9adf97cd5d9"
+    },
+    {
+      "path": "share/freeciv/classic/cities.ruleset",
+      "bytes": 5396,
+      "sha256": "95026301ad0a937ff7d30b9207c9cba7bd54f08000926380f6de68db47d3f48a"
+    },
+    {
+      "path": "share/freeciv/classic/effects.ruleset",
+      "bytes": 63317,
+      "sha256": "b5bd665c95847d7958d2155c17c63393403d598f3f289793309c634a1b8f7deb"
+    },
+    {
+      "path": "share/freeciv/classic/game.ruleset",
+      "bytes": 27318,
+      "sha256": "7ca351b962db352771389b35bc3f540228d94a719c8dc4d37149a035f614db4c"
+    },
+    {
+      "path": "share/freeciv/classic/governments.ruleset",
+      "bytes": 8737,
+      "sha256": "c6e1a06b7416eb3baa15fd9a73e1179bfad9e7d5f93f87449a1e014a5696b297"
+    },
+    {
+      "path": "share/freeciv/classic/nations.ruleset",
+      "bytes": 2473,
+      "sha256": "89efbd1d9c1ca7424e3adb158e77cbbd888ba4f4b19cb2f49bd48b81c4c93961"
+    },
+    {
+      "path": "share/freeciv/classic/parser.lua",
+      "bytes": 639,
+      "sha256": "3c95aa8716c9dd1e2a16cfa08775dc2e41ec81c6e1052165360c9619bb0bb837"
+    },
+    {
+      "path": "share/freeciv/classic/script.lua",
+      "bytes": 3101,
+      "sha256": "51a0aeb0d93d0c5250850fceb6db4698035e7ba922dff31d635525f8c04690c8"
+    },
+    {
+      "path": "share/freeciv/classic/styles.ruleset",
+      "bytes": 7031,
+      "sha256": "fb8c7b35cd0c7227474e6c0d987d15bb09ca02603c89766e8fc8a365b739bb5e"
+    },
+    {
+      "path": "share/freeciv/classic/techs.ruleset",
+      "bytes": 20738,
+      "sha256": "cd0ebfae9dfa2ff51f8827c8205d542fe845e169d2537f262e3387cc009b10a1"
+    },
+    {
+      "path": "share/freeciv/classic/terrain.ruleset",
+      "bytes": 70041,
+      "sha256": "ce3cc9ea1c8563517392d8de5cd2ff9cf7df04d60e4ca0229c345a308ecd3bb1"
+    },
+    {
+      "path": "share/freeciv/classic/units.ruleset",
+      "bytes": 78346,
+      "sha256": "3ac6fed02dc964f31a0676393d81b524fb9f1147dd2d72cdc729e11c993b2ac0"
+    },
+    {
+      "path": "share/freeciv/classic.modpack",
+      "bytes": 446,
+      "sha256": "8b8fdc0d45085701561a89692291c95f7a47a32948eaf0820fcf7c5787725308"
+    },
+    {
+      "path": "share/freeciv/default/ai_effects.ruleset",
+      "bytes": 2810,
+      "sha256": "08d1cf246501775cc746cd22b722ecdd27d453984d48689f6ab2faf21e7495f4"
+    },
+    {
+      "path": "share/freeciv/default/default.lua",
+      "bytes": 8793,
+      "sha256": "58ec464bbb18af942a3aa47e03ea394ff6615930e4255e8d37ee3d6f05c88344"
+    },
+    {
+      "path": "share/freeciv/default/nationlist.ruleset",
+      "bytes": 24736,
+      "sha256": "52972c56ef9dc40a0a5e36b39b104b46c92dde0cb3e8f3635cab9910d370a3aa"
+    },
+    {
+      "path": "share/freeciv/default.modpack",
+      "bytes": 447,
+      "sha256": "b15de718cdb4d20e8dc9a38eb95a4729ef7784703902869d7bba27855c99f67e"
+    },
+    {
+      "path": "share/freeciv/multiplayer/README.multiplayer",
+      "bytes": 6221,
+      "sha256": "d4b5ef0d24fde305edeb13e13053b60451ce2fb82b2aa0b69d359100cf6eea15"
+    },
+    {
+      "path": "share/freeciv/multiplayer/actions.ruleset",
+      "bytes": 49436,
+      "sha256": "d681219bb01ea1687aa306b35c4f8c7e687274b36acecb83f2abd3554e42acf2"
+    },
+    {
+      "path": "share/freeciv/multiplayer/buildings.ruleset",
+      "bytes": 53310,
+      "sha256": "bf4d414299821a8cde693bd67806c0621ff54db935ad22490186010b8f2a95a3"
+    },
+    {
+      "path": "share/freeciv/multiplayer/cities.ruleset",
+      "bytes": 5387,
+      "sha256": "0da9af0494636527da87dcfe77033cd7b2eaad92b8a2b56285f7659f797920b8"
+    },
+    {
+      "path": "share/freeciv/multiplayer/effects.ruleset",
+      "bytes": 65054,
+      "sha256": "c5f76ef1028d2ca8428493cafbb31818a7f44769e0081094d41736efc79fa5fe"
+    },
+    {
+      "path": "share/freeciv/multiplayer/game.ruleset",
+      "bytes": 30980,
+      "sha256": "6b3039a5466ce9ae0c249039793d17328b153fad3c6836c1cb6c79fdf10a0201"
+    },
+    {
+      "path": "share/freeciv/multiplayer/governments.ruleset",
+      "bytes": 9765,
+      "sha256": "d79f42ced9a148201eb2e9366c24f282d24c332586d3f221fca3b7656003ed2b"
+    },
+    {
+      "path": "share/freeciv/multiplayer/nations.ruleset",
+      "bytes": 2477,
+      "sha256": "df796ae76fbdbd7d2932c46397a8a8f47540f7fbbbe258335cdeb04519dd8eac"
+    },
+    {
+      "path": "share/freeciv/multiplayer/parser.lua",
+      "bytes": 639,
+      "sha256": "3c95aa8716c9dd1e2a16cfa08775dc2e41ec81c6e1052165360c9619bb0bb837"
+    },
+    {
+      "path": "share/freeciv/multiplayer/script.lua",
+      "bytes": 5623,
+      "sha256": "ca46c4d560fe1345650e4b0bc5ed0949950394c803940bc84046600322d0abd6"
+    },
+    {
+      "path": "share/freeciv/multiplayer/styles.ruleset",
+      "bytes": 7023,
+      "sha256": "e6e1b61c64ee62a14f7f02d5b95dd92f924a76efd5cb036246234aad7e23b670"
+    },
+    {
+      "path": "share/freeciv/multiplayer/techs.ruleset",
+      "bytes": 21138,
+      "sha256": "527f19bb62dfebacd7bd66433318526513e62378c87cae9bf6c5f9584820a7e2"
+    },
+    {
+      "path": "share/freeciv/multiplayer/terrain.ruleset",
+      "bytes": 69051,
+      "sha256": "1b31a5fc0ad9afcc6694496b824ed96d9920b45691651585607d75a73ca9f2eb"
+    },
+    {
+      "path": "share/freeciv/multiplayer/units.ruleset",
+      "bytes": 80103,
+      "sha256": "b92b56f8b3d80ffb318b38202091b4fa6271d6b53ff3ef2a00aa1b441b672765"
+    },
+    {
+      "path": "share/freeciv/multiplayer.modpack",
+      "bytes": 454,
+      "sha256": "cc702017cbd2ea84943a4fd2732ce6fecb67132a31e5c9c3a2050044cd03389f"
+    },
+    {
+      "path": "share/freeciv/nation/abkhaz.ruleset",
+      "bytes": 2594,
+      "sha256": "5ddc6975be061218942088b5f453e8b85a3908addb7f4de903303c290f83cb35"
+    },
+    {
+      "path": "share/freeciv/nation/aborigines.ruleset",
+      "bytes": 1787,
+      "sha256": "0f6b11650e033a14f5d49450b5cf4f3528a60251777f23614ff2abbd51ae1be1"
+    },
+    {
+      "path": "share/freeciv/nation/abyssinian.ruleset",
+      "bytes": 1240,
+      "sha256": "5bfb06f7a6b2f4287e5daa325f972636d31a5f0f860f7e4aa119640e15c2ad0b"
+    },
+    {
+      "path": "share/freeciv/nation/acadian.ruleset",
+      "bytes": 2733,
+      "sha256": "28291f9aaca40dae35dd887b997fbcb1c662b9d2b53c1bb7ec43320086c58f9e"
+    },
+    {
+      "path": "share/freeciv/nation/acehnese.ruleset",
+      "bytes": 1751,
+      "sha256": "ae39a3f63701461f0168413c67e8e770c71a655d34aa1a79fa82a586a466f9af"
+    },
+    {
+      "path": "share/freeciv/nation/acrean.ruleset",
+      "bytes": 2263,
+      "sha256": "fe56d00a15a8e68641851979b8d4ba3cbbe1f0fbce5d094078e2e1e43f7da45e"
+    },
+    {
+      "path": "share/freeciv/nation/afghani.ruleset",
+      "bytes": 1784,
+      "sha256": "a20240865843ea4a8132c12c5e3a76240b88341dadac52afd8b8347082bb2b83"
+    },
+    {
+      "path": "share/freeciv/nation/african.ruleset",
+      "bytes": 2253,
+      "sha256": "fa1e0cbbf20093ac209a2aedbf557923fbe851b630e0a4cead1d997ef9de3601"
+    },
+    {
+      "path": "share/freeciv/nation/ainu.ruleset",
+      "bytes": 2151,
+      "sha256": "95de304b3b122727527a19cbb168f4a2d64574180955a54c77bc970e35f96078"
+    },
+    {
+      "path": "share/freeciv/nation/akwe.ruleset",
+      "bytes": 1590,
+      "sha256": "96ffa84bedf9cb90d82b6c6d569cb530f5dbf3f6e4bc702c0eec5726b293cbf4"
+    },
+    {
+      "path": "share/freeciv/nation/alandalus.ruleset",
+      "bytes": 5779,
+      "sha256": "cf27684ad0a43708e317014bd006deb1ddcce6ae79e553a2026c1d2ab48cdd07"
+    },
+    {
+      "path": "share/freeciv/nation/alander.ruleset",
+      "bytes": 2495,
+      "sha256": "8c925cd1f8988daf58ff4df14e212ee0131f239313c58dacfd1cba624688e2fc"
+    },
+    {
+      "path": "share/freeciv/nation/alaskan.ruleset",
+      "bytes": 2842,
+      "sha256": "895af2399315fb04fbe2b9e2e1d39e81c2b1989b798f82a017c5dde009d3e15c"
+    },
+    {
+      "path": "share/freeciv/nation/albanian.ruleset",
+      "bytes": 1925,
+      "sha256": "e8d568f3a6bbb13aeb5b57a425fa59882a6ed71698f0968382ff34de43528a53"
+    },
+    {
+      "path": "share/freeciv/nation/aleut.ruleset",
+      "bytes": 1294,
+      "sha256": "ae9ab696775092737fb87da788cdb4b621bd771ab0a36899f047fddae3ecc996"
+    },
+    {
+      "path": "share/freeciv/nation/algerian.ruleset",
+      "bytes": 1197,
+      "sha256": "7192b5ce573c010f76f45196ce9bbbd4f28364272858e7a1556a6ac967e07812"
+    },
+    {
+      "path": "share/freeciv/nation/alsatian.ruleset",
+      "bytes": 2642,
+      "sha256": "ab190bf59f636ab47d81c0709c3d986edbcf1ea34464d323a72eea465c64bb37"
+    },
+    {
+      "path": "share/freeciv/nation/amazigh.ruleset",
+      "bytes": 5082,
+      "sha256": "cada7e219f8d4a36a7139b587967a3cee38f556c66d8b650d32e5dc334317846"
+    },
+    {
+      "path": "share/freeciv/nation/amazonian.ruleset",
+      "bytes": 1031,
+      "sha256": "46ba61463ee64a6fad31db548ec0087823edb2d348ab29d4d6a2141f06b79469"
+    },
+    {
+      "path": "share/freeciv/nation/american.ruleset",
+      "bytes": 7086,
+      "sha256": "e5bb26730e4f0dfd8b6ccbf764741b4af08186534c085b04af6f9c89efe6a592"
+    },
+    {
+      "path": "share/freeciv/nation/andorran.ruleset",
+      "bytes": 1755,
+      "sha256": "2621f3db6850b30614c2b5fbd9a84ae0d05f1f9816f6023bd6c49de56e7f4b28"
+    },
+    {
+      "path": "share/freeciv/nation/angolan.ruleset",
+      "bytes": 1563,
+      "sha256": "3bcda397e5451be1d04ff00979b570095ded9ea2965da7ba6db170f16e6a20e2"
+    },
+    {
+      "path": "share/freeciv/nation/anhaltian.ruleset",
+      "bytes": 2258,
+      "sha256": "2753d5a8ea112a4a3bd7a74ca6b24075603b533736b1579b03871860b5cd0428"
+    },
+    {
+      "path": "share/freeciv/nation/animals.ruleset",
+      "bytes": 590,
+      "sha256": "4e18d3050c1f2f4f663a50a96cfa4c1cc47dac0111f31554d42f5c23cb0862c2"
+    },
+    {
+      "path": "share/freeciv/nation/anishinaabe.ruleset",
+      "bytes": 2077,
+      "sha256": "819ea4afa82fc51695f103da73cd97438e65175b3eb1441044ee6638042e5f3e"
+    },
+    {
+      "path": "share/freeciv/nation/antarctican.ruleset",
+      "bytes": 2556,
+      "sha256": "b6ddbb72ac49418369f65437885dd9c70f21d39053ce20eb545def1bd4be2edc"
+    },
+    {
+      "path": "share/freeciv/nation/antiguan.ruleset",
+      "bytes": 1726,
+      "sha256": "b9f86ca8034c06a056db630bb983550ba090ad787de76505313a2e8563b4dee9"
+    },
+    {
+      "path": "share/freeciv/nation/antillean.ruleset",
+      "bytes": 3147,
+      "sha256": "fc3aa56fc352b0c7346a67eb86acdbb277c5af7b7718129f8e932231e54994ed"
+    },
+    {
+      "path": "share/freeciv/nation/apache.ruleset",
+      "bytes": 2313,
+      "sha256": "63f41f117b14e6636543d32391ad2d4dd2efb65628da7881da0d880471428fbd"
+    },
+    {
+      "path": "share/freeciv/nation/arab.ruleset",
+      "bytes": 2590,
+      "sha256": "a9b05bdc5954653f51103695337113b563fd3d98f68df516c5fa1ea097677691"
+    },
+    {
+      "path": "share/freeciv/nation/aragonese.ruleset",
+      "bytes": 2412,
+      "sha256": "528fd0ad4046b81846528018532e71af431113486d96e637a46149ee2c786214"
+    },
+    {
+      "path": "share/freeciv/nation/aramean.ruleset",
+      "bytes": 822,
+      "sha256": "bf6794995f6fe8639b3de781a17ef066a2b883e0adff9e16b29b4ea3ffe43053"
+    },
+    {
+      "path": "share/freeciv/nation/argentine.ruleset",
+      "bytes": 2943,
+      "sha256": "be1fbd4a0e43cc2ee99e78c6bb288c2d03585de549540a49d1bc142da8567bf3"
+    },
+    {
+      "path": "share/freeciv/nation/armenian.ruleset",
+      "bytes": 1375,
+      "sha256": "de785c128c17df342665f0a0521f7fde3c5b1033c721974065be22a1d58ec1e8"
+    },
+    {
+      "path": "share/freeciv/nation/ashanti.ruleset",
+      "bytes": 1665,
+      "sha256": "84d92655deb99b405c688d407165be8debddb4fcf71286be1697c2827b9c2859"
+    },
+    {
+      "path": "share/freeciv/nation/assamese.ruleset",
+      "bytes": 1112,
+      "sha256": "32700ff2064e609a89a3fef0f2e7556995e83c4b81a5ddc660172f8c5990c6ce"
+    },
+    {
+      "path": "share/freeciv/nation/assyrian.ruleset",
+      "bytes": 1101,
+      "sha256": "0049f8de946c62fcbcf16f6cc6e5ee9e1d91f78dd68a1e564d217c0a81adf6a6"
+    },
+    {
+      "path": "share/freeciv/nation/asturian.ruleset",
+      "bytes": 2412,
+      "sha256": "a7ca2c64854654476fa62064c9ccb400d659f81b9697911596f261dbe0ab6b72"
+    },
+    {
+      "path": "share/freeciv/nation/atlantean.ruleset",
+      "bytes": 1571,
+      "sha256": "d5ebcbb900d5283af177364e48fbe640ce4ab357cf1ea76d7d05281219ef35f3"
+    },
+    {
+      "path": "share/freeciv/nation/australian.ruleset",
+      "bytes": 2839,
+      "sha256": "61cc580b8098df201bcef763fe54ec5b8dd0b21c8b888639d22b7f4080528964"
+    },
+    {
+      "path": "share/freeciv/nation/austrian.ruleset",
+      "bytes": 3772,
+      "sha256": "58b8bce954ccab87bcc4e7a3868dd4a6600e4c86401924ca0a82ec89bc498328"
+    },
+    {
+      "path": "share/freeciv/nation/avar.ruleset",
+      "bytes": 1854,
+      "sha256": "a055c32f455a45f28a549f0543c0820e8edd20f1109f3c0d697f1b27606f64ef"
+    },
+    {
+      "path": "share/freeciv/nation/aymara.ruleset",
+      "bytes": 2095,
+      "sha256": "aef860111fe459dec2ad23db267bd71ecda638f98edd833828259f314df47efc"
+    },
+    {
+      "path": "share/freeciv/nation/azeri.ruleset",
+      "bytes": 2870,
+      "sha256": "120c0d1eabf566e8f59622354ba9e607790216872afc939a7757a1f3fb22b454"
+    },
+    {
+      "path": "share/freeciv/nation/aztec.ruleset",
+      "bytes": 2474,
+      "sha256": "493332fca5f6fa17373b8b8a5ffc0b7047f0e330954d2d99f0753e52fda5538f"
+    },
+    {
+      "path": "share/freeciv/nation/babylonian.ruleset",
+      "bytes": 1549,
+      "sha256": "171eb8fea08ad39caa2b7005e5250509a04e4e7f7abd2058d675da52acf61e9e"
+    },
+    {
+      "path": "share/freeciv/nation/badian.ruleset",
+      "bytes": 1916,
+      "sha256": "331de16ad6e30f52483023ca8ce14c40def3fdc5ca0ccee1d289b2de2fbe5cce"
+    },
+    {
+      "path": "share/freeciv/nation/bahamian.ruleset",
+      "bytes": 1898,
+      "sha256": "cda494ffe46da9a3926e1921ab123bbd8333e69621b60bac5cf79515ee948ed2"
+    },
+    {
+      "path": "share/freeciv/nation/bahraini.ruleset",
+      "bytes": 1679,
+      "sha256": "380c2b9f0a6d2166b36ee475dc3c71e92b4a8555de888d63abea71d074647348"
+    },
+    {
+      "path": "share/freeciv/nation/bangladeshi.ruleset",
+      "bytes": 1390,
+      "sha256": "fab8b7590532e1dcf411c2ed171ff374249435f783db26810fb0e0aeaafcc55f"
+    },
+    {
+      "path": "share/freeciv/nation/barbadian.ruleset",
+      "bytes": 1826,
+      "sha256": "c8e531acca52997047d8b35ef7f5a0dc64b31481a893a37f278282310fe5c9d0"
+    },
+    {
+      "path": "share/freeciv/nation/barbarian.ruleset",
+      "bytes": 643,
+      "sha256": "31c9585881cd4fc2b8e8d1af8a0349410f0261b5d07ec628c96de17b37fb386a"
+    },
+    {
+      "path": "share/freeciv/nation/bashkir.ruleset",
+      "bytes": 2742,
+      "sha256": "daa5c385ca7db97315f10e55a1ff963dbe55cb5c88399e946d121ad844e16eb4"
+    },
+    {
+      "path": "share/freeciv/nation/basque.ruleset",
+      "bytes": 4295,
+      "sha256": "78b85bd72238c2fc91474b18afea388f580cdd510dbdca9a063f183fedb7d552"
+    },
+    {
+      "path": "share/freeciv/nation/bavarian.ruleset",
+      "bytes": 1692,
+      "sha256": "bc225b7b94da70819dc3590d445004fb244f7f81f514888e68706a1e608bf207"
+    },
+    {
+      "path": "share/freeciv/nation/belarusian.ruleset",
+      "bytes": 1659,
+      "sha256": "e7bde1133e64aa510f7be7e68f7e838d9b9c02023b77226d0cd93d250922da0b"
+    },
+    {
+      "path": "share/freeciv/nation/belgian.ruleset",
+      "bytes": 1525,
+      "sha256": "312f4a4bb979bf1ca1dc09c028ac5dfb1ba67f26d03646ddf82a9294ab261ab2"
+    },
+    {
+      "path": "share/freeciv/nation/belgic.ruleset",
+      "bytes": 2027,
+      "sha256": "ce7dc3f7957f8a2c1d3fa684159862f231fc2ba5ba8f8811a6fc24dbc6cb6206"
+    },
+    {
+      "path": "share/freeciv/nation/belizean.ruleset",
+      "bytes": 2279,
+      "sha256": "a206ebc6dc0ea2ab909f70a3c0684ce7b731475e1d7b4b814e4f7da41ab9084c"
+    },
+    {
+      "path": "share/freeciv/nation/bengali.ruleset",
+      "bytes": 1777,
+      "sha256": "33a1e1bc34e44521052760b16ca2a7b7faadf502b7e9fe2ed61b39be57c314d1"
+    },
+    {
+      "path": "share/freeciv/nation/benin.ruleset",
+      "bytes": 1439,
+      "sha256": "5913a0125708a28d3eadac7f86c1fbb003c842a6891bcbdca895686d47b465e9"
+    },
+    {
+      "path": "share/freeciv/nation/beninese.ruleset",
+      "bytes": 1235,
+      "sha256": "3e6f3ef8912e6b5cdaad5d208c995e379447d558e58274e3bb656af046fe3621"
+    },
+    {
+      "path": "share/freeciv/nation/bhutanese.ruleset",
+      "bytes": 1985,
+      "sha256": "faf1ccc81f5c20ec7c23e4d899c32c7923b917b98314c1fc22e27d9c58485deb"
+    },
+    {
+      "path": "share/freeciv/nation/biafran.ruleset",
+      "bytes": 1323,
+      "sha256": "11d2cfa0ecd5ea3c7f78acfe5abbd346524d3419ffdb211ba8d4779abfc46a09"
+    },
+    {
+      "path": "share/freeciv/nation/bissauguinean.ruleset",
+      "bytes": 1394,
+      "sha256": "c8da443d4af033de98f0c67c1764ea179e78df4d3d7bb8488908e2de5920e551"
+    },
+    {
+      "path": "share/freeciv/nation/boer.ruleset",
+      "bytes": 1801,
+      "sha256": "f20fe25adf76f8c0dd51f12d865b70309c743c24bbd88b19fb478a4673507f09"
+    },
+    {
+      "path": "share/freeciv/nation/boian.ruleset",
+      "bytes": 1238,
+      "sha256": "b807682a4a785d0e34a2e18ce8088ad6b06eee0fda170f067e3ff41c704bc49b"
+    },
+    {
+      "path": "share/freeciv/nation/bolivian.ruleset",
+      "bytes": 2737,
+      "sha256": "5d9296229828ebe2d3dbdfa3f0823df9716bbc973cb1d0eedd95c2a4b3868ddb"
+    },
+    {
+      "path": "share/freeciv/nation/bosnia.ruleset",
+      "bytes": 1955,
+      "sha256": "8c2eb566547f51c9361f952c28e79afaf2e4b068865fc8f2ed9d0432c5d50943"
+    },
+    {
+      "path": "share/freeciv/nation/bosporan.ruleset",
+      "bytes": 1735,
+      "sha256": "845ea7ef45e077f283b5888f5a163d0fe6804ba9b6e14ed72143a44b02dba1e1"
+    },
+    {
+      "path": "share/freeciv/nation/botswanan.ruleset",
+      "bytes": 1199,
+      "sha256": "bb04474e35c7b39635ac451eb242edc4d97f4f54627529afac314b645cb97da7"
+    },
+    {
+      "path": "share/freeciv/nation/brandenburgian.ruleset",
+      "bytes": 2099,
+      "sha256": "b06d21f83d2ee3fa8f377794c933e5dfed333046304a127980294915d3a9e999"
+    },
+    {
+      "path": "share/freeciv/nation/brazilian.ruleset",
+      "bytes": 2892,
+      "sha256": "91dbd2a071e8119f283808da4d8ce6844ccc2ffbb7d071596942cb3524855044"
+    },
+    {
+      "path": "share/freeciv/nation/breton.ruleset",
+      "bytes": 1940,
+      "sha256": "11f359e1f4c45449815a79dcec54d2f77b6e1e4320fe8df9fa21d9aa26aced24"
+    },
+    {
+      "path": "share/freeciv/nation/british.ruleset",
+      "bytes": 1922,
+      "sha256": "42800e5162ad65a45f51393d5eaefcedd86f3686e37ba0dec1fd50c5526143f4"
+    },
+    {
+      "path": "share/freeciv/nation/briton.ruleset",
+      "bytes": 1546,
+      "sha256": "e63bf36c5cc29dae7ac8c3b1c111bb62d903d87b7640c589e453363e5946a0ba"
+    },
+    {
+      "path": "share/freeciv/nation/bruneian.ruleset",
+      "bytes": 1639,
+      "sha256": "616d286a6e913e8721464d24e5e2f61576696e4820d8f4fbf5a7f8099a8dbc14"
+    },
+    {
+      "path": "share/freeciv/nation/bulgarian.ruleset",
+      "bytes": 2183,
+      "sha256": "81cd4a638883c475435199b9b063bb73371002f11868f4e0997e8410d0119e52"
+    },
+    {
+      "path": "share/freeciv/nation/burgundian.ruleset",
+      "bytes": 1926,
+      "sha256": "c21b1151a36e112622e9b905d5cfeeedb494944c1562c099f2afb077ea1c462e"
+    },
+    {
+      "path": "share/freeciv/nation/burgundic.ruleset",
+      "bytes": 2756,
+      "sha256": "76d0c0a32fa9ada67987267a15a44e16e2a8b67de0aedff10845bce8b98b5cfa"
+    },
+    {
+      "path": "share/freeciv/nation/burkinabe.ruleset",
+      "bytes": 1207,
+      "sha256": "2e722cd54aad43269a3b65bf5f27693649af1c1034264a0eff42bfb436d06531"
+    },
+    {
+      "path": "share/freeciv/nation/burmese.ruleset",
+      "bytes": 1105,
+      "sha256": "ca60e8ec2d08dd2d531cbe54844716aeeefba3f8e7c5b1fc71dc9e105a955ee3"
+    },
+    {
+      "path": "share/freeciv/nation/burundi.ruleset",
+      "bytes": 1700,
+      "sha256": "e3319ae59a284a53f023da7846b566b48426c65be23131281c717adb26e6628e"
+    },
+    {
+      "path": "share/freeciv/nation/buryat.ruleset",
+      "bytes": 2257,
+      "sha256": "a76f3126a2ab767bff767e81edadfe0017f5df710b9dd16aa76e23cadcdb4988"
+    },
+    {
+      "path": "share/freeciv/nation/byzantium.ruleset",
+      "bytes": 3156,
+      "sha256": "eed8040fd2aa559621ac71101970c93a0517aba60d195631b6c95fa711175b67"
+    },
+    {
+      "path": "share/freeciv/nation/californian.ruleset",
+      "bytes": 3707,
+      "sha256": "de8eb87068962913cd91482e370cf982720eb2d1c8b35637ee90345100f61245"
+    },
+    {
+      "path": "share/freeciv/nation/cambodian.ruleset",
+      "bytes": 1354,
+      "sha256": "9b4aa76f696da574338423ead76ff595ffe379ffbc23425319eba6169db60788"
+    },
+    {
+      "path": "share/freeciv/nation/cameroonian.ruleset",
+      "bytes": 1038,
+      "sha256": "2653eb45ceb11c7288b1d9681f876a3f3cd8f69c9623708a0e8793519b2d0e0f"
+    },
+    {
+      "path": "share/freeciv/nation/canadian.ruleset",
+      "bytes": 6658,
+      "sha256": "bb05f4737444d2ed11e77ce39b7eb08cf4ad7269757a3cbee7aa6488ed3c652e"
+    },
+    {
+      "path": "share/freeciv/nation/canari.ruleset",
+      "bytes": 1897,
+      "sha256": "65f14514b497e6eace52a1b08711be8d6d2edb43a8c60bca8d4cda2e5c4601b4"
+    },
+    {
+      "path": "share/freeciv/nation/cantonese.ruleset",
+      "bytes": 2315,
+      "sha256": "bf06cd9b9c0e9df47aa7bf1ff0c529dbc1764abb4b6b2233918cb1a434cbecaa"
+    },
+    {
+      "path": "share/freeciv/nation/capeverdean.ruleset",
+      "bytes": 2456,
+      "sha256": "7d553d77dc59d1b5a30e1a7401104cebb33b78bf1f2b3ebd4f2b0955a8923347"
+    },
+    {
+      "path": "share/freeciv/nation/carantanian.ruleset",
+      "bytes": 1858,
+      "sha256": "d89feeb8b83f3c7cb6b46fcadfd7db0e12ba722bffd63780406665a3f886d703"
+    },
+    {
+      "path": "share/freeciv/nation/carthaginian.ruleset",
+      "bytes": 1414,
+      "sha256": "b8dab5a9046db50cf1d46d7534ef448967e61745635c10eaff1958e8b447e0d9"
+    },
+    {
+      "path": "share/freeciv/nation/castilian.ruleset",
+      "bytes": 2130,
+      "sha256": "411e5e737dd518b1afa1ac8694a00f854421e88958f6db35068f7240ebdbd870"
+    },
+    {
+      "path": "share/freeciv/nation/catalan.ruleset",
+      "bytes": 3480,
+      "sha256": "597208f84583ad381ebb862548def5c4eb77bdd6964b0a0bf047767807b64928"
+    },
+    {
+      "path": "share/freeciv/nation/celtiberian.ruleset",
+      "bytes": 1258,
+      "sha256": "0af587cb1b71636da03395d636d771536d1fc2b9542f20b0457fa7eebadb493c"
+    },
+    {
+      "path": "share/freeciv/nation/celtic.ruleset",
+      "bytes": 3209,
+      "sha256": "3123c0e847db58c55cb9394cf4b21ae4519e7b9d50a9a251f5e368a3b5fe70db"
+    },
+    {
+      "path": "share/freeciv/nation/centralafrican.ruleset",
+      "bytes": 1284,
+      "sha256": "6586b4773fcdaaff4a0b1d5177cb20021beb08d13353889c5aed1c6c8b007801"
+    },
+    {
+      "path": "share/freeciv/nation/centralamerican.ruleset",
+      "bytes": 2504,
+      "sha256": "5df24d12a99ad0687bf002d5fe811965b5a192b02a1a2b89318c245a1da2c2a5"
+    },
+    {
+      "path": "share/freeciv/nation/centrallithuanian.ruleset",
+      "bytes": 3278,
+      "sha256": "688249dea2840cb994c7ee15bf2d47d000ff90300a4b6d5826bbd50de2609909"
+    },
+    {
+      "path": "share/freeciv/nation/chadian.ruleset",
+      "bytes": 1386,
+      "sha256": "fb688b99397f2d1d399be911c8c8b578fe8ce24305baa81e90487daaf0b9c056"
+    },
+    {
+      "path": "share/freeciv/nation/cham.ruleset",
+      "bytes": 1438,
+      "sha256": "441460fec2c0cd5228342d2ded3b360a6f22c4e4df3f03fe571f3a5b20d91a3c"
+    },
+    {
+      "path": "share/freeciv/nation/chananean.ruleset",
+      "bytes": 1860,
+      "sha256": "d7b94cb241f705f75bfb7e2390413a54d1a8f118109ba825e7375c4ac49ee838"
+    },
+    {
+      "path": "share/freeciv/nation/chechen.ruleset",
+      "bytes": 2866,
+      "sha256": "0edbb32e44576a7c07993ca50c1e606bce11eba6cd5e1de8758e26c7618752a6"
+    },
+    {
+      "path": "share/freeciv/nation/cherokee.ruleset",
+      "bytes": 4036,
+      "sha256": "873f404e8920f359133fd599af96774474a2626b2069c13f2482488cd399bbdc"
+    },
+    {
+      "path": "share/freeciv/nation/chiapanec.ruleset",
+      "bytes": 2400,
+      "sha256": "8807e32a9b535d381fe827ccaa642e7bc6188d4ffa0ccc578540d366fdbaf8ea"
+    },
+    {
+      "path": "share/freeciv/nation/chickasaw.ruleset",
+      "bytes": 1564,
+      "sha256": "2b5caed7225500c60d9bc0132995727c4ba74a552ce0bbf839788cea72736d19"
+    },
+    {
+      "path": "share/freeciv/nation/chilean.ruleset",
+      "bytes": 2557,
+      "sha256": "adf513087edfa7d55bf541cdf25c8b77d811a7d4b1df5fcec046e7aefb1cbd8b"
+    },
+    {
+      "path": "share/freeciv/nation/chimu.ruleset",
+      "bytes": 1379,
+      "sha256": "6d6c3a9a0b4c567427ff3f6182db6c681cb571b7f0018471d04b9d2ca57ce9eb"
+    },
+    {
+      "path": "share/freeciv/nation/chinese.ruleset",
+      "bytes": 2713,
+      "sha256": "128980c1bab1429b3f20874a047837eca70fa9f6fedecd565c724ff0e5bddb17"
+    },
+    {
+      "path": "share/freeciv/nation/chinook.ruleset",
+      "bytes": 1386,
+      "sha256": "36263882197bcf37579d9ad6914fc8d538936cb9cd1c78f7be1a36330da4efbd"
+    },
+    {
+      "path": "share/freeciv/nation/choctaw.ruleset",
+      "bytes": 3016,
+      "sha256": "ac715f0ff5510ca4d1a09da61f28555436f2fd735c4631b64193393a5901e305"
+    },
+    {
+      "path": "share/freeciv/nation/chola.ruleset",
+      "bytes": 1691,
+      "sha256": "2c5c762d6c7fb53e70e53c1c1b8400f67f3e5fe9a73c292ccbe8ba4545b3b113"
+    },
+    {
+      "path": "share/freeciv/nation/chrobatian.ruleset",
+      "bytes": 2139,
+      "sha256": "3e991218e25953d77bd02f76ccc270ed571245dad322b37c76ac5d69257dde1d"
+    },
+    {
+      "path": "share/freeciv/nation/chumash.ruleset",
+      "bytes": 1612,
+      "sha256": "066dee8c1b6227f684d44560aa85695d57364be4f8bc2c31ec2ba01b0bfc3710"
+    },
+    {
+      "path": "share/freeciv/nation/chuvash.ruleset",
+      "bytes": 2172,
+      "sha256": "1206477c1616fde2e87b0dd16f208d69c75675beeff537a4add8900fcba4159f"
+    },
+    {
+      "path": "share/freeciv/nation/circassian.ruleset",
+      "bytes": 2531,
+      "sha256": "191ab24fb2c6a56d83542ce4d1101088e8de3d29e2f4a2257a37e1b5d5da2f7e"
+    },
+    {
+      "path": "share/freeciv/nation/colombian.ruleset",
+      "bytes": 1935,
+      "sha256": "194491ae43e215a106adbd17d4c705f31d4ce474ae643b174b7e468b367366d7"
+    },
+    {
+      "path": "share/freeciv/nation/comanche.ruleset",
+      "bytes": 1596,
+      "sha256": "860f6a04a09e948c97792698c4899a099c23cfbad005a2098217fc5d16a58ab5"
+    },
+    {
+      "path": "share/freeciv/nation/comorian.ruleset",
+      "bytes": 1720,
+      "sha256": "af573bf37a05d829fcaa1f19feb8af980d778a244693891e7d6ffd63aa08950c"
+    },
+    {
+      "path": "share/freeciv/nation/conch.ruleset",
+      "bytes": 1477,
+      "sha256": "681c72505f0a0b9b0dd68e553b61687c6e86a17f024f5d0aeb7214fb93f1aeb6"
+    },
+    {
+      "path": "share/freeciv/nation/confederate.ruleset",
+      "bytes": 3254,
+      "sha256": "28429f28213b8dea07248f7b7c2115e6a545ccabde25e6e9a9fe83996e6ca74e"
+    },
+    {
+      "path": "share/freeciv/nation/congolese.ruleset",
+      "bytes": 1868,
+      "sha256": "ff31227c2b9914b157f402a7d485b7598117ffdfa4f3f41ffb68e6e04037d567"
+    },
+    {
+      "path": "share/freeciv/nation/congolesebrazzaville.ruleset",
+      "bytes": 1737,
+      "sha256": "7f6317307a3e50f904521152dee21f2cf57557ad4c4d59d09c730d13696bf7aa"
+    },
+    {
+      "path": "share/freeciv/nation/cornish.ruleset",
+      "bytes": 2588,
+      "sha256": "15a683f8fa3598198d0179210ec078cd74c3b1992824a6463b1f1decc911cc42"
+    },
+    {
+      "path": "share/freeciv/nation/corsican.ruleset",
+      "bytes": 2705,
+      "sha256": "6a5c12cb4e7b258b2aa62c37e18e5a9d96eea1ec7ff0ef157019af605e755671"
+    },
+    {
+      "path": "share/freeciv/nation/cossack.ruleset",
+      "bytes": 1673,
+      "sha256": "fa619b3b1d824f80ffdd38e2478a3e6c710257e44dd267be50760e339419637f"
+    },
+    {
+      "path": "share/freeciv/nation/costarican.ruleset",
+      "bytes": 2049,
+      "sha256": "20df192de137db85310b18a1f3075c38792a9b29f7ded8e812cd03813a8798a5"
+    },
+    {
+      "path": "share/freeciv/nation/cree.ruleset",
+      "bytes": 1063,
+      "sha256": "3203b328849309de2be9f6f5b98e0117331c77e444c2de1b380613086a6cfe09"
+    },
+    {
+      "path": "share/freeciv/nation/cretan.ruleset",
+      "bytes": 1936,
+      "sha256": "039634689cb3bf841c0438fc51a48f0943d70efd525d8de60663136f4c83911a"
+    },
+    {
+      "path": "share/freeciv/nation/crimeantatar.ruleset",
+      "bytes": 4468,
+      "sha256": "b3ed97bf730bfba36f728a68c54c9a1681da2e0ed8eeb7444c2153f33c0d2d98"
+    },
+    {
+      "path": "share/freeciv/nation/croatian.ruleset",
+      "bytes": 3522,
+      "sha256": "1023f81445c58ab87aae0ced35abec215cd660ea19efc031651c83070445d792"
+    },
+    {
+      "path": "share/freeciv/nation/crusader.ruleset",
+      "bytes": 2706,
+      "sha256": "30df1aa94883dbce844c8ce957cebccf812224d28c8ff596e1d0962d52ae4baa"
+    },
+    {
+      "path": "share/freeciv/nation/cuban.ruleset",
+      "bytes": 1491,
+      "sha256": "622abb80602a48a4e9d3b71caabbbad9ac0bef5e2cf0cc83aca90109bf60a3d3"
+    },
+    {
+      "path": "share/freeciv/nation/curonian.ruleset",
+      "bytes": 1981,
+      "sha256": "94fe95755476ef56ae36555e9575db08bf76d60aacf3b2ef84cbbb582fa62950"
+    },
+    {
+      "path": "share/freeciv/nation/cuyavian.ruleset",
+      "bytes": 1477,
+      "sha256": "4d5e011c86799db4314e20583815975fbe6bdda4f76e152320948f1f756da14b"
+    },
+    {
+      "path": "share/freeciv/nation/cypriot.ruleset",
+      "bytes": 1680,
+      "sha256": "9362fd35a5ed8cdcdd683c62ef40356d98945d5084d3e2021de1a4b715f2043d"
+    },
+    {
+      "path": "share/freeciv/nation/cyrenaican.ruleset",
+      "bytes": 2002,
+      "sha256": "6ec640ddbe9833587a2d70369de4b53c0a589cafe7c0407e536fe732b6c37bb0"
+    },
+    {
+      "path": "share/freeciv/nation/czech.ruleset",
+      "bytes": 2866,
+      "sha256": "15fd6d7cae05309967a51b2a7e2e59deb5bd2eab3e2e40714b7b7d721e090613"
+    },
+    {
+      "path": "share/freeciv/nation/czechoslovak.ruleset",
+      "bytes": 1191,
+      "sha256": "1a7a6e41213d2df2ab9a113a4285f9151b2ee24a629dae9a7ae9d93208b86363"
+    },
+    {
+      "path": "share/freeciv/nation/dacian.ruleset",
+      "bytes": 1894,
+      "sha256": "a9d328fd5cc33d14c25d9d6043cc3293af9486d94f053cc7c3ee26b1c9fa5696"
+    },
+    {
+      "path": "share/freeciv/nation/dagestan.ruleset",
+      "bytes": 2923,
+      "sha256": "33a8faa3e151f2d984f4f8ec52d71c29e3d1235bbf00e4facd3eecc19fa6e0ce"
+    },
+    {
+      "path": "share/freeciv/nation/dahomean.ruleset",
+      "bytes": 3039,
+      "sha256": "4dd27a4eaa5b4fe0735e75e612230c52aec460cb96bb7e13bf3f1b755d81ba87"
+    },
+    {
+      "path": "share/freeciv/nation/danish.ruleset",
+      "bytes": 1978,
+      "sha256": "01f02a1034b9a91800fcb197e20fefc1146ddc12074fc304ba8ff4123db475d1"
+    },
+    {
+      "path": "share/freeciv/nation/darfuri.ruleset",
+      "bytes": 1530,
+      "sha256": "06c023d31c8db787232858c0c4d7c2dbc22683ed784b690e6f3094412a024066"
+    },
+    {
+      "path": "share/freeciv/nation/djiboutian.ruleset",
+      "bytes": 1211,
+      "sha256": "ca67d90e2bdd807c96c2435019dd064b101b350fb5fc08cf395c68dbdf30db7d"
+    },
+    {
+      "path": "share/freeciv/nation/dominican.ruleset",
+      "bytes": 1243,
+      "sha256": "a01a26ddcf1c176abc7653633d3816039b1f781f91b7e6c23fa4bafc3c2cdd4f"
+    },
+    {
+      "path": "share/freeciv/nation/dominicano.ruleset",
+      "bytes": 2070,
+      "sha256": "6fdd5df4186be2bcb36e203362d613b6fca38f0b20139dc4db924aae00848489"
+    },
+    {
+      "path": "share/freeciv/nation/donetsk.ruleset",
+      "bytes": 3613,
+      "sha256": "e0881bec0dde13c8f73d74f9634da0cb69e697701f190a29062c717e8b9c94cb"
+    },
+    {
+      "path": "share/freeciv/nation/dryad.ruleset",
+      "bytes": 2754,
+      "sha256": "96c50d7496a479c4c0cf00dde821f5b5c29f2fb1861ccb08b68c3a44e7e212f2"
+    },
+    {
+      "path": "share/freeciv/nation/dutch.ruleset",
+      "bytes": 4476,
+      "sha256": "2e2ac850fbd07abf4c294f95505488a2216d21e85924fdb62e77e14b6e6f499a"
+    },
+    {
+      "path": "share/freeciv/nation/eastgerman.ruleset",
+      "bytes": 3653,
+      "sha256": "3ec6ee31294e8bd4d4ea54bb1f6144a79d58ad2ab47e09e65677ff612d34a656"
+    },
+    {
+      "path": "share/freeciv/nation/easttimorese.ruleset",
+      "bytes": 1311,
+      "sha256": "95fdd3bf483ac9392391194e4cb1215b5256cd5ef1c93b8a4a1af1f0d1c5dac1"
+    },
+    {
+      "path": "share/freeciv/nation/ecuadorian.ruleset",
+      "bytes": 2878,
+      "sha256": "bbb450cce8ccd9e800ea796ffa04d59b94ea1a899a2bac1b83c18a42d1855189"
+    },
+    {
+      "path": "share/freeciv/nation/egyptian.ruleset",
+      "bytes": 2840,
+      "sha256": "fdbcddc4178763b4b34c21b159c5757bacae62a945958d49ca46f0b0e006f36b"
+    },
+    {
+      "path": "share/freeciv/nation/egyptianarab.ruleset",
+      "bytes": 1906,
+      "sha256": "7ac761625e9ab0cf20e1ba4251883d796993fdc3b9d83de4d0c5762b6102d604"
+    },
+    {
+      "path": "share/freeciv/nation/elamite.ruleset",
+      "bytes": 1674,
+      "sha256": "15d61a11b6380e910fa89f12f1505761924ce9891fb74438a89a9516b9380928"
+    },
+    {
+      "path": "share/freeciv/nation/emirati.ruleset",
+      "bytes": 2089,
+      "sha256": "dc3102b56985a7a48286204007a59eca123b693d03bccacb5472261a7879dd08"
+    },
+    {
+      "path": "share/freeciv/nation/english.ruleset",
+      "bytes": 2397,
+      "sha256": "6e5cc24042c44f57204b467df90ed3d5614e0952e9b5d10f511028e8de9dea45"
+    },
+    {
+      "path": "share/freeciv/nation/epirote.ruleset",
+      "bytes": 1766,
+      "sha256": "7c162124ca034a2e82ead1091adfc74456192ecf9aaa571064f1fef10c82b309"
+    },
+    {
+      "path": "share/freeciv/nation/equatoguinean.ruleset",
+      "bytes": 1290,
+      "sha256": "c3602b8806232d930b15260495f3dfe9c3642a15c7185cf0bc9be40582b872c0"
+    },
+    {
+      "path": "share/freeciv/nation/eritrean.ruleset",
+      "bytes": 1814,
+      "sha256": "cb8e0a577a879c71d385df9ed05a68979bc9e9b669e2bcc07c273d80109a369b"
+    },
+    {
+      "path": "share/freeciv/nation/esperant.ruleset",
+      "bytes": 1508,
+      "sha256": "7bd9916589674760a910b3fcf69a8e886f059d7813b7fbc96c693cba57ea7c1c"
+    },
+    {
+      "path": "share/freeciv/nation/estonian.ruleset",
+      "bytes": 1296,
+      "sha256": "c6bb61b6a9b3df6152fabdf21654e9b67105fdc144e53c85d44e48bb3083cb34"
+    },
+    {
+      "path": "share/freeciv/nation/ethiopian.ruleset",
+      "bytes": 1369,
+      "sha256": "3554b5fe9be8ba344d9d38d3953d3588e4b1243b0610a34a2161502fcfad862d"
+    },
+    {
+      "path": "share/freeciv/nation/etruscan.ruleset",
+      "bytes": 2040,
+      "sha256": "87ac36f849fcb27fa8c3ad5792fed9535125d06a3732edffa36da075fd67407b"
+    },
+    {
+      "path": "share/freeciv/nation/european.ruleset",
+      "bytes": 2044,
+      "sha256": "593dc98bdcb234c42c082142a698a94997e4c746940affa9d12dd7a321bd8e66"
+    },
+    {
+      "path": "share/freeciv/nation/evenki.ruleset",
+      "bytes": 1651,
+      "sha256": "eaa63efc2aacdc9a16d9a0b5111e3c388fa69f64b5ff32a4c9cfeea4e3c8b29f"
+    },
+    {
+      "path": "share/freeciv/nation/faroese.ruleset",
+      "bytes": 2116,
+      "sha256": "7c2c638aa2d2f07facb2ebca286b7ea45888287660858404e927ce623fd2ef65"
+    },
+    {
+      "path": "share/freeciv/nation/fijian.ruleset",
+      "bytes": 1426,
+      "sha256": "f30878b05189e1731b08822c780ccb133d446ef09dc814d5273b1d07513d902a"
+    },
+    {
+      "path": "share/freeciv/nation/filipino.ruleset",
+      "bytes": 1194,
+      "sha256": "279cddce48f8119f39c6fbafa302871b2af9f6b1889068a476bb2fe6d762bbdd"
+    },
+    {
+      "path": "share/freeciv/nation/finnish.ruleset",
+      "bytes": 3783,
+      "sha256": "29c33eea0a231351cb3647f39688467879e04653eabe9198814a80ce721ca00d"
+    },
+    {
+      "path": "share/freeciv/nation/flemish.ruleset",
+      "bytes": 2863,
+      "sha256": "1d010e605ddee03b0de8d00c2cc759d3abe27ef3fb05e0609d58e1f92363a779"
+    },
+    {
+      "path": "share/freeciv/nation/florentine.ruleset",
+      "bytes": 2804,
+      "sha256": "88d0d9ff076213d348c2325787e9b392696d157cbc0b5863daf10da20db29b8c"
+    },
+    {
+      "path": "share/freeciv/nation/florida.ruleset",
+      "bytes": 4787,
+      "sha256": "337fa5ba4142456b24db2dfe38ea91b1e7a355a76d417b1ec5052332d045138b"
+    },
+    {
+      "path": "share/freeciv/nation/formosan.ruleset",
+      "bytes": 1757,
+      "sha256": "a47f134f4250e64dcacb5c5134082e96f91887d74655c5c8af085713d3970208"
+    },
+    {
+      "path": "share/freeciv/nation/franconian.ruleset",
+      "bytes": 2076,
+      "sha256": "5ac5f7c192356da97761c6376c058c00f0a37625450cc9411657066dbf839a18"
+    },
+    {
+      "path": "share/freeciv/nation/frankish.ruleset",
+      "bytes": 6020,
+      "sha256": "57c69ad50feb4208d00a5d6541b2fb47a94ad3e880e5b95b21649d8a2354326f"
+    },
+    {
+      "path": "share/freeciv/nation/french.ruleset",
+      "bytes": 5569,
+      "sha256": "e2b1dab1073e335dc75bf97952cb12a002fbad2a36621a08def1ca0491fbd59c"
+    },
+    {
+      "path": "share/freeciv/nation/frisian.ruleset",
+      "bytes": 3223,
+      "sha256": "7522f56714775ce1b165f7bd73b23f0f8777cd5292834d413efb8be83d23ab77"
+    },
+    {
+      "path": "share/freeciv/nation/friulian.ruleset",
+      "bytes": 1905,
+      "sha256": "53bfec5e4c5667678c48e5cffbe7421a134780e7b91a6d58d0e2bd9a46f21fd9"
+    },
+    {
+      "path": "share/freeciv/nation/fulani.ruleset",
+      "bytes": 2123,
+      "sha256": "7bc259663a4979d72e09f54918f1dfbe1c097d9c286c7593b00723a29b000bfa"
+    },
+    {
+      "path": "share/freeciv/nation/gabonese.ruleset",
+      "bytes": 1384,
+      "sha256": "8f9a989c38bd61293819107be90a23bc4ea25816f539883ae3f60183a8c85f02"
+    },
+    {
+      "path": "share/freeciv/nation/gaelic.ruleset",
+      "bytes": 3689,
+      "sha256": "ccb75cbd91685a1b3410f69c59295b03c452e390a1a7cea2a4c7f368465af11c"
+    },
+    {
+      "path": "share/freeciv/nation/galician.ruleset",
+      "bytes": 1754,
+      "sha256": "99fb7d4ce51cb2198e61ee1cc5007601edbfa4c53aa3d3c959e64c46a52f81dd"
+    },
+    {
+      "path": "share/freeciv/nation/gallic.ruleset",
+      "bytes": 2872,
+      "sha256": "ef921ead42ac46d81ca21c00a5ac88ab97323b7445459fb9ac8444dc95071449"
+    },
+    {
+      "path": "share/freeciv/nation/gambian.ruleset",
+      "bytes": 1311,
+      "sha256": "739ef8d1630e6b176d1ba80a22abc6b26dd2421f0cfeba2d32a99aaa03a3cbc9"
+    },
+    {
+      "path": "share/freeciv/nation/genoese.ruleset",
+      "bytes": 3143,
+      "sha256": "fa1bef08272aa4fd709ff0145380e5247c7f6da53d4ed00b1200b4b1a68b58f8"
+    },
+    {
+      "path": "share/freeciv/nation/georgian.ruleset",
+      "bytes": 1449,
+      "sha256": "74d909775e9352b9ebc7ed98abbddb253fe7ce9489d4a86ef0648e45ff119294"
+    },
+    {
+      "path": "share/freeciv/nation/gepid.ruleset",
+      "bytes": 3030,
+      "sha256": "3a6352c299564c691cca63f5b99eb351f15a48945a47a9f6f81a97261387ed70"
+    },
+    {
+      "path": "share/freeciv/nation/german.ruleset",
+      "bytes": 7098,
+      "sha256": "195dc125cecd9ea44311bafed3f11a4f8bc816b77ea5fa04a9cbf1a5f2c6e712"
+    },
+    {
+      "path": "share/freeciv/nation/germanbelgian.ruleset",
+      "bytes": 2131,
+      "sha256": "efbdff08574091ea30c565824cdbcaf6c93e1f7c1ccab5895f5c0bc7dbd49c06"
+    },
+    {
+      "path": "share/freeciv/nation/germanic.ruleset",
+      "bytes": 2813,
+      "sha256": "951933d21cdbb7678d76a3f786b7e6e70cffa12c02c0b78e4bcbaed91ea3882f"
+    },
+    {
+      "path": "share/freeciv/nation/ghana.ruleset",
+      "bytes": 1241,
+      "sha256": "00067c2ae1bf46ff291db0f1feb8095fbe08408b6163d87b7dd5d49f61dc8b30"
+    },
+    {
+      "path": "share/freeciv/nation/ghanaian.ruleset",
+      "bytes": 1309,
+      "sha256": "cb7d8abcc46b7287512a28e3050d215015550392f08813b5f3b7db49c380bbb6"
+    },
+    {
+      "path": "share/freeciv/nation/ghaznavid.ruleset",
+      "bytes": 1632,
+      "sha256": "ebbb8ba781f9e28ce7552d9e60fbf239364623f7a71548c2b2b1b6a7ca853916"
+    },
+    {
+      "path": "share/freeciv/nation/gokturk.ruleset",
+      "bytes": 2338,
+      "sha256": "815e4d060f934525d926c5091d1bbb69571e0410c6aae7e73079cff033a6b9c9"
+    },
+    {
+      "path": "share/freeciv/nation/goldenhorde.ruleset",
+      "bytes": 2023,
+      "sha256": "edd41f7244e8f5dd2b2734a68e7ec9c86e1fc48c7106729fa23c948832fadd41"
+    },
+    {
+      "path": "share/freeciv/nation/gothic.ruleset",
+      "bytes": 2492,
+      "sha256": "82acf3390c982330f464bc753e18f1b1b111695ac064d547e3d7cee32c8817b2"
+    },
+    {
+      "path": "share/freeciv/nation/greaterpolish.ruleset",
+      "bytes": 2523,
+      "sha256": "c0c9732c3124337419ae42418041dc7320e5ca96e0a1da4d6507a691a47799d8"
+    },
+    {
+      "path": "share/freeciv/nation/greek.ruleset",
+      "bytes": 2847,
+      "sha256": "283a77a4b75ca0f222f7a2c60789ddc84e3f369c5321ca232b2ce359ecd3e1a6"
+    },
+    {
+      "path": "share/freeciv/nation/greenlander.ruleset",
+      "bytes": 1901,
+      "sha256": "284416e55d138cc145d47caf20be03eae5d776d48f499e793ccadcd153e2c918"
+    },
+    {
+      "path": "share/freeciv/nation/grenadian.ruleset",
+      "bytes": 1363,
+      "sha256": "ffd65a8c83f2d2f202f87fa12c7266b992b44420aa236baf552e25fb154c0d96"
+    },
+    {
+      "path": "share/freeciv/nation/guanche.ruleset",
+      "bytes": 1340,
+      "sha256": "6690225def8ad7ebf59616ec72cd314f09c20c06b9c1c788d428305199391ebf"
+    },
+    {
+      "path": "share/freeciv/nation/guarani.ruleset",
+      "bytes": 1086,
+      "sha256": "dfe11c0d268bd934d3175bd773c3376879a6978d6adf0dd01464de9b77fdc884"
+    },
+    {
+      "path": "share/freeciv/nation/guatemalan.ruleset",
+      "bytes": 2965,
+      "sha256": "0f18a25109c3678a0b66700caca9e6154190add06372990932a9c9b25abe32e9"
+    },
+    {
+      "path": "share/freeciv/nation/guinean.ruleset",
+      "bytes": 1410,
+      "sha256": "c4fc8ac14850b94f0c899a70f9fe42218815780b7affcf7828c9154c5bdc9a8a"
+    },
+    {
+      "path": "share/freeciv/nation/gupta.ruleset",
+      "bytes": 1118,
+      "sha256": "927ea05c74df9bb7b3afaacf03218596437c14a502fea5aafedf48ff8b923ae0"
+    },
+    {
+      "path": "share/freeciv/nation/guyanese.ruleset",
+      "bytes": 1926,
+      "sha256": "c28719ba9c45c21d35f3b00d37a8c380a3be32a8029e4cf2ab687519a6ee7bff"
+    },
+    {
+      "path": "share/freeciv/nation/hacker.ruleset",
+      "bytes": 1767,
+      "sha256": "d5034b55297761f50eccf253cf46f972394be2d0760c5affaadec1df57ddcc3d"
+    },
+    {
+      "path": "share/freeciv/nation/haitian.ruleset",
+      "bytes": 1871,
+      "sha256": "7b35dc721718e700d9753a5e16c6c6e98710ae25811e5f66e0d85d4520c3d227"
+    },
+    {
+      "path": "share/freeciv/nation/han.ruleset",
+      "bytes": 1786,
+      "sha256": "084a95424113649d5f78eb445f47638a4947394274a5370e49df683b873ac3bc"
+    },
+    {
+      "path": "share/freeciv/nation/hanoverian.ruleset",
+      "bytes": 1868,
+      "sha256": "e382227806662cd8d3fdc2decc1365ae13a0a77c2b6becefe044cce84bb61d4c"
+    },
+    {
+      "path": "share/freeciv/nation/hansa.ruleset",
+      "bytes": 2671,
+      "sha256": "e1ac329e8251bff6ae97ba8acaf6d1249d203b1571826506b72cab42f2be2d7f"
+    },
+    {
+      "path": "share/freeciv/nation/hasinay.ruleset",
+      "bytes": 1647,
+      "sha256": "9b3afb70632d01f1165997cfe177fd2ed13d9d9f7792b34566a4ec7b01cbff9f"
+    },
+    {
+      "path": "share/freeciv/nation/hawaiian.ruleset",
+      "bytes": 1163,
+      "sha256": "57df1f294a2c2a1d3a12abc204a27c9e917de544e0dace456e4cab2be49a0ce6"
+    },
+    {
+      "path": "share/freeciv/nation/hellenic.ruleset",
+      "bytes": 1760,
+      "sha256": "8177e9e5c3ce71272a04df2214a315a6029ef1b8222d2ca49b2638816d0f9100"
+    },
+    {
+      "path": "share/freeciv/nation/helvetian.ruleset",
+      "bytes": 2006,
+      "sha256": "e617836699c94f50a84183ab4a30f21f1ae252fa1bbcdc85e0a0ee3ffae89e47"
+    },
+    {
+      "path": "share/freeciv/nation/hephthalite.ruleset",
+      "bytes": 1659,
+      "sha256": "fe8590d66f6bbd76e481f4a7de89af56aa480ac6192be0c6ca60591197e09cdb"
+    },
+    {
+      "path": "share/freeciv/nation/hessian.ruleset",
+      "bytes": 2190,
+      "sha256": "5b23a6c4f63fb9c81ab6c8c10d3e9bbb0f5e08dfc6e25381e918c3b1054ee8c2"
+    },
+    {
+      "path": "share/freeciv/nation/himyarite.ruleset",
+      "bytes": 1741,
+      "sha256": "90a8c785c2f8fe8f3dd272d13197256277de856ee345e2d3497ba260fd2f5d30"
+    },
+    {
+      "path": "share/freeciv/nation/hittite.ruleset",
+      "bytes": 1576,
+      "sha256": "fa0cdd60391c61d108317617650c5b230c084e16b4fb463113e84df9594a31a4"
+    },
+    {
+      "path": "share/freeciv/nation/holyroman.ruleset",
+      "bytes": 11384,
+      "sha256": "e89076b0dc41c79a00e2ab0d3d58d4cc1530fa4e1522143c737c0c3d3a075b8f"
+    },
+    {
+      "path": "share/freeciv/nation/holysee.ruleset",
+      "bytes": 2311,
+      "sha256": "7b74d136801d491c994c3d95f542cfff77d27cfb2d1e9fcd1bd54e411af3702a"
+    },
+    {
+      "path": "share/freeciv/nation/honduran.ruleset",
+      "bytes": 2240,
+      "sha256": "dedad6acdebf2a9e3b879e6621746c43e83dfb1b5dd2f427411fef833a4ac148"
+    },
+    {
+      "path": "share/freeciv/nation/hopi.ruleset",
+      "bytes": 1376,
+      "sha256": "7832bbe89f1c17a62e6b91e82960d956ff4bd78f0c02ca1b5eb02cf3fa3b73ca"
+    },
+    {
+      "path": "share/freeciv/nation/hungarian.ruleset",
+      "bytes": 1703,
+      "sha256": "42894475f3da8c2d6e53f8800fff41571727aae0368f9a7e511c3973dcebcd9c"
+    },
+    {
+      "path": "share/freeciv/nation/hunnic.ruleset",
+      "bytes": 2612,
+      "sha256": "273d26ea3f36a6206fea2bc2777b81acfc579ebb3a313fec6ed89cb2b81199ba"
+    },
+    {
+      "path": "share/freeciv/nation/iberian.ruleset",
+      "bytes": 1287,
+      "sha256": "430985a0e49b1a492ce12b20e5ecf3861c7662576fb462b51a7a1ecca425bf09"
+    },
+    {
+      "path": "share/freeciv/nation/icelandic.ruleset",
+      "bytes": 2087,
+      "sha256": "964d4d4a83ba842db4858c8b44b6e67f95af79684b3cb5d12588baf8a611807a"
+    },
+    {
+      "path": "share/freeciv/nation/illyrian.ruleset",
+      "bytes": 7493,
+      "sha256": "cdf8c90b608cde31c70b9c84ea1a9db617050bd897ca4cf275e1113150cb9ef7"
+    },
+    {
+      "path": "share/freeciv/nation/inca.ruleset",
+      "bytes": 2392,
+      "sha256": "176fc55b42449d04a31fe64af3bfd5b8ff9cd1f33711897a0bcb8838cddb3741"
+    },
+    {
+      "path": "share/freeciv/nation/indian.ruleset",
+      "bytes": 2209,
+      "sha256": "7438f5ec85e01292d07efea2e881b239be350e5f311f6878d2355ff4cc896b2b"
+    },
+    {
+      "path": "share/freeciv/nation/indoeuropean.ruleset",
+      "bytes": 2584,
+      "sha256": "89f8d926a39f68b656bebec30765a44d27f1f464b7bec022225ed42a76c4da54"
+    },
+    {
+      "path": "share/freeciv/nation/indonesian.ruleset",
+      "bytes": 1366,
+      "sha256": "343184648e3b80442c2a577a2f001ad6d25ab143f1fdfd094127f71f4e17885b"
+    },
+    {
+      "path": "share/freeciv/nation/inuit.ruleset",
+      "bytes": 1559,
+      "sha256": "3401418e5291d24c9542d15b7ff046a5bd97301c1d992792f0a39d84d84a09ab"
+    },
+    {
+      "path": "share/freeciv/nation/iranian.ruleset",
+      "bytes": 2876,
+      "sha256": "ec5de66024d884c51cc86bace8c1d21b8e6b055f9fb08a6eb16b77d63d330236"
+    },
+    {
+      "path": "share/freeciv/nation/iraqi.ruleset",
+      "bytes": 1305,
+      "sha256": "7190f9122c7c139ed851cb0f491f7e3f279ec8fbcae8b4531d896d85bdecc719"
+    },
+    {
+      "path": "share/freeciv/nation/irish.ruleset",
+      "bytes": 5017,
+      "sha256": "8a976c38f3c0a6a96aef6af225e73ce9c545cbd5708b081a7cdb2bcb9bd4ad25"
+    },
+    {
+      "path": "share/freeciv/nation/iroquois.ruleset",
+      "bytes": 5142,
+      "sha256": "556e9647238f196b8a3e7ade647054e573376ce82f58957cf9d20170aa66e2ce"
+    },
+    {
+      "path": "share/freeciv/nation/israeli.ruleset",
+      "bytes": 2477,
+      "sha256": "ff8ca3485f38f6cde214e9fa70d7e371a7aa6130f84c3b98d91b127c8bece57e"
+    },
+    {
+      "path": "share/freeciv/nation/israelite.ruleset",
+      "bytes": 2890,
+      "sha256": "73d79f1a9a0104ce96540a52cc392b4b7a8543e73025b83b3da34b97e8402c37"
+    },
+    {
+      "path": "share/freeciv/nation/italian.ruleset",
+      "bytes": 3238,
+      "sha256": "c9c3cd34d3a1194fff44bc994d604da258e031e15345d028377935d5c004588d"
+    },
+    {
+      "path": "share/freeciv/nation/italiangreek.ruleset",
+      "bytes": 3092,
+      "sha256": "004b0631f9f8a05c9c674a6fc8d1f45941d69d1efe2156a68f102dbe7360fd0c"
+    },
+    {
+      "path": "share/freeciv/nation/ivoirian.ruleset",
+      "bytes": 1507,
+      "sha256": "3e9565ffceda116ba9d5f79a39b69fbd5c3eb379e3cab8aa839570f8f203290d"
+    },
+    {
+      "path": "share/freeciv/nation/jaffna.ruleset",
+      "bytes": 1455,
+      "sha256": "967cf73840fae326efac75c62eacb6da1abf1c7d26ee609bfdf2e91d957e8882"
+    },
+    {
+      "path": "share/freeciv/nation/jamaican.ruleset",
+      "bytes": 1780,
+      "sha256": "e8259fc37be7173182b8ec6dd429b0a8d332a048b51480a01585a32cbdb9f5e7"
+    },
+    {
+      "path": "share/freeciv/nation/japanese.ruleset",
+      "bytes": 2645,
+      "sha256": "ddbbbed0f10bfde8b94d472f03953de5e28f338f3d3e8994dff2dfd7c44162d9"
+    },
+    {
+      "path": "share/freeciv/nation/jolof.ruleset",
+      "bytes": 1531,
+      "sha256": "32b2ff77556f215077d814a31a1830d27143c40a569bebe5e9a848219a8ad8f5"
+    },
+    {
+      "path": "share/freeciv/nation/jordanian.ruleset",
+      "bytes": 1918,
+      "sha256": "bd450f4ef2c616e6ecf4918bcf1946d55687b8d3a8e8c0ce2d955c69f5d32acb"
+    },
+    {
+      "path": "share/freeciv/nation/kalmyk.ruleset",
+      "bytes": 1616,
+      "sha256": "9437350c838dd5312ee7bf9539cbb48f3d91abd996c6dc1052158498c796c62d"
+    },
+    {
+      "path": "share/freeciv/nation/kanem-bornu.ruleset",
+      "bytes": 945,
+      "sha256": "3ac3026aadb014366da8bbf4094f3d62fcaf14a23f0577d9ea67e9bfff89e32f"
+    },
+    {
+      "path": "share/freeciv/nation/karabakhi.ruleset",
+      "bytes": 2191,
+      "sha256": "d3d351c8dbc9c47eb97b100a4a6531f5f12d220fdc9d329e773945d85ab246dc"
+    },
+    {
+      "path": "share/freeciv/nation/karelian.ruleset",
+      "bytes": 1781,
+      "sha256": "c1a255f42116e943bcd5a32fe4f05641d34ae75565e760275763faca8f51fec1"
+    },
+    {
+      "path": "share/freeciv/nation/karen.ruleset",
+      "bytes": 1215,
+      "sha256": "b3c7807a9dafa36c471fb56e954f9385f188bcbe74cb95c708fd66f9fd5fb37e"
+    },
+    {
+      "path": "share/freeciv/nation/kashmiri.ruleset",
+      "bytes": 1375,
+      "sha256": "9a421c2207f8a49113ca9e4f31c30c3e6724b6a4eeb2a2d438acb0effdee10a6"
+    },
+    {
+      "path": "share/freeciv/nation/kashubian.ruleset",
+      "bytes": 2365,
+      "sha256": "fbd637e20ac37258d8dd4ac8c8fd590c95680e669d2d473986a2394aaef3f746"
+    },
+    {
+      "path": "share/freeciv/nation/katangan.ruleset",
+      "bytes": 1311,
+      "sha256": "31fca8c8fd3da348ff0a3ed775e39db26160e93eb8c6674788cf0ff868e15d59"
+    },
+    {
+      "path": "share/freeciv/nation/kazakh.ruleset",
+      "bytes": 2068,
+      "sha256": "be8a3b0c548ac3eb2f1350365db0302579ef7ee4fdf95c633c1f6a086c40436d"
+    },
+    {
+      "path": "share/freeciv/nation/kenyan.ruleset",
+      "bytes": 997,
+      "sha256": "bb1c1e846a487871b51d328a22ab67cb46ac006ffa0e4c91b5fd2aa252e82165"
+    },
+    {
+      "path": "share/freeciv/nation/khazar.ruleset",
+      "bytes": 1748,
+      "sha256": "28df410eecbac58c09d9ee29196e81e3f4fafdb437efea574c16c2700ec9935c"
+    },
+    {
+      "path": "share/freeciv/nation/khmer.ruleset",
+      "bytes": 1511,
+      "sha256": "a1f77a841526d43e54514a3750ebaaf8208f01546e664241492774b817ea1d9d"
+    },
+    {
+      "path": "share/freeciv/nation/khoisan.ruleset",
+      "bytes": 1659,
+      "sha256": "a2945eace61ad463f93122f23d87bc5afd08b330c0e469c8bf9bb601d96df83d"
+    },
+    {
+      "path": "share/freeciv/nation/khwarezmian.ruleset",
+      "bytes": 1711,
+      "sha256": "fb5bf227cadd1a5176e5d8804387f7253925630c182686dffbfaf815942eed8a"
+    },
+    {
+      "path": "share/freeciv/nation/kiribati.ruleset",
+      "bytes": 1379,
+      "sha256": "2310b4f2c525e1bab96c10c16994f0af79787c90ac4bbf9ac60493b636c4cbea"
+    },
+    {
+      "path": "share/freeciv/nation/kittitian.ruleset",
+      "bytes": 1697,
+      "sha256": "bea6cf0221c02f2fa31f2be09977c5294d6aba729d02f879b54e427ca921771a"
+    },
+    {
+      "path": "share/freeciv/nation/komi.ruleset",
+      "bytes": 1394,
+      "sha256": "1524ed7d3ee3804caa85c5cfedfda6905e41dd42b4bcf227291438b25c27a42d"
+    },
+    {
+      "path": "share/freeciv/nation/kongo.ruleset",
+      "bytes": 1183,
+      "sha256": "ed6ab7cdb2445a42620c74715bd807ec8f07f34d2d5c502df543a8cc02e846c3"
+    },
+    {
+      "path": "share/freeciv/nation/korean.ruleset",
+      "bytes": 1652,
+      "sha256": "db20d898731fcc4e200e01241ef755638532061140053e9fb135bcdbaabc28e3"
+    },
+    {
+      "path": "share/freeciv/nation/kosovar.ruleset",
+      "bytes": 1756,
+      "sha256": "eb9dc6a3f5b3363559eaa1905da93d2d75a7899495dc5861753e8c04f0f61a85"
+    },
+    {
+      "path": "share/freeciv/nation/kuna.ruleset",
+      "bytes": 1901,
+      "sha256": "8d25c937e8e7a3bb6911e19f674b75f831b988b01c84131478db0191feac0f5a"
+    },
+    {
+      "path": "share/freeciv/nation/kurd.ruleset",
+      "bytes": 2345,
+      "sha256": "934b1804714be7efa70c37fd058854b095fc88582232e8db9b05847739bcd5cb"
+    },
+    {
+      "path": "share/freeciv/nation/kushan.ruleset",
+      "bytes": 2104,
+      "sha256": "c22d49d6af2e4b0bc26671d72a06dc9f463f4ddba45d5a34dd2e714bc062c029"
+    },
+    {
+      "path": "share/freeciv/nation/kuwaiti.ruleset",
+      "bytes": 2260,
+      "sha256": "7ec73890b25fe21e7394dd6139bea09f11b0658779c82b39736fe5d3d6110ac2"
+    },
+    {
+      "path": "share/freeciv/nation/kyrgyz.ruleset",
+      "bytes": 3082,
+      "sha256": "7619d971bd72762ee389654ee01b062bf0d603f7166ae2fa68aea178c2c014bc"
+    },
+    {
+      "path": "share/freeciv/nation/langobardic.ruleset",
+      "bytes": 2308,
+      "sha256": "22be80f0077dfa806cca2b18ae9b8187c373caf84606c4a831b971bb8899aa81"
+    },
+    {
+      "path": "share/freeciv/nation/lankese.ruleset",
+      "bytes": 1448,
+      "sha256": "040fd06a2e75c7812f2695a00bf4e1306722992f65cb3a6eddcd00b908cd5610"
+    },
+    {
+      "path": "share/freeciv/nation/laotian.ruleset",
+      "bytes": 2132,
+      "sha256": "977e5babab7ec9b51b673e2202adec5c604e9a904ebe3e99123e38470bf40732"
+    },
+    {
+      "path": "share/freeciv/nation/latin.ruleset",
+      "bytes": 2432,
+      "sha256": "a4d11838e42e0c8226b526402789648d30854d1ca1556fb8662dedacdce62df6"
+    },
+    {
+      "path": "share/freeciv/nation/latvian.ruleset",
+      "bytes": 1985,
+      "sha256": "3db66d5f427395e4037123afc7f34891ac8b1d66bf4628c848b877e49b47ca53"
+    },
+    {
+      "path": "share/freeciv/nation/lebanese.ruleset",
+      "bytes": 2007,
+      "sha256": "4687245f802fa70333bf418e54b556cc0d14c6584357d012aeb7b192cf31513e"
+    },
+    {
+      "path": "share/freeciv/nation/lendian.ruleset",
+      "bytes": 1265,
+      "sha256": "e626003c7be1909c0c9760a9da59696a1a1a3858fd34913d51892e39e97ee132"
+    },
+    {
+      "path": "share/freeciv/nation/leonese.ruleset",
+      "bytes": 1805,
+      "sha256": "fb2862ed8b325540c6bd566cf99db41ebf12a6d2d5464c57bee9cf22326b2a12"
+    },
+    {
+      "path": "share/freeciv/nation/lesothoan.ruleset",
+      "bytes": 1553,
+      "sha256": "31e2517d0066b03bb6c45b19cdcd7575824d8744b1ac29ad68b93e69f7425c69"
+    },
+    {
+      "path": "share/freeciv/nation/liberian.ruleset",
+      "bytes": 1919,
+      "sha256": "f29f1dabfea6f8fa7aea32c756aad47a9e951aa158ab9af2c489c334a91f3991"
+    },
+    {
+      "path": "share/freeciv/nation/liburnian.ruleset",
+      "bytes": 1564,
+      "sha256": "dc29bba77eb3b38e115a150e2b6fd1460befb6e120a1da52d790ef8f41b946ac"
+    },
+    {
+      "path": "share/freeciv/nation/libyan.ruleset",
+      "bytes": 1356,
+      "sha256": "492a5547b7ee21751113f8c3f0ecea8d851fa0ca2061734698aee8909e650955"
+    },
+    {
+      "path": "share/freeciv/nation/liechtensteiner.ruleset",
+      "bytes": 1793,
+      "sha256": "e89d7b15ab7556022c16240a548f619d9ad848b1920b817a554c091c6e75594a"
+    },
+    {
+      "path": "share/freeciv/nation/liege.ruleset",
+      "bytes": 1868,
+      "sha256": "13aaa9e3f718dcab71df27a371deb740743a1a4bbeedb3c080149ff8b28ad103"
+    },
+    {
+      "path": "share/freeciv/nation/ligurian.ruleset",
+      "bytes": 1529,
+      "sha256": "a6689a494828adaeec575516a689315ef1717c91a24d07e3586c4af326befcfb"
+    },
+    {
+      "path": "share/freeciv/nation/lipkatatar.ruleset",
+      "bytes": 2384,
+      "sha256": "5c5e63b087fbae18abcc4c5828db8766a61305ed2e7d771eb1988ce0fdfb9a05"
+    },
+    {
+      "path": "share/freeciv/nation/lippe.ruleset",
+      "bytes": 1565,
+      "sha256": "5fd62d0227164c1023165ebf4e1165c43004593b3526fe8c1806f14b010b2cb5"
+    },
+    {
+      "path": "share/freeciv/nation/lithuanian.ruleset",
+      "bytes": 2141,
+      "sha256": "06ecd811a90cff57df7d0e356d1be09e401b1bc4acc2ee59a5db1b3da4c6a7c5"
+    },
+    {
+      "path": "share/freeciv/nation/lojbanistani.ruleset",
+      "bytes": 1342,
+      "sha256": "1ad2bfdace97c59006fb22f849d5e86de1d609befebc02e26c6e59fce01b7800"
+    },
+    {
+      "path": "share/freeciv/nation/lorrain.ruleset",
+      "bytes": 2627,
+      "sha256": "07b5c6890ef84db0bd3c7df9e6e721660648f2d2fe9e4ee52e24f7020746c3fd"
+    },
+    {
+      "path": "share/freeciv/nation/louisianian.ruleset",
+      "bytes": 3962,
+      "sha256": "3d82bb9a6064844ca58c9c804d5c3fc3ed6fb3d24b3fc245c27f5e386c60ff41"
+    },
+    {
+      "path": "share/freeciv/nation/luhansk.ruleset",
+      "bytes": 3096,
+      "sha256": "944869c0244af0262e00c16c172aedf6225431f98467f691de53fa8c5b0d37ca"
+    },
+    {
+      "path": "share/freeciv/nation/luwian.ruleset",
+      "bytes": 1466,
+      "sha256": "d4722d708711f57f1336e39840d351794e85305f069fcf414831a360bdfee5bf"
+    },
+    {
+      "path": "share/freeciv/nation/luxembourgish.ruleset",
+      "bytes": 3334,
+      "sha256": "143523e39777c0e7b63d90eedd6e9f12e2c7f0af588341d3354cc1ff0f11cafe"
+    },
+    {
+      "path": "share/freeciv/nation/lycian.ruleset",
+      "bytes": 1255,
+      "sha256": "ae4a6131d96616120e3519c6eb5b7d0c05425b39ad41d72e941031e8e590adce"
+    },
+    {
+      "path": "share/freeciv/nation/maasai.ruleset",
+      "bytes": 1056,
+      "sha256": "eb9be57c009a92d0c2b45c7e72c7951b98be620d70552b407f5513835192539b"
+    },
+    {
+      "path": "share/freeciv/nation/macedon.ruleset",
+      "bytes": 1975,
+      "sha256": "1e71e4befe8688d8179b92fba868d6d96913683212f738cc8f201e58508d70ed"
+    },
+    {
+      "path": "share/freeciv/nation/macedonian.ruleset",
+      "bytes": 1671,
+      "sha256": "1a006c16dda5ad647db0a67402fe9bbede9e08613ce67e2dee482a6462117e26"
+    },
+    {
+      "path": "share/freeciv/nation/majapahit.ruleset",
+      "bytes": 1896,
+      "sha256": "3b0df33f4e8313831ca546dc13e8d491085133155fa60e4ab9844478c7ad1faa"
+    },
+    {
+      "path": "share/freeciv/nation/malagasy.ruleset",
+      "bytes": 1492,
+      "sha256": "9dba65433b602204e6cd0cb98e429b3c7bdb91fb39d7104a8a9c95622955a16f"
+    },
+    {
+      "path": "share/freeciv/nation/malawian.ruleset",
+      "bytes": 1256,
+      "sha256": "54a1380bd7a95f00f9862e11565a5780dc5df6889207a4595e5b000bd721f2b3"
+    },
+    {
+      "path": "share/freeciv/nation/malaysian.ruleset",
+      "bytes": 1228,
+      "sha256": "3adcfbd91b9fca4a982010fc21e5b9fed1cb04b8ab7daf4c53019ff9183db442"
+    },
+    {
+      "path": "share/freeciv/nation/maldivian.ruleset",
+      "bytes": 2043,
+      "sha256": "69acc0bddf77f98f83d17a71058804b6bb72dfc60616cf3040b6923dadcadc50"
+    },
+    {
+      "path": "share/freeciv/nation/mali.ruleset",
+      "bytes": 1550,
+      "sha256": "a28b72657a5d01a27dd3ecfe20f7f20bece5346dc25d20cfcd34893ae855c703"
+    },
+    {
+      "path": "share/freeciv/nation/malian.ruleset",
+      "bytes": 1311,
+      "sha256": "466027364f5fa2497d12c95cae7cbdc6deaecddd674adfeda94c66ef268dd50b"
+    },
+    {
+      "path": "share/freeciv/nation/maltese.ruleset",
+      "bytes": 2414,
+      "sha256": "e93a35adc11e6f796ee27fea05ab157ebd3c85a263503007367028079945d713"
+    },
+    {
+      "path": "share/freeciv/nation/mamluk.ruleset",
+      "bytes": 2145,
+      "sha256": "e9f5a10f91a0da22ac17b80775a45fabaa537cf5d543773445c9e7665fa709ff"
+    },
+    {
+      "path": "share/freeciv/nation/manchu.ruleset",
+      "bytes": 1830,
+      "sha256": "e09ef891c094553540b450bf24816b336b49bc840d12250e34ad3c5377a4fb89"
+    },
+    {
+      "path": "share/freeciv/nation/manx.ruleset",
+      "bytes": 2117,
+      "sha256": "2c83c9c7ae8dce8daa5379b66a7fefca6298ad7f03db1ac840a56308e218a79e"
+    },
+    {
+      "path": "share/freeciv/nation/maori.ruleset",
+      "bytes": 1907,
+      "sha256": "c45bae98b103e2023502444eee5e53b940b684d13324d7e4fd509ce373a40b08"
+    },
+    {
+      "path": "share/freeciv/nation/mapuche.ruleset",
+      "bytes": 1014,
+      "sha256": "ecb4a136455f1b900ac3af6ea44dce009200f2ddac1a79b83dd54b4d07361cf4"
+    },
+    {
+      "path": "share/freeciv/nation/marathi.ruleset",
+      "bytes": 2176,
+      "sha256": "2bd3961b2cc18c209253152d4175a104690d5517f379657a4cd00a1b618056a6"
+    },
+    {
+      "path": "share/freeciv/nation/marshallese.ruleset",
+      "bytes": 1565,
+      "sha256": "d61696b2ceefd104799fe8d781fa64151c042f4f4d40fb0106133770bc9b7c0d"
+    },
+    {
+      "path": "share/freeciv/nation/martian.ruleset",
+      "bytes": 1174,
+      "sha256": "a7de6d9453c3d65f1d4ec3703cee69bf82896d7befbf26a2d93cb3f9df427bf1"
+    },
+    {
+      "path": "share/freeciv/nation/mauritanian.ruleset",
+      "bytes": 1466,
+      "sha256": "21980dbf585d845cb786dad30dc1791cee4d63fdeca58e129c67f8336c6924ae"
+    },
+    {
+      "path": "share/freeciv/nation/mauritian.ruleset",
+      "bytes": 2111,
+      "sha256": "cc7126a4541de0f685618677e4823ce6994fd52db69a2312c4bbb64f2d1d1a58"
+    },
+    {
+      "path": "share/freeciv/nation/mayan.ruleset",
+      "bytes": 3682,
+      "sha256": "26cb2c7b4d941f08f95d488f6e9a039e53364cb8651a23f7e4e98428a3d01e90"
+    },
+    {
+      "path": "share/freeciv/nation/mazovian.ruleset",
+      "bytes": 1662,
+      "sha256": "478f88e9dd61178f172e9364f45f09e4e0a02cd42805498ae2c63ec0ce179677"
+    },
+    {
+      "path": "share/freeciv/nation/mecklenburgian.ruleset",
+      "bytes": 2150,
+      "sha256": "f916be16de1b8e92993ffae0ce312b92b030bcc76be370ca8b63a50a67624e90"
+    },
+    {
+      "path": "share/freeciv/nation/median.ruleset",
+      "bytes": 1980,
+      "sha256": "e12bb30f07116416e7ee5a7e0a403de817a489bf93979321cbf87d38e2e2e325"
+    },
+    {
+      "path": "share/freeciv/nation/messapian.ruleset",
+      "bytes": 911,
+      "sha256": "21b6ebe1bc5987cb1090d23f28ce11c3ea22932c0bf42cc94051ad69e251e9d1"
+    },
+    {
+      "path": "share/freeciv/nation/metis.ruleset",
+      "bytes": 1369,
+      "sha256": "f79e60ef1678933ef30e5980c87e798f0e006d41e9d5092733820152ef2baec8"
+    },
+    {
+      "path": "share/freeciv/nation/mexican.ruleset",
+      "bytes": 6424,
+      "sha256": "8d438fe1c2443a7a0fd27696d330a10983f7afc6092c16326a58b5edbfbc0ecb"
+    },
+    {
+      "path": "share/freeciv/nation/miao.ruleset",
+      "bytes": 1499,
+      "sha256": "870b45c5efb36e1235aaed77d3fa799b3119a1784a724c3fcb6fba8ca76e102a"
+    },
+    {
+      "path": "share/freeciv/nation/micronesian.ruleset",
+      "bytes": 1283,
+      "sha256": "5bcfc4b58038f67cccfa5b293229533ec7b61f41a98aee1cd42ec543c2ca763d"
+    },
+    {
+      "path": "share/freeciv/nation/mikmaq.ruleset",
+      "bytes": 1446,
+      "sha256": "46700311ad104d8d1fc8d67c860076ace7cce92e80f638ed5afaa8870229458b"
+    },
+    {
+      "path": "share/freeciv/nation/milanese.ruleset",
+      "bytes": 1920,
+      "sha256": "1f5f0bea2bee0cb5727e96cbfc5de08cb71220ac964419a8cead36802d4bd8e7"
+    },
+    {
+      "path": "share/freeciv/nation/minnesotan.ruleset",
+      "bytes": 3514,
+      "sha256": "4709da6238e37b05f82ce57caadb3b6b42dfbd6f5e8c8b94b0b1c46ff646a362"
+    },
+    {
+      "path": "share/freeciv/nation/miskito.ruleset",
+      "bytes": 1963,
+      "sha256": "b7eb60dfccc30ee5ebbba6c7542315d694ce9daf5c053de3feef679f009494a3"
+    },
+    {
+      "path": "share/freeciv/nation/mitanni.ruleset",
+      "bytes": 1534,
+      "sha256": "0f84f22fa7c136886be3ac4a4ee1da5807420a0c824c4791ec731271685caf42"
+    },
+    {
+      "path": "share/freeciv/nation/mixtec.ruleset",
+      "bytes": 2616,
+      "sha256": "00a925326ef9fa1c842b7537e362d76c2d6fcd484047ca088f4b833d8c035ba9"
+    },
+    {
+      "path": "share/freeciv/nation/moldovan.ruleset",
+      "bytes": 1722,
+      "sha256": "02ac63d7138ecab794f155d21363e076cb08e6999e5c5e9d20488e8a3027719a"
+    },
+    {
+      "path": "share/freeciv/nation/moluccan.ruleset",
+      "bytes": 1924,
+      "sha256": "fcf9c13a748bd11f43131b1f856fc971167e655a1338bcee4e008c57c746673c"
+    },
+    {
+      "path": "share/freeciv/nation/mon.ruleset",
+      "bytes": 921,
+      "sha256": "7b644b1107261df5483ae83af19eb2c7a63ce458068b9f9bde2058f536dae4d8"
+    },
+    {
+      "path": "share/freeciv/nation/monegasque.ruleset",
+      "bytes": 2231,
+      "sha256": "5962160eb8fa940951266f4ba2cf4e576579d3da8d04631f6a7c381766946378"
+    },
+    {
+      "path": "share/freeciv/nation/mongol.ruleset",
+      "bytes": 2423,
+      "sha256": "d801542fe18f4a05e09d7aa77bb7623c46c8c5b0c0c351aa512f934095f3585f"
+    },
+    {
+      "path": "share/freeciv/nation/montenegrin.ruleset",
+      "bytes": 1960,
+      "sha256": "b405c9b0137a08b19d21ca36ccd40cea1f522daa8b4e98411dd00f11e262e00f"
+    },
+    {
+      "path": "share/freeciv/nation/moravian.ruleset",
+      "bytes": 2604,
+      "sha256": "09f7fa47a120badedeab3643ae1fa77aa91c57dcb365e9c6884cef6853e991f3"
+    },
+    {
+      "path": "share/freeciv/nation/mordvin.ruleset",
+      "bytes": 2897,
+      "sha256": "cab55da3ff89d11c447ca9ee4dbb5826b1d38c152b8dbef9ef40a81979959a08"
+    },
+    {
+      "path": "share/freeciv/nation/moroccan.ruleset",
+      "bytes": 2480,
+      "sha256": "0d6962fcc47743e22e06156ba4634959acc570dc632fb215227326346fb22d7b"
+    },
+    {
+      "path": "share/freeciv/nation/mozambican.ruleset",
+      "bytes": 1078,
+      "sha256": "84a5ebe6420eef1b645c4e766b24fbf22cc9168c73fc99798b87efd33f68e00f"
+    },
+    {
+      "path": "share/freeciv/nation/mughal.ruleset",
+      "bytes": 1118,
+      "sha256": "0a3f7607b7295a0a46024550fdf316ce40b1b91e7bae7fb01ca86f50ca62dc32"
+    },
+    {
+      "path": "share/freeciv/nation/muscovite.ruleset",
+      "bytes": 1559,
+      "sha256": "7f0db143f420d9973b10ce60ffe9582c5adda84edc6b3d1a1bb72e372f7a729b"
+    },
+    {
+      "path": "share/freeciv/nation/muskogee.ruleset",
+      "bytes": 3366,
+      "sha256": "d0f49fd8eec8b6bbce6363bd7e2bf9aa3945f32315f4455ff463d1cd570e4216"
+    },
+    {
+      "path": "share/freeciv/nation/mwiska.ruleset",
+      "bytes": 1523,
+      "sha256": "250ca5287771301e39913ab5ca676a20a08eb0f5007c1be892bbbb3eb7fe0a53"
+    },
+    {
+      "path": "share/freeciv/nation/namibian.ruleset",
+      "bytes": 1536,
+      "sha256": "d150b30815cd21c8fd5a5c230204fcfc0bfa577e297d4515135f407a80f6c53f"
+    },
+    {
+      "path": "share/freeciv/nation/nauruan.ruleset",
+      "bytes": 1928,
+      "sha256": "5c153ebf97aa54772fae53a0b13a0818386afc35d538a599d744860e1bc69bc6"
+    },
+    {
+      "path": "share/freeciv/nation/navajo.ruleset",
+      "bytes": 2567,
+      "sha256": "3ec64fdd7f847e2568044fca0190e8ae1cc17dbb22e9d901171d45a2627d5dcb"
+    },
+    {
+      "path": "share/freeciv/nation/neapolitan.ruleset",
+      "bytes": 2161,
+      "sha256": "5bef3eda6260a8a772b31f402a29fc2cdda10a7299d358c95f454ef06f3125cf"
+    },
+    {
+      "path": "share/freeciv/nation/nenets.ruleset",
+      "bytes": 1221,
+      "sha256": "7e00db7700fb8a6d0945c8fb7a33425b97c76110e7e5cecf5152a3b7cbe1dfdb"
+    },
+    {
+      "path": "share/freeciv/nation/nepali.ruleset",
+      "bytes": 1709,
+      "sha256": "6f0271b152fe884981c1cb137fe842ba3be67ac471385d5bd36e65cd8f4671bb"
+    },
+    {
+      "path": "share/freeciv/nation/nestorian.ruleset",
+      "bytes": 5251,
+      "sha256": "65036658b53c548d40d44a3ece3cffbe556fdaf5e84acb8bf04a1dc581cceead"
+    },
+    {
+      "path": "share/freeciv/nation/newfoundland.ruleset",
+      "bytes": 3437,
+      "sha256": "db3256bf23cb9b7c80a0a525e186436dbeee04ce73f8c3147e1030a196eba7a3"
+    },
+    {
+      "path": "share/freeciv/nation/newzealand.ruleset",
+      "bytes": 2136,
+      "sha256": "c72101381da0cc2700c1f910962c05c94860855e2eb8a91544390482dbc16fc9"
+    },
+    {
+      "path": "share/freeciv/nation/nicaraguan.ruleset",
+      "bytes": 2778,
+      "sha256": "4ccef170aad47ec615a90f7670d165879fad2ea54557c2ff1a22224d85628a13"
+    },
+    {
+      "path": "share/freeciv/nation/nigerian.ruleset",
+      "bytes": 1028,
+      "sha256": "523b441b89a5b13d183bd6a63af122062ff66bf384a2587cf41052f721102d88"
+    },
+    {
+      "path": "share/freeciv/nation/nigerien.ruleset",
+      "bytes": 1724,
+      "sha256": "af01f1444c3265e4f26a98c1dfa19277994352a774e15ac2ddd4f417f7ba139d"
+    },
+    {
+      "path": "share/freeciv/nation/nimiipuu.ruleset",
+      "bytes": 2957,
+      "sha256": "6386167970d871bfc35e0788c8fff21663b0454f2b9d982e9ff104403d794598"
+    },
+    {
+      "path": "share/freeciv/nation/norman.ruleset",
+      "bytes": 2029,
+      "sha256": "b482e7125b4c1d765661f78ea4f36cbee1156c3d58510b2fcbfbec4e50a9096f"
+    },
+    {
+      "path": "share/freeciv/nation/northirish.ruleset",
+      "bytes": 3465,
+      "sha256": "132f7fd6eef78ee72e30594c7a8d7c29ee85e8a9584c771270a1208789a3819d"
+    },
+    {
+      "path": "share/freeciv/nation/northkorean.ruleset",
+      "bytes": 1395,
+      "sha256": "0bf25b096b6d2253aff4e10a2e6fc7c4ffcdfdc81da29f165d21efc05848d4f7"
+    },
+    {
+      "path": "share/freeciv/nation/northumbrian.ruleset",
+      "bytes": 6778,
+      "sha256": "4c42d69e67d37ddbf0122e9237de34b112bee6fbf0c95460de449ff730fa7e7c"
+    },
+    {
+      "path": "share/freeciv/nation/norwegian.ruleset",
+      "bytes": 3163,
+      "sha256": "dabe2f29dfd216d9217976f39cfe51246415b8153f90322edfb783abc82712f3"
+    },
+    {
+      "path": "share/freeciv/nation/novgorodian.ruleset",
+      "bytes": 2004,
+      "sha256": "bfdd8c988ba544eace67b6d52ffe5b022d6b6a5dcb8c371e0f27064f45bd7647"
+    },
+    {
+      "path": "share/freeciv/nation/nubian.ruleset",
+      "bytes": 1954,
+      "sha256": "4956be3d8b3b217bb72616e3af5ac098a1f6eda36c9260b4a1368d1117194c70"
+    },
+    {
+      "path": "share/freeciv/nation/numidian.ruleset",
+      "bytes": 1385,
+      "sha256": "ef808b99ffaf5d158a14a1aab075b20a425afe1714d1355e2c42dac8e11596a0"
+    },
+    {
+      "path": "share/freeciv/nation/nuu-chah-nulth.ruleset",
+      "bytes": 1559,
+      "sha256": "0eb34dd58db0820f581cb8d3822384c9ab0c85d836b9f4146d7db649caf50333"
+    },
+    {
+      "path": "share/freeciv/nation/occitan.ruleset",
+      "bytes": 2483,
+      "sha256": "bb2afb2859e631181d91e1422fcd2cba46cf9d0b8d90bfa686231c91e96eca17"
+    },
+    {
+      "path": "share/freeciv/nation/ohlone.ruleset",
+      "bytes": 1654,
+      "sha256": "7eaadc5c3e98c756a6fad42ad355f0695f9a2f48d97525fa3c3e7fef8574a621"
+    },
+    {
+      "path": "share/freeciv/nation/oldenburgian.ruleset",
+      "bytes": 2148,
+      "sha256": "471ce536a6795736e32dab593ccede5ecf7bd0838cea417fdbb7c935f9dcdcbf"
+    },
+    {
+      "path": "share/freeciv/nation/oldprussian.ruleset",
+      "bytes": 1073,
+      "sha256": "df137efa4ce58c333fabc6b3b89431b5f7c39dd798c16f017f4e984e6dff9fef"
+    },
+    {
+      "path": "share/freeciv/nation/omani.ruleset",
+      "bytes": 1880,
+      "sha256": "4a579d7e015a854bf2b0ed07cac584ea00438652e1e9e01b7a2c546ae813a439"
+    },
+    {
+      "path": "share/freeciv/nation/ossetian.ruleset",
+      "bytes": 2838,
+      "sha256": "6b7f02c5aa0416d60c4c62cfd8dae800c4ee0a28d62c14cd353f75a9e8a09d63"
+    },
+    {
+      "path": "share/freeciv/nation/ostrogothic.ruleset",
+      "bytes": 2196,
+      "sha256": "d9e6293b350596d2ce95e03d86a4b1ffc5a2b273397698ebac75e8205657ec69"
+    },
+    {
+      "path": "share/freeciv/nation/otomi.ruleset",
+      "bytes": 2393,
+      "sha256": "c2514e95afc20758296cba0c1b52209e024502561f44586035684409c0898a65"
+    },
+    {
+      "path": "share/freeciv/nation/ottoman.ruleset",
+      "bytes": 2512,
+      "sha256": "5f255c660e3ba0c8bc031882813556e00db0e26893506f5aff70fbde58417897"
+    },
+    {
+      "path": "share/freeciv/nation/ozite.ruleset",
+      "bytes": 1783,
+      "sha256": "7600b4f84fce3b8ab0c102111008fa501f9f2da2aab010328220c25514d87d61"
+    },
+    {
+      "path": "share/freeciv/nation/paeonian.ruleset",
+      "bytes": 1302,
+      "sha256": "d5144b16ebf0f478452018921818dcc562c5d9571220a589b6912b3bfe9097ca"
+    },
+    {
+      "path": "share/freeciv/nation/pakistani.ruleset",
+      "bytes": 1752,
+      "sha256": "21259e0f910c67c5f4eebe86b355f97ed3e6f0d0166a627b006de768e0ee3e33"
+    },
+    {
+      "path": "share/freeciv/nation/palatinate.ruleset",
+      "bytes": 2193,
+      "sha256": "46ad2925e78a4f285f66eba91789a61d4f5c44fd8ff2b86e08e18746bd44ba26"
+    },
+    {
+      "path": "share/freeciv/nation/palauan.ruleset",
+      "bytes": 1222,
+      "sha256": "2a070fbb80166c585bfcd93e78b3c54c8bf29396b58df92b9585a65e3932f7a3"
+    },
+    {
+      "path": "share/freeciv/nation/palestinian.ruleset",
+      "bytes": 1736,
+      "sha256": "b6f56dc341c156c3163f6a3f867cae1bd52e90b3c919788b1243c0e0cc3093da"
+    },
+    {
+      "path": "share/freeciv/nation/palmyrene.ruleset",
+      "bytes": 1524,
+      "sha256": "ce057e82cfca2fed7da8ce8f22914f81417222d2e103a5082d539e4a58386171"
+    },
+    {
+      "path": "share/freeciv/nation/panamanian.ruleset",
+      "bytes": 2607,
+      "sha256": "ebcc763677aa05fe4161fd4d17746d1ddbf15a4002b0d8ec0e4d0566fe653d6e"
+    },
+    {
+      "path": "share/freeciv/nation/papuan.ruleset",
+      "bytes": 2406,
+      "sha256": "36c629c69ca743afd816bebf5be3800c88809dd3fe8e27bded40c716d72d7ebe"
+    },
+    {
+      "path": "share/freeciv/nation/papuanewguinean.ruleset",
+      "bytes": 1515,
+      "sha256": "f94debd0bb3f218d376cdc37f16ddb20ae74aab34ce36e4ff78e8e4dd31e9d2b"
+    },
+    {
+      "path": "share/freeciv/nation/paraguayan.ruleset",
+      "bytes": 2811,
+      "sha256": "3fd4015ea34713b3aabc6cd4fd33e9717a73a0525643af3645be6c96a1271074"
+    },
+    {
+      "path": "share/freeciv/nation/parthian.ruleset",
+      "bytes": 1918,
+      "sha256": "00bce978580ed0fe7693ec38df8bde7c58f60ea7b220179d91bcc052840b353a"
+    },
+    {
+      "path": "share/freeciv/nation/pashtun.ruleset",
+      "bytes": 1595,
+      "sha256": "20eeddab9762dc545d9c28be12c38b2e755d0413ca489fdfe6d3e45308342fd1"
+    },
+    {
+      "path": "share/freeciv/nation/pelasgian.ruleset",
+      "bytes": 1404,
+      "sha256": "2473b8034a2cd51bc81ce9a9496597ccb9a8a5adec7f547b5e0d6b47f87b7a80"
+    },
+    {
+      "path": "share/freeciv/nation/persian.ruleset",
+      "bytes": 1790,
+      "sha256": "1aa128067d487a908a5f3bb6e0ddffe9254be13d769631863e2fc2bd112ac1a1"
+    },
+    {
+      "path": "share/freeciv/nation/peruvian.ruleset",
+      "bytes": 1468,
+      "sha256": "4f14c81ee76423215321e97c350119e3c3a7f7df719431d009fe60f96bcc8d82"
+    },
+    {
+      "path": "share/freeciv/nation/phoenician.ruleset",
+      "bytes": 2991,
+      "sha256": "46e40edff567aee3f0f18c37d4da6859d08c2f9297cd2276f89f70afbfae3164"
+    },
+    {
+      "path": "share/freeciv/nation/phrygian.ruleset",
+      "bytes": 1503,
+      "sha256": "7b5225379815c20a11d96423c95df90f4565eca8e8fe79ed0c9293ccbbc96ca5"
+    },
+    {
+      "path": "share/freeciv/nation/pictish.ruleset",
+      "bytes": 1422,
+      "sha256": "68684dff1191bbe4e03abbbb6d4d84948fa067b9abb4b02a9f91218e50ed1f9d"
+    },
+    {
+      "path": "share/freeciv/nation/piedmontese.ruleset",
+      "bytes": 2813,
+      "sha256": "e2f169839f795b1c3208862ec6eae822d7df19bed9526556f08b6bb557f61203"
+    },
+    {
+      "path": "share/freeciv/nation/pirate.ruleset",
+      "bytes": 903,
+      "sha256": "683d9b62fa3a8e8f93aefff90f91bd67c45d4bae599a4b850c6084cc76199240"
+    },
+    {
+      "path": "share/freeciv/nation/polish.ruleset",
+      "bytes": 4070,
+      "sha256": "1633778ae69c8b0fb8c77c298e76641654a5b2cf14f2b8970c76e9652044f47f"
+    },
+    {
+      "path": "share/freeciv/nation/polynesian.ruleset",
+      "bytes": 1493,
+      "sha256": "d03beba0c8725314aecd29a65a18e48740c54632dabab560df747dcbbbf08e3b"
+    },
+    {
+      "path": "share/freeciv/nation/pontic.ruleset",
+      "bytes": 2321,
+      "sha256": "7be3ac46bdb44412cac48dc4de2d71da05d445df98c9942971b50064e188c646"
+    },
+    {
+      "path": "share/freeciv/nation/portuguese.ruleset",
+      "bytes": 2317,
+      "sha256": "3290195ce568c6f13557500c129910e0e54a0545d5c0c158f5740e83a7339e04"
+    },
+    {
+      "path": "share/freeciv/nation/poyaisian.ruleset",
+      "bytes": 2805,
+      "sha256": "ad3cbb261d81c013935361b393e8fc39b9258fe10c8619c3d4493d6a6f6fff4f"
+    },
+    {
+      "path": "share/freeciv/nation/prussian.ruleset",
+      "bytes": 2560,
+      "sha256": "473775b4ad7ce6f344ac3a6c065d0ae066d9e40ad059360037e9e3c51c13c5d8"
+    },
+    {
+      "path": "share/freeciv/nation/puertorican.ruleset",
+      "bytes": 2151,
+      "sha256": "aaf22f33765395b20fbdad5de1c2a6ce39f2a0e59d0dba9f2a54c6d967039791"
+    },
+    {
+      "path": "share/freeciv/nation/purhepecha.ruleset",
+      "bytes": 3917,
+      "sha256": "01d0f68dc733696c91ec7f36aad2ab9c85ddce3fe3c03c033f8c164ed9bef8ec"
+    },
+    {
+      "path": "share/freeciv/nation/qatari.ruleset",
+      "bytes": 1484,
+      "sha256": "7afd8bbfb5c90bce87c3a19a9d28399e03e70cde1341df4068b5fc1b12bfb13e"
+    },
+    {
+      "path": "share/freeciv/nation/quebecois.ruleset",
+      "bytes": 1515,
+      "sha256": "5505ee7bb9b8c312158296816e91683fb43815d05312e485f7a5fe04fa259117"
+    },
+    {
+      "path": "share/freeciv/nation/rapanui.ruleset",
+      "bytes": 1894,
+      "sha256": "dee8e2dcf56246baa28bf18384038728c1f738dac998a4b2c78444c9cc0c744e"
+    },
+    {
+      "path": "share/freeciv/nation/raramuri.ruleset",
+      "bytes": 1534,
+      "sha256": "50ad9c0f64e5f57ed8f2d685e2e6df05070be9568b5d52ded0540b68fb6176c2"
+    },
+    {
+      "path": "share/freeciv/nation/rhenish.ruleset",
+      "bytes": 2982,
+      "sha256": "79f64498ecb05a800baa3022db38b3ace93435ad7f25118dc5352e7555335241"
+    },
+    {
+      "path": "share/freeciv/nation/riffian.ruleset",
+      "bytes": 1469,
+      "sha256": "1c721265f3abf8c8993ec749a984e7ca5af4d6ea8c9927613316c5416497dfe5"
+    },
+    {
+      "path": "share/freeciv/nation/riograndense.ruleset",
+      "bytes": 1612,
+      "sha256": "4a6aab8bc416187ad6c8d8d2dbc1eba0878ee06b31ddc331135fcd48eee17a6e"
+    },
+    {
+      "path": "share/freeciv/nation/roman.ruleset",
+      "bytes": 5637,
+      "sha256": "caf9afdb2c867090ca73cbf3897989ab9de2b596bc88fae92307995740070e05"
+    },
+    {
+      "path": "share/freeciv/nation/romanian.ruleset",
+      "bytes": 3805,
+      "sha256": "b100eca7468db405935ac94fb6231582fbcc8d2bccb7bac47da1960744687154"
+    },
+    {
+      "path": "share/freeciv/nation/romansh.ruleset",
+      "bytes": 2011,
+      "sha256": "8848827198aaf869dfa18f11a93eaafe63ca3a85e774c1f204f80f88cdaf90a3"
+    },
+    {
+      "path": "share/freeciv/nation/russian.ruleset",
+      "bytes": 4521,
+      "sha256": "29cf475dd9255fcca0e3b1dd1c40a42b5b12af71ec66b8b4c1561a41871688d5"
+    },
+    {
+      "path": "share/freeciv/nation/rusyn.ruleset",
+      "bytes": 2305,
+      "sha256": "6d1edac8688fb30b5bdedc22eb780d03a759fcdd360670efb02a974d7879c7eb"
+    },
+    {
+      "path": "share/freeciv/nation/ruthenian.ruleset",
+      "bytes": 1959,
+      "sha256": "a585bb592488f888f53647bf13b87cfe3c76876e2bd06b12de19d0a3eb6c1cd1"
+    },
+    {
+      "path": "share/freeciv/nation/rwandan.ruleset",
+      "bytes": 860,
+      "sha256": "b18a550ce4017fa726f846b066bbe04d839febe333941ba74a2d50c79f03b053"
+    },
+    {
+      "path": "share/freeciv/nation/ryukyuan.ruleset",
+      "bytes": 1810,
+      "sha256": "f5a224bec386164ebf574e7d4ec83fbdf2c84d38bf2f2cc1a2182641aa6266a4"
+    },
+    {
+      "path": "share/freeciv/nation/sabine.ruleset",
+      "bytes": 1858,
+      "sha256": "3e52855a5bcb2f76722cea43d536fbe06190700871d32a6237ff242d2ead0554"
+    },
+    {
+      "path": "share/freeciv/nation/sahrawi.ruleset",
+      "bytes": 1370,
+      "sha256": "27ff82947f7d0f61873f8fa59e9c370e1e10813bc2c1b28c85ec3eca202fed4e"
+    },
+    {
+      "path": "share/freeciv/nation/saintlucian.ruleset",
+      "bytes": 1787,
+      "sha256": "c25532112bcd715d0cb3e239055c2d904099cac12f011c5751ba154b2d3e4e2b"
+    },
+    {
+      "path": "share/freeciv/nation/saka.ruleset",
+      "bytes": 1021,
+      "sha256": "04461ef5a4860c6cd300aa4b894107693c3eb41eca8d19152e9b23329d468427"
+    },
+    {
+      "path": "share/freeciv/nation/salishan.ruleset",
+      "bytes": 3993,
+      "sha256": "dce1c715f714af8d3e2f7eb170d4c513ade0a2842da71706cce9209d4813b64f"
+    },
+    {
+      "path": "share/freeciv/nation/salvadoran.ruleset",
+      "bytes": 2654,
+      "sha256": "f28723769073d13e98ea18250429363977fd0b26e4d0e61843e50d888e16e18c"
+    },
+    {
+      "path": "share/freeciv/nation/sami.ruleset",
+      "bytes": 3817,
+      "sha256": "463ccb641f28b8ca0021a8f410c0d245cafdfcde41611a41e14e6fc043c4dd1c"
+    },
+    {
+      "path": "share/freeciv/nation/sammarinese.ruleset",
+      "bytes": 1959,
+      "sha256": "3a73dd6e3e00fd1ee796ca158c2faa66a703b67474a63f562c09633dd6541234"
+    },
+    {
+      "path": "share/freeciv/nation/samnite.ruleset",
+      "bytes": 1757,
+      "sha256": "83589e5af2d0a47ae9d78c90ab058c64e841cec94785f6e4cd92c4931e6681bd"
+    },
+    {
+      "path": "share/freeciv/nation/samoan.ruleset",
+      "bytes": 2095,
+      "sha256": "9bdf19eefc39fffe2f86a7c5442781ddee9a9f2a83b9946fc558f03495350620"
+    },
+    {
+      "path": "share/freeciv/nation/samogitian.ruleset",
+      "bytes": 1039,
+      "sha256": "617408c2a105e28e83307ec544af56fcc28631c3a0378bf8ace2db2b216f9843"
+    },
+    {
+      "path": "share/freeciv/nation/santomean.ruleset",
+      "bytes": 1771,
+      "sha256": "59b3a653dbeca3e6ebc41756fdd4fb46069e7d06328b5e26a92ee9feca2a07ab"
+    },
+    {
+      "path": "share/freeciv/nation/sardinian.ruleset",
+      "bytes": 2670,
+      "sha256": "7a691673cd0f04956a065d124e2f6d0e9201c3cf360e4fd9163a32a70a466012"
+    },
+    {
+      "path": "share/freeciv/nation/sarmatian.ruleset",
+      "bytes": 1618,
+      "sha256": "dcbfe560d939e07abfbb6ed87f18201bdd7b54638000d547888df093a7e6890d"
+    },
+    {
+      "path": "share/freeciv/nation/saudi.ruleset",
+      "bytes": 2013,
+      "sha256": "da56b6cf32a6962b132a0fb6d9fefb798089a3a92091b6a939755fefba379cef"
+    },
+    {
+      "path": "share/freeciv/nation/savoyard.ruleset",
+      "bytes": 2133,
+      "sha256": "e63e17403e6c92c7055d3c8551e14b66970bc0eb5d07e3384f5e220a87a30c36"
+    },
+    {
+      "path": "share/freeciv/nation/saxon.ruleset",
+      "bytes": 1872,
+      "sha256": "034cffd4bcbdf3b6d28be8deea96821ae9ee6f26bd630eb7ed6187a5fa976b12"
+    },
+    {
+      "path": "share/freeciv/nation/scanian.ruleset",
+      "bytes": 2185,
+      "sha256": "bb90709af16021f05346661a6211ee9a0f940594410d6c1cd85ec1640930c3c1"
+    },
+    {
+      "path": "share/freeciv/nation/schleswig-holsteinian.ruleset",
+      "bytes": 2730,
+      "sha256": "44bd55601078673678a405cd09e976677c82c3f2e3deef1d62fa3e7324d40ca6"
+    },
+    {
+      "path": "share/freeciv/nation/scottish.ruleset",
+      "bytes": 3561,
+      "sha256": "6c38be213f68ac42a41bcb8dcdce8b1c65767d37fda6828ced503684c86edc62"
+    },
+    {
+      "path": "share/freeciv/nation/scottishgaelic.ruleset",
+      "bytes": 5615,
+      "sha256": "24d77cd02754199c326d086e77987c7a4fb9ff02cdf0d7514a121922b454c3e7"
+    },
+    {
+      "path": "share/freeciv/nation/scythian.ruleset",
+      "bytes": 1773,
+      "sha256": "50fd9adb345ada55516d82ea7d3692d3b5118e4a07128166f701ae7f4dc41eb9"
+    },
+    {
+      "path": "share/freeciv/nation/seleucid.ruleset",
+      "bytes": 1826,
+      "sha256": "a14dff76853327150fb7c4097da34de6f624d729e93351717b1e82ab8b365d58"
+    },
+    {
+      "path": "share/freeciv/nation/seljuk.ruleset",
+      "bytes": 2390,
+      "sha256": "2ba5387507bebc3f3e6c3f690df339ef6288224ff5fab7d6ee5e11bfb73d6b61"
+    },
+    {
+      "path": "share/freeciv/nation/seminole.ruleset",
+      "bytes": 3100,
+      "sha256": "acae72e94a163625ec4c32e88d3c8af19e189a0ec1c2846f1a469eadade36b0b"
+    },
+    {
+      "path": "share/freeciv/nation/senegalese.ruleset",
+      "bytes": 1524,
+      "sha256": "44e0cebf4a7386ca96585df60be78d8a4838430d31d7b12144b8eb2e8072ede9"
+    },
+    {
+      "path": "share/freeciv/nation/serbian.ruleset",
+      "bytes": 2493,
+      "sha256": "c77e7311b37c1d2a5d82f6b2d6256c867450ce4347d512b9a8dc2e24ef1a164c"
+    },
+    {
+      "path": "share/freeciv/nation/seychellois.ruleset",
+      "bytes": 1570,
+      "sha256": "9a49248f26467e48b80f54318299a5c14321dff12a99692197ffd858ede69014"
+    },
+    {
+      "path": "share/freeciv/nation/shan.ruleset",
+      "bytes": 1208,
+      "sha256": "ba6301bb825b42df453ab6e4da7e6c855c998a073680890a1cd348324cdafb37"
+    },
+    {
+      "path": "share/freeciv/nation/shawnee.ruleset",
+      "bytes": 1463,
+      "sha256": "73e6a20be47e337b1d99373171e00d7f9986e21f6cc48ca462ca9e4a5bbbb4bf"
+    },
+    {
+      "path": "share/freeciv/nation/sherpa.ruleset",
+      "bytes": 1745,
+      "sha256": "f8b88c1a04a4d7c422ad5e413bd378fe42358b4e362a630aff77ecec51ceb2b6"
+    },
+    {
+      "path": "share/freeciv/nation/siberian.ruleset",
+      "bytes": 1943,
+      "sha256": "4161e38c35ce301da167944101ae37a70c2fe0990bead08b88724187de7959de"
+    },
+    {
+      "path": "share/freeciv/nation/sicilian.ruleset",
+      "bytes": 2027,
+      "sha256": "dc7c7de45b7e2e7cb95128ce6ff8dabf279fd15f92d443df13bc4e7279094321"
+    },
+    {
+      "path": "share/freeciv/nation/sierraleonean.ruleset",
+      "bytes": 1585,
+      "sha256": "cdd49c275bebf7fc23e3f2f4ca1e25d603530bbbc353c486f414d6dc03b9527b"
+    },
+    {
+      "path": "share/freeciv/nation/sikh.ruleset",
+      "bytes": 2734,
+      "sha256": "e4e505795a2ec923024cb08bef6e1c558c98a33187a2683db722a7a54fd6bef0"
+    },
+    {
+      "path": "share/freeciv/nation/sikkimese.ruleset",
+      "bytes": 1207,
+      "sha256": "e85d973eb2cd834a48bec6423a8c6498dbecd332287e51922f61bb2e07113730"
+    },
+    {
+      "path": "share/freeciv/nation/silesian.ruleset",
+      "bytes": 1647,
+      "sha256": "e7b3223235ceef9b3bffe91500ef2d64af6a2ef6c7bb5e64de7387bbc58b5508"
+    },
+    {
+      "path": "share/freeciv/nation/singaporean.ruleset",
+      "bytes": 2458,
+      "sha256": "e8baecc56ff7a0f40755f32708cce595d8f105e1732bd1902aa4c793916d9dd5"
+    },
+    {
+      "path": "share/freeciv/nation/singlebarbarian.ruleset",
+      "bytes": 661,
+      "sha256": "ead1ca052c52f7fcb843fa311d5ef31ef438849e1d1aadd19a3716df0689e91d"
+    },
+    {
+      "path": "share/freeciv/nation/sinhalese.ruleset",
+      "bytes": 1285,
+      "sha256": "49cad08468412ff771020fa73f8455c3ddb2db4f8a0dbdb2f28159079c0b912c"
+    },
+    {
+      "path": "share/freeciv/nation/sioux.ruleset",
+      "bytes": 2367,
+      "sha256": "2158d727c908e1b34777f4c59f81d341aba248f62bfa59a4d69b07d3172b453d"
+    },
+    {
+      "path": "share/freeciv/nation/slavic.ruleset",
+      "bytes": 4842,
+      "sha256": "cd80682b267c3a79d3aa2eb1d0a2a0cd5925d647710b97fa9c7b11b739658383"
+    },
+    {
+      "path": "share/freeciv/nation/slovakian.ruleset",
+      "bytes": 3718,
+      "sha256": "9c9a6e6668da0ace5ea4f7d0793f8a779c7ed933892b0d77e4cda3ff7807c3fb"
+    },
+    {
+      "path": "share/freeciv/nation/slovenian.ruleset",
+      "bytes": 1258,
+      "sha256": "7ae79b41d7106dceb6e3266d9cee106161a10927dd1384b5cade1f2e00c2e1ec"
+    },
+    {
+      "path": "share/freeciv/nation/solomonislander.ruleset",
+      "bytes": 1330,
+      "sha256": "8212ded882bb0a46b68ce5ea7465b12b27b7da3a67258cb45a1c1ee4fd79dac2"
+    },
+    {
+      "path": "share/freeciv/nation/somali.ruleset",
+      "bytes": 2356,
+      "sha256": "5f6f5fe3a128e51e4a0fb01322d0840dedb7ca558c9ea975553b27b21f5b66e1"
+    },
+    {
+      "path": "share/freeciv/nation/somaliland.ruleset",
+      "bytes": 1602,
+      "sha256": "7d2102ec856270da26d70bf689b0756ade62a7aff8357c776fa8c14890dfc2e6"
+    },
+    {
+      "path": "share/freeciv/nation/songhai.ruleset",
+      "bytes": 1503,
+      "sha256": "20fdbdba75dcd43a215d7d2e15196f56186e0f9c75a84998c83163da4c92bc10"
+    },
+    {
+      "path": "share/freeciv/nation/sorbian.ruleset",
+      "bytes": 3181,
+      "sha256": "f8b8648b4795f185ed5f18a63c9046e96e25c98da14b7242504330435c39d7f6"
+    },
+    {
+      "path": "share/freeciv/nation/sotho.ruleset",
+      "bytes": 1740,
+      "sha256": "bcd93871e11f4edf5dfab3e228705539f30e11f99b6d430bcb13aed98180d68d"
+    },
+    {
+      "path": "share/freeciv/nation/southafrican.ruleset",
+      "bytes": 2187,
+      "sha256": "7bbdac32dfe87cd4c02b2856ef7561fe47ebc3f8cfd9e5940b25938c0d58c996"
+    },
+    {
+      "path": "share/freeciv/nation/southamerican.ruleset",
+      "bytes": 1335,
+      "sha256": "2647b6dd0f08ee47714eeff19f28cf9113c72da5dc278aaad38284eb36fafdcc"
+    },
+    {
+      "path": "share/freeciv/nation/southkorean.ruleset",
+      "bytes": 1839,
+      "sha256": "eb9c8e1ca84b67c767f053268547048b43117381a9412b73bca2ce02ae768ac7"
+    },
+    {
+      "path": "share/freeciv/nation/southsudanese.ruleset",
+      "bytes": 1052,
+      "sha256": "8dbbe56b7d4d19411fd963bde51f37649f0e13a96b07ff31d8cbc01f1b07c84d"
+    },
+    {
+      "path": "share/freeciv/nation/southvietnamese.ruleset",
+      "bytes": 1743,
+      "sha256": "30e96e16cf4f8be371bc29f4743b84f82843103fa798e8ba44703d78e44081a8"
+    },
+    {
+      "path": "share/freeciv/nation/southyemeni.ruleset",
+      "bytes": 1501,
+      "sha256": "1f9ec19218c1b49dc56e509bf79b9c4f4da58db43385d2e072654b7be6fa3be2"
+    },
+    {
+      "path": "share/freeciv/nation/soviet.ruleset",
+      "bytes": 2549,
+      "sha256": "215a3eb08cfc6b6b7904cf00f39b9b21cee5bc1080407bc333b0e9f8c7244e27"
+    },
+    {
+      "path": "share/freeciv/nation/spanish.ruleset",
+      "bytes": 5040,
+      "sha256": "267aa8da437ae0c68e9f4788f286024566735fab9b0566c74a6afbdb3f608e73"
+    },
+    {
+      "path": "share/freeciv/nation/srivijaya.ruleset",
+      "bytes": 1420,
+      "sha256": "6cd632bff75e41842258be8dc9091e9ee74deebdae72862b897d194b693529a2"
+    },
+    {
+      "path": "share/freeciv/nation/sudanese.ruleset",
+      "bytes": 1235,
+      "sha256": "246cf3c600e5d697ec20c5b84e9dc9199a076a19152a0802fdfbc039cc7e9dd7"
+    },
+    {
+      "path": "share/freeciv/nation/suebian.ruleset",
+      "bytes": 3052,
+      "sha256": "1f4b6d8c7fc10a04394eb49a6d02522aa83473abb3422a2a29d7397a3bf67ae7"
+    },
+    {
+      "path": "share/freeciv/nation/sumerian.ruleset",
+      "bytes": 1465,
+      "sha256": "83c649fe4f13f738f626cf0ce0bdddfda31a63de66b979ac40ac9a9dd422cf36"
+    },
+    {
+      "path": "share/freeciv/nation/surinamese.ruleset",
+      "bytes": 2039,
+      "sha256": "0b8c30107c96a4f42c3d610601de022ef623f58c013ff66c5f16beb2aca4cd12"
+    },
+    {
+      "path": "share/freeciv/nation/swahili.ruleset",
+      "bytes": 2280,
+      "sha256": "1717b5741f696728c60949fb603de8456224289984c4904b43edd8a58be9f900"
+    },
+    {
+      "path": "share/freeciv/nation/swazi.ruleset",
+      "bytes": 1340,
+      "sha256": "f375d09d921800d7f8d0e1bd514eab82a4a4992dd600f13765b60b111c682386"
+    },
+    {
+      "path": "share/freeciv/nation/swedish.ruleset",
+      "bytes": 4663,
+      "sha256": "fffc623b9e376c9205cc507e75cb948257b63b56d9d8c1ed261c6852e1e606f5"
+    },
+    {
+      "path": "share/freeciv/nation/swiss.ruleset",
+      "bytes": 3484,
+      "sha256": "2639ec9aa366dc294ec51bbe6a0b9269f8425a940b6953f9e3bbfea26a72277a"
+    },
+    {
+      "path": "share/freeciv/nation/syrian.ruleset",
+      "bytes": 1476,
+      "sha256": "60583db38c59106101ab80738c238bed27725d22d55abe9e693fcc40f5b185e0"
+    },
+    {
+      "path": "share/freeciv/nation/tahitian.ruleset",
+      "bytes": 1796,
+      "sha256": "25f9fb4c9c023db9a5b4d0ca04b16b83394914ac548f3c928dd5f1b03790705c"
+    },
+    {
+      "path": "share/freeciv/nation/taino.ruleset",
+      "bytes": 1914,
+      "sha256": "aa9b4688f561611b5781e6b453def0a194c567a2956289f83e62a665df94824c"
+    },
+    {
+      "path": "share/freeciv/nation/tairona.ruleset",
+      "bytes": 1588,
+      "sha256": "b7ba377e1541a9bdb6033b6196444dc7d472fcf97fec6145747822ccaf2eaced"
+    },
+    {
+      "path": "share/freeciv/nation/taiwanese.ruleset",
+      "bytes": 1812,
+      "sha256": "84be4d4daf363fdbfded8df27958ce048eadfdbd9b1b5304c64986adbc3f16d1"
+    },
+    {
+      "path": "share/freeciv/nation/tajik.ruleset",
+      "bytes": 1557,
+      "sha256": "c879426a539cba0f4f85b798ae475dd4dea58a419c6c89f4a9eeef7ccfd1af85"
+    },
+    {
+      "path": "share/freeciv/nation/tanganyikan.ruleset",
+      "bytes": 1339,
+      "sha256": "ec7ff3b044e849c599b622caa2eb2fe9592780f00f90bd1a7224e0ffe8e89497"
+    },
+    {
+      "path": "share/freeciv/nation/tanzanian.ruleset",
+      "bytes": 1328,
+      "sha256": "a14af93b8691c429b28ae6d4362a0539f2eef1c84a9326038b49f1b7d1a60b89"
+    },
+    {
+      "path": "share/freeciv/nation/tatar.ruleset",
+      "bytes": 2454,
+      "sha256": "88507c489f458f3ecbb7b231c0f99a04c0bd00d058dac440d1913855e55a65a0"
+    },
+    {
+      "path": "share/freeciv/nation/templar.ruleset",
+      "bytes": 2486,
+      "sha256": "d66ccc24387d0e2f231b9a1d370696702c9d213234021d176d3829989af7ac75"
+    },
+    {
+      "path": "share/freeciv/nation/teutonic.ruleset",
+      "bytes": 2221,
+      "sha256": "79181ffcedbc3590efc126bece235070b62f58caceb00a49855a349c57d299bb"
+    },
+    {
+      "path": "share/freeciv/nation/texan.ruleset",
+      "bytes": 6230,
+      "sha256": "d7a8c0155140bb566beac94a7ea8341a20dc9b98fc51334bf90b1e1a20cc5386"
+    },
+    {
+      "path": "share/freeciv/nation/thai.ruleset",
+      "bytes": 1014,
+      "sha256": "741e299f862d9ba5119104ee567e77267be4304417aa0887c4fa5c3da344198c"
+    },
+    {
+      "path": "share/freeciv/nation/thracian.ruleset",
+      "bytes": 1204,
+      "sha256": "ffecca06b5943e08d4c224c1a9fb30c3affdbc8cb99671a88487b74c8a1a8689"
+    },
+    {
+      "path": "share/freeciv/nation/thuringian.ruleset",
+      "bytes": 3573,
+      "sha256": "9373b06e1e860c1fc0b8a56d253274605d56b906405df37d6c242dbb1cbe13ca"
+    },
+    {
+      "path": "share/freeciv/nation/tibetan.ruleset",
+      "bytes": 1667,
+      "sha256": "b3f1b95ff20832bad2d1c1993424a7dac181f234808ca967126ce7bd1a850c53"
+    },
+    {
+      "path": "share/freeciv/nation/timurid.ruleset",
+      "bytes": 1411,
+      "sha256": "4b2357af97c3c0ce927b20ea5325769a8bdb226663e2b379475f202101fa2a27"
+    },
+    {
+      "path": "share/freeciv/nation/tocharian.ruleset",
+      "bytes": 1875,
+      "sha256": "9b03284528284e57d208c9c9da0a147c19edea0b90f6b2f2dbfa4abbdfa78d23"
+    },
+    {
+      "path": "share/freeciv/nation/togolese.ruleset",
+      "bytes": 1167,
+      "sha256": "05a821be893a5d8a88dd3c5a0c32bf2fc984bed9f9fd0d7bb9fabcc309fb20b8"
+    },
+    {
+      "path": "share/freeciv/nation/tokiponan.ruleset",
+      "bytes": 3091,
+      "sha256": "728e84cd793d4f13187aac0449e98346f7c1c9b430b5e12af46fa96acac9b829"
+    },
+    {
+      "path": "share/freeciv/nation/toltec.ruleset",
+      "bytes": 2417,
+      "sha256": "e81f7e74e886481117e613d3be3361eae108c850035242ba1abe7b52e1203cda"
+    },
+    {
+      "path": "share/freeciv/nation/tongan.ruleset",
+      "bytes": 1406,
+      "sha256": "5c21a31eb7dca26299f98d2acda33f015066c8f55a5cf90b6a8a02d948282e93"
+    },
+    {
+      "path": "share/freeciv/nation/transnistrian.ruleset",
+      "bytes": 1716,
+      "sha256": "5d89bdca9caab339db767d30fc1ee277681860d38d0f8d827a2aed164ded641f"
+    },
+    {
+      "path": "share/freeciv/nation/transylvanian.ruleset",
+      "bytes": 2511,
+      "sha256": "3fbadf3f56d4b0d5bfe893ec895be16e66d78021f4836b7f8064ff36976cbb48"
+    },
+    {
+      "path": "share/freeciv/nation/trinidadian.ruleset",
+      "bytes": 2026,
+      "sha256": "559a312cbe34d7e3ab565161d57b662d1d9be9f774111b1d3fed1fa0c88e212a"
+    },
+    {
+      "path": "share/freeciv/nation/tswana.ruleset",
+      "bytes": 1832,
+      "sha256": "182d24ac70a0b164c128df7fe21c6da972f5616b10bdaf75c08ce23d1eecd4d2"
+    },
+    {
+      "path": "share/freeciv/nation/tuareg.ruleset",
+      "bytes": 1852,
+      "sha256": "1e9d86fbf46defdd2b8032c7e9940641ce978c6d0ec82af2a8363e56fbe8c5ac"
+    },
+    {
+      "path": "share/freeciv/nation/tunisian.ruleset",
+      "bytes": 1642,
+      "sha256": "35031ca44562dad5f097fc657c71dab9a2863fcafa90ec3598a29f0285198173"
+    },
+    {
+      "path": "share/freeciv/nation/tupi.ruleset",
+      "bytes": 1653,
+      "sha256": "b7c1e0aa1a37bca8497217c4cd0a2e6178281191b197bea27cf428ddbd58b6d2"
+    },
+    {
+      "path": "share/freeciv/nation/turk.ruleset",
+      "bytes": 4191,
+      "sha256": "532b3b0c7551a25c6f0ae87bfb6b49603310c151d326ed0dff2679ed2800ca38"
+    },
+    {
+      "path": "share/freeciv/nation/turkishcypriot.ruleset",
+      "bytes": 1749,
+      "sha256": "6013380e47848128229cf83026f12a2a9643f86946c8787e32e36d12e661178d"
+    },
+    {
+      "path": "share/freeciv/nation/turkmen.ruleset",
+      "bytes": 1707,
+      "sha256": "c0cb20d9976d1a8866721d9759caa29bb71569441694440f5c28ce39b9f49168"
+    },
+    {
+      "path": "share/freeciv/nation/tuvaluan.ruleset",
+      "bytes": 1298,
+      "sha256": "365af8c0ccdcb727b062789f93e7458d82859200633533646b4f87b0722362a6"
+    },
+    {
+      "path": "share/freeciv/nation/tuvan.ruleset",
+      "bytes": 1939,
+      "sha256": "cc1c0a421e7b68ba4a9f87cbbf6c8dd9106a8b24c7edd1459162bad9bf76ba18"
+    },
+    {
+      "path": "share/freeciv/nation/tyrolian.ruleset",
+      "bytes": 2169,
+      "sha256": "cbac2dc774eb0343c71dbc79b9412cc69182719ef3ec1a5cf801fb292b928e6f"
+    },
+    {
+      "path": "share/freeciv/nation/ugandan.ruleset",
+      "bytes": 3023,
+      "sha256": "315dd325e508ef69cc581bab376dbf50cfca2b8ba18cb554e93d28e93fc93305"
+    },
+    {
+      "path": "share/freeciv/nation/ukrainian.ruleset",
+      "bytes": 2480,
+      "sha256": "f35ba21ad9a24bf2b4fff086f9ab1849b117f548df34fa5d2dd61246e25ad71e"
+    },
+    {
+      "path": "share/freeciv/nation/un.ruleset",
+      "bytes": 1345,
+      "sha256": "a4b8bdd082b155324452a67932e20cf45c4baee04185708005ad5df2b9c56d95"
+    },
+    {
+      "path": "share/freeciv/nation/urartian.ruleset",
+      "bytes": 2379,
+      "sha256": "904ae29f9b30eae64424c12ee6f10ae802c698b7751a6192c672e741925c7940"
+    },
+    {
+      "path": "share/freeciv/nation/uruguayan.ruleset",
+      "bytes": 1942,
+      "sha256": "b39bf250ef4422a5fefeaaee3e8eda66516cad51d99fc0b67d7feeaca7328753"
+    },
+    {
+      "path": "share/freeciv/nation/uyghur.ruleset",
+      "bytes": 1562,
+      "sha256": "97f8b61e4d98a06ffb04e0c9228516f7d696bd2bfa5a5018ff9176bbab79e921"
+    },
+    {
+      "path": "share/freeciv/nation/uzbek.ruleset",
+      "bytes": 2095,
+      "sha256": "6c650c46b9cafec26369d21cc722bf5d689b238bf5f0b637f68adb18daa6be1f"
+    },
+    {
+      "path": "share/freeciv/nation/vampire.ruleset",
+      "bytes": 2874,
+      "sha256": "b876be451cb83f8909d9841aef67bfc38d668cbbb670f0a638b16c367e515126"
+    },
+    {
+      "path": "share/freeciv/nation/vandalic.ruleset",
+      "bytes": 2566,
+      "sha256": "d5c342a8085a2725f23e2322c2ea30eed006e65856fba626b6b80417a089c461"
+    },
+    {
+      "path": "share/freeciv/nation/vanuatuan.ruleset",
+      "bytes": 1544,
+      "sha256": "0f36b47a122249bd94dd5444f03f7c6857b7660921946546b63e768bc1abb987"
+    },
+    {
+      "path": "share/freeciv/nation/vedic.ruleset",
+      "bytes": 1312,
+      "sha256": "42c64db2b821a093b8fefa2e052085d511f2862aca36f6d22dca59ba06ccc888"
+    },
+    {
+      "path": "share/freeciv/nation/veletian.ruleset",
+      "bytes": 2477,
+      "sha256": "705fe3dc44b83a7988a5b199d0441de8b7a89ac286b400cd352d3cd9a1ea553e"
+    },
+    {
+      "path": "share/freeciv/nation/venda.ruleset",
+      "bytes": 1366,
+      "sha256": "7ccbb11b7cf7405c0e8272183f4f727d7f410919c08078c78ab4623ba56f291a"
+    },
+    {
+      "path": "share/freeciv/nation/venetian.ruleset",
+      "bytes": 2939,
+      "sha256": "3189bf864afa0cb5702320f9b7bcf0d631c4a05b0381f30990f753ba0240a24b"
+    },
+    {
+      "path": "share/freeciv/nation/venetic.ruleset",
+      "bytes": 1573,
+      "sha256": "570bb646aa7ab30df9f02fd7f545f2bc28a220cae27caacf9edb9cde83749d87"
+    },
+    {
+      "path": "share/freeciv/nation/venezuelan.ruleset",
+      "bytes": 2709,
+      "sha256": "478cefc8cde431adf82d28aa98392f8de24129aa4fab7c16709d101ca2d63059"
+    },
+    {
+      "path": "share/freeciv/nation/vermont.ruleset",
+      "bytes": 1872,
+      "sha256": "9d79b170ef2ea08ced89ed6ccf9537d864bbbf92882fb14696a3591b38b930c5"
+    },
+    {
+      "path": "share/freeciv/nation/vietnamese.ruleset",
+      "bytes": 1693,
+      "sha256": "7d6f458d896e9aaa4f27e587db94645891e084d2828335565c185b24614b7fa6"
+    },
+    {
+      "path": "share/freeciv/nation/viking.ruleset",
+      "bytes": 2834,
+      "sha256": "49d870ff95fc1d7413d1e30324adb78b0ca0efa06b0d0ad1bcd3d744c7baaab0"
+    },
+    {
+      "path": "share/freeciv/nation/vincentian.ruleset",
+      "bytes": 1653,
+      "sha256": "7bb66935a89e4203301f9099dcc5a3ed2715b306fd63eafde4ca05908a03cd94"
+    },
+    {
+      "path": "share/freeciv/nation/visigothic.ruleset",
+      "bytes": 4555,
+      "sha256": "9c26c7e5d5efe56be8344f561c4a33a470bb65f7a04930b9702a95601785cd38"
+    },
+    {
+      "path": "share/freeciv/nation/vistulan.ruleset",
+      "bytes": 1763,
+      "sha256": "50274ddb5db2574ac4f27060b2c92f8996399333e29b2c90f91174d707db93e8"
+    },
+    {
+      "path": "share/freeciv/nation/volapuk.ruleset",
+      "bytes": 1790,
+      "sha256": "f8f98ab4188dcbc3bc7eaa19d730fe4146b76aa83209ab4345139a3cf586012b"
+    },
+    {
+      "path": "share/freeciv/nation/volgabulgar.ruleset",
+      "bytes": 2248,
+      "sha256": "70172263edd5fec31e3795a308a8217a5f52749cec4332325990721c47bfda38"
+    },
+    {
+      "path": "share/freeciv/nation/volgagerman.ruleset",
+      "bytes": 2500,
+      "sha256": "4da13c5c8020c7d2da488ca4a08a39719b326daaa1c211a88beb003d272e0ca7"
+    },
+    {
+      "path": "share/freeciv/nation/walloon.ruleset",
+      "bytes": 2535,
+      "sha256": "2f6e0d8b297ab444ba516fba4759981b8499aa1453a2ce7fc32b4735aed986e6"
+    },
+    {
+      "path": "share/freeciv/nation/welsh.ruleset",
+      "bytes": 1936,
+      "sha256": "2da1557b30c93416a406951367d61805ee85d063026f0a15bf80d4bd694d826f"
+    },
+    {
+      "path": "share/freeciv/nation/werewolf.ruleset",
+      "bytes": 2135,
+      "sha256": "9e68777431285b7b325b61c7fd422efd3b6b8a2ed6a4af98c2562322d9d9f19b"
+    },
+    {
+      "path": "share/freeciv/nation/westernpomeranian.ruleset",
+      "bytes": 1965,
+      "sha256": "bbe6abac48bd57f4ddf8e777f2d144d8459f251c681bb511d72ec56d91c17b79"
+    },
+    {
+      "path": "share/freeciv/nation/westernroman.ruleset",
+      "bytes": 6674,
+      "sha256": "e6bcc11a8e9f44caf34f333c1f8747c6a56f9b54c7de0cc729099aaf4f6623d4"
+    },
+    {
+      "path": "share/freeciv/nation/westindian.ruleset",
+      "bytes": 2253,
+      "sha256": "6a632824665786583c0da934fa25df2c4aa72ce4ab6386b0ad811e632b0f9290"
+    },
+    {
+      "path": "share/freeciv/nation/westphalian.ruleset",
+      "bytes": 1937,
+      "sha256": "1aaee3dd7a05cdfda0d21d42a8a3234bff611daa85bf56733373901d7252c644"
+    },
+    {
+      "path": "share/freeciv/nation/wuerttembergian.ruleset",
+      "bytes": 2206,
+      "sha256": "00d7bc58f0a4fc59f573023afd59aa8ef01dc3f5b4fc81327ffd0f585d8d56ea"
+    },
+    {
+      "path": "share/freeciv/nation/xhosa.ruleset",
+      "bytes": 1861,
+      "sha256": "35509f6258d1dea0498e5fc72d9181496dda6f1d828d55a5188ffa2aedfbfd56"
+    },
+    {
+      "path": "share/freeciv/nation/xiongnu.ruleset",
+      "bytes": 2129,
+      "sha256": "af7f2dad431d605bec294f0587cb6a441776a222c77179906bb8b798aff79cb0"
+    },
+    {
+      "path": "share/freeciv/nation/yakut.ruleset",
+      "bytes": 3132,
+      "sha256": "59a9bdb915758857100240f54b2126f40ba592bb6631425a761826bad88f7471"
+    },
+    {
+      "path": "share/freeciv/nation/yemeni.ruleset",
+      "bytes": 1622,
+      "sha256": "24a6486b9a5507847d8972a50d07e71876f51d1ecafb5cdaeb86c28d74843090"
+    },
+    {
+      "path": "share/freeciv/nation/yucatecan.ruleset",
+      "bytes": 2449,
+      "sha256": "8f8755737ca80c3100a0cb15eeadcb662624000437ace498f0fef622193337ed"
+    },
+    {
+      "path": "share/freeciv/nation/yugoslav.ruleset",
+      "bytes": 1050,
+      "sha256": "69272821009cd3fe63b381f6099832ba199b4a3b92ec7013ad16b2809422521c"
+    },
+    {
+      "path": "share/freeciv/nation/zambian.ruleset",
+      "bytes": 1088,
+      "sha256": "de55c33a47a68f8d40dc8e4a6d2e2a04eaed1a8606aef15ae18e7b5f8cc24c4f"
+    },
+    {
+      "path": "share/freeciv/nation/zanzibari.ruleset",
+      "bytes": 1915,
+      "sha256": "8bf4f961c0cca9f15fa110ba3035e9d393a7628ab240f3b8ef74f1b17041d635"
+    },
+    {
+      "path": "share/freeciv/nation/zapotec.ruleset",
+      "bytes": 2586,
+      "sha256": "e1b621eb113329ec8bb4adc3d255d47b214c603111720e20ace8a1a0da1fe366"
+    },
+    {
+      "path": "share/freeciv/nation/zhuang.ruleset",
+      "bytes": 1637,
+      "sha256": "d236da567ee218369d2a25177a81c076f50121fe4b4ee765ed102d4d9f086923"
+    },
+    {
+      "path": "share/freeciv/nation/zimbabwean.ruleset",
+      "bytes": 1672,
+      "sha256": "f65bc2a97081fabc1e0ff7ee15d88256885a7eeeb8117acc2800c4ee0a3d1b83"
+    },
+    {
+      "path": "share/freeciv/nation/zulu.ruleset",
+      "bytes": 2427,
+      "sha256": "2d6fb67f14b3fe4abf36f06cc10c6c0e54f484ba1e49fc5e9e396bf200851e0f"
+    },
+    {
+      "path": "share/freeciv/override/nation.ruleset",
+      "bytes": 202,
+      "sha256": "f433cda257b868a821d32296066097fd1def2869c0b64c0d0e51fb2b9922347b"
+    },
+    {
+      "path": "share/freeciv/ruledit/comments-3.2.txt",
+      "bytes": 85949,
+      "sha256": "a0afc1a7becd622ea7572575a7082e20497b6365e08ed7c5b05afc43ec48ca5d"
+    },
+    {
+      "path": "share/freeciv/sandbox/README.sandbox",
+      "bytes": 10885,
+      "sha256": "6bd26cfcfa78f933b5a1cc88be191558b3bf6a33e708f7bdd0683175f312bfcc"
+    },
+    {
+      "path": "share/freeciv/sandbox/actions.ruleset",
+      "bytes": 115004,
+      "sha256": "da3a1459e52911a90e5eeb65c6780ed37588a9b17c05bb0c468badcdcdf078a7"
+    },
+    {
+      "path": "share/freeciv/sandbox/buildings.ruleset",
+      "bytes": 70418,
+      "sha256": "07cb806014f4bddad2d1f84860723abdf8689366665bd6022bda8004dcfb83a5"
+    },
+    {
+      "path": "share/freeciv/sandbox/cities.ruleset",
+      "bytes": 5892,
+      "sha256": "1c0189d0f56c286266835e4a288ec59ada5a550cb472998cb25ae08cf124f30a"
+    },
+    {
+      "path": "share/freeciv/sandbox/effects.ruleset",
+      "bytes": 133426,
+      "sha256": "2cf20f2aa4ab8b9105d7f8a602b4a4c8d0752ed80f4d8051e933610e96bbc27f"
+    },
+    {
+      "path": "share/freeciv/sandbox/game.ruleset",
+      "bytes": 32772,
+      "sha256": "2de6e21d32a1dde4e73926a4ec27529cb5c20bd7408d024908329392c1471648"
+    },
+    {
+      "path": "share/freeciv/sandbox/governments.ruleset",
+      "bytes": 20433,
+      "sha256": "d3345b61d387437b039ab0aa87482c0bd198968689615b61062da25917c16e51"
+    },
+    {
+      "path": "share/freeciv/sandbox/luadata.txt",
+      "bytes": 424,
+      "sha256": "ca5d5b34f3bf075874786bb61f053abad5d5338d64fe84244c5929b1c8c1db58"
+    },
+    {
+      "path": "share/freeciv/sandbox/nations.ruleset",
+      "bytes": 2466,
+      "sha256": "01fc6a64898abb902d71664a87c29a6dbf1db45153b7418499216482963ece98"
+    },
+    {
+      "path": "share/freeciv/sandbox/parser.lua",
+      "bytes": 892,
+      "sha256": "6d4501f600d48f778cc395cda420411040cc279168f4e814294735ffdb203775"
+    },
+    {
+      "path": "share/freeciv/sandbox/script.lua",
+      "bytes": 17404,
+      "sha256": "932fea8af1091a31ac3c43bc110c14edbd5d5ae8f43e78261276919966dacc64"
+    },
+    {
+      "path": "share/freeciv/sandbox/styles.ruleset",
+      "bytes": 7016,
+      "sha256": "e928b8710b4b67384df6748465f7eb491c88f5fc54b37828d660c905df858012"
+    },
+    {
+      "path": "share/freeciv/sandbox/techs.ruleset",
+      "bytes": 22217,
+      "sha256": "b3b8ca824dcc3b05936c54a0065769299833e7036b1b205a0ef1e4807494bd07"
+    },
+    {
+      "path": "share/freeciv/sandbox/terrain.ruleset",
+      "bytes": 82520,
+      "sha256": "70d06991070e1d769cf91060fded9d483392b702b12125c780978c1d77a55903"
+    },
+    {
+      "path": "share/freeciv/sandbox/units.ruleset",
+      "bytes": 97059,
+      "sha256": "fc7247fd963bcb2f0ad48e3966627da6818bcae805bbe8f01bd6d1e3b10764c4"
+    },
+    {
+      "path": "share/freeciv/sandbox.modpack",
+      "bytes": 446,
+      "sha256": "ad01ae5f1dbac1c542c89ede90f05262551001d5466bdfc8795c754c7242225e"
+    },
+    {
+      "path": "share/freeciv/stub/actions.ruleset",
+      "bytes": 8653,
+      "sha256": "898401c45283e7fd18da37a368acf69215ff4d9b7fbe57ca02d2ae172a64138a"
+    },
+    {
+      "path": "share/freeciv/stub/buildings.ruleset",
+      "bytes": 3540,
+      "sha256": "0f299a03630ee07e68e6a73414644a833ad2b2001614ed07caa01ccd85ed1253"
+    },
+    {
+      "path": "share/freeciv/stub/cities.ruleset",
+      "bytes": 4097,
+      "sha256": "10bf8b78bb63480a1144501f23421fab8e1146713ed86b15050f32b7f670fc41"
+    },
+    {
+      "path": "share/freeciv/stub/effects.ruleset",
+      "bytes": 2171,
+      "sha256": "9f39f25dbf9d4f3c55e20ab827d535c41dd5df5a22a3153ff095c121d9bb35e7"
+    },
+    {
+      "path": "share/freeciv/stub/game.ruleset",
+      "bytes": 24469,
+      "sha256": "8e42188c2461b01d326deed6d00a84d3d42f7430739bea925eb6195e706a4fa4"
+    },
+    {
+      "path": "share/freeciv/stub/governments.ruleset",
+      "bytes": 4975,
+      "sha256": "60c2868c52fedd7e89a23cc4e7d5c93ea4bbd8ddfeae9524d789c8fbf88bece0"
+    },
+    {
+      "path": "share/freeciv/stub/nations/barbarian.ruleset",
+      "bytes": 409,
+      "sha256": "2636e94abd904e59078c695dbb3b64c97567451854e5673b971c4d851716ae9a"
+    },
+    {
+      "path": "share/freeciv/stub/nations/generic.ruleset",
+      "bytes": 333,
+      "sha256": "c6b53b79fb5fc624622282eb8e1c8c3d2e5d55beceead3c55f2e0518695943f0"
+    },
+    {
+      "path": "share/freeciv/stub/nations.ruleset",
+      "bytes": 4454,
+      "sha256": "1875cdce4b49d2a8313ab1352a240eab4d1fb86c61f04ffea1597f15edf027a5"
+    },
+    {
+      "path": "share/freeciv/stub/parser.lua",
+      "bytes": 639,
+      "sha256": "3c95aa8716c9dd1e2a16cfa08775dc2e41ec81c6e1052165360c9619bb0bb837"
+    },
+    {
+      "path": "share/freeciv/stub/script.lua",
+      "bytes": 803,
+      "sha256": "af545713e76c40c368150c3aa3778fcd3cf27d3a2064ed50a25c0d7c708d5b86"
+    },
+    {
+      "path": "share/freeciv/stub/styles.ruleset",
+      "bytes": 2464,
+      "sha256": "f8d7019f47ae85d7e22368d3e9179ad7f8b4c384214238cc59963d26957ae3cb"
+    },
+    {
+      "path": "share/freeciv/stub/techs.ruleset",
+      "bytes": 5254,
+      "sha256": "37cd66caa2fe5a8bf2758da67711ba6eeca92b64859933745d9ff84f606b62a9"
+    },
+    {
+      "path": "share/freeciv/stub/terrain.ruleset",
+      "bytes": 29921,
+      "sha256": "0d4185b1c0ea71e1c11d8b9d8fa34afb667cb1683ecc5372e3c90dd37b512372"
+    },
+    {
+      "path": "share/freeciv/stub/units.ruleset",
+      "bytes": 20887,
+      "sha256": "666ebeec1ec3efb769d0aa1542f83f69885eea6979958dffb3aa01ee756ef0ee"
+    }
+  ]
+}

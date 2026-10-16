@@ -10,9 +10,12 @@ ROOT = Path('/usr/local/libexec/playbound-isolated-xonotic-data-086')
 
 
 def open_assets(root=None, game='xonotic'):
-    if game not in ('xonotic','wolfenstein-enemy-territory','medal-of-honor-allied-assault'):raise ValueError('Unsupported immutable asset family')
-    if root is None:root=ROOT if game=='xonotic' else Path('/usr/local/libexec/playbound-isolated-etlegacy-data-285') if game=='wolfenstein-enemy-territory' else Path('/usr/local/libexec/playbound-isolated-openmohaa-data-v1')
+    if game not in ('xonotic','wolfenstein-enemy-territory','medal-of-honor-allied-assault','freeciv'):raise ValueError('Unsupported immutable asset family')
+    if root is None:root=ROOT if game=='xonotic' else Path('/usr/local/libexec/playbound-isolated-etlegacy-data-285') if game=='wolfenstein-enemy-territory' else Path('/usr/local/libexec/playbound-isolated-freeciv-data-v1') if game=='freeciv' else Path('/usr/local/libexec/playbound-isolated-openmohaa-data-v1')
     pattern=r'[A-Za-z0-9_-]{1,100}\.pk3' if game=='xonotic' else r'(?:etmain|legacy)/[A-Za-z0-9_.-]{1,100}\.(?:pk3|so)' if game=='wolfenstein-enemy-territory' else r'(?:main/[A-Za-z0-9_.-]{1,100}\.pk3|game\.so)'
+    if game=='freeciv':
+        if root is None: raise ValueError('Missing fixed Freeciv asset root')
+        pattern=r'(?:lib|share/freeciv)/(?:[A-Za-z0-9_+.,@ -]{1,100}/){0,15}[A-Za-z0-9_+.,@ -]{1,100}'
     parent=os.open('/',os.O_RDONLY|os.O_DIRECTORY)
     try:
         for component in root.parts[1:]:
@@ -46,24 +49,26 @@ def open_assets(root=None, game='xonotic'):
                 after=os.fstat(source.fileno())
                 if (before.st_size,before.st_mtime_ns,before.st_ctime_ns)!=(after.st_size,after.st_mtime_ns,after.st_ctime_ns):raise ValueError('Asset changed')
                 return before.st_size,digest.hexdigest(),content
-        _,_,content=read_file('profile.json',32768)
+        _,_,content=read_file('profile.json',512*1024 if game=='freeciv' else 32768)
         rows=json.loads(content)['files']
-        if not isinstance(rows,list) or not 1<=len(rows)<=16:raise ValueError('Invalid immutable asset inventory')
+        if not isinstance(rows,list) or not 1<=len(rows)<=(1024 if game=='freeciv' else 16):raise ValueError('Invalid immutable asset inventory')
         seen={'profile.json'};total=0
         for row in rows:
             name=row.get('path')
-            if not isinstance(name,str) or not re.fullmatch(pattern,name) or name in seen:raise ValueError('Invalid immutable asset path')
+            if not isinstance(name,str) or not re.fullmatch(pattern,name) or name in seen or any(part in ('.','..') for part in name.split('/')):raise ValueError('Invalid immutable asset path')
             seen.add(name)
             size,digest,_=read_file(name,768*1024**2);total+=size
             if total>2*1024**3 or size!=row.get('bytes') or digest!=row.get('sha256'):raise ValueError('Immutable assets differ from reviewed pins')
-        expected_top={name.split('/')[0] for name in seen}
-        if set(os.listdir(parent))!=expected_top:raise ValueError('Unlisted immutable asset file')
-        for folder in expected_top-{'profile.json'}:
-            if '/' not in next((name for name in seen if name.startswith(folder+'/')), ''):continue
-            descriptor=os.open(folder,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW,dir_fd=parent)
-            try:
-                if set(os.listdir(descriptor))!={name.split('/')[1] for name in seen if name.startswith(folder+'/')}:raise ValueError('Unlisted immutable asset subdirectory entry')
-            finally:os.close(descriptor)
+        def verify_tree(directory,prefix=''):
+            expected={name[len(prefix):].split('/')[0] for name in seen if name.startswith(prefix)}
+            if set(os.listdir(directory))!=expected:raise ValueError('Unlisted immutable asset entry')
+            for entry in expected:
+                nested=prefix+entry+'/'
+                if not any(name.startswith(nested) for name in seen):continue
+                child=os.open(entry,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW,dir_fd=directory)
+                try:verify_tree(child,nested)
+                finally:os.close(child)
+        verify_tree(parent)
         result,parent=parent,None
         return result
     finally:

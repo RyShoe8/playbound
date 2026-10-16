@@ -1756,3 +1756,51 @@ Executable plugin/Workshop installation and broader isolation remain unfinished.
 Validation: 121 Linux helper tests passed, including nested asset link denial.
 
 The complete agent suite passed 341 tests with 49 platform skips. Guarded deployment preserved all eleven live managed process identities; service and 15-minute scheduler stayed active. Production customer enrollment and catalog/database writes remain zero.
+
+
+### Explicit Zandronum identity and Linux release checks (2026-10-16)
+
+`freedoom-unix-v1` is accepted only with the explicit `zandronum` edition.
+It uses the reviewed existing dedicated engine, matching zandronum.pk3 and
+Freedoom2 IWAD, copied into sealed descriptors. Base Freedoom and other Doom
+ports are rejected rather than silently changed to Zandronum. Root and agent
+independently validate stock MAP01–MAP32, mode, skill, slots and match limits.
+Registration/broadcast stay disabled for the isolated profile. Private config
+and save directories are reserved-UID owned. There is no automatic import from
+a formerly shared game-install directory; enrollment remains explicit/offline.
+
+Zandronum resolves its home using getpwuid, so HOME alone was insufficient.
+The supervisor supplies a sealed read-only passwd record containing exactly its
+reserved UID/GID and /server home; no host account database is mounted. IDs
+outside the reserved range, mismatched groups and noninteger inputs fail closed.
+The actual fixture passed native query (zero players/four slots; bots unknown),
+unchanged gate/game PID after agent restart, metrics, scoped stop and rollback
+preserving old/new data. All fixture processes and data were removed. Protected
+file/snapshot routing includes the eighteenth accepted identity profile.
+
+The Linux full-agent run exposed a real AssaultCube verifier cache race: a
+same-size rewrite can share metadata timestamps. Its small native binaries are
+now rehashed on every verification, with a regression that freezes metadata
+while changing bytes. The Freeciv isolation test now points game discovery at
+its own scratch installation rather than depending on whether this VPS has
+Freeciv installed. The Linux acceptance copy includes the scheduler source
+needed by its cap/bot contract tests; it runs without production credentials.
+
+Final validation: 390 agent tests passed on the VPS, one platform-specific skip;
+124 Linux helper tests passed. The earlier Windows suite had an unrelated
+transient Factorio rename EPERM; that focused suite passed on rerun. No production
+catalog/database writes or automatic customer enrollment were performed.
+
+
+Freeciv preparation (not accepted/enrolled): published a fixed root-owned library
+and ruleset tree with 709 pinned files (7,685,002 bytes). The nested verifier
+rejects unlisted descendants at every depth, traversal, links and writable data.
+The publisher admits only lib/ and share/freeciv/ paths, at most 1,024 files;
+existing three asset families retain their sixteen-file limit. No shared saves,
+manual customer data, or installation executables enter that data tree.
+Runtime identity integration and staging lifecycle acceptance are still pending;
+this publication alone does not enable isolation or executable content.
+All 126 Linux helper tests passed after the nested-tree checks were added.
+
+Latest guarded agent deployment preserved all ten processes present in its
+pre-deployment snapshot. Service and 15-minute scheduler remained active.

@@ -10,7 +10,7 @@ export function identityMigrationMetadata(serverId, home, execute = execFileSync
       encoding: "utf8", timeout: 4000, maxBuffer: 4096,
       env: { PATH: "/usr/bin:/usr/games", LANG: "C.UTF-8" }, stdio: ["ignore", "pipe", "pipe"],
     }));
-    if (result.serverId !== serverId || result.migrationReady !== true || (result.identityProfile !== undefined && !["teeworlds-unix-v1","bzflag-unix-v1","hedgewars-unix-v1","openttd-unix-v1","luanti-unix-v1","openarena-unix-v1","battle-for-wesnoth-unix-v1","supertuxkart-unix-v1","0-ad-unix-v1","ysoccer-unix-v1","flightgear-unix-v1","mindustry-unix-v1","hurry-curry-unix-v1","assaultcube-unix-v1","xonotic-unix-v1","wolfenstein-enemy-territory-unix-v1","medal-of-honor-allied-assault-unix-v1"].includes(result.identityProfile)) || ![undefined, null, "public-game-v1"].includes(result.networkProfile)) return null;
+    if (result.serverId !== serverId || result.migrationReady !== true || (result.identityProfile !== undefined && !["teeworlds-unix-v1","bzflag-unix-v1","hedgewars-unix-v1","openttd-unix-v1","luanti-unix-v1","openarena-unix-v1","battle-for-wesnoth-unix-v1","supertuxkart-unix-v1","0-ad-unix-v1","ysoccer-unix-v1","flightgear-unix-v1","mindustry-unix-v1","hurry-curry-unix-v1","assaultcube-unix-v1","xonotic-unix-v1","wolfenstein-enemy-territory-unix-v1","medal-of-honor-allied-assault-unix-v1","freedoom-unix-v1"].includes(result.identityProfile)) || ![undefined, null, "public-game-v1"].includes(result.networkProfile)) return null;
     return { networkProfile: result.networkProfile || null, identityProfile: result.identityProfile || "teeworlds-unix-v1" };
   } catch { return null; }
 }
