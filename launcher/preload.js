@@ -237,6 +237,7 @@ contextBridge.exposeInMainWorld("playbound", {
   pingServers: (servers) => ipcRenderer.invoke("ping-servers", servers),
   getAllServers: () => ipcRenderer.invoke("get-all-servers"),
   getModsCatalog: () => ipcRenderer.invoke("get-mods-catalog"),
+  getHostingPromo: () => ipcRenderer.invoke("get-hosting-promo"),
   getGearCatalog: () => ipcRenderer.invoke("get-gear-catalog"),
   getEvents: (opts) => ipcRenderer.invoke("get-events", opts || {}),
   getEventDetail: (id) => ipcRenderer.invoke("get-event-detail", id),

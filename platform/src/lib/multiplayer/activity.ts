@@ -48,6 +48,27 @@ function isMmoGame(game: { tags?: string[]; features?: string[]; genre?: string;
   return haystack.includes("mmo") || haystack.includes("mmorpg") || haystack.includes("runescape") || haystack.includes("everquest");
 }
 
+/*
+ * One slow game server provider used to hold the whole snapshot: the totals waited on
+ * every provider, and a handful of master-server lookups can each take tens of seconds.
+ * Each game now gets a few seconds; a provider that misses its deadline keeps its last
+ * known count (carried between recomputes in this process) so the totals neither stall
+ * nor flicker to zero.
+ */
+const PROVIDER_DEADLINE_MS = 4000;
+const lastKnownCounts = new Map<string, { players: number; servers: number }>();
+async function playerCountWithinDeadline(slug: string): Promise<{ players: number; servers: number }> {
+  const fresh = getPlayerCountForGame(slug).then((counts) => {
+    lastKnownCounts.set(slug, counts);
+    return counts;
+  });
+  fresh.catch(() => {});
+  const late = new Promise<{ players: number; servers: number }>((resolve) =>
+    setTimeout(() => resolve(lastKnownCounts.get(slug) ?? { players: 0, servers: 0 }), PROVIDER_DEADLINE_MS)
+  );
+  return Promise.race([fresh, late]);
+}
+
 // Recomputing the snapshot can take half a minute, so keep it a little longer between refreshes.
 const CACHE_SECONDS = 180;
 
@@ -109,7 +130,7 @@ async function computeMultiplayerActivitySnapshot(): Promise<MultiplayerActivity
   const statsResults = await Promise.all(
     multiplayerGames.map(async (g) => {
       try {
-        const counts = await getPlayerCountForGame(g.slug);
+        const counts = await playerCountWithinDeadline(g.slug);
         const stats = { multiplayerPlayers: counts.players, serverCount: counts.servers, platformPlayers: platformByGame.get(g.slug) ?? 0 };
         return { slug: g.slug, stats };
       } catch {

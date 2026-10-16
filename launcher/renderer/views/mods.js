@@ -93,7 +93,22 @@ export function paintModsGrid() {
     grid.innerHTML = `<p class="view-sub" style="grid-column:1/-1">No mods match.</p>`;
     return;
   }
-  grid.replaceChildren(...list.map((mod) => createModCard(mod)));
+  /*
+   * 460-odd cards built in one go held the page for the better part of a second. The first
+   * screenful goes in at once and the rest follows in small batches between frames; a newer
+   * paint (typing in the search box, say) cancels the batches still queued.
+   */
+  const token = (paintModsGrid._token = (paintModsGrid._token || 0) + 1);
+  const FIRST = 36, BATCH = 60;
+  grid.replaceChildren(...list.slice(0, FIRST).map((mod) => createModCard(mod)));
+  let next = FIRST;
+  const more = () => {
+    if (token !== paintModsGrid._token || next >= list.length) return;
+    grid.append(...list.slice(next, next + BATCH).map((mod) => createModCard(mod)));
+    next += BATCH;
+    setTimeout(more, 16);
+  };
+  setTimeout(more, 16);
 }
 
 async function renderModsView() {

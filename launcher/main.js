@@ -10947,6 +10947,10 @@ async function swrJson(key, apiPath, { ttlMs = 5 * 60000, timeoutMs, valid, empt
 ipcMain.handle("get-server-index", () =>
   swrJson("server-index", "/api/launcher/servers", { ttlMs: 2 * 60000, empty: { games: [], providers: [] } })
 );
+// The hosting promo the website's /hosting page draws, for My servers without an active plan.
+ipcMain.handle("get-hosting-promo", () =>
+  swrJson("hosting-promo", "/api/launcher/hosting-promo", { ttlMs: 30 * 60000, valid: (d) => Array.isArray(d.packages), empty: null })
+);
 ipcMain.handle("get-mods-catalog", () =>
   swrJson("mods", "/api/launcher/mods", { ttlMs: 10 * 60000, valid: (d) => Array.isArray(d.mods), empty: { mods: [] } })
 );
