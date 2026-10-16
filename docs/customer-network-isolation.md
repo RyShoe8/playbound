@@ -95,13 +95,24 @@ the real operator CLI always requires the old service UID offline.
 
 ## Remaining rollout gates
 
+The latest five-engine opt-in handoff additionally requires the host-egress nft
+guard, fixed native bind filter and seccomp policy described in the
+[parity plan](server-hosting-parity-plan.md#combined-native-isolation-and-protected-data-operations-2026-10-16).
+These are mandatory for newly started UID runtimes, independent of the older
+optional `public-game-v1` CIDR profile. Disabling that legacy profile does not
+disable the new protections. The bind filter is applied directly because this
+VPS systemd build omits its socket-bind framework. Kernel attachments and exact
+nft rule structure are checked during recovery. Unknown tables are not flushed.
+Unix sockets are denied; host/private destinations are denied for new outbound
+traffic, while replies and public outbound connections remain possible.
+
 - Keep default launches unchanged. Approve a maintenance rollout only after
   client Join/occupied-count checks; no production profile is enrolled today.
 - Verify public client Join, occupied counts, IPv6 if offered, DNS/master listing,
   callbacks and game-specific RCON. The current candidate blocks loopback, so a
   blanket rollout would break existing local adapters.
-- Assess host administration ports, public-address access to other tenants,
-  outbound abuse controls and abstract Unix sockets. CIDR filters alone do not
-  establish complete network or executable-plugin isolation.
+- Continue assessing outbound abuse controls and public-address access to remote
+  tenants. Host-local administration/private destinations and Unix sockets now
+  have mandatory denial checks, but that does not establish all-game isolation.
 - Repeat engine-specific acceptance across the entire offered inventory before
   claiming all-game coverage. Keep unsupported profiles explicitly unavailable.

@@ -1408,3 +1408,50 @@ Validation: 52 Linux root-helper cases and 329 agent cases passed (49 local
 platform skips). Additional games, native network/admission-port protections,
 seccomp and executable-plugin/Workshop gates remain open; this is an isolation
 expansion, not a claim of universal tenant isolation.
+
+## Combined native isolation and protected data operations (2026-10-16)
+
+OpenTTD and Luanti now have the same explicit UID handoff as Teeworlds, BZFlag
+and Hedgewars. All five require sealed engine files, a root-owned migration
+journal, reserved UID, restricted filesystem/process namespace, resource limits,
+and a fixed seccomp filter. Unix sockets and dangerous kernel interfaces are
+denied. A per-UID nftables guard blocks host/private destinations while retaining
+public connections and replies. Recovery validates the actual rule structure;
+unknown or altered rules are never silently replaced.
+
+The VPS systemd build does not include its socket-bind BPF framework. A fixed
+six-instruction kernel program instead restricts explicit IPv4/IPv6 binds to the
+allocated port. Launch verifies negative bind probes; recovery compares the
+exact attached program IDs. There is no caller-supplied bytecode or port-rule API.
+
+All five isolated VPS fixtures passed start, restart adoption of the same game
+PID, metrics, full scope stop, and rollback preserving original and newer data.
+Four returned real zero-player/four-slot queries. Luanti returned unknown, not
+zero; its current isolated configuration is private/unlisted. Public master-list
+announcement and its query transport must be adapted before public enrollment.
+The host-network preflight separately confirmed IPv4/IPv6 local-service denial,
+public outbound access, public inbound replies, and an unaffected agent UID.
+Fixtures were removed after acceptance.
+
+OpenTTD/Luanti stopped-world snapshots and browser file operations now use fixed
+root helpers. File operations drop to the reserved UID before executing the
+bounded worker. Snapshots retain verified metadata and checksums; atomic restore
+retains pre-restore data, updates the migration inode, and supports interrupted
+transaction recovery. Running worlds, cross-server metadata, traversal, links,
+executable uploads, disk pressure and excessive input fail closed. Luanti live
+fixture acceptance covered snapshot/restore/restart, file ownership, and unsafe
+path/code rejection. Recovery remains a direct-root operator command.
+
+Validation: 70 Linux helper tests passed, including firewall-tamper and bind-policy
+regressions; agent suite passed 331 cases with 49 platform skips. No database
+writes or automatic customer enrollment. Other installation families and
+executable plugin/Workshop support remain unfinished; these five private opt-in
+profiles do not establish universal customer isolation.
+
+Luanti executable content has an additional engine gate: the pinned reviewed
+5.6.1 package predates the LuaJIT sandbox fix in 5.15.2. See
+[GHSA-g596-mf82-w8c3](https://github.com/luanti-org/luanti/security/advisories/GHSA-g596-mf82-w8c3).
+Generated isolated configuration enforces mod security and empty trusted/HTTP
+allowlists, but is not represented as fixing that CVE. Upgrade or verify an
+upstream-supported patch before enabling executable content; do not use a
+ContentDB download or OS sandbox as evidence that the engine gate passed.

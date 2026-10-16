@@ -30,7 +30,7 @@ PROFILE = 'teeworlds-unix-v1'
 
 def select_game(game):
     global GAME, PROFILE, SOURCE
-    folders = {'teeworlds':'customer-sandboxes','bzflag':'bzflag-servers','hedgewars':'hedgewars-servers'}
+    folders = {'teeworlds':'customer-sandboxes','bzflag':'bzflag-servers','hedgewars':'hedgewars-servers','openttd':'openttd-servers','luanti':'luanti-servers'}
     if game not in folders: raise ValueError('Unsupported migration game')
     GAME, PROFILE = game, game + '-unix-v1'
     SOURCE = Path('/var/lib/playbound-host') / folders[game]
@@ -544,6 +544,8 @@ def transition_profile(action, server_id, legacy_uid, runtime, identities):
         if action == 'enroll':
             row['identityProfile'] = PROFILE
         else:
+            guard = runtime.trusted_module('pb_host_guard','playbound-customer-host-network')
+            guard.remove_if_present(account['uid'])
             row.pop('identityProfile', None)
         target = 'uid' if action == 'enroll' else 'legacy'
         import datetime

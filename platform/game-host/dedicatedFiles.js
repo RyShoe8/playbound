@@ -253,7 +253,20 @@ function manageRead(root, relative) {
 
 /** Runs synchronously while the agent holds this server's start lock. */
 export function manageDedicatedFiles(id, game, input, home = process.env.HOME || "/var/lib/playbound-host") {
-  const root = rootFor(id, game, home);
+  return manageFiles(rootFor(id, game, home), input);
+}
+
+/** Invoked only by the fixed UID worker; no HTTP request chooses this root. */
+export function manageIsolatedDedicatedFiles(id, game, input) {
+  if (!/^[a-f0-9]{24}$/.test(id || "") || !["openttd","luanti"].includes(game)) throw new Error("Invalid isolated world identity");
+  const base = "/var/lib/playbound-customer-runtime";
+  if (fs.realpathSync(base) !== base) throw new Error("Invalid isolated world root");
+  const data = checkedPath(base, [id,"data"]);
+  const root = game === "luanti" ? checkedPath(data,["world"]) : data;
+  return manageFiles(root,input);
+}
+
+function manageFiles(root, input) {
   const relative = input.path ?? "";
   uploadRoot(root);
   if (["stat", "read-chunk", "upload-begin", "upload-chunk", "upload-commit", "upload-cancel"].includes(input.action)) return transfer(root, input, relative);
