@@ -12,7 +12,7 @@ import Edition from "@/lib/models/Edition";
 import { fetchGameHostHealth, fetchGameHostMetrics, listManagedHostRooms, requestManagedHostRoom, stopManagedHostRoom } from "@/lib/gameHost/client";
 import { readyPublishedHostableCatalog } from "@/lib/dedicatedHosting/hostableProfiles";
 import { canRetireEmptyServer, canScaleDownEmptyServer, paidScaleDownRank, placementDecision, runningReservationEnvelope, type ResourceEnvelope } from "./capacity";
-import { managedQueryKind, QUERY_BY_GAME, queryManagedOccupancy } from "./playerQuery";
+import { managedQueryKind, QUERY_BY_GAME, queryManagedOccupancy, expectedRegistryMod } from "./playerQuery";
 import { recordResourceSample } from "./samples";
 import { recordPopulationReading } from "./population";
 import { rotationPriority } from "./rotation";
@@ -388,7 +388,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
       }
       const queryKind = managedQueryKind(server.gameSlug, profile);
       const occupancy = queryKind
-        ? await queryManagedOccupancy({ queryKind, host: room.host, port: room.port, communityServerId: String(server._id), expectedMod: server.gameSlug === "earth-2140-trilogy" ? "e2140" : undefined })
+        ? await queryManagedOccupancy({ queryKind, host: room.host, port: room.port, communityServerId: String(server._id), expectedMod: expectedRegistryMod(server.gameSlug,server.editionSlug) })
         : null;
       const players = occupancy?.players ?? null;
       const bots = occupancy?.bots ?? null;

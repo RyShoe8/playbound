@@ -162,3 +162,21 @@ Daily publisher discovery, staged reinstallation and rollback passed on the VPS,
 with actual native HX player queries before/after both transitions. New upstream
 versions require a reviewed compatibility/checksum profile. Human Join testing
 was removed from this work's release gates at the owner's request.
+
+## GoldenEye and OpenRA update boundaries (2026-10-16)
+
+GoldenEye uses reviewed package `5.0.6-sdk-195543-pb1` with coordinated SDK/mod
+staging, rollback and private runtime refresh. Settings and generated Python
+state remain private. The exact official mod archive must currently be seeded
+in the verified cache because ModDB denied the VPS download; future SDK/mod
+combinations need review. Native query and live time-limit controls passed.
+Empty-server bot fill did not pass, so no new bot-fill control is exposed.
+
+OpenRA public editions have separate targets: Official (`openra`), Combined
+Arms (`combined-arms`), Romanov's Vengeance (`romanovs-vengeance`, catalog `ra2`,
+mod `rv`), Tiberian Dawn HD (`tiberian-dawn-hd`, mod `cnc`) and Crystallized Nexus
+(`crystallized-nexus`, mod `cn`). Nexus is pinned to the client's playtest-20260820;
+its launcher-only releases are excluded. Missing editions never fall back to
+stock OpenRA. All four new handlers passed actual update, rollback and daily
+discovery; each additional OpenRA package passed its native handshake.
+See the parity plan for evidence and remaining isolation/plugin/launcher gates.

@@ -165,6 +165,7 @@ test("openra join substitutes the target mod and address", () => {
   assert.equal(openRaModName("combined-arms"), "ca");
   assert.equal(openRaModName("tiberian-dawn-hd"), "cnc");
   assert.equal(openRaModName("ra2"), "rv", "Romanovs Vengeance ships mods/rv, not ra2");
+  assert.equal(openRaModName("crystallized-nexus"), "cn", "Crystallized Nexus uses its own cn mod");
 
   // A slug that merely contains "ca" is not Combined Arms.
   assert.equal(openRaModName("arcade-skirmish"), "ra");

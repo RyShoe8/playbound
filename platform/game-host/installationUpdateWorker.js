@@ -27,6 +27,10 @@ import { stageHurryRelease } from "./hurryUpdates.js";
 import { stageCombinedArmsRelease } from "./combinedArmsUpdates.js";
 import { stageOpenFortress, openFortressArchivePath, recordOpenFortressVerification, retainedOpenFortressPackage } from "./openFortressUpdates.js";
 import { stageHxRelease } from "./hxUpdates.js";
+import { stageGoldenEye } from "./goldenEyeUpdates.js";
+import { stageRomanovsVengeanceRelease } from "./romanovsVengeanceUpdates.js";
+import { stageTiberianDawnHdRelease } from "./tiberianDawnHdUpdates.js";
+import { stageCrystallizedNexusRelease } from "./crystallizedNexusUpdates.js";
 
 const GIB = 1024 ** 3;
 
@@ -110,7 +114,7 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
     store.write(job);
   };
   try {
-    if (job.key === "open-fortress") phase("validating", "Verifying the current SDK/mod pair in the background; the installed files remain untouched");
+    if (["open-fortress","goldeneye-source"].includes(job.key)) phase("validating", "Verifying the current SDK/mod pair in the background; the installed files remain untouched");
     const original = fullyVerify(current, job.key);
     if (job.key === "unvanquished") validateUnvanquishedOverrides(hostHome);
     if (original.branch && !/^[a-zA-Z0-9_-]{1,64}$/.test(original.branch)) throw new Error("SteamCMD installed branch requires operator review");
@@ -134,7 +138,7 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
       if (target.component) fs.mkdirSync(stage, { mode: 0o700 });
       // Reviewed native files are root-owned. The unprivileged worker copies
       // their bytes, then the fixed promotion helper restores trusted ownership.
-      if (target.strategy !== "coordinated-open-fortress") await run("/usr/bin/cp", ["-a", ...(["reviewed-distro-native", "reviewed-native-zip"].includes(target.strategy) ? ["--no-preserve=ownership"] : []), "--reflink=auto", "--sparse=always", "--", activePath, stagedPath], { root: gamesRoot });
+      if (target.strategy !== "coordinated-open-fortress" && job.key !== "goldeneye-source") await run("/usr/bin/cp", ["-a", ...(["reviewed-distro-native", "reviewed-native-zip"].includes(target.strategy) ? ["--no-preserve=ownership"] : []), "--reflink=auto", "--sparse=always", "--", activePath, stagedPath], { root: gamesRoot });
       const detachedLinks = prepareInstallationLinks(stage, current, true);
       if (target.strategy === "coordinated-open-fortress") {
         if (reusable) {
@@ -150,6 +154,19 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
             if (available.free < available.reserve + extra + 512 * 1024 ** 2) throw new Error("Update stopped to preserve free disk space");
           } });
         }
+      } else if (["tiberian-dawn-hd","crystallized-nexus"].includes(job.key)) {
+        const stageEdition=job.key==="tiberian-dawn-hd"?stageTiberianDawnHdRelease:stageCrystallizedNexusRelease;
+        phase("downloading", "Staging this edition's matching publisher package; private support data remains untouched");
+        await stageEdition(stage,{run,diskCheck:()=>{
+          const available=disk(gamesRoot);
+          if(available.free<available.reserve+512*1024**2)throw new Error("Update stopped to preserve free disk space");
+        }});
+      } else if (job.key === "romanovs-vengeance") {
+        phase("downloading", "Staging the publisher's Romanov's Vengeance engine/mod package; private support data remains untouched");
+        await stageRomanovsVengeanceRelease(stage,{run,diskCheck:()=>{
+          const available=disk(gamesRoot);
+          if(available.free<available.reserve+512*1024**2)throw new Error("Update stopped to preserve free disk space");
+        }});
       } else if (target.strategy === "reviewed-hx-package") {
         phase("downloading", "Staging the reviewed public HX package; retail assets, private configuration and saves remain untouched");
         await stageHxRelease(stage, { run, diskCheck: () => {
@@ -165,6 +182,12 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
           const available = disk(gamesRoot);
           if (available.free < available.reserve + 256 * 1024 ** 2) throw new Error("Update stopped to preserve free disk space");
         } });
+      } else if (job.key === "goldeneye-source") {
+        phase("downloading", "Preparing the reviewed Windows Source SDK/GoldenEye pair; private server files remain outside the update");
+        await stageGoldenEye(stage,{run,diskCheck:(extra=0)=>{
+          const available=disk(gamesRoot);
+          if(available.free<available.reserve+extra+512*1024**2)throw new Error("Update stopped to preserve free disk space");
+        }});
       } else if (target.strategy === "paired-runtime") {
         phase("downloading", "Verifying the paired runtime package; mutable settings and saved worlds remain outside the swap");
         await stagePairedRuntime(stage, job.key, { run, diskCheck: () => {

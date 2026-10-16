@@ -54,7 +54,17 @@ export function verifyPairedTree(root, key, { profile = PAIRED_RUNTIMES[key] } =
   if (key === "space-station-14") verifySpaceStation14Metadata(root, release);
   for (const binary of (release.binaries || profile.binaries)) {
     if (!safeRelative(binary)) throw new Error("Paired runtime binary path is invalid");
-    const filename = path.join(root, binary);fs.accessSync(filename, fs.constants.X_OK);
+    const filename = path.join(root, binary);
+    if (profile.executableFormat === "pe32") {
+      const fd=fs.openSync(filename,"r"),dos=Buffer.alloc(64),pe=Buffer.alloc(26);
+      try {
+        if(fs.readSync(fd,dos,0,64,0)!==64||dos.readUInt16LE(0)!==0x5a4d)throw new Error("Paired runtime requires a reviewed PE engine");
+        const offset=dos.readUInt32LE(60);
+        if(offset<64||offset>1024*1024||fs.readSync(fd,pe,0,26,offset)!==26||pe.readUInt32LE(0)!==0x4550||pe.readUInt16LE(4)!==0x14c||pe.readUInt16LE(24)!==0x10b)throw new Error("Paired runtime requires a reviewed PE32 engine");
+      }finally{fs.closeSync(fd);}
+      continue;
+    }
+    fs.accessSync(filename, fs.constants.X_OK);
     const fd = fs.openSync(filename, "r"), header = Buffer.alloc(20);
     try {
       const elfClass = profile.elfClass ?? 2;

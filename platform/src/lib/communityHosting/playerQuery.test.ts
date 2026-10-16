@@ -1,9 +1,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { managedQueryKind, queryManagedOccupancy, queryManagedPlayerCount } from "./playerQuery";
+import { managedQueryKind, queryManagedOccupancy, queryManagedPlayerCount, expectedRegistryMod } from "./playerQuery";
 
 afterEach(() => vi.unstubAllGlobals());
 
 describe("managed player count", () => {
+  it("requires the matching mod for each separately packaged OpenRA edition",()=>{
+    expect(expectedRegistryMod("openra","ra2")).toBe("rv");
+    expect(expectedRegistryMod("openra","crystallized-nexus")).toBe("cn");
+    expect(expectedRegistryMod("openra","tiberian-dawn-hd")).toBe("cnc");
+    expect(expectedRegistryMod("openra","official")).toBeUndefined();
+    expect(expectedRegistryMod("openra","constructor")).toBeUndefined();
+  });
   it("falls back to the game's live query when a stored profile has no usable method", () => {
     expect(managedQueryKind("luanti", { queryVerified: true, queryKind: "none" })).toBe("luanti-master");
     expect(managedQueryKind("counter-strike-2", { queryVerified: false, queryKind: "none" })).toBe("agent-local");

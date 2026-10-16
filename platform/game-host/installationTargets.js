@@ -22,9 +22,16 @@ import { verifyHurryInstallation } from "./hurryUpdates.js";
 import { verifyCombinedArmsInstallation } from "./combinedArmsUpdates.js";
 import { inspectOpenFortressInstallation } from "./openFortressUpdates.js";
 import { verifyHxInstallation } from "./hxUpdates.js";
+import { verifyRomanovsVengeanceInstallation } from "./romanovsVengeanceUpdates.js";
+import { verifyTiberianDawnHdInstallation } from "./tiberianDawnHdUpdates.js";
+import { verifyCrystallizedNexusInstallation } from "./crystallizedNexusUpdates.js";
 
 // These are shared installations, not per-customer save directories.
 export const INSTALLATION_TARGETS = Object.freeze({
+  "tiberian-dawn-hd": { name: "OpenRA · Tiberian Dawn HD", strategy: "github-appimage" },
+  "crystallized-nexus": { name: "OpenRA · Crystallized Nexus", strategy: "github-appimage" },
+  "romanovs-vengeance": { name: "OpenRA · Romanov's Vengeance (RA2)", strategy: "github-appimage" },
+  "goldeneye-source": { name: "GoldenEye: Source (SDK + mod)", strategy: "paired-runtime", component: "runtime" },
   "deus-ex": { name: "Deus Ex GOTY (HX)", strategy: "reviewed-hx-package", component: "System" },
   "open-fortress": { name: "Open Fortress (SDK + mod)", strategy: "coordinated-open-fortress", component: "runtime" },
   "counter-strike-2": { name: "Counter-Strike 2", appId: 730, binaries: ["game/bin/linuxsteamrt64/cs2"] },
@@ -90,7 +97,7 @@ export function installationKey(slug) {
 // OpenRA editions can select (or fall back to) the shared variant binaries.
 // Hold these installations conservatively, including while a start is pending.
 export function installationDependencies(slug) {
-  if (slug === "openra") return ["openra", "openhv", "earth-2140-trilogy", "combined-arms"];
+  if (slug === "openra") return ["openra", "openhv", "earth-2140-trilogy", "combined-arms", "romanovs-vengeance", "tiberian-dawn-hd", "crystallized-nexus"];
   // Open Fortress mounts TF2 assets even though its SDK/mod updater is separate.
   if (slug === "open-fortress") return ["open-fortress", "team-fortress-2"];
   const key = installationKey(slug);
@@ -101,6 +108,9 @@ export function verifyInstallation(directory, key, { metadataOnly = false } = {}
   const target = INSTALLATION_TARGETS[key];
   if (!target) throw new Error("Unsupported installation");
   if (key === "deus-ex") return verifyHxInstallation(directory);
+  if (key === "romanovs-vengeance") return verifyRomanovsVengeanceInstallation(directory);
+  if (key === "tiberian-dawn-hd") return verifyTiberianDawnHdInstallation(directory);
+  if (key === "crystallized-nexus") return verifyCrystallizedNexusInstallation(directory);
   const root = fs.lstatSync(directory);
   if (!root.isDirectory() || root.isSymbolicLink()) throw new Error("Installation must be a real directory");
   if (key === "open-fortress" && metadataOnly) return inspectOpenFortressInstallation(directory);

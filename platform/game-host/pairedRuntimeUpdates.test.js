@@ -104,10 +104,15 @@ test("an absent OpenRA edition never starts a different installed game's engine"
   t.after(()=>{fs.rmSync(root,{recursive:true,force:true});if(previous===undefined)delete process.env.GAME_HOST_GAMES_DIR;else process.env.GAME_HOST_GAMES_DIR=previous;});
   fs.mkdirSync(path.join(root,"openra"));fs.writeFileSync(path.join(root,"openra/OpenRA.Server"),"official engine");
   const {recipes}=await import(new URL(`./recipes.js?variant-test=${randomUUID()}`,import.meta.url));
-  for(const editionSlug of ["combined-arms","openhv","e2140","ra2"])
+  for(const editionSlug of ["combined-arms","openhv","e2140","ra2","tiberian-dawn-hd","crystallized-nexus","unknown-new-edition"])
     for (const mod of [undefined,"ra","cnc"])
       assert.equal(recipes.openra.resolveBinary([],{editionSlug,mod}),null,editionSlug);
   assert.equal(recipes.openra.resolveBinary([],{editionSlug:"official"}),path.join(root,"openra/OpenRA.Server"));
+  for(const [edition,key,mod] of [["ra2","romanovs-vengeance","rv"],["crystallized-nexus","crystallized-nexus","cn"],["tiberian-dawn-hd","tiberian-dawn-hd","cnc"]]) {
+    fs.mkdirSync(path.join(root,key));fs.writeFileSync(path.join(root,key,"OpenRA.Server"),"matching engine");
+    assert.equal(recipes.openra.resolveBinary([],{editionSlug:edition,mod:"ra"}),path.join(root,key,"OpenRA.Server"));
+    assert.ok(recipes.openra.args(1234,{editionSlug:edition,mod:"ra"}).includes("Game.Mod="+mod));
+  }
 });
 
 test("Freedoom never launches Zandronum for an incompatible explicit client edition", async t => {

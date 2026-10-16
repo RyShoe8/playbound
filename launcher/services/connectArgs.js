@@ -41,6 +41,7 @@ const OPENRA_EDITION_MODS = {
   official: "ra",
   "combined-arms": "ca",
   "tiberian-dawn-hd": "cnc",
+  "crystallized-nexus": "cn",
   // "ra2" is PlayBound's slug for Romanov's Vengeance. There is no mod called
   // "ra2" in that package; naming one crashes it at the title screen.
   ra2: "rv",

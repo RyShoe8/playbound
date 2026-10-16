@@ -1309,3 +1309,52 @@ reviewed RA2 engine/mod/assets package is installed. Its source/distribution
 review remains separate from the official OpenRA updater. Vintage Story remains
 owner-deferred. Unix isolation/plugin and packaged-launcher controls remain
 independent work; this batch does not claim those are complete.
+
+## GoldenEye and published OpenRA editions (2026-10-16)
+
+Read-only live catalog audit found five OpenRA editions: Official, Combined
+Arms, Crystallized Nexus, Tiberian Dawn HD and `ra2` (Romanov's Vengeance).
+These are separate engine/mod packages. Exact edition `ra2` uses mod `rv`,
+Crystallized Nexus uses `cn`, and Tiberian Dawn HD uses its own `cnc` engine.
+Unknown edition installations fail closed. Master-list queries now match the
+edition's actual mod. Launcher source includes the `cn` fallback; no launcher
+binary was released in this batch.
+
+Four additional update handlers are deployed: GoldenEye: Source, Romanov's
+Vengeance, Tiberian Dawn HD and Crystallized Nexus. GoldenEye stages the reviewed
+5.0.6 mod with SDK 2007 build 195543, verifies complete tree fingerprints and
+PE32 architecture, and preserves private settings, logs and Python state.
+Modified private launchers and legacy full-copy layouts require review.
+Each OpenRA edition has a separately reviewed AppImage with bounded extraction,
+embedded engine/mod verification and explicit client compatibility. Crystallized
+Nexus stays on playtest-20260820; launcher-v2.0.0 is not a game-server release.
+
+All four real update jobs and all four rollback jobs completed. These exercised
+same-reviewed-version reinstall/rollback, not unknown future compatibility.
+All three additional OpenRA packages passed native protocol handshakes. Daily
+discovery matched installed versions for all four handlers. Final guarded agent
+deployment preserved all 12 then-live managed process identities; service and
+15-minute timer stayed active. No Mongo catalog or operational profile writes.
+
+GoldenEye's query and live time-limit control passed, but an empty-server bot
+check still returned zero bots for a target of two. Bot-fill additions were
+withheld from automatic hosting and the settings schema. No human Join or
+human/bot replacement result is claimed; human Join is owner-waived.
+ModDB denied the VPS download, so GoldenEye currently requires the exact official
+mod archive seeded in its digest-verified cache; its SDK is freshly staged.
+Unknown SDK/mod combinations require review before activation.
+
+Coverage is 52 installation families and 37 daily release-discovery sources.
+The remaining 15 are not claimed to auto-download upstream releases. Vintage
+Story remains deferred. Steps 4/5/7 still include broader customer isolation,
+executable plugins and packaged-launcher/self-hosted acceptance; this update
+batch does not complete those independent release gates.
+
+Validation: 376 agent cases (327 passed, 49 platform skips, zero failures), all
+three GoldenEye Linux runtime/PE32 cases, affected platform/launcher tests,
+TypeScript, lint and a production build using an isolated local test database.
+VPS evidence lives in `/var/lib/playbound-host/state/hosting-final-acceptance/`
+and the corresponding package-review directories. Native fixtures now use
+bounded transient systemd services. An old private Combined Arms fixture was
+identified by name, staging script and port and stopped without stopping a
+production runtime. User saves and shared game installations were retained.

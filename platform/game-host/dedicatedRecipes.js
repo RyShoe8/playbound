@@ -30,6 +30,7 @@ import { ANIV_HELPER, anivDirectory } from "./anivControl.js";
 import { prepareBarotraumaRuntime } from "./barotraumaRuntime.js";
 import { prepareTrackmaniaPackage } from "./trackmaniaRuntime.js";
 import { openFortressHome, prepareOpenFortressRuntime } from "./openFortressRuntime.js";
+import { prepareGoldenEyeRuntime } from "./goldenEyeRuntime.js";
 const rimworldDifficulty = createRequire(import.meta.url)("./rimworldDifficulty.json");
 
 /**
@@ -216,29 +217,18 @@ export function createDedicatedRecipes(deps) {
       startupReadyTimeoutMs: 90_000,
       spawnEnv: (_port, ctx) => {
         const home = serverDir("goldeneye-source-servers", ctx);
-        return { HOME: home, WINEPREFIX: path.join(home, "wineprefix"), WINEDEBUG: "-all" };
+        return { HOME: home, WINEPREFIX: path.join(home, "wineprefix"), WINEDEBUG: "-all", PYTHONDONTWRITEBYTECODE: "1" };
       },
       prepareSpawn: async (_port, ctx) => {
         const home = serverDir("goldeneye-source-servers", ctx);
-        const runtime = path.join(home, "runtime");
-        if (fs.existsSync(path.join(runtime, "srcds.exe"))) return;
-        const source = path.join(GAMES_ROOT, "goldeneye-source");
-        const stage = path.join(home, `.runtime-${process.pid}`);
-        if (fs.existsSync(stage)) fs.rmSync(stage, { recursive: true });
-        fs.cpSync(source, stage, { recursive: true });
-        if (!fs.existsSync(path.join(stage, "srcds.exe")) || !fs.existsSync(path.join(stage, "gesource", "gameinfo.txt"))) {
-          fs.rmSync(stage, { recursive: true });
-          throw new Error("GoldenEye: Source needs Source 2007 server and the GE:S 5.0.6 server archive");
-        }
-        fs.renameSync(stage, runtime);
+        await prepareGoldenEyeRuntime(path.join(GAMES_ROOT,"goldeneye-source"),home,ctx);
       },
       args: (port, ctx) => [
         "-console", "-game", "gesource", "-strictportbind", "-norestart", "-ip", "0.0.0.0",
         "-port", String(port), "+map", settingToken("goldeneye-source", ctx, "map", "ge_archives"),
         "-maxplayers", String(managedPlayerLimit(ctx)),
         "+mp_timelimit", String(settingNumber("goldeneye-source", ctx, "mp_timelimit", 0, 0, 600)),
-        "+hostname", `"${serverName(ctx, "PlayBound GoldenEye: Source")}"`,
-        ...(ctx.rconPassword ? ["+rcon_password", ctx.rconPassword] : []),
+        "+exec", "pb-managed.cfg",
       ],
     },
     "counter-strike-source": {

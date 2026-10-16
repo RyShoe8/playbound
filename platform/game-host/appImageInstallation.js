@@ -18,7 +18,7 @@ export function createVerifiedAppImageInstallation(profile) {
     if (stat.size > 4096) throw new Error(`${label} release record is too large`);
     const value = JSON.parse(fs.readFileSync(filename, "utf8"));
     if (value.version !== 1 || !profile.tag.test(value.buildId) || !/^sha256:[a-f0-9]{64}$/.test(value.digest)
-      || !Number.isSafeInteger(value.size) || value.size < 1 || value.size > 256 * 1024 ** 2) throw new Error(`${label} release record is invalid`);
+      || !Number.isSafeInteger(value.size) || value.size < 1 || value.size > (profile.maximumBytes || 256 * 1024 ** 2)) throw new Error(`${label} release record is invalid`);
     return value;
   }
   function verifyInstallation(root) {

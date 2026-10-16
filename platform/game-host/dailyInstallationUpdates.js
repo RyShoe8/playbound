@@ -13,9 +13,14 @@ import { REVIEWED_JAVA } from "./reviewedJavaUpdates.js";
 import { HURRY_BUILD } from "./hurryUpdates.js";
 import { OPEN_FORTRESS_RELEASE, openFortressModVersion } from "./openFortressUpdates.js";
 import { HX_RELEASE } from "./hxUpdates.js";
+import { GOLDENEYE_RELEASE } from "./goldenEyeUpdates.js";
+import { CRYSTALLIZED_NEXUS_PIN } from "./crystallizedNexusUpdates.js";
 
 const DAY = 24 * 60 * 60_000;
 const RELEASES = {
+  "crystallized-nexus": ["DoGyAUT/crystallized-nexus", /^playtest-\d{8}$/],
+  "tiberian-dawn-hd": ["OpenRA/TiberianDawnHD", /^release-\d{8}(?:-v\d+)?$/],
+  "romanovs-vengeance": ["MustaphaTR/Romanovs-Vengeance", /^playtest-\d{8}$/],
   mindustry: ["Anuken/Mindustry", /^v\d+(?:\.\d+)*$/],
   openra: ["OpenRA/OpenRA", /^release-\d{8}$/],
   openhv: ["OpenHV/OpenHV", /^\d{8}$/],
@@ -67,6 +72,17 @@ async function boundedText(url, request, limit = 16_384) {
 }
 
 export async function latestInstallationBuild(key, { request = fetch, run = runCommand, steamHome } = {}) {
+  if (key === "goldeneye-source") {
+    if (!steamHome) throw new Error("Isolated Steam metadata home is required");
+    fs.mkdirSync(steamHome,{recursive:true,mode:0o700});
+    const output=await run("/usr/bin/env",["-i","PATH=/usr/local/bin:/usr/bin:/bin:/usr/games","LANG=C.UTF-8",`HOME=${steamHome}`,`XDG_DATA_HOME=${path.join(steamHome,".local/share")}`,"/usr/games/steamcmd","+login","anonymous","+app_info_update","1","+app_info_print","310","+quit"],{timeout:120000,maxOutput:4*1024**2});
+    const sdk=steamPublicBuild(output,310),page=await boundedText("https://www.geshl2.com/server-downloads/",request,128*1024);
+    const version=page.match(/GoldenEye_Source_v(\d+\.\d+\.\d+)_full_server_windows\.7z/)?.[1];
+    const checksum=page.match(/Checksum \(SHA256\):(?:\s|<[^>]*>)*([a-f0-9]{64})/i)?.[1]?.toLowerCase();
+    if(!version||!checksum)throw new Error("GoldenEye publisher metadata unavailable");
+    return sdk===GOLDENEYE_RELEASE.sdkBuild&&version===GOLDENEYE_RELEASE.modVersion&&checksum===GOLDENEYE_RELEASE.archiveSha256
+      ? PAIRED_RUNTIMES[key].latest : `sdk-${sdk}-mod-${version}-${checksum}`;
+  }
   if (key === "deus-ex") {
     const page = await boundedText("https://builds.hx.hanfling.de/testing/", request, 128 * 1024);
     const versions = [...page.matchAll(/href="HX-(\d+\.\d+\.\d+\.\d+)\.zip"/g)].map(match => match[1]);
@@ -93,7 +109,7 @@ export async function latestInstallationBuild(key, { request = fetch, run = runC
   if (RELEASES[key]) {
     const [repository, tag] = RELEASES[key];
     const release = await readRelease(repository, { request, signal: AbortSignal.timeout(30_000), label: target.name });
-    if (release.draft !== false || release.prerelease !== false || !tag.test(release.tag_name || "")) throw new Error("Official release is not a stable supported build");
+    if (release.draft !== false || (release.prerelease !== false && key !== "crystallized-nexus") || !tag.test(release.tag_name || "")) throw new Error("Official release is not a stable supported build or the declared game-package channel");
     return key === "morrowind" ? release.tag_name.slice(7) : ["mindustry", "openmohaa", "unvanquished"].includes(key) ? release.tag_name.slice(1) : release.tag_name;
   }
   if (REVIEWED_JAVA[key]) {
@@ -239,7 +255,7 @@ export function createDailyInstallationUpdates({ stateDir, coordinator, latest =
       await coordinator.withMetadataCheck(async () => {
         const inventory = coordinator.snapshot();
         for (const target of inventory.targets) {
-          const reviewedPackage = REVIEWED_JAVA[target.key] || PAIRED_RUNTIMES[target.key] || (target.key === "deus-ex" ? HX_RELEASE : target.key === "hurry-curry" ? HURRY_BUILD : target.key === "freedoom" ? {latest: REVIEWED_COMPONENTS.freedoom.version} : null);
+          const reviewedPackage = REVIEWED_JAVA[target.key] || PAIRED_RUNTIMES[target.key] || (target.key === "crystallized-nexus" ? CRYSTALLIZED_NEXUS_PIN : target.key === "deus-ex" ? HX_RELEASE : target.key === "hurry-curry" ? HURRY_BUILD : target.key === "freedoom" ? {latest: REVIEWED_COMPONENTS.freedoom.version} : null);
           const old = previous.targets[target.key];
           const row = { checkedAt: now(), installedBuild: target.buildId,
             lastAttemptBuild: old?.lastAttemptBuild, jobId: old?.jobId };
@@ -262,6 +278,7 @@ export function createDailyInstallationUpdates({ stateDir, coordinator, latest =
               } else if (reviewedPackage && row.availableBuild === target.buildId) row.status = "up_to_date";
               else if (reviewedPackage && row.availableBuild !== reviewedPackage.latest) {
                 row.status = "review_required"; row.message = target.key === "freedoom" ? "New Zandronum package revision needs reviewed engine/data compatibility, dependencies and checksums; the installed runtime is unchanged." : PAIRED_RUNTIMES[target.key] ? "New paired package needs reviewed controller/engine/assets compatibility and checksums; the installed runtime is unchanged." : target.key === "hurry-curry" ? "New source build needs reviewed client protocol, player-limit patch, toolchain and compiled checksums; the installation is unchanged." : "New Java server package needs reviewed runtime/client compatibility and checksums; the installation is unchanged.";
+                if(target.key === "crystallized-nexus") row.message = "A newer game playtest needs compatibility review against the catalog's pinned client. The installed server is unchanged.";
               } else if (!reviewedPackage && !newer(row.availableBuild, target.buildId)) row.status = "up_to_date";
               else if (target.key === "unvanquished" && row.availableBuild !== UNVANQUISHED_RELEASES.latest) {
                 row.status = "review_required"; row.message = "New Unvanquished version needs reviewed engine/sandbox/game package compatibility and checksums.";

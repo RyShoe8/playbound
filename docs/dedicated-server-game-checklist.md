@@ -225,3 +225,18 @@ For live update acceptance fixtures, reserve an unused port before starting,
 query the fixture's unique server name/version (not just a plausible player
 count), and verify all fixture processes and listeners are gone before rollback
 or cleanup. A stale fixture answering the query does not verify the new runtime.
+Run long/native fixtures in a transient systemd service with a bounded runtime,
+the game service user, resource limits and `KillMode=control-group`. Killing only
+an AppImage launcher can leave its engine and shell alive; verify the entire
+fixture cgroup is empty and its port is closed. Do not stop an unclassified
+process to make an update pass. Identify the old fixture, check no players or
+registered room uses it, and stop only its recorded process identities.
+
+For an OpenRA edition, inspect the live catalog's exact install repository,
+release channel and embedded mod ID. An edition slug is not an engine mod ID:
+`openra:ra2` currently uses Romanov's Vengeance `rv`, Crystallized Nexus uses
+`cn`, and Tiberian Dawn HD uses a separate `cnc` package. Keep an exact package
+mapping and reject missing/unknown editions rather than falling back to stock
+OpenRA. Reconcile web Join, launcher Join, agent startup, update dependencies,
+master-list mod matching and the admin coverage row together. Preserve client
+pins: a repository's newest launcher release is not a game-server release.

@@ -85,6 +85,9 @@ it("keeps separate edition updates pending instead of inheriting base-depot supp
   expect(rows.find((row) => row.id === "team-fortress-2:open-fortress")).toMatchObject({ category: "supported", installationKey: "open-fortress" });
   expect(buildInstallationCoverage({ targets: [], jobs: [] }).find(row => row.id === "team-fortress-2:open-fortress")?.installationKey).toBeUndefined();
   expect(rows.find((row) => row.id === "openra:combined-arms")).toMatchObject({ category: "supported", installationKey: "combined-arms" });
+  expect(rows.find(row=>row.id==="openra:ra2")).toMatchObject({category:"supported",installationKey:"romanovs-vengeance"});
+  expect(rows.find(row=>row.id==="openra:tiberian-dawn-hd")).toMatchObject({category:"supported",installationKey:"tiberian-dawn-hd"});
+  expect(rows.find(row=>row.id==="openra:crystallized-nexus")).toMatchObject({category:"supported",installationKey:"crystallized-nexus"});
   expect(rows.find((row) => row.id === "freedoom")).toMatchObject({category: "supported", installationKey: "freedoom"});
   expect(rows.find((row) => row.id === "rimworld-together")).toMatchObject({ category: "supported", installationKey: "rimworld-together" });
   expect(rows.find((row) => row.id === "freeciv")).toMatchObject({ category: "supported", installationKey: "freeciv" });
