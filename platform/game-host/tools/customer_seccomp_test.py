@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import socket
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -56,12 +57,30 @@ try:
 except OSError as error:
  assert error.errno==errno.EPERM
 else: raise AssertionError('Unix host socket access was allowed')
+left,right=socket.socketpair()
+left.sendall(b'private ipc')
+assert right.recv(32)==b'private ipc'
+try:
+ left.connect('\\0playbound-host-socket-probe')
+except OSError as error:
+ assert error.errno==errno.EISCONN
+else: raise AssertionError('Connected IPC pair reached an external socket')
+left.close();right.close()
+for kind in [socket.SOCK_DGRAM,socket.SOCK_SEQPACKET]:
+ try: socket.socketpair(socket.AF_UNIX,kind)
+ except OSError as error: assert error.errno==errno.EPERM
+ else: raise AssertionError('Reconnectable Unix socket pair was allowed')
 assert not Path('/opt/playbound-host/agent').exists()
 assert not Path('/var/lib/playbound-host').exists()
 assert not Path('/etc/playbound-game-host.env').exists()
 Path('/server/owned.txt').write_text('private')
 print(json.dumps({'filterApplied':True,'dangerousCallsDenied':True,'privateWritePassed':True}))
 '''
+        listener=socket.socket(socket.AF_UNIX,socket.SOCK_STREAM)
+        self.addCleanup(listener.close)
+        name='playbound-host-socket-probe-'+str(os.getpid())
+        listener.bind('\0'+name);listener.listen(1);listener.setblocking(False)
+        code=code.replace('playbound-host-socket-probe',name)
         for game in runtime.NATIVE_GAMES:
             runtime.select_game(game)
             with tempfile.TemporaryDirectory() as temporary:
@@ -74,7 +93,7 @@ print(json.dumps({'filterApplied':True,'dangerousCallsDenied':True,'privateWrite
                 descriptor = module.sealed_filter()
                 try:
                     command = runtime.command(data, config, runtime.NATIVE_GAMES[game][1], 1024,
-                                              native_settings={'maxPlayers':4,'scoreLimit':3,'name':'Private fixture','mode':3,'difficulty':1}, seccomp_fd=descriptor)
+                                              native_settings={'maxPlayers':4,'scoreLimit':3,'name':'Private fixture','mode':3,'difficulty':1,'map':'random/mainland'}, seccomp_fd=descriptor)
                     delimiter = len(command) - 1 - command[::-1].index('--')
                     result = subprocess.run([*command[:delimiter+1], '/usr/bin/python3', '-I', '-c', code],
                         user=65534, group=65534, extra_groups=[], pass_fds=(config,descriptor),

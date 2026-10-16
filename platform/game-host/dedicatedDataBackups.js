@@ -11,6 +11,11 @@ const BACKUP_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}
 // World data for each game, relative to the shared home. Every path sits
 // inside one customer server's own pb-<id> folder — never a shared directory.
 const WORLD_SOURCES = {
+  teeworlds: (folder) => ["customer-sandboxes", folder],
+  bzflag: (folder) => ["bzflag-servers", folder],
+  hedgewars: (folder) => ["hedgewars-servers", folder],
+  openarena: (folder) => ["openarena-servers", folder],
+  "battle-for-wesnoth": (folder) => ["wesnoth-servers", folder],
   mindustry: (folder) => ["mindustry", folder],
   openttd: (folder) => ["openttd-servers", folder],
   luanti: (folder) => ["luanti-servers", folder],

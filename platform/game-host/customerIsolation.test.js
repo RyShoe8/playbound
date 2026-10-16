@@ -4,10 +4,16 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawn, execFileSync } from "node:child_process";
-import { customerIsolationLaunch, validateCustomerPreparation, CUSTOMER_ISOLATION_GAMES, openArenaIdentityConfiguration, superTuxKartIdentityConfiguration } from "./customerIsolation.js";
+import { customerIsolationLaunch, validateCustomerPreparation, CUSTOMER_ISOLATION_GAMES, openArenaIdentityConfiguration, superTuxKartIdentityConfiguration, zeroAdIdentityConfiguration } from "./customerIsolation.js";
 import { NATIVE_PACKAGE_PROFILES } from "./nativePackageUpdates.js";
 
 const id = "0123456789abcdef01234567";
+test("0 A.D. identity uses its fixed port and bounded maps/slots",()=>{
+  const args=['-autostart=random/mainland','-autostart-host','-autostart-host-players=4','-autostart-playername=PlayBound Server','-autostart-seed=-1','-autostart-nonvisual','-quickstart','-nosound'];
+  assert.deepEqual(zeroAdIdentityConfiguration(args),{port:20595,config:JSON.stringify({map:'random/mainland',maxPlayers:4})});
+  for (const bad of [[...args,'-mod=payload'],args.map(x=>x==='-autostart=random/mainland'?'-autostart=../../private':x),args.map(x=>x==='-autostart-host-players=4'?'-autostart-host-players=9':x)]) assert.throws(()=>zeroAdIdentityConfiguration(bad));
+  assert.equal(customerIsolationLaunch({gameSlug:'0-ad',customerOwned:true}),null);
+});
 test("SuperTuxKart identity accepts declared modes and bounded slots only", () => {
   for (const mode of [0,1,3,4,6,7,8]) {
     const args=['--lan-server=Private fixture','--port=2779','--no-graphics','--max-players=12',`--mode=${mode}`,'--difficulty=3'];

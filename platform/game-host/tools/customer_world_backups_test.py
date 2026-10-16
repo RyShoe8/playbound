@@ -88,6 +88,23 @@ class WorldSnapshots(unittest.TestCase):
         self.assertEqual(len(retained), 1)
         self.assertEqual((retained[0] / 'saved.dat').read_text(), 'newer progress')
 
+    def check_native_snapshot(self, game):
+        self.journal['gameSlug'] = game
+        (self.control / 'migration.json').write_text(json.dumps(self.journal))
+        value = self.run_operation('create')
+        self.assertEqual(value['gameSlug'],game)
+        self.write('newer progress')
+        self.run_operation('restore',value['id'])
+        self.assertEqual(self.file.read_text(),'original')
+        self.assertEqual(self.file.stat().st_uid,65534)
+        self.assertTrue(runtime.migration_ready(ID,65534))
+
+    def test_teeworlds_snapshot_restore(self): self.check_native_snapshot('teeworlds')
+    def test_bzflag_snapshot_restore(self): self.check_native_snapshot('bzflag')
+    def test_hedgewars_snapshot_restore(self): self.check_native_snapshot('hedgewars')
+    def test_openarena_snapshot_restore(self): self.check_native_snapshot('openarena')
+    def test_wesnoth_snapshot_restore(self): self.check_native_snapshot('battle-for-wesnoth')
+
     def test_interrupted_swap_recovers_without_replacing_progress_twice(self):
         value = self.run_operation('create')
         self.write('newer progress')

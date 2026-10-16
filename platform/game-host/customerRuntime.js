@@ -9,7 +9,7 @@ import { customerResourceLimits } from "./customerResourceLimits.js";
 const runFile = promisify(execFile);
 export const CUSTOMER_RESOURCE_HELPER = "/usr/local/libexec/playbound-customer-resources";
 const IDENTITY_HELPER = "/usr/local/libexec/playbound-customer-runtime";
-const GAMES = ["teeworlds", "bzflag", "hedgewars", "openttd", "luanti", "openarena", "battle-for-wesnoth", "supertuxkart"];
+const GAMES = ["teeworlds", "bzflag", "hedgewars", "openttd", "luanti", "openarena", "battle-for-wesnoth", "supertuxkart", "0-ad", "ysoccer"];
 
 export function resourceScope(id, pid) {
   if (!/^[a-f0-9]{24}$/i.test(id || "") || !Number.isInteger(pid) || pid <= 1) throw new Error("Invalid resource identity");
@@ -43,7 +43,7 @@ export async function enterCustomerResources(id, gameSlug, pid = process.pid, al
 export function launchIdentityRuntime(id, pid, plan) {
   const identity = processIdentity(pid);
   const game = plan.identityRuntime?.gameSlug || "teeworlds";
-  const ranges = { teeworlds: [8303,8323], bzflag: [5155,5174], hedgewars: [46631,46650], openttd: [3979,3999], luanti: [30000,30020], openarena: [27960,27980], "battle-for-wesnoth": [15000,15020], supertuxkart: [2759,2779] };
+  const ranges = { teeworlds: [8303,8323], bzflag: [5155,5174], hedgewars: [46631,46650], openttd: [3979,3999], luanti: [30000,30020], openarena: [27960,27980], "battle-for-wesnoth": [15000,15020], supertuxkart: [2759,2779], "0-ad": [20595,20595], ysoccer: [54555,54575] };
   if (!Object.hasOwn(ranges,game)) throw new Error("Invalid identity game");
   const limits = customerResourceLimits(game, plan.resourceLimits);
   if (!identity || plan.identityProfile !== `${game}-unix-v1` || !Number.isInteger(plan.identityRuntime?.port) || plan.identityRuntime.port < ranges[game][0] || plan.identityRuntime.port > ranges[game][1] || typeof plan.identityRuntime.config !== "string" || Buffer.byteLength(plan.identityRuntime.config) > 16384) throw new Error("Invalid identity handoff");
@@ -55,7 +55,7 @@ export function launchIdentityRuntime(id, pid, plan) {
 
 async function identityOperation(action, room) {
   resourceScope(room.communityServerId, room.pid);
-  if (!room.processIdentity || !["teeworlds-unix-v1","bzflag-unix-v1","hedgewars-unix-v1","openttd-unix-v1","luanti-unix-v1","openarena-unix-v1","battle-for-wesnoth-unix-v1","supertuxkart-unix-v1"].includes(room.identityProfile)) throw new Error("Invalid identity operation");
+  if (!room.processIdentity || !["teeworlds-unix-v1","bzflag-unix-v1","hedgewars-unix-v1","openttd-unix-v1","luanti-unix-v1","openarena-unix-v1","battle-for-wesnoth-unix-v1","supertuxkart-unix-v1","0-ad-unix-v1","ysoccer-unix-v1"].includes(room.identityProfile)) throw new Error("Invalid identity operation");
   const { stdout } = await runFile("/usr/bin/sudo", ["-n", IDENTITY_HELPER, action, room.communityServerId, String(room.pid), room.processIdentity], { timeout: 4000, maxBuffer: 4096, env: { PATH: "/usr/bin:/bin", LANG: "C.UTF-8" } });
   return JSON.parse(stdout);
 }
@@ -73,7 +73,7 @@ export async function runCustomerGate(input, { place = enterCustomerResources, l
   const { id, gameSlug, plan } = input || {};
   resourceScope(id, pid);
   if (!GAMES.includes(gameSlug) || plan?.binary !== "/usr/bin/prlimit" || !Array.isArray(plan.args) || plan.args.length > 128 || plan.args.some(value => typeof value !== "string" || value.includes("\0")) || typeof plan.cwd !== "string" || !plan.env || typeof plan.env !== "object") throw new Error("Invalid customer runtime plan");
-  if (plan.identityProfile !== undefined && (!["teeworlds","bzflag","hedgewars","openttd","luanti","openarena","battle-for-wesnoth","supertuxkart"].includes(gameSlug) || plan.identityProfile !== `${gameSlug}-unix-v1` || (gameSlug !== "teeworlds" && plan.identityRuntime?.gameSlug !== gameSlug))) throw new Error("Invalid identity profile");
+  if (plan.identityProfile !== undefined && (!["teeworlds","bzflag","hedgewars","openttd","luanti","openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer"].includes(gameSlug) || plan.identityProfile !== `${gameSlug}-unix-v1` || (gameSlug !== "teeworlds" && plan.identityRuntime?.gameSlug !== gameSlug))) throw new Error("Invalid identity profile");
   let stopping = false, child, finish;
   const stop = () => {
     stopping = true;

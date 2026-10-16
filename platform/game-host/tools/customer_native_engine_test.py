@@ -31,7 +31,7 @@ class EngineBoundary(unittest.TestCase):
         return module.sealed_engine(self.engine, self.profile)
 
     def test_every_native_profile_uses_its_own_reviewed_manifest(self):
-        records = {game: {'binaryBytes': len(self.bytes), 'binarySha256': hashlib.sha256(self.bytes).hexdigest()} for game in module.ENGINES}
+        records = {('0ad' if game == '0-ad' else game): {'binaryBytes': len(self.bytes), 'binarySha256': hashlib.sha256(self.bytes).hexdigest()} for game in module.ENGINES}
         self.profile.write_text(json.dumps(records))
         for game in module.ENGINES:
             fd = module.sealed_engine(self.engine, self.profile, game)
@@ -104,5 +104,27 @@ class EngineBoundary(unittest.TestCase):
         os.chown(self.profile, 65534, 65534)
         with self.assertRaises(ValueError): self.select()
 
+
+@unittest.skipUnless(os.getuid() == 0, 'Root-owned Java manifest fixtures')
+class JavaEngineTests(unittest.TestCase):
+    def test_java_bytes_are_sealed_and_changed_or_linked_inputs_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary)
+            jar=root/'server.jar';profile=root/'profile.json'
+            content=b'PK\x03\x04reviewed-fixture'
+            jar.write_bytes(content);jar.chmod(0o600)
+            profile.write_text(json.dumps({'ysoccer':{'jar':'ysoccer-server.jar','java':'/usr/bin/java','versions':[{'bytes':len(content),'sha256':hashlib.sha256(content).hexdigest()}]}}));profile.chmod(0o644)
+            fd=module.sealed_java_engine(jar,profile)
+            try:
+                self.assertEqual(os.read(fd,1000),content)
+                self.assertEqual(fcntl.fcntl(fd,fcntl.F_GET_SEALS),15)
+                with self.assertRaises(OSError):os.write(fd,b'changed')
+            finally:os.close(fd)
+            jar.write_bytes(b'PK\x03\x04tampered-fixture')
+            with self.assertRaises(ValueError):module.sealed_java_engine(jar,profile)
+            jar.unlink();jar.symlink_to(profile)
+            with self.assertRaises(OSError):module.sealed_java_engine(jar,profile)
+            profile.chmod(0o666)
+            with self.assertRaises(ValueError):module.sealed_java_engine(jar,profile)
 
 if __name__ == '__main__': unittest.main()
