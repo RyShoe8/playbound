@@ -19,6 +19,14 @@ class RuntimeBoundaries(unittest.TestCase):
     def setUp(self):
         module.select_game('teeworlds')
 
+    def test_flightgear_status_port_is_adjacent_and_admin_listener_disabled(self):
+        module.select_game('flightgear')
+        self.assertEqual(module.config_bytes('{}',5010),b'{}')
+        with self.assertRaises(ValueError):module.config_bytes('{"adminPort":9000}',5010)
+        command=module.command(Path('/fixture/data'),7,5010,1024,8,{})
+        self.assertEqual(command[-8:],['/engine-native','-p','5010','-a','5011','-b','0','-d'])
+        with self.assertRaises(ValueError):module.request(['run-native',ID,'42',IDENTITY,'flightgear','5001','750','1024'])
+
     def test_ysoccer_has_fixed_java_runtime_and_bounded_heap(self):
         module.select_game('ysoccer')
         self.assertEqual(module.config_bytes('{}',54575),b'{}')
@@ -41,16 +49,34 @@ class RuntimeBoundaries(unittest.TestCase):
         self.assertIn('-autostart=random/mainland',command)
         with self.assertRaises(ValueError):module.request(['run-native',ID,'42',IDENTITY,'0-ad','20596','750','2048'])
 
+    def test_mindustry_generates_fixed_startup_commands_without_console_injection(self):
+        import json
+        module.select_game('mindustry')
+        values={'name':'Private fixture','maxPlayers':4}
+        self.assertEqual(json.loads(module.config_bytes(json.dumps(values),6587)),values)
+        command=module.command(Path('/fixture/data'),7,6587,2048,8,values)
+        self.assertIn('/engine.jar',command)
+        self.assertIn('config name Private fixture,config port 6587,playerlimit 4,host',command)
+        for name in ['bad,exit','bad\nexit','bad;exit','bad\\escape']:
+            with self.assertRaises(ValueError):module.config_bytes(json.dumps(dict(values,name=name)),6587)
+        for slots in [True,0,65,'4']:
+            with self.assertRaises(ValueError):module.config_bytes(json.dumps(dict(values,maxPlayers=slots)),6587)
+        with self.assertRaises(ValueError):module.config_bytes(json.dumps(dict(values,exec='exit')),6587)
+
     def test_stk_settings_preserve_declared_modes_and_reject_extra_arguments(self):
         import json
         module.select_game('supertuxkart')
         values={'name':'Private fixture','maxPlayers':12,'mode':8,'difficulty':3}
-        self.assertEqual(json.loads(module.config_bytes(json.dumps(values),2779)),values)
-        command=module.command(Path('/fixture/data'),7,2779,1536,8,values)
+        self.assertEqual(json.loads(module.config_bytes(json.dumps(values),2777)),values)
+        command=module.command(Path('/fixture/data'),7,2777,1536,8,values)
         self.assertIn('--mode=8',command)
+        self.assertIn('PLAYBOUND_STK_DISCOVERY_PORT',command)
+        self.assertIn('2778',command)
+        for port in (2776,2779):
+            with self.assertRaises(ValueError):module.request(['run-native',ID,'42',IDENTITY,'supertuxkart',str(port),'750','1536'])
         self.assertIn('--max-players=12',command)
         for update in [{'mode':5},{'maxPlayers':13},{'difficulty':4},{'name':'x\nunsafe'},{'exec':'unsafe'}]:
-            with self.assertRaises(ValueError):module.config_bytes(json.dumps(dict(values,**update)),2779)
+            with self.assertRaises(ValueError):module.config_bytes(json.dumps(dict(values,**update)),2777)
 
     def test_wesnoth_series_and_config_paths_are_fixed(self):
         module.select_game('battle-for-wesnoth')

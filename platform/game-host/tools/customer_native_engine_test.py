@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 if os.name == 'nt': raise unittest.SkipTest('Linux sealed engine descriptors')
 spec = importlib.util.spec_from_file_location('engine', Path(__file__).with_name('customer-native-engine.py'))
@@ -15,6 +16,12 @@ spec.loader.exec_module(module)
 
 @unittest.skipUnless(os.getuid() == 0, 'Root-owned executable fixtures')
 class EngineBoundary(unittest.TestCase):
+    def test_stk_cannot_fall_back_to_the_unpatched_binary(self):
+        with patch.object(module,'sealed_engine',return_value=None):
+            with self.assertRaisesRegex(ValueError,'not installed'):module.sealed_engine_for('supertuxkart')
+        with patch.object(module,'sealed_engine',return_value=71) as seal:
+            self.assertEqual(module.sealed_engine_for('supertuxkart'),(71,'/usr/games/supertuxkart'))
+            self.assertEqual(seal.call_args.args,(Path('/usr/local/libexec/playbound-isolated-stk/supertuxkart'),Path('/usr/local/libexec/playbound-isolated-stk/profile.json'),'supertuxkart'))
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
@@ -107,6 +114,12 @@ class EngineBoundary(unittest.TestCase):
 
 @unittest.skipUnless(os.getuid() == 0, 'Root-owned Java manifest fixtures')
 class JavaEngineTests(unittest.TestCase):
+    def test_java_selection_has_no_cross_engine_or_arbitrary_path(self):
+        with patch.object(module,'sealed_java_engine',return_value=71) as seal:
+            self.assertEqual(module.sealed_engine_for('mindustry'),(71,'/engine.jar'))
+            seal.assert_called_once_with(game='mindustry')
+        with self.assertRaises(ValueError):module.sealed_java_engine(game='../other')
+
     def test_java_bytes_are_sealed_and_changed_or_linked_inputs_rejected(self):
         with tempfile.TemporaryDirectory() as temporary:
             root=Path(temporary)

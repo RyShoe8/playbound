@@ -432,8 +432,14 @@ export function parseStkDiscovery(m, expectedPort) {
   return { players, maxPlayers: validMax(maxPlayers) };
 }
 
-export async function querySuperTuxKart(roomPort) {
-  const packet = await udpRequest(2757, Buffer.concat([Buffer.from([10]), Buffer.from("stk-server")]), {
+export function stkDiscoveryPort(roomPort, identityProfile) {
+  if (identityProfile !== "supertuxkart-unix-v1") return 2757;
+  if (!Number.isInteger(roomPort) || roomPort < 2759 || roomPort > 2777 || roomPort % 2 !== 1) throw new Error("Invalid STK discovery allocation");
+  return roomPort + 1;
+}
+
+export async function querySuperTuxKart(roomPort, identityProfile) {
+  const packet = await udpRequest(stkDiscoveryPort(roomPort, identityProfile), Buffer.concat([Buffer.from([10]), Buffer.from("stk-server")]), {
     localReplyOnly: true, accept: reply => parseStkDiscovery(reply,roomPort) !== null,
   });
   return packet ? parseStkDiscovery(packet, roomPort) : null;
@@ -700,7 +706,7 @@ export async function queryRoomOccupancy(room) {
   if (slug === "bzflag") return queryBzflag(room.port);
   if (slug === "teeworlds") return room.networkProfile === "public-game-v1"
     ? queryTeeworlds(room.port, { host: room.host || "" }) : queryTeeworlds(room.port);
-  if (slug === "supertuxkart") return querySuperTuxKart(room.port);
+  if (slug === "supertuxkart") return querySuperTuxKart(room.port, room.identityProfile);
   if (slug === "flightgear") return queryFlightGear(room.port);
   if (slug === "freedoom") {
     const edition = String(room.editionSlug || "").toLowerCase();

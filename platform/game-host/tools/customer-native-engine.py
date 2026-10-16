@@ -23,25 +23,40 @@ ENGINES = {
     'battle-for-wesnoth': ('wesnothd', '/usr/games/wesnothd-1.18'),
     'supertuxkart': ('supertuxkart', '/usr/games/supertuxkart'),
     '0-ad': ('pyrogenesis', '/usr/games/pyrogenesis'),
+    'flightgear': ('fgms', '/engine-native'),
 }
 
 def sealed_engine_for(game):
-    if game == 'ysoccer':
-        return sealed_java_engine(), '/engine.jar'
+    if game in ('ysoccer','mindustry'):
+        return sealed_java_engine(game=game), '/engine.jar'
+    if game == 'flightgear':
+        root=Path('/usr/local/libexec/playbound-isolated-flightgear')
+        descriptor=sealed_engine(root/'fgms',root/'profile.json',game)
+        if descriptor is None: raise ValueError('Reviewed isolated FlightGear engine is not installed')
+        return descriptor, '/engine-native'
+    if game == 'supertuxkart':
+        # The stock engine probes bind-zero sockets during startup, which
+        # conflicts with the reviewed port fence. Never silently fall back.
+        root=Path('/usr/local/libexec/playbound-isolated-stk')
+        descriptor=sealed_engine(root/'supertuxkart',root/'profile.json',game)
+        if descriptor is None: raise ValueError('Reviewed isolated SuperTuxKart engine is not installed')
+        return descriptor, '/usr/games/supertuxkart'
     if game not in ENGINES:
         raise ValueError('Unsupported reviewed native engine')
     binary, target = ENGINES[game]
     return sealed_engine(Path('/opt/playbound-host/games') / ('0ad' if game == '0-ad' else game) / binary, PROFILE, game), target
 
 
-def sealed_java_engine(engine=Path('/opt/playbound-host/games/ysoccer/ysoccer-server.jar'), profile_path=Path('/usr/local/libexec/playbound-customer-java-profiles.json')):
+def sealed_java_engine(engine=Path('/opt/playbound-host/games/ysoccer/ysoccer-server.jar'), profile_path=Path('/usr/local/libexec/playbound-customer-java-profiles.json'), game='ysoccer'):
+    if game not in ('ysoccer','mindustry'): raise ValueError('Unsupported isolated Java engine')
+    if game == 'mindustry': engine=Path('/opt/playbound-host/games/mindustry/server-release.jar')
     profile_fd = open_regular(profile_path)
     with os.fdopen(profile_fd,'rb') as source:
         info=os.fstat(source.fileno())
         if not stat.S_ISREG(info.st_mode) or info.st_uid!=0 or info.st_nlink!=1 or info.st_mode&0o022 or info.st_size>32768:
             raise ValueError('Untrusted Java engine profiles')
-        profile=json.load(source)['ysoccer']
-    if profile['jar']!='ysoccer-server.jar' or profile['java']!='/usr/bin/java':
+        profile=json.load(source)[game]
+    if profile['jar']!=('ysoccer-server.jar' if game=='ysoccer' else 'server-release.jar') or profile['java']!='/usr/bin/java':
         raise ValueError('Java runtime contract changed')
     source_fd=open_regular(engine)
     destination=None
@@ -49,7 +64,7 @@ def sealed_java_engine(engine=Path('/opt/playbound-host/games/ysoccer/ysoccer-se
         before=os.fstat(source_fd)
         if not stat.S_ISREG(before.st_mode) or before.st_nlink!=1 or before.st_mode&0o7022 or not 0<before.st_size<=128*1024**2:
             raise ValueError('Unsafe Java engine file')
-        destination=os.memfd_create('playbound-ysoccer-reviewed',os.MFD_CLOEXEC|os.MFD_ALLOW_SEALING)
+        destination=os.memfd_create('playbound-'+game+'-reviewed',os.MFD_CLOEXEC|os.MFD_ALLOW_SEALING)
         digest=hashlib.sha256()
         remaining=before.st_size
         while remaining:

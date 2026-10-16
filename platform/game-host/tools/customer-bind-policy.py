@@ -51,17 +51,19 @@ def syscall(command, attribute):
     return result
 
 
-def instructions(port, stk_discovery=False):
+def instructions(port, stk_discovery=False, flightgear_status=False):
     if type(port) is not int or not 1 <= port <= 65535:
         raise ValueError('Invalid native port allocation')
-    if type(stk_discovery) is not bool or stk_discovery and not 2759 <= port <= 2779:
+    if type(stk_discovery) is not bool or stk_discovery and (not 2759 <= port <= 2777 or port % 2 != 1):
         raise ValueError('Invalid SuperTuxKart discovery contract')
-    if stk_discovery:
-        # Only STK's fixed UDP discovery port is additional. TCP discovery,
+    if type(flightgear_status) is not bool or flightgear_status and (stk_discovery or not 5000 <= port <= 5010 or port % 2):
+        raise ValueError('Invalid FlightGear status allocation')
+    if stk_discovery or flightgear_status:
+        # Only STK's allocated UDP discovery port is additional. TCP discovery,
         # dynamic binds and every other explicit port remain denied.
         rows = [(0x61,0x12,24,0), (0x15,0x02,5,socket.htons(port)),
-                (0x61,0x13,36,0), (0x55,0x03,1,socket.IPPROTO_UDP),
-                (0x15,0x02,2,socket.htons(2757)),
+                (0x61,0x13,36,0), (0x55,0x03,1,socket.IPPROTO_TCP if flightgear_status else socket.IPPROTO_UDP),
+                (0x15,0x02,2,socket.htons(port+1)),
                 (0xb7,0,0,0),(0x95,0,0,0),(0xb7,0,0,1),(0x95,0,0,0)]
         return b''.join(struct.pack('<BBhi',*row) for row in rows)
     rows = [(0x61,0x12,24,0),       # r2 = *(u32 *)(r1 + user_port)
@@ -94,8 +96,8 @@ def program_ids(scope):
         os.close(descriptor)
 
 
-def apply_current(port, stk_discovery=False):
-    program_bytes = instructions(port,stk_discovery)
+def apply_current(port, stk_discovery=False, flightgear_status=False):
+    program_bytes = instructions(port,stk_discovery,flightgear_status)
     bytecode = ctypes.create_string_buffer(program_bytes)
     license = ctypes.create_string_buffer(b'GPL\0')
     placement = Path('/proc/self/cgroup').read_text().strip()

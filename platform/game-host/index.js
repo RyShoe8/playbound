@@ -887,7 +887,7 @@ async function startRoom(opts) {
 
 async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername, saveKey, customerOwned, resourceLimits, identityProfile, testSpawn = false }) {
   if (shuttingDown) return { error: "Agent is shutting down" };
-  if (identityProfile !== undefined && (!["teeworlds","bzflag","hedgewars","openttd","luanti","openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer"].includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1` || !customerOwned || !communityServerId)) return { error: "Unsupported customer identity handoff" };
+  if (identityProfile !== undefined && (!["teeworlds","bzflag","hedgewars","openttd","luanti","openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry"].includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1` || !customerOwned || !communityServerId)) return { error: "Unsupported customer identity handoff" };
   if (customerOwned && CUSTOMER_ISOLATION_GAMES.includes(gameSlug)) {
     try { resourceLimits = customerResourceLimits(gameSlug, resourceLimits); }
     catch (error) { return { error: error.message }; }
@@ -944,7 +944,7 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
 
   // Recipes use partyId as a filesystem namespace; managed IDs serve that
   // internal purpose without creating a Party or entering byParty.
-  const roomCtx = { editionSlug, mod, partyId: partyId || communityServerId, managed: Boolean(communityServerId), customerOwned: Boolean(customerOwned && communityServerId), testSpawn, name, settings, leaderUsername, saveKey };
+  const roomCtx = { identityProfile, editionSlug, mod, partyId: partyId || communityServerId, managed: Boolean(communityServerId), customerOwned: Boolean(customerOwned && communityServerId), testSpawn, name, settings, leaderUsername, saveKey };
   let resolved = resolveRecipe(gameSlug, roomCtx);
   if (!resolved) return { error: `Game ${gameSlug} is not hostable` };
 
@@ -1064,7 +1064,7 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
       HOME: hostHome,
       ...(typeof recipe.spawnEnv === "function" ? recipe.spawnEnv(port, ctx) : {}),
     });
-    const cwd =
+    const cwd = identityProfile === "mindustry-unix-v1" ? "/" :
       typeof recipe.cwd === "function"
         ? recipe.cwd(port, ctx)
         : recipe.cwd || path.dirname(binary);
@@ -1074,7 +1074,7 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
     }
     let isolated;
     try {
-      isolated = customerIsolationLaunch({ gameSlug, customerOwned: ctx.customerOwned, communityServerId, binary, args, home: hostHome, resourceLimits, identityProfile, settings: ctx.settings });
+      isolated = customerIsolationLaunch({ gameSlug, customerOwned: ctx.customerOwned, communityServerId, binary, args, home: hostHome, resourceLimits, identityProfile, settings: ctx.settings, startupPort:port, serverName:ctx.name });
     } catch {
       freePort(gameSlug, port);
       return { error: "Customer runtime isolation could not be prepared. The server was not launched." };
@@ -1547,7 +1547,7 @@ const server = http.createServer(async (req, res) => {
       if (retainedIdentity && retainedIdentity !== identityProfile) {
         json(res, 409, { error: "Customer identity profile cannot be downgraded" }); return;
       }
-      if (identityProfile !== undefined && (!["teeworlds","bzflag","hedgewars","openttd","luanti","openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer"].includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1` || body.customerOwned !== true || !/^[a-f0-9]{24}$/.test(communityServerId))) {
+      if (identityProfile !== undefined && (!["teeworlds","bzflag","hedgewars","openttd","luanti","openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry"].includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1` || body.customerOwned !== true || !/^[a-f0-9]{24}$/.test(communityServerId))) {
         json(res, 400, { error: "Unsupported customer identity handoff" }); return;
       }
       const activeId = byManaged.get(communityServerId);

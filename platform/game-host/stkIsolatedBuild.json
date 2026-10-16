@@ -1,0 +1,14 @@
+{
+  "version": "1.4-playbound-isolated-2",
+  "commit": "bea5b530a56296e6110e7755a56d79742bd94176",
+  "source": "https://github.com/supertuxkart/stk-code/tree/bea5b530a56296e6110e7755a56d79742bd94176",
+  "sourceDiffSha256": "4b414016c67e623dc02096cccb4d2fca55f98201f517197e23cb60cc107e8255",
+  "binary": {
+    "bytes": 16299928,
+    "sha256": "b84f38925d71ec4e12911a812e6df6a27721547758b99334279df177d56c7364"
+  },
+  "legacyBinary": {
+    "bytes": 16299928,
+    "sha256": "b84f38925d71ec4e12911a812e6df6a27721547758b99334279df177d56c7364"
+  }
+}

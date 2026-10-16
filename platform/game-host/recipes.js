@@ -1081,12 +1081,13 @@ export const recipes = {
       if (jar) return ["-jar", jar];
       return [];
     },
-    resolveBinary: (candidates) => {
+    resolveBinary: (candidates, ctx) => {
       const jar = firstExisting([
         path.join(GAMES_ROOT, "mindustry", "server-release.jar"),
         path.join(GAMES_ROOT, "mindustry", "Mindustry.jar"),
       ]);
       const wrapper = firstExisting(gameBin("mindustry", ["run-server"]));
+      if (ctx?.identityProfile === "mindustry-unix-v1") return jar && fs.existsSync("/usr/bin/java") ? "/usr/bin/java" : null;
       if (wrapper) return wrapper;
       if (jar && fs.existsSync("/usr/bin/java")) return "/usr/bin/java";
       return firstExisting(candidates);
@@ -1210,6 +1211,10 @@ export const recipes = {
   supertuxkart: {
     portStart: 2759,
     portEnd: 2779,
+    // Reserve a private discovery socket beside gameplay for isolated engines.
+    // Stock engines retain their legacy shared discovery port.
+    portStride: 2,
+    portSpan: 2,
     protocol: "both",
     binaries: gameBin("supertuxkart", ["supertuxkart"]),
     args: (port, ctx) => [
