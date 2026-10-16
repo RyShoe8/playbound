@@ -1669,3 +1669,20 @@ engine before checking dangerous calls, host secret visibility and Unix sockets.
 Executable content and UID-aware live administration are still separate gates.
 Source: https://github.com/assaultcube/AC/blob/v1.3.0.2/source/src/protos.h
 Query transport: https://github.com/assaultcube/AC/blob/v1.3.0.2/source/src/serverms.cpp
+
+
+### Protected data management across all accepted identities (2026-10-16)
+
+Protected files and stopped-only world snapshots now cover all fourteen accepted
+operator identity profiles, including STK, 0 A.D., YSoccer, FlightGear, Mindustry,
+Hurry Curry and AssaultCube. The root helper derives the actual game and data
+location from its activation journal; the caller cannot select another directory.
+Per-game Linux restore fixtures verify UID preservation and activation-inode
+updates. The existing browser file policy continues to reject executable content,
+secrets and traversal. This does not enable plugin uploads through the file API.
+
+Twenty-one Linux snapshot tests passed. The live AssaultCube fixture additionally
+passed reserved-UID file listing/read/write, traversal/executable rejection, API
+snapshot creation and atomic restore retaining the prior data. Same-process
+restart acceptance was repeated before stop, and migration rollback preserved
+old and newer data. All fixture processes and directories were removed.

@@ -64,7 +64,7 @@ test("world backups cover Freeciv saves and Morrowind data, one server at a time
 });
 
 test("backups refuse games without persistent world data and malformed server IDs", () => {
-  assert.throws(() => createWorldBackup(ID, "hurry-curry", 3, HOME), /no persistent world-data backup/);
+  assert.throws(() => createWorldBackup(ID, "counter-strike-2", 3, HOME), /no persistent world-data backup/);
   assert.throws(() => createWorldBackup("../etc", "freeciv", 3, HOME), /Invalid customer server ID/);
   assert.throws(() => createWorldBackup(ID, "constructor", 3, HOME), /no persistent world-data backup/);
 });
@@ -78,7 +78,7 @@ test("the worker-thread runner does the same work off the event loop and hides h
   const made = await runWorldBackup("createWorldBackup", [id, "freeciv", 3]);
   assert.equal(made.files, 1);
   assert.equal((await runWorldBackup("listWorldBackups", [id, "freeciv"])).length, 1);
-  await assert.rejects(runWorldBackup("createWorldBackup", [id, "hurry-curry", 3]), /no persistent world-data backup/);
+  await assert.rejects(runWorldBackup("createWorldBackup", [id, "counter-strike-2", 3]), /no persistent world-data backup/);
   await assert.rejects(runWorldBackup("createWorldBackup", ["ffffffffffffffffffffffff", "freeciv", 3]), /No saved world data exists/);
   await assert.rejects(runWorldBackup("rmSync", [id]), /Unknown world-backup operation/);
 });
@@ -86,7 +86,7 @@ test("the worker-thread runner does the same work off the event loop and hides h
 test("the agent route only accepts games the backup module supports", async () => {
   const { WORLD_BACKUP_GAMES, isWorldBackupGame } = await import("./dedicatedDataBackups.js");
   assert.deepEqual([...WORLD_BACKUP_GAMES].sort(), [
-    "barotrauma", "battle-for-wesnoth", "bzflag", "core-keeper", "dont-starve-together", "factorio", "freeciv", "hedgewars", "luanti", "mindustry", "morrowind", "necesse", "openarena", "openttd", "rimworld-together", "teeworlds", "terraria", "vintage-story",
+    "0-ad", "assaultcube", "barotrauma", "battle-for-wesnoth", "bzflag", "core-keeper", "dont-starve-together", "factorio", "flightgear", "freeciv", "hedgewars", "hurry-curry", "luanti", "mindustry", "morrowind", "necesse", "openarena", "openttd", "rimworld-together", "supertuxkart", "teeworlds", "terraria", "vintage-story", "ysoccer",
   ]);
   assert.equal(isWorldBackupGame("constructor"), false);
   const source = fs.readFileSync(new URL("./index.js", import.meta.url), "utf8");

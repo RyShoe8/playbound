@@ -17,6 +17,12 @@ const WORLD_SOURCES = {
   openarena: (folder) => ["openarena-servers", folder],
   "battle-for-wesnoth": (folder) => ["wesnoth-servers", folder],
   mindustry: (folder) => ["mindustry", folder],
+  supertuxkart: (folder) => ["supertuxkart-servers", folder],
+  "0-ad": (folder) => ["0ad-servers", folder],
+  ysoccer: (folder) => ["ysoccer-servers", folder],
+  flightgear: (folder) => ["flightgear-servers", folder],
+  "hurry-curry": (folder) => ["hurry-curry-servers", folder],
+  assaultcube: (folder) => ["assaultcube-servers", folder],
   openttd: (folder) => ["openttd-servers", folder],
   luanti: (folder) => ["luanti-servers", folder],
   // Saved games only; the startup script beside them is regenerated each start.
