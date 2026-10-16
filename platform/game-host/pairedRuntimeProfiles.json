@@ -239,5 +239,23 @@
         "archiveSha256": "72cfe586368190edcd53f074da1a3e9a03f7f63486bf628a3ad2c7bdb2487187"
       }
     ]
+  },
+  "open-fortress": {
+    "latest": "alpha-2024-09-06-sdk-6982827-pb2",
+    "component": "runtime",
+    "elfClass": 1,
+    "binaries": [
+      "srcds_linux",
+      "open_fortress/bin/server_srv.so"
+    ],
+    "versions": [
+      {
+        "buildId": "alpha-2024-09-06-sdk-6982827-pb2",
+        "treeSha256": "0c537ccfe7af1110c83be2e8bbc0fbeedd8c73ab390acd0f10d7cca7f434b33d",
+        "fileCount": 27076,
+        "totalBytes": 8089733594,
+        "baselineOnly": true
+      }
+    ]
   }
 }

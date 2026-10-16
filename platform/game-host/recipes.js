@@ -242,7 +242,7 @@ for (const slug of [
   "warzone-2100", "bzflag", "supertuxkart", "xonotic", "openarena",
   "0-ad", "0ad", "bombsquad", "wolfenstein-enemy-territory", "team-fortress-2",
   "unvanquished", "hedgewars", "freedoom", "veloren", "freeciv",
-  "battlefield-1942-anthology", "counter-strike-source", "goldeneye-source", "terraria", "unturned", "rimworld-together", "core-keeper", "vintage-story", "factorio", "necesse", "dont-starve-together", "barotrauma", "trackmania",
+  "battlefield-1942-anthology", "counter-strike-source", "goldeneye-source", "open-fortress", "terraria", "unturned", "rimworld-together", "core-keeper", "vintage-story", "factorio", "necesse", "dont-starve-together", "barotrauma", "trackmania",
 ]) {
   RECIPE_SETTING_TYPES[slug] = { ...RECIPE_SETTING_TYPES[slug], maxPlayers: "number" };
 }
@@ -266,6 +266,7 @@ for (const [slug, types] of Object.entries({
   "counter-strike-2": { map: "string", maxplayers: "number" },
   "counter-strike-source": { map: "string", mp_timelimit: "number" },
   "goldeneye-source": { map: "string", mp_timelimit: "number" },
+  "open-fortress": { map: "string", mp_timelimit: "number" },
   "medal-of-honor-allied-assault": { map: "string" },
   openmohaa: { map: "string" },
   unvanquished: { map: "string", sv_maxclients: "number" },
@@ -295,7 +296,7 @@ function settingNumber(slug, ctx, key, fallback, min, max) {
 }
 
 export const BOT_FILL_RECIPES = [
-  "xonotic", "openarena", "team-fortress-2", "counter-strike-2", "unvanquished",
+  "xonotic", "openarena", "team-fortress-2", "open-fortress", "counter-strike-2", "unvanquished",
   "medal-of-honor-allied-assault", "wolfenstein-enemy-territory",
 ];
 for (const slug of BOT_FILL_RECIPES) {

@@ -1040,6 +1040,26 @@ const TEAM_FORTRESS_2: ServerSettingProfile = {
   ],
 };
 
+const OPEN_FORTRESS_MAPS = [
+  { value: "dm_2fort", label: "2Fort" },
+  { value: "dm_backfort", label: "Backfort" },
+  { value: "dm_badworks", label: "Badworks" },
+  { value: "dm_blacksite", label: "Blacksite" },
+  { value: "dm_bloodcovenant", label: "Blood Covenant" },
+];
+
+const OPEN_FORTRESS: ServerSettingProfile = {
+  slug: "open-fortress",
+  controlChannel: "rcon-source",
+  maps: { options: OPEN_FORTRESS_MAPS, changeCommand: "changelevel {value}", nextCommand: "nextlevel {value}", rotation: null },
+  settings: [
+    { key: "map", label: "Map", feature: "map", type: "enum", default: "dm_2fort", options: OPEN_FORTRESS_MAPS, apply: "restart", backend: "startup" },
+    { key: "maxPlayers", label: "Player slots", feature: "slots", type: "number", default: 16, min: 2, max: 32, apply: "restart", backend: "startup" },
+    { key: "botFill", label: "Bots fill to", feature: "bots", type: "number", default: 0, min: 0, max: 31, apply: "live", backend: "rcon", rcon: { cvar: "tf_bot_quota" }, help: "Native fill mode replaces bots as people join. Set 0 for none." },
+    SOURCE_TIME_LIMIT,
+  ],
+};
+
 const COUNTER_STRIKE_2: ServerSettingProfile = {
   slug: "counter-strike-2",
   controlChannel: "rcon-source",
@@ -1637,6 +1657,7 @@ export const SERVER_SETTING_PROFILES: Readonly<Record<string, ServerSettingProfi
   openarena: OPENARENA,
   xonotic: XONOTIC,
   "team-fortress-2": TEAM_FORTRESS_2,
+  "open-fortress": OPEN_FORTRESS,
   "counter-strike-2": COUNTER_STRIKE_2,
   "counter-strike-source": COUNTER_STRIKE_SOURCE,
   "goldeneye-source": GOLDENEYE_SOURCE,
@@ -1662,10 +1683,15 @@ export const SERVER_SETTING_PROFILES: Readonly<Record<string, ServerSettingProfi
   "0-ad": ZERO_AD,
 };
 
+export function serverSettingSlug(slug: string, editionSlug?: string | null): string {
+  return slug === "team-fortress-2" && editionSlug === "open-fortress" ? "open-fortress" : slug;
+}
+
 export function getServerSettingProfile(
-  slug: string | null | undefined
+  slug: string | null | undefined, editionSlug?: string | null
 ): ServerSettingProfile | null {
   if (!slug) return null;
+  slug = serverSettingSlug(slug, editionSlug);
   if (slug === "rimworld") return SERVER_SETTING_PROFILES["rimworld-together"];
   return SERVER_SETTING_PROFILES[slug] ?? null;
 }

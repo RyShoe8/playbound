@@ -102,3 +102,41 @@ Idle calibration does not establish resource use at unobserved player counts.
 The hosting tier's resource-fit display shows the number of tier units required
 by a measured server. A 256 MB displayed estimate is a floor, not an enforced
 256 MB memory limit; a tier unit is likewise not the full server allocation.
+
+
+## Open Fortress native hosting (2026-10-15)
+
+Open Fortress remains the `team-fortress-2:open-fortress` catalog edition but
+uses the separate `open-fortress` recipe, Source SDK 2013 Multiplayer
+`previous2021` build 6982827, and reviewed alpha mod distribution. It must
+never fall back to the current 64-bit TF2 engine. Gameplay UDP ports are
+27150–27169; the native client listener uses gameplay + 1000. The recipe
+binds to all interfaces and uses authenticated Source RCON locally.
+
+The reviewed shared package is `games/open-fortress/runtime`. Each stable
+server identity gets `HOME/open-fortress-servers/pb-<id>/runtime`, a private
+launcher, module bindings, configuration, logs and generated map graphs.
+SDK aliases must resolve to the same native files; copying both aliases as
+independent modules breaks the legacy loader. The native mod expects
+`server_srv.so` to resolve to `server.so`. Explicit Linux resource paths mount
+the existing TF2 assets. TF2 installation updates wait for Open Fortress too.
+
+Package verification supports its reviewed ELF32 architecture and streams
+large-file hashes in a bounded child process rather than blocking the agent.
+Only a complete reviewed engine/content tree can start. Configuration survives
+preparation; linked configuration, linked directory ancestors and changed
+private launcher files require review. This is private data separation, not
+completed per-customer Unix isolation or permission to install executable mods.
+
+Declared controls cover native maps, a 32-slot ceiling, live time limit,
+bot fill and the existing Source console/player moderation primitives. The
+native fixture reported zero humans/four slots, then two bots after fill was
+requested; restart retained private configuration. Human Join and human/bot
+replacement acceptance remain separate. Windows self-hosted delivery also
+needs its own acceptance before parity is claimed.
+
+The package is a baseline only. Coordinated SDK/mod download, staged update,
+rollback and daily release discovery are still required. Do not point this
+edition at TF2's updater or count it as covered by that updater. Existing
+operational profiles need their edition recipe corrected through the admin
+profile save; no catalog or profile records are rewritten by deployment.

@@ -33,6 +33,8 @@ describe("game host catalog", () => {
     for (const slug of ["witchbrook", "risk-of-rain-2", "starbound", "stardew-valley", "vintage-story", "aneurism-iv", "rimworld", "quake-ii-enhanced", "quake-ii"]) {
       expect(PARTY_DEDICATED_GAMES[slug]).toBeUndefined();
     }
+    expect(getPartyHostableGame("team-fortress-2", "open-fortress")?.slug).toBe("open-fortress");
+    expect(partyDedicatedPlayerLimit("open-fortress", 64)).toBe(32);
     expect(partyDedicatedPlayerLimit("core-keeper", 32)).toBe(8);
     expect(partyDedicatedPlayerLimit("barotrauma", 32)).toBe(16);
     expect(partyDedicatedPlayerLimit("factorio", 12)).toBe(12);

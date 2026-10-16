@@ -14,6 +14,7 @@ import {
   defaultSettingValues,
   getServerSettingProfile,
   strongestApplyMode,
+  serverSettingSlug,
   type ServerSettingValues,
 } from "./settings";
 
@@ -46,7 +47,8 @@ type ManagedRef = {
  * party rooms, so the platform never holds it.
  */
 export function createManagedVpsAdapter(ref: ManagedRef): ServerControlAdapter {
-  const profile = getServerSettingProfile(ref.gameSlug);
+  const settingsSlug = serverSettingSlug(ref.gameSlug, ref.editionSlug);
+  const profile = getServerSettingProfile(settingsSlug);
   const live = Boolean(profile?.controlChannel);
   const capabilities: ServerControlCapabilities = {
     settings: Boolean(profile),
@@ -115,12 +117,12 @@ export function createManagedVpsAdapter(ref: ManagedRef): ServerControlAdapter {
     capabilities,
     getStatus: state,
     async getSettings(): Promise<ServerSettingsView> {
-      return { gameSlug: ref.gameSlug, definitions: profile?.settings ?? [], values: { ...defaultSettingValues(ref.gameSlug), ...ref.settings } };
+      return { gameSlug: settingsSlug, definitions: profile?.settings ?? [], values: { ...defaultSettingValues(settingsSlug), ...ref.settings } };
     },
     async applySettings(input): Promise<ApplySettingsResult> {
       if (!profile) throw new ServerControlUnsupported("vps-agent", "change undeclared settings");
-      const { values, rejected } = coerceSettingValues(ref.gameSlug, input);
-      const current = { ...defaultSettingValues(ref.gameSlug), ...ref.settings };
+      const { values, rejected } = coerceSettingValues(settingsSlug, input);
+      const current = { ...defaultSettingValues(settingsSlug), ...ref.settings };
       const changed = Object.keys(values).filter((key) => current[key] !== values[key]);
       if (!changed.length) return { applied: {}, rejected, outcome: "unchanged", state: await state() };
 
@@ -139,7 +141,7 @@ export function createManagedVpsAdapter(ref: ManagedRef): ServerControlAdapter {
        * together (see vpsAgent.ts for why a half-applied batch is worse).
        */
       if (needsRestart) {
-        if (live && strongestApplyMode(ref.gameSlug, changed) !== "restart") {
+        if (live && strongestApplyMode(settingsSlug, changed) !== "restart") {
           throw new ServerControlUnsupported("vps-agent", "apply that change without a restart");
         }
         ref.settings = { ...current, ...values };
@@ -152,7 +154,7 @@ export function createManagedVpsAdapter(ref: ManagedRef): ServerControlAdapter {
       const id = await roomId("change settings without restarting");
       const applied: ServerSettingValues = {};
       const failures: { key: string; reason: string }[] = [];
-      for (const { key, command } of buildRconCommands(ref.gameSlug, Object.fromEntries(changed.map((k) => [k, values[k]])))) {
+      for (const { key, command } of buildRconCommands(settingsSlug, Object.fromEntries(changed.map((k) => [k, values[k]])))) {
         const sent = await sendRoomCommand(id, command);
         if (sent.ok) applied[key] = values[key];
         else failures.push({ key, reason: sent.error });
@@ -167,7 +169,7 @@ export function createManagedVpsAdapter(ref: ManagedRef): ServerControlAdapter {
       const id = await roomId("list connected players");
       const sent = await sendRoomCommand(id, "status");
       if (!sent.ok) throw new Error(sent.error);
-      return parseStatus(getServerSettingProfile(ref.gameSlug)?.controlChannel, sent.response).map((p) => ({ name: p.bot ? `${p.name} (bot)` : p.name, id: p.id, pingMs: p.pingMs, score: p.score }));
+      return parseStatus(getServerSettingProfile(settingsSlug)?.controlChannel, sent.response).map((p) => ({ name: p.bot ? `${p.name} (bot)` : p.name, id: p.id, pingMs: p.pingMs, score: p.score }));
     },
     start,
     stop,

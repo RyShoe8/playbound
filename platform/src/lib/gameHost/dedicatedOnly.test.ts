@@ -36,7 +36,7 @@ describe("paid-plan-only games", () => {
 
   it("show up in the tier's admin list", () => {
     const keys = hostableProfileStubs([], []).map((s) => s.key);
-    for (const slug of slugs.filter(s => s !== "rimworld-together")) expect(keys).toContain(`${slug}:base`);
+    for (const slug of slugs.filter(s => s !== "rimworld-together" && s !== "open-fortress")) expect(keys).toContain(`${slug}:base`);
     expect(hostableProfileStubs([], [{gameSlug:"rimworld",slug:"rimworld-together"}]).map(s=>s.key)).toContain("rimworld:rimworld-together");
     expect(keys).not.toContain("rimworld:base");
   });

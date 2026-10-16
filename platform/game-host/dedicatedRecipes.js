@@ -29,6 +29,7 @@ import { createRequire } from "node:module";
 import { ANIV_HELPER, anivDirectory } from "./anivControl.js";
 import { prepareBarotraumaRuntime } from "./barotraumaRuntime.js";
 import { prepareTrackmaniaPackage } from "./trackmaniaRuntime.js";
+import { openFortressHome, prepareOpenFortressRuntime } from "./openFortressRuntime.js";
 const rimworldDifficulty = createRequire(import.meta.url)("./rimworldDifficulty.json");
 
 /**
@@ -97,6 +98,42 @@ export function createDedicatedRecipes(deps) {
   const keepStdinOpen = () => "";
 
   return {
+    "open-fortress": {
+      portStart: 27150,
+      portEnd: 27169,
+      protocol: "udp",
+      rcon: "source",
+      binaries: gameBin("open-fortress", ["runtime/srcds_linux"]),
+      resolveBinary: (candidates, ctx) => {
+        const runtime = path.join(GAMES_ROOT, "open-fortress/runtime");
+        const privateBinary = ctx && (ctx.communityServerId || ctx.partyId)
+          ? path.join(openFortressHome(HOST_HOME, ctx), "runtime/srcds_linux") : null;
+        return ["open_fortress/bin/server.so", "bin/steamclient.so", "open_fortress/maps/dm_2fort.bsp", "defaults/cfg/server.cfg"]
+          .every(name => fs.existsSync(path.join(runtime, name))) &&
+          fs.existsSync(path.join(GAMES_ROOT, "team-fortress-2/tf/tf2_misc_dir.vpk"))
+          ? firstExisting([...(privateBinary ? [privateBinary] : []), ...candidates]) : null;
+      },
+      cwd: (_port, ctx) => path.join(openFortressHome(HOST_HOME, ctx), "runtime"),
+      startupReadyTimeoutMs: 90_000,
+      prepareSpawn: async (_port, ctx) => prepareOpenFortressRuntime(path.join(GAMES_ROOT, "open-fortress"), HOST_HOME, ctx),
+      spawnEnv: (_port, ctx) => ({
+        HOME: openFortressHome(HOST_HOME, ctx),
+        LD_LIBRARY_PATH: path.join(openFortressHome(HOST_HOME, ctx), "runtime/bin"),
+      }),
+      args: (port, ctx) => [
+        // The legacy Source launcher limits the complete command line to 512
+        // bytes. The private launcher and cwd make a relative mod path safe.
+        "-game", "open_fortress",
+        "-norestart", "-strictportbind", "-nohltv", "-ip", "0.0.0.0", "-port", String(port),
+        "+clientport", String(port + 1000),
+        "+exec", "playbound-managed.cfg",
+        "+map", settingToken("open-fortress", ctx, "map", "dm_2fort"),
+        "+maxplayers", String(Math.min(32, managedPlayerLimit(ctx))),
+        "+mp_timelimit", String(settingNumber("open-fortress", ctx, "mp_timelimit", 0, 0, 600)),
+        ...(typeof ctx.settings?.botFill === "number" && Number.isFinite(ctx.settings.botFill)
+          ? ["+tf_bot_join_after_player", "0", "+tf_bot_quota_mode", "fill", "+tf_bot_quota", String(Math.min(Math.min(32, managedPlayerLimit(ctx)) - 1, settingNumber("open-fortress", ctx, "botFill", 0, 0, 31)))] : []),
+      ],
+    },
     "aneurism-iv": {
       // These are namespace slots, never client-connect ports.
       portStart: 27700, portEnd: 27715, protocol: "udp",

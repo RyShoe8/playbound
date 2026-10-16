@@ -6,7 +6,7 @@ import sys
 
 targets = {
     "counter-strike-2": ["counter-strike-2", "cs2"],
-    "team-fortress-2": ["team-fortress-2"],
+    "team-fortress-2": ["team-fortress-2", "open-fortress"],
     "unturned": ["unturned"],
     "counter-strike-source": ["counter-strike-source"],
     "core-keeper": ["core-keeper"],

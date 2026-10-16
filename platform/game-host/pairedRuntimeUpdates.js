@@ -8,6 +8,14 @@ import { httpsGetStream } from "./downloadStream.js";
 export const PAIRED_RUNTIMES = Object.freeze(JSON.parse(fs.readFileSync(new URL("./pairedRuntimeProfiles.json", import.meta.url), "utf8")));
 const cache = new Map();
 const sha = (bytes) => createHash("sha256").update(bytes).digest("hex");
+function fileSha(filename) {
+  const hash = createHash("sha256"), buffer = Buffer.alloc(512 * 1024), fd = fs.openSync(filename, "r");
+  try {
+    let length;
+    while ((length = fs.readSync(fd, buffer, 0, buffer.length, null))) hash.update(buffer.subarray(0, length));
+    return hash.digest("hex");
+  } finally { fs.closeSync(fd); }
+}
 const safeRelative = (name) => name && !name.startsWith("/") && !name.includes("\\") && name.split("/").every(part => part && part !== "." && part !== "..");
 
 /** Fingerprint every owned file; never include mutable worlds in the swap. */
@@ -37,7 +45,7 @@ export function verifyPairedTree(root, key, { profile = PAIRED_RUNTIMES[key] } =
   let tree = cache.get(root);
   if (!tree || tree.fingerprint !== fingerprint) {
     const hash = createHash("sha256"); let totalBytes = 0;
-    for (const row of rows) { hash.update(row.relative + "\0" + sha(fs.readFileSync(row.filename)) + "\n"); totalBytes += row.info.size; }
+    for (const row of rows) { hash.update(row.relative + "\0" + fileSha(row.filename) + "\n"); totalBytes += row.info.size; }
     tree = { fingerprint, treeSha256: hash.digest("hex"), fileCount: rows.length, totalBytes };
     if (cache.size >= 16) cache.clear(); cache.set(root, tree);
   }
@@ -49,7 +57,8 @@ export function verifyPairedTree(root, key, { profile = PAIRED_RUNTIMES[key] } =
     const filename = path.join(root, binary);fs.accessSync(filename, fs.constants.X_OK);
     const fd = fs.openSync(filename, "r"), header = Buffer.alloc(20);
     try {
-      if (fs.readSync(fd, header, 0, 20, 0) !== 20 || header.readUInt32BE(0) !== 0x7f454c46 || header[4] !== 2 || header[5] !== 1 || header.readUInt16LE(18) !== 62) throw new Error("Paired runtime needs a reviewed amd64 ELF engine");
+      const elfClass = profile.elfClass ?? 2;
+      if (![1, 2].includes(elfClass) || fs.readSync(fd, header, 0, 20, 0) !== 20 || header.readUInt32BE(0) !== 0x7f454c46 || header[4] !== elfClass || header[5] !== 1 || header.readUInt16LE(18) !== (elfClass === 1 ? 3 : 62)) throw new Error("Paired runtime needs a reviewed ELF engine architecture");
     } finally { fs.closeSync(fd); }
   }
   return { buildId: release.buildId };

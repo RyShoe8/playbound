@@ -18,7 +18,7 @@ import { normalizeStatus } from "@/lib/catalogStatus";
 
 /** Every game the admin can put on a tier: hostable everywhere, plus the paid-plan-only games. */
 function tierSlugs(): string[] {
-  return [...HOSTABLE_SLUGS.filter((slug) => !HOSTABLE_SLUG_ALIASES[slug]), ...Object.keys(DEDICATED_ONLY_GAMES).filter(slug => slug !== "rimworld-together"), "rimworld"];
+  return [...HOSTABLE_SLUGS.filter((slug) => !HOSTABLE_SLUG_ALIASES[slug]), ...Object.keys(DEDICATED_ONLY_GAMES).filter(slug => slug !== "rimworld-together" && slug !== "open-fortress"), "rimworld"];
 }
 
 export type EditionRef = { gameSlug: string; slug: string; name?: string; features?: string[]; isDefault?: boolean };

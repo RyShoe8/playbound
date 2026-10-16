@@ -1154,3 +1154,66 @@ TypeScript and lint passed. No catalog/profile or production database changes
 were made by this batch. Remaining update handlers are HX, GoldenEye, Open
 Fortress and RA2; Vintage Story stays owner-deferred. General isolation/plugin,
 human Join and packaged-launcher gates still apply.
+
+
+## Open Fortress production recipe and private runtime (2026-10-15)
+
+The native Open Fortress recipe is now deployed, separate from ordinary TF2.
+The canonical catalog identity stays `team-fortress-2:open-fortress`; party
+selection and new/saved operational profiles resolve that edition to the
+`open-fortress` recipe. No parallel catalog game, catalog sync or production
+profile/database write was made. Existing profiles with the old recipe require
+a scoped admin save before using the new recipe.
+
+The reviewed ELF32 SDK/content baseline is
+`alpha-2024-09-06-sdk-6982827-pb2`: 27,076 files, 8,089,733,594 bytes, tree SHA-256
+`0c537ccfe7af1110c83be2e8bbc0fbeedd8c73ab390acd0f10d7cca7f434b33d`.
+A staging-generated SDK console log was excluded from the clean package;
+publisher assets and native binaries were retained. Its complete fingerprint
+is checked in a bounded child process before preparation so large VPK hashing
+does not block the control agent. Hashing also streams files rather than
+allocating an entire VPK in memory.
+
+Each stable identity owns a private launcher, SDK/mod module bindings,
+configuration, logs, downloads and generated map graphs. This resolved legacy
+Source's 512-byte command-line limit, module identity failures from independent
+alias copies, executable-relative writes, and node graphs being generated in
+shared maps. Shared installed assets stay outside the server's mutable paths.
+TF2 updates hold while Open Fortress runs because it mounts TF2 resources.
+Its own updater is deliberately not aliased to TF2.
+
+The final VPS fixture passed full package verification, real A2S occupancy,
+a four-player cap, live time-limit writes/reads, zero-human/two-bot reporting,
+stop/restart, and retention of private configuration. A second full verification
+between runs passed, including the generated-graph separation. No fixture
+process remains. Declared Source controls and actual Open Fortress map options
+now feed the existing party, server-manager and overlay surfaces. Native bot
+fill is wired to the fleet setting with a 32-slot ceiling and one slot reserved
+in its requested target. Human Join, observed human/bot replacement and Windows
+self-hosted control acceptance are not implied by this native fixture.
+
+The first narrow SHA-pinned agent deployment preserved all eleven live managed
+PID/boot identities, and the authenticated health check reports the recipe
+installed/ready. The service and 15-minute timer remain active. UDP gameplay
+ports 27150–27169 are allowed; RCON was not publicly opened. Automatic hosting
+eligibility was not changed. Validation: 351 agent cases (305 passed, 46
+platform skips, no failures), Linux private-runtime cases, 134 affected platform/
+control tests (including isolated Mongo permission tests), TypeScript and affected-file lint. No production database writes.
+
+Still required: Open Fortress's coordinated SDK/mod staged update, rollback and
+daily discovery handler; HX, GoldenEye and RA2 update handlers; remaining Unix
+isolation/plugin gates; real-client and packaged-launcher acceptance. Inventory
+coverage remains 46 installation families and 31 daily discovery sources.
+Vintage Story remains deferred at the owner's request.
+
+
+The control adapters now select settings using the game and edition together;
+they retain the catalog identity in runtime status. Pre-launch party settings,
+party maps, managed settings and customer map/moderation permissions all select
+the Open Fortress schema instead of TF2 maps/defaults. Regression cases cover
+both party and managed adapters. Generated private management configuration
+also carries hostname/RCON credentials, keeping Unicode names within the legacy
+command-line limit and credentials out of process arguments.
+
+The final credential/configuration follow-up preserved all twelve then-running
+managed identities. Its post-restart authenticated health check passed.

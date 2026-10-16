@@ -76,7 +76,7 @@ export const INSTALLATION_TARGETS = Object.freeze({
 export function installationKey(slug) {
   if (slug === "0-ad") return "0ad";
   if (slug === "cs2") return "counter-strike-2";
-  if (slug === "tf2" || slug === "open-fortress") return "team-fortress-2";
+  if (slug === "tf2") return "team-fortress-2";
   if (slug === "opene2140") return "earth-2140-trilogy";
   if (slug === "medal-of-honor-allied-assault") return "openmohaa";
   return Object.hasOwn(INSTALLATION_TARGETS, slug) ? slug : null;
@@ -86,6 +86,8 @@ export function installationKey(slug) {
 // Hold these installations conservatively, including while a start is pending.
 export function installationDependencies(slug) {
   if (slug === "openra") return ["openra", "openhv", "earth-2140-trilogy", "combined-arms"];
+  // Open Fortress mounts TF2 assets even though its SDK/mod updater is separate.
+  if (slug === "open-fortress") return ["team-fortress-2"];
   const key = installationKey(slug);
   return key ? [key] : [];
 }

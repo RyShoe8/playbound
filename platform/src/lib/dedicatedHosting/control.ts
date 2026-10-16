@@ -22,12 +22,12 @@ import { customerRuntimeAllocation } from "./runtimeAllocation";
 
 
 /** Keys PlayBound owns on a customer server: the game's slot setting. */
-function lockedKeys(server: { gameSlug: string }): Set<string> {
-  const profile = getServerSettingProfile(server.gameSlug);
+function lockedKeys(server: { gameSlug: string; editionSlug?: string | null }): Set<string> {
+  const profile = getServerSettingProfile(server.gameSlug, server.editionSlug);
   return new Set((profile?.settings ?? []).filter((s) => s.feature === "slots").map((s) => s.key));
 }
 
-function stripLocked(server: { gameSlug: string }, values: Record<string, unknown>): Record<string, unknown> {
+function stripLocked(server: { gameSlug: string; editionSlug?: string | null }, values: Record<string, unknown>): Record<string, unknown> {
   const locked = lockedKeys(server);
   return Object.fromEntries(Object.entries(values).filter(([k]) => !locked.has(k) && k !== "maxPlayers"));
 }
@@ -71,8 +71,8 @@ export async function getControl(userId: string, serverId: string) {
     capabilities: adapter.capabilities,
     files: adapter.files && ROLE_PERMISSIONS[role].includes("server:read_files"),
     /** A Maps tab: the game declares its maps and can change them over its live channel. */
-    maps: Boolean(getServerSettingProfile(server.gameSlug)?.maps && adapter.capabilities.liveApply) ||
-      Boolean(getServerSettingProfile(server.gameSlug)?.settings.some((d) => d.feature === "map")),
+    maps: Boolean(getServerSettingProfile(server.gameSlug, server.editionSlug)?.maps && adapter.capabilities.liveApply) ||
+      Boolean(getServerSettingProfile(server.gameSlug, server.editionSlug)?.settings.some((d) => d.feature === "map")),
     status,
     definitions: view.definitions.filter((d) => !locked.has(d.key)),
     values,
@@ -86,7 +86,7 @@ export async function applyControlSettings(userId: string, serverId: string, inp
   const clean = stripLocked(view.server, input || {});
   const keys = Object.keys(clean);
   if (!keys.length) return { error: "Nothing to change.", status: 400 } satisfies Fail;
-  const profile = getServerSettingProfile(view.server.gameSlug);
+  const profile = getServerSettingProfile(view.server.gameSlug, view.server.editionSlug);
   const mapOnly = keys.every((k) => profile?.settings.find((s) => s.key === k)?.feature === "map");
   const auth = await authorizeServer(userId, serverId, mapOnly ? "server:change_map" : "server:configure");
   if ("error" in auth) return auth;
@@ -128,7 +128,7 @@ export async function kickPlayer(userId: string, serverId: string, playerId: str
   const adapter = await adapterFor(auth.server);
   if (!adapter.capabilities.players) return { error: "This game doesn't support kicking from PlayBound.", status: 400 } satisfies Fail;
   try {
-    await adapter.sendCommand(kickCommand(getServerSettingProfile(auth.server.gameSlug)?.controlChannel, String(playerId)));
+    await adapter.sendCommand(kickCommand(getServerSettingProfile(auth.server.gameSlug, auth.server.editionSlug)?.controlChannel, String(playerId)));
     await recordActivity(serverId, { id: userId }, "player_kicked", playerName || `client ${playerId}`);
     return { ok: true as const, status: 200 as const };
   } catch (err) {
@@ -139,7 +139,7 @@ export async function kickPlayer(userId: string, serverId: string, playerId: str
 export async function runConsole(userId: string, serverId: string, command: string) {
   const auth = await authorizeServer(userId, serverId, "server:console");
   if ("error" in auth) return auth;
-  const problem = consoleCommandProblem(command, getServerSettingProfile(auth.server.gameSlug)?.controlChannel);
+  const problem = consoleCommandProblem(command, getServerSettingProfile(auth.server.gameSlug, auth.server.editionSlug)?.controlChannel);
   if (problem) return { error: problem, status: 400 } satisfies Fail;
   const adapter = await adapterFor(auth.server);
   if (!adapter.capabilities.console) return { error: "This game has no console PlayBound can reach.", status: 400 } satisfies Fail;

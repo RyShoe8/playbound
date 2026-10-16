@@ -21,6 +21,21 @@ test("enrollment is idempotent, copies the engine and assets together, and leave
   assert.equal(enrollPairedRuntime(f.root,"veloren",{profile:f.profile}).buildId,"old");assert.ok(!fs.existsSync(path.join(f.root,"runtime/userdata")));
   assert.equal(fs.readFileSync(path.join(f.root,"userdata/world"),"utf8"),"saved world");
 });
+
+test("32-bit SDK profiles require their reviewed architecture", t => {
+  const f = fixture(t), filename = path.join(f.root, "veloren-server-cli");
+  const bytes = fs.readFileSync(filename); bytes[4] = 1; bytes.writeUInt16LE(3, 18);
+  fs.writeFileSync(filename, bytes);
+  const hash = createHash("sha256");
+  for (const [name, data] of [["assets/data", Buffer.from("matching assets")], ["veloren-server-cli", bytes]]) hash.update(name + "\0" + sha(data) + "\n");
+  // This fixture deliberately excludes mutable userdata from the package.
+  const root = path.join(f.root, "package"); fs.mkdirSync(root);
+  fs.renameSync(path.join(f.root, "assets"), path.join(root, "assets")); fs.renameSync(filename, path.join(root, "veloren-server-cli"));
+  const profile = { ...f.profile, elfClass: 1, versions: [{ ...f.profile.versions[0], treeSha256: hash.digest("hex") }] };
+  assert.equal(verifyPairedTree(root, "open-fortress", { profile }).buildId, "old");
+  assert.throws(() => verifyPairedTree(root, "open-fortress", { profile: { ...profile, elfClass: 2 } }), /architecture/);
+  assert.throws(() => verifyPairedTree(root, "open-fortress", { profile: { ...profile, elfClass: 0 } }), /architecture/);
+});
 test("mixed or modified engine/assets and unreviewed extra files fail closed",t=>{
   const f=fixture(t);enrollPairedRuntime(f.root,"veloren",{profile:f.profile});
   fs.writeFileSync(path.join(f.root,"runtime/assets/data"),"different data!");assert.throws(()=>verifyPairedTree(path.join(f.root,"runtime"),"veloren",{profile:f.profile}),/do not match/);

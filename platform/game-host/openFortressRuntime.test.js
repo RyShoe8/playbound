@@ -1,0 +1,55 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { openFortressHome, prepareOpenFortress } from "./openFortressRuntime.js";
+import { recipes } from "./recipes.js";
+import { installationDependencies, installationKey } from "./installationTargets.js";
+
+test("Open Fortress never aliases the ordinary TF2 updater or engine", () => {
+  assert.equal(installationKey("open-fortress"), null);
+  assert.deepEqual(installationDependencies("open-fortress"), ["team-fortress-2"]);
+  assert.equal(recipes["team-fortress-2"].resolveBinary([], { editionSlug: "open-fortress" }), null);
+  const ctx = { communityServerId: "community-123", settings: { map: "dm_backfort", maxPlayers: 64 }, name: "Fixture" };
+  const args = recipes["open-fortress"].args(27150, ctx);
+  assert.equal(args[args.indexOf("+map") + 1], "dm_backfort");
+  assert.equal(args[args.indexOf("+maxplayers") + 1], "32");
+  assert.equal(args[args.indexOf("-game") + 1], "open_fortress");
+  assert.match(recipes["open-fortress"].cwd(27150, ctx), /pb-community-123[/\\]runtime$/);
+  const long = { ...ctx, communityServerId: "a".repeat(64), name: "界".repeat(48), rconPassword: "private-test", settings: { maxPlayers: 32, botFill: 16 } };
+  const longArgs = recipes["open-fortress"].args(27150, long);
+  assert.ok(Buffer.byteLength([recipes["open-fortress"].cwd(27150, long) + "/srcds_linux", ...longArgs].join(" ")) < 512);
+  assert.equal(longArgs.includes("private-test"), false);
+  assert.throws(() => openFortressHome("/tmp", { partyId: "../bad" }), /identity/);
+  assert.notEqual(openFortressHome("/tmp", { partyId: "party-123" }), openFortressHome("/tmp", { communityServerId: "community-123", partyId: "party-123" }));
+});
+
+test("private native configuration survives preparation and refuses linked writes", { skip: process.platform === "win32" }, t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "pb-of-test-"));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const shared = path.join(root, "games", "open-fortress"), runtime = path.join(shared, "runtime"), home = path.join(root, "homes");
+  for (const name of ["bin", "hl2", "platform", "open_fortress/bin", "open_fortress/maps", "defaults/cfg"]) fs.mkdirSync(path.join(runtime, name), { recursive: true });
+  for (const name of ["srcds_linux", "bin/steamclient.so", "bin/engine.so", "bin/engine_srv.so", "open_fortress/bin/server.so", "open_fortress/bin/server_srv.so", "open_fortress/maps/dm_2fort.bsp", "defaults/cfg/server.cfg"]) fs.writeFileSync(path.join(runtime, name), "fixture");
+  fs.writeFileSync(path.join(runtime, "open_fortress/gameinfo.txt"), 'game "|all_source_engine_paths|..\\Team Fortress 2\\tf"');
+  const options = { verify: () => ({ buildId: "fixture" }) }, ctx = { communityServerId: "one" };
+  const first = prepareOpenFortress(shared, home, ctx, options);
+  const config = path.join(first.mod, "cfg/server.cfg");
+  assert.equal(fs.realpathSync(path.join(first.mod, "bin/server_srv.so")), path.join(runtime, "open_fortress/bin/server.so"));
+  assert.equal(fs.realpathSync(path.join(first.runtime, "bin/engine.so")), fs.realpathSync(path.join(first.runtime, "bin/engine_srv.so")));
+  assert.equal(fs.lstatSync(path.join(first.runtime, "srcds_linux")).isSymbolicLink(), false);
+  fs.writeFileSync(path.join(first.mod, "maps/graphs/generated.ain"), "private graph");
+  assert.equal(fs.existsSync(path.join(runtime, "open_fortress/maps/graphs/generated.ain")), false);
+  fs.writeFileSync(config, "mp_timelimit 15");
+  prepareOpenFortress(shared, home, ctx, options);
+  assert.equal(fs.readFileSync(config, "utf8"), "mp_timelimit 15");
+  const second = prepareOpenFortress(shared, home, { communityServerId: "two" }, options);
+  assert.equal(fs.readFileSync(path.join(second.mod, "cfg/server.cfg"), "utf8"), "fixture");
+  assert.match(fs.readFileSync(path.join(first.mod, "gameinfo.txt"), "utf8"), /games\/team-fortress-2\/tf/);
+  fs.unlinkSync(config); fs.symlinkSync(path.join(runtime, "defaults/cfg/server.cfg"), config);
+  assert.throws(() => prepareOpenFortress(shared, home, ctx, options), /configuration/);
+  const outside = path.join(root, "outside"); fs.mkdirSync(outside);
+  fs.symlinkSync(outside, path.join(home, "open-fortress-servers/pb-escape"), "dir");
+  assert.throws(() => prepareOpenFortress(shared, home, { communityServerId: "escape" }, options), /ancestor/);
+  assert.deepEqual(fs.readdirSync(outside), []);
+});
