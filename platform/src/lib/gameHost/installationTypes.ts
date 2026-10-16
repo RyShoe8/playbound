@@ -22,7 +22,7 @@ export type InstallationUpdateSnapshot = {
   };
   /** Agent recipe inventory, including dedicated-only games and aliases. */
   gameSlugs?: string[];
-  targets: { key: string; name: string; installed: boolean; buildId?: string; rollbackAvailable: boolean; blockedReason?: string }[];
+  targets: { updateLimitation?: string; key: string; name: string; installed: boolean; buildId?: string; rollbackAvailable: boolean; blockedReason?: string }[];
   jobs: InstallationUpdateJob[];
 };
 

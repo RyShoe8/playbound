@@ -1,0 +1,17 @@
+{
+  "battlefield-1942-anthology": "Manual: retained 1.61 static engine. Review the legacy distribution and matching retail data before replacing it; no maintained version feed is configured.",
+  "assaultcube": "Manual: reviewed engine and matching game data are pinned. A release needs a new checksum/dependency and client-protocol review before Queue update can install it.",
+  "terraria": "Manual: the official Linux server archive is pinned to the reviewed release. Review a newer archive checksum and world/client compatibility before updating.",
+  "bzflag": "Manual: reviewed Ubuntu binary is pinned to its package/dependency baseline. The agent does not run apt upgrade; review a new package baseline before updating.",
+  "hedgewars": "Manual: reviewed Ubuntu server binary is pinned. Review package dependencies and matching client protocol before updating.",
+  "openttd": "Manual: reviewed Ubuntu server binary is pinned. Review dependencies, client protocol and saved-game compatibility before updating.",
+  "luanti": "Manual: reviewed Minetest/Luanti package and game data are pinned. Review dependency, game/mod and world compatibility before updating.",
+  "battle-for-wesnoth": "Manual: reviewed server engine and runtime libraries are pinned together. Review the matching client branch and dependency baseline before updating.",
+  "rimworld-together": "Manual: PlayBound-patched source build is pinned. Review upstream changes, reapply the integration and verify the compiled package before updating.",
+  "supertuxkart": "Manual: reviewed dedicated binary and installed assets are pinned together. Review engine/assets and client compatibility before updating.",
+  "openarena": "Manual: reviewed engine and installed game data are pinned together. Review new binaries, dependencies and matching protocol before updating.",
+  "xonotic": "Manual: reviewed dedicated engine and game assets are pinned together. Review the complete publisher package before updating.",
+  "0ad": "Manual: reviewed engine, scripts, assets and runtime dependencies are pinned together. Review the complete compatible package before updating.",
+  "teeworlds": "Manual: reviewed Ubuntu server binary is pinned. Review dependencies and client protocol before updating; UID-isolated engines also require the root-owned reviewed manifest to match.",
+  "flightgear": "Manual: reviewed multiplayer relay binary is pinned to its dependency baseline. Review and verify a new relay package before updating."
+}

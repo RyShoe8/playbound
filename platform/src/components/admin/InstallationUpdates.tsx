@@ -66,6 +66,7 @@ export default function InstallationUpdates() {
       const dailyJob = daily?.status === "queued" ? data.jobs.find((job) => job.id === daily.jobId) : undefined;
       return <div key={target.key} className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-lg bg-muted/40 p-3">
         <div className="min-w-0"><p className="font-medium">{target.name}</p><p className="text-xs text-muted-foreground">{target.installed ? `Installed build ${target.buildId}` : "Installation missing or incomplete"}{active ? ` · ${active.status}` : ""}</p>{target.blockedReason && <p className="max-w-xl text-xs text-muted-foreground">{target.blockedReason}</p>}
+          {target.updateLimitation && <p className="max-w-xl text-xs text-muted-foreground">{target.updateLimitation}</p>}
           {daily && <p className="max-w-xl text-xs text-muted-foreground">Daily check: {dailyJob ? `update ${dailyJob.status}` : daily.status.replaceAll("_", " ")}{daily.availableBuild ? ` · latest ${daily.availableBuild}` : ""}. {dailyJob?.message || daily.message}</p>}
         </div>
         <div className="flex flex-wrap gap-2 text-sm">

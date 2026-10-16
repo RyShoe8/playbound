@@ -46,8 +46,9 @@ export function readyPublishedHostableCatalog(
   const allowed = new Set(eligibleGames.map((game) => game.slug));
   const storedKeys = new Set(stored.map((profile) => profile.key));
   const eligibleEditions = editions.filter((edition) => allowed.has(edition.gameSlug) &&
+    (edition.gameSlug !== "deus-ex-goty-edition" || Boolean(getPartyHostableGame(edition.gameSlug, edition.slug))) &&
     !edition.isDefault && edition.slug !== "official" && edition.slug !== "base" &&
-    (edition.features?.includes("Dedicated Servers") || storedKeys.has(`${edition.gameSlug}:${edition.slug}`) || (edition.gameSlug === "rimworld" && edition.slug === "rimworld-together")));
+    (edition.features?.includes("Dedicated Servers") || storedKeys.has(`${edition.gameSlug}:${edition.slug}`) || (edition.gameSlug === "rimworld" && edition.slug === "rimworld-together") || (edition.gameSlug === "deus-ex-goty-edition" && edition.slug === "playbound-hx-coop")));
   return { games: eligibleGames, editions: eligibleEditions };
 }
 export type ProfileStub = {
@@ -69,8 +70,8 @@ export function hostableProfileStubs(stored: StoredProfileRef[], editions: Editi
     stubs.push({ key, gameSlug, editionSlug, recipeSlug: getPartyHostableGame(gameSlug, editionSlug)?.slug || gameSlug });
   };
   for (const slug of slugs) {
-    if (slug !== "rimworld") add(slug, null);
-    for (const edition of editions) if (edition.gameSlug === slug) add(slug, edition.slug);
+    if (!["rimworld", "deus-ex-goty-edition"].includes(slug)) add(slug, null);
+    for (const edition of editions) if (edition.gameSlug === slug && (slug !== "deus-ex-goty-edition" || getPartyHostableGame(slug, edition.slug))) add(slug, edition.slug);
   }
   return stubs;
 }
