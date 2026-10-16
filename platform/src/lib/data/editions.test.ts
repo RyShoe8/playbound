@@ -33,20 +33,22 @@ describe("Privateer Gemini Gold install", () => {
 describe("Daggerfall editions", () => {
   const daggerfall = editions.filter((e) => e.gameSlug === "daggerfall");
 
-  it("keeps the Unity package on the Unity edition only", () => {
+  it("installs Daggerfall Unity from upstream releases for every platform", () => {
     const unity = daggerfall.find((e) => e.slug === "daggerfall-unity")!;
     const classic = daggerfall.find((e) => e.slug === "classic-dos")!;
-    const playbound = daggerfall.find((e) => e.slug === "playbound-remastered")!;
-    expect(unity.installConfig?.playbound_installer?.fileName).toBe(
-      "Daggerfall-Unity-PlayBound-v1.1.1.zip"
-    );
+    const recipe = unity.installConfig!.playbound_installer!;
+    expect(recipe.repo).toBe("Interkarma/daggerfall-unity");
+    expect(recipe.assetPattern).toContain("windows_64bit");
+    expect(recipe.assetPatternMac).toContain("mac_universal");
+    expect(recipe.assetPatternLinux).toContain("linux_64bit");
+    // Bethesda's data is never hosted by PlayBound.
+    expect(JSON.stringify(unity.installConfig)).not.toContain("mirror.playbound.club");
     expect(classic.installConfig?.playbound_installer?.fileName).toBe("DFInstall.zip");
-    expect(playbound.isDefault).toBe(false);
-    expect(playbound.installConfig?.playbound_installer?.url).toBe(
-      unity.installConfig?.playbound_installer?.url
-    );
   });
 
+  it("has no PlayBound-branded duplicate of Daggerfall Unity", () => {
+    expect(daggerfall.find((e) => e.slug === "playbound-remastered")).toBeUndefined();
+  });
   it("launches Classic through DOSBox with its generated full-install config", () => {
     const recipe = daggerfall.find((e) => e.slug === "classic-dos")!.installConfig!
       .playbound_installer!;

@@ -162,8 +162,8 @@ function toEdition(doc: LeanEdition): Edition {
             !installConfig.playbound_installer?.unwrapSingleRoot)) ||
         (gameSlugStr === "tes-arena" &&
           (editionSlugStr === "official" || editionSlugStr === "opentesarena")) ||
-        (gameSlugStr === "daggerfall" &&
-          (editionSlugStr === "classic-dos" || editionSlugStr === "daggerfall-unity")) ||
+        // Daggerfall Unity is curated in the database now; only Classic stays pinned to the seed.
+        (gameSlugStr === "daggerfall" && editionSlugStr === "classic-dos") ||
         (gameSlugStr === "privateer-gemini-gold" && editionSlugStr === "gemini-gold-1-03") ||
         (gameSlugStr === "holocure" &&
           (editionSlugStr === "playbound" || editionSlugStr === "official")) ||

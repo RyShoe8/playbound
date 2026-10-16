@@ -17,7 +17,13 @@
  */
 
 const crypto = require("crypto");
+const fs = require("fs");
 const Platform = require("./platform");
+
+/** Offline events kept for retry. The site rejects client times older than 48 h. */
+const QUEUE_MAX = 200;
+const QUEUE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const FLUSH_BATCH = 25;
 
 /** Matches the site's ingest guard, which rejects ids shorter than this. */
 const MIN_ID_LENGTH = 8;
@@ -54,7 +60,87 @@ function createTelemetry({
   saveSettings,
   getAppVersion,
   getAuthHeaders = (extra = {}) => extra,
+  queueFile = null,
 }) {
+  let flushing = false;
+
+  function readQueue() {
+    if (!queueFile) return [];
+    try {
+      const parsed = JSON.parse(fs.readFileSync(queueFile, "utf8"));
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function writeQueue(items) {
+    if (!queueFile) return;
+    try {
+      if (!items.length) fs.rmSync(queueFile, { force: true });
+      else fs.writeFileSync(queueFile, JSON.stringify(items.slice(-QUEUE_MAX)));
+    } catch {
+      // Best effort: a queue that cannot be written is just a dropped event.
+    }
+  }
+
+  /** Keep an event that could not be delivered so the next launch can retry it. */
+  function enqueue(body) {
+    if (!queueFile || body.event === "launcher_install") return;
+    const cutoff = Date.now() - QUEUE_MAX_AGE_MS;
+    const live = readQueue().filter((b) => Date.parse(b.timestamp) > cutoff);
+    live.push(body);
+    writeQueue(live);
+  }
+
+  /**
+   * Whether a failed response is worth retrying. Network errors, timeouts,
+   * rate limiting and server errors are; a 4xx is the event itself being
+   * wrong, and resending it would only fail again.
+   */
+  function isRetryable(status) {
+    return status == null || status === 429 || status >= 500;
+  }
+
+  async function send(body) {
+    try {
+      const res = await fetch(`${getApiBase()}/api/telemetry`, {
+        method: "POST",
+        headers: getAuthHeaders({
+          "Content-Type": "application/json",
+          accept: "application/json",
+          "user-agent": `playbound-launcher/${getAppVersion()} (${Platform.getOS()}; ${Platform.getArchitecture()})`,
+        }),
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(10_000),
+      });
+      return { ok: res.ok, status: res.status };
+    } catch {
+      return { ok: false, status: null };
+    }
+  }
+
+  /** Resend queued events, oldest first, stopping at the first failure. */
+  async function flushQueue() {
+    if (flushing || !queueFile) return { sent: 0 };
+    flushing = true;
+    try {
+      const cutoff = Date.now() - QUEUE_MAX_AGE_MS;
+      let queue = readQueue().filter((b) => Date.parse(b.timestamp) > cutoff);
+      let sent = 0;
+      while (queue.length && sent < FLUSH_BATCH) {
+        const result = await send(queue[0]);
+        if (!result.ok && isRetryable(result.status)) break;
+        queue = queue.slice(1); // delivered, or permanently rejected
+        sent += 1;
+      }
+      writeQueue(queue);
+      return { sent, remaining: queue.length };
+    } finally {
+      flushing = false;
+    }
+  }
+
   let launcherInstallInFlight = null;
   /**
    * A stable per-install id, persisted alongside the launcher's own settings.
@@ -80,30 +166,28 @@ function createTelemetry({
       const anonymousId = getAnonymousId();
       if (!event || anonymousId.length < MIN_ID_LENGTH) return { ok: false };
 
-      const res = await fetch(`${getApiBase()}/api/telemetry`, {
-        method: "POST",
-        headers: getAuthHeaders({
-          "Content-Type": "application/json",
-          accept: "application/json",
-          "user-agent": `playbound-launcher/${getAppVersion()} (${Platform.getOS()}; ${Platform.getArchitecture()})`,
-        }),
-        body: JSON.stringify({
-          event: String(event),
-          properties: {
-            ...properties,
-            source: "launcher",
-            launcherVersion: getAppVersion(),
-            platform: Platform.getOS(),
-            osVersion: Platform.getOSVersion(),
-            architecture: Platform.getArchitecture(),
-          },
-          timestamp: new Date().toISOString(),
-          sessionId: RUN_SESSION_ID,
-          anonymousId,
-        }),
-        signal: AbortSignal.timeout(10_000),
-      });
-      return { ok: res.ok };
+      const body = {
+        event: String(event),
+        properties: {
+          ...properties,
+          source: "launcher",
+          launcherVersion: getAppVersion(),
+          platform: Platform.getOS(),
+          osVersion: Platform.getOSVersion(),
+          architecture: Platform.getArchitecture(),
+        },
+        timestamp: new Date().toISOString(),
+        sessionId: RUN_SESSION_ID,
+        anonymousId,
+      };
+      const result = await send(body);
+      if (result.ok) {
+        // Connectivity is back: drain anything that was waiting.
+        if (queueFile) void flushQueue();
+      } else if (isRetryable(result.status)) {
+        enqueue(body);
+      }
+      return { ok: result.ok };
     } catch {
       // Swallowed on purpose — see the module header.
       return { ok: false };
@@ -177,6 +261,7 @@ function createTelemetry({
 
   return {
     track,
+    flushQueue,
     launcherInstalled,
 
     editionInstalled(info) {
