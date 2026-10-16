@@ -15,7 +15,7 @@ const EDITIONS: InstallationCoverageRow[] = [
   { id: "team-fortress-2:open-fortress", name: "Team Fortress 2 · Open Fortress", category: "edition", reason: "Requires its own Source SDK 2013 previous2021 engine and Open Fortress mod update/rollback handler. The current 64-bit TF2 handler does not update this edition." },
 ];
 
-const normalize = (slug: string) => Object.hasOwn(HOSTABLE_SLUG_ALIASES, slug) ? HOSTABLE_SLUG_ALIASES[slug] : slug === "open-fortress" ? "team-fortress-2" : slug;
+const normalize = (slug: string) => Object.hasOwn(HOSTABLE_SLUG_ALIASES, slug) ? HOSTABLE_SLUG_ALIASES[slug] : slug === "deus-ex" ? "deus-ex-goty-edition" : slug === "open-fortress" ? "team-fortress-2" : slug;
 const title = (slug: string) => slug === "aneurism-iv" ? "ANEURISM IV" : slug.replace(/-/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 /** Read-only operational inventory. It never changes catalog content or eligibility. */
@@ -24,7 +24,7 @@ export function buildInstallationCoverage(snapshot: InstallationUpdateSnapshot):
   const slugs = new Set([...Object.keys(games), ...(snapshot.gameSlugs || []), ...snapshot.targets.map((target) => target.key)].map(normalize));
   const keys = new Set<string>(INSTALLATION_UPDATE_KEYS);
   return [...slugs].filter((slug) => slug !== "combined-arms").map((slug): InstallationCoverageRow => {
-    const key = slug === "medal-of-honor-allied-assault" ? "openmohaa" : slug;
+    const key = slug === "deus-ex-goty-edition" ? "deus-ex" : slug === "medal-of-honor-allied-assault" ? "openmohaa" : slug;
     const target = snapshot.targets.find((entry) => entry.key === key);
     const name = (Object.hasOwn(games, slug) ? games[slug].title : undefined) || target?.name || title(slug);
     if (keys.has(key) && target) return { id: slug, name, category: "supported", installationKey: key, reason: target.blockedReason || (target.installed ? "Coordinated update and rollback handler available." : "Handler available; installation missing, modified or incomplete. Verify the installation before queueing an update.") };

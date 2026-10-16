@@ -26,6 +26,7 @@ import { stageReviewedJava } from "./reviewedJavaUpdates.js";
 import { stageHurryRelease } from "./hurryUpdates.js";
 import { stageCombinedArmsRelease } from "./combinedArmsUpdates.js";
 import { stageOpenFortress, openFortressArchivePath, recordOpenFortressVerification, retainedOpenFortressPackage } from "./openFortressUpdates.js";
+import { stageHxRelease } from "./hxUpdates.js";
 
 const GIB = 1024 ** 3;
 
@@ -149,6 +150,12 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
             if (available.free < available.reserve + extra + 512 * 1024 ** 2) throw new Error("Update stopped to preserve free disk space");
           } });
         }
+      } else if (target.strategy === "reviewed-hx-package") {
+        phase("downloading", "Staging the reviewed public HX package; retail assets, private configuration and saves remain untouched");
+        await stageHxRelease(stage, { run, diskCheck: () => {
+          const available = disk(gamesRoot);
+          if (available.free < available.reserve + 64 * 1024 ** 2) throw new Error("Update stopped to preserve free disk space");
+        } });
       } else if (target.strategy === "reviewed-rust-source") {
         phase("downloading", "Building the locked, reviewed Hurry Curry source with the player-admission patch; game data and replays remain in place");
         await stageHurryRelease(stage, {run});
@@ -290,7 +297,7 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
     const uncertain = activated || (job.status === "activating" && !fs.existsSync(activePath));
     phase(uncertain ? "interrupted" : "failed", uncertain
       ? "Activation needs operator inspection. New starts remain blocked; the rollback copy is retained."
-      : error instanceof Error && /^(Open Fortress|Paired runtime|Reviewed component|Not enough|An affected|SS14|Unvanquished|OpenMoHAA|ET Legacy|FlightGear|RimWorld|Xonotic|Native package|Legacy|SteamCMD|Mindustry|OpenRA|OpenHV|OpenE2140|Hypersomnia|AssaultCube|Factorio|Terraria|Update command|Update stopped|Cannot verify|Barotrauma|Unexpected Barotrauma|Invalid Barotrauma)/.test(error.message)
+      : error instanceof Error && /^(HX|Open Fortress|Paired runtime|Reviewed component|Not enough|An affected|SS14|Unvanquished|OpenMoHAA|ET Legacy|FlightGear|RimWorld|Xonotic|Native package|Legacy|SteamCMD|Mindustry|OpenRA|OpenHV|OpenE2140|Hypersomnia|AssaultCube|Factorio|Terraria|Update command|Update stopped|Cannot verify|Barotrauma|Unexpected Barotrauma|Invalid Barotrauma)/.test(error.message)
         ? error.message : "Update failed before activation; the previous installation was preserved");
     // Retain partial staging files for diagnosis. Never recurse into customer save links.
   }

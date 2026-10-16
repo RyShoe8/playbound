@@ -1,6 +1,7 @@
 /** Per-room HX files for the Windows console server running under Wine. */
 import fs from "node:fs";
 import path from "node:path";
+import { refreshHxRuntime } from "./hxRuntimeFiles.js";
 
 const GAMES_ROOT = process.env.GAME_HOST_GAMES_DIR || "/opt/playbound-host/games";
 const HOST_HOME = process.env.HOME || "/var/lib/playbound-host";
@@ -61,7 +62,7 @@ export function buildHxIni(template, port, maxPlayers = 8) {
   return setIniValue(ini, "HX.HXUdpServerUplink", "DoUplink", "False");
 }
 
-export function prepareHxRoom(port, ctx, base = HX_BASE, home = HOST_HOME) {
+export function prepareHxRoom(port, ctx, base = HX_BASE, home = HOST_HOME, { refresh = refreshHxRuntime } = {}) {
   if (!hxReady(base)) throw new Error("HX needs a provisioned Deus Ex GOTY install, HX files, and Wine wrapper on the VPS");
   const id = roomId(ctx);
   const room = path.join(home, "deus-ex", `room-${id}`);
@@ -71,6 +72,7 @@ export function prepareHxRoom(port, ctx, base = HX_BASE, home = HOST_HOME) {
   const system = path.join(room, "System");
   if (!fs.existsSync(system)) fs.cpSync(path.join(base, "System"), system, { recursive: true });
   if (fs.lstatSync(system).isSymbolicLink() || fs.realpathSync(system) !== path.resolve(system)) throw new Error("HX private System directory requires review");
+  refresh(path.join(base, "System"), system);
   const saves = path.join(room, "Save"), sharedSaves = path.join(base, "Save");
   let legacySaveLink = false;
   try {

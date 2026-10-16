@@ -21,9 +21,11 @@ import { verifyReviewedJava } from "./reviewedJavaUpdates.js";
 import { verifyHurryInstallation } from "./hurryUpdates.js";
 import { verifyCombinedArmsInstallation } from "./combinedArmsUpdates.js";
 import { inspectOpenFortressInstallation } from "./openFortressUpdates.js";
+import { verifyHxInstallation } from "./hxUpdates.js";
 
 // These are shared installations, not per-customer save directories.
 export const INSTALLATION_TARGETS = Object.freeze({
+  "deus-ex": { name: "Deus Ex GOTY (HX)", strategy: "reviewed-hx-package", component: "System" },
   "open-fortress": { name: "Open Fortress (SDK + mod)", strategy: "coordinated-open-fortress", component: "runtime" },
   "counter-strike-2": { name: "Counter-Strike 2", appId: 730, binaries: ["game/bin/linuxsteamrt64/cs2"] },
   "team-fortress-2": { name: "Team Fortress 2", appId: 232250, binaries: ["srcds_linux64"] },
@@ -76,6 +78,7 @@ export const INSTALLATION_TARGETS = Object.freeze({
 });
 
 export function installationKey(slug) {
+  if (slug === "deus-ex-goty-edition") return "deus-ex";
   if (slug === "0-ad") return "0ad";
   if (slug === "cs2") return "counter-strike-2";
   if (slug === "tf2") return "team-fortress-2";
@@ -97,6 +100,7 @@ export function installationDependencies(slug) {
 export function verifyInstallation(directory, key, { metadataOnly = false } = {}) {
   const target = INSTALLATION_TARGETS[key];
   if (!target) throw new Error("Unsupported installation");
+  if (key === "deus-ex") return verifyHxInstallation(directory);
   const root = fs.lstatSync(directory);
   if (!root.isDirectory() || root.isSymbolicLink()) throw new Error("Installation must be a real directory");
   if (key === "open-fortress" && metadataOnly) return inspectOpenFortressInstallation(directory);

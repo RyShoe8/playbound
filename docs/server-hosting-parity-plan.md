@@ -1262,3 +1262,50 @@ Vintage Story remains owner-deferred. Remaining acceptance includes per-customer
 Unix isolation/plugin boundaries, actual human Join and human/bot replacement,
 and packaged-launcher/self-hosted controls. These fixtures do not satisfy those
 gates or enable an operational hosting profile.
+
+## HX update delivery and remaining package prerequisites (2026-10-15)
+
+Owner direction: human Join acceptance is no longer a release gate for this
+work. No human Join result is claimed; native protocol/control checks continue.
+
+HX now has a separate `deus-ex` installation target, mapped from the canonical
+`deus-ex-goty-edition` game. Its staged component is `System`; retail maps,
+assets and saved games are outside that swap. Only the pinned public HX 0.9.89.4
+archive is downloaded, with exact size/SHA-256 and a bounded, allowlisted ZIP
+extractor. The existing unprivileged worker, process scanner, start lock,
+atomic activation, retained rollback and update-failure reporting are reused.
+The scanner includes private Wine server directories, not just the shared base.
+
+Private server preparation refreshes reviewed HX executable/package files and
+preserves `HX.ini`, `HXUser.ini` and saves. All files are preflighted before
+replacement; modified private binaries, links and unknown shared releases require
+review. Future compatibility profiles must explicitly retain prior reviewed
+hashes for upgrades and reverse hashes for rollback; do not overwrite arbitrary
+private files. Configuration defaults remain separate from private rules.
+
+Daily discovery reads the publisher's existing testing channel and compares
+numeric versions. A newer unreviewed version is reported for review, never
+installed as an arbitrary archive. Live discovery resolved 0.9.89.4. The actual
+worker reinstalled the reviewed release, retained a rollback, and completed
+rollback. Native Wine fixtures before/after update and after rollback answered
+the HX player query with zero players/four slots. No human client was needed.
+The final state is the reviewed 0.9.89.4 release; no production DB writes.
+
+Narrow deployment preserved all 11 then-live managed identities. Validation:
+371 agent cases (324 passed, 47 platform skips, zero failures), all seven HX
+Linux cases, six platform installation-coverage cases, TypeScript and affected
+platform lint. Evidence is retained in the VPS's
+`/var/lib/playbound-host/state/hx-query-review-TVmO31` directory. Inventory now
+has 48 installation families and 33 daily discovery sources.
+
+Remaining update work is GoldenEye: Source and OpenRA RA2. GoldenEye's existing
+installation occupies 7,854,196,965 bytes. At this check the node had
+42,591,703,040 bytes free against its approximately 41.5 GB disk reserve, so
+staging a replacement/rollback is not safe yet; the reserve was not lowered or
+rollback packages deleted. Its current recipe also copies the private engine
+only once and needs a reviewed private-runtime refresh before updates qualify.
+RA2's recipe deliberately refuses fallback to an unrelated OpenRA engine; no
+reviewed RA2 engine/mod/assets package is installed. Its source/distribution
+review remains separate from the official OpenRA updater. Vintage Story remains
+owner-deferred. Unix isolation/plugin and packaged-launcher controls remain
+independent work; this batch does not claim those are complete.

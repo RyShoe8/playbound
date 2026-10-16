@@ -12,6 +12,7 @@ import { PAIRED_RUNTIMES } from "./pairedRuntimeUpdates.js";
 import { REVIEWED_JAVA } from "./reviewedJavaUpdates.js";
 import { HURRY_BUILD } from "./hurryUpdates.js";
 import { OPEN_FORTRESS_RELEASE, openFortressModVersion } from "./openFortressUpdates.js";
+import { HX_RELEASE } from "./hxUpdates.js";
 
 const DAY = 24 * 60 * 60_000;
 const RELEASES = {
@@ -25,7 +26,7 @@ const RELEASES = {
   "warzone-2100": ["Warzone2100/warzone2100", /^\d+\.\d+\.\d+$/],
   morrowind: ["TES3MP/TES3MP", /^tes3mp-\d+\.\d+\.\d+$/],
 };
-export const automaticInstallationUpdate = (key) => Boolean(INSTALLATION_TARGETS[key]?.appId || RELEASES[key] || PAIRED_RUNTIMES[key] || REVIEWED_JAVA[key] || ["factorio", "hypersomnia", "wolfenstein-enemy-territory", "re-volt-rvgl", "hurry-curry", "freedoom"].includes(key));
+export const automaticInstallationUpdate = (key) => Boolean(INSTALLATION_TARGETS[key]?.appId || RELEASES[key] || PAIRED_RUNTIMES[key] || REVIEWED_JAVA[key] || ["deus-ex", "factorio", "hypersomnia", "wolfenstein-enemy-territory", "re-volt-rvgl", "hurry-curry", "freedoom"].includes(key));
 
 // Parse only quoted VDF keys/values and braces. Never confuse a beta/depot's
 // build with depots.branches.public.buildid, even when it appears first.
@@ -66,6 +67,13 @@ async function boundedText(url, request, limit = 16_384) {
 }
 
 export async function latestInstallationBuild(key, { request = fetch, run = runCommand, steamHome } = {}) {
+  if (key === "deus-ex") {
+    const page = await boundedText("https://builds.hx.hanfling.de/testing/", request, 128 * 1024);
+    const versions = [...page.matchAll(/href="HX-(\d+\.\d+\.\d+\.\d+)\.zip"/g)].map(match => match[1]);
+    versions.sort((a,b)=>a.localeCompare(b,"en",{numeric:true}));
+    if (!versions.length) throw new Error("HX publisher release metadata unavailable");
+    return versions.at(-1);
+  }
   const target = INSTALLATION_TARGETS[key];
   if (key === "open-fortress") {
     if (!steamHome) throw new Error("Isolated Steam metadata home is required");
@@ -231,7 +239,7 @@ export function createDailyInstallationUpdates({ stateDir, coordinator, latest =
       await coordinator.withMetadataCheck(async () => {
         const inventory = coordinator.snapshot();
         for (const target of inventory.targets) {
-          const reviewedPackage = REVIEWED_JAVA[target.key] || PAIRED_RUNTIMES[target.key] || (target.key === "hurry-curry" ? HURRY_BUILD : target.key === "freedoom" ? {latest: REVIEWED_COMPONENTS.freedoom.version} : null);
+          const reviewedPackage = REVIEWED_JAVA[target.key] || PAIRED_RUNTIMES[target.key] || (target.key === "deus-ex" ? HX_RELEASE : target.key === "hurry-curry" ? HURRY_BUILD : target.key === "freedoom" ? {latest: REVIEWED_COMPONENTS.freedoom.version} : null);
           const old = previous.targets[target.key];
           const row = { checkedAt: now(), installedBuild: target.buildId,
             lastAttemptBuild: old?.lastAttemptBuild, jobId: old?.jobId };
