@@ -13,6 +13,8 @@ export type PartyEditionOption = {
 const REQUIRED_PARTY_EDITIONS: Readonly<Record<string, string>> = {
   freedoom: "zandronum",
   rimworld: "rimworld-together",
+  // Daggerfall Online is the networked client; the other Daggerfall editions are singleplayer.
+  daggerfall: "daggerfall-online",
   "deus-ex-goty-edition": "playbound-hx-coop",
   // OpenMW is the SP remaster default; parties need TES3MP.
   morrowind: "tes3mp",

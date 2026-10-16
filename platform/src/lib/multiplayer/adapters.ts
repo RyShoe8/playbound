@@ -194,6 +194,17 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     adapterType: "official", protocol: "official",
     client: { inGameJoinPrompt: true, inGameSteps: ["With the RimWorld Together mod installed, join the PlayBound server by address"] },
   },
+  /*
+   * Daggerfall Online plays on its own community servers, so PlayBound's part
+   * is party launch and presence, like RimWorld Together above. Only the
+   * daggerfall-online edition is networked; the party edition picker is pinned
+   * to it in partyEdition.ts.
+   */
+  daggerfall: {
+    gameSlug: "daggerfall", title: "Daggerfall", tier: "tier3_official",
+    adapterType: "official", protocol: "official",
+    client: { inGameJoinPrompt: true, inGameSteps: ["Open Daggerfall Online and join the server your party is using from its server list"] },
+  },
   trackmania: {
     gameSlug: "trackmania", title: "Trackmania", tier: "tier3_official",
     adapterType: "official", protocol: "official",

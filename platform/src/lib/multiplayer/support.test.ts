@@ -170,3 +170,12 @@ describe("the call sites that used to disagree", () => {
     expect(supportsMultiplayer(coopOnly)).toBe(true);
   });
 });
+
+describe("edition-driven party games", () => {
+  it("lets Daggerfall's networked edition put the base game in a party", () => {
+    const game = { slug: "daggerfall", isMultiplayer: false, features: ["Singleplayer"], editions: [{ features: ["Singleplayer"] }, { features: ["Online Multiplayer"] }] };
+    expect(supportsMultiplayer(game as never)).toBe(true);
+    expect(supportsOnlineMultiplayer(game as never)).toBe(true);
+    expect(supportsMultiplayer({ ...game, editions: [{ features: ["Singleplayer"] }] } as never)).toBe(false);
+  });
+});
