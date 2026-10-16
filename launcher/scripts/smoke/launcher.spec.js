@@ -96,8 +96,8 @@ test('real launcher boots, navigates, and installs/removes a mock game', async (
       await expect(page.getByRole('heading',{name:'My servers',exact:true})).toBeVisible();
       await expect(page.getByText('No saved servers yet.',{exact:true})).toBeVisible();
       await page.locator('#site-developer').click();
-      await expect(page.getByRole('heading',{name:'Developer tools',exact:true})).toBeVisible();
-      await expect(page.getByRole('heading',{name:'Your developer workspace',exact:true})).toBeVisible();
+      await expect(page.getByRole('heading',{name:'Developer Dashboard',exact:true})).toBeVisible();
+      await expect(page.getByRole('heading',{name:'Your Games',exact:true})).toBeVisible();
       await page.locator('[data-view="deals"]').click();
       await expect(page.locator('#deals-discount-grid')).toContainText('Fixture Deal');
       await expect(page.getByRole('button',{name:'Refresh deals',exact:true})).toBeVisible();
