@@ -178,9 +178,21 @@ export function sendSourceRcon({ host = "127.0.0.1", port, password, command, ti
  * DarkPlaces (Xonotic) speaks the Quake 3 packet format with rcon_secure 0 but
  * answers with an "n" header instead of "print".
  */
-export async function sendRoomRcon(room, command) {
+export async function sendRoomRcon(room, command, { udp = sendRcon } = {}) {
   if (room.rcon === "source") {
     return sendSourceRcon({ port: room.port, password: room.rconPassword, command });
   }
-  return sendRcon({ port: room.port, password: room.rconPassword, command, darkplaces: room.rcon === "darkplaces" });
+  const options = { port: room.port, password: room.rconPassword, command, darkplaces: room.rcon === "darkplaces" };
+  try {
+    return await udp(options);
+  } catch (error) {
+    // OpenArena may apply this cvar without sending a print packet. Never
+    // replay the write or accept silence as success: read the actual value.
+    const setting = room.gameSlug === "openarena" && /^(?:set\s+)?bot_minplayers\s+"?([0-9]{1,2})"?$/.exec(command);
+    if (error.message !== "rcon timed out" || !setting || Number(setting[1]) > 32) throw error;
+    const reply = await udp({ ...options, command: "bot_minplayers" });
+    const value = /"bot_minplayers"\s+is:\s*"([0-9]+)"/.exec(String(reply).replace(/\^[0-9]/g,""));
+    if (!value || Number(value[1]) !== Number(setting[1])) throw new Error("The game server did not confirm the bot setting");
+    return `bot_minplayers verified: ${value[1]}`;
+  }
 }

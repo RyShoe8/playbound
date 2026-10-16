@@ -1,6 +1,16 @@
 import { describe, it, expect } from "vitest";
 import { buildRconCommands, parseStatus, rconValue, UnsafeSettingValue } from "./rcon";
 
+it("OpenArena zero bot fill removes existing bots after disabling replenishment", () => {
+  expect(buildRconCommands("openarena", { botFill: 0 })).toEqual([
+    { key: "botFill", command: 'set bot_minplayers "0"' },
+    { key: "botFill", command: "kick allbots" },
+  ]);
+  expect(buildRconCommands("openarena", { botFill: 2 })).toEqual([
+    { key: "botFill", command: 'set bot_minplayers "2"' },
+  ]);
+});
+
 const parseQuake3Status = (text: string) => parseStatus("rcon-quake3", text);
 
 describe("building commands from declared settings", () => {

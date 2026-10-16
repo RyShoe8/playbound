@@ -427,7 +427,9 @@ export function parseStkDiscovery(m, expectedPort) {
 }
 
 export async function querySuperTuxKart(roomPort) {
-  const packet = await udpRequest(2757, Buffer.concat([Buffer.from([10]), Buffer.from("stk-server")]));
+  const packet = await udpRequest(2757, Buffer.concat([Buffer.from([10]), Buffer.from("stk-server")]), {
+    localReplyOnly: true, accept: reply => parseStkDiscovery(reply,roomPort) !== null,
+  });
   return packet ? parseStkDiscovery(packet, roomPort) : null;
 }
 

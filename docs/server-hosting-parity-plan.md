@@ -1455,3 +1455,54 @@ Generated isolated configuration enforces mod security and empty trusted/HTTP
 allowlists, but is not represented as fixing that CVE. Upgrade or verify an
 upstream-supported patch before enabling executable content; do not use a
 ContentDB download or OS sandbox as evidence that the engine gate passed.
+
+## OpenArena identity and live-control acceptance (2026-10-16)
+
+OpenArena adds a sixth explicit UID profile. Ordinary community/party launches
+remain unchanged. The handoff accepts only the existing recipe's fixed tokens
+and typed name, player/bot limit and generated control password; injected console
+programs, undeclared settings and out-of-range ports are rejected. The reviewed
+engine is sealed from its root-owned manifest. The root supervisor supplies a
+read-only config through Quake's virtual filesystem, with the same mandatory
+seccomp, host-egress and allocated-port restrictions as the other UID profiles.
+
+VPS acceptance confirmed four slots, RCON, two bots counted separately from zero
+humans, map change, same process through agent restart, scoped stop and rollback
+preserving old/new data. The fixture was removed. Live controls uncovered two
+engine behaviors now handled explicitly: zero bot fill stops replenishment but
+requires `kick allbots` to remove connected bots; a silent bot cvar update needs
+an exact readback rather than a replay or success inferred from silence.
+
+Validation: 335 agent tests passed with 49 platform skips, 71 Linux helper tests
+passed (including all six seccomp namespace probes), 17 platform RCON tests and
+TypeScript passed. Guarded deployment preserved all eleven then-running managed
+process identities. No customer enrollment or database changes. Full-catalog
+isolation and executable-content installation remain open.
+
+## Wesnoth and SuperTuxKart boundary work (2026-10-16)
+
+Wesnoth's explicit UID profile passed real VPS startup, zero established
+connections, same-process adoption across agent restart, scoped stop and
+save-preserving rollback. Its read-only generated configuration retains the
+1.18-series compatibility rule; callers cannot supply configuration directives.
+The lobby's maximum slots remain unknown. No customer was enrolled.
+
+SuperTuxKart has an experimental operator-only handoff with typed declared modes,
+difficulty and slot bounds. Its fixed kernel policy permits the allocated game
+port plus UDP discovery on 2757; TCP on the discovery port and explicit bind-zero
+remain denied. Regression tests interpret every policy branch against allowed
+and denied ports/protocols. The kernel rejected an incorrect context offset in
+the initial staging program; it was corrected before successful runtime startup.
+Do not infer enforcement merely from systemd accepting a setting.
+
+The STK fixture ran under its reserved UID and the combined boundary, stopped
+cleanly, and preserved data on rollback. Its discovery query remained unknown,
+so readiness acceptance is explicitly false and it must not be customer-enrolled
+or offered executable content yet. The shared-port query now ignores responses
+for other game ports instead of accepting the first unrelated reply. All fixture
+processes/data were cleaned up. This is not STK public hosting acceptance.
+
+Latest validation: 336 agent tests passed, 49 platform skips; 74 Linux helper
+tests passed. The guarded live agent deployment retained all eleven managed
+process identities. Platform RCON tests and TypeScript passed earlier in this
+batch. Remaining games and content support still require engine-specific work.

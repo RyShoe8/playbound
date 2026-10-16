@@ -11,6 +11,24 @@ spec.loader.exec_module(module)
 
 
 class BindPolicyTests(unittest.TestCase):
+    def test_stk_secondary_port_is_udp_only_and_never_an_arbitrary_rule(self):
+        rows = list(struct.iter_unpack('<BBhi',module.instructions(2779,True)))
+        def evaluate(port,protocol):
+            registers={1:0};position=0
+            while position < len(rows):
+                code,register,offset,value=rows[position];destination=register&15
+                if code==0x61:registers[destination]={36:protocol,24:socket.htons(port)}[offset]
+                elif code==0x15 and registers[destination]==value:position+=offset
+                elif code==0x55 and registers[destination]!=value:position+=offset
+                elif code==0xb7:registers[destination]=value
+                elif code==0x95:return registers[0]
+                position+=1
+            self.fail('Unterminated bind program')
+        for protocol in (socket.IPPROTO_TCP,socket.IPPROTO_UDP):
+            for port in (0,2757,2758,2779,2780,60000):
+                self.assertEqual(evaluate(port,protocol),int(port==2779 or port==2757 and protocol==socket.IPPROTO_UDP))
+        for port,flag in [(27980,True),(2779,'true'),(2779,1)]:
+            with self.assertRaises(ValueError):module.instructions(port,flag)
     def test_fixed_program_allows_only_allocated_network_order_port(self):
         rows = list(struct.iter_unpack('<BBhi', module.instructions(3999)))
         self.assertEqual(rows, [(0x61, 0x12, 24, 0), (0x15, 2, 2, socket.htons(3999)),

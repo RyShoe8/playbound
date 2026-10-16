@@ -19,6 +19,9 @@ ENGINES = {
     'hedgewars': ('hedgewars-server', '/usr/lib/hedgewars/bin/hedgewars-server'),
     'openttd': ('openttd', '/usr/games/openttd'),
     'luanti': ('minetestserver', '/usr/games/minetestserver'),
+    'openarena': ('openarena-server', '/usr/lib/ioquake3/ioq3ded'),
+    'battle-for-wesnoth': ('wesnothd', '/usr/games/wesnothd-1.18'),
+    'supertuxkart': ('supertuxkart', '/usr/games/supertuxkart'),
 }
 
 def sealed_engine_for(game):

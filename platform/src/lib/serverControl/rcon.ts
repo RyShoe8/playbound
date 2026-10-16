@@ -79,6 +79,11 @@ export function buildRconCommands(
     const value = values[def.key];
     if (value === undefined) continue;
     out.push({ key: def.key, command: commandFor(def, value, profile.controlChannel) });
+    // OpenArena stops replenishing at zero but retains bots already connected,
+    // including across map changes. Explicitly remove those bots as well.
+    if (slug === "openarena" && def.key === "botFill" && value === 0) {
+      out.push({ key: def.key, command: "kick allbots" });
+    }
   }
   return out;
 }

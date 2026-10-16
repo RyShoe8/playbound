@@ -10,7 +10,7 @@ import { customerResourceLimits } from "./customerResourceLimits.js";
 import { identityMigrationMetadata } from "./customerMigration.js";
 import { NATIVE_PACKAGE_PROFILES, verifyNativePackageInstallation } from "./nativePackageUpdates.js";
 
-export const CUSTOMER_IDENTITY_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti"]);
+export const CUSTOMER_IDENTITY_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti", "openarena", "battle-for-wesnoth", "supertuxkart"]);
 export const TEEWORLDS_ISOLATION = "teeworlds-bwrap-v1";
 export const CUSTOMER_ISOLATION_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti"]);
 
@@ -33,6 +33,10 @@ function unlinkedAncestors(filename) {
 
 /** Runs before recipes write any generated configuration, not just at spawn. */
 export function validateCustomerPreparation({ gameSlug, customerOwned, communityServerId: id, home, identityProfile }) {
+  if (customerOwned && ["openarena","battle-for-wesnoth","supertuxkart"].includes(gameSlug) && identityProfile) {
+    if (identityProfile !== `${gameSlug}-unix-v1` || identityMigrationMetadata(id,home)?.identityProfile !== identityProfile) throw new Error("Customer identity migration is not ready");
+    return;
+  }
   if (!customerOwned || !CUSTOMER_ISOLATION_GAMES.includes(gameSlug)) return;
   if (!/^[a-f0-9]{24}$/i.test(id || "") || typeof home !== "string" || !path.isAbsolute(home)) throw new Error("Invalid isolation identity");
   if (identityProfile && ["openttd","luanti"].includes(gameSlug)) {
@@ -70,7 +74,7 @@ function privateDirectory(directory) {
 }
 
 export function customerIsolationLaunch({ gameSlug, customerOwned, communityServerId, binary, args, home, resourceLimits, identityProfile, settings }) {
-  if (!customerOwned || !CUSTOMER_ISOLATION_GAMES.includes(gameSlug)) return null;
+  if (!customerOwned || (!CUSTOMER_ISOLATION_GAMES.includes(gameSlug) && !(["openarena","battle-for-wesnoth","supertuxkart"].includes(gameSlug) && identityProfile))) return null;
   if (identityProfile !== undefined && (!CUSTOMER_IDENTITY_GAMES.includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1`)) throw new Error("Unsupported customer identity profile");
   const limits = customerResourceLimits(gameSlug, resourceLimits);
   validateCustomerPreparation({ gameSlug, customerOwned, communityServerId, home, identityProfile });
@@ -165,12 +169,45 @@ function sandboxPlan({ gameSlug, binary, gameArgs, data, mounts = [], resourceLi
   };
 }
 
+/** Accept only the existing recipe's declared tokens, never a console program. */
+export function openArenaIdentityConfiguration(args) {
+  if (!Array.isArray(args) || args.at(-2) !== "+map" || args.at(-1) !== "oa_dm1") throw new Error("Unexpected OpenArena map");
+  const values = {};
+  for (let index = 0; index < args.length - 2; index += 3) {
+    const [marker,key,value] = args.slice(index,index+3);
+    if (marker !== "+set" || typeof key !== "string" || typeof value !== "string" || Object.hasOwn(values,key)) throw new Error("Unexpected OpenArena settings");
+    values[key] = value;
+  }
+  const fixed = {com_basegame:"baseoa",fs_basepath:"/usr/lib/openarena-server",com_homepath:".openarena",com_legacyprotocol:"71",com_protocol:"71",cl_motd:"0",dedicated:"1",sv_master1:'""'};
+  const allowed = new Set([...Object.keys(fixed),"net_port","sv_hostname","rconpassword","sv_maxclients","bot_enable","bot_minplayers"]);
+  if (Object.keys(values).some(key=>!allowed.has(key)) || Object.entries(fixed).some(([key,value])=>values[key]!==value) || !withinPort(values.net_port,27960,27980)) throw new Error("Unexpected OpenArena startup contract");
+  const maxPlayers = Number(values.sv_maxclients ?? 12), botPlayers = Number(values.bot_minplayers ?? 0);
+  if (!Number.isInteger(maxPlayers) || maxPlayers < 2 || maxPlayers > 64 || !Number.isInteger(botPlayers) || botPlayers < 0 || botPlayers > maxPlayers || (values.bot_enable !== undefined && values.bot_enable !== "1") || typeof values.sv_hostname !== "string" || !values.sv_hostname.length || values.sv_hostname.length > 100 || /[\x00-\x1f\x7f"\\;]/.test(values.sv_hostname) || !/^[A-Za-z0-9_-]{24,64}$/.test(values.rconpassword || "")) throw new Error("Invalid OpenArena typed settings");
+  return {port:Number(values.net_port),config:JSON.stringify({maxPlayers,botPlayers,name:values.sv_hostname,rconPassword:values.rconpassword})};
+}
+
+export function superTuxKartIdentityConfiguration(args) {
+  const values={};
+  for (const item of args) {
+    if (item === "--no-graphics") { if (values.headless) throw new Error("Duplicate headless flag"); values.headless=true; continue; }
+    const match=/^--(lan-server|port|max-players|mode|difficulty)=(.*)$/.exec(item);
+    if (!match || Object.hasOwn(values,match[1])) throw new Error("Unexpected SuperTuxKart startup contract");
+    values[match[1]]=match[2];
+  }
+  const name=values["lan-server"],maxPlayers=Number(values["max-players"]??8),mode=Number(values.mode??3),difficulty=Number(values.difficulty??1);
+  if (!values.headless || !withinPort(values.port,2759,2779) || typeof name!=="string" || !name.length || name.length>100 || /[\x00-\x1f\x7f]/.test(name) || !Number.isInteger(maxPlayers) || maxPlayers<2 || maxPlayers>12 || ![0,1,3,4,6,7,8].includes(mode) || !Number.isInteger(difficulty) || difficulty<0 || difficulty>3) throw new Error("Invalid SuperTuxKart typed settings");
+  return {port:Number(values.port),config:JSON.stringify({name,maxPlayers,mode,difficulty})};
+}
+
 function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, home, resourceLimits, identityProfile, settings }) {
   const supported = {
     bzflag: ["/usr/games/bzfs", "bzflag-servers"],
     hedgewars: ["/usr/lib/hedgewars/bin/hedgewars-server", "hedgewars-servers"],
     openttd: ["/usr/games/openttd", "openttd-servers"],
     luanti: ["/usr/games/minetestserver", "luanti-servers"],
+    openarena: ["/usr/lib/ioquake3/ioq3ded", "openarena-servers"],
+    "battle-for-wesnoth": ["/usr/games/wesnothd-1.18", "wesnoth-servers"],
+    supertuxkart: ["/usr/games/supertuxkart", "supertuxkart-servers"],
   };
   const [expected, folder] = supported[gameSlug];
   let engineMount;
@@ -182,6 +219,20 @@ function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, 
     engineMount = binary;
   }
   trustedExecutables(binary);
+  if (gameSlug === "supertuxkart") {
+    if (identityProfile !== "supertuxkart-unix-v1" || identityMigrationMetadata(id,home)?.identityProfile !== identityProfile) throw new Error("Customer identity migration is not ready");
+    return {profile:"supertuxkart-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,...superTuxKartIdentityConfiguration(args)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
+  if (gameSlug === "battle-for-wesnoth") {
+    const config = "/opt/playbound-host/games/battle-for-wesnoth/wesnothd.cfg";
+    const port = args.at(-1);
+    if (identityProfile !== "battle-for-wesnoth-unix-v1" || identityMigrationMetadata(id,home)?.identityProfile !== identityProfile || !withinPort(port,15000,15020) || !(args.length === 2 && args[0] === "-p" || args.length === 4 && args[0] === "-c" && args[1] === config && args[2] === "-p")) throw new Error("Unexpected Wesnoth identity arguments");
+    return {profile:"battle-for-wesnoth-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:Number(port),config:"{}"},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
+  if (gameSlug === "openarena") {
+    if (identityProfile !== "openarena-unix-v1" || identityMigrationMetadata(id,home)?.identityProfile !== identityProfile) throw new Error("Customer identity migration is not ready");
+    return {profile:"openarena-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,...openArenaIdentityConfiguration(args)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
   const data = path.join(home, folder, `pb-${id}`);
   if (!identityProfile) {
     privateDirectory(path.dirname(data));

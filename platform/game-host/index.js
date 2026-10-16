@@ -887,7 +887,7 @@ async function startRoom(opts) {
 
 async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername, saveKey, customerOwned, resourceLimits, identityProfile, testSpawn = false }) {
   if (shuttingDown) return { error: "Agent is shutting down" };
-  if (identityProfile !== undefined && (!["teeworlds","bzflag","hedgewars","openttd","luanti"].includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1` || !customerOwned || !communityServerId)) return { error: "Unsupported customer identity handoff" };
+  if (identityProfile !== undefined && (!["teeworlds","bzflag","hedgewars","openttd","luanti","openarena","battle-for-wesnoth","supertuxkart"].includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1` || !customerOwned || !communityServerId)) return { error: "Unsupported customer identity handoff" };
   if (customerOwned && CUSTOMER_ISOLATION_GAMES.includes(gameSlug)) {
     try { resourceLimits = customerResourceLimits(gameSlug, resourceLimits); }
     catch (error) { return { error: error.message }; }
@@ -1547,7 +1547,7 @@ const server = http.createServer(async (req, res) => {
       if (retainedIdentity && retainedIdentity !== identityProfile) {
         json(res, 409, { error: "Customer identity profile cannot be downgraded" }); return;
       }
-      if (identityProfile !== undefined && (!["teeworlds","bzflag","hedgewars","openttd","luanti"].includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1` || body.customerOwned !== true || !/^[a-f0-9]{24}$/.test(communityServerId))) {
+      if (identityProfile !== undefined && (!["teeworlds","bzflag","hedgewars","openttd","luanti","openarena","battle-for-wesnoth","supertuxkart"].includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1` || body.customerOwned !== true || !/^[a-f0-9]{24}$/.test(communityServerId))) {
         json(res, 400, { error: "Unsupported customer identity handoff" }); return;
       }
       const activeId = byManaged.get(communityServerId);
