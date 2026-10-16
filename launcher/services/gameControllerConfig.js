@@ -1052,6 +1052,10 @@ const NO_CONFIG_NEEDED = {
     kind: "native",
     note: "The Godot project ships explicit joypad buttons and axes for movement, fire, upgrades, start and select.",
   },
+  openseek: {
+    kind: "native",
+    note: "SDL-mapped gamepads: left stick turns and drives, right stick strafes, buttons rebind under OPTIONS > CONTROLS, and co-op gives each player their own pad, so a bridged phone works as pad two.",
+  },
   hurrican: {
     kind: "native",
     /*

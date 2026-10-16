@@ -152,6 +152,7 @@ const LOCAL_COUCH_GAMES = new Set([
   "streets-of-rage-remake",
   "metal-slug-remake",
   "hurrican",
+  "openseek",
   "pixreveal",
   "the-spike-cross",
   "x-men-arcade-remake",

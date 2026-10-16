@@ -42,6 +42,12 @@ describe("multiplayer FAQ answer", () => {
     expect(a).not.toMatch(/start a party/);
   });
 
+  it("calls split-screen-only co-op local, not an online service", () => {
+    const a = multiplayerFaqAnswer(mk("local-only-demo", "Local Demo", { features: ["Co-op", "Split-Screen Co-op"] }) as never);
+    expect(a).toContain("local only");
+    expect(a).not.toContain("online service");
+  });
+
   it("credits Deus Ex multiplayer to the HX co-op edition", () => {
     const a = multiplayerFaqAnswer(
       mk("deus-ex-goty-edition", "Deus Ex GOTY", { features: ["Multiplayer", "Co-op"] }) as never

@@ -2128,6 +2128,51 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       "Official online servers are offline. PlayBound Connect carries surviving LAN multiplayer (up to 8) over the party overlay.",
   },
 
+  /*
+   * Sudden Strike 2 multiplayer is plain TCP/IP: players on the Steam Gold
+   * forums describe joining a host by IP (2v2 over 192.168.x.x) and tunnelling
+   * with Hamachi-style software when ports are not open. There is no official
+   * server browser, so the party overlay stands in for that tunnel and the host
+   * hands friends the PlayBound network address. Direct IP rather than
+   * broadcast discovery, so requiresBroadcast stays off. No listen port is
+   * published, hence no hostPort. Not yet hosted-and-joined by hand on the GOG
+   * build; the in-game wording below follows the manual's multiplayer menu.
+   */
+  "sudden-strike-2-gold": {
+    gameSlug: "sudden-strike-2-gold",
+    title: "Sudden Strike 2 Gold",
+    tier: "tier1_improved",
+    adapterType: "virtual-lan",
+    protocol: "tcp",
+    client: { inGameJoinPrompt: true },
+    virtualLan: {
+      requiresBroadcast: false,
+      inGameSteps: [
+        "Create a PlayBound Connect party first so everyone shares one network",
+        "Host: Multiplayer, then create a game",
+        "Everyone else: Multiplayer, then join by entering the host's PlayBound network address",
+      ],
+    },
+    notes:
+      "TCP/IP multiplayer with no live official servers. Connect carries it over the party overlay in place of the Hamachi-style tunnels players have used for years.",
+  },
+
+  /*
+   * openSEEK has no network code (the network input source in the repo is a
+   * stub), so there is nothing for virtual-lan to carry. Its two-player
+   * split-screen co-op goes online through couch mode, the same shape as
+   * hurrican below: the remote player arrives as pad two.
+   */
+  openseek: {
+    gameSlug: "openseek",
+    title: "openSEEK",
+    tier: "tier1_improved",
+    adapterType: "official",
+    protocol: "official",
+    notes:
+      "No network transport: two-player split-screen co-op only. PlayBound Connect uses couch mode and remote controllers.",
+  },
+
   hurrican: {
     gameSlug: "hurrican",
     title: "Hurrican",

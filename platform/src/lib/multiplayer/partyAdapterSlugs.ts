@@ -21,6 +21,7 @@ export const PARTY_ADAPTER_SLUGS: ReadonlySet<string> = new Set<string>([
   "barotrauma",
   "unturned",
   "holocure",
+  "sudden-strike-2-gold",
   "ysoccer",
   "openclonk",
   "assaultcube",
