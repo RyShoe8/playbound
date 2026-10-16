@@ -15,7 +15,7 @@ function createHostingFixture(root) {
   return (_event,input) => {
     const method = input.method || 'GET', route = input.path;
     if (method !== 'GET') fs.appendFileSync(path.join(root,'hosting-writes.jsonl'),JSON.stringify(input)+'\n');
-    if (route === '/api/hosting/me') return {subscription:null,servers:[server],shared:[]};
+    if (route === '/api/hosting/me') return {subscription:{status:'active',tierName:'PlayBound Dedicated',slotCapacity:8,regionLabel:'US Central'},servers:[server],shared:[]};
     if (route === BASE) {
       if (method === 'PATCH') Object.assign(server,input.body);
       return {server,control};
