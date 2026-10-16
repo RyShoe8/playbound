@@ -7,6 +7,7 @@ export function homepageSelections(catalog, feed) {
       return date(b) - date(a) || a.title?.localeCompare(b.title || "") || 0;
     }),
     popular: feed ? resolve(feed.popular).slice(0, 12) : catalog.slice(0, 12),
+    newest: feed ? resolve(feed.released).slice(0, 12) : [],
     editions: (feed?.editions || []).filter(item => bySlug.has(item.gameSlug)).slice(0, 8).map(item => ({...item, game: bySlug.get(item.gameSlug)})),
     mods: (feed?.mods || []).filter(mod => bySlug.has(mod.baseGameSlug)).slice(0, 8),
   };
