@@ -711,7 +711,7 @@ function freePort(slug, port) {
 function stopRoom(room) {
   if (!room) return 0;
   const pid = room.child?.pid || room.pid;
-  const unixIdentity = room.identityProfile === "teeworlds-unix-v1";
+  const unixIdentity = Boolean(room.identityProfile);
   if (unixIdentity) room.stopPromise = stopIdentityRuntime({ ...room, pid });
   const shutdownRecipe = recipes[room.gameSlug];
   let graceful = Boolean(room.child?.stdin?.writable && shutdownRecipe?.shutdownCommand);
@@ -827,7 +827,7 @@ function persistManagedRooms() {
 
 async function recoverManagedRooms() {
   for (const saved of managedRegistry.read()) {
-    const failure = saved.identityProfile === "teeworlds-unix-v1" && !(await identityRuntimeHealthy({ ...saved, processIdentity: saved.identity }))
+    const failure = Boolean(saved.identityProfile) && !(await identityRuntimeHealthy({ ...saved, processIdentity: saved.identity }))
       ? "Customer identity runtime could not be verified after agent restart"
       : !isSameProcess(saved.pid, saved.identity)
       ? "Managed runtime was no longer running when the game-host agent restarted"
@@ -887,7 +887,7 @@ async function startRoom(opts) {
 
 async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername, saveKey, customerOwned, resourceLimits, identityProfile, testSpawn = false }) {
   if (shuttingDown) return { error: "Agent is shutting down" };
-  if (identityProfile !== undefined && (identityProfile !== "teeworlds-unix-v1" || !customerOwned || !communityServerId || gameSlug !== "teeworlds")) return { error: "Unsupported customer identity handoff" };
+  if (identityProfile !== undefined && (!["teeworlds","bzflag","hedgewars"].includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1` || !customerOwned || !communityServerId)) return { error: "Unsupported customer identity handoff" };
   if (customerOwned && CUSTOMER_ISOLATION_GAMES.includes(gameSlug)) {
     try { resourceLimits = customerResourceLimits(gameSlug, resourceLimits); }
     catch (error) { return { error: error.message }; }
@@ -1547,7 +1547,7 @@ const server = http.createServer(async (req, res) => {
       if (retainedIdentity && retainedIdentity !== identityProfile) {
         json(res, 409, { error: "Customer identity profile cannot be downgraded" }); return;
       }
-      if (identityProfile !== undefined && (identityProfile !== "teeworlds-unix-v1" || body.customerOwned !== true || gameSlug !== "teeworlds" || !/^[a-f0-9]{24}$/.test(communityServerId))) {
+      if (identityProfile !== undefined && (!["teeworlds","bzflag","hedgewars"].includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1` || body.customerOwned !== true || !/^[a-f0-9]{24}$/.test(communityServerId))) {
         json(res, 400, { error: "Unsupported customer identity handoff" }); return;
       }
       const activeId = byManaged.get(communityServerId);

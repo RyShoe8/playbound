@@ -1388,3 +1388,23 @@ Customer isolation and executable-plugin/Workshop installation remain open.
 The deployed filesystem sandbox covers five engines; the separate-UID handoff
 and fixed network policy remain Teeworlds-only. Do not expose executable uploads
 or claim tenant isolation across the remaining recipes from update coverage.
+
+## Native UID handoff expansion (2026-10-16)
+
+BZFlag and Hedgewars now join Teeworlds as explicitly enrolled Unix-identity
+profiles. Migration retains originals and later progress; root-owned game tags
+prevent cross-engine reuse. Engines are sealed from a fixed reviewed manifest
+before dropping privileges. The sealed-engine helper supports all five native
+filesystem profiles, but OpenTTD/Luanti UID runtime handoff remains unfinished.
+Hedgewars required fixed read-only protocol/service database mounts; no general
+host /etc mount was added. Missing migration proof blocks execution.
+
+Actual VPS fixtures passed game query, idempotency, unchanged game PID across
+agent restart, metrics, full scope shutdown and save-preserving rollback for
+both games. Fixtures were removed; the narrow live agent deployment preserved
+all twelve production managed process identities. No customer was automatically
+enrolled, no catalog/profile DB writes, no executable plugins enabled.
+Validation: 52 Linux root-helper cases and 329 agent cases passed (49 local
+platform skips). Additional games, native network/admission-port protections,
+seccomp and executable-plugin/Workshop gates remain open; this is an isolation
+expansion, not a claim of universal tenant isolation.

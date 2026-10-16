@@ -22,6 +22,6 @@ test("missing, failed, mismatched or untrusted migration proof never permits enr
   assert.equal(verifiedIdentityMigration(id, "/tmp/other-home", forbidden), false);
 });
 test("network enrollment comes only from a validated root-owned migration response", () => {
-  assert.deepEqual(identityMigrationMetadata(id, "/var/lib/playbound-host", () => JSON.stringify({ serverId: id, migrationReady: true, networkProfile: "public-game-v1" })), { networkProfile: "public-game-v1" });
+  assert.deepEqual(identityMigrationMetadata(id, "/var/lib/playbound-host", () => JSON.stringify({ serverId: id, migrationReady: true, networkProfile: "public-game-v1" })), { networkProfile: "public-game-v1", identityProfile: "teeworlds-unix-v1" });
   assert.equal(identityMigrationMetadata(id, "/var/lib/playbound-host", () => JSON.stringify({ serverId: id, migrationReady: true, networkProfile: "arbitrary" })), null);
 });

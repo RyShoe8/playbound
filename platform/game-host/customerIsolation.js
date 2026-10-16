@@ -1,6 +1,6 @@
 /** Reviewed engine profiles only. This builds the filesystem/process namespace
  * boundary; customerRuntime applies cgroup limits before running the plan.
- * Teeworlds has an opt-in UID handoff. Other host UIDs, network policy and
+ * Teeworlds, BZFlag and Hedgewars have opt-in UID handoffs. Other host UIDs, network policy and
  * executable-plugin isolation remain unfinished.
  * There is deliberately no fallback to an unrestricted launch if setup fails.
  */
@@ -10,6 +10,7 @@ import { customerResourceLimits } from "./customerResourceLimits.js";
 import { identityMigrationMetadata } from "./customerMigration.js";
 import { NATIVE_PACKAGE_PROFILES, verifyNativePackageInstallation } from "./nativePackageUpdates.js";
 
+export const CUSTOMER_IDENTITY_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars"]);
 export const TEEWORLDS_ISOLATION = "teeworlds-bwrap-v1";
 export const CUSTOMER_ISOLATION_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti"]);
 
@@ -65,12 +66,12 @@ function privateDirectory(directory) {
 
 export function customerIsolationLaunch({ gameSlug, customerOwned, communityServerId, binary, args, home, resourceLimits, identityProfile }) {
   if (!customerOwned || !CUSTOMER_ISOLATION_GAMES.includes(gameSlug)) return null;
-  if (identityProfile !== undefined && (identityProfile !== "teeworlds-unix-v1" || gameSlug !== "teeworlds")) throw new Error("Unsupported customer identity profile");
+  if (identityProfile !== undefined && (!CUSTOMER_IDENTITY_GAMES.includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1`)) throw new Error("Unsupported customer identity profile");
   const limits = customerResourceLimits(gameSlug, resourceLimits);
   validateCustomerPreparation({ gameSlug, customerOwned, communityServerId, home });
   if (!/^[a-f0-9]{24}$/i.test(communityServerId || "") || !path.isAbsolute(home)) throw new Error("Invalid isolation identity");
   if (!Array.isArray(args) || args.some(value => typeof value !== "string" || value.includes("\0"))) throw new Error("Invalid isolation arguments");
-  if (gameSlug !== "teeworlds") return nativeIsolationLaunch({ gameSlug, communityServerId, binary, args, home, resourceLimits: limits });
+  if (gameSlug !== "teeworlds") return nativeIsolationLaunch({ gameSlug, communityServerId, binary, args, home, resourceLimits: limits, identityProfile });
   // Alternate/custom executables need their own reviewed dependency profile.
   const systemBinary = "/usr/games/teeworlds-server";
   let engineMount;
@@ -159,7 +160,7 @@ function sandboxPlan({ gameSlug, binary, gameArgs, data, mounts = [], resourceLi
   };
 }
 
-function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, home, resourceLimits }) {
+function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, home, resourceLimits, identityProfile }) {
   const supported = {
     bzflag: ["/usr/games/bzfs", "bzflag-servers"],
     hedgewars: ["/usr/lib/hedgewars/bin/hedgewars-server", "hedgewars-servers"],
@@ -177,8 +178,10 @@ function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, 
   }
   trustedExecutables(binary);
   const data = path.join(home, folder, `pb-${id}`);
-  privateDirectory(path.dirname(data));
-  privateDirectory(data);
+  if (!identityProfile) {
+    privateDirectory(path.dirname(data));
+    privateDirectory(data);
+  }
   let gameArgs = args;
   const mounts = [];
   if (gameSlug === "hedgewars") {
@@ -199,6 +202,14 @@ function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, 
     regularFile(config, 64 * 1024);
     mounts.push([config, "/server/world/playbound.conf"]);
     gameArgs = ["--port", args[1], "--world", "/server/world", "--gameid", "minetest", "--config", "/server/world/playbound.conf", "--logfile", "/server/minetest.log"];
+  }
+  if (identityProfile) {
+    const migration = identityMigrationMetadata(id, home);
+    if (!migration || migration.identityProfile !== identityProfile) throw new Error("Customer identity migration is not ready");
+    const config = gameSlug === "bzflag" ? { scoreLimit: Number(args[7]), maxPlayers: Number(args[9]) } : {};
+    return { profile: `${gameSlug}-bwrap-v1`, resourceLimits, identityProfile, networkProfile: migration.networkProfile,
+      identityRuntime: { gameSlug, port: Number(args[1]), config: JSON.stringify(config) },
+      binary: "/usr/bin/prlimit", args: [], cwd: "/", env: { PATH: "/usr/bin:/usr/games", LANG: "C.UTF-8" } };
   }
   return sandboxPlan({ gameSlug, binary: engineMount ? NATIVE_PACKAGE_PROFILES[gameSlug].systemBinary : expected, gameArgs, data, mounts, resourceLimits, engineMount });
 }

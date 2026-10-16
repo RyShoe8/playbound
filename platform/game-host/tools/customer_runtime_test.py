@@ -16,6 +16,9 @@ CONFIG = 'sv_name Fixture\nsv_port 8322\nsv_register 0\nsv_map dm1\nsv_gametype 
 
 
 class RuntimeBoundaries(unittest.TestCase):
+    def setUp(self):
+        module.select_game('teeworlds')
+
     @unittest.skipUnless(os.getuid() == 0, 'Root-owned migration journal fixture')
     def test_migration_journal_gates_phase_directory_identity_and_legacy_seal(self):
         import json
@@ -63,6 +66,35 @@ class RuntimeBoundaries(unittest.TestCase):
                 seal.rename(legacy / 'retained-seal')
                 seal.mkdir(mode=0o700)
                 with self.assertRaises(ValueError): module.migration_ready(ID, 0)
+
+    def test_additional_native_profiles_have_fixed_ports_commands_and_typed_settings(self):
+        for game, port, settings, executable in [('bzflag', 5174, '{"maxPlayers":4,"scoreLimit":3}', '/usr/games/bzfs'), ('hedgewars',46650,'{}','/usr/lib/hedgewars/bin/hedgewars-server')]:
+            module.select_game(game)
+            self.assertEqual(module.request(['run-native',ID,'42',IDENTITY,game,str(port),'750','1536'])[0], 'run')
+            self.assertEqual(module.config_bytes(settings,port),settings.encode())
+            import json
+            command=module.command(Path('/fixture/data'),7,port,1536,8,json.loads(settings))
+            self.assertEqual(command[command.index('--perms')+4],executable)
+            self.assertEqual(command[command.index('--',command.index('/usr/bin/bwrap'))+1],executable)
+            for bad in ['{"exec":"/bin/sh"}', '{"maxPlayers":"4","scoreLimit":3}', '{"maxPlayers":201,"scoreLimit":3}']:
+                with self.assertRaises(ValueError):module.config_bytes(bad,port)
+            with self.assertRaises(ValueError):module.request(['run-native',ID,'42',IDENTITY,game,'9999','750','1536'])
+
+    @unittest.skipUnless(os.getuid() == 0, 'Root-owned profile journal fixture')
+    def test_native_journal_rejects_links_wrong_identity_and_unknown_game(self):
+        import json
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary)/'runtime';root.mkdir(mode=0o711)
+            control=root/ID/'control';control.parent.mkdir(mode=0o711);control.mkdir(mode=0o700)
+            journal=control/'migration.json'
+            journal.write_text(json.dumps({'serverId':ID,'gameSlug':'bzflag'}));journal.chmod(0o600)
+            with patch.object(module,'ROOT',root):
+                self.assertEqual(module.journal_game(ID),'bzflag')
+                for value in [{'serverId':'0'*24,'gameSlug':'bzflag'},{'serverId':ID,'gameSlug':'custom'}]:
+                    journal.write_text(json.dumps(value))
+                    with self.assertRaises(ValueError):module.journal_game(ID)
+                journal.unlink();journal.symlink_to('/etc/passwd')
+                with self.assertRaises(OSError):module.journal_game(ID)
 
     def test_only_fixed_operations_and_bounded_arguments(self):
         self.assertEqual(module.request(['migration', ID]), ('migration', ID, None, None, None))
@@ -133,7 +165,7 @@ class RuntimeBoundaries(unittest.TestCase):
             resources = SimpleNamespace(verify_caller=Mock())
             child = Mock(pid=52, returncode=0)
             child.poll.return_value = 0
-            with patch.object(module, 'trusted_module', return_value=SimpleNamespace(sealed_engine=Mock(return_value=None))), patch.object(module, 'migration_ready', return_value=False), patch.object(module, 'verify_scope', return_value=Path('/fixture.scope')), patch.object(module, 'verify_supervisor_scope'), patch.object(module, 'workspace', return_value=root), patch.object(module.pwd, 'getpwnam', return_value=SimpleNamespace(pw_uid=1001)), patch.object(Path, 'stat', return_value=SimpleNamespace(st_mode=0o100755, st_uid=0)), patch.object(module.subprocess, 'Popen', return_value=child) as spawn, patch.object(module, 'binding_write') as binding, patch.object(module, 'game_identity', return_value=IDENTITY):
+            with patch.object(module, 'migration_network_profile', return_value=None), patch.object(module, 'journal_game', return_value='teeworlds'), patch.object(module, 'trusted_module', return_value=SimpleNamespace(sealed_engine_for=Mock(return_value=(None, "/usr/games/teeworlds-server")))), patch.object(module, 'migration_ready', return_value=True), patch.object(module, 'verify_scope', return_value=Path('/fixture.scope')), patch.object(module, 'verify_supervisor_scope'), patch.object(module, 'workspace', return_value=root), patch.object(module.pwd, 'getpwnam', return_value=SimpleNamespace(pw_uid=1001)), patch.object(Path, 'stat', return_value=SimpleNamespace(st_mode=0o100755, st_uid=0)), patch.object(module.subprocess, 'Popen', return_value=child) as spawn, patch.object(module, 'binding_write') as binding, patch.object(module, 'game_identity', return_value=IDENTITY):
                 self.assertEqual(module.run_runtime(identities, resources, ID, 42, IDENTITY, (8322, 750, 1536), CONFIG), 0)
                 options = spawn.call_args.kwargs
                 self.assertEqual((options['user'], options['group'], options['extra_groups']), (40000, 40000, []))
@@ -157,7 +189,7 @@ class RuntimeBoundaries(unittest.TestCase):
             identities = SimpleNamespace(ensure_identity=Mock(return_value={'uid': 40000, 'gid': 40000}), secure_stat=Mock())
             resources = SimpleNamespace(verify_caller=Mock())
             network = SimpleNamespace(apply_current_scope=Mock(side_effect=ValueError('missing hooks')))
-            with patch.object(module, 'migration_ready', return_value=True), patch.object(module, 'migration_network_profile', return_value='public-game-v1'), patch.object(module, 'verify_scope', return_value=Path('/fixture.scope')), patch.object(module, 'verify_supervisor_scope'), patch.object(module, 'workspace', return_value=root), patch.object(module.pwd, 'getpwnam', return_value=SimpleNamespace(pw_uid=1001)), patch.object(module, 'trusted_module', return_value=network) as trusted, patch.object(module.subprocess, 'Popen') as spawn:
+            with patch.object(module, 'journal_game', return_value='teeworlds'), patch.object(module, 'migration_ready', return_value=True), patch.object(module, 'migration_network_profile', return_value='public-game-v1'), patch.object(module, 'verify_scope', return_value=Path('/fixture.scope')), patch.object(module, 'verify_supervisor_scope'), patch.object(module, 'workspace', return_value=root), patch.object(module.pwd, 'getpwnam', return_value=SimpleNamespace(pw_uid=1001)), patch.object(module, 'trusted_module', return_value=network) as trusted, patch.object(module.subprocess, 'Popen') as spawn:
                 with self.assertRaisesRegex(ValueError, 'missing hooks'):
                     module.run_runtime(identities, resources, ID, 42, IDENTITY, (8322, 750, 1536), CONFIG)
                 spawn.assert_not_called()

@@ -19,6 +19,7 @@ rule="$(mktemp)"
 trap 'rm -f "$rule"' EXIT
 printf '%s\n' \
   'playbound ALL=(root) NOPASSWD: /usr/local/libexec/playbound-customer-runtime run *' \
+  'playbound ALL=(root) NOPASSWD: /usr/local/libexec/playbound-customer-runtime run-native *' \
   'playbound ALL=(root) NOPASSWD: /usr/local/libexec/playbound-customer-runtime stop *' \
   'playbound ALL=(root) NOPASSWD: /usr/local/libexec/playbound-customer-runtime status *' > "$rule"
 printf '%s\n' 'playbound ALL=(root) NOPASSWD: /usr/local/libexec/playbound-customer-runtime migration *' >> "$rule"

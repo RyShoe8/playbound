@@ -1,5 +1,5 @@
 #!/usr/bin/python3 -I
-"""Root-only, offline Teeworlds migration with retained originals and progress.
+"""Root-only, offline reviewed-native migration with retained originals and progress.
 
 The agent has no sudo permission for this tool. Sources and destinations are
 derived from a server ID; no caller-selected path or executable is accepted.
@@ -25,6 +25,16 @@ MAX_ENTRIES = 8192
 MAX_BYTES = 2 * 1024 ** 3
 MAX_FILE_BYTES = 256 * 1024 ** 2
 MAX_DEPTH = 16
+GAME = 'teeworlds'
+PROFILE = 'teeworlds-unix-v1'
+
+def select_game(game):
+    global GAME, PROFILE, SOURCE
+    folders = {'teeworlds':'customer-sandboxes','bzflag':'bzflag-servers','hedgewars':'hedgewars-servers'}
+    if game not in folders: raise ValueError('Unsupported migration game')
+    GAME, PROFILE = game, game + '-unix-v1'
+    SOURCE = Path('/var/lib/playbound-host') / folders[game]
+
 
 
 def arguments(args):
@@ -170,7 +180,7 @@ def manifest_read(snapshot, server_id):
             value = json.load(handle)
     finally:
         os.close(fd)
-    if value.get('version') != 1 or value.get('serverId') != server_id or value.get('profile') != 'teeworlds-unix-v1':
+    if value.get('version') != 1 or value.get('serverId') != server_id or value.get('profile') != PROFILE:
         raise ValueError('Migration identity mismatch')
     return value
 
@@ -190,6 +200,7 @@ def prepare(server_id, owner):
         spec = importlib.util.spec_from_loader('pb_runtime', loader)
         runtime = importlib.util.module_from_spec(spec)
         loader.exec_module(runtime)
+        runtime.select_game(GAME)
         # Do not reserve an account or create/change its live data directory.
         runtime.directory(ROOT)
         runtime.directory(ROOT / server_id)
@@ -217,7 +228,7 @@ def prepare(server_id, owner):
             quiescent(owner)
             if entries != walk(source_fd, owner):
                 raise ValueError('Source changed during checkpoint')
-            value = {'version': 1, 'profile': 'teeworlds-unix-v1', 'serverId': server_id, 'entries': entries}
+            value = {'version': 1, 'profile': PROFILE, 'serverId': server_id, 'entries': entries}
             with (stage / 'manifest.json').open('x') as handle:
                 os.fchmod(handle.fileno(), 0o600)
                 json.dump(value, handle, ensure_ascii=True)
@@ -273,6 +284,7 @@ def journal_read(control, server_id):
         value = json.load(handle)
     if value.get('serverId') != server_id or value.get('version') != 1 or value.get('phase') not in ('activating', 'active', 'rolling-back', 'rolled-back'):
         raise ValueError('Migration journal identity mismatch')
+    if value.get('gameSlug','teeworlds') != GAME: raise ValueError('Migration journal game mismatch')
     return value
 
 
@@ -424,7 +436,7 @@ def transaction(action, server_id, legacy_uid, runtime, identities):
                     raise ValueError('Existing UID game progress must not be replaced')
             stage = control / 'activation-copy-v1'
             origin, owner, target_uid = control / 'legacy-checkpoint-v1' / 'data', 0, uid
-            value = {'version': 1, 'serverId': server_id, 'phase': 'activating', 'uid': uid, 'legacyUid': legacy_uid, 'previousDataInode': previous, 'sourceInode': inode(source)}
+            value = {'version': 1, 'serverId': server_id, 'phase': 'activating', 'gameSlug': GAME, 'uid': uid, 'legacyUid': legacy_uid, 'previousDataInode': previous, 'sourceInode': inode(source)}
             seal = control / 'legacy-source-retained-v1'
             seal.mkdir(mode=0o700)
             value['sealedSourceInode'] = inode(seal)
@@ -478,6 +490,8 @@ def registry_read(name, uid):
 
 def transition_profile(action, server_id, legacy_uid, runtime, identities):
     """Explicit offline operator bridge; ordinary job writes remain sticky."""
+    if action in ('enable-network','disable-network') and GAME != 'teeworlds':
+        raise ValueError('Native network policy needs engine-specific acceptance')
     if action not in ('enroll', 'complete-rollback', 'enable-network', 'disable-network'):
         raise ValueError('Invalid profile transition')
     quiescent(legacy_uid)
@@ -506,13 +520,13 @@ def transition_profile(action, server_id, legacy_uid, runtime, identities):
             raise ValueError('Stop the managed runtime through the agent before migration')
         jobs = registry_read('managed-jobs.json', legacy_uid)
         selected = [row for row in jobs if row.get('communityServerId') == server_id]
-        if len(selected) != 1 or selected[0].get('gameSlug') != 'teeworlds' or selected[0].get('status') not in ('stopped', 'failed'):
-            raise ValueError('Expected one stopped Teeworlds managed job')
-        if selected[0].get('identityProfile') not in (None, 'teeworlds-unix-v1'):
+        if len(selected) != 1 or selected[0].get('gameSlug') != GAME or selected[0].get('status') not in ('stopped', 'failed'):
+            raise ValueError('Expected one stopped matching native managed job')
+        if selected[0].get('identityProfile') not in (None, PROFILE):
             raise ValueError('Unexpected existing identity profile')
         row = selected[0]
         if action in ('enable-network', 'disable-network'):
-            if row.get('identityProfile') != 'teeworlds-unix-v1' or value.get('profileTransition', {}).get('state') != 'complete' or value.get('profileTransition', {}).get('target') != 'uid':
+            if row.get('identityProfile') != PROFILE or value.get('profileTransition', {}).get('state') != 'complete' or value.get('profileTransition', {}).get('target') != 'uid':
                 raise ValueError('Complete UID enrollment before choosing network policy')
             if action == 'enable-network':
                 network = runtime.trusted_module('pb_network', 'playbound-customer-network-check')
@@ -528,7 +542,7 @@ def transition_profile(action, server_id, legacy_uid, runtime, identities):
             journal_write(control, value)
             return value
         if action == 'enroll':
-            row['identityProfile'] = 'teeworlds-unix-v1'
+            row['identityProfile'] = PROFILE
         else:
             row.pop('identityProfile', None)
         target = 'uid' if action == 'enroll' else 'legacy'
@@ -556,7 +570,10 @@ if __name__ == '__main__':
     try:
         if os.getuid() != 0 or os.geteuid() != 0 or os.environ.get('SUDO_USER'):
             raise ValueError('Direct root operator required')
-        action, server_id = arguments(sys.argv[1:])
+        cli = sys.argv[1:]
+        if len(cli) == 4 and cli[0] == '--game':
+            select_game(cli[1]); cli = cli[2:]
+        action, server_id = arguments(cli)
         if action in ('prepare', 'verify'):
             value = prepare(server_id, pwd.getpwnam('playbound').pw_uid) if action == 'prepare' else verify(server_id)
             result = {'serverId': server_id, 'checkpointVerified': True, 'entries': len(value['entries']), 'activated': False}
@@ -570,6 +587,7 @@ if __name__ == '__main__':
             spec = importlib.util.spec_from_loader('pb_runtime', loader)
             runtime = importlib.util.module_from_spec(spec)
             loader.exec_module(runtime)
+            runtime.select_game(GAME)
             identities = runtime.trusted_module('pb_identities', 'playbound-customer-identities')
             operation = transition_profile if action in ('enroll', 'complete-rollback', 'enable-network', 'disable-network') else transaction
             value = operation(action, server_id, pwd.getpwnam('playbound').pw_uid, runtime, identities)

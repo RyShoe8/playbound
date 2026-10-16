@@ -10,8 +10,8 @@ export function identityMigrationMetadata(serverId, home, execute = execFileSync
       encoding: "utf8", timeout: 4000, maxBuffer: 4096,
       env: { PATH: "/usr/bin:/usr/games", LANG: "C.UTF-8" }, stdio: ["ignore", "pipe", "pipe"],
     }));
-    if (result.serverId !== serverId || result.migrationReady !== true || ![undefined, null, "public-game-v1"].includes(result.networkProfile)) return null;
-    return { networkProfile: result.networkProfile || null };
+    if (result.serverId !== serverId || result.migrationReady !== true || (result.identityProfile !== undefined && !["teeworlds-unix-v1","bzflag-unix-v1","hedgewars-unix-v1"].includes(result.identityProfile)) || ![undefined, null, "public-game-v1"].includes(result.networkProfile)) return null;
+    return { networkProfile: result.networkProfile || null, identityProfile: result.identityProfile || "teeworlds-unix-v1" };
   } catch { return null; }
 }
 

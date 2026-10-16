@@ -30,6 +30,23 @@ class EngineBoundary(unittest.TestCase):
     def select(self):
         return module.sealed_engine(self.engine, self.profile)
 
+    def test_every_native_profile_uses_its_own_reviewed_manifest(self):
+        records = {game: {'binaryBytes': len(self.bytes), 'binarySha256': hashlib.sha256(self.bytes).hexdigest()} for game in module.ENGINES}
+        self.profile.write_text(json.dumps(records))
+        for game in module.ENGINES:
+            fd = module.sealed_engine(self.engine, self.profile, game)
+            try:
+                self.assertEqual(os.read(fd, 1000), self.bytes)
+            finally:
+                os.close(fd)
+        records['bzflag']['binarySha256'] = '0' * 64
+        self.profile.write_text(json.dumps(records))
+        with self.assertRaises(ValueError): module.sealed_engine(self.engine, self.profile, 'bzflag')
+        fd = self.select()
+        os.close(fd)
+        for game in ['../teeworlds', 'constructor', 'custom']:
+            with self.assertRaises(ValueError): module.sealed_engine(self.engine, self.profile, game)
+
     def test_sealed_copy_survives_path_replacement_and_cannot_be_written(self):
         fd = self.select()
         self.addCleanup(os.close, fd)

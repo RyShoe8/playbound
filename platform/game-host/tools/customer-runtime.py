@@ -1,5 +1,5 @@
 #!/usr/bin/python3 -I
-"""Fixed Teeworlds identity handoff. No executable, path, environment or signal
+"""Fixed reviewed native identity handoff. No executable, path, environment or signal
 is supplied by the caller. The unprivileged gate owns the cgroup first.
 """
 import fcntl
@@ -19,6 +19,39 @@ ROOT = Path('/var/lib/playbound-customer-runtime')
 LEGACY_ROOT = Path('/var/lib/playbound-host/customer-sandboxes')
 ENV = {'PATH': '/usr/bin:/usr/games', 'LANG': 'C.UTF-8'}
 PROFILE = 'teeworlds-unix-v1'
+GAME = 'teeworlds'
+NATIVE_GAMES = {
+    'teeworlds': ('customer-sandboxes', 8303, 8323),
+    'bzflag': ('bzflag-servers', 5155, 5174),
+    'hedgewars': ('hedgewars-servers', 46631, 46650),
+}
+
+def select_game(game):
+    global GAME, PROFILE, LEGACY_ROOT
+    if game not in NATIVE_GAMES:
+        raise ValueError('Unsupported native identity profile')
+    GAME, PROFILE = game, game + '-unix-v1'
+    LEGACY_ROOT = Path('/var/lib/playbound-host') / NATIVE_GAMES[game][0]
+
+def journal_game(server_id):
+    file = ROOT / server_id / 'control' / 'migration.json'
+    for parent, mode in [(ROOT, 0o711), (ROOT / server_id, 0o711), (file.parent, 0o700)]:
+        info = parent.lstat()
+        if not stat.S_ISDIR(info.st_mode) or info.st_uid != 0 or stat.S_IMODE(info.st_mode) != mode:
+            raise ValueError('Unsafe native profile journal parent')
+    fd = os.open(file, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    with os.fdopen(fd) as source:
+        info = os.fstat(source.fileno())
+        if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_nlink != 1 or info.st_mode & 0o077 or info.st_size > 4096:
+            raise ValueError('Unsafe native profile journal')
+        value = json.load(source)
+    if value.get('serverId') != server_id:
+        raise ValueError('Native profile journal identity mismatch')
+    game = value.get('gameSlug', 'teeworlds')
+    if game not in NATIVE_GAMES:
+        raise ValueError('Unsupported native journal game')
+    return game
+
 
 
 def trusted_module(name, filename):
@@ -36,6 +69,12 @@ def trusted_module(name, filename):
 def request(args):
     if len(args) == 2 and args[0] == 'migration' and re.fullmatch(r'[a-f0-9]{24}', args[1]):
         return 'migration', args[1], None, None, None
+    if len(args) == 8 and args[0] == 'run-native':
+        game = args[4]
+        if game not in NATIVE_GAMES or game == 'teeworlds': raise ValueError('Unsupported native runtime')
+        select_game(game)
+        result = request(['run', *args[1:4], *args[5:]])
+        return result
     if len(args) not in (4, 7) or args[0] not in ('run', 'stop', 'status') or not re.fullmatch(r'[a-f0-9]{24}', args[1]) or not re.fullmatch(r'[1-9][0-9]{0,9}', args[2]) or int(args[2]) <= 1 or not re.fullmatch(r'[a-f0-9-]{36}:[0-9]+', args[3]):
         raise ValueError('Invalid runtime identity')
     action, server_id, raw_pid, identity = args[:4]
@@ -46,13 +85,22 @@ def request(args):
         if not all(re.fullmatch(r'[1-9][0-9]{0,4}', value) for value in args[4:]):
             raise ValueError('Invalid runtime allocation')
         port, cpu, memory = map(int, args[4:])
-        if not 8303 <= port <= 8323 or not 250 <= cpu <= 6000 or not 256 <= memory <= 8192:
+        if not NATIVE_GAMES[GAME][1] <= port <= NATIVE_GAMES[GAME][2] or not 250 <= cpu <= 6000 or not 256 <= memory <= 8192:
             raise ValueError('Unsupported runtime allocation')
         extra = port, cpu, memory
     return action, server_id, int(raw_pid), identity, extra
 
 
 def config_bytes(text, port):
+    if GAME != 'teeworlds':
+        if not isinstance(text,str) or len(text.encode()) > 16384: raise ValueError('Invalid native configuration')
+        values = json.loads(text)
+        if not isinstance(values,dict) or set(values) != ({'maxPlayers','scoreLimit'} if GAME == 'bzflag' else set()):
+            raise ValueError('Undeclared native settings')
+        for key, maximum in [('maxPlayers',200),('scoreLimit',100)]:
+            if key in values and (type(values[key]) is not int or not (2 if key == 'maxPlayers' else 0) <= values[key] <= maximum):
+                raise ValueError('Invalid native setting number')
+        return text.encode()
     if not isinstance(text, str) or len(text.encode('utf-8')) > 16384 or any(char in text for char in '\0\r;'):
         raise ValueError('Invalid Teeworlds configuration')
     values = {}
@@ -148,14 +196,18 @@ def verify_scope(resources, server_id, pid, identity, cpu, memory):
     return scope
 
 
-def command(data, fd, port, memory, engine_fd=None):
+def command(data, fd, port, memory, engine_fd=None, native_settings=None):
+    target = {'teeworlds':'/usr/games/teeworlds-server','bzflag':'/usr/games/bzfs','hedgewars':'/usr/lib/hedgewars/bin/hedgewars-server'}[GAME]
+    settings = native_settings or {}
+    game_args = ['-f','server.cfg','sv_port '+str(port)] if GAME == 'teeworlds' else ['-p',str(port)] if GAME == 'hedgewars' else ['-p',str(port),'-offa','-q','-j','+r','+s',str(settings['scoreLimit']),'-mp',str(settings['maxPlayers'])]
     return ['/usr/bin/prlimit', '--as=' + str(max(1024 ** 3, memory * 2 * 1024 ** 2)), '--nofile=1024', '--core=0', '--', '/usr/bin/bwrap',
             '--unshare-user', '--unshare-pid', '--unshare-ipc', '--unshare-uts', '--unshare-cgroup', '--disable-userns', '--cap-drop', 'ALL', '--die-with-parent',
             '--ro-bind', '/usr', '/usr', '--symlink', 'usr/lib', '/lib', '--symlink', 'usr/lib64', '/lib64', '--symlink', 'usr/bin', '/bin',
-            *(['--perms', '0555', '--ro-bind-data', str(engine_fd), '/usr/games/teeworlds-server'] if engine_fd is not None else []),
+            *(['--perms', '0555', '--ro-bind-data', str(engine_fd), target] if engine_fd is not None else []),
             '--proc', '/proc', '--dev', '/dev', '--size', '67108864', '--tmpfs', '/tmp', '--bind', str(data), '/server', '--ro-bind-data', str(fd), '/server/server.cfg',
+            *[part for filename in ['/etc/protocols','/etc/services','/etc/hosts','/etc/resolv.conf','/etc/ssl/certs'] if Path(filename).exists() for part in ['--ro-bind',filename,filename]],
             '--clearenv', '--setenv', 'PATH', '/usr/bin:/usr/games', '--setenv', 'HOME', '/server', '--setenv', 'XDG_DATA_HOME', '/server', '--setenv', 'XDG_CONFIG_HOME', '/server', '--setenv', 'LANG', 'C.UTF-8', '--chdir', '/server',
-            '--', '/usr/games/teeworlds-server', '-f', 'server.cfg', 'sv_port ' + str(port)]
+            '--', target, *game_args]
 
 
 def verify_supervisor_scope(scope):
@@ -232,7 +284,7 @@ def migration_ready(server_id, uid, allow_pending=False):
     if not allow_pending and value.get('profileTransition', {}).get('state') == 'pending':
         raise ValueError('Runtime enrollment transition is incomplete')
     data = (root / 'data').lstat()
-    if value.get('version') != 1 or value.get('serverId') != server_id or value.get('phase') != 'active' or value.get('uid') != uid or not stat.S_ISDIR(data.st_mode) or data.st_uid != uid or value.get('activationInode') != [data.st_dev, data.st_ino]:
+    if value.get('gameSlug', 'teeworlds') != GAME or value.get('version') != 1 or value.get('serverId') != server_id or value.get('phase') != 'active' or value.get('uid') != uid or not stat.S_ISDIR(data.st_mode) or data.st_uid != uid or value.get('activationInode') != [data.st_dev, data.st_ino]:
         raise ValueError('Customer migration is not ready')
     source = LEGACY_ROOT / ('pb-' + server_id)
     seal = source.lstat()
@@ -255,17 +307,18 @@ def migration_network_profile(server_id, uid):
 
 def run_runtime(identities, resources, server_id, pid, identity, extra, text):
     port, cpu, memory = extra
+    if journal_game(server_id) != GAME: raise ValueError('Runtime game differs from activated data')
     config = config_bytes(text, port)
     resources.verify_caller(pid, pwd.getpwnam('playbound').pw_uid)
     scope = verify_scope(resources, server_id, pid, identity, cpu, memory)
     account = identities.ensure_identity(server_id)
-    migration_ready(server_id, account['uid'])
+    if not migration_ready(server_id, account['uid']): raise ValueError('Customer data migration is required')
     root = workspace(server_id, account['uid'])
     lock = os.open(root / 'control' / 'runtime.lock', os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
     try:
         identities.secure_stat(os.fstat(lock))
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        migration_ready(server_id, account['uid'])
+        if not migration_ready(server_id, account['uid']): raise ValueError('Customer data migration is required')
         fd = os.memfd_create('pb-server-config', os.MFD_CLOEXEC | os.MFD_ALLOW_SEALING)
         child = None
         engine_fd = None
@@ -279,13 +332,13 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
             if network_profile:
                 network = trusted_module('pb_network', 'playbound-customer-network-check')
                 network.apply_current_scope()
-            for binary in ['/usr/bin/prlimit', '/usr/bin/bwrap', '/usr/games/teeworlds-server']:
+            for binary in ['/usr/bin/prlimit', '/usr/bin/bwrap', {'teeworlds':'/usr/games/teeworlds-server','bzflag':'/usr/games/bzfs','hedgewars':'/usr/lib/hedgewars/bin/hedgewars-server'}[GAME]]:
                 info = Path(binary).stat()
                 if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_mode & 0o022: raise ValueError('Untrusted runtime executable')
             engines = trusted_module('pb_native_engine', 'playbound-customer-native-engine')
-            engine_fd = engines.sealed_engine()
+            engine_fd, _target = engines.sealed_engine_for(GAME)
             inherited = (fd,) if engine_fd is None else (fd, engine_fd)
-            child = subprocess.Popen(command(root / 'data', fd, port, memory, engine_fd), user=account['uid'], group=account['gid'], extra_groups=[], env=ENV, cwd='/', stdin=subprocess.DEVNULL, pass_fds=inherited)
+            child = subprocess.Popen(command(root / 'data', fd, port, memory, engine_fd, json.loads(text) if GAME != 'teeworlds' else None), user=account['uid'], group=account['gid'], extra_groups=[], env=ENV, cwd='/', stdin=subprocess.DEVNULL, pass_fds=inherited)
             binding_write(root, {'profile': PROFILE, 'serverId': server_id, 'gatePid': pid, 'gateIdentity': identity, 'uid': account['uid'], 'gid': account['gid'], 'gamePid': child.pid, 'gameIdentity': game_identity(child.pid), 'networkProfile': network_profile})
             while child.poll() is None:
                 try:
@@ -311,6 +364,7 @@ if __name__ == '__main__':
         identities = trusted_module('pb_identities', 'playbound-customer-identities')
         identities.verify_caller()
         action, server_id, pid, identity, extra = request(sys.argv[1:])
+        if action != 'run': select_game(journal_game(server_id))
         if action == 'run':
             text = sys.stdin.buffer.read(16385)
             if len(text) > 16384: raise ValueError('Configuration exceeds limit')
@@ -318,7 +372,7 @@ if __name__ == '__main__':
             sys.exit(run_runtime(identities, resources, server_id, pid, identity, extra, text.decode('utf-8')))
         elif action == 'migration':
             account = identities.ensure_identity(server_id)
-            print(json.dumps({'serverId': server_id, 'migrationReady': migration_ready(server_id, account['uid']), 'networkProfile': migration_network_profile(server_id, account['uid'])}))
+            print(json.dumps({'serverId': server_id, 'migrationReady': migration_ready(server_id, account['uid']), 'networkProfile': migration_network_profile(server_id, account['uid']), 'identityProfile': PROFILE}))
         elif action == 'stop':
             print(json.dumps(stop_runtime(server_id, pid, identity)))
         else:
