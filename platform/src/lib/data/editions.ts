@@ -3331,26 +3331,6 @@ export const editions: EditionSeed[] = [
     ],
   },
   {
-    gameSlug: "quake-champions",
-    slug: "qc-champions-pack",
-    name: "Quake Champions (Full Roster & Custom Games)",
-    shortDescription: "All 16 Champions permanently unlocked with custom game hosting and lore scrolls.",
-    description:
-      "Unlocks the entire roster of 16 Champions instantly, granting immediate permanent access to Ranger, Visor, Nyx, Scalebearer, Anarki, Slash, Clutch, Galena, Sorlag, Doom Slayer, Keel, Strogg & Peeker, Eisen, Athena, Death Knight, and B.J. Blazkowicz, along with custom private game hosting privileges.",
-    type: "official",
-    status: "active",
-    visibility: "public",
-    isDefault: false,
-    sortOrder: 20,
-    links: {
-      website: "https://quake.bethesda.net",
-    },
-    installMethod: "official_download",
-    features: ["All Champions Unlocked", "Custom Game Hosting", "Lore Scrolls", "Competitive"],
-    tags: ["Full Roster", "Champions Pack", "Arena Shooter"],
-    verificationLevel: "official",
-  },
-  {
     gameSlug: "dota-2",
     slug: "dota-2-steam",
     name: "Dota 2 (Steam Edition)",
