@@ -1358,3 +1358,33 @@ and the corresponding package-review directories. Native fixtures now use
 bounded transient systemd services. An old private Combined Arms fixture was
 identified by name, staging script and port and stopped without stopping a
 production runtime. User saves and shared game installations were retained.
+
+## Explicit manual update policy and HX picker correction (2026-10-16)
+
+All 15 installation families without daily upstream discovery now carry an
+individual manual-update limitation in agent inventory and daily reports, with
+matching display in the existing admin installation panel. The declarations
+are in `platform/game-host/manualInstallationUpdates.json`; a coverage test
+requires the list to exactly match families without automatic discovery, so
+new handlers cannot silently lose their policy. This completes the owner's
+requested automatic-source-or-explicit-manual-limitation coverage: 37 automatic
+sources, 15 declared manual policies, 52 total. A manual Queue update reuses the
+reviewed package; it does not fetch an arbitrary newer upstream version.
+
+The VPS deployment preserved all 12 managed process identities. A real
+authenticated inventory probe confirmed all 52 targets and all 15 explicit
+manual limitations. Agent suite: 328 passed, 49 platform skips, no failures;
+TypeScript and affected UI lint passed. No production database changes.
+
+Deus Ex's existing `playbound-hx-coop` edition already selects the HX party/VPS
+recipe, local HCC dedicated host, agent-local player query and `deus-ex` update
+family. The hosting picker now excludes vanilla and single-player GMDX fallback
+profiles, and recognizes HX eligibility without requiring a redundant dedicated
+feature tag. Public catalog endpoints omit the testing game, so this is not a
+claim that its live publication or hosting profile has been enabled. Twenty-one
+HX/hosting-picker/query tests passed. No catalog seed was synchronized.
+
+Customer isolation and executable-plugin/Workshop installation remain open.
+The deployed filesystem sandbox covers five engines; the separate-UID handoff
+and fixed network policy remain Teeworlds-only. Do not expose executable uploads
+or claim tenant isolation across the remaining recipes from update coverage.

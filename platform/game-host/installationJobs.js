@@ -1,4 +1,6 @@
 import fs from "node:fs";
+import { createRequire } from "node:module";
+const MANUAL_UPDATES = createRequire(import.meta.url)("./manualInstallationUpdates.json");
 import path from "node:path";
 import crypto from "node:crypto";
 import { fork, execFile } from "node:child_process";
@@ -152,7 +154,7 @@ export function createInstallationCoordinator({ stateDir, gamesRoot, rooms, game
           if (["paired-runtime", "coordinated-open-fortress"].includes(target.strategy)) blocked = "This installation needs its reviewed package and a current full-verification record before maintenance. Existing servers remain online.";
         }
         const rollback = jobs.find((job) => job.key === key && job.status === "completed" && job.action === "update" && !job.rollbackConsumed);
-        return { key, name: target.name, installed: Boolean(installed), buildId: installed?.buildId, branch: installed?.branch, rollbackAvailable: Boolean(rollback), blockedReason: blocked };
+        return { updateLimitation: Object.hasOwn(MANUAL_UPDATES,key) ? MANUAL_UPDATES[key] : undefined, key, name: target.name, installed: Boolean(installed), buildId: installed?.buildId, branch: installed?.branch, rollbackAvailable: Boolean(rollback), blockedReason: blocked };
       }),
       jobs: [...jobs.filter((job) => !TERMINAL.has(job.status)), ...jobs.filter((job) => TERMINAL.has(job.status)).slice(0, 30)]
         .map(({ pid: _pid, identity: _identity, ...job }) => job),

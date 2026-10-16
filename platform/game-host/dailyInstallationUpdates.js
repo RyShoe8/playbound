@@ -1,4 +1,6 @@
 import fs from "node:fs";
+import { createRequire } from "node:module";
+const MANUAL_UPDATES = createRequire(import.meta.url)("./manualInstallationUpdates.json");
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { INSTALLATION_TARGETS } from "./installationTargets.js";
@@ -266,7 +268,7 @@ export function createDailyInstallationUpdates({ stateDir, coordinator, latest =
               row.message = "Non-public Steam branch: automatic updates will not switch the installed channel.";
             } else if (!automaticInstallationUpdate(target.key)) {
               row.status = "review_required";
-              row.message = "Pinned/custom build: new upstream versions need a reviewed handler before automatic installation.";
+              row.message = Object.hasOwn(MANUAL_UPDATES, target.key) ? MANUAL_UPDATES[target.key] : "Manual: no reviewed upstream discovery source exists for this installation. Existing files stay unchanged.";
             } else if (!target.installed || target.blockedReason) {
               row.status = "unavailable";
               row.message = target.blockedReason || "Installation missing or incomplete; automatic installation is paused.";

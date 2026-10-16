@@ -2,6 +2,15 @@ import { describe, expect, it } from "vitest";
 import { hostableProfileStubs, readyGameHostSlugs, readyPublishedHostableCatalog } from "./hostableProfiles";
 
 describe("hostable profile stubs", () => {
+  it("offers HX co-op rather than vanilla Deus Ex or single-player mods", () => {
+    const hx = { gameSlug: "deus-ex-goty-edition", slug: "playbound-hx-coop", features: ["Multiplayer"] };
+    const gmdx = { gameSlug: "deus-ex-goty-edition", slug: "gmdx", features: ["Dedicated Servers"] };
+    expect(hostableProfileStubs([], [hx, gmdx], [hx.gameSlug])).toEqual([
+      { key: "deus-ex-goty-edition:playbound-hx-coop", gameSlug: hx.gameSlug, editionSlug: hx.slug, recipeSlug: hx.gameSlug },
+    ]);
+    expect(readyPublishedHostableCatalog([{ slug: hx.gameSlug, title: "Deus Ex", status: "published" }], [hx, gmdx], [], new Set([hx.gameSlug])).editions).toEqual([hx]);
+  });
+
   it("keeps Open Fortress under the TF2 edition with its own recipe", () => {
     const edition = { gameSlug: "team-fortress-2", slug: "open-fortress", features: ["Dedicated Servers"] };
     const rows = hostableProfileStubs([], [edition]);

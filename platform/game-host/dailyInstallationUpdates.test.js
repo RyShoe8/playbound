@@ -239,3 +239,13 @@ test("paired release checks queue the reviewed upgrade, flag future packages, an
   await daily().tick();assert.equal(jobs.length,1);clock+=86400000;await daily().tick();assert.equal(jobs.length,1);assert.equal(daily().snapshot().targets.bombsquad.status,"review_required");
   available="1.8.3";clock+=86400000;await daily().tick();assert.equal(jobs.length,1);assert.match(daily().snapshot().targets.bombsquad.message,/paired package/);
 });
+
+
+test("every installation without daily discovery has an explicit manual limitation", async () => {
+  const { createRequire } = await import("node:module");
+  const manual = createRequire(import.meta.url)("./manualInstallationUpdates.json");
+  const { INSTALLATION_TARGETS } = await import("./installationTargets.js");
+  const missing = Object.keys(INSTALLATION_TARGETS).filter(key => !automaticInstallationUpdate(key));
+  assert.deepEqual(Object.keys(manual).sort(), missing.sort());
+  for (const reason of Object.values(manual)) assert.match(reason, /^Manual: .{60,}/);
+});
