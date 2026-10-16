@@ -1,0 +1,175 @@
+{
+  "version": "3.1.2-existing-assets",
+  "files": [
+    {
+      "path": "index.yaml",
+      "bytes": 1127,
+      "sha256": "3bc9b594c82eee4d41651a993243b52430bcadf552e75119273905e6af0ddd34"
+    },
+    {
+      "path": "maps/5star.yaml",
+      "bytes": 2229,
+      "sha256": "524f137dd858ae522e5af620fc581347fb984240a19333b6391e471b31559e8d"
+    },
+    {
+      "path": "maps/anticurry.yaml",
+      "bytes": 1299,
+      "sha256": "dc288f8c7ae0654008dd69a39ce3fb5df6cbb2eed91079ef063bd73eb6613c84"
+    },
+    {
+      "path": "maps/auto_sushi.yaml",
+      "bytes": 2479,
+      "sha256": "e6752c9473d9ca1e871240e74ff7eaf011fee1912ed7c95640a8f65822c970fe"
+    },
+    {
+      "path": "maps/bar.yaml",
+      "bytes": 1541,
+      "sha256": "d725298779f6cbb6fdad39190e7fc34f15382089b648bfd581a098d32b3d991d"
+    },
+    {
+      "path": "maps/bbq.yaml",
+      "bytes": 1374,
+      "sha256": "35fec2f3184e2cf79fd84e8c0d316bd70ffacdd03be3331268d8409af079b41d"
+    },
+    {
+      "path": "maps/burgers_inc.yaml",
+      "bytes": 1915,
+      "sha256": "a261f57876ddbd7a2f42f5c31279e0ecd8106b9859134891e9aead17230cbf8a"
+    },
+    {
+      "path": "maps/bus.yaml",
+      "bytes": 2372,
+      "sha256": "da44161290de7b244c2096faf2b207b0f18827c3c315923d57aecfecb92ce840"
+    },
+    {
+      "path": "maps/ctf.yaml",
+      "bytes": 1707,
+      "sha256": "a83953f606054ed6c5c4012e0dcdf56eecbbfbaf3ebd6ac443b772ccfc0132f5"
+    },
+    {
+      "path": "maps/debug.yaml",
+      "bytes": 2522,
+      "sha256": "ce02c3b9debd568ee4ab31734990a8a957ae7489c1d3e74592486ddc8e36306f"
+    },
+    {
+      "path": "maps/debug2.yaml",
+      "bytes": 2148,
+      "sha256": "07e8c628b7858bf362e0028614b44d0a8379d10a5410eeaa8652bae2985fcd32"
+    },
+    {
+      "path": "maps/duplex.yaml",
+      "bytes": 2262,
+      "sha256": "7f29cdc5ee7ece7baced5ed505a43c816ed4f32ae3197f960773027008c0afbe"
+    },
+    {
+      "path": "maps/junior.yaml",
+      "bytes": 1573,
+      "sha256": "d0221112969d41de7034ddb4a5d79c9593b7951d212d23d692c5cfa30e9e32ec"
+    },
+    {
+      "path": "maps/line.yaml",
+      "bytes": 1300,
+      "sha256": "0acc39d8c7ce08d8867806b07380f1809e03b1be627c3109e239619f91aff53e"
+    },
+    {
+      "path": "maps/lobby.yaml",
+      "bytes": 3231,
+      "sha256": "b008be2e41c675835e65dddf7a4098cffda32d15573ea62ce6bcc26891dd86d3"
+    },
+    {
+      "path": "maps/paris.yaml",
+      "bytes": 1762,
+      "sha256": "872963b5b54d0b327c25a4cba6e20bbcab17cb6eb56f80dfc52392c17e01a137"
+    },
+    {
+      "path": "maps/ring.yaml",
+      "bytes": 1609,
+      "sha256": "61db14c6ba42104cb086142a4d9098fd78fb5ed8a4e6ab863bc7208d64362286"
+    },
+    {
+      "path": "maps/salad.yaml",
+      "bytes": 1425,
+      "sha256": "571680361c1c068f588132905cad11b0c47db37c8c81deb94450154ec5f0f86c"
+    },
+    {
+      "path": "maps/scattered.yaml",
+      "bytes": 1642,
+      "sha256": "c4483ebcb9f4cd83fbc5bc91624e8823be7ae2c7b3eca4c3f8a8d9f4dd0a0f12"
+    },
+    {
+      "path": "maps/senior.yaml",
+      "bytes": 1625,
+      "sha256": "b18619f0ffddb9227ac65633804b2e056b8b556483e8fa1d99c6bc1342d90dbc"
+    },
+    {
+      "path": "maps/sophomore.yaml",
+      "bytes": 1316,
+      "sha256": "b87feea2bc84567aba5e3fb9cb354e1e04d60c97556eb928102da51cdcc19d64"
+    },
+    {
+      "path": "maps/souping.yaml",
+      "bytes": 2541,
+      "sha256": "84464b519a7514ad3fc1e50bc11ce8ad6c71421f864c517111d8d33ecb5652f3"
+    },
+    {
+      "path": "maps/star.yaml",
+      "bytes": 2268,
+      "sha256": "4627331b0c3525512602f329dbf5822be3bc5a495358fb41fc01e7bd9cbf39b4"
+    },
+    {
+      "path": "maps/station.yaml",
+      "bytes": 1703,
+      "sha256": "702a55afddfc0f1683ab4aee03df8e2804864dccb7577379ff4911200f0241ae"
+    },
+    {
+      "path": "maps/streetfood.yaml",
+      "bytes": 1802,
+      "sha256": "4b6478d6c2903ee3c4b1c7c51dcc27ccd0b076e73ca490ac6d12ba07f723601e"
+    },
+    {
+      "path": "maps/sushibar.yaml",
+      "bytes": 1539,
+      "sha256": "3a86d852d6435a9697a680bd14094d5b35d043b978474e016520d88b2db2d339"
+    },
+    {
+      "path": "maps/tag.yaml",
+      "bytes": 1779,
+      "sha256": "6ab22e7f13ca94e8cff787713ac62a07d03f1a961641b9f4f9227768fc19b5e3"
+    },
+    {
+      "path": "maps/teeny.yaml",
+      "bytes": 1630,
+      "sha256": "ec9a10089aeed1a0ed03504f9d1bea955d0961d43e4dea1985a1b3ca24e82269"
+    },
+    {
+      "path": "maps/zigzag.yaml",
+      "bytes": 1525,
+      "sha256": "31ea7d18a35ed1bace0774fcfa2d8af1493b1d5101125f89bd8085bdc6dc1040"
+    },
+    {
+      "path": "palettes.yaml",
+      "bytes": 1201,
+      "sha256": "4dc08a1b0d10205bed5bd9a001f122f02cfa2d01fe8bb738b40b559288412960"
+    },
+    {
+      "path": "recipes/anticurry.yaml",
+      "bytes": 48767,
+      "sha256": "c125da0a4b0a4b9e0398a645d4b613bb3d1120450524168b4f41816bbcd10671"
+    },
+    {
+      "path": "recipes/default.yaml",
+      "bytes": 48767,
+      "sha256": "a2e34890498f369a9910e02d68139a88177eef71ca8b0118121d77c8f50e7dfd"
+    },
+    {
+      "path": "recipes/none.yaml",
+      "bytes": 1,
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "tiles.yaml",
+      "bytes": 395,
+      "sha256": "a932e040eb89449a495adc11d928feb73c6af9266aabc7a92c327d854b7b4b2d"
+    }
+  ]
+}

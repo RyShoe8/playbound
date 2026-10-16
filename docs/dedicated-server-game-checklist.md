@@ -240,3 +240,11 @@ mapping and reject missing/unknown editions rather than falling back to stock
 OpenRA. Reconcile web Join, launcher Join, agent startup, update dependencies,
 master-list mod matching and the admin coverage row together. Preserve client
 pins: a repository's newest launcher release is not a game-server release.
+
+
+For identity-isolated engines with shared assets, expose only a reviewed read-only
+asset tree or sealed pinned descriptors. Bound individual files, total bytes and
+entry count; reject links, traversal, changed bytes and unlisted destinations.
+An engine executable pin does not verify its maps/scripts/data. Test source
+replacement after selection and show an explicit isolated-update limitation when
+new upstream bytes still require an operator's root-owned pin approval.

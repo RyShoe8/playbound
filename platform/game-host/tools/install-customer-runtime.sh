@@ -6,6 +6,12 @@ source_dir="$(cd "$(dirname "$0")" && pwd)"
 java_profiles="$source_dir/../customerJavaProfiles.json"
 if test -f "$source_dir/customerJavaProfiles.json"; then java_profiles="$source_dir/customerJavaProfiles.json"; fi
 install -o root -g root -m 644 "$java_profiles" /usr/local/libexec/playbound-customer-java-profiles.json
+asset_profile="$source_dir/../customerHurryAssets.json"
+if test -f "$source_dir/customerHurryAssets.json"; then asset_profile="$source_dir/customerHurryAssets.json"; fi
+install -o root -g root -m 644 "$asset_profile" /usr/local/libexec/playbound-customer-hurry-assets.json
+python3 -m py_compile "$source_dir/customer-game-assets.py"
+install -o root -g root -m 755 "$source_dir/customer-game-assets.py" /usr/local/libexec/playbound-customer-game-assets
+
 test -x /usr/local/libexec/playbound-customer-identities
 test -x /usr/local/libexec/playbound-customer-resources
 test -f /usr/local/libexec/playbound-package-native/nativePackageProfiles.json

@@ -26,6 +26,7 @@ PROFILES = {
     'ysoccer': (1, 1024 ** 3, 128),
     'flightgear': (1, 1024 ** 3, 128),
     'mindustry': (1, 1024 ** 3, 128),
+    'hurry-curry': (1, 1024 ** 3, 128),
 }
 
 

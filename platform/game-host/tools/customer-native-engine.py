@@ -24,11 +24,17 @@ ENGINES = {
     'supertuxkart': ('supertuxkart', '/usr/games/supertuxkart'),
     '0-ad': ('pyrogenesis', '/usr/games/pyrogenesis'),
     'flightgear': ('fgms', '/engine-native'),
+    'hurry-curry': ('hurrycurry-server', '/engine-native'),
 }
 
 def sealed_engine_for(game):
     if game in ('ysoccer','mindustry'):
         return sealed_java_engine(game=game), '/engine.jar'
+    if game == 'hurry-curry':
+        root=Path('/usr/local/libexec/playbound-isolated-hurry')
+        descriptor=sealed_engine(root/'hurrycurry-server',root/'profile.json',game)
+        if descriptor is None: raise ValueError('Reviewed isolated Hurry Curry engine is not installed')
+        return descriptor, '/engine-native'
     if game == 'flightgear':
         root=Path('/usr/local/libexec/playbound-isolated-flightgear')
         descriptor=sealed_engine(root/'fgms',root/'profile.json',game)
