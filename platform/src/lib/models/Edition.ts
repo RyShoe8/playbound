@@ -63,6 +63,15 @@ const InstallStepSchema = new Schema(
   { _id: false }
 );
 
+const CreditSchema = new Schema(
+  {
+    name: { type: String, required: true },
+    role: { type: String, default: "" },
+    url: { type: String, default: null },
+  },
+  { _id: false }
+);
+
 const FaqSchema = new Schema(
   {
     q: { type: String, required: true },
@@ -154,6 +163,18 @@ const EditionSchema = new Schema(
     /** In-game server name, when this edition is a server. */
     serverName: { type: String, default: null, index: true },
     languages: { type: [String], default: [] },
+
+    /** Accreditation. Who made this edition, under what terms, and when. */
+    developerSlug: { type: String, default: null, index: true },
+    developerName: { type: String, default: null },
+    credits: { type: [CreditSchema], default: [] },
+    license: { type: String, default: null },
+    releaseYear: { type: Number, default: null },
+    /** Long-form copy, mirroring the game page's depth. */
+    longDescription: { type: String, default: null },
+    whyWePickedIt: { type: String, default: null },
+    bestFor: { type: [String], default: [] },
+    notFor: { type: [String], default: [] },
 
     version: { type: String, default: null },
     firstPlaySteps: { type: [InstallStepSchema], default: [] },

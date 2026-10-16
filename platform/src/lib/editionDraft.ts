@@ -1,5 +1,6 @@
 import type { Edition } from "@/lib/editionTypes";
 import type {
+  EditionCredit,
   EditionFaqItem,
   EditionInstallConfig,
   EditionPatchNote,
@@ -47,6 +48,15 @@ export interface EditionDraft {
   aliases: string[];
   serverName: string;
   languages: string[];
+  developerSlug: string;
+  developerName: string;
+  credits: EditionCredit[];
+  license: string;
+  releaseYear: number | null;
+  longDescription: string;
+  whyWePickedIt: string;
+  bestFor: string[];
+  notFor: string[];
   version: string;
   firstPlaySteps: InstallStep[];
   multiplayerGamingSteps: InstallStep[];
@@ -83,6 +93,15 @@ export function emptyEditionDraft(gameSlug: string): EditionDraft {
     aliases: [],
     serverName: "",
     languages: [],
+    developerSlug: "",
+    developerName: "",
+    credits: [],
+    license: "",
+    releaseYear: null,
+    longDescription: "",
+    whyWePickedIt: "",
+    bestFor: [],
+    notFor: [],
     version: "",
     firstPlaySteps: [],
     multiplayerGamingSteps: [],
@@ -136,6 +155,15 @@ export function editionToDraft(edition: Edition): EditionDraft {
     aliases: edition.aliases,
     serverName: edition.serverName ?? "",
     languages: edition.languages,
+    developerSlug: edition.developerSlug ?? "",
+    developerName: edition.developerName ?? "",
+    credits: edition.credits ?? [],
+    license: edition.license ?? "",
+    releaseYear: edition.releaseYear ?? null,
+    longDescription: edition.longDescription ?? "",
+    whyWePickedIt: edition.whyWePickedIt ?? "",
+    bestFor: edition.bestFor ?? [],
+    notFor: edition.notFor ?? [],
     version: edition.version ?? "",
     firstPlaySteps: edition.firstPlaySteps ?? [],
     multiplayerGamingSteps: edition.multiplayerGamingSteps ?? [],

@@ -48,6 +48,8 @@ import { GameFeatureIcon } from "@/components/GameFeatureIcon";
 import { SectionHeader } from "@/components/ui/bits";
 import { Badge, EmptyHint } from "@/components/ui/bits";
 import { JsonLd, graph, breadcrumbSchema, faqSchema } from "@/components/JsonLd";
+import { absoluteUrl } from "@/lib/site";
+import { retiredEditionRedirect } from "@/lib/editionRedirects";
 import { TelemetryOnce } from "@/components/TelemetryOnce";
 import {
   EditionInstallButton,
@@ -119,7 +121,11 @@ export async function generateMetadata({ params }: { params: Params }) {
   }
 
   const edition = await getEditionBySlug(game, editionSlug, { includeHidden: includeTesting });
-  if (!edition) notFound();
+  if (!edition) {
+    // Retired editions send their old URL to the edition that replaced them.
+    if (retiredEditionRedirect(game.slug, editionSlug)) return privateMetadata("Edition moved");
+    notFound();
+  }
 
   // Unlisted editions stay reachable by URL but must not be indexed.
   if (edition.visibility !== "public" || game.status === "testing" || game.status === "ready") {
@@ -170,7 +176,11 @@ export default async function EditionPage({
   }
 
   const edition = await getEditionBySlug(game, editionSlug, { includeHidden: includeTesting });
-  if (!edition) notFound();
+  if (!edition) {
+    const moved = retiredEditionRedirect(game.slug, editionSlug);
+    if (moved) permanentRedirect(moved);
+    notFound();
+  }
 
   const tab: Tab = tabs.includes(rawTab as Tab) ? (rawTab as Tab) : "overview";
   const action = resolveInstallAction(edition);
@@ -250,7 +260,31 @@ export default async function EditionPage({
             { name: game.title, path: `/games/${game.slug}` },
             { name: edition.name, path: pageBase },
           ]),
-          faqSchema(edition.faq ?? [])
+          faqSchema(edition.faq ?? []),
+          // Who made this edition, so search engines can attribute the software.
+          edition.developerName || edition.license || edition.releaseYear
+            ? {
+                "@type": "SoftwareApplication",
+                "@id": `${absoluteUrl(pageBase)}#software`,
+                name: edition.name,
+                url: absoluteUrl(pageBase),
+                applicationCategory: "GameApplication",
+                ...(edition.developerName
+                  ? {
+                      author: {
+                        "@type": "Organization",
+                        name: edition.developerName,
+                        ...(edition.developerSlug
+                          ? { url: absoluteUrl(`/developers/${edition.developerSlug}`) }
+                          : {}),
+                      },
+                    }
+                  : {}),
+                ...(edition.license ? { license: edition.license } : {}),
+                ...(edition.releaseYear ? { datePublished: String(edition.releaseYear) } : {}),
+                ...(edition.version ? { softwareVersion: edition.version } : {}),
+              }
+            : null
         )}
       />
 
@@ -578,6 +612,107 @@ function OverviewTab({
               {edition.description.split("\n\n").map((para, i) => (
                 <p key={i}>{para}</p>
               ))}
+            </div>
+          </section>
+        )}
+
+        {edition.longDescription && (
+          <section>
+            <SectionHeader title={`${edition.name} in depth`} />
+            <div className="mt-3 space-y-4 leading-relaxed text-muted-foreground">
+              {edition.longDescription.split("\n\n").map((para, i) => (
+                <p key={i}>{para}</p>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {edition.whyWePickedIt && (
+          <section>
+            <SectionHeader title="Why we picked it" />
+            <p className="mt-3 leading-relaxed text-muted-foreground">{edition.whyWePickedIt}</p>
+          </section>
+        )}
+
+        {((edition.bestFor?.length ?? 0) > 0 || (edition.notFor?.length ?? 0) > 0) && (
+          <section className="grid gap-4 sm:grid-cols-2">
+            {(edition.bestFor?.length ?? 0) > 0 && (
+              <div className="rounded-xl border border-border bg-card p-5">
+                <p className="text-xs font-bold tracking-wide text-muted-foreground uppercase">Best for</p>
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-foreground/90">
+                  {edition.bestFor!.map((item, i) => (
+                    <li key={i}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {(edition.notFor?.length ?? 0) > 0 && (
+              <div className="rounded-xl border border-border bg-card p-5">
+                <p className="text-xs font-bold tracking-wide text-muted-foreground uppercase">Not for</p>
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-foreground/90">
+                  {edition.notFor!.map((item, i) => (
+                    <li key={i}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </section>
+        )}
+
+        {(edition.developerName || (edition.credits?.length ?? 0) > 0 || edition.license || edition.releaseYear) && (
+          <section>
+            <SectionHeader title="Credits" />
+            <div className="mt-3 rounded-xl border border-border bg-card p-5 text-sm">
+              <dl className="grid gap-x-8 gap-y-2 sm:grid-cols-2">
+                {edition.developerName && (
+                  <div>
+                    <dt className="text-xs font-bold tracking-wide text-muted-foreground uppercase">Developed by</dt>
+                    <dd className="mt-0.5 font-semibold">
+                      {edition.developerSlug ? (
+                        <Link href={`/developers/${edition.developerSlug}`} className="text-primary hover:underline">
+                          {edition.developerName}
+                        </Link>
+                      ) : (
+                        edition.developerName
+                      )}
+                    </dd>
+                  </div>
+                )}
+                {edition.license && (
+                  <div>
+                    <dt className="text-xs font-bold tracking-wide text-muted-foreground uppercase">License</dt>
+                    <dd className="mt-0.5 font-semibold">{edition.license}</dd>
+                  </div>
+                )}
+                {edition.releaseYear && (
+                  <div>
+                    <dt className="text-xs font-bold tracking-wide text-muted-foreground uppercase">First released</dt>
+                    <dd className="mt-0.5 font-semibold">{edition.releaseYear}</dd>
+                  </div>
+                )}
+                {edition.version && (
+                  <div>
+                    <dt className="text-xs font-bold tracking-wide text-muted-foreground uppercase">Version listed</dt>
+                    <dd className="mt-0.5 font-semibold">{edition.version}</dd>
+                  </div>
+                )}
+              </dl>
+              {(edition.credits?.length ?? 0) > 0 && (
+                <ul className="mt-4 space-y-1.5 border-t border-border pt-4">
+                  {edition.credits!.map((credit, i) => (
+                    <li key={i} className="flex flex-wrap items-baseline gap-x-2">
+                      {credit.url ? (
+                        <a href={credit.url} target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">
+                          {credit.name}
+                        </a>
+                      ) : (
+                        <span className="font-semibold">{credit.name}</span>
+                      )}
+                      {credit.role && <span className="text-muted-foreground">— {credit.role}</span>}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </section>
         )}

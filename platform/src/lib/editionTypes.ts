@@ -303,6 +303,14 @@ export interface EditionPatchNote {
   url?: string;
 }
 
+/** One person or team credited on an edition, with what they did. */
+export interface EditionCredit {
+  name: string;
+  /** "Lead developer", "Engine", "Original game", "Artwork"… */
+  role: string;
+  url?: string;
+}
+
 export interface EditionFaqItem {
   q: string;
   a: string;
@@ -364,6 +372,18 @@ export interface Edition {
    */
   serverName?: string;
   languages: string[];
+
+  /** Accreditation: the people behind this edition and the terms it ships under. */
+  developerSlug?: string;
+  developerName?: string;
+  credits?: EditionCredit[];
+  license?: string;
+  releaseYear?: number;
+  /** Long-form description, shown beneath the summary. */
+  longDescription?: string;
+  whyWePickedIt?: string;
+  bestFor?: string[];
+  notFor?: string[];
 
   version?: string;
   firstPlaySteps?: InstallStep[];

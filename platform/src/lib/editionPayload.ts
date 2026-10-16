@@ -11,6 +11,23 @@ import { normalizeTags } from "@/lib/gamePayload";
 
 const SLUG = /^[a-z0-9][a-z0-9-]*$/;
 
+/**
+ * A URL or an app-protocol link (steam://install/570, com.epicgames.launcher://…).
+ *
+ * Storefront hand-offs are not http(s) URLs, and requiring that made editions
+ * that install through Steam or Epic impossible to re-save in admin: the stored
+ * value was valid for the launcher but the validator rejected the whole edition.
+ */
+const optionalLaunchUrl = z
+  .string()
+  .trim()
+  .max(500)
+  .optional()
+  .default("")
+  .refine((v) => v === "" || /^[a-z][a-z0-9+.-]*:\/\/\S+$/i.test(v), {
+    message: "Must be a full URL such as https://… or steam://…",
+  });
+
 const optionalUrl = z
   .string()
   .trim()
@@ -73,7 +90,7 @@ const installConfigSchema = z
     epic: z
       .object({
         productSlug: z.string().trim().max(200).optional(),
-        launchUrl: optionalUrl,
+        launchUrl: optionalLaunchUrl,
       })
       .optional(),
     gog: z.object({ productUrl: optionalUrl }).optional(),
@@ -126,7 +143,7 @@ const installConfigSchema = z
       })
       .optional(),
     external_installer: z
-      .object({ url: optionalUrl, instructions: z.string().trim().max(1000).optional() })
+      .object({ url: optionalLaunchUrl, instructions: z.string().trim().max(1000).optional() })
       .optional(),
     manual: z
       .object({
@@ -218,6 +235,25 @@ export const editionPayloadSchema = z
     aliases: z.array(z.string().trim().min(1).max(80)).max(20).default([]),
     serverName: z.string().trim().max(120).optional(),
     languages: z.array(z.string().trim().min(1).max(60)).max(60).default([]),
+
+    developerSlug: z.string().trim().max(80).optional(),
+    developerName: z.string().trim().max(160).optional(),
+    credits: z
+      .array(
+        z.object({
+          name: z.string().trim().min(1).max(160),
+          role: z.string().trim().max(120).default(""),
+          url: optionalUrl,
+        })
+      )
+      .max(60)
+      .default([]),
+    license: z.string().trim().max(160).optional(),
+    releaseYear: z.number().int().min(1970).max(2100).nullish(),
+    longDescription: z.string().trim().max(20000).optional(),
+    whyWePickedIt: z.string().trim().max(4000).optional(),
+    bestFor: z.array(z.string().trim().min(1).max(300)).max(12).default([]),
+    notFor: z.array(z.string().trim().min(1).max(300)).max(12).default([]),
 
     version: z.string().trim().max(80).optional(),
     firstPlaySteps: z.array(installStepSchema).max(30).default([]),
