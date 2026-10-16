@@ -60,7 +60,7 @@ test("Battlefield 1942 isolates settings and caps players without copying game a
   assert.match(fs.readFileSync(path.join(overlayB, "settings", "maplist.con"), "utf8"), /berlin GPM_CQ/);
 });
 
-test("GoldenEye: Source isolates its Windows runtime and Wine prefix per server", async () => {
+test("GoldenEye refuses unreviewed runtime copies and isolates Wine prefixes per server", async () => {
   const source = path.join(games, "goldeneye-source");
   fs.mkdirSync(path.join(source, "gesource"), { recursive: true });
   fs.writeFileSync(path.join(source, "srcds.exe"), "server");
@@ -68,14 +68,12 @@ test("GoldenEye: Source isolates its Windows runtime and Wine prefix per server"
   fs.writeFileSync(path.join(source, "gesource", "gameinfo.txt"), "mod");
   const a = context("ges-a", 8);
   const b = context("ges-b", 4);
-  await recipes["goldeneye-source"].prepareSpawn(27120, a);
-  await recipes["goldeneye-source"].prepareSpawn(27121, b);
+  await assert.rejects(recipes["goldeneye-source"].prepareSpawn(27120, a), /Paired runtime|ENOENT/);
   const rootA = path.join(home, "goldeneye-source-servers", "pb-ges-a");
   const rootB = path.join(home, "goldeneye-source-servers", "pb-ges-b");
-  assert.equal(recipes["goldeneye-source"].resolveBinary(recipes["goldeneye-source"].binaries, a), path.join(rootA, "runtime", "run-server.sh"));
   assert.equal(recipes["goldeneye-source"].spawnEnv(27120, a).WINEPREFIX, path.join(rootA, "wineprefix"));
   assert.equal(recipes["goldeneye-source"].spawnEnv(27121, b).WINEPREFIX, path.join(rootB, "wineprefix"));
-  assert.equal(fs.readFileSync(path.join(rootA, "runtime", "gesource", "gameinfo.txt"), "utf8"), "mod");
+  assert.ok(!fs.existsSync(path.join(rootA, "runtime", "srcds.exe")));
   const args = recipes["goldeneye-source"].args(27120, a);
   assert.equal(args[args.indexOf("-maxplayers") + 1], "8");
   assert.equal(args[args.indexOf("-port") + 1], "27120");

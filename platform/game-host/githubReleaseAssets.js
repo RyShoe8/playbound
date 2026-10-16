@@ -3,10 +3,10 @@ import { createHash } from "node:crypto";
 
 const HOSTS = new Set(["github.com", "release-assets.githubusercontent.com", "objects.githubusercontent.com"]);
 export async function readRelease(repository, { request = fetch, signal, label }) {
-  if (!["Anuken/Mindustry", "OpenRA/OpenRA", "OpenHV/OpenHV", "OpenE2140/OpenE2140", "assaultcube/AC", "openmoh/openmohaa", "Unvanquished/Unvanquished", "TES3MP/TES3MP", "triplea-game/triplea", "RyShoe8/playbound", "Warzone2100/warzone2100", "Inq8/CAmod"].includes(repository)) throw new Error("Unsupported release source");
+  if (!["Anuken/Mindustry", "OpenRA/OpenRA", "OpenHV/OpenHV", "MustaphaTR/Romanovs-Vengeance", "OpenRA/TiberianDawnHD", "DoGyAUT/crystallized-nexus", "OpenE2140/OpenE2140", "assaultcube/AC", "openmoh/openmohaa", "Unvanquished/Unvanquished", "TES3MP/TES3MP", "triplea-game/triplea", "RyShoe8/playbound", "Warzone2100/warzone2100", "Inq8/CAmod"].includes(repository)) throw new Error("Unsupported release source");
   // TES3MP marks its VR channel as GitHub's latest stable release. Select the
   // highest standard-server tag explicitly; never switch a normal world to VR.
-  const endpoint = repository === "TES3MP/TES3MP" ? "releases?per_page=30" : repository === "RyShoe8/playbound" ? "releases/tags/ysoccer-online-latest" : "releases/latest";
+  const endpoint = ["TES3MP/TES3MP","DoGyAUT/crystallized-nexus"].includes(repository) ? "releases?per_page=30" : repository === "RyShoe8/playbound" ? "releases/tags/ysoccer-online-latest" : "releases/latest";
   const response = await request(`https://api.github.com/repos/${repository}/${endpoint}`, {
     redirect: "error", signal, headers: { "User-Agent": "PlayBound-game-host", Accept: "application/vnd.github+json" },
   });
@@ -18,6 +18,13 @@ export async function readRelease(repository, { request = fetch, signal, label }
     chunks.push(chunk);
   }
   const result = JSON.parse(Buffer.concat(chunks).toString());
+  if(repository==="DoGyAUT/crystallized-nexus") {
+    if(!Array.isArray(result))throw new Error("Crystallized Nexus package channel is invalid");
+    const packages=result.filter(row=>row.draft===false&&/^playtest-\d{8}$/.test(row.tag_name||"")&&row.assets?.some(asset=>asset.name===`CrystallizedNexus-${row.tag_name}-x86_64.AppImage`));
+    packages.sort((a,b)=>b.tag_name.localeCompare(a.tag_name,"en",{numeric:true}));
+    if(!packages.length)throw new Error("Crystallized Nexus game package is unavailable");
+    return packages[0];
+  }
   if (repository !== "TES3MP/TES3MP") return result;
   if (!Array.isArray(result)) throw new Error("TES3MP standard release feed is invalid");
   const releases = result.filter((row) => row.draft === false && row.prerelease === false && /^tes3mp-\d{1,4}\.\d{1,4}\.\d{1,4}$/.test(row.tag_name || ""));

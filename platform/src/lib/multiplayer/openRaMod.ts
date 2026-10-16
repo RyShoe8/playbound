@@ -15,7 +15,7 @@
  * this exists to prevent. Change one, change the other.
  */
 
-export type OpenRaMod = "ra" | "cnc" | "d2k" | "ts" | "ca" | "hv" | "ra2" | "e2140";
+export type OpenRaMod = "ra" | "cnc" | "d2k" | "ts" | "ca" | "hv" | "rv" | "cn" | "e2140";
 
 /**
  * Red Alert is the default because it is OpenRA's flagship mod and the one an
@@ -23,6 +23,7 @@ export type OpenRaMod = "ra" | "cnc" | "d2k" | "ts" | "ca" | "hv" | "ra2" | "e21
  */
 export function openRaModFor(editionSlug: string | null | undefined): OpenRaMod {
   const raw = String(editionSlug || "").toLowerCase();
+  if (raw === "crystallized-nexus") return "cn";
   /*
    * OpenE2140 before any `dune` / generic OpenRA branches — its portable only
    * ships mod `e2140`. Mapping it to `ra` (the old fallthrough) made party
@@ -43,7 +44,7 @@ export function openRaModFor(editionSlug: string | null | undefined): OpenRaMod 
   if (raw.includes("d2k") || raw.includes("dune")) return "d2k";
   if (raw.includes("combined") || raw.includes("ca")) return "ca";
   if (raw.includes("openhv") || raw === "hv") return "hv";
-  if (raw.includes("ra2")) return "ra2";
+  if (["ra2", "rv", "romanovs-vengeance"].includes(raw)) return "rv";
   return "ra";
 }
 

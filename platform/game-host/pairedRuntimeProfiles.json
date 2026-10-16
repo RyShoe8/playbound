@@ -267,5 +267,25 @@
         "launcherSha256": "32c60aeea1b1c2b857c08d1ddc5e63b049bf8c2e2023afd09979e4a8db252e49"
       }
     ]
+  },
+  "goldeneye-source": {
+    "latest": "5.0.6-sdk-195543-pb1",
+    "component": "runtime",
+    "executableFormat": "pe32",
+    "binaries": [
+      "srcds.exe",
+      "gesource/bin/server.dll"
+    ],
+    "versions": [
+      {
+        "buildId": "5.0.6-sdk-195543-pb1",
+        "treeSha256": "ebf2ed63de75191d2d49c34f8c6c3071436e4b959e768bc769c776042b022cef",
+        "fileCount": 54034,
+        "totalBytes": 7853064255,
+        "launcherSha256": "4cac1c4084e6fe63a13069b6e61d02c6e185fb660c6ae43b7c8ec8a20c1c90cc",
+        "format": "sdk-mod-assembly",
+        "baselineOnly": false
+      }
+    ]
   }
 }

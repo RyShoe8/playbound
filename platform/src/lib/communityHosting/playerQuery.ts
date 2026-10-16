@@ -1,5 +1,14 @@
 import { queryManagedHostOccupancy } from "@/lib/gameHost/client";
 
+/** A recycled port must not accept a stale master entry for another mod. */
+export function expectedRegistryMod(gameSlug: string, editionSlug?: string | null): string | undefined {
+  if (gameSlug === "earth-2140-trilogy") return "e2140";
+  if (gameSlug === "openhv") return "hv";
+  if (gameSlug !== "openra") return undefined;
+  const mods: Record<string,string> = { "combined-arms":"ca", "ra2":"rv", "crystallized-nexus":"cn", "tiberian-dawn-hd":"cnc", "openhv":"hv", "e2140":"e2140" };
+  return Object.hasOwn(mods,editionSlug || "") ? mods[editionSlug!] : undefined;
+}
+
 /*
  * "agent-local": the VPS agent asks the server on its own port (Steam A2S,
  * Quake 3 getstatus, Mindustry ping, AssaultCube info, SS14 /status, TES3MP

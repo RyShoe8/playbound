@@ -539,6 +539,7 @@ function gameBin(slug, names) {
 
 function openRaMod(editionSlug) {
   const raw = String(editionSlug || "").toLowerCase();
+  if (raw === "crystallized-nexus") return "cn";
   // OpenE2140 before dune/ra — portable only ships mod e2140.
   if (raw.includes("e2140") || raw.includes("opene2140") || raw.includes("earth-2140")) {
     return "e2140";
@@ -547,7 +548,7 @@ function openRaMod(editionSlug) {
   if (raw.includes("d2k") || raw.includes("dune")) return "d2k";
   if (raw.includes("combined") || raw.includes("ca")) return "ca";
   if (raw.includes("openhv") || raw === "hv") return "hv";
-  if (raw.includes("ra2")) return "ra2";
+  if (["ra2","rv","romanovs-vengeance"].includes(raw)) return "rv";
   return "ra";
 }
 
@@ -864,6 +865,9 @@ export const recipes = {
     binaries: [
       ...gameBin("openra", ["OpenRA.Server", "openra-server"]),
       ...gameBin("combined-arms", ["OpenRA.Server", "openra-server"]),
+      ...gameBin("romanovs-vengeance", ["OpenRA.Server"]),
+      ...gameBin("tiberian-dawn-hd", ["OpenRA.Server"]),
+      ...gameBin("crystallized-nexus", ["OpenRA.Server"]),
       ...gameBin("openhv", ["OpenHV.Server", "openhv-server", "OpenRA.Server"]),
       ...gameBin("earth-2140-trilogy", ["OpenRA.Server", "OpenE2140", "openra-server"]),
       ...gameBin("opene2140", ["OpenRA.Server", "OpenE2140", "openra-server"]),
@@ -871,6 +875,9 @@ export const recipes = {
     resolveBinary: (candidates, ctx) => {
       const ed = String(ctx?.editionSlug || "").toLowerCase();
       const mod = resolveOpenRaServerMod(ctx);
+      if (ed === "crystallized-nexus") return firstExisting(gameBin("crystallized-nexus", ["OpenRA.Server"]));
+      if (ed === "tiberian-dawn-hd") return firstExisting(gameBin("tiberian-dawn-hd", ["OpenRA.Server"]));
+      if (mod === "rv") return firstExisting(gameBin("romanovs-vengeance", ["OpenRA.Server"]));
       if (ed.includes("combined") || ed === "ca" || mod === "ca") {
         return firstExisting(gameBin("combined-arms", ["OpenRA.Server", "openra-server"]));
       }
@@ -888,7 +895,8 @@ export const recipes = {
           ...gameBin("opene2140", ["OpenRA.Server", "OpenE2140", "openra-server"]),
         ]);
       }
-      if (mod === "ra2" || mod === "ts") return null; // No reviewed RA2/TS engine and assets exist.
+      if (mod === "ts") return null; // No reviewed Tiberian Sun package exists.
+      if (!["","official","openra","red-alert","tiberian-dawn","dune-2000","ra","cnc","d2k"].includes(ed)) return null;
       return firstExisting(gameBin("openra", ["OpenRA.Server", "openra-server"]));
     },
     args: (port, ctx, binary) => [
@@ -905,6 +913,7 @@ export const recipes = {
       `Server.LockBots=${acceptedSettingsFor("openra", ctx?.settings)["Server.LockBots"] === true ? "True" : "False"}`,
       "Server.OrderLatency=5",
     ],
+    spawnEnv: isolatedHomeEnv("openra-servers"),
   },
   "earth-2140-trilogy": {
     portStart: 1275,

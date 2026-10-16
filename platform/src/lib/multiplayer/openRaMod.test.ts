@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
+import { runInNewContext } from "node:vm";
 import { openRaEditionAllowsStockModPicker, openRaModFor } from "./openRaMod";
 
 /**
@@ -25,7 +26,9 @@ describe("mod resolution", () => {
     expect(openRaModFor("dune-2000")).toBe("d2k");
     expect(openRaModFor("combined-arms")).toBe("ca");
     expect(openRaModFor("openhv")).toBe("hv");
-    expect(openRaModFor("ra2")).toBe("ra2");
+    expect(openRaModFor("ra2")).toBe("rv");
+    expect(openRaModFor("crystallized-nexus")).toBe("cn");
+    expect(openRaModFor("tiberian-dawn-hd")).toBe("cnc");
     expect(openRaModFor("opene2140")).toBe("e2140");
     expect(openRaModFor("e2140")).toBe("e2140");
     expect(openRaModFor("earth-2140-trilogy")).toBe("e2140");
@@ -54,6 +57,10 @@ describe("agreement with the host agent", () => {
     const fn = AGENT.match(/function openRaMod\(editionSlug\)\s*\{([\s\S]*?)\n\}/);
     expect(fn, "openRaMod should exist in the agent").not.toBeNull();
     const body = fn![1];
+    const agentResolve = runInNewContext(`(${fn![0]})`) as (edition: string) => string;
+    for (const edition of ["official","combined-arms","crystallized-nexus","tiberian-dawn-hd","ra2"]) {
+      expect(agentResolve(edition),edition).toBe(openRaModFor(edition));
+    }
 
     // Same branches, same order, same defaults.
     expect(body).toMatch(/includes\("e2140"\)/);

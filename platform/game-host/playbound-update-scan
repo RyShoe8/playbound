@@ -5,6 +5,10 @@ import os
 import sys
 
 targets = {
+    "tiberian-dawn-hd": ["tiberian-dawn-hd"],
+    "crystallized-nexus": ["crystallized-nexus"],
+    "romanovs-vengeance": ["romanovs-vengeance"],
+    "goldeneye-source": ["goldeneye-source"],
     "deus-ex": ["deus-ex"],
     "counter-strike-2": ["counter-strike-2", "cs2"],
     "team-fortress-2": ["team-fortress-2", "open-fortress"],
@@ -84,6 +88,8 @@ if sys.argv[1] == "hypersomnia":
 if sys.argv[1] == "open-fortress":
     roots.extend(["/var/lib/playbound-host/open-fortress-servers", "/var/lib/playbound-host/of-acceptance/open-fortress-servers"])
 count = 0
+if sys.argv[1] == "goldeneye-source":
+    roots.extend(["/var/lib/playbound-host/goldeneye-source-servers", "/var/lib/playbound-host/goldeneye-source-servers-rooms", "/var/lib/playbound-host/ge-acceptance"])
 if sys.argv[1] == "deus-ex":
     roots.extend(["/var/lib/playbound-host/deus-ex", "/var/lib/playbound-host/state/hx-query-review-TVmO31/deus-ex"])
 try:
@@ -118,7 +124,7 @@ try:
             # AppImage child executables run from a temporary FUSE mount rather
             # than the installation directory. Unclassified mounts hold the
             # queue conservatively; never inspect argv or interrupt a process.
-            if sys.argv[1] in ("openhv", "earth-2140-trilogy", "hypersomnia") and any(
+            if sys.argv[1] in ("openhv", "earth-2140-trilogy", "hypersomnia", "romanovs-vengeance", "tiberian-dawn-hd", "crystallized-nexus") and any(
                 part.startswith((".mount_", "appimage_extracted_")) for part in value.split("/")
             ):
                 matched = True
