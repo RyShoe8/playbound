@@ -69,6 +69,12 @@ export async function GET(req: Request) {
           description: edition.description || "",
           faq: Array.isArray(edition.faq) ? edition.faq : [],
           version: edition.version ?? null,
+          // Accreditation, shown in the launcher's Edition Facts and Credits card.
+          developerName: edition.developerName ?? null,
+          developerSlug: edition.developerSlug ?? null,
+          license: edition.license ?? null,
+          releaseYear: edition.releaseYear ?? null,
+          credits: Array.isArray(edition.credits) ? edition.credits : [],
           verificationLevel: edition.verificationLevel,
           verified: edition.verified,
           tags: edition.tags || [],
