@@ -1398,6 +1398,22 @@ async function reconcileChannels(opts = {}) {
         await sleep(PROVISION_DELAY_MS);
       }
     }
+
+    /*
+     * Re-sort at the end of every real reconcile.
+     *
+     * Sorting used to happen only inside the backfill, and only when it
+     * provisioned something. Everything reconcile does (renames, re-parenting
+     * into a franchise category, deleting orphans) and everything the event and
+     * party paths create left categories and channels wherever Discord put
+     * them, so the guild drifted out of order until the next new game. The
+     * sorters only send the moves that change something, so an already-sorted
+     * guild costs two channel fetches and no writes.
+     */
+    if (!dryRun) {
+      await sortCategories(guild);
+      await sortChannelsAlphabetically(guild);
+    }
   } finally {
     reconcileRunning = false;
   }
