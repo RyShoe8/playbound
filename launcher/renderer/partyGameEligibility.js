@@ -11,6 +11,9 @@ export function catalogGameSupportsParty(game) {
 
 /** Match the website's card CTA for online play, including store-launched games. */
 export function catalogGameSupportsOnlineParty(game) {
+  // Couch-mode games (openSEEK, Hurrican...) are local co-op on paper but play online through the
+  // party, so their local-only tags must not hide the button. The server says which ones they are.
+  if (game?.couchParty === true && game.partyLaunchable !== false) return true;
   // A singleplayer base game can ship a networked edition (RimWorld Together, Daggerfall Online).
   // The base game's own multiplayer flag says no, so ask the editions, unless the server has said
   // the game cannot be launched for a party at all.

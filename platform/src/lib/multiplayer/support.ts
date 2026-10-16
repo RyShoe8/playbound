@@ -50,7 +50,7 @@ const MULTIPLAYER_PATTERNS: readonly RegExp[] = [
   /\bmatchmaking\b/i,
 ];
 
-import { PARTY_ADAPTER_SLUGS } from "./partyAdapterSlugs";
+import { COUCH_PARTY_SLUGS, PARTY_ADAPTER_SLUGS } from "./partyAdapterSlugs";
 
 type MultiplayerInput = {
   slug?: string;
@@ -79,6 +79,8 @@ export function supportsOnlineMultiplayer(game: MultiplayerInput | null | undefi
   if ((game as { isMultiplayer?: boolean }).isMultiplayer === false || game.multiplayer === false) return false;
   // A Connect adapter (virtual LAN, direct IP, managed server) is proof enough.
   if (game.slug && PARTY_ADAPTER_SLUGS.has(game.slug.toLowerCase())) return true;
+  // Couch-mode games are local co-op on paper but play online through the party, so they get a party too.
+  if (game.slug && COUCH_PARTY_SLUGS.has(game.slug.toLowerCase())) return true;
   const values = [...(game.features ?? []), ...(game.tags ?? [])];
   if (values.some((value) => /^(multiplayer|online multiplayer|online co-op|dedicated servers|matchmaking|mmo|mmorpg|pvp|cross-play|crossplay|lan support|lan)$/i.test(value.trim())) || hasServerBrowser(game)) return true;
   const hasCoop = values.some((value) => /^(co-op|coop|cooperative)$/i.test(value.trim()));

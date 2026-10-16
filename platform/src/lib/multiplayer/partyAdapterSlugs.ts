@@ -105,3 +105,26 @@ export const PARTY_ADAPTER_SLUGS: ReadonlySet<string> = new Set<string>([
   "hurry-curry",
   "hyperdisc-arena",
 ]);
+
+/**
+ * Games that go online through couch mode (the host streams the screen and friends join as
+ * controllers). Mirrors couchCapableGameSlugs() in hostModes.ts, and partyAdapterSlugs.test.ts
+ * fails if the two drift. These games are local co-op on paper, so their feature tags never say
+ * "online"; without this list neither client offers them a Start Party button.
+ */
+export const COUCH_PARTY_SLUGS: ReadonlySet<string> = new Set<string>([
+  "re-volt-rvgl",
+  "stardew-valley",
+  "streets-of-rage-remake",
+  "metal-slug-remake",
+  "hurrican",
+  "openseek",
+  "pixreveal",
+  "the-spike-cross",
+  "x-men-arcade-remake",
+  "tmnt-rescue-palooza",
+  "relic-hunters-zero-remix",
+  "lovers-in-a-dangerous-spacetime",
+  "hindstrike",
+  "hindstrike-homebrew-retroarch",
+]);
