@@ -23,6 +23,7 @@ const WORLD_SOURCES = {
   flightgear: (folder) => ["flightgear-servers", folder],
   "hurry-curry": (folder) => ["hurry-curry-servers", folder],
   assaultcube: (folder) => ["assaultcube-servers", folder],
+  xonotic: (folder) => ["xonotic-servers", folder],
   openttd: (folder) => ["openttd-servers", folder],
   luanti: (folder) => ["luanti-servers", folder],
   // Saved games only; the startup script beside them is regenerated each start.

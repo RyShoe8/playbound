@@ -3,7 +3,7 @@ import { promisify } from "node:util";
 import { Worker } from "node:worker_threads";
 
 const FUNCTIONS = new Set(["createWorldBackup", "listWorldBackups", "restoreWorldBackup"]);
-const ISOLATED_DATA_GAMES = new Set(["teeworlds","bzflag","hedgewars","openttd","luanti","openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube"]);
+const ISOLATED_DATA_GAMES = new Set(["teeworlds","bzflag","hedgewars","openttd","luanti","openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic"]);
 
 /** Run one world-backup operation in a worker thread. Resolves to the result; rejects with a safe message. */
 export function runWorldBackup(fn, args) {

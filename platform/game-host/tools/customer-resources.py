@@ -28,6 +28,7 @@ PROFILES = {
     'mindustry': (1, 1024 ** 3, 128),
     'hurry-curry': (1, 1024 ** 3, 128),
     'assaultcube': (1, 1024 ** 3, 128),
+    'xonotic': (1, 1024 ** 3, 128),
 }
 
 

@@ -1,0 +1,11 @@
+{
+  "version": "0.8.6",
+  "binary": {
+    "bytes": 13239000,
+    "sha256": "35b40b973d7e83d75bab026b2707bf80660840421b1e12fcfe0e9c85cb9633ea"
+  },
+  "legacyBinary": {
+    "bytes": 13239000,
+    "sha256": "35b40b973d7e83d75bab026b2707bf80660840421b1e12fcfe0e9c85cb9633ea"
+  }
+}

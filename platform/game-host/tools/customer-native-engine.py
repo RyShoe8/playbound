@@ -26,11 +26,17 @@ ENGINES = {
     'flightgear': ('fgms', '/engine-native'),
     'hurry-curry': ('hurrycurry-server', '/engine-native'),
     'assaultcube': ('linux_64_server', '/engine-native'),
+    'xonotic': ('xonotic-linux64-dedicated', '/engine-native'),
 }
 
 def sealed_engine_for(game):
     if game in ('ysoccer','mindustry'):
         return sealed_java_engine(game=game), '/engine.jar'
+    if game == 'xonotic':
+        root=Path('/usr/local/libexec/playbound-isolated-xonotic')
+        descriptor=sealed_engine(root/'xonotic-linux64-dedicated',root/'profile.json',game)
+        if descriptor is None: raise ValueError('Reviewed isolated Xonotic engine is not installed')
+        return descriptor, '/engine-native'
     if game == 'assaultcube':
         root=Path('/usr/local/libexec/playbound-isolated-assaultcube')
         descriptor=sealed_engine(root/'linux_64_server',root/'profile.json',game)

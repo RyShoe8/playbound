@@ -112,6 +112,7 @@ class WorldSnapshots(unittest.TestCase):
     def test_mindustry_snapshot_restore(self): self.check_native_snapshot('mindustry')
     def test_hurry_curry_snapshot_restore(self): self.check_native_snapshot('hurry-curry')
     def test_assaultcube_snapshot_restore(self): self.check_native_snapshot('assaultcube')
+    def test_xonotic_snapshot_restore(self): self.check_native_snapshot('xonotic')
 
     def test_interrupted_swap_recovers_without_replacing_progress_twice(self):
         value = self.run_operation('create')
