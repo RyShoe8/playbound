@@ -878,6 +878,7 @@ async function OverviewTab({
           >
             <Avatar name={developer.name} hue={developer.artHue} size="lg" />
             <div className="min-w-0">
+              <p className="text-[10px] font-extrabold tracking-wider text-muted-foreground uppercase">Developer</p>
               <p className="truncate font-bold">{developer.name}</p>
               <p className="text-xs break-words text-muted-foreground">{developer.tagline}</p>
             </div>
