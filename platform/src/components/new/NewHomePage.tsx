@@ -47,6 +47,7 @@ export default async function NewHomePage() {
         <NewHomeGames games={popular.map(toHomeCardGame)} title="Most Popular this week" counts={counts} />
         <section className="new-home-event"><div className="new-section-heading"><h2>Next game night</h2><Link href="/events">Full schedule →</Link></div>{nextNight ? <EventCard event={nextNight} gameTitle={nextNight.gameSlug ? bySlug.get(nextNight.gameSlug)?.title : null} /> : <div className="new-panel new-pad"><h3>Make the next game night happen</h3><p>Gather your friends around a game you love.</p><Link className="new-button primary" href="/events/create">Create event</Link></div>}</section>
         <Suspense fallback={<FreeGamesSectionFallback />}><FreeGamesSection diversifyStores /></Suspense>
+        <NewHomeGames games={released.map(toHomeCardGame)} title="Newest Games" counts={counts} />
         <NewHomeEditions candidates={newestEditions} />
         <FeaturedModsRow candidates={modCandidates} limit={8} title="Newest Mods" grid />
       </div>
