@@ -1,0 +1,11 @@
+{
+  "version": "existing-reviewed-warzone-runtime",
+  "binary": {
+    "bytes": 28501312,
+    "sha256": "07439fc298437648991b4be15483036160d5334059e84d8ccfec7f3c060c1ccd"
+  },
+  "legacyBinary": {
+    "bytes": 28501312,
+    "sha256": "07439fc298437648991b4be15483036160d5334059e84d8ccfec7f3c060c1ccd"
+  }
+}

@@ -59,6 +59,15 @@ class PublicationTests(unittest.TestCase):
             with self.assertRaises(ValueError):module.promote(self.source,self.root/'rejected',{'files':[dict(row,path=invalid)]},game='freeciv')
         with self.assertRaises(ValueError):module.promote(self.source,self.root/'rejected',{'files':[dict(row,path='lib/'+str(i)+'.so') for i in range(1025)]},game='freeciv')
 
+    def test_warzone_assets_never_admit_save_or_executable_directories(self):
+        folder=self.source/'data/mods';folder.mkdir(parents=True)
+        file=folder/'base.wz';file.write_bytes(self.data)
+        row={'path':'data/mods/base.wz','bytes':len(self.data),'sha256':hashlib.sha256(self.data).hexdigest()}
+        result=module.promote(self.source,self.destination,{'files':[row]},game='warzone-2100')
+        self.assertEqual(result['files'],1)
+        for path in ('saves/save.gam','bin/warzone2100','data/../escape.wz'):
+            with self.assertRaises(ValueError):module.promote(self.source,self.root/'rejected',{'files':[dict(row,path=path)]},game='warzone-2100')
+
 
 @unittest.skipUnless(os.getuid()==0,'Root immutable descriptor fixtures')
 class AssetDescriptorTests(unittest.TestCase):

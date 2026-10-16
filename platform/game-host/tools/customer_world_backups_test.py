@@ -113,6 +113,8 @@ class WorldSnapshots(unittest.TestCase):
     def test_hurry_curry_snapshot_restore(self): self.check_native_snapshot('hurry-curry')
     def test_assaultcube_snapshot_restore(self): self.check_native_snapshot('assaultcube')
     def test_xonotic_snapshot_restore(self): self.check_native_snapshot('xonotic')
+    def test_warzone_snapshot_restore(self): self.check_native_snapshot('warzone-2100')
+    def test_freeciv_snapshot_restore(self): self.check_native_snapshot('freeciv')
     def test_zandronum_snapshot_restore(self): self.check_native_snapshot('freedoom')
     def test_openmohaa_snapshot_restore_preserves_legacy_short_id(self):
         self.seal.rename(self.legacy/('pb-'+ID[-8:]))
