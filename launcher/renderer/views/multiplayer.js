@@ -80,6 +80,11 @@ async function loadMultiplayerData() {
   }
 }
 
+// The Installed only switch lives in the server browser's header; repaint the hub when it flips.
+document.addEventListener("playbound:installed-only", () => {
+  if (state.currentView === "multiplayer" && views.multiplayer) paintMultiplayerView(views.multiplayer);
+});
+
 export async function renderMultiplayerView(params = {}) {
   const container = views.multiplayer;
   if (!container) return;
@@ -98,6 +103,25 @@ export async function renderMultiplayerView(params = {}) {
   // Repaint with live data
   paintMultiplayerView(container);
   markViewReady(container);
+
+  /*
+   * The first answer can be last time's snapshot (the site recomputes slowly), so look once more
+   * after the live one has had time to land, unless the player is in the middle of a drawer.
+   */
+  let rechecks = 0;
+  const recheck = async () => {
+    rechecks += 1;
+    if (state.currentView !== "multiplayer") return;
+    if (state.multiplayerState.createPartyOpen || state.multiplayerState.ltpDrawerOpen) return;
+    const next = await window.playbound.getMultiplayerActivity?.().catch(() => null);
+    if (next && !next.error && next.asOf !== _cachedActivity?.asOf) {
+      _cachedActivity = next;
+      paintMultiplayerView(container);
+    } else if (!_cachedActivity && rechecks < 6) {
+      setTimeout(recheck, 10000);
+    }
+  };
+  setTimeout(recheck, 12000);
 
   /*
    * No background refresh. Each repaint re-wired the embedded server browser,
@@ -304,15 +328,6 @@ function paintMultiplayerView(container) {
 
       <!-- Live & starting-soon events replace the old All Activity / Games / Server Browser / Events tabs. -->
       ${renderSoonEventsSection()}
-
-      <div class="mp-tabs-bar">
-        <div class="mp-tabs-nav">
-          <label class="mp-global-filter-toggle" id="mp-installed-filter-label" title="Filter to installed games">
-            <input type="checkbox" id="mp-installed-filter" ${state.multiplayerState.installedOnly ? "checked" : ""} />
-            <span>Installed only</span>
-          </label>
-        </div>
-      </div>
 
       <!-- Tab Content Area -->
       <div id="mp-tab-content-area" class="mp-tab-content-area"></div>

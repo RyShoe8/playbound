@@ -10892,42 +10892,67 @@ ipcMain.handle("get-community-servers", async () => {
     return { supported: false, servers: [] };
   }
 });
-ipcMain.handle("get-server-index", async () => {
-  try {
-    // The home page awaits this before it paints its rows, so it needs a
-    // deadline: unbounded, a stalled connection held the whole page.
-    const res = await apiFetch(`${getApiBase()}/api/launcher/servers`, {
-      headers: launcherApiHeaders(),
-    });
-    if (!res.ok) return { games: [], providers: [] };
-    return await res.json();
-  } catch {
-    return { games: [], providers: [] };
+/*
+ * Stale-while-revalidate for the site's read-only list endpoints.
+ *
+ * Mods, gear, the server index, deals and the multiplayer snapshot are big or
+ * slow to build, and every one used to be fetched with an 8 second deadline on
+ * every visit. A slow build meant an empty page (the handlers swallow the
+ * timeout and return an empty list), and a good one still made the player wait
+ * for the network on every page open. Each answer is now kept on disk: a stored
+ * answer comes back at once and a fresh one is fetched behind it with a patient
+ * timeout, so pages paint immediately on every visit after the first and a slow
+ * server only delays the refresh, never the page.
+ */
+const swrMemory = new Map();
+const swrInflight = new Map();
+function swrFile(key) {
+  return path.join(app.getPath("userData"), `swr-${key}.json`);
+}
+async function swrRefresh(key, apiPath, { timeoutMs = 45000, valid } = {}) {
+  if (swrInflight.has(key)) return swrInflight.get(key);
+  const job = (async () => {
+    try {
+      const data = await launcherJson(apiPath, { timeoutMs });
+      if (data && !data.error && (!valid || valid(data))) {
+        const entry = { at: Date.now(), data };
+        swrMemory.set(key, entry);
+        fsp.writeFile(swrFile(key), JSON.stringify(entry)).catch(() => {});
+        return data;
+      }
+    } catch {
+      /* keep whatever is stored */
+    }
+    return null;
+  })().finally(() => swrInflight.delete(key));
+  swrInflight.set(key, job);
+  return job;
+}
+async function swrJson(key, apiPath, { ttlMs = 5 * 60000, timeoutMs, valid, empty } = {}) {
+  let entry = swrMemory.get(key);
+  if (!entry) {
+    try {
+      entry = JSON.parse(await fsp.readFile(swrFile(key), "utf8"));
+      if (entry?.data) swrMemory.set(key, entry);
+    } catch {
+      entry = null;
+    }
   }
-});
-ipcMain.handle("get-mods-catalog", async () => {
-  try {
-    const res = await fetch(`${getApiBase()}/api/launcher/mods`, {
-      headers: launcherApiHeaders(),
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) return { mods: [] };
-    return await res.json();
-  } catch {
-    return { mods: [] };
+  if (entry?.data) {
+    if (Date.now() - entry.at > ttlMs) void swrRefresh(key, apiPath, { timeoutMs, valid });
+    return entry.data;
   }
-});
-ipcMain.handle("get-gear-catalog", async () => {
-  try {
-    const res = await apiFetch(`${getApiBase()}/api/launcher/gear`, {
-      headers: launcherApiHeaders(),
-    });
-    if (!res.ok) return { items: [], categories: [], grouped: {} };
-    return await res.json();
-  } catch {
-    return { items: [], categories: [], grouped: {} };
-  }
-});
+  return (await swrRefresh(key, apiPath, { timeoutMs, valid })) || empty;
+}
+ipcMain.handle("get-server-index", () =>
+  swrJson("server-index", "/api/launcher/servers", { ttlMs: 2 * 60000, empty: { games: [], providers: [] } })
+);
+ipcMain.handle("get-mods-catalog", () =>
+  swrJson("mods", "/api/launcher/mods", { ttlMs: 10 * 60000, valid: (d) => Array.isArray(d.mods), empty: { mods: [] } })
+);
+ipcMain.handle("get-gear-catalog", () =>
+  swrJson("gear", "/api/launcher/gear", { ttlMs: 10 * 60000, empty: { items: [], categories: [], grouped: {} } })
+);
 ipcMain.handle("get-gear-detail", async (_event, slug) => {
   try {
     const res = await apiFetch(`${getApiBase()}/api/launcher/gear/${encodeURIComponent(slug)}`, {
@@ -11145,17 +11170,9 @@ require("./services/workspaceApi").registerWorkspaceApi({ ipcMain, apiFetch, get
 const loadHomeFeed = require("./services/homeFeed").createHomeFeedClient({ apiFetch, getApiBase });
 ipcMain.handle("get-home-feed", () => loadHomeFeed());
 
-ipcMain.handle("get-free-offers", async () => {
-  try {
-    const res = await apiFetch(`${getApiBase()}/api/free-offers`, {
-      headers: launcherApiHeaders({ accept: "application/json" }),
-    });
-    if (!res.ok) return { offers: [], count: 0 };
-    return await res.json();
-  } catch {
-    return { offers: [], count: 0 };
-  }
-});
+ipcMain.handle("get-free-offers", () =>
+  swrJson("free-offers", "/api/free-offers", { ttlMs: 10 * 60000, empty: { offers: [], count: 0 } })
+);
 /*
  * Both halves of the Game Deals view in one call.
  *
@@ -11990,17 +12007,29 @@ ipcMain.handle("get-parties", async (_event, opts = {}) => {
   }
 });
 
+/*
+ * The full multiplayer snapshot is rebuilt by the site every few minutes and a
+ * rebuild can take 30-40 seconds, far past the default 8 second deadline. It
+ * goes through the same stored-answer path as the other list endpoints.
+ */
 ipcMain.handle("get-multiplayer-activity", async (_event, opts = {}) => {
-  const slug = opts?.slug ? `?slug=${encodeURIComponent(opts.slug)}` : "";
-  try {
-    return await launcherJson(`/api/multiplayer/activity${slug}`);
-  } catch (err) {
-    return {
-      error: err.message,
+  if (opts?.slug) {
+    try {
+      return await launcherJson(`/api/multiplayer/activity?slug=${encodeURIComponent(opts.slug)}`);
+    } catch (err) {
+      return { error: err.message };
+    }
+  }
+  return swrJson("multiplayer-activity", "/api/multiplayer/activity", {
+    ttlMs: 60000,
+    timeoutMs: 60000,
+    valid: (d) => d.summary && Array.isArray(d.games),
+    empty: {
+      error: "Multiplayer activity is taking longer than usual to load.",
       summary: { totalServerPlayers: 0, totalServersOnline: 0, totalOpenParties: 0, totalUsersLooking: 0 },
       games: [],
-    };
-  }
+    },
+  });
 });
 
 /*

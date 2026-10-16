@@ -2472,7 +2472,7 @@ async function fetchCatalogLiveStats() {
   return await res.json();
 }
 
-async function launcherJson(path, { method = "GET", body } = {}) {
+async function launcherJson(path, { method = "GET", body, timeoutMs } = {}) {
   /*
    * apiFetch, not fetch: thirty call sites route through here, including the
    * parties and play-together reads the home page waits on. A bare fetch has
@@ -2483,7 +2483,7 @@ async function launcherJson(path, { method = "GET", body } = {}) {
     method,
     headers: launcherApiHeaders(body != null ? { "content-type": "application/json" } : {}),
     body: body != null ? JSON.stringify(body) : undefined,
-  });
+  }, timeoutMs);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     // Some routes (e.g. party Discord voice) attach extra fields like

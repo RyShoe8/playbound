@@ -131,9 +131,11 @@ async function ensureViewModule(viewName) {
 function applyNavChrome(viewName) {
   const navBtns = document.querySelectorAll(".nav-btn");
   const navKey =
-    viewName === "gameDetail" || viewName === "editionDetail" || viewName === "modDetail"
+    viewName === "gameDetail" || viewName === "editionDetail"
       ? null
-      : viewName === "editions"
+      : viewName === "modDetail"
+        ? "mods"
+        : viewName === "editions"
         ? "editions"
         : viewName === "eventDetail"
           ? "events"
@@ -154,9 +156,7 @@ function applyNavChrome(viewName) {
       (isGearParent && (viewName === "gear" || viewName === "gearDetail")) ||
       (isGamesParent &&
         (viewName === "games" ||
-          viewName === "mods" ||
           viewName === "gameDetail" ||
-          viewName === "modDetail" ||
           viewName === "editionDetail" ||
           viewName === "editions"));
     btn.classList.toggle("active", active);

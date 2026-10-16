@@ -32,15 +32,35 @@ async function renderMyServersView() {
   if (!state.accountState?.connected) return signIn(host);
   try {
     const data = await request('/api/hosting/me');
-    host.innerHTML = `<section class="site-panel site-pad"><h2>${escapeHtml(data.subscription?.tierName || 'PlayBound Dedicated')}</h2><p>${data.subscription ? `${data.subscription.slotCapacity} player slots · ${escapeHtml(data.subscription.regionLabel)}` : 'No hosting plan is linked to your account. Shared servers are listed below.'}</p></section><div class="workspace-server-grid"></div>`;
+    // Same rule as the website's My Servers page: only an active or past-due plan gets the dashboard.
+    // A canceled, expired or missing plan gets the hosting promo, with any servers shared with you below it.
+    const runnable = ['active', 'past_due'].includes(data.subscription?.status);
+    if (!runnable) {
+      const priced = (data.packages || []).slice().sort((a, b) => a.slots - b.slots);
+      const money = (cents, currency = 'USD') => new Intl.NumberFormat(undefined, { style: 'currency', currency }).format((cents || 0) / 100);
+      host.innerHTML = `<section class="site-panel site-pad hosting-promo">
+        <p class="site-eyebrow">PlayBound Dedicated</p>
+        <h2 style="font-size:28px;margin:4px 0 8px">Your games deserve a place to play.</h2>
+        <p>Host the games your people love. Give one game the whole room, or split your plan across several. Switch whenever the night takes a different turn.</p>
+        ${data.subscription ? `<p class="view-sub">Your ${escapeHtml(data.subscription.tierName || 'hosting')} plan is ${escapeHtml(String(data.subscription.status).replace(/_/g, ' '))}. Pick a plan to start hosting again.</p>` : ''}
+        ${priced.length ? `<div class="hosting-promo-plans">${priced.map((p) => `<div class="hosting-promo-plan"><strong>${p.slots} player slots</strong><span>${escapeHtml(money(p.priceCents, p.currency))} / month</span></div>`).join('')}</div>` : ''}
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px">
+          <button class="btn-primary" data-hosting-web="/hosting">See hosting plans →</button>
+          <button class="btn-secondary" data-hosting-web="/api/hosting/support/discord">Discord support ↗</button>
+        </div>
+      </section><div class="workspace-server-grid"></div>`;
+      host.querySelectorAll('[data-hosting-web]').forEach((button) => button.addEventListener('click', () => window.playbound.openExternal(`https://playbound.club${button.dataset.hostingWeb}`)));
+    } else {
+      host.innerHTML = `<section class="site-panel site-pad"><h2>${escapeHtml(data.subscription?.tierName || 'PlayBound Dedicated')}</h2><p>${`${data.subscription.slotCapacity} player slots · ${escapeHtml(data.subscription.regionLabel)}`}</p></section><div class="workspace-server-grid"></div>`;
+    }
     const grid = host.querySelector('.workspace-server-grid');
-    for (const server of [...(data.servers || []), ...(data.shared || [])]) {
+    for (const server of runnable ? [...(data.servers || []), ...(data.shared || [])] : (data.shared || [])) {
       const card = document.createElement('section'); card.className = 'site-panel site-pad';
       card.innerHTML = `<h2>${escapeHtml(server.name)}</h2><p>${escapeHtml(server.gameTitle)}${server.editionSlug ? ` · ${escapeHtml(server.editionSlug)}` : ''}</p><p>${escapeHtml(server.runtimeState)} · ${server.players ?? 'Unknown'} players / ${server.slots}</p><button class="btn-primary">Manage server</button>`;
       card.querySelector('button').onclick = () => renderServer(server.id); grid.append(card);
     }
-    if (!grid.children.length) grid.innerHTML = '<p class="view-sub">No saved servers yet.</p>';
-    if (data.subscription && data.games?.length) {
+    if (!grid.children.length && runnable) grid.innerHTML = '<p class="view-sub">No saved servers yet.</p>';
+    if (runnable && data.games?.length) {
       const form = document.createElement('form'); form.className = 'site-panel site-pad workspace-form';
       const games = [...data.games].sort((a,b) => `${a.gameTitle} ${a.editionTitle || ''}`.localeCompare(`${b.gameTitle} ${b.editionTitle || ''}`));
       form.innerHTML = `<h2>Create a saved server</h2>${input('Server name','name')}<label class="workspace-field">Game & edition<select class="input-text" name="profileKey">${games.filter(game => !game.blocked && game.sizes?.length).map(game => `<option value="${escapeHtml(game.profileKey)}">${escapeHtml(game.gameTitle)}${game.editionTitle ? ` · ${escapeHtml(game.editionTitle)}` : ''}</option>`).join('')}</select></label><label class="workspace-field">Player count<select name="slots" class="input-text"></select></label><button class="btn-primary">Save server</button>`;
@@ -59,31 +79,91 @@ async function renderServer(id) {
   } catch(error) { failure(host,error,() => renderServer(id)); }
 }
 
+const devIcon = (paths) => `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+const DEV_ICONS = {
+  shield: devIcon('<path d="M20 13c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V5l8-3 8 3z"/><path d="m9 12 2 2 4-4"/>'),
+  games: devIcon('<line x1="6" x2="10" y1="12" y2="12"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="15" x2="15.01" y1="13" y2="13"/><line x1="18" x2="18.01" y1="11" y2="11"/><rect width="20" height="12" x="2" y="6" rx="2"/>'),
+  studio: devIcon('<rect width="16" height="20" x="4" y="2" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01"/>'),
+  spark: devIcon('<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/>'),
+  edit: devIcon('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'),
+  link: devIcon('<path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>'),
+};
+const openWeb = (route) => window.playbound.openExternal(`https://playbound.club${route}`);
+
+/*
+ * Same layout as the website's Developer Dashboard: the editorial-standard
+ * notice, the claim and submit actions, three stat tiles, a grid of game cards
+ * with cover art and status, and the studio profile list. Editing still happens
+ * here in the launcher, inline under the card you pick.
+ */
 async function renderDeveloperView() {
-  const host = heading(views.developer,'Developer tools','Manage your games and studio profile from PlayBound.');
+  const host = heading(views.developer, 'Developer Dashboard', 'Manage your games and studio identity on PlayBound.');
   if (!state.accountState?.connected) return signIn(host);
   try {
-    const [games,profiles] = await Promise.all([request('/api/developer/games'),request('/api/developer/profile')]);
-    host.innerHTML = '<section class="site-panel site-pad"><h2>Built for more ways to play</h2><p>PlayBound’s virtual LAN and streaming systems bring local co-op online. Expanded controller support includes console and USB controllers, plus your phone as a controller.</p></section><div class="workspace-server-grid"></div>';
-    const grid = host.querySelector('.workspace-server-grid');
-    for (const game of games.games || []) {
-      const card = document.createElement('section'); card.className = 'site-panel site-pad';
-      card.innerHTML = `<h2>${escapeHtml(game.title)}</h2><p>${escapeHtml(game.tagline || '')}</p><button class="btn-primary">Edit game</button>`;
-      card.querySelector('button').onclick = () => action(card.querySelector('button'), async () => {
-        const {game:full} = await request(`/api/developer/games/${game.slug}`);
-        const form = document.createElement('form'); form.className = 'workspace-form';
-        form.innerHTML = `${input('Tagline','tagline',full.tagline)}<label class="workspace-field">Description<textarea name="description" class="input-text"></textarea></label>${input('Website','website',full.website,'url')}<button class="btn-primary">Save game</button>`;
-        form.elements.description.value = full.description || '';
-        form.onsubmit = event => { event.preventDefault(); void action(form.querySelector('button'),async () => { await request(`/api/developer/games/${game.slug}`,'PATCH',{...full,tagline:form.elements.tagline.value,description:form.elements.description.value,website:form.elements.website.value}); setStatus('Game saved.'); await renderDeveloperView(); }); }; card.append(form);
-      }); grid.append(card);
+    const [games, profiles] = await Promise.all([request('/api/developer/games'), request('/api/developer/profile')]);
+    const gameList = games.games || [];
+    const studios = profiles.developers || [];
+    const role = String(state.accountState?.role || 'user');
+    host.innerHTML = `<div class="dev-dashboard">
+      <div class="dev-notice">${DEV_ICONS.shield}<div><h2>PlayBound Editorial Standard &amp; Developer Ownership</h2><p>You own your game’s presentation — descriptions, trailers, screenshots, system requirements, and installation links. PlayBound’s Quality Bar assessments, editorial reviews, and staff highlights are independently authored and maintained by our editorial staff to preserve reader trust and neutrality.</p></div></div>
+      <div class="dev-header"><div class="dev-actions"><button class="btn-secondary btn-sm" data-dev-web="/developer/claim">Claim Another Game</button><button class="btn-primary btn-sm" data-dev-web="/submit-game">Submit New Game</button></div></div>
+      <div class="dev-stats">
+        <div class="dev-stat"><span class="dev-stat-label">${DEV_ICONS.games}Games Managed</span><strong>${gameList.length}</strong></div>
+        <div class="dev-stat"><span class="dev-stat-label">${DEV_ICONS.studio}Studios Linked</span><strong>${studios.length}</strong></div>
+        <div class="dev-stat"><span class="dev-stat-label">${DEV_ICONS.spark}Account Role</span><strong style="font-size:16px;text-transform:capitalize">${escapeHtml(role)}</strong></div>
+      </div>
+      <section class="dev-section"><h2>Your Games</h2><div id="dev-games"></div></section>
+      <section class="dev-section"><h2>Your Studio Profiles</h2><div id="dev-studios"></div></section>
+    </div>`;
+    host.querySelectorAll('[data-dev-web]').forEach((button) => button.addEventListener('click', () => openWeb(button.dataset.devWeb)));
+
+    const gamesHost = host.querySelector('#dev-games');
+    if (!gameList.length) {
+      gamesHost.innerHTML = `<div class="dev-empty">${DEV_ICONS.games}<h3>No games linked yet</h3><p>If your game is already listed on PlayBound, claim ownership to start managing its page, screenshots, and download links.</p><button class="btn-primary btn-sm">Claim an Existing Game</button></div>`;
+      gamesHost.querySelector('button').onclick = () => openWeb('/developer/claim');
+    } else {
+      const grid = document.createElement('div'); grid.className = 'dev-game-grid'; gamesHost.append(grid);
+      for (const game of gameList) {
+        const card = document.createElement('div'); card.className = 'dev-game-card';
+        card.innerHTML = `<div class="dev-game-art">${game.coverImage ? `<img src="${escapeHtml(game.coverImage)}" alt="" loading="lazy">` : '<span>No cover image</span>'}<span class="dev-status">${escapeHtml(String(game.status || 'published'))}</span></div>
+          <div class="dev-game-body"><h3>${escapeHtml(game.title)}</h3><p>${escapeHtml(game.tagline || 'No tagline set')}</p>
+          <div class="dev-game-actions"><button class="btn-primary btn-sm dev-edit">${DEV_ICONS.edit}Edit Page</button><button class="btn-secondary btn-sm dev-view" title="View Public Page">${DEV_ICONS.link}</button></div></div>`;
+        card.querySelector('.dev-view').onclick = () => openWeb(`/games/${game.slug}`);
+        const editButton = card.querySelector('.dev-edit');
+        editButton.onclick = () => action(editButton, async () => {
+          if (card.querySelector('form')) { card.querySelector('form').remove(); return; }
+          const {game: full} = await request(`/api/developer/games/${game.slug}`);
+          const form = document.createElement('form'); form.className = 'workspace-form dev-inline-form';
+          form.innerHTML = `${input('Tagline','tagline',full.tagline)}<label class="workspace-field">Description<textarea name="description" class="input-text"></textarea></label>${input('Website','website',full.website,'url')}<button class="btn-primary">Save game</button>`;
+          form.elements.description.value = full.description || '';
+          form.onsubmit = (event) => { event.preventDefault(); void action(form.querySelector('button'), async () => { await request(`/api/developer/games/${game.slug}`,'PATCH',{...full,tagline:form.elements.tagline.value,description:form.elements.description.value,website:form.elements.website.value}); setStatus('Game saved.'); await renderDeveloperView(); }); };
+          card.append(form);
+        });
+        grid.append(card);
+      }
     }
-    for (const profile of profiles.developers || []) {
-      const form = document.createElement('form'); form.className = 'site-panel site-pad workspace-form';
-      form.innerHTML = `<h2>Studio profile</h2>${input('Studio name','name',profile.name)}${input('Tagline','tagline',profile.tagline)}${input('Website','website',profile.website,'url')}<label class="workspace-field">About<textarea name="about" class="input-text"></textarea></label><button class="btn-primary">Save studio</button>`;
-      form.elements.about.value = profile.about || '';
-      form.onsubmit = event => { event.preventDefault(); void action(form.querySelector('button'),async () => { await request('/api/developer/profile','PATCH',{...profile,name:form.elements.name.value,tagline:form.elements.tagline.value,website:form.elements.website.value,about:form.elements.about.value}); setStatus('Studio saved.'); }); }; host.append(form);
+
+    const studiosHost = host.querySelector('#dev-studios');
+    if (!studios.length) {
+      studiosHost.innerHTML = `<div class="dev-empty dev-empty-small">${DEV_ICONS.studio}<p>No developer studio profile is linked to your account yet. Claim your studio profile to manage your bio, website, and team links.</p><button class="btn-secondary btn-sm">Claim Studio Profile →</button></div>`;
+      studiosHost.querySelector('button').onclick = () => openWeb('/developer/claim');
+    } else {
+      const list = document.createElement('div'); list.className = 'dev-studio-list'; studiosHost.append(list);
+      for (const profile of studios) {
+        const row = document.createElement('div'); row.className = 'dev-studio';
+        row.innerHTML = `<div class="dev-studio-head"><div><h3>${escapeHtml(profile.name)}</h3><p>${escapeHtml(profile.tagline || profile.location || 'Studio profile')}</p></div><div class="dev-game-actions"><button class="btn-secondary btn-sm dev-edit">${DEV_ICONS.edit}Edit Studio</button><button class="btn-secondary btn-sm dev-view" title="View Studio on Site">${DEV_ICONS.link}</button></div></div>`;
+        row.querySelector('.dev-view').onclick = () => openWeb(`/developers/${profile.slug}`);
+        row.querySelector('.dev-edit').onclick = () => {
+          const open = row.querySelector('form'); if (open) { open.remove(); return; }
+          const form = document.createElement('form'); form.className = 'workspace-form dev-inline-form';
+          form.innerHTML = `${input('Studio name','name',profile.name)}${input('Tagline','tagline',profile.tagline)}${input('Website','website',profile.website,'url')}<label class="workspace-field">About<textarea name="about" class="input-text"></textarea></label><button class="btn-primary">Save studio</button>`;
+          form.elements.about.value = profile.about || '';
+          form.onsubmit = (event) => { event.preventDefault(); void action(form.querySelector('button'), async () => { await request('/api/developer/profile','PATCH',{...profile,name:form.elements.name.value,tagline:form.elements.tagline.value,website:form.elements.website.value,about:form.elements.about.value}); setStatus('Studio saved.'); await renderDeveloperView(); }); };
+          row.append(form);
+        };
+        list.append(row);
+      }
     }
-    if (!(games.games || []).length && !(profiles.developers || []).length) grid.innerHTML = '<section class="site-panel site-pad"><h2>Your developer workspace</h2><p>Once your game or studio ownership is approved, its management tools appear here.</p></section>';
   } catch(error) { failure(host,error,renderDeveloperView); }
 }
 api.renderMyServersView = renderMyServersView;

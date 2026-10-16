@@ -892,7 +892,7 @@ function compareNewestFirst(a: Game, b: Game): number {
 export async function mostPopularGames(limit = 12, days?: number): Promise<Game[]> {
   return unstable_cache(
     () => computeMostPopularGames(limit, days),
-    ["catalog-most-popular-playtime", String(limit), String(days ?? "all")],
+    ["catalog-most-popular-playtime-v2", String(limit), String(days ?? "all")],
     { revalidate: 900, tags: ["catalog", "live-activity"] }
   )();
 }
