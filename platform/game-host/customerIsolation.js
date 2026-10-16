@@ -1,6 +1,6 @@
 /** Reviewed engine profiles only. This builds the filesystem/process namespace
  * boundary; customerRuntime applies cgroup limits before running the plan.
- * The five reviewed native engines have opt-in UID handoffs. Other host UIDs, network policy and
+ * Reviewed engine profiles have opt-in UID handoffs. Other host UIDs, network policy and
  * executable-plugin isolation remain unfinished.
  * There is deliberately no fallback to an unrestricted launch if setup fails.
  */
@@ -10,7 +10,7 @@ import { customerResourceLimits } from "./customerResourceLimits.js";
 import { identityMigrationMetadata } from "./customerMigration.js";
 import { NATIVE_PACKAGE_PROFILES, verifyNativePackageInstallation } from "./nativePackageUpdates.js";
 
-export const CUSTOMER_IDENTITY_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti", "openarena", "battle-for-wesnoth", "supertuxkart", "0-ad", "ysoccer"]);
+export const CUSTOMER_IDENTITY_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti", "openarena", "battle-for-wesnoth", "supertuxkart", "0-ad", "ysoccer", "flightgear", "mindustry"]);
 export const TEEWORLDS_ISOLATION = "teeworlds-bwrap-v1";
 export const CUSTOMER_ISOLATION_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti"]);
 
@@ -33,7 +33,7 @@ function unlinkedAncestors(filename) {
 
 /** Runs before recipes write any generated configuration, not just at spawn. */
 export function validateCustomerPreparation({ gameSlug, customerOwned, communityServerId: id, home, identityProfile }) {
-  if (customerOwned && ["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer"].includes(gameSlug) && identityProfile) {
+  if (customerOwned && ["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry"].includes(gameSlug) && identityProfile) {
     if (identityProfile !== `${gameSlug}-unix-v1` || identityMigrationMetadata(id,home)?.identityProfile !== identityProfile) throw new Error("Customer identity migration is not ready");
     return;
   }
@@ -73,14 +73,14 @@ function privateDirectory(directory) {
       (process.getuid && (stat.uid !== process.getuid() || (stat.mode & 0o077)))) throw new Error("Isolation data directory must be private and service-owned");
 }
 
-export function customerIsolationLaunch({ gameSlug, customerOwned, communityServerId, binary, args, home, resourceLimits, identityProfile, settings }) {
-  if (!customerOwned || (!CUSTOMER_ISOLATION_GAMES.includes(gameSlug) && !(["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer"].includes(gameSlug) && identityProfile))) return null;
+export function customerIsolationLaunch({ gameSlug, customerOwned, communityServerId, binary, args, home, resourceLimits, identityProfile, settings, startupPort, serverName }) {
+  if (!customerOwned || (!CUSTOMER_ISOLATION_GAMES.includes(gameSlug) && !(["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry"].includes(gameSlug) && identityProfile))) return null;
   if (identityProfile !== undefined && (!CUSTOMER_IDENTITY_GAMES.includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1`)) throw new Error("Unsupported customer identity profile");
   const limits = customerResourceLimits(gameSlug, resourceLimits);
   validateCustomerPreparation({ gameSlug, customerOwned, communityServerId, home, identityProfile });
   if (!/^[a-f0-9]{24}$/i.test(communityServerId || "") || !path.isAbsolute(home)) throw new Error("Invalid isolation identity");
   if (!Array.isArray(args) || args.some(value => typeof value !== "string" || value.includes("\0"))) throw new Error("Invalid isolation arguments");
-  if (gameSlug !== "teeworlds") return nativeIsolationLaunch({ gameSlug, communityServerId, binary, args, home, resourceLimits: limits, identityProfile, settings });
+  if (gameSlug !== "teeworlds") return nativeIsolationLaunch({ gameSlug, communityServerId, binary, args, home, resourceLimits: limits, identityProfile, settings, startupPort, serverName });
   // Alternate/custom executables need their own reviewed dependency profile.
   const systemBinary = "/usr/games/teeworlds-server";
   let engineMount;
@@ -195,7 +195,7 @@ export function superTuxKartIdentityConfiguration(args) {
     values[match[1]]=match[2];
   }
   const name=values["lan-server"],maxPlayers=Number(values["max-players"]??8),mode=Number(values.mode??3),difficulty=Number(values.difficulty??1);
-  if (!values.headless || !withinPort(values.port,2759,2779) || typeof name!=="string" || !name.length || name.length>100 || /[\x00-\x1f\x7f]/.test(name) || !Number.isInteger(maxPlayers) || maxPlayers<2 || maxPlayers>12 || ![0,1,3,4,6,7,8].includes(mode) || !Number.isInteger(difficulty) || difficulty<0 || difficulty>3) throw new Error("Invalid SuperTuxKart typed settings");
+  if (!values.headless || (!withinPort(values.port,2759,2777) || Number(values.port)%2!==1) || typeof name!=="string" || !name.length || name.length>100 || /[\x00-\x1f\x7f]/.test(name) || !Number.isInteger(maxPlayers) || maxPlayers<2 || maxPlayers>12 || ![0,1,3,4,6,7,8].includes(mode) || !Number.isInteger(difficulty) || difficulty<0 || difficulty>3) throw new Error("Invalid SuperTuxKart typed settings");
   return {port:Number(values.port),config:JSON.stringify({name,maxPlayers,mode,difficulty})};
 }
 
@@ -207,7 +207,18 @@ export function zeroAdIdentityConfiguration(args) {
   return {port:20595,config:JSON.stringify({map,maxPlayers:Number(slots)})};
 }
 
-function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, home, resourceLimits, identityProfile, settings }) {
+function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, home, resourceLimits, identityProfile, settings, startupPort, serverName }) {
+  if (gameSlug === "mindustry") {
+    if (binary!=="/usr/bin/java" || args.length!==2 || args[0]!=="-jar" || args[1]!=="/opt/playbound-host/games/mindustry/server-release.jar" || identityProfile!=="mindustry-unix-v1" || identityMigrationMetadata(id,home)?.identityProfile!==identityProfile) throw new Error("Unexpected Mindustry identity contract");
+    const port=startupPort,name=serverName,maxPlayers=settings?.maxPlayers ?? 12;
+    if (!Number.isInteger(port) || port<6567 || port>6587 || typeof name!=="string" || !/^[A-Za-z0-9 ._'-]{1,80}$/.test(name) || !Number.isInteger(maxPlayers) || maxPlayers<2 || maxPlayers>64) throw new Error("Invalid Mindustry typed settings");
+    return {profile:"mindustry-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port,config:JSON.stringify({name,maxPlayers})},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
+  if (gameSlug === "flightgear") {
+    const port=Number(args[1]);
+    if (binary!=="/opt/playbound-host/games/flightgear/fgms" || args.length!==7 || args[0]!=="-p" || !withinPort(args[1],5000,5010) || port%2 || args.slice(2).join("\0")!==["-a",String(port+1),"-b","0","-d"].join("\0") || identityProfile!=="flightgear-unix-v1" || identityMigrationMetadata(id,home)?.identityProfile!==identityProfile) throw new Error("Unexpected FlightGear identity contract");
+    return {profile:"flightgear-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port,config:"{}"},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
   if (gameSlug === "ysoccer") {
     if (binary!=="/usr/bin/java" || args.length!==4 || args[0]!=="-jar" || args[1]!=="/opt/playbound-host/games/ysoccer/ysoccer-server.jar" || args[2]!==args[3] || !withinPort(args[2],54555,54575) || identityProfile!=="ysoccer-unix-v1" || identityMigrationMetadata(id,home)?.identityProfile!==identityProfile) throw new Error("Unexpected YSoccer identity contract");
     trustedExecutables(binary);

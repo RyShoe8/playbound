@@ -16,9 +16,9 @@ test("0 A.D. identity uses its fixed port and bounded maps/slots",()=>{
 });
 test("SuperTuxKart identity accepts declared modes and bounded slots only", () => {
   for (const mode of [0,1,3,4,6,7,8]) {
-    const args=['--lan-server=Private fixture','--port=2779','--no-graphics','--max-players=12',`--mode=${mode}`,'--difficulty=3'];
+    const args=['--lan-server=Private fixture','--port=2777','--no-graphics','--max-players=12',`--mode=${mode}`,'--difficulty=3'];
     assert.deepEqual(JSON.parse(superTuxKartIdentityConfiguration(args).config),{name:"Private fixture",maxPlayers:12,mode,difficulty:3});
-    for (const bad of [[...args,'--config=/tmp/unsafe'],args.map(x=>x==='--port=2779'?'--port=0':x),args.map(x=>x==='--max-players=12'?'--max-players=13':x),args.map(x=>x===`--mode=${mode}`?'--mode=5':x)]) assert.throws(()=>superTuxKartIdentityConfiguration(bad));
+    for (const bad of [[...args,'--config=/tmp/unsafe'],args.map(x=>x==='--port=2777'?'--port=0':x),args.map(x=>x==='--max-players=12'?'--max-players=13':x),args.map(x=>x===`--mode=${mode}`?'--mode=5':x)]) assert.throws(()=>superTuxKartIdentityConfiguration(bad));
   }
 });
 test("OpenArena identity handoff accepts only recipe settings and keeps ordinary launches unchanged", () => {

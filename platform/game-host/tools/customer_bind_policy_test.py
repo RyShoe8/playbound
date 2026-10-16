@@ -12,7 +12,7 @@ spec.loader.exec_module(module)
 
 class BindPolicyTests(unittest.TestCase):
     def test_stk_secondary_port_is_udp_only_and_never_an_arbitrary_rule(self):
-        rows = list(struct.iter_unpack('<BBhi',module.instructions(2779,True)))
+        rows = list(struct.iter_unpack('<BBhi',module.instructions(2777,True)))
         def evaluate(port,protocol):
             registers={1:0};position=0
             while position < len(rows):
@@ -25,10 +25,16 @@ class BindPolicyTests(unittest.TestCase):
                 position+=1
             self.fail('Unterminated bind program')
         for protocol in (socket.IPPROTO_TCP,socket.IPPROTO_UDP):
-            for port in (0,2757,2758,2779,2780,60000):
-                self.assertEqual(evaluate(port,protocol),int(port==2779 or port==2757 and protocol==socket.IPPROTO_UDP))
-        for port,flag in [(27980,True),(2779,'true'),(2779,1)]:
+            for port in (0,2757,2758,2777,2778,2779,60000):
+                self.assertEqual(evaluate(port,protocol),int(port==2777 or port==2778 and protocol==socket.IPPROTO_UDP))
+        for port,flag in [(27980,True),(2779,True),(2776,True),(2777,'true'),(2777,1)]:
             with self.assertRaises(ValueError):module.instructions(port,flag)
+        rows=list(struct.iter_unpack('<BBhi',module.instructions(5010,flightgear_status=True)))
+        for protocol in (socket.IPPROTO_TCP,socket.IPPROTO_UDP):
+            for port in (0,5009,5010,5011,5012,60000):
+                self.assertEqual(evaluate(port,protocol),int(port==5010 or port==5011 and protocol==socket.IPPROTO_TCP))
+        for port,stk,fgms in [(5001,False,True),(5012,False,True),(5010,True,True),(5010,False,1)]:
+            with self.assertRaises(ValueError):module.instructions(port,stk,fgms)
     def test_fixed_program_allows_only_allocated_network_order_port(self):
         rows = list(struct.iter_unpack('<BBhi', module.instructions(3999)))
         self.assertEqual(rows, [(0x61, 0x12, 24, 0), (0x15, 2, 2, socket.htons(3999)),

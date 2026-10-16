@@ -1,0 +1,59 @@
+{
+  "ysoccer": {
+    "component": "ysoccer-server.jar",
+    "jar": "ysoccer-server.jar",
+    "java": "/usr/bin/java",
+    "mainClass": "com.ygames.ysoccer.server.ServerLauncher",
+    "repository": "RyShoe8/playbound",
+    "latest": "sha256-1d34d3a1c6ccd24bd587f8f8190505fcb889b0e466487ccc4b9d24e6f726ea61",
+    "versions": [
+      {
+        "buildId": "sha256-1a745f1356a85cabf5ed85bd5c8c5a38fb64cd1a4e15666412bc6b6913357a59",
+        "bytes": 10228826,
+        "sha256": "1a745f1356a85cabf5ed85bd5c8c5a38fb64cd1a4e15666412bc6b6913357a59"
+      },
+      {
+        "buildId": "sha256-1d34d3a1c6ccd24bd587f8f8190505fcb889b0e466487ccc4b9d24e6f726ea61",
+        "bytes": 10233346,
+        "sha256": "1d34d3a1c6ccd24bd587f8f8190505fcb889b0e466487ccc4b9d24e6f726ea61",
+        "url": "https://github.com/RyShoe8/playbound/releases/download/ysoccer-online-latest/ysoccer-server.jar",
+        "archiveBytes": 10233346,
+        "archiveSha256": "1d34d3a1c6ccd24bd587f8f8190505fcb889b0e466487ccc4b9d24e6f726ea61"
+      }
+    ]
+  },
+  "triplea": {
+    "component": "bin",
+    "jar": "bin/game-headless.jar",
+    "java": "/opt/playbound-host/jre/temurin-25/bin/java",
+    "mainClass": "org.triplea.game.server.HeadlessGameRunner",
+    "repository": "triplea-game/triplea",
+    "latest": "2026-10.16.15815",
+    "versions": [
+      {
+        "buildId": "sha256-f79cbe5209f3417cbce36e4a312fdf64c2966fb4432bf17b98baf41a7932129e",
+        "bytes": 35749690,
+        "sha256": "f79cbe5209f3417cbce36e4a312fdf64c2966fb4432bf17b98baf41a7932129e"
+      },
+      {
+        "buildId": "2026-10.16.15815",
+        "bytes": 35811846,
+        "sha256": "123199064c5ed1cd2f48a7ccf4595eea7388b07f11b9af6e234362fb2c4e2fd1",
+        "url": "https://github.com/triplea-game/triplea/releases/download/2026-10.16.15815/game-headless.zip",
+        "archiveBytes": 32042094,
+        "archiveSha256": "459189f278c233c87845e18679d8d168d77a4fbafabc5cbff3b7180f3470cad6"
+      }
+    ]
+  },
+  "mindustry": {
+    "jar": "server-release.jar",
+    "java": "/usr/bin/java",
+    "versions": [
+      {
+        "buildId": "160.7",
+        "bytes": 19453000,
+        "sha256": "f7b899a4038b95b14a824d5f8993984f79d73baa3254c385b6538327f9c0befd"
+      }
+    ]
+  }
+}

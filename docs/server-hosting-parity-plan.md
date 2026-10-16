@@ -1564,3 +1564,61 @@ adoption, metrics, scoped stop and rollback preserving newer data. Maximum slots
 remain unknown because its occupancy adapter does not expose them. Both fixtures
 were removed. These remain operator-enrolled profiles; no customer/database
 records were changed. Broader isolation and executable-content support are open.
+
+
+## FlightGear and isolated STK acceptance (2026-10-16)
+
+FlightGear now has an explicit `flightgear-unix-v1` identity handoff. Its reviewed
+fgms binary is copied into a root-owned installation and executed from a sealed
+descriptor. Only the allocated even gameplay port and its TCP status port are
+allowed; the unused native admin listener is disabled. The actual VPS fixture
+passed zero-player query, unchanged gate/game PID after agent restart, process
+metrics, full scope stop and rollback preserving old and newer data.
+
+SuperTuxKart requires the dedicated adapted 1.4 engine, not the stock binary.
+The reviewed patch detects address families without bind-zero probes and accepts
+a supervisor-selected discovery port. Each new STK allocation reserves two ports;
+isolated gameplay uses an odd port 2759–2777 and discovery uses only UDP port+1.
+Stock launches retain upstream discovery behavior. Kernel policy rejects port0,
+shared discovery2757, TCP discovery and unallocated ports for the isolated profile.
+The sealed build is pinned in `stkIsolatedBuild.json`; `tools/build-stk-isolated.sh`
+builds it as an unprivileged operator. The direct-root-only promotion helper verifies
+commit, source diff and resulting binary bytes. Neither helper enrolls customers.
+
+The second VPS STK fixture returned zero players/four slots, retained the exact
+gate and game process through agent restart, reported metrics, stopped its full
+scope and preserved newer data on migration rollback. It coexisted with the stock
+server without taking its discovery socket. Both fixtures were removed. The first
+adapted build fixed address-family detection but still conflicted on discovery;
+its evidence explicitly remains unaccepted and is superseded by the port-pair run.
+
+Installation inventory now reports isolation/content readiness separately from
+update support. Eleven families have explicit operator-only identity profiles;
+other families remain pending. Executable content remains disabled across all
+families pending each engine's boundary, compatibility and recovery acceptance.
+Luanti additionally exposes its pinned LuaJIT vulnerability blocker. This is not
+completion of universal isolation or Plugin/Workshop support. Production database,
+catalog and customer enrollment changes remain zero.
+
+
+### Mindustry isolated Java acceptance (2026-10-16)
+
+`mindustry-unix-v1` uses the installed official 160.7 server JAR whose bytes match
+GitHub's published release digest. The root-owned `customerJavaProfiles.json`
+authority is separate from normal release discovery; new isolated Java builds
+require a reviewed root pin rather than accepting an agent-supplied checksum.
+The root supervisor seals the JAR before dropping privileges and generates only
+bounded name, port, player-limit and host commands. Commas, newlines, control
+characters and undeclared commands are rejected independently at both boundaries.
+The fixed OpenJDK21 security configuration is mounted read-only without exposing
+all of `/etc`. Ordinary wrapper launches retain their existing behavior.
+
+The VPS fixture passed native query (zero players/four slots), the exact game
+and gate PID after agent restart, process metrics, full scoped stop and migration
+rollback retaining older and newer data. Fixture processes/data were removed.
+Mindustry joins the twelve explicit operator-enrolled identity profiles. This is
+not live-console or executable-mod acceptance: those operations still need a
+UID-aware transport, quotas, compatibility and rollback before enabling content.
+Source: https://github.com/Anuken/Mindustry/blob/master/server/src/mindustry/server/ServerControl.java
+
+Latest batch validation: 341 agent tests passed with 49 platform skips; 95 Linux helper tests passed. TypeScript and targeted admin lint passed. Both guarded agent deployments retained all eleven running process identities; service and 15-minute timer are active. No customer enrollment or database/catalog changes were made.

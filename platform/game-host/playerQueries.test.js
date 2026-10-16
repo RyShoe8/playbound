@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { parseQuake3Status, openMohaaBotCount, parseMindustryPing, parseAssaultCubeInfo, parseChocolateDoomStatus, parseHxInfo, queryRoomOccupancy, LOCAL_QUERY_GAMES } from "./playerQueries.js";
+import { parseQuake3Status, openMohaaBotCount, parseMindustryPing, parseAssaultCubeInfo, parseChocolateDoomStatus, parseHxInfo, stkDiscoveryPort, queryRoomOccupancy, LOCAL_QUERY_GAMES } from "./playerQueries.js";
 import { parseA2sOccupancy } from "./a2sQuery.js";
 
 const ff = Buffer.from([0xff, 0xff, 0xff, 0xff]);
@@ -143,4 +143,11 @@ test("Zandronum: raw (0xFF) replies decode and parse", () => {
   body[16] = 32; body[17] = 3;
   const decoded = zandronumDecode(Buffer.concat([Buffer.from([0xff]), body]));
   assert.deepEqual(parseZandronumReply(decoded), { players: 3, maxPlayers: 32 });
+});
+
+
+test("STK UID discovery uses its allocated pair while stock rooms keep upstream discovery", () => {
+  assert.equal(stkDiscoveryPort(2777, "supertuxkart-unix-v1"),2778);
+  assert.equal(stkDiscoveryPort(2779),2757);
+  for (const port of [2758,2760,2779, "2777",null]) assert.throws(() => stkDiscoveryPort(port,"supertuxkart-unix-v1"));
 });

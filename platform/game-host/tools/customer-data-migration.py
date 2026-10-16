@@ -30,7 +30,7 @@ PROFILE = 'teeworlds-unix-v1'
 
 def select_game(game):
     global GAME, PROFILE, SOURCE
-    folders = {'teeworlds':'customer-sandboxes','bzflag':'bzflag-servers','hedgewars':'hedgewars-servers','openttd':'openttd-servers','luanti':'luanti-servers','openarena':'openarena-servers','battle-for-wesnoth':'wesnoth-servers','supertuxkart':'supertuxkart-servers','0-ad':'0ad-servers','ysoccer':'ysoccer-servers'}
+    folders = {'teeworlds':'customer-sandboxes','bzflag':'bzflag-servers','hedgewars':'hedgewars-servers','openttd':'openttd-servers','luanti':'luanti-servers','openarena':'openarena-servers','battle-for-wesnoth':'wesnoth-servers','supertuxkart':'supertuxkart-servers','0-ad':'0ad-servers','ysoccer':'ysoccer-servers','flightgear':'flightgear-servers','mindustry':'mindustry'}
     if game not in folders: raise ValueError('Unsupported migration game')
     GAME, PROFILE = game, game + '-unix-v1'
     SOURCE = Path('/var/lib/playbound-host') / folders[game]

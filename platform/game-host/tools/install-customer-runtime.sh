@@ -3,8 +3,8 @@
 set -euo pipefail
 test "$(id -u)" = 0 || { echo 'Run as root'; exit 1; }
 source_dir="$(cd "$(dirname "$0")" && pwd)"
-java_profiles="$source_dir/../reviewedJavaProfiles.json"
-if test -f "$source_dir/reviewedJavaProfiles.json"; then java_profiles="$source_dir/reviewedJavaProfiles.json"; fi
+java_profiles="$source_dir/../customerJavaProfiles.json"
+if test -f "$source_dir/customerJavaProfiles.json"; then java_profiles="$source_dir/customerJavaProfiles.json"; fi
 install -o root -g root -m 644 "$java_profiles" /usr/local/libexec/playbound-customer-java-profiles.json
 test -x /usr/local/libexec/playbound-customer-identities
 test -x /usr/local/libexec/playbound-customer-resources
