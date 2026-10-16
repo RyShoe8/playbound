@@ -19,6 +19,9 @@ PROFILES = {
     'hedgewars': (1, 1024 ** 3, 128),
     'openttd': (1, 1024 ** 3, 128),
     'luanti': (2, 2 * 1024 ** 3, 128),
+    'openarena': (1, 1024 ** 3, 128),
+    'battle-for-wesnoth': (1, 1024 ** 3, 128),
+    'supertuxkart': (1, 1024 ** 3, 128),
 }
 
 

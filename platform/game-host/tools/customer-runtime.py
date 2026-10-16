@@ -26,6 +26,9 @@ NATIVE_GAMES = {
     'hedgewars': ('hedgewars-servers', 46631, 46650),
     'openttd': ('openttd-servers',3979,3999),
     'luanti': ('luanti-servers',30000,30020),
+    'openarena': ('openarena-servers',27960,27980),
+    'battle-for-wesnoth': ('wesnoth-servers',15000,15020),
+    'supertuxkart': ('supertuxkart-servers',2759,2779),
 }
 
 def select_game(game):
@@ -97,6 +100,24 @@ def config_bytes(text, port):
     if GAME != 'teeworlds':
         if not isinstance(text,str) or len(text.encode()) > 16384: raise ValueError('Invalid native configuration')
         values = json.loads(text)
+        if GAME == 'supertuxkart':
+            if not isinstance(values,dict) or set(values) != {'name','maxPlayers','mode','difficulty'} or not isinstance(values['name'],str) or not 1 <= len(values['name']) <= 100 or re.search(r'[\x00-\x1f\x7f]',values['name']):
+                raise ValueError('Invalid SuperTuxKart settings')
+            for key,minimum,maximum in [('maxPlayers',2,12),('mode',0,8),('difficulty',0,3)]:
+                if type(values[key]) is not int or not minimum <= values[key] <= maximum: raise ValueError('Invalid SuperTuxKart allocation')
+            if values['mode'] not in (0,1,3,4,6,7,8): raise ValueError('Unsupported SuperTuxKart mode')
+            return text.encode()
+        if GAME == 'battle-for-wesnoth':
+            if values != {}: raise ValueError('Undeclared Wesnoth setting')
+            return b'versions_accepted="1.18.*"\n'
+        if GAME == 'openarena':
+            if not isinstance(values,dict) or set(values) != {'maxPlayers','botPlayers','name','rconPassword'}:
+                raise ValueError('Undeclared OpenArena setting')
+            if type(values['maxPlayers']) is not int or not 2 <= values['maxPlayers'] <= 64 or type(values['botPlayers']) is not int or not 0 <= values['botPlayers'] <= values['maxPlayers']:
+                raise ValueError('Invalid OpenArena player limit')
+            if not isinstance(values['name'],str) or not 1 <= len(values['name']) <= 100 or re.search(r'[\x00-\x1f\x7f"\\;]',values['name']) or not isinstance(values['rconPassword'],str) or not re.fullmatch(r'[A-Za-z0-9_-]{24,64}',values['rconPassword']):
+                raise ValueError('Invalid OpenArena text setting')
+            return ('set sv_hostname "' + values['name'] + '"\nset rconpassword "' + values['rconPassword'] + '"\nset sv_maxclients ' + str(values['maxPlayers']) + '\nset sv_master1 ""\nset bot_enable 1\nset bot_minplayers ' + str(values['botPlayers']) + '\n').encode()
         if not isinstance(values,dict) or set(values) != ({'maxPlayers','scoreLimit'} if GAME == 'bzflag' else {'maxPlayers'} if GAME in ('openttd','luanti') else set()):
             raise ValueError('Undeclared native settings')
         for key, maximum in [('maxPlayers',200),('scoreLimit',100)]:
@@ -206,9 +227,12 @@ def verify_scope(resources, server_id, pid, identity, cpu, memory):
 
 
 def command(data, fd, port, memory, engine_fd=None, native_settings=None, seccomp_fd=None, dns_fd=None):
-    target = {'teeworlds':'/usr/games/teeworlds-server','bzflag':'/usr/games/bzfs','hedgewars':'/usr/lib/hedgewars/bin/hedgewars-server','openttd':'/usr/games/openttd','luanti':'/usr/games/minetestserver'}[GAME]
+    target = {'teeworlds':'/usr/games/teeworlds-server','bzflag':'/usr/games/bzfs','hedgewars':'/usr/lib/hedgewars/bin/hedgewars-server','openttd':'/usr/games/openttd','luanti':'/usr/games/minetestserver','openarena':'/usr/lib/ioquake3/ioq3ded','battle-for-wesnoth':'/usr/games/wesnothd-1.18','supertuxkart':'/usr/games/supertuxkart'}[GAME]
     settings = native_settings or {}
-    game_args = ['-f','server.cfg','sv_port '+str(port)] if GAME == 'teeworlds' else ['-p',str(port)] if GAME == 'hedgewars' else [] if GAME in ('openttd','luanti') else ['-p',str(port),'-offa','-q','-j','+r','+s',str(settings['scoreLimit']),'-mp',str(settings['maxPlayers'])]
+    game_args = ['-f','server.cfg','sv_port '+str(port)] if GAME == 'teeworlds' else ['-p',str(port)] if GAME == 'hedgewars' else [] if GAME in ('openttd','luanti','openarena','battle-for-wesnoth','supertuxkart') else ['-p',str(port),'-offa','-q','-j','+r','+s',str(settings['scoreLimit']),'-mp',str(settings['maxPlayers'])]
+    if GAME == 'openarena': game_args = ['+set','com_basegame','baseoa','+set','fs_basepath','/usr/lib/openarena-server','+set','fs_homepath','/server','+set','com_legacyprotocol','71','+set','com_protocol','71','+set','dedicated','1','+set','net_port',str(port),'+exec','playbound.cfg','+map','oa_dm1']
+    if GAME == 'supertuxkart': game_args = ['--lan-server='+settings['name'],'--port='+str(port),'--no-graphics','--max-players='+str(settings['maxPlayers']),'--mode='+str(settings['mode']),'--difficulty='+str(settings['difficulty'])]
+    if GAME == 'battle-for-wesnoth': game_args = ['-c','/server/server.cfg','-p',str(port)]
     if GAME == 'openttd': game_args = ['-D','0.0.0.0:'+str(port),'-c','/server/server.cfg']
     if GAME == 'luanti': game_args = ['--port',str(port),'--world','/server/world','--gameid','minetest','--config','/server/server.cfg','--logfile','/server/minetest.log']
     return ['/usr/bin/prlimit', '--as=' + str(max(1024 ** 3, memory * 2 * 1024 ** 2)), '--nofile=1024', '--core=0', '--', '/usr/bin/bwrap',
@@ -216,7 +240,7 @@ def command(data, fd, port, memory, engine_fd=None, native_settings=None, seccom
             '--unshare-user', '--unshare-pid', '--unshare-ipc', '--unshare-uts', '--unshare-cgroup', '--disable-userns', '--cap-drop', 'ALL', '--die-with-parent',
             '--ro-bind', '/usr', '/usr', '--symlink', 'usr/lib', '/lib', '--symlink', 'usr/lib64', '/lib64', '--symlink', 'usr/bin', '/bin',
             *(['--perms', '0555', '--ro-bind-data', str(engine_fd), target] if engine_fd is not None else []),
-            '--proc', '/proc', '--dev', '/dev', '--size', '67108864', '--tmpfs', '/tmp', '--bind', str(data), '/server', '--ro-bind-data', str(fd), '/server/server.cfg',
+            '--proc', '/proc', '--dev', '/dev', '--size', '67108864', '--tmpfs', '/tmp', '--bind', str(data), '/server', '--ro-bind-data', str(fd), '/server/baseoa/playbound.cfg' if GAME == 'openarena' else '/server/server.cfg',
             *[part for filename in ['/etc/protocols','/etc/services','/etc/hosts','/etc/resolv.conf','/etc/ssl/certs'] if Path(filename).exists() for part in ['--ro-bind',filename,filename]],
             *(['--ro-bind-data', str(dns_fd), '/etc/resolv.conf'] if dns_fd is not None else []),
             '--clearenv', '--setenv', 'PATH', '/usr/bin:/usr/games', '--setenv', 'HOME', '/server', '--setenv', 'XDG_DATA_HOME', '/server', '--setenv', 'XDG_CONFIG_HOME', '/server', '--setenv', 'LANG', 'C.UTF-8', '--chdir', '/server',
@@ -360,12 +384,12 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
             host_guard.install(account['uid'])
             guard_installed = True
             binder = trusted_module('pb_bind', 'playbound-customer-bind-policy')
-            bind_programs = binder.apply_current(port)
+            bind_programs = binder.apply_current(port,stk_discovery=True) if GAME == 'supertuxkart' else binder.apply_current(port)
             dns_fd = os.memfd_create('pb-public-dns',os.MFD_CLOEXEC|os.MFD_ALLOW_SEALING)
             os.write(dns_fd,b'nameserver 1.1.1.1\nnameserver 1.0.0.1\noptions timeout:2 attempts:2\n')
             os.lseek(dns_fd,0,os.SEEK_SET)
             fcntl.fcntl(dns_fd,fcntl.F_ADD_SEALS,fcntl.F_SEAL_WRITE|fcntl.F_SEAL_GROW|fcntl.F_SEAL_SHRINK|fcntl.F_SEAL_SEAL)
-            for binary in ['/usr/bin/prlimit', '/usr/bin/bwrap', {'teeworlds':'/usr/games/teeworlds-server','bzflag':'/usr/games/bzfs','hedgewars':'/usr/lib/hedgewars/bin/hedgewars-server','openttd':'/usr/games/openttd','luanti':'/usr/games/minetestserver'}[GAME]]:
+            for binary in ['/usr/bin/prlimit', '/usr/bin/bwrap', {'teeworlds':'/usr/games/teeworlds-server','bzflag':'/usr/games/bzfs','hedgewars':'/usr/lib/hedgewars/bin/hedgewars-server','openttd':'/usr/games/openttd','luanti':'/usr/games/minetestserver','openarena':'/usr/lib/ioquake3/ioq3ded','battle-for-wesnoth':'/usr/games/wesnothd-1.18','supertuxkart':'/usr/games/supertuxkart'}[GAME]]:
                 info = Path(binary).stat()
                 if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_mode & 0o022: raise ValueError('Untrusted runtime executable')
             engines = trusted_module('pb_native_engine', 'playbound-customer-native-engine')

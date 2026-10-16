@@ -51,9 +51,19 @@ def syscall(command, attribute):
     return result
 
 
-def instructions(port):
+def instructions(port, stk_discovery=False):
     if type(port) is not int or not 1 <= port <= 65535:
         raise ValueError('Invalid native port allocation')
+    if type(stk_discovery) is not bool or stk_discovery and not 2759 <= port <= 2779:
+        raise ValueError('Invalid SuperTuxKart discovery contract')
+    if stk_discovery:
+        # Only STK's fixed UDP discovery port is additional. TCP discovery,
+        # dynamic binds and every other explicit port remain denied.
+        rows = [(0x61,0x12,24,0), (0x15,0x02,5,socket.htons(port)),
+                (0x61,0x13,36,0), (0x55,0x03,1,socket.IPPROTO_UDP),
+                (0x15,0x02,2,socket.htons(2757)),
+                (0xb7,0,0,0),(0x95,0,0,0),(0xb7,0,0,1),(0x95,0,0,0)]
+        return b''.join(struct.pack('<BBhi',*row) for row in rows)
     rows = [(0x61,0x12,24,0),       # r2 = *(u32 *)(r1 + user_port)
             (0x15,0x02,2,socket.htons(port)),
             (0xb7,0x00,0,0),(0x95,0x00,0,0),
@@ -84,8 +94,9 @@ def program_ids(scope):
         os.close(descriptor)
 
 
-def apply_current(port):
-    bytecode = ctypes.create_string_buffer(instructions(port))
+def apply_current(port, stk_discovery=False):
+    program_bytes = instructions(port,stk_discovery)
+    bytecode = ctypes.create_string_buffer(program_bytes)
     license = ctypes.create_string_buffer(b'GPL\0')
     placement = Path('/proc/self/cgroup').read_text().strip()
     match = re.fullmatch(r'0::/system.slice/(playbound-customer-[a-f0-9]{24}-[1-9][0-9]*\.scope)',placement)
@@ -97,7 +108,7 @@ def apply_current(port):
     try:
         for kind in (8,9):
             log = ctypes.create_string_buffer(65536)
-            attribute = Load(prog_type=18,insn_cnt=6,insns=ctypes.addressof(bytecode),
+            attribute = Load(prog_type=18,insn_cnt=len(program_bytes)//8,insns=ctypes.addressof(bytecode),
                              license=ctypes.addressof(license),log_level=1,log_size=65536,
                              log_buf=ctypes.addressof(log),prog_name=b'pb_bind_port_v1',expected_attach_type=kind)
             program = syscall(5,attribute)

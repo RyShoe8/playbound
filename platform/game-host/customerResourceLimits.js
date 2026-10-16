@@ -1,6 +1,6 @@
 /** Wire units are integers; no caller selects cgroup properties or task/swap policy. */
 export function customerResourceLimits(game, input) {
-  if (!["teeworlds", "bzflag", "hedgewars", "openttd", "luanti"].includes(game)) throw new Error("Unsupported resource profile");
+  if (!["teeworlds", "bzflag", "hedgewars", "openttd", "luanti", "openarena", "battle-for-wesnoth", "supertuxkart"].includes(game)) throw new Error("Unsupported resource profile");
   if (input === undefined) return { cpuMillis: game === "luanti" ? 2000 : 1000, memoryMiB: game === "luanti" ? 2048 : 1024 };
   if (!input || typeof input !== "object" || Array.isArray(input) || Object.keys(input).some(key => !["cpuMillis", "memoryMiB"].includes(key)) ||
       !Number.isInteger(input.cpuMillis) || input.cpuMillis < 250 || input.cpuMillis > 6000 ||

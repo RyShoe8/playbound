@@ -19,6 +19,43 @@ class RuntimeBoundaries(unittest.TestCase):
     def setUp(self):
         module.select_game('teeworlds')
 
+    def test_stk_settings_preserve_declared_modes_and_reject_extra_arguments(self):
+        import json
+        module.select_game('supertuxkart')
+        values={'name':'Private fixture','maxPlayers':12,'mode':8,'difficulty':3}
+        self.assertEqual(json.loads(module.config_bytes(json.dumps(values),2779)),values)
+        command=module.command(Path('/fixture/data'),7,2779,1536,8,values)
+        self.assertIn('--mode=8',command)
+        self.assertIn('--max-players=12',command)
+        for update in [{'mode':5},{'maxPlayers':13},{'difficulty':4},{'name':'x\nunsafe'},{'exec':'unsafe'}]:
+            with self.assertRaises(ValueError):module.config_bytes(json.dumps(dict(values,**update)),2779)
+
+    def test_wesnoth_series_and_config_paths_are_fixed(self):
+        module.select_game('battle-for-wesnoth')
+        self.assertEqual(module.config_bytes('{}',15020),b'versions_accepted="1.18.*"\n')
+        for value in ['{"versions_accepted":"*"}','{"password":"unsafe"}','[]','false']:
+            with self.assertRaises(ValueError):module.config_bytes(value,15020)
+        command=module.command(Path('/fixture/data'),7,15020,1024,8,{})
+        self.assertEqual(command[-5:],['/usr/games/wesnothd-1.18','-c','/server/server.cfg','-p','15020'])
+        with self.assertRaises(ValueError):module.request(['run-native',ID,'42',IDENTITY,'battle-for-wesnoth','15021','750','1024'])
+
+    def test_openarena_typed_configuration_cannot_inject_console_commands(self):
+        import json
+        module.select_game('openarena')
+        values = {'maxPlayers':4,'botPlayers':2,'name':'Private fixture','rconPassword':'a'*32}
+        config = module.config_bytes(json.dumps(values),27980)
+        self.assertIn(b'set sv_maxclients 4\n',config)
+        self.assertIn(b'set bot_minplayers 2\n',config)
+        for field, value in [('name','name";quit'),('name','name\nquit'),('rconPassword','x;quit'),('botPlayers',5),('maxPlayers',True)]:
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                module.config_bytes(json.dumps(dict(values,**{field:value})),27980)
+        with self.assertRaises(ValueError):
+            module.config_bytes(json.dumps(dict(values,exec='payload.cfg')),27980)
+        command = module.command(Path('/fixture/data'),7,27980,1536,8,values)
+        self.assertIn('/usr/lib/ioquake3/ioq3ded',command)
+        self.assertIn('/server/baseoa/playbound.cfg',command)
+        self.assertEqual(command[-4:],['+exec','playbound.cfg','+map','oa_dm1'])
+
     @unittest.skipUnless(os.getuid() == 0, 'Root-owned migration journal fixture')
     def test_migration_journal_gates_phase_directory_identity_and_legacy_seal(self):
         import json

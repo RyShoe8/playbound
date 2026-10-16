@@ -4,10 +4,26 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawn, execFileSync } from "node:child_process";
-import { customerIsolationLaunch, validateCustomerPreparation, CUSTOMER_ISOLATION_GAMES } from "./customerIsolation.js";
+import { customerIsolationLaunch, validateCustomerPreparation, CUSTOMER_ISOLATION_GAMES, openArenaIdentityConfiguration, superTuxKartIdentityConfiguration } from "./customerIsolation.js";
 import { NATIVE_PACKAGE_PROFILES } from "./nativePackageUpdates.js";
 
 const id = "0123456789abcdef01234567";
+test("SuperTuxKart identity accepts declared modes and bounded slots only", () => {
+  for (const mode of [0,1,3,4,6,7,8]) {
+    const args=['--lan-server=Private fixture','--port=2779','--no-graphics','--max-players=12',`--mode=${mode}`,'--difficulty=3'];
+    assert.deepEqual(JSON.parse(superTuxKartIdentityConfiguration(args).config),{name:"Private fixture",maxPlayers:12,mode,difficulty:3});
+    for (const bad of [[...args,'--config=/tmp/unsafe'],args.map(x=>x==='--port=2779'?'--port=0':x),args.map(x=>x==='--max-players=12'?'--max-players=13':x),args.map(x=>x===`--mode=${mode}`?'--mode=5':x)]) assert.throws(()=>superTuxKartIdentityConfiguration(bad));
+  }
+});
+test("OpenArena identity handoff accepts only recipe settings and keeps ordinary launches unchanged", () => {
+  const fixed = {com_basegame:"baseoa",fs_basepath:"/usr/lib/openarena-server",com_homepath:".openarena",com_legacyprotocol:"71",com_protocol:"71",cl_motd:"0",dedicated:"1",net_port:"27980",sv_hostname:"Private fixture",sv_master1:'""',rconpassword:"a".repeat(32),sv_maxclients:"4",bot_enable:"1",bot_minplayers:"2"};
+  const args = Object.entries(fixed).flatMap(([key,value])=>["+set",key,value]).concat(["+map","oa_dm1"]);
+  const result = openArenaIdentityConfiguration(args);
+  assert.equal(result.port,27980);
+  assert.deepEqual(JSON.parse(result.config),{maxPlayers:4,botPlayers:2,name:"Private fixture",rconPassword:"a".repeat(32)});
+  for (const invalid of [[...args,"+exec","payload.cfg"],["+set","fs_game","payload",...args],args.map(value=>value==="27980"?"27981":value),args.map(value=>value==="Private fixture"?'name";quit':value),args.map(value=>value==="2"?"5":value)]) assert.throws(()=>openArenaIdentityConfiguration(invalid));
+  assert.equal(customerIsolationLaunch({gameSlug:"openarena",customerOwned:true}),null);
+});
 for (const [gameSlug, profile] of Object.entries(NATIVE_PACKAGE_PROFILES)) {
   if (!CUSTOMER_ISOLATION_GAMES.includes(gameSlug)) continue;
   const root = path.join("/opt/playbound-host/games", gameSlug);
