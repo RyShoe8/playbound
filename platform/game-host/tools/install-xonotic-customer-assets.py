@@ -12,14 +12,15 @@ import tempfile
 
 
 def promote(source, destination, manifest, game='xonotic'):
-    if game not in ('xonotic','wolfenstein-enemy-territory','medal-of-honor-allied-assault'): raise ValueError('Unsupported asset publication')
+    if game not in ('xonotic','wolfenstein-enemy-territory','medal-of-honor-allied-assault','freeciv'): raise ValueError('Unsupported asset publication')
     pattern=r'[A-Za-z0-9_-]{1,100}\.pk3' if game=='xonotic' else r'(?:etmain|legacy)/[A-Za-z0-9_.-]{1,100}\.(?:pk3|so)' if game=='wolfenstein-enemy-territory' else r'(?:main/[A-Za-z0-9_.-]{1,100}\.pk3|game\.so)'
+    if game=='freeciv': pattern=r'(?:lib|share/freeciv)/(?:[A-Za-z0-9_+.,@ -]{1,100}/){0,15}[A-Za-z0-9_+.,@ -]{1,100}'
     rows = manifest.get('files')
-    if not isinstance(rows,list) or not 1 <= len(rows) <= 16:
+    if not isinstance(rows,list) or not 1 <= len(rows) <= (1024 if game=='freeciv' else 16):
         raise ValueError('Invalid Xonotic asset inventory')
     seen,total = set(),0
     for row in rows:
-        if not isinstance(row,dict) or not re.fullmatch(pattern,str(row.get('path'))) or row['path'] in seen:
+        if not isinstance(row,dict) or not re.fullmatch(pattern,str(row.get('path'))) or row['path'] in seen or any(part in ('.','..') for part in row['path'].split('/')):
             raise ValueError('Invalid Xonotic asset path')
         seen.add(row['path'])
         if type(row.get('bytes')) is not int or not 1 <= row['bytes'] <= 768*1024**2 or not re.fullmatch(r'[a-f0-9]{64}',str(row.get('sha256'))):

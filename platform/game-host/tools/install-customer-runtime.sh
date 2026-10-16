@@ -8,6 +8,9 @@ install -o root -g root -m 755 "$source_dir/customer-xonotic-assets.py" /usr/loc
 java_profiles="$source_dir/../customerJavaProfiles.json"
 if test -f "$source_dir/customerJavaProfiles.json"; then java_profiles="$source_dir/customerJavaProfiles.json"; fi
 install -o root -g root -m 644 "$java_profiles" /usr/local/libexec/playbound-customer-java-profiles.json
+doom_profile="$source_dir/../customerFreedoomAssets.json"
+if test -f "$source_dir/customerFreedoomAssets.json"; then doom_profile="$source_dir/customerFreedoomAssets.json"; fi
+install -o root -g root -m 644 "$doom_profile" /usr/local/libexec/playbound-customer-freedoom-assets.json
 asset_profile="$source_dir/../customerHurryAssets.json"
 if test -f "$source_dir/customerHurryAssets.json"; then asset_profile="$source_dir/customerHurryAssets.json"; fi
 install -o root -g root -m 644 "$asset_profile" /usr/local/libexec/playbound-customer-hurry-assets.json

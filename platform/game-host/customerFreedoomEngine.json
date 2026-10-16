@@ -1,0 +1,11 @@
+{
+  "version": "existing-reviewed-zandronum",
+  "binary": {
+    "bytes": 9743800,
+    "sha256": "41c1d3d9656dece8dbb7544b380acea6524b2f65aa9a89442899a556f86bd9fa"
+  },
+  "legacyBinary": {
+    "bytes": 9743800,
+    "sha256": "41c1d3d9656dece8dbb7544b380acea6524b2f65aa9a89442899a556f86bd9fa"
+  }
+}

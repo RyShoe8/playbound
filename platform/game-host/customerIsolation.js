@@ -10,7 +10,7 @@ import { customerResourceLimits } from "./customerResourceLimits.js";
 import { identityMigrationMetadata } from "./customerMigration.js";
 import { NATIVE_PACKAGE_PROFILES, verifyNativePackageInstallation } from "./nativePackageUpdates.js";
 
-export const CUSTOMER_IDENTITY_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti", "openarena", "battle-for-wesnoth", "supertuxkart", "0-ad", "ysoccer", "flightgear", "mindustry", "hurry-curry", "assaultcube", "xonotic", "wolfenstein-enemy-territory", "medal-of-honor-allied-assault"]);
+export const CUSTOMER_IDENTITY_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti", "openarena", "battle-for-wesnoth", "supertuxkart", "0-ad", "ysoccer", "flightgear", "mindustry", "hurry-curry", "assaultcube", "xonotic", "wolfenstein-enemy-territory", "medal-of-honor-allied-assault", "freedoom"]);
 export const TEEWORLDS_ISOLATION = "teeworlds-bwrap-v1";
 export const CUSTOMER_ISOLATION_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti"]);
 
@@ -33,7 +33,7 @@ function unlinkedAncestors(filename) {
 
 /** Runs before recipes write any generated configuration, not just at spawn. */
 export function validateCustomerPreparation({ gameSlug, customerOwned, communityServerId: id, home, identityProfile }) {
-  if (customerOwned && ["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault"].includes(gameSlug) && identityProfile) {
+  if (customerOwned && ["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault","freedoom"].includes(gameSlug) && identityProfile) {
     if (identityProfile !== `${gameSlug}-unix-v1` || identityMigrationMetadata(id,home)?.identityProfile !== identityProfile) throw new Error("Customer identity migration is not ready");
     return;
   }
@@ -74,7 +74,7 @@ function privateDirectory(directory) {
 }
 
 export function customerIsolationLaunch({ gameSlug, customerOwned, communityServerId, binary, args, home, resourceLimits, identityProfile, settings, startupPort, serverName }) {
-  if (!customerOwned || (!CUSTOMER_ISOLATION_GAMES.includes(gameSlug) && !(["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault"].includes(gameSlug) && identityProfile))) return null;
+  if (!customerOwned || (!CUSTOMER_ISOLATION_GAMES.includes(gameSlug) && !(["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault","freedoom"].includes(gameSlug) && identityProfile))) return null;
   if (identityProfile !== undefined && (!CUSTOMER_IDENTITY_GAMES.includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1`)) throw new Error("Unsupported customer identity profile");
   const limits = customerResourceLimits(gameSlug, resourceLimits);
   validateCustomerPreparation({ gameSlug, customerOwned, communityServerId, home, identityProfile });
@@ -208,6 +208,16 @@ export function zeroAdIdentityConfiguration(args) {
 }
 
 function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, home, resourceLimits, identityProfile, settings, startupPort, serverName }) {
+  if (gameSlug === "freedoom") {
+    if(binary!=="/opt/playbound-host/games/freedoom/zandronum-server"||identityProfile!=="freedoom-unix-v1"||identityMigrationMetadata(id,home)?.identityProfile!==identityProfile||args[0]!=="-host")throw new Error("Unexpected isolated Zandronum contract");
+    const values={};for(let i=1;i<args.length;i+=2){const key=args[i],value=args[i+1];if(typeof value!=="string"||Object.hasOwn(values,key))throw new Error("Unexpected Zandronum argument");values[key]=value;}
+    const modes=["deathmatch","teamplay","ctf","duel","lastmanstanding"],allowed=new Set(["-port","-iwad","-skill","+map","+sv_hostname","+sv_maxplayers","+sv_maxclients","+fraglimit","+timelimit",...modes.map(x=>"+"+x)]);
+    const selected=modes.filter(x=>values["+"+x]!==undefined);
+    if(Object.keys(values).some(x=>!allowed.has(x))||values['-port']!==String(startupPort)||values['-iwad']!=="/opt/playbound-host/games/freedoom/freedoom2.wad"||selected.length>1||selected.some(x=>values['+'+x]!=="1"))throw new Error("Unsupported isolated Doom edition or setting");
+    const configuration={name:values['+sv_hostname'],maxPlayers:Math.min(Number(values['+sv_maxplayers']??12),Number(values['+sv_maxclients']??12)),map:values['+map'],mode:selected[0]??"coop",skill:Number(values['-skill']??3),fragLimit:Number(values['+fraglimit']??0),timeLimit:Number(values['+timelimit']??0)};
+    if(!Number.isInteger(startupPort)||startupPort<10666||startupPort>10686||typeof configuration.name!=="string"||!configuration.name.length||configuration.name.length>100||/[\x00-\x1f\x7f"\\;]/.test(configuration.name)||!/^MAP(?:0[1-9]|[12][0-9]|3[0-2])$/.test(configuration.map||"")||!Number.isInteger(configuration.maxPlayers)||configuration.maxPlayers<2||configuration.maxPlayers>64||!Number.isInteger(configuration.skill)||configuration.skill<1||configuration.skill>5||[configuration.fragLimit,configuration.timeLimit].some(x=>!Number.isInteger(x)||x<0||x>100000))throw new Error("Invalid Zandronum typed setting");
+    return {profile:"freedoom-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify(configuration)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
   if (gameSlug === "medal-of-honor-allied-assault") {
     if (binary!=="/opt/playbound-host/games/openmohaa/omohaaded" || identityProfile!=="medal-of-honor-allied-assault-unix-v1" || identityMigrationMetadata(id,home)?.identityProfile!==identityProfile || args.at(-2)!=="+map") throw new Error("Unexpected OpenMoHAA identity contract");
     const values={};for(let i=0;i<args.length-2;i+=3){const [marker,key,value]=args.slice(i,i+3);if(marker!=="+set"||typeof value!=="string"||Object.hasOwn(values,key))throw new Error("Unexpected OpenMoHAA setting");values[key]=value;}

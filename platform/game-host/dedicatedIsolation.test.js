@@ -7,6 +7,7 @@ import path from "node:path";
 // recipes.js reads HOME once at import, so point it at a scratch directory first.
 const HOME = fs.mkdtempSync(path.join(os.tmpdir(), "pb-host-"));
 process.env.HOME = HOME;
+process.env.GAME_HOST_GAMES_DIR = path.join(HOME, "games");
 const { recipes, acceptedSettingsFor } = await import("./recipes.js");
 const { createWorldBackup, listWorldBackups, restoreWorldBackup } = await import("./dedicatedDataBackups.js");
 
@@ -86,7 +87,7 @@ test("the worker-thread runner does the same work off the event loop and hides h
 test("the agent route only accepts games the backup module supports", async () => {
   const { WORLD_BACKUP_GAMES, isWorldBackupGame } = await import("./dedicatedDataBackups.js");
   assert.deepEqual([...WORLD_BACKUP_GAMES].sort(), [
-    "0-ad", "assaultcube", "barotrauma", "battle-for-wesnoth", "bzflag", "core-keeper", "dont-starve-together", "factorio", "flightgear", "freeciv", "hedgewars", "hurry-curry", "luanti", "medal-of-honor-allied-assault", "mindustry", "morrowind", "necesse", "openarena", "openttd", "rimworld-together", "supertuxkart", "teeworlds", "terraria", "vintage-story", "wolfenstein-enemy-territory", "xonotic", "ysoccer",
+    "0-ad", "assaultcube", "barotrauma", "battle-for-wesnoth", "bzflag", "core-keeper", "dont-starve-together", "factorio", "flightgear", "freeciv", "freedoom", "hedgewars", "hurry-curry", "luanti", "medal-of-honor-allied-assault", "mindustry", "morrowind", "necesse", "openarena", "openttd", "rimworld-together", "supertuxkart", "teeworlds", "terraria", "vintage-story", "wolfenstein-enemy-territory", "xonotic", "ysoccer",
   ]);
   assert.equal(isWorldBackupGame("constructor"), false);
   const source = fs.readFileSync(new URL("./index.js", import.meta.url), "utf8");

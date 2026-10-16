@@ -31,6 +31,7 @@ PROFILES = {
     'xonotic': (1, 1024 ** 3, 128),
     'wolfenstein-enemy-territory': (1, 1024 ** 3, 128),
     'medal-of-honor-allied-assault': (1, 1024 ** 3, 128),
+    'freedoom': (1, 1024 ** 3, 128),
 }
 
 

@@ -77,6 +77,16 @@ test("native verification rejects custom files and modified executables, but nev
   assert.throws(() => verifyAssaultCubeInstallation(f.current), /custom/);
   assert.equal(fs.readFileSync(path.join(f.current, "config/private.cfg"), "utf8"), "original settings");
 });
+
+test("native verification rehashes content when a rewrite retains identical metadata", (t) => {
+  const f=setup(t), filename=path.join(f.current,"bin_unix/linux_64_server");
+  const original=fs.lstatSync, unchanged=original(filename);
+  verifyAssaultCubeInstallation(f.current);
+  fs.writeFileSync(filename,Buffer.alloc(128));
+  fs.lstatSync=(file,...args)=>file===filename ? unchanged : original(file,...args);
+  try { assert.throws(()=>verifyAssaultCubeInstallation(f.current),/reviewed/); }
+  finally { fs.lstatSync=original; }
+});
 test("unknown release versions and unreviewed artifacts cannot replace native files", async (t) => {
   for (const tag of ["v1.3.0.3", "../other", "v1.3.0.2"]) {
     const stage = path.join(fixture(t), `.pb-update-assaultcube-${randomUUID()}`); install(stage);

@@ -24,6 +24,7 @@ const WORLD_SOURCES = {
   "hurry-curry": (folder) => ["hurry-curry-servers", folder],
   assaultcube: (folder) => ["assaultcube-servers", folder],
   xonotic: (folder) => ["xonotic-servers", folder],
+  freedoom: (folder) => ["freedoom-servers", folder],
   "wolfenstein-enemy-territory": (folder) => ["et", folder.slice(-16)],
   "medal-of-honor-allied-assault": (folder) => ["openmohaa", "pb-"+folder.slice(-8)],
   openttd: (folder) => ["openttd-servers", folder],

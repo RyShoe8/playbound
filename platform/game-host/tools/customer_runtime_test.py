@@ -49,6 +49,28 @@ class RuntimeBoundaries(unittest.TestCase):
         self.assertIn('-autostart=random/mainland',command)
         with self.assertRaises(ValueError):module.request(['run-native',ID,'42',IDENTITY,'0-ad','20596','750','2048'])
 
+    def test_private_account_database_is_sealed_and_contains_only_the_reserved_identity(self):
+        import fcntl
+        descriptor=module.identity_database(40000,40000)
+        try:
+            self.assertEqual(os.read(descriptor,4096),b'playbound-runtime:x:40000:40000:Private game runtime:/server:/usr/sbin/nologin\n')
+            self.assertEqual(fcntl.fcntl(descriptor,fcntl.F_GET_SEALS),15)
+            with self.assertRaises(OSError):os.write(descriptor,b'changed')
+        finally:os.close(descriptor)
+        for uid,gid in [(0,0),(39999,39999),(40256,40256),(40000,40001),(True,True),('40000','40000')]:
+            with self.assertRaises(ValueError):module.identity_database(uid,gid)
+
+    def test_zandronum_uses_fixed_iwad_and_private_configuration(self):
+        import json
+        module.select_game('freedoom')
+        values={'name':'Private fixture','maxPlayers':4,'map':'MAP01','mode':'coop','skill':3,'fragLimit':0,'timeLimit':0}
+        self.assertIn(b'sv_updatemaster false',module.config_bytes(json.dumps(values),10686))
+        command=module.command(Path('/fixture/data'),7,10686,2048,8,values)
+        self.assertIn('/game-data/freedoom2.wad',command)
+        self.assertIn('/server/zandronum.ini',command)
+        for update in [{'mode':'exec'},{'map':'../unsafe'},{'skill':True},{'maxPlayers':65},{'iwad':'other.wad'}]:
+            with self.assertRaises(ValueError):module.config_bytes(json.dumps(dict(values,**update)),10686)
+
     def test_openmohaa_generates_bounded_map_slots_and_bot_settings(self):
         import json
         module.select_game('medal-of-honor-allied-assault')

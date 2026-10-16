@@ -17,10 +17,13 @@ SOURCE = Path('/opt/playbound-host/games/hurry-curry/data')
 
 
 def seal_assets(source=SOURCE, profile_path=PROFILE, game='hurry-curry'):
-    if game not in ('hurry-curry','assaultcube'): raise ValueError('Unsupported asset family')
+    if game not in ('hurry-curry','assaultcube','freedoom'): raise ValueError('Unsupported asset family')
     if game == 'assaultcube':
         source=Path('/opt/playbound-host/games/assaultcube')
         profile_path=Path('/usr/local/libexec/playbound-customer-assaultcube-assets.json')
+    if game == 'freedoom':
+        source=Path('/opt/playbound-host/games/freedoom')
+        profile_path=Path('/usr/local/libexec/playbound-customer-freedoom-assets.json')
     engine_file = Path('/usr/local/libexec/playbound-customer-native-engine')
     info = engine_file.lstat()
     if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_nlink != 1 or info.st_mode & 0o022:
@@ -37,14 +40,14 @@ def seal_assets(source=SOURCE, profile_path=PROFILE, game='hurry-curry'):
     try:
         for row in rows:
             relative = row.get('path')
-            if not isinstance(relative, str) or not re.fullmatch(r'[A-Za-z0-9_-]+(?:/[A-Za-z0-9_-]+)*\.'+('cgz' if game=='assaultcube' else 'yaml'), relative) or relative in seen:
+            if not isinstance(relative, str) or not re.fullmatch(r'[A-Za-z0-9_-]+(?:/[A-Za-z0-9_-]+)*\.'+('cgz' if game=='assaultcube' else '(?:wad|pk3)' if game=='freedoom' else 'yaml'), relative) or relative in seen:
                 raise ValueError('Invalid asset path')
             seen.add(relative)
             size = row.get('bytes')
-            if type(size) is not int or not 0 <= size <= 1024**2 or not re.fullmatch(r'[a-f0-9]{64}', str(row.get('sha256'))):
+            if type(size) is not int or not 0 <= size <= (64*1024**2 if game=='freedoom' else 1024**2) or not re.fullmatch(r'[a-f0-9]{64}', str(row.get('sha256'))):
                 raise ValueError('Invalid asset pin')
             total += size
-            if total > 8*1024**2:
+            if total > (128*1024**2 if game=='freedoom' else 8*1024**2):
                 raise ValueError('Asset budget exceeded')
             with os.fdopen(engines.open_regular(source / relative), 'rb') as asset:
                 before = os.fstat(asset.fileno())
