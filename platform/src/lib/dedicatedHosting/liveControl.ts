@@ -37,15 +37,15 @@ async function send(roomId: string, command: string): Promise<string> {
   return sent.response;
 }
 
-function channelOf(gameSlug: string) {
-  return getServerSettingProfile(gameSlug)?.controlChannel;
+function channelOf(gameSlug: string, editionSlug?: string | null) {
+  return getServerSettingProfile(gameSlug, editionSlug)?.controlChannel;
 }
 
 /** Map list, current map, next-map and rotation support for the Maps tab. */
 export async function getMaps(userId: string, serverId: string) {
   const auth = await authorizeServer(userId, serverId, "server:view");
   if ("error" in auth) return auth;
-  const profile = getServerSettingProfile(auth.server.gameSlug);
+  const profile = getServerSettingProfile(auth.server.gameSlug, auth.server.editionSlug);
   const spec = profile?.controlChannel ? profile.maps : undefined;
   const restartMap = profile?.settings.find((d) => d.feature === "map");
   if (!spec && !restartMap) return { error: "This game's maps can't be changed from PlayBound.", status: 400 } satisfies Fail;
@@ -76,7 +76,7 @@ async function liveMapAction(
 ) {
   const auth = await authorizeServer(userId, serverId, "server:change_map");
   if ("error" in auth) return auth;
-  const spec = getServerSettingProfile(auth.server.gameSlug)?.maps;
+  const spec = getServerSettingProfile(auth.server.gameSlug, auth.server.editionSlug)?.maps;
   if (!spec) return { error: "This game's maps can't be changed from PlayBound.", status: 400 } satisfies Fail;
   let command: string | null;
   try {
@@ -100,7 +100,7 @@ async function liveMapAction(
 export async function changeMap(userId: string, serverId: string, map: string) {
   const auth = await authorizeServer(userId, serverId, "server:change_map");
   if ("error" in auth) return auth;
-  const profile = getServerSettingProfile(auth.server.gameSlug);
+  const profile = getServerSettingProfile(auth.server.gameSlug, auth.server.editionSlug);
   if (profile?.maps) return liveMapAction(userId, serverId, map, changeMapCommand, "map_changed");
   const def = profile?.settings.find((d) => d.feature === "map");
   const allowed = def?.type === "enum" ? def.options.some((o) => o.value === map)
@@ -120,7 +120,7 @@ export const setNextMap = (userId: string, serverId: string, map: string) =>
 export async function setRotation(userId: string, serverId: string, maps: unknown) {
   const auth = await authorizeServer(userId, serverId, "server:change_map");
   if ("error" in auth) return auth;
-  const spec = getServerSettingProfile(auth.server.gameSlug)?.maps;
+  const spec = getServerSettingProfile(auth.server.gameSlug, auth.server.editionSlug)?.maps;
   if (!spec?.rotation) return { error: "This game doesn't support a map rotation from PlayBound.", status: 400 } satisfies Fail;
   const list = Array.isArray(maps) ? maps.map(String) : [];
   if (list.length > MAX_ROTATION) return { error: `A rotation can have up to ${MAX_ROTATION} maps.`, status: 400 } satisfies Fail;
@@ -144,7 +144,7 @@ export async function setRotation(userId: string, serverId: string, maps: unknow
 export async function banPlayer(userId: string, serverId: string, playerId: string) {
   const auth = await authorizeServer(userId, serverId, "server:ban_players");
   if ("error" in auth) return auth;
-  const channel = channelOf(auth.server.gameSlug);
+  const channel = channelOf(auth.server.gameSlug, auth.server.editionSlug);
   if (!channel) return { error: "This game doesn't support bans from PlayBound.", status: 400 } satisfies Fail;
   const roomId = await roomIdFor(serverId);
   if (!roomId) return { error: "The server isn't running.", status: 409 } satisfies Fail;
@@ -184,7 +184,7 @@ export async function unbanPlayer(userId: string, serverId: string, banId: strin
   auth.server.bans = auth.server.bans.filter((b: { _id: unknown }) => String(b._id) !== banId);
   await auth.server.save();
   let liftedNow = false;
-  const channel = channelOf(auth.server.gameSlug);
+  const channel = channelOf(auth.server.gameSlug, auth.server.editionSlug);
   const roomId = await roomIdFor(serverId);
   const cmds = channel ? unbanCommands(channel, ban.address) : null;
   if (roomId && cmds) {
@@ -206,10 +206,11 @@ export async function unbanPlayer(userId: string, serverId: string, banId: strin
  */
 export async function applyLiveState(server: {
   gameSlug: string;
+  editionSlug?: string | null;
   bans?: Array<{ address: string }>;
   mapRotation?: string[];
 }, roomId: string): Promise<boolean> {
-  const profile = getServerSettingProfile(server.gameSlug);
+  const profile = getServerSettingProfile(server.gameSlug, server.editionSlug);
   const channel = profile?.controlChannel;
   if (!channel) return true;
   const commands: string[] = [];

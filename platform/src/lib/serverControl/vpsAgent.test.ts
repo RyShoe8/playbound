@@ -17,6 +17,18 @@ function roomRef(over: Partial<VpsRoomRef> = {}): VpsRoomRef {
   };
 }
 
+it("uses Open Fortress controls while retaining the TF2 catalog identity", async () => {
+  const fake = fakeClient();
+  const adapter = createVpsAgentAdapter({ client: fake.client, room: roomRef({ gameSlug: "team-fortress-2", hostSlug: "open-fortress", editionSlug: "open-fortress" }) });
+  const view = await adapter.getSettings();
+  expect(view.gameSlug).toBe("open-fortress");
+  expect(view.values.map).toBe("dm_2fort");
+  expect(view.definitions.find(def => def.key === "map")).toMatchObject({ options: expect.arrayContaining([{ value: "dm_backfort", label: "Backfort" }]) });
+  expect(await adapter.getStatus()).toMatchObject({ gameSlug: "team-fortress-2" });
+  await adapter.applySettings({ map: "dm_backfort" });
+  expect(fake.calls.created[0]).toMatchObject({ gameSlug: "open-fortress", editionSlug: "open-fortress", settings: expect.objectContaining({ map: "dm_backfort" }) });
+});
+
 /** An agent that starts with one room and records what it is asked to do. */
 function fakeClient(initial: Partial<GameHostRoom>[] = [{ roomId: "room_a" }]) {
   const rooms: GameHostRoom[] = initial.map((r, i) => ({

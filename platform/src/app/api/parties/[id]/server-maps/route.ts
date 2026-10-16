@@ -20,7 +20,7 @@ async function permitted(req: Request, ctx: Ctx, edit: boolean) {
   if (edit && String(party.leaderId) !== userId) return { error: "Only the party leader can change maps", status: 403 } as const;
   const source = party as unknown as PartyServerSource;
   const available = serverControlAvailability(source);
-  const profile = getServerSettingProfile(String(source.gameSlug || ""));
+  const profile = getServerSettingProfile(String(source.gameSlug || ""), source.editionSlug);
   if (!available.available || available.phase !== "live" || !profile?.maps || !profile.controlChannel) {
     return { error: "This party server cannot change maps live", status: 409 } as const;
   }

@@ -5,6 +5,11 @@ import { createManagedVpsAdapter } from "./managedVps";
 import { requestManagedHostRoom } from "@/lib/gameHost/client";
 const adapter = () => createManagedVpsAdapter({ id: "customer", gameSlug: "xonotic", recipeSlug: "xonotic", editionSlug: null, mod: null, name: "Customer server", settings: {} });
 beforeEach(() => vi.resetAllMocks());
+it("selects the edition's native settings without changing catalog identity", async () => {
+  const managed = createManagedVpsAdapter({ id: "customer", gameSlug: "team-fortress-2", recipeSlug: "open-fortress", editionSlug: "open-fortress", mod: null, name: "Open Fortress", settings: {} });
+  expect(await managed.getSettings()).toMatchObject({ gameSlug: "open-fortress", values: { map: "dm_2fort", maxPlayers: 16 } });
+  expect((await managed.getSettings()).definitions.find(def => def.key === "map")).toMatchObject({ options: expect.arrayContaining([{ value: "dm_backfort", label: "Backfort" }]) });
+});
 it("preserves pending status and exposes only the matched runtime's safe metrics", async () => {
   list.mockResolvedValue({ ok: true, rooms: [
     { communityServerId: "other", resources: { available: true, cpuCores: 5 } },

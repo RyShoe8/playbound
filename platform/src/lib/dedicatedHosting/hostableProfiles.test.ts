@@ -2,6 +2,12 @@ import { describe, expect, it } from "vitest";
 import { hostableProfileStubs, readyGameHostSlugs, readyPublishedHostableCatalog } from "./hostableProfiles";
 
 describe("hostable profile stubs", () => {
+  it("keeps Open Fortress under the TF2 edition with its own recipe", () => {
+    const edition = { gameSlug: "team-fortress-2", slug: "open-fortress", features: ["Dedicated Servers"] };
+    const rows = hostableProfileStubs([], [edition]);
+    expect(rows.find(row => row.key === "team-fortress-2:open-fortress")?.recipeSlug).toBe("open-fortress");
+    expect(rows.some(row => row.gameSlug === "open-fortress")).toBe(false);
+  });
   it("maps Together to its recipe without offering vanilla RimWorld hosting", () => {
     const edition = { gameSlug: "rimworld", slug: "rimworld-together", features: ["Multiplayer"] };
     expect(hostableProfileStubs([], [edition], ["rimworld"])).toEqual([{ key: "rimworld:rimworld-together", gameSlug: "rimworld", editionSlug: "rimworld-together", recipeSlug: "rimworld-together" }]);

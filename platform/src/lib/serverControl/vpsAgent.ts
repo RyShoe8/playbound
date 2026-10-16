@@ -36,6 +36,7 @@ import {
   defaultSettingValues,
   getServerSettingProfile,
   strongestApplyMode,
+  serverSettingSlug,
   type ServerSettingValues,
 } from "./settings";
 import { buildRconCommands, parseStatus } from "./rcon";
@@ -70,7 +71,8 @@ const liveVpsAgentClient: VpsAgentClient = {
 /**
  * Everything the adapter needs to find and re-create one party's room.
  *
- * `gameSlug` is the catalog's and keys the settings schema; `hostSlug` is the
+ * `gameSlug` is the catalog's; together with editionSlug it selects settings.
+ * `hostSlug` is the
  * agent's own name for the same game, which is not always the same string —
  * 0 A.D. is `0ad` in the catalog and `0-ad` on the box.
  */
@@ -161,6 +163,7 @@ export function createVpsAgentAdapter(opts: VpsAgentAdapterOptions): ServerContr
   // Local to this adapter: a restart replaces both, and getStatus after it
   // must describe the new room rather than the one we were constructed with.
   const ref: VpsRoomRef = { ...opts.room, settings: { ...opts.room.settings } };
+  const settingsSlug = serverSettingSlug(ref.gameSlug, ref.editionSlug);
 
   async function findRoom(): Promise<GameHostRoom | null> {
     const listed = await client.listRooms();
@@ -236,12 +239,12 @@ export function createVpsAgentAdapter(opts: VpsAgentAdapterOptions): ServerContr
 
   return {
     kind: "vps-agent",
-    capabilities: capabilitiesFor(ref.gameSlug),
+    capabilities: capabilitiesFor(settingsSlug),
 
     getStatus: currentState,
 
     async getSettings(): Promise<ServerSettingsView> {
-      const profile = getServerSettingProfile(ref.gameSlug);
+      const profile = getServerSettingProfile(settingsSlug);
       const room = await findRoom();
       /*
        * Truth is per-key, and which record holds it depends on how the value
@@ -255,7 +258,7 @@ export function createVpsAgentAdapter(opts: VpsAgentAdapterOptions): ServerContr
        * by definition.
        */
       const spawned = (room?.settings as ServerSettingValues | undefined) ?? {};
-      const values: ServerSettingValues = { ...defaultSettingValues(ref.gameSlug) };
+      const values: ServerSettingValues = { ...defaultSettingValues(settingsSlug) };
       for (const def of profile?.settings ?? []) {
         const fromAgent = def.backend === "rcon" ? undefined : spawned[def.key];
         const fromUs = def.backend === "rcon" ? ref.settings[def.key] : undefined;
@@ -265,15 +268,15 @@ export function createVpsAgentAdapter(opts: VpsAgentAdapterOptions): ServerContr
       /* A room with no profile still reports what it was started with. */
       if (!profile) Object.assign(values, spawned, ref.settings);
       return {
-        gameSlug: ref.gameSlug,
+        gameSlug: settingsSlug,
         definitions: profile?.settings ?? [],
         values,
       };
     },
 
     async applySettings(input: Record<string, unknown>): Promise<ApplySettingsResult> {
-      const { values, rejected } = coerceSettingValues(ref.gameSlug, input);
-      const current = { ...defaultSettingValues(ref.gameSlug), ...ref.settings };
+      const { values, rejected } = coerceSettingValues(settingsSlug, input);
+      const current = { ...defaultSettingValues(settingsSlug), ...ref.settings };
       const changed = Object.keys(values).filter((key) => current[key] !== values[key]);
 
       if (changed.length === 0) {
@@ -285,7 +288,7 @@ export function createVpsAgentAdapter(opts: VpsAgentAdapterOptions): ServerContr
         };
       }
 
-      const profile = getServerSettingProfile(ref.gameSlug);
+      const profile = getServerSettingProfile(settingsSlug);
       const needsRestart = changed.some(
         (key) => profile?.settings.find((s) => s.key === key)?.backend !== "rcon"
       );
@@ -298,7 +301,7 @@ export function createVpsAgentAdapter(opts: VpsAgentAdapterOptions): ServerContr
        * cost one restart. Everything lands together or not at all.
        */
       if (needsRestart) {
-        if (strongestApplyMode(ref.gameSlug, changed) !== "restart") {
+        if (strongestApplyMode(settingsSlug, changed) !== "restart") {
           // A key delivered at spawn that claims to apply live is a promise
           // the server cannot keep, and this is where it would be broken.
           throw new ServerControlUnsupported("vps-agent", "apply that change without a restart");
@@ -313,7 +316,7 @@ export function createVpsAgentAdapter(opts: VpsAgentAdapterOptions): ServerContr
       }
 
       const commands = buildRconCommands(
-        ref.gameSlug,
+        settingsSlug,
         Object.fromEntries(changed.map((key) => [key, values[key]]))
       );
       const failures: { key: string; reason: string }[] = [];
@@ -349,7 +352,7 @@ export function createVpsAgentAdapter(opts: VpsAgentAdapterOptions): ServerContr
     },
 
     async restart(): Promise<ServerRuntimeState> {
-      const settings = { ...defaultSettingValues(ref.gameSlug), ...ref.settings };
+      const settings = { ...defaultSettingValues(settingsSlug), ...ref.settings };
       await stopRoom();
       return spawn(settings);
     },
@@ -357,7 +360,7 @@ export function createVpsAgentAdapter(opts: VpsAgentAdapterOptions): ServerContr
     async start(): Promise<ServerRuntimeState> {
       const existing = await findRoom();
       if (existing) return stateFromRoom(ref, existing);
-      return spawn({ ...defaultSettingValues(ref.gameSlug), ...ref.settings });
+      return spawn({ ...defaultSettingValues(settingsSlug), ...ref.settings });
     },
 
     async stop(): Promise<ServerRuntimeState> {
@@ -374,16 +377,16 @@ export function createVpsAgentAdapter(opts: VpsAgentAdapterOptions): ServerContr
     },
 
     async getPlayers(): Promise<ServerPlayer[]> {
-      if (!capabilitiesFor(ref.gameSlug).players || !ref.roomId) {
+      if (!capabilitiesFor(settingsSlug).players || !ref.roomId) {
         throw new ServerControlUnsupported("vps-agent", "list connected players");
       }
       const sent = await client.sendCommand(ref.roomId, "status");
       if (!sent.ok) throw new Error(sent.error);
-      return parseStatus(getServerSettingProfile(ref.gameSlug)?.controlChannel, sent.response).map((p) => ({ name: p.bot ? `${p.name} (bot)` : p.name, id: p.id, pingMs: p.pingMs, score: p.score }));
+      return parseStatus(getServerSettingProfile(settingsSlug)?.controlChannel, sent.response).map((p) => ({ name: p.bot ? `${p.name} (bot)` : p.name, id: p.id, pingMs: p.pingMs, score: p.score }));
     },
 
     async sendCommand(raw: string): Promise<string> {
-      if (!capabilitiesFor(ref.gameSlug).console || !ref.roomId) {
+      if (!capabilitiesFor(settingsSlug).console || !ref.roomId) {
         throw new ServerControlUnsupported("vps-agent", "run raw commands");
       }
       const sent = await client.sendCommand(ref.roomId, raw);

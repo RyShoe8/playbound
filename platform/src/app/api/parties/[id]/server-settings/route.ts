@@ -13,6 +13,7 @@ import {
   defaultSettingValues,
   getServerSettingProfile,
   strongestApplyMode,
+  serverSettingSlug,
 } from "@/lib/serverControl/settings";
 import type { ServerControlCapabilities, ServerRuntimeState } from "@/lib/serverControl/adapter";
 
@@ -89,7 +90,7 @@ export async function GET(req: Request, ctx: RouteContext) {
      * from the game's own schema and whatever the host has already planned.
      */
     if (availability.phase === "pre-launch") {
-      const slug = String(party.gameSlug || "");
+      const slug = serverSettingSlug(String(party.gameSlug || ""), party.editionSlug);
       const profile = getServerSettingProfile(slug)!;
       const planned = coerceSettingValues(slug, (doc.hosted?.settings as Record<string, unknown>) || {});
       return NextResponse.json({
@@ -165,7 +166,7 @@ export async function PATCH(req: Request, ctx: RouteContext) {
      * nobody on a server to disconnect.
      */
     if (availability.phase === "pre-launch") {
-      const slug = String(party.gameSlug || "");
+      const slug = serverSettingSlug(String(party.gameSlug || ""), party.editionSlug);
       const { values, rejected } = coerceSettingValues(slug, requested);
       doc.hosted = doc.hosted || {};
       doc.hosted.settings = { ...(doc.hosted.settings || {}), ...values };
