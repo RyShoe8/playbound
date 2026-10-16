@@ -207,7 +207,8 @@ export async function DELETE(req: Request) {
   const mirrorUrl = `https://mirror.playbound.club/${relativePath.split("/").map(encodeURIComponent).join("/")}`;
   const [gameUse, editionUse] = await Promise.all([
     CatalogGame.exists({ "launcherInstall.url": mirrorUrl }),
-    EditionModel.exists({ "installConfig.playbound_installer.url": mirrorUrl }),
+    // A tombstone left by deleting a seed edition keeps its old config but installs nothing.
+    EditionModel.exists({ "installConfig.playbound_installer.url": mirrorUrl, suppressesSeed: { $ne: true } }),
   ]);
   if (gameUse || editionUse) {
     return NextResponse.json({ error: "A game or edition still installs from this package" }, { status: 409 });
