@@ -93,7 +93,8 @@ print(json.dumps({'filterApplied':True,'dangerousCallsDenied':True,'privateWrite
                 descriptor = module.sealed_filter()
                 try:
                     command = runtime.command(data, config, runtime.NATIVE_GAMES[game][1], 1024,
-                                              native_settings={'maxPlayers':4,'scoreLimit':3,'name':'Private fixture','mode':3,'difficulty':1,'map':'random/mainland'}, seccomp_fd=descriptor)
+                                              native_settings={'maxPlayers':4,'scoreLimit':3,'name':'Private fixture','mode':3,'difficulty':1,'map':'random/mainland'}, seccomp_fd=descriptor,
+                                              assets=[(config,'/game-data/packages/maps/official/fixture.cgz')] if game=='assaultcube' else ())
                     delimiter = len(command) - 1 - command[::-1].index('--')
                     result = subprocess.run([*command[:delimiter+1], '/usr/bin/python3', '-I', '-c', code],
                         user=65534, group=65534, extra_groups=[], pass_fds=(config,descriptor),

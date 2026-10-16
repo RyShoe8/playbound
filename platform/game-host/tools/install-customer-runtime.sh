@@ -9,6 +9,9 @@ install -o root -g root -m 644 "$java_profiles" /usr/local/libexec/playbound-cus
 asset_profile="$source_dir/../customerHurryAssets.json"
 if test -f "$source_dir/customerHurryAssets.json"; then asset_profile="$source_dir/customerHurryAssets.json"; fi
 install -o root -g root -m 644 "$asset_profile" /usr/local/libexec/playbound-customer-hurry-assets.json
+ac_profile="$source_dir/../customerAssaultCubeAssets.json"
+if test -f "$source_dir/customerAssaultCubeAssets.json"; then ac_profile="$source_dir/customerAssaultCubeAssets.json"; fi
+install -o root -g root -m 644 "$ac_profile" /usr/local/libexec/playbound-customer-assaultcube-assets.json
 python3 -m py_compile "$source_dir/customer-game-assets.py"
 install -o root -g root -m 755 "$source_dir/customer-game-assets.py" /usr/local/libexec/playbound-customer-game-assets
 

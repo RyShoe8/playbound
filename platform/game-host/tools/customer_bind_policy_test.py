@@ -35,6 +35,25 @@ class BindPolicyTests(unittest.TestCase):
                 self.assertEqual(evaluate(port,protocol),int(port==5010 or port==5011 and protocol==socket.IPPROTO_TCP))
         for port,stk,fgms in [(5001,False,True),(5012,False,True),(5010,True,True),(5010,False,1)]:
             with self.assertRaises(ValueError):module.instructions(port,stk,fgms)
+    def test_assaultcube_pair_is_udp_only_and_has_no_shared_lan_listener(self):
+        rows=list(struct.iter_unpack('<BBhi',module.instructions(28781,assaultcube_query=True)))
+        def evaluate(port,protocol):
+            registers={1:0};position=0
+            while position<len(rows):
+                code,register,offset,value=rows[position];destination=register&15
+                if code==0x61:registers[destination]={36:protocol,24:socket.htons(port)}[offset]
+                elif code==0x15 and registers[destination]==value:position+=offset
+                elif code==0x55 and registers[destination]!=value:position+=offset
+                elif code==0xb7:registers[destination]=value
+                elif code==0x95:return registers[0]
+                position+=1
+        for protocol in (socket.IPPROTO_TCP,socket.IPPROTO_UDP):
+            for port in (0,28760,28780,28781,28782,28783):
+                self.assertEqual(evaluate(port,protocol),int(port==28781 or port==28782 and protocol==socket.IPPROTO_UDP))
+        for port in (28762,28764,28783):
+            with self.assertRaises(ValueError):module.instructions(port,assaultcube_query=True)
+        with self.assertRaises(ValueError):module.instructions(28781,assaultcube_query=1)
+
     def test_fixed_program_allows_only_allocated_network_order_port(self):
         rows = list(struct.iter_unpack('<BBhi', module.instructions(3999)))
         self.assertEqual(rows, [(0x61, 0x12, 24, 0), (0x15, 2, 2, socket.htons(3999)),

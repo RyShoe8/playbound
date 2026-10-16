@@ -49,6 +49,21 @@ class RuntimeBoundaries(unittest.TestCase):
         self.assertIn('-autostart=random/mainland',command)
         with self.assertRaises(ValueError):module.request(['run-native',ID,'42',IDENTITY,'0-ad','20596','750','2048'])
 
+    def test_assaultcube_has_private_config_logs_and_allocated_query_pair(self):
+        import json
+        module.select_game('assaultcube')
+        values={'name':'Private fixture','maxPlayers':4}
+        self.assertEqual(module.config_bytes(json.dumps(values),28781),b'')
+        command=module.command(Path('/fixture/data'),7,28781,2048,8,values,assets=[(9,'/game-data/packages/maps/official/ac_desert.cgz')])
+        self.assertIn('-f28781',command)
+        self.assertIn('-H/server/logs/',command)
+        self.assertIn('-m',command)
+        self.assertNotIn('/opt/playbound-host/games/assaultcube',command)
+        for port in (28764,28782):
+            with self.assertRaises(ValueError):module.request(['run-native',ID,'42',IDENTITY,'assaultcube',str(port),'750','2048'])
+        for update in [{'exec':'unsafe'},{'name':'bad\nline'},{'maxPlayers':True}]:
+            with self.assertRaises(ValueError):module.config_bytes(json.dumps(dict(values,**update)),28781)
+
     def test_hurry_curry_uses_sealed_data_without_enabling_registration_or_custom_commands(self):
         import json
         module.select_game('hurry-curry')

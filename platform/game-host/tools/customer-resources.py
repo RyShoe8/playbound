@@ -27,6 +27,7 @@ PROFILES = {
     'flightgear': (1, 1024 ** 3, 128),
     'mindustry': (1, 1024 ** 3, 128),
     'hurry-curry': (1, 1024 ** 3, 128),
+    'assaultcube': (1, 1024 ** 3, 128),
 }
 
 

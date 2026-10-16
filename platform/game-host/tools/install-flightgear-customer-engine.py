@@ -10,7 +10,7 @@ import tempfile
 
 
 def promote(source, destination, manifest, game='flightgear', binary_name='fgms'):
-    if (game,binary_name) not in [('flightgear','fgms'),('supertuxkart','supertuxkart'),('hurry-curry','hurrycurry-server')]:
+    if (game,binary_name) not in [('flightgear','fgms'),('supertuxkart','supertuxkart'),('hurry-curry','hurrycurry-server'),('assaultcube','linux_64_server')]:
         raise ValueError('Unknown reviewed engine promotion')
     info=source.lstat()
     if not stat.S_ISREG(info.st_mode) or info.st_nlink!=1 or info.st_mode&0o7022:

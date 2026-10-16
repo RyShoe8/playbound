@@ -51,14 +51,16 @@ def syscall(command, attribute):
     return result
 
 
-def instructions(port, stk_discovery=False, flightgear_status=False):
+def instructions(port, stk_discovery=False, flightgear_status=False, assaultcube_query=False):
     if type(port) is not int or not 1 <= port <= 65535:
         raise ValueError('Invalid native port allocation')
     if type(stk_discovery) is not bool or stk_discovery and (not 2759 <= port <= 2777 or port % 2 != 1):
         raise ValueError('Invalid SuperTuxKart discovery contract')
     if type(flightgear_status) is not bool or flightgear_status and (stk_discovery or not 5000 <= port <= 5010 or port % 2):
         raise ValueError('Invalid FlightGear status allocation')
-    if stk_discovery or flightgear_status:
+    if type(assaultcube_query) is not bool or assaultcube_query and (stk_discovery or flightgear_status or not 28763 <= port <= 28781 or port % 2 != 1):
+        raise ValueError('Invalid AssaultCube query allocation')
+    if stk_discovery or flightgear_status or assaultcube_query:
         # Only STK's allocated UDP discovery port is additional. TCP discovery,
         # dynamic binds and every other explicit port remain denied.
         rows = [(0x61,0x12,24,0), (0x15,0x02,5,socket.htons(port)),
@@ -96,8 +98,8 @@ def program_ids(scope):
         os.close(descriptor)
 
 
-def apply_current(port, stk_discovery=False, flightgear_status=False):
-    program_bytes = instructions(port,stk_discovery,flightgear_status)
+def apply_current(port, stk_discovery=False, flightgear_status=False, assaultcube_query=False):
+    program_bytes = instructions(port,stk_discovery,flightgear_status,assaultcube_query)
     bytecode = ctypes.create_string_buffer(program_bytes)
     license = ctypes.create_string_buffer(b'GPL\0')
     placement = Path('/proc/self/cgroup').read_text().strip()

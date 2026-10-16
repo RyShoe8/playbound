@@ -25,11 +25,17 @@ ENGINES = {
     '0-ad': ('pyrogenesis', '/usr/games/pyrogenesis'),
     'flightgear': ('fgms', '/engine-native'),
     'hurry-curry': ('hurrycurry-server', '/engine-native'),
+    'assaultcube': ('linux_64_server', '/engine-native'),
 }
 
 def sealed_engine_for(game):
     if game in ('ysoccer','mindustry'):
         return sealed_java_engine(game=game), '/engine.jar'
+    if game == 'assaultcube':
+        root=Path('/usr/local/libexec/playbound-isolated-assaultcube')
+        descriptor=sealed_engine(root/'linux_64_server',root/'profile.json',game)
+        if descriptor is None: raise ValueError('Reviewed isolated AssaultCube engine is not installed')
+        return descriptor, '/engine-native'
     if game == 'hurry-curry':
         root=Path('/usr/local/libexec/playbound-isolated-hurry')
         descriptor=sealed_engine(root/'hurrycurry-server',root/'profile.json',game)
