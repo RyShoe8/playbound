@@ -80,5 +80,16 @@ class AssetDescriptorTests(unittest.TestCase):
         extra.unlink();self.asset.unlink();self.asset.symlink_to(self.profile)
         with self.assertRaises(OSError):self.reader.open_assets(self.root)
 
+    def test_nested_engine_assets_reject_intermediate_links_and_extra_files(self):
+        self.asset.unlink()
+        folder=self.root/'legacy';folder.mkdir(mode=0o555)
+        file=folder/'qagame.mp.x86_64.so';file.write_bytes(self.data);file.chmod(0o444)
+        self.profile.write_text(json.dumps({'files':[{'path':'legacy/qagame.mp.x86_64.so','bytes':len(self.data),'sha256':hashlib.sha256(self.data).hexdigest()}]}))
+        descriptor=self.reader.open_assets(self.root,game='wolfenstein-enemy-territory');os.close(descriptor)
+        extra=folder/'extra.so';extra.write_bytes(b'extra')
+        with self.assertRaises(ValueError):self.reader.open_assets(self.root,game='wolfenstein-enemy-territory')
+        extra.unlink();folder.rename(self.root/'elsewhere');folder.symlink_to(self.root/'elsewhere')
+        with self.assertRaises(OSError):self.reader.open_assets(self.root,game='wolfenstein-enemy-territory')
+
 
 if __name__=='__main__':unittest.main()

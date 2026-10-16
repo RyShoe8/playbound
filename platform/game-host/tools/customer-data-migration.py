@@ -30,7 +30,7 @@ PROFILE = 'teeworlds-unix-v1'
 
 def select_game(game):
     global GAME, PROFILE, SOURCE
-    folders = {'teeworlds':'customer-sandboxes','bzflag':'bzflag-servers','hedgewars':'hedgewars-servers','openttd':'openttd-servers','luanti':'luanti-servers','openarena':'openarena-servers','battle-for-wesnoth':'wesnoth-servers','supertuxkart':'supertuxkart-servers','0-ad':'0ad-servers','ysoccer':'ysoccer-servers','flightgear':'flightgear-servers','mindustry':'mindustry','hurry-curry':'hurry-curry-servers','assaultcube':'assaultcube-servers','xonotic':'xonotic-servers'}
+    folders = {'teeworlds':'customer-sandboxes','bzflag':'bzflag-servers','hedgewars':'hedgewars-servers','openttd':'openttd-servers','luanti':'luanti-servers','openarena':'openarena-servers','battle-for-wesnoth':'wesnoth-servers','supertuxkart':'supertuxkart-servers','0-ad':'0ad-servers','ysoccer':'ysoccer-servers','flightgear':'flightgear-servers','mindustry':'mindustry','hurry-curry':'hurry-curry-servers','assaultcube':'assaultcube-servers','xonotic':'xonotic-servers','wolfenstein-enemy-territory':'et','medal-of-honor-allied-assault':'openmohaa'}
     if game not in folders: raise ValueError('Unsupported migration game')
     GAME, PROFILE = game, game + '-unix-v1'
     SOURCE = Path('/var/lib/playbound-host') / folders[game]
@@ -187,7 +187,7 @@ def manifest_read(snapshot, server_id):
 
 def prepare(server_id, owner):
     """Write a private checkpoint only; existing runtime/data paths stay intact."""
-    source_fd = open_directory(SOURCE / ('pb-' + server_id))
+    source_fd = open_directory(SOURCE / (server_id[-16:] if GAME=='wolfenstein-enemy-territory' else 'pb-'+server_id[-8:] if GAME=='medal-of-honor-allied-assault' else 'pb-'+server_id))
     try:
         quiescent(owner)
         check_directory(source_fd, owner)
@@ -345,7 +345,7 @@ def finish_transaction(server_id, control, value):
     root = ROOT / server_id
     rollback = value['phase'] in ('rolling-back', 'rolled-back')
     stage = control / ('rollback-copy-v1' if rollback else 'activation-copy-v1')
-    target = SOURCE / ('pb-' + server_id) if rollback else root / 'data'
+    target = SOURCE / (server_id[-16:] if GAME=='wolfenstein-enemy-territory' else 'pb-'+server_id[-8:] if GAME=='medal-of-honor-allied-assault' else 'pb-'+server_id) if rollback else root / 'data'
     expected = value['rollbackInode'] if rollback else value['activationInode']
     previous = value['sealedSourceInode'] if rollback else value['previousDataInode']
     if inode(target) != expected:
@@ -355,7 +355,7 @@ def finish_transaction(server_id, control, value):
             raise ValueError('Ambiguous migration requires operator review')
         # Resume only if the original source still matches its checkpoint. A
         # legacy process started after interruption may have written more saves.
-        if not rollback and tree(SOURCE / ('pb-' + server_id), value['legacyUid']) != verify(server_id)['entries']:
+        if not rollback and tree(SOURCE / (server_id[-16:] if GAME=='wolfenstein-enemy-territory' else 'pb-'+server_id[-8:] if GAME=='medal-of-honor-allied-assault' else 'pb-'+server_id), value['legacyUid']) != verify(server_id)['entries']:
             raise ValueError('Legacy progress changed during interrupted migration')
         if not rollback and previous is not None:
             entries = tree(target, value['uid'])
@@ -368,7 +368,7 @@ def finish_transaction(server_id, control, value):
         else:
             exchange(stage / 'data', target)
     if not rollback:
-        source = SOURCE / ('pb-' + server_id)
+        source = SOURCE / (server_id[-16:] if GAME=='wolfenstein-enemy-territory' else 'pb-'+server_id[-8:] if GAME=='medal-of-honor-allied-assault' else 'pb-'+server_id)
         retained = control / 'legacy-source-retained-v1'
         if inode(source) != value['sealedSourceInode']:
             if inode(source) != value['sourceInode'] or inode(retained) != value['sealedSourceInode']:
@@ -408,7 +408,7 @@ def transaction(action, server_id, legacy_uid, runtime, identities):
     try:
         identities.secure_stat(os.fstat(lock))
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        source = SOURCE / ('pb-' + server_id)
+        source = SOURCE / (server_id[-16:] if GAME=='wolfenstein-enemy-territory' else 'pb-'+server_id[-8:] if GAME=='medal-of-honor-allied-assault' else 'pb-'+server_id)
         try:
             value = journal_read(control, server_id)
         except FileNotFoundError:
@@ -513,7 +513,7 @@ def transition_profile(action, server_id, legacy_uid, runtime, identities):
         if action in ('enroll', 'enable-network', 'disable-network'):
             if value['phase'] != 'active' or not runtime.migration_ready(server_id, account['uid'], allow_pending=True):
                 raise ValueError('Data activation must complete before enrollment')
-        elif value['phase'] != 'rolled-back' or inode(SOURCE / ('pb-' + server_id)) != value.get('rollbackInode'):
+        elif value['phase'] != 'rolled-back' or inode(SOURCE / (server_id[-16:] if GAME=='wolfenstein-enemy-territory' else 'pb-'+server_id[-8:] if GAME=='medal-of-honor-allied-assault' else 'pb-'+server_id)) != value.get('rollbackInode'):
             raise ValueError('Data rollback must complete before profile rollback')
         rooms = registry_read('managed-rooms.json', legacy_uid)
         if any(row.get('communityServerId') == server_id for row in rooms):

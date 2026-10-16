@@ -1401,6 +1401,9 @@ export const recipes = {
     ],
   },
   "wolfenstein-enemy-territory": {
+    resolveBinary: (candidates, ctx) => ctx?.identityProfile === "wolfenstein-enemy-territory-unix-v1"
+      ? firstExisting([path.join(GAMES_ROOT, "wolfenstein-enemy-territory", "etlded.x86_64")])
+      : firstExisting(candidates),
     /*
      * Omni-bot's MaxBots is "total players": it adds bots up to N and kicks one
      * for each person who joins. Sent over rcon after start because the

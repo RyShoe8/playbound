@@ -11,13 +11,15 @@ import sys
 import tempfile
 
 
-def promote(source, destination, manifest):
+def promote(source, destination, manifest, game='xonotic'):
+    if game not in ('xonotic','wolfenstein-enemy-territory','medal-of-honor-allied-assault'): raise ValueError('Unsupported asset publication')
+    pattern=r'[A-Za-z0-9_-]{1,100}\.pk3' if game=='xonotic' else r'(?:etmain|legacy)/[A-Za-z0-9_.-]{1,100}\.(?:pk3|so)' if game=='wolfenstein-enemy-territory' else r'(?:main/[A-Za-z0-9_.-]{1,100}\.pk3|game\.so)'
     rows = manifest.get('files')
     if not isinstance(rows,list) or not 1 <= len(rows) <= 16:
         raise ValueError('Invalid Xonotic asset inventory')
     seen,total = set(),0
     for row in rows:
-        if not isinstance(row,dict) or not re.fullmatch(r'[A-Za-z0-9_-]{1,100}\.pk3',str(row.get('path'))) or row['path'] in seen:
+        if not isinstance(row,dict) or not re.fullmatch(pattern,str(row.get('path'))) or row['path'] in seen:
             raise ValueError('Invalid Xonotic asset path')
         seen.add(row['path'])
         if type(row.get('bytes')) is not int or not 1 <= row['bytes'] <= 768*1024**2 or not re.fullmatch(r'[a-f0-9]{64}',str(row.get('sha256'))):
@@ -49,7 +51,9 @@ def promote(source, destination, manifest):
                 if not stat.S_ISREG(before.st_mode) or before.st_nlink!=1 or before.st_mode&0o7022 or before.st_size!=row['bytes']:
                     raise ValueError('Unsafe Xonotic asset source')
                 digest=hashlib.sha256();remaining=row['bytes']
-                with (temporary/row['path']).open('xb') as output:
+                target=temporary/row['path']
+                target.parent.mkdir(mode=0o755,parents=True,exist_ok=True)
+                with target.open('xb') as output:
                     while remaining:
                         block=original.read(min(1024**2,remaining))
                         if not block:raise ValueError('Incomplete Xonotic asset')
@@ -61,7 +65,7 @@ def promote(source, destination, manifest):
         record=temporary/'profile.json'
         with record.open('x') as output:
             json.dump(manifest,output);output.flush();os.fchmod(output.fileno(),0o444);os.fsync(output.fileno())
-        os.chmod(temporary,0o555)
+        for directory,_,_ in os.walk(temporary,topdown=False):os.chmod(directory,0o555)
         os.rename(temporary,destination)
         directory=os.open(destination.parent,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW)
         try:os.fsync(directory)

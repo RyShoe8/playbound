@@ -1720,3 +1720,39 @@ Validation: 116 Linux helper tests passed, including immutable directory access,
 changed/link/writable/unlisted rejection and atomic publication bounds.
 
 The agent suite passed 341 tests with 49 platform skips. One initial parallel Windows run hit a transient Barotrauma fixture rename EPERM; its focused rerun and the complete sequential suite passed.
+
+
+### ET Legacy and OpenMoHAA isolated acceptance (2026-10-16)
+
+Two additional explicit offline identity profiles are implemented: canonical
+`wolfenstein-enemy-territory-unix-v1` and
+`medal-of-honor-allied-assault-unix-v1` (installation family `openmohaa`).
+Both use a root-promoted sealed executable and a separately pinned, immutable
+root asset directory. ET's five files include the 2.85.0 Legacy game module and
+base packs; OpenMoHAA's eight files include its matching game.so and base packs.
+These are hashes of the existing installation baseline, not a fresh publisher
+provenance claim. Shared logs, account files and unrelated installation files
+are not exposed. Nested asset reads retain no-follow directory descriptors and
+reject linked, writable, changed or unlisted entries. The publication helper
+copies bounded files atomically with disk headroom and refuses overwriting an
+existing version. No new generic privileged filesystem endpoint was added.
+
+ET independently validates native name/slots/RCON and runs the stock oasis map.
+Its isolated profile disables Omni-bot and public registration until separate
+library/script/listing acceptance. OpenMoHAA independently validates stock deathmatch
+maps, slots and native bot-fill numbers. The latter's fixture used zero bots;
+occupied/bot behavior is not newly claimed from an idle query.
+Both retain their real legacy saved-data namespaces: ET uses the final sixteen
+ID characters; OpenMoHAA uses pb- plus the final eight. Migration, runtime
+verification, rollback and backup tests now use those exact contracts.
+
+Both VPS fixtures passed native query (zero humans/four slots/zero bots), same
+gate/game PID after agent restart, metrics, scoped stop and rollback preserving
+old and newer data. All fixture processes/data were removed. Protected files and
+snapshots cover both profiles; separate Linux restore tests verify the suffix
+contracts and UID/inode preservation. Neither was automatically customer-enrolled.
+Executable plugin/Workshop installation and broader isolation remain unfinished.
+
+Validation: 121 Linux helper tests passed, including nested asset link denial.
+
+The complete agent suite passed 341 tests with 49 platform skips. Guarded deployment preserved all eleven live managed process identities; service and 15-minute scheduler stayed active. Production customer enrollment and catalog/database writes remain zero.

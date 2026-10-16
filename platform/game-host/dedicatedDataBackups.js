@@ -24,6 +24,8 @@ const WORLD_SOURCES = {
   "hurry-curry": (folder) => ["hurry-curry-servers", folder],
   assaultcube: (folder) => ["assaultcube-servers", folder],
   xonotic: (folder) => ["xonotic-servers", folder],
+  "wolfenstein-enemy-territory": (folder) => ["et", folder.slice(-16)],
+  "medal-of-honor-allied-assault": (folder) => ["openmohaa", "pb-"+folder.slice(-8)],
   openttd: (folder) => ["openttd-servers", folder],
   luanti: (folder) => ["luanti-servers", folder],
   // Saved games only; the startup script beside them is regenerated each start.

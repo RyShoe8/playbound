@@ -1,0 +1,11 @@
+{
+  "version": "existing-reviewed-openmohaa",
+  "binary": {
+    "bytes": 4317504,
+    "sha256": "f9d4edef0813a9e454b0207ef989bb3e80a3a2b88385571f6236bbc196e96316"
+  },
+  "legacyBinary": {
+    "bytes": 4317504,
+    "sha256": "f9d4edef0813a9e454b0207ef989bb3e80a3a2b88385571f6236bbc196e96316"
+  }
+}

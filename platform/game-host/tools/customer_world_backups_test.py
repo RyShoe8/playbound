@@ -113,6 +113,15 @@ class WorldSnapshots(unittest.TestCase):
     def test_hurry_curry_snapshot_restore(self): self.check_native_snapshot('hurry-curry')
     def test_assaultcube_snapshot_restore(self): self.check_native_snapshot('assaultcube')
     def test_xonotic_snapshot_restore(self): self.check_native_snapshot('xonotic')
+    def test_openmohaa_snapshot_restore_preserves_legacy_short_id(self):
+        self.seal.rename(self.legacy/('pb-'+ID[-8:]))
+        self.seal=self.legacy/('pb-'+ID[-8:])
+        self.check_native_snapshot('medal-of-honor-allied-assault')
+
+    def test_etlegacy_snapshot_restore_preserves_legacy_short_id(self):
+        self.seal.rename(self.legacy/ID[-16:])
+        self.seal=self.legacy/ID[-16:]
+        self.check_native_snapshot('wolfenstein-enemy-territory')
 
     def test_interrupted_swap_recovers_without_replacing_progress_twice(self):
         value = self.run_operation('create')
