@@ -206,12 +206,17 @@ export async function DELETE(req: Request) {
   await dbConnect();
   const mirrorUrl = `https://mirror.playbound.club/${relativePath.split("/").map(encodeURIComponent).join("/")}`;
   const [gameUse, editionUse] = await Promise.all([
-    CatalogGame.exists({ "launcherInstall.url": mirrorUrl }),
+    CatalogGame.findOne({ "launcherInstall.url": mirrorUrl }).select("slug").lean(),
     // A tombstone left by deleting a seed edition keeps its old config but installs nothing.
-    EditionModel.exists({ "installConfig.playbound_installer.url": mirrorUrl, suppressesSeed: { $ne: true } }),
+    EditionModel.findOne({ "installConfig.playbound_installer.url": mirrorUrl, suppressesSeed: { $ne: true } })
+      .select("gameSlug slug status visibility")
+      .lean(),
   ]);
   if (gameUse || editionUse) {
-    return NextResponse.json({ error: "A game or edition still installs from this package" }, { status: 409 });
+    const where = gameUse
+      ? `game ${(gameUse as { slug?: string }).slug}`
+      : `edition ${(editionUse as { gameSlug?: string; slug?: string }).gameSlug}/${(editionUse as { slug?: string }).slug}`;
+    return NextResponse.json({ error: `${where} still installs from this package` }, { status: 409 });
   }
 
   const result = await deleteArchivedArtifactOnHost(relativePath);
