@@ -1,0 +1,11 @@
+{
+  "version": "existing-reviewed-hypersomnia-headless",
+  "binary": {
+    "bytes": 26294776,
+    "sha256": "d741618283090d3ab298ad3e72e80c5431d6a57b8a28f704278444267683a44d"
+  },
+  "legacyBinary": {
+    "bytes": 26294776,
+    "sha256": "d741618283090d3ab298ad3e72e80c5431d6a57b8a28f704278444267683a44d"
+  }
+}

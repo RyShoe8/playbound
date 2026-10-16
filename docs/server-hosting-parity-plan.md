@@ -1855,3 +1855,23 @@ active; catalog/database writes and automatic customer enrollment remain zero.
 Whole-data snapshots cover saved games; the browser file manager retains its
 existing extension filter, so not every engine-native save extension is exposed
 for individual upload/edit. This is not a claim of full content-management parity.
+
+
+### Hypersomnia reserved-UID runtime acceptance (2026-10-16)
+
+`hypersomnia-unix-v1` uses the pinned existing headless AppImage promoted to a
+fixed root-owned path and copied into a sealed executable descriptor. Extraction
+runs only inside the fenced namespace, with a 256 MiB tmpfs ceiling (other
+profiles retain 64 MiB) and the existing cgroup memory/CPU/task limits. Typed
+name/slot settings generate a fixed read-only conf.d document. Self-update on
+launch, daily self-update and bulk external-map synchronization remain disabled;
+installation updates keep their existing agent-owned lifecycle.
+
+The fixture passed concurrent/idempotent create, reserved UID, gameplay-port
+readiness, unchanged gate/game PID after agent restart, process metrics, scoped
+stop and data rollback preserving old/new data. All fixture data/processes were
+removed. Local occupancy is unknown (null), not zero; native player-query,
+public listing and client Join are not newly claimed. This is the twenty-first
+opt-in isolation identity, not automatic rotation/profile or customer enrollment.
+Protected files and UID-aware snapshots include its private app-data directory.
+Executable content installation remains disabled.
