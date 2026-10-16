@@ -17,6 +17,8 @@ test("isolated engine implementations cannot claim automatic enrollment or safe 
   assert.equal(hostingReadiness("0ad").identityProfile,"0-ad-unix-v1");
   assert.equal(hostingReadiness("flightgear").isolation,"operator_rollout");
   assert.equal(hostingReadiness("supertuxkart").isolation,"operator_rollout");
+  assert.equal(hostingReadiness("hurry-curry").identityProfile,"hurry-curry-unix-v1");
+  assert.match(hostingReadiness("hurry-curry").reason,/unknown/);
   assert.match(hostingReadiness("luanti").contentReason,/GHSA/);
   assert.equal(hostingReadiness("counter-strike-2").isolation,"pending");
 });

@@ -49,6 +49,20 @@ class RuntimeBoundaries(unittest.TestCase):
         self.assertIn('-autostart=random/mainland',command)
         with self.assertRaises(ValueError):module.request(['run-native',ID,'42',IDENTITY,'0-ad','20596','750','2048'])
 
+    def test_hurry_curry_uses_sealed_data_without_enabling_registration_or_custom_commands(self):
+        import json
+        module.select_game('hurry-curry')
+        values={'name':'Private fixture','maxPlayers':4}
+        self.assertEqual(json.loads(module.config_bytes(json.dumps(values),27052)),values)
+        command=module.command(Path('/fixture/data'),7,27052,2048,8,values,assets=[(9,'/game-data/index.yaml')])
+        self.assertIn('/engine-native',command)
+        self.assertIn('/game-data/index.yaml',command)
+        self.assertIn('0.0.0.0:27052',command)
+        self.assertNotIn('--register',command)
+        self.assertNotIn('/opt/playbound-host/games/hurry-curry',command)
+        for update in [{'exec':'unsafe'},{'name':'bad\nline'},{'maxPlayers':True},{'maxPlayers':65}]:
+            with self.assertRaises(ValueError):module.config_bytes(json.dumps(dict(values,**update)),27052)
+
     def test_mindustry_generates_fixed_startup_commands_without_console_injection(self):
         import json
         module.select_game('mindustry')

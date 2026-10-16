@@ -1622,3 +1622,24 @@ UID-aware transport, quotas, compatibility and rollback before enabling content.
 Source: https://github.com/Anuken/Mindustry/blob/master/server/src/mindustry/server/ServerControl.java
 
 Latest batch validation: 341 agent tests passed with 49 platform skips; 95 Linux helper tests passed. TypeScript and targeted admin lint passed. Both guarded agent deployments retained all eleven running process identities; service and 15-minute timer are active. No customer enrollment or database/catalog changes were made.
+
+
+### Hurry Curry asset-boundary acceptance (2026-10-16)
+
+`hurry-curry-unix-v1` adds the thirteenth explicit offline identity profile.
+Its reviewed 3.1.2 executable is root-promoted and sealed. Thirty-four existing
+YAML assets have a separate root-owned pin inventory; each is copied into a
+sealed read-only descriptor before entering the namespace. Shared directories,
+unlisted files, links, executable paths, remote URLs and caller checksums are
+not mounted or accepted. Per-file/count/aggregate size bounds apply. Changed
+assets fail closed and updates require explicit review of the isolated pin set.
+This preserves the existing data set; it is not an upstream asset auto-updater.
+
+The VPS fixture passed port-ready startup, unchanged gate/game PID through agent
+restart, metrics, full scoped stop and rollback preserving older and newer data.
+It deliberately remains unregistered, with unknown occupancy rather than a false
+zero. Public master discovery/query, live UID-aware controls and executable
+content are not accepted. No normal/community launch behavior is changed.
+Fixture data and processes were removed. Production customer enrollment stays zero.
+
+Hurry Curry batch validation: 341 agent tests passed with 49 platform skips; 99 Linux helper tests passed. Guarded live deployment preserved all eleven managed process identities and the service/timer remain active.
