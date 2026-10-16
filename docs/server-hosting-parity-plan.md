@@ -1875,3 +1875,24 @@ public listing and client Join are not newly claimed. This is the twenty-first
 opt-in isolation identity, not automatic rotation/profile or customer enrollment.
 Protected files and UID-aware snapshots include its private app-data directory.
 Executable content installation remains disabled.
+
+
+Hypersomnia release checks: the first full agent suite found the backup allowlist
+regression's expected list had not included the newly supported private app data.
+The expectation was updated to retain the route/module parity check. The earlier
+133 Linux root-helper tests passed, including Hypersomnia configuration validation
+and reserved-UID snapshot restore.
+
+Next isolation candidate audit: BombSquad's existing run-server wrapper executes
+its reviewed paired controller with the custom /opt/playbound-host/python314
+runtime and writes state under the shared game installation. Acceptance requires
+root-reviewed copies of both runtime dependencies and game assets plus private
+per-server state. Merely changing the controller UID is insufficient. No BombSquad
+identity or executable content support is enabled by this audit.
+
+Final Hypersomnia release: 390 VPS agent tests passed with one platform skip.
+Guarded deployment preserved all eleven live managed process identities; agent
+and 15-minute scheduler are active. No catalog/database writes or automatic
+customer enrollment occurred. Local occupancy remains unknown. BombSquad's
+runtime audit counted 605 paired game files and 3,521 Python runtime files; its
+boundary remains pending, rather than expanding immutable-tree limits blindly.
