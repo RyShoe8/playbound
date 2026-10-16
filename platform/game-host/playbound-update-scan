@@ -7,6 +7,7 @@ import sys
 targets = {
     "counter-strike-2": ["counter-strike-2", "cs2"],
     "team-fortress-2": ["team-fortress-2", "open-fortress"],
+    "open-fortress": ["open-fortress"],
     "unturned": ["unturned"],
     "counter-strike-source": ["counter-strike-source"],
     "core-keeper": ["core-keeper"],
@@ -79,6 +80,8 @@ if sys.argv[1] == "mindustry":
     roots.append("/var/lib/playbound-host/mindustry")
 if sys.argv[1] == "hypersomnia":
     roots.append("/var/lib/playbound-host/hypersomnia")
+if sys.argv[1] == "open-fortress":
+    roots.extend(["/var/lib/playbound-host/open-fortress-servers", "/var/lib/playbound-host/of-acceptance/open-fortress-servers"])
 count = 0
 try:
     for entry in os.listdir("/proc"):

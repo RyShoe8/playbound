@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { INSTALLATION_TARGETS } from "./installationTargets.js";
 import { readRelease } from "./githubReleaseAssets.js";
 import { runCommand } from "./installationUpdateWorker.js";
@@ -10,6 +11,7 @@ import { REVIEWED_COMPONENTS } from "./reviewedComponentUpdates.js";
 import { PAIRED_RUNTIMES } from "./pairedRuntimeUpdates.js";
 import { REVIEWED_JAVA } from "./reviewedJavaUpdates.js";
 import { HURRY_BUILD } from "./hurryUpdates.js";
+import { OPEN_FORTRESS_RELEASE, openFortressModVersion } from "./openFortressUpdates.js";
 
 const DAY = 24 * 60 * 60_000;
 const RELEASES = {
@@ -27,7 +29,7 @@ export const automaticInstallationUpdate = (key) => Boolean(INSTALLATION_TARGETS
 
 // Parse only quoted VDF keys/values and braces. Never confuse a beta/depot's
 // build with depots.branches.public.buildid, even when it appears first.
-export function steamPublicBuild(output, appId) {
+export function steamPublicBuild(output, appId, branch = "public") {
   if (output.length > 4 * 1024 ** 2) throw new Error("Steam metadata exceeds its size limit");
   const start = output.indexOf(`"${appId}"`);
   if (start < 0) throw new Error("Steam did not return app metadata");
@@ -46,7 +48,8 @@ export function steamPublicBuild(output, appId) {
     if (tokens[index++] !== "}") throw new Error("Steam metadata is incomplete");
     return value;
   }
-  const build = object().depots?.branches?.public?.buildid;
+  if (!/^[a-zA-Z0-9_-]{1,64}$/.test(branch)) throw new Error("Steam branch is invalid");
+  const build = object().depots?.branches?.[branch]?.buildid;
   if (!/^\d{1,20}$/.test(build || "")) throw new Error("Steam public build is unavailable");
   return build;
 }
@@ -64,6 +67,15 @@ async function boundedText(url, request, limit = 16_384) {
 
 export async function latestInstallationBuild(key, { request = fetch, run = runCommand, steamHome } = {}) {
   const target = INSTALLATION_TARGETS[key];
+  if (key === "open-fortress") {
+    if (!steamHome) throw new Error("Isolated Steam metadata home is required");
+    fs.mkdirSync(steamHome, { recursive: true, mode: 0o700 });
+    const release = OPEN_FORTRESS_RELEASE;
+    const output = await run("/usr/bin/env", ["-i", "PATH=/usr/local/bin:/usr/bin:/bin:/usr/games", "LANG=C.UTF-8", `HOME=${steamHome}`, `XDG_DATA_HOME=${path.join(steamHome, ".local/share")}`, "/usr/games/steamcmd", "+login", "anonymous", "+app_info_update", "1", "+app_info_print", String(release.appId), "+quit"], { timeout: 120_000, maxOutput: 4 * 1024 ** 2 });
+    const sdk = steamPublicBuild(output, release.appId, release.branch), mod = await openFortressModVersion(request);
+    return sdk === release.sdkBuild && mod.etag === release.etag && mod.bytes === release.archiveBytes
+      ? PAIRED_RUNTIMES[key].latest : `sdk-${sdk}-mod-${mod.etag.slice(1, -1)}-${mod.bytes}`;
+  }
   if (target?.appId) {
     if (!steamHome) throw new Error("Isolated Steam metadata home is required");
     fs.mkdirSync(steamHome, { recursive: true, mode: 0o700 });
@@ -189,10 +201,20 @@ export function createDailyInstallationUpdates({ stateDir, coordinator, latest =
     if (report.version !== 1 || !report.targets || typeof report.targets !== "object") throw new Error("Daily update state needs inspection");
     return report;
   }
-  function save(report) {
-    const temp = `${filename}.${process.pid}.tmp`;
+  async function save(report) {
+    const temp = `${filename}.${process.pid}.${randomUUID()}.tmp`;
     fs.writeFileSync(temp, JSON.stringify({ ...report, version: 1 }), { mode: 0o600 });
-    fs.renameSync(temp, filename);
+    try {
+      for (let attempt = 0; ; attempt++) {
+        try { await fs.promises.rename(temp, filename); break; }
+        catch (error) {
+          // Windows scanners can briefly hold the previous report open. Keep
+          // the old complete JSON readable and retry without blocking the agent.
+          if (process.platform !== "win32" || !["EPERM", "EACCES", "EBUSY"].includes(error.code) || attempt >= 5) throw error;
+          await new Promise(resolve => setTimeout(resolve, 5 * 2 ** attempt));
+        }
+      }
+    } finally { if (fs.existsSync(temp)) fs.unlinkSync(temp); }
   }
   async function tick() {
     if (running) return;
@@ -202,8 +224,8 @@ export function createDailyInstallationUpdates({ stateDir, coordinator, latest =
     if (due > now()) return;
     running = true;
     const report = { enabled: true, startedAt: now(), nextCheckAt: now() + DAY, targets: { ...previous.targets } };
-    save(report);
     try {
+      await save(report);
       // Metadata SteamCMD and installation SteamCMD share a cache. Do not run
       // either concurrently; updates can still be queued while checking feeds.
       await coordinator.withMetadataCheck(async () => {
@@ -242,10 +264,15 @@ export function createDailyInstallationUpdates({ stateDir, coordinator, latest =
               } else if (target.key === "factorio" && row.availableBuild.split(".")[0] !== target.buildId.split(".")[0]) {
                 row.status = "review_required"; row.message = "Major Factorio upgrade requires world compatibility review.";
               } else {
-                const job = old?.jobId && coordinator.snapshot().jobs.find((job) => job.id === old.jobId);
+                const history = coordinator.snapshot().jobs;
+                const job = old?.jobId && history.find((job) => job.id === old.jobId);
+                const rolledBack = history.find(job => job.key === target.key && job.action === "rollback" && job.status === "completed" && job.beforeBuild === row.availableBuild && job.afterBuild === target.buildId);
                 // A cancellation, rollback or failed build must not get silently
                 // reapplied every day. A new upstream build permits a new attempt.
-                if (old?.lastAttemptBuild === row.availableBuild && old.jobId
+                if (rolledBack) {
+                  row.status = "review_required"; row.jobId = rolledBack.id; row.lastAttemptBuild = row.availableBuild;
+                  row.message = "This build was rolled back deliberately. Use Queue update to retry it.";
+                } else if (old?.lastAttemptBuild === row.availableBuild && old.jobId
                   && (!job || ["failed", "cancelled", "completed"].includes(job.status))) {
                   row.status = "review_required"; row.jobId = old.jobId;
                   row.message = "This build was already attempted or cancelled. Use Queue update to retry deliberately.";
@@ -260,14 +287,14 @@ export function createDailyInstallationUpdates({ stateDir, coordinator, latest =
             row.status = "check_failed";
             row.message = "Could not verify the release or queue its update; existing files are unchanged. Next daily check will retry.";
           }
-          save(report);
+          await save(report);
         }
       });
       report.completedAt = now();
     } catch {
       report.message = "Installation maintenance is active; daily release checks will retry in one hour.";
       report.nextCheckAt = now() + 60 * 60_000;
-    } finally { save(report); running = false; }
+    } finally { try { await save(report); } finally { running = false; } }
   }
   return { tick, snapshot };
 }

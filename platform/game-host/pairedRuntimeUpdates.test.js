@@ -7,7 +7,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { Readable } from "node:stream";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { enrollPairedRuntime, verifyPairedTree, stagePairedRuntime } from "./pairedRuntimeUpdates.js";
+import { enrollPairedRuntime, verifyPairedTree, stagePairedRuntime, recordPairedVerification, inspectPairedInstallation } from "./pairedRuntimeUpdates.js";
 const sha = bytes => createHash("sha256").update(bytes).digest("hex");
 function fixture(t) {
   const root=fs.mkdtempSync(path.join(os.tmpdir(),"pb-paired-"));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
@@ -20,6 +20,17 @@ test("enrollment is idempotent, copies the engine and assets together, and leave
   const f=fixture(t);assert.equal(enrollPairedRuntime(f.root,"veloren",{profile:f.profile}).buildId,"old");
   assert.equal(enrollPairedRuntime(f.root,"veloren",{profile:f.profile}).buildId,"old");assert.ok(!fs.existsSync(path.join(f.root,"runtime/userdata")));
   assert.equal(fs.readFileSync(path.join(f.root,"userdata/world"),"utf8"),"saved world");
+});
+
+test("inventory reads verified runtime identity without rehashing assets, and refuses changed engines", t => {
+  const f = fixture(t), options = { profile: f.profile };
+  const verified = enrollPairedRuntime(f.root, "veloren", options);
+  recordPairedVerification(f.root, "veloren", verified, options);
+  assert.equal(inspectPairedInstallation(f.root, "veloren", options).buildId, "old");
+  fs.writeFileSync(path.join(f.root, "userdata/world"), "newer private world");
+  assert.equal(inspectPairedInstallation(f.root, "veloren", options).buildId, "old");
+  fs.appendFileSync(path.join(f.root, "runtime/veloren-server-cli"), "changed");
+  assert.throws(() => inspectPairedInstallation(f.root, "veloren", options), /engine changed/);
 });
 
 test("32-bit SDK profiles require their reviewed architecture", t => {

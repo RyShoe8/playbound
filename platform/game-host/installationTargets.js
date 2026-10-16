@@ -16,13 +16,15 @@ import { verifyEtlegacyInstallation } from "./etlegacyUpdates.js";
 import { verifyOpenMohaaInstallation } from "./openmohaaUpdates.js";
 import { verifyUnvanquishedInstallation } from "./unvanquishedUpdates.js";
 import { verifyReviewedComponent } from "./reviewedComponentUpdates.js";
-import { verifyPairedInstallation } from "./pairedRuntimeUpdates.js";
+import { verifyPairedInstallation, inspectPairedInstallation } from "./pairedRuntimeUpdates.js";
 import { verifyReviewedJava } from "./reviewedJavaUpdates.js";
 import { verifyHurryInstallation } from "./hurryUpdates.js";
 import { verifyCombinedArmsInstallation } from "./combinedArmsUpdates.js";
+import { inspectOpenFortressInstallation } from "./openFortressUpdates.js";
 
 // These are shared installations, not per-customer save directories.
 export const INSTALLATION_TARGETS = Object.freeze({
+  "open-fortress": { name: "Open Fortress (SDK + mod)", strategy: "coordinated-open-fortress", component: "runtime" },
   "counter-strike-2": { name: "Counter-Strike 2", appId: 730, binaries: ["game/bin/linuxsteamrt64/cs2"] },
   "team-fortress-2": { name: "Team Fortress 2", appId: 232250, binaries: ["srcds_linux64"] },
   unturned: { name: "Unturned", appId: 1110390, binaries: ["Unturned_Headless.x86_64"] },
@@ -87,16 +89,18 @@ export function installationKey(slug) {
 export function installationDependencies(slug) {
   if (slug === "openra") return ["openra", "openhv", "earth-2140-trilogy", "combined-arms"];
   // Open Fortress mounts TF2 assets even though its SDK/mod updater is separate.
-  if (slug === "open-fortress") return ["team-fortress-2"];
+  if (slug === "open-fortress") return ["open-fortress", "team-fortress-2"];
   const key = installationKey(slug);
   return key ? [key] : [];
 }
 
-export function verifyInstallation(directory, key) {
+export function verifyInstallation(directory, key, { metadataOnly = false } = {}) {
   const target = INSTALLATION_TARGETS[key];
   if (!target) throw new Error("Unsupported installation");
   const root = fs.lstatSync(directory);
   if (!root.isDirectory() || root.isSymbolicLink()) throw new Error("Installation must be a real directory");
+  if (key === "open-fortress" && metadataOnly) return inspectOpenFortressInstallation(directory);
+  if (target.strategy === "paired-runtime" && metadataOnly) return inspectPairedInstallation(directory, key);
   if (target.strategy === "github-jar") return verifyMindustryInstallation(directory);
   if (key === "openhv") return verifyOpenHVInstallation(directory);
   if (key === "combined-arms") return verifyCombinedArmsInstallation(directory);
@@ -110,7 +114,7 @@ export function verifyInstallation(directory, key) {
   if (key === "openmohaa") return verifyOpenMohaaInstallation(directory);
   if (key === "unvanquished") return verifyUnvanquishedInstallation(directory);
   if (target.strategy === "reviewed-component") return verifyReviewedComponent(directory, key);
-  if (target.strategy === "paired-runtime") return verifyPairedInstallation(directory, key);
+  if (target.strategy === "paired-runtime" || target.strategy === "coordinated-open-fortress") return verifyPairedInstallation(directory, key);
   if (target.strategy === "reviewed-java") return verifyReviewedJava(directory, key);
   if (target.strategy === "reviewed-rust-source") return verifyHurryInstallation(directory);
   if (target.strategy === "reviewed-distro-native") return verifyNativePackageInstallation(directory, key);

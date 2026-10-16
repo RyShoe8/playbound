@@ -3,9 +3,24 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { createDailyInstallationUpdates, latestInstallationBuild, steamPublicBuild, automaticInstallationUpdate } from "./dailyInstallationUpdates.js";
 import { createInstallationCoordinator, createInstallationStore } from "./installationJobs.js";
 import { REVIEWED_JAVA } from "./reviewedJavaUpdates.js";
+import { OPEN_FORTRESS_RELEASE } from "./openFortressUpdates.js";
+import { PAIRED_RUNTIMES } from "./pairedRuntimeUpdates.js";
+
+test("Open Fortress discovery follows previous2021 and mod metadata, never TF2 public", async t => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "pb-of-metadata-"));
+  t.after(() => fs.rmSync(home, { recursive: true, force: true }));
+  const run = async (_command, args) => {
+    assert.ok(args.includes("244310")); assert.ok(!args.includes("232250"));
+    return '"244310" { "depots" { "branches" { "public" { "buildid" "999" } "previous2021" { "buildid" "6982827" } } } }';
+  };
+  const request = async () => new Response(null, { headers: { etag: OPEN_FORTRESS_RELEASE.etag, "content-length": String(OPEN_FORTRESS_RELEASE.archiveBytes) } });
+  assert.equal(await latestInstallationBuild("open-fortress", { run, request, steamHome: home }), PAIRED_RUNTIMES["open-fortress"].latest);
+  assert.match(await latestInstallationBuild("open-fortress", { run, steamHome: home, request: async () => new Response(null, { headers: { etag: '"abcd-1234"', "content-length": "1234" } }) }), /^sdk-6982827-mod-abcd-1234-1234$/);
+});
 
 test("Trackmania daily discovery uses HEAD, never downloads its large package", async () => {
   const build=await latestInstallationBuild("trackmania",{request:async (url,input)=>{assert.equal(input.method,"HEAD");assert.equal(url,"https://nadeo-download.cdn.ubi.com/trackmania/TrackmaniaServer_Latest.zip");return new Response(null,{headers:{etag:'"017668822791cdcd01639bb436b6edee-31"'}});}});
@@ -60,6 +75,7 @@ function fixture(t) {
 test("Steam public build ignores beta/depot build IDs and fails closed on missing/duplicate metadata", () => {
   const info = 'Steam log "232250" { "depots" { "123" { "buildid" "999" } "branches" { "preview" { "buildid" "888" } "public" { "buildid" "200" } } } }';
   assert.equal(steamPublicBuild(info, 232250), "200");
+  assert.equal(steamPublicBuild(info, 232250, "preview"), "888");
   assert.throws(() => steamPublicBuild(info, 730));
   assert.throws(() => steamPublicBuild(info.replace('"public"', '"private"'), 232250));
   assert.throws(() => steamPublicBuild(info.replace('"buildid" "200"', '"buildid" "200" "buildid" "300"'), 232250));
@@ -106,6 +122,27 @@ test("completed update followed by rollback is not silently undone by the next d
   f.install("100"); f.advance(); await f.daily().tick();
   assert.equal(f.store.all().length, 1);
   assert.equal(f.daily().snapshot().targets["team-fortress-2"].status, "review_required");
+});
+
+test("a manual rollback before the first daily check is respected too", async t => {
+  const f = fixture(t), id = randomUUID();
+  f.store.write({ id, key: "team-fortress-2", action: "rollback", status: "completed", beforeBuild: "200", afterBuild: "100", createdAt: 1 });
+  await f.daily().tick();
+  assert.equal(f.store.all().length, 1);
+  assert.equal(f.daily().snapshot().targets["team-fortress-2"].status, "review_required");
+  f.advance(); f.version("300"); await f.daily().tick();
+  assert.equal(f.store.all().length, 2);
+});
+
+test("Windows report replacement retries a transient scanner lock without losing the schedule", { skip: process.platform !== "win32" }, async t => {
+  const f = fixture(t), rename = fs.promises.rename.bind(fs.promises); let blocked = false;
+  t.mock.method(fs.promises, "rename", async (...args) => {
+    if (!blocked) { blocked = true; throw Object.assign(new Error("temporary scanner lock"), { code: "EPERM" }); }
+    return rename(...args);
+  });
+  await f.daily().tick();
+  assert.equal(blocked, true); assert.equal(f.store.all().length, 1);
+  assert.equal(f.daily().snapshot().targets["team-fortress-2"].status, "queued");
 });
 
 test("non-public installed Steam branches are not switched automatically", async (t) => {

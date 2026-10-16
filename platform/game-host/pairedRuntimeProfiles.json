@@ -241,7 +241,7 @@
     ]
   },
   "open-fortress": {
-    "latest": "alpha-2024-09-06-sdk-6982827-pb2",
+    "latest": "alpha-2024-09-06-sdk-6982827-pb3",
     "component": "runtime",
     "elfClass": 1,
     "binaries": [
@@ -254,7 +254,17 @@
         "treeSha256": "0c537ccfe7af1110c83be2e8bbc0fbeedd8c73ab390acd0f10d7cca7f434b33d",
         "fileCount": 27076,
         "totalBytes": 8089733594,
-        "baselineOnly": true
+        "baselineOnly": true,
+        "launcherSha256": "32c60aeea1b1c2b857c08d1ddc5e63b049bf8c2e2023afd09979e4a8db252e49"
+      },
+      {
+        "buildId": "alpha-2024-09-06-sdk-6982827-pb3",
+        "treeSha256": "cc35f13136555de3b335ea5694792d06c15702b88c5e369a803ddc33b413cc3a",
+        "fileCount": 27075,
+        "totalBytes": 8089698900,
+        "baselineOnly": false,
+        "format": "sdk-mod-assembly",
+        "launcherSha256": "32c60aeea1b1c2b857c08d1ddc5e63b049bf8c2e2023afd09979e4a8db252e49"
       }
     ]
   }

@@ -73,6 +73,37 @@ export function verifyPairedInstallation(root, key, options) {
   return verifyPairedTree(path.join(root, "runtime"), key, options);
 }
 
+const PAIRED_RECORD = ".pb-paired-verified.json";
+const fileIdentity = info => [info.dev, info.ino, info.size, info.mtimeMs, info.ctimeMs, info.mode];
+
+/** Inventory records never replace full verification before starts/activation. */
+export function recordPairedVerification(root, key, verified, { profile = PAIRED_RUNTIMES[key] } = {}) {
+  if (!profile || fs.realpathSync(root) !== path.resolve(root)) throw new Error("Paired runtime verification root requires review");
+  const release = profile.versions.find(row => row.buildId === verified.buildId), runtime = path.join(root, "runtime");
+  if (!release || fs.realpathSync(runtime) !== path.resolve(runtime)) throw new Error("Paired runtime verification requires a reviewed release");
+  const binaries = Object.fromEntries((release.binaries || profile.binaries).map(name => [name, fileIdentity(fs.lstatSync(path.join(runtime, name)))]));
+  const info = fs.statSync(runtime), temporary = path.join(root, ".paired-verification-" + randomUUID());
+  try {
+    fs.writeFileSync(temporary, JSON.stringify({ version: 1, buildId: release.buildId, treeSha256: release.treeSha256, device: info.dev, inode: info.ino, binaries }), { flag: "wx", mode: 0o600 });
+    fs.renameSync(temporary, path.join(root, PAIRED_RECORD));
+  } finally { if (fs.existsSync(temporary)) fs.unlinkSync(temporary); }
+}
+
+export function inspectPairedInstallation(root, key, { profile = PAIRED_RUNTIMES[key] } = {}) {
+  const runtime = path.join(root, "runtime"), file = path.join(root, PAIRED_RECORD);
+  if (!profile || fs.realpathSync(root) !== path.resolve(root) || fs.realpathSync(runtime) !== path.resolve(runtime)) throw new Error("Paired runtime installation requires review");
+  const marker = fs.lstatSync(file);
+  if (!marker.isFile() || marker.isSymbolicLink() || marker.nlink !== 1 || marker.size > 16384) throw new Error("Paired runtime full verification record is unavailable");
+  const recorded = JSON.parse(fs.readFileSync(file, "utf8")), info = fs.statSync(runtime);
+  const release = profile.versions.find(row => row.buildId === recorded.buildId && row.treeSha256 === recorded.treeSha256);
+  if (recorded.version !== 1 || !release || info.dev !== recorded.device || info.ino !== recorded.inode) throw new Error("Paired runtime changed and needs full verification");
+  for (const name of (release.binaries || profile.binaries)) {
+    const binary = path.join(runtime, name), current = fs.lstatSync(binary);
+    if (!current.isFile() || current.isSymbolicLink() || current.nlink !== 1 || fs.realpathSync(binary) !== path.resolve(binary) || JSON.stringify(fileIdentity(current)) !== JSON.stringify(recorded.binaries?.[name])) throw new Error("Paired runtime engine changed and needs full verification");
+  }
+  return { buildId: release.buildId };
+}
+
 /** One-time enrollment copies immutable legacy files; it never moves worlds. */
 export function enrollPairedRuntime(root, key, { profile = PAIRED_RUNTIMES[key] } = {}) {
   if (!PAIRED_RUNTIMES[key] || !profile || fs.realpathSync(root) !== path.resolve(root)) throw new Error("Paired runtime enrollment requires a supported real installation");
