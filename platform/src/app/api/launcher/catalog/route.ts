@@ -20,6 +20,7 @@ import { TAGS, FEATURES } from "@/lib/gamePayload";
 import { supportsController } from "@/lib/controller/support";
 import { getMultiplayerAdapter } from "@/lib/multiplayer/adapters";
 import { supportsLauncherParty } from "@/lib/multiplayer/support";
+import { canUseCouch } from "@/lib/multiplayer/hostModes";
 
 export async function GET(req: Request) {
   try {
@@ -101,6 +102,7 @@ export async function GET(req: Request) {
                  */
                 hostLaunch: getMultiplayerAdapter(g.slug)?.host ?? null,
                 ...(g.slug === "unturned" ? { multiplayer: true, hasServerBrowser: true } : {}),
+                couchParty: canUseCouch(g.slug),
                 partyLaunchable: g.slug === "rimworld" ? publicActiveEditions.some(e => e.slug === "rimworld-together") : supportsLauncherParty({ ...g, launcherInstall: recipe }),
                 ...(g.slug === "rimworld" && publicActiveEditions.some(e => e.slug === "rimworld-together") ? { isMultiplayer: true, multiplayer: true, hasServerBrowser: true } : {}),
                 status: g.status || "published",

@@ -59,3 +59,15 @@ test("a singleplayer base game with a networked edition gets Start Party", () =>
     editions: [{ features: ["Singleplayer"] }, { features: ["Multiplayer", "Mod Support"] }],
   }), true);
 });
+
+test("couch-mode games get Start Party even though their tags are local-only", () => {
+  assert.equal(catalogGameSupportsOnlineParty({
+    slug: "openseek", isMultiplayer: true, couchParty: true, partyLaunchable: true, features: ["Co-op", "Couch Co-Op", "Split-Screen Co-op"],
+  }), true);
+  assert.equal(catalogGameSupportsOnlineParty({
+    slug: "openseek", isMultiplayer: true, couchParty: true, partyLaunchable: false, features: ["Couch Co-Op"],
+  }), false);
+  assert.equal(catalogGameSupportsOnlineParty({
+    slug: "local-only", isMultiplayer: true, features: ["Co-op", "Couch Co-Op"],
+  }), false);
+});
