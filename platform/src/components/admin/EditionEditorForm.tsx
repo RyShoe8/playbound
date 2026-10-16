@@ -15,6 +15,7 @@ import {
   INSTALL_METHOD_LABELS,
   VERIFICATION_LABELS,
   VERIFICATION_LEVELS,
+  type EditionCredit,
   type EditionFaqItem,
   type EditionInstallConfig,
   type EditionPatchNote,
@@ -1106,6 +1107,90 @@ export function EditionEditorForm({
         </div>
       </AdminCollapsibleSection>
 
+      <AdminCollapsibleSection title="Credits & depth">
+        <p className="text-[11px] text-muted-foreground">
+          Who made this edition and what players should know. Credit everyone whose work ships in it.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className={label}>Developer / team</label>
+            <input
+              value={form.developerName}
+              onChange={(e) => patch("developerName", e.target.value)}
+              className={field}
+              placeholder="OpenMW Team"
+            />
+          </div>
+          <div>
+            <label className={label}>Developer page slug</label>
+            <input
+              value={form.developerSlug}
+              onChange={(e) => patch("developerSlug", e.target.value)}
+              className={field}
+              placeholder="openmw-team"
+            />
+          </div>
+          <div>
+            <label className={label}>License</label>
+            <input
+              value={form.license}
+              onChange={(e) => patch("license", e.target.value)}
+              className={field}
+              placeholder="GPL-3.0"
+            />
+          </div>
+          <div>
+            <label className={label}>Release year</label>
+            <input
+              type="number"
+              value={form.releaseYear ?? ""}
+              onChange={(e) => patch("releaseYear", e.target.value ? Number(e.target.value) : null)}
+              className={field}
+              placeholder="2008"
+            />
+          </div>
+        </div>
+        <CreditsEditor credits={form.credits} onChange={(credits) => patch("credits", credits)} />
+        <div>
+          <label className={label}>Long description</label>
+          <textarea
+            rows={8}
+            value={form.longDescription}
+            onChange={(e) => patch("longDescription", e.target.value)}
+            className={area}
+          />
+        </div>
+        <div>
+          <label className={label}>Why we picked it</label>
+          <textarea
+            rows={3}
+            value={form.whyWePickedIt}
+            onChange={(e) => patch("whyWePickedIt", e.target.value)}
+            className={area}
+          />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className={label}>Best for (one per line)</label>
+            <textarea
+              rows={4}
+              value={form.bestFor.join("\n")}
+              onChange={(e) => patch("bestFor", e.target.value.split("\n").map((s) => s.trim()).filter(Boolean))}
+              className={area}
+            />
+          </div>
+          <div>
+            <label className={label}>Not for (one per line)</label>
+            <textarea
+              rows={4}
+              value={form.notFor.join("\n")}
+              onChange={(e) => patch("notFor", e.target.value.split("\n").map((s) => s.trim()).filter(Boolean))}
+              className={area}
+            />
+          </div>
+        </div>
+      </AdminCollapsibleSection>
+
       <AdminCollapsibleSection title="FAQ & patch notes">
         <FaqEditor faq={form.faq} onChange={(faq) => patch("faq", faq)} />
         <PatchNotesEditor
@@ -1194,6 +1279,57 @@ export function EditionEditorForm({
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+function CreditsEditor({
+  credits,
+  onChange,
+}: {
+  credits: EditionCredit[];
+  onChange: (next: EditionCredit[]) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <label className={label}>Credits</label>
+      {credits.map((credit, i) => (
+        <div key={i} className="grid gap-2 sm:grid-cols-[1fr_1fr_1.4fr_auto]">
+          <input
+            value={credit.name}
+            onChange={(e) => onChange(credits.map((c, x) => (x === i ? { ...c, name: e.target.value } : c)))}
+            className={field}
+            placeholder="Name"
+          />
+          <input
+            value={credit.role}
+            onChange={(e) => onChange(credits.map((c, x) => (x === i ? { ...c, role: e.target.value } : c)))}
+            className={field}
+            placeholder="Role (e.g. Lead developer)"
+          />
+          <input
+            value={credit.url ?? ""}
+            onChange={(e) => onChange(credits.map((c, x) => (x === i ? { ...c, url: e.target.value } : c)))}
+            className={field}
+            placeholder="https://…"
+          />
+          <button
+            type="button"
+            onClick={() => onChange(credits.filter((_, x) => x !== i))}
+            className="h-9 rounded-lg border border-border px-2 text-muted-foreground hover:text-foreground"
+            aria-label="Remove credit"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={() => onChange([...credits, { name: "", role: "", url: "" }])}
+        className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+      >
+        <Plus className="size-3" /> Add credit
+      </button>
     </div>
   );
 }

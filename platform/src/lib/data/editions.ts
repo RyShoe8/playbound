@@ -61,6 +61,15 @@ export type EditionSeed = {
   aliases?: string[];
   serverName?: string | null;
   languages?: string[];
+  developerSlug?: string | null;
+  developerName?: string | null;
+  credits?: { name: string; role: string; url?: string }[];
+  license?: string | null;
+  releaseYear?: number | null;
+  longDescription?: string | null;
+  whyWePickedIt?: string | null;
+  bestFor?: string[];
+  notFor?: string[];
   version?: string | null;
   firstPlaySteps?: InstallStep[];
   multiplayerGamingSteps?: InstallStep[];

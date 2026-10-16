@@ -63,6 +63,15 @@ function seedToEdition(seed: EditionSeed): Edition {
     aliases: seed.aliases ?? [],
     serverName: seed.serverName ?? undefined,
     languages: seed.languages ?? [],
+    developerSlug: seed.developerSlug ?? undefined,
+    developerName: seed.developerName ?? undefined,
+    credits: seed.credits ?? [],
+    license: seed.license ?? undefined,
+    releaseYear: seed.releaseYear ?? undefined,
+    longDescription: seed.longDescription ?? undefined,
+    whyWePickedIt: seed.whyWePickedIt ?? undefined,
+    bestFor: seed.bestFor ?? [],
+    notFor: seed.notFor ?? [],
     version: seed.version ?? undefined,
     firstPlaySteps: seed.firstPlaySteps ?? [],
     multiplayerGamingSteps: seed.multiplayerGamingSteps ?? [],
@@ -266,6 +275,18 @@ function toEdition(doc: LeanEdition): Edition {
     aliases: useCuratedFreedoomMetadata ? seedMatch!.aliases ?? [] : (doc.aliases as string[]) ?? [],
     serverName: (doc.serverName as string) || undefined,
     languages: (doc.languages as string[]) ?? [],
+    developerSlug: (doc.developerSlug as string) || seedMatch?.developerSlug || undefined,
+    developerName: (doc.developerName as string) || seedMatch?.developerName || undefined,
+    credits:
+      Array.isArray(doc.credits) && doc.credits.length > 0
+        ? (doc.credits as Edition["credits"])
+        : seedMatch?.credits ?? [],
+    license: (doc.license as string) || seedMatch?.license || undefined,
+    releaseYear: doc.releaseYear == null ? seedMatch?.releaseYear ?? undefined : Number(doc.releaseYear),
+    longDescription: (doc.longDescription as string) || seedMatch?.longDescription || undefined,
+    whyWePickedIt: (doc.whyWePickedIt as string) || seedMatch?.whyWePickedIt || undefined,
+    bestFor: Array.isArray(doc.bestFor) && doc.bestFor.length > 0 ? (doc.bestFor as string[]) : seedMatch?.bestFor ?? [],
+    notFor: Array.isArray(doc.notFor) && doc.notFor.length > 0 ? (doc.notFor as string[]) : seedMatch?.notFor ?? [],
 
     version: (doc.version as string) || undefined,
     firstPlaySteps:
@@ -825,6 +846,17 @@ export function editionSource(id: string): "seed" | "database" {
   return parseSeedEditionId(id) ? "seed" : "database";
 }
 
+/** `game:slug` of every stored edition row, including tombstones and non-public copies. */
+async function occupiedSeedKeys(): Promise<Set<string>> {
+  const uri = process.env.MONGODB_URI;
+  if (!uri || uri === "[SENSITIVE]" || (!uri.startsWith("mongodb://") && !uri.startsWith("mongodb+srv://"))) {
+    return new Set();
+  }
+  await dbConnect();
+  const docs = await EditionModel.find({}).select("gameSlug slug").lean();
+  return new Set(docs.map((d) => `${str((d as LeanEdition).gameSlug)}:${str((d as LeanEdition).slug)}`));
+}
+
 /**
  * Every public, stored edition across the catalog — for the sitemap.
  *
@@ -835,16 +867,29 @@ export function editionSource(id: string): "seed" | "database" {
 export async function listAllPublicEditions(): Promise<Edition[]> {
   try {
     const fromDb = await fetchEditions({ visibility: "public", status: { $ne: "archived" } });
-    const dbKeys = new Set(fromDb.map((e) => `${e.gameSlug}:${e.slug}`));
+    /*
+     * Every stored row for a seed slug occupies it: a hidden or archived copy,
+     * and above all a tombstone left when admin deleted a seed edition. The
+     * sitemap used to subtract only the public rows, so seed editions that had
+     * since been deleted or hidden were still advertised and answered 404.
+     */
+    const occupied = await occupiedSeedKeys();
     const seeds = seedEditions
       .filter(
         (s) =>
           (s.visibility ?? "public") === "public" &&
           s.status !== "archived" &&
-          !dbKeys.has(`${s.gameSlug}:${s.slug}`)
+          !occupied.has(`${s.gameSlug}:${s.slug}`)
       )
       .map(seedToEdition);
-    return [...fromDb, ...seeds];
+    const merged = [...fromDb, ...seeds];
+    const gameSlugs = [...new Set(merged.map((e) => e.gameSlug))];
+    return gameSlugs.flatMap((gameSlug) =>
+      filterRetiredEditions(
+        gameSlug,
+        merged.filter((e) => e.gameSlug === gameSlug)
+      )
+    );
   } catch (err) {
     console.error("[editions] listAllPublic failed:", err);
     return seedEditions
