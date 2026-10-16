@@ -24,6 +24,8 @@ NATIVE_GAMES = {
     'teeworlds': ('customer-sandboxes', 8303, 8323),
     'bzflag': ('bzflag-servers', 5155, 5174),
     'hedgewars': ('hedgewars-servers', 46631, 46650),
+    'openttd': ('openttd-servers',3979,3999),
+    'luanti': ('luanti-servers',30000,30020),
 }
 
 def select_game(game):
@@ -95,11 +97,18 @@ def config_bytes(text, port):
     if GAME != 'teeworlds':
         if not isinstance(text,str) or len(text.encode()) > 16384: raise ValueError('Invalid native configuration')
         values = json.loads(text)
-        if not isinstance(values,dict) or set(values) != ({'maxPlayers','scoreLimit'} if GAME == 'bzflag' else set()):
+        if not isinstance(values,dict) or set(values) != ({'maxPlayers','scoreLimit'} if GAME == 'bzflag' else {'maxPlayers'} if GAME in ('openttd','luanti') else set()):
             raise ValueError('Undeclared native settings')
         for key, maximum in [('maxPlayers',200),('scoreLimit',100)]:
             if key in values and (type(values[key]) is not int or not (2 if key == 'maxPlayers' else 0) <= values[key] <= maximum):
                 raise ValueError('Invalid native setting number')
+        if GAME in ('openttd','luanti'):
+            if values['maxPlayers'] > 64: raise ValueError('Native player limit exceeded')
+            if GAME == 'openttd':
+                return ('[network]\nmax_clients = ' + str(values['maxPlayers']) + '\n').encode()
+            # Root-generated configuration cannot grant a mod HTTP or insecure
+            # Lua access. This is defense in depth, not a fix for engine CVEs.
+            return ('server_announce = false\nsecure.enable_security = true\nsecure.trusted_mods =\nsecure.http_mods =\nmax_users = ' + str(values['maxPlayers']) + '\n').encode()
         return text.encode()
     if not isinstance(text, str) or len(text.encode('utf-8')) > 16384 or any(char in text for char in '\0\r;'):
         raise ValueError('Invalid Teeworlds configuration')
@@ -196,16 +205,20 @@ def verify_scope(resources, server_id, pid, identity, cpu, memory):
     return scope
 
 
-def command(data, fd, port, memory, engine_fd=None, native_settings=None):
-    target = {'teeworlds':'/usr/games/teeworlds-server','bzflag':'/usr/games/bzfs','hedgewars':'/usr/lib/hedgewars/bin/hedgewars-server'}[GAME]
+def command(data, fd, port, memory, engine_fd=None, native_settings=None, seccomp_fd=None, dns_fd=None):
+    target = {'teeworlds':'/usr/games/teeworlds-server','bzflag':'/usr/games/bzfs','hedgewars':'/usr/lib/hedgewars/bin/hedgewars-server','openttd':'/usr/games/openttd','luanti':'/usr/games/minetestserver'}[GAME]
     settings = native_settings or {}
-    game_args = ['-f','server.cfg','sv_port '+str(port)] if GAME == 'teeworlds' else ['-p',str(port)] if GAME == 'hedgewars' else ['-p',str(port),'-offa','-q','-j','+r','+s',str(settings['scoreLimit']),'-mp',str(settings['maxPlayers'])]
+    game_args = ['-f','server.cfg','sv_port '+str(port)] if GAME == 'teeworlds' else ['-p',str(port)] if GAME == 'hedgewars' else [] if GAME in ('openttd','luanti') else ['-p',str(port),'-offa','-q','-j','+r','+s',str(settings['scoreLimit']),'-mp',str(settings['maxPlayers'])]
+    if GAME == 'openttd': game_args = ['-D','0.0.0.0:'+str(port),'-c','/server/server.cfg']
+    if GAME == 'luanti': game_args = ['--port',str(port),'--world','/server/world','--gameid','minetest','--config','/server/server.cfg','--logfile','/server/minetest.log']
     return ['/usr/bin/prlimit', '--as=' + str(max(1024 ** 3, memory * 2 * 1024 ** 2)), '--nofile=1024', '--core=0', '--', '/usr/bin/bwrap',
+            *(['--seccomp', str(seccomp_fd)] if seccomp_fd is not None else []),
             '--unshare-user', '--unshare-pid', '--unshare-ipc', '--unshare-uts', '--unshare-cgroup', '--disable-userns', '--cap-drop', 'ALL', '--die-with-parent',
             '--ro-bind', '/usr', '/usr', '--symlink', 'usr/lib', '/lib', '--symlink', 'usr/lib64', '/lib64', '--symlink', 'usr/bin', '/bin',
             *(['--perms', '0555', '--ro-bind-data', str(engine_fd), target] if engine_fd is not None else []),
             '--proc', '/proc', '--dev', '/dev', '--size', '67108864', '--tmpfs', '/tmp', '--bind', str(data), '/server', '--ro-bind-data', str(fd), '/server/server.cfg',
             *[part for filename in ['/etc/protocols','/etc/services','/etc/hosts','/etc/resolv.conf','/etc/ssl/certs'] if Path(filename).exists() for part in ['--ro-bind',filename,filename]],
+            *(['--ro-bind-data', str(dns_fd), '/etc/resolv.conf'] if dns_fd is not None else []),
             '--clearenv', '--setenv', 'PATH', '/usr/bin:/usr/games', '--setenv', 'HOME', '/server', '--setenv', 'XDG_DATA_HOME', '/server', '--setenv', 'XDG_CONFIG_HOME', '/server', '--setenv', 'LANG', 'C.UTF-8', '--chdir', '/server',
             '--', target, *game_args]
 
@@ -255,6 +268,11 @@ def runtime_status(resources, server_id, pid, identity):
         if network_profile:
             network = trusted_module('pb_network', 'playbound-customer-network-check')
             network.attached_filters(scope_path(server_id, pid))
+        if value.get('hostNetworkGuard') != 'host-egress-v1': raise ValueError('Native host guard is missing')
+        guard = trusted_module('pb_host_guard', 'playbound-customer-host-network')
+        guard.verify(value['uid'])
+        binder = trusted_module('pb_bind', 'playbound-customer-bind-policy')
+        if binder.program_ids(scope_path(server_id,pid)) != value.get('bindPrograms'): raise ValueError('Native bind program identities changed')
         value['running'] = True
     except Exception:
         value['running'] = False
@@ -322,6 +340,10 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
         fd = os.memfd_create('pb-server-config', os.MFD_CLOEXEC | os.MFD_ALLOW_SEALING)
         child = None
         engine_fd = None
+        seccomp_fd = None
+        dns_fd = None
+        host_guard = None
+        guard_installed = False
         try:
             os.write(fd, config)
             os.lseek(fd, 0, os.SEEK_SET)
@@ -332,14 +354,27 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
             if network_profile:
                 network = trusted_module('pb_network', 'playbound-customer-network-check')
                 network.apply_current_scope()
-            for binary in ['/usr/bin/prlimit', '/usr/bin/bwrap', {'teeworlds':'/usr/games/teeworlds-server','bzflag':'/usr/games/bzfs','hedgewars':'/usr/lib/hedgewars/bin/hedgewars-server'}[GAME]]:
+            migration = trusted_module('pb_migration', 'playbound-customer-data-migration')
+            migration.quiescent(account['uid'])
+            host_guard = trusted_module('pb_host_guard', 'playbound-customer-host-network')
+            host_guard.install(account['uid'])
+            guard_installed = True
+            binder = trusted_module('pb_bind', 'playbound-customer-bind-policy')
+            bind_programs = binder.apply_current(port)
+            dns_fd = os.memfd_create('pb-public-dns',os.MFD_CLOEXEC|os.MFD_ALLOW_SEALING)
+            os.write(dns_fd,b'nameserver 1.1.1.1\nnameserver 1.0.0.1\noptions timeout:2 attempts:2\n')
+            os.lseek(dns_fd,0,os.SEEK_SET)
+            fcntl.fcntl(dns_fd,fcntl.F_ADD_SEALS,fcntl.F_SEAL_WRITE|fcntl.F_SEAL_GROW|fcntl.F_SEAL_SHRINK|fcntl.F_SEAL_SEAL)
+            for binary in ['/usr/bin/prlimit', '/usr/bin/bwrap', {'teeworlds':'/usr/games/teeworlds-server','bzflag':'/usr/games/bzfs','hedgewars':'/usr/lib/hedgewars/bin/hedgewars-server','openttd':'/usr/games/openttd','luanti':'/usr/games/minetestserver'}[GAME]]:
                 info = Path(binary).stat()
                 if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_mode & 0o022: raise ValueError('Untrusted runtime executable')
             engines = trusted_module('pb_native_engine', 'playbound-customer-native-engine')
             engine_fd, _target = engines.sealed_engine_for(GAME)
-            inherited = (fd,) if engine_fd is None else (fd, engine_fd)
-            child = subprocess.Popen(command(root / 'data', fd, port, memory, engine_fd, json.loads(text) if GAME != 'teeworlds' else None), user=account['uid'], group=account['gid'], extra_groups=[], env=ENV, cwd='/', stdin=subprocess.DEVNULL, pass_fds=inherited)
-            binding_write(root, {'profile': PROFILE, 'serverId': server_id, 'gatePid': pid, 'gateIdentity': identity, 'uid': account['uid'], 'gid': account['gid'], 'gamePid': child.pid, 'gameIdentity': game_identity(child.pid), 'networkProfile': network_profile})
+            syscalls = trusted_module('pb_syscalls', 'playbound-customer-seccomp')
+            seccomp_fd = syscalls.sealed_filter()
+            inherited = (fd,seccomp_fd,dns_fd) if engine_fd is None else (fd,engine_fd,seccomp_fd,dns_fd)
+            child = subprocess.Popen(command(root / 'data', fd, port, memory, engine_fd, json.loads(text) if GAME != 'teeworlds' else None, seccomp_fd, dns_fd), user=account['uid'], group=account['gid'], extra_groups=[], env=ENV, cwd='/', stdin=subprocess.DEVNULL, pass_fds=inherited)
+            binding_write(root, {'profile': PROFILE, 'serverId': server_id, 'gatePid': pid, 'gateIdentity': identity, 'uid': account['uid'], 'gid': account['gid'], 'gamePid': child.pid, 'gameIdentity': game_identity(child.pid), 'networkProfile': network_profile, 'hostNetworkGuard': 'host-egress-v1', 'socketBindPort': port, 'bindPrograms': bind_programs})
             while child.poll() is None:
                 try:
                     resources.verify_process(pid, identity, pwd.getpwnam('playbound').pw_uid)
@@ -353,8 +388,11 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
         finally:
             os.close(fd)
             if engine_fd is not None: os.close(engine_fd)
+            if seccomp_fd is not None: os.close(seccomp_fd)
+            if dns_fd is not None: os.close(dns_fd)
             if child is not None and child.poll() is None:
                 (scope / 'cgroup.kill').write_text('1')
+            if guard_installed: host_guard.remove(account['uid'])
     finally:
         os.close(lock)
 
@@ -378,6 +416,9 @@ if __name__ == '__main__':
         else:
             resources = trusted_module('pb_resources', 'playbound-customer-resources')
             print(json.dumps(runtime_status(resources, server_id, pid, identity)))
-    except Exception:
-        print('Customer identity runtime operation failed', file=sys.stderr)
+    except Exception as error:
+        reason = str(error)[:240] if isinstance(error, ValueError) else type(error).__name__
+        if isinstance(error, subprocess.CalledProcessError) and error.cmd and error.cmd[0] in ('/usr/bin/systemctl','/usr/sbin/nft'):
+            reason = (error.stderr or '').strip()[:240] or reason
+        print('Customer identity runtime operation failed: ' + reason, file=sys.stderr)
         sys.exit(1)

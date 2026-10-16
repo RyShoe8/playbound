@@ -1,6 +1,6 @@
 /** Reviewed engine profiles only. This builds the filesystem/process namespace
  * boundary; customerRuntime applies cgroup limits before running the plan.
- * Teeworlds, BZFlag and Hedgewars have opt-in UID handoffs. Other host UIDs, network policy and
+ * The five reviewed native engines have opt-in UID handoffs. Other host UIDs, network policy and
  * executable-plugin isolation remain unfinished.
  * There is deliberately no fallback to an unrestricted launch if setup fails.
  */
@@ -10,7 +10,7 @@ import { customerResourceLimits } from "./customerResourceLimits.js";
 import { identityMigrationMetadata } from "./customerMigration.js";
 import { NATIVE_PACKAGE_PROFILES, verifyNativePackageInstallation } from "./nativePackageUpdates.js";
 
-export const CUSTOMER_IDENTITY_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars"]);
+export const CUSTOMER_IDENTITY_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti"]);
 export const TEEWORLDS_ISOLATION = "teeworlds-bwrap-v1";
 export const CUSTOMER_ISOLATION_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti"]);
 
@@ -32,9 +32,14 @@ function unlinkedAncestors(filename) {
 }
 
 /** Runs before recipes write any generated configuration, not just at spawn. */
-export function validateCustomerPreparation({ gameSlug, customerOwned, communityServerId: id, home }) {
+export function validateCustomerPreparation({ gameSlug, customerOwned, communityServerId: id, home, identityProfile }) {
   if (!customerOwned || !CUSTOMER_ISOLATION_GAMES.includes(gameSlug)) return;
   if (!/^[a-f0-9]{24}$/i.test(id || "") || typeof home !== "string" || !path.isAbsolute(home)) throw new Error("Invalid isolation identity");
+  if (identityProfile && ["openttd","luanti"].includes(gameSlug)) {
+    const migration = identityMigrationMetadata(id,home);
+    if (migration?.identityProfile !== identityProfile || identityProfile !== `${gameSlug}-unix-v1`) throw new Error("Customer identity migration is not ready");
+    return; // No legacy data is prepared; the root supervisor generates typed configuration.
+  }
   const outputs = {
     teeworlds: [path.join(home, "teeworlds", `pb-${id}.cfg`), path.join(home, "customer-sandboxes", `pb-${id}`)],
     openttd: [path.join(home, "openttd", `pb-${id.slice(-16)}.cfg`), path.join(home, "openttd-servers", `pb-${id}`)],
@@ -64,14 +69,14 @@ function privateDirectory(directory) {
       (process.getuid && (stat.uid !== process.getuid() || (stat.mode & 0o077)))) throw new Error("Isolation data directory must be private and service-owned");
 }
 
-export function customerIsolationLaunch({ gameSlug, customerOwned, communityServerId, binary, args, home, resourceLimits, identityProfile }) {
+export function customerIsolationLaunch({ gameSlug, customerOwned, communityServerId, binary, args, home, resourceLimits, identityProfile, settings }) {
   if (!customerOwned || !CUSTOMER_ISOLATION_GAMES.includes(gameSlug)) return null;
   if (identityProfile !== undefined && (!CUSTOMER_IDENTITY_GAMES.includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1`)) throw new Error("Unsupported customer identity profile");
   const limits = customerResourceLimits(gameSlug, resourceLimits);
-  validateCustomerPreparation({ gameSlug, customerOwned, communityServerId, home });
+  validateCustomerPreparation({ gameSlug, customerOwned, communityServerId, home, identityProfile });
   if (!/^[a-f0-9]{24}$/i.test(communityServerId || "") || !path.isAbsolute(home)) throw new Error("Invalid isolation identity");
   if (!Array.isArray(args) || args.some(value => typeof value !== "string" || value.includes("\0"))) throw new Error("Invalid isolation arguments");
-  if (gameSlug !== "teeworlds") return nativeIsolationLaunch({ gameSlug, communityServerId, binary, args, home, resourceLimits: limits, identityProfile });
+  if (gameSlug !== "teeworlds") return nativeIsolationLaunch({ gameSlug, communityServerId, binary, args, home, resourceLimits: limits, identityProfile, settings });
   // Alternate/custom executables need their own reviewed dependency profile.
   const systemBinary = "/usr/games/teeworlds-server";
   let engineMount;
@@ -160,7 +165,7 @@ function sandboxPlan({ gameSlug, binary, gameArgs, data, mounts = [], resourceLi
   };
 }
 
-function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, home, resourceLimits, identityProfile }) {
+function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, home, resourceLimits, identityProfile, settings }) {
   const supported = {
     bzflag: ["/usr/games/bzfs", "bzflag-servers"],
     hedgewars: ["/usr/lib/hedgewars/bin/hedgewars-server", "hedgewars-servers"],
@@ -192,23 +197,23 @@ function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, 
   } else if (gameSlug === "openttd") {
     const config = path.join(home, "openttd", `pb-${id.slice(-16)}.cfg`);
     if (args.length !== 4 || args[0] !== "-D" || !args[1].startsWith("0.0.0.0:") || !withinPort(args[1].slice(8), 3979, 3999) || args[2] !== "-c" || args[3] !== config) throw new Error("Unexpected OpenTTD isolation arguments");
-    regularFile(config, 64 * 1024);
+    if (!identityProfile) regularFile(config, 64 * 1024);
     mounts.push([config, "/server/openttd.cfg"]);
     gameArgs = ["-D", args[1], "-c", "/server/openttd.cfg"];
   } else if (gameSlug === "luanti") {
     const config = path.join(data, "world", "playbound.conf");
     if (args.length !== 10 || args[0] !== "--port" || !withinPort(args[1], 30000, 30020) ||
         args.slice(2).join("\0") !== ["--world", path.join(data, "world"), "--gameid", "minetest", "--config", config, "--logfile", path.join(data, "minetest.log")].join("\0")) throw new Error("Unexpected Luanti isolation arguments");
-    regularFile(config, 64 * 1024);
+    if (!identityProfile) regularFile(config, 64 * 1024);
     mounts.push([config, "/server/world/playbound.conf"]);
     gameArgs = ["--port", args[1], "--world", "/server/world", "--gameid", "minetest", "--config", "/server/world/playbound.conf", "--logfile", "/server/minetest.log"];
   }
   if (identityProfile) {
     const migration = identityMigrationMetadata(id, home);
     if (!migration || migration.identityProfile !== identityProfile) throw new Error("Customer identity migration is not ready");
-    const config = gameSlug === "bzflag" ? { scoreLimit: Number(args[7]), maxPlayers: Number(args[9]) } : {};
+    const config = gameSlug === "bzflag" ? { scoreLimit: Number(args[7]), maxPlayers: Number(args[9]) } : ["openttd","luanti"].includes(gameSlug) ? { maxPlayers: settings?.maxPlayers ?? 12 } : {};
     return { profile: `${gameSlug}-bwrap-v1`, resourceLimits, identityProfile, networkProfile: migration.networkProfile,
-      identityRuntime: { gameSlug, port: Number(args[1]), config: JSON.stringify(config) },
+      identityRuntime: { gameSlug, port: Number(gameSlug === "openttd" ? args[1].slice(8) : args[1]), config: JSON.stringify(config) },
       binary: "/usr/bin/prlimit", args: [], cwd: "/", env: { PATH: "/usr/bin:/usr/games", LANG: "C.UTF-8" } };
   }
   return sandboxPlan({ gameSlug, binary: engineMount ? NATIVE_PACKAGE_PROFILES[gameSlug].systemBinary : expected, gameArgs, data, mounts, resourceLimits, engineMount });

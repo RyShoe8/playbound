@@ -46,7 +46,7 @@ import { queryRoomOccupancy } from "./playerQueries.js";
 import { spawnRimworld, sendRimworldCommand, queryRimworldBrowser } from "./rimworldControl.js";
 import { spawnAniv, waitForAniv, anivStatus, queryAnivLogs, retainAnivLogs } from "./anivControl.js";
 import { isWorldBackupGame } from "./dedicatedDataBackups.js";
-import { runWorldBackup } from "./worldBackupRunner.js";
+import { runWorldBackup, runIsolatedWorldBackup, runIsolatedFileOperation } from "./worldBackupRunner.js";
 import { manageDedicatedFiles } from "./dedicatedFiles.js";
 import { createInstallationCoordinator } from "./installationJobs.js";
 import { createDailyInstallationUpdates } from "./dailyInstallationUpdates.js";
@@ -887,7 +887,7 @@ async function startRoom(opts) {
 
 async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername, saveKey, customerOwned, resourceLimits, identityProfile, testSpawn = false }) {
   if (shuttingDown) return { error: "Agent is shutting down" };
-  if (identityProfile !== undefined && (!["teeworlds","bzflag","hedgewars"].includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1` || !customerOwned || !communityServerId)) return { error: "Unsupported customer identity handoff" };
+  if (identityProfile !== undefined && (!["teeworlds","bzflag","hedgewars","openttd","luanti"].includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1` || !customerOwned || !communityServerId)) return { error: "Unsupported customer identity handoff" };
   if (customerOwned && CUSTOMER_ISOLATION_GAMES.includes(gameSlug)) {
     try { resourceLimits = customerResourceLimits(gameSlug, resourceLimits); }
     catch (error) { return { error: error.message }; }
@@ -1037,13 +1037,13 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
     if (!port) return { error: lastError };
 
     try {
-      validateCustomerPreparation({ gameSlug, customerOwned: ctx.customerOwned, communityServerId, home: process.env.HOME || "/var/lib/playbound-host" });
+      validateCustomerPreparation({ gameSlug, customerOwned: ctx.customerOwned, communityServerId, home: process.env.HOME || "/var/lib/playbound-host", identityProfile });
     } catch {
       freePort(gameSlug, port);
       return { error: "Customer runtime data paths could not be validated. The server was not prepared or launched." };
     }
 
-    if (recipe.prepareSpawn) {
+    if (recipe.prepareSpawn && !(identityProfile && ["openttd","luanti"].includes(gameSlug))) {
       try {
         await recipe.prepareSpawn(port, ctx);
       } catch (err) {
@@ -1074,7 +1074,7 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
     }
     let isolated;
     try {
-      isolated = customerIsolationLaunch({ gameSlug, customerOwned: ctx.customerOwned, communityServerId, binary, args, home: hostHome, resourceLimits, identityProfile });
+      isolated = customerIsolationLaunch({ gameSlug, customerOwned: ctx.customerOwned, communityServerId, binary, args, home: hostHome, resourceLimits, identityProfile, settings: ctx.settings });
     } catch {
       freePort(gameSlug, port);
       return { error: "Customer runtime isolation could not be prepared. The server was not launched." };
@@ -1547,7 +1547,7 @@ const server = http.createServer(async (req, res) => {
       if (retainedIdentity && retainedIdentity !== identityProfile) {
         json(res, 409, { error: "Customer identity profile cannot be downgraded" }); return;
       }
-      if (identityProfile !== undefined && (!["teeworlds","bzflag","hedgewars"].includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1` || body.customerOwned !== true || !/^[a-f0-9]{24}$/.test(communityServerId))) {
+      if (identityProfile !== undefined && (!["teeworlds","bzflag","hedgewars","openttd","luanti"].includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1` || body.customerOwned !== true || !/^[a-f0-9]{24}$/.test(communityServerId))) {
         json(res, 400, { error: "Unsupported customer identity handoff" }); return;
       }
       const activeId = byManaged.get(communityServerId);
@@ -1607,7 +1607,7 @@ const server = http.createServer(async (req, res) => {
           const active = activeId ? rooms.get(activeId) : null;
           if (active && active.customerOwned !== true) throw new Error("Only customer-owned server files can be managed");
           if (["write", "delete", "restore", "mkdir", "upload-begin", "upload-chunk", "upload-commit"].includes(body.action) && (active || managedJobs.get(serverId)?.status === "pending")) throw new Error("Stop the server before changing its files");
-          return manageDedicatedFiles(serverId, gameSlug, body);
+          return managedJobs.get(serverId)?.identityProfile ? runIsolatedFileOperation(serverId, gameSlug, body) : manageDedicatedFiles(serverId, gameSlug, body);
         });
         json(res, 200, result);
       } catch (error) {
@@ -1630,17 +1630,24 @@ const server = http.createServer(async (req, res) => {
       const retention = Number.isInteger(body.retention) ? body.retention : 3;
       const activeId = byManaged.get(serverId);
       const busy = Boolean((activeId && rooms.has(activeId)) || managedJobs.get(serverId)?.status === "pending");
+      const snapshot = (fn, args) => startCoordinator.withPartyLock(`managed:${serverId}`, () => {
+        const profile = managedJobs.get(serverId)?.identityProfile;
+        const active = byManaged.get(serverId);
+        const running = Boolean((active && rooms.has(active)) || managedJobs.get(serverId)?.status === "pending");
+        if (running && (fn === "restoreWorldBackup" || (profile && fn === "createWorldBackup"))) throw new Error("Stop the server before creating or restoring isolated world data.");
+        return profile ? runIsolatedWorldBackup(fn,args) : runWorldBackup(fn,args);
+      });
       try {
         if (body.action === "list") {
-          json(res, 200, { backups: await runWorldBackup("listWorldBackups", [serverId, gameSlug]) });
+          json(res, 200, { backups: await snapshot("listWorldBackups", [serverId, gameSlug]) });
         } else if (body.action === "create") {
-          json(res, 200, { backup: await runWorldBackup("createWorldBackup", [serverId, gameSlug, retention]) });
+          json(res, 200, { backup: await snapshot("createWorldBackup", [serverId, gameSlug, retention]) });
         } else if (body.action === "restore") {
           if (busy) {
             json(res, 409, { error: "Stop the server before restoring its world data." });
             return;
           }
-          json(res, 200, { result: await runWorldBackup("restoreWorldBackup", [serverId, gameSlug, String(body.backupId || ""), retention]) });
+          json(res, 200, { result: await snapshot("restoreWorldBackup", [serverId, gameSlug, String(body.backupId || ""), retention]) });
         } else {
           json(res, 400, { error: "Unknown action" });
         }

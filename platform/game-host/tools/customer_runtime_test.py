@@ -68,10 +68,17 @@ class RuntimeBoundaries(unittest.TestCase):
                 with self.assertRaises(ValueError): module.migration_ready(ID, 0)
 
     def test_additional_native_profiles_have_fixed_ports_commands_and_typed_settings(self):
-        for game, port, settings, executable in [('bzflag', 5174, '{"maxPlayers":4,"scoreLimit":3}', '/usr/games/bzfs'), ('hedgewars',46650,'{}','/usr/lib/hedgewars/bin/hedgewars-server')]:
+        for game, port, settings, executable in [('bzflag', 5174, '{"maxPlayers":4,"scoreLimit":3}', '/usr/games/bzfs'), ('hedgewars',46650,'{}','/usr/lib/hedgewars/bin/hedgewars-server'), ('openttd',3999,'{"maxPlayers":4}','/usr/games/openttd'), ('luanti',30020,'{"maxPlayers":4}','/usr/games/minetestserver')]:
             module.select_game(game)
             self.assertEqual(module.request(['run-native',ID,'42',IDENTITY,game,str(port),'750','1536'])[0], 'run')
-            self.assertEqual(module.config_bytes(settings,port),settings.encode())
+            config=module.config_bytes(settings,port)
+            if game in ('openttd','luanti'): self.assertIn(b'4',config)
+            else: self.assertEqual(config,settings.encode())
+            if game == 'luanti':
+                self.assertIn(b'secure.enable_security = true\n', config)
+                self.assertIn(b'secure.trusted_mods =\nsecure.http_mods =\n', config)
+                with self.assertRaises(ValueError):
+                    module.config_bytes('{"maxPlayers":4,"secure.trusted_mods":"payload"}',port)
             import json
             command=module.command(Path('/fixture/data'),7,port,1536,8,json.loads(settings))
             self.assertEqual(command[command.index('--perms')+4],executable)
@@ -165,7 +172,7 @@ class RuntimeBoundaries(unittest.TestCase):
             resources = SimpleNamespace(verify_caller=Mock())
             child = Mock(pid=52, returncode=0)
             child.poll.return_value = 0
-            with patch.object(module, 'migration_network_profile', return_value=None), patch.object(module, 'journal_game', return_value='teeworlds'), patch.object(module, 'trusted_module', return_value=SimpleNamespace(sealed_engine_for=Mock(return_value=(None, "/usr/games/teeworlds-server")))), patch.object(module, 'migration_ready', return_value=True), patch.object(module, 'verify_scope', return_value=Path('/fixture.scope')), patch.object(module, 'verify_supervisor_scope'), patch.object(module, 'workspace', return_value=root), patch.object(module.pwd, 'getpwnam', return_value=SimpleNamespace(pw_uid=1001)), patch.object(Path, 'stat', return_value=SimpleNamespace(st_mode=0o100755, st_uid=0)), patch.object(module.subprocess, 'Popen', return_value=child) as spawn, patch.object(module, 'binding_write') as binding, patch.object(module, 'game_identity', return_value=IDENTITY):
+            with patch.object(module, 'migration_network_profile', return_value=None), patch.object(module, 'journal_game', return_value='teeworlds'), patch.object(module, 'trusted_module', return_value=SimpleNamespace(sealed_engine_for=Mock(return_value=(None, "/usr/games/teeworlds-server")), sealed_filter=Mock(side_effect=lambda:os.memfd_create("filter-fixture",os.MFD_CLOEXEC)), quiescent=Mock(), install=Mock(), remove=Mock(), apply_current=Mock(return_value={"8":[1],"9":[2]}))), patch.object(module, 'migration_ready', return_value=True), patch.object(module, 'verify_scope', return_value=Path('/fixture.scope')), patch.object(module, 'verify_supervisor_scope'), patch.object(module, 'workspace', return_value=root), patch.object(module.pwd, 'getpwnam', return_value=SimpleNamespace(pw_uid=1001)), patch.object(Path, 'stat', return_value=SimpleNamespace(st_mode=0o100755, st_uid=0)), patch.object(module.subprocess, 'Popen', return_value=child) as spawn, patch.object(module, 'binding_write') as binding, patch.object(module, 'game_identity', return_value=IDENTITY):
                 self.assertEqual(module.run_runtime(identities, resources, ID, 42, IDENTITY, (8322, 750, 1536), CONFIG), 0)
                 options = spawn.call_args.kwargs
                 self.assertEqual((options['user'], options['group'], options['extra_groups']), (40000, 40000, []))
@@ -196,9 +203,9 @@ class RuntimeBoundaries(unittest.TestCase):
                 trusted.assert_called_once_with('pb_network', 'playbound-customer-network-check')
 
     def test_recovery_rechecks_network_enrollment_and_exact_scope_hooks(self):
-        value = {'uid': 40000, 'gamePid': 52, 'gameIdentity': IDENTITY, 'networkProfile': 'public-game-v1'}
+        value = {'uid': 40000, 'gamePid': 52, 'gameIdentity': IDENTITY, 'networkProfile': 'public-game-v1', 'hostNetworkGuard':'host-egress-v1', 'socketBindPort':8322,'bindPrograms':{'8':[1],'9':[2]}}
         resources = SimpleNamespace(verify_process=Mock())
-        network = SimpleNamespace(attached_filters=Mock(return_value={'kernelIngressPrograms': 1, 'kernelEgressPrograms': 1}))
+        network = SimpleNamespace(attached_filters=Mock(return_value={'kernelIngressPrograms': 1, 'kernelEgressPrograms': 1}),verify=Mock(return_value=True),program_ids=Mock(return_value={"8":[1],"9":[2]}))
         with patch.object(module, 'binding_read', side_effect=lambda *args: dict(value)), patch.object(module, 'migration_network_profile', return_value='public-game-v1') as profile, patch.object(module.pwd, 'getpwnam', return_value=SimpleNamespace(pw_uid=1001)), patch.object(Path, 'read_text', return_value='0::/system.slice/' + module.scope_path(ID, 42).name), patch.object(module, 'trusted_module', return_value=network):
             self.assertTrue(module.runtime_status(resources, ID, 42, IDENTITY)['running'])
             network.attached_filters.assert_called_with(module.scope_path(ID, 42))
