@@ -1,0 +1,11 @@
+{
+  "version": "existing-reviewed-bombsquad-python314",
+  "binary": {
+    "bytes": 78233712,
+    "sha256": "362516ea7c8b8e6fa961b7b1f824910638c5b6ee97276a1167022accf9615621"
+  },
+  "legacyBinary": {
+    "bytes": 78233712,
+    "sha256": "362516ea7c8b8e6fa961b7b1f824910638c5b6ee97276a1167022accf9615621"
+  }
+}
