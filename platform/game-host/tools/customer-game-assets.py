@@ -1,4 +1,4 @@
-"""Seal the fixed, reviewed Hurry Curry data set; never mount shared state.
+"""Seal fixed, reviewed game assets; never mount shared state.
 
 Only root's asset manifest selects bytes. Requests cannot choose a source,
 destination, checksum or extra file. Unlisted installation files stay hidden.
@@ -16,7 +16,11 @@ PROFILE = Path('/usr/local/libexec/playbound-customer-hurry-assets.json')
 SOURCE = Path('/opt/playbound-host/games/hurry-curry/data')
 
 
-def seal_assets(source=SOURCE, profile_path=PROFILE):
+def seal_assets(source=SOURCE, profile_path=PROFILE, game='hurry-curry'):
+    if game not in ('hurry-curry','assaultcube'): raise ValueError('Unsupported asset family')
+    if game == 'assaultcube':
+        source=Path('/opt/playbound-host/games/assaultcube')
+        profile_path=Path('/usr/local/libexec/playbound-customer-assaultcube-assets.json')
     engine_file = Path('/usr/local/libexec/playbound-customer-native-engine')
     info = engine_file.lstat()
     if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_nlink != 1 or info.st_mode & 0o022:
@@ -33,7 +37,7 @@ def seal_assets(source=SOURCE, profile_path=PROFILE):
     try:
         for row in rows:
             relative = row.get('path')
-            if not isinstance(relative, str) or not re.fullmatch(r'[A-Za-z0-9_-]+(?:/[A-Za-z0-9_-]+)*\.yaml', relative) or relative in seen:
+            if not isinstance(relative, str) or not re.fullmatch(r'[A-Za-z0-9_-]+(?:/[A-Za-z0-9_-]+)*\.'+('cgz' if game=='assaultcube' else 'yaml'), relative) or relative in seen:
                 raise ValueError('Invalid asset path')
             seen.add(relative)
             size = row.get('bytes')

@@ -1643,3 +1643,29 @@ content are not accepted. No normal/community launch behavior is changed.
 Fixture data and processes were removed. Production customer enrollment stays zero.
 
 Hurry Curry batch validation: 341 agent tests passed with 49 platform skips; 99 Linux helper tests passed. Guarded live deployment preserved all eleven managed process identities and the service/timer remain active.
+
+
+### AssaultCube isolated native acceptance (2026-10-16)
+
+`assaultcube-unix-v1` adds the fourteenth explicit offline identity profile.
+The reviewed 1.3.0.2 Linux server is root-promoted and sealed. Forty-four existing
+compressed map files are independently pinned and sealed; shared installation
+logs, private keys, password files and unrelated configuration are not mounted.
+The supervisor generates bounded name/slot arguments and uses empty read-only
+configuration plus private writable logs/demos/vita paths. Gameplay uses an odd
+port28763–28781; only UDP port+1 is allowed for queries. The optional shared LAN
+listener remains denied without weakening the allocation fence. Ordinary launches
+retain the existing binary selection and server configuration.
+
+The live fixture returned zero players/four slots, retained the exact gate/game
+PID through agent restart, reported metrics, stopped the full scope and preserved
+old/new data through rollback. Fixture processes/data were removed. The staging
+run caught a second recipe-resolution step dropping the identity profile; both
+resolution contexts now preserve it, avoiding fallback to the legacy symlink.
+
+Validation: 341 agent tests passed with 49 platform skips; 101 Linux helper tests
+passed. The namespace/syscall test now supplies a private asset mount for the new
+engine before checking dangerous calls, host secret visibility and Unix sockets.
+Executable content and UID-aware live administration are still separate gates.
+Source: https://github.com/assaultcube/AC/blob/v1.3.0.2/source/src/protos.h
+Query transport: https://github.com/assaultcube/AC/blob/v1.3.0.2/source/src/serverms.cpp

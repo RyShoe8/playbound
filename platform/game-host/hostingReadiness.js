@@ -6,7 +6,7 @@ const IDENTITY_PROFILES = Object.freeze({
   teeworlds:"teeworlds-unix-v1",bzflag:"bzflag-unix-v1",hedgewars:"hedgewars-unix-v1",
   openttd:"openttd-unix-v1",luanti:"luanti-unix-v1",openarena:"openarena-unix-v1",
   "battle-for-wesnoth":"battle-for-wesnoth-unix-v1","0ad":"0-ad-unix-v1",
-  ysoccer:"ysoccer-unix-v1",flightgear:"flightgear-unix-v1",supertuxkart:"supertuxkart-unix-v1",mindustry:"mindustry-unix-v1","hurry-curry":"hurry-curry-unix-v1",
+  ysoccer:"ysoccer-unix-v1",flightgear:"flightgear-unix-v1",supertuxkart:"supertuxkart-unix-v1",mindustry:"mindustry-unix-v1","hurry-curry":"hurry-curry-unix-v1",assaultcube:"assaultcube-unix-v1",
 });
 
 export function hostingReadiness(key) {

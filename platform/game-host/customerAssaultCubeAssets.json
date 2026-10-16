@@ -1,0 +1,225 @@
+{
+  "version": "1.3.0.2-existing-maps",
+  "files": [
+    {
+      "path": "packages/maps/official/ac_africa.cgz",
+      "bytes": 9456,
+      "sha256": "fc1a3568c26d669b9c922e3af461946f7878a8c960b3e962a254f11736471ca1"
+    },
+    {
+      "path": "packages/maps/official/ac_alcove.cgz",
+      "bytes": 21369,
+      "sha256": "8740a814429eaccda3cfdaad412c45170d62930817283cf9de3962de9c7e3e67"
+    },
+    {
+      "path": "packages/maps/official/ac_aqueous.cgz",
+      "bytes": 19856,
+      "sha256": "cf3e38d811aeb583b7a8aececbdcbabaede664339ce820bc339d34354f8fb663"
+    },
+    {
+      "path": "packages/maps/official/ac_arabian.cgz",
+      "bytes": 27026,
+      "sha256": "75d69d553d954d6ad010fc39a8628cfc3563ead40bc04d0acb1619bcce1ce509"
+    },
+    {
+      "path": "packages/maps/official/ac_arctic.cgz",
+      "bytes": 15076,
+      "sha256": "1bf2dbc83cbf0ee11a23dbb24c58b4e9daf92877425bce255595de8d7499a6f7"
+    },
+    {
+      "path": "packages/maps/official/ac_arctic2.cgz",
+      "bytes": 25065,
+      "sha256": "929678de0138c4c9c279af24e62c82ac9dec9a5efe5780de443297521fe8ce81"
+    },
+    {
+      "path": "packages/maps/official/ac_arid.cgz",
+      "bytes": 16003,
+      "sha256": "14267bf3b10fb19a6d96a5e975ba99b8ff2c7474fc890cd0690932da26837b65"
+    },
+    {
+      "path": "packages/maps/official/ac_avenue.cgz",
+      "bytes": 21527,
+      "sha256": "b428e8a96ca2cdf833f4ff658c013f74c75ca94179ce15bca2e8ce32879d3193"
+    },
+    {
+      "path": "packages/maps/official/ac_coal.cgz",
+      "bytes": 25299,
+      "sha256": "47913f394e51959e24be23b38fe7d3f34ff209d8d384e96841299b14769fb3fc"
+    },
+    {
+      "path": "packages/maps/official/ac_complex.cgz",
+      "bytes": 13461,
+      "sha256": "9b6eed57b7e00570825e977d0badcef1489194703426ae45545308628ff42efb"
+    },
+    {
+      "path": "packages/maps/official/ac_depot.cgz",
+      "bytes": 13105,
+      "sha256": "e0328a5921ead4ee4849cb42320334530ce94e9e73deef3472950f6c6a8080e1"
+    },
+    {
+      "path": "packages/maps/official/ac_desert.cgz",
+      "bytes": 12629,
+      "sha256": "ca65e17b43ee858b27fe6ebdf7262486f0c497637996ce6680dcd45ccf974f45"
+    },
+    {
+      "path": "packages/maps/official/ac_desert2.cgz",
+      "bytes": 13010,
+      "sha256": "509b31f81ed646ef417f7bb6d351f56477d16fae016f876d49979148e4c1dda4"
+    },
+    {
+      "path": "packages/maps/official/ac_desert3.cgz",
+      "bytes": 10128,
+      "sha256": "a40482d149cc529f273e01c8e70c309a73cb611c80e6256117d6f5d58f57a366"
+    },
+    {
+      "path": "packages/maps/official/ac_douze.cgz",
+      "bytes": 5704,
+      "sha256": "225809fc2f66a03f330a1e72446be345128abcaf69a03ab2f853beccc6edd779"
+    },
+    {
+      "path": "packages/maps/official/ac_dusk.cgz",
+      "bytes": 9728,
+      "sha256": "8a4150b1a5d99d58e6dba953f32bc71f7b4efcaffe091bfd77d7523f0d7e74f9"
+    },
+    {
+      "path": "packages/maps/official/ac_edifice.cgz",
+      "bytes": 21219,
+      "sha256": "d4d6be433641fb52f355ec69d735afd74484f13ebed598130aec8c7f09876b09"
+    },
+    {
+      "path": "packages/maps/official/ac_elevation.cgz",
+      "bytes": 18376,
+      "sha256": "313ae1f6691b55fe7f5ee2d2fb1b8c1c8f98d014a3343eae74752aecc53c2520"
+    },
+    {
+      "path": "packages/maps/official/ac_gothic.cgz",
+      "bytes": 10991,
+      "sha256": "be1a29670f4d3b2c806ec5d07d35a9b2edc82aabdc42831b8ac01e801b7c5870"
+    },
+    {
+      "path": "packages/maps/official/ac_industrial.cgz",
+      "bytes": 23202,
+      "sha256": "bc08cd840b99bc4a754f7147a056b85281285bdc41833cb01475f3745ef343e6"
+    },
+    {
+      "path": "packages/maps/official/ac_ingress.cgz",
+      "bytes": 13717,
+      "sha256": "fdd1370161ca9f30df0415e6eaeb95fd87580e2261b285a06955b4ca144b05de"
+    },
+    {
+      "path": "packages/maps/official/ac_kazemat.cgz",
+      "bytes": 32224,
+      "sha256": "e2d9163b80a769ac4b80b91ccb0c2cd37f58a2970105bb062ca074ada9681151"
+    },
+    {
+      "path": "packages/maps/official/ac_keller.cgz",
+      "bytes": 28661,
+      "sha256": "bc5346491af793578c74c978b1abd74fc509f44f21f6ca14a697547b88fd39b4"
+    },
+    {
+      "path": "packages/maps/official/ac_lainio.cgz",
+      "bytes": 21757,
+      "sha256": "b98dd67f2dc1ab1a1a05564da4d5a398669a993d49fc20351dee404ffc656cb4"
+    },
+    {
+      "path": "packages/maps/official/ac_lotus.cgz",
+      "bytes": 24854,
+      "sha256": "62846bcc9a6fc0fb2c1fbff96d2bbed4e6ed5768df042b8028bc73a494a11d9d"
+    },
+    {
+      "path": "packages/maps/official/ac_mines.cgz",
+      "bytes": 32580,
+      "sha256": "9d743fe28cdbeccd25572c2aa792b54a402f00c66b84799de6c933ad1ce93d0d"
+    },
+    {
+      "path": "packages/maps/official/ac_nocturne.cgz",
+      "bytes": 27279,
+      "sha256": "9df4576027c9a13d02acd163b4a5061ea778daae9ed2f30c1277e79febe37154"
+    },
+    {
+      "path": "packages/maps/official/ac_origin.cgz",
+      "bytes": 14412,
+      "sha256": "86e2baf654fbe26d4d229e5bc51bc2f0aec6b8cf2e26001cbd9447e8cf1be1b9"
+    },
+    {
+      "path": "packages/maps/official/ac_outpost.cgz",
+      "bytes": 29399,
+      "sha256": "db6b4fbb267a2a505e84cdaaedbb75961000b04174af97dde61d8395952276f6"
+    },
+    {
+      "path": "packages/maps/official/ac_power.cgz",
+      "bytes": 14636,
+      "sha256": "455948380cd680ac3c6a3ef979a9651643b016f5816d74fede94552b8a85af4a"
+    },
+    {
+      "path": "packages/maps/official/ac_rampart.cgz",
+      "bytes": 10799,
+      "sha256": "2cb45bbd43fdc5b0505b8066e6c920bc9fa7ccc4965d410f0898649ad503dcb9"
+    },
+    {
+      "path": "packages/maps/official/ac_rattrap.cgz",
+      "bytes": 13124,
+      "sha256": "df5a1990c575fb8bc174112773b4c69ba981873d0cfc2c02049999c8e728eed8"
+    },
+    {
+      "path": "packages/maps/official/ac_scaffold.cgz",
+      "bytes": 10942,
+      "sha256": "22a42deb43c0ea8523cace45f4d38e5f03dc2a77f21dbda6aa1b76de7fec0df0"
+    },
+    {
+      "path": "packages/maps/official/ac_shine.cgz",
+      "bytes": 20348,
+      "sha256": "1f7ee9383b0182217112663f8990e39558e2d3e42e73b7db8d47a575a1640c51"
+    },
+    {
+      "path": "packages/maps/official/ac_snow.cgz",
+      "bytes": 9934,
+      "sha256": "9c0032afe98ad77589899e450360a07404e46d179c72bc07e8acbab75d9b65c6"
+    },
+    {
+      "path": "packages/maps/official/ac_stellar.cgz",
+      "bytes": 39911,
+      "sha256": "5fc13dc242feb38d6d0e692e46663a44d8313812dfab9e50ad7054b668d459a4"
+    },
+    {
+      "path": "packages/maps/official/ac_sunset.cgz",
+      "bytes": 23777,
+      "sha256": "a7825ccb2f09f9a7a2f77eeb9d47523c43605a9a6caeceb9f13f6540a6595f59"
+    },
+    {
+      "path": "packages/maps/official/ac_swamp.cgz",
+      "bytes": 23987,
+      "sha256": "acb8d878f90fb4dfa1a53aa69b4500282bace127fe426a658f348a70a4fde9aa"
+    },
+    {
+      "path": "packages/maps/official/ac_terros.cgz",
+      "bytes": 23789,
+      "sha256": "ea175103a238a789910056835edcf82ac72c5f60f8dba21e2abbb0a1a3075a5c"
+    },
+    {
+      "path": "packages/maps/official/ac_toxic.cgz",
+      "bytes": 18315,
+      "sha256": "3f5e7dbf9671b3c2dbfdf8c0c00d4b139e91c427fad887b55b67bb458e8727bf"
+    },
+    {
+      "path": "packages/maps/official/ac_urban.cgz",
+      "bytes": 14434,
+      "sha256": "579d11297a1756ea32b6fd4ee87b65ab8378b6c880f485799baa97947fba7e45"
+    },
+    {
+      "path": "packages/maps/official/ac_venison.cgz",
+      "bytes": 47375,
+      "sha256": "581ec8f8a155b6ddb3250dc9c04640130759485361064fcec4d0372fd0aed559"
+    },
+    {
+      "path": "packages/maps/official/ac_wasteland.cgz",
+      "bytes": 13505,
+      "sha256": "9cdd99635d3a3f3be4356b9db3da64b5b200240952503ceb3711ab62e6592d36"
+    },
+    {
+      "path": "packages/maps/official/ac_werk.cgz",
+      "bytes": 19793,
+      "sha256": "abdbe60092acc89876601ad5d4321e946693ebab5e076f185378c4c8eafc26dd"
+    }
+  ]
+}

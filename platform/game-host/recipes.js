@@ -810,6 +810,9 @@ export const recipes = {
     portEnd: 28782,
     protocol: "udp",
     portStride: 2,
+    resolveBinary: (candidates, ctx) => ctx?.identityProfile === "assaultcube-unix-v1"
+      ? firstExisting([path.join(GAMES_ROOT, "assaultcube", "bin_unix", "linux_64_server")])
+      : firstExisting(candidates),
     binaries: [
       path.join(GAMES_ROOT, "assaultcube", "ac_server"),
       path.join(GAMES_ROOT, "assaultcube", "bin_unix", "linux_64_server"),

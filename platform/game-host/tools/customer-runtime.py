@@ -34,6 +34,7 @@ NATIVE_GAMES = {
     'flightgear': ('flightgear-servers',5000,5010),
     'mindustry': ('mindustry',6567,6587),
     'hurry-curry': ('hurry-curry-servers',27032,27052),
+    'assaultcube': ('assaultcube-servers',28763,28781),
 }
 
 def select_game(game):
@@ -97,6 +98,7 @@ def request(args):
         port, cpu, memory = map(int, args[4:])
         if not NATIVE_GAMES[GAME][1] <= port <= NATIVE_GAMES[GAME][2] or not 250 <= cpu <= 6000 or not 256 <= memory <= 8192:
             raise ValueError('Unsupported runtime allocation')
+        if GAME == 'assaultcube' and port % 2 != 1: raise ValueError('Invalid AssaultCube port pair')
         if GAME == 'flightgear' and port % 2: raise ValueError('Invalid FlightGear port stride')
         if GAME == 'supertuxkart' and (port % 2 != 1 or port > 2777): raise ValueError('Invalid SuperTuxKart port pair')
         extra = port, cpu, memory
@@ -110,10 +112,10 @@ def config_bytes(text, port):
         if GAME in ('ysoccer','flightgear'):
             if values != {}: raise ValueError('Undeclared YSoccer setting')
             return text.encode()
-        if GAME == 'hurry-curry':
+        if GAME in ('hurry-curry','assaultcube'):
             if not isinstance(values,dict) or set(values) != {'name','maxPlayers'} or not isinstance(values['name'],str) or not 1 <= len(values['name']) <= 40 or re.search(r'[\x00-\x1f\x7f]',values['name']) or type(values['maxPlayers']) is not int or not 2 <= values['maxPlayers'] <= 64:
-                raise ValueError('Invalid Hurry Curry typed settings')
-            return text.encode()
+                raise ValueError('Invalid game typed settings')
+            return b'' if GAME == 'assaultcube' else text.encode()
         if GAME == 'mindustry':
             if not isinstance(values,dict) or set(values) != {'name','maxPlayers'} or not isinstance(values['name'],str) or not re.fullmatch(r"[A-Za-z0-9 ._'\-]{1,80}",values['name']) or type(values['maxPlayers']) is not int or not 2 <= values['maxPlayers'] <= 64:
                 raise ValueError('Invalid Mindustry typed settings')
@@ -249,11 +251,12 @@ def verify_scope(resources, server_id, pid, identity, cpu, memory):
 
 
 def command(data, fd, port, memory, engine_fd=None, native_settings=None, seccomp_fd=None, dns_fd=None, assets=()):
-    target = {'teeworlds':'/usr/games/teeworlds-server','bzflag':'/usr/games/bzfs','hedgewars':'/usr/lib/hedgewars/bin/hedgewars-server','openttd':'/usr/games/openttd','luanti':'/usr/games/minetestserver','openarena':'/usr/lib/ioquake3/ioq3ded','battle-for-wesnoth':'/usr/games/wesnothd-1.18','supertuxkart':'/usr/games/supertuxkart','0-ad':'/usr/games/pyrogenesis','ysoccer':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','flightgear':'/engine-native','mindustry':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','hurry-curry':'/engine-native'}[GAME]
+    target = {'teeworlds':'/usr/games/teeworlds-server','bzflag':'/usr/games/bzfs','hedgewars':'/usr/lib/hedgewars/bin/hedgewars-server','openttd':'/usr/games/openttd','luanti':'/usr/games/minetestserver','openarena':'/usr/lib/ioquake3/ioq3ded','battle-for-wesnoth':'/usr/games/wesnothd-1.18','supertuxkart':'/usr/games/supertuxkart','0-ad':'/usr/games/pyrogenesis','ysoccer':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','flightgear':'/engine-native','mindustry':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','hurry-curry':'/engine-native','assaultcube':'/engine-native'}[GAME]
     settings = native_settings or {}
-    game_args = ['-f','server.cfg','sv_port '+str(port)] if GAME == 'teeworlds' else ['-p',str(port)] if GAME == 'hedgewars' else [] if GAME in ('openttd','luanti','openarena','battle-for-wesnoth','supertuxkart','0-ad','ysoccer','flightgear','mindustry','hurry-curry') else ['-p',str(port),'-offa','-q','-j','+r','+s',str(settings['scoreLimit']),'-mp',str(settings['maxPlayers'])]
+    game_args = ['-f','server.cfg','sv_port '+str(port)] if GAME == 'teeworlds' else ['-p',str(port)] if GAME == 'hedgewars' else [] if GAME in ('openttd','luanti','openarena','battle-for-wesnoth','supertuxkart','0-ad','ysoccer','flightgear','mindustry','hurry-curry','assaultcube') else ['-p',str(port),'-offa','-q','-j','+r','+s',str(settings['scoreLimit']),'-mp',str(settings['maxPlayers'])]
     if GAME == 'openarena': game_args = ['+set','com_basegame','baseoa','+set','fs_basepath','/usr/lib/openarena-server','+set','fs_homepath','/server','+set','com_legacyprotocol','71','+set','com_protocol','71','+set','dedicated','1','+set','net_port',str(port),'+exec','playbound.cfg','+map','oa_dm1']
     if GAME == 'flightgear': game_args = ['-p',str(port),'-a',str(port+1),'-b','0','-d']
+    if GAME == 'assaultcube': game_args = ['-c'+str(settings['maxPlayers']),'-n'+settings['name'],'-f'+str(port),'-m','-H/server/logs/','-W/server/demos/','-A/server/server.cfg','-r/server/server.cfg','-X/server/server.cfg','-B/server/server.cfg','-G/server/server.cfg','-K/server/server.cfg','-g/server/server.cfg','-U/server/vita']
     if GAME == 'hurry-curry': game_args = ['--listen','0.0.0.0:'+str(port),'--server-name',settings['name'],'--max-players',str(settings['maxPlayers']),'--data-dir','/game-data']
     if GAME == 'mindustry': game_args = ['-Xms64m','-Xmx768m','-XX:MaxMetaspaceSize=128m','-XX:ReservedCodeCacheSize=64m','-XX:CompressedClassSpaceSize=64m','-XX:+UseSerialGC','-XX:ActiveProcessorCount=1','-XX:+PerfDisableSharedMem','-Dorg.jline.terminal.dumb=true','-jar','/engine.jar','config name '+settings['name']+',config port '+str(port)+',playerlimit '+str(settings['maxPlayers'])+',host']
     if GAME == 'ysoccer': game_args = ['-Xms64m','-Xmx512m','-XX:MaxMetaspaceSize=128m','-XX:ReservedCodeCacheSize=64m','-XX:CompressedClassSpaceSize=64m','-XX:+UseSerialGC','-XX:ActiveProcessorCount=1','-XX:+PerfDisableSharedMem','-jar','/engine.jar',str(port),str(port)]
@@ -272,7 +275,7 @@ def command(data, fd, port, memory, engine_fd=None, native_settings=None, seccom
             *[part for filename in ['/etc/protocols','/etc/services','/etc/hosts','/etc/resolv.conf','/etc/ssl/certs'] if Path(filename).exists() for part in ['--ro-bind',filename,filename]],
             *(['--ro-bind','/etc/java-21-openjdk','/etc/java-21-openjdk'] if GAME == 'mindustry' else []),
             *(['--ro-bind-data', str(dns_fd), '/etc/resolv.conf'] if dns_fd is not None else []),
-            '--clearenv', '--setenv', 'PATH', '/usr/bin:/usr/games', '--setenv', 'HOME', '/server', '--setenv', 'XDG_DATA_HOME', '/server', '--setenv', 'XDG_CONFIG_HOME', '/server', '--setenv', 'LANG', 'C.UTF-8', '--chdir', '/server',
+            '--clearenv', '--setenv', 'PATH', '/usr/bin:/usr/games', '--setenv', 'HOME', '/server', '--setenv', 'XDG_DATA_HOME', '/server', '--setenv', 'XDG_CONFIG_HOME', '/server', '--setenv', 'LANG', 'C.UTF-8', '--chdir', '/game-data' if GAME == 'assaultcube' else '/server',
             *(['--setenv', 'PLAYBOUND_STK_DISCOVERY_PORT', str(port+1)] if GAME == 'supertuxkart' else []),
             '--', target, *game_args]
 
@@ -400,6 +403,9 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
         host_guard = None
         guard_installed = False
         try:
+            if GAME == 'assaultcube':
+                for name in ('logs','demos'):
+                    directory(root/'data'/name,uid=account['uid'],mode=0o700)
             os.write(fd, config)
             os.lseek(fd, 0, os.SEEK_SET)
             fcntl.fcntl(fd, fcntl.F_ADD_SEALS, fcntl.F_SEAL_WRITE | fcntl.F_SEAL_GROW | fcntl.F_SEAL_SHRINK | fcntl.F_SEAL_SEAL)
@@ -415,17 +421,17 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
             host_guard.install(account['uid'])
             guard_installed = True
             binder = trusted_module('pb_bind', 'playbound-customer-bind-policy')
-            bind_programs = binder.apply_current(port,stk_discovery=True) if GAME == 'supertuxkart' else binder.apply_current(port,flightgear_status=True) if GAME == 'flightgear' else binder.apply_current(port)
+            bind_programs = binder.apply_current(port,stk_discovery=True) if GAME == 'supertuxkart' else binder.apply_current(port,flightgear_status=True) if GAME == 'flightgear' else binder.apply_current(port,assaultcube_query=True) if GAME == 'assaultcube' else binder.apply_current(port)
             dns_fd = os.memfd_create('pb-public-dns',os.MFD_CLOEXEC|os.MFD_ALLOW_SEALING)
             os.write(dns_fd,b'nameserver 1.1.1.1\nnameserver 1.0.0.1\noptions timeout:2 attempts:2\n')
             os.lseek(dns_fd,0,os.SEEK_SET)
             fcntl.fcntl(dns_fd,fcntl.F_ADD_SEALS,fcntl.F_SEAL_WRITE|fcntl.F_SEAL_GROW|fcntl.F_SEAL_SHRINK|fcntl.F_SEAL_SEAL)
-            for binary in ['/usr/bin/prlimit', '/usr/bin/bwrap', {'teeworlds':'/usr/games/teeworlds-server','bzflag':'/usr/games/bzfs','hedgewars':'/usr/lib/hedgewars/bin/hedgewars-server','openttd':'/usr/games/openttd','luanti':'/usr/games/minetestserver','openarena':'/usr/lib/ioquake3/ioq3ded','battle-for-wesnoth':'/usr/games/wesnothd-1.18','supertuxkart':'/usr/games/supertuxkart','0-ad':'/usr/games/pyrogenesis','ysoccer':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','flightgear':'/usr/local/libexec/playbound-isolated-flightgear/fgms','mindustry':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','hurry-curry':'/usr/local/libexec/playbound-isolated-hurry/hurrycurry-server'}[GAME]]:
+            for binary in ['/usr/bin/prlimit', '/usr/bin/bwrap', {'teeworlds':'/usr/games/teeworlds-server','bzflag':'/usr/games/bzfs','hedgewars':'/usr/lib/hedgewars/bin/hedgewars-server','openttd':'/usr/games/openttd','luanti':'/usr/games/minetestserver','openarena':'/usr/lib/ioquake3/ioq3ded','battle-for-wesnoth':'/usr/games/wesnothd-1.18','supertuxkart':'/usr/games/supertuxkart','0-ad':'/usr/games/pyrogenesis','ysoccer':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','flightgear':'/usr/local/libexec/playbound-isolated-flightgear/fgms','mindustry':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','hurry-curry':'/usr/local/libexec/playbound-isolated-hurry/hurrycurry-server','assaultcube':'/usr/local/libexec/playbound-isolated-assaultcube/linux_64_server'}[GAME]]:
                 info = Path(binary).stat()
                 if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_mode & 0o022: raise ValueError('Untrusted runtime executable')
             engines = trusted_module('pb_native_engine', 'playbound-customer-native-engine')
             engine_fd, _target = engines.sealed_engine_for(GAME)
-            if GAME == 'hurry-curry': assets = trusted_module('pb_assets','playbound-customer-game-assets').seal_assets()
+            if GAME in ('hurry-curry','assaultcube'): assets = trusted_module('pb_assets','playbound-customer-game-assets').seal_assets()
             syscalls = trusted_module('pb_syscalls', 'playbound-customer-seccomp')
             seccomp_fd = syscalls.sealed_filter()
             inherited = (fd,seccomp_fd,dns_fd) if engine_fd is None else (fd,engine_fd,seccomp_fd,dns_fd)

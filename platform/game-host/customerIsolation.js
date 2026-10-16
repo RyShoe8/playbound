@@ -10,7 +10,7 @@ import { customerResourceLimits } from "./customerResourceLimits.js";
 import { identityMigrationMetadata } from "./customerMigration.js";
 import { NATIVE_PACKAGE_PROFILES, verifyNativePackageInstallation } from "./nativePackageUpdates.js";
 
-export const CUSTOMER_IDENTITY_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti", "openarena", "battle-for-wesnoth", "supertuxkart", "0-ad", "ysoccer", "flightgear", "mindustry", "hurry-curry"]);
+export const CUSTOMER_IDENTITY_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti", "openarena", "battle-for-wesnoth", "supertuxkart", "0-ad", "ysoccer", "flightgear", "mindustry", "hurry-curry", "assaultcube"]);
 export const TEEWORLDS_ISOLATION = "teeworlds-bwrap-v1";
 export const CUSTOMER_ISOLATION_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti"]);
 
@@ -33,7 +33,7 @@ function unlinkedAncestors(filename) {
 
 /** Runs before recipes write any generated configuration, not just at spawn. */
 export function validateCustomerPreparation({ gameSlug, customerOwned, communityServerId: id, home, identityProfile }) {
-  if (customerOwned && ["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry"].includes(gameSlug) && identityProfile) {
+  if (customerOwned && ["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube"].includes(gameSlug) && identityProfile) {
     if (identityProfile !== `${gameSlug}-unix-v1` || identityMigrationMetadata(id,home)?.identityProfile !== identityProfile) throw new Error("Customer identity migration is not ready");
     return;
   }
@@ -74,7 +74,7 @@ function privateDirectory(directory) {
 }
 
 export function customerIsolationLaunch({ gameSlug, customerOwned, communityServerId, binary, args, home, resourceLimits, identityProfile, settings, startupPort, serverName }) {
-  if (!customerOwned || (!CUSTOMER_ISOLATION_GAMES.includes(gameSlug) && !(["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry"].includes(gameSlug) && identityProfile))) return null;
+  if (!customerOwned || (!CUSTOMER_ISOLATION_GAMES.includes(gameSlug) && !(["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube"].includes(gameSlug) && identityProfile))) return null;
   if (identityProfile !== undefined && (!CUSTOMER_IDENTITY_GAMES.includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1`)) throw new Error("Unsupported customer identity profile");
   const limits = customerResourceLimits(gameSlug, resourceLimits);
   validateCustomerPreparation({ gameSlug, customerOwned, communityServerId, home, identityProfile });
@@ -208,6 +208,11 @@ export function zeroAdIdentityConfiguration(args) {
 }
 
 function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, home, resourceLimits, identityProfile, settings, startupPort, serverName }) {
+  if (gameSlug === "assaultcube") {
+    const port=startupPort,name=serverName,maxPlayers=settings?.maxPlayers ?? 12;
+    if (binary!=="/opt/playbound-host/games/assaultcube/bin_unix/linux_64_server" || identityProfile!=="assaultcube-unix-v1" || identityMigrationMetadata(id,home)?.identityProfile!==identityProfile || !Number.isInteger(port) || port<28763 || port>28781 || port%2!==1 || typeof name!=="string" || !name.length || name.length>40 || /[\x00-\x1f\x7f]/.test(name) || !Number.isInteger(maxPlayers) || maxPlayers<2 || maxPlayers>64) throw new Error("Invalid AssaultCube identity contract");
+    return {profile:"assaultcube-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port,config:JSON.stringify({name,maxPlayers})},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
   if (gameSlug === "hurry-curry") {
     if (binary!=="/opt/playbound-host/games/hurry-curry/hurrycurry-server" || identityProfile!=="hurry-curry-unix-v1" || identityMigrationMetadata(id,home)?.identityProfile!==identityProfile) throw new Error("Unexpected Hurry Curry identity contract");
     const port=startupPort,name=serverName,maxPlayers=settings?.maxPlayers ?? 12;
