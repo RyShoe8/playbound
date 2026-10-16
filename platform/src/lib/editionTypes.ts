@@ -197,6 +197,8 @@ export interface EditionInstallConfig {
     postInstallEqw?: boolean;
     /** After install, build a complete Daggerfall ARENA2 from Bethesda's freeware release and point DFO Online at it. */
     postInstallDaggerfallData?: boolean;
+    /** Merge the overlay into folders the base game already has instead of replacing them. */
+    overlayMerge?: boolean;
     /** Overlay zip URL for locate-then-zip (P99Files). */
     overlayUrl?: string | null;
     overlayFileName?: string | null;

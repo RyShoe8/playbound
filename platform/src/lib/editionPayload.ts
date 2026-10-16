@@ -132,6 +132,7 @@ const installConfigSchema = z
         postInstallDiscord: z.union([z.string().trim().max(500), z.boolean()]).nullish(),
         postInstallEqw: z.boolean().optional(),
         postInstallDaggerfallData: z.boolean().optional(),
+        overlayMerge: z.boolean().optional(),
         overlayUrl: z.string().trim().max(500).nullish(),
         overlayFileName: z.string().trim().max(200).nullish(),
         overlayDest: z.string().trim().max(300).nullish(),
