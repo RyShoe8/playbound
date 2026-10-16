@@ -1275,6 +1275,10 @@ const NO_CONFIG_NEEDED = {
     kind: "native",
     note: "Engine includes native XInput and DirectInput controller detection and 8-way whip controls; no PlayBound config write needed.",
   },
+  "citadel-remonstered": {
+    kind: "native",
+    note: "The WebGL port reads any standard gamepad through the browser Gamepad API: sticks move and turn, A/RT/RB shoot, B/LT use, LB sprints. Nothing for PlayBound to write.",
+  },
   "hawken-hawkening": {
     kind: "native",
     note: "Unreal Engine client features native gamepad and Xbox controller support for boost-dodging and mech control; no PlayBound config write needed.",
