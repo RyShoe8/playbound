@@ -1217,3 +1217,48 @@ command-line limit and credentials out of process arguments.
 
 The final credential/configuration follow-up preserved all twelve then-running
 managed identities. Its post-restart authenticated health check passed.
+
+## Open Fortress coordinated updates and rollback (2026-10-15)
+
+Open Fortress now has its own installation target and daily discovery source
+(47 installation families, 32 daily discovery sources). Steam SDK app 244310,
+`previous2021` build 6982827, and the publisher's alpha mod archive are assembled
+and verified together. A separately downloaded SDK/mod tree matched the approved
+baseline; the current pb3 package excludes generated `modelsounds.cache` and
+keeps that cache private. Its 27,075 files / 8,089,698,900 bytes have tree SHA-256
+`cc35f13136555de3b335ea5694792d06c15702b88c5e369a803ddc33b413cc3a`.
+
+The real VPS worker completed pb2 → pb3, rollback to pb2, and reapply to pb3.
+Each transition passed a private native server check: real A2S reply, four slots,
+zero humans/two bots, live time-limit write/read, clean stop/restart and retained
+configuration. Reapply fully verified and reused the retained reviewed package
+instead of downloading and duplicating another 8 GB tree. The initial transient
+Steam bootstrap failure preserved the installed package; bootstrap retry is
+bounded to one transient-network retry, excluding authentication/disk/timeouts.
+
+Daily discovery compares both SDK branch and mod metadata. Unreviewed composite
+releases remain review-required. A real-history isolated daily check confirmed
+that deliberate manual rollback is not automatically undone. A final live
+SDK/publisher metadata probe resolved pb3 successfully. No production
+catalog, hosting profile or database records were changed.
+
+Inventory reads now use verification records for Open Fortress and six paired
+runtime families; start and update activation still perform full verification
+off the agent's event loop. Authenticated health responded in 84 ms during
+worker verification. Cold inventory can still take about 15 seconds, chiefly
+Unvanquished, Factorio and Enemy Territory verification; this is not claimed
+as resolved. All then-running managed process identities survived each narrow
+agent deployment, and the agent and 15-minute timer remain active.
+The final authenticated health check returned HTTP 200 in 100 ms; the private
+acceptance processes were stopped.
+
+Validation: 364 agent cases (318 passed, 46 platform skips, zero failures),
+five Python archive/SDK manifest cases, targeted Linux checks, 60 affected
+platform cases, TypeScript and affected-file lint. Evidence is retained under
+`/var/lib/playbound-host/state/openfortress-package-review-zx6nOA` on the VPS.
+
+Remaining update handlers: Deus Ex HX, GoldenEye: Source and OpenRA RA2.
+Vintage Story remains owner-deferred. Remaining acceptance includes per-customer
+Unix isolation/plugin boundaries, actual human Join and human/bot replacement,
+and packaged-launcher/self-hosted controls. These fixtures do not satisfy those
+gates or enable an operational hosting profile.

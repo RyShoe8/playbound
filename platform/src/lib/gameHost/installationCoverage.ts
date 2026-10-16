@@ -31,6 +31,10 @@ export function buildInstallationCoverage(snapshot: InstallationUpdateSnapshot):
     if (keys.has(key)) return { id: slug, name, category: "review", reason: "The current agent does not expose this update handler. Check agent deployment before queueing an update." };
     return { id: slug, name, ...(Object.hasOwn(GAPS, slug) ? GAPS[slug] : { category: "review", reason: "No reviewed update handler is declared for this recipe. Review its distribution, runtime dependencies, saves and rollback before enabling updates." }) };
   }).concat(EDITIONS.map((edition): InstallationCoverageRow => {
+    if (edition.id === "team-fortress-2:open-fortress") {
+      const target = snapshot.targets.find(row => row.key === "open-fortress");
+      return target ? { ...edition, category: "supported", installationKey: "open-fortress", reason: target.blockedReason || "Separate reviewed SDK/mod staged update and rollback handler available." } : edition;
+    }
     if (edition.id !== "openra:combined-arms") return edition;
     const target = snapshot.targets.find((row) => row.key === "combined-arms");
     return target ? { ...edition, category: "supported", reason: target.blockedReason || (target.installed ? "Separate Combined Arms update and rollback handler available." : "Combined Arms handler available; verify its missing or incomplete installation before updating.") }

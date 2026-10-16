@@ -3,7 +3,8 @@ import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
-import { verifyPairedInstallation } from "./pairedRuntimeUpdates.js";
+import { createHash, randomUUID } from "node:crypto";
+import { PAIRED_RUNTIMES, verifyPairedInstallation } from "./pairedRuntimeUpdates.js";
 
 const run = promisify(execFile);
 
@@ -48,7 +49,7 @@ function binding(target, source) {
 }
 
 /** Only immutable engine/assets are shared; native writes belong to this identity. */
-export function prepareOpenFortress(shared, home, ctx, { verify = verifyPairedInstallation } = {}) {
+export function prepareOpenFortress(shared, home, ctx, { verify = verifyPairedInstallation, launcherDigests = PAIRED_RUNTIMES["open-fortress"].versions.map(version => version.launcherSha256).filter(Boolean) } = {}) {
   const release = verify(shared, "open-fortress");
   const runtime = path.join(shared, "runtime"), privateHome = openFortressHome(home, ctx);
   directory(privateHome);
@@ -59,7 +60,15 @@ export function prepareOpenFortress(shared, home, ctx, { verify = verifyPairedIn
   try { fs.copyFileSync(sourceLauncher, launcher, fs.constants.COPYFILE_EXCL); fs.chmodSync(launcher, 0o700); }
   catch (error) { if (error.code !== "EEXIST") throw error; }
   const launcherInfo = fs.lstatSync(launcher);
-  if (!launcherInfo.isFile() || launcherInfo.isSymbolicLink() || launcherInfo.nlink !== 1 || !fs.readFileSync(launcher).equals(fs.readFileSync(sourceLauncher))) throw new Error("Open Fortress private launcher requires review");
+  if (!launcherInfo.isFile() || launcherInfo.isSymbolicLink() || launcherInfo.nlink !== 1 || launcherInfo.size > 1024 * 1024) throw new Error("Open Fortress private launcher requires review");
+  const oldLauncher = fs.readFileSync(launcher);
+  if (!oldLauncher.equals(fs.readFileSync(sourceLauncher))) {
+    if (!launcherDigests.includes(createHash("sha256").update(oldLauncher).digest("hex"))) throw new Error("Open Fortress private launcher requires review");
+    const temporary = path.join(local, ".launcher-" + randomUUID());
+    try {
+      fs.copyFileSync(sourceLauncher, temporary, fs.constants.COPYFILE_EXCL); fs.chmodSync(temporary, 0o700); fs.renameSync(temporary, launcher);
+    } finally { if (fs.existsSync(temporary)) fs.unlinkSync(temporary); }
+  }
   const sdkBin = path.join(local, "bin"), sharedSdkBin = path.join(runtime, "bin");
   directory(sdkBin);
   const sdkAliases = new Set(["datacache", "dedicated", "engine", "materialsystem", "replay", "scenefilecache", "shaderapiempty", "soundemittersystem", "studiorender", "vphysics"]);
@@ -69,10 +78,22 @@ export function prepareOpenFortress(shared, home, ctx, { verify = verifyPairedIn
   }
   const mutable = new Set(["cfg", "download", "downloadlists", "custom", "logs", "replay", "cache"]);
   for (const entry of fs.readdirSync(path.join(runtime, "open_fortress"))) {
-    if (mutable.has(entry) || entry === "bin" || entry === "maps" || entry === "gameinfo.txt" || /^console.*\.log$/.test(entry)) continue;
+    if (mutable.has(entry) || entry === "modelsounds.cache" || entry === "bin" || entry === "maps" || entry === "gameinfo.txt" || /^console.*\.log$/.test(entry)) continue;
     binding(path.join(mod, entry), path.join(runtime, "open_fortress", entry));
   }
   for (const name of mutable) directory(path.join(mod, name));
+  const soundCache = path.join(mod, "modelsounds.cache"), sharedSoundCache = path.join(runtime, "open_fortress/modelsounds.cache");
+  try {
+    const info = fs.lstatSync(soundCache);
+    if (info.isSymbolicLink()) {
+      if (fs.readlinkSync(soundCache) !== sharedSoundCache) throw new Error("Open Fortress sound cache binding requires review");
+      if (fs.existsSync(sharedSoundCache)) {
+        const temporary = path.join(mod, ".sound-cache-" + randomUUID());
+        try { fs.copyFileSync(sharedSoundCache, temporary, fs.constants.COPYFILE_EXCL); fs.chmodSync(temporary, 0o600); fs.renameSync(temporary, soundCache); }
+        finally { if (fs.existsSync(temporary)) fs.unlinkSync(temporary); }
+      } else fs.unlinkSync(soundCache); // The engine regenerates its own cache.
+    } else if (!info.isFile() || info.nlink !== 1) throw new Error("Open Fortress sound cache requires review");
+  } catch (error) { if (error.code !== "ENOENT") throw error; }
   const maps = path.join(mod, "maps"), sharedMaps = path.join(runtime, "open_fortress/maps");
   directory(maps); directory(path.join(maps, "graphs"));
   for (const name of fs.readdirSync(sharedMaps)) {

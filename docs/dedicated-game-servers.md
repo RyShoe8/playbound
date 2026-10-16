@@ -135,8 +135,14 @@ requested; restart retained private configuration. Human Join and human/bot
 replacement acceptance remain separate. Windows self-hosted delivery also
 needs its own acceptance before parity is claimed.
 
-The package is a baseline only. Coordinated SDK/mod download, staged update,
-rollback and daily release discovery are still required. Do not point this
-edition at TF2's updater or count it as covered by that updater. Existing
+Coordinated SDK/mod download, staged update, rollback and daily discovery now
+use the separate `open-fortress` installation target. The reviewed current
+package is `alpha-2024-09-06-sdk-6982827-pb3`; unknown SDK/mod combinations
+require compatibility review rather than automatic activation. Actual VPS
+update, rollback and retained-package reapply passed, with native query,
+bot counts, live time-limit controls and private configuration retention
+checked after each transition. Daily discovery checks both the pinned SDK
+branch and publisher mod metadata; deliberate rollback is not undone daily.
+Do not point this edition at TF2's updater. Existing
 operational profiles need their edition recipe corrected through the admin
 profile save; no catalog or profile records are rewritten by deployment.

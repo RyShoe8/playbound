@@ -21,12 +21,20 @@ import { stageEtlegacyRelease } from "./etlegacyUpdates.js";
 import { stageOpenMohaaRelease } from "./openmohaaUpdates.js";
 import { stageUnvanquishedRelease, validateUnvanquishedOverrides } from "./unvanquishedUpdates.js";
 import { stageReviewedComponent, validInstallationComponent } from "./reviewedComponentUpdates.js";
-import { stagePairedRuntime } from "./pairedRuntimeUpdates.js";
+import { stagePairedRuntime, recordPairedVerification } from "./pairedRuntimeUpdates.js";
 import { stageReviewedJava } from "./reviewedJavaUpdates.js";
 import { stageHurryRelease } from "./hurryUpdates.js";
 import { stageCombinedArmsRelease } from "./combinedArmsUpdates.js";
+import { stageOpenFortress, openFortressArchivePath, recordOpenFortressVerification, retainedOpenFortressPackage } from "./openFortressUpdates.js";
 
 const GIB = 1024 ** 3;
+
+function fullyVerify(directory, key) {
+  const result = verifyInstallation(directory, key);
+  if (key === "open-fortress") recordOpenFortressVerification(directory, result);
+  else if (INSTALLATION_TARGETS[key]?.strategy === "paired-runtime") recordPairedVerification(directory, key, result);
+  return result;
+}
 
 export function steamCommandFailure(output) {
   if (/access denied|no subscription|no license/i.test(output)) return "SteamCMD download authorization was denied; the current installation was preserved";
@@ -74,7 +82,8 @@ export function runCommand(command, args, { root, timeout = 90 * 60_000, maxOutp
     child.on("error", () => { cleanup(); reject(new Error("Update command could not be started")); });
     child.on("close", (code) => {
       cleanup();
-      if (failure || code !== 0) reject(failure || new Error(command === "/usr/games/steamcmd" ? steamCommandFailure(output) : "Update command failed; current installation was preserved"));
+      const steam = command === "/usr/games/steamcmd" || (command === "/usr/bin/env" && args[0] === "-i" && args.includes("/usr/games/steamcmd"));
+      if (failure || code !== 0) reject(failure || new Error(steam ? steamCommandFailure(output) : "Update command failed; current installation was preserved"));
       else resolve(output);
     });
   });
@@ -100,7 +109,8 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
     store.write(job);
   };
   try {
-    const original = verifyInstallation(current, job.key);
+    if (job.key === "open-fortress") phase("validating", "Verifying the current SDK/mod pair in the background; the installed files remain untouched");
+    const original = fullyVerify(current, job.key);
     if (job.key === "unvanquished") validateUnvanquishedOverrides(hostHome);
     if (original.branch && !/^[a-zA-Z0-9_-]{1,64}$/.test(original.branch)) throw new Error("SteamCMD installed branch requires operator review");
     if (await scan(job.key, gamesRoot)) throw new Error("An affected process is still running; no files were changed");
@@ -110,19 +120,36 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
       baselineBarotraumaHomes(current, hostHome);
     }
     if (job.action === "update") {
-      phase("staging", "Copying installation; current files remain untouched");
+      const reusable = job.key === "open-fortress" ? retainedOpenFortressPackage(store, gamesRoot) : null;
+      phase("staging", target.strategy === "coordinated-open-fortress" ? "Preparing isolated SDK/mod staging; current files remain untouched" : "Copying installation; current files remain untouched");
       const size = Number((await run("/usr/bin/du", ["-sb", "--", activePath], { root: gamesRoot, timeout: 60_000 })).split(/\s/)[0]);
       const available = disk(gamesRoot);
-      if (!Number.isFinite(size) || size <= 0 || available.free < size * 1.25 + available.reserve) {
+      const required = reusable ? 512 * 1024 ** 2 : target.strategy === "coordinated-open-fortress"
+        ? size + (fs.existsSync(openFortressArchivePath(gamesRoot)) ? GIB : 4 * GIB) : size * 1.25;
+      if (!Number.isFinite(size) || size <= 0 || available.free < required + available.reserve) {
         throw new Error("Not enough free disk for a staged update and rollback copy");
       }
       if (fs.existsSync(stage) || fs.existsSync(backup)) throw new Error("Update directory already exists; operator inspection required");
       if (target.component) fs.mkdirSync(stage, { mode: 0o700 });
       // Reviewed native files are root-owned. The unprivileged worker copies
       // their bytes, then the fixed promotion helper restores trusted ownership.
-      await run("/usr/bin/cp", ["-a", ...(["reviewed-distro-native", "reviewed-native-zip"].includes(target.strategy) ? ["--no-preserve=ownership"] : []), "--reflink=auto", "--sparse=always", "--", activePath, stagedPath], { root: gamesRoot });
+      if (target.strategy !== "coordinated-open-fortress") await run("/usr/bin/cp", ["-a", ...(["reviewed-distro-native", "reviewed-native-zip"].includes(target.strategy) ? ["--no-preserve=ownership"] : []), "--reflink=auto", "--sparse=always", "--", activePath, stagedPath], { root: gamesRoot });
       const detachedLinks = prepareInstallationLinks(stage, current, true);
-      if (target.strategy === "reviewed-rust-source") {
+      if (target.strategy === "coordinated-open-fortress") {
+        if (reusable) {
+          phase("validating", "Verifying the retained SDK/mod pair for an explicit update after rollback");
+          const retained = fullyVerify(reusable.root, job.key);
+          if (retained.buildId !== reusable.job.beforeBuild) throw new Error("Open Fortress retained package does not match the reviewed update build");
+          fs.renameSync(path.join(reusable.root, "runtime"), stagedPath);
+          store.write({ ...reusable.job, packageReusedBy: job.id });
+        } else {
+          phase("downloading", "Rebuilding the reviewed Source SDK/Open Fortress pair; private server files remain outside the update");
+          await stageOpenFortress(stage, { run, diskCheck: (extra = 0) => {
+            const available = disk(gamesRoot);
+            if (available.free < available.reserve + extra + 512 * 1024 ** 2) throw new Error("Update stopped to preserve free disk space");
+          } });
+        }
+      } else if (target.strategy === "reviewed-rust-source") {
         phase("downloading", "Building the locked, reviewed Hurry Curry source with the player-admission patch; game data and replays remain in place");
         await stageHurryRelease(stage, {run});
       } else if (target.strategy === "reviewed-java") {
@@ -221,7 +248,7 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
     }
     phase("validating", job.key === "xonotic" ? "Checking reviewed Xonotic native bytes and host libraries" : target.strategy === "reviewed-cmake-source" ? "Checking reviewed fgms relay and host libraries" : target.strategy === "reviewed-dotnet-source" ? "Checking reviewed patched RimWorld binary, upstream license and host libraries" : target.strategy === "reviewed-distro-native" ? "Checking reviewed native package, root ownership and host libraries" : job.key === "terraria" ? "Checking reviewed Terraria Linux package and runtime dependencies" : job.key === "factorio" ? "Checking Factorio headless executable, base data and package integrity" : target.strategy === "github-native-binaries" ? "Checking reviewed native executables without replacing server data" : ["github-appimage", "signed-appimage"].includes(target.strategy) ? "Checking official AppImage installation integrity and version" : target.strategy === "github-jar" ? "Checking JAR integrity, server version and Java compatibility" : "Checking Steam manifest and required executables");
     const prepared = job.action === "update" ? stage : previous;
-    const verified = verifyInstallation(prepared, job.key);
+    const verified = fullyVerify(prepared, job.key);
     if (job.action === "update" && target.appId && (original.branch || "public") !== (verified.branch || "public")) {
       throw new Error("SteamCMD changed the installed branch; activation was refused");
     }
@@ -235,13 +262,22 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
     try { fs.renameSync(preparedPath, activePath); }
     catch (error) { fs.renameSync(backupPath, activePath); throw error; }
     activated = true;
-    verifyInstallation(current, job.key);
+    if (job.key === "open-fortress") {
+      // Rename preserves the already-verified runtime identity. Keep inventory
+      // available during the final full check; starts remain gated by the job.
+      recordOpenFortressVerification(current, verified);
+      recordOpenFortressVerification(backup, original);
+    } else if (target.strategy === "paired-runtime") {
+      recordPairedVerification(current, job.key, verified);
+      recordPairedVerification(backup, job.key, original);
+    }
+    fullyVerify(current, job.key);
     prepareInstallationLinks(backup, current);
     if (job.action === "rollback") {
       const source = store.read(job.rollbackId);
       store.write({ ...source, rollbackConsumed: true });
     }
-    phase("completed", target.strategy === "paired-runtime" ? "Paired runtime ready. Engine/assets or controller/distribution were replaced together. Settings and saved data remain intact; binary rollback does not reverse save-format migrations." : target.strategy === "reviewed-component" ? "Reviewed engine ready. Saved worlds, accounts, Lua scripts, profiles and game data were not changed. New engine/data versions require a reviewed compatibility profile." : job.key === "unvanquished" ? "Reviewed Unvanquished engine and game packages ready. Private settings, custom maps and per-server data were retained. Clients must use a compatible release; new package versions require review." : job.key === "wolfenstein-enemy-territory" ? "Reviewed ET Legacy engine, server mod and bot assets ready. Original assets, maps, generated bot configuration and per-server data were retained. New releases require a reviewed package profile." : job.key === "xonotic" ? "Reviewed Xonotic 0.8.6 engine ready. Existing data, maps and server configuration were retained; new engine/data versions require compatibility review." : target.strategy === "reviewed-cmake-source" ? "Reviewed fgms relay ready. Existing configuration and logs were retained; new source/compiler versions require compatibility review."
+    phase("completed", ["paired-runtime", "coordinated-open-fortress"].includes(target.strategy) ? "Paired runtime ready. Engine/assets or controller/distribution were replaced together. Settings and saved data remain intact; binary rollback does not reverse save-format migrations." : target.strategy === "reviewed-component" ? "Reviewed engine ready. Saved worlds, accounts, Lua scripts, profiles and game data were not changed. New engine/data versions require a reviewed compatibility profile." : job.key === "unvanquished" ? "Reviewed Unvanquished engine and game packages ready. Private settings, custom maps and per-server data were retained. Clients must use a compatible release; new package versions require review." : job.key === "wolfenstein-enemy-territory" ? "Reviewed ET Legacy engine, server mod and bot assets ready. Original assets, maps, generated bot configuration and per-server data were retained. New releases require a reviewed package profile." : job.key === "xonotic" ? "Reviewed Xonotic 0.8.6 engine ready. Existing data, maps and server configuration were retained; new engine/data versions require compatibility review." : target.strategy === "reviewed-cmake-source" ? "Reviewed fgms relay ready. Existing configuration and logs were retained; new source/compiler versions require compatibility review."
       : target.strategy === "reviewed-dotnet-source" ? "Reviewed RimWorld Together build ready. PlayBound management/tracking and per-server data were retained. New source, SDK, dependencies or client versions require review; binary rollback does not reverse colony migrations."
       : target.strategy === "reviewed-distro-native" ? "Reviewed native server ready. Operating-system packages and saved data were not changed. New package versions require compatibility review."
       : job.key === "terraria" ? "Reviewed Terraria Linux installation ready. Saved worlds were not changed. New server versions require a new reviewed package and matching client/world compatibility checks."
@@ -254,7 +290,7 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
     const uncertain = activated || (job.status === "activating" && !fs.existsSync(activePath));
     phase(uncertain ? "interrupted" : "failed", uncertain
       ? "Activation needs operator inspection. New starts remain blocked; the rollback copy is retained."
-      : error instanceof Error && /^(Paired runtime|Reviewed component|Not enough|An affected|SS14|Unvanquished|OpenMoHAA|ET Legacy|FlightGear|RimWorld|Xonotic|Native package|Legacy|SteamCMD|Mindustry|OpenRA|OpenHV|OpenE2140|Hypersomnia|AssaultCube|Factorio|Terraria|Update command|Update stopped|Cannot verify|Barotrauma|Unexpected Barotrauma|Invalid Barotrauma)/.test(error.message)
+      : error instanceof Error && /^(Open Fortress|Paired runtime|Reviewed component|Not enough|An affected|SS14|Unvanquished|OpenMoHAA|ET Legacy|FlightGear|RimWorld|Xonotic|Native package|Legacy|SteamCMD|Mindustry|OpenRA|OpenHV|OpenE2140|Hypersomnia|AssaultCube|Factorio|Terraria|Update command|Update stopped|Cannot verify|Barotrauma|Unexpected Barotrauma|Invalid Barotrauma)/.test(error.message)
         ? error.message : "Update failed before activation; the previous installation was preserved");
     // Retain partial staging files for diagnosis. Never recurse into customer save links.
   }

@@ -16,7 +16,7 @@ it("every admin update target is wired to the agent, root scanner, and exact sud
     expect(sudo).toContain(`/usr/local/sbin/playbound-update-scan ${key}`);
   }
   const appIds = [...targets.matchAll(/appId: (\d+)/g)].map((match) => match[1]);
-  const archiveTargets = [...targets.matchAll(/strategy: "(?:github-(?:jar|appimage|native-binaries)|signed-appimage|official-headless-archive|official-linux-zip|reviewed-distro-native|reviewed-dotnet-source|reviewed-cmake-source|reviewed-native-zip|reviewed-etlegacy-package|reviewed-openmohaa-package|reviewed-unvanquished-package|reviewed-component|paired-runtime|reviewed-java|reviewed-rust-source)"/g)];
+  const archiveTargets = [...targets.matchAll(/strategy: "(?:github-(?:jar|appimage|native-binaries)|signed-appimage|official-headless-archive|official-linux-zip|reviewed-distro-native|reviewed-dotnet-source|reviewed-cmake-source|reviewed-native-zip|reviewed-etlegacy-package|reviewed-openmohaa-package|reviewed-unvanquished-package|reviewed-component|paired-runtime|coordinated-open-fortress|reviewed-java|reviewed-rust-source)"/g)];
   expect(appIds.length + archiveTargets.length).toBe(INSTALLATION_UPDATE_KEYS.length);
   expect(new Set(appIds).size).toBe(appIds.length);
   expect(source("../../../game-host/install.sh")).toContain('"$AGENT_SRC/nativeArchive.py"');
@@ -41,7 +41,7 @@ it("every admin update target is wired to the agent, root scanner, and exact sud
 it("covers every offered base recipe and fails closed when an agent lacks a handler", () => {
   const rows = buildInstallationCoverage({ targets: [], jobs: [] });
   for (const slug of Object.keys({ ...HOSTABLE_GAMES, ...DEDICATED_ONLY_GAMES })) {
-    expect(rows.find((row) => row.id === slug), slug).toBeDefined();
+    expect(rows.find((row) => row.id === (slug === "open-fortress" ? "team-fortress-2:open-fortress" : slug)), slug).toBeDefined();
   }
   expect(rows.find((row) => row.id === "unturned")).toMatchObject({ category: "review" });
   expect(rows.find((row) => row.id === "unturned")?.reason).toContain("agent does not expose");
@@ -55,7 +55,7 @@ it("classifies all current agent recipes without mistaking inherited object keys
   const recipeSlugs = slugs.filter((slug) => new RegExp(`(?:"${slug}"|${slug}): \\{\\s*(?://[^\\n]*\\n\\s*)*portStart:`).test(recipeSource));
   const rows = buildInstallationCoverage({ targets: INSTALLATION_UPDATE_KEYS.map((key) => ({ key, name: key, installed: true, rollbackAvailable: false })), jobs: [], gameSlugs: [...recipeSlugs, "constructor"] });
   for (const slug of recipeSlugs) {
-    const normalized = slug === "0-ad" ? "0ad" : slug;
+    const normalized = slug === "0-ad" ? "0ad" : slug === "open-fortress" ? "team-fortress-2:open-fortress" : slug;
     expect(rows.find((row) => row.id === normalized), slug).toBeDefined();
     expect(rows.find((row) => row.id === normalized)?.category, slug).not.toBe("review");
   }
@@ -82,8 +82,8 @@ it("shows Combined Arms once and never offers its action before the agent expose
 it("keeps separate edition updates pending instead of inheriting base-depot support", () => {
   const rows = buildInstallationCoverage({ targets: INSTALLATION_UPDATE_KEYS.map((key) => ({ key, name: key, installed: true, rollbackAvailable: false })), jobs: [] });
   expect(rows.filter((row) => row.category === "supported")).toHaveLength(INSTALLATION_UPDATE_KEYS.length);
-  expect(rows.find((row) => row.id === "team-fortress-2:open-fortress")).toMatchObject({ category: "edition" });
-  expect(rows.find((row) => row.id === "team-fortress-2:open-fortress")?.installationKey).toBeUndefined();
+  expect(rows.find((row) => row.id === "team-fortress-2:open-fortress")).toMatchObject({ category: "supported", installationKey: "open-fortress" });
+  expect(buildInstallationCoverage({ targets: [], jobs: [] }).find(row => row.id === "team-fortress-2:open-fortress")?.installationKey).toBeUndefined();
   expect(rows.find((row) => row.id === "openra:combined-arms")).toMatchObject({ category: "supported", installationKey: "combined-arms" });
   expect(rows.find((row) => row.id === "freedoom")).toMatchObject({category: "supported", installationKey: "freedoom"});
   expect(rows.find((row) => row.id === "rimworld-together")).toMatchObject({ category: "supported", installationKey: "rimworld-together" });

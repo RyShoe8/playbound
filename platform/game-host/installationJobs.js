@@ -78,12 +78,12 @@ export function createInstallationCoordinator({ stateDir, gamesRoot, rooms, game
     const existing = active(key);
     if (existing) return existing; // Duplicate requests never dispatch a second worker.
     if (store.all().length >= 500) throw new Error("Update history needs operator archival before adding more jobs");
-    const installed = verifyInstallation(path.join(gamesRoot, key), key);
+    const installed = verifyInstallation(path.join(gamesRoot, key), key, { metadataOnly: true });
     let rollbackId;
     if (action === "rollback") {
       rollbackId = store.all().find((job) => job.key === key && job.status === "completed" && job.action === "update" && !job.rollbackConsumed)?.id;
       if (!rollbackId) throw new Error("No retained installation is available for rollback");
-      verifyInstallation(path.join(gamesRoot, `.pb-rollback-${key}-${rollbackId}`), key);
+      verifyInstallation(path.join(gamesRoot, `.pb-rollback-${key}-${rollbackId}`), key, { metadataOnly: true });
     }
     const job = { id: crypto.randomUUID(), key, action, actor: String(actor || "admin").slice(0, 160), status: "waiting", createdAt: Date.now(), beforeBuild: installed.buildId, rollbackId };
     store.write(job);
@@ -147,8 +147,9 @@ export function createInstallationCoordinator({ stateDir, gamesRoot, rooms, game
       gameSlugs: [...new Set(gameSlugs())].filter((slug) => typeof slug === "string" && /^[a-z0-9][a-z0-9-]{0,127}$/.test(slug)).sort(),
       targets: Object.entries(INSTALLATION_TARGETS).map(([key, target]) => {
         let installed, blocked = target.blockedReason;
-        try { installed = verifyInstallation(path.join(gamesRoot, key), key); } catch {
+        try { installed = verifyInstallation(path.join(gamesRoot, key), key, { metadataOnly: true }); } catch {
           if (key === "factorio") blocked = "Factorio requires an official-package integrity baseline and a compatible headless runtime before updates. Custom files require operator review.";
+          if (["paired-runtime", "coordinated-open-fortress"].includes(target.strategy)) blocked = "This installation needs its reviewed package and a current full-verification record before maintenance. Existing servers remain online.";
         }
         const rollback = jobs.find((job) => job.key === key && job.status === "completed" && job.action === "update" && !job.rollbackConsumed);
         return { key, name: target.name, installed: Boolean(installed), buildId: installed?.buildId, branch: installed?.branch, rollbackAvailable: Boolean(rollback), blockedReason: blocked };

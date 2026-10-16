@@ -128,6 +128,18 @@ pull credentials, edit environment files, or alter unrelated database records.
   while queued/active/interrupted. Preserve live games, saves, and credentials.
   Verify artifacts/executables before activation, retain rollback, and recover
   safely from worker/agent crashes. Never silently update shared files in place.
+- Coordinated SDK/mod installations need a distinct installation key, pinned
+  compatible artifacts and channel, complete-tree verification and atomic
+  component activation/rollback. Track dependencies shared with other games;
+  updating the parent engine alone does not update a mod edition. Open Fortress
+  uses this path rather than TF2's current engine/depot.
+- Keep multi-gigabyte verification out of the agent's inventory and queue
+  handlers. A worker may record verified build/tree identity against the runtime
+  inode for quick inventory reads, but starts and update activation must still
+  perform full verification. Generated caches belong in private runtime data,
+  never in the immutable package fingerprint. Cache large publisher artifacts
+  by digest, recheck their checksum on use and include both cached/downloaded
+  staging paths in disk-headroom accounting.
 - Executable plugins/Workshop packages require verified per-customer isolation,
   explicit privileges, trusted sources, compatibility, backup and rollback.
   A save-file upload extension allowlist is not executable-plugin isolation.
