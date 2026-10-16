@@ -5,6 +5,7 @@ import os
 import sys
 
 targets = {
+    "deus-ex": ["deus-ex"],
     "counter-strike-2": ["counter-strike-2", "cs2"],
     "team-fortress-2": ["team-fortress-2", "open-fortress"],
     "open-fortress": ["open-fortress"],
@@ -83,6 +84,8 @@ if sys.argv[1] == "hypersomnia":
 if sys.argv[1] == "open-fortress":
     roots.extend(["/var/lib/playbound-host/open-fortress-servers", "/var/lib/playbound-host/of-acceptance/open-fortress-servers"])
 count = 0
+if sys.argv[1] == "deus-ex":
+    roots.extend(["/var/lib/playbound-host/deus-ex", "/var/lib/playbound-host/state/hx-query-review-TVmO31/deus-ex"])
 try:
     for entry in os.listdir("/proc"):
         if not entry.isdigit():

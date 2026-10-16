@@ -213,6 +213,9 @@ echo "==> copy agent"
 # copied. platform/src/lib/gameHost/chain.test.ts checks the two agree.
 cp -f "$AGENT_SRC/index.js" "$AGENT_SRC/agentRoutes.js" "$AGENT_SRC/recipes.js" "$AGENT_SRC/ensureGame.js" \
   "$AGENT_SRC/deusExHx.js" \
+  "$AGENT_SRC/hxRuntimeFiles.js" \
+  "$AGENT_SRC/hxUpdates.js" \
+  "$AGENT_SRC/hxArchive.py" \
   "$AGENT_SRC/etLegacyInstall.js" "$AGENT_SRC/metrics.js" "$AGENT_SRC/spawnTests.js" \
   "$AGENT_SRC/gameVersions.js" "$AGENT_SRC/rcon.js" "$AGENT_SRC/roomRestart.js" \
   "$AGENT_SRC/startLock.js" "$AGENT_SRC/downloadStream.js" \

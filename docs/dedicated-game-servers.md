@@ -146,3 +146,19 @@ branch and publisher mod metadata; deliberate rollback is not undone daily.
 Do not point this edition at TF2's updater. Existing
 operational profiles need their edition recipe corrected through the admin
 profile save; no catalog or profile records are rewritten by deployment.
+
+## Deus Ex HX update boundary (2026-10-15)
+
+The `deus-ex-goty-edition` recipe maps to the `deus-ex` installation updater.
+It stages the shared `System` directory and downloads only the reviewed public
+HX 0.9.89.4 mod archive. Retail game assets are supplied separately and are not
+redistributed by the updater. Private INI files and saves remain outside the
+activation/rollback boundary. Private HX runtime files are checked against the
+reviewed hashes during stopped-server preparation; unknown custom binaries
+require review. Future releases must carry explicit prior/reverse compatibility
+hashes so both private-runtime upgrade and rollback remain safe.
+
+Daily publisher discovery, staged reinstallation and rollback passed on the VPS,
+with actual native HX player queries before/after both transitions. New upstream
+versions require a reviewed compatibility/checksum profile. Human Join testing
+was removed from this work's release gates at the owner's request.
