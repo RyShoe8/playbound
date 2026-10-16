@@ -17,6 +17,8 @@ export const WORLD_BACKUP_GAMES = [
   "mindustry", "openttd", "luanti", "freeciv", "morrowind",
   "terraria", "factorio", "core-keeper", "vintage-story", "rimworld-together",
   "barotrauma", "dont-starve-together", "necesse",
+  "0-ad", "assaultcube", "flightgear", "freedoom", "hurry-curry", "hypersomnia",
+  "medal-of-honor-allied-assault", "supertuxkart", "wolfenstein-enemy-territory", "xonotic", "ysoccer",
 ] as const;
 
 export function hasWorldBackups(recipeSlug: string): boolean {

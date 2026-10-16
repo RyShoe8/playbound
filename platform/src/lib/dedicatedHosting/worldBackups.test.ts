@@ -14,7 +14,8 @@ describe("world-data backups", () => {
   it("offers backups only for games with world data", () => {
     expect(hasWorldBackups("freeciv")).toBe(true);
     expect(hasWorldBackups("morrowind")).toBe(true);
-    expect(hasWorldBackups("hurry-curry")).toBe(false);
+    expect(hasWorldBackups("hurry-curry")).toBe(true);
+    expect(hasWorldBackups("counter-strike-2")).toBe(false);
     expect(hasWorldBackups("constructor")).toBe(false);
   });
 
