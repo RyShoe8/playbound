@@ -48,7 +48,8 @@ function isMmoGame(game: { tags?: string[]; features?: string[]; genre?: string;
   return haystack.includes("mmo") || haystack.includes("mmorpg") || haystack.includes("runescape") || haystack.includes("everquest");
 }
 
-const CACHE_SECONDS = 60;
+// Recomputing the snapshot can take half a minute, so keep it a little longer between refreshes.
+const CACHE_SECONDS = 180;
 
 async function computeMultiplayerActivitySnapshot(): Promise<MultiplayerActivityResponse> {
   let hasDb = false;

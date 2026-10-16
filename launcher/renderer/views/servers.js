@@ -58,14 +58,20 @@ export function buildServersBrowserHtml(hintText = "Pick a game to see who&apos;
         <div>
           <h2 class="view-title" style="font-size: 1.35rem; margin: 0">Live Community &amp; Dedicated Servers <span class="servers-title-hint">${hintText}</span></h2>
         </div>
-        <button class="btn-secondary btn-sm" id="servers-refresh">
-          <svg class="refresh-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 4px;">
-            <polyline points="23 4 23 10 17 10"></polyline>
-            <polyline points="1 20 1 14 7 14"></polyline>
-            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-          </svg>
-          Refresh Servers
-        </button>
+        <div class="servers-header-actions">
+          <button class="btn-secondary btn-sm" id="servers-refresh">
+            <svg class="refresh-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 4px;">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+            Refresh Servers
+          </button>
+          <label class="mp-global-filter-toggle" title="Only show games you have installed">
+            <input type="checkbox" id="servers-installed-only" ${state.serversState.installedOnly ? "checked" : ""} />
+            <span>Installed only</span>
+          </label>
+        </div>
       </div>
 
       <div class="servers-toolbar">
@@ -115,8 +121,11 @@ export async function wireServersBrowser(container, selectedGameSlug = null) {
   if (installedOnlyBox) {
     installedOnlyBox.onchange = (e) => {
       state.serversState.installedOnly = e.target.checked;
+      state.multiplayerState.installedOnly = e.target.checked;
       state.serversState.pingById = {};
-      void refreshServersPickersAndList();
+      // The Multiplayer hub filters its open parties by the same switch, so it repaints itself.
+      document.dispatchEvent(new CustomEvent("playbound:installed-only"));
+      if (state.currentView !== "multiplayer") void refreshServersPickersAndList();
     };
   }
   const withPlayersBox = document.getElementById("servers-with-players");
