@@ -1236,13 +1236,21 @@ function MediaTab({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <h2 className="text-lg font-bold">Media</h2>
-        <span className="text-xs text-muted-foreground">
-          {vids.length > 0 && `${vids.length} ${vids.length === 1 ? "video" : "videos"}`}
-          {vids.length > 0 && screenshots.length > 0 && " · "}
-          {screenshots.length > 0 && `${screenshots.length} ${screenshots.length === 1 ? "screenshot" : "screenshots"}`}
-        </span>
+        <nav aria-label="Jump to media" className="flex items-center gap-2 text-xs text-muted-foreground">
+          {vids.length > 0 && (
+            <a href="#media-videos" className="font-medium text-primary hover:underline">
+              {`${vids.length} ${vids.length === 1 ? "video" : "videos"}`}
+            </a>
+          )}
+          {vids.length > 0 && screenshots.length > 0 && <span aria-hidden>·</span>}
+          {screenshots.length > 0 && (
+            <a href="#media-screenshots" className="font-medium text-primary hover:underline">
+              {`${screenshots.length} ${screenshots.length === 1 ? "screenshot" : "screenshots"}`}
+            </a>
+          )}
+        </nav>
       </div>
 
       {/*
@@ -1252,7 +1260,7 @@ function MediaTab({
         the game page gives them, including the YouTube/Vimeo/HLS split.
       */}
       {vids.length > 0 && (
-        <details open className="group rounded-xl border border-border bg-card/50 overflow-hidden">
+        <details id="media-videos" open className="group scroll-mt-24 rounded-xl border border-border bg-card/50 overflow-hidden">
           <summary className="flex cursor-pointer select-none items-center justify-between px-4 py-3 bg-secondary/30 transition-colors hover:bg-secondary/50 font-semibold text-sm">
             <span className="flex items-center gap-2">
               <Film className="size-4 text-primary" />
@@ -1300,7 +1308,7 @@ function MediaTab({
       )}
 
       {screenshots.length > 0 ? (
-        <details open className="group rounded-xl border border-border bg-card/50 overflow-hidden">
+        <details id="media-screenshots" open className="group scroll-mt-24 rounded-xl border border-border bg-card/50 overflow-hidden">
           <summary className="flex cursor-pointer select-none items-center justify-between px-4 py-3 bg-secondary/30 transition-colors hover:bg-secondary/50 font-semibold text-sm">
             <span className="flex items-center gap-2">
               <ImageIcon className="size-4 text-primary" />
