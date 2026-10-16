@@ -27,6 +27,80 @@ function input(label, name, value = '', type = 'text') {
   return `<label class="workspace-field">${escapeHtml(label)}<input class="input-text" name="${escapeHtml(name)}" type="${type}" value="${escapeHtml(String(value ?? ''))}"></label>`;
 }
 
+/*
+ * The hosting promo a player without an active plan sees on My servers. It is the
+ * website's /hosting page: hero over a wall of cover art, the Basic plan card with
+ * its slot picker and popular games, the hosting map, and the support strip. The
+ * data comes from /api/launcher/hosting-promo, which serves what that page renders.
+ */
+const promoMoney = (cents) => `$${((cents || 0) / 100).toFixed(2)}`;
+const editionLabel = (slug) => String(slug).replace(/-/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+const CHECK_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+const SERVER_ICON = '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>';
+
+function hostingMapSvg(promo) {
+  const active = promo.regions || [];
+  const label = active.length ? `US hosting regions: ${active.map((r) => r.label).join(', ')}` : 'Map of the contiguous United States';
+  const paths = (promo.statePaths || []).map((d) => `<path d="${escapeHtml(d)}" class="hosting-map-state"/>`).join('');
+  const pins = active.filter((r) => r.point).map((r) => `<g><circle cx="${r.point.x}" cy="${r.point.y}" r="35" class="hosting-map-glow"/><circle cx="${r.point.x}" cy="${r.point.y}" r="11" class="hosting-map-ring"/><circle cx="${r.point.x}" cy="${r.point.y}" r="5" class="hosting-map-dot"/><text x="${r.point.x + 14}" y="${r.point.y + 4}" class="hosting-map-label">${escapeHtml(r.label)}</text></g>`).join('');
+  return `<svg viewBox="0 0 800 430" role="img" aria-label="${escapeHtml(label)}" class="hosting-map">${paths}${pins}</svg><div class="hosting-map-pills">${active.map((r) => `<span>${escapeHtml(r.label)}</span>`).join('')}</div>`;
+}
+
+function hostingPromoHtml(promo) {
+  const heroCovers = (promo.hero || []).map((g) => `<div><img src="${escapeHtml(g.cover)}" alt="${escapeHtml(g.name)} cover art" loading="lazy"></div>`).join('');
+  const packages = promo.packages || [];
+  const tiles = (promo.games || []).map((g) => `<button type="button" class="hosting-tile" data-web="/hosting/${escapeHtml(g.slug)}"><span class="hosting-tile-art">${g.cover ? `<img src="${escapeHtml(g.cover)}" alt="" loading="lazy">` : ''}</span><span class="hosting-tile-copy"><strong>${escapeHtml(g.title)}</strong><small>${g.editions?.length ? `Editions: ${g.editions.map(editionLabel).map(escapeHtml).join(', ')}` : 'Base game'}</small></span></button>`).join('');
+  const picker = `<div class="hosting-picker">
+      <label for="hosting-slots">Slots and monthly price</label>
+      <p>One pool for every game you host. ${escapeHtml(promo.region)} · no setup fee.</p>
+      ${packages.length ? `<select id="hosting-slots" class="input-text">${packages.map((p) => `<option value="${p.slots}">${p.slots} slots — ${promoMoney(p.priceCents)}/month</option>`).join('')}</select><p id="hosting-slots-note">${packages[0].slots} slots can run one server or be divided among several games. Stopped servers free their slots.</p>` : '<p>Packages will be announced soon.</p>'}
+      ${promo.available && packages.length ? `<button type="button" class="btn-primary" id="hosting-checkout">Choose ${packages[0].slots} slots</button>` : '<p class="hosting-soon">Early access — coming soon</p>'}
+      <p id="hosting-error" role="alert" class="hosting-error" hidden></p>
+    </div>`;
+  return `<div class="hosting-promo-page">
+    <section class="hosting-hero"><div class="hosting-hero-art" aria-hidden="true">${heroCovers}<div class="hosting-hero-fade"></div></div>
+      <div class="hosting-hero-copy"><p class="site-eyebrow">PlayBound Dedicated</p><h2>Your games deserve a place to play.</h2><p>Host the games your people love. Give one game the whole room, or split your plan across several. Switch whenever the night takes a different turn.</p>
+      <div class="hosting-hero-actions"><button type="button" class="btn-primary" id="hosting-explore">Explore plans</button><button type="button" class="btn-secondary" data-web="/hosting/servers">Manage my servers</button></div></div></section>
+    <section id="hosting-plans" class="hosting-section"><div><h2>Choose how you host</h2><p class="view-sub">Flexible slots for the games your group loves.</p></div>
+      <article class="hosting-plan"><div class="hosting-plan-head"><span class="hosting-plan-icon">${SERVER_ICON}</span><h3>Basic</h3><p>Flexible game hosting for your group or community.</p><p class="hosting-plan-count">${promo.gameCount} ${promo.gameCount === 1 ? 'game' : 'games'} · ${promo.editionCount} additional editions</p></div>
+        <ul class="hosting-features">${(promo.features || []).map((f) => `<li>${CHECK_ICON}${escapeHtml(f)}</li>`).join('')}</ul>
+        ${picker}
+        <div class="hosting-games"><h4>${promo.games?.length ? 'Popular games' : 'Games coming soon'}</h4>${tiles}</div>
+        <button type="button" class="hosting-seeall" data-web="/hosting/basic">See all games and plan details →</button></article></section>
+    <section class="hosting-section hosting-card"><div class="hosting-card-head"><div><h2>Where we host</h2><p class="view-sub">Available hosting regions appear on this map as they come online. Choose the region closest to your players when you subscribe.</p></div><button type="button" class="btn-link" data-web="/hosting/servers">Manage your servers →</button></div>${hostingMapSvg(promo)}</section>
+    <section class="hosting-card hosting-support"><div><h2>Need a hand with your server?</h2><p class="view-sub">Open a support request in PlayBound or join the dedicated-server support room on Discord.</p></div><div class="hosting-hero-actions"><button type="button" class="btn-secondary" data-web="/hosting/servers">PlayBound support</button><button type="button" class="btn-primary" data-web="/api/hosting/support/discord">Discord support ↗</button></div></section>
+  </div>`;
+}
+
+function wireHostingPromo(root, promo) {
+  root.querySelectorAll('[data-web]').forEach((button) => button.addEventListener('click', () => openWeb(button.dataset.web)));
+  root.querySelector('#hosting-explore')?.addEventListener('click', () => root.querySelector('#hosting-plans')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  const select = root.querySelector('#hosting-slots');
+  const checkout = root.querySelector('#hosting-checkout');
+  const error = root.querySelector('#hosting-error');
+  if (select) select.onchange = () => {
+    const slots = Number(select.value);
+    root.querySelector('#hosting-slots-note').textContent = `${slots} slots can run one server or be divided among several games. Stopped servers free their slots.`;
+    if (checkout) checkout.textContent = `Choose ${slots} slots`;
+    error.hidden = true;
+  };
+  if (checkout) checkout.onclick = () => action(checkout, async () => {
+    error.hidden = true;
+    try {
+      const slots = Number(select.value);
+      const key = `${promo.regionKey}:${slots}`;
+      let checkoutKey = state.hostingCheckoutKeys?.[key];
+      if (!checkoutKey) { checkoutKey = (crypto.randomUUID?.() || String(Date.now())).replaceAll('-', ''); (state.hostingCheckoutKeys ||= {})[key] = checkoutKey; }
+      const data = await request('/api/hosting/checkout', 'POST', { regionKey: promo.regionKey, slots, checkoutKey });
+      if (typeof data?.url !== 'string' || new URL(data.url).hostname !== 'checkout.stripe.com') throw new Error('Checkout returned an invalid destination');
+      window.playbound.openExternal(data.url);
+    } catch (err) {
+      const message = err.message === 'SOLD_OUT' ? 'No hosting capacity is available in this region right now. Please try again later.' : err.message;
+      error.textContent = message; error.hidden = false;
+    }
+  });
+}
+
 async function renderMyServersView() {
   const host = heading(views.myServers, 'My servers', 'Your saved worlds, players, maps, and server controls.');
   if (!state.accountState?.connected) return signIn(host);
@@ -36,20 +110,14 @@ async function renderMyServersView() {
     // A canceled, expired or missing plan gets the hosting promo, with any servers shared with you below it.
     const runnable = ['active', 'past_due'].includes(data.subscription?.status);
     if (!runnable) {
-      const priced = (data.packages || []).slice().sort((a, b) => a.slots - b.slots);
-      const money = (cents, currency = 'USD') => new Intl.NumberFormat(undefined, { style: 'currency', currency }).format((cents || 0) / 100);
-      host.innerHTML = `<section class="site-panel site-pad hosting-promo">
-        <p class="site-eyebrow">PlayBound Dedicated</p>
-        <h2 style="font-size:28px;margin:4px 0 8px">Your games deserve a place to play.</h2>
-        <p>Host the games your people love. Give one game the whole room, or split your plan across several. Switch whenever the night takes a different turn.</p>
-        ${data.subscription ? `<p class="view-sub">Your ${escapeHtml(data.subscription.tierName || 'hosting')} plan is ${escapeHtml(String(data.subscription.status).replace(/_/g, ' '))}. Pick a plan to start hosting again.</p>` : ''}
-        ${priced.length ? `<div class="hosting-promo-plans">${priced.map((p) => `<div class="hosting-promo-plan"><strong>${p.slots} player slots</strong><span>${escapeHtml(money(p.priceCents, p.currency))} / month</span></div>`).join('')}</div>` : ''}
-        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px">
-          <button class="btn-primary" data-hosting-web="/hosting">See hosting plans →</button>
-          <button class="btn-secondary" data-hosting-web="/api/hosting/support/discord">Discord support ↗</button>
-        </div>
-      </section><div class="workspace-server-grid"></div>`;
-      host.querySelectorAll('[data-hosting-web]').forEach((button) => button.addEventListener('click', () => window.playbound.openExternal(`https://playbound.club${button.dataset.hostingWeb}`)));
+      const promo = await window.playbound.getHostingPromo?.();
+      if (promo && Array.isArray(promo.packages)) {
+        host.innerHTML = `${hostingPromoHtml(promo)}<div class="workspace-server-grid"></div>`;
+        wireHostingPromo(host, promo);
+      } else {
+        host.innerHTML = `<section class="site-panel site-pad"><p class="site-eyebrow">PlayBound Dedicated</p><h2>Your games deserve a place to play.</h2><p>Host the games your people love. Give one game the whole room, or split your plan across several.</p><button class="btn-primary" id="hosting-fallback">See hosting plans →</button></section><div class="workspace-server-grid"></div>`;
+        host.querySelector('#hosting-fallback').onclick = () => openWeb('/hosting');
+      }
     } else {
       host.innerHTML = `<section class="site-panel site-pad"><h2>${escapeHtml(data.subscription?.tierName || 'PlayBound Dedicated')}</h2><p>${`${data.subscription.slotCapacity} player slots · ${escapeHtml(data.subscription.regionLabel)}`}</p></section><div class="workspace-server-grid"></div>`;
     }
