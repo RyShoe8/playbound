@@ -5,6 +5,7 @@ module.exports = defineConfig({
   expect: { timeout: 15000 },
   workers: 1,
   retries: 0,
-  reporter: [['list']],
+  // The github reporter turns a failing test into a public annotation, so a CI failure says which test and why.
+  reporter: process.env.GITHUB_ACTIONS ? [['list'], ['github']] : [['list']],
   outputDir: 'test-results',
 });
