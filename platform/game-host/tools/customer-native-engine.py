@@ -29,12 +29,24 @@ ENGINES = {
     'xonotic': ('xonotic-linux64-dedicated', '/engine-native'),
     'wolfenstein-enemy-territory': ('etlded.x86_64', '/engine-native'),
     'medal-of-honor-allied-assault': ('omohaaded', '/engine-native'),
+    'warzone-2100': ('warzone2100', '/engine-native'),
+    'freeciv': ('freeciv-server', '/engine-native'),
     'freedoom': ('zandronum-server', '/game-data/zandronum-server'),
 }
 
 def sealed_engine_for(game):
     if game in ('ysoccer','mindustry'):
         return sealed_java_engine(game=game), '/engine.jar'
+    if game == 'warzone-2100':
+        root=Path('/usr/local/libexec/playbound-isolated-warzone')
+        descriptor=sealed_engine(root/'warzone2100',root/'profile.json',game)
+        if descriptor is None:raise ValueError('Reviewed isolated Warzone engine is not installed')
+        return descriptor, '/engine-native'
+    if game == 'freeciv':
+        root=Path('/usr/local/libexec/playbound-isolated-freeciv')
+        descriptor=sealed_engine(root/'freeciv-server',root/'profile.json',game)
+        if descriptor is None: raise ValueError('Reviewed isolated Freeciv engine is not installed')
+        return descriptor, '/engine-native'
     if game == 'freedoom':
         root=Path('/usr/local/libexec/playbound-isolated-freedoom')
         descriptor=sealed_engine(root/'zandronum-server',root/'profile.json',game)

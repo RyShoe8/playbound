@@ -12,11 +12,12 @@ import tempfile
 
 
 def promote(source, destination, manifest, game='xonotic'):
-    if game not in ('xonotic','wolfenstein-enemy-territory','medal-of-honor-allied-assault','freeciv'): raise ValueError('Unsupported asset publication')
+    if game not in ('xonotic','wolfenstein-enemy-territory','medal-of-honor-allied-assault','freeciv','warzone-2100'): raise ValueError('Unsupported asset publication')
     pattern=r'[A-Za-z0-9_-]{1,100}\.pk3' if game=='xonotic' else r'(?:etmain|legacy)/[A-Za-z0-9_.-]{1,100}\.(?:pk3|so)' if game=='wolfenstein-enemy-territory' else r'(?:main/[A-Za-z0-9_.-]{1,100}\.pk3|game\.so)'
     if game=='freeciv': pattern=r'(?:lib|share/freeciv)/(?:[A-Za-z0-9_+.,@ -]{1,100}/){0,15}[A-Za-z0-9_+.,@ -]{1,100}'
+    if game=='warzone-2100':pattern=r'data/(?:[A-Za-z0-9_+.,@ -]{1,100}/){0,15}[A-Za-z0-9_+.,@ -]{1,100}'
     rows = manifest.get('files')
-    if not isinstance(rows,list) or not 1 <= len(rows) <= (1024 if game=='freeciv' else 16):
+    if not isinstance(rows,list) or not 1 <= len(rows) <= (1024 if game in ('freeciv','warzone-2100') else 16):
         raise ValueError('Invalid Xonotic asset inventory')
     seen,total = set(),0
     for row in rows:

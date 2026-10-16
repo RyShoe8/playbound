@@ -39,6 +39,8 @@ NATIVE_GAMES = {
     'wolfenstein-enemy-territory': ('et',27950,27959),
     'medal-of-honor-allied-assault': ('openmohaa',12203,12222),
     'freedoom': ('freedoom-servers',10666,10686),
+    'freeciv': ('freeciv-servers',5556,5576),
+    'warzone-2100': ('warzone-2100-servers',2100,2120),
 }
 
 def select_game(game):
@@ -116,6 +118,16 @@ def config_bytes(text, port):
         if GAME in ('ysoccer','flightgear'):
             if values != {}: raise ValueError('Undeclared YSoccer setting')
             return text.encode()
+        if GAME == 'warzone-2100':
+            keys={'name','map','maxPlayers','techLevel','bases','powerLevel','alliances','scavengers','openSpectatorSlots'}
+            if not isinstance(values,dict) or set(values)!=keys or not isinstance(values['name'],str) or not 1<=len(values['name'])<=40 or re.search(r'[\x00-\x1f\x7f]',values['name']) or not re.fullmatch(r'[A-Za-z0-9_-]{1,80}',str(values['map'])):raise ValueError('Invalid Warzone text settings')
+            for key,low,high in [('maxPlayers',2,8),('techLevel',1,3),('bases',0,2),('powerLevel',0,2),('alliances',0,2),('scavengers',0,2),('openSpectatorSlots',0,10)]:
+                if type(values[key]) is not int or not low<=values[key]<=high:raise ValueError('Invalid Warzone number')
+            challenge={k:v for k,v in values.items()};challenge.update({'spectatorHost':True,'blindMode':'none'})
+            return json.dumps({'locked':{'alliances':True,'scavengers':True,'bases':True},'challenge':challenge}).encode()
+        if GAME == 'freeciv':
+            if not isinstance(values,dict) or set(values)!={'maxPlayers'} or type(values['maxPlayers']) is not int or not 2<=values['maxPlayers']<=64:raise ValueError('Invalid Freeciv typed settings')
+            return ('set maxplayers '+str(values['maxPlayers'])+'\n').encode()
         if GAME == 'freedoom':
             if not isinstance(values,dict) or set(values)!={'name','maxPlayers','map','mode','skill','fragLimit','timeLimit'} or not isinstance(values['name'],str) or not 1<=len(values['name'])<=100 or re.search(r'[\x00-\x1f\x7f"\\;]',values['name']) or not re.fullmatch(r'MAP(?:0[1-9]|[12][0-9]|3[0-2])',str(values['map'])) or values['mode'] not in ('coop','deathmatch','teamplay','ctf','duel','lastmanstanding'):
                 raise ValueError('Invalid Zandronum text settings')
@@ -291,11 +303,13 @@ def identity_database(uid,gid):
 
 
 def command(data, fd, port, memory, engine_fd=None, native_settings=None, seccomp_fd=None, dns_fd=None, assets=(), asset_directory=None, identity_fd=None):
-    target = {'teeworlds':'/usr/games/teeworlds-server','bzflag':'/usr/games/bzfs','hedgewars':'/usr/lib/hedgewars/bin/hedgewars-server','openttd':'/usr/games/openttd','luanti':'/usr/games/minetestserver','openarena':'/usr/lib/ioquake3/ioq3ded','battle-for-wesnoth':'/usr/games/wesnothd-1.18','supertuxkart':'/usr/games/supertuxkart','0-ad':'/usr/games/pyrogenesis','ysoccer':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','flightgear':'/engine-native','mindustry':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','hurry-curry':'/engine-native','assaultcube':'/engine-native','xonotic':'/engine-native','wolfenstein-enemy-territory':'/engine-native','medal-of-honor-allied-assault':'/engine-native','freedoom':'/game-data/zandronum-server'}[GAME]
+    target = {'teeworlds':'/usr/games/teeworlds-server','bzflag':'/usr/games/bzfs','hedgewars':'/usr/lib/hedgewars/bin/hedgewars-server','openttd':'/usr/games/openttd','luanti':'/usr/games/minetestserver','openarena':'/usr/lib/ioquake3/ioq3ded','battle-for-wesnoth':'/usr/games/wesnothd-1.18','supertuxkart':'/usr/games/supertuxkart','0-ad':'/usr/games/pyrogenesis','ysoccer':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','flightgear':'/engine-native','mindustry':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','hurry-curry':'/engine-native','assaultcube':'/engine-native','xonotic':'/engine-native','wolfenstein-enemy-territory':'/engine-native','medal-of-honor-allied-assault':'/engine-native','freedoom':'/game-data/zandronum-server','freeciv':'/engine-native','warzone-2100':'/engine-native'}[GAME]
     settings = native_settings or {}
-    game_args = ['-f','server.cfg','sv_port '+str(port)] if GAME == 'teeworlds' else ['-p',str(port)] if GAME == 'hedgewars' else [] if GAME in ('openttd','luanti','openarena','battle-for-wesnoth','supertuxkart','0-ad','ysoccer','flightgear','mindustry','hurry-curry','assaultcube','xonotic','wolfenstein-enemy-territory','medal-of-honor-allied-assault','freedoom') else ['-p',str(port),'-offa','-q','-j','+r','+s',str(settings['scoreLimit']),'-mp',str(settings['maxPlayers'])]
+    game_args = ['-f','server.cfg','sv_port '+str(port)] if GAME == 'teeworlds' else ['-p',str(port)] if GAME == 'hedgewars' else [] if GAME in ('openttd','luanti','openarena','battle-for-wesnoth','supertuxkart','0-ad','ysoccer','flightgear','mindustry','hurry-curry','assaultcube','xonotic','wolfenstein-enemy-territory','medal-of-honor-allied-assault','freedoom','freeciv','warzone-2100') else ['-p',str(port),'-offa','-q','-j','+r','+s',str(settings['scoreLimit']),'-mp',str(settings['maxPlayers'])]
     if GAME == 'openarena': game_args = ['+set','com_basegame','baseoa','+set','fs_basepath','/usr/lib/openarena-server','+set','fs_homepath','/server','+set','com_legacyprotocol','71','+set','com_protocol','71','+set','dedicated','1','+set','net_port',str(port),'+exec','playbound.cfg','+map','oa_dm1']
     if GAME == 'flightgear': game_args = ['-p',str(port),'-a',str(port+1),'-b','0','-d']
+    if GAME == 'warzone-2100': game_args=['--datadir=/game-data/data','--configdir=/server','--autohost=playbound.json','--gameport='+str(port),'--startplayers=1','--headless','--nosound']
+    if GAME == 'freeciv': game_args = ['-p',str(port),'--read','/server/server.cfg','--saves','/server/saves']
     if GAME == 'freedoom': game_args = ['-host','-port',str(port),'-iwad','/game-data/freedoom2.wad','-config','/server/zandronum.ini','-exec','/server/server.cfg','-skill',str(settings['skill']),'+map',settings['map']]
     if GAME == 'medal-of-honor-allied-assault': game_args = ['+set','fs_basepath','/game-data','+set','fs_homepath','/server','+set','net_port',str(port),'+set','dedicated','1','+exec','playbound.cfg','+map',settings['map']]
     if GAME == 'wolfenstein-enemy-territory': game_args = ['+set','fs_basepath','/game-data','+set','fs_homepath','/server','+set','fs_game','legacy','+set','dedicated','1','+set','net_port',str(port),'+exec','playbound.cfg','+map','oasis']
@@ -316,12 +330,13 @@ def command(data, fd, port, memory, engine_fd=None, native_settings=None, seccom
             *(['--perms', '0555', '--ro-bind-data', str(engine_fd), '/engine.jar' if GAME in ('ysoccer','mindustry') else target] if engine_fd is not None else []),
             *(['--ro-bind','/proc/self/fd/'+str(asset_directory),'/game-data/data' if GAME=='xonotic' else '/game-data'] if asset_directory is not None else []),
             *[part for descriptor,target in assets for part in ['--perms','0444','--ro-bind-data',str(descriptor),target]],
-            '--proc', '/proc', '--dev', '/dev', '--size', '67108864', '--tmpfs', '/tmp', '--bind', str(data), '/server', '--ro-bind-data', str(fd), '/server/baseoa/playbound.cfg' if GAME == 'openarena' else '/server/data/server.cfg' if GAME == 'xonotic' else '/server/legacy/playbound.cfg' if GAME == 'wolfenstein-enemy-territory' else '/server/main/playbound.cfg' if GAME=='medal-of-honor-allied-assault' else '/server/server.cfg',
+            '--proc', '/proc', '--dev', '/dev', '--size', '67108864', '--tmpfs', '/tmp', '--bind', str(data), '/server', '--ro-bind-data', str(fd), '/server/baseoa/playbound.cfg' if GAME == 'openarena' else '/server/data/server.cfg' if GAME == 'xonotic' else '/server/legacy/playbound.cfg' if GAME == 'wolfenstein-enemy-territory' else '/server/main/playbound.cfg' if GAME=='medal-of-honor-allied-assault' else '/server/autohost/playbound.json' if GAME=='warzone-2100' else '/server/server.cfg',
             *[part for filename in ['/etc/protocols','/etc/services','/etc/hosts','/etc/resolv.conf','/etc/ssl/certs'] if Path(filename).exists() for part in ['--ro-bind',filename,filename]],
             *(['--ro-bind','/etc/java-21-openjdk','/etc/java-21-openjdk'] if GAME == 'mindustry' else []),
             *(['--ro-bind-data', str(dns_fd), '/etc/resolv.conf'] if dns_fd is not None else []),
             *(['--perms','0444','--ro-bind-data', str(identity_fd), '/etc/passwd'] if identity_fd is not None else []),
             '--clearenv', '--setenv', 'PATH', '/usr/bin:/usr/games', '--setenv', 'HOME', '/server', '--setenv', 'XDG_DATA_HOME', '/server', '--setenv', 'XDG_CONFIG_HOME', '/server', '--setenv', 'LANG', 'C.UTF-8', '--chdir', '/game-data' if GAME in ('assaultcube','medal-of-honor-allied-assault','freedoom') else '/server',
+            *(['--setenv','LD_LIBRARY_PATH','/game-data/lib:/game-data/lib/x86_64-linux-gnu','--setenv','FREECIV_DATA_PATH','/game-data/share/freeciv'] if GAME=='freeciv' else []),
             *(['--setenv', 'PLAYBOUND_STK_DISCOVERY_PORT', str(port+1)] if GAME == 'supertuxkart' else []),
             '--', target, *game_args]
 
@@ -451,6 +466,10 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
         host_guard = None
         guard_installed = False
         try:
+            if GAME == 'warzone-2100':
+                directory(root/'data'/'autohost',uid=account['uid'],mode=0o700)
+            if GAME == 'freeciv':
+                directory(root/'data'/'saves',uid=account['uid'],mode=0o700)
             if GAME == 'freedoom':
                 identity_fd=identity_database(account['uid'],account['gid'])
                 for name in ('.config','.config/zandronum','saves'):
@@ -478,12 +497,12 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
             os.write(dns_fd,b'nameserver 1.1.1.1\nnameserver 1.0.0.1\noptions timeout:2 attempts:2\n')
             os.lseek(dns_fd,0,os.SEEK_SET)
             fcntl.fcntl(dns_fd,fcntl.F_ADD_SEALS,fcntl.F_SEAL_WRITE|fcntl.F_SEAL_GROW|fcntl.F_SEAL_SHRINK|fcntl.F_SEAL_SEAL)
-            for binary in ['/usr/bin/prlimit', '/usr/bin/bwrap', {'teeworlds':'/usr/games/teeworlds-server','bzflag':'/usr/games/bzfs','hedgewars':'/usr/lib/hedgewars/bin/hedgewars-server','openttd':'/usr/games/openttd','luanti':'/usr/games/minetestserver','openarena':'/usr/lib/ioquake3/ioq3ded','battle-for-wesnoth':'/usr/games/wesnothd-1.18','supertuxkart':'/usr/games/supertuxkart','0-ad':'/usr/games/pyrogenesis','ysoccer':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','flightgear':'/usr/local/libexec/playbound-isolated-flightgear/fgms','mindustry':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','hurry-curry':'/usr/local/libexec/playbound-isolated-hurry/hurrycurry-server','assaultcube':'/usr/local/libexec/playbound-isolated-assaultcube/linux_64_server','xonotic':'/usr/local/libexec/playbound-isolated-xonotic/xonotic-linux64-dedicated','wolfenstein-enemy-territory':'/usr/local/libexec/playbound-isolated-etlegacy/etlded.x86_64','medal-of-honor-allied-assault':'/usr/local/libexec/playbound-isolated-openmohaa/omohaaded','freedoom':'/usr/local/libexec/playbound-isolated-freedoom/zandronum-server'}[GAME]]:
+            for binary in ['/usr/bin/prlimit', '/usr/bin/bwrap', {'teeworlds':'/usr/games/teeworlds-server','bzflag':'/usr/games/bzfs','hedgewars':'/usr/lib/hedgewars/bin/hedgewars-server','openttd':'/usr/games/openttd','luanti':'/usr/games/minetestserver','openarena':'/usr/lib/ioquake3/ioq3ded','battle-for-wesnoth':'/usr/games/wesnothd-1.18','supertuxkart':'/usr/games/supertuxkart','0-ad':'/usr/games/pyrogenesis','ysoccer':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','flightgear':'/usr/local/libexec/playbound-isolated-flightgear/fgms','mindustry':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','hurry-curry':'/usr/local/libexec/playbound-isolated-hurry/hurrycurry-server','assaultcube':'/usr/local/libexec/playbound-isolated-assaultcube/linux_64_server','xonotic':'/usr/local/libexec/playbound-isolated-xonotic/xonotic-linux64-dedicated','wolfenstein-enemy-territory':'/usr/local/libexec/playbound-isolated-etlegacy/etlded.x86_64','medal-of-honor-allied-assault':'/usr/local/libexec/playbound-isolated-openmohaa/omohaaded','freedoom':'/usr/local/libexec/playbound-isolated-freedoom/zandronum-server','freeciv':'/usr/local/libexec/playbound-isolated-freeciv/freeciv-server','warzone-2100':'/usr/local/libexec/playbound-isolated-warzone/warzone2100'}[GAME]]:
                 info = Path(binary).stat()
                 if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_mode & 0o022: raise ValueError('Untrusted runtime executable')
             engines = trusted_module('pb_native_engine', 'playbound-customer-native-engine')
             engine_fd, _target = engines.sealed_engine_for(GAME)
-            if GAME in ('xonotic','wolfenstein-enemy-territory','medal-of-honor-allied-assault'): asset_directory = trusted_module('pb_assets','playbound-customer-xonotic-assets').open_assets(game=GAME)
+            if GAME in ('xonotic','wolfenstein-enemy-territory','medal-of-honor-allied-assault','freeciv','warzone-2100'): asset_directory = trusted_module('pb_assets','playbound-customer-xonotic-assets').open_assets(game=GAME)
             if GAME in ('hurry-curry','assaultcube','freedoom'): assets = trusted_module('pb_assets','playbound-customer-game-assets').seal_assets(game=GAME)
             syscalls = trusted_module('pb_syscalls', 'playbound-customer-seccomp')
             seccomp_fd = syscalls.sealed_filter()

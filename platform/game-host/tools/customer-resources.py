@@ -32,6 +32,8 @@ PROFILES = {
     'wolfenstein-enemy-territory': (1, 1024 ** 3, 128),
     'medal-of-honor-allied-assault': (1, 1024 ** 3, 128),
     'freedoom': (1, 1024 ** 3, 128),
+    'freeciv': (1, 1024 ** 3, 128),
+    'warzone-2100': (1, 1024 ** 3, 128),
 }
 
 

@@ -1,0 +1,11 @@
+{
+  "version": "existing-reviewed-freeciv-runtime",
+  "binary": {
+    "bytes": 2555600,
+    "sha256": "4719c2bb677ef1c0cb5eabad1f9e845c2f3e622dd6249b6a92bc77f2ee4fba96"
+  },
+  "legacyBinary": {
+    "bytes": 2555600,
+    "sha256": "4719c2bb677ef1c0cb5eabad1f9e845c2f3e622dd6249b6a92bc77f2ee4fba96"
+  }
+}

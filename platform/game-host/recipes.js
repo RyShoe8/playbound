@@ -39,7 +39,7 @@ const TES3MP_CONFIG_DIR = path.join(HOST_HOME, "tes3mp");
 function customerHomeDir(dirName, ctx) {
   const id = String(ctx?.partyId || "").replace(/[^a-zA-Z0-9_-]/g, "").slice(-24);
   const home = path.join(HOST_HOME, dirName, `pb-${id}`);
-  fs.mkdirSync(home, { recursive: true, mode: 0o700 });
+  if(ctx?.identityProfile!=="warzone-2100-unix-v1")fs.mkdirSync(home, { recursive: true, mode: 0o700 });
   return home;
 }
 
@@ -58,6 +58,7 @@ function luantiWorldDir(ctx) {
  * servers keep script and saves inside their isolated home.
  */
 function freecivRoomDir(ctx) {
+  if(ctx?.identityProfile==="freeciv-unix-v1")return path.join(HOST_HOME,"freeciv-servers",`pb-${ctx.partyId}`);
   return ctx.customerOwned ? customerHomeDir("freeciv-servers", ctx) : path.join(HOST_HOME, "freeciv-rooms");
 }
 function freecivScriptPath(ctx) {
@@ -1171,7 +1172,7 @@ export const recipes = {
       "--nosound",
     ],
     startupGraceMs: 2500,
-    spawnEnv: isolatedHomeEnv("warzone-2100-servers"),
+    spawnEnv: (port,ctx)=>ctx?.identityProfile==="warzone-2100-unix-v1"?{}:isolatedHomeEnv("warzone-2100-servers")(port,ctx),
   },
   freeciv: {
     portStart: 5556,
@@ -1191,7 +1192,7 @@ export const recipes = {
       if (ctx.customerOwned) fs.mkdirSync(freecivSavesDir(ctx), { recursive: true, mode: 0o700 });
       fs.writeFileSync(freecivScriptPath(ctx), `set maxplayers ${managedPlayerLimit(ctx)}\n`, "utf8");
     },
-    spawnEnv: (port, ctx) => ({
+    spawnEnv: (port, ctx) => ctx?.identityProfile === "freeciv-unix-v1" ? {} : ({
       ...(ctx?.customerOwned ? isolatedHomeEnv("freeciv-servers")(port, ctx) : {}),
       ...(fs.existsSync(path.join(GAMES_ROOT,"freeciv/runtime")) ? {LD_LIBRARY_PATH:["lib","lib/x86_64-linux-gnu"].map(name=>path.join(GAMES_ROOT,"freeciv/runtime",name)).join(path.delimiter),FREECIV_DATA_PATH:path.join(GAMES_ROOT,"freeciv/runtime/share/freeciv")} : {}),
     }),

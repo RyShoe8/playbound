@@ -1804,3 +1804,54 @@ All 126 Linux helper tests passed after the nested-tree checks were added.
 
 Latest guarded agent deployment preserved all ten processes present in its
 pre-deployment snapshot. Service and 15-minute scheduler remained active.
+
+
+### Freeciv reserved-UID runtime acceptance (2026-10-16)
+
+`freeciv-unix-v1` uses a root-promoted copy of the existing paired dedicated
+engine and a fixed immutable tree of 709 reviewed libraries/ruleset files.
+The startup contract independently validates the gameplay port and integer
+player limit; no caller-supplied script or arbitrary command is accepted.
+Root generates the maxplayers script, fixes the library/data paths inside the
+namespace, and keeps saves in reserved-UID-owned private data. The agent recipe
+skips writes to the sealed legacy directory after explicit offline enrollment.
+
+The isolated VPS fixture passed concurrent/idempotent create, native query
+(zero players/four slots; bots unknown), same gate/game PID after staging-agent
+restart, per-process metrics, scoped stop, and data rollback preserving both
+old and newer files. All fixture processes and data were removed. Protected
+file and snapshot routing includes Freeciv; a separate Linux restore regression
+checks ownership/data preservation. All 128 Linux helper tests passed.
+This is the nineteenth accepted opt-in identity; no automatic customer enrollment,
+catalog writes or executable ruleset/plugin installation was enabled.
+
+Freeciv release validation: complete VPS agent suite passed 390 tests with one
+platform skip. Guarded deployment preserved all eleven managed processes in its
+snapshot; production agent and 15-minute scheduler remained active. No customer
+identity was automatically enrolled and no catalog/database data was changed.
+
+
+### Warzone 2100 reserved-UID runtime acceptance (2026-10-16)
+
+`warzone-2100-unix-v1` uses the existing paired headless engine and 64 pinned
+asset files (402,841,998 bytes), published root-owned/read-only. Autohost inputs
+are independently validated in agent and root supervisor: stock-map identifiers,
+name, two-to-eight player ceiling, tech, bases, power, alliances, scavengers and
+spectator slots. Root generates the fixed autohost JSON and controls data/config
+paths; callers cannot supply scripts, binaries or alternate startup paths.
+
+The staging fixture passed concurrent/idempotent create, the existing local
+connection-based occupancy adapter (zero/four slots; bots unknown), unchanged
+gate/game PID after agent restart, process metrics, scoped stop, and rollback
+preserving old/new data. Connection counts are not claimed as a native game-level
+human/bot protocol. All fixture processes and data were removed. Protected files
+and reserved-UID snapshots include this twentieth accepted opt-in identity.
+Executable mod installation and automatic customer enrollment remain disabled.
+
+Warzone release validation: 390 complete agent tests passed on the VPS (one
+platform skip), plus 131 Linux helper tests. Guarded deployment preserved all
+ten live managed processes in its snapshot. Service and 15-minute timer stayed
+active; catalog/database writes and automatic customer enrollment remain zero.
+Whole-data snapshots cover saved games; the browser file manager retains its
+existing extension filter, so not every engine-native save extension is exposed
+for individual upload/edit. This is not a claim of full content-management parity.

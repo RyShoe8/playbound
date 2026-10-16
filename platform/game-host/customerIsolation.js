@@ -10,7 +10,7 @@ import { customerResourceLimits } from "./customerResourceLimits.js";
 import { identityMigrationMetadata } from "./customerMigration.js";
 import { NATIVE_PACKAGE_PROFILES, verifyNativePackageInstallation } from "./nativePackageUpdates.js";
 
-export const CUSTOMER_IDENTITY_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti", "openarena", "battle-for-wesnoth", "supertuxkart", "0-ad", "ysoccer", "flightgear", "mindustry", "hurry-curry", "assaultcube", "xonotic", "wolfenstein-enemy-territory", "medal-of-honor-allied-assault", "freedoom"]);
+export const CUSTOMER_IDENTITY_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti", "openarena", "battle-for-wesnoth", "supertuxkart", "0-ad", "ysoccer", "flightgear", "mindustry", "hurry-curry", "assaultcube", "xonotic", "wolfenstein-enemy-territory", "medal-of-honor-allied-assault", "freedoom","freeciv","warzone-2100"]);
 export const TEEWORLDS_ISOLATION = "teeworlds-bwrap-v1";
 export const CUSTOMER_ISOLATION_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti"]);
 
@@ -33,7 +33,7 @@ function unlinkedAncestors(filename) {
 
 /** Runs before recipes write any generated configuration, not just at spawn. */
 export function validateCustomerPreparation({ gameSlug, customerOwned, communityServerId: id, home, identityProfile }) {
-  if (customerOwned && ["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault","freedoom"].includes(gameSlug) && identityProfile) {
+  if (customerOwned && ["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault","freedoom","freeciv","warzone-2100"].includes(gameSlug) && identityProfile) {
     if (identityProfile !== `${gameSlug}-unix-v1` || identityMigrationMetadata(id,home)?.identityProfile !== identityProfile) throw new Error("Customer identity migration is not ready");
     return;
   }
@@ -74,7 +74,7 @@ function privateDirectory(directory) {
 }
 
 export function customerIsolationLaunch({ gameSlug, customerOwned, communityServerId, binary, args, home, resourceLimits, identityProfile, settings, startupPort, serverName }) {
-  if (!customerOwned || (!CUSTOMER_ISOLATION_GAMES.includes(gameSlug) && !(["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault","freedoom"].includes(gameSlug) && identityProfile))) return null;
+  if (!customerOwned || (!CUSTOMER_ISOLATION_GAMES.includes(gameSlug) && !(["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault","freedoom","freeciv","warzone-2100"].includes(gameSlug) && identityProfile))) return null;
   if (identityProfile !== undefined && (!CUSTOMER_IDENTITY_GAMES.includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1`)) throw new Error("Unsupported customer identity profile");
   const limits = customerResourceLimits(gameSlug, resourceLimits);
   validateCustomerPreparation({ gameSlug, customerOwned, communityServerId, home, identityProfile });
@@ -208,6 +208,21 @@ export function zeroAdIdentityConfiguration(args) {
 }
 
 function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, home, resourceLimits, identityProfile, settings, startupPort, serverName }) {
+  if(gameSlug==="warzone-2100") {
+    const expected=["--datadir=/opt/playbound-host/games/warzone-2100/runtime/data",`--configdir=${path.join(home,"warzone-2100-servers",`pb-${id}`)}`,`--autohost=pb-${id.slice(-16)}.json`,`--gameport=${startupPort}`,"--startplayers=1","--headless","--nosound"];
+    if(binary!=="/opt/playbound-host/games/warzone-2100/runtime/warzone2100" || identityProfile!=="warzone-2100-unix-v1" || identityMigrationMetadata(id,home)?.identityProfile!==identityProfile || args.join("\0")!==expected.join("\0"))throw new Error("Unexpected Warzone identity contract");
+    const configuration={name:String(serverName||"PlayBound.club Party").slice(0,40),map:settings?.map??"Sk-Mountain",maxPlayers:Math.min(settings?.maxPlayers??8,8),techLevel:settings?.techLevel??1,bases:settings?.bases??2,powerLevel:settings?.powerLevel??1,alliances:settings?.alliances??0,scavengers:settings?.scavengers??0,openSpectatorSlots:settings?.openSpectatorSlots??4};
+    if(!Number.isInteger(startupPort)||startupPort<2100||startupPort>2120||!configuration.name.length||/[\x00-\x1f\x7f]/.test(configuration.name)||!/^[A-Za-z0-9_-]{1,80}$/.test(configuration.map))throw new Error("Invalid Warzone text setting");
+    for(const [key,low,high] of [["maxPlayers",2,8],["techLevel",1,3],["bases",0,2],["powerLevel",0,2],["alliances",0,2],["scavengers",0,2],["openSpectatorSlots",0,10]])if(!Number.isInteger(configuration[key])||configuration[key]<low||configuration[key]>high)throw new Error("Invalid Warzone number");
+    return {profile:"warzone-2100-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify(configuration)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
+  if (gameSlug === "freeciv") {
+    const expectedRoot=path.join(home,"freeciv-servers",`pb-${id}`);
+    if (binary!=="/opt/playbound-host/games/freeciv/runtime/bin/freeciv-server" || identityProfile!=="freeciv-unix-v1" || identityMigrationMetadata(id,home)?.identityProfile!==identityProfile || args.length!==6 || args[0]!=="-p" || args[1]!==String(startupPort) || args[2]!=="--read" || args[3]!==path.join(expectedRoot,`pb-${id}.serv`) || args[4]!=="--saves" || args[5]!==path.join(expectedRoot,"saves")) throw new Error("Unexpected Freeciv identity contract");
+    const maxPlayers=Number(settings?.maxPlayers??16);
+    if(!Number.isInteger(startupPort)||startupPort<5556||startupPort>5576||!Number.isInteger(maxPlayers)||maxPlayers<2||maxPlayers>64)throw new Error("Invalid Freeciv typed setting");
+    return {profile:"freeciv-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify({maxPlayers})},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
   if (gameSlug === "freedoom") {
     if(binary!=="/opt/playbound-host/games/freedoom/zandronum-server"||identityProfile!=="freedoom-unix-v1"||identityMigrationMetadata(id,home)?.identityProfile!==identityProfile||args[0]!=="-host")throw new Error("Unexpected isolated Zandronum contract");
     const values={};for(let i=1;i<args.length;i+=2){const key=args[i],value=args[i+1];if(typeof value!=="string"||Object.hasOwn(values,key))throw new Error("Unexpected Zandronum argument");values[key]=value;}

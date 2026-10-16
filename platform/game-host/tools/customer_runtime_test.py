@@ -405,4 +405,27 @@ class RuntimeBoundaries(unittest.TestCase):
             with self.assertRaises(ValueError): module.verify_scope(resources, ID, 42, IDENTITY, 750, 1536)
 
 
+class FreecivTypedTests(unittest.TestCase):
+    def test_fixed_configuration_rejects_commands_and_noninteger_slots(self):
+        module.select_game('freeciv')
+        try:
+            self.assertEqual(module.config_bytes('{"maxPlayers":4}',5576),b'set maxplayers 4\n')
+            for value in ('{"maxPlayers":true}','{"maxPlayers":65}','{"maxPlayers":4,"command":"lua unsafe"}'):
+                with self.assertRaises(ValueError):module.config_bytes(value,5576)
+        finally:module.select_game('teeworlds')
+
+class WarzoneTypedTests(unittest.TestCase):
+    def test_bounded_autohost_configuration_has_no_arbitrary_script_path(self):
+        import json
+        module.select_game('warzone-2100')
+        try:
+            value={'name':'Private fixture','map':'Sk-Mountain','maxPlayers':4,'techLevel':1,'bases':2,'powerLevel':1,'alliances':0,'scavengers':0,'openSpectatorSlots':4}
+            result=json.loads(module.config_bytes(json.dumps(value),2120))
+            self.assertEqual(result['challenge']['maxPlayers'],4)
+            self.assertTrue(result['challenge']['spectatorHost'])
+            for key,bad in [('maxPlayers',True),('maxPlayers',9),('map','../../scripts/unsafe'),('techLevel',4),('openSpectatorSlots',11),('name','bad\ncommand')]:
+                with self.assertRaises(ValueError):module.config_bytes(json.dumps(dict(value,**{key:bad})),2120)
+            with self.assertRaises(ValueError):module.config_bytes(json.dumps(dict(value,script='unsafe')),2120)
+        finally:module.select_game('teeworlds')
+
 if __name__ == '__main__': unittest.main()
