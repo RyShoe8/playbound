@@ -1,0 +1,30 @@
+{
+  "version": "2.85.0-existing-assets",
+  "files": [
+    {
+      "path": "etmain/pak0.pk3",
+      "bytes": 228138631,
+      "sha256": "712966b20e06523fe81419516500e499c86b2b4fec823856ddbd333fcb3d26e5"
+    },
+    {
+      "path": "etmain/pak1.pk3",
+      "bytes": 51616,
+      "sha256": "5610fd749024405b4425a7ce6397e58187b941d22092ef11d4844b427df53e5d"
+    },
+    {
+      "path": "etmain/pak2.pk3",
+      "bytes": 89910,
+      "sha256": "a48ab749a1a12ab4d9137286b1f23d642c29da59845b2bafc8f64e052cf06f3e"
+    },
+    {
+      "path": "legacy/legacy_v2.85.0.pk3",
+      "bytes": 34312686,
+      "sha256": "b2faa37620f01648eb6145cd3608f96eaab472b6fd0fb553fcfc4e5774c44799"
+    },
+    {
+      "path": "legacy/qagame.mp.x86_64.so",
+      "bytes": 10816616,
+      "sha256": "87c4b6e69787da6ea08fed017fd16ba533ba75cd9b01241a627bbd7b738ffcc6"
+    }
+  ]
+}

@@ -49,6 +49,31 @@ class RuntimeBoundaries(unittest.TestCase):
         self.assertIn('-autostart=random/mainland',command)
         with self.assertRaises(ValueError):module.request(['run-native',ID,'42',IDENTITY,'0-ad','20596','750','2048'])
 
+    def test_openmohaa_generates_bounded_map_slots_and_bot_settings(self):
+        import json
+        module.select_game('medal-of-honor-allied-assault')
+        values={'name':'Private fixture','maxPlayers':4,'bots':2,'map':'dm/mohdm1'}
+        config=module.config_bytes(json.dumps(values),12222)
+        self.assertIn(b'set sv_minPlayers 2',config)
+        command=module.command(Path('/fixture/data'),7,12222,2048,8,values,asset_directory=9)
+        self.assertIn('/server/main/playbound.cfg',command)
+        self.assertEqual(command[-2:],['+map','dm/mohdm1'])
+        for update in [{'name':'bad";quit'},{'bots':5},{'maxPlayers':True},{'map':'../unsafe'},{'plugin':'unsafe.so'}]:
+            with self.assertRaises(ValueError):module.config_bytes(json.dumps(dict(values,**update)),12222)
+
+    def test_etlegacy_has_fixed_native_map_and_disables_unreviewed_bot_scripts(self):
+        import json
+        module.select_game('wolfenstein-enemy-territory')
+        values={'name':'Private fixture','maxPlayers':4,'rconPassword':'a'*32}
+        config=module.config_bytes(json.dumps(values),27959)
+        self.assertIn(b'set omnibot_enable 0',config)
+        command=module.command(Path('/fixture/data'),7,27959,2048,8,values,asset_directory=9)
+        self.assertIn('/server/legacy/playbound.cfg',command)
+        self.assertIn('/game-data',command)
+        self.assertEqual(command[-2:],['+map','oasis'])
+        for update in [{'name':'bad";quit'},{'rconPassword':'bad\nquit'},{'maxPlayers':True},{'plugin':'unsafe.so'}]:
+            with self.assertRaises(ValueError):module.config_bytes(json.dumps(dict(values,**update)),27959)
+
     def test_xonotic_generates_fixed_config_and_uses_immutable_assets(self):
         import json
         module.select_game('xonotic')

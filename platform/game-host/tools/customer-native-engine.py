@@ -27,11 +27,23 @@ ENGINES = {
     'hurry-curry': ('hurrycurry-server', '/engine-native'),
     'assaultcube': ('linux_64_server', '/engine-native'),
     'xonotic': ('xonotic-linux64-dedicated', '/engine-native'),
+    'wolfenstein-enemy-territory': ('etlded.x86_64', '/engine-native'),
+    'medal-of-honor-allied-assault': ('omohaaded', '/engine-native'),
 }
 
 def sealed_engine_for(game):
     if game in ('ysoccer','mindustry'):
         return sealed_java_engine(game=game), '/engine.jar'
+    if game == 'medal-of-honor-allied-assault':
+        root=Path('/usr/local/libexec/playbound-isolated-openmohaa')
+        descriptor=sealed_engine(root/'omohaaded',root/'profile.json',game)
+        if descriptor is None: raise ValueError('Reviewed isolated OpenMoHAA engine is not installed')
+        return descriptor, '/engine-native'
+    if game == 'wolfenstein-enemy-territory':
+        root=Path('/usr/local/libexec/playbound-isolated-etlegacy')
+        descriptor=sealed_engine(root/'etlded.x86_64',root/'profile.json',game)
+        if descriptor is None: raise ValueError('Reviewed isolated ET engine is not installed')
+        return descriptor, '/engine-native'
     if game == 'xonotic':
         root=Path('/usr/local/libexec/playbound-isolated-xonotic')
         descriptor=sealed_engine(root/'xonotic-linux64-dedicated',root/'profile.json',game)

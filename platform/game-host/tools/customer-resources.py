@@ -29,6 +29,8 @@ PROFILES = {
     'hurry-curry': (1, 1024 ** 3, 128),
     'assaultcube': (1, 1024 ** 3, 128),
     'xonotic': (1, 1024 ** 3, 128),
+    'wolfenstein-enemy-territory': (1, 1024 ** 3, 128),
+    'medal-of-honor-allied-assault': (1, 1024 ** 3, 128),
 }
 
 

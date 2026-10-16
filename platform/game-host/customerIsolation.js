@@ -10,7 +10,7 @@ import { customerResourceLimits } from "./customerResourceLimits.js";
 import { identityMigrationMetadata } from "./customerMigration.js";
 import { NATIVE_PACKAGE_PROFILES, verifyNativePackageInstallation } from "./nativePackageUpdates.js";
 
-export const CUSTOMER_IDENTITY_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti", "openarena", "battle-for-wesnoth", "supertuxkart", "0-ad", "ysoccer", "flightgear", "mindustry", "hurry-curry", "assaultcube", "xonotic"]);
+export const CUSTOMER_IDENTITY_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti", "openarena", "battle-for-wesnoth", "supertuxkart", "0-ad", "ysoccer", "flightgear", "mindustry", "hurry-curry", "assaultcube", "xonotic", "wolfenstein-enemy-territory", "medal-of-honor-allied-assault"]);
 export const TEEWORLDS_ISOLATION = "teeworlds-bwrap-v1";
 export const CUSTOMER_ISOLATION_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti"]);
 
@@ -33,7 +33,7 @@ function unlinkedAncestors(filename) {
 
 /** Runs before recipes write any generated configuration, not just at spawn. */
 export function validateCustomerPreparation({ gameSlug, customerOwned, communityServerId: id, home, identityProfile }) {
-  if (customerOwned && ["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic"].includes(gameSlug) && identityProfile) {
+  if (customerOwned && ["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault"].includes(gameSlug) && identityProfile) {
     if (identityProfile !== `${gameSlug}-unix-v1` || identityMigrationMetadata(id,home)?.identityProfile !== identityProfile) throw new Error("Customer identity migration is not ready");
     return;
   }
@@ -74,7 +74,7 @@ function privateDirectory(directory) {
 }
 
 export function customerIsolationLaunch({ gameSlug, customerOwned, communityServerId, binary, args, home, resourceLimits, identityProfile, settings, startupPort, serverName }) {
-  if (!customerOwned || (!CUSTOMER_ISOLATION_GAMES.includes(gameSlug) && !(["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic"].includes(gameSlug) && identityProfile))) return null;
+  if (!customerOwned || (!CUSTOMER_ISOLATION_GAMES.includes(gameSlug) && !(["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault"].includes(gameSlug) && identityProfile))) return null;
   if (identityProfile !== undefined && (!CUSTOMER_IDENTITY_GAMES.includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1`)) throw new Error("Unsupported customer identity profile");
   const limits = customerResourceLimits(gameSlug, resourceLimits);
   validateCustomerPreparation({ gameSlug, customerOwned, communityServerId, home, identityProfile });
@@ -208,6 +208,25 @@ export function zeroAdIdentityConfiguration(args) {
 }
 
 function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, home, resourceLimits, identityProfile, settings, startupPort, serverName }) {
+  if (gameSlug === "medal-of-honor-allied-assault") {
+    if (binary!=="/opt/playbound-host/games/openmohaa/omohaaded" || identityProfile!=="medal-of-honor-allied-assault-unix-v1" || identityMigrationMetadata(id,home)?.identityProfile!==identityProfile || args.at(-2)!=="+map") throw new Error("Unexpected OpenMoHAA identity contract");
+    const values={};for(let i=0;i<args.length-2;i+=3){const [marker,key,value]=args.slice(i,i+3);if(marker!=="+set"||typeof value!=="string"||Object.hasOwn(values,key))throw new Error("Unexpected OpenMoHAA setting");values[key]=value;}
+    const allowed=new Set(["fs_homepath","net_port","sv_hostname","sv_gamespy","sv_maxclients","g_gametype","sv_maxbots","sv_minPlayers"]);
+    const maxPlayers=Number(values.sv_maxclients),bots=Number(values.sv_minPlayers??0),map=args.at(-1);
+    if(Object.keys(values).some(x=>!allowed.has(x))||values.net_port!==String(startupPort)||values.fs_homepath!=="/var/lib/playbound-host/openmohaa/pb-"+id.slice(-8)||values.sv_gamespy!=="0"||values.g_gametype!=="1"||!Number.isInteger(startupPort)||startupPort<12203||startupPort>12222||!Number.isInteger(maxPlayers)||maxPlayers<2||maxPlayers>64||!Number.isInteger(bots)||bots<0||bots>maxPlayers||(values.sv_maxbots!==undefined&&Number(values.sv_maxbots)!==bots)||typeof values.sv_hostname!=="string"||!values.sv_hostname.length||values.sv_hostname.length>48||/[\x00-\x1f\x7f"\\;]/.test(values.sv_hostname)||!/^dm\/mohdm[1-7]$/.test(map))throw new Error("Invalid OpenMoHAA typed settings");
+    return {profile:"medal-of-honor-allied-assault-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify({name:values.sv_hostname,maxPlayers,bots,map})},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
+  if (gameSlug === "wolfenstein-enemy-territory") {
+    if (binary!=="/opt/playbound-host/games/wolfenstein-enemy-territory/etlded.x86_64" || identityProfile!=="wolfenstein-enemy-territory-unix-v1" || identityMigrationMetadata(id,home)?.identityProfile!==identityProfile) throw new Error("Unexpected ET Legacy identity contract");
+    const values={};
+    if(args.at(-4)!=="+exec"||args.at(-3)!=="et-playbound.cfg"||args.at(-2)!=="+map"||args.at(-1)!=="oasis")throw new Error("Unexpected ET startup map");
+    for(let i=0;i<args.length-4;i+=3){const [marker,key,value]=args.slice(i,i+3);if(marker!=="+set"||typeof value!=="string"||Object.hasOwn(values,key))throw new Error("Unexpected ET setting");values[key]=value;}
+    const allowed=new Set(["fs_basepath","fs_homepath","dedicated","net_port","sv_hostname","sv_master1","sv_pure","omnibot_enable","rconpassword","sv_maxclients"]);
+    if(Object.keys(values).some(x=>!allowed.has(x))||values.net_port!==String(startupPort)||values.dedicated!=="2"||values.sv_pure!=="0"||values.omnibot_enable!=="0"||values.fs_homepath!=="/var/lib/playbound-host/et/"+id.slice(-16)||values.fs_basepath!=="/opt/playbound-host/games/wolfenstein-enemy-territory"||!/^[A-Za-z0-9_-]{24,64}$/.test(values.rconpassword||""))throw new Error("ET isolated startup requires bounded native settings and no Omni-bot");
+    const maxPlayers=Number(values.sv_maxclients);
+    if(!Number.isInteger(startupPort)||startupPort<27950||startupPort>27959||!Number.isInteger(maxPlayers)||maxPlayers<2||maxPlayers>64||typeof values.sv_hostname!=="string"||!values.sv_hostname.length||values.sv_hostname.length>100||/[\x00-\x1f\x7f"\\;]/.test(values.sv_hostname))throw new Error("Invalid ET typed settings");
+    return {profile:"wolfenstein-enemy-territory-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify({name:values.sv_hostname,maxPlayers,rconPassword:values.rconpassword})},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
   if (gameSlug === "xonotic") {
     if (binary!=="/opt/playbound-host/games/xonotic/xonotic-linux64-dedicated" || identityProfile!=="xonotic-unix-v1" || identityMigrationMetadata(id,home)?.identityProfile!==identityProfile) throw new Error("Unexpected Xonotic identity contract");
     const values={};

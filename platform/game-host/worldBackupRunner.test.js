@@ -6,7 +6,7 @@ const id = "0123456789abcdef01234567";
 const token = "01234567-0123-4123-8123-0123456789ab";
 
 test("every verified native identity uses the protected snapshot helper",async()=>{
-  for (const game of ["teeworlds","bzflag","hedgewars","openttd","luanti","openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic"]) {
+  for (const game of ["teeworlds","bzflag","hedgewars","openttd","luanti","openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault"]) {
     const result=await runIsolatedWorldBackup("createWorldBackup",[id,game],async(binary,args)=>{
       assert.equal(binary,"/usr/bin/sudo");
       assert.deepEqual(args,["-n","/usr/local/libexec/playbound-customer-world-backups","create",id,"3"]);

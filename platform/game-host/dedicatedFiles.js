@@ -258,7 +258,7 @@ export function manageDedicatedFiles(id, game, input, home = process.env.HOME ||
 
 /** Invoked only by the fixed UID worker; no HTTP request chooses this root. */
 export function manageIsolatedDedicatedFiles(id, game, input) {
-  if (!/^[a-f0-9]{24}$/.test(id || "") || !["teeworlds","bzflag","hedgewars","openttd","luanti","openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic"].includes(game)) throw new Error("Invalid isolated world identity");
+  if (!/^[a-f0-9]{24}$/.test(id || "") || !["teeworlds","bzflag","hedgewars","openttd","luanti","openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault"].includes(game)) throw new Error("Invalid isolated world identity");
   const base = "/var/lib/playbound-customer-runtime";
   if (fs.realpathSync(base) !== base) throw new Error("Invalid isolated world root");
   const data = checkedPath(base, [id,"data"]);

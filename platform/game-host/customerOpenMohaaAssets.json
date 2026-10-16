@@ -1,0 +1,45 @@
+{
+  "version": "existing-openmohaa-assets",
+  "files": [
+    {
+      "path": "main/Pak0.pk3",
+      "bytes": 98668934,
+      "sha256": "6caf6d93cc996b6895d5015f1be153724e5369b8c063c73e1609578323261df6"
+    },
+    {
+      "path": "main/Pak1.pk3",
+      "bytes": 119631347,
+      "sha256": "60ed94c185c4f81813aefaf1603b16734e65eb1b931737ae588df84c0a2a4b80"
+    },
+    {
+      "path": "main/Pak2.pk3",
+      "bytes": 365587748,
+      "sha256": "00133b93d350b5d82ff2d59a7d87fe94dad18147d28b6fd59dd2b5a6c816acce"
+    },
+    {
+      "path": "main/Pak3.pk3",
+      "bytes": 87555605,
+      "sha256": "1e0eed04b234bae260097813755325d2533bb6082c5fc9e98332aa66c4f4db92"
+    },
+    {
+      "path": "main/Pak4.pk3",
+      "bytes": 34046379,
+      "sha256": "853cc70610933e83284db95e6144ed3c02d81190065b44aae94ba58ca09f3130"
+    },
+    {
+      "path": "main/Pak5.pk3",
+      "bytes": 87721422,
+      "sha256": "b6035d8686bed133be76cdee322c37fd4a9814ba88bbce3e91f20571ea7b2a1d"
+    },
+    {
+      "path": "main/pak6.pk3",
+      "bytes": 11202988,
+      "sha256": "619e6acfd37471f0c71194ef6546e592d01cd9f7c1a3ebf57064cf618cf503ae"
+    },
+    {
+      "path": "game.so",
+      "bytes": 17270072,
+      "sha256": "55be6f50b9f05d97147ed9743c00ce4f99be81465e02c03531f35140546a5f1f"
+    }
+  ]
+}
