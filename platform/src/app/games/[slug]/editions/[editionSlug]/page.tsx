@@ -317,20 +317,7 @@ export default async function EditionPage({
             <p className="max-w-3xl text-base leading-relaxed text-white/90 sm:text-lg">{edition.shortDescription}</p>
           )}
           <p className="text-xs font-medium text-white/70">
-            {[
-              game.genres.filter(Boolean).join(" / "),
-              game.releaseYear,
-              edition.installConfig?.official_download?.sizeMB
-                ? edition.installConfig.official_download.sizeMB >= 1000
-                  ? `~${(edition.installConfig.official_download.sizeMB / 1000).toFixed(1)} GB`
-                  : `~${edition.installConfig.official_download.sizeMB} MB`
-                : game.sizeMB
-                  ? game.sizeMB >= 1000
-                    ? `~${(game.sizeMB / 1000).toFixed(1)} GB`
-                    : `~${game.sizeMB} MB`
-                  : "",
-              game.license,
-            ]
+            {[game.genres.filter(Boolean).join(" / "), edition.releaseYear ?? game.releaseYear]
               .filter(Boolean)
               .join(" · ")}
           </p>
@@ -659,64 +646,6 @@ function OverviewTab({
           </section>
         )}
 
-        {(edition.developerName || (edition.credits?.length ?? 0) > 0 || edition.license || edition.releaseYear) && (
-          <section>
-            <SectionHeader title="Credits" />
-            <div className="mt-3 rounded-xl border border-border bg-card p-5 text-sm">
-              <dl className="grid gap-x-8 gap-y-2 sm:grid-cols-2">
-                {edition.developerName && (
-                  <div>
-                    <dt className="text-xs font-bold tracking-wide text-muted-foreground uppercase">Developed by</dt>
-                    <dd className="mt-0.5 font-semibold">
-                      {edition.developerSlug ? (
-                        <Link href={`/developers/${edition.developerSlug}`} className="text-primary hover:underline">
-                          {edition.developerName}
-                        </Link>
-                      ) : (
-                        edition.developerName
-                      )}
-                    </dd>
-                  </div>
-                )}
-                {edition.license && (
-                  <div>
-                    <dt className="text-xs font-bold tracking-wide text-muted-foreground uppercase">License</dt>
-                    <dd className="mt-0.5 font-semibold">{edition.license}</dd>
-                  </div>
-                )}
-                {edition.releaseYear && (
-                  <div>
-                    <dt className="text-xs font-bold tracking-wide text-muted-foreground uppercase">First released</dt>
-                    <dd className="mt-0.5 font-semibold">{edition.releaseYear}</dd>
-                  </div>
-                )}
-                {edition.version && (
-                  <div>
-                    <dt className="text-xs font-bold tracking-wide text-muted-foreground uppercase">Version listed</dt>
-                    <dd className="mt-0.5 font-semibold">{edition.version}</dd>
-                  </div>
-                )}
-              </dl>
-              {(edition.credits?.length ?? 0) > 0 && (
-                <ul className="mt-4 space-y-1.5 border-t border-border pt-4">
-                  {edition.credits!.map((credit, i) => (
-                    <li key={i} className="flex flex-wrap items-baseline gap-x-2">
-                      {credit.url ? (
-                        <a href={credit.url} target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">
-                          {credit.name}
-                        </a>
-                      ) : (
-                        <span className="font-semibold">{credit.name}</span>
-                      )}
-                      {credit.role && <span className="text-muted-foreground">— {credit.role}</span>}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </section>
-        )}
-
         <section>
           <SectionHeader title="Will this run on your PC?" />
           <div className="mt-3">
@@ -860,7 +789,7 @@ function OverviewTab({
           <h2 className="text-sm font-extrabold tracking-wider text-muted-foreground uppercase">
             Edition Facts
           </h2>
-          <dl className="mt-3.5 space-y-3 text-sm">
+          <dl className="mt-3.5 space-y-3 text-sm [&>div:last-child]:border-b-0 [&>div:last-child]:pb-0">
             <div className="flex justify-between gap-2 border-b border-border/50 pb-2">
               <dt className="text-muted-foreground">Base Game</dt>
               <dd className="font-semibold text-right">
@@ -870,10 +799,6 @@ function OverviewTab({
               </dd>
             </div>
             <div className="flex justify-between gap-2 border-b border-border/50 pb-2">
-              <dt className="text-muted-foreground">Type</dt>
-              <dd className="font-semibold capitalize text-right">{edition.type || "Community"}</dd>
-            </div>
-            <div className="flex justify-between gap-2 border-b border-border/50 pb-2">
               <dt className="text-muted-foreground">Install Method</dt>
               <dd className="font-semibold text-right">{INSTALL_METHOD_LABELS[edition.installMethod]}</dd>
             </div>
@@ -881,16 +806,60 @@ function OverviewTab({
               <dt className="text-muted-foreground">Approx. Size</dt>
               <dd className="font-semibold text-right">{sizeText}</dd>
             </div>
-            <div className="flex justify-between gap-2 border-b border-border/50 pb-2">
-              <dt className="text-muted-foreground">License</dt>
-              <dd className="font-semibold text-right text-xs max-w-[160px] truncate">{game.license}</dd>
-            </div>
-            <div className="flex justify-between gap-2">
-              <dt className="text-muted-foreground">Verification</dt>
-              <dd className="font-semibold capitalize text-right">{edition.verificationLevel.replace(/_/g, " ")}</dd>
-            </div>
+            {edition.developerName && (
+              <div className="flex justify-between gap-2 border-b border-border/50 pb-2">
+                <dt className="text-muted-foreground">Developer</dt>
+                <dd className="font-semibold text-right">
+                  {edition.developerSlug ? (
+                    <Link href={`/developers/${edition.developerSlug}`} className="text-primary hover:underline">
+                      {edition.developerName}
+                    </Link>
+                  ) : (
+                    edition.developerName
+                  )}
+                </dd>
+              </div>
+            )}
+            {(edition.license || game.license) && (
+              <div className="flex justify-between gap-2 border-b border-border/50 pb-2">
+                <dt className="text-muted-foreground">License</dt>
+                <dd className="font-semibold text-right text-xs max-w-[160px]">{edition.license || game.license}</dd>
+              </div>
+            )}
+            {edition.releaseYear && (
+              <div className="flex justify-between gap-2 border-b border-border/50 pb-2">
+                <dt className="text-muted-foreground">First Released</dt>
+                <dd className="font-semibold text-right">{edition.releaseYear}</dd>
+              </div>
+            )}
+            {edition.version && (
+              <div className="flex justify-between gap-2 border-b border-border/50 pb-2">
+                <dt className="text-muted-foreground">Version</dt>
+                <dd className="font-semibold text-right">{edition.version}</dd>
+              </div>
+            )}
           </dl>
         </div>
+
+        {(edition.credits?.length ?? 0) > 0 && (
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+            <h2 className="text-sm font-extrabold tracking-wider text-muted-foreground uppercase">Credits</h2>
+            <ul className="mt-3.5 space-y-2 text-sm">
+              {edition.credits!.map((credit, i) => (
+                <li key={i}>
+                  {credit.url ? (
+                    <a href={credit.url} target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">
+                      {credit.name}
+                    </a>
+                  ) : (
+                    <span className="font-semibold">{credit.name}</span>
+                  )}
+                  {credit.role && <span className="block text-xs text-muted-foreground">{credit.role}</span>}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {liveStats.serverCount > 0 && (
           <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5">

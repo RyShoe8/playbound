@@ -1052,6 +1052,11 @@ const NO_CONFIG_NEEDED = {
     kind: "native",
     note: "The Godot project ships explicit joypad buttons and axes for movement, fire, upgrades, start and select.",
   },
+  "medal-of-honor-retro-remake": {
+    kind: "native",
+    note:
+      "Unreal Engine 4 build whose shipped DefaultInput.ini binds a gamepad itself (read from MOH-WindowsNoEditor.pak): right stick looks, d-pad moves, shoulders strafe, face buttons jump, fire, reload and change weapon. Nothing for PlayBound to write.",
+  },
   openseek: {
     kind: "native",
     note: "SDL-mapped gamepads: left stick turns and drives, right stick strafes, buttons rebind under OPTIONS > CONTROLS, and co-op gives each player their own pad, so a bridged phone works as pad two.",
