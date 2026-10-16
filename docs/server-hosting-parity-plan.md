@@ -1686,3 +1686,37 @@ passed reserved-UID file listing/read/write, traversal/executable rejection, API
 snapshot creation and atomic restore retaining the prior data. Same-process
 restart acceptance was repeated before stop, and migration rollback preserved
 old and newer data. All fixture processes and directories were removed.
+
+
+### Xonotic immutable asset and identity acceptance (2026-10-16)
+
+`xonotic-unix-v1` adds the fifteenth explicit offline identity profile. The pinned
+0.8.6 dedicated executable is root-promoted and sealed. Seven existing asset
+archives (1,185,158,790 bytes) are independently hashed and atomically published
+into a versioned root-owned read-only directory. The operator-only publisher
+requires disk headroom, refuses an existing destination, bounds counts/sizes,
+rejects changed or linked sources and leaves the shared installation untouched.
+This is an existing-data baseline, not a new upstream provenance claim.
+
+Startup validates root ownership, immutable permissions, exact file inventory
+and hashes, then retains a no-follow directory descriptor for the read-only
+namespace bind. Data stays on disk rather than being copied into RAM per server.
+Private writes and generated configuration remain under the reserved server UID.
+Root and agent independently validate name/map/mode/slots/bots/limits/RCON fields;
+arbitrary console input, paths and commands are rejected. DarkPlaces requires
+explicit `-xonotic` selection when the sealed executable has a neutral name:
+https://github.com/DarkPlacesEngine/darkplaces/blob/master/com_game.c
+The isolated profile stays unlisted (`sv_public 0`); normal launches are unchanged.
+
+The VPS fixture passed native query (zero humans/four slots/zero bots), unchanged
+gate and game PID through agent restart, metrics, scoped stop and migration
+rollback preserving older/newer data. All fixture processes/data were removed.
+Protected file and snapshot routing includes this identity; Linux restore tests
+verify UID and activation inode preservation. Executable content and UID-aware
+live control acceptance remain separate. Isolated updates require operator
+review/promotion of the root executable and asset pins, never a silent auto-bless.
+
+Validation: 116 Linux helper tests passed, including immutable directory access,
+changed/link/writable/unlisted rejection and atomic publication bounds.
+
+The agent suite passed 341 tests with 49 platform skips. One initial parallel Windows run hit a transient Barotrauma fixture rename EPERM; its focused rerun and the complete sequential suite passed.

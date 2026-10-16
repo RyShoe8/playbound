@@ -3,6 +3,8 @@
 set -euo pipefail
 test "$(id -u)" = 0 || { echo 'Run as root'; exit 1; }
 source_dir="$(cd "$(dirname "$0")" && pwd)"
+python3 -m py_compile "$source_dir/customer-xonotic-assets.py"
+install -o root -g root -m 755 "$source_dir/customer-xonotic-assets.py" /usr/local/libexec/playbound-customer-xonotic-assets
 java_profiles="$source_dir/../customerJavaProfiles.json"
 if test -f "$source_dir/customerJavaProfiles.json"; then java_profiles="$source_dir/customerJavaProfiles.json"; fi
 install -o root -g root -m 644 "$java_profiles" /usr/local/libexec/playbound-customer-java-profiles.json

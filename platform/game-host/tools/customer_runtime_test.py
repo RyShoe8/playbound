@@ -49,6 +49,21 @@ class RuntimeBoundaries(unittest.TestCase):
         self.assertIn('-autostart=random/mainland',command)
         with self.assertRaises(ValueError):module.request(['run-native',ID,'42',IDENTITY,'0-ad','20596','750','2048'])
 
+    def test_xonotic_generates_fixed_config_and_uses_immutable_assets(self):
+        import json
+        module.select_game('xonotic')
+        values={'name':'Private fixture','maxPlayers':4,'map':'stormkeep','gameType':'dm','rconPassword':'a'*32,'bots':1,'fragLimit':-1,'timeLimit':-1}
+        config=module.config_bytes(json.dumps(values),26020)
+        self.assertIn(b'sv_public 0',config)
+        self.assertIn(b'minplayers 1',config)
+        command=module.command(Path('/fixture/data'),7,26020,2048,8,values,asset_directory=9)
+        self.assertIn('/proc/self/fd/9',command)
+        self.assertIn('/game-data/data',command)
+        self.assertIn('/server/data/server.cfg',command)
+        self.assertNotIn('/opt/playbound-host/games/xonotic',command)
+        for update in [{'name':'bad";quit'},{'map':'../unsafe'},{'maxPlayers':True},{'bots':5},{'exec':'unsafe'}]:
+            with self.assertRaises(ValueError):module.config_bytes(json.dumps(dict(values,**update)),26020)
+
     def test_assaultcube_has_private_config_logs_and_allocated_query_pair(self):
         import json
         module.select_game('assaultcube')

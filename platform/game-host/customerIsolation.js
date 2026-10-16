@@ -10,7 +10,7 @@ import { customerResourceLimits } from "./customerResourceLimits.js";
 import { identityMigrationMetadata } from "./customerMigration.js";
 import { NATIVE_PACKAGE_PROFILES, verifyNativePackageInstallation } from "./nativePackageUpdates.js";
 
-export const CUSTOMER_IDENTITY_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti", "openarena", "battle-for-wesnoth", "supertuxkart", "0-ad", "ysoccer", "flightgear", "mindustry", "hurry-curry", "assaultcube"]);
+export const CUSTOMER_IDENTITY_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti", "openarena", "battle-for-wesnoth", "supertuxkart", "0-ad", "ysoccer", "flightgear", "mindustry", "hurry-curry", "assaultcube", "xonotic"]);
 export const TEEWORLDS_ISOLATION = "teeworlds-bwrap-v1";
 export const CUSTOMER_ISOLATION_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti"]);
 
@@ -33,7 +33,7 @@ function unlinkedAncestors(filename) {
 
 /** Runs before recipes write any generated configuration, not just at spawn. */
 export function validateCustomerPreparation({ gameSlug, customerOwned, communityServerId: id, home, identityProfile }) {
-  if (customerOwned && ["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube"].includes(gameSlug) && identityProfile) {
+  if (customerOwned && ["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic"].includes(gameSlug) && identityProfile) {
     if (identityProfile !== `${gameSlug}-unix-v1` || identityMigrationMetadata(id,home)?.identityProfile !== identityProfile) throw new Error("Customer identity migration is not ready");
     return;
   }
@@ -74,7 +74,7 @@ function privateDirectory(directory) {
 }
 
 export function customerIsolationLaunch({ gameSlug, customerOwned, communityServerId, binary, args, home, resourceLimits, identityProfile, settings, startupPort, serverName }) {
-  if (!customerOwned || (!CUSTOMER_ISOLATION_GAMES.includes(gameSlug) && !(["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube"].includes(gameSlug) && identityProfile))) return null;
+  if (!customerOwned || (!CUSTOMER_ISOLATION_GAMES.includes(gameSlug) && !(["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic"].includes(gameSlug) && identityProfile))) return null;
   if (identityProfile !== undefined && (!CUSTOMER_IDENTITY_GAMES.includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1`)) throw new Error("Unsupported customer identity profile");
   const limits = customerResourceLimits(gameSlug, resourceLimits);
   validateCustomerPreparation({ gameSlug, customerOwned, communityServerId, home, identityProfile });
@@ -208,6 +208,20 @@ export function zeroAdIdentityConfiguration(args) {
 }
 
 function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, home, resourceLimits, identityProfile, settings, startupPort, serverName }) {
+  if (gameSlug === "xonotic") {
+    if (binary!=="/opt/playbound-host/games/xonotic/xonotic-linux64-dedicated" || identityProfile!=="xonotic-unix-v1" || identityMigrationMetadata(id,home)?.identityProfile!==identityProfile) throw new Error("Unexpected Xonotic identity contract");
+    const values={};
+    for(let i=0;i<args.length;){
+      const marker=args[i++],key=marker==="+set"?args[i++]:marker?.slice(1),value=args[i++];
+      if (!marker?.startsWith("+") || !key || typeof value!=="string" || Object.hasOwn(values,key)) throw new Error("Unexpected Xonotic startup settings");
+      values[key]=value;
+    }
+    const allowed=new Set(["port","hostname","sv_public","rcon_secure","rcon_password","maxplayers","gametype","fraglimit_override","timelimit_override","bot_join_empty","minplayers","map"]);
+    if(Object.keys(values).some(key=>!allowed.has(key)) || values.port!==String(startupPort) || values.rcon_secure!=="0" || !/^[A-Za-z0-9_-]{24,64}$/.test(values.rcon_password||"") || !["0","1"].includes(values.sv_public)) throw new Error("Unexpected Xonotic startup contract");
+    const configuration={name:values.hostname,maxPlayers:Number(values.maxplayers),map:values.map,gameType:values.gametype,rconPassword:values.rcon_password,bots:Number(values.minplayers??0),fragLimit:Number(values.fraglimit_override??-1),timeLimit:Number(values.timelimit_override??-1)};
+    if(!Number.isInteger(startupPort)||startupPort<26000||startupPort>26020||typeof configuration.name!=="string"||!configuration.name.length||configuration.name.length>100||/[\x00-\x1f\x7f"\\;]/.test(configuration.name)||!/^[A-Za-z0-9_-]{1,64}$/.test(configuration.map||"")||!["dm","tdm","ctf","ca","duel","lms","kh","dom","as","race","cts","nb","ft","ka","inv"].includes(configuration.gameType)||!Number.isInteger(configuration.maxPlayers)||configuration.maxPlayers<2||configuration.maxPlayers>64||!Number.isInteger(configuration.bots)||configuration.bots<0||configuration.bots>configuration.maxPlayers||[configuration.fragLimit,configuration.timeLimit].some(x=>!Number.isInteger(x)||x < -1 || x>100000)) throw new Error("Invalid Xonotic typed settings");
+    return {profile:"xonotic-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify(configuration)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
   if (gameSlug === "assaultcube") {
     const port=startupPort,name=serverName,maxPlayers=settings?.maxPlayers ?? 12;
     if (binary!=="/opt/playbound-host/games/assaultcube/bin_unix/linux_64_server" || identityProfile!=="assaultcube-unix-v1" || identityMigrationMetadata(id,home)?.identityProfile!==identityProfile || !Number.isInteger(port) || port<28763 || port>28781 || port%2!==1 || typeof name!=="string" || !name.length || name.length>40 || /[\x00-\x1f\x7f]/.test(name) || !Number.isInteger(maxPlayers) || maxPlayers<2 || maxPlayers>64) throw new Error("Invalid AssaultCube identity contract");

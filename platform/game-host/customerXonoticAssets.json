@@ -1,0 +1,40 @@
+{
+  "version": "0.8.6-existing-assets",
+  "files": [
+    {
+      "path": "font-unifont-20230620.pk3",
+      "bytes": 2839911,
+      "sha256": "7cc9ca2e4cccaa7533d7e9fe7a6e5b5dd6e4af0c8551c1e9edc40d32b90dba2b"
+    },
+    {
+      "path": "font-xolonium-20230620.pk3",
+      "bytes": 171388,
+      "sha256": "d6404f31eea4b90d7fe4951b41b692261ef26e6b512b5c7de7a9e99d5d57b586"
+    },
+    {
+      "path": "xonotic-20230620-data.pk3",
+      "bytes": 317540306,
+      "sha256": "7602be0d44a4f1ce4f0918c54ceb215c9bc963a103623d6c7874f081330c8505"
+    },
+    {
+      "path": "xonotic-20230620-maps.pk3",
+      "bytes": 626168138,
+      "sha256": "d10e5a8eac468a4a5b6d80f9603d95949971c6b10f86bec65a79e19f0d424f54"
+    },
+    {
+      "path": "xonotic-20230620-music.pk3",
+      "bytes": 110697275,
+      "sha256": "133fbcfa5766cd6849c2918bb34ce4d749aeafcbf89de54df467a61296353f48"
+    },
+    {
+      "path": "xonotic-20230620-nexcompat.pk3",
+      "bytes": 125433473,
+      "sha256": "34021da1176e2b47383c94707b5922d9a5f3c4ff43f8ac4ac0e39da44648ccbe"
+    },
+    {
+      "path": "xonotic-20230620-xoncompat.pk3",
+      "bytes": 2308299,
+      "sha256": "e3aaff8e6dfb7a0031e2a04d62e5146fd7a9710264c7af1c3be752b62629b739"
+    }
+  ]
+}

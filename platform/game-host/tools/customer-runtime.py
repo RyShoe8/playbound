@@ -35,6 +35,7 @@ NATIVE_GAMES = {
     'mindustry': ('mindustry',6567,6587),
     'hurry-curry': ('hurry-curry-servers',27032,27052),
     'assaultcube': ('assaultcube-servers',28763,28781),
+    'xonotic': ('xonotic-servers',26000,26020),
 }
 
 def select_game(game):
@@ -112,6 +113,15 @@ def config_bytes(text, port):
         if GAME in ('ysoccer','flightgear'):
             if values != {}: raise ValueError('Undeclared YSoccer setting')
             return text.encode()
+        if GAME == 'xonotic':
+            if not isinstance(values,dict) or set(values)!={'name','maxPlayers','map','gameType','rconPassword','bots','fragLimit','timeLimit'}:
+                raise ValueError('Undeclared Xonotic setting')
+            if not isinstance(values['name'],str) or not 1<=len(values['name'])<=100 or re.search(r'[\x00-\x1f\x7f"\\;]',values['name']) or not re.fullmatch(r'[A-Za-z0-9_-]{1,64}',str(values['map'])) or not re.fullmatch(r'[A-Za-z0-9_-]{24,64}',str(values['rconPassword'])) or values['gameType'] not in ('dm','tdm','ctf','ca','duel','lms','kh','dom','as','race','cts','nb','ft','ka','inv'):
+                raise ValueError('Invalid Xonotic text setting')
+            for key,minimum,maximum in [('maxPlayers',2,64),('bots',0,64),('fragLimit',-1,100000),('timeLimit',-1,100000)]:
+                if type(values[key]) is not int or not minimum<=values[key]<=maximum:raise ValueError('Invalid Xonotic number')
+            if values['bots']>values['maxPlayers']:raise ValueError('Invalid Xonotic bot limit')
+            return ('hostname "'+values['name']+'"\nsv_public 0\nrcon_secure 0\nrcon_password "'+values['rconPassword']+'"\nmaxplayers '+str(values['maxPlayers'])+'\ngametype '+values['gameType']+'\nbot_join_empty 1\nminplayers '+str(values['bots'])+'\nfraglimit_override '+str(values['fragLimit'])+'\ntimelimit_override '+str(values['timeLimit'])+'\n').encode()
         if GAME in ('hurry-curry','assaultcube'):
             if not isinstance(values,dict) or set(values) != {'name','maxPlayers'} or not isinstance(values['name'],str) or not 1 <= len(values['name']) <= 40 or re.search(r'[\x00-\x1f\x7f]',values['name']) or type(values['maxPlayers']) is not int or not 2 <= values['maxPlayers'] <= 64:
                 raise ValueError('Invalid game typed settings')
@@ -250,12 +260,13 @@ def verify_scope(resources, server_id, pid, identity, cpu, memory):
     return scope
 
 
-def command(data, fd, port, memory, engine_fd=None, native_settings=None, seccomp_fd=None, dns_fd=None, assets=()):
-    target = {'teeworlds':'/usr/games/teeworlds-server','bzflag':'/usr/games/bzfs','hedgewars':'/usr/lib/hedgewars/bin/hedgewars-server','openttd':'/usr/games/openttd','luanti':'/usr/games/minetestserver','openarena':'/usr/lib/ioquake3/ioq3ded','battle-for-wesnoth':'/usr/games/wesnothd-1.18','supertuxkart':'/usr/games/supertuxkart','0-ad':'/usr/games/pyrogenesis','ysoccer':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','flightgear':'/engine-native','mindustry':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','hurry-curry':'/engine-native','assaultcube':'/engine-native'}[GAME]
+def command(data, fd, port, memory, engine_fd=None, native_settings=None, seccomp_fd=None, dns_fd=None, assets=(), asset_directory=None):
+    target = {'teeworlds':'/usr/games/teeworlds-server','bzflag':'/usr/games/bzfs','hedgewars':'/usr/lib/hedgewars/bin/hedgewars-server','openttd':'/usr/games/openttd','luanti':'/usr/games/minetestserver','openarena':'/usr/lib/ioquake3/ioq3ded','battle-for-wesnoth':'/usr/games/wesnothd-1.18','supertuxkart':'/usr/games/supertuxkart','0-ad':'/usr/games/pyrogenesis','ysoccer':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','flightgear':'/engine-native','mindustry':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','hurry-curry':'/engine-native','assaultcube':'/engine-native','xonotic':'/engine-native'}[GAME]
     settings = native_settings or {}
-    game_args = ['-f','server.cfg','sv_port '+str(port)] if GAME == 'teeworlds' else ['-p',str(port)] if GAME == 'hedgewars' else [] if GAME in ('openttd','luanti','openarena','battle-for-wesnoth','supertuxkart','0-ad','ysoccer','flightgear','mindustry','hurry-curry','assaultcube') else ['-p',str(port),'-offa','-q','-j','+r','+s',str(settings['scoreLimit']),'-mp',str(settings['maxPlayers'])]
+    game_args = ['-f','server.cfg','sv_port '+str(port)] if GAME == 'teeworlds' else ['-p',str(port)] if GAME == 'hedgewars' else [] if GAME in ('openttd','luanti','openarena','battle-for-wesnoth','supertuxkart','0-ad','ysoccer','flightgear','mindustry','hurry-curry','assaultcube','xonotic') else ['-p',str(port),'-offa','-q','-j','+r','+s',str(settings['scoreLimit']),'-mp',str(settings['maxPlayers'])]
     if GAME == 'openarena': game_args = ['+set','com_basegame','baseoa','+set','fs_basepath','/usr/lib/openarena-server','+set','fs_homepath','/server','+set','com_legacyprotocol','71','+set','com_protocol','71','+set','dedicated','1','+set','net_port',str(port),'+exec','playbound.cfg','+map','oa_dm1']
     if GAME == 'flightgear': game_args = ['-p',str(port),'-a',str(port+1),'-b','0','-d']
+    if GAME == 'xonotic': game_args = ['-xonotic','-basedir','/game-data','-userdir','/server','+port',str(port),'+exec','server.cfg','+map',settings['map']]
     if GAME == 'assaultcube': game_args = ['-c'+str(settings['maxPlayers']),'-n'+settings['name'],'-f'+str(port),'-m','-H/server/logs/','-W/server/demos/','-A/server/server.cfg','-r/server/server.cfg','-X/server/server.cfg','-B/server/server.cfg','-G/server/server.cfg','-K/server/server.cfg','-g/server/server.cfg','-U/server/vita']
     if GAME == 'hurry-curry': game_args = ['--listen','0.0.0.0:'+str(port),'--server-name',settings['name'],'--max-players',str(settings['maxPlayers']),'--data-dir','/game-data']
     if GAME == 'mindustry': game_args = ['-Xms64m','-Xmx768m','-XX:MaxMetaspaceSize=128m','-XX:ReservedCodeCacheSize=64m','-XX:CompressedClassSpaceSize=64m','-XX:+UseSerialGC','-XX:ActiveProcessorCount=1','-XX:+PerfDisableSharedMem','-Dorg.jline.terminal.dumb=true','-jar','/engine.jar','config name '+settings['name']+',config port '+str(port)+',playerlimit '+str(settings['maxPlayers'])+',host']
@@ -270,8 +281,9 @@ def command(data, fd, port, memory, engine_fd=None, native_settings=None, seccom
             '--unshare-user', '--unshare-pid', '--unshare-ipc', '--unshare-uts', '--unshare-cgroup', '--disable-userns', '--cap-drop', 'ALL', '--die-with-parent',
             '--ro-bind', '/usr', '/usr', '--symlink', 'usr/lib', '/lib', '--symlink', 'usr/lib64', '/lib64', '--symlink', 'usr/bin', '/bin',
             *(['--perms', '0555', '--ro-bind-data', str(engine_fd), '/engine.jar' if GAME in ('ysoccer','mindustry') else target] if engine_fd is not None else []),
+            *(['--ro-bind','/proc/self/fd/'+str(asset_directory),'/game-data/data'] if asset_directory is not None else []),
             *[part for descriptor,target in assets for part in ['--perms','0444','--ro-bind-data',str(descriptor),target]],
-            '--proc', '/proc', '--dev', '/dev', '--size', '67108864', '--tmpfs', '/tmp', '--bind', str(data), '/server', '--ro-bind-data', str(fd), '/server/baseoa/playbound.cfg' if GAME == 'openarena' else '/server/server.cfg',
+            '--proc', '/proc', '--dev', '/dev', '--size', '67108864', '--tmpfs', '/tmp', '--bind', str(data), '/server', '--ro-bind-data', str(fd), '/server/baseoa/playbound.cfg' if GAME == 'openarena' else '/server/data/server.cfg' if GAME == 'xonotic' else '/server/server.cfg',
             *[part for filename in ['/etc/protocols','/etc/services','/etc/hosts','/etc/resolv.conf','/etc/ssl/certs'] if Path(filename).exists() for part in ['--ro-bind',filename,filename]],
             *(['--ro-bind','/etc/java-21-openjdk','/etc/java-21-openjdk'] if GAME == 'mindustry' else []),
             *(['--ro-bind-data', str(dns_fd), '/etc/resolv.conf'] if dns_fd is not None else []),
@@ -398,6 +410,7 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
         child = None
         engine_fd = None
         assets = []
+        asset_directory = None
         seccomp_fd = None
         dns_fd = None
         host_guard = None
@@ -426,17 +439,19 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
             os.write(dns_fd,b'nameserver 1.1.1.1\nnameserver 1.0.0.1\noptions timeout:2 attempts:2\n')
             os.lseek(dns_fd,0,os.SEEK_SET)
             fcntl.fcntl(dns_fd,fcntl.F_ADD_SEALS,fcntl.F_SEAL_WRITE|fcntl.F_SEAL_GROW|fcntl.F_SEAL_SHRINK|fcntl.F_SEAL_SEAL)
-            for binary in ['/usr/bin/prlimit', '/usr/bin/bwrap', {'teeworlds':'/usr/games/teeworlds-server','bzflag':'/usr/games/bzfs','hedgewars':'/usr/lib/hedgewars/bin/hedgewars-server','openttd':'/usr/games/openttd','luanti':'/usr/games/minetestserver','openarena':'/usr/lib/ioquake3/ioq3ded','battle-for-wesnoth':'/usr/games/wesnothd-1.18','supertuxkart':'/usr/games/supertuxkart','0-ad':'/usr/games/pyrogenesis','ysoccer':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','flightgear':'/usr/local/libexec/playbound-isolated-flightgear/fgms','mindustry':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','hurry-curry':'/usr/local/libexec/playbound-isolated-hurry/hurrycurry-server','assaultcube':'/usr/local/libexec/playbound-isolated-assaultcube/linux_64_server'}[GAME]]:
+            for binary in ['/usr/bin/prlimit', '/usr/bin/bwrap', {'teeworlds':'/usr/games/teeworlds-server','bzflag':'/usr/games/bzfs','hedgewars':'/usr/lib/hedgewars/bin/hedgewars-server','openttd':'/usr/games/openttd','luanti':'/usr/games/minetestserver','openarena':'/usr/lib/ioquake3/ioq3ded','battle-for-wesnoth':'/usr/games/wesnothd-1.18','supertuxkart':'/usr/games/supertuxkart','0-ad':'/usr/games/pyrogenesis','ysoccer':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','flightgear':'/usr/local/libexec/playbound-isolated-flightgear/fgms','mindustry':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','hurry-curry':'/usr/local/libexec/playbound-isolated-hurry/hurrycurry-server','assaultcube':'/usr/local/libexec/playbound-isolated-assaultcube/linux_64_server','xonotic':'/usr/local/libexec/playbound-isolated-xonotic/xonotic-linux64-dedicated'}[GAME]]:
                 info = Path(binary).stat()
                 if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_mode & 0o022: raise ValueError('Untrusted runtime executable')
             engines = trusted_module('pb_native_engine', 'playbound-customer-native-engine')
             engine_fd, _target = engines.sealed_engine_for(GAME)
-            if GAME in ('hurry-curry','assaultcube'): assets = trusted_module('pb_assets','playbound-customer-game-assets').seal_assets()
+            if GAME == 'xonotic': asset_directory = trusted_module('pb_assets','playbound-customer-xonotic-assets').open_assets()
+            if GAME in ('hurry-curry','assaultcube'): assets = trusted_module('pb_assets','playbound-customer-game-assets').seal_assets(game=GAME)
             syscalls = trusted_module('pb_syscalls', 'playbound-customer-seccomp')
             seccomp_fd = syscalls.sealed_filter()
             inherited = (fd,seccomp_fd,dns_fd) if engine_fd is None else (fd,engine_fd,seccomp_fd,dns_fd)
             inherited += tuple(descriptor for descriptor,_ in assets)
-            child = subprocess.Popen(command(root / 'data', fd, port, memory, engine_fd, json.loads(text) if GAME != 'teeworlds' else None, seccomp_fd, dns_fd, assets), user=account['uid'], group=account['gid'], extra_groups=[], env=ENV, cwd='/', stdin=subprocess.DEVNULL, pass_fds=inherited)
+            if asset_directory is not None: inherited += (asset_directory,)
+            child = subprocess.Popen(command(root / 'data', fd, port, memory, engine_fd, json.loads(text) if GAME != 'teeworlds' else None, seccomp_fd, dns_fd, assets, asset_directory), user=account['uid'], group=account['gid'], extra_groups=[], env=ENV, cwd='/', stdin=subprocess.DEVNULL, pass_fds=inherited)
             binding_write(root, {'profile': PROFILE, 'serverId': server_id, 'gatePid': pid, 'gateIdentity': identity, 'uid': account['uid'], 'gid': account['gid'], 'gamePid': child.pid, 'gameIdentity': game_identity(child.pid), 'networkProfile': network_profile, 'hostNetworkGuard': 'host-egress-v1', 'socketBindPort': port, 'bindPrograms': bind_programs})
             while child.poll() is None:
                 try:
@@ -452,6 +467,7 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
             os.close(fd)
             if engine_fd is not None: os.close(engine_fd)
             for descriptor,_ in assets: os.close(descriptor)
+            if asset_directory is not None: os.close(asset_directory)
             if seccomp_fd is not None: os.close(seccomp_fd)
             if dns_fd is not None: os.close(dns_fd)
             if child is not None and child.poll() is None:
