@@ -195,6 +195,8 @@ export interface EditionInstallConfig {
     postInstallDiscord?: string | boolean | null;
     /** Fetch latest eqw.dll from CoastalRedwood/eqw_takp. */
     postInstallEqw?: boolean;
+    /** After install, build a complete Daggerfall ARENA2 from Bethesda's freeware release and point DFO Online at it. */
+    postInstallDaggerfallData?: boolean;
     /** Overlay zip URL for locate-then-zip (P99Files). */
     overlayUrl?: string | null;
     overlayFileName?: string | null;
