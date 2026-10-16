@@ -5,10 +5,11 @@ import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
 import EditionModel from "@/lib/models/Edition";
 import { editions as seedEditions } from "@/lib/data/editions";
-import { archiveArtifactOnHost, archivedArtifactStatusOnHost } from "@/lib/gameHost/client";
+import { archiveArtifactOnHost, archivedArtifactStatusOnHost, deleteArchivedArtifactOnHost } from "@/lib/gameHost/client";
 import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 import { registerVerifiedUploadedPackage } from "@/lib/mirrors/uploadedPackages";
 import { launcherPackageKind } from "@/lib/mirrors/launcherPackageKind";
+import Artifact from "@/lib/models/Artifact";
 
 const payload = z.object({
   gameSlug: z.string().trim().regex(/^[a-z0-9][a-z0-9-]{0,119}$/),
@@ -186,4 +187,34 @@ export async function GET(req: Request) {
   if (!relativePath.startsWith("launcher-packages/")) return NextResponse.json({ error: "Invalid package path" }, { status: 400 });
   const status = await archivedArtifactStatusOnHost(relativePath);
   return NextResponse.json(status || { status: "missing", message: "Game host is not configured" });
+}
+
+/**
+ * Remove an uploaded launcher package from the VPS, and its artifact record.
+ *
+ * For packages that are no longer referenced by any recipe, such as one that
+ * held third-party data PlayBound should not be hosting. Refuses anything that
+ * a current game or edition recipe still points at.
+ */
+export async function DELETE(req: Request) {
+  const { error } = await requireAdminSession();
+  if (error) return error;
+  const relativePath = new URL(req.url).searchParams.get("relativePath") || "";
+  const valid = /^launcher-packages\/(?:games\/[a-z0-9][a-z0-9-]*|editions\/[a-z0-9][a-z0-9-]*\/[a-z0-9][a-z0-9-]*)\/[A-Za-z0-9._-]+\.(?:zip|7z|exe|msi)$/.test(relativePath);
+  if (!valid) return NextResponse.json({ error: "Invalid package path" }, { status: 400 });
+
+  await dbConnect();
+  const mirrorUrl = `https://mirror.playbound.club/${relativePath.split("/").map(encodeURIComponent).join("/")}`;
+  const [gameUse, editionUse] = await Promise.all([
+    CatalogGame.exists({ "launcherInstall.url": mirrorUrl }),
+    EditionModel.exists({ "installConfig.playbound_installer.url": mirrorUrl }),
+  ]);
+  if (gameUse || editionUse) {
+    return NextResponse.json({ error: "A game or edition still installs from this package" }, { status: 409 });
+  }
+
+  const result = await deleteArchivedArtifactOnHost(relativePath);
+  if (!result.success) return NextResponse.json({ error: result.message || "Could not delete the package" }, { status: 502 });
+  const removed = await Artifact.deleteOne({ relativePath });
+  return NextResponse.json({ success: true, relativePath, artifactRemoved: removed.deletedCount > 0 });
 }
