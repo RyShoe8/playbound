@@ -103,6 +103,8 @@ contextBridge.exposeInMainWorld("playbound", {
 
   // Friends API
   getFriends: () => ipcRenderer.invoke("get-friends"),
+  getPlayAvailability: () => ipcRenderer.invoke("get-play-availability"),
+  savePlayAvailability: (availability) => ipcRenderer.invoke("save-play-availability", availability),
   getFriendRequests: () => ipcRenderer.invoke("get-friend-requests"),
   acceptFriendRequest: (requestId) => ipcRenderer.invoke("accept-friend-request", requestId),
   declineFriendRequest: (requestId) => ipcRenderer.invoke("decline-friend-request", requestId),

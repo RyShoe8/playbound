@@ -7,6 +7,7 @@ import { ensureCouchBackground, startCouchSessionQuiet, pushHostDisplayToPeers }
 import { ensureHostDisplayStream } from "../hostDisplayStream.js";
 import { maybeShowLaunchGuidance } from "../guidanceModal.js";
 import { catalogGameSupportsParty } from "../partyGameEligibility.js";
+import { mountPlayAvailability } from "../playAvailability.js";
 import { partyConnectFailed, partyConnectReady } from "../partyConnectState.js";
 import {
   api,
@@ -569,6 +570,7 @@ async function renderFriendsView() {
       </div>
 
       <div id="friends-party-area" style="margin-top: 20px;"></div>
+      <div id="friends-availability-area" style="margin-top: 20px;"></div>
       <div id="friends-content-area" style="margin-top: 20px;">
         <p class="view-sub">Loading friends...</p>
       </div>
@@ -578,6 +580,7 @@ async function renderFriendsView() {
     document.getElementById("btn-toggle-create-party").onclick = () => toggleCreatePartyPanel();
     wireActivityPrivacy();
     wireLfgButton();
+    mountPlayAvailability(document.getElementById("friends-availability-area"));
     document.getElementById("btn-friends-popout")?.addEventListener("click", () => {
       void window.playbound.openFriendsPopout?.();
     });
