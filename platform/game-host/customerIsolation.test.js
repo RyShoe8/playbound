@@ -4,10 +4,25 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawn, execFileSync } from "node:child_process";
-import { customerIsolationLaunch, validateCustomerPreparation, CUSTOMER_ISOLATION_GAMES, openArenaIdentityConfiguration, superTuxKartIdentityConfiguration, zeroAdIdentityConfiguration } from "./customerIsolation.js";
+import { customerIsolationLaunch, validateCustomerPreparation, CUSTOMER_ISOLATION_GAMES, openArenaIdentityConfiguration, superTuxKartIdentityConfiguration, zeroAdIdentityConfiguration, coreKeeperIdentityConfiguration, rvglIdentityConfiguration } from "./customerIsolation.js";
 import { NATIVE_PACKAGE_PROFILES } from "./nativePackageUpdates.js";
 
 const id = "0123456789abcdef01234567";
+test("Core Keeper translates only the fixed display recipe into typed settings", () => {
+  const home = "/var/lib/playbound-host", data = `${home}/core-keeper-servers/pb-${id}/data`;
+  const args = ["-a", "--", "/opt/playbound-host/games/core-keeper/CoreKeeperServer", "-batchmode", "-ip", "0.0.0.0", "-port", "1320", "-maxplayers", "4", "-datapath", data, "-logfile", `${data}/server.log`];
+  assert.deepEqual(coreKeeperIdentityConfiguration(args, 1320, id, home, "Saved world"), {name:"Saved world",maxPlayers:4});
+  for (const changes of [
+    {args:[...args,"-exec","payload"]}, {args:args.map((value,index)=>index===9?"65":value)},
+    {args:args.map((value,index)=>index===2?"/tmp/custom-engine":value)},
+    {args:args.map((value,index)=>index===11?"/another/server":value)},
+    {port:1319}, {serverId:"../another"}, {home:"/tmp/custom-home"}, {name:"bad\nname"},
+  ]) {
+    const value = {args, port:1320, serverId:id, home, name:"Saved world", ...changes};
+    assert.throws(() => coreKeeperIdentityConfiguration(value.args,value.port,value.serverId,value.home,value.name));
+  }
+  assert.equal(customerIsolationLaunch({gameSlug:"core-keeper",customerOwned:true}), null);
+});
 test("0 A.D. identity uses its fixed port and bounded maps/slots",()=>{
   const args=['-autostart=random/mainland','-autostart-host','-autostart-host-players=4','-autostart-playername=PlayBound Server','-autostart-seed=-1','-autostart-nonvisual','-quickstart','-nosound'];
   assert.deepEqual(zeroAdIdentityConfiguration(args),{port:20595,config:JSON.stringify({map:'random/mainland',maxPlayers:4})});
@@ -203,3 +218,16 @@ for (const [gameSlug, binary, args] of [
     } finally { fs.rmSync(home, { recursive: true, force: true }); }
   });
 }
+
+test("RVGL translates only its fixed display lobby recipe", () => {
+  const args = ["-n","2310","-f","/var/lib/playbound-host/rvgl-displays/2310.xauth",
+    "-s","-screen 0 640x480x24 -nolisten tcp","/opt/playbound-host/games/re-volt-rvgl/rvgl.64",
+    "-lobby","-profile","PlayBound","-serverport","2310","-nosound","-window","640","480"];
+  assert.deepEqual(rvglIdentityConfiguration(args,2310),{});
+  for (const index of [0,1,3,5,6,9,11,15]) {
+    const invalid = [...args]; invalid[index] = "unsafe";
+    assert.throws(() => rvglIdentityConfiguration(invalid,2310));
+  }
+  for (const port of [true,"2310",2309,2331]) assert.throws(() => rvglIdentityConfiguration(args,port));
+  assert.throws(() => rvglIdentityConfiguration([...args,"-exec","unsafe"],2310));
+});

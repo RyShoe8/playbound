@@ -28,9 +28,22 @@ MAX_DEPTH = 16
 GAME = 'teeworlds'
 PROFILE = 'teeworlds-unix-v1'
 
+
+def fixed_runtime_link(relative, source_fd, name, info, owner):
+    """Only this derived library alias is retained, never dereferenced."""
+    if (GAME != 'core-keeper' or relative != '.steam/sdk64/steamclient.so'
+            or not stat.S_ISLNK(info.st_mode) or info.st_uid != owner or info.st_nlink != 1):
+        return None
+    target = os.readlink(name, dir_fd=source_fd)
+    if target != '/game-data/linux64/steamclient.so':
+        raise ValueError('Unreviewed Core Keeper library alias')
+    if fingerprint(info) != fingerprint(os.stat(name, dir_fd=source_fd, follow_symlinks=False)):
+        raise ValueError('Core Keeper library alias changed')
+    return target
+
 def select_game(game):
     global GAME, PROFILE, SOURCE
-    folders = {'teeworlds':'customer-sandboxes','bzflag':'bzflag-servers','hedgewars':'hedgewars-servers','openttd':'openttd-servers','luanti':'luanti-servers','openarena':'openarena-servers','battle-for-wesnoth':'wesnoth-servers','supertuxkart':'supertuxkart-servers','0-ad':'0ad-servers','ysoccer':'ysoccer-servers','flightgear':'flightgear-servers','mindustry':'mindustry','hurry-curry':'hurry-curry-servers','assaultcube':'assaultcube-servers','xonotic':'xonotic-servers','wolfenstein-enemy-territory':'et','medal-of-honor-allied-assault':'openmohaa','freedoom':'freedoom-servers','freeciv':'freeciv-servers','warzone-2100':'warzone-2100-servers','hypersomnia':'hypersomnia','terraria':'terraria-servers','factorio':'factorio-servers','unvanquished':'unvanquished','openra':'openra-servers','openhv':'openhv-servers','earth-2140-trilogy':'earth-2140-servers','rimworld-together':'rimworld-together-servers','space-station-14':'space-station-14-servers','triplea':'triplea-servers','necesse':'necesse-servers','veloren':'veloren-servers','barotrauma':'barotrauma-servers','dont-starve-together':'dont-starve-together-servers','morrowind':'morrowind-servers','unturned':'unturned-servers','bombsquad':'bombsquad-servers','counter-strike-source':'counter-strike-source-servers','open-fortress':'open-fortress-servers','battlefield-1942-anthology':'battlefield-1942-anthology-servers','trackmania':'trackmania-servers','team-fortress-2':'team-fortress-2-servers','counter-strike-2':'counter-strike-2-servers'}
+    folders = {'teeworlds':'customer-sandboxes','bzflag':'bzflag-servers','hedgewars':'hedgewars-servers','openttd':'openttd-servers','luanti':'luanti-servers','openarena':'openarena-servers','battle-for-wesnoth':'wesnoth-servers','supertuxkart':'supertuxkart-servers','0-ad':'0ad-servers','ysoccer':'ysoccer-servers','flightgear':'flightgear-servers','mindustry':'mindustry','hurry-curry':'hurry-curry-servers','assaultcube':'assaultcube-servers','xonotic':'xonotic-servers','wolfenstein-enemy-territory':'et','medal-of-honor-allied-assault':'openmohaa','freedoom':'freedoom-servers','freeciv':'freeciv-servers','warzone-2100':'warzone-2100-servers','hypersomnia':'hypersomnia','terraria':'terraria-servers','factorio':'factorio-servers','unvanquished':'unvanquished','openra':'openra-servers','openhv':'openhv-servers','earth-2140-trilogy':'earth-2140-servers','rimworld-together':'rimworld-together-servers','space-station-14':'space-station-14-servers','triplea':'triplea-servers','necesse':'necesse-servers','veloren':'veloren-servers','barotrauma':'barotrauma-servers','dont-starve-together':'dont-starve-together-servers','core-keeper':'core-keeper-servers','re-volt-rvgl':'rvgl-servers','morrowind':'morrowind-servers','unturned':'unturned-servers','bombsquad':'bombsquad-servers','counter-strike-source':'counter-strike-source-servers','open-fortress':'open-fortress-servers','battlefield-1942-anthology':'battlefield-1942-anthology-servers','trackmania':'trackmania-servers','team-fortress-2':'team-fortress-2-servers','counter-strike-2':'counter-strike-2-servers'}
     if game not in folders: raise ValueError('Unsupported migration game')
     GAME, PROFILE = game, game + '-unix-v1'
     SOURCE = Path('/var/lib/playbound-host') / folders[game]
@@ -85,6 +98,12 @@ def walk(source_fd, owner, destination=None, depth=0, prefix='', budget=None):
             raise ValueError('Too many data entries')
         relative = prefix + name
         info = os.stat(name, dir_fd=source_fd, follow_symlinks=False)
+        target = fixed_runtime_link(relative, source_fd, name, info, owner)
+        if target is not None:
+            if destination is not None:
+                (destination/name).symlink_to(target)
+            entries.append({'path': relative, 'type': 'symlink', 'target': target})
+            continue
         if info.st_uid != owner or info.st_mode & 0o022:
             raise ValueError('Unsafe data ownership or permissions')
         if stat.S_ISDIR(info.st_mode):
@@ -315,7 +334,7 @@ def exchange(left, right):
         os.close(right_fd)
 
 
-def change_copy_owner(path, owner):
+def change_copy_owner(path, owner, prefix=''):
     """Only a just-created copy below root-private control/ is reassigned."""
     fd = open_directory(path)
     try:
@@ -323,7 +342,7 @@ def change_copy_owner(path, owner):
         for name in os.listdir(fd):
             info = os.stat(name, dir_fd=fd, follow_symlinks=False)
             if stat.S_ISDIR(info.st_mode):
-                change_copy_owner(path / name, owner)
+                change_copy_owner(path / name, owner, prefix+name+'/')
             elif stat.S_ISREG(info.st_mode) and info.st_uid == 0 and info.st_nlink == 1:
                 child = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=fd)
                 try:
@@ -333,6 +352,8 @@ def change_copy_owner(path, owner):
                     os.fsync(child)
                 finally:
                     os.close(child)
+            elif fixed_runtime_link(prefix+name, fd, name, info, 0) is not None:
+                os.chown(name, owner, owner, dir_fd=fd, follow_symlinks=False)
             else:
                 raise ValueError('Unsafe private migration copy')
         os.fchown(fd, owner, owner)

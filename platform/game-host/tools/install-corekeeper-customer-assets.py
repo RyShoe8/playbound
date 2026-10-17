@@ -14,8 +14,8 @@ if __name__=='__main__':
     helper=here/'install-xonotic-customer-assets.py';info=helper.lstat()
     if not stat.S_ISREG(info.st_mode) or info.st_uid!=0 or info.st_nlink!=1 or info.st_mode&0o022:
         raise SystemExit('Untrusted asset publisher')
-    profile=here.parent/'customerCore KeeperAssets.json'
-    if not profile.is_file():profile=here/'customerCore KeeperAssets.json'
+    profile=here.parent/'customerCoreKeeperAssets.json'
+    if not profile.is_file():profile=here/'customerCoreKeeperAssets.json'
     module=importlib.machinery.SourceFileLoader('publisher',str(helper)).load_module()
     print(json.dumps(module.promote(Path('/opt/playbound-host/games/core-keeper'),
         Path('/usr/local/libexec/playbound-isolated-corekeeper-data-v1'),json.loads(profile.read_text()),'core-keeper')))

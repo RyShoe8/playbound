@@ -54,6 +54,7 @@ export function createDedicatedRecipes(deps) {
 
   /** One folder per server: the customer's home, or a rooms folder for anything else. */
   function serverDir(dirName, ctx) {
+    if(ctx.identityProfile==="core-keeper-unix-v1" && dirName==="core-keeper-servers")return path.join(HOST_HOME,dirName,`pb-${ctx.partyId}`);
     if(ctx.identityProfile==="dont-starve-together-unix-v1" && dirName==="dont-starve-together-servers")return path.join(HOST_HOME,dirName,`pb-${ctx.partyId}`);
     if(ctx.identityProfile==="trackmania-unix-v1" && dirName==="trackmania-servers")return path.join(HOST_HOME,dirName,`pb-${ctx.partyId}`);
     if(ctx.identityProfile==="unturned-unix-v1" && dirName==="unturned-servers")return path.join(HOST_HOME,dirName,`pb-${ctx.partyId}`);

@@ -20,6 +20,7 @@ export function expectedRegistryMod(gameSlug: string, editionSlug?: string | nul
 export const QUERY_BY_GAME: Record<string, string> = {
   "aneurism-iv": "agent-local",
   unturned: "agent-local",
+  "core-keeper": "agent-local",
   rimworld: "agent-local",
   "rimworld-together": "agent-local",
   "counter-strike-2": "agent-local",

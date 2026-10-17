@@ -37,6 +37,10 @@ ENGINES = {
 }
 
 def sealed_engine_for(game):
+    if game == 're-volt-rvgl':
+        return None, '/server/runtime/rvgl.64'
+    if game == 'core-keeper':
+        return None, '/game-data/CoreKeeperServer'
     if game in ('ysoccer','mindustry'):
         return sealed_java_engine(game=game), '/engine.jar'
     if game in ('openra','openhv','earth-2140-trilogy'):

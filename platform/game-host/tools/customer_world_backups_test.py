@@ -100,6 +100,43 @@ class WorldSnapshots(unittest.TestCase):
         self.assertTrue(runtime.migration_ready(ID,65534))
 
     def test_teeworlds_snapshot_restore(self): self.check_native_snapshot('teeworlds')
+
+    def test_corekeeper_restore_preserves_world_selection_identity_and_fixed_alias(self):
+        self.journal['gameSlug'] = 'core-keeper'
+        (self.control/'migration.json').write_text(json.dumps(self.journal))
+        sdk = self.data/'.steam/sdk64'
+        sdk.mkdir(parents=True, mode=0o700)
+        for directory in (self.data/'.steam', sdk):
+            directory.chmod(0o700)
+            os.chown(directory, 65534, 65534)
+        link = sdk/'steamclient.so'
+        link.symlink_to('/game-data/linux64/steamclient.so')
+        os.chown(link, 65534, 65534, follow_symlinks=False)
+        world = self.data/'data'
+        world.mkdir(mode=0o700)
+        os.chown(world, 65534, 65534)
+        initial = {'world': 3, 'worldName': 'Saved world', 'worldSeed': 12345,
+                   'gameId': 'private-staging-id', 'maxNumberPlayers': 4}
+        config = world/'ServerConfig.json'
+        config.write_text(json.dumps(initial)); config.chmod(0o600)
+        os.chown(config, 65534, 65534)
+        for name in ('GameID.txt', 'GameInfo.txt'):
+            file = self.data/name
+            file.write_text('private-staging-identity'); file.chmod(0o600)
+            os.chown(file, 65534, 65534)
+        snapshot = self.run_operation('create')
+        self.write('later world progress')
+        config.write_text(json.dumps({**initial, 'world': 9}))
+        (self.data/'GameID.txt').write_text('later identity')
+        self.run_operation('restore', snapshot['id'])
+        self.assertEqual(self.file.read_text(), 'original')
+        self.assertEqual(json.loads(config.read_text()), initial)
+        self.assertEqual((self.data/'GameID.txt').read_text(), 'private-staging-identity')
+        self.assertEqual(os.readlink(link), '/game-data/linux64/steamclient.so')
+        self.assertEqual(link.lstat().st_uid, 65534)
+        self.assertTrue(runtime.migration_ready(ID, 65534))
+        retained = next(self.control.glob('world-restore-*'))
+        self.assertEqual((retained/'saved.dat').read_text(), 'later world progress')
     def test_bzflag_snapshot_restore(self): self.check_native_snapshot('bzflag')
     def test_hedgewars_snapshot_restore(self): self.check_native_snapshot('hedgewars')
     def test_openarena_snapshot_restore(self): self.check_native_snapshot('openarena')

@@ -14,8 +14,8 @@ if __name__=='__main__':
     helper=here/'install-xonotic-customer-assets.py';info=helper.lstat()
     if not stat.S_ISREG(info.st_mode) or info.st_uid!=0 or info.st_nlink!=1 or info.st_mode&0o022:
         raise SystemExit('Untrusted asset publisher')
-    profile=here.parent/'customerRVGLAssets.json'
-    if not profile.is_file():profile=here/'customerRVGLAssets.json'
+    profile=here.parent/'customerRvglAssets.json'
+    if not profile.is_file():profile=here/'customerRvglAssets.json'
     module=importlib.machinery.SourceFileLoader('publisher',str(helper)).load_module()
     print(json.dumps(module.promote(Path('/opt/playbound-host/games/re-volt-rvgl'),
         Path('/usr/local/libexec/playbound-isolated-rvgl-data-v1'),json.loads(profile.read_text()),'re-volt-rvgl')))

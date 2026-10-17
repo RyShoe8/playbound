@@ -16,6 +16,36 @@ ID = '0123456789abcdef01234567'
 
 
 class DataCheckpoint(unittest.TestCase):
+    def test_corekeeper_fixed_library_alias_roundtrips_without_following_target(self):
+        module.select_game('core-keeper')
+        root = self.source
+        sdk = root/'.steam/sdk64'
+        sdk.mkdir(parents=True, mode=0o700)
+        (root/'.steam').chmod(0o700)
+        link = sdk/'steamclient.so'
+        link.symlink_to('/game-data/linux64/steamclient.so')
+        destination = self.base/'copy'
+        destination.mkdir(mode=0o700)
+        rows = module.tree(root, os.getuid(), destination)
+        self.assertIn({'path': '.steam/sdk64/steamclient.so', 'type': 'symlink',
+                       'target': '/game-data/linux64/steamclient.so'}, rows)
+        self.assertTrue((destination/'.steam/sdk64/steamclient.so').is_symlink())
+        self.assertEqual(module.tree(destination, os.getuid()), rows)
+        if os.getuid() == 0:
+            module.change_copy_owner(destination, 40254)
+            self.assertEqual(module.tree(destination, 40254), rows)
+        link.unlink()
+        link.symlink_to('/etc/passwd')
+        with self.assertRaises(ValueError):
+            module.tree(root, os.getuid())
+
+    def test_fixed_alias_does_not_permit_other_symlinks_or_other_games(self):
+        (self.source/'steamclient.so').symlink_to('/game-data/linux64/steamclient.so')
+        for game in ('teeworlds', 'core-keeper'):
+            module.select_game(game)
+            with self.subTest(game=game), self.assertRaises(ValueError):
+                module.tree(self.source, os.getuid())
+
     def test_native_migration_selects_only_fixed_data_roots(self):
         for game, folder in [('bzflag','bzflag-servers'),('hedgewars','hedgewars-servers'),('openttd','openttd-servers'),('luanti','luanti-servers')]:
             module.select_game(game)

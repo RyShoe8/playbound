@@ -63,7 +63,7 @@ test("new native family candidates cannot claim accepted isolation",()=>{
 });
 
 test("unimplemented legacy/display/special supervisors have explicit limitations",()=>{
-  for(const game of ["goldeneye-source","deus-ex","core-keeper","aneurism-iv","re-volt-rvgl"]){
+  for(const game of ["goldeneye-source","deus-ex","aneurism-iv"]){
     const value=hostingReadiness(game);
     assert.equal(value.isolation,"pending",game);
     assert.equal(value.identityProfile,null);
@@ -73,4 +73,20 @@ test("unimplemented legacy/display/special supervisors have explicit limitations
   const bombsquad=hostingReadiness("bombsquad");
   assert.equal(bombsquad.isolation,"blocked");
   assert.match(bombsquad.reason,/transport startup failed/);
+});
+
+test("Core Keeper handoff stays blocked pending full root lifecycle acceptance", () => {
+  const value = hostingReadiness("core-keeper");
+  assert.equal(value.identityProfile, "core-keeper-unix-v1");
+  assert.equal(value.isolation, "blocked");
+  assert.equal(value.executableContentEnabled, false);
+  assert.match(value.reason, /agent-restart adoption/);
+});
+
+test("RVGL identity remains blocked pending lifecycle and query acceptance", () => {
+  const value = hostingReadiness("re-volt-rvgl");
+  assert.equal(value.identityProfile,"re-volt-rvgl-unix-v1");
+  assert.equal(value.isolation,"blocked");
+  assert.equal(value.executableContentEnabled,false);
+  assert.match(value.reason,/persistent adoption/);
 });

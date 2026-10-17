@@ -1047,7 +1047,7 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
       return { error: "Customer runtime data paths could not be validated. The server was not prepared or launched." };
     }
 
-    if (recipe.prepareSpawn && !(identityProfile && ["openttd","luanti","hurry-curry","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault","freedoom","freeciv","warzone-2100","hypersomnia","terraria","factorio","unvanquished","openra","openhv","earth-2140-trilogy","rimworld-together","space-station-14","triplea","necesse","veloren","barotrauma","dont-starve-together","morrowind","team-fortress-2","counter-strike-2","trackmania","unturned","bombsquad","counter-strike-source","open-fortress","battlefield-1942-anthology"].includes(gameSlug))) {
+    if (recipe.prepareSpawn && !(identityProfile && ["openttd","luanti","hurry-curry","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault","freedoom","freeciv","warzone-2100","hypersomnia","terraria","factorio","unvanquished","openra","openhv","earth-2140-trilogy","rimworld-together","space-station-14","triplea","necesse","veloren","barotrauma","dont-starve-together","morrowind","team-fortress-2","counter-strike-2","trackmania","unturned","bombsquad","counter-strike-source","open-fortress","battlefield-1942-anthology","core-keeper","re-volt-rvgl"].includes(gameSlug))) {
       try {
         await recipe.prepareSpawn(port, ctx);
       } catch (err) {
@@ -1068,7 +1068,7 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
       HOME: hostHome,
       ...(typeof recipe.spawnEnv === "function" ? recipe.spawnEnv(port, ctx) : {}),
     });
-    const cwd = ["mindustry-unix-v1","hurry-curry-unix-v1","assaultcube-unix-v1","xonotic-unix-v1","wolfenstein-enemy-territory-unix-v1","medal-of-honor-allied-assault-unix-v1","freedoom-unix-v1","freeciv-unix-v1","warzone-2100-unix-v1","hypersomnia-unix-v1","terraria-unix-v1","factorio-unix-v1","unvanquished-unix-v1","openra-unix-v1","openhv-unix-v1","earth-2140-trilogy-unix-v1","rimworld-together-unix-v1","space-station-14-unix-v1","triplea-unix-v1","necesse-unix-v1","veloren-unix-v1","barotrauma-unix-v1","dont-starve-together-unix-v1","morrowind-unix-v1","team-fortress-2-unix-v1","counter-strike-2-unix-v1","trackmania-unix-v1","unturned-unix-v1","bombsquad-unix-v1","counter-strike-source-unix-v1","open-fortress-unix-v1","battlefield-1942-anthology-unix-v1"].includes(identityProfile) ? "/" :
+    const cwd = ["mindustry-unix-v1","hurry-curry-unix-v1","assaultcube-unix-v1","xonotic-unix-v1","wolfenstein-enemy-territory-unix-v1","medal-of-honor-allied-assault-unix-v1","freedoom-unix-v1","freeciv-unix-v1","warzone-2100-unix-v1","hypersomnia-unix-v1","terraria-unix-v1","factorio-unix-v1","unvanquished-unix-v1","openra-unix-v1","openhv-unix-v1","earth-2140-trilogy-unix-v1","rimworld-together-unix-v1","space-station-14-unix-v1","triplea-unix-v1","necesse-unix-v1","veloren-unix-v1","barotrauma-unix-v1","dont-starve-together-unix-v1","morrowind-unix-v1","team-fortress-2-unix-v1","counter-strike-2-unix-v1","trackmania-unix-v1","unturned-unix-v1","bombsquad-unix-v1","counter-strike-source-unix-v1","open-fortress-unix-v1","battlefield-1942-anthology-unix-v1","core-keeper-unix-v1","re-volt-rvgl-unix-v1"].includes(identityProfile) ? "/" :
       typeof recipe.cwd === "function"
         ? recipe.cwd(port, ctx)
         : recipe.cwd || path.dirname(binary);

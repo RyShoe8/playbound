@@ -22,12 +22,25 @@ class PublicationTests(unittest.TestCase):
         self.manifest={'files':[{'path':'data.pk3','bytes':len(self.data),'sha256':hashlib.sha256(self.data).hexdigest()}]}
 
     def test_large_public_manifests_validate_without_publishing(self):
-        for game,filename in [('re-volt-rvgl','customerRvglAssets.json'),('core-keeper','customerCoreKeeperAssets.json'),('barotrauma','customerBarotraumaAssets.json'),('dont-starve-together','customerDstAssets.json'),('morrowind','customerMorrowindAssets.json'),('team-fortress-2','customerTf2Assets.json'),('counter-strike-2','customerCs2Assets.json'),('trackmania','customerTrackmaniaAssets.json'),('counter-strike-source','customerCssAssets.json'),('open-fortress','customerOpenFortressAssets.json'),('battlefield-1942-anthology','customerBattlefieldAssets.json'),('unturned','customerUnturnedAssets.json')]:
+        for game,filename in [('aneurism-iv','customerAnivAssets.json'),('re-volt-rvgl','customerRvglAssets.json'),('core-keeper','customerCoreKeeperAssets.json'),('barotrauma','customerBarotraumaAssets.json'),('dont-starve-together','customerDstAssets.json'),('morrowind','customerMorrowindAssets.json'),('team-fortress-2','customerTf2Assets.json'),('counter-strike-2','customerCs2Assets.json'),('trackmania','customerTrackmaniaAssets.json'),('counter-strike-source','customerCssAssets.json'),('open-fortress','customerOpenFortressAssets.json'),('battlefield-1942-anthology','customerBattlefieldAssets.json'),('unturned','customerUnturnedAssets.json')]:
             value=json.loads((Path(__file__).parent.parent/filename).read_text())
             with self.subTest(game=game),patch.object(module.shutil,'disk_usage',return_value=type('Disk',(),{'free':0})()):
                 with self.assertRaisesRegex(ValueError,'Insufficient disk space'):
                     module.promote(self.source,self.destination,value,game=game)
             self.assertFalse(self.destination.exists())
+
+    def test_aniv_publication_rejects_tokens_state_and_download_metadata(self):
+        rows=[]
+        for name in ('aniv_server.x86_64','GameAssembly.so','UnityPlayer.so','linux64/steamclient.so','aniv_server_Data/globalgamemanagers'):
+            file=self.source/name;file.parent.mkdir(parents=True,exist_ok=True);file.write_bytes(self.data)
+            rows.append({'path':name,'bytes':len(self.data),'sha256':hashlib.sha256(self.data).hexdigest()})
+        result=module.promote(self.source,self.destination,{'files':rows},game='aneurism-iv')
+        self.assertEqual(result['files'],5)
+        self.assertEqual((self.destination/'aniv_server.x86_64').stat().st_mode&0o777,0o555)
+        self.assertEqual((self.destination/'GameAssembly.so').stat().st_mode&0o777,0o444)
+        for private in ('gslt.txt','owner-steamid64.txt','data/world.save','home/settings.json','steamapps/appmanifest.acf','unity.lock','build-metadata.json','aniv_server_Data/../gslt.txt'):
+            with self.subTest(private=private),self.assertRaises(ValueError):
+                module.promote(self.source,self.root/'rejected',{'files':[dict(rows[0],path=private)]},game='aneurism-iv')
 
     def test_corekeeper_publication_excludes_saves_and_executable_plugins(self):
         rows=[]
@@ -229,7 +242,7 @@ class AssetDescriptorTests(unittest.TestCase):
         with self.assertRaises(ValueError):self.reader.open_assets(published,game='team-fortress-2')
 
     def test_corekeeper_and_rvgl_roundtrip_reject_extra_private_files(self):
-        for game,paths in [('core-keeper',('CoreKeeperServer','CoreKeeperServer_Data/Managed/Assembly-CSharp.dll')),
+        for game,paths in [('aneurism-iv',('aniv_server.x86_64','aniv_server_Data/globalgamemanagers')),('core-keeper',('CoreKeeperServer','CoreKeeperServer_Data/Managed/Assembly-CSharp.dll')),
                            ('re-volt-rvgl',('rvgl.64','lib/lib64/libunistring.so.2','lib/libunistring.so.2'))]:
             with self.subTest(game=game):
                 source=self.root/(game+'-source');source.mkdir();rows=[]
@@ -248,6 +261,19 @@ class AssetDescriptorTests(unittest.TestCase):
                     self.assertEqual(alias.read_bytes(),self.data)
                 (published/'ServerConfig.json').write_bytes(b'private data')
                 with self.assertRaises(ValueError):self.reader.open_assets(published,game=game)
+
+    def test_corekeeper_mountpoints_never_import_shared_identity_files(self):
+        source=self.root/'core-source';source.mkdir()
+        (source/'CoreKeeperServer').write_bytes(self.data)
+        (source/'GameID.txt').write_bytes(b'not public server identity')
+        row={'path':'CoreKeeperServer','bytes':len(self.data),'sha256':hashlib.sha256(self.data).hexdigest()}
+        published=self.root/'core-public'
+        module.promote(source,published,{'files':[row]},game='core-keeper')
+        self.assertEqual((published/'GameID.txt').read_bytes(),b'')
+        self.assertEqual((published/'GameInfo.txt').read_bytes(),b'')
+        descriptor=self.reader.open_assets(published,game='core-keeper');os.close(descriptor)
+        (published/'GameID.txt').write_bytes(b'private identity contamination')
+        with self.assertRaises(ValueError):self.reader.open_assets(published,game='core-keeper')
 
     def test_factorio_reader_verifies_paired_engine_and_rejects_changed_bytes(self):
         source=self.root/'inputs';source.mkdir();rows=[]

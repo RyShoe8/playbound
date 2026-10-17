@@ -4,6 +4,7 @@ from pathlib import Path
 import stat
 import struct
 import subprocess
+import signal
 import tempfile
 from types import SimpleNamespace
 import unittest
@@ -99,6 +100,66 @@ class PrivateDisplayBoundary(unittest.TestCase):
         self.assertTrue(sent.endswith(b'd'*16))
         connection.settimeout.assert_called_once_with(0.25)
         connection.connect.assert_called_once_with('/tmp/.X11-unix/X1000')
+
+    def test_supervisor_refuses_invalid_callbacks_before_start(self):
+        for launch, factory in ((None, None), ('/bin/sh', None), (lambda _: None, 'Xvfb')):
+            with self.subTest(launch=launch), patch.object(module, 'start') as start:
+                with self.assertRaises(ValueError):
+                    module.supervise_game(launch, factory)
+                start.assert_not_called()
+
+    def test_cancel_during_display_start_cannot_launch_engine(self):
+        display = Mock()
+        handlers = {}
+        def register(number, handler):
+            handlers[number] = handler
+            return signal.SIG_DFL
+        def start():
+            handlers[signal.SIGTERM](signal.SIGTERM, None)
+            return display
+        launch = Mock()
+        with patch.object(module.signal, 'signal', side_effect=register):
+            self.assertEqual(module.supervise_game(launch, start), 143)
+        launch.assert_not_called()
+        display.close.assert_called_once()
+        self.assertEqual(handlers[signal.SIGTERM], signal.SIG_DFL)
+        self.assertEqual(handlers[signal.SIGINT], signal.SIG_DFL)
+
+    def test_failed_engine_spawn_closes_display_and_restores_handlers(self):
+        display = Mock(environment={'DISPLAY': ':1000'})
+        before = {number: signal.getsignal(number) for number in (signal.SIGTERM, signal.SIGINT)}
+        with self.assertRaisesRegex(OSError, 'spawn failed'):
+            module.supervise_game(Mock(side_effect=OSError('spawn failed')), lambda: display)
+        display.close.assert_called_once()
+        for number, handler in before.items():
+            self.assertEqual(signal.getsignal(number), handler)
+
+    def test_running_cancellation_stops_engine_before_closing_display(self):
+        events = []
+        display = Mock(environment={'DISPLAY': ':1000'})
+        display.process.poll.return_value = None
+        display.close.side_effect = lambda: events.append('display closed')
+        game = Mock()
+        game.poll.side_effect = [None, 0]
+        game.terminate.side_effect = lambda: events.append('game stopped')
+        def launch(environment):
+            self.assertEqual(environment, display.environment)
+            signal.getsignal(signal.SIGINT)(signal.SIGINT, None)
+            return game
+        self.assertEqual(module.supervise_game(launch, lambda: display), 143)
+        self.assertEqual(events, ['game stopped', 'display closed'])
+        game.wait.assert_called_once_with(timeout=10)
+
+    def test_unexpected_wait_failure_still_closes_display(self):
+        display = Mock(environment={})
+        display.process.poll.return_value = 1
+        game = Mock()
+        game.poll.return_value = None
+        game.wait.side_effect = OSError('wait failed')
+        with self.assertRaisesRegex(OSError, 'wait failed'):
+            module.supervise_game(lambda _: game, lambda: display)
+        game.kill.assert_called_once()
+        display.close.assert_called_once()
 
 
 if __name__ == '__main__':

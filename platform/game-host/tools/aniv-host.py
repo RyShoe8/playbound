@@ -152,12 +152,19 @@ def emit(payload):
 
 
 def private_value(file, owner):
-    fd = os.open(file, os.O_RDONLY | os.O_NOFOLLOW)
+    fd = os.open(file, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
     try:
         info = os.fstat(fd)
-        if not stat.S_ISREG(info.st_mode) or info.st_uid != owner or info.st_mode & 0o077 or info.st_size > 256:
+        if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_uid != owner or info.st_mode & 0o077 or info.st_size > 256:
             raise ValueError('Steam credentials require private, service-owned regular files')
-        return os.read(fd, 257).decode().strip()
+        content = os.read(fd, 257)
+        after = os.fstat(fd)
+        if len(content) > 256 or len(content) != info.st_size or (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns) != (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns):
+            raise ValueError('Steam credential file changed while reading')
+        try:
+            return content.decode('ascii').strip()
+        except UnicodeDecodeError:
+            raise ValueError('Invalid Steam credential encoding') from None
     finally:
         os.close(fd)
 

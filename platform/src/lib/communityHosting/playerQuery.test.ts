@@ -16,6 +16,7 @@ describe("managed player count", () => {
     expect(managedQueryKind("luanti", { queryVerified: true, queryKind: "none" })).toBe("luanti-master");
     expect(managedQueryKind("counter-strike-2", { queryVerified: false, queryKind: "none" })).toBe("agent-local");
     expect(managedQueryKind("counter-strike-source", null)).toBe("agent-local");
+    expect(managedQueryKind("core-keeper", { queryKind: "none", queryVerified: false })).toBe("agent-local");
     expect(managedQueryKind("goldeneye-source", null)).toBe("agent-local");
     expect(managedQueryKind("deus-ex-goty-edition", null)).toBe("agent-local");
     expect(managedQueryKind("aneurism-iv", { queryVerified: false, queryKind: "none" })).toBe("agent-local");

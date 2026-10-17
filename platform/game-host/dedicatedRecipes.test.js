@@ -25,6 +25,17 @@ test("every paid-plan recipe accepts the slot cap the platform sends", () => {
   }
 });
 
+test("enrolled Core Keeper argument construction does not recreate the sealed legacy home", () => {
+  const id = "d".repeat(24);
+  const legacy = path.join(HOME, "core-keeper-servers", `pb-${id}`);
+  assert.equal(fs.existsSync(legacy), false);
+  const args = recipes["core-keeper"].args(1320, {
+    ...ctxFor("core-keeper", id, 4), identityProfile:"core-keeper-unix-v1",
+  });
+  assert.equal(args[args.indexOf("-datapath")+1],path.join(legacy,"data"));
+  assert.equal(fs.existsSync(legacy), false);
+});
+
 test("Quake II Enhanced does not advertise the incompatible Original server", () => {
   assert.equal(recipes["quake-ii"], undefined);
   assert.equal(recipes["quake-ii-enhanced"], undefined);

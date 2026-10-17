@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import dgram from "node:dgram";
 import { test } from "node:test";
 import { parseQuake3Status, openMohaaBotCount, parseMindustryPing, parseAssaultCubeInfo, parseChocolateDoomStatus, parseHxInfo, stkDiscoveryPort, queryRoomOccupancy, LOCAL_QUERY_GAMES } from "./playerQueries.js";
 import { parseA2sOccupancy } from "./a2sQuery.js";
@@ -150,4 +151,20 @@ test("STK UID discovery uses its allocated pair while stock rooms keep upstream 
   assert.equal(stkDiscoveryPort(2777, "supertuxkart-unix-v1"),2778);
   assert.equal(stkDiscoveryPort(2779),2757);
   for (const port of [2758,2760,2779, "2777",null]) assert.throws(() => stkDiscoveryPort(port,"supertuxkart-unix-v1"));
+});
+
+
+test("Core Keeper uses its auxiliary Steam query port and preserves human/bot counts", async (t) => {
+  const server = dgram.createSocket("udp4");
+  await new Promise((resolve, reject) => { server.once("error", reject); server.bind(0, "127.0.0.1", resolve); });
+  t.after(() => server.close());
+  const response = Buffer.concat([Buffer.from([255,255,255,255,0x49,17]),
+    Buffer.from("Staging\0World\0CoreKeeper\0Core Keeper\0"), Buffer.from([0,0,3,4,1])]);
+  let requests = 0;
+  server.on("message", (_packet, peer) => { requests++;server.send(response, peer.port, peer.address); });
+  const result = await queryRoomOccupancy({ gameSlug: "core-keeper", port: server.address().port - 1 });
+  assert.deepEqual(result, { players: 2, maxPlayers: 4, bots: 1 });
+  assert.equal(requests, 1);
+  assert.ok(LOCAL_QUERY_GAMES.has("core-keeper"));
+  assert.equal(await queryRoomOccupancy({ gameSlug: "core-keeper", port: 65535 }), null);
 });

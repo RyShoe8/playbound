@@ -4,11 +4,51 @@ import json
 import os
 from pathlib import Path
 import re
-import signal
 import stat
 import subprocess
 import tempfile
-import time
+
+
+def identity_mounts(root, uid):
+    """Root-supervisor-only pinned private files for the immutable bundle mounts.
+
+    Never mount a re-opened customer-controlled path after validating it. Keep
+    these descriptors until bubblewrap has consumed the root-built command.
+    """
+    if os.geteuid() != 0 or type(uid) is not int or not 40000 <= uid <= 40255:
+        raise ValueError('Root supervisor and reserved identity required')
+    directory = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    result = []
+    try:
+        info = os.fstat(directory)
+        if info.st_uid != uid or stat.S_IMODE(info.st_mode) != 0o700:
+            raise ValueError('Unsafe private Core Keeper workspace')
+        for name in ('GameInfo.txt', 'GameID.txt'):
+            descriptor = None
+            try:
+                try:
+                    descriptor = os.open(name, os.O_RDONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=directory)
+                except FileExistsError:
+                    descriptor = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory)
+                else:
+                    os.fchown(descriptor, uid, uid)
+                info = os.fstat(descriptor)
+                if (not stat.S_ISREG(info.st_mode) or info.st_uid != uid or info.st_gid != uid
+                        or info.st_nlink != 1 or stat.S_IMODE(info.st_mode) != 0o600
+                        or info.st_size > 16384):
+                    raise ValueError('Unsafe private Core Keeper identity mount')
+                result.append((descriptor, name))
+                descriptor = None
+            finally:
+                if descriptor is not None:
+                    os.close(descriptor)
+        return result
+    except BaseException:
+        for descriptor, _ in result:
+            os.close(descriptor)
+        raise
+    finally:
+        os.close(directory)
 
 
 def settings(text, port):
@@ -26,6 +66,33 @@ def settings(text, port):
 
 def prepare(root, value, port):
     settings(json.dumps(value), port)
+    current = root
+    for part in ('.steam', 'sdk64'):
+        current /= part
+        current.mkdir(mode=0o700, exist_ok=True)
+        info = current.lstat()
+        if not stat.S_ISDIR(info.st_mode) or info.st_uid != os.getuid() or info.st_mode & 0o077:
+            raise ValueError('Unsafe Core Keeper Steam directory')
+    link = current/'steamclient.so'
+    expected = '/game-data/linux64/steamclient.so'
+    try:
+        info = link.lstat()
+    except FileNotFoundError:
+        link.symlink_to(expected)
+    else:
+        if not stat.S_ISLNK(info.st_mode) or info.st_uid != os.getuid() or os.readlink(link) != expected:
+            raise ValueError('Unreviewed Core Keeper Steam library binding')
+    # Fixed private output files back the read-only bundle's empty mountpoints.
+    for name in ('GameInfo.txt', 'GameID.txt'):
+        file = root/name
+        try:
+            descriptor = os.open(file, os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW, 0o600)
+        except FileExistsError:
+            info = file.lstat()
+            if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid() or info.st_nlink != 1 or info.st_mode & 0o077 or info.st_size > 16384:
+                raise ValueError('Unsafe Core Keeper identity output')
+        else:
+            os.close(descriptor)
     directory = root/'data'
     directory.mkdir(mode=0o700, exist_ok=True)
     info = directory.lstat()
@@ -80,54 +147,23 @@ def arguments(value, port):
 
 def supervise(value, port, display_helper):
     settings(json.dumps(value), port)
-    game = None
-    display = None
-    stopping = False
-    previous = {}
-    def stop(_signal, _frame):
-        nonlocal stopping
-        stopping = True
-    try:
-        for number in (signal.SIGTERM, signal.SIGINT):
-            previous[number] = signal.signal(number, stop)
-        display = display_helper.start()  # refuses a missing/wrong enforced IPC label
-        if stopping:
-            return 143
+    def launch(display_environment):
         environment = {'PATH': '/usr/bin:/bin', 'HOME': '/server', 'LANG': 'C.UTF-8',
                        'LD_LIBRARY_PATH': '/game-data:/game-data/linux64',
-                       **display.environment}
-        game = subprocess.Popen(arguments(value, port), cwd='/game-data', env=environment,
-                                close_fds=True)
-        while game.poll() is None:
-            if stopping or display.process.poll() is not None:
-                game.terminate()
-                try:
-                    game.wait(timeout=10)
-                except subprocess.TimeoutExpired:
-                    game.kill()
-                    game.wait(timeout=2)
-                return 143 if stopping else 1
-            time.sleep(0.1)
-        return game.returncode if game.returncode >= 0 else 1
-    finally:
-        try:
-            if game is not None and game.poll() is None:
-                game.kill()
-                game.wait(timeout=2)
-        finally:
-            try:
-                if display is not None:
-                    display.close()
-            finally:
-                for number, handler in previous.items():
-                    signal.signal(number, handler)
+                       **display_environment}
+        return subprocess.Popen(arguments(value, port), cwd='/game-data',
+                                env=environment, close_fds=True, umask=0o077,
+                                stdin=subprocess.PIPE)
+    return display_helper.supervise_game(launch, display_helper.start)
 
 
 if __name__ == '__main__':
     if not 40000 <= os.getuid() <= 40255 or not Path('/game-data/CoreKeeperServer').is_file():
         raise SystemExit('Reserved runtime namespace required')
-    import importlib.machinery
-    helper = importlib.machinery.SourceFileLoader('display_helper', '/display-helper.py').load_module()
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('display_helper', '/display-helper.py')
+    helper = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(helper)
     # No file preparation or engine launch before the enforced-label guard.
     helper.verify_current()
     payload = json.loads(Path('/server/server.cfg').read_text())

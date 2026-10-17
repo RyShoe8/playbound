@@ -1,13 +1,14 @@
-"""Candidate private Xvfb supervisor. Not enrolled or called by any game yet.
+"""Candidate private Xvfb supervisor. Used only by unenrolled game candidates.
 
 Requires the matching enforced AppArmor label before any socket or process is
-created. No caller executable, display number, command, geometry or environment
-is accepted. Existing seccomp policy is intentionally unchanged.
+created. The display entry point accepts no caller executable, display number, command,
+geometry or environment. Game lifetime callbacks are internal trusted code. Existing seccomp policy is intentionally unchanged.
 """
 import os
 import fcntl
 from pathlib import Path
 import secrets
+import signal
 import socket
 import stat
 import struct
@@ -179,3 +180,52 @@ def start():
             finally:
                 os.close(lock)
         raise
+
+
+def supervise_game(launch, display_factory=None):
+    """Internal trusted-bootstrap callback; never exposed as an operation endpoint.
+
+    A fixed game bootstrap constructs its own argv/env. This function only owns
+    display/game lifetime and never reads a command from configuration or stdin.
+    """
+    if not callable(launch) or (display_factory is not None and not callable(display_factory)):
+        raise ValueError('Trusted game/display factory required')
+    if display_factory is None:
+        display_factory = start
+    game = None
+    display = None
+    stopping = False
+    previous = {}
+    def stop(_signal, _frame):
+        nonlocal stopping
+        stopping = True
+    try:
+        for number in (signal.SIGTERM, signal.SIGINT):
+            previous[number] = signal.signal(number, stop)
+        display = display_factory()  # refuses a missing/wrong enforced IPC label
+        if stopping:
+            return 143
+        game = launch(display.environment)
+        while game.poll() is None:
+            if stopping or display.process.poll() is not None:
+                game.terminate()
+                try:
+                    game.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    game.kill()
+                    game.wait(timeout=2)
+                return 143 if stopping else 1
+            time.sleep(0.1)
+        return game.returncode if game.returncode >= 0 else 1
+    finally:
+        try:
+            if game is not None and game.poll() is None:
+                game.kill()
+                game.wait(timeout=2)
+        finally:
+            try:
+                if display is not None:
+                    display.close()
+            finally:
+                for number, handler in previous.items():
+                    signal.signal(number, handler)

@@ -27,7 +27,7 @@ test("implemented identities have installation, resource, readiness and root por
   for (const ports of Object.values(CUSTOMER_IDENTITY_PORTS)) assert.ok(Object.isFrozen(ports));
 });
 test("unknown identities remain rejected even when installations exist", () => {
-  for (const game of ["constructor", "__proto__", "../terraria", "core-keeper", "goldeneye-source"]) {
+  for (const game of ["constructor", "__proto__", "../terraria", "goldeneye-source"]) {
     assert.equal(supportsCustomerIdentity(game), false);
     assert.equal(supportsCustomerIdentityProfile(`${game}-unix-v1`), false);
     assert.throws(() => customerResourceLimits(game));

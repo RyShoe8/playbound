@@ -208,6 +208,21 @@ export function zeroAdIdentityConfiguration(args) {
   return {port:20595,config:JSON.stringify({map,maxPlayers:Number(slots)})};
 }
 
+export function coreKeeperIdentityConfiguration(args, port, serverId, home, name) {
+  if (!Array.isArray(args) || args.length !== 14 || args.some(arg => typeof arg !== "string" || arg.includes("\0")) ||
+      !/^[a-f0-9]{24}$/.test(serverId || "") || home !== "/var/lib/playbound-host" ||
+      !Number.isInteger(port) || port < 1300 || port > 1320 || (port - 1300) % 2 ||
+      typeof name !== "string" || !name.length || name.length > 80 || /[\x00-\x1f\x7f]/.test(name) ||
+      !/^[1-9]\d*$/.test(args[9])) throw new Error("Unexpected Core Keeper identity contract");
+  const maxPlayers = Number(args[9]);
+  if (!Number.isInteger(maxPlayers) || maxPlayers < 2 || maxPlayers > 64) throw new Error("Invalid Core Keeper slots");
+  const data = path.posix.join(home, "core-keeper-servers", `pb-${serverId}`, "data");
+  const expected = ["-a", "--", "/opt/playbound-host/games/core-keeper/CoreKeeperServer", "-batchmode", "-ip", "0.0.0.0",
+    "-port", String(port), "-maxplayers", String(maxPlayers), "-datapath", data, "-logfile", path.posix.join(data, "server.log")];
+  if (args.join("\0") !== expected.join("\0")) throw new Error("Unexpected Core Keeper launch arguments");
+  return { name, maxPlayers };
+}
+
 export function sourceIdentityConfiguration(game, args, port) {
   if (!["team-fortress-2","counter-strike-2","counter-strike-source"].includes(game)||!Array.isArray(args)||args.length>64) throw new Error("Unknown native Source contract");
   const tf=game==="team-fortress-2",css=game==="counter-strike-source",values=Object.create(null),flags=new Set();
@@ -244,7 +259,33 @@ export function openFortressIdentityConfiguration(args,startupPort,serverName,rc
     return {name:serverName,maxPlayers,map:values["+map"],botFill,timeLimit,rconPassword:rconPassword??""};
 }
 
+export function rvglIdentityConfiguration(args, port) {
+  if (!Number.isInteger(port) || port < 2310 || port > 2330 || !Array.isArray(args)) throw new Error("Invalid RVGL allocation");
+  const expected = ["-n",String(port),"-f",`/var/lib/playbound-host/rvgl-displays/${port}.xauth`,
+    "-s","-screen 0 640x480x24 -nolisten tcp","/opt/playbound-host/games/re-volt-rvgl/rvgl.64",
+    "-lobby","-profile","PlayBound","-serverport",String(port),"-nosound","-window","640","480"];
+  if (args.length !== expected.length || args.some((value,index) => value !== expected[index])) throw new Error("Unexpected RVGL launch arguments");
+  return {};
+}
+
 function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, home, resourceLimits, identityProfile, settings, startupPort, serverName, rconPassword }) {
+  if (gameSlug === "re-volt-rvgl") {
+    if (binary !== "/usr/bin/xvfb-run" || home !== "/var/lib/playbound-host" || identityProfile !== "re-volt-rvgl-unix-v1" ||
+        identityMigrationMetadata(id,home)?.identityProfile !== identityProfile) throw new Error("RVGL identity migration is not ready");
+    const configuration = rvglIdentityConfiguration(args,startupPort);
+    if (settings && Object.keys(settings).length) throw new Error("RVGL identity settings are not verified");
+    return {profile:"re-volt-rvgl-bwrap-v1",resourceLimits,identityProfile,
+      identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify(configuration)},
+      binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
+  if (gameSlug === "core-keeper") {
+    if (binary !== "/usr/bin/xvfb-run" || identityProfile !== "core-keeper-unix-v1" ||
+        identityMigrationMetadata(id, home)?.identityProfile !== identityProfile) throw new Error("Core Keeper identity migration is not ready");
+    const configuration = coreKeeperIdentityConfiguration(args, startupPort, id, home, serverName);
+    return {profile:"core-keeper-bwrap-v1",resourceLimits,identityProfile,
+      identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify(configuration)},
+      binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
   if(gameSlug==="battlefield-1942-anthology") {
     const configuration={name:serverName,maxPlayers:Math.min(64,settings?.maxPlayers??12),map:settings?.map??"berlin",gameMode:settings?.gameMode??"GPM_CQ",botSkill:settings?.botSkill??75};
     if(binary!=="/opt/playbound-host/games/battlefield-1942-anthology/bf1942_lnxded.static"||identityProfile!=="battlefield-1942-anthology-unix-v1"||identityMigrationMetadata(id,home)?.identityProfile!==identityProfile||args.join("\0")!==["+overlayPath",path.join(home,"battlefield-1942-anthology-servers",`pb-${id}`)].join("\0")||!Number.isInteger(startupPort)||startupPort<14567||startupPort>14586||typeof serverName!=="string"||!serverName.length||serverName.length>80||/[\x00-\x1f\x7f"\\;]/.test(serverName)||!Number.isInteger(configuration.maxPlayers)||configuration.maxPlayers<2||typeof configuration.map!=="string"||!/^[A-Za-z0-9_]{1,64}$/.test(configuration.map)||!["GPM_CQ","GPM_COOP"].includes(configuration.gameMode)||!Number.isInteger(configuration.botSkill)||configuration.botSkill<1||configuration.botSkill>100)throw new Error("Unexpected Battlefield identity contract");

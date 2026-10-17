@@ -32,6 +32,12 @@ python3 -m py_compile "$source_dir/customer-bind-policy.py"
 install -o root -g root -m 755 "$source_dir/customer-bind-policy.py" /usr/local/libexec/playbound-customer-bind-policy
 install -o root -g root -m 755 "$source_dir/customer-host-network.py" /usr/local/libexec/playbound-customer-host-network
 install -o root -g root -m 755 "$source_dir/customer-seccomp.py" /usr/local/libexec/playbound-customer-seccomp
+# Install the reviewed display dependencies without enrolling a game or loading
+# any AppArmor policy. A missing enforced per-UID policy still refuses launch.
+for helper in corekeeper rvgl display display-entry display-policy; do
+  python3 -m py_compile "$source_dir/customer-$helper.py"
+  install -o root -g root -m 755 "$source_dir/customer-$helper.py" "/usr/local/libexec/playbound-customer-$helper"
+done
 install -o root -g root -m 755 "$source_dir/customer-native-engine.py" /usr/local/libexec/playbound-customer-native-engine
 python3 -m py_compile "$source_dir/customer-data-migration.py"
 python3 -m py_compile "$source_dir/customer-network-check.py"
