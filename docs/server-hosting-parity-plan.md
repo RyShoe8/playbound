@@ -3063,3 +3063,35 @@ Diff checks passed. No customer migration/enrollment, production deployment,
 database/catalog changes, commit or push. RVGL is now an implemented candidate,
 not accepted isolation: 22 accepted families, 27 implemented candidates and three
 remaining full integration families (GoldenEye, Deus Ex HX, ANEURISM).
+
+### Production deploy of the committed agent and Core Keeper bundle publication (2026-10-17)
+
+The VPS agent and root helpers were brought to commit fe08d2b8 with a pinned,
+backed-up deploy (rollback copy in `/opt/playbound-host/rollback/deploy-head-20261017`).
+72 agent files changed (32 replaced, 40 added); `install-customer-runtime.sh` refreshed
+the runtime/seccomp/display/world-backup helpers and sudoers; ten managed processes kept
+their PIDs through the agent restart. Customer enrollment remains zero. Before the deploy,
+423 agent tests passed on Linux as the service account (`umask 022`) and 337 of 339 root
+helper tests passed as root; the two others are account-specific and pass or skip in the
+right context.
+
+The Core Keeper public bundle was published to
+`/usr/local/libexec/playbound-isolated-corekeeper-data-v1` with the strict root publisher
+(1,140 files, 591,875,009 bytes, no changed processes).
+
+**Deployment gap found:** `install-customer-runtime.sh` does **not** refresh
+`playbound-customer-resources`, `playbound-customer-identities` or the ANEURISM helper;
+each has its own narrow installer (`install-customer-resources.sh`,
+`install-customer-identities.sh`, `install-aniv-helper.sh`). The installed resources helper
+predates the Core Keeper/RVGL profiles, so a staging-agent Core Keeper start failed at
+resource placement ("Customer resource placement was not confirmed") while Teeworlds
+placed correctly from the same fixture. The fix is to run the resources installer (and
+review the other two) before repeating acceptance; this step was not completed in this
+session. Fixture state was left in place for the repeat: fixture server
+`ffffffffffffffffffffffff1`... (migrated, enrolled), the loaded
+`playbound-customer-ipc-40000` label and a staging agent on 127.0.0.1:8753
+(unit `playbound-corekeeper-identity-staging`); scripts are in
+`/opt/playbound-host/staging/corekeeper-acceptance-20261017`. Run `ck-finish.py` there to
+remove everything. Core Keeper acceptance, RVGL acceptance and the three remaining root
+families are still pending.
+
